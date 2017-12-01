@@ -21,13 +21,22 @@ genetic variants from next-generation DNA sequencing data.
 <a name="about"></a>
 ## About DeepVariant
 
-redacted
+For technical details describing how DeepVariant works please see our
+[preprint](https://www.biorxiv.org/content/early/2016/12/21/092890). Briefly,
+we started with GIAB reference genomes, for which there is high-quality ground
+truth available. Using multiple replicates of these genomes, we produced tens of
+millions of training examples in the form of multi-channel tensors encoding the
+sequencing instrument data, and then trained a TensorFlow-based image
+classification model ([inception-v3](https://arxiv.org/abs/1512.00567)) to
+assign genotype likelihoods from the experimental data produced by the
+instrument.
 
 ## Support
 
-The Genomics team in Google Brain actively supports DeepVariant and are always
-interested in improving the quality of DeepVariant. If you run into an issue, we
-recommend you follow one of two approaches to getting the issue resolved.
+The [Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/)
+actively supports DeepVariant and are always interested in improving the quality
+of DeepVariant. If you run into an issue, we recommend you follow one of two
+approaches to getting the issue resolved.
 
 If you have found a bug in DeepVariant - i.e., the code itself needs to be
 fixed - please report the problem on our [Issue
@@ -50,10 +59,6 @@ Interested in contributing? See [CONTRIBUTING](CONTRIBUTING.md).
 ## License
 
 DeepVariant is licensed under the terms of the [BSD-3-Clause license](LICENSE).
-
-## Links
-
-redacted
 
 ## Acknowledgements
 

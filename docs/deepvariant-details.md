@@ -147,6 +147,58 @@ single sample to merge into a final VCF. `postprocess_variants` is
 single-threaded and needs a non-trivial amount of memory to run (20-30 GB), so
 it is best run on a single/dual core machine with sufficient memory.
 
+## Updates on DeepVariant since precisionFDA truth challenge and bioRxiv preprint
+
+The DeepVariant team has been hard at work since we first presented the method.
+Key changes and improvements include:
+
+*   Rearchitected with open source release in mind
+*   Built on [TensorFlow]
+*   Increased variant calling accuracy, especially for indels
+*   Vastly faster with reduced memory usage
+
+We have made a number of improvements to the methodology as well. The biggest
+change was to move away from RGB-encoded (3-channel) pileup images and instead
+represent the aligned read data using a multi-channel tensor data layout. We
+current represent the data as a 7-channel raw tensor in which we encode:
+
+*   The read base (A, C, G, T)
+*   The base's quality score
+*   The read's mapping quality score
+*   The read's strand (positive or negative)
+*   Does the read support the allele being evaluated?
+*   Does the base match the reference genome at this position?
+*   The CIGAR operation length for the current op
+
+These are all readily derived from the information found in the BAM file
+encoding of each read.
+
+Additional modeling changes were to move to the inception-v3 architecture and to
+train on many more independent sequencing replicates of the ground truth
+training samples, including 50% downsampled versions of each of those read sets.
+In our testing this allowed the model to better generalize to other data types.
+
+In the end these changes reduced our error rate by more than 50% on the held out
+evaluation sample (NA24385 / HG002) as compared to our results in the
+[PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/results/):
+
+DeepVariant April 2016 (HG002, GIAB v3.2.2):
+
+Type  | Recall   | Precision | F1_Score
+----- | -------- | --------- | --------
+INDEL | 0.987882 | 0.991728  | 0.989802
+SNP   | 0.999447 | 0.999728  | 0.999587
+
+DeepVariant December 2017 (HG002, GIAB v3.2.2):
+
+Type  | Recall   | Precision | F1_Score
+----- | -------- | --------- | --------
+INDEL | 0.993081 | 0.994954  | 0.994017
+SNP   | 0.999759 | 0.999881  | 0.999820
+
+See the [whole genome case study], which we update with each release of
+DeepVariant, for the latest results.
+
 ## Optimizing DeepVariant
 
 For educational purposes, the DeepVariant Case Study uses the simplest, but
@@ -299,3 +351,4 @@ but the output must go to a local disk.
 [whole genome case study]: deepvariant-case-study.md
 [quick start]: deepvariant-quick-start.md
 [Running DeepVariant on Google Cloud Platform]: https://cloud.google.com/genomics/deepvariant
+[TensorFlow]: http://www.tensorflow.org/
