@@ -387,6 +387,7 @@ serves as a quick check to ensure the three DeepVariant commands ran correctly.
 
 ```bash
 sudo apt-get -y install docker.io
+
 sudo docker pull pkrusche/hap.py
 sudo docker run -it -v `pwd`:/data pkrusche/hap.py /opt/hap.py/bin/hap.py \
   /data/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
