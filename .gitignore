@@ -1,0 +1,12 @@
+# Compiled python files.
+*.pyc
+
+# Emacs temporary files
+*~
+
+# Other temporary files
+*#
+
+bazel-*
+
+**/.ipynb_checkpoints

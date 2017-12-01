@@ -1,0 +1,283 @@
+// Copyright 2017 Google Inc.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+
+package learning.genomics.core;
+
+message ContigInfo {
+  // The name of the contig. Canonically this is the first
+  // non-whitespace-containing string after the > marker in a FASTA file.
+  // For example, the line:
+  //      >chr1 more info here
+  // has a name of "chr1" and a description of "more info here"
+  string name = 1;
+
+  // Ideally this record is filled in as described above, but not all fasta
+  // readers capture the description information after the name.
+  string description = 2;
+
+  // The length of this contig in basepairs.
+  int64 n_bases = 3;
+
+  // The position of this contig in the src_fasta file. The first contig would
+  // have position 0.
+  // redacted
+  int32 pos_in_fasta = 4;
+}
+
+// This table includes all of the information needed to translate contig names
+// between the names from one set of contigs to another. The table
+// isn't symmetric: there's a primary set of names (usually the reference) and
+// a secondary set of names (usually the non-reference data aligned to the
+// genome).
+message ContigTranslationTable {
+  // A map from primary contig names (e.g., "chr1") to their corresponding
+  // secondary keys (e.g., "1"). A key not present in the primary key set means
+  // that there's no corresponding contig in the secondary.
+  map<string, string> primary_to_secondary = 1;
+  // A map just like primary_to_secondary but in the opposite direction.
+  map<string, string> secondary_to_primary = 2;
+}
+
+// Describes requirements for a read for us to use it in BioTF.
+message ReadRequirements {
+  // By default, duplicate reads will not be kept. Set this flag to keep them.
+  bool keep_duplicates = 1;
+  // By default, reads that failed the vendor quality checks will not be kept.
+  // Set this flag to keep them.
+  bool keep_failed_vendor_quality_checks = 2;
+  // By default, reads that are marked as secondary alignments will not be kept.
+  // Set this flag to keep them.
+  bool keep_secondary_alignments = 3;
+  // By default, reads that are marked as supplementary alignments will not be
+  // kept. Set this flag to keep them.
+  bool keep_supplementary_alignments = 4;
+  // By default, reads that aren't aligned are not kept. Set this flag to keep
+  // them.
+  bool keep_unaligned = 5;
+  // Paired (or greater) reads that are improperly placed are not kept by
+  // default. Set this flag to keep them. We define improperly placed to mean
+  // reads whose (next) mate is mapped to a different contig.
+  bool keep_improperly_placed = 6;
+  // By default, reads with any mapping quality are kept. Setting this field
+  // to a positive integer i will only keep reads that have a MAPQ >= i. Note
+  // this only applies to aligned reads. If keep_unaligned is set, unaligned
+  // reads, which by definition do not have a mapping quality, will still be
+  // kept.
+  int32 min_mapping_quality = 7;
+
+  // Minimum base quality. This field indicates that we are enforcing a minimum
+  // base quality score for a read to be used. How this field is enforced,
+  // though, depends on the enum field min_base_quality_mode, as there are
+  // multiple ways for this requirement to be interpreted.
+  int32 min_base_quality = 8;
+
+  // How should we enforce the min_base_quality requirement?
+  enum MinBaseQualityMode {
+    // If UNSPECIFIED, there are no guarantees on whether and how
+    // min_base_quality would be enforced. By default we recomment
+    // implementations ignore min_base_quality if this is set to UNSPECIFIED.
+    UNSPECIFIED = 0;
+    // The min_base_quality requirement is being enforced not by the reader but
+    // by the client itself. This is commonly used when the algorithm for
+    // computing whether a read satisfying the min_base_quality requirement is
+    // too complex or too specific for the reader.
+    ENFORCED_BY_CLIENT = 1;
+  }
+  MinBaseQualityMode min_base_quality_mode = 9;
+}
+
+enum IndexHandlingMode {
+  // Don't try to use an index.
+  //  Reader: index won't be loaded; query will not work.
+  //  Writer: index won't be written
+  DONT_USE_INDEX = 0;
+  // Expect index file, with filename based on filename of SAM/BAM/etc file.
+  //  Reader: load index automatically
+  //  Writer: write index automatically
+  INDEX_BASED_ON_FILENAME = 1;
+}
+
+// This record type mirrors a VCF "FILTER" header.
+message VcfFilterInfo {
+  string id = 1;
+  string description = 2;
+}
+
+// This record type mirrors a VCF "FORMAT" header.
+message VcfFormatInfo {
+  string id = 1;  //
+  string number = 2;  // The number of entries expected, or symbolic code
+  string type = 3;
+  string description = 4;
+}
+
+message OptionalVariantFieldsToParse {
+  // These booleans are the reverse sense of what we want, to give the desired
+  // default behavior
+  bool exclude_genotype = 1;
+  bool exclude_genotype_likelihood = 2;
+  bool exclude_genotype_quality = 3;
+  bool exclude_allele_depth = 4;  // "AD" in FORMAT
+  bool exclude_read_depth = 5;  // "DP" in FORMAT
+}
+
+message VcfReaderOptions {
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+  // What FORMAT entries should we parse from every call?
+  OptionalVariantFieldsToParse desired_format_entries = 2;
+}
+
+message VcfWriterOptions {
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+
+  // Info about the genome contigs:
+  repeated ContigInfo contigs = 2;
+
+  // Sample names
+  repeated string sample_names = 3;
+
+  // Variant filters
+  repeated VcfFilterInfo filters = 4;
+
+  // What FORMAT entries should we write out for each call?
+  OptionalVariantFieldsToParse desired_format_entries = 5;
+}
+
+message SamReaderOptions {
+  // Read requirements that must be satisfied before our reader will return
+  // a read to use.
+  ReadRequirements read_requirements = 1;
+  IndexHandlingMode index_mode = 2;
+  // How should we handle the aux fields in the SAM record?
+  enum AuxFieldHandling {
+    UNSPECIFIED = 0;
+    SKIP_AUX_FIELDS = 1;
+    PARSE_ALL_AUX_FIELDS = 2;
+  }
+  AuxFieldHandling aux_field_handling = 3;
+
+  // Block size to use in htslib, in reading the SAM/BAM. Value <=0 will use the
+  // default htslib block size.
+  int64 hts_block_size = 4;
+
+  // Controls if, and at what rate, we discard reads from the input stream.
+  //
+  // This option allows the user to efficiently remove a random fraction of
+  // reads from the source SAM/BAM file. The reads are discarded on the fly
+  // before being parsed into protos, so the downsampling is reasonably
+  // efficient.
+  //
+  // If 0.0 (the default protobuf value), this field is ignored. If != 0.0, then
+  // this must be a value between (0.0, 1.0] indicating the probability p that a
+  // read should be kept, or equivalently (1 - p) that a read will be kept. For
+  // example, if downsample_fraction is 0.25, then each read has a 25% chance of
+  // being included in the output reads.
+  float downsample_fraction = 5;
+
+  // Random seed to use with downsampling fraction.
+  int64 random_seed = 6;
+}
+
+
+// This proto encodes semantic level information about the nature of the
+// computational task being performed by a process. For example, it tells us
+// what experiment the task belongs to, so we can easily filter logs to find
+// the relevant messages.
+message RuntimeTask {
+  // The experiment name, if this is part of an experiment.
+  // Typical examples: "model_comparison",  "nightly@07-26-2017".
+  string experiment_name = 1;
+  // The experimental condition name, if this is part of an experiment.
+  // Example: "with_gpu" or "without_gpu"
+  string condition_name = 2;
+  // The job name, representing a large computational piece---for example
+  // "make_examples".  A job may consist of subtasks.
+  string job_name = 3;
+  // The task name, for example "1/3", indicating the subcomponent of the
+  // job.
+  string task_name = 4;
+}
+
+// This proto encodes basic runtime performance metrics for the
+// execution of a command---the command that was executed, the
+// start/stop times, CPU, memory, and disk utilization, etc.
+message RuntimeMetrics {
+  // Information about the host executing the command..
+  RuntimeHostInfo host_info = 1;
+  // Semantic-level information about what the task that process embodies.
+  RuntimeTask task_info = 2;
+
+  // The remaining fields represent process-level information.
+
+  // The name of the executable, for example "/opt/bin/make_variants.par".
+  string executable_name = 3;
+  // Version identifier for the executable software build.
+  string software_build_id = 4;
+  // The command line, which includes the command name and its arguments.
+  repeated string command_line = 5;
+  // Total wall clock time (seconds)
+  double wall_time_seconds = 6;
+  // CPU time (seconds) in user mode
+  double cpu_user_time_seconds = 7;
+  // CPU time (seconds) in system mode
+  double cpu_system_time_seconds = 8;
+  // Peak memory usage in megabytes (RSS)
+  int32 memory_peak_rss_mb = 9;
+
+  // Process termination information---process either exited on it own
+  // or was killed by an external signal.
+
+  // Signal number that killed this process.  If zero, was not killed
+  // by a signal.
+  int32 killed_by_signal = 10;
+  // UNIX exit code.  Undefined if the process was killed by signal.
+  int32 exit_code = 11;
+}
+
+
+// This proto contains information about the host executing the
+// command.
+message RuntimeHostInfo {
+  // Fully qualified host name.
+  string host_name = 1;
+  // Name of the cluster or cloud provider, if applicable, e.g. "gce".
+  string compute_provider = 2;
+  // Cloud instance type, if applicable, e.g. "n1-standard-1"
+  string instance_type = 3;
+  // The count of physical CPU cores.
+  int32 physical_core_count = 5;
+  // Nominal (maximum) CPU frequency in MHz.
+  double cpu_frequency_mhz = 6;
+  // Total physical memory, in megabytes.
+  int32 total_memory_mb = 7;
+}

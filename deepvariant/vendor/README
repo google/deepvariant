@@ -1,0 +1,6 @@
+This directory contains code that has been vendored into genomics
+from other Google projects.
+
+Contents:
+ - timer.py and tests - stopwatch timer from pyglib
+ - map_util.h - vendored functions from util/gtl/map_util.h.
