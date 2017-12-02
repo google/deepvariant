@@ -21,7 +21,7 @@ genetic variants from next-generation DNA sequencing data.
 <a name="about"></a>
 ## About DeepVariant
 
-![DeepVariant workflow](DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
+![DeepVariant workflow](docs/DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
 
 For technical details describing how DeepVariant works please see our
 [preprint](https://www.biorxiv.org/content/early/2016/12/21/092890). Briefly,
