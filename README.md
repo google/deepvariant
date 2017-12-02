@@ -21,6 +21,8 @@ genetic variants from next-generation DNA sequencing data.
 <a name="about"></a>
 ## About DeepVariant
 
+![DeepVariant workflow](DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
+
 For technical details describing how DeepVariant works please see our
 [preprint](https://www.biorxiv.org/content/early/2016/12/21/092890). Briefly,
 we started with GIAB reference genomes, for which there is high-quality ground
@@ -29,7 +31,8 @@ millions of training examples in the form of multi-channel tensors encoding the
 sequencing instrument data, and then trained a TensorFlow-based image
 classification model ([inception-v3](https://arxiv.org/abs/1512.00567)) to
 assign genotype likelihoods from the experimental data produced by the
-instrument.
+instrument. Read additional information on the [Google Research
+blog](https://research.googleblog.com/2017/12/deepvariant-highly-accurate-genomes.html).
 
 ## Support
 
