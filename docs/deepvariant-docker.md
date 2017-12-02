@@ -5,7 +5,7 @@ has all DeepVariant binaries and their dependencies preinstalled, which makes it
 easier to run DeepVariant locally, on a VM, or at scale using the
 [Genomics Pipelines API](https://cloud.google.com/genomics/v1alpha2/pipelines).
 
-## Set up
+## Setup
 
 If you have not already done so, please follow the instructions on the
 [quick start](deepvariant-quick-start.md) page. Particularly, you need to

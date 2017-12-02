@@ -13,7 +13,7 @@ genetic variants from next-generation DNA sequencing data.
 *   [DeepVariant via Docker](docs/deepvariant-docker.md)
 *   [DeepVariant whole genome case study](docs/deepvariant-case-study.md)
 *   [DeepVariant exome case study](docs/deepvariant-exome-case-study.md)
-*   [DeepVariant details](docs/deepvariant-details.md)
+*   [DeepVariant usage guide](docs/deepvariant-details.md)
 *   [DeepVariant model training](docs/deepvariant-model-training.md)
 
 <!-- mdlint on -->
@@ -21,15 +21,16 @@ genetic variants from next-generation DNA sequencing data.
 <a name="about"></a>
 ## About DeepVariant
 
+For technical details describing how DeepVariant works please see our
+[preprint](https://www.biorxiv.org/content/early/2016/12/21/092890).
+
 ![DeepVariant workflow](docs/DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
 
-For technical details describing how DeepVariant works please see our
-[preprint](https://www.biorxiv.org/content/early/2016/12/21/092890). Briefly,
-we started with GIAB reference genomes, for which there is high-quality ground
-truth available. Using multiple replicates of these genomes, we produced tens of
-millions of training examples in the form of multi-channel tensors encoding the
-sequencing instrument data, and then trained a TensorFlow-based image
-classification model ([inception-v3](https://arxiv.org/abs/1512.00567)) to
+Briefly, we started with GIAB reference genomes, for which there is high-quality
+ground truth available. Using multiple replicates of these genomes, we produced
+tens of millions of training examples in the form of multi-channel tensors
+encoding the sequencing instrument data, and then trained a TensorFlow-based
+image classification model ([inception-v3](https://arxiv.org/abs/1512.00567)) to
 assign genotype likelihoods from the experimental data produced by the
 instrument. Read additional information on the [Google Research
 blog](https://research.googleblog.com/2017/12/deepvariant-highly-accurate-genomes.html).

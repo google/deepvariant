@@ -1,4 +1,4 @@
-# DeepVariant Quick Start
+# DeepVariant quick start
 
 ## Set up a Google Cloud account
 

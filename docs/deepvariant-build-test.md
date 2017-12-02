@@ -29,7 +29,7 @@ you wish run DeepVariant:
 ./run-prereq.sh
 ```
 
-## settings.sh
+## Configuring the build
 
 Advanced users may want to edit the settings.sh file before building.
 It contains options for configuring TensorFlow, CUDA, GPU usage, etc.
