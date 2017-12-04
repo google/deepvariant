@@ -182,14 +182,14 @@ In the end these changes reduced our error rate by more than 50% on the held out
 evaluation sample (NA24385 / HG002) as compared to our results in the
 [PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/results/):
 
-DeepVariant April 2016 (HG002, GIAB v3.2.2):
+DeepVariant April 2016 (HG002, GIAB v3.2.2, b37):
 
 Type  | Recall   | Precision | F1_Score
 ----- | -------- | --------- | --------
 INDEL | 0.987882 | 0.991728  | 0.989802
 SNP   | 0.999447 | 0.999728  | 0.999587
 
-DeepVariant December 2017 (HG002, GIAB v3.2.2):
+DeepVariant December 2017 (HG002, GIAB v3.2.2, b37):
 
 Type  | Recall   | Precision | F1_Score
 ----- | -------- | --------- | --------
