@@ -119,7 +119,7 @@ class IOTest(parameterized.TestCase):
 
     # Check the round-trip contents.
     if '@' in filename:
-      # Sharded outputs are striped across shards, so order isn't perserved.
+      # Sharded outputs are striped across shards, so order isn't preserved.
       self.assertCountEqual(protos, reader)
     else:
       self.assertEqual(protos, list(reader))
@@ -159,6 +159,41 @@ class IOTest(parameterized.TestCase):
       expected_n = min(max_records, len(protos))
     actual = io.read_tfrecords(
         path, core_pb2.ContigInfo, max_records=max_records)
+    self.assertLen(list(actual), expected_n)
+
+  @parameterized.parameters('foo.tfrecord', 'foo@2.tfrecord', 'foo@3.tfrecord')
+  def test_shard_sorted_tfrecords(self, filename):
+    protos, path = self.write_test_protos(filename)
+
+    # Create our generator of records.
+    key = lambda x: int(x.name)
+    reader = io.read_shard_sorted_tfrecords(
+        path, key=key, proto=core_pb2.ContigInfo)
+
+    # Make sure it's actually a generator.
+    self.assertEqual(type(reader), types.GeneratorType)
+
+    # Check the round-trip contents.
+    contents = list(reader)
+    self.assertEqual(protos, contents)
+    self.assertEqual(contents, sorted(contents, key=key))
+
+  @parameterized.parameters((filename, max_records)
+                            for max_records in [None, 0, 1, 3, 100]
+                            for filename in ['foo.tfrecord', 'foo@2.tfrecord'])
+  def test_shard_sorted_tfrecords_max_records(self, filename, max_records):
+    protos, path = self.write_test_protos(filename)
+
+    if max_records is None:
+      expected_n = len(protos)
+    else:
+      expected_n = min(max_records, len(protos))
+    # Create our generator of records from read_tfrecords.
+    actual = io.read_shard_sorted_tfrecords(
+        path,
+        key=lambda x: int(x.name),
+        proto=core_pb2.ContigInfo,
+        max_records=max_records)
     self.assertLen(list(actual), expected_n)
 
 
@@ -422,6 +457,88 @@ class ShardsTest(parameterized.TestCase):
   )
   def testNormalizeToShardedFilePattern(self, spec, expected):
     self.assertEquals(expected, io.NormalizeToShardedFilePattern(spec))
+
+
+class ComparableSortedRecordIteratorTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      (iter(range(5)), 0),
+      (iter(range(10, -1, -1)), 10),
+      (iter('abc'), 'a'),
+      ((x for x in []), io._ComparableSortedRecordIterator._sentinel),
+  )
+  def test_init(self, iterator, expected_value):
+    it = io._ComparableSortedRecordIterator(iterator)
+    self.assertEqual(it.value, expected_value)
+
+  @parameterized.parameters(
+      (iter(range(5)), 5),
+      (iter('abc'), 3),
+      ((x for x in []), 0),
+  )
+  def test_exhausted(self, iterator, num_non_exhausted):
+    it = io._ComparableSortedRecordIterator(iterator)
+    for _ in xrange(num_non_exhausted):
+      self.assertFalse(it.exhausted())
+      it.advance()
+    self.assertTrue(it.exhausted())
+    it.advance()
+    self.assertTrue(it.exhausted())
+
+  @parameterized.parameters(
+      (iter(range(5)), (lambda x: x), 5),
+      (iter([1, -2, 3, -4, 5]), abs, 5),
+      (iter(range(10, -1, -1)), (lambda x: -x), 11),
+  )
+  def test_valid_iteration_order(self, iterator, key, num_non_exhausted):
+    it = io._ComparableSortedRecordIterator(iterator, key)
+    for _ in xrange(num_non_exhausted):
+      self.assertFalse(it.exhausted())
+      it.advance()
+    self.assertTrue(it.exhausted())
+
+  @parameterized.parameters(
+      (iter([1, -2, 3, -4, 5]),),
+      (iter(range(10, -1, -1)),),
+      (iter('aBcab'),),
+  )
+  def test_invalid_iteration_order(self, iterator):
+    it = io._ComparableSortedRecordIterator(iterator)
+    with self.assertRaisesRegexp(ValueError, 'Iterator is not sorted'):
+      for _ in range(5):
+        it.advance()
+
+  def test_comparison(self):
+    it1 = io._ComparableSortedRecordIterator(iter([0, 0, 2, 2]))
+    it2 = io._ComparableSortedRecordIterator(iter([0, 1, 1.5]))
+    # 0 vs 0
+    self.assertEqual(it1, it2)
+    self.assertFalse(it1 < it2)
+    self.assertFalse(it2 < it1)
+    # 0 vs 1
+    it1.advance()
+    it2.advance()
+    self.assertNotEqual(it1, it2)
+    self.assertTrue(it1 < it2)
+    self.assertFalse(it2 < it1)
+    # 2 vs 1.5
+    it1.advance()
+    it2.advance()
+    self.assertNotEqual(it1, it2)
+    self.assertFalse(it1 < it2)
+    self.assertTrue(it2 < it1)
+    # 2 vs exhausted
+    it1.advance()
+    it2.advance()
+    self.assertNotEqual(it1, it2)
+    self.assertTrue(it1 < it2)
+    self.assertFalse(it2 < it1)
+    # exhausted vs exhausted
+    it1.advance()
+    it2.advance()
+    self.assertEqual(it1, it2)
+    self.assertFalse(it1 < it2)
+    self.assertFalse(it2 < it1)
 
 
 if __name__ == '__main__':

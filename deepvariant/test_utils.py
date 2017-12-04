@@ -70,6 +70,8 @@ CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
 GOLDEN_POSTPROCESS_INPUT = None
 GOLDEN_POSTPROCESS_OUTPUT = None
+GOLDEN_POSTPROCESS_GVCF_INPUT = None
+GOLDEN_POSTPROCESS_GVCF_OUTPUT = None
 
 
 def init():
@@ -83,6 +85,8 @@ def init():
   global TRUTH_VARIANTS_VCF
   global GOLDEN_POSTPROCESS_INPUT
   global GOLDEN_POSTPROCESS_OUTPUT
+  global GOLDEN_POSTPROCESS_GVCF_INPUT
+  global GOLDEN_POSTPROCESS_GVCF_OUTPUT
 
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
@@ -100,3 +104,7 @@ def init():
       'golden.postprocess_single_site_input.tfrecord')
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.postprocess_single_site_output.vcf')
+  GOLDEN_POSTPROCESS_GVCF_INPUT = deepvariant_testdata(
+      'golden.postprocess_gvcf_input.tfrecord')
+  GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
+      'golden.postprocess_gvcf_output.vcf')

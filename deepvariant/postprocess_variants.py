@@ -75,6 +75,15 @@ tf.flags.DEFINE_float(
 tf.flags.DEFINE_float(
     'multi_allelic_qual_filter', 1.0,
     'The qual value below which to filter multi-allelic variants.')
+tf.flags.DEFINE_string(
+    'nonvariant_site_tfrecord_path', None,
+    'Optional. Path(s) to the non-variant sites protos in TFRecord format to '
+    'convert to gVCF file. This should be the complete set of outputs from the '
+    '--gvcf flag of make_examples.py.')
+tf.flags.DEFINE_string(
+    'gvcf_outfile', None,
+    'Optional. Destination path where we will write non-variant sites in VCF '
+    'format.')
 
 # The filter field strings to add to variants created by this method.
 DEEP_VARIANT_REF_FILTER = 'RefCall'
@@ -579,46 +588,80 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
   return canonical_variant, [i / denominator for i in predictions]
 
 
-def write_call_variants_output_to_vcf(contigs, input_sorted_tfrecord_path,
-                                      output_vcf_path, qual_filter,
-                                      multi_allelic_qual_filter, sample_name):
-  """Reads CallVariantsOutput protos and writes to a VCF file.
-
-  Variants present in the input TFRecord are converted to VCF format, with the
-  following filters applied: 1) variants are omitted if their quality is lower
-  than the `qual_filter` threshold. 2) multi-allelic variants omit individual
-  alleles whose qualities are lower than the `multi_allelic_qual_filter`
-  threshold.
+def write_variants_to_vcf(contigs, variant_generator, output_vcf_path,
+                          sample_name):
+  """Writes Variant protos to a VCF file.
 
   Args:
     contigs: list(ContigInfo). A list of the reference genome contigs for
       writers that need contig information.
+    variant_generator: generator. A generator that yields sorted Variant protos.
+    output_vcf_path: str. Output file in VCF format.
+    sample_name: str. Sample name to write to VCF file.
+  """
+  logging.info('Writing output to VCF file: %s', output_vcf_path)
+  sync_writer, writer_fn = genomics_io.make_variant_writer(
+      output_vcf_path, contigs, samples=[sample_name], filters=FILTERS)
+  with sync_writer, io_utils.AsyncWriter(writer_fn) as writer:
+    for variant in variant_generator:
+      writer.write(variant)
+
+
+def _transform_call_variants_output_to_variants(
+    input_sorted_tfrecord_path, qual_filter, multi_allelic_qual_filter,
+    sample_name):
+  """Yields Variant protos in sorted order from CallVariantsOutput protos.
+
+  Variants present in the input TFRecord are converted to Variant protos, with
+  the following filters applied: 1) variants are omitted if their quality is
+  lower than the `qual_filter` threshold. 2) multi-allelic variants omit
+  individual alleles whose qualities are lower than the
+  `multi_allelic_qual_filter` threshold.
+
+  Args:
     input_sorted_tfrecord_path: str. TFRecord format file containing sorted
       CallVariantsOutput protos.
-    output_vcf_path: str. Output file in VCF format.
     qual_filter: double. The qual value below which to filter variants.
     multi_allelic_qual_filter: double. The qual value below which to filter
       multi-allelic variants.
     sample_name: str. Sample name to write to VCF file.
+
+  Yields:
+    Variant protos in sorted order representing the CallVariantsOutput calls.
   """
-  logging.info('Writing calls to VCF file: %s', output_vcf_path)
-  sync_writer, writer_fn = genomics_io.make_variant_writer(
-      output_vcf_path, contigs, samples=[sample_name], filters=FILTERS)
-  with sync_writer, io_utils.AsyncWriter(writer_fn) as writer:
-    for _, group in itertools.groupby(
-        io_utils.read_tfrecords(
-            input_sorted_tfrecord_path,
-            proto=deepvariant_pb2.CallVariantsOutput),
-        lambda x: variantutils.variant_range(x.variant)):
-      outputs = list(group)
-      canonical_variant, predictions = merge_predictions(
-          outputs, multi_allelic_qual_filter)
-      variant = add_call_to_variant(
-          canonical_variant,
-          predictions,
-          qual_filter=qual_filter,
-          sample_name=sample_name)
-      writer.write(variant)
+  for _, group in itertools.groupby(
+      io_utils.read_tfrecords(
+          input_sorted_tfrecord_path, proto=deepvariant_pb2.CallVariantsOutput),
+      lambda x: variantutils.variant_range(x.variant)):
+    outputs = list(group)
+    canonical_variant, predictions = merge_predictions(
+        outputs, multi_allelic_qual_filter)
+    variant = add_call_to_variant(
+        canonical_variant,
+        predictions,
+        qual_filter=qual_filter,
+        sample_name=sample_name)
+    yield variant
+
+
+def _get_contig_based_variant_sort_keyfn(contigs):
+  """Returns a callable used to sort variants based on genomic position.
+
+  Args:
+    contigs: list(ContigInfo). The list of contigs in the desired sort order.
+
+  Returns:
+    A callable that takes a single Variant proto as input and returns a value
+    that sorts based on contig and then start position. Note that if the variant
+    has a contig not represented in the list of contigs this will raise
+    IndexError.
+  """
+  contig_index = {contig.name: ix for ix, contig in enumerate(contigs)}
+
+  def keyfn(variant):
+    return contig_index[variant.reference_name], variant.start
+
+  return keyfn
 
 
 def main(argv=()):
@@ -629,6 +672,12 @@ def main(argv=()):
           'positional arguments but some are present on the command line: '
           '"{}".'.format(str(argv)), errors.CommandLineError)
     del argv  # Unused.
+
+    if (not FLAGS.nonvariant_site_tfrecord_path) != (not FLAGS.gvcf_outfile):
+      errors.log_and_raise(
+          'gVCF creation requires both nonvariant_site_tfrecord_path and '
+          'gvcf_outfile flags to be set.', errors.CommandLineError)
+
     proto_utils.uses_fast_cpp_protos_or_die()
 
     logging_level.set_from_flag()
@@ -648,12 +697,27 @@ def main(argv=()):
               paths[0], proto=deepvariant_pb2.CallVariantsOutput,
               max_records=1))
       sample_name = _extract_single_sample_name(record)
-      write_call_variants_output_to_vcf(
-          contigs=contigs,
+      variant_generator = _transform_call_variants_output_to_variants(
           input_sorted_tfrecord_path=temp.name,
-          output_vcf_path=FLAGS.outfile,
           qual_filter=FLAGS.qual_filter,
           multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
+          sample_name=sample_name)
+      write_variants_to_vcf(
+          contigs=contigs,
+          variant_generator=variant_generator,
+          output_vcf_path=FLAGS.outfile,
+          sample_name=sample_name)
+
+    # Also write out the gVCF file if it was provided.
+    if FLAGS.nonvariant_site_tfrecord_path:
+      nonvariant_generator = io_utils.read_shard_sorted_tfrecords(
+          FLAGS.nonvariant_site_tfrecord_path,
+          key=_get_contig_based_variant_sort_keyfn(contigs),
+          proto=variants_pb2.Variant)
+      write_variants_to_vcf(
+          contigs=contigs,
+          variant_generator=nonvariant_generator,
+          output_vcf_path=FLAGS.gvcf_outfile,
           sample_name=sample_name)
 
 

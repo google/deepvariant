@@ -174,12 +174,19 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.infile = make_golden_dataset(compressed_inputs)
     FLAGS.ref = test_utils.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('calls.vcf')
+    FLAGS.nonvariant_site_tfrecord_path = (
+        test_utils.GOLDEN_POSTPROCESS_GVCF_INPUT)
+    FLAGS.gvcf_outfile = test_utils.test_tmpfile('gvcf_calls.vcf')
 
     postprocess_variants.main(['postprocess_variants.py'])
 
     self.assertEqual(
         tf.gfile.FastGFile(FLAGS.outfile).readlines(),
         tf.gfile.FastGFile(test_utils.GOLDEN_POSTPROCESS_OUTPUT).readlines())
+    self.assertEqual(
+        tf.gfile.FastGFile(FLAGS.gvcf_outfile).readlines(),
+        tf.gfile.FastGFile(
+            test_utils.GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
 
   def test_extract_single_variant_name(self):
     record = _create_call_variants_output(
@@ -814,6 +821,23 @@ class PostprocessVariantsTest(parameterized.TestCase):
         'Command line parsing failure: postprocess_variants does not accept '
         'positional arguments but some are present on the command line: '
         '"[\'postprocess_variants.py\', \'extra_arg\']".')
+    mock_exit.assert_called_once_with(errno.ENOENT)
+
+  @flagsaver.FlagSaver
+  def test_catches_bad_flags(self):
+    FLAGS.infile = make_golden_dataset(False)
+    FLAGS.ref = test_utils.CHR20_FASTA
+    FLAGS.outfile = 'nonempty_outfile.vcf'
+    FLAGS.nonvariant_site_tfrecord_path = (
+        test_utils.GOLDEN_POSTPROCESS_GVCF_INPUT)
+    # This is the bad flag.
+    FLAGS.gvcf_outfile = ''
+    with mock.patch.object(logging, 'error') as mock_logging, \
+        mock.patch.object(sys, 'exit') as mock_exit:
+      postprocess_variants.main(['postprocess_variants.py'])
+    mock_logging.assert_called_once_with(
+        'gVCF creation requires both nonvariant_site_tfrecord_path and '
+        'gvcf_outfile flags to be set.')
     mock_exit.assert_called_once_with(errno.ENOENT)
 
 
