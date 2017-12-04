@@ -86,11 +86,6 @@ export PYTHON_BIN_PATH=$(which python)
 export USE_DEFAULT_PYTHON_LIB_PATH=1
 export DV_COPT_FLAGS="--copt=-msse4.1 --copt=-msse4.2 --copt=-mavx --copt=-O3"
 
-# Set the TensorFlow commit SHA that we use for the release. This is the latest
-# commit to the master branch as of 2017 Nov 26. See:
-# https://github.com/tensorflow/tensorflow/commit/ab0fcaceda001825654424bf18e8a8e0f8d39df2
-export DV_TENSORFLOW_GIT_SHA="ab0fcaceda001825654424bf18e8a8e0f8d39df2"
-
 function note_build_stage {
   echo "========== [$(date)] Stage '${1}' starting"
 }
