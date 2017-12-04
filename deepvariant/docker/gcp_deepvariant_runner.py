@@ -54,6 +54,7 @@ import argparse
 import logging
 import multiprocessing
 import re
+import socket
 import time
 
 from dsub.commands import dsub
@@ -236,8 +237,14 @@ def _run_make_examples(pipeline_args):
         threads.apply_async(func=_run_job, args=(dsub_args, pipeline_args, i)))
   threads.close()
   threads.join()
-  # Ensure exceptions are re-thrown.
-  _ = [result.get() for result in results if result]
+  # Ensure exceptions are re-thrown (ignore socket.timeout errors from dstat
+  # calls).
+  for result in results:
+    if result:
+      try:
+        result.get()
+      except socket.timeout:
+        logging.warning('Ignoring socket timeout exception.')
 
 
 def _run_call_variants(pipeline_args):
@@ -286,8 +293,14 @@ def _run_call_variants(pipeline_args):
         threads.apply_async(func=_run_job, args=(dsub_args, pipeline_args, i)))
   threads.close()
   threads.join()
-  # Ensure exceptions are re-thrown.
-  _ = [result.get() for result in results if result]
+  # Ensure exceptions are re-thrown (ignore socket.timeout errors from dstat
+  # calls).
+  for result in results:
+    if result:
+      try:
+        result.get()
+      except socket.timeout:
+        logging.warning('Ignoring socket timeout exception.')
 
 
 def _run_postprocess_variants(pipeline_args):
