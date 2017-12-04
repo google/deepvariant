@@ -194,7 +194,7 @@ In this bucket models are organized into subdirectories by program name and
 version, such as:
 
 ```
-deepvariant/0.4.0/DeepVariant-inception_v3-0.4.0+cl-12345.data-wgs_standard/
+DeepVariant/0.4.0/DeepVariant-inception_v3-0.4.0+cl-12345.data-wgs_standard/
 ```
 
 The model files are tagged with the program name and version, model name and
