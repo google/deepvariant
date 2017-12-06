@@ -458,17 +458,6 @@ py_test(
 )
 
 py_test(
-    name = "genomics_io_plugins_test",
-    srcs = ["genomics_io_plugins_test.py"],
-    deps = [
-        ":genomics_io",
-        ":py_test_utils",
-        "//third_party/py/tfbam_lib",
-        "@com_google_absl_py//absl/testing:absltest",
-    ],
-)
-
-py_test(
     name = "genomics_io_noplugin_test",
     size = "small",
     srcs = ["genomics_io_noplugin_test.py"],
