@@ -104,7 +104,18 @@ def make_sam_reader(reads_source,
     ImportError: If someone tries to load a tfbam file.
   """
   if reads_source.endswith('.tfbam'):
-    raise ImportError('tfbam_lib module not found, cannot read .tfbam files.')
+    # delay load tfbam_lib. This is a simple plugin mechanism.
+    try:
+      from tfbam_lib import tfbam_reader  # pylint: disable=g-import-not-at-top
+      return tfbam_reader.make_sam_reader(
+          reads_source,
+          read_requirements=read_requirements,
+          use_index=use_index,
+          unused_block_size=hts_block_size,
+          downsample_fraction=downsample_fraction,
+          random_seed=random_seed)
+    except ImportError:
+      raise ImportError('tfbam_lib module not found, cannot read .tfbam files.')
   aux_field_handling = core_pb2.SamReaderOptions.SKIP_AUX_FIELDS
   if parse_aux_fields:
     aux_field_handling = core_pb2.SamReaderOptions.PARSE_ALL_AUX_FIELDS
