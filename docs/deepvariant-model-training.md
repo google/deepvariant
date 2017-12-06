@@ -15,12 +15,13 @@ following high-level overview should help bootstrap training your own custom
 models or fine-tune the released model on new datasets:
 
 *   Run `make_examples` in training mode, providing the `--confident_regions`
-    and `--truth_variants' arguments so that`make_examples` produces the labeled
-    TensorFlow examples uses during training. Confident regions and truth
-    variants should be a BED file of regions where variants (or not) have been
-    confidently determined and a VCF file containing all of the variants within
-    those regions. [Genome in a Bottle](https://github.com/genome-in-a-bottle)
-    provides examples of such files.
+    and `--truth_variants` arguments so that `make_examples` produces the
+    labeled TensorFlow examples uses during training. Confident regions and
+    truth variants should be a BED file of regions where variants (or not) have
+    been confidently determined and a VCF file containing all of the variants
+    within those regions. [Genome in a
+    Bottle](https://github.com/genome-in-a-bottle) provides examples of such
+    files.
 *   Prepare a config text protobuf pointing to the output of `make_examples`,
     which looks something like:
 
