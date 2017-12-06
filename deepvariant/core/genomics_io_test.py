@@ -176,7 +176,7 @@ class SamReaderTests(parameterized.TestCase):
       self.assertEqual(reads[0].aligned_sequence, 'CCC')
       self.assertEqual(reads[0].alignment.position.reference_name, 'chr1')
       self.assertEqual(reads[0].alignment.position.position, 0)
-    except ValueError, e:
+    except ValueError as e:
       if 'Failed to parse SAM record' not in str(e):
         self.fail('Parsing failed but unexpected exception was seen: ' + str(e))
 
