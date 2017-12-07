@@ -7,7 +7,10 @@ access to a machine running Ubuntu is through a cloud computing platform
 like Google Cloud Engine; see for example the instructions at the beginning
 of the [DeepVariant Quick Start](deepvariant-quick-start.md).
 
-To build and test DeepVariant, run the following commands:
+To build and test DeepVariant, first install the
+[Google Cloud SDK](https://cloud.google.com/sdk/downloads)
+(because we need to use its `gsutil` command),
+then run the following commands:
 
 ```shell
 ./build-prereq.sh
