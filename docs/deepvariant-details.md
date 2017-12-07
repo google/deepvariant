@@ -184,17 +184,17 @@ evaluation sample (NA24385 / HG002) as compared to our results in the
 
 DeepVariant April 2016 (HG002, GIAB v3.2.2, b37):
 
-Type  | Recall   | Precision | F1_Score
------ | -------- | --------- | --------
-INDEL | 0.987882 | 0.991728  | 0.989802
-SNP   | 0.999447 | 0.999728  | 0.999587
+Type  | # FN | # FP | Recall   | Precision | F1_Score
+----- | ---- | ---- | -------- | --------- | --------
+INDEL | 4175 | 2839 | 0.987882 | 0.991728  | 0.989802
+SNP   | 1689 | 832  | 0.999447 | 0.999728  | 0.999587
 
 DeepVariant December 2017 (HG002, GIAB v3.2.2, b37):
 
-Type  | Recall   | Precision | F1_Score
------ | -------- | --------- | --------
-INDEL | 0.993081 | 0.994954  | 0.994017
-SNP   | 0.999759 | 0.999881  | 0.999820
+Type  | # FN | # FP | Recall   | Precision | F1_Score
+----- | ---- | ---- | -------- | --------- | --------
+INDEL | 2384 | 1811 | 0.993081 | 0.994954  | 0.994017
+SNP   | 735  | 363  | 0.999759 | 0.999881  | 0.999820
 
 See the [whole genome case study], which we update with each release of
 DeepVariant, for the latest results.
