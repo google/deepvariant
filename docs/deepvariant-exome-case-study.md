@@ -97,7 +97,7 @@ sudo apt-get -y install docker.io
 Copy our binaries from the cloud bucket.
 
 ```bash
-time gsutil -m cp -r "${BIN_BUCKET}/*" "${BIN_DIR}"
+time gsutil -m cp -r -P "${BIN_BUCKET}/*" "${BIN_DIR}"
 ```
 
 This step should be very fast - it took us about 6 seconds when we tested.
