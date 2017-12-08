@@ -3,9 +3,20 @@
 DeepVariant is an analysis pipeline that uses a deep neural network to call
 genetic variants from next-generation DNA sequencing data.
 
-# Documentation
+## Availability
 
 <!-- mdlint off(URL_BAD_G3DOC_PATH) -->
+
+DeepVariant is a suite of Python/C++ programs that run on any Unix-like
+operating system. For convenience the documentation refers to building and
+running DeepVariant on [Google Cloud Platform](https://cloud.google.com/), but
+the tools themselves can be built and run on any standard Linux computer,
+including on-premise machines. Pre-built binaries are available here
+redacted
+DeepVariant](docs/deepvariant-build-test.md) for more information on building
+DeepVariant from sources for your platform.
+
+# Documentation
 
 *   [DeepVariant release notes](docs/deepvariant-release-notes.md)
 *   [Building and testing DeepVariant](docs/deepvariant-build-test.md)
