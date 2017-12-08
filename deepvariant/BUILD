@@ -507,6 +507,7 @@ py_test(
     deps = [
         ":data_providers",
         ":modeling",
+        ":pileup_image",
         ":py_test_utils",
         "//deepvariant/core:io_utils",
         "//deepvariant/core:variantutils",
@@ -521,6 +522,7 @@ py_library(
     srcs = ["modeling.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":pileup_image",
         ":tf_utils",
         "@com_google_absl_py//absl/logging",
         "@org_tensorflow_slim//:inception",
@@ -610,6 +612,7 @@ py_test(
         ":data_providers_test",
         ":model_eval",
         ":modeling",
+        ":pileup_image",
         ":py_test_utils",
         "//deepvariant/core:variantutils",
         "//deepvariant/testing:flagsaver",

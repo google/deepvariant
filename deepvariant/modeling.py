@@ -47,6 +47,7 @@ from nets import inception
 from nets import mobilenet_v1
 from nets import resnet_v2
 
+from deepvariant import pileup_image
 from deepvariant import tf_utils
 
 # The decay factor to use for the moving average.
@@ -471,7 +472,7 @@ class DeepVariantRandomGuessModel(DeepVariantModel):
     image = tf.to_float(image)
     image = tf.subtract(image, 128.0)
     image = tf.div(image, 128.0)
-    image = tf.reshape(image, (100, 221, 7))
+    image = tf.reshape(image, (100, 221, pileup_image.DEFAULT_NUM_CHANNEL))
 
     return image
 

@@ -66,7 +66,7 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> upr,
   std::call_once(import_array_flag, call_import_array);
   if (!upr) { Py_RETURN_NONE; }
 
-  npy_intp dims[] { 1, upr->Width(), 7 };
+  npy_intp dims[] { 1, upr->Width(), 6 };
   PyArrayObject* res = reinterpret_cast<PyArrayObject*>(
       PyArray_SimpleNew(3, dims, PyArray_UBYTE));
   CHECK(res != nullptr);
@@ -79,7 +79,6 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> upr,
     *cur++ = upr->on_positive_strand[i];
     *cur++ = upr->supports_alt[i];
     *cur++ = upr->matches_ref[i];
-    *cur++ = upr->op_len[i];
   }
   return PyArray_Return(res);
 }

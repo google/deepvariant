@@ -45,6 +45,7 @@ import tensorflow as tf
 from deepvariant import data_providers_test
 from deepvariant import model_eval
 from deepvariant import modeling
+from deepvariant import pileup_image
 from deepvariant import test_utils
 from deepvariant.core import variantutils
 from deepvariant.testing import flagsaver
@@ -133,7 +134,8 @@ class ModelEvalTest(
       model = modeling.get_model(model_name)
       # Needed to protect ourselves for models without an input image shape.
       h, w = getattr(model, 'input_image_shape', (100, 221))
-      images = tf.placeholder(tf.float32, shape=(4, h, w, 7))
+      images = tf.placeholder(
+          tf.float32, shape=(4, h, w, pileup_image.DEFAULT_NUM_CHANNEL))
       model.create(images, num_classes=3, is_training=True)
       # This is gross, but necessary as model_eval assumes the model was trained
       # with model_train which uses exp moving averages. Unfortunately we cannot

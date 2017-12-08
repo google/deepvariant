@@ -159,9 +159,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
             # Supports alt or not.
             (152, 152, 152, 152, 152),
             # Matches ref or not.
-            (50, 50, 50, 50, 50),
-            # Cigar operation length. 0 for reference.
-            (0, 0, 0, 0, 0)
+            (50, 50, 50, 50, 50)
         ]).astype(np.uint8))
 
   def assertImageRowEquals(self, image_row, expected):
@@ -185,9 +183,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 254, 254, 254),
         # Matches ref or not.
-        (50, 50, 254, 50, 50),
-        # Cigar operation length.
-        (5, 5, 5, 5, 5)
+        (50, 50, 254, 50, 50)
     ]).astype(np.uint8)
 
     self.assertImageRowEquals(_make_encoder().encode_read(
@@ -207,7 +203,6 @@ class PileupImageEncoderTest(parameterized.TestCase):
     read_start = bases_start_offset + bases_start
 
     # Create our expected image row encoding.
-    op_len = bases_end - bases_start
     full_expected = np.dstack([
         # Base.
         (250, 30, 30, 180, 100),
@@ -220,9 +215,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 254, 254, 254),
         # Matches ref or not.
-        (50, 50, 254, 50, 50),
-        # Cigar operation length.
-        [op_len] * 5
+        (50, 50, 254, 50, 50)
     ]).astype(np.uint8)
     expected = np.zeros(
         (1, ref_size, pileup_image.DEFAULT_NUM_CHANNEL), dtype=np.uint8)
@@ -261,9 +254,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 0, 0, 254),
         # Matches ref or not.
-        (50, 254, 0, 0, 50),
-        # Cigar operation length.
-        (2, 2, 0, 0, 1)
+        (50, 254, 0, 0, 50)
     ]).astype(np.uint8)
     self.assertImageRowEquals(_make_encoder().encode_read(
         dv_call, 'AACAG', read, start, alt_allele), full_expected)
@@ -292,9 +283,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 254, 254, 254),
         # Matches ref or not.
-        (50, 254, 50, 50, 50),
-        # Cigar operation length.
-        (2, 1, 3, 3, 3)
+        (50, 254, 50, 50, 50)
     ]).astype(np.uint8)
     self.assertImageRowEquals(_make_encoder().encode_read(
         dv_call, 'AACAG', read, start, alt_allele), full_expected)
@@ -364,7 +353,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     expected_supports_alt_channel = [152, 254]
     expected = [
         expected_base_values[read_base], 254, 211, 70,
-        expected_supports_alt_channel[supports_alt], 254, 1
+        expected_supports_alt_channel[supports_alt], 254
     ]
 
     self.assertEqual(list(actual[0, 1]), expected)
@@ -386,7 +375,8 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
 
     self.expected_rows = {
         'ref':
-            np.asarray(range(0, 21), np.uint8)
+            np.asarray(
+                range(0, 3 * pileup_image.DEFAULT_NUM_CHANNEL), np.uint8)
             .reshape(1, 3, pileup_image.DEFAULT_NUM_CHANNEL),
         'empty':
             np.zeros((1, 3, pileup_image.DEFAULT_NUM_CHANNEL), dtype=np.uint8),

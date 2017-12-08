@@ -44,6 +44,7 @@ import tensorflow as tf
 from tensorflow.core.example import example_pb2
 from deepvariant import data_providers
 from deepvariant import modeling
+from deepvariant import pileup_image
 from deepvariant import test_utils
 from deepvariant.core import io_utils
 from deepvariant.core import variantutils
@@ -86,12 +87,13 @@ class DataProviderTest(parameterized.TestCase):
         tfrecord_path='/path/to/dataset',
         num_examples=1000)
     ds = data_providers.get_dataset(
-        dataset_config_pbtext_filename, tensor_shape=[3, 4, 7])
+        dataset_config_pbtext_filename,
+        tensor_shape=[3, 4, pileup_image.DEFAULT_NUM_CHANNEL])
 
     self.assertEqual('some_dataset_name', ds.name)
     self.assertEqual('/path/to/dataset', ds.source)
     self.assertEqual(1000, ds.num_examples)
-    self.assertEqual([3, 4, 7], ds.tensor_shape)
+    self.assertEqual([3, 4, pileup_image.DEFAULT_NUM_CHANNEL], ds.tensor_shape)
 
   def test_get_dataset_raises_error_for_empty_name(self):
     dataset_config_pbtext_filename = _test_dataset_config(
@@ -127,12 +129,13 @@ class DataProviderTest(parameterized.TestCase):
         source='test.tfrecord',
         num_examples=10,
         num_classes=2,
-        tensor_shape=[11, 13, 7])
+        tensor_shape=[11, 13, pileup_image.DEFAULT_NUM_CHANNEL])
     self.assertEqual('name', ds.name)
     self.assertEqual('test.tfrecord', ds.source)
     self.assertEqual(10, ds.num_examples)
     self.assertEqual(2, ds.num_classes)
-    self.assertEqual([11, 13, 7], ds.tensor_shape)
+    self.assertEqual([11, 13, pileup_image.DEFAULT_NUM_CHANNEL],
+                     ds.tensor_shape)
 
   def test_good_dataset(self):
     dataset_config_pbtext_filename = _test_dataset_config(
@@ -141,7 +144,8 @@ class DataProviderTest(parameterized.TestCase):
         tfrecord_path='/path/to/dataset',
         num_examples=1000)
     ds = data_providers.get_dataset(
-        dataset_config_pbtext_filename, tensor_shape=[100, 221, 7])
+        dataset_config_pbtext_filename,
+        tensor_shape=[100, 221, pileup_image.DEFAULT_NUM_CHANNEL])
     # Test that the slim.DataSet we create from the dataset has the values
     # and fields we expect.
     with tf.Session():
@@ -150,7 +154,8 @@ class DataProviderTest(parameterized.TestCase):
       self.assertItemsEqual(
           ['image', 'label', 'locus', 'variant', 'truth_variant'],
           slim_ds.decoder.list_items())
-      self.assertEqual([100, 221, 7], ds.tensor_shape)
+      self.assertEqual([100, 221, pileup_image.DEFAULT_NUM_CHANNEL],
+                       ds.tensor_shape)
 
   def assertDataSetExamplesMatchExpected(self, dataset, expected_dataset):
     with tf.Session() as sess:
@@ -179,7 +184,8 @@ class DataProviderTest(parameterized.TestCase):
     self.assertEqual(expected_loci, seen)
     # Note that this expected shape comes from the golden dataset. If the data
     # is remade in the future, the values might need to be modified accordingly.
-    self.assertEqual([100, 221, 7], expected_dataset.tensor_shape)
+    self.assertEqual([100, 221, pileup_image.DEFAULT_NUM_CHANNEL],
+                     expected_dataset.tensor_shape)
 
   @parameterized.parameters(True, False)
   def test_reading_dataset(self, compressed_inputs):
@@ -229,7 +235,8 @@ class DataProviderTest(parameterized.TestCase):
       images, labels, variants = sess.run(batch)
 
       # Checks that our labels are the right shape and are one-hot encoded.
-      self.assertEqual((batch_size, 107, 221, 7), images.shape)
+      self.assertEqual((batch_size, 107, 221, pileup_image.DEFAULT_NUM_CHANNEL),
+                       images.shape)
       self.assertEqual((batch_size,), labels.shape)
       for label in labels:
         self.assertTrue(0 <= label <= 2)

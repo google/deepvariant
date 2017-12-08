@@ -47,7 +47,7 @@ from deepvariant.python import pileup_image_native
 DEFAULT_MIN_BASE_QUALITY = 10
 DEFAULT_MIN_MAPPING_QUALITY = 10
 # redacted
-DEFAULT_NUM_CHANNEL = 7
+DEFAULT_NUM_CHANNEL = 6
 
 
 def default_options(read_requirements=None):

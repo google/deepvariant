@@ -52,7 +52,6 @@ struct ImageRow {
   std::vector<unsigned char> on_positive_strand;
   std::vector<unsigned char> supports_alt;
   std::vector<unsigned char> matches_ref;
-  std::vector<unsigned char> op_len;
 
   int Width() const;
   explicit ImageRow(int width);
