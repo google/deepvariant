@@ -17,7 +17,7 @@ Alternatively, see [Building and testing
 DeepVariant](docs/deepvariant-build-test.md) for more information on building
 DeepVariant from sources for your platform.
 
-# Documentation
+## Documentation
 
 *   [DeepVariant release notes](docs/deepvariant-release-notes.md)
 *   [Building and testing DeepVariant](docs/deepvariant-build-test.md)
@@ -38,14 +38,31 @@ For technical details describing how DeepVariant works please see our
 
 ![DeepVariant workflow](docs/DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
 
-Briefly, we started with GIAB reference genomes, for which there is high-quality
-ground truth available. Using multiple replicates of these genomes, we produced
-tens of millions of training examples in the form of multi-channel tensors
-encoding the sequencing instrument data, and then trained a TensorFlow-based
-image classification model ([inception-v3](https://arxiv.org/abs/1512.00567)) to
+Briefly, we started with some of the reference genomes from [Genome in a
+Bottle](http://jimb.stanford.edu/giab/), for which there is high-quality ground
+truth available (or the closest approximation currently possible). Using
+multiple replicates of these genomes, we produced approximately one hundred
+million training examples in the form of multi-channel tensors encoding the
+sequencing instrument data, and then trained a TensorFlow-based image
+classification model ([inception-v3](https://arxiv.org/abs/1512.00567)) to
 assign genotype likelihoods from the experimental data produced by the
 instrument. Read additional information on the [Google Research
 blog](https://research.googleblog.com/2017/12/deepvariant-highly-accurate-genomes.html).
+
+## Evaluating DeepVariant
+
+We are delighted to see several external evaluations of the DeepVariant method.
+
+The 2016 PrecisionFDA Truth Challenge, administered by the FDA, assessed several
+community-submitted variant callsets on the (at the time) blinded evaluation
+sample, HG002. DeepVariant won the [Highest SNP
+Performance](https://precision.fda.gov/challenges/truth/results) award in the
+challenge.
+
+DNAnexus [posted an extensive
+evaluation](https://blog.dnanexus.com/2017-12-05-evaluating-deepvariant-googles-machine-learning-variant-caller/)
+of several variant calling methods, including DeepVariant, using a variety of
+read sets from HG001, HG002, and HG005.
 
 ## Support
 
