@@ -31,6 +31,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import httplib
+
 
 
 from oauth2client import client as oauth2_client
@@ -58,7 +60,8 @@ def oauth2_token():
       credentials = oauth2_client.GoogleCredentials.get_application_default()
       credentials.get_access_token()
       _OAUTH_TOKEN = credentials.access_token
-    except oauth2_client.ApplicationDefaultCredentialsError:
+    except (oauth2_client.ApplicationDefaultCredentialsError,
+            httplib.HTTPException):
       _OAUTH_TOKEN = ''
   return _OAUTH_TOKEN
 
