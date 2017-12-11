@@ -607,6 +607,15 @@ py_binary(
     deps = ["@protobuf_archive//:protobuf_python"],
 )
 
+py_test(
+    name = "cloud_utils_test",
+    srcs = ["cloud_utils_test.py"],
+    deps = [
+        ":cloud_utils",
+        "@com_google_absl_py//absl/testing:absltest",
+    ],
+)
+
 py_library(
     name = "htslib_gcp_oauth_lib",
     srcs = ["htslib_gcp_oauth.py"],
