@@ -42,10 +42,10 @@ from __future__ import print_function
 
 import logging
 
-import tensorflow as tf
+from tensorflow import flags
 
-tf.flags.DEFINE_string('logging_level', 'INFO',
-                       'select general logging threshold.')
+flags.DEFINE_string('logging_level', 'INFO',
+                    'select general logging threshold.')
 
 
 def set_level(level_name):
@@ -61,4 +61,4 @@ def set_info():
 
 
 def set_from_flag():
-  return set_level(tf.flags.FLAGS.logging_level)
+  return set_level(flags.FLAGS.logging_level)

@@ -42,6 +42,7 @@ import os
 import os.path
 
 
+from tensorflow import flags
 import tensorflow as tf
 
 from deepvariant.core import genomics_io
@@ -53,70 +54,68 @@ from deepvariant.realigner import window_selector
 from deepvariant.realigner.python import debruijn_graph
 from deepvariant.vendor import timer
 
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'ws_min_num_supporting_reads', 3,
     'Minimum number of supporting reads to call a reference position for local '
     'assembly.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'ws_max_num_supporting_reads', 300,
     'Maximum number of supporting reads to call a reference position for local '
     'assembly.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'ws_min_mapq', 20,
     'Minimum read alignment quality to consider in calling a reference '
     'position for local assembly.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'ws_min_base_quality', 20,
     'Minimum base quality to consider in calling a reference position for '
     'local assembly.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'ws_min_windows_distance', 70,
     'Minimum distance between candidate windows for local assembly.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'ws_max_window_size', 1000,
     'Maximum window size to consider for local assembly. Large noisy regions '
     'are skipped for realignment.')
-tf.flags.DEFINE_integer('dbg_min_k', 10,
-                        'Initial k-mer size to build the graph.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer('dbg_min_k', 10, 'Initial k-mer size to build the graph.')
+flags.DEFINE_integer(
     'dbg_max_k', 100,
     'Maximum k-mer size. Larger k-mer size is used to resolve graph cycles.')
-tf.flags.DEFINE_integer(
-    'dbg_step_k', 1, 'Increment size for k to try in resolving graph cycles.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer('dbg_step_k', 1,
+                     'Increment size for k to try in resolving graph cycles.')
+flags.DEFINE_integer(
     'dbg_min_mapq', 14,
     'Minimum read alignment quality to consider in building the graph.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'dbg_min_base_quality', 17,
     'Minimum base quality in a k-mer sequence to consider in building the '
     'graph.')
-tf.flags.DEFINE_integer('dbg_min_edge_weight', 2,
-                        'Minimum number of supporting reads to keep an edge.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer('dbg_min_edge_weight', 2,
+                     'Minimum number of supporting reads to keep an edge.')
+flags.DEFINE_integer(
     'dbg_max_num_paths', 256,
     'Maximum number of paths within a graph to consider for realignment. '
     'Set max_num_paths to 0 to have unlimited number of paths.')
-tf.flags.DEFINE_integer('aln_match', 4,
-                        'Match score (expected to be a non-negative score).')
-tf.flags.DEFINE_integer('aln_mismatch', 6,
-                        'Mismatch score (expected to be a non-negative score).')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer('aln_match', 4,
+                     'Match score (expected to be a non-negative score).')
+flags.DEFINE_integer('aln_mismatch', 6,
+                     'Mismatch score (expected to be a non-negative score).')
+flags.DEFINE_integer(
     'aln_gap_open', 8, 'Gap open score (expected to be a non-negative score). '
     'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'aln_gap_extend', 1,
     'Gap extend score (expected to be a non-negative score). '
     'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
-tf.flags.DEFINE_integer('aln_k', 23,
-                        'k-mer size used to index target sequence.')
-tf.flags.DEFINE_float('aln_error_rate', .01, 'Estimated sequencing error rate.')
-tf.flags.DEFINE_string(
+flags.DEFINE_integer('aln_k', 23, 'k-mer size used to index target sequence.')
+flags.DEFINE_float('aln_error_rate', .01, 'Estimated sequencing error rate.')
+flags.DEFINE_string(
     'realigner_diagnostics', '',
     'Root directory where the realigner should place diagnostic output (such as'
     ' a dump of the DeBruijn graph, and a log of metrics reflecting the graph '
     'and  realignment to the haplotypes).  If empty, no diagnostics are output.'
 )
-tf.flags.DEFINE_bool(
+flags.DEFINE_bool(
     'emit_realigned_reads', False,
     'If True, we will emit realigned reads if our realigner_diagnostics are '
     'also enabled.')
@@ -129,11 +128,11 @@ _REF_ALIGN_MARGIN = 20
 # ---------------------------------------------------------------------------
 
 
-def realigner_config(flags):
+def realigner_config(flags_obj):
   """Creates a RealignerOptions proto based on input and default settings.
 
   Args:
-    flags: configuration FLAGS.
+    flags_obj: configuration FLAGS.
 
   Returns:
     realigner_pb2.RealignerOptions protobuf.
@@ -142,34 +141,34 @@ def realigner_config(flags):
     ValueError: If we observe invalid flag values.
   """
   ws_config = realigner_pb2.RealignerOptions.WindowSelectorOptions(
-      min_num_supporting_reads=flags.ws_min_num_supporting_reads,
-      max_num_supporting_reads=flags.ws_max_num_supporting_reads,
-      min_mapq=flags.ws_min_mapq,
-      min_base_quality=flags.ws_min_base_quality,
-      min_windows_distance=flags.ws_min_windows_distance,
-      max_window_size=flags.ws_max_window_size)
+      min_num_supporting_reads=flags_obj.ws_min_num_supporting_reads,
+      max_num_supporting_reads=flags_obj.ws_max_num_supporting_reads,
+      min_mapq=flags_obj.ws_min_mapq,
+      min_base_quality=flags_obj.ws_min_base_quality,
+      min_windows_distance=flags_obj.ws_min_windows_distance,
+      max_window_size=flags_obj.ws_max_window_size)
 
   dbg_config = realigner_pb2.RealignerOptions.DeBruijnGraphOptions(
-      min_k=flags.dbg_min_k,
-      max_k=flags.dbg_max_k,
-      step_k=flags.dbg_step_k,
-      min_mapq=flags.dbg_min_mapq,
-      min_base_quality=flags.dbg_min_base_quality,
-      min_edge_weight=flags.dbg_min_edge_weight,
-      max_num_paths=flags.dbg_max_num_paths)
+      min_k=flags_obj.dbg_min_k,
+      max_k=flags_obj.dbg_max_k,
+      step_k=flags_obj.dbg_step_k,
+      min_mapq=flags_obj.dbg_min_mapq,
+      min_base_quality=flags_obj.dbg_min_base_quality,
+      min_edge_weight=flags_obj.dbg_min_edge_weight,
+      max_num_paths=flags_obj.dbg_max_num_paths)
 
   aln_config = realigner_pb2.RealignerOptions.AlignerOptions(
-      match=flags.aln_match,
-      mismatch=flags.aln_mismatch,
-      gap_open=flags.aln_gap_open,
-      gap_extend=flags.aln_gap_extend,
-      k=flags.aln_k,
-      error_rate=flags.aln_error_rate)
+      match=flags_obj.aln_match,
+      mismatch=flags_obj.aln_mismatch,
+      gap_open=flags_obj.aln_gap_open,
+      gap_extend=flags_obj.aln_gap_extend,
+      k=flags_obj.aln_k,
+      error_rate=flags_obj.aln_error_rate)
 
   diagnostics = realigner_pb2.RealignerOptions.Diagnostics(
-      enabled=bool(flags.realigner_diagnostics),
-      output_root=flags.realigner_diagnostics,
-      emit_realigned_reads=flags.emit_realigned_reads)
+      enabled=bool(flags_obj.realigner_diagnostics),
+      output_root=flags_obj.realigner_diagnostics,
+      emit_realigned_reads=flags_obj.emit_realigned_reads)
 
   return realigner_pb2.RealignerOptions(
       ws_config=ws_config,

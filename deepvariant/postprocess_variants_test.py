@@ -37,6 +37,7 @@ import itertools
 import sys
 
 
+from tensorflow import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
@@ -52,7 +53,7 @@ from deepvariant.core.genomics import variants_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
 

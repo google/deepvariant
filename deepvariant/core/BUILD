@@ -327,6 +327,7 @@ py_library(
         "//deepvariant/core/genomics:reads_py_pb2",
         "//deepvariant/core/genomics:struct_py_pb2",
         "//deepvariant/core/genomics:variants_py_pb2",
+        "@com_google_absl_py//absl/flags",
     ],
 )
 

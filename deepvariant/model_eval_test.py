@@ -36,6 +36,7 @@ import os
 
 
 
+from tensorflow import flags
 from absl.testing import parameterized
 import mock
 import numpy.testing as npt
@@ -51,7 +52,7 @@ from deepvariant.core import variantutils
 from deepvariant.testing import flagsaver
 
 slim = tf.contrib.slim
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 
 def setUpModule():

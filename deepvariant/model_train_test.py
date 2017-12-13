@@ -36,6 +36,7 @@ import json
 
 
 
+from tensorflow import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
@@ -47,7 +48,7 @@ from deepvariant import modeling
 from deepvariant import test_utils
 from deepvariant.testing import flagsaver
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 MOCK_SENTINEL_RETURN_VALUE = 'mocked_return_value'
 
 

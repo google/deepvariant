@@ -37,6 +37,7 @@ import itertools
 import tempfile
 
 
+from tensorflow import flags
 import numpy as np
 import tensorflow as tf
 
@@ -54,33 +55,33 @@ from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'infile', None,
     'Required. Path(s) to CallVariantOutput protos in TFRecord format to '
     'postprocess. These should be the complete set of outputs for '
     'call_variants.py.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'outfile', None,
     'Required. Destination path where we will write output variant calls in '
     'VCF format.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference in FAI-indexed FASTA format. Used to determine '
     'the sort order for the emitted variants and the VCF header.')
-tf.flags.DEFINE_float(
+flags.DEFINE_float(
     'qual_filter', 1.0,
     'Any variant with QUAL < qual_filter will be filtered in the VCF file.')
-tf.flags.DEFINE_float(
+flags.DEFINE_float(
     'multi_allelic_qual_filter', 1.0,
     'The qual value below which to filter multi-allelic variants.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'nonvariant_site_tfrecord_path', None,
     'Optional. Path(s) to the non-variant sites protos in TFRecord format to '
     'convert to gVCF file. This should be the complete set of outputs from the '
     '--gvcf flag of make_examples.py.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'gvcf_outfile', None,
     'Optional. Destination path where we will write non-variant sites in VCF '
     'format.')
@@ -722,5 +723,5 @@ def main(argv=()):
 
 
 if __name__ == '__main__':
-  tf.flags.mark_flags_as_required(['infile', 'outfile', 'ref'])
+  flags.mark_flags_as_required(['infile', 'outfile', 'ref'])
   tf.app.run()

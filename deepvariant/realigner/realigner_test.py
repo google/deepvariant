@@ -37,6 +37,7 @@ import itertools
 import os
 
 
+from tensorflow import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
@@ -51,7 +52,7 @@ from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import realigner
 from deepvariant.realigner import utils
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 
 def setUpModule():

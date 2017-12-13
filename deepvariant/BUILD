@@ -239,6 +239,7 @@ py_library(
         "//deepvariant/python:allelecounter",
         "//deepvariant/realigner",
         "//deepvariant/vendor:timer",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],
 )
@@ -275,6 +276,7 @@ py_test(
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/testing:flagsaver",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
@@ -296,6 +298,7 @@ py_library(
         "//deepvariant/core:variantutils",
         "//deepvariant/core/genomics:variants_py_pb2",
         "//deepvariant/protos:deepvariant_py_pb2",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],
 )
@@ -308,6 +311,7 @@ py_binary(
     main = "call_variants.py",
     deps = [
         ":call_variants_lib",
+        "@com_google_absl_py//absl/flags",
     ],
 )
 
@@ -327,6 +331,7 @@ py_test(
         "//deepvariant/core:variantutils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/testing:flagsaver",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -414,6 +419,7 @@ py_library(
         "//deepvariant/core/protos:core_py_pb2",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:postprocess_variants",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],
 )
@@ -426,6 +432,7 @@ py_binary(
     main = "postprocess_variants.py",
     deps = [
         ":postprocess_variants_py_lib",
+        "@com_google_absl_py//absl/flags",
     ],
 )
 
@@ -444,6 +451,7 @@ py_test(
         "//deepvariant/core/genomics:variants_py_pb2",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/testing:flagsaver",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -551,6 +559,7 @@ py_library(
         ":logging_level",
         ":modeling",
         "//deepvariant/core:proto_utils",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],
 )
@@ -561,6 +570,7 @@ py_binary(
     srcs_version = "PY2AND3",
     deps = [
         ":model_train_lib",
+        "@com_google_absl_py//absl/flags",
     ],
 )
 
@@ -575,6 +585,7 @@ py_test(
         ":modeling",
         ":py_test_utils",
         "//deepvariant/testing:flagsaver",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -590,6 +601,7 @@ py_library(
         ":modeling",
         "//deepvariant/core:proto_utils",
         "//deepvariant/core:variantutils",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],
 )
@@ -600,6 +612,7 @@ py_binary(
     srcs_version = "PY2AND3",
     deps = [
         ":model_eval_lib",
+        "@com_google_absl_py//absl/flags",
     ],
 )
 
@@ -616,6 +629,7 @@ py_test(
         ":py_test_utils",
         "//deepvariant/core:variantutils",
         "//deepvariant/testing:flagsaver",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
@@ -650,4 +664,5 @@ py_test(
 py_library(
     name = "logging_level",
     srcs = ["logging_level.py"],
+    deps = ["@com_google_absl_py//absl/flags"],
 )

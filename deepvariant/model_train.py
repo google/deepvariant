@@ -37,6 +37,7 @@ import os
 
 
 
+from tensorflow import flags
 import tensorflow as tf
 
 from absl import logging
@@ -48,88 +49,85 @@ from deepvariant.core import proto_utils
 
 slim = tf.contrib.slim
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 # Data set selection parameters
-tf.flags.DEFINE_string('dataset_config_pbtxt', None,
-                       'The path to the dataset config file.')
+flags.DEFINE_string('dataset_config_pbtxt', None,
+                    'The path to the dataset config file.')
 
-tf.flags.DEFINE_string('model_name', 'inception_v3',
-                       'The name of the model to use for predictions.')
+flags.DEFINE_string('model_name', 'inception_v3',
+                    'The name of the model to use for predictions.')
 
-tf.flags.DEFINE_integer('batch_size', 64,
-                        'The number of samples in each batch.')
+flags.DEFINE_integer('batch_size', 64, 'The number of samples in each batch.')
 
-tf.flags.DEFINE_string('master', '',
-                       'The TensorFlow master to use. Set to the empty string '
-                       'to let TF pick a default.')
+flags.DEFINE_string('master', '',
+                    'The TensorFlow master to use. Set to the empty string '
+                    'to let TF pick a default.')
 
-tf.flags.DEFINE_string('train_dir', '/tmp/deepvariant/',
-                       'Directory where to write event logs.')
+flags.DEFINE_string('train_dir', '/tmp/deepvariant/',
+                    'Directory where to write event logs.')
 
-tf.flags.DEFINE_integer('worker_replicas', 1, 'Number of worker replicas.')
+flags.DEFINE_integer('worker_replicas', 1, 'Number of worker replicas.')
 
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'ps_tasks', 0,
     'The number of parameter servers. If the value is 0, then the parameters '
     'are handled locally by the worker.')
 
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'save_summaries_secs', 600,
     'The frequency with which summaries are saved, in seconds.')
 
-tf.flags.DEFINE_integer(
-    'save_interval_secs', 600,
-    'The frequency with which the model is saved, in seconds.')
+flags.DEFINE_integer('save_interval_secs', 600,
+                     'The frequency with which the model is saved, in seconds.')
 
-tf.flags.DEFINE_integer('startup_delay_steps', 15,
-                        'Number of training steps between replicas startup.')
+flags.DEFINE_integer('startup_delay_steps', 15,
+                     'Number of training steps between replicas startup.')
 
-tf.flags.DEFINE_integer('task', 0,
-                        'Task id of the replica running the training.')
+flags.DEFINE_integer('task', 0, 'Task id of the replica running the training.')
 
-tf.flags.DEFINE_integer('number_of_steps', 30000000,
-                        'Maximum number of global steps to take when training.')
+flags.DEFINE_integer('number_of_steps', 30000000,
+                     'Maximum number of global steps to take when training.')
 
 # Training parameters.
-tf.flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
+flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 
-tf.flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
+flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
 
-tf.flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
+flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
 
-tf.flags.DEFINE_float('rmsprop_epsilon', 1.0, 'Epsilon term for RMSProp.')
+flags.DEFINE_float('rmsprop_epsilon', 1.0, 'Epsilon term for RMSProp.')
 
-tf.flags.DEFINE_float('learning_rate_decay_factor', 0.94,
-                      'Learning rate decay factor.')
+flags.DEFINE_float('learning_rate_decay_factor', 0.94,
+                   'Learning rate decay factor.')
 
-tf.flags.DEFINE_float('num_epochs_per_decay', 2.0,
-                      'Number of epochs after which learning rate decays.')
+flags.DEFINE_float('num_epochs_per_decay', 2.0,
+                   'Number of epochs after which learning rate decays.')
 
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'replicas_to_aggregate', 1,
     'The Number of gradients to collect before updating params.')
 
-tf.flags.DEFINE_float('moving_average_decay', 0.9999,
-                      'The decay to use for the moving average.')
+flags.DEFINE_float('moving_average_decay', 0.9999,
+                   'The decay to use for the moving average.')
 
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'num_retries', 0,
     'The number of times to retry on InternalError or UnavailableError.')
 
 # Pre-trained model parameters
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'start_from_checkpoint', 'model_default',
     'A path to a checkpoint of model weights to initalize our model at the '
     'start of training. If None or "", the model will start from random weights'
     '. The special value "model_default" will use the default pretrained '
     'path for the selected model.')
 
-tf.flags.DEFINE_integer('max_checkpoints_to_keep', 10,
-                        'Number of last checkpoints to keep during traning. '
-                        'Passing "0" preserves all checkpoints.')
+flags.DEFINE_integer('max_checkpoints_to_keep', 10,
+                     'Number of last checkpoints to keep during traning. '
+                     'Passing "0" preserves all checkpoints.')
 
-tf.flags.DEFINE_float(
+flags.DEFINE_float(
     'keep_checkpoint_every_n_hours', 1.0,
     'If specified, in addition to keeping the last "max_checkpoints_to_keep" '
     'checkpoints, an additional checkpoint will be kept for every n hours of '

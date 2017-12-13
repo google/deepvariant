@@ -35,6 +35,7 @@ from __future__ import print_function
 
 
 
+from tensorflow import flags
 import numpy as np
 import tensorflow as tf
 
@@ -47,39 +48,37 @@ from deepvariant.core import proto_utils
 from deepvariant.core import variantutils
 
 slim = tf.contrib.slim
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
-tf.flags.DEFINE_integer('batch_size', 64,
-                        'The number of samples in each batch.')
+flags.DEFINE_integer('batch_size', 64, 'The number of samples in each batch.')
 
-tf.flags.DEFINE_string('master', '',
-                       'The TensorFlow master to use. Set to the empty string '
-                       'to let TF pick a default.')
+flags.DEFINE_string('master', '',
+                    'The TensorFlow master to use. Set to the empty string '
+                    'to let TF pick a default.')
 
-tf.flags.DEFINE_string('checkpoint_dir', '/tmp/deepvariant/',
-                       'Directory where the model was written to.')
+flags.DEFINE_string('checkpoint_dir', '/tmp/deepvariant/',
+                    'Directory where the model was written to.')
 
-tf.flags.DEFINE_string('eval_dir', '/tmp/deepvariant/',
-                       'Directory where the results are saved to.')
+flags.DEFINE_string('eval_dir', '/tmp/deepvariant/',
+                    'Directory where the results are saved to.')
 
-tf.flags.DEFINE_integer(
-    'eval_interval_secs', 600,
-    'The frequency, in seconds, with which evaluation is run.')
+flags.DEFINE_integer('eval_interval_secs', 600,
+                     'The frequency, in seconds, with which evaluation is run.')
 
-tf.flags.DEFINE_integer('batches_per_eval_step', 1000,
-                        'Number of batches to evaluate in each eval step.')
+flags.DEFINE_integer('batches_per_eval_step', 1000,
+                     'Number of batches to evaluate in each eval step.')
 
-tf.flags.DEFINE_integer('max_evaluations', None,
-                        'Max number of batches to evaluate')
+flags.DEFINE_integer('max_evaluations', None,
+                     'Max number of batches to evaluate')
 
-tf.flags.DEFINE_string('model_name', 'inception_v3',
-                       'The name of the model to use for predictions.')
+flags.DEFINE_string('model_name', 'inception_v3',
+                    'The name of the model to use for predictions.')
 
-tf.flags.DEFINE_string('dataset_config_pbtxt', None,
-                       'The path to the dataset config file.')
+flags.DEFINE_string('dataset_config_pbtxt', None,
+                    'The path to the dataset config file.')
 
-tf.flags.DEFINE_float('moving_average_decay', 0.9999,
-                      'The decay to use for the moving average.')
+flags.DEFINE_float('moving_average_decay', 0.9999,
+                   'The decay to use for the moving average.')
 
 
 def select_variants_weights(variant_p_func, encoded_variants, name=None):

@@ -75,11 +75,11 @@ import functools
 import inspect
 
 
-import tensorflow as tf
+from tensorflow import flags
 
 from tensorflow.python.platform import flags
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 
 @contextlib.contextmanager

@@ -14,6 +14,7 @@ py_library(
     name = "flagsaver",
     srcs = ["flagsaver.py"],
     srcs_version = "PY2AND3",
+    deps = ["@com_google_absl_py//absl/flags"],
 )
 
 cc_library(

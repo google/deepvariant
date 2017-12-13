@@ -36,6 +36,7 @@ import time
 
 
 
+from tensorflow import flags
 import numpy as np
 import tensorflow as tf
 
@@ -62,34 +63,34 @@ _ALLOW_EXECUTION_HARDWARE = [
 # rounded to, for numerical stability.
 _GL_PRECISION = 10
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'examples', None,
     'Required. tf.Example protos containing DeepVariant candidate variants in '
     'TFRecord format, as emitted by make_examples.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'outfile', None,
     'Required. Destination path where we will write output candidate variants '
     'with additional likelihood information in TFRecord format of '
     'CallVariantsOutput protos.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'checkpoint', None,
     'Required. Path to the TensorFlow model checkpoint to use to evaluate '
     'candidate variant calls.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'batch_size', 512,
     'Number of candidate variant tensors to batch together during inference. '
     'Larger batches use more memory but are more computational efficient.')
-tf.flags.DEFINE_integer('max_batches', None,
-                        'Max. batches to evaluate. Defaults to all.')
-tf.flags.DEFINE_integer('num_readers', 8,
-                        'Number of parallel readers to create for examples.')
-tf.flags.DEFINE_string('model_name', 'inception_v3',
-                       'The name of the model architecture of --checkpoint.')
-tf.flags.DEFINE_boolean('include_debug_info', False,
-                        'If true, include extra debug info in the output.')
-tf.flags.DEFINE_string(
+flags.DEFINE_integer('max_batches', None,
+                     'Max. batches to evaluate. Defaults to all.')
+flags.DEFINE_integer('num_readers', 8,
+                     'Number of parallel readers to create for examples.')
+flags.DEFINE_string('model_name', 'inception_v3',
+                    'The name of the model architecture of --checkpoint.')
+flags.DEFINE_boolean('include_debug_info', False,
+                     'If true, include extra debug info in the output.')
+flags.DEFINE_string(
     'execution_hardware', 'auto',
     'When in cpu mode, call_variants will not place any ops on the GPU, even '
     'if one is available. In accelerator mode call_variants validates that at '
@@ -402,7 +403,7 @@ def main(argv=()):
 
 
 if __name__ == '__main__':
-  tf.flags.mark_flags_as_required([
+  flags.mark_flags_as_required([
       'examples',
       'outfile',
       'checkpoint',

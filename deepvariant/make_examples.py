@@ -34,6 +34,7 @@ from __future__ import print_function
 
 
 
+from tensorflow import flags
 import numpy as np
 import tensorflow as tf
 
@@ -59,7 +60,7 @@ from deepvariant.python import allelecounter
 from deepvariant.realigner import realigner
 from deepvariant.vendor import timer
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 # Sentinel command line flag value indicating no downsampling should occur.
 NO_DOWNSAMPLING = 0.0
@@ -77,109 +78,108 @@ _UNKNOWN_SAMPLE = 'UNKNOWN'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
     'well. Supports text or gzipped references. Should match the reference '
     'used to align the BAM file provided to --reads.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'reads', None,
     'Required. Aligned, sorted, indexed BAM file containing the reads we want '
     'to call. Should be aligned to a reference genome compatible with --ref.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'examples', None,
     'Required. Path to write tf.Example protos in TFRecord format.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'candidates', '',
     'Candidate DeepVariantCalls in tfrecord format. For DEBUGGING.')
-tf.flags.DEFINE_string('mode', None,
-                       'Mode to run. Must be one of calling or training')
-tf.flags.DEFINE_string(
+flags.DEFINE_string('mode', None,
+                    'Mode to run. Must be one of calling or training')
+flags.DEFINE_string(
     'regions', '',
     'Optional. Space-separated list of regions we want to process. Elements '
     'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'gvcf', '',
     'Optional. Path where we should write gVCF records in TFRecord of Variant '
     'proto format.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'confident_regions', '',
     'Regions that we are confident are hom-ref or a variant in BED format. In '
     'BED or other equivalent format, sorted or unsorted. Contig names must '
     'match those of the reference genome.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'truth_variants', '',
     'Tabix-indexed VCF file containing the truth variant calls for this labels '
     'which we use to label our examples.')
-tf.flags.DEFINE_integer('task', 0, 'Task ID of this task')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer('task', 0, 'Task ID of this task')
+flags.DEFINE_integer(
     'partition_size', 1000,
     'The maximum number of basepairs we will allow in a region before splitting'
     'it into multiple smaller subregions.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'max_reads_per_partition', 1500,
     'The maximum number of reads per partition that we consider before '
     'following processing such as sampling and realigner.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'multi_allelic_mode', '',
     'How to handle multi-allelic candidate variants. For DEBUGGING')
-tf.flags.DEFINE_bool('realign_reads', True,
-                     'If True, locally realign reads before calling variants.')
-tf.flags.DEFINE_float(
+flags.DEFINE_bool('realign_reads', True,
+                  'If True, locally realign reads before calling variants.')
+flags.DEFINE_float(
     'downsample_fraction', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
     'Reads will be kept (randomly) with a probability of downsample_fraction '
     'from the input BAM. This argument makes it easy to create examples as '
     'though the input BAM had less coverage.')
-tf.flags.DEFINE_string(
+flags.DEFINE_string(
     'sample_name', '', 'Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads.')
-tf.flags.DEFINE_string('hts_logging_level',
-                       hts_verbose.htsLogLevel.HTS_LOG_WARNING.name,
-                       'Sets the htslib logging threshold.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_string('hts_logging_level',
+                    hts_verbose.htsLogLevel.HTS_LOG_WARNING.name,
+                    'Sets the htslib logging threshold.')
+flags.DEFINE_integer(
     'hts_block_size', _DEFAULT_HTS_BLOCK_SIZE,
     'Sets the htslib block size. Zero or negative uses default htslib setting; '
     'larger values (e.g. 1M) may be beneficial for using remote files. '
     'Currently only applies to SAM/BAM reading.')
-tf.flags.DEFINE_integer('vsc_min_count_snps', 2,
-                        'SNP alleles occurring at least this many times in our '
-                        'AlleleCount will be advanced as candidates.')
-tf.flags.DEFINE_integer('vsc_min_count_indels', 2,
-                        'Indel alleles occurring at least this many times in '
-                        'our AlleleCount will be advanced as candidates.')
-tf.flags.DEFINE_float('vsc_min_fraction_snps', 0.12,
-                      'SNP alleles occurring at least this fraction of all '
-                      'counts in our AlleleCount will be advanced as '
-                      'candidates.')
-tf.flags.DEFINE_float('vsc_min_fraction_indels', 0.12,
-                      'Indel alleles occurring at least this fraction of all '
-                      'counts in our AlleleCount will be advanced as '
-                      'candidates.')
-tf.flags.DEFINE_float(
+flags.DEFINE_integer('vsc_min_count_snps', 2,
+                     'SNP alleles occurring at least this many times in our '
+                     'AlleleCount will be advanced as candidates.')
+flags.DEFINE_integer('vsc_min_count_indels', 2,
+                     'Indel alleles occurring at least this many times in '
+                     'our AlleleCount will be advanced as candidates.')
+flags.DEFINE_float('vsc_min_fraction_snps', 0.12,
+                   'SNP alleles occurring at least this fraction of all '
+                   'counts in our AlleleCount will be advanced as '
+                   'candidates.')
+flags.DEFINE_float('vsc_min_fraction_indels', 0.12,
+                   'Indel alleles occurring at least this fraction of all '
+                   'counts in our AlleleCount will be advanced as '
+                   'candidates.')
+flags.DEFINE_float(
     'training_random_emit_ref_sites', NO_RANDOM_REF,
     'If > 0, emit extra random reference examples with this probability.')
-tf.flags.DEFINE_integer(
+flags.DEFINE_integer(
     'pileup_image_height', 0,
     'Height for the pileup image. If 0, uses the default height')
-tf.flags.DEFINE_integer(
-    'pileup_image_width', 0,
-    'Width for the pileup image. If 0, uses the default width')
+flags.DEFINE_integer('pileup_image_width', 0,
+                     'Width for the pileup image. If 0, uses the default width')
 
 # ---------------------------------------------------------------------------
 # Option handling
 # ---------------------------------------------------------------------------
 
 
-def default_options(add_flags=True, flags=None):
+def default_options(add_flags=True, flags_obj=None):
   """Creates a DeepVariantOptions proto populated with reasonable defaults.
 
   Args:
     add_flags: bool. defaults to True. If True, we will push the value of
       certain FLAGS into our options. If False, those option fields are left
       uninitialized.
-    flags: object.  If not None, use as the source of flags,
+    flags_obj: object.  If not None, use as the source of flags,
       else use global FLAGS.
 
   Returns:
@@ -188,8 +188,8 @@ def default_options(add_flags=True, flags=None):
   Raises:
     ValueError: If we observe invalid flag values.
   """
-  if not flags:
-    flags = FLAGS
+  if not flags_obj:
+    flags_obj = FLAGS
 
   read_reqs = core_pb2.ReadRequirements(
       min_base_quality=10,
@@ -199,20 +199,20 @@ def default_options(add_flags=True, flags=None):
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
-      partition_size=flags.partition_size, read_requirements=read_reqs)
+      partition_size=flags_obj.partition_size, read_requirements=read_reqs)
 
-  if flags.sample_name:
-    sample_name = flags.sample_name
-  elif flags.reads:
-    sample_name = extract_sample_name_from_reads(flags.reads)
+  if flags_obj.sample_name:
+    sample_name = flags_obj.sample_name
+  elif flags_obj.reads:
+    sample_name = extract_sample_name_from_reads(flags_obj.reads)
   else:
     sample_name = _UNKNOWN_SAMPLE
 
   variant_caller_options = deepvariant_pb2.VariantCallerOptions(
-      min_count_snps=flags.vsc_min_count_snps,
-      min_count_indels=flags.vsc_min_count_indels,
-      min_fraction_snps=flags.vsc_min_fraction_snps,
-      min_fraction_indels=flags.vsc_min_fraction_indels,
+      min_count_snps=flags_obj.vsc_min_count_snps,
+      min_count_indels=flags_obj.vsc_min_count_indels,
+      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
+      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
       # Not specified by default: fraction_reference_sites_to_emit,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=1400605801,
@@ -306,65 +306,65 @@ def default_options(add_flags=True, flags=None):
   )
 
   if add_flags:
-    if flags.mode == 'training':
+    if flags_obj.mode == 'training':
       options.mode = deepvariant_pb2.DeepVariantOptions.TRAINING
-    elif flags.mode == 'calling':
+    elif flags_obj.mode == 'calling':
       options.mode = deepvariant_pb2.DeepVariantOptions.CALLING
     else:
-      raise ValueError('Unexpected mode', flags.mode)
+      raise ValueError('Unexpected mode', flags_obj.mode)
 
-    if flags.ref:
-      options.reference_filename = flags.ref
-    if flags.reads:
-      options.reads_filename = flags.reads
-    if flags.confident_regions:
-      options.confident_regions_filename = flags.confident_regions
-    if flags.truth_variants:
-      options.truth_variants_filename = flags.truth_variants
+    if flags_obj.ref:
+      options.reference_filename = flags_obj.ref
+    if flags_obj.reads:
+      options.reads_filename = flags_obj.reads
+    if flags_obj.confident_regions:
+      options.confident_regions_filename = flags_obj.confident_regions
+    if flags_obj.truth_variants:
+      options.truth_variants_filename = flags_obj.truth_variants
 
-    if flags.downsample_fraction != NO_DOWNSAMPLING:
-      options.downsample_fraction = flags.downsample_fraction
+    if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
+      options.downsample_fraction = flags_obj.downsample_fraction
 
-    if flags.multi_allelic_mode:
+    if flags_obj.multi_allelic_mode:
       multi_allelic_enum = {
           'include_het_alt_images':
               deepvariant_pb2.PileupImageOptions.ADD_HET_ALT_IMAGES,
           'exclude_het_alt_images':
               deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES,
-      }[flags.multi_allelic_mode]
+      }[flags_obj.multi_allelic_mode]
       options.pic_options.multi_allelic_mode = multi_allelic_enum
 
-    if flags.pileup_image_height:
-      options.pic_options.height = flags.pileup_image_height
-    if flags.pileup_image_width:
-      options.pic_options.width = flags.pileup_image_width
+    if flags_obj.pileup_image_height:
+      options.pic_options.height = flags_obj.pileup_image_height
+    if flags_obj.pileup_image_width:
+      options.pic_options.width = flags_obj.pileup_image_width
 
     num_shards, examples, candidates, gvcf = io_utils.resolve_filespecs(
-        flags.task, flags.examples or '', flags.candidates or '', flags.gvcf or
-        '')
+        flags_obj.task, flags_obj.examples or '', flags_obj.candidates or '',
+        flags_obj.gvcf or '')
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
 
     # redacted
-    regions_flag = flags.regions
+    regions_flag = flags_obj.regions
     if isinstance(regions_flag, str):
       regions_flag = regions_flag.split()
     options.calling_regions.extend(regions_flag)
 
-    options.task_id = flags.task
+    options.task_id = flags_obj.task
     options.num_shards = 0 if num_shards is None else num_shards
 
-    if flags.realign_reads:
+    if flags_obj.realign_reads:
       options.realigner_enabled = True
-      options.realigner_options.CopyFrom(realigner.realigner_config(flags))
+      options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
-    options.max_reads_per_partition = flags.max_reads_per_partition
+    options.max_reads_per_partition = flags_obj.max_reads_per_partition
 
     if (options.mode == deepvariant_pb2.DeepVariantOptions.TRAINING and
-        flags.training_random_emit_ref_sites != NO_RANDOM_REF):
+        flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF):
       options.variant_caller_options.fraction_reference_sites_to_emit = (
-          flags.training_random_emit_ref_sites)
+          flags_obj.training_random_emit_ref_sites)
 
   return options
 
@@ -966,7 +966,7 @@ def main(argv=()):
     htslib_gcp_oauth.init()
 
     # Set up options; may do I/O.
-    options = default_options(add_flags=True, flags=FLAGS)
+    options = default_options(add_flags=True, flags_obj=FLAGS)
 
     # Check arguments that apply to any mode.
     if not options.reference_filename:
@@ -1006,7 +1006,7 @@ def main(argv=()):
 
 
 if __name__ == '__main__':
-  tf.flags.mark_flags_as_required([
+  flags.mark_flags_as_required([
       'examples',
       'mode',
       'reads',

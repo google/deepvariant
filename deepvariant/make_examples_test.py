@@ -37,10 +37,10 @@ import sys
 
 
 
+from tensorflow import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
-import tensorflow as tf
 
 from absl import logging
 from tensorflow.core.example import example_pb2
@@ -58,7 +58,7 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.protos import realigner_pb2
 from deepvariant.testing import flagsaver
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 # Dictionary mapping keys to decoders for decode_example function.
 _EXAMPLE_DECODERS = {

@@ -18,6 +18,7 @@ py_library(
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/realigner/python:debruijn_graph",
         "//deepvariant/vendor:timer",
+        "@com_google_absl_py//absl/flags",
     ],
 )
 
@@ -36,6 +37,7 @@ py_test(
         "//deepvariant/core/genomics:reads_py_pb2",
         "//deepvariant/core/protos:core_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

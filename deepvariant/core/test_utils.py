@@ -35,6 +35,7 @@ from __future__ import print_function
 import os
 
 
+from tensorflow import flags
 import tensorflow as tf
 
 from tensorflow.python.platform import googletest
@@ -44,7 +45,7 @@ from deepvariant.core.genomics import reads_pb2
 from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.genomics import variants_pb2
 
-FLAGS = tf.flags.FLAGS
+FLAGS = flags.FLAGS
 
 # In the OSS version this will be ''.
 DATADIR = ''
