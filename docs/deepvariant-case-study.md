@@ -42,7 +42,7 @@ Set a number of shell variables, to make what follows easier.
 ```bash
 BASE="${HOME}/case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.4.0"
+BIN_VERSION="0.4.1"
 MODEL_VERSION="0.4.0"
 MODEL_CL="174375304"
 
