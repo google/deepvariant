@@ -68,22 +68,16 @@ read sets from HG001, HG002, and HG005.
 
 The [Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/)
 actively supports DeepVariant and are always interested in improving the quality
-of DeepVariant. If you run into an issue, we recommend you follow one of two
-approaches to getting the issue resolved.
-
-If you have found a bug in DeepVariant - i.e., the code itself needs to be
-fixed - please report the problem on our [Issue
+of DeepVariant. If you run into an issue, please report the problem on our [Issue
 tracker](https://github.com/google/deepvariant/issues). Make sure to add enough
 detail to your report that we can reproduce the problem and fix it. We encourage
 including links to snippets of BAM/VCF/etc. files that provoke the bug, if
 possible. Depending on the severity of the issue we may patch DeepVariant
 immediately with the fix or roll it into the next release.
 
-If you have general questions about DeepVariant usage, please post your question
-to [BioStars](https://www.biostars.org/), adding the tag 'deepvariant'. We
-monitor [BioStars posts tagged with
-DeepVariant](https://www.biostars.org/t/deepvariant/) and will respond as needed
-there.
+If you have questions about next-generation sequencing, bioinformatics, or other
+general topics not specific to DeepVariant we recommend you post your question
+to a community discussion forum such as [BioStars](https://www.biostars.org/).
 
 ## Contributing
 
