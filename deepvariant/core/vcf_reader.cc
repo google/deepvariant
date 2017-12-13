@@ -173,6 +173,7 @@ tf::Status ConvertToPb(
   bool want_gt = !desired_format_entries.exclude_genotype();
   bool want_ad = !desired_format_entries.exclude_allele_depth();
   bool want_dp = !desired_format_entries.exclude_read_depth();
+  bool want_vaf = !desired_format_entries.exclude_variant_allele_frequencies();
 
   // Parse the calls of the variant.
   if (v->n_sample > 0) {
@@ -204,6 +205,7 @@ tf::Status ConvertToPb(
     vector<vector<int>> pl_values = ReadFormatValues<int>(h, v, "PL");
     vector<vector<float>> gl_values = ReadFormatValues<float>(h, v, "GL");
     vector<string> ps_values = ReadFormatStrings(h, v, "PS");
+    vector<vector<float>> vaf_values = ReadFormatValues<float>(h, v, "VAF");
 
     // If GL and PL are *both* present, we could convert it to proto per
     // the variants.proto spec, but we'd rather fail---better not to allow
@@ -223,6 +225,7 @@ tf::Status ConvertToPb(
       bool have_gl = !gl_values.empty() && !gl_values[i].empty();
       bool have_pl = !pl_values.empty() && !pl_values[i].empty();
       bool have_ps = !ps_values.empty() && !ps_values[i].empty();
+      bool have_vaf = !vaf_values.empty() && !vaf_values[i].empty();
 
       VariantCall* call = variant_message->mutable_calls(i);
       if (want_ad && have_ad) {
@@ -248,6 +251,9 @@ tf::Status ConvertToPb(
       // Don't add the missing "." marker to the phaseset field.
       if (have_ps && ps_values[i] != ".") {
         call->set_phaseset(ps_values[i]);
+      }
+      if (want_vaf && have_vaf) {
+        SetInfoField("VAF", vaf_values[i], call);
       }
     }
   }

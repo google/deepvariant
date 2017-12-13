@@ -75,6 +75,8 @@ constexpr char kVcfPhasesetFilename[] = "test_phaseset.vcf";
 constexpr char kVcfPhasesetGoldenFilename[] = "test_phaseset.vcf.golden.tfrecord";  // NOLINT
 constexpr char kVcfAlleleDepthFilename[] = "test_allele_depth.vcf";
 constexpr char kVcfAlleleDepthGoldenFilename[] = "test_allele_depth.vcf.golden.tfrecord";  // NOLINT
+constexpr char kVcfVariantAlleleFrequencyFilename[] = "test_vaf.vcf";
+constexpr char kVcfVariantAlleleFrequencyGoldenFilename[] = "test_vaf.vcf.golden.tfrecord";  // NOLINT
 
 constexpr int CHR1_SIZE = 248956422;
 constexpr int CHR2_SIZE = 242193529;
@@ -215,6 +217,17 @@ TEST(VcfReaderAlleleDepthTest, MatchesGolden) {
   vector<Variant> golden =
       ReadProtosFromTFRecord<Variant>(
       GetTestData(kVcfAlleleDepthGoldenFilename));
+  EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), golden));
+}
+
+TEST(VcfReaderVariantAlleleFrequencyTest, MatchesGolden) {
+  // Verify that we can still read the VAF field correctly.
+  std::unique_ptr<VcfReader> reader = std::move(
+      VcfReader::FromFile(GetTestData(kVcfVariantAlleleFrequencyFilename),
+                          VcfReaderOptions())
+          .ValueOrDie());
+  vector<Variant> golden = ReadProtosFromTFRecord<Variant>(
+      GetTestData(kVcfVariantAlleleFrequencyGoldenFilename));
   EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), golden));
 }
 }  // namespace core

@@ -1,0 +1,19 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth of all passing filters reads.">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth of all passing filters reads for each allele.">
+##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
+##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype likelihoods, log10 encoded">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Genotype likelihoods, Phred encoded">
+##INFO=<ID=END,Number=1,Type=Integer,Description="Stop position of the interval">
+##contig=<ID=Chr1,length=50>
+##contig=<ID=Chr2,length=25>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Fido	Spot
+Chr1	21	DogSNP1	A	T	0	.	.	GT:GQ	0/1:.	0/1:42
+Chr1	22	DogSNP2	A	T	0	.	.	GT:PL:VAF	0/1:.:0.9	0/1:10,0,20:0.6
+Chr1	23	DogSNP3	A	T	0	.	.	GT:PL:VAF	0/1:.:0.9	0/1:10,0,20:.
+Chr1	24	DogSNP4	A	T,C	10	.	.	GT:PL:VAF	0/1:.:0.48,0.02	0/1:10,0,20,50,50,50:0.5,0
+Chr1	25	DogSNP5	A	T,C	20	.	.	GT:PL:VAF	0/1:10,0,20,50,50,50:.	0/1:10,0,20,50,50,50:0.4,0.1
+Chr1	26	DogSNP6	A	T,C,G	30	.	.	GT:GQ:PL:VAF	0/1:42:10,0,20,99,99,99,99,99,99,99:0.5,0.05,0.03	0/1:42:10,0,20,99,99,99,99,99,99,99:0.6,0.1,0
