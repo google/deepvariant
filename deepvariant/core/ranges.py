@@ -32,6 +32,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import gzip
 import re
 
 
@@ -134,6 +135,8 @@ class RangeSet(object):
       A RangeSet.
     """
     with tf.gfile.GFile(source) as fin:
+      if source.endswith('.gz'):
+        fin = gzip.GzipFile(fileobj=fin)
       return cls(bed_parser(fin))
 
   def intersection(self, *others):

@@ -228,8 +228,9 @@ class RangesTests(parameterized.TestCase):
     with self.assertRaises(ValueError):
       ranges.parse_literal(bad_literal)
 
-  def test_from_bed(self):
-    source = test_utils.genomics_core_testdata('test.bed')
+  @parameterized.parameters('test.bed', 'test.bed.gz')
+  def test_from_bed(self, bed_filename):
+    source = test_utils.genomics_core_testdata(bed_filename)
     self.assertCountEqual([
         ranges.make_range('chr1', 1, 10),
         ranges.make_range('chr2', 20, 30),
