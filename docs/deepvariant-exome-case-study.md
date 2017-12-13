@@ -9,7 +9,7 @@ DeepVariant to a real exome sample.
 For this case study, we use a 64-core DeepVariant non-preemptible instance in
 the "us-west1-b" zone with no GPU. From our local command line, we do:
 
-```bash
+```shell
 gcloud beta compute instances create "${USER}-deepvariant-exome-casestudy"  \
 --scopes "compute-rw,storage-full,cloud-platform" \
 --image-family "ubuntu-1604-lts" --image-project "ubuntu-os-cloud" \
@@ -23,7 +23,7 @@ The `custom-64-131072` machine type gives you 64 vCPU, 128.0 GiB.
 
 Then connect to your instance via SSH:
 
-```bash
+```shell
 gcloud compute ssh --zone "us-west1-b" "${USER}-deepvariant-exome-casestudy"
 ```
 
@@ -97,7 +97,8 @@ sudo apt-get -y install docker.io
 Copy our binaries from the cloud bucket.
 
 ```bash
-time gsutil -m cp -r -P "${BIN_BUCKET}/*" "${BIN_DIR}"
+time gsutil -m cp -r "${BIN_BUCKET}/*" "${BIN_DIR}"
+chmod a+x "${BIN_DIR}"/*
 ```
 
 This step should be very fast - it took us about 6 seconds when we tested.
@@ -198,12 +199,31 @@ section](#resources_used_by_each_step).
 
 ## Run `call_variants`
 
-Follow the same instructions (reuse the same commands) in the [call_variants
+There are different ways to run `call_variants`. In this case study, we ran just
+one `call_variants` job. Here's the command that we used:
+
+```bash
+( time python "${BIN_DIR}"/call_variants.zip \
+    --outfile "${CALL_VARIANTS_OUTPUT}" \
+    --examples "${EXAMPLES}" \
+    --checkpoint "${MODEL}"
+) >"${LOG_DIR}/call_variants.log" 2>&1
+```
+
+More discussion can be found in the [call_variants
 section in the case study](deepvariant-case-study.md#run_call_variants).
 
 ## Run `postprocess_variants`
 
-Follow the same instructions (reuse the same commands) in the
+```bash
+( time python "${BIN_DIR}"/postprocess_variants.zip \
+    --ref "${REF}" \
+    --infile "${CALL_VARIANTS_OUTPUT}" \
+    --outfile "${OUTPUT_VCF}"
+) >"${LOG_DIR}/postprocess_variants.log" 2>&1
+```
+
+More discussion can be found in the
 [postprocess_variants section in the case
 study](deepvariant-case-study.md#run_postprocess_variants).
 

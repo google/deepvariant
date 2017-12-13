@@ -40,5 +40,9 @@ echo 'set -e'
 echo 'set -u'
 echo 'set -o pipefail'
 echo ''
-perl -ne 'print if /^```bash/ ... /^```/ and !/^```/' "$@"
+perl -ne '
+  print "\n### line $.\n" if /^```bash/ ;
+  print if /^```bash/ ... /^```/ and !/^```/
+' "$@"
+echo ''
 echo 'echo status=$?'
