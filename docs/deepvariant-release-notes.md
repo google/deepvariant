@@ -2,6 +2,10 @@
 
 ## Binary Releases
 
+### 0.4.1
+
+This fixes a problem with htslib_gcp_oauth when network access is unavailable.
+
 ### 0.4.0
 
 This is the initial open source release of the DeepVariant binaries!
