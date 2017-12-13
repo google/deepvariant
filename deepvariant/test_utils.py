@@ -107,4 +107,4 @@ def init():
   GOLDEN_POSTPROCESS_GVCF_INPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_input.tfrecord')
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
-      'golden.postprocess_gvcf_output.vcf')
+      'golden.postprocess_gvcf_output.g.vcf')

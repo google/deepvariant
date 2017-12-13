@@ -50,6 +50,7 @@ from deepvariant.core import io_utils
 from deepvariant.core import math
 from deepvariant.core import proto_utils
 from deepvariant.core import variantutils
+from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.genomics import variants_pb2
 from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
@@ -112,6 +113,8 @@ _ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([('AD', True), ('VAF', False)])
 
 # The number of places past the decimal point to round QUAL estimates to.
 _QUAL_PRECISION = 7
+# The genotype likelihood of the gVCF alternate allele for variant calls.
+_GVCF_ALT_ALLELE_GL = -99
 
 
 def _extract_single_sample_name(record):
@@ -589,8 +592,11 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
   return canonical_variant, [i / denominator for i in predictions]
 
 
-def write_variants_to_vcf(contigs, variant_generator, output_vcf_path,
-                          sample_name):
+def write_variants_to_vcf(contigs,
+                          variant_generator,
+                          output_vcf_path,
+                          sample_name,
+                          filters=None):
   """Writes Variant protos to a VCF file.
 
   Args:
@@ -599,10 +605,14 @@ def write_variants_to_vcf(contigs, variant_generator, output_vcf_path,
     variant_generator: generator. A generator that yields sorted Variant protos.
     output_vcf_path: str. Output file in VCF format.
     sample_name: str. Sample name to write to VCF file.
+    filters: list(VcfFilterInfo). A list of filters to include in the VCF
+      header. If not specified, the default DeepVariant headers are used.
   """
+  if filters is None:
+    filters = FILTERS
   logging.info('Writing output to VCF file: %s', output_vcf_path)
   sync_writer, writer_fn = genomics_io.make_variant_writer(
-      output_vcf_path, contigs, samples=[sample_name], filters=FILTERS)
+      output_vcf_path, contigs, samples=[sample_name], filters=filters)
   with sync_writer, io_utils.AsyncWriter(writer_fn) as writer:
     for variant in variant_generator:
       writer.write(variant)
@@ -665,6 +675,141 @@ def _get_contig_based_variant_sort_keyfn(contigs):
   return keyfn
 
 
+def _get_contig_based_lessthan(contigs):
+  """Returns a callable that compares variants on genomic position.
+
+  The returned function takes two arguments, both of which should be Variant
+  protos or None. The function returns True if and only if the first Variant is
+  strictly less than the second, which occurs if the first variant is on a
+  previous chromosome or is on the same chromosome and its entire span lies
+  before the start position of the second variant. `None` is treated as a
+  sentinel value that does not compare less than any valid Variant.
+
+  Args:
+    contigs: list(ContigInfo). The list of contigs in the desired sort order.
+
+  Returns:
+    A callable that takes two Variant protos as input and returns True iff the
+    first is strictly less than the second. Note that if the variant has a
+    contig not represented in the list of contigs this will raise IndexError.
+  """
+  contig_index = {contig.name: i for i, contig in enumerate(contigs)}
+
+  def lessthanfn(variant1, variant2):
+    if variant1 is None:
+      return False
+    if variant2 is None:
+      return True
+    if contig_index[variant1.reference_name] < contig_index[variant2.
+                                                            reference_name]:
+      return True
+    elif contig_index[variant1.reference_name] > contig_index[variant2.
+                                                              reference_name]:
+      return False
+    else:
+      # Same contig.
+      return variant1.end <= variant2.start
+
+  return lessthanfn
+
+
+def _create_record_from_template(template, start, end):
+  """Returns a copy of the template variant with the new start and end."""
+  retval = variants_pb2.Variant()
+  retval.CopyFrom(template)
+  retval.start = start
+  retval.end = end
+  return retval
+
+
+def _transform_to_gvcf_record(variant):
+  """Modifies a variant to include gVCF allele and associated likelihoods.
+
+  Args:
+    variant: learning.genomics.deepvariant.core.genomics.Variant. The Variant
+      to modify.
+
+  Returns:
+    The variant after applying the modification to its alleles and
+    allele-related FORMAT fields.
+  """
+  if variantutils.GVCF_ALT_ALLELE not in variant.alternate_bases:
+    variant.alternate_bases.append(variantutils.GVCF_ALT_ALLELE)
+    # Add one new GL for het allele/gVCF for each of the other alleles, plus one
+    # for the homozygous gVCF allele.
+    num_new_gls = len(variant.alternate_bases) + 1
+    variant.calls[0].genotype_likelihood.extend(
+        [_GVCF_ALT_ALLELE_GL] * num_new_gls)
+    if variant.calls[0].info and 'AD' in variant.calls[0].info:
+      variant.calls[0].info['AD'].values.extend(
+          [struct_pb2.Value(number_value=0)])
+    if variant.calls[0].info and 'VAF' in variant.calls[0].info:
+      variant.calls[0].info['VAF'].values.extend(
+          [struct_pb2.Value(number_value=0)])
+
+  return variant
+
+
+def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
+                                   lessthan):
+  """Yields records consisting of the merging of variant and non-variant sites.
+
+  The merging strategy used for single-sample records is to emit variants
+  without modification. Any non-variant sites that overlap a variant are
+  truncated to only report on regions not affected by the variant. Note that
+  Variants are represented using zero-based half-open coordinates, so a VCF
+  record of `chr1  10  A  T` would have `start=9` and `end=10`.
+
+  Args:
+    variant_iterable: Iterable of Variant protos. A sorted iterable of the
+      variants to merge.
+    nonvariant_iterable: Iterable of Variant protos. A sorted iterable of the
+      non-variant sites to merge.
+    lessthan: Callable. A function that takes two Variant protos as input and
+      returns True iff the first argument is located "before" the second and
+      the variants do not overlap.
+
+  Yields:
+    Variant protos representing both variant and non-variant sites in the sorted
+    order provided by the input.
+  """
+
+  def next_or_none(iterable):
+    try:
+      return next(iterable)
+    except StopIteration:
+      return None
+
+  variant = next_or_none(variant_iterable)
+  nonvariant = next_or_none(nonvariant_iterable)
+
+  while variant is not None or nonvariant is not None:
+    if lessthan(variant, nonvariant):
+      yield variant
+      variant = next_or_none(variant_iterable)
+      continue
+    elif lessthan(nonvariant, variant):
+      yield nonvariant
+      nonvariant = next_or_none(nonvariant_iterable)
+      continue
+    else:
+      # The variant and non-variant are on the same contig and overlap.
+      assert max(variant.start, nonvariant.start) < min(
+          variant.end, nonvariant.end), '{} and {}'.format(variant, nonvariant)
+      if nonvariant.start < variant.start:
+        # Emit a non-variant region up to the start of the variant.
+        yield _create_record_from_template(nonvariant, nonvariant.start,
+                                           variant.start)
+      if nonvariant.end > variant.end:
+        # There is an overhang of the non-variant site after the variant is
+        # finished, so update the non-variant to point to that.
+        nonvariant = _create_record_from_template(nonvariant, variant.end,
+                                                  nonvariant.end)
+      else:
+        # This non-variant site is subsumed by a Variant. Ignore it.
+        nonvariant = next_or_none(nonvariant_iterable)
+
+
 def main(argv=()):
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
@@ -715,11 +860,21 @@ def main(argv=()):
           FLAGS.nonvariant_site_tfrecord_path,
           key=_get_contig_based_variant_sort_keyfn(contigs),
           proto=variants_pb2.Variant)
-      write_variants_to_vcf(
-          contigs=contigs,
-          variant_generator=nonvariant_generator,
-          output_vcf_path=FLAGS.gvcf_outfile,
-          sample_name=sample_name)
+      with genomics_io.make_vcf_reader(
+          FLAGS.outfile, use_index=False,
+          include_likelihoods=True) as variant_reader:
+        lessthanfn = _get_contig_based_lessthan(variant_reader.contigs)
+        gvcf_variants = (
+            _transform_to_gvcf_record(variant)
+            for variant in variant_reader.iterate())
+        merged_variants = merge_variants_and_nonvariants(
+            gvcf_variants, nonvariant_generator, lessthanfn)
+        write_variants_to_vcf(
+            contigs=contigs,
+            variant_generator=merged_variants,
+            output_vcf_path=FLAGS.gvcf_outfile,
+            sample_name=sample_name,
+            filters=FILTERS)
 
 
 if __name__ == '__main__':

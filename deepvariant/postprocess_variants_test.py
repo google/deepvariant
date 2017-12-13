@@ -49,13 +49,23 @@ from deepvariant import postprocess_variants
 from deepvariant import test_utils
 from deepvariant.core import io_utils
 from deepvariant.core import math
+from deepvariant.core import variantutils
+from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.genomics import variants_pb2
+from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
+
+# Test contigs for gVCF merging code.
+_CONTIGS = [
+    core_pb2.ContigInfo(name='1', n_bases=100),
+    core_pb2.ContigInfo(name='2', n_bases=200),
+    core_pb2.ContigInfo(name='10', n_bases=300),
+]
 
 
 def setUpModule():
@@ -114,6 +124,42 @@ def _create_call_variants_output(indices,
       alt_allele_indices=deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
           indices=indices),
       variant=variant)
+
+
+def _simple_variant(ref_name, start, ref_base):
+  """Creates a Variant record for testing variant and non-variant merge.
+
+  Args:
+    ref_name: str. Reference name for this variant.
+    start: int. start position on the contig [0-based, half open).
+    ref_base: str. reference base(s).
+
+  Returns:
+    A Variant record created with the specified arguments.
+  """
+  return test_utils.make_variant(
+      chrom=ref_name,
+      start=start,
+      end=start + len(ref_base),
+      alleles=[ref_base, 'A' if ref_base != 'A' else 'C'])
+
+
+def _create_nonvariant(ref_name, start, end):
+  """Creates a non-variant Variant record for testing.
+
+  Args:
+    ref_name: str. Reference name for this variant.
+    start: int. start position on the contig [0-based, half open).
+    end: int. end position on the contig [0-based, half open).
+
+  Returns:
+    A non-variant Variant record created with the specified arguments.
+  """
+  return test_utils.make_variant(
+      chrom=ref_name,
+      start=start,
+      end=end,
+      alleles=['A', variantutils.GVCF_ALT_ALLELE])
 
 
 def make_golden_dataset(compressed_inputs=False):
@@ -840,6 +886,176 @@ class PostprocessVariantsTest(parameterized.TestCase):
         'gVCF creation requires both nonvariant_site_tfrecord_path and '
         'gvcf_outfile flags to be set.')
     mock_exit.assert_called_once_with(errno.ENOENT)
+
+
+class MergeVcfAndGvcfTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      # Smaller chromosome should return less than.
+      (('1', 10, 20), ('2', 1, 2), True),
+      (('2', 10, 20), ('10', 1, 2), True),
+      # Larger chromosome should not return less than.
+      (('2', 1, 2), ('1', 10, 20), False),
+      (('10', 1, 2), ('2', 10, 20), False),
+      # Same chromosome, smaller.
+      (('1', 1, 2), ('1', 3, 4), True),
+      (('1', 1, 3), ('1', 3, 4), True),
+      # Same chromosome, overlapping.
+      (('1', 1, 4), ('1', 3, 6), False),
+      (('1', 1, 9), ('1', 3, 6), False),
+      (('1', 4, 9), ('1', 3, 6), False),
+      # Same chromosome, larger.
+      (('1', 6, 9), ('1', 3, 4), False),
+  )
+  def test_lessthan_comparison(self, v1, v2, expected):
+    variant1 = _create_nonvariant(*v1)
+    variant2 = _create_nonvariant(*v2)
+    lessthan = postprocess_variants._get_contig_based_lessthan(_CONTIGS)
+    self.assertEqual(lessthan(variant1, variant2), expected)
+    self.assertEqual(lessthan(variant1, None), True)
+    self.assertEqual(lessthan(None, variant1), False)
+
+  @parameterized.parameters(
+      (_create_nonvariant('1', 10, 15), 10, 12, _create_nonvariant('1', 10,
+                                                                   12)),
+      (_create_nonvariant('2', 1, 9), 3, 4, _create_nonvariant('2', 3, 4)),
+  )
+  def test_create_record_from_template(self, template, start, end, expected):
+    actual = postprocess_variants._create_record_from_template(
+        template, start, end)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      # One alt, with het GLs.
+      (['C'], [-2.0457574905606752, -0.004364805402450088, -3.0], [0.75]),
+      # Multi alts.
+      (['G', 'C'], [
+          -1.1368906918484387, -0.5279124552610386, -0.5923808731731073,
+          -0.8155431286425007, -0.8415961054266092, -1.108308924501657
+      ], [0.5, 0.1]),
+      (['G', 'C', 'T'], [
+          -0.7956722868920258, -0.663917423732382, -1.493986734511771,
+          -0.8202531343562444, -0.9377869397242453, -1.0415699718993066,
+          -1.4176189291054515, -1.5795151893394743, -1.8101482990393198,
+          -0.8139951558313916
+      ], [0.5, 0.1, 0.05]),
+  )
+  def test_transform_to_gvcf_add_allele(self, prior_alts, prior_gls, prior_vaf):
+    variant = _create_variant(
+        ref_name='chr1',
+        start=10,
+        ref_base='A',
+        alt_bases=prior_alts,
+        qual=40,
+        filter_field='PASS',
+        genotype=[0, 1],
+        gq=None,
+        likelihoods=prior_gls)
+    prior_vaf_values = [struct_pb2.Value(number_value=v) for v in prior_vaf]
+    variant.calls[0].info['VAF'].values.extend(prior_vaf_values)
+    expected = _create_variant(
+        ref_name='chr1',
+        start=10,
+        ref_base='A',
+        alt_bases=prior_alts + [variantutils.GVCF_ALT_ALLELE],
+        qual=40,
+        filter_field='PASS',
+        genotype=[0, 1],
+        gq=None,
+        likelihoods=prior_gls + ([postprocess_variants._GVCF_ALT_ALLELE_GL] *
+                                 (len(prior_alts) + 2)))
+    expected.calls[0].info['VAF'].values.extend(
+        prior_vaf_values + [struct_pb2.Value(number_value=0)])
+    actual = postprocess_variants._transform_to_gvcf_record(variant)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      # One alt, with het GLs.
+      ([variantutils.GVCF_ALT_ALLELE],
+       [-2.0457574905606752, -0.004364805402450088, -3.0], [0.5]),
+      # Multi alts.
+      (['G', variantutils.GVCF_ALT_ALLELE], [
+          -1.1368906918484387, -0.5279124552610386, -0.5923808731731073,
+          -0.8155431286425007, -0.8415961054266092, -1.108308924501657
+      ], [0.5, 0.1]),
+      (['G', 'C', variantutils.GVCF_ALT_ALLELE], [
+          -0.7956722868920258, -0.663917423732382, -1.493986734511771,
+          -0.8202531343562444, -0.9377869397242453, -1.0415699718993066,
+          -1.4176189291054515, -1.5795151893394743, -1.8101482990393198,
+          -0.8139951558313916
+      ], [0, 0.5, 0.1]),
+  )
+  def test_transform_to_gvcf_no_allele_addition(self, alts, gls, vaf):
+    variant = _create_variant(
+        ref_name='chr1',
+        start=10,
+        ref_base='A',
+        alt_bases=alts,
+        qual=40,
+        filter_field='PASS',
+        genotype=[0, 1],
+        gq=None,
+        likelihoods=gls)
+    vaf_values = [struct_pb2.Value(number_value=v) for v in vaf]
+    variant.calls[0].info['VAF'].values.extend(vaf_values)
+    expected = variants_pb2.Variant()
+    expected.CopyFrom(variant)
+    actual = postprocess_variants._transform_to_gvcf_record(variant)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      # Simple inputs.
+      # Empty.
+      ([], [], []),
+      # Non-overlapping records.
+      ([('1', 1, 'A')], [], [_simple_variant('1', 1, 'A')]),
+      ([('1', 3, 'A'), ('1', 7, 'C'),
+        ('2', 6, 'G')], [('2', 3, 6), ('2', 7, 9)], [
+            _simple_variant('1', 3, 'A'),
+            _simple_variant('1', 7, 'C'),
+            _create_nonvariant('2', 3, 6),
+            _simple_variant('2', 6, 'G'),
+            _create_nonvariant('2', 7, 9)
+        ]),
+      # Non-variant record overlaps a variant from the left.
+      ([('1', 5, 'CACGTG')], [('1', 2, 8)],
+       [_create_nonvariant('1', 2, 5),
+        _simple_variant('1', 5, 'CACGTG')]),
+      # Non-variant record overlaps a variant from the right.
+      ([('1', 5, 'CACGTG')], [('1', 8, 15)],
+       [_simple_variant('1', 5, 'CACGTG'),
+        _create_nonvariant('1', 11, 15)]),
+      # Non-variant record is subsumed by a variant.
+      ([('1', 5, 'CACGTG')], [('1', 5, 11)],
+       [_simple_variant('1', 5, 'CACGTG')]),
+      # Non-variant record subsumes a variant.
+      ([('1', 5, 'CACGTG')], [('1', 4, 12)], [
+          _create_nonvariant('1', 4, 5),
+          _simple_variant('1', 5, 'CACGTG'),
+          _create_nonvariant('1', 11, 12)
+      ]),
+      # Non-variant record subsumes multiple overlapping variants.
+      ([('1', 3, 'AAAAAAA'), ('1', 5, 'A')], [('1', 1, 15)], [
+          _create_nonvariant('1', 1, 3),
+          _simple_variant('1', 3, 'AAAAAAA'),
+          _simple_variant('1', 5, 'A'),
+          _create_nonvariant('1', 10, 15)
+      ]),
+      ([('1', 3, 'AAAAAAA'), ('1', 5, 'AAAAAAA')], [('1', 1, 15)], [
+          _create_nonvariant('1', 1, 3),
+          _simple_variant('1', 3, 'AAAAAAA'),
+          _simple_variant('1', 5, 'AAAAAAA'),
+          _create_nonvariant('1', 12, 15)
+      ]),
+  )
+  def test_merge_variants_and_nonvariants(self, variants, nonvariants,
+                                          expected):
+    viter = (_simple_variant(*v) for v in variants)
+    nonviter = (_create_nonvariant(*nv) for nv in nonvariants)
+    lessthan = postprocess_variants._get_contig_based_lessthan(_CONTIGS)
+    actual = postprocess_variants.merge_variants_and_nonvariants(
+        viter, nonviter, lessthan)
+    self.assertEqual(list(actual), expected)
 
 
 if __name__ == '__main__':
