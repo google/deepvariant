@@ -17,7 +17,7 @@ configuration.
 For this case study, we use a 64-core DeepVariant non-preemptible instance in
 the "us-west1-b" zone with no GPU. From our local command line, we do:
 
-```bash
+```shell
 gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
 --scopes "compute-rw,storage-full,cloud-platform" \
 --image-family "ubuntu-1604-lts" --image-project "ubuntu-os-cloud" \
@@ -31,7 +31,7 @@ The custom machine type gives you 64 vCPU, 128.00 GiB.
 
 Then connect to your instance via SSH:
 
-```bash
+```shell
 gcloud compute ssh --zone "us-west1-b" "${USER}-deepvariant-casestudy"
 ```
 
@@ -102,7 +102,8 @@ sudo apt-get -y install docker.io
 Copy our binaries from the cloud bucket.
 
 ```bash
-time gsutil -m cp -r -P "${BIN_BUCKET}/*" "${BIN_DIR}"
+time gsutil -m cp -r "${BIN_BUCKET}/*" "${BIN_DIR}"
+chmod a+x "${BIN_DIR}"/*
 ```
 
 This step should be very fast - it took us about 6 seconds when we tested.
@@ -226,6 +227,7 @@ python "${BIN_DIR}"/call_variants.zip \
 And the rest will process 00001 to 00063. You can also use tools like
 [dsub](https://cloud.google.com/genomics/v1alpha2/dsub). In this case study we
 only report the runtime on a 1-machine example.
+
 ## Run `postprocess_variants`
 
 ```bash

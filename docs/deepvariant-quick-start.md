@@ -156,7 +156,8 @@ DATA_BUCKET="${BUCKET}/quickstart-testdata"
 
 mkdir -p bin
 # Download the DeepVariant binaries.
-gsutil -m cp -P "${BIN_BUCKET}/*" bin/
+gsutil -m cp "${BIN_BUCKET}/*" bin/
+chmod a+x bin/*
 ```
 
 Which should copy files into the bin subdirectory:
