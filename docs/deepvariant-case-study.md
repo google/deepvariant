@@ -3,7 +3,7 @@
 In this case study we describe applying DeepVariant to a real WGS sample.
 
 We provide some guidelines on the computational resources needed for each step.
-And finally we access the quality of the DeepVariant variant calls with
+And finally we assess the quality of the DeepVariant variant calls with
 `hap.py`.
 
 NOTE: this case study demonstrates an example of how to run DeepVariant
