@@ -331,7 +331,7 @@ time seq 0 $((N_SHARDS-1)) | \
 To explain what *sharded output* is, for example, if `N_SHARDS` is 3, you'll get
 three output files from the above command:
 
-```bash
+```
 ${OUTPUT_DIR}/examples.tfrecord-00000-of-00003.gz
 ${OUTPUT_DIR}/examples.tfrecord-00001-of-00003.gz
 ${OUTPUT_DIR}/examples.tfrecord-00002-of-00003.gz
