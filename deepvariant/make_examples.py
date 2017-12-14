@@ -103,6 +103,10 @@ flags.DEFINE_string(
     'gvcf', '',
     'Optional. Path where we should write gVCF records in TFRecord of Variant '
     'proto format.')
+flags.DEFINE_integer(
+    'gvcf_gq_binsize', 1,
+    'Bin size in which to quantize gVCF genotype qualities. Larger bin size '
+    'reduces the number of gVCF records at a loss of quality granularity.')
 flags.DEFINE_string(
     'confident_regions', '',
     'Regions that we are confident are hom-ref or a variant in BED format. In '
@@ -219,7 +223,7 @@ def default_options(add_flags=True, flags_obj=None):
       sample_name=sample_name,
       p_error=0.001,
       max_gq=50,
-      gq_resolution=1,
+      gq_resolution=flags_obj.gvcf_gq_binsize,
       ploidy=2)
 
   options = deepvariant_pb2.DeepVariantOptions(
@@ -999,6 +1003,9 @@ def main(argv=()):
       # Check for argument issues specific to calling mode.
       if options.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
         errors.log_and_raise('sample_name must be specified in calling mode.',
+                             errors.CommandLineError)
+      if options.variant_caller_options.gq_resolution < 1:
+        errors.log_and_raise('gq_resolution must be a non-negative integer.',
                              errors.CommandLineError)
 
     # Run!

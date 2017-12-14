@@ -170,6 +170,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
+    FLAGS.gvcf_gq_binsize = 1
 
     if mode == 'calling':
       FLAGS.gvcf = test_utils.test_tmpfile(

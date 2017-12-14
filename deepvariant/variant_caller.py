@@ -83,6 +83,23 @@ def _rescale_read_counts_if_necessary(n_ref_reads, n_total_reads,
   return n_ref_reads, n_total_reads
 
 
+def _quantize_gq(raw_gq, binsize):
+  """Returns a quantized value of GQ in units of binsize.
+
+  Args:
+    raw_gq: int. The raw GQ value to quantize.
+    binsize: positive int. The size of bins to quantize within.
+
+  Returns:
+    A quantized GQ integer.
+  """
+  if raw_gq < 1:
+    return 0
+  else:
+    bin_number = (raw_gq - 1) // binsize
+    return bin_number * binsize + 1
+
+
 class VariantCaller(object):
   """Call variants and gvcf records from an AlleleCounter."""
 
@@ -242,7 +259,8 @@ class VariantCaller(object):
       else:
         n_ref = summary_counts.ref_supporting_read_count
         n_total = summary_counts.total_read_count
-        gq, likelihoods = self.reference_confidence(n_ref, n_total)
+        raw_gq, likelihoods = self.reference_confidence(n_ref, n_total)
+        gq = _quantize_gq(raw_gq, self.options.gq_resolution)
       return summary_counts, gq, likelihoods
 
     # Combines contiguous, compatible single-bp blocks into larger gVCF blocks,
