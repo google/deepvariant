@@ -1,31 +1,13 @@
 # DeepVariant exome case study
 
 Similar to the [case study on whole genome sequencing
-data](deepvariant-case-study.md), in this study we describe applying
-DeepVariant to a real exome sample.
+data](deepvariant-case-study.md), in this study we describe applying DeepVariant
+to a real exome sample.
 
 ## Request a machine
 
-For this case study, we use a 64-core DeepVariant non-preemptible instance in
-the "us-west1-b" zone with no GPU. From our local command line, we do:
-
-```shell
-gcloud beta compute instances create "${USER}-deepvariant-exome-casestudy"  \
---scopes "compute-rw,storage-full,cloud-platform" \
---image-family "ubuntu-1604-lts" --image-project "ubuntu-os-cloud" \
---machine-type "custom-64-131072" \
---boot-disk-size "50" --boot-disk-type "pd-ssd" \
---boot-disk-device-name "deepvariant-exome-casestudy" \
---zone "us-west1-b"
-```
-
-The `custom-64-131072` machine type gives you 64 vCPU, 128.0 GiB.
-
-Then connect to your instance via SSH:
-
-```shell
-gcloud compute ssh --zone "us-west1-b" "${USER}-deepvariant-exome-casestudy"
-```
+Any sufficiently capable machine will do. For this case study, we used a 64-core
+non-preemptible instance with 128GiB and no GPU.
 
 ## Preliminaries
 
@@ -80,9 +62,8 @@ mkdir -p "${LOG_DIR}"
 There are some extra programs we will need.
 
 We are going to use [GNU Parallel](https://www.gnu.org/software/parallel/) to
-run `make_examples`.
-We are going to install `samtools` and `docker.io` to help do some
-analysis at the end.
+run `make_examples`. We are going to install `samtools` and `docker.io` to help
+do some analysis at the end.
 
 ```bash
 sudo apt-get -y install parallel
@@ -178,8 +159,8 @@ It took us a few minuntes to copy the files.
 
 ## Run `make_examples`
 
-In this step, we used the `--regions` flag to constrain the regions
-we processed to the extended RefSeq BED file:
+In this step, we used the `--regions` flag to constrain the regions we processed
+to the extended RefSeq BED file:
 
 ```bash
 ( time seq 0 $((N_SHARDS-1)) | \
@@ -210,8 +191,8 @@ one `call_variants` job. Here's the command that we used:
 ) >"${LOG_DIR}/call_variants.log" 2>&1
 ```
 
-More discussion can be found in the [call_variants
-section in the case study](deepvariant-case-study.md#run_call_variants).
+More discussion can be found in the [call_variants section in the case
+study](deepvariant-case-study.md#run_call_variants).
 
 ## Run `postprocess_variants`
 
@@ -223,8 +204,7 @@ section in the case study](deepvariant-case-study.md#run_call_variants).
 ) >"${LOG_DIR}/postprocess_variants.log" 2>&1
 ```
 
-More discussion can be found in the
-[postprocess_variants section in the case
+More discussion can be found in the [postprocess_variants section in the case
 study](deepvariant-case-study.md#run_postprocess_variants).
 
 ## Resources used by each step
@@ -238,10 +218,11 @@ total time             | ~ 1h 10m
 
 ## Variant call quality
 
-Here we use the `hap.py` ([https://github.com/Illumina/hap.py](https://github.com/Illumina/hap.py))
-program from Illumina to evaluate the resulting vcf file. This
-serves as a check to ensure the three DeepVariant commands ran correctly and
-produced high-quality results.
+Here we use the `hap.py`
+([https://github.com/Illumina/hap.py](https://github.com/Illumina/hap.py))
+program from Illumina to evaluate the resulting vcf file. This serves as a check
+to ensure the three DeepVariant commands ran correctly and produced high-quality
+results.
 
 To set up:
 

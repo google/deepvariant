@@ -1,21 +1,25 @@
 # DeepVariant whole genome case study
 
-In this case study we describe applying DeepVariant to a real WGS sample using
-some of the more advanced capabilities of DeepVariant, such as directly calling
-variants off a BAM in Google Cloud Storage (GCS), using different virtual
-machine (VM) instance types for each step of DeepVariant, and using a GPU to
-accelerate `call_variants`. We provide some guidelines on the computational
-resources needed for each step. And finally we access the quality of the
-DeepVariant variant calls with `hap.py`.
+In this case study we describe applying DeepVariant to a real WGS sample.
+
+We provide some guidelines on the computational resources needed for each step.
+And finally we access the quality of the DeepVariant variant calls with
+`hap.py`.
 
 NOTE: this case study demonstrates an example of how to run DeepVariant
 end-to-end on one machine. This might not be the fastest or cheapest
 configuration.
 
+Consult this [document](deepvariant-details.md) for more information about using
+GPUs or reading BAM files from Google Cloud Storage (GCS) directly.
+
 ## Request a machine
 
-For this case study, we use a 64-core DeepVariant non-preemptible instance in
-the "us-west1-b" zone with no GPU. From our local command line, we do:
+You can run this exercise on any sufficiently capable machine. As a concrete but
+simple example of how we performed this study, we used 64-core (vCPU) machine
+with 128GiB of memory and no GPU, on the Google Cloud Platform.
+
+We used a command like this to allocate it:
 
 ```shell
 gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
@@ -23,16 +27,7 @@ gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
 --image-family "ubuntu-1604-lts" --image-project "ubuntu-os-cloud" \
 --machine-type "custom-64-131072" \
 --boot-disk-size "300" --boot-disk-type "pd-ssd" \
---boot-disk-device-name "deepvariant-casestudy" \
 --zone "us-west1-b"
-```
-
-The custom machine type gives you 64 vCPU, 128.00 GiB.
-
-Then connect to your instance via SSH:
-
-```shell
-gcloud compute ssh --zone "us-west1-b" "${USER}-deepvariant-casestudy"
 ```
 
 ## Preliminaries
@@ -85,9 +80,8 @@ mkdir -p "${LOG_DIR}"
 There are some extra programs we will need.
 
 We are going to use [GNU Parallel](https://www.gnu.org/software/parallel/) to
-run `make_examples`.
-We are going to install `samtools` and `docker.io` to help do some
-analysis at the end.
+run `make_examples`. We are going to install `samtools` and `docker.io` to help
+do some analysis at the end.
 
 ```bash
 sudo apt-get -y install parallel
@@ -170,12 +164,11 @@ time gsutil -m cp -r "${DATA_BUCKET}/*" "${DATA_DIR}"
 
 It took us about 15min to copy the files.
 
-
 ## Run `make_examples`
 
-Because the informational log messages (written to stderr) are voluminous,
-and because this takes a long time to finish,
-we will redirect all the output (stdout and stderr) to a file.
+Because the informational log messages (written to stderr) are voluminous, and
+because this takes a long time to finish, we will redirect all the output
+(stdout and stderr) to a file.
 
 ```bash
 ( time seq 0 $((N_SHARDS-1)) | \
@@ -217,7 +210,7 @@ machines (for example, `n1-standard-8` machines) and run each shard as input
 separately, and output to corresponding output shards. For example, the first
 machine will run this command:
 
-```bash
+```shell
 python "${BIN_DIR}"/call_variants.zip \
   --outfile=${OUTPUT_DIR}/HG002.cvo.tfrecord-00000-of-00064.gz \
   --examples=${OUTPUT_DIR}/HG002.examples.tfrecord-00000-of-00064.gz \
@@ -245,7 +238,7 @@ fewer cores for this step.
 ## Resources used by each step
 
 Step                   | wall time
----------------------- | ----------------------------
+---------------------- | ----------
 `make_examples`        | 5h 17m 51s
 `call_variants`        | 8h 17m 10s
 `postprocess_variants` | 24m 53s
@@ -253,10 +246,11 @@ total time             | ~ 14h 0m
 
 ## Variant call quality
 
-Here we use the `hap.py` ([https://github.com/Illumina/hap.py](https://github.com/Illumina/hap.py))
-program from Illumina to evaluate the resulting vcf file. This
-serves as a check to ensure the three DeepVariant commands ran correctly and
-produced high-quality results.
+Here we use the `hap.py`
+([https://github.com/Illumina/hap.py](https://github.com/Illumina/hap.py))
+program from Illumina to evaluate the resulting vcf file. This serves as a check
+to ensure the three DeepVariant commands ran correctly and produced high-quality
+results.
 
 ```bash
 UNCOMPRESSED_REF="${OUTPUT_DIR}/hs37d5.fa"
