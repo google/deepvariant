@@ -700,15 +700,10 @@ def _get_contig_based_lessthan(contigs):
       return False
     if variant2 is None:
       return True
-    if contig_index[variant1.reference_name] < contig_index[variant2.
-                                                            reference_name]:
-      return True
-    elif contig_index[variant1.reference_name] > contig_index[variant2.
-                                                              reference_name]:
-      return False
-    else:
-      # Same contig.
-      return variant1.end <= variant2.start
+    contig1 = contig_index[variant1.reference_name]
+    contig2 = contig_index[variant2.reference_name]
+    return (contig1 < contig2 or
+            (contig1 == contig2 and variant1.end <= variant2.start))
 
   return lessthanfn
 

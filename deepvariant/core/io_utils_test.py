@@ -479,11 +479,11 @@ class ComparableSortedRecordIteratorTest(parameterized.TestCase):
   def test_exhausted(self, iterator, num_non_exhausted):
     it = io._ComparableSortedRecordIterator(iterator)
     for _ in xrange(num_non_exhausted):
-      self.assertFalse(it.exhausted())
+      self.assertFalse(it.exhausted)
       it.advance()
-    self.assertTrue(it.exhausted())
+    self.assertTrue(it.exhausted)
     it.advance()
-    self.assertTrue(it.exhausted())
+    self.assertTrue(it.exhausted)
 
   @parameterized.parameters(
       (iter(range(5)), (lambda x: x), 5),
@@ -493,9 +493,9 @@ class ComparableSortedRecordIteratorTest(parameterized.TestCase):
   def test_valid_iteration_order(self, iterator, key, num_non_exhausted):
     it = io._ComparableSortedRecordIterator(iterator, key)
     for _ in xrange(num_non_exhausted):
-      self.assertFalse(it.exhausted())
+      self.assertFalse(it.exhausted)
       it.advance()
-    self.assertTrue(it.exhausted())
+    self.assertTrue(it.exhausted)
 
   @parameterized.parameters(
       (iter([1, -2, 3, -4, 5]),),

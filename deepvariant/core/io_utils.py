@@ -536,6 +536,12 @@ class _ComparableSortedRecordIterator(object):
   Its driving use case is as a wrapper over sorted iterables within a heap, used
   to implement the merge step of merge sort to create a single globally-sorted
   set of data.
+
+  Attributes:
+    value: The value of the current element in the iterator. If the iterator is
+      exhausted, this is a sentinel value representing that fact.
+    exhausted: bool. True if and only if the underlying iterator has been fully
+      consumed.
   """
 
   # End-of-iterator token.
@@ -551,22 +557,15 @@ class _ComparableSortedRecordIterator(object):
     """
     self._iterator = iterator
     self._keyfn = key
+    self.exhausted = False
     try:
       self.value = next(self._iterator)
     except StopIteration:
       self.value = _ComparableSortedRecordIterator._sentinel
-
-  def exhausted(self):
-    """Returns True if and only if the underlying iterator is empty."""
-    return self.value is _ComparableSortedRecordIterator._sentinel
-
-  @property
-  def _cmp_value(self):
-    """Returns the value used for comparison with other elements."""
-    if self.exhausted():
-      return _ComparableSortedRecordIterator._sentinel
+      self._cmp_value = _ComparableSortedRecordIterator._sentinel
+      self.exhausted = True
     else:
-      return self._keyfn(self.value)
+      self._cmp_value = self._keyfn(self.value)
 
   def advance(self):
     """Advances to the next element in the underlying iterator.
@@ -579,8 +578,12 @@ class _ComparableSortedRecordIterator(object):
       self.value = next(self._iterator)
     except StopIteration:
       self.value = _ComparableSortedRecordIterator._sentinel
+      self._cmp_value = _ComparableSortedRecordIterator._sentinel
+      self.exhausted = True
+    else:
+      self._cmp_value = self._keyfn(self.value)
 
-    if not self.exhausted() and self._cmp_value < prev_cmp_value:
+    if not self.exhausted and self._cmp_value < prev_cmp_value:
       raise ValueError('Iterator is not sorted by comparison value: {}'.format(
           self.value))
 
@@ -592,9 +595,9 @@ class _ComparableSortedRecordIterator(object):
   def __lt__(self, other):
     if not isinstance(other, _ComparableSortedRecordIterator):
       return False
-    if self.exhausted():
+    if self.exhausted:
       return False
-    elif other.exhausted():
+    elif other.exhausted:
       # Any non-exhausted element is less than an exhausted one.
       return True
     else:
@@ -659,7 +662,7 @@ def read_shard_sorted_tfrecords(path,
     # we should just pop it off. Otherwise, we call heapreplace and replace the
     # item with itself, since this triggers the check to efficiently fix the
     # heap invariant in this case where just the top element may not satisfy it.
-    if nextit.exhausted():
+    if nextit.exhausted:
       heapq.heappop(heap)
     else:
       heapq.heapreplace(heap, nextit)
