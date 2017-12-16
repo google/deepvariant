@@ -189,6 +189,10 @@ def main(_):
     metrics = {
         'Accuracy':
             tf.contrib.metrics.streaming_accuracy,
+        'Precision':
+            tf.contrib.metrics.streaming_precision,
+        'Recall':
+            tf.contrib.metrics.streaming_recall,
         'Mean_absolute_error':
             tf.contrib.metrics.streaming_mean_absolute_error,
         'FPs':
@@ -204,12 +208,12 @@ def main(_):
         'All': None,
         'SNPs': _make_selector(variantutils.is_snp),
         'Indels': _make_selector(variantutils.is_indel),
-        'Insertions': _make_selector(variantutils.has_insertion),
-        'Deletions': _make_selector(variantutils.has_deletion),
-        'BiAllelic': _make_selector(variantutils.is_biallelic),
-        'MultiAllelic': _make_selector(variantutils.is_multiallelic),
         # These haven't proven particularly useful, but are commented out here
         # in case someone wants to do some more explorations.
+        # 'Insertions': _make_selector(variantutils.has_insertion),
+        # 'Deletions': _make_selector(variantutils.has_deletion),
+        # 'BiAllelic': _make_selector(variantutils.is_biallelic),
+        # 'MultiAllelic': _make_selector(variantutils.is_multiallelic),
         # 'HomRef': tf.equal(labels, 0),
         # 'Het': tf.equal(labels, 1),
         # 'HomAlt': tf.equal(labels, 2),
