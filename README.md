@@ -11,8 +11,14 @@ DeepVariant is a suite of Python/C++ programs that run on any Unix-like
 operating system. For convenience the documentation refers to building and
 running DeepVariant on [Google Cloud Platform](https://cloud.google.com/), but
 the tools themselves can be built and run on any standard Linux computer,
-including on-premise machines. Pre-built binaries are available at
+including on-premise machines.
+
+Pre-built binaries are available at
 [gs://deepvariant/](https://console.cloud.google.com/storage/browser/deepvariant).
+These are compiled to use SSE4 and AVX instructions, so you'll need a CPU (such
+as Intel Sandy Bridge) that supports them. (The file /proc/cpuinfo lists these
+features under "flags".)
+
 Alternatively, see [Building and testing
 DeepVariant](docs/deepvariant-build-test.md) for more information on building
 DeepVariant from sources for your platform.
