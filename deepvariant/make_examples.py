@@ -459,7 +459,7 @@ def common_contigs(contigs_list, exclude_contig_names=None):
 
 
 def validate_reference_contig_coverage(ref_contigs, shared_contigs,
-                                       min_coverage_fraction):
+                                       min_coverage_fraction, exclude_contig_names=None):
   """Validates that shared_contigs spans a sufficient amount of ref_contigs.
 
   Args:
@@ -469,6 +469,9 @@ def validate_reference_contig_coverage(ref_contigs, shared_contigs,
       ref_contigs and all other genomics data sources.
     min_coverage_fraction: The minimum fraction of basepairs of ref_contigs that
       should be found among the shared_contigs.
+    exclude_contig_names: A set/list/etc of str or None. If not None, any contig
+      whose name occurs in this sequence of names will be excluded from the list
+      of common contigs.
 
   Raises:
     ValueError: If the fraction of covered bases is less than
@@ -484,6 +487,8 @@ def validate_reference_contig_coverage(ref_contigs, shared_contigs,
                                                   ref_contig.n_bases, status))
     return ', '.join(pieces)
 
+  if exclude_contig_names:
+    ref_contigs = [c for c in ref_contigs if c.name not in exclude_contig_names]
   ref_bp = ranges.contigs_n_bases(ref_contigs)
   common_bp = ranges.contigs_n_bases(shared_contigs)
   coverage = common_bp / (1. * ref_bp)
@@ -889,7 +894,8 @@ def processing_regions_from_options(options):
       only_true(ref_contigs, sam_contigs, vcf_contigs),
       exclude_contig_names=options.exclude_contigs)
   validate_reference_contig_coverage(ref_contigs, contigs,
-                                     options.min_shared_contigs_basepairs)
+                                     options.min_shared_contigs_basepairs,
+                                     exclude_contig_names=options.exclude_contigs)
   logging.info('Common contigs are %s', [c.name for c in contigs])
 
   regions = regions_to_process(
