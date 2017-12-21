@@ -238,13 +238,17 @@ class TFUtilsTest(parameterized.TestCase):
         tf_utils.get_shape_from_examples_path(
             test_utils.test_tmpfile(tfrecord_path_to_match)))
 
-  def testGetShapeFromExamplesPathInvalidPath(self):
+  @parameterized.parameters(
+      ('/this/path/does/not/exist', '/this/path/does/not'),
+      ('/bad/pathA/a,/bad/pathB/b', '/bad/pathA'))
+  def testGetShapeFromExamplesPathInvalidPath(self, source_paths,
+                                              expected_partial_message):
     # This calls tf.gfile.Glob, which will raise errors.OpError,
     # at least on a Posix filesystem.  Other filesystems might
     # not fail like that, and will return an empty list, which
     # is turned into a different exception.
-    with self.assertRaisesRegexp(Exception, '/this/path/does/not'):
-      tf_utils.get_shape_from_examples_path('/this/path/does/not/exist')
+    with self.assertRaisesRegexp(Exception, expected_partial_message):
+      tf_utils.get_shape_from_examples_path(source_paths)
 
 
 if __name__ == '__main__':

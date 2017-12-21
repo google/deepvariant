@@ -154,7 +154,13 @@ def _get_one_example_from_examples_path(source):
   for source_path in source_paths:
     files = tf.gfile.Glob(io_utils.NormalizeToShardedFilePattern(source_path))
     if not files:
-      raise ValueError('Unable to read shape from source {}'.format(source))
+      if len(source_paths) > 1:
+        raise ValueError(
+            'Cannot find matching files with the pattern "{}" in "{}"'.format(
+                source_path, ','.join(source_paths)))
+      else:
+        raise ValueError('Cannot find matching files with the pattern "{}"'
+                         .format(source_path))
     for f in files:
       try:
         return io_utils.read_tfrecords(f).next()
