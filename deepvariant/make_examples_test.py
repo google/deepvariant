@@ -391,6 +391,42 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     self.assertEqual(
         options.variant_caller_options.fraction_reference_sites_to_emit, 0.0)
 
+  def test_extract_sample_name_from_reads_single_sample(self):
+    mock_sample_reader = mock.Mock()
+    mock_sample_reader.samples = ['sample_name']
+    self.assertEqual(
+        make_examples.extract_sample_name_from_sam_reader(mock_sample_reader),
+        'sample_name')
+
+  @parameterized.parameters(
+      # No samples could be found in the reads.
+      dict(
+          samples=[],
+          expected_error_message='No sample name found in the input reads. '
+          'Please provide the name of the sample with the --sample_name '
+          'argument.'),
+      # Check that we detect an empty sample name and raise an exception.
+      dict(
+          samples=[''],
+          expected_error_message=
+          'A single sample name was found in the input reads but it was the '
+          'empty string. Please provide the name of the sample with the '
+          '--sample_name argument.'),
+      # We have more than one sample in the reads.
+      dict(
+          samples=['sample1', 'sample2'],
+          expected_error_message=
+          r'Multiple samples \(sample1, sample2\) were found in the input '
+          'reads. DeepVariant can only call variants from a BAM file '
+          'containing a single sample.'),
+  )
+  def test_extract_sample_name_from_reads_detects_bad_samples(
+      self, samples, expected_error_message):
+    mock_sample_reader = mock.Mock()
+    mock_sample_reader.samples = samples
+    with self.assertRaisesRegexp(ValueError, expected_error_message):
+      make_examples.extract_sample_name_from_sam_reader(mock_sample_reader)
+
   @flagsaver.FlagSaver
   def test_confident_regions(self):
     FLAGS.ref = test_utils.CHR20_FASTA

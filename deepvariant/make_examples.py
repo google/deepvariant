@@ -208,7 +208,8 @@ def default_options(add_flags=True, flags_obj=None):
   if flags_obj.sample_name:
     sample_name = flags_obj.sample_name
   elif flags_obj.reads:
-    sample_name = extract_sample_name_from_reads(flags_obj.reads)
+    with genomics_io.make_sam_reader(flags_obj.reads) as sam_reader:
+      sample_name = extract_sample_name_from_sam_reader(sam_reader)
   else:
     sample_name = _UNKNOWN_SAMPLE
 
@@ -392,11 +393,12 @@ def only_true(*elts):
   return [elt for elt in elts if elt]
 
 
-def extract_sample_name_from_reads(reads_path):
+def extract_sample_name_from_sam_reader(sam_reader):
   """Returns the sample name as derived from the BAM file of reads.
 
   Args:
-    reads_path: Path to the SAM/BAM file containing a single sample.
+    sam_reader: Already opened sam_reader to use to extract the sample names
+      from. This sam_reader will not be closed after this function returns.
 
   Returns:
     The sample ID annotated in the read group.
@@ -404,13 +406,22 @@ def extract_sample_name_from_reads(reads_path):
   Raises:
     ValueError: There is not exactly one unique sample name in the SAM/BAM.
   """
-  with genomics_io.make_sam_reader(reads_path) as sam_reader:
-    samples = sam_reader.samples
-  if len(samples) != 1:
-    raise ValueError('Expected a single sample, found {}'.format(samples))
+  samples = sam_reader.samples
+  if not samples:
+    raise ValueError(
+        'No sample name found in the input reads. Please provide the name of '
+        'the sample with the --sample_name argument.')
+  elif len(samples) > 1:
+    raise ValueError(
+        'Multiple samples ({}) were found in the input reads. DeepVariant can '
+        'only call variants from a BAM file containing a single sample.'.format(
+            ', '.join(sorted(samples))))
   sample = next(iter(samples))
   if not sample:
-    raise ValueError('Sample name is empty.')
+    raise ValueError(
+        'A single sample name was found in the input reads but it was the '
+        'empty string. Please provide the name of the sample with the '
+        '--sample_name argument.')
   return sample
 
 
