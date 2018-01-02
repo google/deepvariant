@@ -430,7 +430,44 @@ def extract_sample_name_from_sam_reader(sam_reader):
 # ---------------------------------------------------------------------------
 
 
-def common_contigs(contigs_list, exclude_contig_names=None):
+def _ensure_consistent_contigs(ref_contigs,
+                               sam_contigs,
+                               vcf_contigs,
+                               exclude_contig_names=None,
+                               min_coverage_fraction=1.0):
+  """Returns the common contigs after ensuring 'enough' overlap.
+
+  Args:
+    ref_contigs: list of core_pb2.ContigInfo protos found in the reference
+      genome.
+    sam_contigs: list of core_pb2.ContigInfo protos found in the SAM/BAM file.
+    vcf_contigs: list of core_pb2.ContigInfo protos found in the VCF if in
+      training mode, or None otherwise.
+    exclude_contig_names: list of strings of contig names to exclude from
+      overlap consideration.
+    min_coverage_fraction: The fraction of the reference contigs that must be
+      shared with all inputs.
+
+  Returns:
+    The list of contigs common between all input sources.
+
+  Raises:
+    ValueError: The contigs are not sufficiently similar across input sources.
+  """
+  # Remove any excluded contigs from the ref_contigs, as we want to use the
+  # selected contigs for our overlap comparison.
+  if exclude_contig_names:
+    ref_contigs = [c for c in ref_contigs if c.name not in exclude_contig_names]
+
+  # Compute the common contigs among our inputs, and check that the contigs are
+  # sufficiently consistent among each other.
+  contigs = common_contigs(only_true(ref_contigs, sam_contigs, vcf_contigs))
+  validate_reference_contig_coverage(ref_contigs, contigs,
+                                     min_coverage_fraction)
+  return contigs
+
+
+def common_contigs(contigs_list):
   """Gets a list of contigs found in all contigs in contigs_list.
 
   A common contig is considered one where the name and length in basepairs are
@@ -438,9 +475,6 @@ def common_contigs(contigs_list, exclude_contig_names=None):
 
   Args:
     contigs_list: A sequence of lists of ContigInfo protos.
-    exclude_contig_names: A set/list/etc of str or None. If not None, any contig
-      whose name occurs in this sequence of names will be excluded from the list
-      of common contigs.
 
   Returns:
     A list of ContigInfo protos. Note that the individual protos found in this
@@ -458,15 +492,9 @@ def common_contigs(contigs_list, exclude_contig_names=None):
 
     return [c for c in contigs1 if is_common(c)]
 
-  # Remove any excluded contigs from the ref_contigs, as we want to use the
-  # selected contigs for our overlap comparison.
-  ref_contigs = contigs_list[0]
-  if exclude_contig_names:
-    ref_contigs = [c for c in ref_contigs if c.name not in exclude_contig_names]
-
   # Compute the common contigs by recursively getting common contigs of our
   # master set of contigs (contigs) and each contig in other_contigs.
-  common = ref_contigs
+  common = contigs_list[0]
   for other_contigs in contigs_list[1:]:
     common = common2(common, other_contigs)
 
@@ -878,7 +906,7 @@ def processing_regions_from_options(options):
 
   This function does all of the work needed to read our input files and region
   specifications to determine the list of regions we should generate examples
-  over. It also computes the confident regions need to label variants.
+  over. It also computes the confident regions needed to label variants.
 
   Args:
     options: deepvariant.DeepVariantOptions proto containing information about
@@ -898,13 +926,9 @@ def processing_regions_from_options(options):
     vcf_contigs = genomics_io.make_vcf_reader(
         options.truth_variants_filename).contigs
 
-  # Compute the common contigs among our inputs, and check that the contigs are
-  # sufficiently consistent among each other.
-  contigs = common_contigs(
-      only_true(ref_contigs, sam_contigs, vcf_contigs),
-      exclude_contig_names=options.exclude_contigs)
-  validate_reference_contig_coverage(ref_contigs, contigs,
-                                     options.min_shared_contigs_basepairs)
+  contigs = _ensure_consistent_contigs(ref_contigs, sam_contigs, vcf_contigs,
+                                       options.exclude_contigs,
+                                       options.min_shared_contigs_basepairs)
   logging.info('Common contigs are %s', [c.name for c in contigs])
 
   regions = regions_to_process(

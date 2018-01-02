@@ -582,21 +582,6 @@ class MakeExamplesUnitTest(parameterized.TestCase):
             [_make_contigs(contigs) for contigs in contigs_list]))
 
   @parameterized.parameters(
-      # all intervals are shared.
-      ([('chrM', 10)], ['chrM', 'MT'], []),
-      # One common interval and one not.
-      ([('chrM', 10), ('chr1', 20)], ['chrM', 'MT'], [('chr1', 20, 1)]),
-      ([('chrM', 10), ('chr1', 20)], ['chr1', 'MT'], [('chrM', 10)]),
-      ([('chrM', 10), ('chr1', 20)], ['chrM', 'chr1'], []),
-      ([('chrM', 10), ('chr1', 20)], ['chr2'], [('chrM', 10), ('chr1', 20)]),
-  )
-  def test_common_contigs_exclude_contigs(self, contigs, excludes, expected):
-    self.assertEqual(
-        _make_contigs(expected),
-        make_examples.common_contigs(
-            [_make_contigs(contigs)], exclude_contig_names=excludes))
-
-  @parameterized.parameters(
       # Note that these tests aren't so comprehensive as we are trusting that
       # the intersection code logic itself is good and well-tested elsewhere.
       # Here we are focusing on some basic tests and handling of missing
@@ -730,6 +715,77 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     mock_logging.assert_called_once_with(
         'confident_regions is required when in training mode.')
     mock_exit.assert_called_once_with(errno.ENOENT)
+
+  @parameterized.parameters(
+      dict(
+          ref_names=['1', '2', '3'],
+          sam_names=['1', '2', '3'],
+          vcf_names=None,
+          names_to_exclude=[],
+          min_coverage_fraction=1.0,
+          expected_names=['1', '2', '3']),
+      dict(
+          ref_names=['1', '2', '3'],
+          sam_names=['1', '2'],
+          vcf_names=None,
+          names_to_exclude=[],
+          min_coverage_fraction=0.66,
+          expected_names=['1', '2']),
+      dict(
+          ref_names=['1', '2', '3'],
+          sam_names=['1', '2'],
+          vcf_names=['1', '3'],
+          names_to_exclude=[],
+          min_coverage_fraction=0.33,
+          expected_names=['1']),
+      dict(
+          ref_names=['1', '2', '3', '4', '5'],
+          sam_names=['1', '2', '3'],
+          vcf_names=None,
+          names_to_exclude=['4', '5'],
+          min_coverage_fraction=1.0,
+          expected_names=['1', '2', '3']),
+  )
+  def test_ensure_consistent_contigs(self, ref_names, sam_names, vcf_names,
+                                     names_to_exclude, min_coverage_fraction,
+                                     expected_names):
+    ref_contigs = _make_contigs([(name, 100) for name in ref_names])
+    sam_contigs = _make_contigs([(name, 100) for name in sam_names])
+    if vcf_names is not None:
+      vcf_contigs = _make_contigs([(name, 100) for name in vcf_names])
+    else:
+      vcf_contigs = None
+    actual = make_examples._ensure_consistent_contigs(
+        ref_contigs, sam_contigs, vcf_contigs, names_to_exclude,
+        min_coverage_fraction)
+    self.assertEqual([a.name for a in actual], expected_names)
+
+  @parameterized.parameters(
+      dict(
+          ref_names=['1', '2', '3'],
+          sam_names=['1', '2'],
+          vcf_names=None,
+          names_to_exclude=[],
+          min_coverage_fraction=0.67),
+      dict(
+          ref_names=['1', '2', '3'],
+          sam_names=['1', '2'],
+          vcf_names=['1', '3'],
+          names_to_exclude=[],
+          min_coverage_fraction=0.34),
+  )
+  def test_ensure_inconsistent_contigs(self, ref_names, sam_names, vcf_names,
+                                       names_to_exclude, min_coverage_fraction):
+    ref_contigs = _make_contigs([(name, 100) for name in ref_names])
+    sam_contigs = _make_contigs([(name, 100) for name in sam_names])
+    if vcf_names is not None:
+      vcf_contigs = _make_contigs([(name, 100) for name in vcf_names])
+    else:
+      vcf_contigs = None
+    with self.assertRaisesRegexp(ValueError, 'Reference contigs span'):
+      make_examples._ensure_consistent_contigs(ref_contigs, sam_contigs,
+                                               vcf_contigs, names_to_exclude,
+                                               min_coverage_fraction)
 
 
 class RegionProcessorTest(parameterized.TestCase):
