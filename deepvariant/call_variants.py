@@ -321,7 +321,7 @@ def call_variants(examples_filename,
   if example_format != 'raw':
     raise ValueError('The TF examples in {} has image/format \'{}\' '
                      '(expected \'raw\') which means you might need to rerun '
-                     'make_examples to genenerate the examples again.'.format(
+                     'make_examples to generate the examples again.'.format(
                          examples_filename, example_format))
 
   if execution_hardware not in _ALLOW_EXECUTION_HARDWARE:
