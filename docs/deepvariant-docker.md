@@ -8,10 +8,7 @@ easier to run DeepVariant locally, on a VM, or at scale using the
 ## Setup
 
 If you have not already done so, please follow the instructions on the
-[quick start](deepvariant-quick-start.md) page. Particularly, you need to
-[set up a Google Cloud account](deepvariant-quick-start.md#set_up_a_google_cloud_account),
-[request access](deepvariant-quick-start.md#request_access_to_our_shared_cloud_storage_bucket),
-and [install gCloud SDK](deepvariant-quick-start.md#install_the_google_cloud_sdk).
+[quick start](deepvariant-quick-start.md) page.
 
 ## Run DeepVariant at scale using the Genomics Pipelines API
 
