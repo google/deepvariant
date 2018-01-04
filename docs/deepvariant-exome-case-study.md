@@ -246,6 +246,7 @@ sudo docker run -it \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
   "${TRUTH_VCF}" \
   "${OUTPUT_VCF}" \
+  --preprocess-truth \
   -f "${TRUTH_BED}" \
   -T "${REFSEQ_BED}" \
   -r "${UNCOMPRESSED_REF}" \
@@ -261,6 +262,7 @@ sudo docker run -it \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
   "${TRUTH_VCF}" \
   "${OUTPUT_VCF}" \
+  --preprocess-truth \
   -f "${TRUTH_BED}" \
   -T "${EXTENDED_REFSEQ_BED}" \
   -r "${UNCOMPRESSED_REF}" \
@@ -271,10 +273,10 @@ Putting the quality results in one table, we have:
 
 BED                 | Type  | Recall   | Precision | F1_Score
 ------------------- | ----- | -------- | --------- | --------
-REFSEQ_BED          | INDEL | 0.969194 | 0.971496  | 0.970344
+REFSEQ_BED          | INDEL | 0.966981 | 0.973872  | 0.970414
 REFSEQ_BED          | SNP   | 0.995194 | 0.997902  | 0.996546
-EXTENDED_REFSEQ_BED | INDEL | 0.912479 | 0.921393  | 0.916914
-EXTENDED_REFSEQ_BED | SNP   | 0.994076 | 0.997693  | 0.995881
+EXTENDED_REFSEQ_BED | INDEL | 0.908765 | 0.925705  | 0.917157
+EXTENDED_REFSEQ_BED | SNP   | 0.993989 | 0.997722  | 0.995852
 
 ## Limitations and Future Work
 
