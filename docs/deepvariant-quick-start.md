@@ -316,6 +316,7 @@ sudo docker pull pkrusche/hap.py
 sudo docker run -it -v `pwd`:/data pkrusche/hap.py /opt/hap.py/bin/hap.py \
   /data/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
   "/data/${FINAL_OUTPUT_VCF}" \
+  --preprocess-truth \
   -f /data/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed \
   -r "/data/${REF}" \
   -o "/data/${OUTPUT_DIR}/happy.output" \

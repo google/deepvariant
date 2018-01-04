@@ -267,6 +267,7 @@ sudo docker run -it \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
   "${TRUTH_VCF}" \
   "${OUTPUT_VCF}" \
+  --preprocess-truth \
   -f "${TRUTH_BED}" \
   -r "${UNCOMPRESSED_REF}" \
   -o "${OUTPUT_DIR}/happy.output"
@@ -274,5 +275,5 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 
 Type  | Recall   | Precision | F1_Score
 ----- | -------- | --------- | --------
-INDEL | 0.993081 | 0.994954  | 0.994017
-SNP   | 0.999759 | 0.999881  | 0.999820
+INDEL | 0.993472 | 0.996662  | 0.995065
+SNP   | 0.999753 | 0.999885  | 0.999819
