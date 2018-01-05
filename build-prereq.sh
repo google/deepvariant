@@ -76,17 +76,29 @@ fi
 
 note_build_stage "Install bazel"
 
-if bazel --bazelrc=/dev/null --nomaster_bazelrc version
+function update_bazel_linux {
+  BAZEL_VERSION=$1
+  rm -rf ~/bazel
+  mkdir ~/bazel
+
+  pushd ~/bazel
+  curl -L -O https://github.com/bazelbuild/bazel/releases/download/"${BAZEL_VERSION}"/bazel-"${BAZEL_VERSION}"-installer-linux-x86_64.sh
+  chmod +x bazel-*.sh
+  ./bazel-"${BAZEL_VERSION}"-installer-linux-x86_64.sh --user
+  rm bazel-"${BAZEL_VERSION}"-installer-linux-x86_64.sh
+  popd
+
+  PATH="$HOME/bin:$PATH"
+}
+
+bazel_ver="0.8.1"
+if
+  v=$(bazel --bazelrc=/dev/null --nomaster_bazelrc version) &&
+  echo "$v" | awk -v b="$bazel_ver" '/Build label/ { exit ($3 != b)}'
 then
-  echo "Bazel already installed on the machine, not reinstalling"
+  echo "Bazel $bazel_version already installed on the machine, not reinstalling"
 else
-  # https://bazel.build/versions/master/docs/install-ubuntu.html
-  echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" |
-    sudo tee /etc/apt/sources.list.d/bazel.list
-  curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
-  sudo -H apt-get -qq -y update
-  sudo -H apt-get -y install bazel
-  sudo -H apt-get -y upgrade bazel
+  update_bazel_linux "$bazel_ver"
 fi
 
 ################################################################################
