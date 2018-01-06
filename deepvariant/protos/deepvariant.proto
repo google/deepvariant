@@ -534,6 +534,7 @@ message DeepVariantDatasetConfig {
   int32 num_examples = 3;
 }
 
+// Next ID: 8.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
   message Dataset {
@@ -548,6 +549,13 @@ message DeepVariantInputDatasets {
     string truth_variants = 4;
     // Space-separated list of regions we want to process.
     string regions = 5;
+    // A float number (< 1.0) that allows make_examples to sample more HOMREF
+    // examples. The value can also be "null" which means using the default.
+    string training_random_emit_ref_sites = 6;
+    // List of downsample_fractions. Accepted values are strings that can be
+    // parsed into a value between (0, 1), or the string "null" which means
+    // no downsampling.
+    repeated string downsample_fractions = 7;
   }
   repeated Dataset datasets = 1;
 }
