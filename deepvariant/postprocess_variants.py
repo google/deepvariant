@@ -46,8 +46,8 @@ from absl import logging
 from deepvariant import logging_level
 from deepvariant.core import errors
 from deepvariant.core import genomics_io
+from deepvariant.core import genomics_math
 from deepvariant.core import io_utils
-from deepvariant.core import math
 from deepvariant.core import proto_utils
 from deepvariant.core import variantutils
 from deepvariant.core.genomics import struct_pb2
@@ -282,7 +282,7 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   call.genotype[:] = genotype
   variantutils.set_variantcall_gq(call, gq)
   call.genotype_likelihood[:] = [
-      math.perror_to_bounded_log10_perror(gp) for gp in predictions
+      genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions
   ]
   variant.filter[:] = compute_filter_fields(variant, qual_filter)
   return variant
@@ -309,13 +309,14 @@ def compute_quals(predictions, prediction_index):
   """
   # GQ is prob(genotype) / prob(all genotypes)
   # GQ is rounded to the nearest integer to comply with the VCF spec.
-  gq = np.around(math.ptrue_to_bounded_phred(predictions[prediction_index]))
+  gq = np.around(
+      genomics_math.ptrue_to_bounded_phred(predictions[prediction_index]))
   # QUAL is prob(variant genotype) / prob(all genotypes)
   # Taking the min to avoid minor numerical issues than can push sum > 1.0.
   # redacted
-  #   math.perror_to_phred(max(predictions[0], min_ref_confidence))
+  #   genomics_math.perror_to_phred(max(predictions[0], min_ref_confidence))
   # where min_ref_confidence is something like 1e-15 (producing a qual of 150).
-  qual = math.ptrue_to_bounded_phred(min(sum(predictions[1:]), 1.0))
+  qual = genomics_math.ptrue_to_bounded_phred(min(sum(predictions[1:]), 1.0))
   rounded_qual = round(qual, _QUAL_PRECISION)
   return gq, rounded_qual
 

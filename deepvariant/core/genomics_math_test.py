@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for deepvariant .core.math."""
+"""Tests for deepvariant .core.genomics_math."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -39,7 +39,7 @@ from absl.testing import parameterized
 import numpy as np
 import numpy.testing as npt
 
-from deepvariant.core import math
+from deepvariant.core import genomics_math
 
 
 class MathTests(parameterized.TestCase):
@@ -60,9 +60,9 @@ class MathTests(parameterized.TestCase):
   )
   def test_phred_scale(self, prob, bound, expected):
     if bound:
-      actual = math.ptrue_to_bounded_phred(prob, bound)
+      actual = genomics_math.ptrue_to_bounded_phred(prob, bound)
     else:
-      actual = math.ptrue_to_bounded_phred(prob)
+      actual = genomics_math.ptrue_to_bounded_phred(prob)
     self.assertAlmostEqual(actual, expected, places=6)
 
   @parameterized.parameters(
@@ -83,9 +83,9 @@ class MathTests(parameterized.TestCase):
   )
   def test_log10_prob(self, prob, bound, expected):
     if bound:
-      actual = math.perror_to_bounded_log10_perror(prob, bound)
+      actual = genomics_math.perror_to_bounded_log10_perror(prob, bound)
     else:
-      actual = math.perror_to_bounded_log10_perror(prob)
+      actual = genomics_math.perror_to_bounded_log10_perror(prob)
     self.assertAlmostEqual(actual, expected, places=6)
 
   @parameterized.parameters(
@@ -102,7 +102,7 @@ class MathTests(parameterized.TestCase):
       (0 - 1e-32, -1.0, -1.0),
   )
   def test_log10_ptrue_to_phred(self, prob, value_if_not_finite, expected):
-    actual = math.log10_ptrue_to_phred(prob, value_if_not_finite)
+    actual = genomics_math.log10_ptrue_to_phred(prob, value_if_not_finite)
     self.assertAlmostEqual(actual, expected, places=6)
 
   # R code to produce the expectation table.
@@ -165,7 +165,7 @@ class MathTests(parameterized.TestCase):
       (100, 10000, 0.5, -2768.48565263445),
   )
   def test_log10_binomial(self, k, n, p, expected):
-    self.assertAlmostEqual(math.log10_binomial(k, n, p), expected)
+    self.assertAlmostEqual(genomics_math.log10_binomial(k, n, p), expected)
 
   @parameterized.parameters(
       ([0], 0.0),
@@ -181,7 +181,7 @@ class MathTests(parameterized.TestCase):
       ([-1, -1, -1, -100, -1000, -10000, -100000], -0.5228787),
   )
   def test_log10sumexp(self, log10_probs, expected):
-    self.assertAlmostEqual(math.log10sumexp(log10_probs), expected)
+    self.assertAlmostEqual(genomics_math.log10sumexp(log10_probs), expected)
 
   # R code to compute expected results.
   # expected <- function(lprobs) {
@@ -203,21 +203,37 @@ class MathTests(parameterized.TestCase):
   # expected(c(-1, -2, -100))
   # expected(c(-1, -2, -100, -100))
   @parameterized.parameters(
-      ([0.000000], [0.000000]),
-      ([-1.000000, -10.000000], [-0.000000, -9.000000]),
-      ([-1.000000, -100.000000], [0.000000, -99.000000]),
-      ([-1.000000, -1000.000000], [0.000000, -999.000000]),
-      ([-1.000000, -2.000000], [-0.041393, -1.041393]),
-      ([-1.000000, -2.000000, -3.000000], [-0.045323, -1.045323, -2.045323]),
-      ([-1.000000, -2.000000, -3.000000, -100.000000],
-       [-0.045323, -1.045323, -2.045323, -99.045323]),
-      ([-1.000000, -2.000000, -100.000000], [-0.041393, -1.041393, -99.041393]),
-      ([-1.000000, -2.000000, -100.000000, -100.000000],
-       [-0.041393, -1.041393, -99.041393, -99.041393]),
+      dict(
+          log10_probs=[0.000000],
+          expected=[0.000000]),
+      dict(
+          log10_probs=[-1.000000, -10.000000],
+          expected=[-0.000000, -9.000000]),
+      dict(
+          log10_probs=[-1.000000, -100.000000],
+          expected=[0.000000, -99.000000]),
+      dict(
+          log10_probs=[-1.000000, -1000.000000],
+          expected=[0.000000, -999.000000]),
+      dict(
+          log10_probs=[-1.000000, -2.000000],
+          expected=[-0.041393, -1.041393]),
+      dict(
+          log10_probs=[-1.000000, -2.000000, -3.000000],
+          expected=[-0.045323, -1.045323, -2.045323]),
+      dict(
+          log10_probs=[-1.000000, -2.000000, -3.000000, -100.000000],
+          expected=[-0.045323, -1.045323, -2.045323, -99.045323]),
+      dict(
+          log10_probs=[-1.000000, -2.000000, -100.000000],
+          expected=[-0.041393, -1.041393, -99.041393]),
+      dict(
+          log10_probs=[-1.000000, -2.000000, -100.000000, -100.000000],
+          expected=[-0.041393, -1.041393, -99.041393, -99.041393]),
   )
   def test_normalize_log10_probs(self, log10_probs, expected):
     npt.assert_allclose(
-        math.normalize_log10_probs(log10_probs), expected, atol=1e-6)
+        genomics_math.normalize_log10_probs(log10_probs), expected, atol=1e-6)
 
 
 if __name__ == '__main__':

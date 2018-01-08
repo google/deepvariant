@@ -38,13 +38,13 @@ from __future__ import division
 from __future__ import print_function
 
 import itertools
-import math as py_math
+import math
 import operator
 
 
 import numpy as np
 
-from deepvariant.core import math
+from deepvariant.core import genomics_math
 from deepvariant.core import variantutils
 from deepvariant.core.genomics import variants_pb2
 from deepvariant.python import variant_calling
@@ -78,7 +78,7 @@ def _rescale_read_counts_if_necessary(n_ref_reads, n_total_reads,
   """
   if n_total_reads > max_allowed_reads:
     ratio = n_ref_reads / (1.0 * n_total_reads)
-    n_ref_reads = int(py_math.ceil(ratio * max_allowed_reads))
+    n_ref_reads = int(math.ceil(ratio * max_allowed_reads))
     n_total_reads = max_allowed_reads
   return n_ref_reads, n_total_reads
 
@@ -191,18 +191,19 @@ class VariantCaller(object):
 
     if n_total == 0:
       # No coverage case - all likelihoods are log10 of 1/3, 1/3, 1/3.
-      log10_probs = math.normalize_log10_probs([-1.0, -1.0, -1.0])
+      log10_probs = genomics_math.normalize_log10_probs([-1.0, -1.0, -1.0])
     else:
       n_alts = n_total - n_ref
-      log10_p_ref = math.log10_binomial(n_alts, n_total, self.options.p_error)
-      log10_p_het = math.log10_binomial(n_ref, n_total,
-                                        1.0 / self.options.ploidy)
-      log10_p_hom_alt = math.log10_binomial(n_ref, n_total,
-                                            self.options.p_error)
-      log10_probs = math.normalize_log10_probs(
+      log10_p_ref = genomics_math.log10_binomial(n_alts, n_total,
+                                                 self.options.p_error)
+      log10_p_het = genomics_math.log10_binomial(n_ref, n_total,
+                                                 1.0 / self.options.ploidy)
+      log10_p_hom_alt = genomics_math.log10_binomial(n_ref, n_total,
+                                                     self.options.p_error)
+      log10_probs = genomics_math.normalize_log10_probs(
           [log10_p_ref, log10_p_het, log10_p_hom_alt])
 
-    gq = math.log10_ptrue_to_phred(log10_probs[0], self.options.max_gq)
+    gq = genomics_math.log10_ptrue_to_phred(log10_probs[0], self.options.max_gq)
     gq = int(min(np.floor(gq), self.options.max_gq))
     return gq, log10_probs
 

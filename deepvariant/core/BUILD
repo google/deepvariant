@@ -360,18 +360,17 @@ cc_test(
 )
 
 py_library(
-    name = "py_math",
-    srcs = ["math.py"],
+    name = "genomics_math",
+    srcs = ["genomics_math.py"],
     deps = ["//deepvariant/core/python:math"],
 )
 
 py_test(
-    name = "py_math_test",
+    name = "genomics_math_test",
     size = "small",
-    srcs = ["math_test.py"],
-    main = "math_test.py",
+    srcs = ["genomics_math_test.py"],
     deps = [
-        ":py_math",
+        ":genomics_math",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

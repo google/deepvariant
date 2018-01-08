@@ -47,8 +47,8 @@ import tensorflow as tf
 from absl import logging
 from deepvariant import postprocess_variants
 from deepvariant import test_utils
+from deepvariant.core import genomics_math
 from deepvariant.core import io_utils
-from deepvariant.core import math
 from deepvariant.core import variantutils
 from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.genomics import variants_pb2
@@ -630,7 +630,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
   )
   def test_compute_quals_numerical_stability(self, probs, call, expected_gq):
     max_qual = round(
-        math.ptrue_to_bounded_phred(1.0), postprocess_variants._QUAL_PRECISION)
+        genomics_math.ptrue_to_bounded_phred(1.0),
+        postprocess_variants._QUAL_PRECISION)
     gq, qual = postprocess_variants.compute_quals(probs, call)
     self.assertEquals(expected_gq, gq)
     self.assertEquals(max_qual, qual)
