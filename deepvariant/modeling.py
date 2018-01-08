@@ -402,7 +402,7 @@ class DeepVariantResnet50(DeepVariantSlimModel):
     with slim.arg_scope(resnet_v2.resnet_arg_scope()):
       _, endpoints = resnet_v2.resnet_v2_50(
           images, num_classes, is_training=is_training, spatial_squeeze=False)
-      # Resnet's "predictions" and endpoint is (n, 1, 1, m) but we really
+      # Resnet's "predictions" endpoint is (n, 1, 1, m) but we really
       # want to have an (n, m) "Predictions" endpoint.  We add a squeeze
       # op here to make that happen.
       endpoints['Predictions'] = tf.squeeze(
@@ -411,6 +411,72 @@ class DeepVariantResnet50(DeepVariantSlimModel):
       # "Logits"
       endpoints['Logits'] = tf.squeeze(
           endpoints['resnet_v2_50/logits'], [1, 2], name='SqueezeLogits')
+      return endpoints
+
+
+class DeepVariantResnet101(DeepVariantSlimModel):
+  """Resnet v2 101 model.
+
+  References:
+    See slim resnet_v2.py.
+  """
+
+  def __init__(self):
+    super(DeepVariantResnet101, self).__init__(
+        name='resnet_v2_101',
+        n_classes_model_variable='resnet_v2_101/logits/weights',
+        excluded_scopes=['resnet_v2_101/logits', 'resnet_v2_101/conv1'],
+        pretrained_model_path=('/namespace/vale-project/models/classification/'
+                               'imagenet/resnet_v2_101_inception_preprocessed/'
+                               'model.ckpt-5562630'))
+
+  def create(self, images, num_classes, is_training):
+    """See baseclass."""
+    with slim.arg_scope(resnet_v2.resnet_arg_scope()):
+      _, endpoints = resnet_v2.resnet_v2_101(
+          images, num_classes, is_training=is_training, spatial_squeeze=False)
+      # Resnet's "predictions" endpoint is (n, 1, 1, m) but we really
+      # want to have an (n, m) "Predictions" endpoint.  We add a squeeze
+      # op here to make that happen.
+      endpoints['Predictions'] = tf.squeeze(
+          endpoints['predictions'], [1, 2], name='SqueezePredictions')
+      # Likewise, the endpoint "resnet_v2_101/logits" should be squeezed to
+      # "Logits"
+      endpoints['Logits'] = tf.squeeze(
+          endpoints['resnet_v2_101/logits'], [1, 2], name='SqueezeLogits')
+      return endpoints
+
+
+class DeepVariantResnet152(DeepVariantSlimModel):
+  """Resnet v2 152 model.
+
+  References:
+    See slim resnet_v2.py.
+  """
+
+  def __init__(self):
+    super(DeepVariantResnet152, self).__init__(
+        name='resnet_v2_152',
+        n_classes_model_variable='resnet_v2_152/logits/weights',
+        excluded_scopes=['resnet_v2_152/logits', 'resnet_v2_152/conv1'],
+        pretrained_model_path=('/namespace/vale-project/models/classification/'
+                               'imagenet/resnet_v2_152_inception_preprocessed/'
+                               'model.ckpt-5686729'))
+
+  def create(self, images, num_classes, is_training):
+    """See baseclass."""
+    with slim.arg_scope(resnet_v2.resnet_arg_scope()):
+      _, endpoints = resnet_v2.resnet_v2_152(
+          images, num_classes, is_training=is_training, spatial_squeeze=False)
+      # Resnet's "predictions" endpoint is (n, 1, 1, m) but we really
+      # want to have an (n, m) "Predictions" endpoint.  We add a squeeze
+      # op here to make that happen.
+      endpoints['Predictions'] = tf.squeeze(
+          endpoints['predictions'], [1, 2], name='SqueezePredictions')
+      # Likewise, the endpoint "resnet_v2_152/logits" should be squeezed to
+      # "Logits"
+      endpoints['Logits'] = tf.squeeze(
+          endpoints['resnet_v2_152/logits'], [1, 2], name='SqueezeLogits')
       return endpoints
 
 
@@ -494,6 +560,8 @@ _MODELS = [
     DeepVariantMobileNetV1(),
     DeepVariantRandomGuessModel(),
     DeepVariantResnet50(),
+    DeepVariantResnet101(),
+    DeepVariantResnet152(),
 ]
 
 
