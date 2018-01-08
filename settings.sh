@@ -54,6 +54,7 @@ export CUDNN_INSTALL_PATH="/usr/lib/x86_64-linux-gnu"
 # Path to the public bucket containing DeepVariant-related artifacts.
 export DEEPVARIANT_BUCKET="gs://deepvariant"
 export DV_PACKAGE_BUCKET_PATH="${DEEPVARIANT_BUCKET}/packages"
+export DV_PACKAGE_CURL_PATH="https://storage.googleapis.com/deepvariant/packages"
 
 # Set this to 1 to use DeepVariant with GPUs. Set it to an already existing
 # value in the environment (allowing command line control of the build),
@@ -71,6 +72,7 @@ export DV_GPU_BUILD="${DV_GPU_BUILD:-0}"
 export DV_USE_GCP_OPTIMIZED_TF_WHL="${DV_USE_GCP_OPTIMIZED_TF_WHL:-1}"
 export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-1.4.1.deepvariant_gcp-cp27-none-linux_x86_64.whl"
 export GCP_OPTIMIZED_TF_WHL_PATH="${DV_PACKAGE_BUCKET_PATH}/tensorflow"
+export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"
 
 # Set this to 1 to use the nightly (latest) build of TensorFlow instead of a
 # named release version. Set it to an already existing value in the environment

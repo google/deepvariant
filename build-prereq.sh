@@ -117,17 +117,17 @@ else
   case "$(lsb_release -d)" in
     *Ubuntu*16.*.*) export DV_PLATFORM="ubuntu-16" ;;
     *Ubuntu*14.*.*) export DV_PLATFORM="ubuntu-14" ;;
-    *) echo "CLIF is not installed on this machine and a prebuilt binary is not 
+    *) echo "CLIF is not installed on this machine and a prebuilt binary is not
 unavailable for this platform. Please install CLIF at
 https://github.com/google/clif before continuing."
     exit 1
   esac
 
-  OSS_CLIF_ROOT="${DV_PACKAGE_BUCKET_PATH}/oss_clif"
+  OSS_CLIF_CURL_ROOT="${DV_PACKAGE_CURL_PATH}/oss_clif"
   OSS_CLIF_PKG="oss_clif.${DV_PLATFORM}.latest.tgz"
 
   if [[ ! -f "/tmp/${OSS_CLIF_PKG}" ]]; then
-      gsutil cp "${OSS_CLIF_ROOT}/${OSS_CLIF_PKG}" /tmp/
+    curl "${OSS_CLIF_CURL_ROOT}/${OSS_CLIF_PKG}" > /tmp/${OSS_CLIF_PKG}
   fi
 
   (cd / && sudo tar xzf "/tmp/${OSS_CLIF_PKG}")

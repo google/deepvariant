@@ -110,7 +110,8 @@ else
     sudo -H pip install --upgrade 'tensorflow-gpu==1.4'
   elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
     echo "Installing Google Cloud Platform optimized CPU-only TensorFlow wheel"
-    gsutil cp "${GCP_OPTIMIZED_TF_WHL_PATH}/${GCP_OPTIMIZED_TF_WHL_FILENAME}" /tmp/
+    curl "${GCP_OPTIMIZED_TF_WHL_CURL_PATH}/${GCP_OPTIMIZED_TF_WHL_FILENAME}" \
+      > "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
     sudo -H pip install --upgrade "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
   else
     echo "Installing standard CPU-only TensorFlow wheel"

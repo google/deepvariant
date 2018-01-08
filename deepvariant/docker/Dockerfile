@@ -7,7 +7,7 @@ ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ADD README.txt LICENSE AUTHORS /
 
 RUN mkdir -p /tmp/deepvariant_docker && mkdir -p /opt/deepvariant/bin
-ADD settings.sh run-prereq.sh *.whl /tmp/deepvariant_docker/
+ADD settings.sh run-prereq.sh /tmp/deepvariant_docker/
 RUN cd /tmp/deepvariant_docker && ./run-prereq.sh && \
     rm -rf /tmp/deepvariant_docker/ && \
     apt-get install -y parallel
