@@ -187,7 +187,10 @@ class IgnoreFieldPathCriteria
 namespace {
 // Note, re2:StringPiece does not have ssize().
 bool Consume(StringPiece* s, StringPiece x) {
-  if (s->starts_with(x)) {
+  // We use the implementation of absl::StartsWith here until we can pick up a
+  // dependency on Abseil.
+  if (x.empty() ||
+      (s->size() >= x.size() && memcmp(s->data(), x.data(), x.size()) == 0)) {
     s->remove_prefix(x.size());
     return true;
   }
