@@ -38,14 +38,14 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--tag=gcr.io/$PROJECT_ID/deepvariant'
+      - '--tag=gcr.io/$PROJECT_ID/deepvariant:$TAG_NAME'
       - '.'
     id: 'cpu'
     dir: 'deepvariant/docker'
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--tag=gcr.io/$PROJECT_ID/deepvariant_gpu'
+      - '--tag=gcr.io/$PROJECT_ID/deepvariant_gpu:$TAG_NAME'
       - '--build-arg=FROM_IMAGE=nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04'
       - '--build-arg=DV_GPU_BUILD=1'
       - '.'
@@ -54,12 +54,12 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--tag=gcr.io/$PROJECT_ID/deepvariant_runner'
+      - '--tag=gcr.io/$PROJECT_ID/deepvariant_runner:$TAG_NAME'
       - '--file=Dockerfile.runner'
       - '.'
     id: 'runner'
     dir: 'deepvariant/docker'
 images:
-  - 'gcr.io/$PROJECT_ID/deepvariant'
-  - 'gcr.io/$PROJECT_ID/deepvariant_gpu'
-  - 'gcr.io/$PROJECT_ID/deepvariant_runner'
+  - 'gcr.io/$PROJECT_ID/deepvariant:$TAG_NAME'
+  - 'gcr.io/$PROJECT_ID/deepvariant_gpu:$TAG_NAME'
+  - 'gcr.io/$PROJECT_ID/deepvariant_runner:$TAG_NAME'
