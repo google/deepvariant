@@ -206,6 +206,27 @@ class RangeSet(object):
 
     return intersected
 
+  def exclude_regions(self, other):
+    """Chops out all of the intervals in other from this this RangeSet.
+
+    This is a *MUTATING* operation for performance reasons. Make a copy of self
+    if you want to avoid modifying the RangeSet.
+
+    Args:
+      other: A RangeSet object whose intervals will be removed from this
+        RangeSet.
+    """
+    # pylint: disable=protected-access
+    for chrname, chr_intervals in other._by_chr.iteritems():
+      # If refname is present in self, difference those two IntervalTrees.
+      self_intervals = self._by_chr.get(chrname, None)
+      if self_intervals:
+        for begin, end, _ in chr_intervals:
+          self_intervals.chop(begin, end)
+        if self_intervals.is_empty():
+          # Cleanup after ourselves by removing empty trees from out map.
+          del self._by_chr[chrname]
+
   def __len__(self):
     """Gets the number of ranges used by this RangeSet."""
     return sum(len(for_chr) for for_chr in self._by_chr.itervalues())

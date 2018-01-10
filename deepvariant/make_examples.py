@@ -100,6 +100,13 @@ flags.DEFINE_string(
     'Optional. Space-separated list of regions we want to process. Elements '
     'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
 flags.DEFINE_string(
+    'exclude_regions', '',
+    'Optional. Space-separated list of regions we want to exclude from '
+    'processing. Elements can be region literals (e.g., chr20:10-20) or paths '
+    'to BED/BEDPE files. Region exclusion happens after processing the '
+    '--regions argument, so --region 20 --exclude_regions 20:100 does '
+    'everything on chromosome 20 excluding base 100')
+flags.DEFINE_string(
     'gvcf', '',
     'Optional. Path where we should write gVCF records in TFRecord of Variant '
     'proto format.')
@@ -174,6 +181,12 @@ flags.DEFINE_integer('pileup_image_width', 0,
 # ---------------------------------------------------------------------------
 # Option handling
 # ---------------------------------------------------------------------------
+
+
+def parse_regions_flag(regions_flag_value):
+  if isinstance(regions_flag_value, str):
+    regions_flag_value = regions_flag_value.split()
+  return regions_flag_value
 
 
 def default_options(add_flags=True, flags_obj=None):
@@ -351,11 +364,9 @@ def default_options(add_flags=True, flags_obj=None):
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
 
-    # redacted
-    regions_flag = flags_obj.regions
-    if isinstance(regions_flag, str):
-      regions_flag = regions_flag.split()
-    options.calling_regions.extend(regions_flag)
+    options.calling_regions.extend(parse_regions_flag(flags_obj.regions))
+    options.exclude_calling_regions.extend(
+        parse_regions_flag(flags_obj.exclude_regions))
 
     options.task_id = flags_obj.task
     options.num_shards = 0 if num_shards is None else num_shards
@@ -538,6 +549,45 @@ def validate_reference_contig_coverage(ref_contigs, shared_contigs,
                          ref_bp, common_bp, coverage, format_contig_matches()))
 
 
+def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
+  """Builds a RangeSet containing the regions we should call variants in.
+
+  This function intersects the Ranges spanning all of the contigs with those
+  from regions_to_include, if not empty, and removes all of the regions in
+  regions_to_exclude.
+
+  Args:
+    contigs: Sequence of ContigInfo protos. Used to determine the initial ranges
+      to process (i.e., all bases of these contigs).
+    regions_to_include: RangeSet or iterable that can be converted to a
+      RangeSet.
+    regions_to_exclude: RangeSet or iterable that can be converted to a
+      RangeSet.
+
+  Returns:
+    A RangeSet.
+  """
+  # Initially we are going to call everything in the reference.
+  regions = ranges.RangeSet.from_contigs(contigs)
+
+  # If we provided a regions to include, intersect it with all of the regions,
+  # producing a common set of regions between the reference and the provided
+  # calling regions.
+  contig_dict = ranges.contigs_dict(contigs)
+  if regions_to_include:
+    regions = regions.intersection(
+        ranges.RangeSet.from_regions(regions_to_include, contig_dict))
+
+  # If we provided regions to exclude, intersect those with the existing calling
+  # regions to further refine our set of contigs to process.
+  if regions_to_exclude:
+    # exclude_regions mutates regions.
+    regions.exclude_regions(
+        ranges.RangeSet.from_regions(regions_to_exclude, contig_dict))
+
+  return regions
+
+
 def regions_to_process(contigs,
                        partition_size,
                        calling_regions=None,
@@ -564,7 +614,7 @@ def regions_to_process(contigs,
   Args:
     contigs: Sequence of ContigInfo protos. Used to determine the initial ranges
       to process (i.e., all bases of these contigs) and the order of returned
-      ranges if randomize_regions==False.
+      ranges.
     partition_size: The maximum size to make any region when partitioning.
     calling_regions: None or RangeSet. If provided, we will intersect the
       regions to process so that only those that overlap a region in this set
@@ -580,7 +630,7 @@ def regions_to_process(contigs,
     An iterable of learning.genomics.v1.Range objects.
 
   Raises:
-    ValueError: if random is None but randomize_regions is True.
+    ValueError: if task_id and num_shards are bad or inconsistent.
   """
   if (task_id is None) != (num_shards is None):
     raise ValueError('Both task_id and num_shards must be present if either is',
@@ -932,10 +982,11 @@ def processing_regions_from_options(options):
   logging.info('Common contigs are %s', [c.name for c in contigs])
 
   regions = regions_to_process(
-      contigs,
+      contigs=contigs,
       partition_size=options.allele_counter_options.partition_size,
-      calling_regions=ranges.RangeSet.from_regions(
-          options.calling_regions, ranges.contigs_dict(ref_contigs)),
+      calling_regions=build_calling_regions(ref_contigs,
+                                            options.calling_regions,
+                                            options.exclude_calling_regions),
       task_id=options.task_id,
       num_shards=options.num_shards)
 

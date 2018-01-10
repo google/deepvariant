@@ -422,7 +422,7 @@ message PileupImageOptions {
 
 // High-level options that encapsolates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 26.
+// Next ID: 27.
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -430,7 +430,7 @@ message DeepVariantOptions {
   repeated string exclude_contigs = 1;
 
   // List of regions where we want to call variants. If missing, we will call
-  // variants throughout the entire genomie.
+  // variants throughout the entire genome.
   repeated string calling_regions = 2;
 
   // Fixed random seed to use for DeepVariant itself.
@@ -517,6 +517,11 @@ message DeepVariantOptions {
   // indicates the probability that a read will be kept (randomly) when read
   // from the input. This option makes it easy to simulate lower coverage data.
   float downsample_fraction = 25;
+
+  // List of regions where we DON'T want to call variants. If missing, no
+  // regions will be excluded from calling.
+  repeated string exclude_calling_regions = 26;
+
 }
 
 // Config describe information needed for a dataset that can be used for

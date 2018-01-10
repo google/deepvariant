@@ -310,6 +310,32 @@ class RangesTests(parameterized.TestCase):
     for pre, post in zip(copies, regions_list):
       self.assertCountEqual(pre, post)
 
+  @parameterized.parameters(
+      dict(lhs=['1:1-100'], rhs=['1:10-20'], expected=['1:1-9', '1:21-100']),
+      dict(lhs=['1:1-100'], rhs=[], expected=['1:1-100']),
+      dict(lhs=['1:1-100', '2:1-10'], rhs=['2:1-100'], expected=['1:1-100']),
+      dict(
+          lhs=['1:1-100'],
+          rhs=['1:10-20', '1:15-30'],
+          expected=['1:1-9', '1:31-100']),
+      dict(
+          lhs=['1:1-100'],
+          rhs=['1:10-20', '1:30-40'],
+          expected=['1:1-9', '1:21-29', '1:41-100']),
+      # Excluding regions not in lhs has no impact.
+      dict(lhs=['1:1-100'], rhs=['2:1-100'], expected=['1:1-100']),
+      # Check that excluding the whole region results in an empty RangeSet.
+      dict(lhs=['1:1-100'], rhs=['1:1-100'], expected=[]),
+      # An empty tree remains empty.
+      dict(lhs=[], rhs=['1:1-100'], expected=[]),
+  )
+  def test_exclude_regions(self, lhs, rhs, expected):
+    lhs = ranges.RangeSet.from_regions(lhs)
+    rhs = ranges.RangeSet.from_regions(rhs)
+    # Mutating operation returns None.
+    self.assertIsNone(lhs.exclude_regions(rhs))
+    self.assertCountEqual(ranges.RangeSet.from_regions(expected), lhs)
+
   @parameterized.parameters(('chr1', ranges.make_range('chr1', 0, 10)),
                             ('chr2', ranges.make_range('chr2', 0, 5)))
   def test_parse_literal_with_contig_map(self, contig_name, expected):

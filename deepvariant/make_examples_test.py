@@ -621,6 +621,41 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         make_examples.regions_to_process(
             contigs, max_size, calling_regions=_from_literals(calling_regions)))
 
+  @parameterized.parameters(
+      dict(includes=[], excludes=[], expected=['1:1-100', '2:1-200']),
+      dict(includes=['1'], excludes=[], expected=['1:1-100']),
+      # Check that excludes work as expected.
+      dict(includes=[], excludes=['1'], expected=['2:1-200']),
+      dict(includes=[], excludes=['2'], expected=['1:1-100']),
+      dict(includes=[], excludes=['1', '2'], expected=[]),
+      # Check that excluding pieces works. The main checks on taking the
+      # difference between two RangeSets live in ranges.py so here we are just
+      # making sure some basic logic works.
+      dict(includes=['1'], excludes=['1:1-10'], expected=['1:11-100']),
+      # Check that includes and excludes work together.
+      dict(
+          includes=['1', '2'],
+          excludes=['1:5-10', '1:20-50', '2:10-20'],
+          expected=['1:1-4', '1:11-19', '1:51-100', '2:1-9', '2:21-200']),
+      dict(
+          includes=['1'],
+          excludes=['1:5-10', '1:20-50', '2:10-20'],
+          expected=['1:1-4', '1:11-19', '1:51-100']),
+      dict(
+          includes=['2'],
+          excludes=['1:5-10', '1:20-50', '2:10-20'],
+          expected=['2:1-9', '2:21-200']),
+      # A complex example of including and excluding.
+      dict(
+          includes=['1:10-20', '2:50-60', '2:70-80'],
+          excludes=['1:1-13', '1:19-50', '2:10-65'],
+          expected=['1:14-18', '2:70-80']),
+  )
+  def test_build_calling_regions(self, includes, excludes, expected):
+    contigs = _make_contigs([('1', 100), ('2', 200)])
+    actual = make_examples.build_calling_regions(contigs, includes, excludes)
+    self.assertCountEqual(actual, _from_literals_list(expected))
+
   def test_regions_to_process_sorted_within_contig(self):
     # These regions are out of order but within a single contig.
     contigs = _make_contigs([('z', 100)])
@@ -786,6 +821,23 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       make_examples._ensure_consistent_contigs(ref_contigs, sam_contigs,
                                                vcf_contigs, names_to_exclude,
                                                min_coverage_fraction)
+
+  @flagsaver.FlagSaver
+  def test_regions_and_exclude_regions_flags(self):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = test_utils.CHR20_FASTA
+    FLAGS.reads = test_utils.CHR20_BAM
+    FLAGS.regions = 'chr20:10,000,000-11,000,000'
+    FLAGS.examples = 'examples.tfrecord'
+    FLAGS.exclude_regions = 'chr20:10,010,000-10,100,000'
+
+    options = make_examples.default_options(add_flags=True)
+    self.assertCountEqual(
+        list(
+            ranges.RangeSet(
+                make_examples.processing_regions_from_options(options))),
+        _from_literals_list(
+            ['chr20:10,000,000-10,009,999', 'chr20:10,100,001-11,000,000']))
 
 
 class RegionProcessorTest(parameterized.TestCase):
