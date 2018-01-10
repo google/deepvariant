@@ -35,13 +35,15 @@ set -x
 # docker image.
 
 ./build-prereq.sh  # implies run-prereq.sh
+# For bazel.
+PATH="$HOME/bin:$PATH"
 
 # Build all required binaries as python zip files. Note that par executables
 # that are using subpar library does not yet work due to c-extensions not being
 # supported. Also symlinks do not work in Dockerfile, so copy them explicitly
 # to //deepvariant/docker directory.
 # Note: this is missing --copt=-mavx2 and --copt=-mfma. See b/67778043.
-"${HOME}"/bin/bazel build --build_python_zip -c opt --copt=-msse4.1 \
+bazel build --build_python_zip -c opt --copt=-msse4.1 \
     --copt=-msse4.2 --copt=-mavx --copt=-O3 \
     //deepvariant:make_examples \
     //deepvariant:call_variants \
