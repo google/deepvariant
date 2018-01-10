@@ -96,7 +96,7 @@ if
   v=$(bazel --bazelrc=/dev/null --nomaster_bazelrc version) &&
   echo "$v" | awk -v b="$bazel_ver" '/Build label/ { exit ($3 != b)}'
 then
-  echo "Bazel $bazel_version already installed on the machine, not reinstalling"
+  echo "Bazel $bazel_ver already installed on the machine, not reinstalling"
 else
   update_bazel_linux "$bazel_ver"
 fi
