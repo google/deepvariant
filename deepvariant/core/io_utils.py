@@ -52,8 +52,6 @@ import threading
 import contextlib2
 import tensorflow as tf
 
-from absl import logging
-
 from tensorflow.core.example import example_pb2
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
@@ -266,46 +264,6 @@ def maybe_generate_sharded_filenames(filespec):
     return GenerateShardedFilenames(filespec)
   else:
     return [filespec]
-
-
-# redacted
-class OutputsWriter(object):
-  """Manages all of the outputs of make_examples in a single place."""
-
-  def __init__(self, options):
-    self._writers = {}
-    if options.candidates_filename:
-      logging.info('Writing candidates to %s', options.candidates_filename)
-      self._add_writer('candidates',
-                       make_tfrecord_writer(options.candidates_filename))
-    if options.examples_filename:
-      logging.info('Writing examples to %s', options.examples_filename)
-      self._add_writer('examples',
-                       make_tfrecord_writer(options.examples_filename))
-    if options.gvcf_filename:
-      logging.info('Writing a gvcf to %s', options.gvcf_filename)
-      # redacted
-      # we can write out a VCF or a TFRecords as requested.
-      self._add_writer('gvcfs', make_tfrecord_writer(options.gvcf_filename))
-
-  def _add_writer(self, name, writer):
-    self._writers[name] = writer
-
-  def __enter__(self):
-    """API function to support with syntax."""
-    for writer in self._writers.itervalues():
-      writer.__enter__()
-    return self
-
-  def __exit__(self, exception_type, exception_value, traceback):
-    for writer in self._writers.itervalues():
-      writer.__exit__(exception_type, exception_value, traceback)
-
-  def write(self, writer_name, *protos):
-    writer = self._writers.get(writer_name, None)
-    if writer:
-      for proto in protos:
-        writer.write(proto.SerializeToString())
 
 
 class AsyncWriter(object):

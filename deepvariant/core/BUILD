@@ -487,7 +487,6 @@ py_test(
 py_library(
     name = "io_utils",
     srcs = ["io_utils.py"],
-    deps = ["@com_google_absl_py//absl/logging"],
 )
 
 py_test(
