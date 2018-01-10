@@ -582,6 +582,7 @@ py_test(
     size = "medium",
     srcs = ["model_train_test.py"],
     srcs_version = "PY2AND3",
+    tags = ["nozapfhahn"],  # timeout
     deps = [
         ":data_providers_test",
         ":model_train",
