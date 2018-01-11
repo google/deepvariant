@@ -58,8 +58,43 @@ the program will be 10% of the regions and the output will be written to
 `examples.tfrecord-00000-of-00010.gz`. A concrete example of using multiple
 processes and sharded data is given in the [quick start].
 
-The reference genome FASTA, passed in using the `--ref` flag, must be indexed
-and can either be uncompressed or compressed with bgzip.
+#### Input assumptions
+
+`make_examples` requires its input files to satisfy a few basic requirements to
+be processed correctly.
+
+First, the reference genome FASTA, passed in using the `--ref` flag, must be
+indexed and can either be uncompressed or compressed with bgzip.
+
+Second, the BAM file provided to `--reads` should be aligned to a "compatible"
+version of the genome reference provided as the `--ref`. By compatible here we
+mean the BAM and FASTA share at least a reasonable set of common contigs, as
+DeepVariant will only process contigs shared by both the BAM and reference. As
+an example, suppose you have a BAM file mapped to b37 + decoy FASTA and you
+provide just the vanilla b37 fasta to `make_examples`. DeepVariant will only
+process variants on the shared contigs, effectively excluding the hs37d5 contig
+present in the BAM but not in the reference.
+
+The BAM file must be also sorted and indexed. It must exist on disk, so you
+cannot pipe it into DeepVariant. We currently recommend that the BAM be
+duplicate marked, but it's unclear if this is even necessary. Finally, it's not
+necessary to recalibrate the base qualities or do any form of indel realignment.
+
+Third, if you are providing `--regions` or other similar arguments these should
+refer to contigs present in the reference genome. These arguments accept
+space-separated lists, so all of the follow examples are valid arguments for
+`--regions` or similar arguments:
+
+*   `--regions chr20` => only process all of chromosome 20
+*   `--regions chr20:10,000,000-11,000,000` => only process 10-11mb of chr20
+*   `--regions "chr20 chr21"` => only process chromosomes 20 and 21
+
+Fourth and finally, if running in training mode the `truth_vcf` and
+`confident_regions` arguments should point to VCF and BED files containing the
+true variants and regions where we are confident in our calls (i.e., calls
+within these regions and not in the truth_vcf are considered false positives).
+These should be bgzipped and tabix indexed and be on a reference consistent with
+the one provided with the `--ref` argument.
 
 ### call_variants
 
