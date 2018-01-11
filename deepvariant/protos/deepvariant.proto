@@ -539,9 +539,10 @@ message DeepVariantDatasetConfig {
   int32 num_examples = 3;
 }
 
-// Next ID: 8.
+// Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
+  // Next ID: 8.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -563,4 +564,9 @@ message DeepVariantInputDatasets {
     repeated string downsample_fractions = 7;
   }
   repeated Dataset datasets = 1;
+  string group_name = 2;
+}
+
+message DeepVariantInputDatasetsGroup {
+  repeated DeepVariantInputDatasets groups = 1;
 }
