@@ -542,7 +542,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 8.
+  // Next ID: 9.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -562,6 +562,9 @@ message DeepVariantInputDatasets {
     // parsed into a value between (0, 1), or the string "null" which means
     // no downsampling.
     repeated string downsample_fractions = 7;
+
+    // Space-separated list of regions we want to exclude.
+    string exclude_regions = 8;
   }
   repeated Dataset datasets = 1;
   string group_name = 2;
