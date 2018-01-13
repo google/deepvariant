@@ -371,8 +371,8 @@ def default_options(add_flags=True, flags_obj=None):
     options.task_id = flags_obj.task
     options.num_shards = 0 if num_shards is None else num_shards
 
-    if flags_obj.realign_reads:
-      options.realigner_enabled = True
+    options.realigner_enabled = flags_obj.realign_reads
+    if options.realigner_enabled:
       options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
     options.max_reads_per_partition = flags_obj.max_reads_per_partition
