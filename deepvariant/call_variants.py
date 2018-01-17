@@ -256,56 +256,32 @@ def call_batch(sess, writer, encoded_variants, encoded_alt_allele_indices,
       encoded_variants, encoded_alt_allele_indices, predictions):
     # Round the genotype probabilities to a stable precision level.
     rounded_gls = round_gls(gls, precision=_GL_PRECISION)
-    writer.write(encoded_variant, rounded_gls, one_encoded_alt_allele_indices)
+    cvo = _create_cvo_proto(encoded_variant, rounded_gls,
+                            one_encoded_alt_allele_indices)
+    writer.write(cvo.SerializeToString())
 
   return len(encoded_variants)
 
 
-def make_async_writer(write_fn):
-  """Creates an AsyncWriter writing CallVariantsOutput to write_fn.
-
-  The output CallVariantsOutput proto contains fields that are used to
-  sort and merge multi-allelic after the call_variants step. It contains the
-  serialized Variant proto in the 'variant/encoded' field.
-
-  The created AsyncWriter has a write() function accepting 3 arguments,
-  a CallVariantsOutput (which contains the serialized
-  learning.genomics.v1.Variant proto), a vector of genotype_probabilities,
-  and the alt_allele_indices that describes the biallelics used in the
-  computation by our deep learning model, one for each genotype state
-  of variant.  This write method invokes add_call_to_variant, on the
-  decoded variant to add the call information, and then calls write_fn
-  on this variant.
-
-  Args:
-    write_fn: A function accepting a CallVariantsOutput proto that
-    writes to its underlying writer.
-
-  Returns:
-    An AsyncWriter.
-  """
-
-  def write_output(encoded_variant, gls, encoded_alt_allele_indices):
-    """Provides a write function for a CallVariantsOutput proto."""
-    variant = variants_pb2.Variant.FromString(encoded_variant)
-    alt_allele_indices = (
-        deepvariant_pb2.CallVariantsOutput.AltAlleleIndices.FromString(
-            encoded_alt_allele_indices))
-    debug_info = None
-    if FLAGS.include_debug_info:
-      debug_info = deepvariant_pb2.CallVariantsOutput.DebugInfo(
-          has_insertion=variantutils.has_insertion(variant),
-          has_deletion=variantutils.has_deletion(variant),
-          is_snp=variantutils.is_snp(variant),
-          predicted_label=np.argmax(gls))
-    call_variants_output = deepvariant_pb2.CallVariantsOutput(
-        variant=variant,
-        alt_allele_indices=alt_allele_indices,
-        genotype_probabilities=gls,
-        debug_info=debug_info)
-    write_fn(call_variants_output)
-
-  return io_utils.AsyncWriter(write_output)
+def _create_cvo_proto(encoded_variant, gls, encoded_alt_allele_indices):
+  """Returns a CallVariantsOutput proto from the relevant input information."""
+  variant = variants_pb2.Variant.FromString(encoded_variant)
+  alt_allele_indices = (
+      deepvariant_pb2.CallVariantsOutput.AltAlleleIndices.FromString(
+          encoded_alt_allele_indices))
+  debug_info = None
+  if FLAGS.include_debug_info:
+    debug_info = deepvariant_pb2.CallVariantsOutput.DebugInfo(
+        has_insertion=variantutils.has_insertion(variant),
+        has_deletion=variantutils.has_deletion(variant),
+        is_snp=variantutils.is_snp(variant),
+        predicted_label=np.argmax(gls))
+  call_variants_output = deepvariant_pb2.CallVariantsOutput(
+      variant=variant,
+      alt_allele_indices=alt_allele_indices,
+      genotype_probabilities=gls,
+      debug_info=debug_info)
+  return call_variants_output
 
 
 def call_variants(examples_filename,
@@ -356,8 +332,8 @@ def call_variants(examples_filename,
               'was found')
 
       logging.info('Writing calls to %s', output_file)
-      sync_writer, write_fn = io_utils.make_proto_writer(output_file)
-      with sync_writer, make_async_writer(write_fn) as writer:
+      writer, _ = io_utils.make_proto_writer(output_file)
+      with writer:
         start_time = time.time()
         try:
           n_batches = 0
