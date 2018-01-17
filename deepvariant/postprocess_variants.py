@@ -612,11 +612,11 @@ def write_variants_to_vcf(contigs,
   if filters is None:
     filters = FILTERS
   logging.info('Writing output to VCF file: %s', output_vcf_path)
-  sync_writer, writer_fn = genomics_io.make_variant_writer(
-      output_vcf_path, contigs, samples=[sample_name], filters=filters)
-  with sync_writer:
+  with genomics_io.make_variant_writer(
+      output_vcf_path, contigs, samples=[sample_name],
+      filters=filters) as writer:
     for variant in variant_generator:
-      writer_fn(variant)
+      writer.write(variant)
 
 
 def _transform_call_variants_output_to_variants(

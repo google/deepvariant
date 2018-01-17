@@ -208,8 +208,8 @@ def make_variant_writer(outfile, contigs, samples=None, filters=None):
       by the destination writer.
 
   Returns:
-    An writer object and a write_fn accepting a Variant proto that writes to
-    writer.
+    An writer object that supports the context manager protocol for
+      opening/closing the writer and a single function write(proto).
 
   Raises:
     ValueError: If any of the optional arguments needed for the specific output
@@ -220,14 +220,11 @@ def make_variant_writer(outfile, contigs, samples=None, filters=None):
       raise ValueError('samples must be provided for vcf output')
     if filters is None:
       raise ValueError('filters must be provided for vcf output')
-    writer = make_vcf_writer(
+    return make_vcf_writer(
         outfile, contigs=contigs, samples=samples, filters=filters)
-    write_fn = writer.write
   else:
-    writer = io_utils.make_tfrecord_writer(outfile)
-    write_fn = lambda variant: writer.write(variant.SerializeToString())
-
-  return writer, write_fn
+    return io_utils.RawProtoWriterAdaptor(
+        io_utils.make_tfrecord_writer(outfile))
 
 
 def make_read_writer(outfile, contigs=None):

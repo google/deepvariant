@@ -836,6 +836,9 @@ class RegionProcessor(object):
           examples.append(example)
     logging.info('Found %s candidates in %s [%0.2fs elapsed]', len(examples),
                  ranges.to_literal(region), region_timer.Stop())
+    # Useful for debugging what examples are emitted...
+    # for example in examples:
+    #   logging.info('  example: %s', tf_utils.example_key(example))
     return candidates, examples, gvcfs
 
   def region_reads(self, region):
@@ -998,39 +1001,61 @@ class OutputsWriter(object):
   """Manages all of the outputs of make_examples in a single place."""
 
   def __init__(self, options):
-    self._writers = {}
+    self._writers = {k: None for k in ['candidates', 'examples', 'gvcfs']}
+
     if options.candidates_filename:
-      logging.info('Writing candidates to %s', options.candidates_filename)
       self._add_writer('candidates',
-                       io_utils.make_tfrecord_writer(
-                           options.candidates_filename))
+                       io_utils.RawProtoWriterAdaptor(
+                           io_utils.make_tfrecord_writer(
+                               options.candidates_filename)))
+
     if options.examples_filename:
-      logging.info('Writing examples to %s', options.examples_filename)
       self._add_writer('examples',
-                       io_utils.make_tfrecord_writer(options.examples_filename))
+                       io_utils.RawProtoWriterAdaptor(
+                           io_utils.make_tfrecord_writer(
+                               options.examples_filename)))
+
     if options.gvcf_filename:
-      logging.info('Writing a gvcf to %s', options.gvcf_filename)
       self._add_writer('gvcfs',
-                       io_utils.make_tfrecord_writer(options.gvcf_filename))
+                       io_utils.RawProtoWriterAdaptor(
+                           io_utils.make_tfrecord_writer(
+                               options.gvcf_filename)))
+
+  def write_examples(self, *examples):
+    self._write('examples', *examples)
+
+  def write_gvcfs(self, *gvcfs):
+    self._write('gvcfs', *gvcfs)
+
+  def write_candidates(self, *candidates):
+    self._write('candidates', *candidates)
 
   def _add_writer(self, name, writer):
+    if name not in self._writers:
+      raise ValueError(
+          'Expected writer {} to have a None binding in writers.'.format(name))
+    if self._writers[name] is not None:
+      raise ValueError('Expected writer {} to be bound to None in writers but '
+                       'saw {} instead'.format(name, self._writers[name]))
     self._writers[name] = writer
 
   def __enter__(self):
     """API function to support with syntax."""
     for writer in self._writers.itervalues():
-      writer.__enter__()
+      if writer is not None:
+        writer.__enter__()
     return self
 
   def __exit__(self, exception_type, exception_value, traceback):
     for writer in self._writers.itervalues():
-      writer.__exit__(exception_type, exception_value, traceback)
+      if writer is not None:
+        writer.__exit__(exception_type, exception_value, traceback)
 
-  def write(self, writer_name, *protos):
-    writer = self._writers.get(writer_name, None)
+  def _write(self, writer_name, *protos):
+    writer = self._writers[writer_name]
     if writer:
       for proto in protos:
-        writer.write(proto.SerializeToString())
+        writer.write(proto)
 
 
 def make_examples_runner(options):
@@ -1057,20 +1082,19 @@ def make_examples_runner(options):
       n_candidates += len(candidates)
       n_regions += 1
 
-      writer.write('candidates', *candidates)
+      writer.write_candidates(*candidates)
 
       # If we have any gvcf records, write them out. This if also serves to
       # protect us from trying to write to the gvcfs output of writer when gvcf
       # generation is turned off. In that case, gvcfs will always be empty and
       # we'll never execute the write.
       if gvcfs:
-        writer.write('gvcfs', *gvcfs)
+        writer.write_gvcfs(*gvcfs)
 
-      for example in examples:
-        if in_training_mode(options):
-          truth_variant = tf_utils.example_truth_variant(example)
-          counters.update(truth_variant)
-        writer.write('examples', example)
+      if in_training_mode(options):
+        for example in examples:
+          counters.update(tf_utils.example_truth_variant(example))
+      writer.write_examples(*examples)
 
   logging.info('Found %s candidate variants', n_candidates)
   if in_training_mode(options):
