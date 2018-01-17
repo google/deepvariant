@@ -64,6 +64,7 @@ import googleapiclient
 _MAKE_EXAMPLES_JOB_NAME = 'make_examples'
 _CALL_VARIANTS_JOB_NAME = 'call_variants'
 _POSTPROCESS_VARIANTS_JOB_NAME = 'postprocess_variants'
+_DEFAULT_BOOT_DISK_SIZE_GB = 50
 
 # Error codes returned by the Pipelines API when a VM is stopped unexpectedly.
 # This can be due to preemption or unexpected VM crashes.
@@ -121,7 +122,7 @@ def _get_base_job_args(pipeline_args):
   """Base arguments that are common among all jobs."""
   return [
       '--project', pipeline_args.project, '--logging', pipeline_args.logging,
-      '--zones'
+      '--boot-disk-size', _DEFAULT_BOOT_DISK_SIZE_GB, '--zones'
   ] + pipeline_args.zones + ['--wait']
 
 
