@@ -156,9 +156,7 @@ def _run_job(dsub_args, pipeline_args, worker_index=0):
   max_tries = pipeline_args.max_non_preemptible_tries
   use_preemptibles = False
   preemptible_dsub_args = dsub_args[:] + ['--preemptible']
-  # Determine whether preemptible VMs should be used. Note that preemptible
-  # GPUs are not currently supported.
-  if pipeline_args.preemptible and not pipeline_args.gpu:
+  if pipeline_args.preemptible:
     max_tries += pipeline_args.max_preemptible_tries
     use_preemptibles = True
 
@@ -467,9 +465,7 @@ def run(argv=None):
       '--preemptible',
       default=False,
       action='store_true',
-      help=('Use preemptible VMs for the pipeline. Note that preemptible GPUs '
-            'are not yet supported, so regular VMs will be used for the '
-            'call_variants setp if GPU is also set.'))
+      help=('Use preemptible VMs for the pipeline.'))
   parser.add_argument(
       '--max_preemptible_tries',
       type=int,
