@@ -376,17 +376,17 @@ class VariantCallerTests(parameterized.TestCase):
               dict(start=8, end=9, ref='T', gq=59),
               dict(start=9, end=10, ref='G', gq=56),
           ]),
-      # Binning by 3 rounds down but does not cause any records to be merged.
+      # Binning by 3 does not cause any records to be merged.
       dict(
           gq_resolution=3,
           expecteds=[
-              dict(start=1, end=2, ref='A', gq=52),
-              dict(start=2, end=3, ref='C', gq=55),
+              dict(start=1, end=2, ref='A', gq=53),
+              dict(start=2, end=3, ref='C', gq=56),
               dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=7, ref='A', gq=70),
-              dict(start=7, end=8, ref='C', gq=82),
-              dict(start=8, end=9, ref='T', gq=58),
-              dict(start=9, end=10, ref='G', gq=55),
+              dict(start=6, end=7, ref='A', gq=72),
+              dict(start=7, end=8, ref='C', gq=83),
+              dict(start=8, end=9, ref='T', gq=59),
+              dict(start=9, end=10, ref='G', gq=56),
           ]),
       # Binning by 4 causes the first merge, of the first two records.
       dict(
@@ -394,26 +394,26 @@ class VariantCallerTests(parameterized.TestCase):
           expecteds=[
               dict(start=1, end=3, ref='A', gq=53),
               dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=7, ref='A', gq=69),
-              dict(start=7, end=8, ref='C', gq=81),
-              dict(start=8, end=9, ref='T', gq=57),
-              dict(start=9, end=10, ref='G', gq=53),
+              dict(start=6, end=7, ref='A', gq=72),
+              dict(start=7, end=8, ref='C', gq=83),
+              dict(start=8, end=9, ref='T', gq=59),
+              dict(start=9, end=10, ref='G', gq=56),
           ]),
       dict(
           gq_resolution=10,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=51),
+              dict(start=1, end=3, ref='A', gq=53),
               dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=7, ref='A', gq=71),
-              dict(start=7, end=8, ref='C', gq=81),
-              dict(start=8, end=10, ref='T', gq=51),
+              dict(start=6, end=7, ref='A', gq=72),
+              dict(start=7, end=8, ref='C', gq=83),
+              dict(start=8, end=10, ref='T', gq=56),
           ]),
       dict(
           gq_resolution=45,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=46),
+              dict(start=1, end=3, ref='A', gq=53),
               dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=10, ref='A', gq=46),
+              dict(start=6, end=10, ref='A', gq=56),
           ]),
   )
   def test_quantize_gvcfs(self, gq_resolution, expecteds):

@@ -242,9 +242,9 @@ class VariantCaller(object):
         summary_counts: A single AlleleCountSummary.
 
       Returns:
-        A tuple of summary_counts, GQ, and genotype likelihoods for
-        summary_counts where GQ and genotype_likelihood are calculated by
-        self.reference_confidence.
+        A tuple of summary_counts, quantized GQ, raw GQ, and genotype
+        likelihoods for summary_counts where raw GQ and genotype_likelihood are
+        calculated by self.reference_confidence.
 
       Raises:
         ValueError: The reference base is not a valid DNA or IUPAC base.
@@ -253,7 +253,7 @@ class VariantCaller(object):
         if summary_counts.ref_base in EXTENDED_IUPAC_CODES:
           # Skip calculating gq and likelihoods, since this is an ambiguous
           # reference base.
-          gq, likelihoods = None, None
+          quantized_gq, raw_gq, likelihoods = None, None, None
         else:
           raise ValueError('Invalid reference base={} found during gvcf '
                            'calculation'.format(summary_counts.ref_base))
@@ -261,8 +261,8 @@ class VariantCaller(object):
         n_ref = summary_counts.ref_supporting_read_count
         n_total = summary_counts.total_read_count
         raw_gq, likelihoods = self.reference_confidence(n_ref, n_total)
-        gq = _quantize_gq(raw_gq, self.options.gq_resolution)
-      return summary_counts, gq, likelihoods
+        quantized_gq = _quantize_gq(raw_gq, self.options.gq_resolution)
+      return summary_counts, quantized_gq, raw_gq, likelihoods
 
     # Combines contiguous, compatible single-bp blocks into larger gVCF blocks,
     # respecting non-reference variants interspersed among them. Yields each
@@ -276,12 +276,13 @@ class VariantCaller(object):
         # skip this group.
         continue
       combinable = list(combinable)
-      summary_counts, gq, likelihoods = combinable[0]
+      min_gq = min(raw_gq_value for _, _, raw_gq_value, _ in combinable)
+      summary_counts, _, _, likelihoods = combinable[0]
       call = variants_pb2.VariantCall(
           call_set_name=self.options.sample_name,
           genotype=[0, 0],
           genotype_likelihood=likelihoods)
-      variantutils.set_variantcall_gq(call, gq)
+      variantutils.set_variantcall_gq(call, min_gq)
       yield variants_pb2.Variant(
           reference_name=summary_counts.reference_name,
           reference_bases=summary_counts.ref_base,
