@@ -111,7 +111,7 @@ flags.DEFINE_string(
     'Optional. Path where we should write gVCF records in TFRecord of Variant '
     'proto format.')
 flags.DEFINE_integer(
-    'gvcf_gq_binsize', 1,
+    'gvcf_gq_binsize', 5,
     'Bin size in which to quantize gVCF genotype qualities. Larger bin size '
     'reduces the number of gVCF records at a loss of quality granularity.')
 flags.DEFINE_string(

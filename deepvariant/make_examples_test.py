@@ -170,7 +170,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
-    FLAGS.gvcf_gq_binsize = 1
+    FLAGS.gvcf_gq_binsize = 5
 
     if mode == 'calling':
       FLAGS.gvcf = test_utils.test_tmpfile(
@@ -220,6 +220,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           io_utils.read_tfrecords(FLAGS.gvcf, proto=variants_pb2.Variant))
       self.verify_variants(gvcfs, region, options, is_gvcf=True)
       self.verify_contiguity(gvcfs, region)
+      gvcf_golden_file = _sharded(test_utils.GOLDEN_POSTPROCESS_GVCF_INPUT,
+                                  num_shards)
+      expected_gvcfs = list(
+          io_utils.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant))
+      self.assertItemsEqual(gvcfs, expected_gvcfs)
 
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call all of the real variants (according to NIST's Genome
@@ -296,7 +301,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(region.end, contiguous_variants[-1].end)
 
     # After this loop completes successfully we know that together the GVCF and
-    # Variants form a fully contingous cover of our calling interval, as
+    # Variants form a fully contiguous cover of our calling interval, as
     # expected.
     for v1, v2 in zip(contiguous_variants, contiguous_variants[1:]):
       # Sequential variants should be contiguous, meaning that v2.start should
