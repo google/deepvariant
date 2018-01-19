@@ -69,7 +69,9 @@ challenge.
 DNAnexus [posted an extensive
 evaluation](https://blog.dnanexus.com/2017-12-05-evaluating-deepvariant-googles-machine-learning-variant-caller/)
 of several variant calling methods, including DeepVariant, using a variety of
-read sets from HG001, HG002, and HG005.
+read sets from HG001, HG002, and HG005. They have also evaluated DeepVariant
+under a variety of [noisy sequencing
+conditions](https://blog.dnanexus.com/2018-01-16-evaluating-the-performance-of-ngs-pipelines-on-noisy-wgs-data/).
 
 ## Support
 
