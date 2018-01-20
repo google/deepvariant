@@ -47,8 +47,9 @@ from deepvariant.core.genomics import variants_pb2
 
 FLAGS = flags.FLAGS
 
-# In the OSS version this will be ''.
+# In the OSS version these will be ''.
 DATADIR = ''
+DEFAULT_WORKSPACE = ''
 
 
 def genomics_testdata(path):
@@ -66,14 +67,14 @@ def genomics_testdata(path):
   if hasattr(FLAGS, 'test_srcdir'):
     # Google code uses FLAG.test_srcdir
     # TensorFlow uses a routine googletest.test_src_dir_path.
-    test_workspace = os.environ.get('TEST_WORKSPACE')
+    test_workspace = os.environ.get('TEST_WORKSPACE', DEFAULT_WORKSPACE)
     test_srcdir = os.path.join(FLAGS.test_srcdir, test_workspace)
   else:
     # In bazel TEST_SRCDIR points at the runfiles directory, and
     # TEST_WORKSPACE names the workspace.  We need to append to the
     # path the name of the workspace in order to get to the root of our
     # source tree.
-    test_workspace = os.environ.get('TEST_WORKSPACE')
+    test_workspace = os.environ['TEST_WORKSPACE']
     test_srcdir = os.path.join(os.environ['TEST_SRCDIR'], test_workspace)
   return os.path.join(test_srcdir, DATADIR, path)
 
