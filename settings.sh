@@ -70,7 +70,7 @@ export DV_GPU_BUILD="${DV_GPU_BUILD:-0}"
 # optimized wheel because all GCP instances have at least Sandy Bridge or better
 # chipsets, so this wheel should run anywhere on GCP.
 export DV_USE_GCP_OPTIMIZED_TF_WHL="${DV_USE_GCP_OPTIMIZED_TF_WHL:-1}"
-export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-1.4.1.deepvariant_gcp-cp27-none-linux_x86_64.whl"
+export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-1.5.0rc1.deepvariant_gcp-cp27-none-linux_x86_64.whl"
 export GCP_OPTIMIZED_TF_WHL_PATH="${DV_PACKAGE_BUCKET_PATH}/tensorflow"
 export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"
 
@@ -87,6 +87,11 @@ export DV_INSTALL_GPU_DRIVERS="${DV_INSTALL_GPU_DRIVERS:-0}"
 export PYTHON_BIN_PATH=$(which python)
 export USE_DEFAULT_PYTHON_LIB_PATH=1
 export DV_COPT_FLAGS="--copt=-msse4.1 --copt=-msse4.2 --copt=-mavx --copt=-O3"
+
+# Set the TensorFlow commit SHA that we use for the release. This is the latest
+# commit to the master branch as of 2018 Jan 22. See:
+# https://github.com/tensorflow/tensorflow/commit/57b32eabca4597241120cb4aba8308a431853c30
+export DV_TENSORFLOW_GIT_SHA="57b32eabca4597241120cb4aba8308a431853c30"
 
 function note_build_stage {
   echo "========== [$(date)] Stage '${1}' starting"

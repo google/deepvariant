@@ -333,6 +333,7 @@ py_test(
         "//deepvariant/testing:flagsaver",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
+        "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
@@ -549,6 +550,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":modeling",
+        "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
@@ -634,6 +636,7 @@ py_test(
         "//deepvariant/core:variantutils",
         "//deepvariant/testing:flagsaver",
         "@com_google_absl_py//absl/flags",
+        "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )

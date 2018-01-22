@@ -39,6 +39,7 @@ import sys
 
 
 from tensorflow import flags
+from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 import numpy as np
@@ -371,4 +372,4 @@ class CallVariantsUnitTests(
 
 
 if __name__ == '__main__':
-  tf.test.main()
+  absltest.main()

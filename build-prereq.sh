@@ -91,7 +91,7 @@ function update_bazel_linux {
   PATH="$HOME/bin:$PATH"
 }
 
-bazel_ver="0.8.1"
+bazel_ver="0.9.0"
 if
   v=$(bazel --bazelrc=/dev/null --nomaster_bazelrc version) &&
   echo "$v" | awk -v b="$bazel_ver" '/Build label/ { exit ($3 != b)}'
@@ -143,6 +143,7 @@ note_build_stage "Download and configure TensorFlow sources"
 (cd .. &&
  git clone https://github.com/tensorflow/tensorflow &&
  cd tensorflow &&
+ git checkout "${DV_TENSORFLOW_GIT_SHA}" &&
  echo | ./configure)
 
 note_build_stage "build-prereq.sh complete"

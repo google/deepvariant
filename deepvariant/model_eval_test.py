@@ -37,6 +37,7 @@ import os
 
 
 from tensorflow import flags
+from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 import numpy.testing as npt
@@ -169,4 +170,4 @@ class ModelEvalTest(
 
 
 if __name__ == '__main__':
-  tf.test.main()
+  absltest.main()
