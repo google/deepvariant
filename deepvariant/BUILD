@@ -353,6 +353,7 @@ py_test(
         ":call_variants",
         ":modeling",
         ":py_test_utils",
+        "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )

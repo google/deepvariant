@@ -34,6 +34,7 @@ from __future__ import print_function
 
 
 
+from absl.testing import absltest
 from absl.testing import parameterized
 import six
 import tensorflow as tf
@@ -61,4 +62,4 @@ class CallVariantsAcceleratorTests(
 
 
 if __name__ == '__main__':
-  tf.test.main()
+  absltest.main()
