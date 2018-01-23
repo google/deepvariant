@@ -53,8 +53,8 @@ MODEL="${MODELS_DIR}/model.ckpt"
 DATA_DIR="${INPUT_DIR}/data"
 REF="${DATA_DIR}/hs37d5.fa.gz"
 BAM="${DATA_DIR}/HG002_NIST_150bp_50x.bam"
-TRUTH_VCF="${DATA_DIR}/HG002_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_CHROM1-22_v3.2.2_highconf.vcf.gz"
-TRUTH_BED="${DATA_DIR}/HG002_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_CHROM1-22_v3.2.2_highconf.bed"
+TRUTH_VCF="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"
+TRUTH_BED="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"
 
 N_SHARDS="64"
 
@@ -149,11 +149,7 @@ The original source of these files are:
 
     These come from NIST, as part of the [Genomes in a Bottle
     project](http://jimb.stanford.edu/giab/). They are downloaded from
-    [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.2.2](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.2.2)
-
-    We picked version 3.2.2 in this case study because we want the final F1
-    scores to be comparable to [the results from the Truth
-    Challenge](https://precision.fda.gov/challenges/truth/results-explore).
+    [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/)
 
 You can simply run the command below to get all the data you need for this case
 study.
@@ -273,7 +269,7 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
   -o "${OUTPUT_DIR}/happy.output"
 ```
 
-Type  | Recall   | Precision | F1_Score
------ | -------- | --------- | --------
-INDEL | 0.993472 | 0.996662  | 0.995065
-SNP   | 0.999753 | 0.999885  | 0.999819
+Type  | # FN | # FP | Recall   | Precision | F1_Score
+----- | ---- | ---- | -------- | --------- | --------
+INDEL | 2341 | 918  | 0.995168 | 0.998100  | 0.996632
+SNP   | 2204 | 876  | 0.999277 | 0.999713  | 0.999495
