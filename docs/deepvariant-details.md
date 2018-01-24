@@ -195,7 +195,7 @@ Key changes and improvements include:
 We have made a number of improvements to the methodology as well. The biggest
 change was to move away from RGB-encoded (3-channel) pileup images and instead
 represent the aligned read data using a multi-channel tensor data layout. We
-current represent the data as a 7-channel raw tensor in which we encode:
+currently represent the data as a 6-channel raw tensor in which we encode:
 
 *   The read base (A, C, G, T)
 *   The base's quality score
@@ -203,7 +203,6 @@ current represent the data as a 7-channel raw tensor in which we encode:
 *   The read's strand (positive or negative)
 *   Does the read support the allele being evaluated?
 *   Does the base match the reference genome at this position?
-*   The CIGAR operation length for the current op
 
 These are all readily derived from the information found in the BAM file
 encoding of each read.
