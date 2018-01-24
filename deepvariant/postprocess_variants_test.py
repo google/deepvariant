@@ -102,11 +102,12 @@ def _create_variant(ref_name, start, ref_base, alt_bases, qual, filter_field,
       sample_name=_DEFAULT_SAMPLE_NAME)
 
 
-def _create_variant_with_alleles(ref=None, alts=None):
+def _create_variant_with_alleles(ref=None, alts=None, start=0):
   """Creates a Variant record with specified alternate_bases."""
   return variants_pb2.Variant(
       reference_bases=ref,
       alternate_bases=alts,
+      start=start,
       calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)])
 
 
@@ -787,21 +788,45 @@ class PostprocessVariantsTest(parameterized.TestCase):
   @parameterized.parameters(
       # Check that we are simplifying alleles and that the simplification deps
       # on the alleles we've removed.
-      (['CAA', 'CA', 'C'], [], ['CAA', 'CA', 'C']),
+      dict(
+          alleles=['CAA', 'CA', 'C'],
+          start=5,
+          alt_alleles_to_remove=[],
+          expected_alleles=['CAA', 'CA', 'C'],
+          expected_end=8),
       # Removing the C allele allows us to simplify CAA + CA => CA + C.
-      (['CAA', 'CA', 'C'], ['C'], ['CA', 'C']),
+      dict(
+          alleles=['CAA', 'CA', 'C'],
+          start=4,
+          alt_alleles_to_remove=['C'],
+          expected_alleles=['CA', 'C'],
+          expected_end=6),
       # Removing the CA allele doens't allow any simplification.
-      (['CAA', 'CA', 'C'], ['CA'], ['CAA', 'C']),
+      dict(
+          alleles=['CAA', 'CA', 'C'],
+          start=3,
+          alt_alleles_to_remove=['CA'],
+          expected_alleles=['CAA', 'C'],
+          expected_end=6),
       # Make sure we keep at least one anchor base when pruning.
-      (['CCA', 'CA', 'T'], ['T'], ['CC', 'C']),
+      dict(
+          alleles=['CCA', 'CA', 'T'],
+          start=2,
+          alt_alleles_to_remove=['T'],
+          expected_alleles=['CC', 'C'],
+          expected_end=4),
   )
-  def test_simplify_alleles(self, alleles, alt_alleles_to_remove, expected):
+  def test_simplify_alleles(self, alleles, start, alt_alleles_to_remove,
+                            expected_alleles, expected_end):
     """Test that prune_alleles + simplify_alleles works as expected."""
-    variant = _create_variant_with_alleles(ref=alleles[0], alts=alleles[1:])
+    variant = _create_variant_with_alleles(
+        ref=alleles[0], alts=alleles[1:], start=start)
     pruned = postprocess_variants.prune_alleles(variant, alt_alleles_to_remove)
     simplified = postprocess_variants.simplify_alleles(pruned)
-    self.assertEqual(simplified.reference_bases, expected[0])
-    self.assertEqual(simplified.alternate_bases, expected[1:])
+    self.assertEqual(simplified.reference_bases, expected_alleles[0])
+    self.assertEqual(simplified.alternate_bases, expected_alleles[1:])
+    self.assertEqual(simplified.start, start)
+    self.assertEqual(simplified.end, expected_end)
 
   def test_merge_predictions_simplifies_alleles(self):
     """Checks that merge_predictions simplifies alleles."""

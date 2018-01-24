@@ -554,6 +554,7 @@ def simplify_alleles(variant):
                                                      *variant.alternate_bases)
   variant.reference_bases = simplified_alleles[0]
   variant.alternate_bases[:] = simplified_alleles[1:]
+  variant.end = variant.start + len(variant.reference_bases)
   return variant
 
 
