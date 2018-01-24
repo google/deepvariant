@@ -32,12 +32,12 @@
 // UnitTests for allelecounter.{h,cc}.
 #include "deepvariant/allelecounter.h"
 
-#include "deepvariant/core/genomics/position.pb.h"
 #include "deepvariant/core/reference_fai.h"
 #include "deepvariant/core/reference_test.h"
 #include "deepvariant/core/test_utils.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/utils.h"
+#include "deepvariant/core/genomics/position.pb.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -52,8 +52,8 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using learning::genomics::v1::LinearAlignment;
-using learning::genomics::v1::Read;
+using nucleus::genomics::v1::LinearAlignment;
+using nucleus::genomics::v1::Read;
 using core::GenomeReference;
 using core::TestFastaPath;
 using core::MakePosition;
@@ -97,7 +97,7 @@ class AlleleCounterTest : public ::testing::Test {
   std::unique_ptr<AlleleCounter> MakeCounter(const string& chr,
                                              const int64 start,
                                              const int64 end) {
-    ::learning::genomics::v1::Range range = MakeRange(chr, start, end);
+    ::nucleus::genomics::v1::Range range = MakeRange(chr, start, end);
     // redacted
     // tensorflow/compiler/xla/ptr_util.h.
     return std::unique_ptr<AlleleCounter>(

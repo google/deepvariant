@@ -58,8 +58,8 @@ using ::testing::Pointwise;
 using ::testing::SizeIs;
 using learning::genomics::testing::proto::IgnoringFieldPaths;
 using learning::genomics::testing::proto::Partially;
-using learning::genomics::v1::Read;
-using learning::genomics::v1::Range;
+using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::Range;
 using tensorflow::StringPiece;
 
 // Constants for all filenames used in this test file.

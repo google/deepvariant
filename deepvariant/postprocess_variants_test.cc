@@ -31,8 +31,8 @@
 
 #include "deepvariant/postprocess_variants.h"
 
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/core/test_utils.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 
 #include <gmock/gmock-generated-matchers.h>

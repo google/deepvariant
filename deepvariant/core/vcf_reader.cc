@@ -32,14 +32,14 @@
 // Implementation of vcf_reader.h
 #include "deepvariant/core/vcf_reader.h"
 
-#include "deepvariant/core/genomics/range.pb.h"
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/core/hts_path.h"
 #include "deepvariant/core/math.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/core/vcf_conversion.h"
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
+#include "deepvariant/core/genomics/range.pb.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/strings/str_util.h"
@@ -52,9 +52,9 @@ namespace core {
 namespace tf = tensorflow;
 
 using std::vector;
-using learning::genomics::v1::Range;
-using learning::genomics::v1::Variant;
-using learning::genomics::v1::VariantCall;
+using nucleus::genomics::v1::Range;
+using nucleus::genomics::v1::Variant;
+using nucleus::genomics::v1::VariantCall;
 using tensorflow::strings::StrCat;
 
 namespace {
@@ -267,7 +267,7 @@ tf::Status ConvertToPb(
 class VcfQueryIterable : public VariantIterable {
  public:
   // Advance to the next record.
-  StatusOr<bool> Next(learning::genomics::v1::Variant* out) override;
+  StatusOr<bool> Next(nucleus::genomics::v1::Variant* out) override;
 
   // Constructor will be invoked via VcfReader::Query.
   VcfQueryIterable(const VcfReader* reader,
@@ -292,7 +292,7 @@ class VcfQueryIterable : public VariantIterable {
 class VcfFullFileIterable : public VariantIterable {
  public:
   // Advance to the next record.
-  StatusOr<bool> Next(learning::genomics::v1::Variant* out) override;
+  StatusOr<bool> Next(nucleus::genomics::v1::Variant* out) override;
 
   // Constructor will be invoked via VcfReader::Iterate.
   VcfFullFileIterable(const VcfReader* reader,

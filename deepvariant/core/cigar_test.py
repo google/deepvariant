@@ -39,8 +39,8 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from deepvariant.core import cigar
 from deepvariant.core.genomics import cigar_pb2
+from deepvariant.core import cigar
 
 _CIGAR_TUPLES_AND_CIGAR_UNITS = [
     ((1, 'M'),

@@ -36,8 +36,8 @@ from __future__ import print_function
 
 from absl import logging
 
-from deepvariant.core import variantutils
 from deepvariant.core.genomics import variants_pb2
+from deepvariant.core import variantutils
 
 
 class VariantLabeler(object):
@@ -47,7 +47,7 @@ class VariantLabeler(object):
   given candidate variant using data from a vcf_reader and an optional RangeSet
   of confident regions. The basic logic of this class is something like:
 
-  candidate = learning.genomics.deepvariant.core.genomics.Variant(...)
+  candidate = third_party.nucleus.protos.Variant(...)
   labeler = VariantLabeler(vcf_reader, confident_regions)
   is_confident, truth_variant = labeler.match(candidate)
   if is_confident:
@@ -95,13 +95,13 @@ class VariantLabeler(object):
 
     Args:
       variant: Our
-        candidate learning.genomics.deepvariant.core.genomics.Variant
+        candidate third_party.nucleus.protos.Variant
         variant.
 
     Returns:
       A tuple of (match_status, truth_variant) where match_status is True if
       we are confident in our truth_variant call or False if not. truth_variant
-      is a learning.genomics.deepvariant.core.genomics.Variant object of
+      is a third_party.nucleus.protos.Variant object of
       the truth variant that matched
       variant, or None if none was found and we aren't confident in being
       hom-ref here, or a synthetic variant with the same position and alleles as
@@ -122,7 +122,7 @@ class VariantLabeler(object):
 
     Args:
       variant: Our
-        candidate learning.genomics.deepvariant.core.genomics.Variant
+        candidate third_party.nucleus.protos.Variant
         variant.
 
     Returns:
@@ -185,10 +185,10 @@ class VariantLabeler(object):
 
     Args:
       candidate_variant: Our
-        candidate learning.genomics.deepvariant.core.genomics.Variant
+        candidate third_party.nucleus.protos.Variant
         variant.
       truth_variant: Our
-        learning.genomics.deepvariant.core.genomics.Variant
+        third_party.nucleus.protos.Variant
         truth variant as returned by match().
       alt_alleles: An iterable of strings. Each element should be an alternate
         allele in variant that is considered "alt" when labeling variant.

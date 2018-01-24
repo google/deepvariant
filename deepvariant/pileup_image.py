@@ -176,11 +176,11 @@ class PileupImageCreator(object):
     """Gets the reads used to construct the pileup image around variant.
 
     Args:
-      variant: A learning.genomics.deepvariant.core.genomics.Variant proto
+      variant: A third_party.nucleus.protos.Variant proto
         describing the variant we are creating the pileup image of.
 
     Returns:
-      A list of learning.genomics.deepvariant.core.genomics.Read protos.
+      A list of third_party.nucleus.protos.Read protos.
     """
     query_start = variant.start - self._options.read_overlap_buffer_bp
     query_end = variant.end + self._options.read_overlap_buffer_bp
@@ -191,7 +191,7 @@ class PileupImageCreator(object):
     """Gets the reference bases used to make the pileup image around variant.
 
     Args:
-      variant: A learning.genomics.deepvariant.core.genomics.Variant proto
+      variant: A third_party.nucleus.protos.Variant proto
         describing the variant we are creating the pileup image of.
 
     Returns:
@@ -216,7 +216,7 @@ class PileupImageCreator(object):
     leaving us with the set of alts for the pileup image encoder.
 
     Args:
-      variant: learning.genomics.deepvariant.core.genomics.Variant to
+      variant: third_party.nucleus.protos.Variant to
         generate the alt allele combinations for.
 
     Yields:
@@ -250,7 +250,7 @@ class PileupImageCreator(object):
       refbases: A string options.width in length containing the reference base
         sequence to encode. The middle base of this string should be at the
         start of the variant in dv_call.
-      reads: Iterable of learning.genomics.deepvariant.core.genomics.Read
+      reads: Iterable of third_party.nucleus.protos.Read
         objects that we'll use to
         encode the read information supporting our call. Assumes each read is
         aligned and is well-formed (e.g., has bases and quality scores, cigar).

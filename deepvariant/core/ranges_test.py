@@ -39,10 +39,10 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 
-from deepvariant.core import ranges
-from deepvariant.core import test_utils
 from deepvariant.core.genomics import position_pb2
 from deepvariant.core.genomics import variants_pb2
+from deepvariant.core import ranges
+from deepvariant.core import test_utils
 from deepvariant.core.protos import core_pb2
 
 _TEST_BED_REGIONS = [

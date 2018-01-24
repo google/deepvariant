@@ -31,9 +31,9 @@
 
 #include "deepvariant/core/utils.h"
 
+#include "deepvariant/core/test_utils.h"
 #include "deepvariant/core/genomics/cigar.pb.h"
 #include "deepvariant/core/genomics/struct.pb.h"
-#include "deepvariant/core/test_utils.h"
 
 #include "deepvariant/testing/protocol-buffer-matchers.h"
 
@@ -47,11 +47,11 @@ namespace learning {
 namespace genomics {
 namespace core {
 
-using learning::genomics::v1::CigarUnit;
-using learning::genomics::v1::LinearAlignment;
-using learning::genomics::v1::Read;
-using learning::genomics::v1::Variant;
-using learning::genomics::v1::VariantCall;
+using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::LinearAlignment;
+using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::Variant;
+using nucleus::genomics::v1::VariantCall;
 using ::testing::Eq;
 using ::testing::ElementsAre;
 using learning::genomics::testing::EqualsProto;
@@ -535,21 +535,21 @@ TEST(CompareVariants, BasicCaseWithDifferentName) {
 }
 
 TEST(SetValuesValue, WorksWithInt) {
-  learning::genomics::v1::Value value;
+  nucleus::genomics::v1::Value value;
   int v = 10;
   SetValuesValue<int>(v, &value);
   EXPECT_THAT(value.number_value(), Eq(v));
 }
 
 TEST(SetValuesValue, WorksWithDouble) {
-  learning::genomics::v1::Value value;
+  nucleus::genomics::v1::Value value;
   double v = 1.23456;
   SetValuesValue<double>(v, &value);
   EXPECT_THAT(value.number_value(), Eq(v));
 }
 
 TEST(SetValuesValue, WorksWithString) {
-  learning::genomics::v1::Value value;
+  nucleus::genomics::v1::Value value;
   string v = "str";
   SetValuesValue<string>(v, &value);
   EXPECT_THAT(value.string_value(), Eq(v));

@@ -35,10 +35,10 @@
 #include <algorithm>
 #include <cstddef>
 
-#include "deepvariant/core/genomics/cigar.pb.h"
-#include "deepvariant/core/genomics/position.pb.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/utils.h"
+#include "deepvariant/core/genomics/cigar.pb.h"
+#include "deepvariant/core/genomics/position.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
@@ -51,10 +51,10 @@ namespace deepvariant {
 // the string key constructed from a Read with ReadKey().
 static constexpr char kFragmentNameReadNumberSeparator[] = "/";
 
-using learning::genomics::v1::Range;
-using learning::genomics::v1::Read;
-using learning::genomics::v1::CigarUnit;
-using learning::genomics::v1::LinearAlignment;
+using nucleus::genomics::v1::Range;
+using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::LinearAlignment;
 using core::GenomeReference;
 using tensorflow::strings::StrCat;
 using tensorflow::StringPiece;
@@ -118,7 +118,7 @@ int TotalAlleleCounts(const AlleleCount& allele_count) {
 // the quality threshold to be used for generating alleles for our counts.
 // offset + len must be less than or equal to the length of the aligned
 // sequence of read or a CHECK will fail.
-bool CanBasesBeUsed(const learning::genomics::v1::Read& read, int offset,
+bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
                     int len, const AlleleCounterOptions& options) {
   CHECK_LE(offset + len, read.aligned_quality_size());
 

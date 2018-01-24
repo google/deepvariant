@@ -46,11 +46,11 @@ namespace learning {
 namespace genomics {
 namespace core {
 
-using learning::genomics::v1::CigarUnit;
-using learning::genomics::v1::Position;
-using learning::genomics::v1::Range;
-using learning::genomics::v1::Read;
-using learning::genomics::v1::Variant;
+using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::Position;
+using nucleus::genomics::v1::Range;
+using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::Variant;
 
 using tensorflow::strings::StrCat;
 using tensorflow::StringPiece;
@@ -291,7 +291,7 @@ bool EndsWith(const string& s, const string& t) {
 }
 
 std::vector<string> ListValues(
-    const learning::genomics::v1::ListValue& list_value) {
+    const nucleus::genomics::v1::ListValue& list_value) {
   std::vector<string> values;
   for (const auto& value : list_value.values()) {
     values.push_back(value.string_value());

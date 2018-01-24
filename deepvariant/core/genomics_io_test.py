@@ -39,12 +39,12 @@ from absl.testing import parameterized
 
 import tensorflow as tf
 
+from deepvariant.core.genomics import reads_pb2
+from deepvariant.core.genomics import struct_pb2
 from deepvariant.core import genomics_io
 from deepvariant.core import io_utils
 from deepvariant.core import ranges
 from deepvariant.core import test_utils
-from deepvariant.core.genomics import reads_pb2
-from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.protos import core_pb2
 
 

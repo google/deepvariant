@@ -35,8 +35,8 @@
 #include <memory>
 #include <vector>
 
-#include "deepvariant/core/genomics/reads.pb.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/core/genomics/reads.pb.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
@@ -65,7 +65,7 @@ class PileupImageEncoderNative {
   // Encode one read into a row of pixels for our image.
   std::unique_ptr<ImageRow> EncodeRead(
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,
-      const string& ref_bases, const learning::genomics::v1::Read& read,
+      const string& ref_bases, const nucleus::genomics::v1::Read& read,
       int image_start_pos, const std::vector<string>& alt_alleles);
 
   // Encode the reference bases into a single row of pixels.

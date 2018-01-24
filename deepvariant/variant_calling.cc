@@ -34,11 +34,11 @@
 #include <algorithm>
 #include <numeric>
 
-#include "deepvariant/core/genomics/variants.pb.h"
+#include "deepvariant/allelecounter.h"
 #include "deepvariant/core/math.h"
 #include "deepvariant/core/utils.h"
-#include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -55,8 +55,8 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using learning::genomics::v1::Variant;
-using learning::genomics::v1::VariantCall;
+using nucleus::genomics::v1::Variant;
+using nucleus::genomics::v1::VariantCall;
 using tensorflow::gtl::nullopt;
 using tensorflow::gtl::optional;
 using tensorflow::gtl::make_optional;

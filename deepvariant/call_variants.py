@@ -42,6 +42,7 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.core.genomics import variants_pb2
 from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
@@ -50,7 +51,6 @@ from deepvariant.core import htslib_gcp_oauth
 from deepvariant.core import io_utils
 from deepvariant.core import proto_utils
 from deepvariant.core import variantutils
-from deepvariant.core.genomics import variants_pb2
 from deepvariant.protos import deepvariant_pb2
 
 _ALLOW_EXECUTION_HARDWARE = [
@@ -235,7 +235,7 @@ def call_batch(sess, writer, encoded_variants, encoded_alt_allele_indices,
     writer: A object with a write() function that will be called for each
       encoded_variant and genotype likelihoods.
     encoded_variants: A [batch_size, 1] tensor of strings. Each string should be
-      a learning.genomics.deepvariant.core.genomics.Variant encoded protobuf.
+      a third_party.nucleus.protos.Variant encoded protobuf.
     encoded_alt_allele_indices: a tf.string tensor containing a serialized
       CallVariantsOutput.AltAlleleIndices proto containing the
       alternate alleles indices used as "alt" when constructing the image.

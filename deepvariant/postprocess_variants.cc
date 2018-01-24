@@ -31,10 +31,10 @@
 
 #include "deepvariant/postprocess_variants.h"
 
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/io/compression.h"
 #include "tensorflow/core/lib/io/record_reader.h"

@@ -39,12 +39,12 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/core/reference.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/core/genomics/cigar.pb.h"
 #include "deepvariant/core/genomics/position.pb.h"
 #include "deepvariant/core/genomics/range.pb.h"
 #include "deepvariant/core/genomics/reads.pb.h"
-#include "deepvariant/core/reference.h"
-#include "deepvariant/protos/deepvariant.pb.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
@@ -206,20 +206,20 @@ class AlleleCounter {
   // The GenomeReference must be available throughout the lifetime of this
   // AlleleCounter object.
   AlleleCounter(const core::GenomeReference* const ref,
-                const ::learning::genomics::v1::Range& range,
+                const ::nucleus::genomics::v1::Range& range,
                 const AlleleCounterOptions& options);
 
   // Adds the alleles from read to our AlleleCounts.
-  void Add(const ::learning::genomics::v1::Read& read);
+  void Add(const ::nucleus::genomics::v1::Read& read);
 
   // Adds the alleles from each read in reads to our AlleleCounts.
-  void Add(const std::vector<::learning::genomics::v1::Read>& reads);
+  void Add(const std::vector<::nucleus::genomics::v1::Read>& reads);
 
   // Gets the options in use by this AlleleCounter
   const AlleleCounterOptions& Options() const { return options_; }
 
   // Gets the interval we are counting alleles over.
-  const ::learning::genomics::v1::Range& Interval() const { return interval_; }
+  const ::nucleus::genomics::v1::Range& Interval() const { return interval_; }
 
   // Returns the number of basepairs in our interval.
   int64 IntervalLength() const { return interval_.end() - interval_.start(); }
@@ -246,7 +246,7 @@ class AlleleCounter {
 
   // Constructs a unique string key for this read. The key is the concatenation
   // of fragment_name, "/", and read_number.
-  string ReadKey(const ::learning::genomics::v1::Read& read);
+  string ReadKey(const ::nucleus::genomics::v1::Read& read);
 
  private:
   // Helper function to get the reference bases between offsets rel_start
@@ -261,7 +261,7 @@ class AlleleCounter {
   // Gets the base before read_offset in read, or if that would be before the
   // start of the read (i.e., read_offset == 0) then return the previous base on
   // the reference genome (at interval_offset - 1).
-  string GetPrevBase(const ::learning::genomics::v1::Read& read,
+  string GetPrevBase(const ::nucleus::genomics::v1::Read& read,
                      int read_offset, int interval_offset);
 
   // Creates a ReadAllele for an indel (type based on cigar) from read starting
@@ -272,11 +272,11 @@ class AlleleCounter {
   // implied allele isn't valid for some reason (e.g., bases are too low
   // quality).
   ReadAllele MakeIndelReadAllele(
-      const ::learning::genomics::v1::Read& read, int interval_offset,
-      int read_offset, const ::learning::genomics::v1::CigarUnit& cigar);
+      const ::nucleus::genomics::v1::Read& read, int interval_offset,
+      int read_offset, const ::nucleus::genomics::v1::CigarUnit& cigar);
 
   // Adds the ReadAlleles in to_add to our AlleleCounts.
-  void AddReadAlleles(const ::learning::genomics::v1::Read& read,
+  void AddReadAlleles(const ::nucleus::genomics::v1::Read& read,
                       const std::vector<ReadAllele>& to_add);
 
   // Our GenomeReference, which we use to get information about the reference
@@ -286,7 +286,7 @@ class AlleleCounter {
   // The interval chr from start (0-based, inclusive) to end (0-based,
   // exclusive) describing where we are counting on the genome. We will produce
   // one AlleleCount for each base in interval, from start to end (exclusive).
-  const ::learning::genomics::v1::Range interval_;
+  const ::nucleus::genomics::v1::Range interval_;
 
   // The options that are controlling how we count reads.
   const AlleleCounterOptions options_;

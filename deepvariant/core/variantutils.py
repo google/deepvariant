@@ -35,9 +35,9 @@ from __future__ import print_function
 
 import enum
 
-from deepvariant.core import ranges
 from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.genomics import variants_pb2
+from deepvariant.core import ranges
 
 # The alternate allele string for reference (no alt).
 NO_ALT_ALLELE = '.'
@@ -56,10 +56,10 @@ def decode_variants(encoded_iter):
 
   Args:
     encoded_iter: An iterable that produces binary encoded
-      learning.genomics.deepvariant.core.genomics.Variant strings.
+      third_party.nucleus.protos.Variant strings.
 
   Yields:
-    A parsed learning.genomics.deepvariant.core.genomics.Variant for each
+    A parsed third_party.nucleus.protos.Variant for each
     encoded element of encoded_iter
     in order.
   """
@@ -71,7 +71,7 @@ def variant_position(variant):
   """Returns a new Range at the start position of variant.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A new Range with the same reference_name as variant and start but an end
@@ -86,7 +86,7 @@ def variant_range(variant):
   """Returns a new Range covering variant.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A new Range with the same reference_name, start, and end as variant.
@@ -128,7 +128,7 @@ def format_filters(variant):
   If the filter field isn't set, returns '.'.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A string.
@@ -140,7 +140,7 @@ def format_alleles(variant):
   """Gets a string representation of the variants alleles.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A string ref_bases/alt1,alt2 etc.
@@ -153,7 +153,7 @@ def format_position(variant):
   """Gets a string representation of the variants position.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A string chr:start + 1 (as start is zero-based).
@@ -165,7 +165,7 @@ def is_snp(variant):
   """Is variant a SNP?
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     True if all alleles of variant are 1 bp in length.
@@ -182,7 +182,7 @@ def is_indel(variant):
   is > 1.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     True if the alleles in variant indicate an insertion/deletion event
@@ -204,7 +204,7 @@ def is_multiallelic(variant):
   """Does variant have multiple alt alleles?
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     True if variant has more than one alt allele.
@@ -220,7 +220,7 @@ def is_ref(variant):
   no mutation present (i.e., alt is the missing value).
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A boolean.
@@ -233,7 +233,7 @@ def variant_type(variant):
   """Gets the VariantType of variant.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     VariantType indicating the type of this variant.
@@ -300,7 +300,7 @@ def has_insertion(variant):
   """Does variant have an insertion?
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     True if the alleles in variant indicate an insertion event
@@ -315,7 +315,7 @@ def has_deletion(variant):
   """Does variant have a deletion?
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     True if the alleles in variant indicate an deletion event
@@ -356,8 +356,8 @@ def allele_mismatches(evalv, truev):
   the reference genome than the C=>T allele.
 
   Args:
-    evalv: A learning.genomics.deepvariant.core.genomics.Variant.
-    truev: A learning.genomics.deepvariant.core.genomics.Variant.
+    evalv: A third_party.nucleus.protos.Variant.
+    truev: A third_party.nucleus.protos.Variant.
 
   Returns:
     A set of AlleleMismatchType values.
@@ -460,7 +460,7 @@ def is_variant_call(variant,
   a variant call.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
     require_non_ref_genotype: Should we require a site with a genotype call to
       have a non-reference (het, hom-var) genotype for the site to be considered
       a variant call?
@@ -495,7 +495,7 @@ def has_genotypes(variant):
   """Does variant have genotype calls?
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     True if variant has genotype calls.
@@ -514,7 +514,7 @@ def genotype_type(variant):
   status of the genotypes in the call field of variant.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A GenotypeType.
@@ -547,7 +547,7 @@ def genotype_as_alleles(variant):
   ['A', 'C'].
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     A list of allele (string) from variant, one for each genotype in
@@ -578,7 +578,7 @@ def genotype_quality(variant, default=None):
   present otherwise returning default if its absent.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
     default: The value for GQ to return if variant has no genotypes or
       if GQ is present in the genotype call record.
 
@@ -601,7 +601,7 @@ def is_gvcf(variant):
   canonical gVCF allele GVCF_ALT_ALLELE constant exported here.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Returns:
     Boolean. True if variant is a gVCF record, False otherwise.
@@ -625,7 +625,7 @@ def genotype_ordering_in_likelihoods(variant):
   Currently this function only implements for diploid cases.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant.
+    variant: third_party.nucleus.protos.Variant.
 
   Yields:
     allele indices and strings (i, j, allele_i, allele_j) in the correct order.

@@ -36,7 +36,7 @@ package learning.genomics.deepvariant;
 // Encapsulates a list of candidate haplotype sequences for a genomic region.
 message CandidateHaplotypes {
   // The genomic region containing the candidate haplotypes.
-  learning.genomics.v1.Range span = 1;
+  nucleus.genomics.v1.Range span = 1;
 
   // The list of candidate haplotype sequences.  Each individual haplotype
   // is represented by its nucleotide sequence.

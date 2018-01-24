@@ -193,7 +193,7 @@ message Allele {
 //
 message AlleleCount {
   // The position on the genome of this AlleleCount.
-  learning.genomics.v1.Position position = 1;
+  nucleus.genomics.v1.Position position = 1;
 
   // The reference bases of this AlleleCount. Since AlleleCount currently
   // only represents a single location, this field should always be a
@@ -240,7 +240,7 @@ message AlleleCountSummary {
 message DeepVariantCall {
   // A Variant call based on the information in allele_count. Will always be a
   // non-reference variant call (no gVCF or reference records).
-  learning.genomics.v1.Variant variant = 1;
+  nucleus.genomics.v1.Variant variant = 1;
 
   // A map from an alt allele in Variant to Read key that support that allele.
   // Every alt allele in the variant will have an entry. Reference supporting
@@ -276,7 +276,7 @@ message AlleleCounterOptions {
 // The `variant` here likely doesn't have fully filled information for output to
 // a VCF file yet.
 message CallVariantsOutput {
-  learning.genomics.v1.Variant variant = 1;
+  nucleus.genomics.v1.Variant variant = 1;
 
   // The alt allele indices is represented as a sub-message so that it's easier
   // to re-use as a standalone proto for encoding+decoding.

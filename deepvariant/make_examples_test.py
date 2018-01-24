@@ -43,8 +43,9 @@ from absl.testing import parameterized
 import mock
 
 from absl import logging
-from tensorflow.core.example import example_pb2
+from deepvariant.core.genomics import variants_pb2
 
+from tensorflow.core.example import example_pb2
 from deepvariant import make_examples
 from deepvariant import test_utils
 from deepvariant import tf_utils
@@ -52,7 +53,6 @@ from deepvariant.core import genomics_io
 from deepvariant.core import io_utils
 from deepvariant.core import ranges
 from deepvariant.core import variantutils
-from deepvariant.core.genomics import variants_pb2
 from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.protos import realigner_pb2

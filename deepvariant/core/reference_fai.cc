@@ -46,7 +46,7 @@ namespace learning {
 namespace genomics {
 namespace core {
 
-using learning::genomics::v1::Range;
+using nucleus::genomics::v1::Range;
 using tensorflow::strings::StrCat;
 
 namespace {

@@ -32,14 +32,14 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_SAM_READER_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_CORE_SAM_READER_H_
 
-#include "deepvariant/core/genomics/range.pb.h"
-#include "deepvariant/core/genomics/reads.pb.h"
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/core/reader_base.h"
 #include "deepvariant/core/samplers.h"
 #include "deepvariant/vendor/statusor.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
+#include "deepvariant/core/genomics/range.pb.h"
+#include "deepvariant/core/genomics/reads.pb.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
@@ -49,7 +49,7 @@ namespace core {
 using tensorflow::string;
 
 // Alias for the abstract base class for SAM record iterables.
-using SamIterable = Iterable<learning::genomics::v1::Read>;
+using SamIterable = Iterable<nucleus::genomics::v1::Read>;
 
 // A SAM/BAM reader.
 //
@@ -70,7 +70,7 @@ using SamIterable = Iterable<learning::genomics::v1::Read>;
 //
 // https://github.com/samtools/htslib/tree/develop/htslib
 //
-// The objects returned by iterate() or query() are learning.genomics.v1.Read
+// The objects returned by iterate() or query() are nucleus.genomics.v1.Read
 // objects parsed from the SAM/BAM records in the file. Currently all fields
 // except the extended key/value maps in each BAM fields are parsed.
 //
@@ -121,7 +121,7 @@ class SamReader : public Reader {
   // If range isn't a valid interval in this BAM file a non-OK status value will
   // be returned.
   StatusOr<std::shared_ptr<SamIterable>> Query(
-      const learning::genomics::v1::Range& region) const;
+      const nucleus::genomics::v1::Range& region) const;
 
   // Returns True if this SamReader loaded an index file.
   bool HasIndex() const { return idx_ != nullptr; }
@@ -137,7 +137,7 @@ class SamReader : public Reader {
   // not use it! Returns a Status indicating whether the enter was successful.
   tensorflow::Status PythonEnter() const { return tensorflow::Status::OK(); }
 
-  bool KeepRead(const learning::genomics::v1::Read& read) const;
+  bool KeepRead(const nucleus::genomics::v1::Read& read) const;
 
   const SamReaderOptions& options() const { return options_; }
 

@@ -444,15 +444,15 @@ class Realigner(object):
       - Output all input reads (whether they required realignment or not).
 
     Args:
-      reads: [`learning.genomics.deepvariant.core.genomics.Read` protos]. The
+      reads: [`third_party.nucleus.protos.Read` protos]. The
         list of input reads to realign.
-      region: A `learning.genomics.deepvariant.core.genomics.Range` proto.
+      region: A `third_party.nucleus.protos.Range` proto.
         Specifies the region on the genome we should process.
 
     Returns:
       [realigner_pb2.CandidateHaplotypes]. Information on the list of candidate
         haplotypes.
-      [`learning.genomics.deepvariant.core.genomics.Read` protos]. The realigned
+      [`third_party.nucleus.protos.Read` protos]. The realigned
         reads for the region. NOTE THESE READS MAY NO LONGER BE IN THE SAME
         ORDER AS BEFORE.
     """

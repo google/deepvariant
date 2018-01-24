@@ -44,7 +44,7 @@ def read_range(read):
     read: the read to calculate range
 
   Returns:
-    A learning.genomics.deepvariant.core.genomics.Range for read.
+    A third_party.nucleus.protos.Range for read.
   """
   start = read.alignment.position.position
   end = start + cigar.alignment_length(read.alignment.cigar)
@@ -100,8 +100,7 @@ class InMemorySamReader(object):
   """Python interface class for in-memory sam reader.
 
   Attributes:
-    reads: [learning.genomics.deepvariant.core.genomics.Read], the list of
-      in-memory reads.
+    reads: [third_party.nucleus.protos.Read], the list of in-memory reads.
     is_sorted: bool, if reads are sorted.
   """
 
@@ -116,7 +115,7 @@ class InMemorySamReader(object):
     """Iterate over all records in the reads.
 
     Returns:
-      An iterator over learning.genomics.deepvariant.core.genomics.Read.
+      An iterator over third_party.nucleus.protos.Read.
     """
     return self.reads
 
@@ -124,10 +123,10 @@ class InMemorySamReader(object):
     """Iterate over records overlapping a query region.
 
     Args:
-      region: learning.genomics.deepvariant.core.genomics.Range, query region.
+      region: third_party.nucleus.protos.Range, query region.
 
     Returns:
-      An iterator over learning.genomics.deepvariant.core.genomics.Read
+      An iterator over third_party.nucleus.protos.Read
     """
     # redacted
     return (read for read in self.reads

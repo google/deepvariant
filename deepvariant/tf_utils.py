@@ -40,11 +40,11 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from tensorflow.core.example import example_pb2
+from deepvariant.core.genomics import variants_pb2
 
+from tensorflow.core.example import example_pb2
 from deepvariant.core import io_utils
 from deepvariant.core import ranges
-from deepvariant.core.genomics import variants_pb2
 from deepvariant.protos import deepvariant_pb2
 
 
@@ -134,7 +134,7 @@ def example_set_truth_variant(example, truth_variant, simplify=True):
   Args:
     example: a tf.Example proto.
     truth_variant: a
-      learning.genomics.deepvariant.core.genomics.Variant proto.
+      third_party.nucleus.protos.Variant proto.
     simplify: boolean. If True, we will simplify truth_variant before encoding
       it. If False, truth_variant will be written out as is.
   """
@@ -212,7 +212,7 @@ def make_example(variant, alt_alleles, encoded_image, shape, image_format):
   """Creates a new tf.Example suitable for use with DeepVariant.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant protobuf
+    variant: third_party.nucleus.protos.Variant protobuf
       containing information about a candidate variant call.
     alt_alleles: A set of strings. Indicates the alternate alleles used as "alt"
       when constructing the image.

@@ -31,9 +31,9 @@
 
 #include "deepvariant/core/test_utils.h"
 
-#include "deepvariant/core/genomics/cigar.pb.h"
 #include "deepvariant/core/utils.h"
 
+#include "deepvariant/core/genomics/cigar.pb.h"
 #include "tensorflow/core/lib/io/path.h"
 
 namespace learning {
@@ -41,10 +41,10 @@ namespace genomics {
 namespace core {
 
 using core::MakePosition;
-using learning::genomics::v1::CigarUnit;
-using learning::genomics::v1::CigarUnit_Operation;
-using learning::genomics::v1::LinearAlignment;
-using learning::genomics::v1::Read;
+using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::CigarUnit_Operation;
+using nucleus::genomics::v1::LinearAlignment;
+using nucleus::genomics::v1::Read;
 
 namespace {
 

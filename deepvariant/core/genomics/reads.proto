@@ -29,7 +29,7 @@
 
 syntax = "proto3";
 
-package learning.genomics.v1;
+package nucleus.genomics.v1;
 
 import "deepvariant/core/genomics/cigar.proto";
 import "deepvariant/core/genomics/position.proto";

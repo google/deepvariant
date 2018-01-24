@@ -109,7 +109,7 @@ class GenomeReferenceFai : public GenomeReference {
   const std::vector<ContigInfo>& Contigs() const override { return contigs_; }
 
   StatusOr<string> GetBases(
-      const learning::genomics::v1::Range& range) const override;
+      const nucleus::genomics::v1::Range& range) const override;
 
   // Close the underlying resource descriptors.
   tensorflow::Status Close() override;
@@ -140,7 +140,7 @@ class GenomeReferenceFai : public GenomeReference {
   // The range that is held in the cache, or "empty" if there is no range cached
   // yet.  Range must be <= kFastaCacheSize in length.
   mutable tensorflow::gtl::optional<
-      learning::genomics::v1::Range> cached_range_;
+      nucleus::genomics::v1::Range> cached_range_;
 };
 
 }  // namespace core

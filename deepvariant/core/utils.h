@@ -38,15 +38,15 @@
 #include <type_traits>
 #include <vector>
 
+#include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/core/genomics/position.pb.h"
 #include "deepvariant/core/genomics/range.pb.h"
 #include "deepvariant/core/genomics/reads.pb.h"
 #include "deepvariant/core/genomics/struct.pb.h"
 #include "deepvariant/core/genomics/variants.pb.h"
-#include "deepvariant/core/protos/core.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
-#include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/platform/logging.h"
+#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
@@ -79,56 +79,56 @@ bool IsCanonicalBase(const char base,
                      CanonicalBases canon = CanonicalBases::ACGT);
 
 // Creates a Position proto from chr and pos.
-learning::genomics::v1::Position MakePosition(
+nucleus::genomics::v1::Position MakePosition(
     tensorflow::StringPiece chr, int64 pos, const bool reverse_strand = false);
 
 // Creates a Position proto from reference_name and start position of Variant.
-learning::genomics::v1::Position MakePosition(
-    const learning::genomics::v1::Variant& variant);
+nucleus::genomics::v1::Position MakePosition(
+    const nucleus::genomics::v1::Variant& variant);
 
 // Creates a Range proto from chr, start, and end arguments.
-learning::genomics::v1::Range MakeRange(tensorflow::StringPiece chr,
+nucleus::genomics::v1::Range MakeRange(tensorflow::StringPiece chr,
                                         int64 start, int64 end);
 
 // Creates a Range proto from the reference_name, start, and end of Variant.
-learning::genomics::v1::Range MakeRange(
-    const learning::genomics::v1::Variant& variant);
+nucleus::genomics::v1::Range MakeRange(
+    const nucleus::genomics::v1::Variant& variant);
 
 // Creates a Range proto from the alignment of Read.
-learning::genomics::v1::Range MakeRange(
-    const learning::genomics::v1::Read& read);
+nucleus::genomics::v1::Range MakeRange(
+    const nucleus::genomics::v1::Read& read);
 
 // Returns true iff range `needle` is wholly contained in `haystack`.
-bool RangeContains(const learning::genomics::v1::Range& haystack,
-                   const learning::genomics::v1::Range& needle);
+bool RangeContains(const nucleus::genomics::v1::Range& haystack,
+                   const nucleus::genomics::v1::Range& needle);
 
 // Creates an interval string from its arguments, like chr:start-end.
 string MakeIntervalStr(tensorflow::StringPiece chr, int64 start, int64 end,
                        bool base_zero = true);
 
 // Makes an interval string from a Position proto.
-string MakeIntervalStr(const learning::genomics::v1::Position& position);
+string MakeIntervalStr(const nucleus::genomics::v1::Position& position);
 
 // Makes an interval string from a Range interval.
-string MakeIntervalStr(const learning::genomics::v1::Range& interval);
+string MakeIntervalStr(const nucleus::genomics::v1::Range& interval);
 
 // Compares pos1 and pos2, lexicographically by reference_name then by position.
-int ComparePositions(const learning::genomics::v1::Position& pos1,
-                     const learning::genomics::v1::Position& pos2);
+int ComparePositions(const nucleus::genomics::v1::Position& pos1,
+                     const nucleus::genomics::v1::Position& pos2);
 
 // Compares the positions of two Variants via ComparePositions(), so the
 // comparison is done on the reference name and start position only.
-int ComparePositions(const learning::genomics::v1::Variant& variant1,
-                     const learning::genomics::v1::Variant& variant2);
+int ComparePositions(const nucleus::genomics::v1::Variant& variant1,
+                     const nucleus::genomics::v1::Variant& variant2);
 
 // Returns the contig name to which this read is aligned. Returns empty string
 // if the read is unaligned.
-string AlignedContig(const learning::genomics::v1::Read& read);
+string AlignedContig(const nucleus::genomics::v1::Read& read);
 
 // Get the starting position of read, which is the first base covered
 // by cigar operations of read. This is very fast since the start
 // is encoded in the read proto.
-int64 ReadStart(const learning::genomics::v1::Read& read);
+int64 ReadStart(const nucleus::genomics::v1::Read& read);
 
 // Gets the end position of the, which is the index of the last base on the
 // genome covered by cigar operations in the read. Note this means that the
@@ -137,15 +137,15 @@ int64 ReadStart(const learning::genomics::v1::Read& read);
 // end must be computed by examining the cigar elements of Read. Implements
 // getReferenceLength (excludes padding) as found at:
 // http://grepcode.com/file/repo1.maven.org/maven2/org.seqdoop/htsjdk/1.118/htsjdk/samtools/Cigar.java#Cigar.getReferenceLength%28%29
-int64 ReadEnd(const learning::genomics::v1::Read& read);
+int64 ReadEnd(const nucleus::genomics::v1::Read& read);
 
 // Returns true if the read is properly placed. We define properly placed as
 // read and mate both mapped to the same contig if mapped at all. This is less
 // strict than the proper pair SAM flag.
-bool IsReadProperlyPlaced(const learning::genomics::v1::Read& read);
+bool IsReadProperlyPlaced(const nucleus::genomics::v1::Read& read);
 
 // Returns false if Read does not satisfy all of the ReadRequirements.
-bool ReadSatisfiesRequirements(const learning::genomics::v1::Read& read,
+bool ReadSatisfiesRequirements(const nucleus::genomics::v1::Read& read,
                                const ReadRequirements& requirements);
 
 // Return a string_view that reflects removing quotation from the ends the
@@ -167,21 +167,21 @@ std::map<string, int> MapContigNameToPosInFasta(
 //  type Compare, when contextually converted to bool, yields true if the
 //  first argument of the call appears before the second in the strict weak
 //  ordering relation induced by this Compare type, and false otherwise."
-bool CompareVariants(const learning::genomics::v1::Variant& a,
-                     const learning::genomics::v1::Variant& b,
+bool CompareVariants(const nucleus::genomics::v1::Variant& a,
+                     const nucleus::genomics::v1::Variant& b,
                      const std::map<string, int>& contig_name_to_pos_in_fasta);
 
 // Returns true if the string s ends with the string t.
 bool EndsWith(const string& s, const string& t);
 
 // Templated convenience functions to set a value in a
-// learning::genomics::v1::Value based on its C++ type.
+// nucleus::genomics::v1::Value based on its C++ type.
 //
 // These are intended as helper functions for SetInfoField, but can be used
 // standalone.
 // Sets value to anything that set_string_value accepts as an argument type.
 template <typename T>
-void SetValuesValue(T value, learning::genomics::v1::Value* protobuf_value) {
+void SetValuesValue(T value, nucleus::genomics::v1::Value* protobuf_value) {
   protobuf_value->set_string_value(value);
 }
 
@@ -189,7 +189,7 @@ void SetValuesValue(T value, learning::genomics::v1::Value* protobuf_value) {
 template <typename T>
 void SetValuesValue(
     typename std::enable_if<std::is_arithmetic<T>::value, T>::type value,
-    learning::genomics::v1::Value* protobuf_value) {
+    nucleus::genomics::v1::Value* protobuf_value) {
   protobuf_value->set_number_value(value);
 }
 
@@ -234,7 +234,7 @@ void SetInfoField(const string& key, const Value value,
 //
 template <typename T>
 std::vector<typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-    ListValues(const learning::genomics::v1::ListValue& list_value) {
+    ListValues(const nucleus::genomics::v1::ListValue& list_value) {
   std::vector<T> values;
   for (const auto& value : list_value.values()) {
     values.push_back(value.number_value());
@@ -243,7 +243,7 @@ std::vector<typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 }
 
 std::vector<string> ListValues(
-    const learning::genomics::v1::ListValue& list_value);
+    const nucleus::genomics::v1::ListValue& list_value);
 
 }  // namespace core
 }  // namespace genomics

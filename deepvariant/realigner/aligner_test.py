@@ -36,10 +36,10 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from deepvariant.core.genomics import cigar_pb2
 from deepvariant import test_utils
 from deepvariant.core import cigar as _cigar
 from deepvariant.core import ranges
-from deepvariant.core.genomics import cigar_pb2
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import aligner
 

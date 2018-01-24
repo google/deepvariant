@@ -32,10 +32,6 @@
 // Implementation of sam_reader.h
 #include "deepvariant/core/sam_reader.h"
 
-#include "deepvariant/core/genomics/cigar.pb.h"
-#include "deepvariant/core/genomics/position.pb.h"
-#include "deepvariant/core/genomics/range.pb.h"
-#include "deepvariant/core/genomics/reads.pb.h"
 #include "deepvariant/core/hts_path.h"
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/core/utils.h"
@@ -43,6 +39,10 @@
 #include "htslib/hts.h"
 #include "htslib/hts_endian.h"
 #include "htslib/sam.h"
+#include "deepvariant/core/genomics/cigar.pb.h"
+#include "deepvariant/core/genomics/position.pb.h"
+#include "deepvariant/core/genomics/range.pb.h"
+#include "deepvariant/core/genomics/reads.pb.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/strings/str_util.h"
@@ -56,11 +56,11 @@ namespace core {
 namespace tf = tensorflow;
 
 using std::vector;
-using learning::genomics::v1::Range;
-using learning::genomics::v1::Read;
-using learning::genomics::v1::CigarUnit;
-using learning::genomics::v1::CigarUnit_Operation;
-using learning::genomics::v1::Position;
+using nucleus::genomics::v1::Range;
+using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::CigarUnit_Operation;
+using nucleus::genomics::v1::Position;
 
 using tensorflow::WARNING;
 using tensorflow::int32;
@@ -339,7 +339,7 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
 class SamFullFileIterable : public SamIterable {
  public:
   // Advance to the next record.
-  StatusOr<bool> Next(learning::genomics::v1::Read* out) override;
+  StatusOr<bool> Next(nucleus::genomics::v1::Read* out) override;
 
   // Constructor is invoked via SamReader::Iterate.
   SamFullFileIterable(const SamReader* reader, htsFile* fp, bam_hdr_t* header);
@@ -356,7 +356,7 @@ class SamFullFileIterable : public SamIterable {
 class SamQueryIterable : public SamIterable {
  public:
   // Advance to the next record.
-  StatusOr<bool> Next(learning::genomics::v1::Read* out) override;
+  StatusOr<bool> Next(nucleus::genomics::v1::Read* out) override;
 
   // Constructor will be invoked via SamReader::Query.
   SamQueryIterable(const SamReader* reader,
@@ -473,7 +473,7 @@ void SamReader::ParseSamplesFromHeader() {
 }
 
 // Returns true if read should be returned to the client, or false otherwise.
-bool SamReader::KeepRead(const learning::genomics::v1::Read& read) const {
+bool SamReader::KeepRead(const nucleus::genomics::v1::Read& read) const {
   return (!options_.has_read_requirements() ||
           ReadSatisfiesRequirements(read, options_.read_requirements())) &&
          // Downsample if the downsampling fraction is set.

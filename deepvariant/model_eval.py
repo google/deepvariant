@@ -95,7 +95,7 @@ def select_variants_weights(variant_p_func, encoded_variants, name=None):
   for any non-SNP variants.
 
   Args:
-    variant_p_func: a unary function accepting a learning.genomics.v1.Variant pb
+    variant_p_func: a unary function accepting a nucleus.genomics.v1.Variant pb
       and returning a boolean value with True indicating the variant is part of
       the set and False indicating it is not. This function should be stateless.
     encoded_variants: An iterable of elements where each element is a string

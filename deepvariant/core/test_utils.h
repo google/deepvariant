@@ -33,7 +33,6 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_TEST_UTILS_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_CORE_TEST_UTILS_H_
 
-#include "deepvariant/core/genomics/reads.pb.h"
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/core/reader_base.h"
 #include "deepvariant/vendor/statusor.h"
@@ -43,6 +42,7 @@
 
 
 #include "tensorflow/core/platform/test.h"
+#include "deepvariant/core/genomics/reads.pb.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/io/record_reader.h"
@@ -147,7 +147,7 @@ std::vector<Record> as_vector(const std::shared_ptr<Iterable<Record>>& it) {
 // CIGAR element string values like {"5M", "2I", "3M"} which is 5 bp matches,
 // 2 bp insertion, and 3 bp matches. The read has base qualities set to 30 and
 // a mapping quality of 90.
-::learning::genomics::v1::Read MakeRead(
+::nucleus::genomics::v1::Read MakeRead(
     const string& chr, int start, const string& bases,
     const std::vector<string>& cigar_elements);
 

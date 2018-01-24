@@ -12,8 +12,8 @@ py_clif_cc(
     clif_deps = [],
     py_deps = [],
     pyclif_deps = [
-        "//deepvariant/core/genomics:reads_pyclif",
         "//deepvariant/protos:realigner_pyclif",
+        "//deepvariant/core/genomics:reads_pyclif",
     ],
     deps = ["//deepvariant/realigner:debruijn_graph"],
 )

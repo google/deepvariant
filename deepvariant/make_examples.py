@@ -560,7 +560,7 @@ def regions_to_process(contigs,
       subset of regions we want to process.
 
   Returns:
-    An iterable of learning.genomics.v1.Range objects.
+    An iterable of nucleus.genomics.v1.Range objects.
 
   Raises:
     ValueError: if task_id and num_shards are bad or inconsistent.
@@ -739,7 +739,7 @@ class RegionProcessor(object):
     """Finds candidates and creates corresponding examples in a region.
 
     Args:
-      region: A learning.genomics.v1.Range proto. Specifies the region on the
+      region: A nucleus.genomics.v1.Range proto. Specifies the region on the
         genome we should process.
 
     Returns:
@@ -748,7 +748,7 @@ class RegionProcessor(object):
       in tf.Example protos. For example, these will include the candidate
       variant, the pileup image, and, if in training mode, the truth variants
       and labels needed for training. The third value is a list of
-      learning.genomics.v1.Variant protos containing gVCF information for all
+      nucleus.genomics.v1.Variant protos containing gVCF information for all
       reference sites, if gvcf generation is enabled, otherwise returns [].
     """
     region_timer = timer.TimerStart()
@@ -781,7 +781,7 @@ class RegionProcessor(object):
     are returned.
 
     Args:
-      region: A learning.genomics.v1.Range object specifying the region we
+      region: A nucleus.genomics.v1.Range object specifying the region we
         want to realign reads.
 
     Returns:
@@ -800,13 +800,13 @@ class RegionProcessor(object):
     """Finds candidate DeepVariantCall protos in region.
 
     Args:
-      region: A learning.genomics.v1.Range object specifying the region we
+      region: A nucleus.genomics.v1.Range object specifying the region we
       want to get candidates for.
 
     Returns:
       A 2-tuple. The first value is a list of deepvariant_pb2.DeepVariantCalls
       objects, in coordidate order. The second value is a list of
-      learning.genomics.v1.Variant protos containing gVCF information for all
+      nucleus.genomics.v1.Variant protos containing gVCF information for all
       reference sites, if gvcf generation is enabled, otherwise returns [].
     """
     reads = self.in_memory_sam_reader.query(region)
@@ -865,7 +865,7 @@ class RegionProcessor(object):
     Args:
       example: A tf.Example proto. We will write truth_variant and label into
         this proto.
-      variant: A learning.genomics.v1.Variant proto.
+      variant: A nucleus.genomics.v1.Variant proto.
         This is the variant we'll use
         to call our VariantLabeler.match to get our truth variant.
 
@@ -899,7 +899,7 @@ def processing_regions_from_options(options):
       our input data sources.
 
   Returns:
-    Two values. The first is a list of learning.genomics.v1.Range protos of the
+    Two values. The first is a list of nucleus.genomics.v1.Range protos of the
     regions we should process. The second is a RangeSet containing the confident
     regions for labeling, or None if we are running in training mode.
   """

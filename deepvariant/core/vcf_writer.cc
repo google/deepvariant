@@ -35,12 +35,12 @@
 #include <algorithm>
 #include <cstring>
 
-#include "deepvariant/core/genomics/struct.pb.h"
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/core/hts_path.h"
 #include "deepvariant/core/math.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/core/vcf_conversion.h"
+#include "deepvariant/core/genomics/struct.pb.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 
 #include "absl/memory/memory.h"
 #include "tensorflow/core/lib/core/errors.h"
@@ -59,8 +59,8 @@ namespace core {
 
 namespace tf = tensorflow;
 
-using learning::genomics::v1::Variant;
-using learning::genomics::v1::VariantCall;
+using nucleus::genomics::v1::Variant;
+using nucleus::genomics::v1::VariantCall;
 using tensorflow::strings::StrCat;
 
 namespace {

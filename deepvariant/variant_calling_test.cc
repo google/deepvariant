@@ -31,12 +31,12 @@
 
 #include "deepvariant/variant_calling.h"
 
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/core/test_utils.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "google/protobuf/repeated_field.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 
@@ -51,8 +51,8 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using learning::genomics::v1::Variant;
-using learning::genomics::v1::VariantCall;
+using nucleus::genomics::v1::Variant;
+using nucleus::genomics::v1::VariantCall;
 using core::IsFinite;
 using core::MakePosition;
 using ::testing::DoubleNear;

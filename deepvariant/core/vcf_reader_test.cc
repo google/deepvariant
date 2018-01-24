@@ -53,7 +53,7 @@ using ::testing::SizeIs;
 
 using learning::genomics::testing::EqualsProto;
 using learning::genomics::testing::proto::IgnoringFieldPaths;
-using learning::genomics::v1::Variant;
+using nucleus::genomics::v1::Variant;
 
 // These files are made using the Verily converter.  See:
 //  g3doc/learning/genomics/g3doc/variant-encoding.md

@@ -36,12 +36,12 @@
 #include <memory>
 #include <vector>
 
-#include "deepvariant/core/genomics/reads.pb.h"
 #include "deepvariant/protos/realigner.pb.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
-#include "tensorflow/core/platform/types.h"
+#include "deepvariant/core/genomics/reads.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
+#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
@@ -106,7 +106,7 @@ class DeBruijnGraph {
   // acyclic DeBruijn graphs.  Argument `k` is used to construct the graph;
   // filtering settings are taken from options.
   DeBruijnGraph(const string& ref,
-                const std::vector<learning::genomics::v1::Read>& reads,
+                const std::vector<nucleus::genomics::v1::Read>& reads,
                 const Options& options,
                 int k);
 
@@ -120,7 +120,7 @@ class DeBruijnGraph {
 
   // Add all the edges implied by the given read (and according to our edge
   // filtering criteria).
-  void AddEdgesForRead(const learning::genomics::v1::Read& read);
+  void AddEdgesForRead(const nucleus::genomics::v1::Read& read);
 
   // Returns candidate haplotype paths through the graph.  If more that
   // options.max_num_paths paths are found, this will return an empty vector.
@@ -140,7 +140,7 @@ class DeBruijnGraph {
   // otherwise we return nullptr.
   static std::unique_ptr<DeBruijnGraph> Build(
       const string& ref,
-      const std::vector<learning::genomics::v1::Read>& reads,
+      const std::vector<nucleus::genomics::v1::Read>& reads,
       const Options& options);
 
   // Gets all the candidate haplotypes defined by paths through the graph.  If

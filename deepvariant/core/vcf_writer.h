@@ -32,13 +32,13 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_VCF_WRITER_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_CORE_VCF_WRITER_H_
 
-#include "deepvariant/core/genomics/range.pb.h"
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/vendor/statusor.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htslib/vcf.h"
+#include "deepvariant/core/genomics/range.pb.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -67,7 +67,7 @@ class VcfWriter {
   // listed in the options. Returns Status::OK() if the write was successful;
   // otherwise the status provides information about what error occurred.
   tensorflow::Status Write(
-      const learning::genomics::v1::Variant& variant_message);
+      const nucleus::genomics::v1::Variant& variant_message);
 
   // Close the underlying resource descriptors. Returns Status::OK() if the
   // close was successful; otherwise the status provides information about what

@@ -38,7 +38,6 @@
 #include <tuple>
 #include <vector>
 
-#include "deepvariant/core/genomics/reads.pb.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/protos/realigner.pb.h"
 #include "boost/graph/adjacency_list.hpp"
@@ -46,9 +45,10 @@
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/graphviz.hpp"
 #include "boost/graph/reverse_graph.hpp"
-#include "tensorflow/core/platform/logging.h"
-#include "tensorflow/core/lib/strings/str_util.h"
+#include "deepvariant/core/genomics/reads.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
+#include "tensorflow/core/lib/strings/str_util.h"
+#include "tensorflow/core/platform/logging.h"
 
 namespace learning {
 namespace genomics {
@@ -59,7 +59,7 @@ using VertexIndexMap = DeBruijnGraph::VertexIndexMap;
 using Edge = DeBruijnGraph::Edge;
 using Path = DeBruijnGraph::Path;
 
-using Read = learning::genomics::v1::Read;
+using Read = nucleus::genomics::v1::Read;
 
 using tensorflow::string;
 using tensorflow::StringPiece;
@@ -250,7 +250,7 @@ void DeBruijnGraph::AddEdgesForReference(StringPiece ref) {
   }
 }
 
-void DeBruijnGraph::AddEdgesForRead(const learning::genomics::v1::Read& read) {
+void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
   string bases = tensorflow::str_util::Uppercase(read.aligned_sequence());
   StringPiece bases_view(bases);
   std::vector<int> qual(read.aligned_quality().begin(),

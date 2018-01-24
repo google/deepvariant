@@ -35,13 +35,13 @@
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/core/reader_base.h"
 
-#include "deepvariant/core/genomics/range.pb.h"
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/vendor/statusor.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htslib/tbx.h"
 #include "htslib/vcf.h"
+#include "deepvariant/core/genomics/range.pb.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
@@ -51,7 +51,7 @@ namespace core {
 using tensorflow::string;
 
 // Alias for the abstract base class for VCF record iterables.
-using VariantIterable = Iterable<learning::genomics::v1::Variant>;
+using VariantIterable = Iterable<nucleus::genomics::v1::Variant>;
 
 // A VCF reader that provides access to Tabix indexed VCF files.
 //
@@ -69,7 +69,7 @@ using VariantIterable = Iterable<learning::genomics::v1::Variant>;
 // with Tabix, to also query() for only variants overlapping a specific regions
 // on the genome.
 //
-// The objects returned by iterate() or query() are learning.genomics.v1.Variant
+// The objects returned by iterate() or query() are nucleus.genomics.v1.Variant
 // objects parsed from the VCF records in the file. Currently all fields except
 // the INFO key/value maps in the VCF variant and genotype fields are parsed.
 //
@@ -121,7 +121,7 @@ class VcfReader : public Reader {
   // If range isn't a valid interval in this VCF file a non-OK status value will
   // be returned.
   StatusOr<std::shared_ptr<VariantIterable>> Query(
-      const learning::genomics::v1::Range& region);
+      const nucleus::genomics::v1::Range& region);
 
   // Returns True if this VcfReader loaded an index file.
   bool HasIndex() const { return idx_ != nullptr; }

@@ -44,9 +44,9 @@ import operator
 
 import numpy as np
 
+from deepvariant.core.genomics import variants_pb2
 from deepvariant.core import genomics_math
 from deepvariant.core import variantutils
-from deepvariant.core.genomics import variants_pb2
 from deepvariant.python import variant_calling
 
 # Reference bases with genotype calls must be one of these four values.
@@ -228,7 +228,7 @@ class VariantCaller(object):
         base.
 
     Yields:
-      learning.genomics.deepvariant.core.genomics.Variant proto in
+      third_party.nucleus.protos.Variant proto in
       coordinate-sorted order containing gVCF records.
     """
 

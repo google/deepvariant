@@ -56,7 +56,7 @@ def mock_vcf_reader(variants):
 
   Args:
     variants: list of
-      learning.genomics.deepvariant.core.genomics.Variant protos.
+      third_party.nucleus.protos.Variant protos.
       These variants will be used to return results from this vcf_reader.
 
   Returns:

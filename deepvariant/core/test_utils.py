@@ -38,12 +38,12 @@ import os
 from tensorflow import flags
 import tensorflow as tf
 
-from tensorflow.python.platform import googletest
-from deepvariant.core import cigar as _cigar
 from deepvariant.core.genomics import position_pb2
 from deepvariant.core.genomics import reads_pb2
 from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.genomics import variants_pb2
+from tensorflow.python.platform import googletest
+from deepvariant.core import cigar as _cigar
 
 FLAGS = flags.FLAGS
 
@@ -165,7 +165,7 @@ def make_variant(chrom='chr1',
       genotype_likelihoods of our VariantCall to this value.
 
   Returns:
-    learning.genomics.deepvariant.core.genomics.Variant proto.
+    third_party.nucleus.protos.Variant proto.
   """
   if alleles is None:
     alleles = ['A', 'C']
@@ -209,7 +209,7 @@ def make_read(bases,
               chrom='chr1',
               start=1,
               name='read'):
-  """Makes a learning.genomics.deepvariant.core.genomics.Read for testing."""
+  """Makes a third_party.nucleus.protos.Read for testing."""
   if quals and len(bases) != len(quals):
     raise ValueError('Incompatable bases and quals', bases, quals)
   read = reads_pb2.Read(

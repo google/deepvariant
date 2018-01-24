@@ -36,10 +36,10 @@
 
 #include <vector>
 
-#include "deepvariant/core/genomics/variants.pb.h"
-#include "deepvariant/core/samplers.h"
 #include "deepvariant/allelecounter.h"
+#include "deepvariant/core/samplers.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 #include "tensorflow/core/lib/gtl/optional.h"
 
 namespace learning {

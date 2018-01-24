@@ -43,6 +43,8 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.core.genomics import struct_pb2
+from deepvariant.core.genomics import variants_pb2
 from deepvariant import logging_level
 from deepvariant.core import errors
 from deepvariant.core import genomics_io
@@ -50,8 +52,6 @@ from deepvariant.core import genomics_math
 from deepvariant.core import io_utils
 from deepvariant.core import proto_utils
 from deepvariant.core import variantutils
-from deepvariant.core.genomics import struct_pb2
-from deepvariant.core.genomics import variants_pb2
 from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
@@ -255,7 +255,7 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   variant based on the genotype likelihoods in predictions.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant protobuf
+    variant: third_party.nucleus.protos.Variant protobuf
       to be filled in with info derived from predictions.
     predictions: N element array-like. The real-space probabilities of each
       genotype state for this variant.
@@ -723,7 +723,7 @@ def _transform_to_gvcf_record(variant):
   """Modifies a variant to include gVCF allele and associated likelihoods.
 
   Args:
-    variant: learning.genomics.deepvariant.core.genomics.Variant. The Variant
+    variant: third_party.nucleus.protos.Variant. The Variant
       to modify.
 
   Returns:

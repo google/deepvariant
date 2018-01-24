@@ -45,13 +45,13 @@ import numpy as np
 import tensorflow as tf
 
 from absl import logging
+from deepvariant.core.genomics import struct_pb2
+from deepvariant.core.genomics import variants_pb2
 from deepvariant import postprocess_variants
 from deepvariant import test_utils
 from deepvariant.core import genomics_math
 from deepvariant.core import io_utils
 from deepvariant.core import variantutils
-from deepvariant.core.genomics import struct_pb2
-from deepvariant.core.genomics import variants_pb2
 from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver

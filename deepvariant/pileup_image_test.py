@@ -40,10 +40,10 @@ import mock
 import numpy as np
 import numpy.testing as npt
 
+from deepvariant.core.genomics import variants_pb2
 from deepvariant import pileup_image
 from deepvariant import test_utils
 from deepvariant.core import ranges
-from deepvariant.core.genomics import variants_pb2
 from deepvariant.core.python import reference_fai
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native

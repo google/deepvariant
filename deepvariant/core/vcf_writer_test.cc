@@ -34,11 +34,11 @@
 #include <memory>
 #include <vector>
 
-#include "deepvariant/core/genomics/variants.pb.h"
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/core/test_utils.h"
 #include "deepvariant/core/utils.h"
 #include "deepvariant/vendor/status_matchers.h"
+#include "deepvariant/core/genomics/variants.pb.h"
 
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
@@ -55,8 +55,8 @@ namespace genomics {
 namespace core {
 
 using tensorflow::StringPiece;
-using learning::genomics::v1::Variant;
-using learning::genomics::v1::VariantCall;
+using nucleus::genomics::v1::Variant;
+using nucleus::genomics::v1::VariantCall;
 using std::vector;
 
 // redacted

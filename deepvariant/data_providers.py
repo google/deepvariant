@@ -72,7 +72,7 @@ def make_training_batches(dataset, model, batch_size):
     labels: a 1-D integer Tensor shape (batch_size,) containing the labels for
       each image, in the same order.
     encoded_truth_variants: Tensor of strings with shape (batch_size,).
-      Each element of this tensor is a byte-encoded learning.genomics.v1.Variant
+      Each element of this tensor is a byte-encoded nucleus.genomics.v1.Variant
       protobuf in the same order as images and one_hot_labels.
   """
   data_provider = slim.dataset_data_provider.DatasetDataProvider(

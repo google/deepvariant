@@ -58,9 +58,9 @@
 
 #include <vector>
 
-#include "deepvariant/core/genomics/range.pb.h"
 #include "deepvariant/core/protos/core.pb.h"
 #include "deepvariant/vendor/statusor.h"
+#include "deepvariant/core/genomics/range.pb.h"
 #include "tensorflow/core/platform/types.h"
 
 using tensorflow::string;
@@ -117,11 +117,11 @@ class GenomeReference {
   // If chr isn't present in this reference, start is invalid or end is beyond
   // the length of chr, returns a value whose status is not ok().
   virtual StatusOr<string> GetBases(
-      const learning::genomics::v1::Range& range) const = 0;
+      const nucleus::genomics::v1::Range& range) const = 0;
 
   // Returns true iff the Range chr:start-end is a valid interval on chr and chr
   // is a known contig in this reference.
-  bool IsValidInterval(const learning::genomics::v1::Range& range) const;
+  bool IsValidInterval(const nucleus::genomics::v1::Range& range) const;
 
   // Close the underlying resource descriptors.
   virtual tensorflow::Status Close() { return tensorflow::Status::OK(); }
