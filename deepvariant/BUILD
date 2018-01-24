@@ -220,6 +220,7 @@ py_library(
     srcs = ["make_examples.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":exclude_contigs",
         ":logging_level",
         ":pileup_image",
         ":tf_utils",
@@ -673,4 +674,20 @@ py_library(
     name = "logging_level",
     srcs = ["logging_level.py"],
     deps = ["@com_google_absl_py//absl/flags"],
+)
+
+py_library(
+    name = "exclude_contigs",
+    srcs = ["exclude_contigs.py"],
+)
+
+py_test(
+    name = "exclude_contigs_test",
+    size = "small",
+    srcs = ["exclude_contigs_test.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":exclude_contigs",
+        "@com_google_absl_py//absl/testing:absltest",
+    ],
 )

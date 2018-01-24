@@ -54,7 +54,7 @@ cc_library(
         "//deepvariant/core/genomics:reads_cc_pb2",
         "//deepvariant/core/protos:core_cc_pb2",
         "//deepvariant/vendor:statusor",
-        "@htslib//:htslib",
+        "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",
     ],
@@ -83,7 +83,7 @@ cc_library(
     hdrs = ["vcf_conversion.h"],
     deps = [
         "//deepvariant/vendor:statusor",
-        "@htslib//:htslib",
+        "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -102,7 +102,7 @@ cc_library(
         "//deepvariant/core/genomics:variants_cc_pb2",
         "//deepvariant/core/protos:core_cc_pb2",
         "//deepvariant/vendor:statusor",
-        "@htslib//:htslib",
+        "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",
     ],
@@ -138,7 +138,7 @@ cc_library(
         "//deepvariant/core/protos:core_cc_pb2",
         "//deepvariant/vendor:statusor",
         "@com_google_absl//absl/memory",
-        "@htslib//:htslib",
+        "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -205,7 +205,7 @@ cc_library(
         ":reference",
         "//deepvariant/core/protos:core_cc_pb2",
         "//deepvariant/vendor:statusor",
-        "@htslib//:htslib",
+        "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -547,7 +547,7 @@ cc_library(
     srcs = ["hts_path.cc"],
     hdrs = ["hts_path.h"],
     deps = [
-        "@htslib//:htslib",
+        "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -556,7 +556,7 @@ cc_library(
     name = "hts_verbose",
     srcs = ["hts_verbose.cc"],
     hdrs = ["hts_verbose.h"],
-    deps = ["@htslib//:htslib"],
+    deps = ["@htslib"],
 )
 
 cc_test(
@@ -638,7 +638,7 @@ cc_test(
         ":port",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
-        "@htslib//:htslib",
+        "@htslib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
