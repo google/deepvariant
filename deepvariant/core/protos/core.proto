@@ -172,6 +172,9 @@ message VcfWriterOptions {
 
   // What FORMAT entries should we write out for each call?
   OptionalVariantFieldsToParse desired_format_entries = 5;
+
+  // Should QUAL field values be rounded to one point past the decimal?
+  bool round_qual_values = 6;
 }
 
 message SamReaderOptions {

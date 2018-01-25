@@ -162,7 +162,7 @@ def make_vcf_reader(variants_source, use_index=True, include_likelihoods=False):
           index_mode=index_mode, desired_format_entries=desired_vcf_fields))
 
 
-def make_vcf_writer(outfile, contigs, samples, filters):
+def make_vcf_writer(outfile, contigs, samples, filters, round_qualities=False):
   """Creates a VcfWriter.
 
   Args:
@@ -177,12 +177,17 @@ def make_vcf_writer(outfile, contigs, samples, filters):
       written to this writer. Filters can include filter descriptions that never
       occur in any Variant proto, but all filter field values among all of the
       written Variant protos must be provided here.
+    round_qualities: bool. If True, the QUAL field is rounded to one point past
+      the decimal.
 
   Returns:
     vcf_writer.VcfWriter.
   """
   writer_options = core_pb2.VcfWriterOptions(
-      contigs=contigs, sample_names=samples, filters=filters)
+      contigs=contigs,
+      sample_names=samples,
+      filters=filters,
+      round_qual_values=round_qualities)
   return vcf_writer.VcfWriter.to_file(outfile, writer_options)
 
 

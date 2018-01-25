@@ -71,7 +71,8 @@ constexpr char kVcfLikelihoodsGoldenFilename[] = "test_likelihoods.vcf.golden.tf
 
 // Build the skeleton of a VCF file for some pretend variants.
 // This routine will populated headers but not any records.
-std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname) {
+std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname,
+                                            const bool round_qual) {
   VcfWriterOptions writer_options;
   auto& contig1 = *writer_options.mutable_contigs()->Add();
   contig1.set_name("Chr1");
@@ -85,6 +86,9 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname) {
   contig2.set_pos_in_fasta(1);
   writer_options.mutable_sample_names()->Add("Fido");
   writer_options.mutable_sample_names()->Add("Spot");
+  if (round_qual) {
+    writer_options.set_round_qual_values(true);
+  }
 
   return std::move(
       VcfWriter::ToFile(fname.ToString(), writer_options).ValueOrDie());
@@ -119,7 +123,7 @@ VariantCall MakeVariantCall(StringPiece callSetName, vector<int> genotypes) {
 TEST(VcfWriterTest, WritesVCF) {
   // This test verifies that VcfWriter writes the expected VCF file
   string output_filename = MakeTempFile("writes_vcf.vcf");
-  auto writer = MakeDogVcfWriter(output_filename);
+  auto writer = MakeDogVcfWriter(output_filename, false);
 
   // A named variant with no qual, phase
   Variant v1 = MakeVariant({"DogSNP1"}, "Chr1", 20, 21, "A", {"T"});
@@ -140,7 +144,7 @@ TEST(VcfWriterTest, WritesVCF) {
   Variant v3 = MakeVariant({"DogSNP3", "Woof10003"},
                             "Chr2", 15, 16, "C", {"", "T"});
   v3.mutable_filter()->Add("PASS");
-  v3.set_quality(10);
+  v3.set_quality(10.567);
   *v3.add_calls() = MakeVariantCall("Fido", {-1, -1});
   VariantCall call2 = MakeVariantCall("Spot", {-1, 1});
   call2.set_phaseset("*");
@@ -173,26 +177,88 @@ TEST(VcfWriterTest, WritesVCF) {
   TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
                                            output_filename, &vcf_contents));
 
-  const char kExpectedVcfContent[] = \
+  const char kExpectedVcfContent[] =
       "##fileformat=VCFv4.2\n"
       "##FILTER=<ID=PASS,Description=\"All filters passed\">\n"
       "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-      "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">\n"  // NOLINT
-      "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all passing filters reads.\">\n"  // NOLINT
-      "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all passing filters reads for each allele.\">\n"  // NOLINT
-      "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele fractions.\">\n"  // NOLINT
-      "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype likelihoods, log10 encoded\">\n"  // NOLINT
-      "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype likelihoods, Phred encoded\">\n"  // NOLINT
-      "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of the interval\">\n"  // NOLINT
+      "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype "
+      "Quality\">\n"  // NOLINT
+      "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
+      "passing filters reads.\">\n"  // NOLINT
+      "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
+      "passing filters reads for each allele.\">\n"  // NOLINT
+      "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
+      "fractions.\">\n"  // NOLINT
+      "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype likelihoods, "
+      "log10 encoded\">\n"  // NOLINT
+      "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype "
+      "likelihoods, Phred encoded\">\n"  // NOLINT
+      "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of the "
+      "interval\">\n"  // NOLINT
       "##contig=<ID=Chr1,length=50>\n"
       "##contig=<ID=Chr2,length=25>\n"
       "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\tSpot\n"
       "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t11\t.\tC\tG,T\t10\tPASS\t.\tGT\t0/0\t0/1\n"
-      "Chr2\t16\tDogSNP3;Woof10003\tC\t,T\t10\tPASS\t.\tGT\t./.\t.|1\n"
+      "Chr2\t16\tDogSNP3;Woof10003\tC\t,T\t10.567\tPASS\t.\tGT\t./.\t.|1\n"
       "Chr2\t18\tDogSNP4\tT\tA\t0\t.\t.\tGT\t0/1/0\t0/1\n"
       "Chr2\t20\tDogSNP5\tTT\t\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n";
+
+  EXPECT_EQ(kExpectedVcfContent, vcf_contents);
+}
+
+TEST(VcfWriterTest, RoundsVCFQuals) {
+  // This test verifies that VcfWriter writes the expected VCF file with rounded
+  // quality values.
+  string output_filename = MakeTempFile("rounds_qualities.vcf");
+  auto writer = MakeDogVcfWriter(output_filename, true);
+
+  // A named variant with no qual, phase
+  Variant v1 = MakeVariant({"DogSNP1"}, "Chr1", 20, 21, "A", {"T"});
+  v1.set_quality(10.44999);
+  *v1.add_calls() = MakeVariantCall("Fido", {0, 1});
+  *v1.add_calls() = MakeVariantCall("Spot", {0, 0});
+  ASSERT_THAT(writer->Write(v1), IsOK());
+
+  Variant v2 = MakeVariant({}, "Chr2", 10, 11, "C", {"G", "T"});
+  v2.mutable_filter()->Add("PASS");
+  v2.set_quality(10.4500);
+  *v2.add_calls() = MakeVariantCall("Fido", {0, 0});
+  *v2.add_calls() = MakeVariantCall("Spot", {0, 1});
+  ASSERT_THAT(writer->Write(v2), IsOK());
+
+  // Check that the written data is as expected.
+  // (close file to guarantee flushed to disk)
+  writer.reset();
+
+  string vcf_contents;
+  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
+                                           output_filename, &vcf_contents));
+
+  const char kExpectedVcfContent[] =
+      "##fileformat=VCFv4.2\n"
+      "##FILTER=<ID=PASS,Description=\"All filters passed\">\n"
+      "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+      "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype "
+      "Quality\">\n"  // NOLINT
+      "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
+      "passing filters reads.\">\n"  // NOLINT
+      "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
+      "passing filters reads for each allele.\">\n"  // NOLINT
+      "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
+      "fractions.\">\n"  // NOLINT
+      "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype likelihoods, "
+      "log10 encoded\">\n"  // NOLINT
+      "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype "
+      "likelihoods, Phred encoded\">\n"  // NOLINT
+      "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of the "
+      "interval\">\n"  // NOLINT
+      "##contig=<ID=Chr1,length=50>\n"
+      "##contig=<ID=Chr2,length=25>\n"
+      "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\tSpot\n"
+      "Chr1\t21\tDogSNP1\tA\tT\t10.4\t.\t.\tGT\t0/1\t0/0\n"
+      "Chr2\t11\t.\tC\tG,T\t10.5\tPASS\t.\tGT\t0/0\t0/1\n";
 
   EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
@@ -201,7 +267,7 @@ TEST(VcfWriterTest, WritesVCFWithLikelihoods) {
   std::vector<Variant> variants = ReadProtosFromTFRecord<Variant>(
       GetTestData(kVcfLikelihoodsGoldenFilename));
   string out_fname = MakeTempFile("likelihoods_out.vcf");
-  auto writer = MakeDogVcfWriter(out_fname);
+  auto writer = MakeDogVcfWriter(out_fname, false);
   for (const auto& variant : variants) {
     ASSERT_THAT(writer->Write(variant), IsOK());
   }
@@ -228,7 +294,7 @@ bool IsGzipped(StringPiece input) {
 
 TEST(VcfWriterTest, WritesGzippedVCF) {
   string output_filename = MakeTempFile("writes_gzipped_vcf.vcf.gz");
-  auto writer = MakeDogVcfWriter(output_filename);
+  auto writer = MakeDogVcfWriter(output_filename, false);
   ASSERT_THAT(writer->Close(), IsOK());
 
   string vcf_contents;

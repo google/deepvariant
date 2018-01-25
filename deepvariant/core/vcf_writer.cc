@@ -502,6 +502,11 @@ tf::Status VcfWriter::Write(const Variant& variant_message) {
   if (v == nullptr)
     return tf::errors::Unknown("bcf_init call failed");
   TF_RETURN_IF_ERROR(ConvertFromPb(variant_message, *header_, v));
+  if (options_.round_qual_values()) {
+    // Round quality value printed out to one digit past the decimal point.
+    double rounded_quality = floor(variant_message.quality() * 10 + 0.5) / 10;
+    v->qual = rounded_quality;
+  }
   if (bcf_write(fp_, header_, v) != 0)
     return tf::errors::Unknown("bcf_write call failed");
   bcf_destroy(v);

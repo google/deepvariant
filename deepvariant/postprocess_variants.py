@@ -613,9 +613,12 @@ def write_variants_to_vcf(contigs,
   if filters is None:
     filters = FILTERS
   logging.info('Writing output to VCF file: %s', output_vcf_path)
-  with genomics_io.make_variant_writer(
-      output_vcf_path, contigs, samples=[sample_name],
-      filters=filters) as writer:
+  with genomics_io.make_vcf_writer(
+      output_vcf_path,
+      contigs,
+      samples=[sample_name],
+      filters=filters,
+      round_qualities=True) as writer:
     for variant in variant_generator:
       writer.write(variant)
 

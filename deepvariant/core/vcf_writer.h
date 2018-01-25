@@ -86,7 +86,7 @@ class VcfWriter {
   // A pointer to the htslib file used to write the VCF data.
   htsFile* fp_;
 
-  // The options controlling the behavior of this VcfReader.
+  // The options controlling the behavior of this VcfWriter.
   const VcfWriterOptions options_;
 
   // A pointer to the VCF header object.
