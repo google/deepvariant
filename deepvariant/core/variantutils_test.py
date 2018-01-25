@@ -37,6 +37,7 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from deepvariant.core.genomics import variants_pb2
 from deepvariant.core import ranges
 from deepvariant.core import test_utils
 from deepvariant.core import variantutils
@@ -465,6 +466,98 @@ class VariantUtilsTests(parameterized.TestCase):
   def test_genotype_ordering_in_likelihoods(self, variant, expected):
     self.assertEqual(
         list(variantutils.genotype_ordering_in_likelihoods(variant)), expected)
+
+  @parameterized.parameters(
+      # Haploid.
+      dict(gls=[0.], allele_indices=[0], expected=0.),
+      dict(gls=[-1, -2], allele_indices=[1], expected=-2),
+      dict(gls=[-1, -2, -3], allele_indices=[2], expected=-3),
+      # Diploid.
+      dict(gls=[0.], allele_indices=[0, 0], expected=0.),
+      dict(gls=[-1, -2, -3], allele_indices=[0, 0], expected=-1),
+      dict(gls=[-1, -2, -3], allele_indices=[0, 1], expected=-2),
+      dict(gls=[-1, -2, -3], allele_indices=[1, 0], expected=-2),
+      dict(gls=[-1, -2, -3], allele_indices=[1, 1], expected=-3),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[0, 0], expected=-1),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[0, 1], expected=-2),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[1, 0], expected=-2),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[1, 1], expected=-3),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[0, 2], expected=-4),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[2, 0], expected=-4),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[1, 2], expected=-5),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[2, 1], expected=-5),
+      dict(gls=[-1, -2, -3, -4, -5, -6], allele_indices=[2, 2], expected=-6),
+      dict(gls=range(10), allele_indices=[0, 3], expected=6),
+      dict(gls=range(10), allele_indices=[1, 3], expected=7),
+      dict(gls=range(10), allele_indices=[2, 3], expected=8),
+      dict(gls=range(10), allele_indices=[3, 3], expected=9),
+  )
+  def test_genotype_likelihood(self, gls, allele_indices, expected):
+    variantcall = variants_pb2.VariantCall(genotype_likelihood=gls)
+    actual = variantutils.genotype_likelihood(variantcall, allele_indices)
+    self.assertEqual(actual, expected)
+
+  def test_unsupported_genotype_likelihood(self):
+    variantcall = variants_pb2.VariantCall(genotype_likelihood=[-1, -2, -3])
+    with self.assertRaisesRegexp(NotImplementedError,
+                                 'only supports haploid and diploid'):
+      variantutils.genotype_likelihood(variantcall, [0, 1, 1])
+
+  def test_haploid_allele_indices_for_genotype_likelihood_index(self):
+    for aix in xrange(20):
+      allele_indices = (aix,)
+      ix = variantutils.genotype_likelihood_index(allele_indices)
+      actual = variantutils.allele_indices_for_genotype_likelihood_index(
+          ix, ploidy=1)
+      self.assertEqual(actual, aix)
+
+  def test_diploid_allele_indices_for_genotype_likelihood_index(self):
+    for aix in xrange(20):
+      for bix in xrange(20):
+        allele_indices = (aix, bix)
+        expected = tuple(sorted(allele_indices))
+        ix = variantutils.genotype_likelihood_index(allele_indices)
+        actual = variantutils.allele_indices_for_genotype_likelihood_index(
+            ix, ploidy=2)
+        self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      dict(ploidy=-1),
+      dict(ploidy=0),
+      dict(ploidy=3),
+  )
+  def test_unsupported_allele_indices_for_genotype_likelihood_index(
+      self, ploidy):
+    with self.assertRaisesRegexp(NotImplementedError,
+                                 'only supported for haploid and diploid'):
+      variantutils.allele_indices_for_genotype_likelihood_index(0, ploidy)
+
+  @parameterized.parameters(
+      dict(alt_bases=[], num_alts=0, expected=[(0, 0)]),
+      dict(alt_bases=['A'], num_alts=0, expected=[(0, 0)]),
+      dict(alt_bases=['A'], num_alts=1, expected=[(0, 1)]),
+      dict(alt_bases=['A'], num_alts=2, expected=[(1, 1)]),
+      dict(alt_bases=['A', 'C'], num_alts=0, expected=[(0, 0)]),
+      dict(alt_bases=['A', 'C'], num_alts=1, expected=[(0, 1), (0, 2)]),
+      dict(alt_bases=['A', 'C'], num_alts=2, expected=[(1, 1), (1, 2), (2, 2)]),
+  )
+  def test_allele_indices_with_num_alts(self, alt_bases, num_alts, expected):
+    variant = variants_pb2.Variant(alternate_bases=alt_bases)
+    actual = variantutils.allele_indices_with_num_alts(
+        variant, num_alts, ploidy=2)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      dict(alt_bases=['A'], num_alts=0, ploidy=1),
+      dict(alt_bases=['A'], num_alts=0, ploidy=3),
+      dict(alt_bases=['A'], num_alts=-1, ploidy=2),
+      dict(alt_bases=['A'], num_alts=3, ploidy=2),
+  )
+  def test_invalid_allele_indices_with_num_alts(self, alt_bases, num_alts,
+                                                ploidy):
+    variant = variants_pb2.Variant(alternate_bases=alt_bases)
+    with self.assertRaises((NotImplementedError, ValueError)):
+      variantutils.allele_indices_with_num_alts(variant, num_alts, ploidy)
 
 
 if __name__ == '__main__':

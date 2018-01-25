@@ -609,6 +609,38 @@ def is_gvcf(variant):
   return variant.alternate_bases == [GVCF_ALT_ALLELE]
 
 
+def _genotype_order_in_likelihoods(num_alts, ploidy=2):
+  """Yields tuples of `ploidy` ints for the given number of alt alleles.
+
+  https://samtools.github.io/hts-specs/VCFv4.1.pdf
+  "If A is the allele in REF and B,C,... are the alleles as ordered in ALT,
+  the ordering of genotypes for the likelihoods is given by:
+  F(j/k) = (k*(k+1)/2)+j. In other words, for biallelic sites the ordering is:
+  AA,AB,BB; for triallelic sites the ordering is: AA,AB,BB,AC,BC,CC, etc."
+  The biallelic sites in our case are 0/0, 0/1, 1/1.
+  The triallelic sites are 0/0, 0/1, 1/1, 0/2, 1/2, 2/2.
+  This wiki page has more information that generalizes to different ploidy.
+  http://genome.sph.umich.edu/wiki/Relationship_between_Ploidy,_Alleles_and_Genotypes
+
+  Args:
+    num_alts: int. The number of alternate alleles at the site.
+    ploidy: int. The ploidy for which to return genotypes.
+
+  Yields:
+    Tuples of `ploidy` ints representing allele indices in the order they appear
+    in the corresponding genotype likelihood array.
+  """
+  if ploidy == 1:
+    for i in range(num_alts + 1):
+      yield (i,)
+  elif ploidy == 2:
+    for j in range(num_alts + 1):
+      for i in range(j + 1):
+        yield (i, j)
+  else:
+    raise NotImplementedError('Only haploid and diploid supported.')
+
+
 def genotype_ordering_in_likelihoods(variant):
   """Yields (i, j, allele_i, allele_j) for the genotypes ordering in GLs.
 
@@ -631,6 +663,119 @@ def genotype_ordering_in_likelihoods(variant):
     allele indices and strings (i, j, allele_i, allele_j) in the correct order.
   """
   alleles = [variant.reference_bases] + list(variant.alternate_bases)
-  for j in range(0, len(variant.alternate_bases) + 1):
-    for i in range(0, j + 1):
-      yield i, j, alleles[i], alleles[j]
+  for i, j in _genotype_order_in_likelihoods(
+      len(variant.alternate_bases), ploidy=2):
+    yield i, j, alleles[i], alleles[j]
+
+
+def genotype_likelihood_index(allele_indices):
+  """Returns the genotype likelihood index for the given allele indices.
+
+  Args:
+    allele_indices: list(int). The list of allele indices for a given genotype.
+      E.g. diploid homozygous reference is represented as [0, 0].
+
+  Returns:
+    The index into the associated genotype likelihood array corresponding to
+    the likelihood of this list of alleles.
+
+  Raises:
+    NotImplementedError: The allele_indices are more than diploid.
+  """
+  if len(allele_indices) == 1:
+    # Haploid case.
+    return allele_indices[0]
+  elif len(allele_indices) == 2:
+    # Diploid case.
+    g1, g2 = sorted(allele_indices)
+    return g1 + (g2 * (g2 + 1) // 2)
+  else:
+    raise NotImplementedError(
+        'Genotype likelihood index only supports haploid and diploid: {}'.
+        format(allele_indices))
+
+
+def allele_indices_for_genotype_likelihood_index(gl_index, ploidy=2):
+  """Returns a tuple of allele_indices corresponding to the given GL index.
+
+  This is the inverse function to `genotype_likelihood_index`.
+
+  Args:
+    gl_index: int. The index within a genotype likelihood array for which to
+      determine the associated alleles.
+    ploidy: int. The ploidy of the result.
+
+  Returns:
+    A tuple of `ploidy` ints representing the allele indices at this GL index.
+
+  Raises:
+    NotImplementedError: The requested allele indices are more than diploid.
+  """
+  if ploidy == 1:
+    return gl_index
+  elif ploidy == 2:
+    # redacted
+    # https://genome.sph.umich.edu/wiki/Relationship_between_Ploidy,_Alleles_and_Genotypes
+    # rather than creating all genotypes explicitly.
+    num_alts = 1
+    while genotype_likelihood_index([num_alts, num_alts]) < gl_index:
+      num_alts += 1
+    genotypes = list(_genotype_order_in_likelihoods(num_alts, ploidy=ploidy))
+    return genotypes[gl_index]
+  else:
+    raise NotImplementedError(
+        'Allele calculations only supported for haploid and diploid.')
+
+
+def genotype_likelihood(variantcall, allele_indices):
+  """Returns the genotype likelihood for the given allele indices.
+
+  Args:
+    variantcall: third_party.nucleus.protos.VariantCall. The VariantCall from
+      which to extract the genotype likelihood of the allele indices.
+    allele_indices: list(int). The list of allele indices for a given genotype.
+      E.g. diploid heterozygous alternate can be represented as [0, 1].
+
+  Returns:
+    The float value of the genotype likelihood of this set of alleles.
+  """
+  return variantcall.genotype_likelihood[genotype_likelihood_index(
+      allele_indices)]
+
+
+def allele_indices_with_num_alts(variant, num_alts, ploidy=2):
+  """Returns a list of allele indices configurations with `num_alts` alternates.
+
+  Args:
+    variant: third_party.nucleus.protos.Variant. The variant of interest, which
+      defines the candidate alternate alleles that can be used to generate
+      allele indices configurations.
+    num_alts: int in [0, `ploidy`]. The number of non-reference alleles for
+      which to create the allele indices configurations.
+    ploidy: int. The ploidy for which to return allele indices configurations.
+
+  Returns: A list of tuples. Each tuple is of length `ploidy` and represents the
+    allele indices of all `ploidy` genotypes that contain `num_alts`
+    non-reference alleles.
+
+  Raises:
+    ValueError: The domain of `num_alts` is invalid.
+    NotImplementedError: `ploidy` is not diploid.
+  """
+  if ploidy != 2:
+    raise NotImplementedError(
+        'allele_indices_with_num_alts only supports diploid.')
+  if not 0 <= num_alts <= ploidy:
+    raise ValueError(
+        'Invalid number of alternate alleles requested: {} for ploidy {}'.
+        format(num_alts, ploidy))
+
+  max_candidate_alt_ix = len(variant.alternate_bases)
+  if num_alts == 0:
+    return [(0, 0)]
+  elif num_alts == 1:
+    return [(0, i) for i in range(1, max_candidate_alt_ix + 1)]
+  else:
+    return [(i, j)
+            for i in range(1, max_candidate_alt_ix + 1)
+            for j in range(i, max_candidate_alt_ix + 1)]

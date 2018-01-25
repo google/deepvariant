@@ -419,6 +419,7 @@ py_test(
         ":py_test_utils",
         ":ranges",
         ":variantutils",
+        "//deepvariant/core/genomics:variants_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
