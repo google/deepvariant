@@ -66,7 +66,9 @@ def make_golden_dataset(compressed_inputs=False):
   else:
     source_path = test_utils.GOLDEN_TRAINING_EXAMPLES
   return data_providers.DeepVariantDataSet(
-      name='labeled_golden', source=source_path, num_examples=49)
+      name='labeled_golden',
+      source=source_path,
+      num_examples=test_utils.N_GOLDEN_TRAINING_EXAMPLES)
 
 
 def _test_dataset_config(filename, **kwargs):
