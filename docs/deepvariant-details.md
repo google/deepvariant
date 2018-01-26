@@ -233,6 +233,9 @@ SNP   | 735  | 363  | 0.999759 | 0.999881  | 0.999820
 See the [whole genome case study], which we update with each release of
 DeepVariant, for the latest results.
 
+You can also see the [Datalab example] to see how you can visualize the pileup
+images.
+
 ## Optimizing DeepVariant
 
 For educational purposes, the DeepVariant Case Study uses the simplest, but
@@ -386,3 +389,4 @@ but the output must go to a local disk.
 [quick start]: deepvariant-quick-start.md
 [Running DeepVariant on Google Cloud Platform]: https://cloud.google.com/genomics/deepvariant
 [TensorFlow]: http://www.tensorflow.org/
+[Datalab example]: visualizing_examples.ipynb

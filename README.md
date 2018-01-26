@@ -34,6 +34,8 @@ DeepVariant from sources for your platform.
 *   [DeepVariant exome case study](docs/deepvariant-exome-case-study.md)
 *   [DeepVariant usage guide](docs/deepvariant-details.md)
 *   [DeepVariant model training](docs/deepvariant-model-training.md)
+*   [Datalab example: visualizing pileup
+    images/tensors](docs/visualizing_examples.ipynb)
 
 <!-- mdlint on -->
 
