@@ -103,6 +103,40 @@ class DeepvariantRunnerTest(unittest.TestCase):
                       'CALLED_VARIANTS=gs://staging/called_variants',
                       'OUTFILE=gs://output.vcf'))
 
+  @patch('dsub.commands.dsub.call')
+  @patch.object(multiprocessing, 'Pool')
+  def testRunPipeline_WithGVCFOutFile(self, mock_pool, mock_dsub_call):
+
+    mock_apply_async = mock_pool.return_value.apply_async
+    mock_apply_async.return_value = None
+    self._argv.extend([
+        '--make_examples_workers', '1', '--call_variants_workers', '1',
+        '--gvcf_outfile', 'gs://gvcf_output.vcf', '--gvcf_gq_binsize', '5'
+    ])
+    gcp_deepvariant_runner.run(self._argv)
+
+    mock_apply_async.assert_has_calls([
+        mock.call(
+            func=mock.ANY,
+            args=(mock.HASALLOF(
+                'make_examples', 'gcr.io/dockerimage', 'INPUT_BAM=gs://bam',
+                'INPUT_BAI=gs://bam.bai', 'INPUT_REF=gs://ref',
+                'INPUT_REF_FAI=gs://ref.fai',
+                'EXAMPLES=gs://staging/examples/0', 'GVCF=gs://staging/gvcf'),
+                  mock.ANY, 0)),
+        mock.call(
+            func=mock.ANY,
+            args=(mock.HASALLOF(
+                'call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
+                'EXAMPLES=gs://staging/examples/0',
+                'CALLED_VARIANTS=gs://staging/called_variants'), mock.ANY, 0)),
+    ],)
+    mock_dsub_call.assert_called_once_with(
+        mock.HASALLOF('postprocess_variants', 'gcr.io/dockerimage',
+                      'CALLED_VARIANTS=gs://staging/called_variants',
+                      'OUTFILE=gs://output.vcf', 'GVCF=gs://staging/gvcf',
+                      'GVCF_OUTFILE=gs://gvcf_output.vcf'))
+
   @patch.object(multiprocessing, 'Pool')
   def testRunMakeExamples(self, mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async

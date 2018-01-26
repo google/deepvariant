@@ -53,6 +53,7 @@ from __future__ import print_function
 import argparse
 import logging
 import multiprocessing
+import os
 import re
 import socket
 import time
@@ -73,31 +74,33 @@ _UNEXPECTED_STOP_ERROR_CODES = ['13', '14']
 
 _MAKE_EXAMPLES_COMMAND = r"""
 cd /opt/deepvariant/bin/ && \
-seq "${SHARD_START_INDEX}" "${SHARD_END_INDEX}" | parallel --halt 2 \
+seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2 \
   ./make_examples \
     --mode calling \
-    --examples "${EXAMPLES}"/examples_output.tfrecord@"${SHARDS}".gz \
-    --reads "${INPUT_BAM}" \
-    --ref "${INPUT_REF}" \
-    --task {} "${EXTRA_ARGS}"
+    --examples "${{EXAMPLES}}"/examples_output.tfrecord@"${{SHARDS}}".gz \
+    --reads "${{INPUT_BAM}}" \
+    --ref "${{INPUT_REF}}" \
+    --task {{}} \
+    {EXTRA_ARGS}
 """
 
 _CALL_VARIANTS_COMMAND = r"""
 cd /opt/deepvariant/bin/ && \
-seq -f "%05g" "${SHARD_START_INDEX}" "${SHARD_END_INDEX}" | \
-parallel --jobs "${CONCURRENT_JOBS}" --halt 2 \
+seq -f "%05g" "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | \
+parallel --jobs "${{CONCURRENT_JOBS}}" --halt 2 \
 ./call_variants \
-  --examples "${EXAMPLES}"/examples_output.tfrecord-{}-of-"$(printf "%05d" "${SHARDS}")".gz \
-  --outfile "${CALLED_VARIANTS}"/call_variants_output.tfrecord-{}-of-"$(printf "%05d" "${SHARDS}")".gz \
-  --checkpoint "${MODEL}"/model.ckpt
+  --examples "${{EXAMPLES}}"/examples_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz \
+  --outfile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz \
+  --checkpoint "${{MODEL}}"/model.ckpt
 """
 
 _POSTPROCESS_VARIANTS_COMMAND = r"""
 cd /opt/deepvariant/bin && \
 ./postprocess_variants \
-  --ref "${INPUT_REF}" \
-  --infile "${CALLED_VARIANTS}"/call_variants_output.tfrecord@"${SHARDS}".gz \
-  --outfile "${OUTFILE}"
+    --ref "${{INPUT_REF}}" \
+    --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord@"${{SHARDS}}".gz \
+    --outfile "${{OUTFILE}}" \
+    {EXTRA_ARGS}
 """
 
 
@@ -110,12 +113,17 @@ def _get_staging_examples_folder(pipeline_args, worker_index):
   if (pipeline_args.make_examples_workers ==
       pipeline_args.call_variants_workers):
     path_parts.append(str(worker_index))
-  return '/'.join(path_parts)
+  return os.path.join(*path_parts)
+
+
+def _get_staging_gvcf_folder(pipeline_args):
+  """Returns the folder to store gVCF TF records from make_examples job."""
+  return os.path.join(pipeline_args.staging, 'gvcf')
 
 
 def _get_staging_called_variants_folder(pipeline_args):
   """Returns the folder to store called variants from call_variants job."""
-  return '/'.join([pipeline_args.staging, 'called_variants'])
+  return os.path.join(pipeline_args.staging, 'called_variants')
 
 
 def _get_base_job_args(pipeline_args):
@@ -192,6 +200,21 @@ def _run_job(dsub_args, pipeline_args, worker_index=0):
 
 def _run_make_examples(pipeline_args):
   """Runs the make_examples job."""
+
+  def get_extra_args():
+    """Optional arguments that are specific to make_examples binary."""
+    extra_args = []
+    if pipeline_args.gvcf_outfile:
+      extra_args.extend(
+          ['--gvcf', '"${GVCF}"/gvcf_output.tfrecord@"${SHARDS}".gz'])
+    if pipeline_args.gvcf_gq_binsize:
+      extra_args.extend(
+          ['--gvcf_gq_binsize',
+           str(pipeline_args.gvcf_gq_binsize)])
+    if pipeline_args.regions:
+      extra_args.extend(['--regions', ' '.join(pipeline_args.regions)])
+    return extra_args
+
   num_workers = min(pipeline_args.make_examples_workers, pipeline_args.shards)
   shards_per_worker = pipeline_args.shards / num_workers
   threads = multiprocessing.Pool(processes=num_workers)
@@ -222,16 +245,15 @@ def _run_make_examples(pipeline_args):
         '--env',
         'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
         '--command',
-        _MAKE_EXAMPLES_COMMAND,
+        _MAKE_EXAMPLES_COMMAND.format(EXTRA_ARGS=' '.join(get_extra_args())),
     ]
     if pipeline_args.ref_gzi:
       dsub_args.extend(['--input', 'INPUT_REF_GZI=' + pipeline_args.ref_gzi])
-    if pipeline_args.regions:
+    if pipeline_args.gvcf_outfile:
       dsub_args.extend([
-          '--env',
-          'EXTRA_ARGS=--regions %s' % ' '.join(pipeline_args.regions)
+          '--output-recursive',
+          'GVCF=' + _get_staging_gvcf_folder(pipeline_args)
       ])
-
     results.append(
         threads.apply_async(func=_run_job, args=(dsub_args, pipeline_args, i)))
   threads.close()
@@ -281,7 +303,7 @@ def _run_call_variants(pipeline_args):
             int(pipeline_args.call_variants_cores_per_worker /
                 pipeline_args.call_variants_cores_per_shard)))),
         '--command',
-        _CALL_VARIANTS_COMMAND,
+        _CALL_VARIANTS_COMMAND.format(),
     ]
     if pipeline_args.gpu:
       dsub_args.extend([
@@ -304,6 +326,18 @@ def _run_call_variants(pipeline_args):
 
 def _run_postprocess_variants(pipeline_args):
   """Runs the postprocess_variants job."""
+
+  def get_extra_args():
+    """Optional arguments that are specific to postprocess_variants binary."""
+    extra_args = []
+    if pipeline_args.gvcf_outfile:
+      extra_args.extend([
+          '--nonvariant_site_tfrecord_path',
+          '"${GVCF}"/gvcf_output.tfrecord@"${SHARDS}".gz'
+      ])
+      extra_args.extend(['--gvcf_outfile', '"${GVCF_OUTFILE}"'])
+    return extra_args
+
   dsub_args = _get_base_job_args(pipeline_args) + [
       '--name',
       pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME,
@@ -325,10 +359,16 @@ def _run_postprocess_variants(pipeline_args):
       '--env',
       'SHARDS=' + str(pipeline_args.shards),
       '--command',
-      _POSTPROCESS_VARIANTS_COMMAND,
+      _POSTPROCESS_VARIANTS_COMMAND.format(
+          EXTRA_ARGS=' '.join(get_extra_args())),
   ]
   if pipeline_args.ref_gzi:
     dsub_args.extend(['--input', 'INPUT_REF_GZI=' + pipeline_args.ref_gzi])
+  if pipeline_args.gvcf_outfile:
+    dsub_args.extend([
+        '--input-recursive', 'GVCF=' + _get_staging_gvcf_folder(pipeline_args)
+    ])
+    dsub_args.extend(['--output', 'GVCF_OUTFILE=' + pipeline_args.gvcf_outfile])
   _run_job(dsub_args, pipeline_args)
 
 
@@ -355,10 +395,16 @@ def _validate_and_complete_args(pipeline_args):
       pipeline_args.call_variants_cores_per_shard):
     raise ValueError('--call_variants_cores_per_worker must be at least '
                      'as large as --call_variants_cores_per_shard')
+  if (pipeline_args.gvcf_gq_binsize is not None and
+      not pipeline_args.gvcf_outfile):
+    raise ValueError('--gvcf_outfile must be provided with --gvcf_gq_binsize')
+  if (pipeline_args.gvcf_gq_binsize is not None and
+      pipeline_args.gvcf_gq_binsize < 1):
+    raise ValueError('--gvcf_gq_binsize must be greater or equal to 1')
 
   # Automatically generate default values for missing args (if any).
   if not pipeline_args.logging:
-    pipeline_args.logging = '/'.join([pipeline_args.staging, 'logs'])
+    pipeline_args.logging = os.path.join(pipeline_args.staging, 'logs')
   if not pipeline_args.ref_fai:
     pipeline_args.ref_fai = pipeline_args.ref + '.fai'
   if not pipeline_args.ref_gzi and pipeline_args.ref.endswith('.gz'):
@@ -424,6 +470,19 @@ def run(argv=None):
       '--logging',
       help=('A folder in Google Cloud Storage to use for storing logs. '
             'Defaults to --staging + "/logs".'))
+
+  # Optional gVCF args.
+  parser.add_argument(
+      '--gvcf_outfile',
+      help=('Destination path in Google Cloud Storage where the resulting '
+            'gVCF file will be stored. This is optional, and gVCF file will '
+            'only be generated if this is specified.'))
+  parser.add_argument(
+      '--gvcf_gq_binsize',
+      type=int,
+      help=('Bin size in which make_examples job quantizes gVCF genotype '
+            'qualities. Larger bin size reduces the number of gVCF records '
+            'at a loss of quality granularity.'))
 
   # Additional optional pipeline parameters.
   parser.add_argument(
