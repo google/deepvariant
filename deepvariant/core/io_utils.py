@@ -70,7 +70,7 @@ def ParseShardedFileSpec(spec):  # pylint:disable=invalid-name
   Returns:
     basename: The basename for the files.
     num_shards: The number of shards.
-    suffix: The suffix if there is one or None.
+    suffix: The suffix if there is one, or '' if not.
   Raises:
     ShardError: If the spec is not a valid sharded specification.
   """
@@ -80,7 +80,12 @@ def ParseShardedFileSpec(spec):  # pylint:disable=invalid-name
                       'specification because it did not match the regex '
                       '{1}').format(spec, SHARD_SPEC_PATTERN.pattern))
 
-  return m.group(2), int(m.group(3)), m.group(4)
+  # If there's a non-empty suffix, we need to prepend '.' so we get files like
+  # foo@20.ext instead of foo@ext. The original C++ parser version has:
+  # string ext = StrCat(suff.empty() ? "" : ".", suff);
+  suffix = '.' + m.group(4) if m.group(4) else ''
+
+  return m.group(2), int(m.group(3)), suffix
 
 
 def _ShardWidth(num_shards):  # pylint:disable=invalid-name
@@ -101,11 +106,6 @@ def GenerateShardedFilenames(spec):  # pylint:disable=invalid-name
     ShardError: If spec is not a valid sharded file specification.
   """
   basename, num_shards, suffix = ParseShardedFileSpec(spec)
-
-  if not suffix:
-    suffix = ''
-  else:
-    suffix = '.' + suffix
   files = []
   width = _ShardWidth(num_shards)
   format_str = '{{0}}-{{1:0{0}}}-of-{{2:0{0}}}{{3}}'.format(width)
@@ -119,16 +119,12 @@ def GenerateShardedFilePattern(basename, num_shards, suffix):  # pylint:disable=
   """Generate a sharded file pattern.
 
   Args:
-    basename: The basename for the files.
-    num_shards: The number of shards.
-    suffix: The suffix if there is one or None. Should not include '.'.
+    basename: str; The basename for the files.
+    num_shards: int; The number of shards.
+    suffix: str; The suffix if there is one or ''.
   Returns:
     pattern:
   """
-  if suffix:
-    suffix = '.' + suffix
-  else:
-    suffix = ''
   width = _ShardWidth(num_shards)
   specifier = '?' * width
   format_str = '{{0}}-{{1}}-of-{{2:0{0}}}{{3}}'.format(width)

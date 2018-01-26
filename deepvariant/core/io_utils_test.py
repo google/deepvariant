@@ -236,8 +236,8 @@ class RawProtoWriterAdaptorTests(parameterized.TestCase):
 class ShardsTest(parameterized.TestCase):
 
   @parameterized.named_parameters(
-      ('no_suffix', '/dir/foo/bar@3', '/dir/foo/bar', 3, None),
-      ('suffix', '/dir/foo/bar@3.txt', '/dir/foo/bar', 3, 'txt'),
+      ('no_suffix', '/dir/foo/bar@3', '/dir/foo/bar', 3, ''),
+      ('suffix-dot', '/dir/foo/bar@3.txt', '/dir/foo/bar', 3, '.txt'),
   )
   def testParseShardedFileSpec(self, spec, expected_basename,
                                expected_num_shards, expected_suffix):
@@ -290,9 +290,9 @@ class ShardsTest(parameterized.TestCase):
                           spec, actual, expected))
 
   @parameterized.named_parameters(
-      ('no_suffix', '/dir/foo/bar', 3, None, '/dir/foo/bar-?????-of-00003'),
-      ('suffix', '/dir/foo/bar', 3, 'txt', '/dir/foo/bar-?????-of-00003.txt'),
-      ('many', '/dir/foo/bar', 1234567, 'txt',
+      ('no_suffix', '/dir/foo/bar', 3, '', '/dir/foo/bar-?????-of-00003'),
+      ('suffix', '/dir/foo/bar', 3, '.txt', '/dir/foo/bar-?????-of-00003.txt'),
+      ('many', '/dir/foo/bar', 1234567, '.txt',
        '/dir/foo/bar-???????-of-1234567.txt'),
   )
   def testGenerateShardedFilePattern(self, basename, num_shards, suffix,
