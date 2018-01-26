@@ -209,12 +209,12 @@ study](deepvariant-case-study.md#run_postprocess_variants).
 
 ## Resources used by each step
 
-Step                   | wall time
----------------------- | ---------
-`make_examples`        | 64m 7s
-`call_variants`        | 5m 43s
-`postprocess_variants` | 0m 18s
-total time             | ~ 1h 10m
+Step                        | wall time
+--------------------------- | ---------
+`make_examples`             | 64m 7s
+`call_variants`             | 5m 43s
+`postprocess_variants`      | 0m 18s
+total time (single machine) | ~ 1h 10m
 
 ## Variant call quality
 

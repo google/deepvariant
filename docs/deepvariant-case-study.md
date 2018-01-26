@@ -233,12 +233,12 @@ fewer cores for this step.
 
 ## Resources used by each step
 
-Step                   | wall time
----------------------- | ----------
-`make_examples`        | 5h 17m 51s
-`call_variants`        | 8h 17m 10s
-`postprocess_variants` | 24m 53s
-total time             | ~ 14h 0m
+Step                        | wall time
+--------------------------- | ----------
+`make_examples`             | 5h 17m 51s
+`call_variants`             | 8h 17m 10s
+`postprocess_variants`      | 24m 53s
+total time (single machine) | ~ 14h 0m
 
 ## Variant call quality
 
