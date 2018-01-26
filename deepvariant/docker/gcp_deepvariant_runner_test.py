@@ -51,6 +51,22 @@ import mock
 from mock import patch
 
 
+class _HasAllOf(object):
+  """Helper class used in mock.call to check that all arguments are in a set."""
+
+  def __init__(self, *values):
+    self._values = set(values)
+
+  def __eq__(self, other):
+    return self._values.issubset(set(other))
+
+  def __ne__(self, other):
+    return not self.__eq__(other)
+
+  def __repr__(self):
+    return '<_HasAllOf({})>'.format(', '.join(repr(v) for v in self._values))
+
+
 class DeepvariantRunnerTest(unittest.TestCase):
 
   def setUp(self):
@@ -86,22 +102,21 @@ class DeepvariantRunnerTest(unittest.TestCase):
     mock_apply_async.assert_has_calls([
         mock.call(
             func=mock.ANY,
-            args=(mock.HASALLOF(
-                'make_examples', 'gcr.io/dockerimage', 'INPUT_BAM=gs://bam',
-                'INPUT_BAI=gs://bam.bai', 'INPUT_REF=gs://ref',
-                'INPUT_REF_FAI=gs://ref.fai',
-                'EXAMPLES=gs://staging/examples/0'), mock.ANY, 0)),
+            args=(_HasAllOf('make_examples', 'gcr.io/dockerimage',
+                            'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
+                            'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
+                            'EXAMPLES=gs://staging/examples/0'), mock.ANY, 0)),
         mock.call(
             func=mock.ANY,
-            args=(mock.HASALLOF(
+            args=(_HasAllOf(
                 'call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
                 'EXAMPLES=gs://staging/examples/0',
                 'CALLED_VARIANTS=gs://staging/called_variants'), mock.ANY, 0)),
     ],)
     mock_dsub_call.assert_called_once_with(
-        mock.HASALLOF('postprocess_variants', 'gcr.io/dockerimage',
-                      'CALLED_VARIANTS=gs://staging/called_variants',
-                      'OUTFILE=gs://output.vcf'))
+        _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
+                  'CALLED_VARIANTS=gs://staging/called_variants',
+                  'OUTFILE=gs://output.vcf'))
 
   @patch('dsub.commands.dsub.call')
   @patch.object(multiprocessing, 'Pool')
@@ -118,24 +133,23 @@ class DeepvariantRunnerTest(unittest.TestCase):
     mock_apply_async.assert_has_calls([
         mock.call(
             func=mock.ANY,
-            args=(mock.HASALLOF(
-                'make_examples', 'gcr.io/dockerimage', 'INPUT_BAM=gs://bam',
-                'INPUT_BAI=gs://bam.bai', 'INPUT_REF=gs://ref',
-                'INPUT_REF_FAI=gs://ref.fai',
-                'EXAMPLES=gs://staging/examples/0', 'GVCF=gs://staging/gvcf'),
-                  mock.ANY, 0)),
+            args=(_HasAllOf('make_examples', 'gcr.io/dockerimage',
+                            'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
+                            'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
+                            'EXAMPLES=gs://staging/examples/0',
+                            'GVCF=gs://staging/gvcf'), mock.ANY, 0)),
         mock.call(
             func=mock.ANY,
-            args=(mock.HASALLOF(
+            args=(_HasAllOf(
                 'call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
                 'EXAMPLES=gs://staging/examples/0',
                 'CALLED_VARIANTS=gs://staging/called_variants'), mock.ANY, 0)),
     ],)
     mock_dsub_call.assert_called_once_with(
-        mock.HASALLOF('postprocess_variants', 'gcr.io/dockerimage',
-                      'CALLED_VARIANTS=gs://staging/called_variants',
-                      'OUTFILE=gs://output.vcf', 'GVCF=gs://staging/gvcf',
-                      'GVCF_OUTFILE=gs://gvcf_output.vcf'))
+        _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
+                  'CALLED_VARIANTS=gs://staging/called_variants',
+                  'OUTFILE=gs://output.vcf', 'GVCF=gs://staging/gvcf',
+                  'GVCF_OUTFILE=gs://gvcf_output.vcf'))
 
   @patch.object(multiprocessing, 'Pool')
   def testRunMakeExamples(self, mock_pool):
@@ -160,21 +174,20 @@ class DeepvariantRunnerTest(unittest.TestCase):
         [
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF(
-                    'prefix_make_examples', 'gcr.io/dockerimage',
-                    'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                    'EXAMPLES=gs://staging/examples'), mock.ANY, 0)),
+                args=(_HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                                'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
+                                'EXAMPLES=gs://staging/examples'), mock.ANY,
+                      0)),
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF('prefix_make_examples',
-                                    'gcr.io/dockerimage', 'SHARD_START_INDEX=5',
-                                    'SHARD_END_INDEX=9'), mock.ANY, 1)),
+                args=(_HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                                'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9'),
+                      mock.ANY, 1)),
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF(
-                    'prefix_make_examples', 'gcr.io/dockerimage',
-                    'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14'), mock.ANY,
-                      2)),
+                args=(_HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                                'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14'),
+                      mock.ANY, 2)),
         ],
         any_order=True,
     )
@@ -201,20 +214,19 @@ class DeepvariantRunnerTest(unittest.TestCase):
         [
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF('call_variants', 'gcr.io/dockerimage',
-                                    'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                                    'CONCURRENT_JOBS=2'), mock.ANY, 0)),
+                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage',
+                                'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
+                                'CONCURRENT_JOBS=2'), mock.ANY, 0)),
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF('call_variants', 'gcr.io/dockerimage',
-                                    'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
-                                    'CONCURRENT_JOBS=2'), mock.ANY, 1)),
+                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage',
+                                'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
+                                'CONCURRENT_JOBS=2'), mock.ANY, 1)),
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF('call_variants', 'gcr.io/dockerimage',
-                                    'SHARD_START_INDEX=10',
-                                    'SHARD_END_INDEX=14', 'CONCURRENT_JOBS=2'),
-                      mock.ANY, 2)),
+                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage',
+                                'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
+                                'CONCURRENT_JOBS=2'), mock.ANY, 2)),
         ],
         any_order=True,
     )
@@ -244,21 +256,21 @@ class DeepvariantRunnerTest(unittest.TestCase):
         [
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF('call_variants', 'gcr.io/dockerimage_gpu',
-                                    'nvidia-tesla-k80', 'SHARD_START_INDEX=0',
-                                    'SHARD_END_INDEX=4', 'CONCURRENT_JOBS=1'),
+                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                                'nvidia-tesla-k80', 'SHARD_START_INDEX=0',
+                                'SHARD_END_INDEX=4', 'CONCURRENT_JOBS=1'),
                       mock.ANY, 0)),
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF('call_variants', 'gcr.io/dockerimage_gpu',
-                                    'nvidia-tesla-k80', 'SHARD_START_INDEX=5',
-                                    'SHARD_END_INDEX=9', 'CONCURRENT_JOBS=1'),
+                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                                'nvidia-tesla-k80', 'SHARD_START_INDEX=5',
+                                'SHARD_END_INDEX=9', 'CONCURRENT_JOBS=1'),
                       mock.ANY, 1)),
             mock.call(
                 func=mock.ANY,
-                args=(mock.HASALLOF('call_variants', 'gcr.io/dockerimage_gpu',
-                                    'nvidia-tesla-k80', 'SHARD_START_INDEX=10',
-                                    'SHARD_END_INDEX=14', 'CONCURRENT_JOBS=1'),
+                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                                'nvidia-tesla-k80', 'SHARD_START_INDEX=10',
+                                'SHARD_END_INDEX=14', 'CONCURRENT_JOBS=1'),
                       mock.ANY, 2)),
         ],
         any_order=True,
@@ -277,10 +289,10 @@ class DeepvariantRunnerTest(unittest.TestCase):
     ])
     gcp_deepvariant_runner.run(self._argv)
     mock_dsub_call.assert_called_once_with(
-        mock.HASALLOF('postprocess_variants', 'gcr.io/dockerimage',
-                      'CALLED_VARIANTS=gs://staging/called_variants',
-                      'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
-                      'OUTFILE=gs://output.vcf'))
+        _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
+                  'CALLED_VARIANTS=gs://staging/called_variants',
+                  'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
+                  'OUTFILE=gs://output.vcf'))
 
   @patch('dsub.commands.dsub.call')
   def testRunWithPreemptibles(self, mock_dsub_call):
@@ -299,9 +311,9 @@ class DeepvariantRunnerTest(unittest.TestCase):
     gcp_deepvariant_runner.run(self._argv)
 
     mock_dsub_call.assert_has_calls([
-        mock.call(mock.HASALLOF('postprocess_variants', '--preemptible')),
-        mock.call(mock.HASALLOF('postprocess_variants', '--preemptible')),
-        mock.call(mock.HASALLOF('postprocess_variants'))
+        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
+        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
+        mock.call(_HasAllOf('postprocess_variants'))
     ])
 
   @patch('dsub.commands.dsub.call')
@@ -330,8 +342,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
     # Two preemptible tries should have still happened.
     mock_dsub_call.assert_has_calls([
-        mock.call(mock.HASALLOF('postprocess_variants', '--preemptible')),
-        mock.call(mock.HASALLOF('postprocess_variants', '--preemptible'))
+        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
+        mock.call(_HasAllOf('postprocess_variants', '--preemptible'))
     ])
 
   @patch('dsub.commands.dsub.call')
@@ -350,9 +362,9 @@ class DeepvariantRunnerTest(unittest.TestCase):
     gcp_deepvariant_runner.run(self._argv)
 
     mock_dsub_call.assert_has_calls([
-        mock.call(mock.HASALLOF('postprocess_variants')),
-        mock.call(mock.HASALLOF('postprocess_variants')),
-        mock.call(mock.HASALLOF('postprocess_variants'))
+        mock.call(_HasAllOf('postprocess_variants')),
+        mock.call(_HasAllOf('postprocess_variants')),
+        mock.call(_HasAllOf('postprocess_variants'))
     ])
 
   @patch('dsub.commands.dsub.call')
@@ -382,9 +394,9 @@ class DeepvariantRunnerTest(unittest.TestCase):
       pass
 
     mock_dsub_call.assert_has_calls([
-        mock.call(mock.HASALLOF('postprocess_variants', '--preemptible')),
-        mock.call(mock.HASALLOF('postprocess_variants')),
-        mock.call(mock.HASALLOF('postprocess_variants'))
+        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
+        mock.call(_HasAllOf('postprocess_variants')),
+        mock.call(_HasAllOf('postprocess_variants'))
     ])
 
 
