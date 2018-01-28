@@ -24,6 +24,11 @@ Alternatively, see [Building and testing
 DeepVariant](docs/deepvariant-build-test.md) for more information on building
 DeepVariant from sources for your platform.
 
+For managed pipeline execution of DeepVariant see the [cost- and
+speed-optimized, Docker-based
+pipelines](https://cloud.google.com/genomics/deepvariant) created for Google
+Cloud Platform.
+
 ## Documentation
 
 *   [DeepVariant release notes](docs/deepvariant-release-notes.md)

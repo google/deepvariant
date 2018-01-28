@@ -2,7 +2,13 @@
 
 Similar to the [case study on whole genome sequencing
 data](deepvariant-case-study.md), in this study we describe applying DeepVariant
-to a real exome sample.
+to a real exome sample using a single machine.
+
+NOTE: This case study demonstrates an example of how to run DeepVariant
+end-to-end on one machine. This might not be the fastest or cheapest
+configuration for your needs. For more scalable execution of DeepVariant see the
+[Docker-based exome pipeline](https://cloud.google.com/genomics/deepvariant)
+created for Google Cloud Platform.
 
 ## Request a machine
 
@@ -11,7 +17,7 @@ non-preemptible instance with 128GiB and no GPU.
 
 ## Preliminaries
 
-Set a number of shell variables, to make what follows easier.
+Set a number of shell variables, to make what follows easier to read.
 
 ```bash
 BASE="${HOME}/exome-case-study"

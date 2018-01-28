@@ -6,9 +6,12 @@ We provide some guidelines on the computational resources needed for each step.
 And finally we assess the quality of the DeepVariant variant calls with
 `hap.py`.
 
-NOTE: this case study demonstrates an example of how to run DeepVariant
+NOTE: This case study demonstrates an example of how to run DeepVariant
 end-to-end on one machine. This might not be the fastest or cheapest
-configuration.
+configuration for your needs. For more scalable execution of DeepVariant see the
+[cost- and speed-optimized, Docker-based
+pipelines](https://cloud.google.com/genomics/deepvariant) created for Google
+Cloud Platform.
 
 Consult this [document](deepvariant-details.md) for more information about using
 GPUs or reading BAM files from Google Cloud Storage (GCS) directly.
@@ -32,7 +35,7 @@ gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
 
 ## Preliminaries
 
-Set a number of shell variables, to make what follows easier.
+Set a number of shell variables, to make what follows easier to read.
 
 ```bash
 BASE="${HOME}/case-study"
