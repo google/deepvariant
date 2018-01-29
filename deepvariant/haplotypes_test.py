@@ -141,7 +141,9 @@ def _resolved_compatible_outputs():
 
 class ResolveOverlappingVariantsTest(parameterized.TestCase):
 
+  @flagsaver.FlagSaver
   def test_maybe_resolve_conflicting_variants(self):
+    FLAGS.disable_haplotype_resolution = False
     # Note: Most of the resolution code is tested below in the
     # test_resolve_overlapping_variants function. This test mostly just ensures
     # that the interaction with RefCall variants is properly handled.
