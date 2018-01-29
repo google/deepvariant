@@ -47,6 +47,7 @@ py_library(
     deps = [
         ":call_variants_lib",
         ":data_providers",
+        ":haplotypes",
         ":make_examples_lib",
         ":model_eval_lib",
         ":model_train_lib",
@@ -412,6 +413,7 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         ":logging_level",
+        "//deepvariant:haplotypes",
         "//deepvariant/core:errors",
         "//deepvariant/core:genomics_io",
         "//deepvariant/core:genomics_math",
@@ -526,6 +528,34 @@ py_test(
         "//deepvariant/core:io_utils",
         "//deepvariant/core:variantutils",
         "//deepvariant/protos:deepvariant_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "haplotypes",
+    srcs = ["haplotypes.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        "//deepvariant/core:genomics_math",
+        "//deepvariant/core:variantutils",
+        "//deepvariant/core/genomics:variants_py_pb2",
+        "@com_google_absl_py//absl/flags",
+        "@com_google_absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "haplotypes_test",
+    size = "small",
+    srcs = ["haplotypes_test.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":haplotypes",
+        ":py_test_utils",
+        "//deepvariant/testing:flagsaver",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

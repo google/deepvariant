@@ -94,6 +94,21 @@ def variant_range(variant):
   return ranges.make_range(variant.reference_name, variant.start, variant.end)
 
 
+def variant_range_tuple(variant):
+  """Returns a new tuple of (reference_name, start, end) for the variant.
+
+  A common use case for this function is to sort variants by chromosomal
+  location, with usage like `sorted(variants, key=variant_range_tuple)`.
+
+  Args:
+    variant: third_party.nucleus.protos.Variant.
+
+  Returns:
+    A three-tuple with the same reference_name, start, and end as variant.
+  """
+  return (variant.reference_name, variant.start, variant.end)
+
+
 @enum.unique
 class GenotypeType(enum.Enum):
   """An enumeration of the types of genotypes."""

@@ -45,6 +45,7 @@ from absl import logging
 
 from deepvariant.core.genomics import struct_pb2
 from deepvariant.core.genomics import variants_pb2
+from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant.core import errors
 from deepvariant.core import genomics_io
@@ -843,11 +844,13 @@ def main(argv=()):
               paths[0], proto=deepvariant_pb2.CallVariantsOutput,
               max_records=1))
       sample_name = _extract_single_sample_name(record)
-      variant_generator = _transform_call_variants_output_to_variants(
+      independent_variants = _transform_call_variants_output_to_variants(
           input_sorted_tfrecord_path=temp.name,
           qual_filter=FLAGS.qual_filter,
           multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
           sample_name=sample_name)
+      variant_generator = haplotypes.maybe_resolve_conflicting_variants(
+          independent_variants)
       write_variants_to_vcf(
           contigs=contigs,
           variant_generator=variant_generator,

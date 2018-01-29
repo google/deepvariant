@@ -68,10 +68,14 @@ class VariantUtilsTests(parameterized.TestCase):
     v2 = test_utils.make_variant(chrom='1', alleles=['AGCT', 'C'], start=10)
     pos = ranges.make_range('1', 10, 11)
     range_ = ranges.make_range('1', 10, 14)
+    v1_range_tuple = ('1', 10, 11)
+    v2_range_tuple = ('1', 10, 14)
     self.assertEqual(pos, variantutils.variant_position(v1))
     self.assertEqual(pos, variantutils.variant_position(v2))
     self.assertEqual(pos, variantutils.variant_range(v1))
     self.assertEqual(range_, variantutils.variant_range(v2))
+    self.assertEqual(v1_range_tuple, variantutils.variant_range_tuple(v1))
+    self.assertEqual(v2_range_tuple, variantutils.variant_range_tuple(v2))
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), 'A/C'),
