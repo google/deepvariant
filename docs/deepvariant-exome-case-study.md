@@ -49,8 +49,7 @@ CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/HG002.cvo.tfrecord.gz"
 OUTPUT_VCF="${OUTPUT_DIR}/HG002.output.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
-REFSEQ_BED="${DATA_DIR}/refseq.coding_exons.b37.bed"
-EXTENDED_REFSEQ_BED="${DATA_DIR}/refseq.coding_exons.b37.extended50.bed"
+CAPTURE_BED="${DATA_DIR}/agilent_sureselect_human_all_exon_v5_b37_targets.bed"
 ```
 
 ## Create local directory structure
@@ -133,24 +132,14 @@ are from NIST, as part of the [Genomes in a Bottle
 project](http://jimb.stanford.edu/giab/). They are downloaded from
 [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/)
 
-##### RefSeq target BED file
+##### Capture target BED file
 
-We prepared two different BED files:
-
-1.  `refseq.coding_exons.b37.bed`
-
-    *   Download hg19 refseq.coding_exones.hg19.bed from
-        [http://genome.ucsc.edu/cgi-bin/hgTables](http://genome.ucsc.edu/cgi-bin/hgTables)
-    *   Edit file to remove genes on unk/alt genes
-    *   Then replace-regex '^chr' => '' throughout the file.
-    *   Make sure the chromosomes are sorted the same way as `hs37d5.fa`.
-    *   Save as refseq.coding_exons.b37.bed
-
-    Coverage is 33,889,421 bases.
-
-1.  `refseq.coding_exons.b37.extended50.bed`
-
-    Coverage is 53,393,967 bases.
+According to the paper "[Extensive sequencing of seven human genomes to
+characterize benchmark reference
+materials](https://www.nature.com/articles/sdata201625)", the HG002 exome was
+generated with Agilent SureSelect. In this case study we'll use the SureSelect
+v5 BED (`agilent_sureselect_human_all_exon_v5_b37_targets.bed`) and intersect it
+with the GIAB confident regions for evaluation.
 
 ##### Copy the data
 
@@ -166,7 +155,7 @@ It took us a few minuntes to copy the files.
 ## Run `make_examples`
 
 In this step, we used the `--regions` flag to constrain the regions we processed
-to the extended RefSeq BED file:
+to the capture region BED file:
 
 ```bash
 ( time seq 0 $((N_SHARDS-1)) | \
@@ -176,7 +165,7 @@ to the extended RefSeq BED file:
       --ref "${REF}" \
       --reads "${BAM}" \
       --examples "${EXAMPLES}" \
-      --regions "${EXTENDED_REFSEQ_BED}" \
+      --regions "${CAPTURE_BED}" \
       --task {}
 ) >"${LOG_DIR}/make_examples.log" 2>&1
 ```
@@ -217,10 +206,10 @@ study](deepvariant-case-study.md#run_postprocess_variants).
 
 Step                        | wall time
 --------------------------- | ---------
-`make_examples`             | 64m 7s
-`call_variants`             | 5m 43s
-`postprocess_variants`      | 0m 18s
-total time (single machine) | ~ 1h 10m
+`make_examples`             | 64m 24s
+`call_variants`             | 8m 39s
+`postprocess_variants`      | 0m 15s
+total time (single machine) | ~ 1h 14m
 
 ## Variant call quality
 
@@ -243,7 +232,7 @@ samtools faidx "${UNCOMPRESSED_REF}"
 sudo docker pull pkrusche/hap.py
 ```
 
-First, we evaluate against just the RefSeq region:
+We evaluate against the capture region:
 
 ```bash
 sudo docker run -it \
@@ -254,41 +243,23 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
   "${OUTPUT_VCF}" \
   --preprocess-truth \
   -f "${TRUTH_BED}" \
-  -T "${REFSEQ_BED}" \
+  -T "${CAPTURE_BED}" \
   -r "${UNCOMPRESSED_REF}" \
   -o "${OUTPUT_DIR}/happy.output"
 ```
 
-Then, we also evaluate against the extended RefSeq region:
+Here are the results:
 
-```bash
-sudo docker run -it \
--v "${DATA_DIR}:${DATA_DIR}" \
--v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
-pkrusche/hap.py /opt/hap.py/bin/hap.py \
-  "${TRUTH_VCF}" \
-  "${OUTPUT_VCF}" \
-  --preprocess-truth \
-  -f "${TRUTH_BED}" \
-  -T "${EXTENDED_REFSEQ_BED}" \
-  -r "${UNCOMPRESSED_REF}" \
-  -o "${OUTPUT_DIR}/extended.happy.output"
-```
-
-Putting the quality results in one table, we have:
-
-BED                 | Type  | Recall   | Precision | F1_Score
-------------------- | ----- | -------- | --------- | --------
-REFSEQ_BED          | INDEL | 0.966981 | 0.973872  | 0.970414
-REFSEQ_BED          | SNP   | 0.995194 | 0.997902  | 0.996546
-EXTENDED_REFSEQ_BED | INDEL | 0.908765 | 0.925705  | 0.917157
-EXTENDED_REFSEQ_BED | SNP   | 0.993989 | 0.997722  | 0.995852
+Type  | # FN | # FP | Recall   | Precision | F1_Score
+----- | ---- | ---- | -------- | --------- | --------
+INDEL | 156  | 178  | 0.940842 | 0.933108  | 0.936959
+SNP   | 60   | 32   | 0.998221 | 0.999050  | 0.998636
 
 ## Limitations and Future Work
 
 The current released model is trained on whole genome sequencing data. Based on
-the evaluation on RefSeq, the F1 scores are reasonable even though we didn't
-include exome data in training.
+the evaluation on the capture region, the F1 scores are reasonable even though
+we didn't include exome data in training.
 
 However, from our experience in the [PrecisionFDA Hidden Treasures
 Challenge](https://precision.fda.gov/challenges/1/view/results) we know that we
