@@ -85,8 +85,7 @@ flags.DEFINE_string(
     '--gvcf flag of make_examples.py.')
 flags.DEFINE_string(
     'gvcf_outfile', None,
-    'Optional. Destination path where we will write non-variant sites in VCF '
-    'format.')
+    'Optional. Destination path where we will write the Genomic VCF output.')
 
 # The filter field strings to add to variants created by this method.
 DEEP_VARIANT_REF_FILTER = 'RefCall'

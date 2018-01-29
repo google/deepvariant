@@ -174,7 +174,8 @@ the [whole genome case study] or the [exome case study].
 
 `postprocess_variants` reads all of the output TFRecord files from
 `call_variants`, sorts them, combines multi-allelic records, and writes out a
-VCF file.
+VCF file. When [gVCF output](deepvariant-gvcf-support.md) is requested, it also
+outputs a gVCF file which merges the VCF with the non-variant sites.
 
 Because `postprocess_variants` combines and sorts the output of
 `call_variants`, it needs to see all of the outputs from `call_variants` for a
