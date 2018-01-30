@@ -31,16 +31,19 @@ Cloud Platform.
 
 ## Documentation
 
-*   [DeepVariant release notes](docs/deepvariant-release-notes.md)
+*   [DeepVariant release notes](https://github.com/google/deepvariant/releases)
 *   [Building and testing DeepVariant](docs/deepvariant-build-test.md)
 *   [DeepVariant quick start](docs/deepvariant-quick-start.md)
 *   [DeepVariant via Docker](docs/deepvariant-docker.md)
 *   [DeepVariant whole genome case study](docs/deepvariant-case-study.md)
 *   [DeepVariant exome case study](docs/deepvariant-exome-case-study.md)
+*   [DeepVariant Genomic VCF (gVCF) support](docs/deepvariant-gvcf-support.md)
 *   [DeepVariant usage guide](docs/deepvariant-details.md)
 *   [DeepVariant model training](docs/deepvariant-model-training.md)
 *   [Datalab example: visualizing pileup
     images/tensors](docs/visualizing_examples.ipynb)
+*   [Getting Started with GCP](deepvariant-gcp-info.md) (It is not required to
+    run DeepVariant on GCP.)
 
 <!-- mdlint on -->
 
@@ -48,7 +51,7 @@ Cloud Platform.
 ## About DeepVariant
 
 For technical details describing how DeepVariant works please see our
-[preprint](https://www.biorxiv.org/content/early/2016/12/21/092890).
+[preprint](https://doi.org/10.1101/092890).
 
 ![DeepVariant workflow](docs/DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
 
