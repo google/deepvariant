@@ -66,9 +66,9 @@ The DeepVariant binaries can be downloaded to your instance with the
 
 ```bash
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.4.1"
-MODEL_VERSION="0.4.0"
-MODEL_CL="174375304"
+BIN_VERSION="0.5.0"
+MODEL_VERSION="0.5.0"
+MODEL_CL="182548131"
 
 # Note that we don't specify the CL number for the binary, only the bin version.
 BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
@@ -114,10 +114,16 @@ Models file are stored in a shared Cloud Storage bucket:
 `gs://deepvariant/models`
 
 In this bucket models are organized into subdirectories by program name and
-version, such as:
+version, such as for the model to run on whole genome sequencing data:
 
 ```
-DeepVariant/0.4.0/DeepVariant-inception_v3-0.4.0+cl-12345.data-wgs_standard/
+DeepVariant/0.5.0/DeepVariant-inception_v3-0.5.0+cl-182548131.data-wgs_standard/
+```
+
+and for the model to run on whole exome sequencing data.
+
+```
+DeepVariant/0.5.0/DeepVariant-inception_v3-0.5.0+cl-181413382.data-wes_standard/
 ```
 
 The model files are tagged with the program name and version, model name and the
@@ -328,8 +334,8 @@ You should see output similar to the following.
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.333333
- INDEL   PASS            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.333333
+ INDEL    ALL            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.166667
+ INDEL   PASS            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.166667
    SNP    ALL           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
    SNP   PASS           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
 ```

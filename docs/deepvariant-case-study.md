@@ -40,9 +40,9 @@ Set a number of shell variables, to make what follows easier to read.
 ```bash
 BASE="${HOME}/case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.4.1"
-MODEL_VERSION="0.4.0"
-MODEL_CL="174375304"
+BIN_VERSION="0.5.0"
+MODEL_VERSION="0.5.0"
+MODEL_CL="182548131"
 
 # Note that we don't specify the CL number for the binary, only the bin version.
 BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
@@ -192,13 +192,18 @@ one `call_variants` job. Here's the command that we used:
 ( time python "${BIN_DIR}"/call_variants.zip \
     --outfile "${CALL_VARIANTS_OUTPUT}" \
     --examples "${EXAMPLES}" \
-    --checkpoint "${MODEL}"
+    --checkpoint "${MODEL}" \
+    --batch_size 32
 ) >"${LOG_DIR}/call_variants.log" 2>&1
 ```
 
 This will start one process of `call_variants` and read all 64 shards of
 `HG002.examples.tfrecord@64.gz` as input, but output to one single output file
 `HG002.cvo.tfrecord.gz`.
+
+We add `--batch_size 32` here because we noticed a significant slowdown after
+the Meltdown/Spectre CPU patch if we continue to use the default batch_size
+(512).
 
 We noticed that running multiple `call_variants` on the same machine didn't seem
 to save the overall time, because each of the call_variants slowed down when
@@ -213,7 +218,8 @@ machine will run this command:
 python "${BIN_DIR}"/call_variants.zip \
   --outfile=${OUTPUT_DIR}/HG002.cvo.tfrecord-00000-of-00064.gz \
   --examples=${OUTPUT_DIR}/HG002.examples.tfrecord-00000-of-00064.gz \
-  --checkpoint="${MODEL}"
+  --checkpoint="${MODEL}" \
+  --batch_size 32
 ```
 
 And the rest will process 00001 to 00063. You can also use tools like
@@ -237,11 +243,11 @@ fewer cores for this step.
 ## Resources used by each step
 
 Step                        | wall time
---------------------------- | ----------
-`make_examples`             | 5h 17m 51s
-`call_variants`             | 8h 17m 10s
-`postprocess_variants`      | 24m 53s
-total time (single machine) | ~ 14h 0m
+--------------------------- | -----------
+`make_examples`             | 5h 12m 26s
+`call_variants`             | 11h 17m 20s
+`postprocess_variants`      | 20m 30s
+total time (single machine) | ~ 16h 50m
 
 ## Variant call quality
 
@@ -274,5 +280,5 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 
 Type  | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ---- | ---- | -------- | --------- | --------
-INDEL | 2341 | 918  | 0.995168 | 0.998100  | 0.996632
-SNP   | 2204 | 876  | 0.999277 | 0.999713  | 0.999495
+INDEL | 2291 | 918  | 0.995271 | 0.99810   | 0.996684
+SNP   | 1909 | 885  | 0.999374 | 0.99971   | 0.999542

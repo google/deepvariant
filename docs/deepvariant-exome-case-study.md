@@ -22,13 +22,13 @@ Set a number of shell variables, to make what follows easier to read.
 ```bash
 BASE="${HOME}/exome-case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.4.1"
-MODEL_VERSION="0.4.0"
-MODEL_CL="174375304"
+BIN_VERSION="0.5.0"
+MODEL_VERSION="0.5.0"
+MODEL_CL="181413382"
 
 # Note that we don't specify the CL number for the binary, only the bin version.
 BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wgs_standard"
+MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wes_standard"
 DATA_BUCKET="${BUCKET}/exome-case-study-testdata"
 
 INPUT_DIR="${BASE}/input"
@@ -182,7 +182,8 @@ one `call_variants` job. Here's the command that we used:
 ( time python "${BIN_DIR}"/call_variants.zip \
     --outfile "${CALL_VARIANTS_OUTPUT}" \
     --examples "${EXAMPLES}" \
-    --checkpoint "${MODEL}"
+    --checkpoint "${MODEL}" \
+    --batch_size 32
 ) >"${LOG_DIR}/call_variants.log" 2>&1
 ```
 
@@ -206,10 +207,10 @@ study](deepvariant-case-study.md#run_postprocess_variants).
 
 Step                        | wall time
 --------------------------- | ---------
-`make_examples`             | 64m 24s
-`call_variants`             | 8m 39s
-`postprocess_variants`      | 0m 15s
-total time (single machine) | ~ 1h 14m
+`make_examples`             | 66m 59s
+`call_variants`             | 5m 52s
+`postprocess_variants`      | 0m 12s
+total time (single machine) | ~ 1h 13m
 
 ## Variant call quality
 
@@ -252,19 +253,12 @@ Here are the results:
 
 Type  | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ---- | ---- | -------- | --------- | --------
-INDEL | 156  | 178  | 0.940842 | 0.933108  | 0.936959
-SNP   | 60   | 32   | 0.998221 | 0.999050  | 0.998636
+INDEL | 150  | 48   | 0.943117 | 0.981080  | 0.961724
+SNP   | 46   | 24   | 0.998636 | 0.999288  | 0.998962
 
-## Limitations and Future Work
+## Separate models for calling whole genome and exome data
 
-The current released model is trained on whole genome sequencing data. Based on
-the evaluation on the capture region, the F1 scores are reasonable even though
-we didn't include exome data in training.
-
-However, from our experience in the [PrecisionFDA Hidden Treasures
-Challenge](https://precision.fda.gov/challenges/1/view/results) we know that we
-can train a better model for calling exome data if we include exome in our
-training data.
-
-We are actively working on extending the training set, so we can release a
-better model for calling on exome data in the future.
+In DeepVariant 0.5.0 release, we recommend a separate model for calling exome
+sequencing data. Here is how the exome model is trained: we used a WGS model as
+the starting checkpoint (instead of an ImageNet one), and trained only on
+examples created from exome data.
