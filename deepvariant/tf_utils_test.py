@@ -39,11 +39,11 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
-from deepvariant.core.genomics import variants_pb2
+from deepvariant.util.genomics import variants_pb2
+from deepvariant.util import io_utils
 from tensorflow.core.example import example_pb2
 from deepvariant import test_utils
 from deepvariant import tf_utils
-from deepvariant.core import io_utils
 
 
 class TFUtilsTest(parameterized.TestCase):

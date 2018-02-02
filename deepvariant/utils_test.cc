@@ -31,14 +31,14 @@
 
 #include "deepvariant/utils.h"
 
-#include "deepvariant/core/test_utils.h"
+#include "deepvariant/util/test_utils.h"
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "deepvariant/testing/protocol-buffer-matchers.h"
+#include "deepvariant/util/testing/protocol-buffer-matchers.h"
 
 namespace learning {
 namespace genomics {

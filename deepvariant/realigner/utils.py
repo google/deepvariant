@@ -32,7 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from deepvariant.core.genomics import cigar_pb2
+from deepvariant.util.genomics import cigar_pb2
 
 CIGAR_ALIGN_OPS = [
     cigar_pb2.CigarUnit.ALIGNMENT_MATCH, cigar_pb2.CigarUnit.SEQUENCE_MATCH,

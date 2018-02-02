@@ -45,9 +45,9 @@ import os.path
 from tensorflow import flags
 import tensorflow as tf
 
-from deepvariant.core import genomics_io
-from deepvariant.core import ranges
-from deepvariant.core import utils
+from deepvariant.util import genomics_io
+from deepvariant.util import ranges
+from deepvariant.util import utils
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import aligner
 from deepvariant.realigner import window_selector

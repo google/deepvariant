@@ -41,13 +41,13 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
+from deepvariant.util import io_utils
+from deepvariant.util import variantutils
 from tensorflow.core.example import example_pb2
 from deepvariant import data_providers
 from deepvariant import modeling
 from deepvariant import pileup_image
 from deepvariant import test_utils
-from deepvariant.core import io_utils
-from deepvariant.core import variantutils
 from deepvariant.protos import deepvariant_pb2
 
 slim = tf.contrib.slim

@@ -47,12 +47,12 @@ import six
 import tensorflow as tf
 
 from absl import logging
+from deepvariant.util import io_utils
+from deepvariant.util import variantutils
 from deepvariant import call_variants
 from deepvariant import modeling
 from deepvariant import test_utils
 from deepvariant import tf_utils
-from deepvariant.core import io_utils
-from deepvariant.core import variantutils
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver
 

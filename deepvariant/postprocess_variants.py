@@ -43,17 +43,17 @@ import tensorflow as tf
 
 from absl import logging
 
-from deepvariant.core.genomics import struct_pb2
-from deepvariant.core.genomics import variants_pb2
+from deepvariant.util.genomics import struct_pb2
+from deepvariant.util.genomics import variants_pb2
+from deepvariant.util import errors
+from deepvariant.util import genomics_io
+from deepvariant.util import genomics_math
+from deepvariant.util import io_utils
+from deepvariant.util import proto_utils
+from deepvariant.util import variantutils
+from deepvariant.util.protos import core_pb2
 from deepvariant import haplotypes
 from deepvariant import logging_level
-from deepvariant.core import errors
-from deepvariant.core import genomics_io
-from deepvariant.core import genomics_math
-from deepvariant.core import io_utils
-from deepvariant.core import proto_utils
-from deepvariant.core import variantutils
-from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
 

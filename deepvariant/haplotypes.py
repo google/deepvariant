@@ -51,9 +51,9 @@ from tensorflow import flags
 import numpy as np
 
 from absl import logging
-from deepvariant.core.genomics import variants_pb2
-from deepvariant.core import genomics_math
-from deepvariant.core import variantutils
+from deepvariant.util.genomics import variants_pb2
+from deepvariant.util import genomics_math
+from deepvariant.util import variantutils
 
 FLAGS = flags.FLAGS
 

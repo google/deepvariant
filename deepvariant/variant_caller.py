@@ -44,9 +44,9 @@ import operator
 
 import numpy as np
 
-from deepvariant.core.genomics import variants_pb2
-from deepvariant.core import genomics_math
-from deepvariant.core import variantutils
+from deepvariant.util.genomics import variants_pb2
+from deepvariant.util import genomics_math
+from deepvariant.util import variantutils
 from deepvariant.python import variant_calling
 
 # Reference bases with genotype calls must be one of these four values.

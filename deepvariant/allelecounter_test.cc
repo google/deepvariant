@@ -32,12 +32,12 @@
 // UnitTests for allelecounter.{h,cc}.
 #include "deepvariant/allelecounter.h"
 
-#include "deepvariant/core/reference_fai.h"
-#include "deepvariant/core/reference_test.h"
-#include "deepvariant/core/test_utils.h"
-#include "deepvariant/core/utils.h"
 #include "deepvariant/utils.h"
-#include "deepvariant/core/genomics/position.pb.h"
+#include "deepvariant/util/genomics/position.pb.h"
+#include "deepvariant/util/reference_fai.h"
+#include "deepvariant/util/reference_test.h"
+#include "deepvariant/util/test_utils.h"
+#include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -46,7 +46,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "deepvariant/testing/protocol-buffer-matchers.h"
+#include "deepvariant/util/testing/protocol-buffer-matchers.h"
 
 namespace learning {
 namespace genomics {

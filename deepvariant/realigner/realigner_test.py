@@ -42,12 +42,12 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
 
-from deepvariant.core.genomics import reads_pb2
+from deepvariant.util.genomics import reads_pb2
+from deepvariant.util import genomics_io
+from deepvariant.util import io_utils
+from deepvariant.util import ranges
+from deepvariant.util.protos import core_pb2
 from deepvariant import test_utils
-from deepvariant.core import genomics_io
-from deepvariant.core import io_utils
-from deepvariant.core import ranges
-from deepvariant.core.protos import core_pb2
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import realigner
 from deepvariant.realigner import utils

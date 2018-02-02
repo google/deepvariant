@@ -37,11 +37,11 @@
 #include <string>
 #include <vector>
 
-#include "deepvariant/core/protos/core.pb.h"
-#include "deepvariant/core/genomics/cigar.pb.h"
-#include "deepvariant/core/genomics/position.pb.h"
-#include "deepvariant/core/genomics/reads.pb.h"
-#include "deepvariant/core/genomics/variants.pb.h"
+#include "deepvariant/util/genomics/cigar.pb.h"
+#include "deepvariant/util/genomics/position.pb.h"
+#include "deepvariant/util/genomics/reads.pb.h"
+#include "deepvariant/util/genomics/variants.pb.h"
+#include "deepvariant/util/protos/core.pb.h"
 #include "tensorflow/core/platform/logging.h"
 
 using nucleus::genomics::v1::Read;

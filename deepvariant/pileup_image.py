@@ -38,9 +38,9 @@ import itertools
 
 import numpy as np
 
-from deepvariant.core import ranges
-from deepvariant.core import utils
-from deepvariant.core.protos import core_pb2
+from deepvariant.util import ranges
+from deepvariant.util import utils
+from deepvariant.util.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
 

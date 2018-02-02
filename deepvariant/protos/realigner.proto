@@ -29,7 +29,7 @@
 
 syntax = "proto3";
 
-import "deepvariant/core/genomics/range.proto";
+import "deepvariant/util/genomics/range.proto";
 
 package learning.genomics.deepvariant;
 

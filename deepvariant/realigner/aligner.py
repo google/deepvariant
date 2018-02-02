@@ -41,7 +41,7 @@ import re
 
 from absl import logging
 
-from deepvariant.core.genomics import cigar_pb2
+from deepvariant.util.genomics import cigar_pb2
 from deepvariant.realigner import utils
 from deepvariant.realigner.python import ssw as libssw
 

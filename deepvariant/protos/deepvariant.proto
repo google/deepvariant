@@ -29,9 +29,9 @@
 
 syntax = "proto3";
 
-import "deepvariant/core/genomics/position.proto";
-import "deepvariant/core/genomics/variants.proto";
-import "deepvariant/core/protos/core.proto";
+import "deepvariant/util/genomics/position.proto";
+import "deepvariant/util/genomics/variants.proto";
+import "deepvariant/util/protos/core.proto";
 import "deepvariant/protos/realigner.proto";
 
 

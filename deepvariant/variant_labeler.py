@@ -36,8 +36,8 @@ from __future__ import print_function
 
 from absl import logging
 
-from deepvariant.core.genomics import variants_pb2
-from deepvariant.core import variantutils
+from deepvariant.util.genomics import variants_pb2
+from deepvariant.util import variantutils
 
 
 class VariantLabeler(object):

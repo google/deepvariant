@@ -1,4 +1,4 @@
-workspace(name = "genomics")
+workspace(name = "deepvariant")
 
 # Abseil libraries
 git_repository(

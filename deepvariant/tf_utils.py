@@ -40,11 +40,11 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from deepvariant.core.genomics import variants_pb2
+from deepvariant.util.genomics import variants_pb2
 
+from deepvariant.util import io_utils
+from deepvariant.util import ranges
 from tensorflow.core.example import example_pb2
-from deepvariant.core import io_utils
-from deepvariant.core import ranges
 from deepvariant.protos import deepvariant_pb2
 
 

@@ -35,10 +35,10 @@
 #include <algorithm>
 #include <cstddef>
 
-#include "deepvariant/core/utils.h"
 #include "deepvariant/utils.h"
-#include "deepvariant/core/genomics/cigar.pb.h"
-#include "deepvariant/core/genomics/position.pb.h"
+#include "deepvariant/util/genomics/cigar.pb.h"
+#include "deepvariant/util/genomics/position.pb.h"
+#include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"

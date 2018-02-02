@@ -36,9 +36,9 @@ import textwrap
 
 from absl.testing import absltest
 
+from deepvariant.util import genomics_io
+from deepvariant.util import ranges
 from deepvariant import test_utils
-from deepvariant.core import genomics_io
-from deepvariant.core import ranges
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner.python import debruijn_graph
 

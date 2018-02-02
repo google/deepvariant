@@ -40,22 +40,22 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.util import errors
+from deepvariant.util import genomics_io
+from deepvariant.util import htslib_gcp_oauth
+from deepvariant.util import io_utils
+from deepvariant.util import proto_utils
+from deepvariant.util import ranges
+from deepvariant.util import utils
+from deepvariant.util import variantutils
+from deepvariant.util.protos import core_pb2
+from deepvariant.util.python import hts_verbose
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import pileup_image
 from deepvariant import tf_utils
 from deepvariant import variant_caller
 from deepvariant import variant_labeler
-from deepvariant.core import errors
-from deepvariant.core import genomics_io
-from deepvariant.core import htslib_gcp_oauth
-from deepvariant.core import io_utils
-from deepvariant.core import proto_utils
-from deepvariant.core import ranges
-from deepvariant.core import utils
-from deepvariant.core import variantutils
-from deepvariant.core.protos import core_pb2
-from deepvariant.core.python import hts_verbose
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.realigner import realigner

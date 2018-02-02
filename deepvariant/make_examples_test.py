@@ -43,17 +43,17 @@ from absl.testing import parameterized
 import mock
 
 from absl import logging
-from deepvariant.core.genomics import variants_pb2
+from deepvariant.util.genomics import variants_pb2
 
+from deepvariant.util import genomics_io
+from deepvariant.util import io_utils
+from deepvariant.util import ranges
+from deepvariant.util import variantutils
+from deepvariant.util.protos import core_pb2
 from tensorflow.core.example import example_pb2
 from deepvariant import make_examples
 from deepvariant import test_utils
 from deepvariant import tf_utils
-from deepvariant.core import genomics_io
-from deepvariant.core import io_utils
-from deepvariant.core import ranges
-from deepvariant.core import variantutils
-from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.protos import realigner_pb2
 from deepvariant.testing import flagsaver

@@ -13,7 +13,7 @@ py_clif_cc(
     py_deps = [],
     pyclif_deps = [
         "//deepvariant/protos:realigner_pyclif",
-        "//deepvariant/core/genomics:reads_pyclif",
+        "//deepvariant/util/genomics:reads_pyclif",
     ],
     deps = ["//deepvariant/realigner:debruijn_graph"],
 )
@@ -27,9 +27,9 @@ py_test(
     deps = [
         ":debruijn_graph",
         "//deepvariant:py_test_utils",
-        "//deepvariant/core:genomics_io",
-        "//deepvariant/core:ranges",
         "//deepvariant/protos:realigner_py_pb2",
+        "//deepvariant/util:genomics_io",
+        "//deepvariant/util:ranges",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -38,7 +38,7 @@ py_test(
 py_clif_cc(
     name = "ssw",
     srcs = ["ssw.clif"],
-    py_deps = ["//deepvariant/core:clif_postproc"],
+    py_deps = ["//deepvariant/util:clif_postproc"],
     deps = ["//deepvariant/realigner:ssw"],
 )
 

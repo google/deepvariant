@@ -39,12 +39,12 @@
 #include <string>
 #include <vector>
 
-#include "deepvariant/core/reference.h"
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/core/genomics/cigar.pb.h"
-#include "deepvariant/core/genomics/position.pb.h"
-#include "deepvariant/core/genomics/range.pb.h"
-#include "deepvariant/core/genomics/reads.pb.h"
+#include "deepvariant/util/genomics/cigar.pb.h"
+#include "deepvariant/util/genomics/position.pb.h"
+#include "deepvariant/util/genomics/range.pb.h"
+#include "deepvariant/util/genomics/reads.pb.h"
+#include "deepvariant/util/reference.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {

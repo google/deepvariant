@@ -36,7 +36,7 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
-from deepvariant.core.genomics import range_pb2
+from deepvariant.util.genomics import range_pb2
 from deepvariant import test_utils
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner.window_selector import WindowSelector

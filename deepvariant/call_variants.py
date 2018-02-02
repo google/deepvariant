@@ -42,15 +42,15 @@ import tensorflow as tf
 
 from absl import logging
 
-from deepvariant.core.genomics import variants_pb2
+from deepvariant.util.genomics import variants_pb2
+from deepvariant.util import errors
+from deepvariant.util import htslib_gcp_oauth
+from deepvariant.util import io_utils
+from deepvariant.util import proto_utils
+from deepvariant.util import variantutils
 from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
-from deepvariant.core import errors
-from deepvariant.core import htslib_gcp_oauth
-from deepvariant.core import io_utils
-from deepvariant.core import proto_utils
-from deepvariant.core import variantutils
 from deepvariant.protos import deepvariant_pb2
 
 _ALLOW_EXECUTION_HARDWARE = [

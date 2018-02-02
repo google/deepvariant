@@ -38,10 +38,10 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 
+from deepvariant.util import ranges
+from deepvariant.util import variantutils
 from deepvariant import test_utils
 from deepvariant import variant_labeler
-from deepvariant.core import ranges
-from deepvariant.core import variantutils
 
 
 def setUpModule():

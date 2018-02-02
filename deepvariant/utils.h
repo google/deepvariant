@@ -34,7 +34,7 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/core/genomics/variants.pb.h"
+#include "deepvariant/util/genomics/variants.pb.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {

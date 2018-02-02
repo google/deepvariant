@@ -12,11 +12,11 @@ py_library(
     deps = [
         ":aligner",
         ":window_selector",
-        "//deepvariant/core:genomics_io",
-        "//deepvariant/core:py_utils",
-        "//deepvariant/core:ranges",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/realigner/python:debruijn_graph",
+        "//deepvariant/util:genomics_io",
+        "//deepvariant/util:py_utils",
+        "//deepvariant/util:ranges",
         "//deepvariant/vendor:timer",
         "@com_google_absl_py//absl/flags",
     ],
@@ -31,12 +31,12 @@ py_test(
         ":realigner",
         ":utils",
         "//deepvariant:py_test_utils",
-        "//deepvariant/core:genomics_io",
-        "//deepvariant/core:io_utils",
-        "//deepvariant/core:ranges",
-        "//deepvariant/core/genomics:reads_py_pb2",
-        "//deepvariant/core/protos:core_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
+        "//deepvariant/util:genomics_io",
+        "//deepvariant/util:io_utils",
+        "//deepvariant/util:ranges",
+        "//deepvariant/util/genomics:reads_py_pb2",
+        "//deepvariant/util/protos:core_py_pb2",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
@@ -48,8 +48,8 @@ py_library(
     srcs = ["window_selector.py"],
     deps = [
         ":utils",
-        "//deepvariant/core/genomics:cigar_py_pb2",
-        "//deepvariant/core/genomics:range_py_pb2",
+        "//deepvariant/util/genomics:cigar_py_pb2",
+        "//deepvariant/util/genomics:range_py_pb2",
     ],
 )
 
@@ -60,8 +60,8 @@ py_test(
     deps = [
         ":window_selector",
         "//deepvariant:py_test_utils",
-        "//deepvariant/core/genomics:range_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
+        "//deepvariant/util/genomics:range_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -71,9 +71,9 @@ cc_library(
     srcs = ["debruijn_graph.cc"],
     hdrs = ["debruijn_graph.h"],
     deps = [
-        "//deepvariant/core:cpp_utils",
-        "//deepvariant/core/genomics:reads_cc_pb2",
         "//deepvariant/protos:realigner_cc_pb2",
+        "//deepvariant/util:cpp_utils",
+        "//deepvariant/util/genomics:reads_cc_pb2",
         "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",
     ],
@@ -84,8 +84,8 @@ py_library(
     srcs = ["aligner.py"],
     deps = [
         ":utils",
-        "//deepvariant/core/genomics:cigar_py_pb2",
         "//deepvariant/realigner/python:ssw",
+        "//deepvariant/util/genomics:cigar_py_pb2",
         "@com_google_absl_py//absl/logging",
     ],
 )
@@ -97,10 +97,10 @@ py_test(
     deps = [
         ":aligner",
         "//deepvariant:py_test_utils",
-        "//deepvariant/core:cigar",
-        "//deepvariant/core:ranges",
-        "//deepvariant/core/genomics:cigar_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
+        "//deepvariant/util:cigar",
+        "//deepvariant/util:ranges",
+        "//deepvariant/util/genomics:cigar_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -110,7 +110,7 @@ py_library(
     name = "utils",
     srcs = ["utils.py"],
     deps = [
-        "//deepvariant/core/genomics:cigar_py_pb2",
+        "//deepvariant/util/genomics:cigar_py_pb2",
     ],
 )
 

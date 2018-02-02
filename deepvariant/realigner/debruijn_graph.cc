@@ -38,14 +38,14 @@
 #include <tuple>
 #include <vector>
 
-#include "deepvariant/core/utils.h"
 #include "deepvariant/protos/realigner.pb.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/depth_first_search.hpp"
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/graphviz.hpp"
 #include "boost/graph/reverse_graph.hpp"
-#include "deepvariant/core/genomics/reads.pb.h"
+#include "deepvariant/util/genomics/reads.pb.h"
+#include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"

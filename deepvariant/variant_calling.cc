@@ -35,10 +35,10 @@
 #include <numeric>
 
 #include "deepvariant/allelecounter.h"
-#include "deepvariant/core/math.h"
-#include "deepvariant/core/utils.h"
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/core/genomics/variants.pb.h"
+#include "deepvariant/util/genomics/variants.pb.h"
+#include "deepvariant/util/math.h"
+#include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 

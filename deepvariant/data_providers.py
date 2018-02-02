@@ -41,8 +41,8 @@ from __future__ import print_function
 import tensorflow as tf
 
 from google.protobuf import text_format
+from deepvariant.util import io_utils
 from deepvariant import tf_utils
-from deepvariant.core import io_utils
 from deepvariant.protos import deepvariant_pb2
 
 slim = tf.contrib.slim

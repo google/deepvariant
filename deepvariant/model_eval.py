@@ -41,11 +41,11 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.util import proto_utils
+from deepvariant.util import variantutils
 from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
-from deepvariant.core import proto_utils
-from deepvariant.core import variantutils
 
 slim = tf.contrib.slim
 FLAGS = flags.FLAGS
