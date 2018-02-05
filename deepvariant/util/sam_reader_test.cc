@@ -75,7 +75,7 @@ TEST(ReadBamFile, MatchesGolden) {
       ReadProtosFromTFRecord<Read>(GetTestData(kSamGoldStandardFilename));
   EXPECT_THAT(
       as_vector(reader->Iterate()),
-      Pointwise(IgnoringFieldPaths({"info"}, testing::EqualsProto()), golden));
+      Pointwise(IgnoringFieldPaths({"info"}, EqualsProto()), golden));
 }
 
 TEST(SamReaderTest, TestIteration) {
@@ -164,11 +164,11 @@ TEST_F(SamReaderQueryTest, ThatRangeIsExactlyCorrect) {
   // To start, our read is present in the full interval query over it.
   EXPECT_THAT(as_vector(reader_->Query(
                   MakeRange(chrom, start_inclusive0, end_exclusive0))),
-              Contains(Partially(testing::EqualsProto<Read>(read_proto))));
+              Contains(Partially(EqualsProto<Read>(read_proto))));
   // The read occurs when it fully spans the interval.
   EXPECT_THAT(as_vector(reader_->Query(
                   MakeRange(chrom, start_inclusive0 + 1, end_exclusive0 - 1))),
-              Contains(Partially(testing::EqualsProto<Read>(read_proto))));
+              Contains(Partially(EqualsProto<Read>(read_proto))));
   // The read occurs when the read starts/ends within the interval.
   EXPECT_THAT(
       as_vector(
