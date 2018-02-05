@@ -38,9 +38,7 @@
 
 #include "tensorflow/core/platform/test.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using ::testing::Eq;
 using ::testing::DoubleEq;
@@ -163,7 +161,4 @@ TEST(ZeroShiftLikelihoods, HandlesValidInputs) {
               ElementsAreArray({0.0, -97.7, -85.0}));
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
-
+}  // namespace nucleus

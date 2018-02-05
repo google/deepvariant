@@ -38,9 +38,7 @@
 
 using tensorflow::uint64;
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 // Helper class for randomly sampling a fraction of values.
 //
@@ -95,8 +93,6 @@ class PhiloxFractionalSampler
   mutable tensorflow::random::PhiloxRandom rng_gen_;
 };
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_SAMPLERS_H_

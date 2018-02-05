@@ -267,7 +267,7 @@ message AlleleCounterOptions {
   int32 partition_size = 1;
 
   // The requirements for reads to be used when counting alleles.
-  learning.genomics.core.ReadRequirements read_requirements = 2;
+  nucleus.ReadRequirements read_requirements = 2;
 }
 
 // Variant call for a single site, in a pseudo-biallelic manner. This is an
@@ -402,7 +402,7 @@ message PileupImageOptions {
   int32 read_overlap_buffer_bp = 17;
 
   // The requirements for reads to be used when creating pileup images.
-  learning.genomics.core.ReadRequirements read_requirements = 18;
+  nucleus.ReadRequirements read_requirements = 18;
 
   enum MultiAllelicMode {
     UNSPECIFIED = 0;
@@ -454,7 +454,7 @@ message DeepVariantOptions {
   // Only reads satisfying these requirements will be used in DeepVariant.
   // This parameters are propagated as appropriate to read_requirement fields
   // in our tool-specific options.
-  learning.genomics.core.ReadRequirements read_requirements = 9;
+  nucleus.ReadRequirements read_requirements = 9;
 
   // Options to control out input data sources and output data sinks.
   // Path to our genome reference.

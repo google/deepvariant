@@ -29,6 +29,6 @@
 
 from "deepvariant/util/hts_verbose.h":
   enum htsLogLevel
-  namespace `learning::genomics::core`:
+  namespace `nucleus`:
     def `HtsGetLogLevel` as get() -> htsLogLevel
     def `HtsSetLogLevel` as set(level: htsLogLevel)

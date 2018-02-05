@@ -39,9 +39,9 @@
 
 namespace {
 
+using nucleus::HtsGetLogLevel;
+using nucleus::HtsSetLogLevel;
 using ::testing::Eq;
-using learning::genomics::core::HtsGetLogLevel;
-using learning::genomics::core::HtsSetLogLevel;
 
 TEST(HtsVerboseTest, Set) {
   enum htsLogLevel level;

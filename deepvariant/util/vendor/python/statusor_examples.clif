@@ -30,7 +30,7 @@
 from "deepvariant/util/vendor/statusor_clif_converters.h" import *
 
 from "deepvariant/util/vendor/statusor_examples.h":
-  namespace `learning::genomics`:
+  namespace `nucleus`:
     def MakeIntOK() -> StatusOr<int>
     def MakeIntFail() -> StatusOr<int>
     def MakeIntUniquePtrOK() -> StatusOr<int>

@@ -36,7 +36,7 @@ from deepvariant.util.clif_postproc import WrappedCppIterable
 
 
 from "deepvariant/util/sam_reader.h":
-  namespace `learning::genomics::core`:
+  namespace `nucleus`:
 
     class SamIterable:
       def Next(self) -> (not_done: StatusOr<bool>, read: Read)

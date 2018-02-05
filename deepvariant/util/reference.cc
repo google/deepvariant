@@ -37,9 +37,7 @@
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using nucleus::genomics::v1::Range;
 using tensorflow::strings::StrCat;
@@ -98,6 +96,4 @@ int64 GenomeReference::NTotalBasepairs() const {
                          });
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

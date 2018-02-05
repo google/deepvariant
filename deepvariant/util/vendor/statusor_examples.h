@@ -35,8 +35,7 @@
 
 #include "deepvariant/util/vendor/statusor.h"
 
-namespace learning {
-namespace genomics {
+namespace nucleus {
 
 using tensorflow::Status;
 
@@ -72,7 +71,6 @@ static Status FuncReturningStatusFail() {
   return Status(tensorflow::error::INVALID_ARGUMENT, "FuncReturningStatusFail");
 }
 
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_EXAMPLES_H_

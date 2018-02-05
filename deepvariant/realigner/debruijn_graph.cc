@@ -265,8 +265,8 @@ void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
   for (int i = 0; i < read_length - k_; ++i) {
     // Update QC fail set: remove (i-1), add (i+k) if it fails QC.
     recent_qc_fail_positions.erase(i - 1);
-    if (!IsCanonicalBase(bases[i + k_], core::CanonicalBases::ACGT)
-        || qual[i + k_] < options_.min_base_quality()) {
+    if (!IsCanonicalBase(bases[i + k_], nucleus::CanonicalBases::ACGT) ||
+        qual[i + k_] < options_.min_base_quality()) {
       recent_qc_fail_positions.insert(i + k_);
     }
     if (recent_qc_fail_positions.empty()) {

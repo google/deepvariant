@@ -42,9 +42,7 @@
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using tensorflow::string;
 
@@ -173,11 +171,9 @@ class SamReader : public Reader {
   void ParseSamplesFromHeader();
 
   // For downsampling reads.
-  mutable core::PhiloxFractionalSampler sampler_;
+  mutable PhiloxFractionalSampler sampler_;
 };
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_SAM_READER_H_

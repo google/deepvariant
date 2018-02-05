@@ -95,8 +95,7 @@
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
+namespace nucleus {
 
 using tensorflow::string;
 
@@ -265,7 +264,6 @@ void StatusOr<T>::CheckValueNotNull(const T& value) {
   }
 }
 
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_H_

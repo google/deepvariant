@@ -43,18 +43,15 @@
 
 #include "tensorflow/core/platform/test.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Read;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
-using ::testing::Eq;
 using ::testing::ElementsAre;
-using learning::genomics::testing::EqualsProto;
+using ::testing::Eq;
 
 // Makes an empty Variant with the given position
 Variant MakeVariantAt(const string& chr, const int64 start, const int64 end) {
@@ -621,6 +618,4 @@ TEST(SetInfoField, WorksWithOverwrite) {
   EXPECT_THAT(ListValues<int>(call.info().at("key")), ElementsAre(4));
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

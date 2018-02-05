@@ -76,9 +76,7 @@
 
 #include <vector>
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 // Converts Phred scale to probability scale. Phred value must be >= 0.
 double PhredToPError(int phred);
@@ -120,9 +118,6 @@ double Log10ToReal(double log10_probability);
 std::vector<double> ZeroShiftLikelihoods(
     const std::vector<double>& likelihoods);
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
-
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_MATH_H_

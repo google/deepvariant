@@ -38,16 +38,12 @@
 // This is a wrapper for hts_open that lets us select a default
 // protocol, like "file:" or just plain "".
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 htsFile *hts_open_x(const char *fn, const char *mode);
 faidx_t *fai_load3_x(const char *fa_path, const char *fai_path,
                      const char *gzi_path, int flags);
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_HTS_PATH_H_

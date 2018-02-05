@@ -40,8 +40,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "deepvariant/util/vendor/statusor.h"
 
-namespace learning {
-namespace genomics {
+namespace nucleus {
 
 // Matches if a Status or StatusOr object's ok() returns true.
 MATCHER(IsOK, "") {
@@ -77,7 +76,6 @@ MATCHER_P2(IsNotOKWithCodeAndMessage, expected_code,
              std::string::npos;
 }
 
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUS_MATCHERS_H_

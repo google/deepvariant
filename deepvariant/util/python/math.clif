@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "deepvariant/util/math.h":
-  namespace `learning::genomics::core`:
+  namespace `nucleus`:
     def `Log10PTrueToPhred` as log10_ptrue_to_phred(
         log10_ptrue: float, value_if_not_finite: float) -> float
     def `PhredToPError` as phred_to_perror(phred: int) -> float

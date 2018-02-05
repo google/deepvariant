@@ -29,7 +29,7 @@
 
 syntax = "proto3";
 
-package learning.genomics.core;
+package nucleus;
 
 message ContigInfo {
   // The name of the contig. Canonically this is the first

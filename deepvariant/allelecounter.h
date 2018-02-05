@@ -205,7 +205,7 @@ class AlleleCounter {
   //
   // The GenomeReference must be available throughout the lifetime of this
   // AlleleCounter object.
-  AlleleCounter(const core::GenomeReference* const ref,
+  AlleleCounter(const nucleus::GenomeReference* const ref,
                 const ::nucleus::genomics::v1::Range& range,
                 const AlleleCounterOptions& options);
 
@@ -281,7 +281,7 @@ class AlleleCounter {
 
   // Our GenomeReference, which we use to get information about the reference
   // bases in our interval.
-  const core::GenomeReference* const ref_;
+  const nucleus::GenomeReference* const ref_;
 
   // The interval chr from start (0-based, inclusive) to end (0-based,
   // exclusive) describing where we are counting on the genome. We will produce

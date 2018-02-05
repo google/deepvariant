@@ -44,7 +44,7 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using learning::genomics::testing::EqualsProto;
+using nucleus::EqualsProto;
 
 TEST(UtilsTest, TestMakeAllele) {
   EXPECT_THAT(MakeAllele("A", AlleleType::REFERENCE, 1),

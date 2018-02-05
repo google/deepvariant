@@ -42,9 +42,7 @@
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Position;
@@ -261,10 +259,10 @@ StringPiece Unquote(StringPiece input) {
 }
 
 std::map<string, int> MapContigNameToPosInFasta(
-    const std::vector<core::ContigInfo>& contigs) {
+    const std::vector<ContigInfo>& contigs) {
   // Create the mapping from from contig to pos_in_fasta.
   std::map<string, int> contig_name_to_pos_in_fasta;
-  for (const core::ContigInfo& contig : contigs) {
+  for (const ContigInfo& contig : contigs) {
     contig_name_to_pos_in_fasta[contig.name()] = contig.pos_in_fasta();
   }
   return contig_name_to_pos_in_fasta;
@@ -299,7 +297,4 @@ std::vector<string> ListValues(
   return values;
 }
 
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

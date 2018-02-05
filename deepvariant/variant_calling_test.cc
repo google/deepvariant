@@ -51,17 +51,17 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
+using nucleus::EqualsProto;
+using nucleus::IsFinite;
+using nucleus::MakePosition;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
-using core::IsFinite;
-using core::MakePosition;
-using ::testing::DoubleNear;
-using ::testing::Eq;
-using learning::genomics::testing::EqualsProto;
-using ::testing::Pointwise;
-using ::testing::UnorderedElementsAre;
 using tensorflow::gtl::optional;
 using tensorflow::strings::StrCat;
+using ::testing::DoubleNear;
+using ::testing::Eq;
+using ::testing::Pointwise;
+using ::testing::UnorderedElementsAre;
 
 constexpr char kSampleName[] = "MySampleName";
 constexpr char kChr[] = "chr1";
@@ -71,7 +71,7 @@ AlleleCount MakeTestAlleleCount(int total_n, int alt_n, const string& ref = "A",
                                 int start = 100) {
   CHECK_GE(total_n, alt_n) << "Total number of reads must be >= n alt reads";
   AlleleCount allele_count;
-  *allele_count.mutable_position() = core::MakePosition("chr1", start);
+  *allele_count.mutable_position() = nucleus::MakePosition("chr1", start);
   allele_count.set_ref_base(ref);
   allele_count.set_ref_supporting_read_count(total_n - alt_n);
   const Allele read_allele = MakeAllele("C", AlleleType::SUBSTITUTION, 1);
@@ -150,17 +150,17 @@ Variant WithCounts(const Variant& base_variant, const std::vector<int>& ad,
   Variant variant(base_variant);
   VariantCall* call = variant.mutable_calls(0);
   if (ad.empty()) {
-    core::SetInfoField(kDPFormatField, dp, call);
+    nucleus::SetInfoField(kDPFormatField, dp, call);
   } else {
     if (dp == -1) dp = std::accumulate(ad.begin(), ad.end(), 0);
-    core::SetInfoField(kDPFormatField, dp, call);
-    core::SetInfoField(kADFormatField, ad, call);
+    nucleus::SetInfoField(kDPFormatField, dp, call);
+    nucleus::SetInfoField(kADFormatField, ad, call);
     std::vector<double> vaf;
     // Skip the first one in ad which is ref.
     for (size_t i = 1; i < ad.size(); ++i) {
       vaf.push_back(1.0 * ad[i] / dp);
     }
-    core::SetInfoField(kVAFFormatField, vaf, call);
+    nucleus::SetInfoField(kVAFFormatField, vaf, call);
   }
   return variant;
 }

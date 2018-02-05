@@ -49,9 +49,7 @@
 #include "tensorflow/core/lib/strings/stringprintf.h"
 #include "re2/re2.h"
 
-namespace learning {
-namespace genomics {
-namespace testing {
+namespace nucleus {
 namespace internal {
 
 using re2::StringPiece;  // copybara
@@ -407,6 +405,4 @@ bool ProtoMatcherBase::MatchAndExplain(
 }
 
 }  // namespace internal
-}  // namespace testing
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

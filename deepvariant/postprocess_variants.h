@@ -52,7 +52,7 @@ using tensorflow::StringPiece;
 // and then outputs the sorted TFRecord of CallVariantsOutput protos to
 // `output_tfrecord_path`.
 void ProcessSingleSiteCallTfRecords(
-    const std::vector<core::ContigInfo>& contigs,
+    const std::vector<nucleus::ContigInfo>& contigs,
     const std::vector<string>& tfrecord_paths,
     const string& output_tfrecord_path);
 

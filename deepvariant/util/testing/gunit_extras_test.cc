@@ -37,7 +37,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "deepvariant/util/testing/protocol-buffer-matchers.h"
 
-using learning::genomics::testing::EqualsProto;
+using nucleus::EqualsProto;
 
 namespace {
 

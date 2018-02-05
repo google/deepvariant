@@ -32,7 +32,7 @@ from "deepvariant/util/protos/core_pyclif.h" import *
 from "deepvariant/util/vendor/statusor_clif_converters.h" import *
 
 from "deepvariant/util/vcf_writer.h":
-  namespace `learning::genomics::core`:
+  namespace `nucleus`:
     class VcfWriter:
       @classmethod
       def `ToFile` as to_file(cls, variantsPath: str, options: VcfWriterOptions)

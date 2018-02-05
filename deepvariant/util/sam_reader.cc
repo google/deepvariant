@@ -49,9 +49,7 @@
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 namespace tf = tensorflow;
 
@@ -609,7 +607,4 @@ SamQueryIterable::SamQueryIterable(const SamReader* reader,
       bam1_(bam_init1())
 {}
 
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

@@ -34,12 +34,11 @@
 
 #include "htslib/hts_log.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
+
 void HtsSetLogLevel(enum htsLogLevel level);
 enum htsLogLevel HtsGetLogLevel();
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+
+}  // namespace nucleus
+
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_HTS_VERBOSE_H_

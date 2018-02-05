@@ -34,7 +34,7 @@
 // WHAT THIS IS
 // ============
 //
-// This library defines the following matchers in the ::testing namespace:
+// This library defines the following matchers in the ::nucleus namespace:
 //
 //   EqualsProto(pb)              The argument equals pb.
 //   EqualsInitializedProto(pb)   The argument is initialized and equals pb.
@@ -63,7 +63,7 @@
 // fields are different).
 //
 // This library also defines the following matcher transformer
-// functions in the ::testing::proto namespace:
+// functions in the ::nucleus::proto namespace:
 //
 //   Approximately(m, margin, fraction)
 //                     The same as m, except that it compares
@@ -165,11 +165,11 @@
 // EXAMPLES
 // ========
 //
-//   using ::testing::EqualsProto;
-//   using ::testing::EquivToProto;
-//   using ::testing::proto::Approximately;
-//   using ::testing::proto::Partially;
-//   using ::testing::proto::WhenDeserialized;
+//   using ::nucleus::EqualsProto;
+//   using ::nucleus::EquivToProto;
+//   using ::nucleus::proto::Approximately;
+//   using ::nucleus::proto::Partially;
+//   using ::nucleus::proto::WhenDeserialized;
 //
 //   // my_pb.Equals(expected_pb).
 //   EXPECT_THAT(my_pb, EqualsProto(expected_pb));
@@ -222,12 +222,10 @@
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
+namespace nucleus {
 
 using tensorflow::string;
 
-namespace testing {
 namespace internal {
 
 // Utilities.
@@ -1138,8 +1136,6 @@ WhenDeserializedAs(const InnerMatcher& inner_matcher) {
 }
 
 }  // namespace proto
-}  // namespace testing
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_TESTING_PROTOCOL_BUFFER_MATCHERS_H_

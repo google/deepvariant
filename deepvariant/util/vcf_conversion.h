@@ -37,9 +37,7 @@
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 // redacted
 // independent testing of those functions.
@@ -123,9 +121,6 @@ struct VcfType<float> {
   }
 };
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
-
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_VCF_CONVERSION_H_

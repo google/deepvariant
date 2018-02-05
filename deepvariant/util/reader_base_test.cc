@@ -38,9 +38,7 @@
 
 using tensorflow::string;
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 // Forward declaration.
 class ToyIterable;
@@ -185,7 +183,4 @@ TEST(ReaderIterableTest, TestReaderDiesBeforeIterable) {
   // in Python since destruction order is non-deterministic.
 }
 
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

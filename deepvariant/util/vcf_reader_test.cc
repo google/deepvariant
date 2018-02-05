@@ -41,9 +41,7 @@
 
 #include "tensorflow/core/platform/test.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using std::vector;
 
@@ -51,9 +49,8 @@ using ::testing::Eq;
 using ::testing::Pointwise;
 using ::testing::SizeIs;
 
-using learning::genomics::testing::EqualsProto;
-using learning::genomics::testing::proto::IgnoringFieldPaths;
 using nucleus::genomics::v1::Variant;
+using nucleus::proto::IgnoringFieldPaths;
 
 // These files are made using the Verily converter.  See:
 //  g3doc/learning/genomics/g3doc/variant-encoding.md
@@ -230,6 +227,5 @@ TEST(VcfReaderVariantAlleleFrequencyTest, MatchesGolden) {
       GetTestData(kVcfVariantAlleleFrequencyGoldenFilename));
   EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), golden));
 }
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+
+}  // namespace nucleus

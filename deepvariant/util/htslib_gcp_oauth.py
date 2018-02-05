@@ -62,7 +62,7 @@ import logging
 import os
 
 
-import tensorflow as tf
+import absl.app
 
 from deepvariant.util import cloud_utils
 
@@ -104,4 +104,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  absl.app.run()

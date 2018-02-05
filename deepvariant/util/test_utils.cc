@@ -36,11 +36,9 @@
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/io/path.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
-using core::MakePosition;
+using nucleus::MakePosition;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::CigarUnit_Operation;
 using nucleus::genomics::v1::LinearAlignment;
@@ -129,6 +127,4 @@ Read MakeRead(const string& chr, const int start, const string& bases,
   return read;
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

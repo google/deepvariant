@@ -66,9 +66,7 @@
 using tensorflow::string;
 using tensorflow::int64;
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 class GenomeReference {
  public:
@@ -137,9 +135,6 @@ class GenomeReference {
   GenomeReference() {}
 };
 
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_H_

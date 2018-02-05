@@ -42,9 +42,7 @@
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using tensorflow::string;
 
@@ -93,9 +91,6 @@ class VcfWriter {
   bcf_hdr_t* header_;
 };
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
-
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_VCF_WRITER_H_

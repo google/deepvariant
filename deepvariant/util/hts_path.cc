@@ -38,9 +38,7 @@
 using tensorflow::strings::StrCat;
 using tensorflow::string;
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 const char dflt[] = "";
 
@@ -68,6 +66,4 @@ faidx_t *fai_load3_x(const char *fa, const char *fai, const char *gzi,
                    gzi ? ngzi.c_str() : nullptr, flags);
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

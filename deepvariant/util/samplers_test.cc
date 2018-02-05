@@ -36,9 +36,7 @@
 
 #include "tensorflow/core/platform/test.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using ::testing::DoubleNear;
 
@@ -79,8 +77,4 @@ TEST_P(FractionalSamplerTest, TestPhiloxFractionalSampler) {
 INSTANTIATE_TEST_CASE_P(FractionalSamplerTest1, FractionalSamplerTest,
                         ::testing::Values(0.9, 0.1, 0.01, 0.05));
 
-
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

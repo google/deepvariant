@@ -39,9 +39,7 @@
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/mutex.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 // The classes declared in this file support the functionality of a
 // "reader" class that allows iteration over records by a single
@@ -246,9 +244,6 @@ class Iterable : public IterableBase {
   }
 };
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
-
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_READER_BASE_H_

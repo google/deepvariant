@@ -53,9 +53,7 @@
 #include "htslib/sam.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 namespace tf = tensorflow;
 
@@ -525,6 +523,4 @@ tf::Status VcfWriter::Close() {
   return tf::Status::OK();
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

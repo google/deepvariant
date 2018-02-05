@@ -45,9 +45,7 @@
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 namespace tf = tensorflow;
 
@@ -528,6 +526,4 @@ VcfFullFileIterable::VcfFullFileIterable(const VcfReader* reader,
       bcf1_(bcf_init())
 {}
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

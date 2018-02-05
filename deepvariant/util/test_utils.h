@@ -50,9 +50,7 @@
 #include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using tensorflow::StringPiece;
 using tensorflow::string;
@@ -150,9 +148,6 @@ std::vector<Record> as_vector(const std::shared_ptr<Iterable<Record>>& it) {
     const string& chr, int start, const string& bases,
     const std::vector<string>& cigar_elements);
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
-
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_TEST_UTILS_H_

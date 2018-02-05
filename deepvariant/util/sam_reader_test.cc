@@ -46,21 +46,18 @@
 
 #include "tensorflow/core/platform/test.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
+using nucleus::genomics::v1::Range;
+using nucleus::genomics::v1::Read;
+using nucleus::proto::IgnoringFieldPaths;
+using nucleus::proto::Partially;
 using std::vector;
+using tensorflow::StringPiece;
 using ::testing::Eq;
-using learning::genomics::testing::EqualsProto;
 using ::testing::IsEmpty;
 using ::testing::Pointwise;
 using ::testing::SizeIs;
-using learning::genomics::testing::proto::IgnoringFieldPaths;
-using learning::genomics::testing::proto::Partially;
-using nucleus::genomics::v1::Read;
-using nucleus::genomics::v1::Range;
-using tensorflow::StringPiece;
 
 // Constants for all filenames used in this test file.
 constexpr char kSamTestFilename[] = "test.sam";
@@ -261,6 +258,4 @@ TEST_F(SamReaderQueryTest, NextFailsOnReleasedIterable) {
   EXPECT_THAT(it->Next(&read), IsNotOKWithMessage("Reader is not alive"));
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

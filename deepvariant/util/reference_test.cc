@@ -46,9 +46,7 @@
 
 #include "tensorflow/core/platform/test.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using ::testing::IsEmpty;
 using ::testing::Not;
@@ -190,7 +188,4 @@ TEST_P(GenomeReferenceTest, TestGetBasesParts) {
   // CheckGetBases(Ref(), "chrM", 0, 0, "");
 }
 
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

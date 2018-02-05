@@ -162,7 +162,7 @@ class VariantCaller {
   const VariantCallerOptions options_;
 
   // Fraction of non-variant sites to emit as DeepVariantCalls.
-  mutable core::PhiloxFractionalSampler sampler_;
+  mutable nucleus::PhiloxFractionalSampler sampler_;
 };
 
 

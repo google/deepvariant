@@ -41,9 +41,7 @@
 #include "tensorflow/core/lib/gtl/optional.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 constexpr int REFERENCE_FAI_DEFAULT_CACHE_SIZE = 64 * 1024;
 
@@ -143,8 +141,6 @@ class GenomeReferenceFai : public GenomeReference {
       nucleus::genomics::v1::Range> cached_range_;
 };
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_FAI_H_

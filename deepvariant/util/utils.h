@@ -48,9 +48,7 @@
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using tensorflow::int64;
 using tensorflow::string;
@@ -157,7 +155,7 @@ tensorflow::StringPiece Unquote(tensorflow::StringPiece input);
 // Creates a mapping from string to int for mapping of contig names to position
 // in FASTA. This is used with the CompareVariants function.
 std::map<string, int> MapContigNameToPosInFasta(
-    const std::vector<core::ContigInfo>& contigs);
+    const std::vector<ContigInfo>& contigs);
 
 // Returns true if Variant `a` should appear before Variant `b`,
 // false otherwise.
@@ -245,8 +243,6 @@ std::vector<typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<string> ListValues(
     const nucleus::genomics::v1::ListValue& list_value);
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_UTILS_H_

@@ -37,9 +37,7 @@
 #include "deepvariant/util/test_utils.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using tensorflow::string;
 
@@ -62,9 +60,6 @@ class GenomeReferenceTest : public ::testing::TestWithParam<
 
 typedef GenomeReferenceTest GenomeReferenceDeathTest;
 
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_TEST_H_

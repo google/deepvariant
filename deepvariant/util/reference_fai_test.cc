@@ -55,9 +55,7 @@ using tensorflow::strings::StrCat;
 using testing::Eq;
 using testing::StartsWith;
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 static std::unique_ptr<GenomeReference>
 JustLoadFai(const string& fasta, int cache_size = 64 * 1024) {
@@ -99,6 +97,4 @@ TEST(ReferenceFaiTest, WriteAfterCloseIsntOK) {
                   "can't read from closed GenomeReferenceFai object"));
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

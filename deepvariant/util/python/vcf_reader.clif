@@ -36,7 +36,7 @@ from deepvariant.util.clif_postproc import WrappedCppIterable
 
 
 from "deepvariant/util/vcf_reader.h":
-  namespace `learning::genomics::core`:
+  namespace `nucleus`:
 
     class VariantIterable:
       def Next(self) -> (not_done: StatusOr<bool>, variant: Variant)

@@ -39,7 +39,7 @@
 namespace clif {
 
 // Note: comment below is an instruction to CLIF.
-// CLIF use `learning::genomics::StatusOr` as StatusOr
+// CLIF use `nucleus::StatusOr` as StatusOr
 // CLIF use `::tensorflow::Status` as Status
 
 void ErrorFromStatus(const tensorflow::Status& status);
@@ -47,8 +47,7 @@ void ErrorFromStatus(const tensorflow::Status& status);
 PyObject* Clif_PyObjFrom(const tensorflow::Status& c, py::PostConv);
 
 template <typename T>
-PyObject* Clif_PyObjFrom(const learning::genomics::StatusOr<T>& c,
-                         py::PostConv pc) {
+PyObject* Clif_PyObjFrom(const nucleus::StatusOr<T>& c, py::PostConv pc) {
   if (!c.ok()) {
     ErrorFromStatus(c.status());
     return nullptr;
@@ -56,8 +55,9 @@ PyObject* Clif_PyObjFrom(const learning::genomics::StatusOr<T>& c,
   return Clif_PyObjFrom(c.ValueOrDie(), pc.Get(0));
 }
 
-template<typename T>
-PyObject* Clif_PyObjFrom(learning::genomics::StatusOr<T>&& c, py::PostConv pc) {  // NOLINT:c++11
+template <typename T>
+PyObject* Clif_PyObjFrom(nucleus::StatusOr<T>&& c,
+                         py::PostConv pc) {  // NOLINT:c++11
   if (!c.ok()) {
     ErrorFromStatus(c.status());
     return nullptr;

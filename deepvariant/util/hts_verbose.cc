@@ -32,11 +32,9 @@
 #include "deepvariant/util/hts_verbose.h"
 #include "htslib/hts_log.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
+
 void HtsSetLogLevel(enum htsLogLevel level) { hts_set_log_level(level); }
 enum htsLogLevel HtsGetLogLevel() { return hts_get_log_level(); }
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+
+}  // namespace nucleus

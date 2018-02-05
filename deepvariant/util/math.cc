@@ -35,9 +35,7 @@
 #include "deepvariant/util/math.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 double PhredToPError(const int phred) {
   CHECK_GE(phred, 0);
@@ -98,6 +96,4 @@ std::vector<double> ZeroShiftLikelihoods(
   return normalized;
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

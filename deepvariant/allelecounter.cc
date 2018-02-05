@@ -51,14 +51,13 @@ namespace deepvariant {
 // the string key constructed from a Read with ReadKey().
 static constexpr char kFragmentNameReadNumberSeparator[] = "/";
 
-using nucleus::genomics::v1::Range;
-using nucleus::genomics::v1::Read;
+using nucleus::GenomeReference;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
-using core::GenomeReference;
-using tensorflow::strings::StrCat;
+using nucleus::genomics::v1::Range;
+using nucleus::genomics::v1::Read;
 using tensorflow::StringPiece;
-
+using tensorflow::strings::StrCat;
 
 namespace {
 
@@ -124,7 +123,7 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
 
   const int min_base_quality = options.read_requirements().min_base_quality();
   for (int i = 0; i < len; i++) {
-    if (!core::IsCanonicalBase(read.aligned_sequence()[offset + i])) {
+    if (!nucleus::IsCanonicalBase(read.aligned_sequence()[offset + i])) {
       return false;
     }
     if (read.aligned_quality(offset + i) < min_base_quality) {
@@ -147,7 +146,7 @@ AlleleCounter::AlleleCounter(const GenomeReference* const ref,
     AlleleCount allele_count;
     const int64 pos = range.start() + i;
     *(allele_count.mutable_position()) =
-        core::MakePosition(range.reference_name(), pos);
+        nucleus::MakePosition(range.reference_name(), pos);
     allele_count.set_ref_base(bases.substr(i, 1));
     counts_.push_back(allele_count);
   }
@@ -159,8 +158,8 @@ string AlleleCounter::RefBases(const int64 rel_start, const int64 len) {
   // If our region isn't valid (e.g., it is off the end of the chromosome),
   // return an empty string, otherwise get the actual bases from reference.
   const int abs_start = interval_.start() + rel_start;
-  const Range region =
-      core::MakeRange(interval_.reference_name(), abs_start, abs_start + len);
+  const Range region = nucleus::MakeRange(interval_.reference_name(), abs_start,
+                                          abs_start + len);
   if (!ref_->IsValidInterval(region)) {
     return "";
   } else {
@@ -191,7 +190,7 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
   const int op_len = cigar.operation_length();
   const string prev_base = GetPrevBase(read, read_offset, interval_offset);
 
-  if (prev_base.empty() || !core::AreCanonicalBases(prev_base) ||
+  if (prev_base.empty() || !nucleus::AreCanonicalBases(prev_base) ||
       (cigar.operation() != CigarUnit::DELETE &&
        !CanBasesBeUsed(read, read_offset, op_len, options_))) {
     // There is no prev_base (we are at the start of the contig), or the bases
@@ -221,7 +220,7 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
         return ReadAllele();
       }
 
-      if (!core::AreCanonicalBases(bases)) {
+      if (!nucleus::AreCanonicalBases(bases)) {
         // The reference genome has non-canonical bases that are being deleted.
         // We don't add deletions with non-canonical bases so we return an empty
         // ReadAllele().

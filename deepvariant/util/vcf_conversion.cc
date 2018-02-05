@@ -31,14 +31,9 @@
 
 #include "deepvariant/util/vcf_conversion.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 // redacted
 // independent testing of those functions.
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
-
+}  // namespace nucleus

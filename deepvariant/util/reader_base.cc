@@ -31,9 +31,7 @@
 
 #include "deepvariant/util/reader_base.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 // Reader class methods
 
@@ -90,6 +88,4 @@ tensorflow::Status IterableBase::PythonExit() {
   return Release();
 }
 
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

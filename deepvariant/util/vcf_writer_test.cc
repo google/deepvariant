@@ -50,9 +50,7 @@
 
 #include "tensorflow/core/platform/test.h"
 
-namespace learning {
-namespace genomics {
-namespace core {
+namespace nucleus {
 
 using tensorflow::StringPiece;
 using nucleus::genomics::v1::Variant;
@@ -304,7 +302,4 @@ TEST(VcfWriterTest, WritesGzippedVCF) {
               "VCF writer should be able to writed gzipped output");
 }
 
-
-}  // namespace core
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus

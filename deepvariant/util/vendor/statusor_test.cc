@@ -34,8 +34,7 @@
 #include "deepvariant/util/vendor/status_matchers.h"
 #include "tensorflow/core/lib/core/status.h"
 
-namespace learning {
-namespace genomics {
+namespace nucleus {
 
 using tensorflow::Status;
 
@@ -89,5 +88,4 @@ TEST(StatusOrTest, FailedStatusMatchesIsNotOKWithCodeAndMessage) {
               IsNotOKWithCodeAndMessage(tensorflow::error::UNKNOWN, "fail"));
 }
 
-}  // namespace genomics
-}  // namespace learning
+}  // namespace nucleus
