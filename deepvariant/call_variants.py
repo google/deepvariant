@@ -294,7 +294,11 @@ def call_variants(examples_filename,
   """Main driver of call_variants."""
   # Read a single TFExample to make sure we're not loading an older version.
   example_format = tf_utils.get_format_from_examples_path(examples_filename)
-  if example_format != 'raw':
+  if example_format is None:
+    logging.warning('Unable to read any records from %s. Output will contain '
+                    'zero records.', examples_filename)
+    io_utils.write_tfrecords([], output_file)
+  elif example_format != 'raw':
     raise ValueError('The TF examples in {} has image/format \'{}\' '
                      '(expected \'raw\') which means you might need to rerun '
                      'make_examples to generate the examples again.'.format(

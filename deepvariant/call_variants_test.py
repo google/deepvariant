@@ -105,6 +105,12 @@ class CallVariantsEndToEndTests(
     self.assertCallVariantsEmitsNRecordsForRandomGuess(
         test_utils.test_tmpfile('empty_1st_shard@2'), len(examples))
 
+  def test_call_end2end_zero_record_file(self):
+    zero_record_file = test_utils.test_tmpfile('zero_record_file')
+    io_utils.write_tfrecords([], zero_record_file)
+    self.assertCallVariantsEmitsNRecordsForRandomGuess(
+        test_utils.test_tmpfile('zero_record_file'), 0)
+
   @parameterized.parameters((model, shard_inputs, include_debug_info)
                             for shard_inputs in [False, True]
                             for model in modeling.production_models()
