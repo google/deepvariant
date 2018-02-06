@@ -171,6 +171,7 @@ tf::Status ConvertToPb(
   bool want_gt = !desired_format_entries.exclude_genotype();
   bool want_ad = !desired_format_entries.exclude_allele_depth();
   bool want_dp = !desired_format_entries.exclude_read_depth();
+  bool want_min_dp = !desired_format_entries.exclude_min_read_depth();
   bool want_vaf = !desired_format_entries.exclude_variant_allele_frequencies();
 
   // Parse the calls of the variant.
@@ -199,6 +200,7 @@ tf::Status ConvertToPb(
     // Augment the calls with extra information described in FORMAT
     vector<vector<int>> ad_values = ReadFormatValues<int>(h, v, "AD");
     vector<vector<int>> dp_values = ReadFormatValues<int>(h, v, "DP");
+    vector<vector<int>> min_dp_values = ReadFormatValues<int>(h, v, "MIN_DP");
     vector<vector<int>> gq_values = ReadFormatValues<int>(h, v, "GQ");
     vector<vector<int>> pl_values = ReadFormatValues<int>(h, v, "PL");
     vector<vector<float>> gl_values = ReadFormatValues<float>(h, v, "GL");
@@ -219,6 +221,7 @@ tf::Status ConvertToPb(
       // variant, *and* is non-missing for this sample.
       bool have_ad = !ad_values.empty() && !ad_values[i].empty();
       bool have_dp = !dp_values.empty() && !dp_values[i].empty();
+      bool have_min_dp = !min_dp_values.empty() && !min_dp_values[i].empty();
       bool have_gq = !gq_values.empty() && !gq_values[i].empty();
       bool have_gl = !gl_values.empty() && !gl_values[i].empty();
       bool have_pl = !pl_values.empty() && !pl_values[i].empty();
@@ -231,6 +234,9 @@ tf::Status ConvertToPb(
       }
       if (want_dp && have_dp) {
         SetInfoField("DP", dp_values[i][0], call);
+      }
+      if (want_min_dp && have_min_dp) {
+        SetInfoField("MIN_DP", min_dp_values[i][0], call);
       }
       if (want_gq && have_gq) {
         SetInfoField("GQ", gq_values[i][0], call);

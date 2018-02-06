@@ -183,6 +183,8 @@ TEST(VcfWriterTest, WritesVCF) {
       "Quality\">\n"  // NOLINT
       "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
       "passing filters reads.\">\n"  // NOLINT
+      "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
+      "observed within the GVCF block.\">\n"
       "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
       "passing filters reads for each allele.\">\n"  // NOLINT
       "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
@@ -242,6 +244,8 @@ TEST(VcfWriterTest, RoundsVCFQuals) {
       "Quality\">\n"  // NOLINT
       "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
       "passing filters reads.\">\n"  // NOLINT
+      "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
+      "observed within the GVCF block.\">\n"
       "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
       "passing filters reads for each allele.\">\n"  // NOLINT
       "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "

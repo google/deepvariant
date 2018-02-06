@@ -31,6 +31,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numbers
+
 
 
 import enum
@@ -45,10 +47,21 @@ NO_ALT_ALLELE = '.'
 GVCF_ALT_ALLELE = '<*>'
 
 
+def _set_variantcall_number_field(variant_call, field_name, value):
+  if isinstance(value, numbers.Number):
+    value = [value]
+  if field_name in variant_call.info:
+    del variant_call.info[field_name]
+  struct_values = [struct_pb2.Value(number_value=v) for v in value]
+  variant_call.info[field_name].values.extend(struct_values)
+
+
 def set_variantcall_gq(variant_call, gq):
-  if 'GQ' in variant_call.info:
-    del variant_call.info['GQ']
-  variant_call.info['GQ'].values.extend([struct_pb2.Value(number_value=gq)])
+  _set_variantcall_number_field(variant_call, 'GQ', gq)
+
+
+def set_variantcall_min_dp(variant_call, min_dp):
+  _set_variantcall_number_field(variant_call, 'MIN_DP', min_dp)
 
 
 def decode_variants(encoded_iter):

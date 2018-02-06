@@ -37,6 +37,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
 import itertools
 import math
 import operator
@@ -54,6 +55,11 @@ CANONICAL_DNA_BASES = frozenset('ACGT')
 
 # Possible DNA base codes seen in a reference genome.
 EXTENDED_IUPAC_CODES = frozenset('ACGTRYSWKMBDHVN')
+
+# Data collection class used in creation of gVCF records.
+_GVCF = collections.namedtuple(
+    '_GVCF',
+    ['summary_counts', 'quantized_gq', 'raw_gq', 'likelihoods', 'read_depth'])
 
 
 def _rescale_read_counts_if_necessary(n_ref_reads, n_total_reads,
@@ -215,8 +221,9 @@ class VariantCaller(object):
     blocks for all sites in allele_count_summaries. The returned Variant has
     reference_name, start, end are set and contains a single VariantCall in the
     calls field with call_set_name of options.sample_name, genotypes set to 0/0
-    (diploid reference), and a GQ value bound in the info field appropriate to
-    the data in allele_count.
+    (diploid reference), a GQ value bound in the info field appropriate to the
+    data in allele_count, and a MIN_DP value which is the minimum read coverage
+    seen in the block.
 
     The provided allele count must have either a canonical DNA sequence base (
     A, C, G, T) or be "N".
@@ -254,6 +261,7 @@ class VariantCaller(object):
           # Skip calculating gq and likelihoods, since this is an ambiguous
           # reference base.
           quantized_gq, raw_gq, likelihoods = None, None, None
+          n_total = summary_counts.total_read_count
         else:
           raise ValueError('Invalid reference base={} found during gvcf '
                            'calculation'.format(summary_counts.ref_base))
@@ -262,7 +270,12 @@ class VariantCaller(object):
         n_total = summary_counts.total_read_count
         raw_gq, likelihoods = self.reference_confidence(n_ref, n_total)
         quantized_gq = _quantize_gq(raw_gq, self.options.gq_resolution)
-      return summary_counts, quantized_gq, raw_gq, likelihoods
+      return _GVCF(
+          summary_counts=summary_counts,
+          quantized_gq=quantized_gq,
+          raw_gq=raw_gq,
+          likelihoods=likelihoods,
+          read_depth=n_total)
 
     # Combines contiguous, compatible single-bp blocks into larger gVCF blocks,
     # respecting non-reference variants interspersed among them. Yields each
@@ -270,25 +283,27 @@ class VariantCaller(object):
     # blocks to be merged have the same non-None GQ value.
     for key, combinable in itertools.groupby(
         (with_gq_and_likelihoods(sc) for sc in allele_count_summaries),
-        key=operator.itemgetter(1)):
+        key=operator.attrgetter('quantized_gq')):
       if key is None:
         # A None key indicates that a non-DNA reference base was encountered, so
         # skip this group.
         continue
       combinable = list(combinable)
-      min_gq = min(raw_gq_value for _, _, raw_gq_value, _ in combinable)
-      summary_counts, _, _, likelihoods = combinable[0]
+      min_gq = min(elt.raw_gq for elt in combinable)
+      min_dp = min(elt.read_depth for elt in combinable)
+      first_record, last_record = combinable[0], combinable[-1]
       call = variants_pb2.VariantCall(
           call_set_name=self.options.sample_name,
           genotype=[0, 0],
-          genotype_likelihood=likelihoods)
+          genotype_likelihood=first_record.likelihoods)
       variantutils.set_variantcall_gq(call, min_gq)
+      variantutils.set_variantcall_min_dp(call, min_dp)
       yield variants_pb2.Variant(
-          reference_name=summary_counts.reference_name,
-          reference_bases=summary_counts.ref_base,
+          reference_name=first_record.summary_counts.reference_name,
+          reference_bases=first_record.summary_counts.ref_base,
           alternate_bases=[variantutils.GVCF_ALT_ALLELE],
-          start=summary_counts.position,
-          end=combinable[-1][0].position + 1,
+          start=first_record.summary_counts.position,
+          end=last_record.summary_counts.position + 1,
           calls=[call])
 
   def calls_from_allele_counter(self, allele_counter, include_gvcfs):

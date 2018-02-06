@@ -230,6 +230,7 @@ class VariantCallerTests(parameterized.TestCase):
         gq=1.0,
         start=100,
         end=101,
+        min_dp=0,
         chrom='chr1',
         gls=[-0.47712125472] * 3,
         sample_name=options.sample_name)
@@ -295,15 +296,18 @@ class VariantCallerTests(parameterized.TestCase):
       # Expected diploid genotype likelihoods when there's no coverage. The
       # chance of having each genotype is 1/3, in log10 space.
       flat_gls = np.log10([1.0 / 3] * 3)
-      self.assertGVCF(gvcfs[0], ref='A', start=10, end=11, gq=1, gls=flat_gls)
+      self.assertGVCF(
+          gvcfs[0], ref='A', start=10, end=11, gq=1, min_dp=0, gls=flat_gls)
       self.assertGVCF(
           gvcfs[1],
           ref='G',
           start=11,
           end=12,
           gq=0,
+          min_dp=20,
           gls=np.array([-14.0230482368, -8.32667268469e-15, -14.0230482368]))
-      self.assertGVCF(gvcfs[2], ref='G', start=12, end=14, gq=1, gls=flat_gls)
+      self.assertGVCF(
+          gvcfs[2], ref='G', start=12, end=14, gq=1, min_dp=0, gls=flat_gls)
     else:
       self.assertEmpty(gvcfs)
 
@@ -313,6 +317,7 @@ class VariantCallerTests(parameterized.TestCase):
                  gq,
                  start,
                  end,
+                 min_dp,
                  chrom='chr1',
                  gls=None,
                  sample_name=None):
@@ -326,6 +331,10 @@ class VariantCallerTests(parameterized.TestCase):
     self.assertEqual(len(gvcf.calls), 1)
     self.assertEqual(variantutils.genotype_quality(gvcf), gq)
     self.assertNotEmpty(gvcf.calls[0].genotype_likelihood)
+    self.assertIn('MIN_DP', gvcf.calls[0].info)
+    self.assertLen(gvcf.calls[0].info['MIN_DP'].values, 1)
+    self.assertEqual(gvcf.calls[0].info['MIN_DP'].values[0].number_value,
+                     min_dp)
     if gls is not None:
       npt.assert_allclose(list(gvcf.calls[0].genotype_likelihood), gls)
     if sample_name:
@@ -333,26 +342,28 @@ class VariantCallerTests(parameterized.TestCase):
 
   @parameterized.parameters(
       # Check some basics.
-      ([(0, 0, 'A')], [dict(start=1, end=2, ref='A', gq=1)]),
+      ([(0, 0, 'A')], [dict(start=1, end=2, ref='A', gq=1, min_dp=0)]),
       # Two equal records are merged, and the reference base is the first one.
-      ([(0, 0, 'A'), (0, 0, 'C')], [dict(start=1, end=3, ref='A', gq=1)]),
-      ([(0, 0, 'C'), (0, 0, 'A')], [dict(start=1, end=3, ref='C', gq=1)]),
+      ([(0, 0, 'A'),
+        (0, 0, 'C')], [dict(start=1, end=3, ref='A', gq=1, min_dp=0)]),
+      ([(0, 0, 'C'),
+        (0, 0, 'A')], [dict(start=1, end=3, ref='C', gq=1, min_dp=0)]),
       # Three equal records are merged into a single block.
       ([(0, 0, 'A'), (0, 0, 'C'),
-        (0, 0, 'T')], [dict(start=1, end=4, ref='A', gq=1)]),
+        (0, 0, 'T')], [dict(start=1, end=4, ref='A', gq=1, min_dp=0)]),
       # We don't merge together different GQ value blocks:
       ([(0, 0, 'A'), (0, 100, 'C')], [
-          dict(start=1, end=2, ref='A', gq=1),
-          dict(start=2, end=3, ref='C', gq=100),
+          dict(start=1, end=2, ref='A', gq=1, min_dp=0),
+          dict(start=2, end=3, ref='C', gq=100, min_dp=100),
       ]),
       ([(0, 100, 'A'), (0, 0, 'C')], [
-          dict(start=1, end=2, ref='A', gq=100),
-          dict(start=2, end=3, ref='C', gq=1),
+          dict(start=1, end=2, ref='A', gq=100, min_dp=100),
+          dict(start=2, end=3, ref='C', gq=1, min_dp=0),
       ]),
       ([(0, 0, 'A'), (0, 20, 'C'), (0, 100, 'T')], [
-          dict(start=1, end=2, ref='A', gq=1),
-          dict(start=2, end=3, ref='C', gq=59),
-          dict(start=3, end=4, ref='T', gq=100),
+          dict(start=1, end=2, ref='A', gq=1, min_dp=0),
+          dict(start=2, end=3, ref='C', gq=59, min_dp=20),
+          dict(start=3, end=4, ref='T', gq=100, min_dp=100),
       ]),
   )
   def test_make_gvcfs(self, counts, expecteds):
@@ -368,52 +379,52 @@ class VariantCallerTests(parameterized.TestCase):
       dict(
           gq_resolution=1,
           expecteds=[
-              dict(start=1, end=2, ref='A', gq=53),
-              dict(start=2, end=3, ref='C', gq=56),
-              dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=7, ref='A', gq=72),
-              dict(start=7, end=8, ref='C', gq=83),
-              dict(start=8, end=9, ref='T', gq=59),
-              dict(start=9, end=10, ref='G', gq=56),
+              dict(start=1, end=2, ref='A', gq=53, min_dp=18),
+              dict(start=2, end=3, ref='C', gq=56, min_dp=19),
+              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
+              dict(start=8, end=9, ref='T', gq=59, min_dp=20),
+              dict(start=9, end=10, ref='G', gq=56, min_dp=19),
           ]),
       # Binning by 3 does not cause any records to be merged.
       dict(
           gq_resolution=3,
           expecteds=[
-              dict(start=1, end=2, ref='A', gq=53),
-              dict(start=2, end=3, ref='C', gq=56),
-              dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=7, ref='A', gq=72),
-              dict(start=7, end=8, ref='C', gq=83),
-              dict(start=8, end=9, ref='T', gq=59),
-              dict(start=9, end=10, ref='G', gq=56),
+              dict(start=1, end=2, ref='A', gq=53, min_dp=18),
+              dict(start=2, end=3, ref='C', gq=56, min_dp=19),
+              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
+              dict(start=8, end=9, ref='T', gq=59, min_dp=20),
+              dict(start=9, end=10, ref='G', gq=56, min_dp=19),
           ]),
       # Binning by 4 causes the first merge, of the first two records.
       dict(
           gq_resolution=4,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=53),
-              dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=7, ref='A', gq=72),
-              dict(start=7, end=8, ref='C', gq=83),
-              dict(start=8, end=9, ref='T', gq=59),
-              dict(start=9, end=10, ref='G', gq=56),
+              dict(start=1, end=3, ref='A', gq=53, min_dp=18),
+              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
+              dict(start=8, end=9, ref='T', gq=59, min_dp=20),
+              dict(start=9, end=10, ref='G', gq=56, min_dp=19),
           ]),
       dict(
           gq_resolution=10,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=53),
-              dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=7, ref='A', gq=72),
-              dict(start=7, end=8, ref='C', gq=83),
-              dict(start=8, end=10, ref='T', gq=56),
+              dict(start=1, end=3, ref='A', gq=53, min_dp=18),
+              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
+              dict(start=8, end=10, ref='T', gq=56, min_dp=19),
           ]),
       dict(
           gq_resolution=45,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=53),
-              dict(start=3, end=6, ref='A', gq=0),
-              dict(start=6, end=10, ref='A', gq=56),
+              dict(start=1, end=3, ref='A', gq=53, min_dp=18),
+              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=6, end=10, ref='A', gq=56, min_dp=19),
           ]),
   )
   def test_quantize_gvcfs(self, gq_resolution, expecteds):

@@ -148,6 +148,7 @@ message OptionalVariantFieldsToParse {
   bool exclude_allele_depth = 4;  // "AD" in FORMAT
   bool exclude_read_depth = 5;  // "DP" in FORMAT
   bool exclude_variant_allele_frequencies = 6;  // "VAF" in FORMAT
+  bool exclude_min_read_depth = 7;  // "MIN_DP" in FORMAT, used by gVCF records
 }
 
 message VcfReaderOptions {

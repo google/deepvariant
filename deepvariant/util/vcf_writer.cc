@@ -66,6 +66,7 @@ namespace {
 static const std::map<string, int>* FIELD_TYPE = new std::map<string, int>({
     {"AD", BCF_HT_INT},
     {"DP", BCF_HT_INT},
+    {"MIN_DP", BCF_HT_INT},
     {"GQ", BCF_HT_INT},
     {"VAF", BCF_HT_REAL},
 });
@@ -80,6 +81,9 @@ const char kFormatHeaderGQ[] =
 const char kFormatHeaderDP[] =
     "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
     "passing filters reads.\">";  // NOLINT
+const char kFormatHeaderMINDP[] =
+    "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
+    "observed within the GVCF block.\">";
 const char kFormatHeaderAD[] =
     "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
     "passing filters reads for each allele.\">";  // NOLINT
@@ -385,9 +389,8 @@ tf::Status ConvertFromPb(const Variant& variant_message, const bcf_hdr_t& h,
     // The order of adapter definitions here determines the order of the fields
     // in the VCF.
     std::vector<FormatFieldAdapter> format_field_adapters = {
-        FormatFieldAdapter("GQ"),
-        FormatFieldAdapter("DP"),
-        FormatFieldAdapter("AD"),
+        FormatFieldAdapter("GQ"),     FormatFieldAdapter("DP"),
+        FormatFieldAdapter("MIN_DP"), FormatFieldAdapter("AD"),
         FormatFieldAdapter("VAF"),
     };
     for (const FormatFieldAdapter& field : format_field_adapters) {
@@ -459,6 +462,7 @@ VcfWriter::VcfWriter(const VcfWriterOptions& options, htsFile* fp)
   bcf_hdr_append(header_, kFormatHeaderGT);
   bcf_hdr_append(header_, kFormatHeaderGQ);
   bcf_hdr_append(header_, kFormatHeaderDP);
+  bcf_hdr_append(header_, kFormatHeaderMINDP);
   bcf_hdr_append(header_, kFormatHeaderAD);
   bcf_hdr_append(header_, kFormatHeaderVAF);
   bcf_hdr_append(header_, kFormatHeaderGL);

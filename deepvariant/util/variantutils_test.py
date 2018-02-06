@@ -51,6 +51,43 @@ EVAL_MISS = variantutils.AlleleMismatchType.unmatched_eval_alleles
 
 class VariantUtilsTests(parameterized.TestCase):
 
+  @parameterized.parameters(
+      dict(values=[0, 1, 2], is_iterable=False),
+      dict(values=[0.0, 1.0, 2.5], is_iterable=False),
+      dict(values=[[0.0], [1.0], [2.5]], is_iterable=True),
+      dict(values=[[1, 1], [0, 2]], is_iterable=True),
+      dict(values=[[0.0, 1.0, 2.0], [2.5, 3.5, 0]], is_iterable=True),
+  )
+  def test_set_number_value(self, values, is_iterable):
+    vc = variants_pb2.VariantCall()
+    key = 'MY_KEY'
+    self.assertNotIn(key, vc.info)
+    for value in values:
+      variantutils._set_variantcall_number_field(vc, key, value)
+      self.assertIn(key, vc.info)
+      self.assertLen(vc.info[key].values, len(value) if is_iterable else 1)
+      actual = [x.number_value for x in vc.info[key].values]
+      expected = value if is_iterable else [value]
+      self.assertEqual(actual, expected)
+
+  def test_set_variantcall_gq(self):
+    vc = variants_pb2.VariantCall()
+    self.assertNotIn('GQ', vc.info)
+    for value in range(10):
+      variantutils.set_variantcall_gq(vc, value)
+      self.assertIn('GQ', vc.info)
+      self.assertLen(vc.info['GQ'].values, 1)
+      self.assertEqual(value, vc.info['GQ'].values[0].number_value)
+
+  def test_set_variantcall_min_dp(self):
+    vc = variants_pb2.VariantCall()
+    self.assertNotIn('MIN_DP', vc.info)
+    for value in range(10):
+      variantutils.set_variantcall_min_dp(vc, value)
+      self.assertIn('MIN_DP', vc.info)
+      self.assertLen(vc.info['MIN_DP'].values, 1)
+      self.assertEqual(value, vc.info['MIN_DP'].values[0].number_value)
+
   def test_decode_variants(self):
     variants = [
         test_utils.make_variant(start=1),
