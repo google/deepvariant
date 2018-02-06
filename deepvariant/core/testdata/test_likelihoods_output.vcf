@@ -3,6 +3,7 @@
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth of all passing filters reads.">
+##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum DP observed within the GVCF block.">
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth of all passing filters reads for each allele.">
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
 ##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype likelihoods, log10 encoded">
