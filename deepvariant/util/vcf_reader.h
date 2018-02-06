@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_VCF_READER_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_VCF_READER_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_VCF_READER_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_VCF_READER_H_
 
 #include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/reader_base.h"
@@ -181,4 +181,4 @@ class VcfReader : public Reader {
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_VCF_READER_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_VCF_READER_H_

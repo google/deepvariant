@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_TEST_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_TEST_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_TEST_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_TEST_H_
 
 #include "tensorflow/core/platform/test.h"
 #include "deepvariant/util/reference.h"
@@ -62,4 +62,4 @@ typedef GenomeReferenceTest GenomeReferenceDeathTest;
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_TEST_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_TEST_H_

@@ -84,8 +84,8 @@
 // This is a copy of StatusOr from tensorflow/stream_executor/lib/statusor.h
 // based on the original internal google sources with the key changes to
 // statusor.h reapplied by hand.
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_H_
+#ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_H_
+#define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_H_
 
 #include <new>
 #include <type_traits>
@@ -266,4 +266,4 @@ void StatusOr<T>::CheckValueNotNull(const T& value) {
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_H_
+#endif  // THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_H_

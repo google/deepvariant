@@ -195,8 +195,8 @@
 //   // the type of the protobuf.
 //   // EXPECT_THAT(data, WhenDeserialized(EqualsProto("foo: 1")));
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_TESTING_PROTOCOL_BUFFER_MATCHERS_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_TESTING_PROTOCOL_BUFFER_MATCHERS_H_
+#ifndef THIRD_PARTY_NUCLEUS_TESTING_PROTOCOL_BUFFER_MATCHERS_H_
+#define THIRD_PARTY_NUCLEUS_TESTING_PROTOCOL_BUFFER_MATCHERS_H_
 
 #include <initializer_list>
 #include <iostream>  // NOLINT
@@ -1138,4 +1138,4 @@ WhenDeserializedAs(const InnerMatcher& inner_matcher) {
 }  // namespace proto
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_TESTING_PROTOCOL_BUFFER_MATCHERS_H_
+#endif  // THIRD_PARTY_NUCLEUS_TESTING_PROTOCOL_BUFFER_MATCHERS_H_

@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_HTS_PATH_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_HTS_PATH_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_HTS_PATH_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_HTS_PATH_H_
 
 #include "htslib/faidx.h"
 #include "htslib/hts.h"
@@ -46,4 +46,4 @@ faidx_t *fai_load3_x(const char *fa_path, const char *fai_path,
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_HTS_PATH_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_HTS_PATH_H_

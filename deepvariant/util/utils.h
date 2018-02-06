@@ -30,8 +30,8 @@
  */
 
 // Core utilities functions used throughout deepvariant.
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_UTILS_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_UTILS_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_UTILS_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_UTILS_H_
 
 // redacted
 #include <map>
@@ -245,4 +245,4 @@ std::vector<string> ListValues(
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_UTILS_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_UTILS_H_

@@ -30,8 +30,8 @@
  */
 
 // Examples of StatusOr usage in C++ for CLIF bindings and tests.
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_EXAMPLES_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_EXAMPLES_H_
+#ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
+#define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
 
 #include "deepvariant/util/vendor/statusor.h"
 
@@ -73,4 +73,4 @@ static Status FuncReturningStatusFail() {
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_VENDOR_STATUSOR_EXAMPLES_H_
+#endif  // THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_

@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_SAMPLERS_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_SAMPLERS_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_SAMPLERS_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_SAMPLERS_H_
 
 #include "tensorflow/core/lib/random/simple_philox.h"
 #include "tensorflow/core/platform/logging.h"
@@ -95,4 +95,4 @@ class PhiloxFractionalSampler
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_SAMPLERS_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_SAMPLERS_H_

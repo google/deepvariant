@@ -71,8 +71,8 @@
 // code is often performance critical and the low-level mathematical operations
 // used in this code (e.g., log10) don't distiguish themselves among the types
 // of probabilities.
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_MATH_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_MATH_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_MATH_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_MATH_H_
 
 #include <vector>
 
@@ -120,4 +120,4 @@ std::vector<double> ZeroShiftLikelihoods(
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_MATH_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_MATH_H_

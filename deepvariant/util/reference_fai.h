@@ -30,8 +30,8 @@
  */
 
 // Implementation of GenomeReference class using htslib FAI index format.
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_FAI_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_FAI_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_FAI_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_FAI_H_
 
 #include <vector>
 
@@ -143,4 +143,4 @@ class GenomeReferenceFai : public GenomeReference {
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_FAI_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_FAI_H_

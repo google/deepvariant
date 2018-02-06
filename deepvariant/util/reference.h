@@ -53,8 +53,8 @@
 // containing other characters. The code assumes that random accesses of
 // reasonably small chunks of sequence is important at the expense of low-cost
 // (but still reasonably efficient) iteration of all sequences in the FASTA.
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_H_
 
 #include <vector>
 
@@ -137,4 +137,4 @@ class GenomeReference {
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_REFERENCE_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_H_

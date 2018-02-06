@@ -32,8 +32,8 @@
 //
 // Macros, functions, etc to improve portability of our C++ codebase.
 //
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_PORT_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_PORT_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_PORT_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_PORT_H_
 
 // HAS_GLOBAL_STRING
 // Some platforms have a ::string class that is different from ::std::string
@@ -47,4 +47,4 @@ using std::string;
 #endif  // HAS_GLOBAL_STRING
 #endif  // SWIG, __cplusplus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_PORT_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_PORT_H_

@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CORE_SAM_READER_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CORE_SAM_READER_H_
+#ifndef THIRD_PARTY_NUCLEUS_UTIL_SAM_READER_H_
+#define THIRD_PARTY_NUCLEUS_UTIL_SAM_READER_H_
 
 #include "htslib/hts.h"
 #include "htslib/sam.h"
@@ -176,4 +176,4 @@ class SamReader : public Reader {
 
 }  // namespace nucleus
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CORE_SAM_READER_H_
+#endif  // THIRD_PARTY_NUCLEUS_UTIL_SAM_READER_H_
