@@ -43,6 +43,7 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.util.io import vcf
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import errors
@@ -613,9 +614,9 @@ def write_variants_to_vcf(contigs,
   if filters is None:
     filters = FILTERS
   logging.info('Writing output to VCF file: %s', output_vcf_path)
-  with genomics_io.make_vcf_writer(
+  with vcf.VcfWriter(
       output_vcf_path,
-      contigs,
+      contigs=contigs,
       samples=[sample_name],
       filters=filters,
       round_qualities=True) as writer:

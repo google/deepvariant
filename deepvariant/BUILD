@@ -424,6 +424,7 @@ py_library(
         "//deepvariant/util:variantutils",
         "//deepvariant/util/genomics:struct_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/io:vcf",
         "//deepvariant/util/protos:core_py_pb2",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",

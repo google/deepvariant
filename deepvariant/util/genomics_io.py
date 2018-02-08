@@ -41,7 +41,6 @@ from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import reference_fai
 from deepvariant.util.python import sam_reader as sam_reader_
 from deepvariant.util.python import vcf_reader as vcf_reader_
-from deepvariant.util.python import vcf_writer
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 
@@ -160,76 +159,6 @@ def make_vcf_reader(variants_source, use_index=True, include_likelihoods=False):
       variants_source.encode('utf8'),
       core_pb2.VcfReaderOptions(
           index_mode=index_mode, desired_format_entries=desired_vcf_fields))
-
-
-def make_vcf_writer(outfile, contigs, samples, filters, round_qualities=False):
-  """Creates a VcfWriter.
-
-  Args:
-    outfile: str. A path where we'll write our VCF file.
-    contigs: Iterable of third_party.nucleus.util.ContigInfo protobufs
-      used to populate the contigs info in the VCF header.
-    samples: Iterable of str. The name of the samples we will be writing to this
-      VCF file. The order of samples provided here must be the same as the order
-      of VariantCall elements in any Variant written to this writer.
-    filters: Iterable of third_party.nucleus.util.VcfFilterInfo
-      protos. Description of the filter fields that may occur in Variant protos
-      written to this writer. Filters can include filter descriptions that never
-      occur in any Variant proto, but all filter field values among all of the
-      written Variant protos must be provided here.
-    round_qualities: bool. If True, the QUAL field is rounded to one point past
-      the decimal.
-
-  Returns:
-    vcf_writer.VcfWriter.
-  """
-  writer_options = core_pb2.VcfWriterOptions(
-      contigs=contigs,
-      sample_names=samples,
-      filters=filters,
-      round_qual_values=round_qualities)
-  return vcf_writer.VcfWriter.to_file(outfile, writer_options)
-
-
-def make_variant_writer(outfile, contigs, samples=None, filters=None):
-  """Creates a writer to outfile writing variant Protos.
-
-  This function creates an writer that accepts Variant protos and writes
-  them to outfile. The type of the writer is determined by the extension of
-  outfile. If it's one of VCF_EXTENSIONS, we will write out VCF
-  records via make_vcf_writer. Otherwise we will write out TFRecord file of
-  serialized Variant protos.
-
-  Args:
-    outfile: A path to a file where we want to write our variant calls.
-    contigs: A list of the reference genome contigs for writers that need contig
-      information.
-    samples: A list of sample names we will be writing out. Can be None if the
-      list of samples isn't required for the intended output type. Will raise an
-      exception is None and is required.
-    filters: A list of VcfFilterInfo protos defining the filter fields present
-      in the to-be-written records. Can be None if the intended writer doesn't
-      require this information, but will raise an exception if None and required
-      by the destination writer.
-
-  Returns:
-    An writer object that supports the context manager protocol for
-      opening/closing the writer and a single function write(proto).
-
-  Raises:
-    ValueError: If any of the optional arguments needed for the specific output
-      type of outfile are missing.
-  """
-  if any(outfile.endswith(ext) for ext in VCF_EXTENSIONS):
-    if samples is None:
-      raise ValueError('samples must be provided for vcf output')
-    if filters is None:
-      raise ValueError('filters must be provided for vcf output')
-    return make_vcf_writer(
-        outfile, contigs=contigs, samples=samples, filters=filters)
-  else:
-    return io_utils.RawProtoWriterAdaptor(
-        io_utils.make_tfrecord_writer(outfile))
 
 
 def make_read_writer(outfile, contigs=None):
