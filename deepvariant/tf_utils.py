@@ -81,7 +81,7 @@ def example_variant(example):
 
 def example_label(example):
   """Gets the label field from example as a string."""
-  return example.features.feature['label'].int64_list.value[0]
+  return int(example.features.feature['label'].int64_list.value[0])
 
 
 def example_image_format(example):
@@ -142,6 +142,19 @@ def example_set_truth_variant(example, truth_variant, simplify=True):
     truth_variant = _simplify_variant(truth_variant)
   example.features.feature['truth_variant/encoded'].bytes_list.value[:] = [
       truth_variant.SerializeToString()
+  ]
+
+
+def example_set_variant(example, variant):
+  """Sets the variant/encoded feature of example to variant.SerializeToString().
+
+  Args:
+    example: a tf.Example proto.
+    variant: third_party.nucleus.protos.Variant protobuf containing information
+      about a candidate variant call.
+  """
+  example.features.feature['variant/encoded'].bytes_list.value[:] = [
+      variant.SerializeToString()
   ]
 
 
@@ -231,8 +244,7 @@ def make_example(variant, alt_alleles, encoded_image, shape, image_format):
       ranges.to_literal(
           ranges.make_range(variant.reference_name, variant.start,
                             variant.end)))
-  features.feature['variant/encoded'].bytes_list.value.append(
-      variant.SerializeToString())
+  example_set_variant(example, variant)
   all_alts = list(variant.alternate_bases)
   alt_indices = sorted(all_alts.index(alt) for alt in alt_alleles)
 
