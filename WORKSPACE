@@ -4,7 +4,7 @@ workspace(name = "deepvariant")
 git_repository(
     name = "com_google_absl_py",
     # redacted
-    commit = "e7e488817ecce91d290d7fcce997b8dda1c6ee77",
+    commit = "5e343642d987268df199b4c851b7dd3d687ac316",
     remote = "https://github.com/abseil/abseil-py.git",
 )
 # Note: com_google_absl (the C++ abseil library) is provided by TensorFlow.
