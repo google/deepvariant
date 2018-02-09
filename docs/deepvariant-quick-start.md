@@ -66,7 +66,7 @@ The DeepVariant binaries can be downloaded to your instance with the
 
 ```bash
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.5.0"
+BIN_VERSION="0.5.1"
 MODEL_VERSION="0.5.0"
 MODEL_CL="182548131"
 

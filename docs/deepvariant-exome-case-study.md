@@ -22,7 +22,7 @@ Set a number of shell variables, to make what follows easier to read.
 ```bash
 BASE="${HOME}/exome-case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.5.0"
+BIN_VERSION="0.5.1"
 MODEL_VERSION="0.5.0"
 MODEL_CL="181413382"
 
@@ -45,8 +45,10 @@ N_SHARDS="64"
 
 OUTPUT_DIR="${BASE}/output"
 EXAMPLES="${OUTPUT_DIR}/HG002.examples.tfrecord@${N_SHARDS}.gz"
+GVCF_TFRECORDS="${OUTPUT_DIR}/HG002.gvcf.tfrecord@${N_SHARDS}.gz"
 CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/HG002.cvo.tfrecord.gz"
 OUTPUT_VCF="${OUTPUT_DIR}/HG002.output.vcf.gz"
+OUTPUT_GVCF="${OUTPUT_DIR}/HG002.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
 CAPTURE_BED="${DATA_DIR}/agilent_sureselect_human_all_exon_v5_b37_targets.bed"
@@ -166,6 +168,7 @@ to the capture region BED file:
       --reads "${BAM}" \
       --examples "${EXAMPLES}" \
       --regions "${CAPTURE_BED}" \
+      --gvcf "${GVCF_TFRECORDS}" \
       --task {}
 ) >"${LOG_DIR}/make_examples.log" 2>&1
 ```
@@ -196,21 +199,25 @@ study](deepvariant-case-study.md#run_call_variants).
 ( time python "${BIN_DIR}"/postprocess_variants.zip \
     --ref "${REF}" \
     --infile "${CALL_VARIANTS_OUTPUT}" \
-    --outfile "${OUTPUT_VCF}"
-) >"${LOG_DIR}/postprocess_variants.log" 2>&1
+    --outfile "${OUTPUT_VCF}" \
+    --nonvariant_site_tfrecord_path "${GVCF_TFRECORDS}" \
+    --gvcf_outfile "${OUTPUT_GVCF}"
+) >"${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
 ```
 
-More discussion can be found in the [postprocess_variants section in the case
+The last two flags are optional, only if gVCF outputs are desired. More
+discussion can be found in the [postprocess_variants section in the case
 study](deepvariant-case-study.md#run_postprocess_variants).
 
 ## Resources used by each step
 
-Step                        | wall time
---------------------------- | ---------
-`make_examples`             | 66m 59s
-`call_variants`             | 5m 52s
-`postprocess_variants`      | 0m 12s
-total time (single machine) | ~ 1h 13m
+Step                               | wall time
+---------------------------------- | ---------
+`make_examples`                    | 69m 22s
+`call_variants`                    | 6m 32s
+`postprocess_variants` (no gVCF)   | 0m 13s
+`postprocess_variants` (with gVCF) | 0m 41s
+total time (single machine)        | ~ 1h 16m
 
 ## Variant call quality
 
@@ -251,14 +258,14 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 
 Here are the results:
 
-Type  | # FN | # FP | Recall   | Precision | F1_Score
------ | ---- | ---- | -------- | --------- | --------
+Type  | # FN | # FP | Recall   | Precision | F1\_Score
+----- | ---- | ---- | -------- | --------- | ---------
 INDEL | 150  | 48   | 0.943117 | 0.981080  | 0.961724
 SNP   | 46   | 24   | 0.998636 | 0.999288  | 0.998962
 
 ## Separate models for calling whole genome and exome data
 
-In DeepVariant 0.5.0 release, we recommend a separate model for calling exome
-sequencing data. Here is how the exome model is trained: we used a WGS model as
-the starting checkpoint (instead of an ImageNet one), and trained only on
-examples created from exome data.
+In the DeepVariant 0.5.\* release, we recommend a separate model for calling
+exome sequencing data. Here is how the exome model is trained: we used a WGS
+model as the starting checkpoint (instead of an ImageNet one), and trained only
+on examples created from exome data.

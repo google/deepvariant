@@ -40,7 +40,7 @@ Set a number of shell variables, to make what follows easier to read.
 ```bash
 BASE="${HOME}/case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.5.0"
+BIN_VERSION="0.5.1"
 MODEL_VERSION="0.5.0"
 MODEL_CL="182548131"
 
@@ -63,8 +63,10 @@ N_SHARDS="64"
 
 OUTPUT_DIR="${BASE}/output"
 EXAMPLES="${OUTPUT_DIR}/HG002.examples.tfrecord@${N_SHARDS}.gz"
+GVCF_TFRECORDS="${OUTPUT_DIR}/HG002.gvcf.tfrecord@${N_SHARDS}.gz"
 CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/HG002.cvo.tfrecord.gz"
 OUTPUT_VCF="${OUTPUT_DIR}/HG002.output.vcf.gz"
+OUTPUT_GVCF="${OUTPUT_DIR}/HG002.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 ```
 
@@ -177,6 +179,7 @@ because this takes a long time to finish, we will redirect all the output
       --ref "${REF}" \
       --reads "${BAM}" \
       --examples "${EXAMPLES}" \
+      --gvcf "${GVCF_TFRECORDS}" \
       --task {}
 ) >"${LOG_DIR}/make_examples.log" 2>&1
 ```
@@ -240,14 +243,28 @@ Because this step is single-process, single-thread, if you're orchestrating a
 more complicated running pipeline, you might want to request a machine with
 fewer cores for this step.
 
+If you want to create a gVCF output file, two additional flags must be passed to
+the postprocess\_variants step, so the full call would look instead like:
+
+```bash
+( time python "${BIN_DIR}"/postprocess_variants.zip \
+    --ref "${REF}" \
+    --infile "${CALL_VARIANTS_OUTPUT}" \
+    --outfile "${OUTPUT_VCF}" \
+    --nonvariant_site_tfrecord_path "${GVCF_TFRECORDS}" \
+    --gvcf_outfile "${OUTPUT_GVCF}"
+) >"${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
+```
+
 ## Resources used by each step
 
-Step                        | wall time
---------------------------- | -----------
-`make_examples`             | 5h 12m 26s
-`call_variants`             | 11h 17m 20s
-`postprocess_variants`      | 20m 30s
-total time (single machine) | ~ 16h 50m
+Step                               | wall time
+---------------------------------- | -------------
+`make_examples`                    | 5h 37m 42s
+`call_variants`                    | 11h 0m 29s
+`postprocess_variants` (no gVCF)   | 21m 54s
+`postprocess_variants` (with gVCF) | 58m 24s
+total time (single machine)        | 17h - 17h 36m
 
 ## Variant call quality
 
@@ -278,7 +295,7 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
   -o "${OUTPUT_DIR}/happy.output"
 ```
 
-Type  | # FN | # FP | Recall   | Precision | F1_Score
------ | ---- | ---- | -------- | --------- | --------
+Type  | # FN | # FP | Recall   | Precision | F1\_Score
+----- | ---- | ---- | -------- | --------- | ---------
 INDEL | 2291 | 918  | 0.995271 | 0.99810   | 0.996684
 SNP   | 1909 | 885  | 0.999374 | 0.99971   | 0.999542
