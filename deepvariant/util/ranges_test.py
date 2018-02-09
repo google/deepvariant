@@ -602,6 +602,118 @@ class RangesTests(parameterized.TestCase):
     for to_search in [search_ranges, list(reversed(search_ranges))]:
       self.assertEqual(0, ranges.find_max_overlapping(query_range, to_search))
 
+  @parameterized.parameters(
+      dict(
+          regions=[
+              ranges.make_range('1', 1, 10),
+          ],
+          expected_span=ranges.make_range('1', 1, 10),
+      ),
+      dict(
+          regions=[
+              ranges.make_range('1', 1, 10),
+              ranges.make_range('1', 10, 100),
+          ],
+          expected_span=ranges.make_range('1', 1, 100),
+      ),
+      dict(
+          regions=[
+              ranges.make_range('1', 1, 10),
+              ranges.make_range('1', 10, 100),
+              ranges.make_range('1', 2, 20),
+          ],
+          expected_span=ranges.make_range('1', 1, 100),
+      ),
+      # potential edge cases:
+      # same start, different ends.
+      dict(
+          regions=[
+              ranges.make_range('1', 1, 10),
+              ranges.make_range('1', 1, 100),
+          ],
+          expected_span=ranges.make_range('1', 1, 100),
+      ),
+      # same end, different starts.
+      dict(
+          regions=[
+              ranges.make_range('1', 1, 10),
+              ranges.make_range('1', 2, 10),
+          ],
+          expected_span=ranges.make_range('1', 1, 10),
+      ),
+  )
+  def test_span_computes_span_correctly(self, regions, expected_span):
+    for permutation in itertools.permutations(regions, len(regions)):
+      self.assertEqual(expected_span, ranges.span(permutation))
+
+  @parameterized.parameters(
+      dict(regions=[], regexp='empty'),
+      dict(
+          regions=[
+              ranges.make_range('1', 0, 2),
+              ranges.make_range('2', 0, 2),
+          ],
+          regexp='regions must be all on the same contig'),
+      dict(
+          regions=[
+              ranges.make_range('1', 0, 2),
+              ranges.make_range('1', 0, 3),
+              ranges.make_range('2', 0, 2),
+          ],
+          regexp='regions must be all on the same contig'),
+  )
+  def test_span_raises_on_bad_input(self, regions, regexp):
+    with self.assertRaisesRegexp(ValueError, regexp):
+      ranges.span(regions)
+
+  @parameterized.parameters(
+      dict(
+          region=ranges.make_range('1', 10, 20),
+          n_bp=n_bp,
+          contig_map=None,
+          expected=ranges.make_range('1', 10 - n_bp, 20 + n_bp),
+      ) for n_bp in range(10),
+  )
+  def test_expand_is_correct(self, region, n_bp, contig_map, expected):
+    self.assertEqual(expected, ranges.expand(region, n_bp, contig_map))
+
+  @parameterized.parameters(
+      # Check that we don't create Ranges with negative starts.
+      dict(
+          region=ranges.make_range('1', 10, 20),
+          n_bp=20,
+          contig_map=None,
+          expected=ranges.make_range('1', 0, 40),
+      ),
+      # Check that we respect n_bp if contig_map is provided.
+      dict(
+          region=ranges.make_range('1', 10, 20),
+          n_bp=40,
+          contig_map={'1': core_pb2.ContigInfo(name='1', n_bases=50),},
+          expected=ranges.make_range('1', 0, 50),
+      ),
+  )
+  def test_expand_handles_boundaries(self, region, n_bp, contig_map, expected):
+    self.assertEqual(expected, ranges.expand(region, n_bp, contig_map))
+
+  def test_expand_raises_on_negative_n_bp(self):
+    with self.assertRaisesRegexp(ValueError, 'n_bp must be >= 0 but got -10'):
+      ranges.expand(ranges.make_range('1', 10, 20), -10)
+
+  def test_expand_raises_with_missing_contig_in_map(self):
+    # Empty contig_map should raise.
+    with self.assertRaises(KeyError):
+      ranges.expand(ranges.make_range('1', 10, 20), 1, contig_map={})
+
+    # Missing '1' from the contig map should raise.
+    with self.assertRaises(KeyError):
+      ranges.expand(
+          ranges.make_range('1', 10, 20),
+          1,
+          contig_map={
+              '2': core_pb2.ContigInfo(name='2', n_bases=50),
+          })
+
 
 if __name__ == '__main__':
   absltest.main()

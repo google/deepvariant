@@ -626,3 +626,66 @@ def find_max_overlapping(query_range, search_ranges):
   argmax = max(range(len(search_ranges)), key=lambda i: overlaps[i])
   # We return None if the read doesn't overlap at all.
   return None if overlaps[argmax] == 0 else argmax
+
+
+def expand(region, n_bp, contig_map=None):
+  """Expands region by n_bp in both directions.
+
+  Takes a Range(chrom, start, stop) and returns a new
+  Range(chrom, new_start, new_stop), where:
+
+  -- new_start is max(start - n_bp, 0)
+  -- new_stop is stop + n_bp if contig_map is None, or min(stop + n_bp, max_bp)
+     where max_bp is contig_map[chrom].n_bp.
+
+  Args:
+    region: A deepvariant.util.genomics.Range proto.
+    n_bp: int >= 0; how many basepairs to increase region by.
+    contig_map: None, or dict[string, ContigInfo]. If not None, used to get the
+      maximum extent to increase stop by. Must have region.reference_name as a
+      key.
+
+  Returns:
+    deepvariant.util.genomics.Range proto.
+
+  Raises:
+    ValueError: if n_bp is invalid.
+    KeyError: contig_map is not None and region.reference_name isn't a key.
+  """
+  if n_bp < 0:
+    raise ValueError('n_bp must be >= 0 but got {}'.format(n_bp))
+
+  new_start = max(region.start - n_bp, 0)
+  new_end = region.end + n_bp
+  if contig_map is not None:
+    new_end = min(new_end, contig_map[region.reference_name].n_bases)
+  return make_range(region.reference_name, new_start, new_end)
+
+
+def span(regions):
+  """Returns a region that spans all of the bases in regions.
+
+  This function returns a Range(chrom, start, stop), where start is the min
+  of the starts in regions, and stop is the max end in regions. It may not be
+  freshly allocated.
+
+  Args:
+    regions: list[Range]: an list of Range protos.
+
+  Returns:
+    Range proto.
+
+  Raises:
+    ValueError: if not all regions have the same reference_name.
+    ValueError: if regions is empty.
+  """
+  if not regions:
+    raise ValueError('regions is empty but must have at least one region')
+  elif len(regions) == 1:
+    return regions[0]
+  elif any(r.reference_name != regions[0].reference_name for r in regions):
+    raise ValueError('regions must be all on the same contig')
+  else:
+    start = min(r.start for r in regions)
+    end = max(r.end for r in regions)
+    return make_range(regions[0].reference_name, start, end)
