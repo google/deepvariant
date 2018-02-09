@@ -111,21 +111,26 @@ DeepVariant is licensed under the terms of the [BSD-3-Clause license](LICENSE).
 DeepVariant happily makes use of many open source packages.  We'd like to
 specifically call out a few key ones:
 
-* [Boost Graph Library](http://www.boost.org/doc/libs/1_65_1/libs/graph/doc/index.html)
+*   [Boost Graph
+    Library](http://www.boost.org/doc/libs/1_65_1/libs/graph/doc/index.html)
 
-* [CLIF](https://github.com/google/clif)
+*   [abseil-cpp](https://github.com/abseil/abseil-cpp) and
+    [abseil-py](https://github.com/abseil/abseil-py)
 
-* [GNU Parallel](https://www.gnu.org/software/parallel/)
+*   [CLIF](https://github.com/google/clif)
 
-* [htslib & samtools](http://www.htslib.org/)
+*   [GNU Parallel](https://www.gnu.org/software/parallel/)
 
-* [numpy](http://www.numpy.org/)
+*   [htslib & samtools](http://www.htslib.org/)
 
-* [scipy](https://www.scipy.org/)
+*   [numpy](http://www.numpy.org/)
 
-* [SSW Library](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library)
+*   [scipy](https://www.scipy.org/)
 
-* [TensorFlow and Slim](https://www.tensorflow.org/)
+*   [SSW
+    Library](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library)
+
+*   [TensorFlow and Slim](https://www.tensorflow.org/)
 
 We thank all of the developers and contributors to these packages for their
 work.
