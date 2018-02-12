@@ -52,7 +52,7 @@ slim = tf.contrib.slim
 DEFAULT_NUM_CLASSES = 3
 
 
-def make_training_batches(dataset, model, batch_size):
+def make_batches(dataset, model, batch_size, mode):
   """Provides batches of pileup images from this dataset.
 
   Creates a DataSetProvider for dataset, extracts image, label, and
@@ -65,6 +65,7 @@ def make_training_batches(dataset, model, batch_size):
     model: a DeepVariantModel to use for preprocessing each image before
       batching.
     batch_size: the number of images in each batch.
+    mode: str; one of TRAIN or EVAL.
 
   Returns:
     images: 4-D float Tensor of a batch of images with shape
@@ -74,7 +75,14 @@ def make_training_batches(dataset, model, batch_size):
     encoded_truth_variants: Tensor of strings with shape (batch_size,).
       Each element of this tensor is a byte-encoded nucleus.genomics.v1.Variant
       protobuf in the same order as images and one_hot_labels.
+
+  Raises:
+    ValueError: if mode is not one of TRAIN or EVAL.
   """
+  if mode not in {'TRAIN', 'EVAL'}:
+    raise ValueError(
+        'mode is {} but must be one of TRAIN or EVAL.'.format(mode))
+
   data_provider = slim.dataset_data_provider.DatasetDataProvider(
       dataset,
       common_queue_capacity=2 * batch_size,
@@ -86,13 +94,18 @@ def make_training_batches(dataset, model, batch_size):
   image, label, truth_variant = data_provider.get(
       ['image', 'label', 'truth_variant'])
   image = model.preprocess_image(image)
-  return tf.train.shuffle_batch(
-      [image, label, truth_variant],
-      batch_size=batch_size,
-      num_threads=4,
-      capacity=5000,
-      # redacted
-      min_after_dequeue=min(1000, dataset.num_samples))
+
+  if model == 'TRAIN':
+    return tf.train.shuffle_batch(
+        [image, label, truth_variant],
+        batch_size=batch_size,
+        num_threads=4,
+        capacity=5000,
+        # redacted
+        min_after_dequeue=min(1000, dataset.num_samples))
+  else:
+    return tf.train.batch(
+        [image, label, truth_variant], batch_size=batch_size, num_threads=4)
 
 
 # redacted

@@ -188,8 +188,8 @@ def run(target, is_chief, device_fn):
       # If ps_tasks is zero, the local device is used. When using multiple
       # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
       # across the different devices.
-      images, labels, _ = data_providers.make_training_batches(
-          dataset.get_slim_dataset(), model, FLAGS.batch_size)
+      images, labels, _ = data_providers.make_batches(
+          dataset.get_slim_dataset(), model, FLAGS.batch_size, mode='TRAIN')
       endpoints = model.create(images, dataset.num_classes, is_training=True)
       labels = slim.one_hot_encoding(labels, dataset.num_classes)
       total_loss = model.loss(endpoints, labels)

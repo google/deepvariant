@@ -33,6 +33,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import json
+import math
+
 
 
 from tensorflow import flags
@@ -79,6 +82,13 @@ flags.DEFINE_string('dataset_config_pbtxt', None,
 
 flags.DEFINE_float('moving_average_decay', 0.9999,
                    'The decay to use for the moving average.')
+
+# A fixed evaluation set parameters.
+flags.DEFINE_boolean(
+    'use_fixed_eval', False,
+    'If True, we will evaluate our model using a fixed evaluation set.')
+flags.DEFINE_integer('max_examples_to_eval', 64 * 1024 * 4,
+                     'Maximum number of examples to evaluate.')
 
 
 def select_variants_weights(variant_p_func, encoded_variants, name=None):
@@ -158,6 +168,159 @@ def main(_):
     logging.error('Need to specify --dataset_config_pbtxt')
   logging_level.set_from_flag()
 
+  if FLAGS.use_fixed_eval:
+    fixed_eval_loop()
+  else:
+    continuous_eval_loop()
+
+
+def make_metrics(predictions, labels, encoded_truth_variants):
+  """Creates our evaluation metrics."""
+  # Define the metrics:
+  raw_metrics = {
+      'Accuracy': tf.contrib.metrics.streaming_accuracy,
+      'Precision': tf.contrib.metrics.streaming_precision,
+      'Recall': tf.contrib.metrics.streaming_recall,
+      'Mean_absolute_error': tf.contrib.metrics.streaming_mean_absolute_error,
+      'FPs': tf.contrib.metrics.streaming_false_positives,
+      'FNs': tf.contrib.metrics.streaming_false_negatives,
+      'TPs': tf.contrib.metrics.streaming_true_positives,
+      'TNs': tf.contrib.metrics.streaming_true_negatives,
+  }
+
+  def _make_selector(func):
+    return select_variants_weights(func, encoded_truth_variants)
+
+  selectors = {
+      'All': None,
+      'SNPs': _make_selector(variantutils.is_snp),
+      'Indels': _make_selector(variantutils.is_indel),
+      # These haven't proven particularly useful, but are commented out here
+      # in case someone wants to do some more explorations.
+      # 'Insertions': _make_selector(variantutils.has_insertion),
+      # 'Deletions': _make_selector(variantutils.has_deletion),
+      # 'BiAllelic': _make_selector(variantutils.is_biallelic),
+      # 'MultiAllelic': _make_selector(variantutils.is_multiallelic),
+      # 'HomRef': tf.equal(labels, 0),
+      # 'Het': tf.equal(labels, 1),
+      # 'HomAlt': tf.equal(labels, 2),
+      # 'NonRef': tf.greater(labels, 0),
+  }
+
+  return tf.contrib.metrics.aggregate_metric_map(
+      calling_metrics(raw_metrics, selectors, predictions, labels))
+
+
+def checkpoints_iterator(checkpoint_dir):
+  # This is here to make it easy to mock out the iterator for tests.
+  return tf.contrib.training.checkpoints_iterator(checkpoint_dir)
+
+
+def fixed_eval_loop():
+  logging.info('Running fixed eval for: %s', FLAGS.dataset_config_pbtxt)
+
+  num_evaluations = 0
+  for checkpoint_path in checkpoints_iterator(FLAGS.checkpoint_dir):
+    logging.info('Using checkpoint %s %d', checkpoint_path, num_evaluations)
+
+    g = tf.Graph()
+    with g.as_default():
+      tf_global_step = tf.train.get_or_create_global_step()
+
+      model = modeling.get_model(FLAGS.model_name)
+      dataset = data_providers.get_dataset(FLAGS.dataset_config_pbtxt)
+      logging.info('Running evaluations on %s with model %s, step is %s',
+                   dataset, model, tf_global_step)
+
+      # redacted
+      images, labels, encoded_truth_variants = data_providers.make_batches(
+          dataset.get_slim_dataset(), model, FLAGS.batch_size, mode='EVAL')
+      endpoints = model.create(images, dataset.num_classes, is_training=False)
+      predictions = tf.argmax(endpoints['Predictions'], 1)
+
+      # For eval, explicitly add moving_mean and moving_variance variables to
+      # the MOVING_AVERAGE_VARIABLES collection.
+      variable_averages = tf.train.ExponentialMovingAverage(
+          FLAGS.moving_average_decay, tf_global_step)
+
+      for var in tf.get_collection('moving_vars'):
+        tf.add_to_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES, var)
+      for var in slim.get_model_variables():
+        tf.add_to_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES, var)
+
+      variables_to_restore = variable_averages.variables_to_restore()
+      variables_to_restore[tf_global_step.op.name] = tf_global_step
+
+      names_to_values, names_to_updates = make_metrics(predictions, labels,
+                                                       encoded_truth_variants)
+
+      for name, value in names_to_values.iteritems():
+        slim.summaries.add_scalar_summary(value, name, print_summary=True)
+
+      num_batches = int(
+          math.floor(
+              min(FLAGS.max_examples_to_eval, dataset.num_examples) / float(
+                  FLAGS.batch_size)))
+      num_samples = FLAGS.batch_size * num_batches
+      logging.info('Dataset has %d samples, doing eval over %d',
+                   dataset.num_examples, num_samples)
+
+      logging.info('Running one evaluation')
+      names_to_values = slim.evaluation.evaluate_once(
+          master=FLAGS.master,
+          checkpoint_path=checkpoint_path,
+          logdir=FLAGS.eval_dir,
+          variables_to_restore=variables_to_restore,
+          num_evals=num_batches,
+          eval_op=names_to_updates.values(),
+          final_op=names_to_values,
+      )
+
+      # --- LOW LEVEL [WIP], hangs, initialization seems busted ---
+      # This is (marginally) nicer as it can eliminate the slim dep.
+      # saver = tf.train.Saver(variables_to_restore)
+      # scaffold = tf.train.Scaffold(saver=saver)
+      # names_to_values = tf.contrib.training.evaluate_once(
+      #     checkpoint_path=checkpoint_path,
+      #     master=FLAGS.master,
+      #     scaffold=scaffold,
+      #     eval_ops=names_to_updates.values(),
+      #     final_ops=names_to_values,
+      # )
+
+      _write_checkpoint_metrics(checkpoint_path, names_to_values)
+
+    num_evaluations += 1
+    if (FLAGS.max_evaluations is not None and
+        num_evaluations >= FLAGS.max_evaluations):
+      logging.info('Done with evaluations!')
+      return
+
+
+def checkpoint_metrics_path(checkpoint_path):
+  return checkpoint_path + '.metrics'
+
+
+def read_metrics(checkpoint_path):
+  with tf.gfile.GFile(checkpoint_metrics_path(checkpoint_path)) as fin:
+    return {k: float(v) for k, v in json.load(fin).iteritems()}
+
+
+def _write_checkpoint_metrics(checkpoint_path, metrics_and_values):
+  path = checkpoint_metrics_path(checkpoint_path)
+  serializable = {k: str(v) for k, v in metrics_and_values.iteritems()}
+  logging.info('Writing checkpoint metrics %s', path)
+  try:
+    with tf.gfile.GFile(path, 'w') as fout:
+      json.dump(serializable, fout, sort_keys=True, indent=4)
+  except:  # pylint: disable=bare-except
+    # Note we have a bare exception here as as there's no clear TF base
+    # exception to catch will cover all of the potential issues that might arise
+    # trying to write our metrics to our metrics file.
+    logging.warning('Failed to write checkpoint metrics to path %s', path)
+
+
+def continuous_eval_loop():
   g = tf.Graph()
   with g.as_default():
     tf_global_step = slim.get_or_create_global_step()
@@ -166,8 +329,8 @@ def main(_):
     dataset = data_providers.get_dataset(FLAGS.dataset_config_pbtxt)
     print('Running evaluations on {} with model {}\n'.format(dataset, model))
 
-    batch = data_providers.make_training_batches(dataset.get_slim_dataset(),
-                                                 model, FLAGS.batch_size)
+    batch = data_providers.make_batches(
+        dataset.get_slim_dataset(), model, FLAGS.batch_size, mode='TRAIN')
     images, labels, encoded_truth_variants = batch
     endpoints = model.create(images, dataset.num_classes, is_training=False)
     predictions = tf.argmax(endpoints['Predictions'], 1)

@@ -213,8 +213,11 @@ class DataProviderTest(parameterized.TestCase):
         data_providers.get_dataset(config_file).get_slim_dataset(),
         golden_dataset)
 
-  @parameterized.parameters(True, False)
-  def test_get_training_batches(self, compressed_inputs):
+  @parameterized.parameters(
+      dict(compressed_inputs=compressed_inputs, mode=mode)
+      for compressed_inputs in [True, False]
+      for mode in ['TRAIN', 'EVAL'])
+  def test_get_batches(self, compressed_inputs, mode):
     golden_dataset = make_golden_dataset(compressed_inputs)
     batch_size = 16
     with tf.Session() as sess:
@@ -223,8 +226,8 @@ class DataProviderTest(parameterized.TestCase):
           tf.image.resize_image_with_crop_or_pad,
           target_height=107,
           target_width=221)
-      batch = data_providers.make_training_batches(
-          golden_dataset.get_slim_dataset(), mock_model, batch_size)
+      batch = data_providers.make_batches(
+          golden_dataset.get_slim_dataset(), mock_model, batch_size, mode=mode)
 
       # We should have called our preprocess_image exactly once. We don't have
       # the actual objects to test for the call, though.

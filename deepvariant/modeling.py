@@ -39,6 +39,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
+
 
 
 import tensorflow as tf
@@ -504,7 +506,39 @@ class DeepVariantMobileNetV1(DeepVariantSlimModel):
       return endpoints
 
 
-class DeepVariantRandomGuessModel(DeepVariantModel):
+class DeepVariantDummyModel(DeepVariantModel):
+  """BaseClass for dummy models that are useful for testing and benchmarking."""
+
+  def __init__(self, name):
+    """Creates a Dummy model."""
+    # Note the pretrained model path isn't used but we must return a valid
+    # string so here we just return "UNUSED".
+    super(DeepVariantDummyModel, self).__init__(
+        name=name, pretrained_model_path='UNUSED')
+
+  def preprocess_image(self, image):
+    # Note these calculations aren't necessary, but they are included here to
+    # mimic the data processing pipeline used by inception. We may consider
+    # removing them in a future CL, or making them optional, to reduce CPU cost
+    # of this model.
+    image = tf.to_float(image)
+    image = tf.subtract(image, 128.0)
+    image = tf.div(image, 128.0)
+    image = tf.reshape(image, (100, 221, pileup_image.DEFAULT_NUM_CHANNEL))
+    return image
+
+  def initialize_from_checkpoint(self, checkpoint_path, num_classes,
+                                 is_training):
+    # No initialization is needed, so return a noop.
+    return lambda sess: sess
+
+  @property
+  def is_trainable(self):
+    """A dummy model cannot be trained."""
+    return False
+
+
+class DeepVariantRandomGuessModel(DeepVariantDummyModel):
   """Assigns a random probability to each class.
 
   This model is mostly useful for testing of DeepVariant, as the evaluation of
@@ -517,10 +551,7 @@ class DeepVariantRandomGuessModel(DeepVariantModel):
     Args:
       seed: int. The random number seed to use for our tf.random_uniform op.
     """
-    # Note the pretrained model path isn't used but we must return a valid
-    # string so here we just return "UNUSED".
-    super(DeepVariantRandomGuessModel, self).__init__(
-        name='random_guess', pretrained_model_path='UNUSED')
+    super(DeepVariantRandomGuessModel, self).__init__(name='random_guess')
     self.seed = seed
 
   def create(self, images, num_classes, is_training):
@@ -530,27 +561,42 @@ class DeepVariantRandomGuessModel(DeepVariantModel):
         shape=(batch_size, num_classes), seed=self.seed)
     return {'Predictions': tf.nn.softmax(rand_probs)}
 
-  def preprocess_image(self, image):
-    # Note this calculations aren't necessary, but they are included here to
-    # mimic the data processing pipeline used by inception. We may consider
-    # removing them in a future CL, or making them optional, to reduce CPU cost
-    # of this model.
-    image = tf.to_float(image)
-    image = tf.subtract(image, 128.0)
-    image = tf.div(image, 128.0)
-    image = tf.reshape(image, (100, 221, pileup_image.DEFAULT_NUM_CHANNEL))
 
-    return image
+class DeepVariantConstantModel(DeepVariantDummyModel):
+  """Returns a constant probability distribution for each example."""
 
-  def initialize_from_checkpoint(self, checkpoint_path, num_classes,
-                                 is_training):
-    # No initialization is needed, so return a noop.
-    return lambda sess: sess
+  def __init__(self, predictions=None):
+    """Creates a constant model.
 
-  @property
-  def is_trainable(self):
-    """The RandomGuess model cannot be trained."""
-    return False
+    Args:
+      predictions: list[float]. Values to return for Predictions, which should
+        be a floatting point value between 0 and 1 for each class, normalized so
+        the sum of the values is 1. Predictions should have dimension
+        [num_classes].
+
+    Raises:
+      ValueError: if sum(predictions) is not close to 1.
+    """
+    # Note the pretrained model path isn't used but we must return a valid
+    # string so here we just return "UNUSED".
+    super(DeepVariantConstantModel, self).__init__(name='constant')
+    if predictions is None:
+      self.predictions = [0.0, 1.0, 0.0]
+    elif math.abs(sum(predictions) - 1) > 1e-6:
+      raise ValueError('Sum of predictions should be ~1', predictions)
+    else:
+      self.predictions = predictions
+
+  def create(self, images, num_classes, is_training):
+    assert num_classes == len(self.predictions)
+    batch_size = tf.shape(images)[0]
+    pred_const = tf.constant(self.predictions)
+    return {
+        'Predictions':
+            tf.reshape(
+                tf.tile(pred_const, [batch_size]),
+                shape=(batch_size, tf.shape(pred_const)[0]))
+    }
 
 
 # Our list of pre-defined models.
@@ -559,6 +605,7 @@ _MODELS = [
     DeepVariantInceptionV2(),
     DeepVariantMobileNetV1(),
     DeepVariantRandomGuessModel(),
+    DeepVariantConstantModel(),
     DeepVariantResnet50(),
     DeepVariantResnet101(),
     DeepVariantResnet152(),
