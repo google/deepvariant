@@ -87,35 +87,39 @@ sudo -H pip install six
 
 note_build_stage "Install TensorFlow pip package"
 
-# Also pip install the latest TensorFlow with cpu support. We don't build the
-# full TF from source, but instead using prebuilt version. However, we still
-# need the full source version to build DeepVariant.
-
-# Gets the nightly TF build: https://pypi.python.org/pypi/tf-nightly which is
-# necessary right now if we aren't pinning the TF source. We have observed
-# runtime failures if there's too much skew between the released TF package and
-# the source.
-if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
-  if [[ "${DV_GPU_BUILD}" = "1" ]]; then
-    echo "Installing GPU-enabled TensorFlow nightly wheel"
-    sudo -H pip install --upgrade tf_nightly_gpu
-  else
-    echo "Installing CPU-only TensorFlow nightly wheel"
-    sudo -H pip install --upgrade tf_nightly
-  fi
+if [[ "${DV_USE_PREINSTALLED_TF}" = "1" ]]; then
+  echo "Skipping TensorFlow installation at user request; will use pre-installed TensorFlow."
 else
-  # Use the official TF release pip package.
-  if [[ "${DV_GPU_BUILD}" = "1" ]]; then
-    echo "Installing GPU-enabled TensorFlow wheel"
-    sudo -H pip install --upgrade 'tensorflow-gpu==1.4'
-  elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
-    echo "Installing Google Cloud Platform optimized CPU-only TensorFlow wheel"
-    curl "${GCP_OPTIMIZED_TF_WHL_CURL_PATH}/${GCP_OPTIMIZED_TF_WHL_FILENAME}" \
-      > "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
-    sudo -H pip install --upgrade "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
+  # Also pip install the latest TensorFlow with cpu support. We don't build the
+  # full TF from source, but instead using prebuilt version. However, we still
+  # need the full source version to build DeepVariant.
+
+  # Gets the nightly TF build: https://pypi.python.org/pypi/tf-nightly which is
+  # necessary right now if we aren't pinning the TF source. We have observed
+  # runtime failures if there's too much skew between the released TF package and
+  # the source.
+  if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
+    if [[ "${DV_GPU_BUILD}" = "1" ]]; then
+      echo "Installing GPU-enabled TensorFlow nightly wheel"
+      sudo -H pip install --upgrade tf_nightly_gpu
+    else
+      echo "Installing CPU-only TensorFlow nightly wheel"
+      sudo -H pip install --upgrade tf_nightly
+    fi
   else
-    echo "Installing standard CPU-only TensorFlow wheel"
-    sudo -H pip install --upgrade 'tensorflow==1.4'
+    # Use the official TF release pip package.
+    if [[ "${DV_GPU_BUILD}" = "1" ]]; then
+      echo "Installing GPU-enabled TensorFlow wheel"
+      sudo -H pip install --upgrade 'tensorflow-gpu==1.4'
+    elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
+      echo "Installing Google Cloud Platform optimized CPU-only TensorFlow wheel"
+      curl "${GCP_OPTIMIZED_TF_WHL_CURL_PATH}/${GCP_OPTIMIZED_TF_WHL_FILENAME}" \
+        > "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
+      sudo -H pip install --upgrade "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
+    else
+      echo "Installing standard CPU-only TensorFlow wheel"
+      sudo -H pip install --upgrade 'tensorflow==1.4'
+    fi
   fi
 fi
 

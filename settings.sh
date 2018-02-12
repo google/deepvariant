@@ -30,6 +30,9 @@
 # Source this file---these options are needed for TF config and for
 # successive bazel runs.
 
+# Set this to 1 if the system image already has TensorFlow preinstalled.  This
+# will skip the installation of TensorFlow.
+export DV_USE_PREINSTALLED_TF="${DV_USE_PREINSTALLED_TF:-0}"
 
 export TF_CUDA_CLANG=0
 export TF_ENABLE_XLA=0
