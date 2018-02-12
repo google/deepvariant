@@ -60,6 +60,11 @@ note_build_stage "Install Java and friends"
 if ! java -version 2>&1 | fgrep "1.8"; then
   echo "No Java 8, will install."
   sudo -H apt-get install -y software-properties-common debconf-utils
+  # Debian needs authentication.
+  # (http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html)
+  [[ $(lsb_release -d | grep 'Debian') ]] && \
+    sudo -H apt-get install -y gnupg dirmngr && \
+    sudo -H apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
   sudo add-apt-repository -y ppa:webupd8team/java
   sudo -H apt-get -qq -y update
   echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | sudo debconf-set-selections
@@ -117,6 +122,8 @@ else
   case "$(lsb_release -d)" in
     *Ubuntu*16.*.*) export DV_PLATFORM="ubuntu-16" ;;
     *Ubuntu*14.*.*) export DV_PLATFORM="ubuntu-14" ;;
+    *Debian*9.*)    export DV_PLATFORM="debian" ;;
+    *Debian*rodete) export DV_PLATFORM="debian" ;;
     *) echo "CLIF is not installed on this machine and a prebuilt binary is not
 unavailable for this platform. Please install CLIF at
 https://github.com/google/clif before continuing."
