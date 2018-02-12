@@ -48,9 +48,9 @@ import re
 
 
 import contextlib2
-import tensorflow as tf
 
 from tensorflow.core.example import example_pb2
+from tensorflow.python.lib.io import python_io
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 
@@ -272,7 +272,7 @@ def read_tfrecords(path, proto=None, max_records=None, options=None):
       record in path to parse it.
     max_records: int >= 0 or None. Maximum number of records to read from path.
       If None, the default, all records will be read.
-    options: A tf.python_io.TFRecordOptions object for the reader.
+    options: A python_io.TFRecordOptions object for the reader.
 
   Yields:
     proto.FromString() values on each record in path in order.
@@ -290,7 +290,7 @@ def read_tfrecords(path, proto=None, max_records=None, options=None):
 
   i = 0
   for path in paths:
-    for buf in tf.python_io.tf_record_iterator(path, options):
+    for buf in python_io.tf_record_iterator(path, options):
       i += 1
       if max_records is not None and i > max_records:
         return
@@ -395,7 +395,7 @@ def read_shard_sorted_tfrecords(path,
       record in path to parse it.
     max_records: int >= 0 or None. Maximum number of records to read from path.
       If None, the default, all records will be read.
-    options: A tf.python_io.TFRecordOptions object for the reader.
+    options: A python_io.TFRecordOptions object for the reader.
 
   Yields:
     proto.FromString() values on each record in path in sorted order.
@@ -415,7 +415,7 @@ def read_shard_sorted_tfrecords(path,
   for path in paths:
     it = (
         proto.FromString(buf)
-        for buf in tf.python_io.tf_record_iterator(path, options))
+        for buf in python_io.tf_record_iterator(path, options))
     heap.append(_ComparableSortedRecordIterator(it, key))
   heapq.heapify(heap)
   i = 0
@@ -451,7 +451,7 @@ def write_tfrecords(protos, output_path, options=None):
   Args:
     protos: An iterable of protobufs. The objects we want to write out.
     output_path: str. The filepath where we want to write protos.
-    options: A tf.python_io.TFRecordOptions object for the writer.
+    options: A python_io.TFRecordOptions object for the writer.
   """
   if not options:
     options = make_tfrecord_options(output_path)
@@ -473,13 +473,13 @@ def write_tfrecords(protos, output_path, options=None):
 
 
 def make_tfrecord_options(filenames):
-  """Creates a tf.python_io.TFRecordOptions for the specified filename.
+  """Creates a python_io.TFRecordOptions for the specified filename.
 
   Args:
     filenames: str or list[str]. A path or a list of paths where we'll
       read/write our TFRecord.
   Returns:
-    A tf.python_io.TFRecordOptions object.
+    A python_io.TFRecordOptions object.
   Raises:
     ValueError: If the filenames contain inconsistent file types.
   """
@@ -494,25 +494,25 @@ def make_tfrecord_options(filenames):
         'Incorrect value: {}. Filenames need to be all of the same type: '
         'either all with .gz or all without .gz'.format(','.join(filenames)))
   if extensions == {'.gz'}:
-    compression_type = tf.python_io.TFRecordCompressionType.GZIP
+    compression_type = python_io.TFRecordCompressionType.GZIP
   else:
-    compression_type = tf.python_io.TFRecordCompressionType.NONE
-  return tf.python_io.TFRecordOptions(compression_type)
+    compression_type = python_io.TFRecordCompressionType.NONE
+  return python_io.TFRecordOptions(compression_type)
 
 
 def make_tfrecord_writer(outfile, options=None):
-  """Creates a tf.python_io.TFRecordWriter for the specified outfile.
+  """Creates a python_io.TFRecordWriter for the specified outfile.
 
   Args:
     outfile: str. A path where we'll write our TFRecords.
-    options: tf.python_io.TFRecordOptions or None. If None, one
+    options: python_io.TFRecordOptions or None. If None, one
       will be inferred from the filename.
   Returns:
-    A tf.python_io.TFRecordWriter object.
+    A python_io.TFRecordWriter object.
   """
   if not options:
     options = make_tfrecord_options(outfile)
-  return tf.python_io.TFRecordWriter(outfile, options)
+  return python_io.TFRecordWriter(outfile, options)
 
 
 def make_proto_writer(outfile):

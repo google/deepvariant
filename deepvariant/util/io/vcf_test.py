@@ -36,12 +36,11 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
-import tensorflow as tf
-
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util import test_utils
 from deepvariant.util.protos import core_pb2
+from tensorflow.python.platform import gfile
 
 
 def _format_expected_variant(ref, alts, format_spec, *samples):
@@ -73,7 +72,7 @@ class VcfWriterTests(parameterized.TestCase):
         return line
 
     expected_lines = [cleanup_line(line) for line in expected_lines]
-    with tf.gfile.FastGFile(path, 'r') as fin:
+    with gfile.FastGFile(path, 'r') as fin:
       self.assertEqual([
           line.strip() for line in fin.readlines() if not line.startswith('#')
       ], expected_lines)

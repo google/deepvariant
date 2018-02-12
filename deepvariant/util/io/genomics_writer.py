@@ -44,7 +44,7 @@ import abc
 
 
 
-import tensorflow as tf
+from tensorflow.python.lib.io import python_io
 
 
 class GenomicsWriter(object):
@@ -80,10 +80,10 @@ class TFRecordWriter(GenomicsWriter):
 
   def __init__(self, output_path):
     compressed = output_path.endswith('.gz')
-    options = tf.python_io.TFRecordOptions(
-        tf.python_io.TFRecordCompressionType.GZIP if compressed else
-        tf.python_io.TFRecordCompressionType.NONE)
-    self._writer = tf.python_io.TFRecordWriter(output_path, options=options)
+    options = python_io.TFRecordOptions(
+        python_io.TFRecordCompressionType.GZIP if compressed else
+        python_io.TFRecordCompressionType.NONE)
+    self._writer = python_io.TFRecordWriter(output_path, options=options)
 
   def write(self, proto):
     self._writer.write(proto.SerializeToString())

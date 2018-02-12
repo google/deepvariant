@@ -37,14 +37,13 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 
-import tensorflow as tf
-
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
 from deepvariant.util.protos import core_pb2
+from tensorflow.python.platform import gfile
 
 
 class RefReaderTests(parameterized.TestCase):
@@ -185,7 +184,7 @@ class SamReaderTests(parameterized.TestCase):
     # A single stock read we'll add our AUX fields to.
     read = 'read_name	0	chr1	1	0	3M	*	0	0	CCC	AAA	' + tag_string
     path = test_utils.test_tmpfile('aux_tags.bam')
-    with tf.gfile.FastGFile(path, 'w') as fout:
+    with gfile.FastGFile(path, 'w') as fout:
       fout.write(header_lines)
       fout.write(read + '\n')
     with genomics_io.make_sam_reader(

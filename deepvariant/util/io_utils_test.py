@@ -39,10 +39,10 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 
-import tensorflow as tf
 from deepvariant.util import io_utils as io
 from deepvariant.util import test_utils
 from deepvariant.util.protos import core_pb2
+from tensorflow.python.lib.io import python_io
 
 
 class IOTest(parameterized.TestCase):
@@ -130,7 +130,7 @@ class IOTest(parameterized.TestCase):
       (['foo.tfrecord.gz', 'bar.tfrecord.gz'], 'GZIP'),
   )
   def test_make_tfrecord_options(self, filenames, expected_compression_type):
-    compression_type = tf.python_io.TFRecordOptions.get_compression_type_string(
+    compression_type = python_io.TFRecordOptions.get_compression_type_string(
         io.make_tfrecord_options(filenames))
     self.assertEqual(compression_type, expected_compression_type)
 

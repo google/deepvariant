@@ -36,14 +36,14 @@ import os
 
 
 from tensorflow import flags
-import tensorflow as tf
+from absl.testing import absltest
 
 from deepvariant.util.genomics import position_pb2
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import cigar as _cigar
-from tensorflow.python.platform import googletest
+from tensorflow.python.platform import gfile
 
 FLAGS = flags.FLAGS
 
@@ -110,9 +110,9 @@ def test_tmpfile(name, contents=None):
   Returns:
     str path to a tmpfile with filename name in our test tmpfile directory.
   """
-  path = os.path.join(googletest.GetTempDir(), name)
+  path = os.path.join(absltest.get_default_test_tmpdir(), name)
   if contents is not None:
-    with tf.gfile.FastGFile(path, 'wb') as fout:
+    with gfile.FastGFile(path, 'wb') as fout:
       fout.write(contents)
   return path
 

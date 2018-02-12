@@ -39,10 +39,10 @@ import re
 
 import intervaltree
 
-import tensorflow as tf
-
 from deepvariant.util.genomics import position_pb2
 from deepvariant.util.genomics import range_pb2
+from tensorflow.python.platform import gfile
+
 
 # Regular expressions for matching literal chr:start-stop strings.
 _REGION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)-([0-9,]+)$')
@@ -134,7 +134,7 @@ class RangeSet(object):
     Returns:
       A RangeSet.
     """
-    with tf.gfile.GFile(source) as fin:
+    with gfile.GFile(source) as fin:
       if source.endswith('.gz'):
         fin = gzip.GzipFile(fileobj=fin)
       return cls(bed_parser(fin))
@@ -412,7 +412,7 @@ def from_regions(regions, contig_map=None):
   for region in regions:
     reader = _get_parser_for_file(region)
     if reader:
-      with tf.gfile.GFile(region) as fin:
+      with gfile.GFile(region) as fin:
         for elt in reader(fin):
           yield elt
     else:
