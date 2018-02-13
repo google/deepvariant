@@ -37,12 +37,9 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import genomics_io
-from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
-from deepvariant.util.protos import core_pb2
 from tensorflow.python.platform import gfile
 
 
@@ -253,56 +250,6 @@ class VcfReaderTests(absltest.TestCase):
     range1 = ranges.parse_literal('chr3:100,000-500,000')
     self.assertEqual(
         test_utils.iterable_len(self.samples_reader.query(range1)), 4)
-
-
-class ReadWriterTests(parameterized.TestCase):
-  """Tests for genomics_io's make_read_writer."""
-
-  def setUp(self):
-    self.read1 = test_utils.make_read(
-        bases='ACCGT',
-        chrom='chr1',
-        start=10,
-        cigar='5M',
-        mapq=50,
-        quals=range(30, 35),
-        name='read1')
-    self.read2 = test_utils.make_read(
-        bases='AACCTT',
-        chrom='chr2',
-        start=15,
-        cigar='7M',
-        mapq=40,
-        quals=range(20, 26),
-        name='read2')
-    self.contigs = [
-        core_pb2.ContigInfo(name='chr1'),
-        core_pb2.ContigInfo(name='chr2'),
-    ]
-
-  def test_make_read_writer_tfrecords(self):
-    outfile = test_utils.test_tmpfile('test.tfrecord')
-    writer = genomics_io.make_read_writer(outfile=outfile)
-
-    # Test that the writer is a context manager and that we can write a read to
-    # it.
-    with writer:
-      writer.write(self.read1)
-      writer.write(self.read2)
-
-    # Our output should have exactly one read in it.
-    self.assertEqual([self.read1, self.read2],
-                     list(
-                         io_utils.read_tfrecords(outfile,
-                                                 proto=reads_pb2.Read)))
-
-  def test_make_read_writer_bam_fails_without_contigs(self):
-    with self.assertRaisesRegexp(ValueError, 'contigs'):
-      genomics_io.make_read_writer('test.bam')
-
-  def test_make_read_writer_bam_fails_with_not_implemented_error(self):
-    with self.assertRaises(NotImplementedError):
-      genomics_io.make_read_writer('test.bam', contigs=self.contigs)
 
 
 if __name__ == '__main__':

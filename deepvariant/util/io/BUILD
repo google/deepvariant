@@ -38,3 +38,26 @@ py_test(
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
+
+py_library(
+    name = "sam",
+    srcs = ["sam.py"],
+    deps = [
+        ":genomics_writer",
+    ],
+)
+
+py_test(
+    name = "sam_test",
+    size = "small",
+    srcs = ["sam_test.py"],
+    deps = [
+        ":sam",
+        "//deepvariant/util:io_utils",
+        "//deepvariant/util:py_test_utils",
+        "//deepvariant/util/genomics:struct_py_pb2",
+        "//deepvariant/util/protos:core_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)

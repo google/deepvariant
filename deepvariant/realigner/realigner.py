@@ -45,7 +45,7 @@ import os.path
 from tensorflow import flags
 import tensorflow as tf
 
-from deepvariant.util import genomics_io
+from deepvariant.util.io import sam
 from deepvariant.util import ranges
 from deepvariant.util import utils
 from deepvariant.protos import realigner_pb2
@@ -227,7 +227,7 @@ class DiagnosticLogger(object):
     """Logs, if enabled, the realigned reads for region."""
     if self.enabled and self.config.emit_realigned_reads:
       path = self._file_for_region(region, self.realigned_reads_filename)
-      with genomics_io.make_read_writer(path) as writer:
+      with sam.SamWriter(path) as writer:
         for read in reads:
           writer.write(read)
 

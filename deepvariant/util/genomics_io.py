@@ -36,7 +36,6 @@ import re
 
 
 
-from deepvariant.util import io_utils
 from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import reference_fai
 from deepvariant.util.python import sam_reader as sam_reader_
@@ -159,33 +158,3 @@ def make_vcf_reader(variants_source, use_index=True, include_likelihoods=False):
       variants_source.encode('utf8'),
       core_pb2.VcfReaderOptions(
           index_mode=index_mode, desired_format_entries=desired_vcf_fields))
-
-
-def make_read_writer(outfile, contigs=None):
-  """Creates a writer to outfile writing Read protos.
-
-  This function creates an writer that accepts Read protos and writes them to
-  outfile. The type of the writer is determined by the extension of outfile. If
-  it's one of SAM_EXTENSIONS, we will write out SAM records via make_sam_writer.
-  Otherwise we will write out TFRecord file of serialized Read protos.
-
-  Args:
-    outfile: A path to a file where we want to write our variant calls.
-    contigs: A list of the reference genome contigs for writers that need contig
-      information.
-
-  Returns:
-    An writer object and a write_fn accepting a Read proto that writes to
-    writer.
-
-  Raises:
-    ValueError: If any of the optional arguments needed for the specific output
-      type of outfile are missing.
-  """
-  if any(outfile.endswith(ext) for ext in SAM_EXTENSIONS):
-    if contigs is None:
-      raise ValueError('contigs must be provided for SAM/BAM output')
-    raise NotImplementedError
-  else:
-    return io_utils.RawProtoWriterAdaptor(
-        io_utils.make_tfrecord_writer(outfile))

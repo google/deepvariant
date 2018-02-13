@@ -438,7 +438,6 @@ py_library(
     name = "genomics_io",
     srcs = ["genomics_io.py"],
     deps = [
-        ":io_utils",
         "//deepvariant/util/protos:core_py_pb2",
         "//deepvariant/util/python:reference_fai",
         "//deepvariant/util/python:sam_reader",
@@ -456,12 +455,9 @@ py_test(
     ],
     deps = [
         ":genomics_io",
-        ":io_utils",
         ":py_test_utils",
         ":ranges",
-        "//deepvariant/util/genomics:reads_py_pb2",
         "//deepvariant/util/genomics:struct_py_pb2",
-        "//deepvariant/util/protos:core_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

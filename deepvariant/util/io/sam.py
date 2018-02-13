@@ -26,17 +26,17 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Classes for reading and writing VCF files.
+"""Classes for reading and writing SAM and BAM files.
 
 API for writing:
 
-  with VcfWriter(output_path, contigs, samples, filters) as writer:
-    for variant in variants:
-      writer.write(variant)
+  with SamWriter(output_path) as writer:
+    for read in reads:
+      writer.write(read)
 
-where variant is a nucleus.genomics.v1.Variant protocol buffer.
+where read is a nucleus.genomics.v1.Read protocol buffer.
 
-If output_path contains '.vcf' as an extension, then a true VCF file
+If output_path contains '.sam' as an extension, then a true SAM file
 will be output.  Otherwise, a TFRecord file will be output.  In either
 case, an extension of '.gz' will cause the output to be compressed.
 """
@@ -48,57 +48,37 @@ from __future__ import print_function
 
 
 from deepvariant.util.io import genomics_writer
-from deepvariant.util.protos import core_pb2
-from deepvariant.util.python import vcf_writer
 
 
-class NativeVcfWriter(genomics_writer.GenomicsWriter):
-  """Class for writing to native VCF files.
+class NativeSamWriter(genomics_writer.GenomicsWriter):
+  """Class for writing to native SAM files.
 
-  Most users will want VcfWriter, which will write to either native VCF
+  Most users will want SamWriter, which will write to either native SAM
   files or TFRecords files, based on the output filename's extensions.
   """
 
-  def __init__(self, output_path,
-               contigs, samples, filters, round_qualities=False):
-    """Initializer for NativeVcfWriter.
+  def __init__(self, output_path, contigs):
+    """Initializer for NativeSamWriter.
 
     Args:
-      output_path: str. A path where we'll write our VCF file.
+      output_path: str. A path where we'll write our SAM/BAM file.
       contigs: Iterable of third_party.nucleus.util.ContigInfo protobufs
-        used to populate the contigs info in the VCF header.
-      samples: Iterable of str. The name of the samples we will be writing to
-        this VCF file. The order of samples provided here must be the same as
-        the order of VariantCall elements in any Variant written to this writer.
-      filters: Iterable of third_party.nucleus.util.VcfFilterInfo
-        protos. Description of the filter fields that may occur in Variant
-        protos written to this writer. Filters can include filter descriptions
-        that never occur in any Variant proto, but all filter field values
-        among all of the written Variant protos must be provided here.
-      round_qualities: bool. If True, the QUAL field is rounded to one point
-        past the decimal.
+        used to populate the contigs info in the SAM header.
     """
-    writer_options = core_pb2.VcfWriterOptions(
-        contigs=contigs,
-        sample_names=samples,
-        filters=filters,
-        round_qual_values=round_qualities)
-    self._writer = vcf_writer.VcfWriter.to_file(output_path, writer_options)
+    raise NotImplementedError
 
   def write(self, proto):
-    self._writer.write(proto)
+    raise NotImplementedError
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
 
 
-class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
-  """Class for writing Variant protos to VCF or TFRecord files."""
+class SamWriter(genomics_writer.DispatchingGenomicsWriter):
+  """Class for writing Variant protos to SAM or TFRecord files."""
 
   def _get_extensions(self):
-    return frozenset(['.vcf'])
+    return frozenset(['.bam', '.sam'])
 
-  def _native_writer(self, output_path,
-                     contigs, samples, filters, round_qualities=False):
-    return NativeVcfWriter(
-        output_path, contigs, samples, filters, round_qualities)
+  def _native_writer(self, output_path, contigs):
+    return NativeSamWriter(output_path, contigs)
