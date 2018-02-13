@@ -86,6 +86,10 @@ cc_library(
     srcs = ["vcf_conversion.cc"],
     hdrs = ["vcf_conversion.h"],
     deps = [
+        ":cpp_math",
+        ":cpp_utils",
+        "//deepvariant/util/genomics:variants_cc_pb2",
+        "//deepvariant/util/protos:core_cc_pb2",
         "//deepvariant/util/vendor:statusor",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",

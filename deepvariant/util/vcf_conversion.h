@@ -33,14 +33,23 @@
 #define THIRD_PARTY_NUCLEUS_UTIL_VCF_CONVERSION_H_
 
 #include "htslib/vcf.h"
+#include "deepvariant/util/genomics/variants.pb.h"
+#include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/lib/core/errors.h"
+#include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
-// redacted
-// independent testing of those functions.
+tensorflow::Status ConvertToPb(
+    const bcf_hdr_t *h, bcf1_t *v,
+    const OptionalVariantFieldsToParse &desired_format_entries,
+    nucleus::genomics::v1::Variant *variant_message);
+
+tensorflow::Status ConvertFromPb(
+    const nucleus::genomics::v1::Variant &variant_message, const bcf_hdr_t &h,
+    bcf1_t *v);
 
 // VCF type encoding utilities
 
