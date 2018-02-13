@@ -91,6 +91,7 @@ cc_library(
         "//deepvariant/util/genomics:variants_cc_pb2",
         "//deepvariant/util/protos:core_cc_pb2",
         "//deepvariant/util/vendor:statusor",
+        "@com_google_absl//absl/memory",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],

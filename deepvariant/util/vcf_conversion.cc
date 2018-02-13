@@ -30,6 +30,8 @@
  */
 
 #include "deepvariant/util/vcf_conversion.h"
+
+#include "absl/memory/memory.h"
 #include "deepvariant/util/math.h"
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/strings/str_util.h"
