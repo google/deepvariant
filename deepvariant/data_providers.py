@@ -83,19 +83,29 @@ def make_batches(dataset, model, batch_size, mode):
     raise ValueError(
         'mode is {} but must be one of TRAIN or EVAL.'.format(mode))
 
-  data_provider = slim.dataset_data_provider.DatasetDataProvider(
-      dataset,
-      common_queue_capacity=2 * batch_size,
-      common_queue_min=batch_size,
-      reader_kwargs={
-          'options': io_utils.make_tfrecord_options(dataset.data_sources)
-      })
+  if mode == 'TRAIN':
+    data_provider = slim.dataset_data_provider.DatasetDataProvider(
+        dataset,
+        common_queue_capacity=2 * batch_size,
+        common_queue_min=batch_size,
+        reader_kwargs={
+            'options': io_utils.make_tfrecord_options(dataset.data_sources)
+        })
+  else:
+    data_provider = slim.dataset_data_provider.DatasetDataProvider(
+        dataset,
+        num_readers=1,
+        shuffle=False,
+        reader_kwargs={
+            'options': io_utils.make_tfrecord_options(dataset.data_sources)
+        })
+
   # Load the data.
   image, label, truth_variant = data_provider.get(
       ['image', 'label', 'truth_variant'])
   image = model.preprocess_image(image)
 
-  if model == 'TRAIN':
+  if mode == 'TRAIN':
     return tf.train.shuffle_batch(
         [image, label, truth_variant],
         batch_size=batch_size,
@@ -105,7 +115,7 @@ def make_batches(dataset, model, batch_size, mode):
         min_after_dequeue=min(1000, dataset.num_samples))
   else:
     return tf.train.batch(
-        [image, label, truth_variant], batch_size=batch_size, num_threads=4)
+        [image, label, truth_variant], batch_size=batch_size, num_threads=1)
 
 
 # redacted

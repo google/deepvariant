@@ -117,7 +117,8 @@ class ModelEvalTest(
     # Check that our mocked metrics have all of the calls we.
     for mocked in metrics.values():
       self.assertEqual([
-          mock.call(predictions, labels, weights=selectors[x])
+          mock.call(
+              predictions=predictions, labels=labels, weights=selectors[x])
           for x in selectors
       ], mocked.call_args_list)
 
@@ -180,6 +181,7 @@ class ModelEvalTest(
       'deepvariant.data_providers.get_dataset')
   def test_fixed_eval_sees_the_same_evals(self, mock_get_dataset,
                                           mock_checkpoints_iterator):
+    dataset = data_providers_test.make_golden_dataset()
     checkpoint_dir = tf.test.get_temp_dir()
     n_checkpoints = 5
     checkpoints = [
@@ -190,7 +192,7 @@ class ModelEvalTest(
 
     # Setup our mocks.
     mock_checkpoints_iterator.return_value = checkpoints
-    mock_get_dataset.return_value = data_providers_test.make_golden_dataset()
+    mock_get_dataset.return_value = dataset
 
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
@@ -204,12 +206,41 @@ class ModelEvalTest(
     self.assertEqual(mock_get_dataset.call_args_list,
                      [mock.call(FLAGS.dataset_config_pbtxt)] * n_checkpoints)
 
-    # redacted
-    # metrics = [
-    #     model_eval.read_metrics(checkpoint) for checkpoint in checkpoints
-    # ]
-    # for m1, m2 in zip(metrics, metrics[1:]):
-    #   self.assertEqual(m1, m2)
+    metrics = [
+        model_eval.read_metrics(checkpoint, eval_dir=FLAGS.eval_dir)
+        for checkpoint in checkpoints
+    ]
+
+    # Check that our metrics are what we expect them to be.
+    # See b/62864044 for details on how to compute these counts:
+    # Counts of labels in our golden dataset:
+    #  1 0
+    # 12 1
+    # 35 2
+    expected_values_for_all = {
+        # We have 12 correct calls [there are 12 variants with a label of 1] and
+        # 1 label 0 + 35 with a label of 2, so we have an accuracy of 12 / 48,
+        # which is 0.25.
+        'Accuracy/All': 0.25,
+        # We don't have any FNs because we call everything het.
+        'FNs/All': 0,
+        # One of our labels is 0, which we call het, giving us 1 FP.
+        'FPs/All': 1.0,
+        # We called 47 / 48 correctly.
+        'Precision/All': 0.979167,
+        # We call everything as het, so the recall has to be 1.
+        'Recall/All': 1.0,
+        # redacted
+        # # We don't call anything but hets, so TNs has to be 0.
+        # 'TNs/All': 0,
+        # We find all positives, so this has to be 47.
+        'TPs/All': 47,
+    }
+    for key, expected_value in expected_values_for_all.iteritems():
+      self.assertEqual(metrics[0][key], expected_value)
+
+    for m1, m2 in zip(metrics, metrics[1:]):
+      self.assertEqual(m1, m2)
 
   @parameterized.parameters(
       model.name for model in modeling.production_models() if model.is_trainable

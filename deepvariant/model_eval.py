@@ -35,6 +35,7 @@ from __future__ import print_function
 
 import json
 import math
+import os
 
 
 
@@ -155,7 +156,8 @@ def calling_metrics(metrics_map, selectors_map, predictions, labels):
     to a metrics_map.values() element.
   """
   return {
-      mname + '/' + sname: mfunc(predictions, labels, weights=weights)
+      mname + '/' + sname: mfunc(
+          predictions=predictions, labels=labels, weights=weights)
       for sname, weights in selectors_map.items()
       for mname, mfunc in metrics_map.items()
   }
@@ -178,14 +180,14 @@ def make_metrics(predictions, labels, encoded_truth_variants):
   """Creates our evaluation metrics."""
   # Define the metrics:
   raw_metrics = {
-      'Accuracy': tf.contrib.metrics.streaming_accuracy,
-      'Precision': tf.contrib.metrics.streaming_precision,
-      'Recall': tf.contrib.metrics.streaming_recall,
-      'Mean_absolute_error': tf.contrib.metrics.streaming_mean_absolute_error,
-      'FPs': tf.contrib.metrics.streaming_false_positives,
-      'FNs': tf.contrib.metrics.streaming_false_negatives,
-      'TPs': tf.contrib.metrics.streaming_true_positives,
-      'TNs': tf.contrib.metrics.streaming_true_negatives,
+      'Accuracy': tf.metrics.accuracy,
+      'Precision': tf.metrics.precision,
+      'Recall': tf.metrics.recall,
+      'FPs': tf.metrics.false_positives,
+      'FNs': tf.metrics.false_negatives,
+      'TPs': tf.metrics.true_positives,
+      # redacted
+      # 'TNs': tf.metrics.true_negatives,
   }
 
   def _make_selector(func):
@@ -272,6 +274,8 @@ def fixed_eval_loop():
           logdir=FLAGS.eval_dir,
           variables_to_restore=variables_to_restore,
           num_evals=num_batches,
+          initial_op=tf.group(tf.global_variables_initializer(),
+                              tf.local_variables_initializer()),
           eval_op=names_to_updates.values(),
           final_op=names_to_values,
       )
@@ -288,7 +292,8 @@ def fixed_eval_loop():
       #     final_ops=names_to_values,
       # )
 
-      _write_checkpoint_metrics(checkpoint_path, names_to_values)
+      _write_checkpoint_metrics(
+          checkpoint_path, names_to_values, eval_dir=FLAGS.eval_dir)
 
     num_evaluations += 1
     if (FLAGS.max_evaluations is not None and
@@ -297,17 +302,18 @@ def fixed_eval_loop():
       return
 
 
-def checkpoint_metrics_path(checkpoint_path):
-  return checkpoint_path + '.metrics'
+def checkpoint_metrics_path(checkpoint_path, eval_dir):
+  return os.path.join(eval_dir, os.path.basename(checkpoint_path) + '.metrics')
 
 
-def read_metrics(checkpoint_path):
-  with tf.gfile.GFile(checkpoint_metrics_path(checkpoint_path)) as fin:
+def read_metrics(checkpoint_path, eval_dir):
+  metrics_path = checkpoint_metrics_path(checkpoint_path, eval_dir)
+  with tf.gfile.GFile(metrics_path) as fin:
     return {k: float(v) for k, v in json.load(fin).iteritems()}
 
 
-def _write_checkpoint_metrics(checkpoint_path, metrics_and_values):
-  path = checkpoint_metrics_path(checkpoint_path)
+def _write_checkpoint_metrics(checkpoint_path, metrics_and_values, eval_dir):
+  path = checkpoint_metrics_path(checkpoint_path, eval_dir)
   serializable = {k: str(v) for k, v in metrics_and_values.iteritems()}
   logging.info('Writing checkpoint metrics %s', path)
   try:
