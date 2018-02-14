@@ -92,6 +92,11 @@ flags.DEFINE_integer('number_of_steps', 30000000,
 # Training parameters.
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 
+flags.DEFINE_float(
+    'label_smoothing', 0.0001,
+    'Amount of label smoothing to use. By default this is 0.01%'
+    'meaning that we expect a label error at a rate of 1 / 10000')
+
 flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
 
 flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
@@ -132,6 +137,23 @@ flags.DEFINE_float(
     'If specified, in addition to keeping the last "max_checkpoints_to_keep" '
     'checkpoints, an additional checkpoint will be kept for every n hours of '
     'training.')
+
+
+def loss(logits, one_hot_labels, label_smoothing):
+  """Creates a loss function for training logits against one_hot_labels.
+
+  Args:
+      logits: tensor. logits of the model we want to train.
+    one_hot_labels: One-hot encoded truth labels that we want to train this
+      model to predict.
+    label_smoothing: float. label_smoothing value for softmax_cross_entropy.
+
+  Returns:
+    A `Tensor` whose value represents the total loss.
+  """
+  slim.losses.softmax_cross_entropy(
+      logits, one_hot_labels, label_smoothing=label_smoothing, weights=1.0)
+  return slim.losses.get_total_loss()
 
 
 def model_init_function(model, num_classes, checkpoint_path):
@@ -192,7 +214,8 @@ def run(target, is_chief, device_fn):
           dataset.get_slim_dataset(), model, FLAGS.batch_size, mode='TRAIN')
       endpoints = model.create(images, dataset.num_classes, is_training=True)
       labels = slim.one_hot_encoding(labels, dataset.num_classes)
-      total_loss = model.loss(endpoints, labels)
+      total_loss = loss(
+          endpoints['Logits'], labels, label_smoothing=FLAGS.label_smoothing)
 
       # Setup the moving averages:
       moving_average_variables = slim.get_model_variables()

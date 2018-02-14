@@ -122,10 +122,8 @@ class HiddenFromUnitTest(object):
                          tf.test.TestCase)):
 
     @parameterized.parameters(
-        {
-            'is_training': True
-        },
-        {'is_training': False},
+        dict(is_training=True),
+        dict(is_training=False),
     )
     def test_create(self, is_training):
       # Creates a training=False model.
@@ -138,6 +136,7 @@ class HiddenFromUnitTest(object):
       else:
         self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
       self.assertIn('Predictions', endpoints)
+      self.assertIn('Logits', endpoints)
       self.assertEqual(endpoints['Predictions'].shape, (4, 3))
 
     def test_preprocess_image(self):
@@ -239,23 +238,6 @@ class HiddenFromUnitTest(object):
           ValueError, ('Checkpoint has 100 classes but we want to use 3 and '
                        'is_training=False')):
         self.model.initialize_from_checkpoint('path', 3, False)
-
-    @mock.patch('deepvariant'
-                '.modeling.slim.losses.softmax_cross_entropy')
-    @mock.patch('deepvariant'
-                '.modeling.slim.losses.get_total_loss')
-    def test_loss(self, mock_total_loss, mock_cross):
-      endpoints = {'Logits': 'Logits'}
-      labels = [[0, 1, 0], [1, 0, 0]]
-      actual = self.model.loss(endpoints, labels)
-      mock_total_loss.assert_called_once_with()
-      self.assertEqual(actual, mock_total_loss.return_value)
-      # We really only want to test that the endpoints and labels are being
-      # passed in correctly, without specifying all of the additional keywords
-      # again here like weight that can change without breaking the correctness
-      # of loss.
-      self.assertEqual([('Logits', labels)],
-                       [args for args, _ in mock_cross.call_args_list])
 
 
 class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):

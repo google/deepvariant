@@ -55,8 +55,6 @@ from deepvariant import tf_utils
 # The decay factor to use for the moving average.
 MOVING_AVERAGE_DECAY = 0.9999
 
-GENOTYPING_ERROR_RATE = 0.0001  # 0.01%
-
 SKIP_MODEL_INITIALIZATION_IN_TEST = '__SKIP_MODEL_INITIALIZATION_IN_TEST__'
 
 slim = tf.contrib.slim
@@ -155,20 +153,6 @@ class DeepVariantModel(object):
   def is_trainable(self):
     """Returns True if this model can be trained."""
     return True
-
-  def loss(self, endpoints, one_hot_labels):
-    """Creates a loss function to train this model against one_hot_labels.
-
-    Args:
-      endpoints: Dictionary. The endpoints of this model, as returned by the
-        create function call.
-      one_hot_labels: One-hot encoded truth labels that we want to train this
-        model to predict.
-
-    Returns:
-      A `Tensor` whose value represents the total loss.
-    """
-    raise NotImplementedError
 
   # redacted
 
@@ -332,15 +316,6 @@ class DeepVariantSlimModel(DeepVariantModel):
     # unless we explicity exclude them.
     return slim.assign_from_checkpoint_fn(
         checkpoint_path, variables_to_restore, ignore_missing_vars=is_training)
-
-  def loss(self, endpoints, one_hot_labels):
-    """See baseclass."""
-    slim.losses.softmax_cross_entropy(
-        endpoints['Logits'],
-        one_hot_labels,
-        label_smoothing=GENOTYPING_ERROR_RATE,
-        weights=1.0)
-    return slim.losses.get_total_loss()
 
 
 class DeepVariantInceptionV3(DeepVariantSlimModel):

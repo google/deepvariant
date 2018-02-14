@@ -82,6 +82,20 @@ class ModelTrainTest(parameterized.TestCase):
       mock_get_dataset.assert_called_once_with(FLAGS.dataset_config_pbtxt)
       self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
 
+  @mock.patch('deepvariant'
+              '.modeling.slim.losses.softmax_cross_entropy')
+  @mock.patch('deepvariant'
+              '.modeling.slim.losses.get_total_loss')
+  def test_loss(self, mock_total_loss, mock_cross):
+    labels = [[0, 1, 0], [1, 0, 0]]
+    logits = 'Logits'
+    smoothing = 0.01
+    actual = model_train.loss(logits, labels, smoothing)
+    mock_total_loss.assert_called_once_with()
+    self.assertEqual(actual, mock_total_loss.return_value)
+    mock_cross.assert_called_once_with(
+        logits, labels, label_smoothing=smoothing, weights=1.0)
+
   @parameterized.parameters(
       model.name for model in modeling.production_models() if model.is_trainable
   )
