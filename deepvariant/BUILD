@@ -450,7 +450,7 @@ py_test(
     data = [":testdata"],
     srcs_version = "PY2AND3",
     deps = [
-        ":postprocess_variants",
+        ":postprocess_variants_py_lib",
         ":py_test_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/testing:flagsaver",
@@ -616,6 +616,7 @@ py_test(
     name = "model_train_test",
     size = "medium",
     srcs = ["model_train_test.py"],
+    shard_count = 10,
     srcs_version = "PY2AND3",
     tags = ["nozapfhahn"],  # timeout
     deps = [
@@ -657,8 +658,9 @@ py_binary(
 
 py_test(
     name = "model_eval_test",
-    size = "medium",
+    size = "large",
     srcs = ["model_eval_test.py"],
+    shard_count = 10,
     srcs_version = "PY2AND3",
     deps = [
         ":data_providers_test",

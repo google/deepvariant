@@ -52,7 +52,6 @@ from deepvariant import pileup_image
 from deepvariant import test_utils
 from deepvariant.testing import flagsaver
 
-slim = tf.contrib.slim
 FLAGS = flags.FLAGS
 
 
@@ -63,7 +62,7 @@ def setUpModule():
 class ModelEvalTest(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
 
-  def testSelectVariantsWeights(self):
+  def test_select_variants_weights(self):
     variants = [
         test_utils.make_variant(start=10, alleles=['C', 'T']),
         test_utils.make_variant(start=11, alleles=['C', 'TA']),
@@ -79,7 +78,7 @@ class ModelEvalTest(
       self.assertTrue(op.name.startswith('tf_is_snp'))
       npt.assert_array_equal(op.eval(), [1.0, 0.0, 1.0, 0.0])
 
-  def testCallingMetrics(self):
+  def test_calling_metrics(self):
 
     def make_mock_metric(name):
       # pylint: disable=unused-argument
@@ -122,10 +121,17 @@ class ModelEvalTest(
           for x in selectors
       ], mocked.call_args_list)
 
-  def _write_fake_checkpoint(self, model_name, checkpoint_dir, name='model'):
-    # Create a model with 3 classes, and save it to our checkpoint dir.
+  def setUp(self):
+    self.checkpoint_dir = tf.test.get_temp_dir()
+
+  def _write_fake_checkpoint(self,
+                             model_name,
+                             checkpoint_dir=None,
+                             name='model'):
+    if checkpoint_dir is None:
+      checkpoint_dir = self.checkpoint_dir
+
     path = os.path.join(checkpoint_dir, name)
-    tf.logging.info('path is %s', path)
     with self.test_session() as sess:
       model = modeling.get_model(model_name)
       # Needed to protect ourselves for models without an input image shape.
@@ -140,31 +146,28 @@ class ModelEvalTest(
       variable_averages = tf.train.ExponentialMovingAverage(
           FLAGS.moving_average_decay, tf.train.get_or_create_global_step())
       tf.add_to_collection(tf.GraphKeys.UPDATE_OPS,
-                           variable_averages.apply(slim.get_model_variables()))
+                           variable_averages.apply(
+                               tf.contrib.framework.get_model_variables()))
       sess.run(tf.global_variables_initializer())
-      save = tf.train.Saver(slim.get_variables())
+      save = tf.train.Saver(tf.contrib.framework.get_variables())
       save.save(sess, path)
     return path
 
-  # redacted
-  # dataset twice and make sure all of the values are the same.
-  @parameterized.parameters(['constant', 'random_guess'])
+  @parameterized.parameters(['inception_v3'])
   @flagsaver.FlagSaver
   @mock.patch(
       'deepvariant.data_providers.get_dataset')
-  def test_end2end_fixed_eval(self, model_name, mock_get_dataset):
+  def test_end2end(self, model_name, mock_get_dataset):
     """End-to-end test of model_eval."""
-    checkpoint_dir = tf.test.get_temp_dir() + model_name + 'fe'
-    self._write_fake_checkpoint(model_name, checkpoint_dir)
+    self._write_fake_checkpoint(model_name)
 
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
-    FLAGS.checkpoint_dir = checkpoint_dir
+    FLAGS.checkpoint_dir = self.checkpoint_dir
     FLAGS.eval_dir = tf.test.get_temp_dir()
     FLAGS.max_evaluations = 1
-    FLAGS.eval_interval_secs = 0
+    FLAGS.max_examples = 2
     FLAGS.model_name = model_name
-    FLAGS.use_fixed_eval = True
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
     # Always try to read in compressed inputs to stress that case. Uncompressed
     # inputs are certain to work. This test is expensive to run, so we want to
@@ -182,11 +185,9 @@ class ModelEvalTest(
   def test_fixed_eval_sees_the_same_evals(self, mock_get_dataset,
                                           mock_checkpoints_iterator):
     dataset = data_providers_test.make_golden_dataset()
-    checkpoint_dir = tf.test.get_temp_dir()
-    n_checkpoints = 5
+    n_checkpoints = 3
     checkpoints = [
-        self._write_fake_checkpoint(
-            'constant', checkpoint_dir, name='model' + str(i))
+        self._write_fake_checkpoint('constant', name='model' + str(i))
         for i in range(n_checkpoints)
     ]
 
@@ -196,13 +197,13 @@ class ModelEvalTest(
 
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
-    FLAGS.checkpoint_dir = checkpoint_dir
+    FLAGS.checkpoint_dir = self.checkpoint_dir
     FLAGS.eval_dir = tf.test.get_temp_dir()
     FLAGS.max_evaluations = n_checkpoints
     FLAGS.model_name = 'constant'
-    FLAGS.use_fixed_eval = True
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
     model_eval.main(0)
+
     self.assertEqual(mock_get_dataset.call_args_list,
                      [mock.call(FLAGS.dataset_config_pbtxt)] * n_checkpoints)
 
@@ -241,34 +242,6 @@ class ModelEvalTest(
 
     for m1, m2 in zip(metrics, metrics[1:]):
       self.assertEqual(m1, m2)
-
-  @parameterized.parameters(
-      model.name for model in modeling.production_models() if model.is_trainable
-  )
-  @flagsaver.FlagSaver
-  @mock.patch(
-      'deepvariant.data_providers.get_dataset')
-  def test_end2end_old_approach(self, model_name, mock_get_dataset):
-    """End-to-end test of model_eval."""
-    checkpoint_dir = tf.test.get_temp_dir()
-    self._write_fake_checkpoint(model_name, checkpoint_dir)
-    # Start up eval, loading that checkpoint.
-    FLAGS.batch_size = 2
-    FLAGS.checkpoint_dir = checkpoint_dir
-    FLAGS.eval_dir = tf.test.get_temp_dir()
-    FLAGS.batches_per_eval_step = 1
-    FLAGS.max_evaluations = 1
-    FLAGS.eval_interval_secs = 0
-    FLAGS.model_name = model_name
-    FLAGS.use_fixed_eval = False
-    FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
-    # Always try to read in compressed inputs to stress that case. Uncompressed
-    # inputs are certain to work. This test is expensive to run, so we want to
-    # minimize the number of times we need to run this.
-    mock_get_dataset.return_value = data_providers_test.make_golden_dataset(
-        compressed_inputs=True)
-    model_eval.main(0)
-    mock_get_dataset.assert_called_once_with(FLAGS.dataset_config_pbtxt)
 
 
 if __name__ == '__main__':
