@@ -129,11 +129,11 @@ flags.DEFINE_string(
     'path for the selected model.')
 
 flags.DEFINE_integer('max_checkpoints_to_keep', 10,
-                     'Number of last checkpoints to keep during traning. '
+                     'Number of last checkpoints to keep during training. '
                      'Passing "0" preserves all checkpoints.')
 
 flags.DEFINE_float(
-    'keep_checkpoint_every_n_hours', 1.0,
+    'keep_checkpoint_every_n_hours', 0.1,
     'If specified, in addition to keeping the last "max_checkpoints_to_keep" '
     'checkpoints, an additional checkpoint will be kept for every n hours of '
     'training.')
