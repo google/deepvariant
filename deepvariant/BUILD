@@ -515,11 +515,10 @@ py_library(
     ],
 )
 
-py_test(
-    name = "data_providers_test",
-    size = "small",
+py_library(
+    name = "data_providers_test_lib",
+    testonly = True,
     srcs = ["data_providers_test.py"],
-    data = [":testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":data_providers",
@@ -531,6 +530,18 @@ py_test(
         "//deepvariant/util:variantutils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_test(
+    name = "data_providers_test",
+    size = "small",
+    srcs = ["data_providers_test.py"],
+    data = [":testdata"],
+    main = "data_providers_test.py",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":data_providers_test_lib",
     ],
 )
 
@@ -616,11 +627,12 @@ py_test(
     name = "model_train_test",
     size = "medium",
     srcs = ["model_train_test.py"],
+    data = [":testdata"],
     shard_count = 10,
     srcs_version = "PY2AND3",
     tags = ["nozapfhahn"],  # timeout
     deps = [
-        ":data_providers_test",
+        ":data_providers_test_lib",
         ":model_train",
         ":modeling",
         ":py_test_utils",
@@ -660,10 +672,11 @@ py_test(
     name = "model_eval_test",
     size = "large",
     srcs = ["model_eval_test.py"],
+    data = [":testdata"],
     shard_count = 10,
     srcs_version = "PY2AND3",
     deps = [
-        ":data_providers_test",
+        ":data_providers_test_lib",
         ":model_eval",
         ":modeling",
         ":pileup_image",
