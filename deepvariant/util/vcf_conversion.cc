@@ -116,6 +116,9 @@ static const std::map<string, int>* FIELD_TYPE = new std::map<string, int>({
     {"VAF", BCF_HT_REAL},
 });
 
+// Sentinel value used to set variant.quality if one was not specified.
+constexpr double kQualUnset = -1;
+
 // Translate the variant call allele encoding used in the protobuf
 // message into the htslib VCF constant.
 int32_t vcfEncodeAllele(int pbAllele, bool isPhased) {
@@ -326,8 +329,12 @@ tensorflow::Status ConvertToPb(
     }
   }
 
-  // Parse out the QUAL field.
-  if (!bcf_float_is_missing(v->qual)) {
+  // Parse out the QUAL field. QUAL is the only field where the unset default
+  // proto value is a valid value, so we have to explicitly populate the result
+  // with a sentinel.
+  if (bcf_float_is_missing(v->qual)) {
+    variant_message->set_quality(kQualUnset);
+  } else {
     variant_message->set_quality(v->qual);
   }
 
@@ -475,7 +482,11 @@ tensorflow::Status ConvertFromPb(
   }
 
   // QUAL
-  v->qual = variant_message.quality();
+  if (variant_message.quality() == kQualUnset) {
+    bcf_float_set_missing(v->qual);
+  } else {
+    v->qual = variant_message.quality();
+  }
 
   // Alleles
   int nAlleles = 1 + variant_message.alternate_bases_size();

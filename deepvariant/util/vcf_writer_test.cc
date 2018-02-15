@@ -151,6 +151,7 @@ TEST(VcfWriterTest, WritesVCF) {
 
   // Another variant that has mixed-ploidy calls--copy number variation?
   Variant v4 = MakeVariant({"DogSNP4"}, "Chr2", 17, 18, "T", {"A"});
+  v4.set_quality(-1);
   *v4.add_calls() = MakeVariantCall("Fido", {0, 1, 0});
   *v4.add_calls() = MakeVariantCall("Spot", {0, 1});
   ASSERT_THAT(writer->Write(v4), IsOK());
@@ -201,7 +202,7 @@ TEST(VcfWriterTest, WritesVCF) {
       "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t11\t.\tC\tG,T\t10\tPASS\t.\tGT\t0/0\t0/1\n"
       "Chr2\t16\tDogSNP3;Woof10003\tC\t,T\t10.567\tPASS\t.\tGT\t./.\t.|1\n"
-      "Chr2\t18\tDogSNP4\tT\tA\t0\t.\t.\tGT\t0/1/0\t0/1\n"
+      "Chr2\t18\tDogSNP4\tT\tA\t.\t.\t.\tGT\t0/1/0\t0/1\n"
       "Chr2\t20\tDogSNP5\tTT\t\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n";
 
