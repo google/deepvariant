@@ -223,26 +223,21 @@ def _get_dataset(name, path, num_examples, tensor_shape=None):
       tensor_shape=tensor_shape)
 
 
-def get_dataset(dataset_config_filename, tensor_shape=None):
-  """Creates a DeepVariantDataSet from the dataset config file.
+def read_dataset_config(dataset_config_filename):
+  """Returns a DeepVariantDatasetConfig proto read from the dataset config file.
 
   Args:
     dataset_config_filename: String. Path to the dataset config pbtxt file.
-    tensor_shape: None, or list of int [height, width, channel] for testing.
 
   Returns:
-    A DeepVariantDataSet from the specified split in the dataset_config file.
+    A DeepVariantDatasetConfig proto from the dataset_config file.
 
   Raises:
     ValueError: if the dataset config doesn't have the necessary information.
   """
-
-  def read_dataset_config(dataset_config_pbtxt_filename):
-    with tf.gfile.GFile(dataset_config_pbtxt_filename) as f:
-      return text_format.Parse(f.read(),
-                               deepvariant_pb2.DeepVariantDatasetConfig())
-
-  dataset_config = read_dataset_config(dataset_config_filename)
+  with tf.gfile.GFile(dataset_config_filename) as f:
+    dataset_config = text_format.Parse(
+        f.read(), deepvariant_pb2.DeepVariantDatasetConfig())
 
   if not dataset_config.name:
     raise ValueError('dataset_config needs to have a name')
@@ -257,6 +252,23 @@ def get_dataset(dataset_config_filename, tensor_shape=None):
     raise ValueError('The dataset in the config {} does not have a '
                      'num_examples.'.format(dataset_config_filename))
 
+  return dataset_config
+
+
+def get_dataset(dataset_config_filename, tensor_shape=None):
+  """Creates a DeepVariantDataSet from the dataset config file.
+
+  Args:
+    dataset_config_filename: String. Path to the dataset config pbtxt file.
+    tensor_shape: None, or list of int [height, width, channel] for testing.
+
+  Returns:
+    A DeepVariantDataSet from the specified split in the dataset_config file.
+
+  Raises:
+    ValueError: if the dataset config doesn't have the necessary information.
+  """
+  dataset_config = read_dataset_config(dataset_config_filename)
   return _get_dataset(
       dataset_config.name,
       dataset_config.tfrecord_path,
