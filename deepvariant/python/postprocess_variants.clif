@@ -27,8 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from "deepvariant/util/protos/core_pyclif.h" import *
-from "deepvariant/util/genomics/variants_pyclif.h" import *
+from "deepvariant/util/genomics/reference_pyclif.h" import *
 
 from "deepvariant/postprocess_variants.h":
   namespace `learning::genomics::deepvariant`:

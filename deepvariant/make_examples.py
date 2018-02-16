@@ -382,10 +382,10 @@ def _ensure_consistent_contigs(ref_contigs,
   """Returns the common contigs after ensuring 'enough' overlap.
 
   Args:
-    ref_contigs: list of core_pb2.ContigInfo protos found in the reference
+    ref_contigs: list of reference_pb2.ContigInfo protos in the reference
       genome.
-    sam_contigs: list of core_pb2.ContigInfo protos found in the SAM/BAM file.
-    vcf_contigs: list of core_pb2.ContigInfo protos found in the VCF if in
+    sam_contigs: list of reference_pb2.ContigInfo protos in the SAM/BAM file.
+    vcf_contigs: list of reference_pb2.ContigInfo protos in the VCF if in
       training mode, or None otherwise.
     exclude_contig_names: list of strings of contig names to exclude from
       overlap consideration.

@@ -31,26 +31,8 @@ syntax = "proto3";
 
 package nucleus;
 
-message ContigInfo {
-  // The name of the contig. Canonically this is the first
-  // non-whitespace-containing string after the > marker in a FASTA file.
-  // For example, the line:
-  //      >chr1 more info here
-  // has a name of "chr1" and a description of "more info here"
-  string name = 1;
-
-  // Ideally this record is filled in as described above, but not all fasta
-  // readers capture the description information after the name.
-  string description = 2;
-
-  // The length of this contig in basepairs.
-  int64 n_bases = 3;
-
-  // The position of this contig in the src_fasta file. The first contig would
-  // have position 0.
-  // redacted
-  int32 pos_in_fasta = 4;
-}
+import "deepvariant/util/genomics/reference.proto";
+import "deepvariant/util/genomics/variants.proto";
 
 // This table includes all of the information needed to translate contig names
 // between the names from one set of contigs to another. The table
@@ -125,20 +107,6 @@ enum IndexHandlingMode {
   INDEX_BASED_ON_FILENAME = 1;
 }
 
-// This record type mirrors a VCF "FILTER" header.
-message VcfFilterInfo {
-  string id = 1;
-  string description = 2;
-}
-
-// This record type mirrors a VCF "FORMAT" header.
-message VcfFormatInfo {
-  string id = 1;  //
-  string number = 2;  // The number of entries expected, or symbolic code
-  string type = 3;
-  string description = 4;
-}
-
 message OptionalVariantFieldsToParse {
   // These booleans are the reverse sense of what we want, to give the desired
   // default behavior.
@@ -163,13 +131,13 @@ message VcfWriterOptions {
   IndexHandlingMode index_mode = 1;
 
   // Info about the genome contigs:
-  repeated ContigInfo contigs = 2;
+  repeated nucleus.genomics.v1.ContigInfo contigs = 2;
 
   // Sample names
   repeated string sample_names = 3;
 
   // Variant filters
-  repeated VcfFilterInfo filters = 4;
+  repeated nucleus.genomics.v1.VcfFilterInfo filters = 4;
 
   // What FORMAT entries should we write out for each call?
   OptionalVariantFieldsToParse desired_format_entries = 5;

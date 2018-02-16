@@ -36,6 +36,7 @@
 #include "htslib/sam.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/reader_base.h"
 #include "deepvariant/util/samplers.h"
@@ -125,7 +126,9 @@ class SamReader : public Reader {
   bool HasIndex() const { return idx_ != nullptr; }
 
   // Gets a list of the contigs used by this SAM file.
-  const std::vector<ContigInfo>& Contigs() const { return contigs_; }
+  const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs() const {
+    return contigs_;
+  }
 
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
@@ -163,7 +166,7 @@ class SamReader : public Reader {
 
   // A list of ContigInfo, each of which contains the information about the
   // contigs used by this BAM file.
-  std::vector<ContigInfo> contigs_;
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs_;
 
   // A set of sample names for which this SAM/BAM file contains reads.
   std::set<string> samples_;

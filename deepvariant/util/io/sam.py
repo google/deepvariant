@@ -62,7 +62,7 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
 
     Args:
       output_path: str. A path where we'll write our SAM/BAM file.
-      contigs: Iterable of third_party.nucleus.util.ContigInfo protobufs
+      contigs: Iterable of nucleus.genomics.v1.ContigInfo protobufs
         used to populate the contigs info in the SAM header.
     """
     raise NotImplementedError

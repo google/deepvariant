@@ -128,7 +128,10 @@ pyclif_proto_library(
 proto_library(
     name = "variants_proto",
     srcs = ["variants.proto"],
-    deps = [":struct_proto"],  # NO COPYBARA
+    deps = [
+        ":reference_proto",
+        ":struct_proto",
+    ],  # NO COPYBARA
 )
 
 cc_proto_library(
@@ -136,7 +139,10 @@ cc_proto_library(
     srcs = ["variants.proto"],
     default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
-    deps = [":struct_cc_pb2"],
+    deps = [
+        ":reference_cc_pb2",
+        ":struct_cc_pb2",
+    ],
 )
 
 py_proto_library(
@@ -145,7 +151,10 @@ py_proto_library(
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
     srcs_version = "PY2AND3",
-    deps = [":struct_py_pb2"],
+    deps = [
+        ":reference_py_pb2",
+        ":struct_py_pb2",
+    ],
 )
 
 pyclif_proto_library(
@@ -154,7 +163,7 @@ pyclif_proto_library(
 )
 
 # ----------------------------------------------------------------------
-# Read
+# Reads
 # ----------------------------------------------------------------------
 
 proto_library(
@@ -195,4 +204,33 @@ py_proto_library(
 pyclif_proto_library(
     name = "reads_pyclif",
     proto_lib = ":reads_proto",  # NO COPYBARA
+)
+
+# ----------------------------------------------------------------------
+# Reference
+# ----------------------------------------------------------------------
+
+proto_library(
+    name = "reference_proto",
+    srcs = ["reference.proto"],
+)
+
+cc_proto_library(
+    name = "reference_cc_pb2",
+    srcs = ["reference.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+)
+
+py_proto_library(
+    name = "reference_py_pb2",
+    srcs = ["reference.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+)
+
+pyclif_proto_library(
+    name = "reference_pyclif",
+    proto_lib = ":reference_proto",  # NO COPYBARA
 )

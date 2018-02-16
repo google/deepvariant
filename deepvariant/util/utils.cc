@@ -259,10 +259,10 @@ StringPiece Unquote(StringPiece input) {
 }
 
 std::map<string, int> MapContigNameToPosInFasta(
-    const std::vector<ContigInfo>& contigs) {
+    const std::vector<nucleus::genomics::v1::ContigInfo>& contigs) {
   // Create the mapping from from contig to pos_in_fasta.
   std::map<string, int> contig_name_to_pos_in_fasta;
-  for (const ContigInfo& contig : contigs) {
+  for (const nucleus::genomics::v1::ContigInfo& contig : contigs) {
     contig_name_to_pos_in_fasta[contig.name()] = contig.pos_in_fasta();
   }
   return contig_name_to_pos_in_fasta;

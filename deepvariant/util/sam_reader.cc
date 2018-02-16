@@ -385,7 +385,7 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
   // accesses the low-level C struct because there are no indirection
   // macros/functions by htslib API.
   for (int i = 0; i < header_->n_targets; ++i) {
-    ContigInfo contig;
+    nucleus::genomics::v1::ContigInfo contig;
     contig.set_name(header_->target_name[i]);
     contig.set_n_bases(header_->target_len[i]);
     contig.set_pos_in_fasta(i);

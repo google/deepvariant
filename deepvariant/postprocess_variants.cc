@@ -32,8 +32,8 @@
 #include "deepvariant/postprocess_variants.h"
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/io/compression.h"
@@ -47,8 +47,9 @@ namespace deepvariant {
 
 namespace {
 
-void SortSingleSiteCalls(const std::vector<nucleus::ContigInfo>& contigs,
-                         std::vector<CallVariantsOutput>* calls) {
+void SortSingleSiteCalls(
+    const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
+    std::vector<CallVariantsOutput>* calls) {
   std::vector<CallVariantsOutput> output;
   if (calls->empty()) {
     return;
@@ -67,7 +68,7 @@ void SortSingleSiteCalls(const std::vector<nucleus::ContigInfo>& contigs,
 }  // namespace
 
 void ProcessSingleSiteCallTfRecords(
-    const std::vector<nucleus::ContigInfo>& contigs,
+    const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
     const std::vector<string>& tfrecord_paths,
     const string& output_tfrecord_path) {
   std::vector<CallVariantsOutput> single_site_calls;

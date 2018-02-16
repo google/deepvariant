@@ -31,6 +31,7 @@
 
 #include "deepvariant/postprocess_variants.h"
 
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/test_utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
@@ -64,7 +65,7 @@ CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
 }  // namespace
 
 TEST(ProcessSingleSiteCallTfRecords, BasicCase) {
-  std::vector<nucleus::ContigInfo> contigs =
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs =
       nucleus::CreateContigInfos({"chr1", "chr10"}, {0, 1000});
   std::vector<CallVariantsOutput> single_site_calls;
   single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2001));

@@ -31,22 +31,20 @@ syntax = "proto3";
 
 package nucleus.genomics.v1;
 
+import "deepvariant/util/genomics/reference.proto";
 import "deepvariant/util/genomics/struct.proto";
 
 option cc_enable_arenas = true;
 
 // A variant represents a change in DNA sequence relative to a reference
 // sequence. For example, a variant could represent a SNP or an insertion.
-// Variants belong to a variant set.
 //
-// For more genomics resource definitions, see [Fundamentals of Google
-// Genomics](https://cloud.google.com/genomics/fundamentals-of-google-genomics)
+// The definition of the Variant message closely follows the common VCF variant
+// representation.
 //
 // Each of the calls on a variant represent a determination of genotype with
 // respect to that variant. For example, a call might assign probability of 0.32
-// to the occurrence of a SNP named rs1234 in a sample named NA12345. A call
-// belongs to a call set, which contains related calls typically from one
-// sample.
+// to the occurrence of a SNP named rs1234 in a sample named NA12345.
 // NextID: 17
 message Variant {
   reserved 1, 4, 5;
@@ -169,4 +167,117 @@ message VariantCall {
   //
   // The ID of the call set this variant call belongs to.
   string call_set_id = 8;
+}
+
+// This record type mirrors a VCF header. See
+// https://samtools.github.io/hts-specs/VCFv4.3.pdf for details on the spec.
+message VcfHeader {
+  // The required first line of the VCF. Values e.g. "VCFv4.3".
+  string fileformat = 1;
+
+  // The list of contigs used to produce this VCF. All variants within the VCF
+  // must lie on a contig represented here. All contigs must have distinct IDs.
+  repeated ContigInfo contigs = 2;
+
+  // A list of all filters used to produce this VCF. All variants within the VCF
+  // must only use filters represented here. All filters must have distinct IDs.
+  repeated VcfFilterInfo filters = 3;
+
+  // A list of all info tags used to annotate variants within the VCF. All info
+  // fields present in Variants must only use infos with IDs represented here.
+  // All infos must have distinct IDs.
+  repeated VcfInfo infos = 4;
+
+  // A list of all format fields used to annotate genotypes within the VCF. All
+  // fields present in VariantCalls must only use formats with IDs represented
+  // here. All formats must have distinct IDs.
+  repeated VcfFormatInfo formats = 5;
+
+  // An ordered list of all the sample names present in the VCF. All Variants
+  // within the VCF must contain `len(sample_names)` VariantCalls and must be
+  // in the same order. I.e. for any Variant v,
+  // v.calls[i].call_set_name == sample_names[i] for all i.
+  repeated string sample_names = 6;
+
+  // A list of all header lines that are not one represented above, represented
+  // in an unstructured format. The key within the extras may be duplicated.
+  repeated VcfExtra extras = 7;
+}
+
+// The below messages are sub-messages of the VCF header. They are not nested
+// within VcfHeader simply to avoid verbosity.
+//
+// We comment fields in one of three states:
+// "Required": Required by both the VCF file format and for downstream users of
+//             Variant and VariantCall protos.
+// "Required by VCF": Required by the VCF file format, unused otherwise.
+// "Optional": Optional within the VCF file format, unused otherwise.
+//
+// This record type mirrors a VCF "FILTER" header.
+message VcfFilterInfo {
+  // Required. The unique ID of the filter. Examples include "PASS", "RefCall".
+  string id = 1;
+
+  // Required by VCF. The description of the filter.
+  string description = 2;
+}
+
+// This message type mirrors a VCF "INFO" header.
+message VcfInfo {
+  // Required. The unique ID of the INFO field. Examples include "MQ0" or "END".
+  string id = 1;
+
+  // Required. The number of values included with the info field. This should be
+  // the string representation of the number, e.g. "1" for a single entry, "2"
+  // for a pair of entries, etc. Special cases arise when the number of entries
+  // depend on attributes of the Variant or are unknown in advance, and include:
+  // "A": The field has one value per alternate allele.
+  // "R": The field has one value per allele (including the reference).
+  // "G": The field has one value for each possible genotype.
+  // ".": The number of values varies, is unknown, or is unbounded.
+  string number = 2;
+
+  // Required. The type of the INFO field. Valid values are "Integer", "Float",
+  // "Flag", "Character", and "String".
+  string type = 3;
+
+  // Required by VCF. The description of the field.
+  string description = 4;
+
+  // Optional. The annotation source used to generate the field.
+  string source = 5;
+
+  // Optional. The version of the annotation source used to generate the field.
+  string version = 6;
+}
+
+// This record type mirrors a VCF "FORMAT" header.
+message VcfFormatInfo {
+  // Required. The unique ID of the FORMAT field. Examples include "GT", "PL".
+  string id = 1;
+
+  // Required. The number of entries expected. See description above in the
+  // VcfInfo message.
+  string number = 2;
+
+  // Required. The type of the field. Valid values are "Integer", "Float",
+  // "Character", and "String" (same as INFO except "Flag" is not supported).
+  string type = 3;
+
+  // Required by VCF. The description of the field.
+  string description = 4;
+}
+
+// This record type is a catch-all for other types of headers. For example,
+// headers may have META lines that provide metadata about the VCF as a whole,
+// e.g. ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>
+// The VcfExtra message would represent this with key="META",
+// value="<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>".
+message VcfExtra {
+  // Required by VCF. The key of the extra header field. Note that this key does
+  // not have to be unique within a VcfHeader.
+  string key = 1;
+
+  // Required by VCF. The value of the extra header field.
+  string value = 2;
 }

@@ -36,109 +36,111 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
+from deepvariant.util.genomics import reference_pb2
+from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
 from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import vcf_reader
 
 expected_sites_contigs = [
-    core_pb2.ContigInfo(name='chr1', pos_in_fasta=0, n_bases=248956422),
-    core_pb2.ContigInfo(name='chr2', pos_in_fasta=1, n_bases=242193529),
-    core_pb2.ContigInfo(name='chr3', pos_in_fasta=2, n_bases=198295559),
-    core_pb2.ContigInfo(name='chr4', pos_in_fasta=3, n_bases=190214555),
-    core_pb2.ContigInfo(name='chr5', pos_in_fasta=4, n_bases=181538259),
-    core_pb2.ContigInfo(name='chr6', pos_in_fasta=5, n_bases=170805979),
-    core_pb2.ContigInfo(name='chr7', pos_in_fasta=6, n_bases=159345973),
-    core_pb2.ContigInfo(name='chr8', pos_in_fasta=7, n_bases=145138636),
-    core_pb2.ContigInfo(name='chr9', pos_in_fasta=8, n_bases=138394717),
-    core_pb2.ContigInfo(name='chr10', pos_in_fasta=9, n_bases=133797422),
-    core_pb2.ContigInfo(name='chr11', pos_in_fasta=10, n_bases=135086622),
-    core_pb2.ContigInfo(name='chr12', pos_in_fasta=11, n_bases=133275309),
-    core_pb2.ContigInfo(name='chr13', pos_in_fasta=12, n_bases=114364328),
-    core_pb2.ContigInfo(name='chr14', pos_in_fasta=13, n_bases=107043718),
-    core_pb2.ContigInfo(name='chr15', pos_in_fasta=14, n_bases=101991189),
-    core_pb2.ContigInfo(name='chr16', pos_in_fasta=15, n_bases=90338345),
-    core_pb2.ContigInfo(name='chr17', pos_in_fasta=16, n_bases=83257441),
-    core_pb2.ContigInfo(name='chr18', pos_in_fasta=17, n_bases=80373285),
-    core_pb2.ContigInfo(name='chr19', pos_in_fasta=18, n_bases=58617616),
-    core_pb2.ContigInfo(name='chr20', pos_in_fasta=19, n_bases=64444167),
-    core_pb2.ContigInfo(name='chr21', pos_in_fasta=20, n_bases=46709983),
-    core_pb2.ContigInfo(name='chr22', pos_in_fasta=21, n_bases=50818468),
-    core_pb2.ContigInfo(name='chrX', pos_in_fasta=22, n_bases=156040895),
-    core_pb2.ContigInfo(name='chrY', pos_in_fasta=23, n_bases=57227415),
-    core_pb2.ContigInfo(name='chrM', pos_in_fasta=24, n_bases=16569),
+    reference_pb2.ContigInfo(name='chr1', pos_in_fasta=0, n_bases=248956422),
+    reference_pb2.ContigInfo(name='chr2', pos_in_fasta=1, n_bases=242193529),
+    reference_pb2.ContigInfo(name='chr3', pos_in_fasta=2, n_bases=198295559),
+    reference_pb2.ContigInfo(name='chr4', pos_in_fasta=3, n_bases=190214555),
+    reference_pb2.ContigInfo(name='chr5', pos_in_fasta=4, n_bases=181538259),
+    reference_pb2.ContigInfo(name='chr6', pos_in_fasta=5, n_bases=170805979),
+    reference_pb2.ContigInfo(name='chr7', pos_in_fasta=6, n_bases=159345973),
+    reference_pb2.ContigInfo(name='chr8', pos_in_fasta=7, n_bases=145138636),
+    reference_pb2.ContigInfo(name='chr9', pos_in_fasta=8, n_bases=138394717),
+    reference_pb2.ContigInfo(name='chr10', pos_in_fasta=9, n_bases=133797422),
+    reference_pb2.ContigInfo(name='chr11', pos_in_fasta=10, n_bases=135086622),
+    reference_pb2.ContigInfo(name='chr12', pos_in_fasta=11, n_bases=133275309),
+    reference_pb2.ContigInfo(name='chr13', pos_in_fasta=12, n_bases=114364328),
+    reference_pb2.ContigInfo(name='chr14', pos_in_fasta=13, n_bases=107043718),
+    reference_pb2.ContigInfo(name='chr15', pos_in_fasta=14, n_bases=101991189),
+    reference_pb2.ContigInfo(name='chr16', pos_in_fasta=15, n_bases=90338345),
+    reference_pb2.ContigInfo(name='chr17', pos_in_fasta=16, n_bases=83257441),
+    reference_pb2.ContigInfo(name='chr18', pos_in_fasta=17, n_bases=80373285),
+    reference_pb2.ContigInfo(name='chr19', pos_in_fasta=18, n_bases=58617616),
+    reference_pb2.ContigInfo(name='chr20', pos_in_fasta=19, n_bases=64444167),
+    reference_pb2.ContigInfo(name='chr21', pos_in_fasta=20, n_bases=46709983),
+    reference_pb2.ContigInfo(name='chr22', pos_in_fasta=21, n_bases=50818468),
+    reference_pb2.ContigInfo(name='chrX', pos_in_fasta=22, n_bases=156040895),
+    reference_pb2.ContigInfo(name='chrY', pos_in_fasta=23, n_bases=57227415),
+    reference_pb2.ContigInfo(name='chrM', pos_in_fasta=24, n_bases=16569),
 ]
 
 # pylint: disable=line-too-long
 expected_samples_filters = [
-    core_pb2.VcfFilterInfo(id='PASS', description='All filters passed'),
-    core_pb2.VcfFilterInfo(id='LowQual', description='Low	quality'),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(id='PASS', description='All filters passed'),
+    variants_pb2.VcfFilterInfo(id='LowQual', description='Low	quality'),
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL95.00to96.00',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.9364	<=	x	<	1.0415'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL96.00to97.00',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.8135	<=	x	<	0.9364'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL97.00to99.00',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.323	<=	x	<	0.8135'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.00to99.50',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-0.1071	<=	x	<	0.323'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.50to99.90',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-1.845	<=	x	<	-0.1071'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.90to99.95',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-3.2441	<=	x	<	-1.845'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.95to100.00+',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod	<	-57172.0693'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.95to100.00',
         description=
         'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-57172.0693	<=	x	<	-3.2441'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.50to99.60',
         description=
         'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-0.751	<=	x	<	-0.6681'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.60to99.80',
         description=
         'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-1.0839	<=	x	<	-0.751'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.80to99.90',
         description=
         'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-1.7082	<=	x	<	-1.0839'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.90to99.95',
         description=
         'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-3.0342	<=	x	<	-1.7082'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.95to100.00+',
         description=
         'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod	<	-40235.9641'
     ),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.95to100.00',
         description=
         'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-40235.9641	<=	x	<	-3.0342'

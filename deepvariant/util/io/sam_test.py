@@ -38,9 +38,9 @@ from absl.testing import parameterized
 
 from deepvariant.util.io import sam
 from deepvariant.util.genomics import reads_pb2
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import test_utils
-from deepvariant.util.protos import core_pb2
 
 
 class ReadWriterTests(parameterized.TestCase):
@@ -64,8 +64,8 @@ class ReadWriterTests(parameterized.TestCase):
         quals=range(20, 26),
         name='read2')
     self.contigs = [
-        core_pb2.ContigInfo(name='chr1'),
-        core_pb2.ContigInfo(name='chr2'),
+        reference_pb2.ContigInfo(name='chr1'),
+        reference_pb2.ContigInfo(name='chr2'),
     ]
 
   def test_make_read_writer_tfrecords(self):

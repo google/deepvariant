@@ -40,6 +40,7 @@ from absl.testing import parameterized
 import mock
 
 from deepvariant.util.genomics import position_pb2
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
@@ -88,8 +89,8 @@ class RangesTests(parameterized.TestCase):
   def test_from_regions_not_empty(self):
     literals = ['chr1', 'chr2:10-20']
     contig_map = {
-        'chr1': core_pb2.ContigInfo(name='chr1', n_bases=10),
-        'chr2': core_pb2.ContigInfo(name='chr2', n_bases=100),
+        'chr1': reference_pb2.ContigInfo(name='chr1', n_bases=10),
+        'chr2': reference_pb2.ContigInfo(name='chr2', n_bases=100),
     }
     self.assertItemsEqual(
         [ranges.make_range('chr1', 0, 10),
@@ -340,8 +341,8 @@ class RangesTests(parameterized.TestCase):
                             ('chr2', ranges.make_range('chr2', 0, 5)))
   def test_parse_literal_with_contig_map(self, contig_name, expected):
     contig_map = {
-        'chr1': core_pb2.ContigInfo(name='chr1', n_bases=10),
-        'chr2': core_pb2.ContigInfo(name='chr2', n_bases=5),
+        'chr1': reference_pb2.ContigInfo(name='chr1', n_bases=10),
+        'chr2': reference_pb2.ContigInfo(name='chr2', n_bases=5),
     }
     self.assertEqual(
         ranges.parse_literal(contig_name, contig_map=contig_map), expected)
@@ -353,13 +354,13 @@ class RangesTests(parameterized.TestCase):
       ranges.parse_literal(
           bad_literal,
           contig_map={
-              'chr1': core_pb2.ContigInfo(name='chr1', n_bases=10)
+              'chr1': reference_pb2.ContigInfo(name='chr1', n_bases=10)
           })
 
   def test_from_contigs(self):
     contigs = [
-        core_pb2.ContigInfo(name='chr1', n_bases=10),
-        core_pb2.ContigInfo(name='chr2', n_bases=5),
+        reference_pb2.ContigInfo(name='chr1', n_bases=10),
+        reference_pb2.ContigInfo(name='chr2', n_bases=5),
     ]
     self.assertCountEqual([
         ranges.make_range('chr1', 0, 10),
@@ -453,9 +454,9 @@ class RangesTests(parameterized.TestCase):
         ])
 
   def test_contigs_n_bases(self):
-    c1 = core_pb2.ContigInfo(name='c', n_bases=100, pos_in_fasta=0)
-    c2 = core_pb2.ContigInfo(name='a', n_bases=50, pos_in_fasta=1)
-    c3 = core_pb2.ContigInfo(name='b', n_bases=25, pos_in_fasta=2)
+    c1 = reference_pb2.ContigInfo(name='c', n_bases=100, pos_in_fasta=0)
+    c2 = reference_pb2.ContigInfo(name='a', n_bases=50, pos_in_fasta=1)
+    c3 = reference_pb2.ContigInfo(name='b', n_bases=25, pos_in_fasta=2)
     self.assertEqual(100, ranges.contigs_n_bases([c1]))
     self.assertEqual(50, ranges.contigs_n_bases([c2]))
     self.assertEqual(25, ranges.contigs_n_bases([c3]))
@@ -465,9 +466,9 @@ class RangesTests(parameterized.TestCase):
 
   def test_sort_ranges(self):
     contigs = [
-        core_pb2.ContigInfo(name='c', n_bases=100, pos_in_fasta=0),
-        core_pb2.ContigInfo(name='a', n_bases=76, pos_in_fasta=1),
-        core_pb2.ContigInfo(name='b', n_bases=121, pos_in_fasta=2),
+        reference_pb2.ContigInfo(name='c', n_bases=100, pos_in_fasta=0),
+        reference_pb2.ContigInfo(name='a', n_bases=76, pos_in_fasta=1),
+        reference_pb2.ContigInfo(name='b', n_bases=121, pos_in_fasta=2),
     ]
     unsorted = ranges.parse_literals(
         ['a:10', 'c:20', 'b:30', 'b:10-15', 'b:10', 'a:5'])
@@ -672,8 +673,7 @@ class RangesTests(parameterized.TestCase):
           n_bp=n_bp,
           contig_map=None,
           expected=ranges.make_range('1', 10 - n_bp, 20 + n_bp),
-      ) for n_bp in range(10),
-  )
+      ) for n_bp in range(10))
   def test_expand_is_correct(self, region, n_bp, contig_map, expected):
     self.assertEqual(expected, ranges.expand(region, n_bp, contig_map))
 
@@ -689,7 +689,9 @@ class RangesTests(parameterized.TestCase):
       dict(
           region=ranges.make_range('1', 10, 20),
           n_bp=40,
-          contig_map={'1': core_pb2.ContigInfo(name='1', n_bases=50),},
+          contig_map={
+              '1': reference_pb2.ContigInfo(name='1', n_bases=50),
+          },
           expected=ranges.make_range('1', 0, 50),
       ),
   )
@@ -711,7 +713,7 @@ class RangesTests(parameterized.TestCase):
           ranges.make_range('1', 10, 20),
           1,
           contig_map={
-              '2': core_pb2.ContigInfo(name='2', n_bases=50),
+              '2': reference_pb2.ContigInfo(name='2', n_bases=50),
           })
 
 

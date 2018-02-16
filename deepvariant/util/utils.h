@@ -41,6 +41,7 @@
 #include "deepvariant/util/genomics/position.pb.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/struct.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/protos/core.pb.h"
@@ -155,7 +156,7 @@ tensorflow::StringPiece Unquote(tensorflow::StringPiece input);
 // Creates a mapping from string to int for mapping of contig names to position
 // in FASTA. This is used with the CompareVariants function.
 std::map<string, int> MapContigNameToPosInFasta(
-    const std::vector<ContigInfo>& contigs);
+    const std::vector<nucleus::genomics::v1::ContigInfo>& contigs);
 
 // Returns true if Variant `a` should appear before Variant `b`,
 // false otherwise.

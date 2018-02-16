@@ -475,7 +475,7 @@ TEST(UtilsTest, TestUnquote) {
 }
 
 TEST(MapContigNameToPosInFasta, BasicCase) {
-  std::vector<ContigInfo> contigs =
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs =
       CreateContigInfos({"chr1", "chr10"}, {1, 1000});
   std::map<string, int> map_name_pos = MapContigNameToPosInFasta(contigs);
   EXPECT_EQ(map_name_pos.size(), 2);
@@ -484,7 +484,8 @@ TEST(MapContigNameToPosInFasta, BasicCase) {
 }
 
 TEST(CompareVariants, BasicCaseWithSameName) {
-  std::vector<ContigInfo> contigs = CreateContigInfos({"xyz"}, {1});
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs =
+      CreateContigInfos({"xyz"}, {1});
   std::map<string, int> map_name_pos = MapContigNameToPosInFasta(contigs);
   Variant lhs;
   lhs.set_reference_name("xyz");
@@ -501,7 +502,8 @@ TEST(CompareVariants, BasicCaseWithSameName) {
 }
 
 TEST(CompareVariants, BasicCaseWithSameStartDifferentEnd) {
-  std::vector<ContigInfo> contigs = CreateContigInfos({"xyz"}, {1});
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs =
+      CreateContigInfos({"xyz"}, {1});
   std::map<string, int> map_name_pos = MapContigNameToPosInFasta(contigs);
   Variant lhs;
   lhs.set_reference_name("xyz");
@@ -517,7 +519,7 @@ TEST(CompareVariants, BasicCaseWithSameStartDifferentEnd) {
 // CompareVariants compare reference_name first. If it's different, it assumes
 // the one that has smaller pos_in_fasta should come first and ignore the rest.
 TEST(CompareVariants, BasicCaseWithDifferentName) {
-  std::vector<ContigInfo> contigs =
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs =
       CreateContigInfos({"abc", "xyz"}, {1, 1000});
   std::map<string, int> map_name_pos = MapContigNameToPosInFasta(contigs);
   Variant lhs;

@@ -37,6 +37,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
 
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
@@ -60,8 +61,8 @@ class WrapVcfWriterTest(parameterized.TestCase):
     self.out_fname = test_utils.test_tmpfile('output.vcf')
     self.options = core_pb2.VcfWriterOptions(
         contigs=[
-            core_pb2.ContigInfo(name='Chr1', n_bases=50, pos_in_fasta=0),
-            core_pb2.ContigInfo(name='Chr2', n_bases=25, pos_in_fasta=1),
+            reference_pb2.ContigInfo(name='Chr1', n_bases=50, pos_in_fasta=0),
+            reference_pb2.ContigInfo(name='Chr2', n_bases=25, pos_in_fasta=1),
         ],
         sample_names=['Fido', 'Spot'],
         filters=[])
@@ -80,28 +81,28 @@ class WrapVcfWriterTest(parameterized.TestCase):
 
     writer_options = core_pb2.VcfWriterOptions(
         contigs=[
-            core_pb2.ContigInfo(name='chr1', n_bases=248956422),
-            core_pb2.ContigInfo(name='chr2', n_bases=242193529),
-            core_pb2.ContigInfo(name='chr3', n_bases=198295559),
-            core_pb2.ContigInfo(name='chrX', n_bases=156040895)
+            reference_pb2.ContigInfo(name='chr1', n_bases=248956422),
+            reference_pb2.ContigInfo(name='chr2', n_bases=242193529),
+            reference_pb2.ContigInfo(name='chr3', n_bases=198295559),
+            reference_pb2.ContigInfo(name='chrX', n_bases=156040895)
         ],
         sample_names=['NA12878_18_99'],
         filters=[
-            core_pb2.VcfFilterInfo(id='LowQual'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL95.00to96.00'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL96.00to97.00'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL97.00to99.00'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.00to99.50'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.50to99.90'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.90to99.95'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.95to100.00+'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.95to100.00'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.50to99.60'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.60to99.80'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.80to99.90'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.90to99.95'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.95to100.00+'),
-            core_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.95to100.00'),
+            variants_pb2.VcfFilterInfo(id='LowQual'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL95.00to96.00'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL96.00to97.00'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL97.00to99.00'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.00to99.50'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.50to99.90'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.90to99.95'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.95to100.00+'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL99.95to100.00'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.50to99.60'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.60to99.80'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.80to99.90'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.90to99.95'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.95to100.00+'),
+            variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.95to100.00'),
         ])
 
     variant_records = list(

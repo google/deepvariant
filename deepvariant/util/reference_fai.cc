@@ -49,11 +49,12 @@ using tensorflow::strings::StrCat;
 
 namespace {
 // Gets information about the contigs from the fai index faidx.
-std::vector<ContigInfo> ExtractContigsFromFai(const faidx_t* faidx) {
+std::vector<nucleus::genomics::v1::ContigInfo> ExtractContigsFromFai(
+    const faidx_t* faidx) {
   int n_contigs = faidx_nseq(faidx);
-  std::vector<ContigInfo> contigs(n_contigs);
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs(n_contigs);
   for (int i = 0; i < n_contigs; ++i) {
-    ContigInfo* contig = &contigs[i];
+    nucleus::genomics::v1::ContigInfo* contig = &contigs[i];
     const char* name = faidx_iseq(faidx, i);
     CHECK_NE(name, nullptr) << "Name of " << i << " contig in is null";
     contig->set_name(name);

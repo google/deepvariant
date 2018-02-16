@@ -36,7 +36,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/util/protos/core.pb.h"
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 
 namespace learning {
@@ -52,7 +52,7 @@ using tensorflow::StringPiece;
 // and then outputs the sorted TFRecord of CallVariantsOutput protos to
 // `output_tfrecord_path`.
 void ProcessSingleSiteCallTfRecords(
-    const std::vector<nucleus::ContigInfo>& contigs,
+    const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
     const std::vector<string>& tfrecord_paths,
     const string& output_tfrecord_path);
 

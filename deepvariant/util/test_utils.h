@@ -40,6 +40,7 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "deepvariant/util/genomics/reads.pb.h"
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/reader_base.h"
 #include "deepvariant/util/vendor/statusor.h"
@@ -103,8 +104,8 @@ void WriteProtosToTFRecord(const std::vector<Proto>& protos,
 // Creates a vector of ContigInfos with specified `names` and `positions`
 // representing pos_in_fast. `names` and `positions` need to have the same
 // number of elements.
-std::vector<ContigInfo> CreateContigInfos(const std::vector<string>& names,
-                                          const std::vector<int>& positions);
+std::vector<nucleus::genomics::v1::ContigInfo> CreateContigInfos(
+    const std::vector<string>& names, const std::vector<int>& positions);
 
 // A matcher to help us do Pointwise double expectations with a provided
 // precision via DoubleNear.

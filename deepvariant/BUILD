@@ -104,7 +104,7 @@ cc_library(
     deps = [
         "//deepvariant/util:cpp_utils",
         "//deepvariant/util/genomics:variants_cc_pb2",
-        "//deepvariant/util/protos:core_cc_pb2",
+        "//deepvariant/util/genomics:reference_cc_pb2",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "@org_tensorflow//tensorflow/core:lib",
         # redacted
@@ -122,6 +122,7 @@ cc_test(
     deps = [
         ":postprocess_variants_lib",
         "//deepvariant/util:cpp_test_utils",
+        "//deepvariant/util/genomics:reference_cc_pb2",
         "//deepvariant/util/genomics:variants_cc_pb2",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -276,8 +277,8 @@ py_test(
         "//deepvariant/util:io_utils",
         "//deepvariant/util:ranges",
         "//deepvariant/util:variantutils",
+        "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
-        "//deepvariant/util/protos:core_py_pb2",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
         "@com_google_absl_py//absl/testing:absltest",
@@ -425,7 +426,6 @@ py_library(
         "//deepvariant/util/genomics:struct_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
         "//deepvariant/util/io:vcf",
-        "//deepvariant/util/protos:core_py_pb2",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],
@@ -458,6 +458,7 @@ py_test(
         "//deepvariant/util:genomics_math",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:variantutils",
+        "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:struct_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
         "@com_google_absl_py//absl/flags",

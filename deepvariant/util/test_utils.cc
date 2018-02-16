@@ -88,11 +88,11 @@ string MakeTempFile(StringPiece filename) {
   return tensorflow::io::JoinPath(test_tmpdir, filename);
 }
 
-std::vector<ContigInfo> CreateContigInfos(const std::vector<string>& names,
-                                          const std::vector<int>& positions) {
-  std::vector<ContigInfo> contigs;
+std::vector<nucleus::genomics::v1::ContigInfo> CreateContigInfos(
+    const std::vector<string>& names, const std::vector<int>& positions) {
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs;
   QCHECK_EQ(names.size(), positions.size());
-  ContigInfo contig;
+  nucleus::genomics::v1::ContigInfo contig;
   for (size_t i = 0; i < names.size(); i++) {
     contig.set_name(names[i]);
     contig.set_pos_in_fasta(positions[i]);

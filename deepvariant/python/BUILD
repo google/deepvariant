@@ -47,8 +47,7 @@ py_clif_cc(
     ],
     py_deps = [],
     pyclif_deps = [
-        "//deepvariant/util/genomics:variants_pyclif",
-        "//deepvariant/util/protos:core_pyclif",
+        "//deepvariant/util/genomics:reference_pyclif",
         "//deepvariant/protos:deepvariant_pyclif",
     ],
     deps = ["//deepvariant:postprocess_variants_lib"],

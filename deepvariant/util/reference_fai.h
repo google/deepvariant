@@ -104,7 +104,10 @@ class GenomeReferenceFai : public GenomeReference {
   // Gets a human-readable string describing this GenomeReference.
   string Info() const override;
 
-  const std::vector<ContigInfo>& Contigs() const override { return contigs_; }
+  const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs()
+      const override {
+    return contigs_;
+  }
 
   StatusOr<string> GetBases(
       const nucleus::genomics::v1::Range& range) const override;
@@ -127,7 +130,7 @@ class GenomeReferenceFai : public GenomeReference {
 
   // A list of ContigInfo, each of which contains the information about the
   // contigs used by this BAM file.
-  const std::vector<ContigInfo> contigs_;
+  const std::vector<nucleus::genomics::v1::ContigInfo> contigs_;
 
   // Size, in bases, of the read cache.
   const int cache_size_bases_;

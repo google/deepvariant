@@ -35,6 +35,7 @@
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
 #include "deepvariant/util/genomics/range.pb.h"
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/hts_path.h"
 #include "deepvariant/util/math.h"
@@ -138,7 +139,7 @@ VcfReader::VcfReader(const string& variants_path,
   // BCF_DT_CTG: offset for contig (CTG) information in BCF dictionary (DT).
   const int n_contigs = header_->n[BCF_DT_CTG];
   for (int i = 0; i < n_contigs; ++i) {
-    ContigInfo contig;
+    nucleus::genomics::v1::ContigInfo contig;
     contig.set_name(header_->id[BCF_DT_CTG][i].key);
     contig.set_n_bases(header_->id[BCF_DT_CTG][i].val->info[0]);
     contig.set_pos_in_fasta(i);
@@ -151,7 +152,7 @@ VcfReader::VcfReader(const string& variants_path,
     const bcf_idpair_t& idPair = header_->id[BCF_DT_ID][i];
     const bcf_hrec_t* hrec0 = idPair.val->hrec[0];
     if (hrec0 != nullptr && hrec0->type == BCF_HL_FLT) {
-      VcfFilterInfo filter;
+      nucleus::genomics::v1::VcfFilterInfo filter;
       if (hrec0->nkeys >= 2 && string(hrec0->keys[0]) == "ID" &&
           string(hrec0->keys[1]) == "Description") {
         filter.set_id(hrec0->vals[0]);
@@ -164,7 +165,7 @@ VcfReader::VcfReader(const string& variants_path,
         break;
       }
     } else if (hrec0 != nullptr && hrec0->type == BCF_HL_FMT) {
-      VcfFormatInfo format;
+      nucleus::genomics::v1::VcfFormatInfo format;
       if (hrec0->nkeys >= 4 && string(hrec0->keys[0]) == "ID" &&
           string(hrec0->keys[1]) == "Number" &&
           string(hrec0->keys[2]) == "Type" &&

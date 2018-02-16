@@ -36,6 +36,7 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util import clif_postproc
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
@@ -78,31 +79,55 @@ class SamReaderTest(absltest.TestCase):
     reader = sam_reader.SamReader.from_file(self.bam, self.options)
     with reader:
       self.assertEqual([
-          core_pb2.ContigInfo(name='chrM', pos_in_fasta=0, n_bases=16571),
-          core_pb2.ContigInfo(name='chr1', pos_in_fasta=1, n_bases=249250621),
-          core_pb2.ContigInfo(name='chr2', pos_in_fasta=2, n_bases=243199373),
-          core_pb2.ContigInfo(name='chr3', pos_in_fasta=3, n_bases=198022430),
-          core_pb2.ContigInfo(name='chr4', pos_in_fasta=4, n_bases=191154276),
-          core_pb2.ContigInfo(name='chr5', pos_in_fasta=5, n_bases=180915260),
-          core_pb2.ContigInfo(name='chr6', pos_in_fasta=6, n_bases=171115067),
-          core_pb2.ContigInfo(name='chr7', pos_in_fasta=7, n_bases=159138663),
-          core_pb2.ContigInfo(name='chr8', pos_in_fasta=8, n_bases=146364022),
-          core_pb2.ContigInfo(name='chr9', pos_in_fasta=9, n_bases=141213431),
-          core_pb2.ContigInfo(name='chr10', pos_in_fasta=10, n_bases=135534747),
-          core_pb2.ContigInfo(name='chr11', pos_in_fasta=11, n_bases=135006516),
-          core_pb2.ContigInfo(name='chr12', pos_in_fasta=12, n_bases=133851895),
-          core_pb2.ContigInfo(name='chr13', pos_in_fasta=13, n_bases=115169878),
-          core_pb2.ContigInfo(name='chr14', pos_in_fasta=14, n_bases=107349540),
-          core_pb2.ContigInfo(name='chr15', pos_in_fasta=15, n_bases=102531392),
-          core_pb2.ContigInfo(name='chr16', pos_in_fasta=16, n_bases=90354753),
-          core_pb2.ContigInfo(name='chr17', pos_in_fasta=17, n_bases=81195210),
-          core_pb2.ContigInfo(name='chr18', pos_in_fasta=18, n_bases=78077248),
-          core_pb2.ContigInfo(name='chr19', pos_in_fasta=19, n_bases=59128983),
-          core_pb2.ContigInfo(name='chr20', pos_in_fasta=20, n_bases=63025520),
-          core_pb2.ContigInfo(name='chr21', pos_in_fasta=21, n_bases=48129895),
-          core_pb2.ContigInfo(name='chr22', pos_in_fasta=22, n_bases=51304566),
-          core_pb2.ContigInfo(name='chrX', pos_in_fasta=23, n_bases=155270560),
-          core_pb2.ContigInfo(name='chrY', pos_in_fasta=24, n_bases=59373566),
+          reference_pb2.ContigInfo(name='chrM', pos_in_fasta=0, n_bases=16571),
+          reference_pb2.ContigInfo(
+              name='chr1', pos_in_fasta=1, n_bases=249250621),
+          reference_pb2.ContigInfo(
+              name='chr2', pos_in_fasta=2, n_bases=243199373),
+          reference_pb2.ContigInfo(
+              name='chr3', pos_in_fasta=3, n_bases=198022430),
+          reference_pb2.ContigInfo(
+              name='chr4', pos_in_fasta=4, n_bases=191154276),
+          reference_pb2.ContigInfo(
+              name='chr5', pos_in_fasta=5, n_bases=180915260),
+          reference_pb2.ContigInfo(
+              name='chr6', pos_in_fasta=6, n_bases=171115067),
+          reference_pb2.ContigInfo(
+              name='chr7', pos_in_fasta=7, n_bases=159138663),
+          reference_pb2.ContigInfo(
+              name='chr8', pos_in_fasta=8, n_bases=146364022),
+          reference_pb2.ContigInfo(
+              name='chr9', pos_in_fasta=9, n_bases=141213431),
+          reference_pb2.ContigInfo(
+              name='chr10', pos_in_fasta=10, n_bases=135534747),
+          reference_pb2.ContigInfo(
+              name='chr11', pos_in_fasta=11, n_bases=135006516),
+          reference_pb2.ContigInfo(
+              name='chr12', pos_in_fasta=12, n_bases=133851895),
+          reference_pb2.ContigInfo(
+              name='chr13', pos_in_fasta=13, n_bases=115169878),
+          reference_pb2.ContigInfo(
+              name='chr14', pos_in_fasta=14, n_bases=107349540),
+          reference_pb2.ContigInfo(
+              name='chr15', pos_in_fasta=15, n_bases=102531392),
+          reference_pb2.ContigInfo(
+              name='chr16', pos_in_fasta=16, n_bases=90354753),
+          reference_pb2.ContigInfo(
+              name='chr17', pos_in_fasta=17, n_bases=81195210),
+          reference_pb2.ContigInfo(
+              name='chr18', pos_in_fasta=18, n_bases=78077248),
+          reference_pb2.ContigInfo(
+              name='chr19', pos_in_fasta=19, n_bases=59128983),
+          reference_pb2.ContigInfo(
+              name='chr20', pos_in_fasta=20, n_bases=63025520),
+          reference_pb2.ContigInfo(
+              name='chr21', pos_in_fasta=21, n_bases=48129895),
+          reference_pb2.ContigInfo(
+              name='chr22', pos_in_fasta=22, n_bases=51304566),
+          reference_pb2.ContigInfo(
+              name='chrX', pos_in_fasta=23, n_bases=155270560),
+          reference_pb2.ContigInfo(
+              name='chrY', pos_in_fasta=24, n_bases=59373566),
       ], reader.contigs)
 
   def test_context_manager(self):

@@ -52,7 +52,6 @@ from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import variantutils
-from deepvariant.util.protos import core_pb2
 from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
@@ -96,10 +95,10 @@ DEEP_VARIANT_ALL_FILTER_VALUES = frozenset(
     [DEEP_VARIANT_REF_FILTER, DEEP_VARIANT_QUAL_FILTER, DEEP_VARIANT_PASS])
 
 FILTERS = [
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id=DEEP_VARIANT_REF_FILTER,
         description='Genotyping model thinks this site is reference.'),
-    core_pb2.VcfFilterInfo(
+    variants_pb2.VcfFilterInfo(
         id=DEEP_VARIANT_QUAL_FILTER,
         description=
         'Confidence in this variant being real is below calling threshold.'),

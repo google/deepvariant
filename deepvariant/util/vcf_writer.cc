@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/hts_path.h"
 #include "deepvariant/util/utils.h"
@@ -113,7 +114,7 @@ VcfWriter::VcfWriter(const VcfWriterOptions& options, htsFile* fp)
   CHECK(fp != nullptr);
 
   header_ = bcf_hdr_init("w");
-  for (const VcfFilterInfo& filter : options.filters()) {
+  for (const nucleus::genomics::v1::VcfFilterInfo& filter : options.filters()) {
     string filterStr = tensorflow::strings::Printf(
         kFilterHeaderFmt, filter.id().c_str(), filter.description().c_str());
     bcf_hdr_append(header_, filterStr.c_str());
@@ -129,7 +130,7 @@ VcfWriter::VcfWriter(const VcfWriterOptions& options, htsFile* fp)
   bcf_hdr_append(header_, kFormatHeaderPL);
   bcf_hdr_append(header_, kInfoHeaderEND);
 
-  for (const ContigInfo& contig : options.contigs()) {
+  for (const nucleus::genomics::v1::ContigInfo& contig : options.contigs()) {
     string ctgStr =
         tensorflow::strings::Printf(kContigHeaderFmt, contig.name().c_str(),
                                     static_cast<int64>(contig.n_bases()));

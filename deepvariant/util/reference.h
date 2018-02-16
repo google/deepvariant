@@ -59,6 +59,7 @@
 #include <vector>
 
 #include "deepvariant/util/genomics/range.pb.h"
+#include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/platform/types.h"
@@ -82,7 +83,8 @@ class GenomeReference {
   // GenomeReference.
   virtual string Info() const = 0;
 
-  virtual const std::vector<ContigInfo>& Contigs() const = 0;
+  virtual const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs()
+      const = 0;
 
   // Gets the number of contigs in this reference.
   virtual int NContigs() const;
@@ -104,7 +106,8 @@ class GenomeReference {
   // Gets the metadata about a contig in the fasta, such as its name,
   // description, length, etc. If contig_name isn't found in this reference,
   // returns a value whose status is not ok().
-  virtual StatusOr<const ContigInfo*> Contig(const string& contig_name) const;
+  virtual StatusOr<const nucleus::genomics::v1::ContigInfo*> Contig(
+      const string& contig_name) const;
 
   // Gets the basepairs in the FASTA file from Range range.
   //

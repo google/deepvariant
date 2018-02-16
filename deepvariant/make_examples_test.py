@@ -43,13 +43,13 @@ from absl.testing import parameterized
 import mock
 
 from absl import logging
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
 
 from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import variantutils
-from deepvariant.util.protos import core_pb2
 from tensorflow.core.example import example_pb2
 from deepvariant import make_examples
 from deepvariant import test_utils
@@ -113,12 +113,12 @@ def _make_contigs(specs):
   """
   if specs and len(specs[0]) == 3:
     return [
-        core_pb2.ContigInfo(name=name, n_bases=length, pos_in_fasta=i)
+        reference_pb2.ContigInfo(name=name, n_bases=length, pos_in_fasta=i)
         for name, length, i in specs
     ]
   else:
     return [
-        core_pb2.ContigInfo(name=name, n_bases=length, pos_in_fasta=i)
+        reference_pb2.ContigInfo(name=name, n_bases=length, pos_in_fasta=i)
         for i, (name, length) in enumerate(specs)
     ]
 

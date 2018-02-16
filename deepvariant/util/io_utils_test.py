@@ -39,6 +39,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util import io_utils as io
 from deepvariant.util import test_utils
 from deepvariant.util.protos import core_pb2
@@ -101,7 +102,7 @@ class IOTest(parameterized.TestCase):
     self.assertEqual(io.maybe_generate_sharded_filenames(filespec), expected)
 
   def write_test_protos(self, filename):
-    protos = [core_pb2.ContigInfo(name=str(i)) for i in range(10)]
+    protos = [reference_pb2.ContigInfo(name=str(i)) for i in range(10)]
     path = test_utils.test_tmpfile(filename)
     io.write_tfrecords(protos, path)
     return protos, path
@@ -111,7 +112,7 @@ class IOTest(parameterized.TestCase):
     protos, path = self.write_test_protos(filename)
 
     # Create our generator of records from read_tfrecords.
-    reader = io.read_tfrecords(path, core_pb2.ContigInfo)
+    reader = io.read_tfrecords(path, reference_pb2.ContigInfo)
 
     # Make sure it's actually a generator.
     self.assertEqual(type(reader), types.GeneratorType)
@@ -157,7 +158,7 @@ class IOTest(parameterized.TestCase):
     else:
       expected_n = min(max_records, len(protos))
     actual = io.read_tfrecords(
-        path, core_pb2.ContigInfo, max_records=max_records)
+        path, reference_pb2.ContigInfo, max_records=max_records)
     self.assertLen(list(actual), expected_n)
 
   @parameterized.parameters('foo.tfrecord', 'foo@2.tfrecord', 'foo@3.tfrecord')
@@ -167,7 +168,7 @@ class IOTest(parameterized.TestCase):
     # Create our generator of records.
     key = lambda x: int(x.name)
     reader = io.read_shard_sorted_tfrecords(
-        path, key=key, proto=core_pb2.ContigInfo)
+        path, key=key, proto=reference_pb2.ContigInfo)
 
     # Make sure it's actually a generator.
     self.assertEqual(type(reader), types.GeneratorType)
@@ -191,7 +192,7 @@ class IOTest(parameterized.TestCase):
     actual = io.read_shard_sorted_tfrecords(
         path,
         key=lambda x: int(x.name),
-        proto=core_pb2.ContigInfo,
+        proto=reference_pb2.ContigInfo,
         max_records=max_records)
     self.assertLen(list(actual), expected_n)
 
@@ -199,8 +200,10 @@ class IOTest(parameterized.TestCase):
 class RawProtoWriterAdaptorTests(parameterized.TestCase):
 
   def setUp(self):
-    self.proto1 = core_pb2.ContigInfo(name='p1', n_bases=10, pos_in_fasta=0)
-    self.proto2 = core_pb2.ContigInfo(name='p2', n_bases=20, pos_in_fasta=1)
+    self.proto1 = reference_pb2.ContigInfo(
+        name='p1', n_bases=10, pos_in_fasta=0)
+    self.proto2 = reference_pb2.ContigInfo(
+        name='p2', n_bases=20, pos_in_fasta=1)
     self.protos = [self.proto1, self.proto2]
 
   @parameterized.parameters(

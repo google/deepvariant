@@ -45,12 +45,12 @@ import numpy as np
 import tensorflow as tf
 
 from absl import logging
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
 from deepvariant.util import variantutils
-from deepvariant.util.protos import core_pb2
 from deepvariant import postprocess_variants
 from deepvariant import test_utils
 from deepvariant.protos import deepvariant_pb2
@@ -62,9 +62,9 @@ _DEFAULT_SAMPLE_NAME = 'NA12878'
 
 # Test contigs for gVCF merging code.
 _CONTIGS = [
-    core_pb2.ContigInfo(name='1', n_bases=100),
-    core_pb2.ContigInfo(name='2', n_bases=200),
-    core_pb2.ContigInfo(name='10', n_bases=300),
+    reference_pb2.ContigInfo(name='1', n_bases=100),
+    reference_pb2.ContigInfo(name='2', n_bases=200),
+    reference_pb2.ContigInfo(name='10', n_bases=300),
 ]
 
 

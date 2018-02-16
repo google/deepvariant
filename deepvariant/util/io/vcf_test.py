@@ -37,9 +37,9 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from deepvariant.util.io import vcf
+from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util import test_utils
-from deepvariant.util.protos import core_pb2
 from tensorflow.python.platform import gfile
 
 
@@ -81,7 +81,7 @@ class VcfWriterTests(parameterized.TestCase):
     output_path = test_utils.test_tmpfile('test.vcf')
     writer = vcf.VcfWriter(
         output_path,
-        contigs=[core_pb2.ContigInfo(name='20')],
+        contigs=[reference_pb2.ContigInfo(name='20')],
         samples=[call.call_set_name for call in variant.calls],
         filters=[])
     with writer:
