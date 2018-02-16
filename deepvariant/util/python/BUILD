@@ -23,7 +23,6 @@ py_clif_cc(
         "//deepvariant/util/genomics:reference_pyclif",
         "//deepvariant/util/genomics:variants_pyclif",
     ],
-    visibility = ["//third_party/nucleus:__subpackages__"],
     deps = [
         "//deepvariant/util:vcf_reader",
         "//deepvariant/util/vendor:statusor_clif_converters",
@@ -98,7 +97,6 @@ py_clif_cc(
         "//deepvariant/util/genomics:reads_pyclif",
         "//deepvariant/util/genomics:reference_pyclif",
     ],
-    visibility = ["//third_party/nucleus:__subpackages__"],
     deps = [
         "//deepvariant/util:sam_reader",
         "//deepvariant/util/vendor:statusor_clif_converters",
@@ -161,7 +159,6 @@ py_clif_cc(
     clif_deps = [],
     py_deps = [],
     pyclif_deps = [],
-    visibility = ["//third_party/nucleus:__subpackages__"],
     deps = ["//deepvariant/util:cpp_math"],
 )
 
