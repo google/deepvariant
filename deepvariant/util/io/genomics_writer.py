@@ -43,6 +43,7 @@ from __future__ import print_function
 import abc
 
 
+from absl import logging
 
 from tensorflow.python.lib.io import python_io
 
@@ -107,6 +108,8 @@ class DispatchingGenomicsWriter(GenomicsWriter):
       self._writer = self._native_writer(output_path, **kwargs)
     else:
       self._writer = TFRecordWriter(output_path)
+    logging.info('Writing %s with %s',
+                 output_path, self._writer.__class__.__name__)
 
   @abc.abstractmethod
   def _get_extensions(self):

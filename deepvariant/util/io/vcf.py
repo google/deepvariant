@@ -28,6 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Classes for reading and writing VCF files.
 
+API for reading:
+  with VcfReader(output_path) as reader:
+    for variant in reader:
+      process(reader.header, variant)
+
 API for writing:
 
   with VcfWriter(output_path, contigs, samples, filters) as writer:
@@ -45,11 +50,78 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
 
 
+
+from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
+from deepvariant.util.genomics import variants_pb2
 from deepvariant.util.protos import core_pb2
+from deepvariant.util.python import vcf_reader
 from deepvariant.util.python import vcf_writer
+
+_VCF_EXTENSIONS = frozenset(['.vcf'])
+
+# redacted
+VcfHeader = collections.namedtuple(
+    'VcfHeader', ['contigs', 'filters', 'samples'])
+
+
+class NativeVcfReader(genomics_reader.GenomicsReader):
+  """Class for reading from native VCF files.
+
+  Most users will want to use VcfReader instead, because it dynamically
+  dispatches between reading native VCF files and TFRecord files based
+  on the filename's extensions.
+  """
+
+  def __init__(self, output_path, use_index=True, include_likelihoods=False):
+    index_mode = core_pb2.INDEX_BASED_ON_FILENAME
+    if not use_index:
+      index_mode = core_pb2.DONT_USE_INDEX
+
+    # redacted
+    # list of strings.
+    desired_vcf_fields = core_pb2.OptionalVariantFieldsToParse()
+    if not include_likelihoods:
+      desired_vcf_fields.exclude_genotype_quality = True
+      desired_vcf_fields.exclude_genotype_likelihood = True
+
+    self._reader = vcf_reader.VcfReader.from_file(
+        output_path.encode('utf8'),
+        core_pb2.VcfReaderOptions(
+            index_mode=index_mode,
+            desired_format_entries=desired_vcf_fields))
+
+    # redacted
+    self.header = VcfHeader(contigs=self._reader.Contigs(),
+                            filters=self._reader.Filters(),
+                            samples=self._reader.Samples())
+
+    genomics_reader.GenomicsReader.__init__(self)
+
+  def iterate(self):
+    return self._reader.iterate()
+
+  def query(self, region):
+    return self._reader.query(region)
+
+  def __exit__(self, exit_type, exit_value, exit_traceback):
+    self._reader.__exit__(exit_type, exit_value, exit_traceback)
+
+
+class VcfReader(genomics_reader.DispatchingGenomicsReader):
+  """Class for reading Variant protos from VCF or TFRecord files."""
+
+  def _get_extensions(self):
+    return _VCF_EXTENSIONS
+
+  def _native_reader(self, output_path, **kwargs):
+    return NativeVcfReader(output_path, **kwargs)
+
+  def _record_proto(self):
+    return variants_pb2.Variant
 
 
 class NativeVcfWriter(genomics_writer.GenomicsWriter):
@@ -96,7 +168,7 @@ class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Variant protos to VCF or TFRecord files."""
 
   def _get_extensions(self):
-    return frozenset(['.vcf'])
+    return _VCF_EXTENSIONS
 
   def _native_writer(self, output_path,
                      contigs, samples, filters, round_qualities=False):

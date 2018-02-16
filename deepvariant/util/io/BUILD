@@ -11,16 +11,35 @@ licenses(["notice"])  # Apache 2.0 License
 exports_files(["LICENSE"])
 
 py_library(
+    name = "genomics_reader",
+    srcs = ["genomics_reader.py"],
+    deps = ["@com_google_absl_py//absl/logging"],
+)
+
+py_test(
+    name = "genomics_reader_test",
+    srcs = ["genomics_reader_test.py"],
+    deps = [
+        ":genomics_reader",
+        "@com_google_absl_py//absl/testing:absltest",
+    ],
+)
+
+py_library(
     name = "genomics_writer",
     srcs = ["genomics_writer.py"],
+    deps = ["@com_google_absl_py//absl/logging"],
 )
 
 py_library(
     name = "vcf",
     srcs = ["vcf.py"],
     deps = [
+        ":genomics_reader",
         ":genomics_writer",
+        "//deepvariant/util/genomics:variants_py_pb2",
         "//deepvariant/util/protos:core_py_pb2",
+        "//deepvariant/util/python:vcf_reader",
         "//deepvariant/util/python:vcf_writer",
     ],
 )
