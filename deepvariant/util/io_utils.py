@@ -39,7 +39,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import functools
 import heapq
 import math
 import os
@@ -297,83 +296,6 @@ def read_tfrecords(path, proto=None, max_records=None, options=None):
       yield proto.FromString(buf)
 
 
-@functools.total_ordering
-class _ComparableSortedRecordIterator(object):
-  """Provides a comparable object wrapping an iterator.
-
-  This class is used for convenience with the heapq module. It provides a way to
-  compare iterables based on the value of the current element in the iterable.
-  Its driving use case is as a wrapper over sorted iterables within a heap, used
-  to implement the merge step of merge sort to create a single globally-sorted
-  set of data.
-
-  Attributes:
-    value: The value of the current element in the iterator. If the iterator is
-      exhausted, this is a sentinel value representing that fact.
-    exhausted: bool. True if and only if the underlying iterator has been fully
-      consumed.
-  """
-
-  # End-of-iterator token.
-  _sentinel = object()
-
-  def __init__(self, iterator, key=lambda x: x):
-    """Initializer for _ComparableSortedRecordIterator.
-
-    Args:
-      iterator: Iterator. The iterator to wrap.
-      key: Callable. Takes a single element in the iterator and returns the
-        value used for comparison with other elements.
-    """
-    self._iterator = iterator
-    self._keyfn = key
-    self.exhausted = False
-    try:
-      self.value = next(self._iterator)
-    except StopIteration:
-      self.value = _ComparableSortedRecordIterator._sentinel
-      self._cmp_value = _ComparableSortedRecordIterator._sentinel
-      self.exhausted = True
-    else:
-      self._cmp_value = self._keyfn(self.value)
-
-  def advance(self):
-    """Advances to the next element in the underlying iterator.
-
-    Raises:
-      ValueError: The underlying iterator is not sorted by comparison value.
-    """
-    prev_cmp_value = self._cmp_value
-    try:
-      self.value = next(self._iterator)
-    except StopIteration:
-      self.value = _ComparableSortedRecordIterator._sentinel
-      self._cmp_value = _ComparableSortedRecordIterator._sentinel
-      self.exhausted = True
-    else:
-      self._cmp_value = self._keyfn(self.value)
-
-    if not self.exhausted and self._cmp_value < prev_cmp_value:
-      raise ValueError('Iterator is not sorted by comparison value: {}'.format(
-          self.value))
-
-  def __eq__(self, other):
-    """Returns True iff the comparison values of each iterator are equal."""
-    return (isinstance(other, _ComparableSortedRecordIterator) and
-            self._cmp_value == other._cmp_value)  # pylint: disable=protected-access
-
-  def __lt__(self, other):
-    if not isinstance(other, _ComparableSortedRecordIterator):
-      return False
-    if self.exhausted:
-      return False
-    elif other.exhausted:
-      # Any non-exhausted element is less than an exhausted one.
-      return True
-    else:
-      return self._cmp_value < other._cmp_value  # pylint: disable=protected-access
-
-
 def read_shard_sorted_tfrecords(path,
                                 key,
                                 proto=None,
@@ -411,31 +333,17 @@ def read_shard_sorted_tfrecords(path,
   else:
     paths = [path]
 
-  heap = []
+  keyed_iterables = []
   for path in paths:
-    it = (
+    protos = (
         proto.FromString(buf)
         for buf in python_io.tf_record_iterator(path, options))
-    heap.append(_ComparableSortedRecordIterator(it, key))
-  heapq.heapify(heap)
-  i = 0
-  while heap:
-    i += 1
-    if max_records is not None and i > max_records:
-      return
+    keyed_iterables.append(((key(elem), elem) for elem in protos))
 
-    nextit = heap[0]
-    yield nextit.value
-    nextit.advance()
-    # Because nextit.advance() mutates the first entry in the heap, the heap
-    # invariant may not be satisfied at this point. If the iterator is exhausted
-    # we should just pop it off. Otherwise, we call heapreplace and replace the
-    # item with itself, since this triggers the check to efficiently fix the
-    # heap invariant in this case where just the top element may not satisfy it.
-    if nextit.exhausted:
-      heapq.heappop(heap)
-    else:
-      heapq.heapreplace(heap, nextit)
+  for i, (_, value) in enumerate(heapq.merge(*keyed_iterables)):
+    if max_records is not None and i >= max_records:
+      return
+    yield value
 
 
 def write_tfrecords(protos, output_path, options=None):
