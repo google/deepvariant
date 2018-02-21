@@ -50,7 +50,7 @@ from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
-from deepvariant.util import variantutils
+from deepvariant.util import vcf_constants
 from deepvariant import postprocess_variants
 from deepvariant import test_utils
 from deepvariant.protos import deepvariant_pb2
@@ -160,7 +160,7 @@ def _create_nonvariant(ref_name, start, end):
       chrom=ref_name,
       start=start,
       end=end,
-      alleles=['A', variantutils.GVCF_ALT_ALLELE])
+      alleles=['A', vcf_constants.GVCF_ALT_ALLELE])
 
 
 def make_golden_dataset(compressed_inputs=False):
@@ -983,7 +983,7 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
         ref_name='chr1',
         start=10,
         ref_base='A',
-        alt_bases=prior_alts + [variantutils.GVCF_ALT_ALLELE],
+        alt_bases=prior_alts + [vcf_constants.GVCF_ALT_ALLELE],
         qual=40,
         filter_field='PASS',
         genotype=[0, 1],
@@ -997,14 +997,14 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
 
   @parameterized.parameters(
       # One alt, with het GLs.
-      ([variantutils.GVCF_ALT_ALLELE],
+      ([vcf_constants.GVCF_ALT_ALLELE],
        [-2.0457574905606752, -0.004364805402450088, -3.0], [0.5]),
       # Multi alts.
-      (['G', variantutils.GVCF_ALT_ALLELE], [
+      (['G', vcf_constants.GVCF_ALT_ALLELE], [
           -1.1368906918484387, -0.5279124552610386, -0.5923808731731073,
           -0.8155431286425007, -0.8415961054266092, -1.108308924501657
       ], [0.5, 0.1]),
-      (['G', 'C', variantutils.GVCF_ALT_ALLELE], [
+      (['G', 'C', vcf_constants.GVCF_ALT_ALLELE], [
           -0.7956722868920258, -0.663917423732382, -1.493986734511771,
           -0.8202531343562444, -0.9377869397242453, -1.0415699718993066,
           -1.4176189291054515, -1.5795151893394743, -1.8101482990393198,

@@ -40,11 +40,7 @@ import enum
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
-
-# The alternate allele string for reference (no alt).
-NO_ALT_ALLELE = '.'
-# The alternate allele string for the gVCF "any" alternate allele.
-GVCF_ALT_ALLELE = '<*>'
+from deepvariant.util import vcf_constants
 
 
 def _set_variantcall_number_field(variant_call, field_name, value):
@@ -153,7 +149,7 @@ def format_filters(variant):
   """Gets a human-readable string showing the filters applied to variant.
 
   Returns a string with the filter field values of variant separated by commas.
-  If the filter field isn't set, returns '.'.
+  If the filter field isn't set, returns vcf_constants.MISSING_FIELD ('.').
 
   Args:
     variant: third_party.nucleus.protos.Variant.
@@ -161,7 +157,10 @@ def format_filters(variant):
   Returns:
     A string.
   """
-  return ','.join(variant.filter) if variant.filter else '.'
+  if variant.filter:
+    return ','.join(variant.filter)
+  else:
+    return vcf_constants.MISSING_FIELD
 
 
 def format_alleles(variant):
@@ -254,7 +253,7 @@ def is_ref(variant):
     A boolean.
   """
   alts = variant.alternate_bases
-  return not alts or (len(alts) == 1 and alts[0] == '.')
+  return not alts or (len(alts) == 1 and alts[0] == vcf_constants.MISSING_FIELD)
 
 
 def variant_type(variant):
@@ -465,7 +464,7 @@ def simplify_alleles(*alleles):
 def is_filtered(variant):
   """Returns True if variant has a non-PASS filter field, or False otherwise."""
   return bool(variant.filter) and any(
-      f not in {'PASS', '.'} for f in variant.filter)
+      f not in {'PASS', vcf_constants.MISSING_FIELD} for f in variant.filter)
 
 
 def is_variant_call(variant,
@@ -594,7 +593,8 @@ def genotype_as_alleles(variant):
     # indices > 0 refer to alt alleles, and the no-call genotypes is encoded
     # as -1 in the genotypes. This code relies on this encoding to quickly
     # reference into the alleles by adding 1 to the genotype index.
-    alleles = ['.', variant.reference_bases] + list(variant.alternate_bases)
+    alleles = ([vcf_constants.MISSING_FIELD, variant.reference_bases] +
+               list(variant.alternate_bases))
     return [alleles[i + 1] for i in variant.calls[0].genotype]
 
 
@@ -626,7 +626,7 @@ def is_gvcf(variant):
   """Returns true if variant encodes a standard gVCF reference block.
 
   This means in practice that variant has a single alternate allele that is the
-  canonical gVCF allele GVCF_ALT_ALLELE constant exported here.
+  canonical gVCF allele vcf_constants.GVCF_ALT_ALLELE.
 
   Args:
     variant: third_party.nucleus.protos.Variant.
@@ -634,7 +634,7 @@ def is_gvcf(variant):
   Returns:
     Boolean. True if variant is a gVCF record, False otherwise.
   """
-  return variant.alternate_bases == [GVCF_ALT_ALLELE]
+  return variant.alternate_bases == [vcf_constants.GVCF_ALT_ALLELE]
 
 
 def _genotype_order_in_likelihoods(num_alts, ploidy=2):

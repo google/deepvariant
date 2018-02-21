@@ -50,6 +50,7 @@ from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import variantutils
+from deepvariant.util import vcf_constants
 from tensorflow.core.example import example_pb2
 from deepvariant import make_examples
 from deepvariant import test_utils
@@ -324,7 +325,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     for call in dv_calls:
       for alt_allele in call.variant.alternate_bases:
         # Skip ref calls.
-        if alt_allele == variantutils.NO_ALT_ALLELE:
+        if alt_allele == vcf_constants.NO_ALT_ALLELE:
           continue
         # Make sure allele appears in our allele_support field and that at
         # least our min number of reads to call an alt allele are present in

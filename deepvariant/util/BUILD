@@ -423,6 +423,7 @@ py_library(
     srcs = ["variantutils.py"],
     deps = [
         ":ranges",
+        ":vcf_constants",
         "//deepvariant/util/genomics:struct_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
     ],
@@ -437,6 +438,46 @@ py_test(
         ":ranges",
         ":variantutils",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "struct_utils",
+    srcs = ["struct_utils.py"],
+    deps = [
+        "//deepvariant/util/genomics:struct_py_pb2",
+    ],
+)
+
+py_test(
+    name = "struct_utils_test",
+    srcs = ["struct_utils_test.py"],
+    deps = [
+        ":struct_utils",
+        "//deepvariant/util/genomics:struct_py_pb2",
+        "//deepvariant/util/genomics:variants_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "vcf_constants",
+    srcs = ["vcf_constants.py"],
+    deps = [
+        ":struct_utils",
+        "//deepvariant/util/genomics:variants_py_pb2",
+    ],
+)
+
+py_test(
+    name = "vcf_constants_test",
+    srcs = ["vcf_constants_test.py"],
+    deps = [
+        ":struct_utils",
+        ":vcf_constants",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

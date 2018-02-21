@@ -52,6 +52,7 @@ from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import variantutils
+from deepvariant.util import vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
@@ -733,8 +734,8 @@ def _transform_to_gvcf_record(variant):
     The variant after applying the modification to its alleles and
     allele-related FORMAT fields.
   """
-  if variantutils.GVCF_ALT_ALLELE not in variant.alternate_bases:
-    variant.alternate_bases.append(variantutils.GVCF_ALT_ALLELE)
+  if vcf_constants.GVCF_ALT_ALLELE not in variant.alternate_bases:
+    variant.alternate_bases.append(vcf_constants.GVCF_ALT_ALLELE)
     # Add one new GL for het allele/gVCF for each of the other alleles, plus one
     # for the homozygous gVCF allele.
     num_new_gls = len(variant.alternate_bases) + 1

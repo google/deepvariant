@@ -48,6 +48,7 @@ import numpy as np
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
 from deepvariant.util import variantutils
+from deepvariant.util import vcf_constants
 from deepvariant.python import variant_calling
 
 # Reference bases with genotype calls must be one of these four values.
@@ -301,7 +302,7 @@ class VariantCaller(object):
       yield variants_pb2.Variant(
           reference_name=first_record.summary_counts.reference_name,
           reference_bases=first_record.summary_counts.ref_base,
-          alternate_bases=[variantutils.GVCF_ALT_ALLELE],
+          alternate_bases=[vcf_constants.GVCF_ALT_ALLELE],
           start=first_record.summary_counts.position,
           end=last_record.summary_counts.position + 1,
           calls=[call])
