@@ -189,7 +189,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
 // "GQ" key of info with a numerical value of gq, if provided) to variant.
 void AddGenotypes(const string& sample_name,
                   const std::vector<int>& genotypes, Variant* variant) {
-  CHECK_NOTNULL(variant);
+  CHECK(variant != nullptr);
 
   VariantCall* call = variant->add_calls();
   call->set_call_set_name(sample_name);
