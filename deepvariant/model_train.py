@@ -93,9 +93,9 @@ flags.DEFINE_integer('number_of_steps', 30000000,
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 
 flags.DEFINE_float(
-    'label_smoothing', 0.0001,
-    'Amount of label smoothing to use. By default this is 0.01%'
-    'meaning that we expect a label error at a rate of 1 / 10000')
+    'label_smoothing', 1e-6,
+    'Amount of label smoothing to use. By default this is 0.0001%'
+    'meaning that we expect a label error at a rate of 1 / 1,000,000')
 
 flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
 
