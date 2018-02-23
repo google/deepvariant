@@ -34,6 +34,7 @@ from __future__ import print_function
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import struct_utils
 from deepvariant.util import vcf_constants
 
@@ -51,12 +52,67 @@ class VcfConstantsTest(parameterized.TestCase):
     self.assertLen(unique_format_ids, num_reserved_format)
 
   @parameterized.parameters(
+      dict(
+          value_type=vcf_constants.CHARACTER_TYPE,
+          values=['a'],
+          number='1',
+          expected='a'),
+      dict(
+          value_type=vcf_constants.CHARACTER_TYPE,
+          values=['b'],
+          number='.',
+          expected=['b']),
+      dict(
+          value_type=vcf_constants.CHARACTER_TYPE,
+          values=['c', 'd'],
+          number='R',
+          expected=['c', 'd']),
+      dict(
+          value_type=vcf_constants.FLAG_TYPE,
+          values=[True],
+          number='0',
+          expected=True),
+      dict(
+          value_type=vcf_constants.FLOAT_TYPE,
+          values=[2.5],
+          number='1',
+          expected=2.5),
+      dict(
+          value_type=vcf_constants.FLOAT_TYPE,
+          values=[2.5],
+          number='.',
+          expected=[2.5]),
+      dict(
+          value_type=vcf_constants.FLOAT_TYPE,
+          values=[2.5, 3.5],
+          number='A',
+          expected=[2.5, 3.5]),
+      dict(
+          value_type=vcf_constants.INTEGER_TYPE,
+          values=[2, 3, 4],
+          number='G',
+          expected=[2, 3, 4]),
+      dict(
+          value_type=vcf_constants.STRING_TYPE,
+          values=['a', 'bc'],
+          number='.',
+          expected=['a', 'bc']),
+  )
+  def test_create_get_fn(self, value_type, values, number, expected):
+    info = variants_pb2.Variant().info
+    set_fn = vcf_constants.SET_FN_LOOKUP[value_type]
+    set_fn(info, 'field', values)
+    get_fn = vcf_constants.create_get_fn(value_type, number)
+    actual = get_fn(info, 'field')
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
       dict(field='CIGAR', expected=struct_utils.set_string_field),
       dict(field='DP', expected=struct_utils.set_int_field),
       dict(field='MQ', expected=struct_utils.set_number_field),
       dict(field='SOMATIC', expected=struct_utils.set_bool_field),
   )
-  def test_get_reserved_info_field(self, field, expected):
+  def test_reserved_info_field_set_fn(self, field, expected):
     actual = vcf_constants.reserved_info_field_set_fn(field)
     self.assertIs(actual, expected)
 
@@ -65,16 +121,34 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='EC'),
       dict(field='HQ'),
   )
-  def test_invalid_reserved_info_field(self, field):
+  def test_invalid_reserved_info_field_set_fn(self, field):
     with self.assertRaisesRegexp(ValueError, 'Unknown reserved INFO field:'):
       vcf_constants.reserved_info_field_set_fn(field)
+
+  def test_reserved_info_field_get_fn(self):
+    info = variants_pb2.Variant().info
+    values = ['C']
+    struct_utils.set_string_field(info, 'AA', values)
+    get_fn = vcf_constants.reserved_info_field_get_fn('AA')
+    actual = get_fn(info, 'AA')
+    self.assertEqual(actual, values[0])
+
+  @parameterized.parameters(
+      dict(field='INVALID'),
+      dict(field='EC'),
+      dict(field='HQ'),
+  )
+  def test_invalid_reserved_info_field_get_fn(self, field):
+    with self.assertRaisesRegexp(ValueError,
+                                 'Unknown reserved INFO field to get:'):
+      vcf_constants.reserved_info_field_get_fn(field)
 
   @parameterized.parameters(
       dict(field='AD', expected=struct_utils.set_int_field),
       dict(field='GL', expected=struct_utils.set_number_field),
       dict(field='FT', expected=struct_utils.set_string_field),
   )
-  def test_get_reserved_format_field(self, field, expected):
+  def test_reserved_format_field_set_fn(self, field, expected):
     actual = vcf_constants.reserved_format_field_set_fn(field)
     self.assertIs(actual, expected)
 
@@ -83,9 +157,27 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='CIGAR'),
       dict(field='H2'),
   )
-  def test_invalid_reserved_format_field(self, field):
+  def test_invalid_reserved_format_field_set_fn(self, field):
     with self.assertRaisesRegexp(ValueError, 'Unknown reserved FORMAT field:'):
       vcf_constants.reserved_format_field_set_fn(field)
+
+  def test_reserved_format_field_get_fn(self):
+    info = variants_pb2.VariantCall().info
+    expected = [0.2, 0.5, 0.3]
+    struct_utils.set_number_field(info, 'GP', expected[:])
+    get_fn = vcf_constants.reserved_format_field_get_fn('GP')
+    actual = get_fn(info, 'GP')
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      dict(field='INVALID'),
+      dict(field='CIGAR'),
+      dict(field='H2'),
+  )
+  def test_invalid_reserved_format_field_get_fn(self, field):
+    with self.assertRaisesRegexp(ValueError,
+                                 'Unknown reserved FORMAT field to get:'):
+      vcf_constants.reserved_format_field_get_fn(field)
 
 
 if __name__ == '__main__':

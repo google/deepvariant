@@ -40,14 +40,18 @@ import types
 
 from deepvariant.util.genomics import struct_pb2
 
+# Field names of values defined in struct_pb2.Value.
+_BOOL_TYPE = 'bool_value'
+_INT_TYPE = 'int_value'
+_NUMBER_TYPE = 'number_value'
+_STRING_TYPE = 'string_value'
+
 
 def _add_field_with_type(field_map, field_name, value, value_type):
   """Adds values to a particular map field containing a ListValue."""
   if not isinstance(value, (list, types.GeneratorType, tuple)):
     value = [value]
-  struct_values = [
-      struct_pb2.Value(**{value_type + '_value': v}) for v in value
-  ]
+  struct_values = [struct_pb2.Value(**{value_type: v}) for v in value]
   field_map[field_name].values.extend(struct_values)
 
 
@@ -56,6 +60,11 @@ def _set_field_with_type(field_map, field_name, value, value_type):
   if field_name in field_map:
     del field_map[field_name]
   _add_field_with_type(field_map, field_name, value, value_type)
+
+
+def _get_field_with_type(field_map, field_name, is_single_field, value_type):
+  fields = [getattr(v, value_type) for v in field_map[field_name].values]
+  return fields[0] if is_single_field and fields else fields
 
 
 def add_number_field(field_map, field_name, value):
@@ -67,7 +76,7 @@ def add_number_field(field_map, field_name, value):
     value: The number value(s) to append to the field. This can be a single
       number or a list of numbers.
   """
-  _add_field_with_type(field_map, field_name, value, 'number')
+  _add_field_with_type(field_map, field_name, value, _NUMBER_TYPE)
 
 
 def set_number_field(field_map, field_name, value):
@@ -79,7 +88,26 @@ def set_number_field(field_map, field_name, value):
     value: The number value(s) to set the field to. This can be a single number
       or a list of numbers.
   """
-  _set_field_with_type(field_map, field_name, value, 'number')
+  _set_field_with_type(field_map, field_name, value, _NUMBER_TYPE)
+
+
+def get_number_field(field_map, field_name, is_single_field=False):
+  """Returns the number value(s) stored in `field_map[field_name]`.
+
+  If the field_name is not present in field_map, the empty list is returned.
+
+  Args:
+    field_map: Map(str --> ListValue) of interest.
+    field_name: str. The name of the field to extract number values from.
+    is_single_field: bool. If True, return the first number value stored (it
+      should be the only one in the field). Otherwise, return the list of
+      numbers.
+
+  Returns:
+    The number value(s) stored in the field_map under this field_name.
+  """
+  return _get_field_with_type(field_map, field_name, is_single_field,
+                              _NUMBER_TYPE)
 
 
 def add_int_field(field_map, field_name, value):
@@ -91,7 +119,7 @@ def add_int_field(field_map, field_name, value):
     value: The int value(s) to append to the field. This can be a single
       int or a list of ints.
   """
-  _add_field_with_type(field_map, field_name, value, 'int')
+  _add_field_with_type(field_map, field_name, value, _INT_TYPE)
 
 
 def set_int_field(field_map, field_name, value):
@@ -103,7 +131,25 @@ def set_int_field(field_map, field_name, value):
     value: The int value(s) to set the field to. This can be a single int
       or a list of ints.
   """
-  _set_field_with_type(field_map, field_name, value, 'int')
+  _set_field_with_type(field_map, field_name, value, _INT_TYPE)
+
+
+def get_int_field(field_map, field_name, is_single_field=False):
+  """Returns the int value(s) stored in `field_map[field_name]`.
+
+  If the field_name is not present in field_map, the empty list is returned.
+
+  Args:
+    field_map: Map(str --> ListValue) of interest.
+    field_name: str. The name of the field to extract int values from.
+    is_single_field: bool. If True, return the first int value stored (it
+      should be the only one in the field). Otherwise, return the list of
+      ints.
+
+  Returns:
+    The int value(s) stored in the field_map under this field_name.
+  """
+  return _get_field_with_type(field_map, field_name, is_single_field, _INT_TYPE)
 
 
 def add_string_field(field_map, field_name, value):
@@ -115,7 +161,7 @@ def add_string_field(field_map, field_name, value):
     value: The string value(s) to append to the field. This can be a single
       string or a list of strings.
   """
-  _add_field_with_type(field_map, field_name, value, 'string')
+  _add_field_with_type(field_map, field_name, value, _STRING_TYPE)
 
 
 def set_string_field(field_map, field_name, value):
@@ -127,7 +173,26 @@ def set_string_field(field_map, field_name, value):
     value: The int value(s) to set the field to. This can be a single string or
       a list of strings.
   """
-  _set_field_with_type(field_map, field_name, value, 'string')
+  _set_field_with_type(field_map, field_name, value, _STRING_TYPE)
+
+
+def get_string_field(field_map, field_name, is_single_field=False):
+  """Returns the string value(s) stored in `field_map[field_name]`.
+
+  If the field_name is not present in field_map, the empty list is returned.
+
+  Args:
+    field_map: Map(str --> ListValue) of interest.
+    field_name: str. The name of the field to extract string values from.
+    is_single_field: bool. If True, return the first string value stored (it
+      should be the only one in the field). Otherwise, return the list of
+      strings.
+
+  Returns:
+    The string value(s) stored in the field_map under this field_name.
+  """
+  return _get_field_with_type(field_map, field_name, is_single_field,
+                              _STRING_TYPE)
 
 
 def add_bool_field(field_map, field_name, value):
@@ -139,7 +204,7 @@ def add_bool_field(field_map, field_name, value):
     value: The boolean value(s) to append to the field. This can be a single
       boolean or a list of booleans.
   """
-  _add_field_with_type(field_map, field_name, value, 'bool')
+  _add_field_with_type(field_map, field_name, value, _BOOL_TYPE)
 
 
 def set_bool_field(field_map, field_name, value):
@@ -151,4 +216,23 @@ def set_bool_field(field_map, field_name, value):
     value: The boolean value(s) to set the field to. This can be a single
       boolean or a list of booleans.
   """
-  _set_field_with_type(field_map, field_name, value, 'bool')
+  _set_field_with_type(field_map, field_name, value, _BOOL_TYPE)
+
+
+def get_bool_field(field_map, field_name, is_single_field=False):
+  """Returns the bool value(s) stored in `field_map[field_name]`.
+
+  If the field_name is not present in field_map, the empty list is returned.
+
+  Args:
+    field_map: Map(str --> ListValue) of interest.
+    field_name: str. The name of the field to extract bool values from.
+    is_single_field: bool. If True, return the first bool value stored (it
+      should be the only one in the field). Otherwise, return the list of
+      bools.
+
+  Returns:
+    The bool value(s) stored in the field_map under this field_name.
+  """
+  return _get_field_with_type(field_map, field_name, is_single_field,
+                              _BOOL_TYPE)

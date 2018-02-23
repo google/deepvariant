@@ -419,6 +419,29 @@ py_test(
 )
 
 py_library(
+    name = "variantcall_utils",
+    srcs = ["variantcall_utils.py"],
+    deps = [
+        ":vcf_constants",
+        "//deepvariant/util/genomics:struct_py_pb2",
+        "//deepvariant/util/genomics:variants_py_pb2",
+    ],
+)
+
+py_test(
+    name = "variantcall_utils_test",
+    size = "small",
+    srcs = ["variantcall_utils_test.py"],
+    deps = [
+        ":variantcall_utils",
+        "//deepvariant/util/genomics:struct_py_pb2",
+        "//deepvariant/util/genomics:variants_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
     name = "variantutils",
     srcs = ["variantutils.py"],
     deps = [
@@ -478,6 +501,7 @@ py_test(
     deps = [
         ":struct_utils",
         ":vcf_constants",
+        "//deepvariant/util/genomics:variants_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

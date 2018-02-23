@@ -57,13 +57,14 @@ def _set_protomap_from_dict(d):
 
 
 def _wrapped_value_and_num(value):
+  """Returns a list containing value plus the list's length."""
   if isinstance(value, (list, tuple)):
     return value, len(value)
   else:
     return [value], 1
 
 
-class StructutilsTest(parameterized.TestCase):
+class StructUtilsTest(parameterized.TestCase):
 
   @parameterized.parameters(
       dict(initial_fields={}, value=1, expected=[1]),
@@ -118,6 +119,21 @@ class StructutilsTest(parameterized.TestCase):
                      list_value)
 
   @parameterized.parameters(
+      dict(value=[], is_single_field=False, expected=[]),
+      dict(value=[], is_single_field=True, expected=[]),
+      dict(value=[1.5], is_single_field=False, expected=[1.5]),
+      dict(value=[1.5], is_single_field=True, expected=1.5),
+      dict(value=[1.5, 2], is_single_field=False, expected=[1.5, 2]),
+      dict(value=[1.5, 2], is_single_field=True, expected=1.5),
+  )
+  def test_get_number_field(self, value, is_single_field, expected):
+    key = 'field'
+    field_map = _set_protomap_from_dict({})
+    struct_utils.set_number_field(field_map, key, value)
+    actual = struct_utils.get_number_field(field_map, key, is_single_field)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
       dict(initial_fields={}, value=1, expected=[1]),
       dict(initial_fields={}, value=[1], expected=[1]),
       dict(initial_fields={}, value=[1, 2], expected=[1, 2]),
@@ -167,6 +183,21 @@ class StructutilsTest(parameterized.TestCase):
     self.assertLen(field_map['field'].values, num_values)
     self.assertEqual([v.int_value for v in field_map['field'].values],
                      list_value)
+
+  @parameterized.parameters(
+      dict(value=[], is_single_field=False, expected=[]),
+      dict(value=[], is_single_field=True, expected=[]),
+      dict(value=[1], is_single_field=False, expected=[1]),
+      dict(value=[1L], is_single_field=True, expected=1),
+      dict(value=[1, 2L], is_single_field=False, expected=[1, 2]),
+      dict(value=[1, 2], is_single_field=True, expected=1),
+  )
+  def test_get_int_field(self, value, is_single_field, expected):
+    key = 'field'
+    field_map = _set_protomap_from_dict({})
+    struct_utils.set_int_field(field_map, key, value)
+    actual = struct_utils.get_int_field(field_map, key, is_single_field)
+    self.assertEqual(actual, expected)
 
   @parameterized.parameters(
       dict(initial_fields={}, value='hello', expected=['hello']),
@@ -224,6 +255,21 @@ class StructutilsTest(parameterized.TestCase):
                      list_value)
 
   @parameterized.parameters(
+      dict(value=[], is_single_field=False, expected=[]),
+      dict(value=[], is_single_field=True, expected=[]),
+      dict(value=['hi'], is_single_field=False, expected=['hi']),
+      dict(value=['single'], is_single_field=True, expected='single'),
+      dict(value=['2', 'f'], is_single_field=False, expected=['2', 'f']),
+      dict(value=['two', 'fields'], is_single_field=True, expected='two'),
+  )
+  def test_get_string_field(self, value, is_single_field, expected):
+    key = 'field'
+    field_map = _set_protomap_from_dict({})
+    struct_utils.set_string_field(field_map, key, value)
+    actual = struct_utils.get_string_field(field_map, key, is_single_field)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
       dict(initial_fields={}, value=True, expected=[True]),
       dict(initial_fields={}, value=[True], expected=[True]),
       dict(initial_fields={}, value=[True, False], expected=[True, False]),
@@ -277,6 +323,21 @@ class StructutilsTest(parameterized.TestCase):
     self.assertLen(field_map['field'].values, num_values)
     self.assertEqual([v.bool_value for v in field_map['field'].values],
                      list_value)
+
+  @parameterized.parameters(
+      dict(value=[], is_single_field=False, expected=[]),
+      dict(value=[], is_single_field=True, expected=[]),
+      dict(value=[True], is_single_field=False, expected=[True]),
+      dict(value=[True], is_single_field=True, expected=True),
+      dict(value=[True, False], is_single_field=False, expected=[True, False]),
+      dict(value=[False, True], is_single_field=True, expected=False),
+  )
+  def test_get_bool_field(self, value, is_single_field, expected):
+    key = 'field'
+    field_map = _set_protomap_from_dict({})
+    struct_utils.set_bool_field(field_map, key, value)
+    actual = struct_utils.get_bool_field(field_map, key, is_single_field)
+    self.assertEqual(actual, expected)
 
 
 if __name__ == '__main__':

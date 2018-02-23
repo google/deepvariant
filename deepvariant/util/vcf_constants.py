@@ -36,6 +36,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import functools
+
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import struct_utils
 
@@ -238,6 +240,37 @@ SET_FN_LOOKUP = {
     FLAG_TYPE: struct_utils.set_bool_field,
 }
 
+
+def create_get_fn(value_type, number):
+  """Returns a callable that extracts the typed information from a ListValue.
+
+  Args:
+    value_type: str. The value type stored as defined in the VCF 4.3 spec.
+    number: str. The number of entries of this value as defined in the VCF spec.
+
+  Returns:
+    A callable that takes two inputs: A Map(str --> ListValue) and a string
+    field name and returns the associated typed value(s). The return value is
+    a list of typed values or a single typed value, depending on the expected
+    number of values returned.
+  """
+  is_single_field = (number == '0' or number == '1')
+  if value_type == CHARACTER_TYPE or value_type == STRING_TYPE:
+    return functools.partial(
+        struct_utils.get_string_field, is_single_field=is_single_field)
+  elif value_type == INTEGER_TYPE:
+    return functools.partial(
+        struct_utils.get_int_field, is_single_field=is_single_field)
+  elif value_type == FLOAT_TYPE:
+    return functools.partial(
+        struct_utils.get_number_field, is_single_field=is_single_field)
+  elif value_type == FLAG_TYPE:
+    return functools.partial(
+        struct_utils.get_bool_field, is_single_field=is_single_field)
+  else:
+    raise ValueError('Invalid value_type: {}'.format(value_type))
+
+
 # Map from INFO field name to the function used to set struct_pb2.Value elements
 # of that field.
 RESERVED_INFO_FIELD_SET_FNS = {
@@ -245,10 +278,24 @@ RESERVED_INFO_FIELD_SET_FNS = {
     for info in RESERVED_INFO_FIELDS
 }
 
+# Map from INFO field name to the function used to get struct_pb2.Value elements
+# of that field.
+RESERVED_INFO_FIELD_GET_FNS = {
+    info.id: create_get_fn(info.type, info.number)
+    for info in RESERVED_INFO_FIELDS
+}
+
 # Map from FORMAT field name to the function used to set struct_pb2.Value
 # elements of that field.
 RESERVED_FORMAT_FIELD_SET_FNS = {
     fmt.id: SET_FN_LOOKUP[fmt.type]
+    for fmt in RESERVED_FORMAT_FIELDS
+}
+
+# Map from FORMAT field name to the function used to get struct_pb2.Value
+# elements of that field.
+RESERVED_FORMAT_FIELD_GET_FNS = {
+    fmt.id: create_get_fn(fmt.type, fmt.number)
     for fmt in RESERVED_FORMAT_FIELDS
 }
 
@@ -272,6 +319,26 @@ def reserved_info_field_set_fn(field_name):
     raise ValueError('Unknown reserved INFO field: {}'.format(field_name))
 
 
+def reserved_info_field_get_fn(field_name):
+  """Returns the callable that gets the proper field for the given field_name.
+
+  Args:
+    field_name: str. The field name of the reserved INFO field (e.g. 'MQ').
+
+  Returns:
+    The callable that takes in a Map(str --> ListValue), and field name and
+    returns the associated typed value(s).
+
+  Raises:
+    ValueError: The field_name is not a known reserved INFO field.
+  """
+  try:
+    return RESERVED_INFO_FIELD_GET_FNS[field_name]
+  except KeyError:
+    raise ValueError(
+        'Unknown reserved INFO field to get: {}'.format(field_name))
+
+
 def reserved_format_field_set_fn(field_name):
   """Returns the callable that sets the proper field for the given field_name.
 
@@ -289,3 +356,23 @@ def reserved_format_field_set_fn(field_name):
     return RESERVED_FORMAT_FIELD_SET_FNS[field_name]
   except KeyError:
     raise ValueError('Unknown reserved FORMAT field: {}'.format(field_name))
+
+
+def reserved_format_field_get_fn(field_name):
+  """Returns the callable that gets the proper field for the given field_name.
+
+  Args:
+    field_name: str. The field name of the reserved FORMAT field (e.g. 'AD').
+
+  Returns:
+    The callable that takes in a Map(str --> ListValue), and field name and
+    returns the associated typed value(s).
+
+  Raises:
+    ValueError: The field_name is not a known reserved FORMAT field.
+  """
+  try:
+    return RESERVED_FORMAT_FIELD_GET_FNS[field_name]
+  except KeyError:
+    raise ValueError(
+        'Unknown reserved FORMAT field to get: {}'.format(field_name))
