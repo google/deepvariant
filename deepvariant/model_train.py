@@ -133,7 +133,7 @@ flags.DEFINE_integer('max_checkpoints_to_keep', 10,
                      'Passing "0" preserves all checkpoints.')
 
 flags.DEFINE_float(
-    'keep_checkpoint_every_n_hours', 0.1,
+    'keep_checkpoint_every_n_hours', 0.5,
     'If specified, in addition to keeping the last "max_checkpoints_to_keep" '
     'checkpoints, an additional checkpoint will be kept for every n hours of '
     'training.')
