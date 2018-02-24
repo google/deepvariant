@@ -200,7 +200,8 @@ def log10sumexp(log10_probs):
   Returns:
     Float.
   """
-  return LOG_10_OF_E * scipy.misc.logsumexp(np.array(log10_probs) * LOG_E_OF_10)
+  return LOG_10_OF_E * scipy.special.logsumexp(
+      np.array(log10_probs) * LOG_E_OF_10)
 
 
 def normalize_log10_probs(log10_probs):
