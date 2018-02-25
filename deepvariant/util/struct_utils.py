@@ -30,7 +30,7 @@
 
 This class provides wrappers for conveniently interacting with protos defined
 in struct.proto, mostly ListValue and Value objects. It should primarily be used
-by variantutils and variantcallutils rather than being used directly.
+by variant_utils and variantcallutils rather than being used directly.
 """
 from __future__ import absolute_import
 from __future__ import division

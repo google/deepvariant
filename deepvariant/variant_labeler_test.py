@@ -39,7 +39,7 @@ from absl.testing import parameterized
 import mock
 
 from deepvariant.util import ranges
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant import test_utils
 from deepvariant import variant_labeler
 
@@ -66,7 +66,7 @@ def mock_vcf_reader(variants):
   def _fake_query(region):
     return [
         variant for variant in variants
-        if ranges.ranges_overlap(variantutils.variant_range(variant), region)
+        if ranges.ranges_overlap(variant_utils.variant_range(variant), region)
     ]
 
   reader = mock.MagicMock()

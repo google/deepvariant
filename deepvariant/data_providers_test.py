@@ -42,7 +42,7 @@ import mock
 import tensorflow as tf
 
 from deepvariant.util import io_utils
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from tensorflow.core.example import example_pb2
 from deepvariant import data_providers
 from deepvariant import modeling
@@ -249,7 +249,7 @@ class DataProviderTest(parameterized.TestCase):
       # Check that our variants has the shape we expect and actually contain
       # variants by decoding them and checking the reference_name.
       self.assertEqual((batch_size,), variants.shape)
-      for variant in variantutils.decode_variants(variants):
+      for variant in variant_utils.decode_variants(variants):
         self.assertEqual(variant.reference_name, 'chr20')
 
       # Shutdown tensorflow

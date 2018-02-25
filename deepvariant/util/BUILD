@@ -35,7 +35,7 @@ py_library(
         ":genomics_io",
         ":io_utils",
         ":ranges",
-        ":variantutils",
+        ":variant_utils",
         "//deepvariant/util/python:reference_fai",
         "//deepvariant/util/python:sam_reader",
         "//deepvariant/util/python:vcf_reader",
@@ -442,8 +442,8 @@ py_test(
 )
 
 py_library(
-    name = "variantutils",
-    srcs = ["variantutils.py"],
+    name = "variant_utils",
+    srcs = ["variant_utils.py"],
     deps = [
         ":ranges",
         ":vcf_constants",
@@ -453,13 +453,13 @@ py_library(
 )
 
 py_test(
-    name = "variantutils_test",
+    name = "variant_utils_test",
     size = "small",
-    srcs = ["variantutils_test.py"],
+    srcs = ["variant_utils_test.py"],
     deps = [
         ":py_test_utils",
         ":ranges",
-        ":variantutils",
+        ":variant_utils",
         "//deepvariant/util/genomics:variants_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",

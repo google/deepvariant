@@ -37,7 +37,7 @@ from __future__ import print_function
 from absl import logging
 
 from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 
 
 class VariantLabeler(object):
@@ -142,9 +142,9 @@ class VariantLabeler(object):
 
     def _usable_truth(truth_variant):
       return (variant.start == truth_variant.start and
-              not variantutils.is_filtered(truth_variant))
+              not variant_utils.is_filtered(truth_variant))
 
-    region = variantutils.variant_position(variant)
+    region = variant_utils.variant_position(variant)
     matches = [m for m in self._vcf_reader.query(region) if _usable_truth(m)]
     if not matches:
       return None
@@ -205,11 +205,11 @@ class VariantLabeler(object):
       raise ValueError('candidate_variant cannot be None')
     if truth_variant is None:
       raise ValueError('truth_variant cannot be None')
-    if variantutils.is_ref(candidate_variant):
+    if variant_utils.is_ref(candidate_variant):
       raise ValueError(
           'candidate_variant must have at least one alternate allele',
           candidate_variant)
-    if not variantutils.has_genotypes(truth_variant):
+    if not variant_utils.has_genotypes(truth_variant):
       raise ValueError('truth_variant needs genotypes to be used for labeling',
                        truth_variant)
     if any(alt not in candidate_variant.alternate_bases for alt in alt_alleles):
@@ -218,13 +218,12 @@ class VariantLabeler(object):
 
     def _simplify_alleles(variant, alleles):
       return [
-          variantutils.simplify_alleles(variant.reference_bases, allele)
+          variant_utils.simplify_alleles(variant.reference_bases, allele)
           for allele in alleles
           if allele != variant.reference_bases
       ]
 
     simplified_alt_alleles = _simplify_alleles(candidate_variant, alt_alleles)
     return sum(
-        true_alt in simplified_alt_alleles
-        for true_alt in _simplify_alleles(
-            truth_variant, variantutils.genotype_as_alleles(truth_variant)))
+        true_alt in simplified_alt_alleles for true_alt in _simplify_alleles(
+            truth_variant, variant_utils.genotype_as_alleles(truth_variant)))

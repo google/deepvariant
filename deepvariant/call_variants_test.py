@@ -48,7 +48,7 @@ import tensorflow as tf
 
 from absl import logging
 from deepvariant.util import io_utils
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant import call_variants
 from deepvariant import modeling
 from deepvariant import test_utils
@@ -174,10 +174,10 @@ class CallVariantsEndToEndTests(
     else:
       for cvo in call_variants_outputs:
         self.assertEqual(cvo.debug_info.has_insertion,
-                         variantutils.has_insertion(cvo.variant))
+                         variant_utils.has_insertion(cvo.variant))
         self.assertEqual(cvo.debug_info.has_deletion,
-                         variantutils.has_deletion(cvo.variant))
-        self.assertEqual(cvo.debug_info.is_snp, variantutils.is_snp(
+                         variant_utils.has_deletion(cvo.variant))
+        self.assertEqual(cvo.debug_info.is_snp, variant_utils.is_snp(
             cvo.variant))
         self.assertEqual(cvo.debug_info.predicted_label,
                          np.argmax(cvo.genotype_probabilities))
@@ -288,7 +288,7 @@ class CallVariantsUnitTests(
         pass
 
       self.assertItemsEqual(self.variants,
-                            variantutils.decode_variants(seen_variants))
+                            variant_utils.decode_variants(seen_variants))
 
   @parameterized.parameters(
       (None, [3.592555731302127e-5, 0.99992620944976807, 3.78809563699178e-5]),

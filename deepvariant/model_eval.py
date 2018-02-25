@@ -46,7 +46,7 @@ import tensorflow as tf
 from absl import logging
 
 from deepvariant.util import proto_utils
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
@@ -110,7 +110,7 @@ def select_variants_weights(variant_p_func, encoded_variants, name=None):
   def _select(encoded_variants):
     weights = [
         1.0 * variant_p_func(variant)
-        for variant in variantutils.decode_variants(encoded_variants)
+        for variant in variant_utils.decode_variants(encoded_variants)
     ]
     return np.array(weights, dtype=np.float32)
 
@@ -191,14 +191,14 @@ def make_metrics(predictions, labels, encoded_truth_variants):
 
   selectors = {
       'All': None,
-      'SNPs': _make_selector(variantutils.is_snp),
-      'Indels': _make_selector(variantutils.is_indel),
+      'SNPs': _make_selector(variant_utils.is_snp),
+      'Indels': _make_selector(variant_utils.is_indel),
       # These haven't proven particularly useful, but are commented out here
       # in case someone wants to do some more explorations.
-      # 'Insertions': _make_selector(variantutils.has_insertion),
-      # 'Deletions': _make_selector(variantutils.has_deletion),
-      # 'BiAllelic': _make_selector(variantutils.is_biallelic),
-      # 'MultiAllelic': _make_selector(variantutils.is_multiallelic),
+      # 'Insertions': _make_selector(variant_utils.has_insertion),
+      # 'Deletions': _make_selector(variant_utils.has_deletion),
+      # 'BiAllelic': _make_selector(variant_utils.is_biallelic),
+      # 'MultiAllelic': _make_selector(variant_utils.is_multiallelic),
       # 'HomRef': tf.equal(labels, 0),
       # 'Het': tf.equal(labels, 1),
       # 'HomAlt': tf.equal(labels, 2),

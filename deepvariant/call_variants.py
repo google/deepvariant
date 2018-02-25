@@ -47,7 +47,7 @@ from deepvariant.util import errors
 from deepvariant.util import htslib_gcp_oauth
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
@@ -272,9 +272,9 @@ def _create_cvo_proto(encoded_variant, gls, encoded_alt_allele_indices):
   debug_info = None
   if FLAGS.include_debug_info:
     debug_info = deepvariant_pb2.CallVariantsOutput.DebugInfo(
-        has_insertion=variantutils.has_insertion(variant),
-        has_deletion=variantutils.has_deletion(variant),
-        is_snp=variantutils.is_snp(variant),
+        has_insertion=variant_utils.has_insertion(variant),
+        has_deletion=variant_utils.has_deletion(variant),
+        is_snp=variant_utils.is_snp(variant),
         predicted_label=np.argmax(gls))
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,

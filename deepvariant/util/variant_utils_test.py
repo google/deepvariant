@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for variantutils."""
+"""Tests for variant_utils."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -40,13 +40,13 @@ from absl.testing import parameterized
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 
 NO_MISMATCH = set()
-EVAL_DUP = variantutils.AlleleMismatchType.duplicate_eval_alleles
-TRUE_DUP = variantutils.AlleleMismatchType.duplicate_true_alleles
-TRUE_MISS = variantutils.AlleleMismatchType.unmatched_true_alleles
-EVAL_MISS = variantutils.AlleleMismatchType.unmatched_eval_alleles
+EVAL_DUP = variant_utils.AlleleMismatchType.duplicate_eval_alleles
+TRUE_DUP = variant_utils.AlleleMismatchType.duplicate_true_alleles
+TRUE_MISS = variant_utils.AlleleMismatchType.unmatched_true_alleles
+EVAL_MISS = variant_utils.AlleleMismatchType.unmatched_eval_alleles
 
 
 class VariantUtilsTests(parameterized.TestCase):
@@ -63,7 +63,7 @@ class VariantUtilsTests(parameterized.TestCase):
     key = 'MY_KEY'
     self.assertNotIn(key, vc.info)
     for value in values:
-      variantutils._set_variantcall_number_field(vc, key, value)
+      variant_utils._set_variantcall_number_field(vc, key, value)
       self.assertIn(key, vc.info)
       self.assertLen(vc.info[key].values, len(value) if is_iterable else 1)
       actual = [x.number_value for x in vc.info[key].values]
@@ -74,7 +74,7 @@ class VariantUtilsTests(parameterized.TestCase):
     vc = variants_pb2.VariantCall()
     self.assertNotIn('GQ', vc.info)
     for value in range(10):
-      variantutils.set_variantcall_gq(vc, value)
+      variant_utils.set_variantcall_gq(vc, value)
       self.assertIn('GQ', vc.info)
       self.assertLen(vc.info['GQ'].values, 1)
       self.assertEqual(value, vc.info['GQ'].values[0].number_value)
@@ -83,7 +83,7 @@ class VariantUtilsTests(parameterized.TestCase):
     vc = variants_pb2.VariantCall()
     self.assertNotIn('MIN_DP', vc.info)
     for value in range(10):
-      variantutils.set_variantcall_min_dp(vc, value)
+      variant_utils.set_variantcall_min_dp(vc, value)
       self.assertIn('MIN_DP', vc.info)
       self.assertLen(vc.info['MIN_DP'].values, 1)
       self.assertEqual(value, vc.info['MIN_DP'].values[0].number_value)
@@ -94,7 +94,7 @@ class VariantUtilsTests(parameterized.TestCase):
         test_utils.make_variant(start=2)
     ]
     encoded = [variant.SerializeToString() for variant in variants]
-    actual = variantutils.decode_variants(encoded)
+    actual = variant_utils.decode_variants(encoded)
     # We have an iterable, so actual isn't equal to variants.
     self.assertNotEqual(actual, variants)
     # Making actual a list now makes it equal.
@@ -107,12 +107,12 @@ class VariantUtilsTests(parameterized.TestCase):
     range_ = ranges.make_range('1', 10, 14)
     v1_range_tuple = ('1', 10, 11)
     v2_range_tuple = ('1', 10, 14)
-    self.assertEqual(pos, variantutils.variant_position(v1))
-    self.assertEqual(pos, variantutils.variant_position(v2))
-    self.assertEqual(pos, variantutils.variant_range(v1))
-    self.assertEqual(range_, variantutils.variant_range(v2))
-    self.assertEqual(v1_range_tuple, variantutils.variant_range_tuple(v1))
-    self.assertEqual(v2_range_tuple, variantutils.variant_range_tuple(v2))
+    self.assertEqual(pos, variant_utils.variant_position(v1))
+    self.assertEqual(pos, variant_utils.variant_position(v2))
+    self.assertEqual(pos, variant_utils.variant_range(v1))
+    self.assertEqual(range_, variant_utils.variant_range(v2))
+    self.assertEqual(v1_range_tuple, variant_utils.variant_range_tuple(v1))
+    self.assertEqual(v2_range_tuple, variant_utils.variant_range_tuple(v2))
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), 'A/C'),
@@ -122,7 +122,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['AT', 'A', 'CT']), 'AT/A,CT'),
   )
   def test_format_alleles(self, variant, expected):
-    self.assertEqual(variantutils.format_alleles(variant), expected)
+    self.assertEqual(variant_utils.format_alleles(variant), expected)
 
   @parameterized.parameters(
       (None, '.'),
@@ -135,7 +135,7 @@ class VariantUtilsTests(parameterized.TestCase):
     variant = test_utils.make_variant(filters=filters)
     if filters is None:
       variant.ClearField('filter')
-    self.assertEqual(variantutils.format_filters(variant), expected)
+    self.assertEqual(variant_utils.format_filters(variant), expected)
 
   @parameterized.parameters(
       # variant => status if we require non_ref genotype / status if we don't.
@@ -153,24 +153,24 @@ class VariantUtilsTests(parameterized.TestCase):
                            expected_any_genotype):
     # Check that default call checks for genotypes.
     self.assertEqual(
-        variantutils.is_variant_call(variant), expected_req_non_ref)
+        variant_utils.is_variant_call(variant), expected_req_non_ref)
     # Ask explicitly for genotypes to be included.
     self.assertEqual(
-        variantutils.is_variant_call(variant, require_non_ref_genotype=True),
+        variant_utils.is_variant_call(variant, require_non_ref_genotype=True),
         expected_req_non_ref)
     # Don't require non_ref genotypes.
     self.assertEqual(
-        variantutils.is_variant_call(variant, require_non_ref_genotype=False),
+        variant_utils.is_variant_call(variant, require_non_ref_genotype=False),
         expected_any_genotype)
 
     with self.assertRaises(Exception):
-      variantutils.is_variant_call(None)
+      variant_utils.is_variant_call(None)
 
   def test_is_variant_call_no_calls_are_variant(self):
 
     def check_is_variant(variant, expected, **kwargs):
       self.assertEqual(
-          variantutils.is_variant_call(variant, **kwargs), expected)
+          variant_utils.is_variant_call(variant, **kwargs), expected)
 
     no_call = test_utils.make_variant(gt=[-1, -1])
     hom_ref = test_utils.make_variant(gt=[0, 0])
@@ -198,34 +198,34 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(filters=['FAIL1', '.']), True),
   )
   def test_is_filtered(self, variant, expected):
-    self.assertEqual(variantutils.is_filtered(variant), expected)
+    self.assertEqual(variant_utils.is_filtered(variant), expected)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']),
-       variantutils.VariantType.snp),
+       variant_utils.VariantType.snp),
       (test_utils.make_variant(alleles=['A', 'C', 'T']),
-       variantutils.VariantType.snp),
-      (test_utils.make_variant(alleles=['A']), variantutils.VariantType.ref),
+       variant_utils.VariantType.snp),
+      (test_utils.make_variant(alleles=['A']), variant_utils.VariantType.ref),
       (test_utils.make_variant(alleles=['A', '.']),
-       variantutils.VariantType.ref),
+       variant_utils.VariantType.ref),
       (test_utils.make_variant(alleles=['A', 'AC']),
-       variantutils.VariantType.indel),
+       variant_utils.VariantType.indel),
       (test_utils.make_variant(alleles=['AC', 'A']),
-       variantutils.VariantType.indel),
+       variant_utils.VariantType.indel),
       (test_utils.make_variant(alleles=['A', 'AC', 'ACC']),
-       variantutils.VariantType.indel),
+       variant_utils.VariantType.indel),
       (test_utils.make_variant(alleles=['ACC', 'AC', 'A']),
-       variantutils.VariantType.indel),
+       variant_utils.VariantType.indel),
   )
   def test_variant_type(self, variant, expected):
-    self.assertEqual(variantutils.variant_type(variant), expected)
+    self.assertEqual(variant_utils.variant_type(variant), expected)
 
   @parameterized.parameters(
       (test_utils.make_variant('chr1', 10), 'chr1:11'),
       (test_utils.make_variant('chr2', 100), 'chr2:101'),
   )
   def test_format_position(self, variant, expected):
-    self.assertEqual(variantutils.format_position(variant), expected)
+    self.assertEqual(variant_utils.format_position(variant), expected)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), True),
@@ -238,7 +238,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', '.']), False),
   )
   def test_is_snp(self, variant, expected):
-    self.assertEqual(variantutils.is_snp(variant), expected)
+    self.assertEqual(variant_utils.is_snp(variant), expected)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), False),
@@ -251,7 +251,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', '.']), False),
   )
   def test_is_indel(self, variant, expected):
-    self.assertEqual(variantutils.is_indel(variant), expected)
+    self.assertEqual(variant_utils.is_indel(variant), expected)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), False),
@@ -262,7 +262,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', 'C', 'AT']), True),
   )
   def test_is_multiallelic(self, variant, expected):
-    self.assertEqual(variantutils.is_multiallelic(variant), expected)
+    self.assertEqual(variant_utils.is_multiallelic(variant), expected)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), True),
@@ -273,7 +273,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['AT']), False),
   )
   def test_is_biallelic(self, variant, expected):
-    self.assertEqual(variantutils.is_biallelic(variant), expected)
+    self.assertEqual(variant_utils.is_biallelic(variant), expected)
 
   @parameterized.parameters(
       (['A', 'C'], ['A', 'C']),
@@ -301,9 +301,9 @@ class VariantUtilsTests(parameterized.TestCase):
       (['CGGCGG', 'CGG', 'CAACGG'], ['CGGC', 'C', 'CAAC']),
   )
   def test_simplify_alleles(self, alleles, expected):
-    self.assertEqual(variantutils.simplify_alleles(*alleles), tuple(expected))
+    self.assertEqual(variant_utils.simplify_alleles(*alleles), tuple(expected))
     self.assertEqual(
-        variantutils.simplify_alleles(*reversed(alleles)),
+        variant_utils.simplify_alleles(*reversed(alleles)),
         tuple(reversed(expected)))
 
   @parameterized.parameters(
@@ -338,7 +338,7 @@ class VariantUtilsTests(parameterized.TestCase):
   def test_allele_mismatch(self, a1, a2, expected):
     v1 = test_utils.make_variant(alleles=a1)
     v2 = test_utils.make_variant(alleles=a2)
-    self.assertEqual(variantutils.allele_mismatches(v1, v2), expected)
+    self.assertEqual(variant_utils.allele_mismatches(v1, v2), expected)
 
   @parameterized.parameters(
       (['A', 'C'], False),
@@ -350,15 +350,15 @@ class VariantUtilsTests(parameterized.TestCase):
   )
   def test_is_transition(self, ordered_alleles, expected):
     for alleles in [ordered_alleles, reversed(ordered_alleles)]:
-      self.assertEqual(variantutils.is_transition(*alleles), expected)
+      self.assertEqual(variant_utils.is_transition(*alleles), expected)
 
   def test_is_transition_raises_with_bad_args(self):
     with self.assertRaises(ValueError):
-      variantutils.is_transition('A', 'A')
+      variant_utils.is_transition('A', 'A')
     with self.assertRaises(ValueError):
-      variantutils.is_transition('A', 'AA')
+      variant_utils.is_transition('A', 'AA')
     with self.assertRaises(ValueError):
-      variantutils.is_transition('AA', 'A')
+      variant_utils.is_transition('AA', 'A')
 
   @parameterized.parameters(
       # alleles followed by is_insertion and is_deletion expectation
@@ -377,8 +377,8 @@ class VariantUtilsTests(parameterized.TestCase):
       (['AT', 'CT'], False, False),
   )
   def test_is_insertion_deletion(self, alleles, is_insertion, is_deletion):
-    self.assertEqual(variantutils.is_insertion(*alleles), is_insertion)
-    self.assertEqual(variantutils.is_deletion(*alleles), is_deletion)
+    self.assertEqual(variant_utils.is_insertion(*alleles), is_insertion)
+    self.assertEqual(variant_utils.is_deletion(*alleles), is_deletion)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), False, False),
@@ -392,8 +392,8 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', '.']), False, False),
   )
   def test_has_insertion_deletion(self, variant, has_insertion, has_deletion):
-    self.assertEqual(variantutils.has_insertion(variant), has_insertion)
-    self.assertEqual(variantutils.has_deletion(variant), has_deletion)
+    self.assertEqual(variant_utils.has_insertion(variant), has_insertion)
+    self.assertEqual(variant_utils.has_deletion(variant), has_deletion)
 
   @parameterized.parameters(
       (test_utils.make_variant(gt=None), False),
@@ -403,29 +403,30 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(gt=[-1, -1]), True),
   )
   def test_has_genotypes(self, variant, expected):
-    self.assertEqual(variantutils.has_genotypes(variant), expected)
+    self.assertEqual(variant_utils.has_genotypes(variant), expected)
 
   def test_has_genotypes_raises_with_bad_inputs(self):
     with self.assertRaises(Exception):
-      variantutils.has_genotypes(None)
+      variant_utils.has_genotypes(None)
 
   @parameterized.parameters(
-      (test_utils.make_variant(gt=None), variantutils.GenotypeType.no_call),
-      (test_utils.make_variant(gt=[-1, -1]), variantutils.GenotypeType.no_call),
-      (test_utils.make_variant(gt=[0, 0]), variantutils.GenotypeType.hom_ref),
-      (test_utils.make_variant(gt=[0, 1]), variantutils.GenotypeType.het),
-      (test_utils.make_variant(gt=[1, 0]), variantutils.GenotypeType.het),
-      (test_utils.make_variant(gt=[0, 2]), variantutils.GenotypeType.het),
-      (test_utils.make_variant(gt=[2, 0]), variantutils.GenotypeType.het),
-      (test_utils.make_variant(gt=[1, 1]), variantutils.GenotypeType.hom_var),
-      (test_utils.make_variant(gt=[1, 2]), variantutils.GenotypeType.het),
+      (test_utils.make_variant(gt=None), variant_utils.GenotypeType.no_call),
+      (test_utils.make_variant(gt=[-1, -1]),
+       variant_utils.GenotypeType.no_call),
+      (test_utils.make_variant(gt=[0, 0]), variant_utils.GenotypeType.hom_ref),
+      (test_utils.make_variant(gt=[0, 1]), variant_utils.GenotypeType.het),
+      (test_utils.make_variant(gt=[1, 0]), variant_utils.GenotypeType.het),
+      (test_utils.make_variant(gt=[0, 2]), variant_utils.GenotypeType.het),
+      (test_utils.make_variant(gt=[2, 0]), variant_utils.GenotypeType.het),
+      (test_utils.make_variant(gt=[1, 1]), variant_utils.GenotypeType.hom_var),
+      (test_utils.make_variant(gt=[1, 2]), variant_utils.GenotypeType.het),
   )
   def test_genotype_type(self, variant, expected):
-    self.assertEqual(variantutils.genotype_type(variant), expected)
+    self.assertEqual(variant_utils.genotype_type(variant), expected)
 
   def test_genotype_type_raises_with_bad_args(self):
     with self.assertRaises(Exception):
-      variantutils.genotype_type(None)
+      variant_utils.genotype_type(None)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C'], gt=[0, 0]), ['A', 'A']),
@@ -442,15 +443,15 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', 'C'], gt=[-1, -1]), ['.', '.']),
   )
   def test_genotype_as_alleles(self, variant, expected):
-    self.assertEqual(variantutils.genotype_as_alleles(variant), expected)
+    self.assertEqual(variant_utils.genotype_as_alleles(variant), expected)
 
   def test_genotype_as_alleles_raises_with_bad_inputs(self):
     with self.assertRaises(Exception):
-      variantutils.genotype_as_alleles(None)
+      variant_utils.genotype_as_alleles(None)
     with self.assertRaises(Exception):
-      variantutils.genotype_as_alleles(test_utils.make_variant(gt=None))
+      variant_utils.genotype_as_alleles(test_utils.make_variant(gt=None))
     with self.assertRaises(Exception):
-      variantutils.genotype_type(None)
+      variant_utils.genotype_type(None)
 
   @parameterized.parameters(
       (test_utils.make_variant(gt=None), None),
@@ -461,11 +462,11 @@ class VariantUtilsTests(parameterized.TestCase):
   )
   def test_variant_gq(self, variant, expected):
     self.assertEqual(
-        variantutils.genotype_quality(variant, default=None), expected)
+        variant_utils.genotype_quality(variant, default=None), expected)
 
   def test_variant_gq_raises_with_none(self):
     with self.assertRaises(Exception):
-      variantutils.genotype_quality(None)
+      variant_utils.genotype_quality(None)
 
   @parameterized.parameters(
       # Ref without an alt isn't gVCF.
@@ -484,7 +485,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', '<CNV>']), False),
   )
   def test_is_gvcf(self, variant, expected):
-    self.assertEqual(variantutils.is_gvcf(variant), expected)
+    self.assertEqual(variant_utils.is_gvcf(variant), expected)
 
   @parameterized.parameters(
       # Variants with one ref and one alt allele.
@@ -506,7 +507,7 @@ class VariantUtilsTests(parameterized.TestCase):
   )
   def test_genotype_ordering_in_likelihoods(self, variant, expected):
     self.assertEqual(
-        list(variantutils.genotype_ordering_in_likelihoods(variant)), expected)
+        list(variant_utils.genotype_ordering_in_likelihoods(variant)), expected)
 
   @parameterized.parameters(
       # Haploid.
@@ -535,20 +536,20 @@ class VariantUtilsTests(parameterized.TestCase):
   )
   def test_genotype_likelihood(self, gls, allele_indices, expected):
     variantcall = variants_pb2.VariantCall(genotype_likelihood=gls)
-    actual = variantutils.genotype_likelihood(variantcall, allele_indices)
+    actual = variant_utils.genotype_likelihood(variantcall, allele_indices)
     self.assertEqual(actual, expected)
 
   def test_unsupported_genotype_likelihood(self):
     variantcall = variants_pb2.VariantCall(genotype_likelihood=[-1, -2, -3])
     with self.assertRaisesRegexp(NotImplementedError,
                                  'only supports haploid and diploid'):
-      variantutils.genotype_likelihood(variantcall, [0, 1, 1])
+      variant_utils.genotype_likelihood(variantcall, [0, 1, 1])
 
   def test_haploid_allele_indices_for_genotype_likelihood_index(self):
     for aix in xrange(20):
       allele_indices = (aix,)
-      ix = variantutils.genotype_likelihood_index(allele_indices)
-      actual = variantutils.allele_indices_for_genotype_likelihood_index(
+      ix = variant_utils.genotype_likelihood_index(allele_indices)
+      actual = variant_utils.allele_indices_for_genotype_likelihood_index(
           ix, ploidy=1)
       self.assertEqual(actual, aix)
 
@@ -557,8 +558,8 @@ class VariantUtilsTests(parameterized.TestCase):
       for bix in xrange(20):
         allele_indices = (aix, bix)
         expected = tuple(sorted(allele_indices))
-        ix = variantutils.genotype_likelihood_index(allele_indices)
-        actual = variantutils.allele_indices_for_genotype_likelihood_index(
+        ix = variant_utils.genotype_likelihood_index(allele_indices)
+        actual = variant_utils.allele_indices_for_genotype_likelihood_index(
             ix, ploidy=2)
         self.assertEqual(actual, expected)
 
@@ -571,7 +572,7 @@ class VariantUtilsTests(parameterized.TestCase):
       self, ploidy):
     with self.assertRaisesRegexp(NotImplementedError,
                                  'only supported for haploid and diploid'):
-      variantutils.allele_indices_for_genotype_likelihood_index(0, ploidy)
+      variant_utils.allele_indices_for_genotype_likelihood_index(0, ploidy)
 
   @parameterized.parameters(
       dict(alt_bases=[], num_alts=0, expected=[(0, 0)]),
@@ -584,7 +585,7 @@ class VariantUtilsTests(parameterized.TestCase):
   )
   def test_allele_indices_with_num_alts(self, alt_bases, num_alts, expected):
     variant = variants_pb2.Variant(alternate_bases=alt_bases)
-    actual = variantutils.allele_indices_with_num_alts(
+    actual = variant_utils.allele_indices_with_num_alts(
         variant, num_alts, ploidy=2)
     self.assertEqual(actual, expected)
 
@@ -598,7 +599,7 @@ class VariantUtilsTests(parameterized.TestCase):
                                                 ploidy):
     variant = variants_pb2.Variant(alternate_bases=alt_bases)
     with self.assertRaises((NotImplementedError, ValueError)):
-      variantutils.allele_indices_with_num_alts(variant, num_alts, ploidy)
+      variant_utils.allele_indices_with_num_alts(variant, num_alts, ploidy)
 
 
 if __name__ == '__main__':

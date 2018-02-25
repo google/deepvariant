@@ -44,7 +44,7 @@ import numpy.testing as npt
 import six
 import tensorflow as tf
 
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant import data_providers_test
 from deepvariant import model_eval
 from deepvariant import modeling
@@ -74,7 +74,7 @@ class ModelEvalTest(
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
       op = model_eval.select_variants_weights(
-          variantutils.is_snp, encoded, name='tf_is_snp')
+          variant_utils.is_snp, encoded, name='tf_is_snp')
       self.assertTrue(op.name.startswith('tf_is_snp'))
       npt.assert_array_equal(op.eval(), [1.0, 0.0, 1.0, 0.0])
 

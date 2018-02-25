@@ -53,7 +53,7 @@ import numpy as np
 from absl import logging
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 
 FLAGS = flags.FLAGS
 
@@ -164,7 +164,7 @@ def _maybe_resolve_mixed_calls(overlapping_candidates):
   # number of variants in the input is nearly always < 20 this is not an issue.
   for variant in sorted(
       reference_calls + resolved_variant_calls,
-      key=variantutils.variant_range_tuple):
+      key=variant_utils.variant_range_tuple):
     yield variant
 
 
@@ -238,7 +238,7 @@ class _LikelihoodAggregator(object):
     Args:
       num_alts: int. The number of alternate alleles in the variant.
     """
-    self._num_likelihoods = variantutils.genotype_likelihood_index(
+    self._num_likelihoods = variant_utils.genotype_likelihood_index(
         (num_alts, num_alts)) + 1
 
     # At each GL index, we keep a list that will include the joint GL across all
@@ -255,7 +255,7 @@ class _LikelihoodAggregator(object):
       allele_indices: Pair of (g1, g2) ints representing the genotype.
       likelihood: float. log10(probability of this genotype configuration).
     """
-    ix = variantutils.genotype_likelihood_index(allele_indices)
+    ix = variant_utils.genotype_likelihood_index(allele_indices)
     self._genotype_likelihood_containers[ix].append(likelihood)
 
   def scaled_likelihoods(self):
@@ -273,7 +273,7 @@ class _LikelihoodAggregator(object):
   def most_likely_allele_indices(self):
     """Returns allele indices for the genotype with the largest likelihood."""
     ix = np.argmax(self.scaled_likelihoods())
-    return variantutils.allele_indices_for_genotype_likelihood_index(
+    return variant_utils.allele_indices_for_genotype_likelihood_index(
         ix, ploidy=2)
 
 
@@ -453,7 +453,7 @@ def _get_all_allele_indices_configurations(variants,
         format(len(variants), len(nonref_count_configuration)))
 
   allele_indices_configs = [
-      variantutils.allele_indices_with_num_alts(variant, num_alts, ploidy=2)
+      variant_utils.allele_indices_with_num_alts(variant, num_alts, ploidy=2)
       for variant, num_alts in zip(variants, nonref_count_configuration)
   ]
   return itertools.product(*allele_indices_configs)
@@ -480,7 +480,7 @@ def _allele_indices_configuration_likelihood(variants, allele_indices_config):
 
   retval = 0
   for variant, alleles in zip(variants, allele_indices_config):
-    retval += variantutils.genotype_likelihood(variant.calls[0], alleles)
+    retval += variant_utils.genotype_likelihood(variant.calls[0], alleles)
   return retval
 
 

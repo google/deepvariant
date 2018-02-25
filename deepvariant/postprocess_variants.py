@@ -51,7 +51,7 @@ from deepvariant.util import genomics_io
 from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant.util import vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
@@ -157,7 +157,7 @@ def compute_filter_fields(variant, min_quality):
   Returns:
     Filter field strings to be added to the variant.
   """
-  if variantutils.genotype_type(variant) == variantutils.GenotypeType.hom_ref:
+  if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.hom_ref:
     return [DEEP_VARIANT_REF_FILTER]
   elif variant.quality < min_quality:
     return [DEEP_VARIANT_QUAL_FILTER]
@@ -281,7 +281,7 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   call = variant.calls[0]
   call.call_set_name = sample_name
   call.genotype[:] = genotype
-  variantutils.set_variantcall_gq(call, gq)
+  variant_utils.set_variantcall_gq(call, gq)
   call.genotype_likelihood[:] = [
       genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions
   ]
@@ -541,8 +541,8 @@ def simplify_alleles(variant):
   """Replaces the alleles in variants with their simplified versions.
 
   This function takes a variant and replaces its ref and alt alleles with those
-  produced by a call to variantutils.simplify_alleles() to remove common postfix
-  bases in the alleles that may be present due to pruning away alleles.
+  produced by a call to variant_utils.simplify_alleles() to remove common
+  postfix bases in the alleles that may be present due to pruning away alleles.
 
   Args:
     variant: learning.genomics.genomics.Variant proto we want to simplify.
@@ -551,8 +551,8 @@ def simplify_alleles(variant):
     variant with its ref and alt alleles replaced with their simplified
       equivalents.
   """
-  simplified_alleles = variantutils.simplify_alleles(variant.reference_bases,
-                                                     *variant.alternate_bases)
+  simplified_alleles = variant_utils.simplify_alleles(variant.reference_bases,
+                                                      *variant.alternate_bases)
   variant.reference_bases = simplified_alleles[0]
   variant.alternate_bases[:] = simplified_alleles[1:]
   variant.end = variant.start + len(variant.reference_bases)
@@ -583,9 +583,8 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
 
   canonical_variant = prune_alleles(canonical_variant, alt_alleles_to_remove)
   predictions = [
-      min(flattened_probs_dict[(m, n)])
-      for _, _, m, n in variantutils.genotype_ordering_in_likelihoods(
-          canonical_variant)
+      min(flattened_probs_dict[(m, n)]) for _, _, m, n in
+      variant_utils.genotype_ordering_in_likelihoods(canonical_variant)
   ]
   denominator = sum(predictions)
   # Note the simplify_alleles call *must* happen after the predictions
@@ -649,7 +648,7 @@ def _transform_call_variants_output_to_variants(
   for _, group in itertools.groupby(
       io_utils.read_tfrecords(
           input_sorted_tfrecord_path, proto=deepvariant_pb2.CallVariantsOutput),
-      lambda x: variantutils.variant_range(x.variant)):
+      lambda x: variant_utils.variant_range(x.variant)):
     outputs = list(group)
     canonical_variant, predictions = merge_predictions(
         outputs, multi_allelic_qual_filter)

@@ -47,7 +47,7 @@ from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import ranges
 from deepvariant.util import utils
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import hts_verbose
 from deepvariant import exclude_contigs
@@ -628,20 +628,20 @@ def make_counters():
   """Creates all of the VariantCounters we want to track."""
 
   def _gt_selector(*gt_types):
-    return lambda v: variantutils.genotype_type(v) in gt_types
+    return lambda v: variant_utils.genotype_type(v) in gt_types
 
   return VariantCounters([
       ('All', lambda v: True),
-      ('SNPs', variantutils.is_snp),
-      ('Indels', variantutils.is_indel),
-      ('BiAllelic', variantutils.is_biallelic),
-      ('MultiAllelic', variantutils.is_multiallelic),
-      ('HomRef', _gt_selector(variantutils.GenotypeType.hom_ref)),
-      ('Het', _gt_selector(variantutils.GenotypeType.het)),
-      ('HomAlt', _gt_selector(variantutils.GenotypeType.hom_var)),
+      ('SNPs', variant_utils.is_snp),
+      ('Indels', variant_utils.is_indel),
+      ('BiAllelic', variant_utils.is_biallelic),
+      ('MultiAllelic', variant_utils.is_multiallelic),
+      ('HomRef', _gt_selector(variant_utils.GenotypeType.hom_ref)),
+      ('Het', _gt_selector(variant_utils.GenotypeType.het)),
+      ('HomAlt', _gt_selector(variant_utils.GenotypeType.hom_var)),
       ('NonRef',
-       _gt_selector(variantutils.GenotypeType.het,
-                    variantutils.GenotypeType.hom_var)),
+       _gt_selector(variant_utils.GenotypeType.het,
+                    variant_utils.GenotypeType.hom_var)),
   ])
 
 
@@ -877,7 +877,7 @@ class RegionProcessor(object):
     if not is_confident:
       return False
     alt_alleles = tf_utils.example_alt_alleles(example, variant=variant)
-    if variantutils.is_ref(variant):
+    if variant_utils.is_ref(variant):
       label = 0
     else:
       label = self.labeler.match_to_alt_count(variant, truth_variant,

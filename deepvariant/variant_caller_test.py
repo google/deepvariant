@@ -40,7 +40,7 @@ import mock
 import numpy as np
 import numpy.testing as npt
 
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant import test_utils
 from deepvariant import variant_caller
 from deepvariant.protos import deepvariant_pb2
@@ -329,7 +329,7 @@ class VariantCallerTests(parameterized.TestCase):
     self.assertEqual(gvcf.start, start)
     self.assertEqual(gvcf.end, end if end else start + 1)
     self.assertEqual(len(gvcf.calls), 1)
-    self.assertEqual(variantutils.genotype_quality(gvcf), gq)
+    self.assertEqual(variant_utils.genotype_quality(gvcf), gq)
     self.assertNotEmpty(gvcf.calls[0].genotype_likelihood)
     self.assertIn('MIN_DP', gvcf.calls[0].info)
     self.assertLen(gvcf.calls[0].info['MIN_DP'].values, 1)

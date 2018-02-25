@@ -49,7 +49,7 @@ from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
-from deepvariant.util import variantutils
+from deepvariant.util import variant_utils
 from deepvariant.util import vcf_constants
 from tensorflow.core.example import example_pb2
 from deepvariant import make_examples
@@ -289,7 +289,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         self.assertEqual(call.genotype, [0, 0])
         self.assertEqual(len(call.genotype_likelihood), 3)
         self.assertGreaterEqual(
-            variantutils.genotype_quality(variant, default=None), 0)
+            variant_utils.genotype_quality(variant, default=None), 0)
       else:
         self.assertEqual(call.genotype, [-1, -1])
 
@@ -354,8 +354,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       if verify_labels:
         # Check that our variant and our truth_variant both have the same start.
         self.assertEqual(
-            variantutils.variant_position(tf_utils.example_variant(example)),
-            variantutils.variant_position(
+            variant_utils.variant_position(tf_utils.example_variant(example)),
+            variant_utils.variant_position(
                 tf_utils.example_truth_variant(example)))
 
     # Check that the variants in the examples are good.
