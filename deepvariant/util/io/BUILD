@@ -48,9 +48,13 @@ py_test(
     name = "vcf_test",
     size = "small",
     srcs = ["vcf_test.py"],
+    data = [
+        "//deepvariant/util:testdata",
+    ],
     deps = [
         ":vcf",
         "//deepvariant/util:py_test_utils",
+        "//deepvariant/util:ranges",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:struct_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",

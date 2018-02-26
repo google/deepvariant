@@ -514,8 +514,6 @@ py_library(
         "//deepvariant/util/protos:core_py_pb2",
         "//deepvariant/util/python:reference_fai",
         "//deepvariant/util/python:sam_reader",
-        "//deepvariant/util/python:vcf_reader",
-        "//deepvariant/util/python:vcf_writer",
     ],
 )
 

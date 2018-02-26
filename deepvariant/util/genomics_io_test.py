@@ -233,24 +233,5 @@ class SamReaderTests(parameterized.TestCase):
       self.assertEqual(test_utils.iterable_len(reads_iter), expected_n_reads)
 
 
-class VcfReaderTests(absltest.TestCase):
-  """Test the iteration functionality provided by genomics_io.VcfReader."""
-
-  def setUp(self):
-    self.sites_reader = genomics_io.make_vcf_reader(
-        test_utils.genomics_core_testdata('test_sites.vcf'), use_index=False)
-    self.samples_reader = genomics_io.make_vcf_reader(
-        test_utils.genomics_core_testdata('test_samples.vcf.gz'),
-        use_index=True)
-
-  def test_vcf_iterate(self):
-    self.assertEqual(test_utils.iterable_len(self.sites_reader.iterate()), 5)
-
-  def test_vcf_query(self):
-    range1 = ranges.parse_literal('chr3:100,000-500,000')
-    self.assertEqual(
-        test_utils.iterable_len(self.samples_reader.query(range1)), 4)
-
-
 if __name__ == '__main__':
   absltest.main()

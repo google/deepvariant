@@ -40,6 +40,7 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.util.io import vcf
 from deepvariant.util import errors
 from deepvariant.util import genomics_io
 from deepvariant.util import htslib_gcp_oauth
@@ -727,7 +728,7 @@ class RegionProcessor(object):
 
     if in_training_mode(self.options):
       self.labeler = variant_labeler.VariantLabeler(
-          genomics_io.make_vcf_reader(self.options.truth_variants_filename),
+          vcf.VcfReader(self.options.truth_variants_filename),
           read_confident_regions(self.options))
 
     self.variant_caller = variant_caller.VariantCaller(
@@ -909,8 +910,7 @@ def processing_regions_from_options(options):
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None
   if in_training_mode(options):
-    vcf_contigs = genomics_io.make_vcf_reader(
-        options.truth_variants_filename).contigs
+    vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
 
   contigs = _ensure_consistent_contigs(ref_contigs, sam_contigs, vcf_contigs,
                                        options.exclude_contigs,

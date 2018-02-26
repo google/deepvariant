@@ -95,9 +95,9 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
             desired_format_entries=desired_vcf_fields))
 
     # redacted
-    self.header = VcfHeader(contigs=self._reader.Contigs(),
-                            filters=self._reader.Filters(),
-                            samples=self._reader.Samples())
+    self.header = VcfHeader(contigs=self._reader.contigs,
+                            filters=self._reader.filters,
+                            samples=self._reader.samples)
 
     genomics_reader.GenomicsReader.__init__(self)
 

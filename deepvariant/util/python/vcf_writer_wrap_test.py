@@ -37,9 +37,9 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
 
+from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import test_utils
 from deepvariant.util.protos import core_pb2
@@ -225,20 +225,20 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
     in_file = test_utils.genomics_core_testdata(test_datum_name)
     out_file = test_utils.test_tmpfile('output_' + test_datum_name)
 
-    v1_reader = genomics_io.make_vcf_reader(in_file, use_index=False)
+    v1_reader = vcf.VcfReader(in_file, use_index=False)
     v1_records = list(v1_reader.iterate())
     self.assertTrue(v1_records, 'Reader failed to find records')
 
     writer_options = core_pb2.VcfWriterOptions(
-        contigs=v1_reader.contigs,
-        sample_names=v1_reader.samples,
-        filters=v1_reader.filters)
+        contigs=v1_reader.header.contigs,
+        sample_names=v1_reader.header.samples,
+        filters=v1_reader.header.filters)
 
     with vcf_writer.VcfWriter.to_file(out_file, writer_options) as writer:
       for record in v1_records:
         writer.write(record)
 
-    v2_reader = genomics_io.make_vcf_reader(out_file, use_index=False)
+    v2_reader = vcf.VcfReader(out_file, use_index=False)
     v2_records = list(v2_reader.iterate())
 
     self.assertEqual(v1_records, v2_records,

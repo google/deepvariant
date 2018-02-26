@@ -33,14 +33,36 @@ from __future__ import division
 from __future__ import print_function
 
 
+
 from absl.testing import absltest
 from absl.testing import parameterized
 
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import struct_pb2
+from deepvariant.util import ranges
 from deepvariant.util import test_utils
 from tensorflow.python.platform import gfile
+
+
+class VcfReaderTests(absltest.TestCase):
+  """Test the iteration functionality provided by vcf.VcfReader."""
+
+  def setUp(self):
+    self.sites_reader = vcf.VcfReader(
+        test_utils.genomics_core_testdata('test_sites.vcf'), use_index=False)
+
+    self.samples_reader = vcf.VcfReader(
+        test_utils.genomics_core_testdata('test_samples.vcf.gz'),
+        use_index=True)
+
+  def test_vcf_iterate(self):
+    self.assertEqual(test_utils.iterable_len(self.sites_reader.iterate()), 5)
+
+  def test_vcf_query(self):
+    range1 = ranges.parse_literal('chr3:100,000-500,000')
+    self.assertEqual(
+        test_utils.iterable_len(self.samples_reader.query(range1)), 4)
 
 
 def _format_expected_variant(ref, alts, format_spec, *samples):

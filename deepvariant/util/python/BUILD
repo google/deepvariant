@@ -73,11 +73,11 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":vcf_writer",
-        "//deepvariant/util:genomics_io",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:py_test_utils",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/io:vcf",
         "//deepvariant/util/protos:core_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",

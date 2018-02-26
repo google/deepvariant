@@ -83,7 +83,9 @@ class GenomicsReader(object):
 
   def __init__(self):
     """Allows users to use the object as an iterator."""
-    self.iterator = self.iterate()
+    # Some readers can only support one iterator at a time, so don't
+    # create one now.  Rather, create it when needed in next().
+    self.iterator = None
 
   def __iter__(self):
     """Allows users to use the object as an iterator."""
@@ -91,6 +93,8 @@ class GenomicsReader(object):
 
   def next(self):
     """Allows users to use the object as an iterator."""
+    if self.iterator is None:
+      self.iterator = self.iterate()
     return self.iterator.next()
 
 
@@ -164,8 +168,7 @@ class DispatchingGenomicsReader(GenomicsReader):
       self._reader = TFRecordReader(input_path, proto=self._record_proto(),
                                     tf_options=kwargs.get('tf_options', None))
     logging.info('Reading %s with %s',
-                 # pylint: disable=protected-access
-                 input_path, self._reader.__class__.__name.__)
+                 input_path, self._reader.__class__.__name__)
     self.header = self._reader.header
     GenomicsReader.__init__(self)
 

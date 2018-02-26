@@ -39,7 +39,6 @@ import re
 from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import reference_fai
 from deepvariant.util.python import sam_reader as sam_reader_
-from deepvariant.util.python import vcf_reader as vcf_reader_
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 
@@ -139,22 +138,3 @@ def make_sam_reader(reads_source,
           hts_block_size=(hts_block_size or 0),
           downsample_fraction=downsample_fraction,
           random_seed=random_seed))
-
-
-def make_vcf_reader(variants_source, use_index=True, include_likelihoods=False):
-  """Creates an indexed VcfReader for variants_source."""
-  if use_index:
-    index_mode = core_pb2.INDEX_BASED_ON_FILENAME
-  else:
-    index_mode = core_pb2.DONT_USE_INDEX
-
-  if include_likelihoods:
-    desired_vcf_fields = core_pb2.OptionalVariantFieldsToParse()
-  else:
-    desired_vcf_fields = core_pb2.OptionalVariantFieldsToParse(
-        exclude_genotype_quality=True, exclude_genotype_likelihood=True)
-
-  return vcf_reader_.VcfReader.from_file(
-      variants_source.encode('utf8'),
-      core_pb2.VcfReaderOptions(
-          index_mode=index_mode, desired_format_entries=desired_vcf_fields))

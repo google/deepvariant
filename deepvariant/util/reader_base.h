@@ -72,7 +72,11 @@ class Reader {
   template<class Iterable, typename... Args>
   std::shared_ptr<Iterable> MakeIterable(Args&&... args) const {
     tensorflow::mutex_lock lock(mutex_);
-    if (live_iterable_ != nullptr) { return nullptr; }
+    if (live_iterable_ != nullptr) {
+      LOG(WARNING) << "Returning null from MakeIterable because there's "
+                   " already an active iterator";
+      return nullptr;
+    }
     Iterable* it =  new Iterable(std::forward<Args>(args)...);
     live_iterable_ = it;
     return std::shared_ptr<Iterable>(it);

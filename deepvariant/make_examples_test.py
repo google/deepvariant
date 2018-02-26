@@ -43,10 +43,10 @@ from absl.testing import parameterized
 import mock
 
 from absl import logging
+
+from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
-
-from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
@@ -212,7 +212,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         examples, list(io_utils.read_tfrecords(golden_file)))
 
     if mode == 'calling':
-      nist_reader = genomics_io.make_vcf_reader(test_utils.TRUTH_VARIANTS_VCF)
+      nist_reader = vcf.VcfReader(test_utils.TRUTH_VARIANTS_VCF)
       nist_variants = list(nist_reader.query(region))
       self.verify_nist_concordance(example_variants, nist_variants)
 
