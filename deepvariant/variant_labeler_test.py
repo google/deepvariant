@@ -74,7 +74,7 @@ def mock_vcf_reader(variants):
   return reader
 
 
-class VariantLabelerTest(parameterized.TestCase):
+class PositionalVariantLabelerTest(parameterized.TestCase):
   # Confident variants: SNP, deletion, and multi-allelic.
   snp = test_utils.make_variant(start=10, alleles=['A', 'C'], gt=[0, 1])
   deletion = test_utils.make_variant(start=20, alleles=['ACG', 'A'])
@@ -89,44 +89,76 @@ class VariantLabelerTest(parameterized.TestCase):
 
   variants = [snp, deletion, multiallelic, non_confident, filtered]
 
-  def setUp(self):
-    self.labeler = variant_labeler.VariantLabeler(
-        vcf_reader=mock_vcf_reader(self.variants),
-        confident_regions=ranges.RangeSet(
-            [ranges.make_range(self.snp.reference_name, 10, 100)]))
+  def _make_labeler(self, variants, confident_regions):
+    return variant_labeler.make_labeler(
+        truth_variants_reader=mock_vcf_reader(variants),
+        confident_regions=confident_regions,
+        ref_reader=None,
+        options=None)
 
   @parameterized.parameters(
       # Simple tests: we get back our matching variants in the confident regions
-      (snp, True, snp),
-      (deletion, True, deletion),
-      (multiallelic, True, multiallelic),
+      dict(candidate=snp, expected_confident=True, expected_truth=snp),
+      dict(
+          candidate=deletion, expected_confident=True, expected_truth=deletion),
+      dict(
+          candidate=multiallelic,
+          expected_confident=True,
+          expected_truth=multiallelic),
 
       # Test the behavior outside of our confident regions.
       # We get back non_confident since it matches but we're not confident.
-      (non_confident, False, non_confident),
+      dict(
+          candidate=non_confident,
+          expected_confident=False,
+          expected_truth=non_confident),
       # No matching variant, so we get a None as well as False.
-      (test_utils.make_variant(start=300, alleles=['A', 'C']), False, None),
+      dict(
+          candidate=test_utils.make_variant(start=300, alleles=['A', 'C']),
+          expected_confident=False,
+          expected_truth=None),
 
       # This variant doesn't have any match but we're confident in it.
-      (test_utils.make_variant(start=15, alleles=['C', 'A']), True,
-       test_utils.make_variant(start=15, alleles=['C', 'A'], gt=[0, 0])),
+      dict(
+          candidate=test_utils.make_variant(start=15, alleles=['C', 'A']),
+          expected_confident=True,
+          expected_truth=test_utils.make_variant(
+              start=15, alleles=['C', 'A'], gt=[0, 0])),
 
       # These variant start at our SNP but has a different allele. We are
       # confident and we get back the true snp variant, despite having the
       # different alleles.
-      (test_utils.make_variant(start=snp.start, alleles=['A', 'G']), True, snp),
-      (test_utils.make_variant(start=snp.start, alleles=['AC', 'C']), True,
-       snp),
-      (test_utils.make_variant(start=snp.start, alleles=['A', 'CA']), True,
-       snp),
+      dict(
+          candidate=test_utils.make_variant(
+              start=snp.start, alleles=['A', 'G']),
+          expected_confident=True,
+          expected_truth=snp),
+      dict(
+          candidate=test_utils.make_variant(
+              start=snp.start, alleles=['AC', 'C']),
+          expected_confident=True,
+          expected_truth=snp),
+      dict(
+          candidate=test_utils.make_variant(
+              start=snp.start, alleles=['A', 'CA']),
+          expected_confident=True,
+          expected_truth=snp),
 
       # We don't match filtered variants.
-      (filtered, True, filtered_match),
+      dict(
+          candidate=filtered,
+          expected_confident=True,
+          expected_truth=filtered_match),
   )
-  def test_match(self, candidate, expected_confident, expected_variant):
-    actual_confident, actual_variant = self.labeler.match(candidate)
-    self.assertEqual(expected_confident, actual_confident)
-    self.assertEqual(expected_variant, actual_variant)
+  def test_label_variants(self, candidate, expected_confident, expected_truth):
+    labeler = self._make_labeler(
+        self.variants,
+        ranges.RangeSet([ranges.make_range(self.snp.reference_name, 10, 100)]))
+    labels = list(labeler.label_variants([candidate]))
+    self.assertEqual(len(labels), 1)
+    self.assertEqual(candidate, labels[0].variant)
+    self.assertEqual(expected_confident, labels[0].is_confident)
+    self.assertEqual(expected_truth, labels[0].truth_variant)
 
   def test_match_selects_variant_by_start(self):
     # Tests that match() selects the variant at the same start even if that
@@ -137,10 +169,17 @@ class VariantLabelerTest(parameterized.TestCase):
         test_utils.make_variant(start=21, alleles=['AAA', 'A']),
         test_utils.make_variant(start=22, alleles=['AA', 'A']),
     ]
-    self.labeler = variant_labeler.VariantLabeler(
-        vcf_reader=mock_vcf_reader(overlapping))
+    labeler = self._make_labeler(overlapping, None)
     candidate = test_utils.make_variant(start=21, alleles=['CC', 'A'])
-    self.assertEqual(self.labeler.match(candidate)[1], overlapping[1])
+    labels = list(labeler.label_variants([candidate]))
+    self.assertEqual(len(labels), 1)
+    self.assertEqual(labels[0].variant, candidate)
+    self.assertEqual(labels[0].is_confident, True)
+    self.assertEqual(labels[0].truth_variant, overlapping[1])
+
+
+class VariantLabelerTest(parameterized.TestCase):
+  snp = test_utils.make_variant(start=10, alleles=['A', 'C'], gt=[0, 1])
 
   @parameterized.parameters(
       # Make sure we get the right alt counts for all diploid genotypes.
@@ -148,6 +187,9 @@ class VariantLabelerTest(parameterized.TestCase):
       (['A', 'C'], ['C'], ['A', 'C'], [0, 1], 1),
       (['A', 'C'], ['C'], ['A', 'C'], [1, 0], 1),
       (['A', 'C'], ['C'], ['A', 'C'], [1, 1], 2),
+
+      # Make sure get back a zero alt count for a reference variant.
+      (['A'], [], ['A'], [0, 0], 0),
 
       # Basic multi-allelic tests, without having to deal with simplifying
       # alleles as all of the alleles are SNPs. Our candidates have an extra
@@ -254,36 +296,31 @@ class VariantLabelerTest(parameterized.TestCase):
       (['AT', 'A', 'GT'], ['A'], ['A', 'G'], [0, 1], 0),
       (['AT', 'A', 'GT'], ['GT'], ['A', 'G'], [0, 1], 1),
   )
-  def test_match_to_genotype_label(self, variant_alleles, alt_alleles,
-                                   truth_alleles, truth_gt, expected_n_alts):
+  def test_match_to_alt_count(self, variant_alleles, alt_alleles, truth_alleles,
+                              truth_gt, expected_n_alts):
     variant = test_utils.make_variant(start=10, alleles=variant_alleles)
     truth_variant = test_utils.make_variant(
         start=10, alleles=truth_alleles, gt=truth_gt)
     self.assertEqual(expected_n_alts,
-                     self.labeler.match_to_alt_count(variant, truth_variant,
-                                                     alt_alleles))
+                     variant_labeler._match_to_alt_count(
+                         variant, truth_variant, alt_alleles))
 
-  def test_match_to_genotype_label_none_truth_variant_raises(self):
+  def test_match_to_alt_count_none_truth_variant_raises(self):
     with self.assertRaisesRegexp(ValueError, 'truth_variant cannot be None'):
-      self.labeler.match_to_alt_count(self.snp, None, self.snp.alternate_bases)
+      variant_labeler._match_to_alt_count(self.snp, None,
+                                          self.snp.alternate_bases)
 
-  def test_match_to_genotype_label_no_gt_truth_variant_raises(self):
+  def test_match_to_alt_count_no_gt_truth_variant_raises(self):
     with self.assertRaisesRegexp(ValueError, 'truth_variant needs genotypes'):
-      self.labeler.match_to_alt_count(self.snp,
-                                      test_utils.make_variant(
-                                          start=10, alleles=['A', 'C']),
-                                      self.snp.alternate_bases)
+      variant_labeler._match_to_alt_count(self.snp,
+                                          test_utils.make_variant(
+                                              start=10, alleles=['A', 'C']),
+                                          self.snp.alternate_bases)
 
-  def test_match_to_genotype_label_none_variant_raises(self):
+  def test_match_to_alt_count_none_variant_raises(self):
     with self.assertRaisesRegexp(ValueError, 'variant cannot be None'):
-      self.labeler.match_to_alt_count(None, self.snp, self.snp.alternate_bases)
-
-  def test_match_to_genotype_label_ref_variant_raises(self):
-    with self.assertRaisesRegexp(
-        ValueError, 'variant must have at least one alternate allele'):
-      self.labeler.match_to_alt_count(
-          test_utils.make_variant(start=10, alleles=['A']), self.snp,
-          self.snp.alternate_bases)
+      variant_labeler._match_to_alt_count(None, self.snp,
+                                          self.snp.alternate_bases)
 
 
 if __name__ == '__main__':

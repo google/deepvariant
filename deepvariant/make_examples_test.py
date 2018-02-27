@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 import errno
 import sys
 
@@ -51,10 +52,10 @@ from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
 from deepvariant.util import vcf_constants
-from tensorflow.core.example import example_pb2
 from deepvariant import make_examples
 from deepvariant import test_utils
 from deepvariant import tf_utils
+from deepvariant import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.protos import realigner_pb2
 from deepvariant.testing import flagsaver
@@ -874,16 +875,19 @@ class RegionProcessorTest(parameterized.TestCase):
     return mocked
 
   def test_on_demand_initialization_called_if_not_initialized(self):
+    candidates = ['Candidates']
     self.assertFalse(self.processor.initialized)
     self.processor.in_memory_sam_reader = mock.Mock()
     mock_rr = self.add_mock('region_reads', retval=[])
-    mock_cir = self.add_mock('candidates_in_region', retval=([], []))
+    mock_cir = self.add_mock('candidates_in_region', retval=(candidates, []))
+    mock_lc = self.add_mock('label_candidates', retval=[])
     self.processor.process(self.region)
     test_utils.assert_called_once_workaround(self.mock_init)
     mock_rr.assert_called_once_with(self.region)
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [])
     mock_cir.assert_called_once_with(self.region)
+    mock_lc.assert_called_once_with(candidates)
 
   def test_on_demand_initialization_not_called_if_initialized(self):
     self.processor.initialized = True
@@ -891,26 +895,28 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.in_memory_sam_reader = mock.Mock()
     mock_rr = self.add_mock('region_reads', retval=[])
     mock_cir = self.add_mock('candidates_in_region', retval=([], []))
+    mock_lc = self.add_mock('label_candidates', retval=[])
     self.processor.process(self.region)
     test_utils.assert_not_called_workaround(self.mock_init)
     mock_rr.assert_called_once_with(self.region)
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [])
     mock_cir.assert_called_once_with(self.region)
+    test_utils.assert_called_once_workaround(mock_lc)
 
   def test_process_calls_no_candidates(self):
     self.processor.in_memory_sam_reader = mock.Mock()
     mock_rr = self.add_mock('region_reads', retval=[])
     mock_cir = self.add_mock('candidates_in_region', retval=([], []))
     mock_cpe = self.add_mock('create_pileup_examples', retval=[])
-    mock_lv = self.add_mock('label_variant')
+    mock_lc = self.add_mock('label_candidates')
     self.assertEqual(([], [], []), self.processor.process(self.region))
     mock_rr.assert_called_once_with(self.region)
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [])
     mock_cir.assert_called_once_with(self.region)
     test_utils.assert_not_called_workaround(mock_cpe)
-    test_utils.assert_not_called_workaround(mock_lv)
+    mock_lc.assert_called_once_with([])
 
   @parameterized.parameters([
       deepvariant_pb2.DeepVariantOptions.TRAINING,
@@ -923,11 +929,14 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_read = mock.MagicMock()
     mock_candidate = mock.MagicMock()
     mock_example = mock.MagicMock()
+    mock_label = mock.MagicMock()
     mock_rr = self.add_mock('region_reads', retval=[mock_read])
     mock_cir = self.add_mock(
         'candidates_in_region', retval=([mock_candidate], []))
     mock_cpe = self.add_mock('create_pileup_examples', retval=[mock_example])
-    mock_lv = self.add_mock('label_variant')
+    mock_lc = self.add_mock(
+        'label_candidates', retval=[(mock_candidate, mock_label)])
+    mock_alte = self.add_mock('add_label_to_example', retval=mock_example)
     self.assertEqual(([mock_candidate], [mock_example], []),
                      self.processor.process(self.region))
     mock_rr.assert_called_once_with(self.region)
@@ -936,11 +945,13 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_cir.assert_called_once_with(self.region)
     mock_cpe.assert_called_once_with(mock_candidate)
 
-    if mode == deepvariant_pb2.DeepVariantOptions.CALLING:
-      # In calling mode, we never try to label.
-      test_utils.assert_not_called_workaround(mock_lv)
+    if mode == deepvariant_pb2.DeepVariantOptions.TRAINING:
+      mock_lc.assert_called_once_with([mock_candidate])
+      mock_alte.assert_called_once_with(mock_example, mock_label)
     else:
-      mock_lv.assert_called_once_with(mock_example, mock_candidate.variant)
+      # In training mode we don't label our candidates.
+      test_utils.assert_not_called_workaround(mock_lc)
+      test_utils.assert_not_called_workaround(mock_alte)
 
   @parameterized.parameters([
       deepvariant_pb2.DeepVariantOptions.TRAINING,
@@ -951,13 +962,15 @@ class RegionProcessorTest(parameterized.TestCase):
 
     r1, r2 = mock.Mock(), mock.Mock()
     c1, c2 = mock.Mock(), mock.Mock()
+    l1, l2 = mock.Mock(), mock.Mock()
     e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
     self.processor.in_memory_sam_reader = mock.Mock()
     self.add_mock('region_reads', retval=[r1, r2])
     self.add_mock('candidates_in_region', retval=([c1, c2], []))
     mock_cpe = self.add_mock(
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
-    mock_lv = self.add_mock('label_variant')
+    mock_lc = self.add_mock('label_candidates', retval=[(c1, l1), (c2, l2)])
+    mock_alte = self.add_mock('add_label_to_example', side_effect=[e1, e2, e3])
     self.assertEqual(([c1, c2], [e1, e2, e3], []),
                      self.processor.process(self.region))
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
@@ -967,13 +980,15 @@ class RegionProcessorTest(parameterized.TestCase):
 
     if mode == deepvariant_pb2.DeepVariantOptions.CALLING:
       # In calling mode, we never try to label.
-      test_utils.assert_not_called_workaround(mock_lv)
+      test_utils.assert_not_called_workaround(mock_lc)
+      test_utils.assert_not_called_workaround(mock_alte)
     else:
+      mock_lc.assert_called_once_with([c1, c2])
       self.assertEqual([
-          mock.call(e1, c1.variant),
-          mock.call(e2, c2.variant),
-          mock.call(e3, c2.variant)
-      ], mock_lv.call_args_list)
+          mock.call(e1, l1),
+          mock.call(e2, l2),
+          mock.call(e3, l2),
+      ], mock_alte.call_args_list)
 
   def test_process_with_realigner(self):
     self.processor.options.mode = deepvariant_pb2.DeepVariantOptions.CALLING
@@ -991,7 +1006,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.add_mock('candidates_in_region', retval=([c1, c2], []))
     mock_cpe = self.add_mock(
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
-    mock_lv = self.add_mock('label_variant')
+    mock_lc = self.add_mock('label_candidates')
 
     self.assertEqual(([c1, c2], [e1, e2, e3], []),
                      self.processor.process(self.region))
@@ -1001,7 +1016,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [])
     self.assertEqual([mock.call(c1), mock.call(c2)], mock_cpe.call_args_list)
-    test_utils.assert_not_called_workaround(mock_lv)
+    test_utils.assert_not_called_workaround(mock_lc)
 
   def test_candidates_in_region_no_reads(self):
     self.processor.in_memory_sam_reader = mock.Mock()
@@ -1083,57 +1098,55 @@ class RegionProcessorTest(parameterized.TestCase):
       self.assertEqual(tf_utils.example_image_shape(ex), self.default_shape)
       self.assertEqual(tf_utils.example_image_format(ex), self.default_format)
 
-  def test_label_variant(self):
-    variant = test_utils.make_variant(start=10, alleles=['A', 'C'])
-    tvariant = test_utils.make_variant(start=10, alleles=['A', 'C'], gt=[0, 1])
-    example = tf_utils.make_example(variant, ['C'], 'foo', self.default_shape,
-                                    self.default_format)
-    labeler = mock.Mock()
-    labeler.match = mock.Mock(return_value=[True, tvariant])
-    labeler.match_to_alt_count = mock.Mock(return_value=1)
-    self.processor.labeler = labeler
+  @parameterized.parameters(
+      # Test that a het variant gets a label value of 1 assigned to the example.
+      dict(
+          label=variant_labeler.VariantLabel(
+              is_confident=True,
+              variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
+              truth_variant=test_utils.make_variant(
+                  start=10, alleles=['A', 'C'], gt=[0, 1])),
+          expected_label_value=1,
+      ),
+      # Test that a reference variant gets a label value of 0 in the example.
+      dict(
+          label=variant_labeler.VariantLabel(
+              is_confident=True,
+              variant=test_utils.make_variant(start=10, alleles=['A', '.']),
+              truth_variant=test_utils.make_variant(
+                  start=10, alleles=['A', '.'], gt=[0, 0])),
+          expected_label_value=0,
+      ),
+  )
+  def test_add_label_to_example(self, label, expected_label_value):
+    example = self._example_for_variant(label.variant)
+    labeled = copy.deepcopy(example)
+    actual = self.processor.add_label_to_example(labeled, label)
 
-    labeled = example_pb2.Example()
-    labeled.CopyFrom(example)
-    self.processor.label_variant(labeled, variant)
+    # The add_label_to_example command modifies labeled and returns it.
+    self.assertIs(actual, labeled)
 
-    labeler.match.assert_called_once_with(variant)
-    labeler.match_to_alt_count.assert_called_once_with(variant, tvariant, ['C'])
-
+    # Check that all keys from example are present in labeled.
     for key, value in example.features.feature.iteritems():
       self.assertEqual(value, labeled.features.feature[key])
-    self.assertEqual(1, tf_utils.example_label(labeled))
-    self.assertEqual(tvariant, tf_utils.example_truth_variant(labeled))
 
-  def test_reference_label_variant(self):
-    variant = test_utils.make_variant(start=10, alleles=['A', '.'])
-    tvariant = test_utils.make_variant(start=10, alleles=['A', '.'], gt=[0, 0])
-    example = tf_utils.make_example(variant, ['.'], 'foo', self.default_shape,
-                                    self.default_format)
-
-    labeler = mock.Mock()
-    labeler.match = mock.Mock(return_value=[True, tvariant])
-    self.processor.labeler = labeler
-
-    labeled = example_pb2.Example()
-    labeled.CopyFrom(example)
-    self.processor.label_variant(labeled, variant)
-
-    labeler.match.assert_called_once_with(variant)
-    labeler.match_to_alt_count.assert_not_called()
-
-    for key, value in example.features.feature.iteritems():
-      self.assertEqual(value, labeled.features.feature[key])
-    self.assertEqual(0, tf_utils.example_label(labeled))
-    self.assertEqual(tvariant, tf_utils.example_truth_variant(labeled))
+    self.assertEqual(expected_label_value, tf_utils.example_label(labeled))
+    self.assertEqual(label.truth_variant,
+                     tf_utils.example_truth_variant(labeled))
 
   def test_label_variant_raises_for_non_confident_variant(self):
-    variant = test_utils.make_variant(start=10, alleles=['A', 'C'], gt=[0, 1])
-    self.processor.labeler = mock.Mock()
-    self.processor.labeler.match = mock.Mock(return_value=[False, variant])
-    example = tf_utils.make_example(variant, ['C'], 'foo', self.default_shape,
-                                    self.default_format)
-    self.assertFalse(self.processor.label_variant(example, variant))
+    label = variant_labeler.VariantLabel(
+        is_confident=False,
+        variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
+        truth_variant=test_utils.make_variant(start=10, alleles=['A', 'C']))
+    example = self._example_for_variant(label.variant)
+    with self.assertRaisesRegexp(
+        ValueError, 'Cannot add a non-confident label to an example'):
+      self.processor.add_label_to_example(example, label)
+
+  def _example_for_variant(self, variant):
+    return tf_utils.make_example(variant, list(variant.alternate_bases), 'foo',
+                                 self.default_shape, self.default_format)
 
 
 if __name__ == '__main__':
