@@ -34,20 +34,6 @@ package nucleus;
 import "deepvariant/util/genomics/reference.proto";
 import "deepvariant/util/genomics/variants.proto";
 
-// This table includes all of the information needed to translate contig names
-// between the names from one set of contigs to another. The table
-// isn't symmetric: there's a primary set of names (usually the reference) and
-// a secondary set of names (usually the non-reference data aligned to the
-// genome).
-message ContigTranslationTable {
-  // A map from primary contig names (e.g., "chr1") to their corresponding
-  // secondary keys (e.g., "1"). A key not present in the primary key set means
-  // that there's no corresponding contig in the secondary.
-  map<string, string> primary_to_secondary = 1;
-  // A map just like primary_to_secondary but in the opposite direction.
-  map<string, string> secondary_to_primary = 2;
-}
-
 // Describes requirements for a read for us to use it in BioTF.
 message ReadRequirements {
   // By default, duplicate reads will not be kept. Set this flag to keep them.
