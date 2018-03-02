@@ -40,6 +40,7 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.util.io import sam
 from deepvariant.util.io import vcf
 from deepvariant.util import errors
 from deepvariant.util import genomics_io
@@ -222,7 +223,7 @@ def default_options(add_flags=True, flags_obj=None):
   if flags_obj.sample_name:
     sample_name = flags_obj.sample_name
   elif flags_obj.reads:
-    with genomics_io.make_sam_reader(flags_obj.reads) as sam_reader:
+    with sam.SamReader(flags_obj.reads) as sam_reader:
       sample_name = extract_sample_name_from_sam_reader(sam_reader)
   else:
     sample_name = _UNKNOWN_SAMPLE
@@ -350,7 +351,7 @@ def extract_sample_name_from_sam_reader(sam_reader):
   Raises:
     ValueError: There is not exactly one unique sample name in the SAM/BAM.
   """
-  samples = sam_reader.samples
+  samples = sam_reader.header.samples
   if not samples:
     raise ValueError(
         'No sample name found in the input reads. Please provide the name of '
@@ -643,9 +644,9 @@ class RegionProcessor(object):
     return image_tensor.tostring(), image_tensor.shape, 'raw'
 
   def _make_sam_reader(self):
-    return genomics_io.make_sam_reader(
+    return sam.SamReader(
         self.options.reads_filename,
-        self.options.read_requirements,
+        read_requirements=self.options.read_requirements,
         hts_block_size=FLAGS.hts_block_size,
         downsample_fraction=self.options.downsample_fraction,
         random_seed=self.options.random_seed)
@@ -867,7 +868,7 @@ def processing_regions_from_options(options):
     regions for labeling, or None if we are running in training mode.
   """
   ref_contigs = genomics_io.make_ref_reader(options.reference_filename).contigs
-  sam_contigs = genomics_io.make_sam_reader(options.reads_filename).contigs
+  sam_contigs = sam.SamReader(options.reads_filename).header.contigs
 
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None

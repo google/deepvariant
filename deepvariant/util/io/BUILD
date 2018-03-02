@@ -66,7 +66,12 @@ py_library(
     name = "sam",
     srcs = ["sam.py"],
     deps = [
+        ":genomics_reader",
         ":genomics_writer",
+        "//deepvariant/util/genomics:reads_py_pb2",
+        "//deepvariant/util/protos:core_py_pb2",
+        "//deepvariant/util/python:sam_reader",
+        # "//third_party/py/tfbam_lib",
     ],
 )
 
@@ -74,10 +79,14 @@ py_test(
     name = "sam_test",
     size = "small",
     srcs = ["sam_test.py"],
+    data = [
+        "//deepvariant/util:testdata",
+    ],
     deps = [
         ":sam",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:py_test_utils",
+        "//deepvariant/util:ranges",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:struct_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",

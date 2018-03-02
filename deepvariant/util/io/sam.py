@@ -28,6 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Classes for reading and writing SAM and BAM files.
 
+API for reading:
+  with SamReader(input_path) as reader:
+    for read in reader:
+      process(reader.header, read)
+
 API for writing:
 
   with SamWriter(output_path) as writer:
@@ -36,18 +41,150 @@ API for writing:
 
 where read is a nucleus.genomics.v1.Read protocol buffer.
 
-If output_path contains '.sam' as an extension, then a true SAM file
-will be output.  Otherwise, a TFRecord file will be output.  In either
-case, an extension of '.gz' will cause the output to be compressed.
+Paths containing '.sam' or '.bam' as extensions will be treated as true
+SAM files.  Otherwise, TFRecord files are assumed.  Also, file names ending
+with '.gz' will be assumed to be compressed.
 """
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
+import logging
 
 
+from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
+from deepvariant.util.genomics import reads_pb2
+from deepvariant.util.protos import core_pb2
+from deepvariant.util.python import sam_reader
+
+_SAM_EXTENSIONS = frozenset(['.bam', '.sam', '.tfbam'])
+
+# redacted
+SamHeader = collections.namedtuple(
+    'SamHeader', ['contigs', 'samples'])
+
+
+class NativeSamReader(genomics_reader.GenomicsReader):
+  """Class for reading from native SAM files.
+
+  Most users will want to use SamReader instead, because it dynamically
+  dispatches between reading native SAM files and TFRecord files based
+  on the filename's extensions.
+  """
+
+  def __init__(self, input_path,
+               use_index=True,
+               read_requirements=None,
+               parse_aux_fields=False,
+               hts_block_size=None,
+               downsample_fraction=None,
+               random_seed=None):
+    """Initializes a NativeSamReader.
+
+    Args:
+      input_path: string. A path to a resource containing SAM/BAM records.
+        Currently supports SAM text format and BAM binary format.
+      use_index: optional bool, defaulting to True. If True, we will attempt to
+        load an index file for reads_source to enable the query() API call. If
+        True an index file must exist. If False, we will not attempt to load an
+        index for reads_source, disabling the query() call.
+      read_requirements: optional ReadRequirement proto. If not None, this proto
+        is used to control which reads are filtered out by the reader before
+        they are passed to the client.
+      parse_aux_fields: optional bool. If False, the default, we will not parse
+        the auxillary fields of the SAM/BAM records (see SAM spec for details).
+        Parsing the aux fields is often unnecessary for many applications, and
+        adds a significant parsing cost to access. If you need these aux fields,
+        set parse_aux_fields to True and these fields will be parsed and
+        populate the appropriate Read proto fields (e.g., read.info).
+      hts_block_size: integer or None.  If None, will use the default htslib
+        block size.  Otherwise, will configure the underlying block size of the
+        underlying htslib file object.  Larger values (e.g. 1M) may be
+        beneficial for reading remote files.
+      downsample_fraction: None or float in the interval [0.0, 1.0]. If not
+        None or 0.0, the reader will only keep each read with probability
+        downsample_fraction, randomly.
+      random_seed: None or int. The random seed to use with this sam reader, if
+        needed. If None, a fixed random value will be assigned.
+
+    Raises:
+      ValueError: If downsample_fraction is not None and not in the interval
+        (0.0, 1.0].
+      ImportError: If someone tries to load a tfbam file.
+  """
+    if input_path.endswith('.tfbam'):
+      # Delayed loading of tfbam_lib.
+      try:
+        from tfbam_lib import tfbam_reader  # pylint: disable=g-import-not-at-top
+        self._reader = tfbam_reader.make_sam_reader(
+            input_path,
+            read_requirements=read_requirements,
+            use_index=use_index,
+            unused_block_size=hts_block_size,
+            downsample_fraction=downsample_fraction,
+            random_seed=random_seed)
+      except ImportError:
+        raise ImportError(
+            'tfbam_lib module not found, cannot read .tfbam files.')
+    else:
+      index_mode = core_pb2.INDEX_BASED_ON_FILENAME
+      if not use_index:
+        index_mode = core_pb2.DONT_USE_INDEX
+
+      aux_field_handling = core_pb2.SamReaderOptions.SKIP_AUX_FIELDS
+      if parse_aux_fields:
+        aux_field_handling = core_pb2.SamReaderOptions.PARSE_ALL_AUX_FIELDS
+
+      if downsample_fraction:
+        if not 0.0 < downsample_fraction <= 1.0:
+          raise ValueError(
+              'downsample_fraction must be in the interval (0.0, 1.0]',
+              downsample_fraction)
+
+      if random_seed is None:
+        # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
+        random_seed = 2928130004
+
+      self._reader = sam_reader.SamReader.from_file(
+          input_path.encode('utf8'),
+          core_pb2.SamReaderOptions(
+              read_requirements=read_requirements,
+              index_mode=index_mode,
+              aux_field_handling=aux_field_handling,
+              hts_block_size=(hts_block_size or 0),
+              downsample_fraction=downsample_fraction,
+              random_seed=random_seed))
+
+    # redacted
+    self.header = SamHeader(contigs=self._reader.contigs,
+                            samples=self._reader.samples)
+
+    genomics_reader.GenomicsReader.__init__(self)
+
+  def iterate(self):
+    return self._reader.iterate()
+
+  def query(self, region):
+    return self._reader.query(region)
+
+  def __exit__(self, exit_type, exit_value, exit_traceback):
+    self._reader.__exit__(exit_type, exit_value, exit_traceback)
+
+
+class SamReader(genomics_reader.DispatchingGenomicsReader):
+  """Class for reading Read protos from SAM or TFRecord files."""
+
+  def _get_extensions(self):
+    return _SAM_EXTENSIONS
+
+  def _native_reader(self, input_path, **kwargs):
+    return NativeSamReader(input_path, **kwargs)
+
+  def _record_proto(self):
+    return reads_pb2.Read
 
 
 class NativeSamWriter(genomics_writer.GenomicsWriter):
@@ -78,7 +215,7 @@ class SamWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Variant protos to SAM or TFRecord files."""
 
   def _get_extensions(self):
-    return frozenset(['.bam', '.sam'])
+    return _SAM_EXTENSIONS
 
   def _native_writer(self, output_path, contigs):
     return NativeSamWriter(output_path, contigs)

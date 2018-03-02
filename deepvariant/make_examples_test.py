@@ -400,7 +400,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()
-    mock_sample_reader.samples = ['sample_name']
+    mock_sample_reader.header.samples = ['sample_name']
     self.assertEqual(
         make_examples.extract_sample_name_from_sam_reader(mock_sample_reader),
         'sample_name')
@@ -430,7 +430,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
   def test_extract_sample_name_from_reads_detects_bad_samples(
       self, samples, expected_error_message):
     mock_sample_reader = mock.Mock()
-    mock_sample_reader.samples = samples
+    mock_sample_reader.header.samples = samples
     with self.assertRaisesRegexp(ValueError, expected_error_message):
       make_examples.extract_sample_name_from_sam_reader(mock_sample_reader)
 

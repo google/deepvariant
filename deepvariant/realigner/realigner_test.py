@@ -42,6 +42,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
 
+from deepvariant.util.io import sam
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
@@ -60,7 +61,7 @@ def setUpModule():
 
 
 def _get_reads(region):
-  with genomics_io.make_sam_reader(test_utils.CHR20_BAM) as in_sam_reader:
+  with sam.SamReader(test_utils.CHR20_BAM) as in_sam_reader:
     return list(in_sam_reader.query(region))
 
 
@@ -344,8 +345,9 @@ class RealignerIntegrationTest(absltest.TestCase):
 
     regions = ranges.RangeSet.from_regions([region_str])
     for region in regions.partition(1000):
-      with genomics_io.make_sam_reader(
-          test_utils.CHR20_BAM, core_pb2.ReadRequirements()) as sam_reader:
+      with sam.SamReader(
+          test_utils.CHR20_BAM,
+          read_requirements=core_pb2.ReadRequirements()) as sam_reader:
         in_reads = list(sam_reader.query(region))
       windows, out_reads = reads_realigner.realign_reads(in_reads, region)
 

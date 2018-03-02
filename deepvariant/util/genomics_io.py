@@ -32,18 +32,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import re
 
 
-
-from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import reference_fai
-from deepvariant.util.python import sam_reader as sam_reader_
-
-SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
-
-VCF_EXTENSIONS = frozenset(['.vcf', '.vcf.gz'])
-SAM_EXTENSIONS = frozenset(['.sam', '.bam'])
 
 
 def make_ref_reader(reference_filename):
@@ -51,90 +42,3 @@ def make_ref_reader(reference_filename):
   return reference_fai.GenomeReferenceFai.from_file(
       reference_filename.encode('utf8'),
       reference_filename.encode('utf8') + '.fai')
-
-
-def make_sam_reader(reads_source,
-                    read_requirements=None,
-                    use_index=True,
-                    parse_aux_fields=False,
-                    hts_block_size=None,
-                    downsample_fraction=None,
-                    random_seed=None):
-  """Creates a SamReader for reads_source.
-
-  This function creates a SAM/BAM reader from reads_source, configured by the
-  additional arguments to this function. This returned reader object supports
-  the iterate() and query(range) APIs.
-
-  Args:
-    reads_source: string. A path to a resource containing SAM/BAM records.
-      Currently supports SAM text format and BAM binary format.
-    read_requirements: optional ReadRequirement proto. If not None, this proto
-      is used to control which reads are filtered out by the reader before they
-      are passed to the client.
-    use_index: optional bool, defaulting to True. If True, we will attempt to
-      load an index file for reads_source to enable the query() API call. If
-      True an index file must exist. If False, we will not attempt to load an
-      index for reads_source, disabling the query() call.
-    parse_aux_fields: optional bool. If False, the default, we will not parse
-      the auxillary fields of the SAM/BAM records (see SAM spec for details).
-      Parsing the aux fields is often unnecessary for many applications, and
-      adds a significant parsing cost to access. If you need these aux fields,
-      set parse_aux_fields to True and these fields will be parsed and populate
-      the appropriate Read proto fields (e.g., read.info).
-    hts_block_size: integer or None.  If None, will use the default htslib
-      block size.  Otherwise, will configure the underlying block size of the
-      underlying htslib file object.  Larger values (e.g. 1M) may be beneficial
-      for reading remote files.
-    downsample_fraction: None or float in the interval (0.0, 1.0]. If not None,
-      this sam_reader will only keep each read with probability
-      downsample_fraction, randomly.
-    random_seed: None or int. The random seed to use with this sam reader, if
-      needed. If None, a fixed random value will be assigned.
-
-  Returns:
-    A sam_reader object. The exact class implementing this API is not specified.
-
-  Raises:
-    ValueError: If downsample_fraction is not None and not in the interval
-      (0.0, 1.0].
-    ImportError: If someone tries to load a tfbam file.
-  """
-  if reads_source.endswith('.tfbam'):
-    # delay load tfbam_lib. This is a simple plugin mechanism.
-    try:
-      from tfbam_lib import tfbam_reader  # pylint: disable=g-import-not-at-top
-      return tfbam_reader.make_sam_reader(
-          reads_source,
-          read_requirements=read_requirements,
-          use_index=use_index,
-          unused_block_size=hts_block_size,
-          downsample_fraction=downsample_fraction,
-          random_seed=random_seed)
-    except ImportError:
-      raise ImportError('tfbam_lib module not found, cannot read .tfbam files.')
-  aux_field_handling = core_pb2.SamReaderOptions.SKIP_AUX_FIELDS
-  if parse_aux_fields:
-    aux_field_handling = core_pb2.SamReaderOptions.PARSE_ALL_AUX_FIELDS
-  index_mode = (
-      core_pb2.INDEX_BASED_ON_FILENAME
-      if use_index else core_pb2.DONT_USE_INDEX)
-
-  if downsample_fraction:
-    if not 0.0 < downsample_fraction <= 1.0:
-      raise ValueError('downsample_fraction must be in the interval (0.0, 1.0]',
-                       downsample_fraction)
-
-  if not random_seed:
-    # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
-    random_seed = 2928130004
-
-  return sam_reader_.SamReader.from_file(
-      reads_source.encode('utf8'),
-      core_pb2.SamReaderOptions(
-          read_requirements=read_requirements,
-          index_mode=index_mode,
-          aux_field_handling=aux_field_handling,
-          hts_block_size=(hts_block_size or 0),
-          downsample_fraction=downsample_fraction,
-          random_seed=random_seed))

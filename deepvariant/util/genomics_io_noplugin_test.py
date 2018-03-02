@@ -35,7 +35,7 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
-from deepvariant.util import genomics_io
+from deepvariant.util.io import sam
 
 
 class PluginAbsenceTest(absltest.TestCase):
@@ -44,7 +44,7 @@ class PluginAbsenceTest(absltest.TestCase):
   def test_tfbam_plugin_does_not_load(self):
     with self.assertRaisesRegexp(
         ImportError, 'tfbam_lib module not found, cannot read .tfbam files.'):
-      _ = genomics_io.make_sam_reader('mouse@25.tfbam', use_index=True)
+      _ = sam.SamReader('mouse@25.tfbam', use_index=True)
 
 
 if __name__ == '__main__':

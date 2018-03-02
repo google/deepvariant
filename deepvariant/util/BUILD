@@ -513,7 +513,6 @@ py_library(
     deps = [
         "//deepvariant/util/protos:core_py_pb2",
         "//deepvariant/util/python:reference_fai",
-        "//deepvariant/util/python:sam_reader",
     ],
 )
 
@@ -539,8 +538,8 @@ py_test(
     size = "small",
     srcs = ["genomics_io_noplugin_test.py"],
     deps = [
-        ":genomics_io",
         ":py_test_utils",
+        "//deepvariant/util/io:sam",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -557,6 +556,7 @@ py_test(
         ":genomics_io",
         ":htslib_gcp_oauth_lib",
         ":ranges",
+        "//deepvariant/util/io:sam",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )

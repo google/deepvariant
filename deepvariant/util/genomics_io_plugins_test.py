@@ -35,14 +35,14 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
-from deepvariant.util import genomics_io
+from deepvariant.util.io import sam
 
 
 class PluginTest(absltest.TestCase):
   """Test that the plugin loads correctly."""
 
   def test_tfbam_plugin_loads(self):
-    reader = genomics_io.make_sam_reader('mouse@25.tfbam', use_index=True)
+    reader = sam.SamReader('mouse@25.tfbam', use_index=True)
     self.assertIsNotNone(reader)
 
 

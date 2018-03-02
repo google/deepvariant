@@ -239,6 +239,7 @@ py_library(
         "//deepvariant/util:proto_utils",
         "//deepvariant/util:py_utils",
         "//deepvariant/util:ranges",
+        "//deepvariant/util/io:sam",
         "//deepvariant/util/io:vcf",
         "//deepvariant/util/protos:core_py_pb2",
         "//deepvariant/util/python:hts_verbose",

@@ -36,6 +36,7 @@ import os
 
 from absl.testing import absltest
 
+from deepvariant.util.io import sam
 from deepvariant.util import genomics_io
 from deepvariant.util import ranges
 
@@ -64,8 +65,8 @@ class GenomicsIoGCSTest(absltest.TestCase):
     self.assertEqual(EXPECTED_REFERENCE_SEQUENCE, reference_segment)
 
   def test_remote_bam(self):
-    reader = genomics_io.make_sam_reader(REMOTE_BAM)
-    reads = list(reader.query(self.query_window))
+    with sam.SamReader(REMOTE_BAM) as reader:
+      reads = list(reader.query(self.query_window))
     self.assertEqual(EXPECTED_READS_IN_WINDOW, len(reads))
 
 

@@ -29,21 +29,20 @@
 """Classes for reading and writing VCF files.
 
 API for reading:
-  with VcfReader(output_path) as reader:
+  with VcfReader(input_path) as reader:
     for variant in reader:
       process(reader.header, variant)
 
 API for writing:
-
   with VcfWriter(output_path, contigs, samples, filters) as writer:
     for variant in variants:
       writer.write(variant)
 
 where variant is a nucleus.genomics.v1.Variant protocol buffer.
 
-If output_path contains '.vcf' as an extension, then a true VCF file
-will be output.  Otherwise, a TFRecord file will be output.  In either
-case, an extension of '.gz' will cause the output to be compressed.
+If the path contains '.vcf' as an extension, then a true VCF file
+will be input/output.  Otherwise, a TFRecord file will be assumed.  In either
+case, an extension of '.gz' will cause the file to be treated as compressed.
 """
 
 from __future__ import absolute_import
@@ -76,7 +75,7 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
   on the filename's extensions.
   """
 
-  def __init__(self, output_path, use_index=True, include_likelihoods=False):
+  def __init__(self, input_path, use_index=True, include_likelihoods=False):
     index_mode = core_pb2.INDEX_BASED_ON_FILENAME
     if not use_index:
       index_mode = core_pb2.DONT_USE_INDEX
@@ -89,7 +88,7 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
       desired_vcf_fields.exclude_genotype_likelihood = True
 
     self._reader = vcf_reader.VcfReader.from_file(
-        output_path.encode('utf8'),
+        input_path.encode('utf8'),
         core_pb2.VcfReaderOptions(
             index_mode=index_mode,
             desired_format_entries=desired_vcf_fields))
@@ -117,8 +116,8 @@ class VcfReader(genomics_reader.DispatchingGenomicsReader):
   def _get_extensions(self):
     return _VCF_EXTENSIONS
 
-  def _native_reader(self, output_path, **kwargs):
-    return NativeVcfReader(output_path, **kwargs)
+  def _native_reader(self, input_path, **kwargs):
+    return NativeVcfReader(input_path, **kwargs)
 
   def _record_proto(self):
     return variants_pb2.Variant

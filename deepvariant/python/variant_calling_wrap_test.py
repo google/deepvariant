@@ -35,8 +35,8 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
+from deepvariant.util.io import sam
 from deepvariant.util import genomics_io
-
 from deepvariant.util import ranges
 from deepvariant import test_utils
 from deepvariant.protos import deepvariant_pb2
@@ -52,7 +52,7 @@ class WrapVariantCallingTest(absltest.TestCase):
 
   def test_call_from_allele_counter(self):
     ref = genomics_io.make_ref_reader(test_utils.CHR20_FASTA)
-    sam_reader = genomics_io.make_sam_reader(test_utils.CHR20_BAM)
+    sam_reader = sam.SamReader(test_utils.CHR20_BAM)
     size = 1000
     region = ranges.make_range('chr20', 10000000, 10000000 + size)
     allele_counter = _allelecounter.AlleleCounter(

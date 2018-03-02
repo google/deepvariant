@@ -36,6 +36,7 @@ py_test(
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/util:genomics_io",
         "//deepvariant/util:ranges",
+        "//deepvariant/util/io:sam",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -80,6 +81,7 @@ py_test(
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/util:genomics_io",
         "//deepvariant/util:ranges",
+        "//deepvariant/util/io:sam",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )

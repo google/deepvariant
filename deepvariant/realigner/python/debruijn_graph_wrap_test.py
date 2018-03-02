@@ -36,6 +36,7 @@ import textwrap
 
 from absl.testing import absltest
 
+from deepvariant.util.io import sam
 from deepvariant.util import genomics_io
 from deepvariant.util import ranges
 from deepvariant import test_utils
@@ -246,7 +247,7 @@ class DeBruijnGraphWrapTest(absltest.TestCase):
 
   def test_straightforward_region(self):
     ref_reader = genomics_io.make_ref_reader(test_utils.CHR20_FASTA)
-    bam_reader = genomics_io.make_sam_reader(test_utils.CHR20_BAM)
+    bam_reader = sam.SamReader(test_utils.CHR20_BAM)
     region = ranges.parse_literal('chr20:10,000,000-10,000,100')
     ref_seq = ref_reader.bases(region)
 
@@ -260,7 +261,7 @@ class DeBruijnGraphWrapTest(absltest.TestCase):
     # There is a heterozygous 9 bp deletion of tandem TGA repeat.
     # "chr20:10,095,379-10,095,500"
     ref_reader = genomics_io.make_ref_reader(test_utils.CHR20_FASTA)
-    bam_reader = genomics_io.make_sam_reader(test_utils.CHR20_BAM)
+    bam_reader = sam.SamReader(test_utils.CHR20_BAM)
     region = ranges.parse_literal('chr20:10,095,379-10,095,500')
     ref_seq = ref_reader.bases(region)
     reads = list(bam_reader.query(region))
