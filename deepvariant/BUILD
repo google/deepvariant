@@ -594,7 +594,7 @@ py_library(
 
 py_test(
     name = "modeling_test",
-    size = "small",
+    size = "medium",
     srcs = ["modeling_test.py"],
     srcs_version = "PY2AND3",
     deps = [
