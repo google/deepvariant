@@ -50,7 +50,10 @@ from "deepvariant/util/reference_fai.h":
       contigs: list<ContigInfo> = property(`Contigs`)
 
       @classmethod
-      def `FromFile` as from_file(cls, fasta_path: str, fai_path: str)
+      def `FromFile` as from_file(cls,
+                                  fasta_path: str,
+                                  fai_path: str,
+                                  cache_size_bases: int = default)
         -> StatusOr<GenomeReferenceFai>
 
       @__enter__

@@ -37,8 +37,13 @@ from __future__ import print_function
 from deepvariant.util.python import reference_fai
 
 
-def make_ref_reader(reference_filename):
+def make_ref_reader(reference_filename, cache_size=None):
   """Creates an indexed GenomeReference for reference_filename."""
-  return reference_fai.GenomeReferenceFai.from_file(
-      reference_filename.encode('utf8'),
-      reference_filename.encode('utf8') + '.fai')
+  fasta_path = reference_filename.encode('utf8')
+  fai_path = fasta_path + '.fai'
+  if cache_size is None:
+    # Use the C++-defined default cache size.
+    return reference_fai.GenomeReferenceFai.from_file(fasta_path, fai_path)
+  else:
+    return reference_fai.GenomeReferenceFai.from_file(fasta_path, fai_path,
+                                                      cache_size)
