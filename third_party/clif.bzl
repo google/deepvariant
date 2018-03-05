@@ -249,7 +249,7 @@ def py_clif_cc(name, srcs, clif_deps=[], pyclif_deps=[], deps=[], copts=[],
       module_name=name,
       # Turns //foo/bar:baz_pyclif into foo.bar to create our fully-qualified
       # python package name.
-      package_name=PACKAGE_NAME.replace("/", "."),
+      package_name=native.package_name().replace("/", "."),
   )
 
   native.cc_library(
