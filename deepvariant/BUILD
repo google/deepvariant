@@ -425,6 +425,7 @@ py_library(
         "//deepvariant/util:genomics_math",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:proto_utils",
+        "//deepvariant/util:ranges",
         "//deepvariant/util:variant_utils",
         "//deepvariant/util:vcf_constants",
         "//deepvariant/util/genomics:struct_py_pb2",
