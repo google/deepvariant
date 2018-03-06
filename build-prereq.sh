@@ -96,7 +96,7 @@ function update_bazel_linux {
   PATH="$HOME/bin:$PATH"
 }
 
-bazel_ver="0.9.0"
+bazel_ver="0.11.0"
 if
   v=$(bazel --bazelrc=/dev/null --nomaster_bazelrc version) &&
   echo "$v" | awk -v b="$bazel_ver" '/Build label/ { exit ($3 != b)}'
