@@ -44,10 +44,148 @@ import enum
 
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
+from deepvariant import variant_labeler
 
 
 VariantAndGenotypes = collections.namedtuple('VariantAndGenotype',
                                              ['variant', 'genotypes'])
+
+# The default maximum size of a variant group we'll try to label. See
+# the HaplotypeLabeler class for more information.
+_MAX_GROUP_SIZE = 6
+# The default maximum distance between subsequent variants within a group. See
+# the HaplotypeLabeler class for more information.
+_MAX_DISTANCE_WITHIN_VARIANT_GROUP = 30
+
+
+# redacted
+# use with the API provided by variant_labeler.VariantLabel.
+# new_label = label_from_genotypes(labeled, alt_indices)
+def label_from_genotypes(variant, alt_alleles_indices):
+  gt_matches = {index + 1 for index in alt_alleles_indices}
+  return sum(gt in gt_matches for gt in variant.calls[0].genotype)
+
+
+# redacted
+# variant_labeler or otherwise fix the protected access pattern.
+# pylint: disable=protected-access
+class HaplotypeLabeler(variant_labeler._VariantLabeler):
+  """Haplotype-based variant labeler."""
+
+  def __init__(
+      self,
+      vcf_reader,
+      ref_reader,
+      confident_regions=None,
+      max_group_size=_MAX_GROUP_SIZE,
+      max_distance_within_grouped_variants=_MAX_DISTANCE_WITHIN_VARIANT_GROUP):
+    """Creates a new HaplotypeVariantLabeler.
+
+    Args:
+      vcf_reader: a VcfReader object that points to our truth variant set.
+      ref_reader: A FastaReader object we can use to get reference bases.
+      confident_regions: A RangeSet containing all of the confidently called
+        regions. A variant that falls outside of one of these regions will be
+        receive a special not-confident marker.
+      max_group_size: int >= 1. The maximum number of variants we'll attempt to
+        label together. Larger values increase the runtime of the algorithm.
+      max_distance_within_grouped_variants: int >= 0. The maximum distance
+        between variants within a group. Sequential variants separated by more
+        than this value will be placed in separate groups for labeling.
+
+    Raises:
+      ValueError: if vcf_reader is None.
+    """
+    super(HaplotypeLabeler, self).__init__(
+        vcf_reader, confident_regions=confident_regions)
+    self._ref_reader = ref_reader
+    self.max_group_size = max_group_size
+    self.max_distance_within_grouped_variants = (
+        max_distance_within_grouped_variants)
+
+  def label_variants(self, variants):
+    # redacted
+    for variant_group in self.group_variants(variants):
+      for label in self._label_grouped_variants(variant_group):
+        yield label
+
+  def group_variants(self, variants):
+    # redacted
+    # redacted
+    # we don't want to miss any truths (for FN counts) or double count truths.
+    groups = []
+    current_group = []
+    for variant in variants:
+      if self._include_in_variant_group(current_group, variant):
+        current_group.append(variant)
+      else:
+        groups.append(current_group)
+        current_group = [variant]
+
+    if current_group:
+      groups.append(current_group)
+    return groups
+
+  def _include_in_variant_group(self, group, variant):
+    if not group:
+      return True
+    elif len(group) >= self.max_group_size:
+      return False
+    else:
+      last_variant = group[-1]
+      assert variant.reference_name == last_variant.reference_name
+      return (variant.start - last_variant.start <=
+              self.max_distance_within_grouped_variants)
+
+  def _label_grouped_variants(self, variants):
+    # redacted
+
+    # redacted
+    # they should be computed in the grouping.
+    truths = self.get_truth_variants(variants)
+    # redacted
+    # if len(truths) > self.max_group_size + 2:
+    #   logging.warning('Too many truth variants, returning unmodified')
+    #   return examples
+
+    ref = self.make_labeler_ref(variants, truths)
+    labeled_variants = label_variants(variants, truths, ref)
+
+    if not labeled_variants:
+      raise ValueError('Failed to assign labels for variants', variants)
+    else:
+      for labeled in labeled_variants:
+        # redacted
+        yield variant_labeler.VariantLabel(
+            # redacted
+            # now. Rethink how we establish a variant is confident. Seems like
+            # it'd be confident if it has a non-ref genotype (as we only
+            # consider confident truth variants) or if it overlaps the confident
+            # regions.
+            is_confident=self._confident_regions.variant_overlaps(labeled),
+            variant=labeled,
+            truth_variant=None)
+
+  # redacted
+  # We really should fetch the truth variants over the whole interval we are
+  # labeling, and then group them with our candidates.
+  def get_truth_variants(self, variants, extent=10):
+    span = ranges.span([variant_utils.variant_range(v) for v in variants])
+    region = ranges.expand(span, extent)
+    return [
+        m for m in self._vcf_reader.query(region)
+        if not variant_utils.is_filtered(m)
+    ]
+
+  def make_labeler_ref(self, candidate_variants, true_variants, bufsize=20):
+    all_variants = candidate_variants + true_variants
+    contig = all_variants[0].reference_name
+    start = min(x.start for x in all_variants)
+    end = max(x.end for x in all_variants)
+    # redacted
+    region = ranges.make_range(contig, start - 1, end + bufsize)
+    ref_bases = self._ref_reader.bases(region)
+    return Reference(ref_bases, start=region.start)
 
 
 class EnumerationType(enum.Enum):
@@ -63,9 +201,9 @@ def variants_overlap(variant1, variant2):
 
 
 # redacted
-def variant_key(variant, sort_alts=True):
+def variant_key(variant, sort_alleles=True):
   alts = variant.alternate_bases
-  if sort_alts:
+  if sort_alleles:
     alts = sorted(alts)
   return '{}:{}:{}->{}'.format(variant.reference_name, variant.start,
                                variant.reference_bases, '/'.join(alts))
@@ -97,6 +235,7 @@ def variant_genotypes(variants):
   return [tuple(v.calls[0].genotype) if v.calls else (-1, -1) for v in variants]
 
 
+# redacted
 # redacted
 class Reference(object):
   """Allows us to get bases from a cached reference interval."""

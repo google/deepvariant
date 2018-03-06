@@ -503,6 +503,7 @@ py_library(
     srcs = ["haplotype_labeler.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":variant_labeler",
         "//deepvariant/util:ranges",
         "//deepvariant/util:variant_utils",
     ],
@@ -514,6 +515,8 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":haplotype_labeler",
+        ":variant_labeler_test",
+        "//deepvariant/util:ranges",
         "//deepvariant/util:variant_utils",
         "//deepvariant/util/genomics:variants_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",

@@ -36,12 +36,15 @@ import itertools
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import mock
 from deepvariant.util.genomics import variants_pb2
+from deepvariant.util import ranges
 
 from deepvariant import haplotype_labeler
+from deepvariant import variant_labeler_test
 
 
-def _test_variant(start, alleles, gt=None):
+def _test_variant(start=10, alleles=('A', 'C'), gt=None):
   variant = variants_pb2.Variant(
       reference_name='20',
       start=start,
@@ -54,6 +57,225 @@ def _test_variant(start, alleles, gt=None):
     variant.calls.add(genotype=gt)
 
   return variant
+
+
+def _variants_from_grouped_positions(grouped_positions):
+  groups = [
+      [_test_variant(start=s) for s in starts] for starts in grouped_positions
+  ]
+  variants = [v for subgroup in groups for v in subgroup]
+  return variants, groups
+
+
+def _make_labeler(truth_variants=None, confident_regions=None, **kwargs):
+  mock_ref_reader = mock.MagicMock()
+  return haplotype_labeler.HaplotypeLabeler(
+      vcf_reader=variant_labeler_test.mock_vcf_reader(truth_variants or []),
+      ref_reader=mock_ref_reader,
+      confident_regions=confident_regions,
+      **kwargs)
+
+
+class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      # If there are no variants, we don't get any groups.
+      dict(grouped_positions=[]),
+      # A single variant at 10 gets put in a single group.
+      dict(grouped_positions=[[10]]),
+      # A two variants (at 10 and 11) get grouped because 1 < the max_dist=10.
+      dict(grouped_positions=[[10, 11]]),
+      # A two variants at 10 and 50 get grouped separately because their
+      # distance > max_dist=10.
+      dict(grouped_positions=[[10], [50]]),
+      # Check the behavior right around max_dist.
+      dict(grouped_positions=[[10, 19]]),
+      dict(grouped_positions=[[10, 20]]),
+      dict(grouped_positions=[[10], [21]]),
+      # A few complex examples with multiple variants getting grouped.
+      dict(grouped_positions=[[10, 15], [45, 50], [65]]),
+      dict(grouped_positions=[[10, 12, 15], [45, 49, 50], [65, 70]]),
+      # The distance calculation compares not first variant in the group but the
+      # closest one, so we can have a group with collective distance > max_dist
+      # as long as the distance between successive variants <= max_dist
+      dict(grouped_positions=[[10, 20, 30, 40]]),
+  )
+  def test_group_variants_examples(self, grouped_positions):
+    labeler = _make_labeler(max_distance_within_grouped_variants=10)
+    variants, groups = _variants_from_grouped_positions(grouped_positions)
+    self.assertEqual(labeler.group_variants(variants), groups)
+
+  @parameterized.parameters(
+      dict(separation=s, max_dist_within_group=d)
+      for d in range(5)
+      for s in range(d + 1))
+  def test_group_variants_respects_max_dist(self, separation,
+                                            max_dist_within_group):
+    labeler = _make_labeler(
+        max_distance_within_grouped_variants=max_dist_within_group)
+    variants = [
+        _test_variant(start=10),
+        _test_variant(start=10 + separation),
+    ]
+    self.assertLessEqual(separation, max_dist_within_group)
+    # Because separation <= max_dist_within_group, all variants should be in a
+    # single group.
+    self.assertEqual(labeler.group_variants(variants), [variants])
+
+  @parameterized.parameters(range(1, 10))
+  def test_group_variants_works_with_any_number_of_variants(self, n_variants):
+    labeler = _make_labeler(
+        max_group_size=n_variants,
+        max_distance_within_grouped_variants=n_variants)
+    variants = [_test_variant(start=10 + i) for i in range(n_variants)]
+    self.assertEqual(labeler.group_variants(variants), [variants])
+
+  @parameterized.parameters(
+      dict(
+          grouped_positions=[[10, 11, 12, 13]],
+          max_group_size=4,
+      ),
+      dict(
+          grouped_positions=[[10, 11, 12], [13]],
+          max_group_size=3,
+      ),
+      dict(
+          grouped_positions=[[10, 11], [12, 13]],
+          max_group_size=2,
+      ),
+      dict(
+          grouped_positions=[[10], [11], [12], [13]],
+          max_group_size=1,
+      ),
+  )
+  def test_group_variants_group_size_works(self, grouped_positions,
+                                           max_group_size):
+    labeler = _make_labeler(
+        max_distance_within_grouped_variants=10, max_group_size=max_group_size)
+    variants, groups = _variants_from_grouped_positions(grouped_positions)
+    self.assertEqual(labeler.group_variants(variants), groups)
+
+  @parameterized.parameters(
+      # Check a simple case of two SNPs.
+      dict(
+          candidates=[
+              _test_variant(start=10, alleles=['A', 'C']),
+              _test_variant(start=20, alleles=['A', 'C']),
+          ],
+          truths=[],
+          expected_start=9,
+          expected_end=21,
+          bufsize=0,
+      ),
+      # Check that we respect the deletion's span in the last candidate.
+      dict(
+          candidates=[
+              _test_variant(start=10, alleles=['A', 'C']),
+              _test_variant(start=20, alleles=['AAA', 'C']),
+          ],
+          truths=[],
+          expected_start=9,
+          expected_end=23,
+          bufsize=0,
+      ),
+      # Check that we respect handle truth variants, as the interval is entirely
+      # determined by truth variants here.
+      dict(
+          candidates=[
+              _test_variant(start=15, alleles=['A', 'C']),
+          ],
+          truths=[
+              _test_variant(start=10, alleles=['A', 'C']),
+              _test_variant(start=20, alleles=['AAA', 'C']),
+          ],
+          expected_start=9,
+          expected_end=23,
+          bufsize=0,
+      ),
+      # Check that bufsize is respected.
+      dict(
+          candidates=[
+              _test_variant(start=10, alleles=['A', 'C']),
+              _test_variant(start=20, alleles=['AAA', 'C']),
+          ],
+          truths=[],
+          expected_start=9,
+          expected_end=23 + 10,  # 10 is the bufsize.
+          bufsize=10,
+      ),
+  )
+  def test_make_labeler_ref(self, candidates, truths, expected_start,
+                            expected_end, bufsize):
+    expected_bases = 'A' * (expected_end - expected_start)
+
+    labeler = _make_labeler()
+    labeler._ref_reader.bases.return_value = expected_bases
+
+    labeler_ref = labeler.make_labeler_ref(candidates, truths, bufsize=bufsize)
+
+    labeler._ref_reader.bases.assert_called_once_with(
+        ranges.make_range('20', expected_start, expected_end))
+    self.assertEqual(labeler_ref.start, expected_start)
+    self.assertEqual(labeler_ref.end, expected_end)
+    self.assertEqual(
+        labeler_ref.bases(expected_start, expected_end), expected_bases)
+
+  def test_label_variants(self):
+    v1 = _test_variant(start=10, alleles=['A', 'C'])
+    v2 = _test_variant(start=20, alleles=['A', 'C'])
+    v3 = _test_variant(start=30, alleles=['A', 'C'])
+    v4 = _test_variant(start=40, alleles=['A', 'C'])
+    l1, l2, l3, l4 = ['l1', 'l2', 'l3', 'l4']
+
+    variants = [v1, v2, v3, v4]
+    variant_groups = [[v1, v2], [v3, v4]]
+    labeled_groups = [[l1, l2], [l3, l4]]
+
+    labeler = _make_labeler()
+    labeler.group_variants = mock.Mock(return_value=variant_groups)
+    labeler._label_grouped_variants = mock.Mock(side_effect=labeled_groups)
+
+    result = list(labeler.label_variants(variants))
+
+    labeler.group_variants.assert_called_once_with(variants)
+    self.assertEqual(labeler._label_grouped_variants.call_args_list,
+                     [mock.call(g) for g in variant_groups])
+    self.assertEqual(result,
+                     [label for group in labeled_groups for label in group])
+
+
+class HaplotypeLabelerUtilitiesUnitTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      # Bi-allelic.
+      dict(n_alleles=2, indices=[0], genotype=[0, 0], expected=0),
+      dict(n_alleles=2, indices=[0], genotype=[0, 1], expected=1),
+      dict(n_alleles=2, indices=[0], genotype=[1, 1], expected=2),
+      # Multi-allelic.
+      dict(n_alleles=3, indices=[0], genotype=[0, 0], expected=0),
+      dict(n_alleles=3, indices=[1], genotype=[0, 0], expected=0),
+      dict(n_alleles=3, indices=[0, 1], genotype=[0, 0], expected=0),
+      dict(n_alleles=3, indices=[0], genotype=[0, 1], expected=1),
+      dict(n_alleles=3, indices=[1], genotype=[0, 1], expected=0),
+      dict(n_alleles=3, indices=[0, 1], genotype=[0, 1], expected=1),
+      dict(n_alleles=3, indices=[0], genotype=[1, 1], expected=2),
+      dict(n_alleles=3, indices=[1], genotype=[1, 1], expected=0),
+      dict(n_alleles=3, indices=[0, 1], genotype=[1, 1], expected=2),
+      dict(n_alleles=3, indices=[0], genotype=[0, 2], expected=0),
+      dict(n_alleles=3, indices=[1], genotype=[0, 2], expected=1),
+      dict(n_alleles=3, indices=[0, 1], genotype=[0, 2], expected=1),
+      dict(n_alleles=3, indices=[0], genotype=[1, 2], expected=1),
+      dict(n_alleles=3, indices=[1], genotype=[1, 2], expected=1),
+      dict(n_alleles=3, indices=[0, 1], genotype=[1, 2], expected=2),
+      dict(n_alleles=3, indices=[0], genotype=[2, 2], expected=0),
+      dict(n_alleles=3, indices=[1], genotype=[2, 2], expected=2),
+      dict(n_alleles=3, indices=[0, 1], genotype=[2, 2], expected=2),
+  )
+  def test_label_from_genotypes(self, n_alleles, indices, genotype, expected):
+    alleles = ['A', 'C', 'G', 'T'][0:n_alleles]
+    variant = _test_variant(start=1, alleles=alleles, gt=genotype)
+    self.assertEqual(
+        haplotype_labeler.label_from_genotypes(variant, indices), expected)
 
 
 class LabelerMatchTests(parameterized.TestCase):
