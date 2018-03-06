@@ -1,4 +1,4 @@
-licenses(["notice"])  # Apache License 2.0
+licenses(["notice"])
 
 exports_files([
     "abseil_cpp.LICENSE",

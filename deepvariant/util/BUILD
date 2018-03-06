@@ -8,7 +8,7 @@ package(
     ],
 )
 
-licenses(["notice"])  # Apache 2.0 License
+licenses(["notice"])
 
 exports_files(["LICENSE"])
 
