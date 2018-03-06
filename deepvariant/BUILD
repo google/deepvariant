@@ -419,6 +419,7 @@ py_library(
         "//deepvariant/core:genomics_math",
         "//deepvariant/core:io_utils",
         "//deepvariant/core:proto_utils",
+        "//deepvariant/core:ranges",
         "//deepvariant/core:variantutils",
         "//deepvariant/core/genomics:struct_py_pb2",
         "//deepvariant/core/genomics:variants_py_pb2",
