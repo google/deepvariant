@@ -40,8 +40,8 @@ import mock
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 
-from deepvariant import haplotype_labeler
-from deepvariant import variant_labeler_test
+from deepvariant.labeler import haplotype_labeler
+from deepvariant.labeler import variant_labeler_test
 
 
 def _test_variant(start=10, alleles=('A', 'C'), gt=None):

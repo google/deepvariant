@@ -55,7 +55,7 @@ from deepvariant.util import vcf_constants
 from deepvariant import make_examples
 from deepvariant import test_utils
 from deepvariant import tf_utils
-from deepvariant import variant_labeler
+from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.protos import realigner_pb2
 from deepvariant.testing import flagsaver

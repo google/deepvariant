@@ -41,7 +41,7 @@ import mock
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
 from deepvariant import test_utils
-from deepvariant import variant_labeler
+from deepvariant.labeler import variant_labeler
 
 
 def setUpModule():

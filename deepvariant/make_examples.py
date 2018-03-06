@@ -56,7 +56,7 @@ from deepvariant import logging_level
 from deepvariant import pileup_image
 from deepvariant import tf_utils
 from deepvariant import variant_caller
-from deepvariant import variant_labeler
+from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.realigner import realigner
