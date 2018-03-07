@@ -56,6 +56,7 @@ from deepvariant import logging_level
 from deepvariant import pileup_image
 from deepvariant import tf_utils
 from deepvariant import variant_caller
+from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
@@ -179,10 +180,49 @@ flags.DEFINE_integer(
     'Height for the pileup image. If 0, uses the default height')
 flags.DEFINE_integer('pileup_image_width', 0,
                      'Width for the pileup image. If 0, uses the default width')
+flags.DEFINE_string(
+    'labeler_algorithm', 'positional_labeler',
+    'Algorithm to use to label examples in training mode. Must be one of the '
+    'LabelerAlgorithm enum values in the DeepVariantOptions proto.')
+
 
 # ---------------------------------------------------------------------------
 # Option handling
 # ---------------------------------------------------------------------------
+
+
+def parse_proto_enum_flag(proto_enum_pb2,
+                          flag_value,
+                          skip_unspecified_option=True):
+  """Parses a command line flag string value into a protobuf Enum value.
+
+  Args:
+    proto_enum_pb2: a enum_type_wrapper.EnumTypeWrapper type containing a proto
+      enum definition. For example, this would be
+      deepvariant_pb2.DeepVariantOptions.Mode to get the DeepVariantOptions Mode
+      enum. See:
+      https://developers.google.com/protocol-buffers/docs/reference/python-generated#enum
+      for more information.
+    flag_value: str. The name of the proto enum option from the command line we
+      want to convert into the enum value.
+    skip_unspecified_option: bool. If True, any enum options that include the
+      string 'unspecified' (in any case) will be excluded from the list of
+      allowed options in the ValueError raised if flag_value isn't valid.
+
+  Returns:
+    The enum value for flag_value in proto_enum_pb2
+
+  Raises:
+    ValueError: if flag_value isn't a valid enum name in proto_enum_pb2.
+  """
+  try:
+    return proto_enum_pb2.Value(flag_value)
+  except ValueError:
+    options = proto_enum_pb2.keys()
+    if skip_unspecified_option:
+      options = [o for o in options if 'unspecified' not in o.lower()]
+    raise ValueError('Unknown enum option "{}". Allowed options are {}'.format(
+        flag_value, ','.join(sorted(options))))
 
 
 def parse_regions_flag(regions_flag_value):
@@ -258,12 +298,12 @@ def default_options(add_flags=True, flags_obj=None):
   )
 
   if add_flags:
-    if flags_obj.mode == 'training':
-      options.mode = deepvariant_pb2.DeepVariantOptions.TRAINING
-    elif flags_obj.mode == 'calling':
-      options.mode = deepvariant_pb2.DeepVariantOptions.CALLING
-    else:
-      raise ValueError('Unexpected mode', flags_obj.mode)
+    options.mode = parse_proto_enum_flag(
+        deepvariant_pb2.DeepVariantOptions.Mode, flags_obj.mode.upper())
+
+    options.labeler_algorithm = parse_proto_enum_flag(
+        deepvariant_pb2.DeepVariantOptions.LabelerAlgorithm,
+        flags_obj.labeler_algorithm.upper())
 
     if flags_obj.ref:
       options.reference_filename = flags_obj.ref
@@ -670,17 +710,31 @@ class RegionProcessor(object):
         options=self.options.pic_options)
 
     if in_training_mode(self.options):
-      self.labeler = variant_labeler.make_labeler(
-          truth_variants_reader=vcf.VcfReader(
-              self.options.truth_variants_filename),
-          ref_reader=self.ref_reader,
-          confident_regions=read_confident_regions(self.options),
-          options=None)
+      self.labeler = self._make_labeler_from_options()
 
     self.variant_caller = variant_caller.VariantCaller(
         self.options.variant_caller_options)
     self.random = np.random.RandomState(self.options.random_seed)
     self.initialized = True
+
+  def _make_labeler_from_options(self):
+    truth_vcf_reader = vcf.VcfReader(self.options.truth_variants_filename)
+    confident_regions = read_confident_regions(self.options)
+
+    if (self.options.labeler_algorithm ==
+        deepvariant_pb2.DeepVariantOptions.POSITIONAL_LABELER):
+      return variant_labeler.PositionalVariantLabeler(
+          truth_vcf_reader=truth_vcf_reader,
+          confident_regions=confident_regions)
+    elif (self.options.labeler_algorithm ==
+          deepvariant_pb2.DeepVariantOptions.HAPLOTYPE_LABELER):
+      return haplotype_labeler.HaplotypeLabeler(
+          truth_vcf_reader=truth_vcf_reader,
+          ref_reader=self.ref_reader,
+          confident_regions=confident_regions)
+    else:
+      raise ValueError('Unexpected labeler_algorithm',
+                       self.options.labeler_algorithm)
 
   def process(self, region):
     """Finds candidates and creates corresponding examples in a region.

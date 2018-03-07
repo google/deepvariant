@@ -422,7 +422,7 @@ message PileupImageOptions {
 
 // High-level options that encapsolates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 27.
+// Next ID: 28.
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -522,6 +522,21 @@ message DeepVariantOptions {
   // regions will be excluded from calling.
   repeated string exclude_calling_regions = 26;
 
+  // An enumeration of all of the labeler algorithms we support in DeepVariant.
+  enum LabelerAlgorithm {
+    UNSPECIFIED_LABELER_ALGORITHM = 0;
+    // The labeling algorithm used with DeepVariant 0.4-0.5, which does position
+    // matching to find truth variant to label our candidates.
+    POSITIONAL_LABELER = 1;
+    // A haplotype-aware labeling algorithm, similar to hap.py xcmp, that looks
+    // for genotypes for candidate variants that produce haplotypes that match
+    // those implied by the genotypes of our truth variants. Produces more
+    // accurate labels than the POSITIONAL_LABELER labeling algorithm.
+    HAPLOTYPE_LABELER = 2;
+  }
+  // The labeling algorithm we are using in this DeepVariant run. Only needed
+  // when in CALLING mode.
+  LabelerAlgorithm labeler_algorithm = 27;
 }
 
 // Config describe information needed for a dataset that can be used for

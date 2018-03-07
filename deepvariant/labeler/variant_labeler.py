@@ -42,23 +42,6 @@ from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import variant_utils
 
 
-# redacted
-def make_labeler(truth_variants_reader, ref_reader, confident_regions, options):
-  # redacted
-  del options, ref_reader
-
-  return PositionalVariantLabeler(
-      vcf_reader=truth_variants_reader, confident_regions=confident_regions)
-
-  # redacted
-  # elif options.version == 'v2':
-  #   return HaplotypeAwareLabeler(
-  #       vcf_reader=truth_variants_reader,
-  #       ref_reader=ref_reader,
-  #       confident_regions=confident_regions,
-  #       options=options)
-
-
 # ---------------------------------------------------------------------------
 # VariantLabel
 #
@@ -176,11 +159,11 @@ class PositionalVariantLabeler(_VariantLabeler):
   the candidate variants and the truth variants.
   """
 
-  def __init__(self, vcf_reader, confident_regions=None):
+  def __init__(self, truth_vcf_reader, confident_regions=None):
     """Creates a new VariantLabeler.
 
     Args:
-      vcf_reader: a VcfReader object that points to our truth variant set.
+      truth_vcf_reader: a VcfReader object that points to our truth variant set.
       confident_regions: A RangeSet containing all of the confidently called
         regions. A variant that falls outside of one of these regions will be
         receive a special not-confident marker.
@@ -189,7 +172,7 @@ class PositionalVariantLabeler(_VariantLabeler):
       ValueError: if vcf_reader is None.
     """
     super(PositionalVariantLabeler, self).__init__(
-        vcf_reader, confident_regions=confident_regions)
+        truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions)
 
   def label_variants(self, variants):
     for variant in variants:

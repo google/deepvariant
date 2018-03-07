@@ -141,13 +141,18 @@ def _sharded(basename, num_shards):
     return basename
 
 
-@parameterized.parameters((mode, num_shards)
-                          for mode in ['training', 'calling']
-                          for num_shards in [0, 3])
+@parameterized.parameters(
+    dict(mode='calling', num_shards=0),
+    dict(mode='calling', num_shards=3),
+    dict(mode='training', num_shards=0, labeler_algorithm='positional_labeler'),
+    dict(mode='training', num_shards=0, labeler_algorithm='haplotype_labeler'),
+    dict(mode='training', num_shards=3, labeler_algorithm='haplotype_labeler'),
+)
 class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
-  def test_make_examples_end2end(self, mode, num_shards):
+  def test_make_examples_end2end(self, mode, num_shards,
+                                 labeler_algorithm=None):
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.ref = test_utils.CHR20_FASTA
@@ -160,6 +165,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
     FLAGS.gvcf_gq_binsize = 5
+    if labeler_algorithm is not None:
+      FLAGS.labeler_algorithm = labeler_algorithm
 
     if mode == 'calling':
       FLAGS.gvcf = test_utils.test_tmpfile(
@@ -348,6 +355,28 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
 
 class MakeExamplesUnitTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      dict(
+          flag_value='CALLING',
+          expected=deepvariant_pb2.DeepVariantOptions.CALLING,
+      ),
+      dict(
+          flag_value='TRAINING',
+          expected=deepvariant_pb2.DeepVariantOptions.TRAINING,
+      ),
+  )
+  def test_parse_proto_enum_flag(self, flag_value, expected):
+    enum_pb2 = deepvariant_pb2.DeepVariantOptions.Mode
+    self.assertEqual(
+        make_examples.parse_proto_enum_flag(enum_pb2, flag_value), expected)
+
+  def test_parse_proto_enum_flag_error_handling(self):
+    with self.assertRaisesRegexp(
+        ValueError,
+        'Unknown enum option "foo". Allowed options are CALLING,TRAINING'):
+      make_examples.parse_proto_enum_flag(
+          deepvariant_pb2.DeepVariantOptions.Mode, 'foo')
 
   @flagsaver.FlagSaver
   def test_default_options_with_training_random_emit_ref_sites(self):

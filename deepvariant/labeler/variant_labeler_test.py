@@ -91,11 +91,9 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
   variants = [snp, deletion, multiallelic, non_confident, filtered]
 
   def _make_labeler(self, variants, confident_regions):
-    return variant_labeler.make_labeler(
-        truth_variants_reader=mock_vcf_reader(variants),
-        confident_regions=confident_regions,
-        ref_reader=None,
-        options=None)
+    return variant_labeler.PositionalVariantLabeler(
+        truth_vcf_reader=mock_vcf_reader(variants),
+        confident_regions=confident_regions)
 
   @parameterized.parameters(
       # Simple tests: we get back our matching variants in the confident regions

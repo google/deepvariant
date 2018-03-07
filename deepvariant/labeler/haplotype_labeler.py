@@ -164,6 +164,7 @@ class HaplotypeLabeler(variant_labeler._VariantLabeler):
             # consider confident truth variants) or if it overlaps the confident
             # regions.
             is_confident=self._confident_regions.variant_overlaps(labeled),
+            genotype=tuple(labeled.calls[0].genotype),
             variant=labeled)
 
   # redacted
@@ -173,7 +174,7 @@ class HaplotypeLabeler(variant_labeler._VariantLabeler):
     span = ranges.span([variant_utils.variant_range(v) for v in variants])
     region = ranges.expand(span, extent)
     return [
-        m for m in self._vcf_reader.query(region)
+        m for m in self._truth_vcf_reader.query(region)
         if not variant_utils.is_filtered(m)
     ]
 
