@@ -55,13 +55,13 @@ DEFAULT_NUM_CLASSES = 3
 def make_batches(dataset, model, batch_size, mode):
   """Provides batches of pileup images from this dataset.
 
-  Creates a DataSetProvider for dataset, extracts image, label, and
-  truth_variant from it, preprocesses each image with model.preprocess_image()
-  and finally batches these up.
+  Creates a DataSetProvider for dataset, extracts image, label, and variant
+  from it, preprocesses each image with model.preprocess_image() and finally
+  batches these up.
 
   Args:
     dataset: a slim DataSet we want to turn into batches. Must provide data
-      items "image", "label", and "truth_variant".
+      items "image", "label", and "variant".
     model: a DeepVariantModel to use for preprocessing each image before
       batching.
     batch_size: the number of images in each batch.
@@ -72,7 +72,7 @@ def make_batches(dataset, model, batch_size, mode):
       (batch_size, height, width, 3).
     labels: a 1-D integer Tensor shape (batch_size,) containing the labels for
       each image, in the same order.
-    encoded_truth_variants: Tensor of strings with shape (batch_size,).
+    encoded_variants: Tensor of strings with shape (batch_size,).
       Each element of this tensor is a byte-encoded nucleus.genomics.v1.Variant
       protobuf in the same order as images and one_hot_labels.
 
@@ -101,13 +101,12 @@ def make_batches(dataset, model, batch_size, mode):
         })
 
   # Load the data.
-  image, label, truth_variant = data_provider.get(
-      ['image', 'label', 'truth_variant'])
+  image, label, variant = data_provider.get(['image', 'label', 'variant'])
   image = model.preprocess_image(image)
 
   if mode == 'TRAIN':
     return tf.train.shuffle_batch(
-        [image, label, truth_variant],
+        [image, label, variant],
         batch_size=batch_size,
         num_threads=4,
         capacity=5000,
@@ -115,7 +114,7 @@ def make_batches(dataset, model, batch_size, mode):
         min_after_dequeue=min(1000, dataset.num_samples))
   else:
     return tf.train.batch(
-        [image, label, truth_variant], batch_size=batch_size, num_threads=1)
+        [image, label, variant], batch_size=batch_size, num_threads=1)
 
 
 # redacted
@@ -165,7 +164,6 @@ class DeepVariantDataSet(object):
     keys_to_features = {
         'image/encoded': tf.FixedLenFeature((), tf.string),
         'variant/encoded': tf.FixedLenFeature((), tf.string),
-        'truth_variant/encoded': tf.FixedLenFeature((), tf.string),
         'image/format': tf.FixedLenFeature((), tf.string),
         'label': tf.FixedLenFeature((1,), tf.int64),
         'locus': tf.FixedLenFeature((), tf.string),
@@ -180,8 +178,6 @@ class DeepVariantDataSet(object):
             slim.tfexample_decoder.Tensor('locus', shape=[]),
         'variant':
             slim.tfexample_decoder.Tensor('variant/encoded', shape=[]),
-        'truth_variant':
-            slim.tfexample_decoder.Tensor('truth_variant/encoded', shape=[]),
     }
 
     # redacted

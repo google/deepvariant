@@ -153,9 +153,8 @@ class DataProviderTest(parameterized.TestCase):
     with tf.Session():
       slim_ds = ds.get_slim_dataset()
       self.assertEqual(ds.num_examples, slim_ds.num_samples)
-      self.assertItemsEqual(
-          ['image', 'label', 'locus', 'variant', 'truth_variant'],
-          slim_ds.decoder.list_items())
+      self.assertItemsEqual(['image', 'label', 'locus', 'variant'],
+                            slim_ds.decoder.list_items())
       self.assertEqual([100, 221, pileup_image.DEFAULT_NUM_CHANNEL],
                        ds.tensor_shape)
 

@@ -847,7 +847,6 @@ class RegionProcessor(object):
     alt_alleles_indices = tf_utils.example_alt_alleles_indices(example)
     tf_utils.example_set_label(example,
                                label.label_for_alt_alleles(alt_alleles_indices))
-    tf_utils.example_set_truth_variant(example, label.truth_variant)
     return example
 
 

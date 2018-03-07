@@ -172,7 +172,7 @@ def main(_):
   )
 
 
-def make_metrics(predictions, labels, encoded_truth_variants):
+def make_metrics(predictions, labels, encoded_variants):
   """Creates our evaluation metrics."""
   # Define the metrics we'll get for each variant selection:
   raw_metrics = {
@@ -187,7 +187,7 @@ def make_metrics(predictions, labels, encoded_truth_variants):
   }
 
   def _make_selector(func):
-    return select_variants_weights(func, encoded_truth_variants)
+    return select_variants_weights(func, encoded_variants)
 
   selectors = {
       'All': None,
@@ -232,7 +232,7 @@ def eval_loop(master, dataset_config_pbtxt, checkpoint_dir, model_name,
       dataset = data_providers.get_dataset(dataset_config_pbtxt)
       logging.info('Running evaluations on %s with model %s', dataset, model)
 
-      images, labels, encoded_truth_variants = data_providers.make_batches(
+      images, labels, encoded_variant = data_providers.make_batches(
           dataset.get_slim_dataset(), model, batch_size, mode='EVAL')
       endpoints = model.create(images, dataset.num_classes, is_training=False)
       predictions = tf.argmax(endpoints['Predictions'], 1)
@@ -251,7 +251,7 @@ def eval_loop(master, dataset_config_pbtxt, checkpoint_dir, model_name,
       variables_to_restore[tf_global_step.op.name] = tf_global_step
 
       names_to_values, names_to_updates = make_metrics(predictions, labels,
-                                                       encoded_truth_variants)
+                                                       encoded_variant)
 
       for name, value in names_to_values.iteritems():
         slim.summaries.add_scalar_summary(value, name, print_summary=True)

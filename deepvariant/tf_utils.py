@@ -97,12 +97,6 @@ def example_image_shape(example):
   return example.features.feature['image/shape'].int64_list.value[0:3]
 
 
-def example_truth_variant(example):
-  """Gets and decodes the truth_variant field from example as a Variant."""
-  return variants_pb2.Variant.FromString(
-      example.features.feature['truth_variant/encoded'].bytes_list.value[0])
-
-
 def example_key(example):
   """Constructs a key for example based on its position and alleles."""
   variant = example_variant(example)
@@ -121,28 +115,6 @@ def example_set_label(example, numeric_label):
     numeric_label: A numeric (int64 compatible) label for example.
   """
   example.features.feature['label'].int64_list.value[:] = [numeric_label]
-
-
-def example_set_truth_variant(example, truth_variant, simplify=True):
-  """Sets the truth_variant feature of example to truth_variant.
-
-  The feature 'truth_variant' of example.features gets set to the serialized
-  version of truth_variant. If simplify is True, we strip out the fields of
-  truth_variant that aren't useful for training purposes (such as the INFO
-  field map). truth_variant isn't modified directly, regardless.
-
-  Args:
-    example: a tf.Example proto.
-    truth_variant: a
-      third_party.nucleus.protos.Variant proto.
-    simplify: boolean. If True, we will simplify truth_variant before encoding
-      it. If False, truth_variant will be written out as is.
-  """
-  if simplify:
-    truth_variant = _simplify_variant(truth_variant)
-  example.features.feature['truth_variant/encoded'].bytes_list.value[:] = [
-      truth_variant.SerializeToString()
-  ]
 
 
 def example_set_variant(example, variant):

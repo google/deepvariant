@@ -69,7 +69,6 @@ _EXAMPLE_DECODERS = {
     'image/encoded': tf_utils.example_encoded_image,
     'variant/encoded': tf_utils.example_variant,
     'label': tf_utils.example_label,
-    'truth_variant/encoded': tf_utils.example_truth_variant,
     'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
 }
@@ -338,26 +337,19 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   def verify_examples(self, examples_filename, region, options, verify_labels):
     # Do some simple structural checks on the tf.Examples in the file.
-    expected_labels = [
+    expected_features = [
         'variant/encoded', 'locus', 'image/format', 'image/encoded',
         'alt_allele_indices/encoded'
     ]
     if verify_labels:
-      expected_labels += ['label', 'truth_variant/encoded']
+      expected_features += ['label']
 
     examples = list(io_utils.read_tfrecords(examples_filename))
     for example in examples:
-      for label_feature in expected_labels:
+      for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)
       # pylint: disable=g-explicit-length-test
       self.assertGreater(len(tf_utils.example_alt_alleles_indices(example)), 0)
-
-      if verify_labels:
-        # Check that our variant and our truth_variant both have the same start.
-        self.assertEqual(
-            variant_utils.variant_position(tf_utils.example_variant(example)),
-            variant_utils.variant_position(
-                tf_utils.example_truth_variant(example)))
 
     # Check that the variants in the examples are good.
     variants = [tf_utils.example_variant(x) for x in examples]
@@ -1131,8 +1123,6 @@ class RegionProcessorTest(parameterized.TestCase):
       self.assertEqual(value, labeled.features.feature[key])
 
     self.assertEqual(expected_label_value, tf_utils.example_label(labeled))
-    self.assertEqual(label.truth_variant,
-                     tf_utils.example_truth_variant(labeled))
 
   def test_label_variant_raises_for_non_confident_variant(self):
     label = variant_labeler.VariantLabel(

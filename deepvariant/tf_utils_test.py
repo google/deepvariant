@@ -143,54 +143,6 @@ class TFUtilsTest(parameterized.TestCase):
       tf_utils.example_set_label(example, label)
       self.assertEqual(label, tf_utils.example_label(example))
 
-  def testExampleSetTruthVariant(self):
-    example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
-                                    self.default_shape, self.default_format)
-    full_tvariant = variants_pb2.Variant(
-        variant_set_id='variant_set_id',
-        id='id',
-        names=['name1'],
-        created=1234,
-        reference_name='1',
-        start=10,
-        end=11,
-        reference_bases='C',
-        alternate_bases=['A'],
-        filter=['PASS'],
-        quality=1234.5,
-        calls=[
-            variants_pb2.VariantCall(
-                call_set_id='call_set_id',
-                call_set_name='call_set_name',
-                genotype=[0, 1],
-                phaseset='phaseset',
-                genotype_likelihood=[0.1, 0.2, 0.3])
-        ])
-    test_utils.set_list_values(full_tvariant.info['key'], [1])
-    test_utils.set_list_values(full_tvariant.calls[0].info['key'], [2])
-
-    simple_tvariant = variants_pb2.Variant(
-        reference_name='1',
-        start=10,
-        end=11,
-        reference_bases='C',
-        alternate_bases=['A'],
-        filter=['PASS'],
-        quality=1234.5,
-        calls=[
-            variants_pb2.VariantCall(
-                call_set_name='call_set_name', genotype=[0, 1])
-        ])
-    test_utils.set_list_values(simple_tvariant.calls[0].info['key'], [2])
-
-    self.assertIsNotAFeature('truth_variant/encoded', example)
-    tf_utils.example_set_truth_variant(example, full_tvariant, simplify=False)
-    self.assertEqual(full_tvariant, tf_utils.example_truth_variant(example))
-
-    # Check that reencoding with simplify=True produces the simplified version.
-    tf_utils.example_set_truth_variant(example, full_tvariant, simplify=True)
-    self.assertEqual(simple_tvariant, tf_utils.example_truth_variant(example))
-
   def testExampleImageShape(self):
     example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
                                     self.default_shape, self.default_format)
