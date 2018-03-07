@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import itertools
 import numbers
 
 
@@ -808,3 +809,83 @@ def allele_indices_with_num_alts(variant, num_alts, ploidy=2):
     return [(i, j)
             for i in range(1, max_candidate_alt_ix + 1)
             for j in range(i, max_candidate_alt_ix + 1)]
+
+
+def variants_overlap(variant1, variant2):
+  """Returns True if the range of variant1 and variant2 overlap.
+
+  This is equivalent to:
+
+    ranges_overlap(variant_range(variant1), variant_range(variant2))
+
+  Args:
+    variant1: third_party.nucleus.protos.Variant we want to compare for overlap.
+    variant2: third_party.nucleus.protos.Variant we want to compare for overlap.
+
+  Returns:
+    True if the variants overlap, False otherwise.
+  """
+  return ranges.ranges_overlap(variant_range(variant1), variant_range(variant2))
+
+
+def variant_key(variant, sort_alleles=True):
+  """Gets a human-readable string key that is almost unique for Variant.
+
+  Gets a string key that contains key information about the variant, formatted
+  as:
+
+    reference_name:start+1:reference_bases->alternative_bases
+
+  where alternative bases is joined with a '/' for each entry in
+  alternative_bases. The start+1 is so we display the position, which starts at
+  1, and not the offset, which starts at 0.
+
+  For example, a Variant(reference_name='20', start=10, reference_bases='AC',
+  alternative_bases=['A', 'ACC']) would have a key of:
+
+    20:11:AC->A/ACC
+
+  The key is 'almost unique' in that the reference_name + start + alleles should
+  generally occur once within a single VCF file, given the way the VCF
+  specification works.
+
+  Args:
+    variant: third_party.nucleus.protos.Variant to make into a key.
+    sort_alleles: bool. If True, the alternative_bases of variant will be sorted
+      according to their lexicographic order. If False, the alternative_bases
+      will be displayed in their order in the Variant.
+
+  Returns:
+    A str.
+  """
+  alts = variant.alternate_bases
+  if sort_alleles:
+    alts = sorted(alts)
+  return '{}:{}:{}->{}'.format(variant.reference_name, variant.start + 1,
+                               variant.reference_bases, '/'.join(alts))
+
+
+def sorted_variants(variants):
+  """Returns sorted(variants, key=variant_range_tuple)."""
+  return sorted(variants, key=variant_range_tuple)
+
+
+def variants_are_sorted(variants):
+  """Returns True if variants are sorted w.r.t. variant_range.
+
+  Args:
+    variants: list[third_party.nucleus.protos.Variant]. A list of Variant protos
+      that may or may not be sorted.
+
+  Returns:
+    True if variants are sorted, False otherwise.
+  """
+  def _pairwise(iterable):
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return itertools.izip(a, b)
+
+  for r1, r2 in _pairwise(variant_range_tuple(v) for v in variants):
+    if r2 < r1:
+      return False
+  return True

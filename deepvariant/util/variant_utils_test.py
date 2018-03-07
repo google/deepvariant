@@ -33,10 +33,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
+import itertools
 
 from absl.testing import absltest
+from absl import logging
 from absl.testing import parameterized
+import mock
 
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
@@ -601,6 +603,89 @@ class VariantUtilsTests(parameterized.TestCase):
     variant = variants_pb2.Variant(alternate_bases=alt_bases)
     with self.assertRaises((NotImplementedError, ValueError)):
       variant_utils.allele_indices_with_num_alts(variant, num_alts, ploidy)
+
+  def test_variants_overlap(self):
+    v1 = test_utils.make_variant(chrom='1', alleles=['A', 'C'], start=10)
+    v2 = test_utils.make_variant(chrom='1', alleles=['A', 'C'], start=20)
+    with mock.patch.object(ranges, 'ranges_overlap') as mock_overlap:
+      mock_overlap.return_value = 'SENTINEL'
+      self.assertEqual(variant_utils.variants_overlap(v1, v2), 'SENTINEL')
+      mock_overlap.assert_called_once_with(
+          variant_utils.variant_range(v1), variant_utils.variant_range(v2))
+
+  @parameterized.parameters(
+      # Degenerate cases - no and one variant.
+      dict(sorted_variants=[],),
+      dict(sorted_variants=[
+          test_utils.make_variant(chrom='1', start=10),
+      ],),
+      # Two variants on the same chromosome.
+      dict(
+          sorted_variants=[
+              test_utils.make_variant(chrom='1', start=10),
+              test_utils.make_variant(chrom='1', start=15),
+          ],),
+      # The first variant has start > the second, but it's on a later chrom.
+      dict(
+          sorted_variants=[
+              test_utils.make_variant(chrom='1', start=15),
+              test_utils.make_variant(chrom='2', start=10),
+          ],),
+      # Make sure the end is respected.
+      dict(
+          sorted_variants=[
+              test_utils.make_variant(chrom='1', start=10),
+              test_utils.make_variant(chrom='1', start=15),
+              test_utils.make_variant(chrom='1', alleles=['AA', 'A'], start=15),
+          ],),
+      # Complex example with multiple chromosomes, ends, etc.
+      dict(
+          sorted_variants=[
+              test_utils.make_variant(chrom='1', start=10),
+              test_utils.make_variant(chrom='2', start=5),
+              test_utils.make_variant(chrom='2', alleles=['AA', 'A'], start=5),
+              test_utils.make_variant(chrom='2', start=6),
+              test_utils.make_variant(chrom='2', start=10),
+              test_utils.make_variant(chrom='3', start=2),
+          ],),
+  )
+  def test_sorted_variants(self, sorted_variants):
+    for permutation in itertools.permutations(
+        sorted_variants, r=len(sorted_variants)):
+
+      # Check that sorting the permutations produced sorted.
+      self.assertEqual(
+          variant_utils.sorted_variants(permutation), sorted_variants)
+
+      # Check that variants_are_sorted() is correct, which we detect if
+      # the range_tuples of permutation == the range_tuples of sorted_variants.
+      def _range_tuples(variants):
+        return [variant_utils.variant_range_tuple(v) for v in variants]
+
+      self.assertEqual(
+          variant_utils.variants_are_sorted(permutation),
+          _range_tuples(permutation) == _range_tuples(sorted_variants))
+
+  @parameterized.parameters(
+      dict(
+          variant=test_utils.make_variant(
+              chrom='1', start=10, alleles=['A', 'C']),
+          expected_key='1:11:A->C'),
+      dict(
+          variant=test_utils.make_variant(
+              chrom='1', start=10, alleles=['A', 'G', 'C']),
+          sort_alleles=True,
+          expected_key='1:11:A->C/G'),
+      dict(
+          variant=test_utils.make_variant(
+              chrom='1', start=10, alleles=['A', 'G', 'C']),
+          sort_alleles=False,
+          expected_key='1:11:A->G/C'),
+  )
+  def test_variant_key(self, variant, expected_key, sort_alleles=True):
+    self.assertEqual(
+        variant_utils.variant_key(variant, sort_alleles=sort_alleles),
+        expected_key)
 
 
 if __name__ == '__main__':
