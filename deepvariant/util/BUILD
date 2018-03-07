@@ -544,23 +544,6 @@ py_test(
     ],
 )
 
-py_test(
-    name = "genomics_io_gcs_test",
-    size = "small",
-    srcs = ["genomics_io_gcs_test.py"],
-    # GCS access doesn't work in the sanitized environment in our test system.
-    tags = [
-        "local",
-    ],
-    deps = [
-        ":genomics_io",
-        ":htslib_gcp_oauth_lib",
-        ":ranges",
-        "//deepvariant/util/io:sam",
-        "@com_google_absl_py//absl/testing:absltest",
-    ],
-)
-
 py_library(
     name = "io_utils",
     srcs = ["io_utils.py"],
