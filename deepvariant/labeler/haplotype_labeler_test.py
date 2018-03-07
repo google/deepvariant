@@ -39,6 +39,7 @@ from absl.testing import parameterized
 import mock
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
+from deepvariant.util import variant_utils
 
 from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import variant_labeler_test
@@ -309,7 +310,7 @@ class LabelerMatchTests(parameterized.TestCase):
 
     # Computed fields.
     self.assertEqual(self.match.truth_genotypes,
-                     haplotype_labeler.variant_genotypes(self.truth_variants))
+                     haplotype_labeler._variant_genotypes(self.truth_variants))
     self.assertEqual(self.match.n_false_positives, 1)
     self.assertEqual(self.match.n_false_negatives, 2)
     self.assertEqual(self.match.n_true_positives, 2)
@@ -450,7 +451,7 @@ class LabelExamplesTest(parameterized.TestCase):
 
     # Check that the genotypes of our labeled variants are the ones we expect.
     self.assertEqual(
-        haplotype_labeler.variant_genotypes(labeled_variants),
+        haplotype_labeler._variant_genotypes(labeled_variants),
         [tuple(x) for x in expected_genotypes])
 
   @parameterized.parameters(
@@ -734,12 +735,12 @@ class LabelExamplesTest(parameterized.TestCase):
     ]
     for n_fps in range(1, len(all_fps) + 1):
       for fps in itertools.combinations(all_fps, n_fps):
-        candidates = haplotype_labeler.sort_variants([v1, v2] + list(fps))
+        candidates = variant_utils.sorted_variants([v1, v2] + list(fps))
         self.assertGetsCorrectLabels(
             candidates=candidates,
             true_variants=[v1, v2],
             ref=ref,
-            expected_genotypes=haplotype_labeler.variant_genotypes(candidates))
+            expected_genotypes=haplotype_labeler._variant_genotypes(candidates))
 
   def test_false_negatives(self):
     ref = haplotype_labeler.Reference('xACGTAy', 10)
@@ -756,9 +757,9 @@ class LabelExamplesTest(parameterized.TestCase):
         candidates = [v1, v2]
         self.assertGetsCorrectLabels(
             candidates=candidates,
-            true_variants=haplotype_labeler.sort_variants([v1, v2] + list(fns)),
+            true_variants=variant_utils.sorted_variants([v1, v2] + list(fns)),
             ref=ref,
-            expected_genotypes=haplotype_labeler.variant_genotypes(candidates))
+            expected_genotypes=haplotype_labeler._variant_genotypes(candidates))
 
   # example 20:3528533 and 20:3528534
   def test_example1(self):

@@ -61,6 +61,7 @@ _MAX_DISTANCE_WITHIN_VARIANT_GROUP = 30
 # redacted
 # use with the API provided by variant_labeler.VariantLabel.
 # new_label = label_from_genotypes(labeled, alt_indices)
+# redacted
 def label_from_genotypes(variant, alt_alleles_indices):
   gt_matches = {index + 1 for index in alt_alleles_indices}
   return sum(gt in gt_matches for gt in variant.calls[0].genotype)
@@ -194,48 +195,6 @@ class EnumerationType(enum.Enum):
 
 
 # redacted
-def variants_overlap(variant1, variant2):
-  return ranges.ranges_overlap(
-      variant_utils.variant_range(variant1),
-      variant_utils.variant_range(variant2))
-
-
-# redacted
-def variant_key(variant, sort_alleles=True):
-  alts = variant.alternate_bases
-  if sort_alleles:
-    alts = sorted(alts)
-  return '{}:{}:{}->{}'.format(variant.reference_name, variant.start,
-                               variant.reference_bases, '/'.join(alts))
-
-
-# redacted
-# redacted
-# redacted
-def sort_variants(variants):
-  return sorted(variants, key=lambda x: x.start)
-
-
-# redacted
-def variants_are_sorted(variants):
-  if len(variants) <= 1:
-    return True
-  else:
-    for v1, v2 in zip(variants, variants[1:]):
-      if v2.start < v1.start:
-        return False
-      if v1.start == v2.start and v2.end < v1.end:
-        return False
-  return True
-
-
-# redacted
-# redacted
-def variant_genotypes(variants):
-  return [tuple(v.calls[0].genotype) if v.calls else (-1, -1) for v in variants]
-
-
-# redacted
 # redacted
 class Reference(object):
   """Allows us to get bases from a cached reference interval."""
@@ -361,7 +320,7 @@ def all_diploid_haplotypes(variants_and_genotypes, genotypes2haplotype):
 def genotype_options_for_variants(variants, enumeration_type):
   if enumeration_type == EnumerationType.TRUTH:
     return [
-        with_false_negative_genotypes(x) for x in variant_genotypes(variants)
+        with_false_negative_genotypes(x) for x in _variant_genotypes(variants)
     ]
   elif enumeration_type == EnumerationType.CANDIDATES:
     return [
@@ -381,7 +340,7 @@ def split_independent_variants(variants_and_genotypes):
   overlaps = [variants_and_genotypes[0]]
   for i in range(1, len(variants_and_genotypes)):
     vgi = variants_and_genotypes[i].variant
-    if any(variants_overlap(vg.variant, vgi) for vg in overlaps):
+    if any(variant_utils.variants_overlap(vg.variant, vgi) for vg in overlaps):
       overlaps.append(variants_and_genotypes[i])
     else:
       return overlaps, variants_and_genotypes[i:]
@@ -474,7 +433,8 @@ def print_haplotypes(name, haplotypes):
 def print_variants(name, variants):
   logging.info('variants: %s', name)
   for v in variants:
-    logging.info('  %s gt=%s', variant_key(v), variant_genotypes([v])[0])
+    logging.info('  %s gt=%s', variant_utils.variant_key(v),
+                 _variant_genotypes([v])[0])
 
 
 # redacted
@@ -494,7 +454,7 @@ class LabelerMatch(object):
     self._n_false_positives = None
     self._n_false_negatives = None
 
-    if any(sum(gt) == 0 for gt in variant_genotypes(self.truth_variants)):
+    if any(sum(gt) == 0 for gt in _variant_genotypes(self.truth_variants)):
       raise ValueError('No truth genotypes should be hom-ref')
     assert len(self.matched_variant_genotypes) == len(self.variants)
     assert len(self.matched_truth_genotypes) == len(self.truth_variants)
@@ -511,7 +471,7 @@ class LabelerMatch(object):
 
   @property
   def truth_genotypes(self):
-    return variant_genotypes(self.truth_variants)
+    return _variant_genotypes(self.truth_variants)
 
   # redacted
   @property
@@ -644,9 +604,9 @@ def label_variants(variants, truth_variants, ref):
   variants = list(variants)
   truth_variants = list(truth_variants)
 
-  if not variants_are_sorted(variants):
+  if not variant_utils.variants_are_sorted(variants):
     raise ValueError('Variants are not sorted', variants)
-  if not variants_are_sorted(truth_variants):
+  if not variant_utils.variants_are_sorted(truth_variants):
     raise ValueError('truth_variants are not sorted', truth_variants)
 
   truth_haplotypes = deduplicate_haplotypes(
@@ -701,3 +661,17 @@ def select_best_match(all_matches):
       logging.warning('Equivalent match to best: %s [%s]', f, extra_info)
 
   return equivalents[0]
+
+
+# -----------------------------------------------------------------------------
+#
+# Private utility functions
+#
+# -----------------------------------------------------------------------------
+
+
+def _variant_genotypes(variants, missing_genotypes_default=(-1, -1)):
+  return [
+      tuple(v.calls[0].genotype) if v.calls else missing_genotypes_default
+      for v in variants
+  ]
