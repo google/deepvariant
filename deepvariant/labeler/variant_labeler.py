@@ -60,68 +60,6 @@ def make_labeler(truth_variants_reader, ref_reader, confident_regions, options):
 
 
 # ---------------------------------------------------------------------------
-# Variant counters
-#
-# This code was originally in make_examples and is now moved to the variant
-# labeler itself because we will be refactoring the variant labeler to keep
-# track of stats in the future. This code will be deleted when b/73783601 is
-# completed.
-# ---------------------------------------------------------------------------
-
-
-class _Counter(object):
-
-  def __init__(self, name, selectp):
-    self.name = name
-    self.selectp = selectp
-    self.n_selected = 0
-
-
-class VariantCounters(object):
-  """Provides stats about the number of variants satisfying pfuncs."""
-
-  def __init__(self, names_and_selectors):
-    self.counters = []
-    self.n_total = 0
-    for name, selector in names_and_selectors:
-      self.counters.append(_Counter(name, selector))
-
-  def update(self, variant):
-    self.n_total += 1
-    for counter in self.counters:
-      if counter.selectp(variant):
-        counter.n_selected += 1
-
-  def log(self):
-    logging.info('----- VariantCounts -----')
-    for counter in self.counters:
-      percent = (100.0 * counter.n_selected) / (max(self.n_total, 1.0))
-      logging.info('%s: %s/%s (%.2f%%)', counter.name, counter.n_selected,
-                   self.n_total, percent)
-
-
-def make_counters():
-  """Creates all of the VariantCounters we want to track."""
-
-  def _gt_selector(*gt_types):
-    return lambda v: variant_utils.genotype_type(v) in gt_types
-
-  return VariantCounters([
-      ('All', lambda v: True),
-      ('SNPs', variant_utils.is_snp),
-      ('Indels', variant_utils.is_indel),
-      ('BiAllelic', variant_utils.is_biallelic),
-      ('MultiAllelic', variant_utils.is_multiallelic),
-      ('HomRef', _gt_selector(variant_utils.GenotypeType.hom_ref)),
-      ('Het', _gt_selector(variant_utils.GenotypeType.het)),
-      ('HomAlt', _gt_selector(variant_utils.GenotypeType.hom_var)),
-      ('NonRef',
-       _gt_selector(variant_utils.GenotypeType.het,
-                    variant_utils.GenotypeType.hom_var)),
-  ])
-
-
-# ---------------------------------------------------------------------------
 # VariantLabel
 #
 
