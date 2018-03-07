@@ -33,6 +33,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import copy
 import itertools
 import tempfile
 
@@ -52,6 +53,7 @@ from deepvariant.core import genomics_io
 from deepvariant.core import genomics_math
 from deepvariant.core import io_utils
 from deepvariant.core import proto_utils
+from deepvariant.core import ranges
 from deepvariant.core import variantutils
 from deepvariant.core.protos import core_pb2
 from deepvariant.protos import deepvariant_pb2
@@ -115,6 +117,9 @@ _ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([('AD', True), ('VAF', False)])
 _QUAL_PRECISION = 7
 # The genotype likelihood of the gVCF alternate allele for variant calls.
 _GVCF_ALT_ALLELE_GL = -99
+
+# FASTA cache size. Span 300 Mb so that we query each chromosome at most once.
+_FASTA_CACHE_SIZE = 300000000
 
 
 def _extract_single_sample_name(record):
@@ -713,12 +718,29 @@ def _get_contig_based_lessthan(contigs):
   return lessthanfn
 
 
-def _create_record_from_template(template, start, end):
-  """Returns a copy of the template variant with the new start and end."""
-  retval = variants_pb2.Variant()
-  retval.CopyFrom(template)
+def _create_record_from_template(template, start, end, fasta_reader):
+  """Returns a copy of the template variant with the new start and end.
+
+  Updates to the start position cause a different reference base to be set.
+
+  Args:
+    template: third_party.nucleus.protos.Variant. The template variant whose
+      non-location and reference base information to use.
+    start: int. The desired new start location.
+    end: int. The desired new end location.
+    fasta_reader: GenomeReferenceFai object. The reader used to determine the
+      correct start base to use for the updated variant.
+
+  Returns:
+    An updated third_party.nucleus.protos.Variant with the proper start, end,
+    and reference base set and all other fields inherited from the template.
+  """
+  retval = copy.deepcopy(template)
   retval.start = start
   retval.end = end
+  if start != template.start:
+    retval.reference_bases = fasta_reader.bases(
+        ranges.make_range(retval.reference_name, start, start + 1))
   return retval
 
 
@@ -751,7 +773,7 @@ def _transform_to_gvcf_record(variant):
 
 
 def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
-                                   lessthan):
+                                   lessthan, fasta_reader):
   """Yields records consisting of the merging of variant and non-variant sites.
 
   The merging strategy used for single-sample records is to emit variants
@@ -768,6 +790,8 @@ def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
     lessthan: Callable. A function that takes two Variant protos as input and
       returns True iff the first argument is located "before" the second and
       the variants do not overlap.
+    fasta_reader: GenomeReferenceFai object. The reference genome reader used to
+      ensure gVCF records have the correct reference base.
 
   Yields:
     Variant protos representing both variant and non-variant sites in the sorted
@@ -799,12 +823,12 @@ def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
       if nonvariant.start < variant.start:
         # Emit a non-variant region up to the start of the variant.
         yield _create_record_from_template(nonvariant, nonvariant.start,
-                                           variant.start)
+                                           variant.start, fasta_reader)
       if nonvariant.end > variant.end:
         # There is an overhang of the non-variant site after the variant is
         # finished, so update the non-variant to point to that.
         nonvariant = _create_record_from_template(nonvariant, variant.end,
-                                                  nonvariant.end)
+                                                  nonvariant.end, fasta_reader)
       else:
         # This non-variant site is subsumed by a Variant. Ignore it.
         nonvariant = next_or_none(nonvariant_iterable)
@@ -828,8 +852,9 @@ def main(argv=()):
 
     logging_level.set_from_flag()
 
-    with genomics_io.make_ref_reader(FLAGS.ref) as reader:
-      contigs = reader.contigs
+    fasta_reader = genomics_io.make_ref_reader(FLAGS.ref,
+                                               cache_size=_FASTA_CACHE_SIZE)
+    contigs = fasta_reader.contigs
     paths = io_utils.maybe_generate_sharded_filenames(FLAGS.infile)
     with tempfile.NamedTemporaryFile() as temp:
       postprocess_variants_lib.process_single_sites_tfrecords(
@@ -865,12 +890,12 @@ def main(argv=()):
       with genomics_io.make_vcf_reader(
           FLAGS.outfile, use_index=False,
           include_likelihoods=True) as variant_reader:
-        lessthanfn = _get_contig_based_lessthan(variant_reader.contigs)
+        lessthanfn = _get_contig_based_lessthan(contigs)
         gvcf_variants = (
             _transform_to_gvcf_record(variant)
             for variant in variant_reader.iterate())
         merged_variants = merge_variants_and_nonvariants(
-            gvcf_variants, nonvariant_generator, lessthanfn)
+            gvcf_variants, nonvariant_generator, lessthanfn, fasta_reader)
         write_variants_to_vcf(
             contigs=contigs,
             variant_generator=merged_variants,

@@ -49,11 +49,15 @@ VCF_EXTENSIONS = frozenset(['.vcf', '.vcf.gz'])
 SAM_EXTENSIONS = frozenset(['.sam', '.bam'])
 
 
-def make_ref_reader(reference_filename):
+def make_ref_reader(reference_filename, cache_size=None):
   """Creates an indexed GenomeReference for reference_filename."""
-  return reference_fai.GenomeReferenceFai.from_file(
-      reference_filename.encode('utf8'),
-      reference_filename.encode('utf8') + '.fai')
+  fasta_path = reference_filename.encode('utf8')
+  fai_path = fasta_path + '.fai'
+  if cache_size is None:
+    return reference_fai.GenomeReferenceFai.from_file(fasta_path, fai_path)
+  else:
+    return reference_fai.GenomeReferenceFai.from_file(fasta_path, fai_path,
+                                                      cache_size)
 
 
 def make_sam_reader(reads_source,
