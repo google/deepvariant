@@ -985,9 +985,6 @@ def make_examples_runner(options):
       writer.write_examples(*examples)
 
   logging.info('Found %s candidate variants', n_candidates)
-  if in_training_mode(options):
-    # This printout is only valid in training mode.
-    region_processor.labeler.log()
 
 
 def main(argv=()):

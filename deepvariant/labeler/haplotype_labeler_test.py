@@ -71,7 +71,8 @@ def _variants_from_grouped_positions(grouped_positions):
 def _make_labeler(truth_variants=None, confident_regions=None, **kwargs):
   mock_ref_reader = mock.MagicMock()
   return haplotype_labeler.HaplotypeLabeler(
-      vcf_reader=variant_labeler_test.mock_vcf_reader(truth_variants or []),
+      truth_vcf_reader=variant_labeler_test.mock_vcf_reader(
+          truth_variants or []),
       ref_reader=mock_ref_reader,
       confident_regions=confident_regions,
       **kwargs)

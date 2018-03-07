@@ -136,15 +136,12 @@ class VariantLabel(object):
     variant: nucleus.protos.Variant proto that we assigned a label for.
     genotype: tuple of ints. The labeled genotype (e.g., (0, 1) for a het) in
       the standard nucleus.proto.VariantCall style.
-    truth_variant: nucleus.protos.Variant proto containing the truth variant we
-      will use to assign the label for this variant.
   """
 
-  def __init__(self, is_confident, variant, genotype, truth_variant):
+  def __init__(self, is_confident, variant, genotype):
     self.is_confident = is_confident
     self.variant = variant
     self.genotype = genotype
-    self.truth_variant = truth_variant
 
   def label_for_alt_alleles(self, alt_alleles_indices):
     """Computes the label value for an example using alt_alleles_indices.
@@ -201,21 +198,11 @@ class _VariantLabeler(object):
 
   __metaclass__ = abc.ABCMeta
 
-  # redacted
-  def __init__(self, vcf_reader, confident_regions):
-    if vcf_reader is None:
-      raise ValueError('vcf_reader cannot be None')
-    self._vcf_reader = vcf_reader
+  def __init__(self, truth_vcf_reader, confident_regions):
+    if truth_vcf_reader is None:
+      raise ValueError('truth_vcf_reader cannot be None')
+    self._truth_vcf_reader = truth_vcf_reader
     self._confident_regions = confident_regions
-    self.counters = make_counters()
-
-  def log(self):
-    """Logs information about the types and counts of labeled variants.
-
-    This logs some basic summary information, like the number of labeled
-    variants and their types, to logging.info.
-    """
-    self.counters.log()
 
   @abc.abstractmethod
   def label_variants(self, variants):
@@ -274,14 +261,8 @@ class PositionalVariantLabeler(_VariantLabeler):
       if truth_variant is not None:
         genotype = _genotype_from_matched_truth(variant, truth_variant)
 
-      if is_confident:
-        self.counters.update(truth_variant)
-
       yield VariantLabel(
-          is_confident=is_confident,
-          variant=variant,
-          genotype=genotype,
-          truth_variant=truth_variant)
+          is_confident=is_confident, variant=variant, genotype=genotype)
 
   def _match(self, variant):
     """Get a truth variant matching variant.
@@ -325,7 +306,6 @@ class PositionalVariantLabeler(_VariantLabeler):
         matched_variant = self._make_synthetic_hom_ref(variant)
     return confident, matched_variant
 
-  # redacted
   def _make_synthetic_hom_ref(self, variant):
     """Creates a version of variant with a hom-ref genotype.
 
@@ -346,6 +326,7 @@ class PositionalVariantLabeler(_VariantLabeler):
         alternate_bases=variant.alternate_bases,
         calls=[variants_pb2.VariantCall(genotype=[0, 0])])
 
+  # redacted
   def _find_matching_variant_in_reader(self, variant):
     """Finds a variant in vcf_reader compatible with variant, if one exists."""
 
@@ -355,7 +336,9 @@ class PositionalVariantLabeler(_VariantLabeler):
               not variant_utils.is_filtered(truth_variant))
 
     region = variant_utils.variant_position(variant)
-    matches = [m for m in self._vcf_reader.query(region) if _usable_truth(m)]
+    matches = [
+        m for m in self._truth_vcf_reader.query(region) if _usable_truth(m)
+    ]
     if not matches:
       return None
     elif len(matches) > 1:

@@ -123,60 +123,77 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
       dict(
           candidate=test_utils.make_variant(start=15, alleles=['C', 'A']),
           expected_confident=True,
+          expected_genotype=(0, 0),
           expected_truth=test_utils.make_variant(
               start=15, alleles=['C', 'A'], gt=[0, 0])),
 
       # These variant start at our SNP but has a different allele. We are
       # confident and we get back the true snp variant, despite having the
-      # different alleles.
+      # different alleles. snp has alleles=['A', 'C'] and gt=[0, 1].
       dict(
           candidate=test_utils.make_variant(
               start=snp.start, alleles=['A', 'G']),
           expected_confident=True,
+          expected_genotype=(0, 0),
           expected_truth=snp),
       dict(
           candidate=test_utils.make_variant(
               start=snp.start, alleles=['AC', 'C']),
           expected_confident=True,
+          expected_genotype=(0, 0),
           expected_truth=snp),
       dict(
           candidate=test_utils.make_variant(
               start=snp.start, alleles=['A', 'CA']),
           expected_confident=True,
+          expected_genotype=(0, 0),
           expected_truth=snp),
 
       # We don't match filtered variants.
       dict(
           candidate=filtered,
           expected_confident=True,
+          expected_genotype=(0, 0),
           expected_truth=filtered_match),
   )
-  def test_label_variants(self, candidate, expected_confident, expected_truth):
+  def test_label_variants(self,
+                          candidate,
+                          expected_confident,
+                          expected_truth,
+                          expected_genotype=None):
     labeler = self._make_labeler(
         self.variants,
         ranges.RangeSet([ranges.make_range(self.snp.reference_name, 10, 100)]))
+
+    # Call _match so we can compare our expected truth with the actual one.
+    is_confident, truth_variant = labeler._match(candidate)
+    self.assertEqual(expected_truth, truth_variant)
+    self.assertEqual(is_confident, expected_confident)
+
+    # Now call label_variants to exercise the higher-level API.
+    if expected_genotype is None and expected_truth is not None:
+      expected_genotype = tuple(expected_truth.calls[0].genotype)
     labels = list(labeler.label_variants([candidate]))
     self.assertEqual(len(labels), 1)
     self.assertEqual(candidate, labels[0].variant)
     self.assertEqual(expected_confident, labels[0].is_confident)
-    self.assertEqual(expected_truth, labels[0].truth_variant)
+    self.assertEqual(expected_genotype, labels[0].genotype)
 
   def test_match_selects_variant_by_start(self):
     # Tests that match() selects the variant at the same start even if that
     # variant doesn't have the same alleles at candidate and there's an
     # overlapping with the same alleles.
     overlapping = [
-        test_utils.make_variant(start=20, alleles=['CC', 'A'], gt=[0, 1]),
+        test_utils.make_variant(start=20, alleles=['CC', 'A'], gt=[1, 1]),
         test_utils.make_variant(start=21, alleles=['AAA', 'A'], gt=[0, 1]),
-        test_utils.make_variant(start=22, alleles=['AA', 'A'], gt=[0, 1]),
+        test_utils.make_variant(start=22, alleles=['AA', 'A'], gt=[1, 1]),
     ]
-    labeler = self._make_labeler(overlapping, None)
     candidate = test_utils.make_variant(start=21, alleles=['CC', 'A'])
-    labels = list(labeler.label_variants([candidate]))
-    self.assertEqual(len(labels), 1)
-    self.assertEqual(labels[0].variant, candidate)
-    self.assertEqual(labels[0].is_confident, True)
-    self.assertEqual(labels[0].truth_variant, overlapping[1])
+
+    labeler = self._make_labeler(overlapping, None)
+    is_confident, truth_variant = labeler._match(candidate)
+    self.assertEqual(is_confident, True)
+    self.assertEqual(truth_variant, overlapping[1])
 
 
 class VariantLabelerTest(parameterized.TestCase):
@@ -312,7 +329,6 @@ class VariantLabelerTest(parameterized.TestCase):
     labeled = variant_labeler.VariantLabel(
         is_confident=True,
         variant=variant,
-        truth_variant=truth_variant,
         genotype=expected_genotype)
     indices = [variant_alleles.index(alt) - 1 for alt in alt_alleles]
     self.assertEqual(labeled.label_for_alt_alleles(indices), expected_label)

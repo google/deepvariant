@@ -75,7 +75,7 @@ class HaplotypeLabeler(variant_labeler._VariantLabeler):
 
   def __init__(
       self,
-      vcf_reader,
+      truth_vcf_reader,
       ref_reader,
       confident_regions=None,
       max_group_size=_MAX_GROUP_SIZE,
@@ -83,7 +83,7 @@ class HaplotypeLabeler(variant_labeler._VariantLabeler):
     """Creates a new HaplotypeVariantLabeler.
 
     Args:
-      vcf_reader: a VcfReader object that points to our truth variant set.
+      truth_vcf_reader: a VcfReader object that points to our truth variant set.
       ref_reader: A FastaReader object we can use to get reference bases.
       confident_regions: A RangeSet containing all of the confidently called
         regions. A variant that falls outside of one of these regions will be
@@ -98,7 +98,7 @@ class HaplotypeLabeler(variant_labeler._VariantLabeler):
       ValueError: if vcf_reader is None.
     """
     super(HaplotypeLabeler, self).__init__(
-        vcf_reader, confident_regions=confident_regions)
+        truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions)
     self._ref_reader = ref_reader
     self.max_group_size = max_group_size
     self.max_distance_within_grouped_variants = (
@@ -164,8 +164,7 @@ class HaplotypeLabeler(variant_labeler._VariantLabeler):
             # consider confident truth variants) or if it overlaps the confident
             # regions.
             is_confident=self._confident_regions.variant_overlaps(labeled),
-            variant=labeled,
-            truth_variant=None)
+            variant=labeled)
 
   # redacted
   # We really should fetch the truth variants over the whole interval we are

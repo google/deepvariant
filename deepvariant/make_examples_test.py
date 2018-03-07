@@ -1085,9 +1085,7 @@ class RegionProcessorTest(parameterized.TestCase):
           label=variant_labeler.VariantLabel(
               is_confident=True,
               variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-              genotype=(0, 1),
-              truth_variant=test_utils.make_variant(
-                  start=10, alleles=['A', 'C'], gt=[0, 1])),
+              genotype=(0, 1)),
           expected_label_value=1,
       ),
       # Test that a reference variant gets a label value of 0 in the example.
@@ -1095,9 +1093,7 @@ class RegionProcessorTest(parameterized.TestCase):
           label=variant_labeler.VariantLabel(
               is_confident=True,
               variant=test_utils.make_variant(start=10, alleles=['A', '.']),
-              genotype=(0, 0),
-              truth_variant=test_utils.make_variant(
-                  start=10, alleles=['A', '.'], gt=[0, 0])),
+              genotype=(0, 0)),
           expected_label_value=0,
       ),
   )
@@ -1119,8 +1115,7 @@ class RegionProcessorTest(parameterized.TestCase):
     label = variant_labeler.VariantLabel(
         is_confident=False,
         variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-        genotype=(0, 1),  # dummy value.
-        truth_variant=test_utils.make_variant(start=10, alleles=['A', 'C']))
+        genotype=(0, 1))
     example = self._example_for_variant(label.variant)
     with self.assertRaisesRegexp(
         ValueError, 'Cannot add a non-confident label to an example'):
