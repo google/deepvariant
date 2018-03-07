@@ -42,6 +42,7 @@ from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import variant_utils
 
 
+# redacted
 def make_labeler(truth_variants_reader, ref_reader, confident_regions, options):
   # redacted
   del options, ref_reader
@@ -133,17 +134,33 @@ class VariantLabel(object):
     is_confident: bool. True if we could confidently assign a label to this
       variant, False otherwise.
     variant: nucleus.protos.Variant proto that we assigned a label for.
+    genotype: tuple of ints. The labeled genotype (e.g., (0, 1) for a het) in
+      the standard nucleus.proto.VariantCall style.
     truth_variant: nucleus.protos.Variant proto containing the truth variant we
       will use to assign the label for this variant.
   """
 
-  def __init__(self, is_confident, variant, truth_variant):
+  def __init__(self, is_confident, variant, genotype, truth_variant):
     self.is_confident = is_confident
     self.variant = variant
+    self.genotype = genotype
     self.truth_variant = truth_variant
 
   def label_for_alt_alleles(self, alt_alleles_indices):
     """Computes the label value for an example using alt_alleles_indices.
+
+    This function computes the TensorFlow label value (0, 1, 2) we train
+    DeepVariant to predict. The label value is an int >= which is the number of
+    copies of the alt allele present, which is computed from the true genotypes
+    (self.genotypes) and the alt_allele_indices ([0] for the first alt, [1] for
+    the second, [0, 1] to combine the first and second). For example, suppose we
+    have a variant with alts A and C, and a true genotype of (0, 1), indicating
+    that we have 1 copy of the A allele. We'd expect:
+
+      label_for_alt_alleles([0]) => 1 since there's 1 copy of the first alt.
+      label_for_alt_alleles([1]) => 0 since there's 0 copies of the second alt.
+      label_for_alt_alleles([0, 1]) => 1 since there's 1 copy of the first or
+        second allele.
 
     Args:
       alt_alleles_indices: list[int]. A list of the alt_allele_indices
@@ -153,8 +170,7 @@ class VariantLabel(object):
       int >= 0. The number of copies of alt_allele_indices we'd expect to be
       called for this example.
     """
-    alt_alleles = [self.variant.alternate_bases[i] for i in alt_alleles_indices]
-    return _match_to_alt_count(self.variant, self.truth_variant, alt_alleles)
+    return sum(gt - 1 in alt_alleles_indices for gt in self.genotype if gt != 0)
 
 
 # ---------------------------------------------------------------------------
@@ -253,11 +269,18 @@ class PositionalVariantLabeler(_VariantLabeler):
   def label_variants(self, variants):
     for variant in variants:
       is_confident, truth_variant = self._match(variant)
+
+      genotype = None
+      if truth_variant is not None:
+        genotype = _genotype_from_matched_truth(variant, truth_variant)
+
       if is_confident:
         self.counters.update(truth_variant)
+
       yield VariantLabel(
           is_confident=is_confident,
           variant=variant,
+          genotype=genotype,
           truth_variant=truth_variant)
 
   def _match(self, variant):
@@ -342,15 +365,15 @@ class PositionalVariantLabeler(_VariantLabeler):
     return matches[0]
 
 
-# redacted
-def _match_to_alt_count(candidate_variant, truth_variant, alt_alleles):
-  """Returns the number of copies of alt_alleles that occur in truth_variant.
+def _genotype_from_matched_truth(candidate_variant, truth_variant):
+  """Gets the diploid genotype for candidate_variant from matched truth_variant.
 
-  This method figures out how many alternate copies of alt_alleles occur
-  in truth_variant. For example, if candidate is A/C and truth is A/C with
-  a 0/1 genotype, then this function would return 1 indicating there's one
-  copy of the C allele in truth. If the true genotype is 1/1, then this
-  routine would return 2.
+  This method figures out the genotype for candidate_variant by matching alleles
+  in candidate_variant with those used by the genotype assigned to
+  truth_variant. For example, if candidate is A/C and truth is A/C with a 0/1
+  genotype, then this function would return (0, 1) indicating that there's one
+  copy of the A allele and one of C in truth. If the true genotype is 1/1, then
+  this routine would return (1, 1).
 
   The routine allows candidate_variant and truth_variant to differ in both
   the number of alternate alleles, and even in the representation of the same
@@ -364,28 +387,20 @@ def _match_to_alt_count(candidate_variant, truth_variant, alt_alleles):
 
   And this routine will correctly equate the AGT/AGTGT allele in candidate
   with the A/AGT in truth and use the number of copies of AGT in truth to
-  compute the number of copies of AGTGT.
-
-  alt_alleles has a bit of a special meaning here. All of the alleles in
-  alt_alleles are counted up, so if alt_alleles contains two alleles we'll
-  compute the number of copies of each allele and return the sum. This allows
-  us to compute the genotype of a synthetic combined allele that includes
-  both alt1 and alt2.
+  compute the number of copies of AGTGT when determining the returned genotype.
 
   Args:
     candidate_variant: Our candidate third_party.nucleus.protos.Variant variant.
-    truth_variant: Our third_party.nucleus.protos.Variant truth variant as
-      returned by match().
-    alt_alleles: An iterable of strings. Each element should be an alternate
-      allele in variant that is considered "alt" when labeling variant.
+    truth_variant: Our third_party.nucleus.protos.Variant truth variant
+      containing true alleles and genotypes.
 
   Returns:
-    Number of copies of alt_alleles in the true genotype.
+    A tuple genotypes with the same semantics at the genotype field of the
+    VariantCall proto.
 
   Raises:
-    ValueError: If candidate_variant or truth_variant is None, truth_variant
-      doesn't have genotypes, or any of alt_alleles aren't found in
-      candidate_variant.
+    ValueError: If candidate_variant is None, truth_variant is None, or
+      truth_variant doesn't have genotypes.
   """
   if candidate_variant is None:
     raise ValueError('candidate_variant cannot be None')
@@ -394,22 +409,27 @@ def _match_to_alt_count(candidate_variant, truth_variant, alt_alleles):
   if not variant_utils.has_genotypes(truth_variant):
     raise ValueError('truth_variant needs genotypes to be used for labeling',
                      truth_variant)
-  if any(alt not in candidate_variant.alternate_bases for alt in alt_alleles):
-    raise ValueError('All alt_alleles must be present in variant', alt_alleles,
-                     candidate_variant)
 
-  # If our candidate_variant is a reference call, return a label of 0.
+  def _match_one_allele(true_allele):
+    if true_allele == truth_variant.reference_bases:
+      return 0
+    else:
+      simplifed_true_allele = variant_utils.simplify_alleles(
+          truth_variant.reference_bases, true_allele)
+      for alt_index, alt_allele in enumerate(candidate_variant.alternate_bases):
+        simplifed_alt_allele = variant_utils.simplify_alleles(
+            candidate_variant.reference_bases, alt_allele)
+        if simplifed_true_allele == simplifed_alt_allele:
+          return alt_index + 1
+      # If nothing matched, we don't have this alt, so the alt allele index for
+      # should be 0 (i.e., not any alt).
+      return 0
+
+  # If our candidate_variant is a reference call, return a (0, 0) genotype.
   if variant_utils.is_ref(candidate_variant):
-    return 0
-
-  def _simplify_alleles(variant, alleles):
-    return [
-        variant_utils.simplify_alleles(variant.reference_bases, allele)
-        for allele in alleles
-        if allele != variant.reference_bases
-    ]
-
-  simplified_alt_alleles = _simplify_alleles(candidate_variant, alt_alleles)
-  return sum(
-      true_alt in simplified_alt_alleles for true_alt in _simplify_alleles(
-          truth_variant, variant_utils.genotype_as_alleles(truth_variant)))
+    return (0, 0)
+  else:
+    return tuple(
+        sorted(
+            _match_one_allele(true_allele) for true_allele in
+            variant_utils.genotype_as_alleles(truth_variant)))

@@ -134,18 +134,6 @@ def _from_literals(literals, contig_map=None):
   return ranges.RangeSet.from_regions(literals, contig_map)
 
 
-def _variant_range_tuple(variant):
-  return variant.reference_name, variant.start, variant.end
-
-
-def _sort_candidates(candidates):
-  return list(sorted(candidates, key=lambda c: _variant_range_tuple(c.variant)))
-
-
-def _sort_variants(variants):
-  return list(sorted(variants, key=_variant_range_tuple))
-
-
 def _sharded(basename, num_shards):
   if num_shards:
     return basename + '@' + str(num_shards)
@@ -187,9 +175,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
     # Test that our candidates are reasonable, calling specific helper functions
     # to check lots of properties of the output.
-    candidates = _sort_candidates(
+    candidates = sorted(
         io_utils.read_tfrecords(
-            FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall))
+            FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall),
+        key=lambda c: variant_utils.variant_range_tuple(c.variant))
     self.verify_deepvariant_calls(candidates, options)
     self.verify_variants(
         [call.variant for call in candidates], region, options, is_gvcf=False)
@@ -217,7 +206,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       self.verify_nist_concordance(example_variants, nist_variants)
 
       # Check the quality of our generated gvcf file.
-      gvcfs = _sort_variants(
+      gvcfs = variant_utils.sorted_variants(
           io_utils.read_tfrecords(FLAGS.gvcf, proto=variants_pb2.Variant))
       self.verify_variants(gvcfs, region, options, is_gvcf=True)
       self.verify_contiguity(gvcfs, region)
@@ -1096,6 +1085,7 @@ class RegionProcessorTest(parameterized.TestCase):
           label=variant_labeler.VariantLabel(
               is_confident=True,
               variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
+              genotype=(0, 1),
               truth_variant=test_utils.make_variant(
                   start=10, alleles=['A', 'C'], gt=[0, 1])),
           expected_label_value=1,
@@ -1105,6 +1095,7 @@ class RegionProcessorTest(parameterized.TestCase):
           label=variant_labeler.VariantLabel(
               is_confident=True,
               variant=test_utils.make_variant(start=10, alleles=['A', '.']),
+              genotype=(0, 0),
               truth_variant=test_utils.make_variant(
                   start=10, alleles=['A', '.'], gt=[0, 0])),
           expected_label_value=0,
@@ -1128,6 +1119,7 @@ class RegionProcessorTest(parameterized.TestCase):
     label = variant_labeler.VariantLabel(
         is_confident=False,
         variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
+        genotype=(0, 1),  # dummy value.
         truth_variant=test_utils.make_variant(start=10, alleles=['A', 'C']))
     example = self._example_for_variant(label.variant)
     with self.assertRaisesRegexp(
