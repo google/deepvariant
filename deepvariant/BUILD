@@ -229,7 +229,7 @@ py_library(
         ":tf_utils",
         ":variant_caller",
         "//deepvariant/labeler:haplotype_labeler",
-        "//deepvariant/labeler:variant_labeler",
+        "//deepvariant/labeler:positional_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:allelecounter",
         "//deepvariant/realigner",

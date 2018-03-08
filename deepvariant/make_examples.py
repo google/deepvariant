@@ -57,7 +57,7 @@ from deepvariant import pileup_image
 from deepvariant import tf_utils
 from deepvariant import variant_caller
 from deepvariant.labeler import haplotype_labeler
-from deepvariant.labeler import variant_labeler
+from deepvariant.labeler import positional_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.realigner import realigner
@@ -723,7 +723,7 @@ class RegionProcessor(object):
 
     if (self.options.labeler_algorithm ==
         deepvariant_pb2.DeepVariantOptions.POSITIONAL_LABELER):
-      return variant_labeler.PositionalVariantLabeler(
+      return positional_labeler.PositionalVariantLabeler(
           truth_vcf_reader=truth_vcf_reader,
           confident_regions=confident_regions)
     elif (self.options.labeler_algorithm ==

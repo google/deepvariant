@@ -42,7 +42,7 @@ from deepvariant.util import ranges
 from deepvariant.util import variant_utils
 
 from deepvariant.labeler import haplotype_labeler
-from deepvariant.labeler import variant_labeler_test
+from deepvariant.labeler import positional_labeler_test
 
 
 def _test_variant(start=10, alleles=('A', 'C'), gt=None):
@@ -71,7 +71,7 @@ def _variants_from_grouped_positions(grouped_positions):
 def _make_labeler(truth_variants=None, confident_regions=None, **kwargs):
   mock_ref_reader = mock.MagicMock()
   return haplotype_labeler.HaplotypeLabeler(
-      truth_vcf_reader=variant_labeler_test.mock_vcf_reader(
+      truth_vcf_reader=positional_labeler_test.mock_vcf_reader(
           truth_variants or []),
       ref_reader=mock_ref_reader,
       confident_regions=confident_regions,

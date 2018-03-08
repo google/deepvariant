@@ -67,10 +67,7 @@ def label_from_genotypes(variant, alt_alleles_indices):
   return sum(gt in gt_matches for gt in variant.calls[0].genotype)
 
 
-# redacted
-# variant_labeler or otherwise fix the protected access pattern.
-# pylint: disable=protected-access
-class HaplotypeLabeler(variant_labeler._VariantLabeler):
+class HaplotypeLabeler(variant_labeler.VariantLabeler):
   """Haplotype-based variant labeler."""
 
   def __init__(
