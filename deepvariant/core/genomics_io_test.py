@@ -51,10 +51,16 @@ from deepvariant.core.protos import core_pb2
 class RefReaderTests(parameterized.TestCase):
 
   @parameterized.parameters('test.fasta', 'test.fasta.gz')
-  def test_make_ref_reader(self, fasta_filename):
+  def test_make_ref_reader_default(self, fasta_filename):
     fasta_path = test_utils.genomics_core_testdata(fasta_filename)
     with genomics_io.make_ref_reader(fasta_path) as reader:
       self.assertEqual(reader.bases(ranges.make_range('chrM', 1, 6)), 'ATCAC')
+
+  @parameterized.parameters('test.fasta', 'test.fasta.gz')
+  def test_make_ref_reader_cache_specified(self, fasta_filename):
+    fasta_path = test_utils.genomics_core_testdata(fasta_filename)
+    with genomics_io.make_ref_reader(fasta_path, cache_size=10) as reader:
+      self.assertEqual(reader.bases(ranges.make_range('chrM', 1, 5)), 'ATCA')
 
 
 class SamReaderTests(parameterized.TestCase):
