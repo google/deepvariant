@@ -286,8 +286,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         self.assertEqual(len(call.genotype_likelihood), 3)
         self.assertGreaterEqual(
             variant_utils.genotype_quality(variant, default=None), 0)
-      else:
-        self.assertEqual(call.genotype, [-1, -1])
 
   def verify_contiguity(self, contiguous_variants, region):
     """Verifies region is fully covered by gvcf records."""
@@ -1136,9 +1134,21 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # Check that all keys from example are present in labeled.
     for key, value in example.features.feature.iteritems():
-      self.assertEqual(value, labeled.features.feature[key])
+      if key != 'variant/encoded':  # Special case tested below.
+        self.assertEqual(value, labeled.features.feature[key])
 
+    # The genotype of our example_variant should be set to the true genotype
+    # according to our label.
     self.assertEqual(expected_label_value, tf_utils.example_label(labeled))
+    labeled_variant = tf_utils.example_variant(labeled)
+    self.assertEqual(tuple(labeled_variant.calls[0].genotype), label.genotype)
+
+    # The original variant and labeled_variant from out tf.Example should be
+    # equal except for the genotype field, since this is set by
+    # add_label_to_example.
+    label.variant.calls[0].genotype[:] = []
+    labeled_variant.calls[0].genotype[:] = []
+    self.assertEqual(label.variant, labeled_variant)
 
   def test_label_variant_raises_for_non_confident_variant(self):
     label = variant_labeler.VariantLabel(

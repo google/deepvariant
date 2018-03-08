@@ -410,6 +410,13 @@ def extract_sample_name_from_sam_reader(sam_reader):
   return sample
 
 
+def _set_variant_genotype(variant, genotype):
+  if not variant.calls:
+    variant.calls.add(genotype=genotype)
+  else:
+    variant.calls[0].genotype[:] = genotype
+
+
 # ---------------------------------------------------------------------------
 # Region processing
 # ---------------------------------------------------------------------------
@@ -899,6 +906,13 @@ class RegionProcessor(object):
       raise ValueError('Cannot add a non-confident label to an example',
                        example, label)
     alt_alleles_indices = tf_utils.example_alt_alleles_indices(example)
+
+    # Set the genotype of the candidate variant to the labeled value.
+    candidate = label.variant
+    _set_variant_genotype(candidate, label.genotype)
+    tf_utils.example_set_variant(example, candidate)
+
+    # Set the label of the example to the # alts given our alt_alleles_indices.
     tf_utils.example_set_label(example,
                                label.label_for_alt_alleles(alt_alleles_indices))
     return example
