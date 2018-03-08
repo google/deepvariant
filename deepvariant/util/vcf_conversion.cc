@@ -538,8 +538,12 @@ tensorflow::Status ConvertFromPb(
             "Too many genotypes given the ploidy");
       if (vc.call_set_name() != h.samples[c])
         return tensorflow::errors::FailedPrecondition(
-            "Out-of-order call set names, or unrecognized call set name, with "
-            "respect to samples declared in VCF header.");
+            tensorflow::strings::StrCat(
+                "Out-of-order call set names, or unrecognized call set name, "
+                "with respect to samples declared in VCF header. Variant has ",
+                vc.call_set_name(), " at position ", c,
+                " while the VCF header expected a sample named ",
+                h.samples[c], " at this position"));
 
       const bool isPhased = !vc.phaseset().empty();
       int a = 0;
