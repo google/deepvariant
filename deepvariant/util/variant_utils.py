@@ -600,30 +600,6 @@ def genotype_as_alleles(variant):
     return [alleles[i + 1] for i in variant.calls[0].genotype]
 
 
-def genotype_quality(variant, default=None):
-  """Gets the genotype quality (GQ) value the genotype call in variant.
-
-  If variant doesn't have genotypes, returns default, otherwise tries
-  to retrieve the GQ field of the call field, returning that value if
-  present otherwise returning default if its absent.
-
-  Args:
-    variant: third_party.nucleus.protos.Variant.
-    default: The value for GQ to return if variant has no genotypes or
-      if GQ is present in the genotype call record.
-
-  Returns:
-    The GQ value (may be a string or whatever value default is).
-  """
-  if not has_calls(variant):
-    return default
-  call = variant.calls[0]
-  if 'GQ' in call.info:
-    return call.info['GQ'].values[0].int_value
-  else:
-    return default
-
-
 def is_gvcf(variant):
   """Returns true if variant encodes a standard gVCF reference block.
 

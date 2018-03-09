@@ -456,21 +456,6 @@ class VariantUtilsTests(parameterized.TestCase):
       variant_utils.genotype_type(None)
 
   @parameterized.parameters(
-      (test_utils.make_variant(gt=None), None),
-      (test_utils.make_variant(gt=[0, 1], gq=10), 10),
-      (test_utils.make_variant(gt=[0, 1], gq=20), 20),
-      (test_utils.make_variant(gt=[0, 1], gq=30), 30),
-      (test_utils.make_variant(gt=[0, 1], gq=35), 35),
-  )
-  def test_variant_gq(self, variant, expected):
-    self.assertEqual(
-        variant_utils.genotype_quality(variant, default=None), expected)
-
-  def test_variant_gq_raises_with_none(self):
-    with self.assertRaises(Exception):
-      variant_utils.genotype_quality(None)
-
-  @parameterized.parameters(
       # Ref without an alt isn't gVCF.
       (test_utils.make_variant(alleles=['A']), False),
       # SNPs and indels aren't gVCF records.
