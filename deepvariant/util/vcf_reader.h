@@ -33,16 +33,17 @@
 #ifndef THIRD_PARTY_NUCLEUS_UTIL_VCF_READER_H_
 #define THIRD_PARTY_NUCLEUS_UTIL_VCF_READER_H_
 
-#include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/reader_base.h"
 
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htslib/tbx.h"
 #include "htslib/vcf.h"
+#include "deepvariant/util/genomics/index.pb.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
+#include "deepvariant/util/genomics/vcf.pb.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/platform/types.h"
 

@@ -42,6 +42,7 @@ from absl import logging
 
 from deepvariant.util.io import sam
 from deepvariant.util.io import vcf
+from deepvariant.util.genomics import sam_pb2
 from deepvariant.util import errors
 from deepvariant.util import genomics_io
 from deepvariant.util import htslib_gcp_oauth
@@ -49,7 +50,6 @@ from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import ranges
 from deepvariant.util import utils
-from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import hts_verbose
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
@@ -250,10 +250,10 @@ def default_options(add_flags=True, flags_obj=None):
   if not flags_obj:
     flags_obj = FLAGS
 
-  read_reqs = core_pb2.ReadRequirements(
+  read_reqs = sam_pb2.ReadRequirements(
       min_base_quality=10,
       min_mapping_quality=10,
-      min_base_quality_mode=core_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+      min_base_quality_mode=sam_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
 
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
