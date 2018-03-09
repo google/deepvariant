@@ -396,13 +396,20 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(gt=[0, 1]), True),
       (test_utils.make_variant(gt=[1, 1]), True),
       (test_utils.make_variant(gt=[-1, -1]), True),
+      (variants_pb2.Variant(calls=[]), False),
+      (variants_pb2.Variant(
+          calls=[variants_pb2.VariantCall(call_set_name='no_geno')]), True),
+      (variants_pb2.Variant(calls=[
+          variants_pb2.VariantCall(call_set_name='no_geno'),
+          variants_pb2.VariantCall(call_set_name='no_geno2'),
+      ]), True),
   )
-  def test_has_genotypes(self, variant, expected):
-    self.assertEqual(variant_utils.has_genotypes(variant), expected)
+  def test_has_calls(self, variant, expected):
+    self.assertEqual(variant_utils.has_calls(variant), expected)
 
-  def test_has_genotypes_raises_with_bad_inputs(self):
+  def test_has_calls_raises_with_bad_inputs(self):
     with self.assertRaises(Exception):
-      variant_utils.has_genotypes(None)
+      variant_utils.has_calls(None)
 
   @parameterized.parameters(
       (test_utils.make_variant(gt=None), variant_utils.GenotypeType.no_call),

@@ -187,7 +187,9 @@ def _genotype_from_matched_truth(candidate_variant, truth_variant):
     raise ValueError('candidate_variant cannot be None')
   if truth_variant is None:
     raise ValueError('truth_variant cannot be None')
-  if not variant_utils.has_genotypes(truth_variant):
+  # redacted
+  if not (truth_variant.calls and
+          any(gt >= 0 for gt in truth_variant.calls[0].genotype)):
     raise ValueError('truth_variant needs genotypes to be used for labeling',
                      truth_variant)
 

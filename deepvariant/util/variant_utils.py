@@ -520,14 +520,14 @@ def is_variant_call(variant,
     return False
 
 
-def has_genotypes(variant):
-  """Does variant have genotype calls?
+def has_calls(variant):
+  """Does variant have any genotype calls?
 
   Args:
     variant: third_party.nucleus.protos.Variant.
 
   Returns:
-    True if variant has genotype calls.
+    True if variant has one or more VariantCalls.
   """
   # I don't want to return the actual data structure so I'm doing the
   # explicit True/False evaluation here.
@@ -551,7 +551,7 @@ def genotype_type(variant):
   Raises:
     ValueError: If variant has more than one call (i.e., is multi-sample).
   """
-  if not has_genotypes(variant):
+  if not has_calls(variant):
     return GenotypeType.no_call
   elif len(variant.calls) > 1:
     raise ValueError('Unsupported: multiple genotypes found at', variant)
@@ -586,7 +586,7 @@ def genotype_as_alleles(variant):
     ValueError: If variant doesn't have genotypes.
     ValueError: If variant has more than one call (i.e., is multi-sample).
   """
-  if not has_genotypes(variant):
+  if not has_calls(variant):
     raise ValueError('Not genotypes present in', variant)
   elif len(variant.calls) > 1:
     raise ValueError('Unsupported: multiple genotypes found at', variant)
@@ -615,7 +615,7 @@ def genotype_quality(variant, default=None):
   Returns:
     The GQ value (may be a string or whatever value default is).
   """
-  if not has_genotypes(variant):
+  if not has_calls(variant):
     return default
   call = variant.calls[0]
   if 'GQ' in call.info:
