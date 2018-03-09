@@ -56,10 +56,7 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
   # Outside our confident regions.
   non_confident = test_utils.make_variant(
       start=200, alleles=['A', 'C'], gt=[0, 1])
-  filtered = test_utils.make_variant(
-      start=40, alleles=['A', 'C'], filters='FAILED', gt=[0, 1])
-  filtered_match = test_utils.make_variant(
-      start=40, alleles=['A', 'C'], gt=[0, 0])
+  filtered = test_utils.make_variant(start=40, filters='FAILED', gt=[0, 1])
 
   variants = [snp, deletion, multiallelic, non_confident, filtered]
 
@@ -79,11 +76,12 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
           expected_truth=multiallelic),
 
       # Test the behavior outside of our confident regions.
-      # We get back non_confident since it matches but we're not confident.
+      # If we provide a variant outside the confident regions (non_confident) we
+      # don't get back any expected_truth variants.
       dict(
           candidate=non_confident,
           expected_confident=False,
-          expected_truth=non_confident),
+          expected_truth=None),
       # No matching variant, so we get a None as well as False.
       dict(
           candidate=test_utils.make_variant(start=300, alleles=['A', 'C']),
@@ -119,13 +117,15 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
           expected_confident=True,
           expected_genotype=(0, 0),
           expected_truth=snp),
-
-      # We don't match filtered variants.
+      # Checks that we don't match against the filtered truth variant in our
+      # database. This means that we return not the filtered variant but one
+      # with a (0, 0) genotype.
       dict(
-          candidate=filtered,
+          candidate=test_utils.make_variant(start=filtered.start),
           expected_confident=True,
           expected_genotype=(0, 0),
-          expected_truth=filtered_match),
+          expected_truth=test_utils.make_variant(
+              start=filtered.start, gt=(0, 0))),
   )
   def test_label_variants(self,
                           candidate,

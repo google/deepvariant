@@ -56,6 +56,9 @@ _MAX_GROUP_SIZE = 6
 # The default maximum distance between subsequent variants within a group. See
 # the HaplotypeLabeler class for more information.
 _MAX_DISTANCE_WITHIN_VARIANT_GROUP = 30
+# When querying for the truth variants within our span, we extend the query
+# region by this many basepairs to capture nearby truth variants.
+_TRUTH_VARIANTS_QUERY_REGION_EXPANSION_IN_BP = 10
 
 
 # redacted
@@ -140,12 +143,26 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
 
     # redacted
     # they should be computed in the grouping.
-    truths = self.get_truth_variants(variants)
-    # redacted
-    # if len(truths) > self.max_group_size + 2:
-    #   logging.warning('Too many truth variants, returning unmodified')
-    #   return examples
+    span = ranges.span([variant_utils.variant_range(v) for v in variants])
+    truths = list(
+        self._get_truth_variants(
+            ranges.expand(span, _TRUTH_VARIANTS_QUERY_REGION_EXPANSION_IN_BP)))
 
+    if len(truths) > self.max_group_size:
+      logging.warning(
+          ('Found a large number of variants to label (n_candidates=%d, '
+           'n_truth=%d) relative to candidate cap of %d. This may make the '
+           'algorithm very slow.'), len(variants), len(truths),
+          self.max_group_size)
+      # redacted
+      # simply not label variants, which was ok because the inputs were
+      # already labeled and leaving them alone was an actual option. Here we
+      # need to proceed with labeling the variants. Right now we just brute
+      # force the answer by going ahead and labeling, but this might be
+      # intractible computationally. The medium-term solution is to move to a
+      # better grouping algorithm that groups truth and candidate together, or
+      # even better to move to the dynamic programming version of this code so
+      # we don't even have to group up variants at all.
     ref = self.make_labeler_ref(variants, truths)
     labeled_variants = label_variants(variants, truths, ref)
 
@@ -163,17 +180,6 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
             is_confident=self._confident_regions.variant_overlaps(labeled),
             genotype=tuple(labeled.calls[0].genotype),
             variant=labeled)
-
-  # redacted
-  # We really should fetch the truth variants over the whole interval we are
-  # labeling, and then group them with our candidates.
-  def get_truth_variants(self, variants, extent=10):
-    span = ranges.span([variant_utils.variant_range(v) for v in variants])
-    region = ranges.expand(span, extent)
-    return [
-        m for m in self._truth_vcf_reader.query(region)
-        if not variant_utils.is_filtered(m)
-    ]
 
   def make_labeler_ref(self, candidate_variants, true_variants, bufsize=20):
     all_variants = candidate_variants + true_variants

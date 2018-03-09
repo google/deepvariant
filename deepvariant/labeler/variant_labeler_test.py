@@ -37,6 +37,8 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from deepvariant.util import in_memory_vcf_reader
+from deepvariant.util import ranges
 from deepvariant import test_utils
 from deepvariant.labeler import variant_labeler
 
@@ -45,8 +47,62 @@ def setUpModule():
   test_utils.init()
 
 
+class DummyVariantLabeler(variant_labeler.VariantLabeler):
+  """A dummy VariantLabeler.
+
+  This class provides a label_variants implementation and so allows the base
+  class to be instantiated and its methods tested.
+  """
+
+  def __init__(self, *pos, **kwargs):
+    super(DummyVariantLabeler, self).__init__(*pos, **kwargs)
+
+  def label_variants(self, variants):
+    raise NotImplementedError
+
+
 class VariantLabelerTest(parameterized.TestCase):
   snp = test_utils.make_variant(start=10, alleles=['A', 'C'], gt=[0, 1])
+
+  def test_get_truth_variants(self):
+    v1 = test_utils.make_variant(chrom='1', start=10)
+    v2 = test_utils.make_variant(chrom='1', start=20)
+    v3_filtered = test_utils.make_variant(chrom='1', start=30, filters=['FAIL'])
+    v4_del = test_utils.make_variant(chrom='1', start=40, alleles=['AAAA', 'A'])
+    v5_non_confident = test_utils.make_variant(chrom='1', start=150)
+
+    variants = [v1, v2, v3_filtered, v4_del, v5_non_confident]
+    reader = in_memory_vcf_reader.InMemoryVcfReader(variants=variants)
+    confident_regions = ranges.RangeSet([ranges.make_range('1', 1, 100)])
+    labeler = DummyVariantLabeler(
+        truth_vcf_reader=reader, confident_regions=confident_regions)
+
+    # Check that we get v1 and v2 specifically when only they are covered by the
+    # query.
+    self.assertEqual(
+        list(labeler._get_truth_variants(ranges.parse_literal('1:1-15'))), [v1])
+    self.assertEqual(
+        list(labeler._get_truth_variants(ranges.parse_literal('1:15-25'))),
+        [v2])
+
+    # We don't include filtered variants.
+    self.assertEqual(
+        list(labeler._get_truth_variants(ranges.parse_literal('1:25-35'))), [])
+
+    # Check that we get all overlapping variants of our query.
+    for del_query in ['1:35-45', '1:42-43', '1:38-42', '1:42-50']:
+      self.assertEqual(
+          list(labeler._get_truth_variants(ranges.parse_literal(del_query))),
+          [v4_del])
+
+    # Checks that a simple query gets all our non-filtered variants.
+    self.assertEqual(
+        list(labeler._get_truth_variants(ranges.parse_literal('1:1-100'))),
+        [v1, v2, v4_del])
+    # Even through our query covers v5, it's not confident, so we don't get it.
+    self.assertEqual(
+        list(labeler._get_truth_variants(ranges.parse_literal('1:1-1000'))),
+        [v1, v2, v4_del])
 
   @parameterized.parameters(
       # Make sure we get the right alt counts for all diploid genotypes.

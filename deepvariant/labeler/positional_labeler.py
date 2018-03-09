@@ -138,19 +138,14 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
         alternate_bases=variant.alternate_bases,
         calls=[variants_pb2.VariantCall(genotype=[0, 0])])
 
-  # redacted
   def _find_matching_variant_in_reader(self, variant):
     """Finds a variant in vcf_reader compatible with variant, if one exists."""
-
-    # redacted
-    def _usable_truth(truth_variant):
-      return (variant.start == truth_variant.start and
-              not variant_utils.is_filtered(truth_variant))
-
     region = variant_utils.variant_position(variant)
     matches = [
-        m for m in self._truth_vcf_reader.query(region) if _usable_truth(m)
+        truth_variant for truth_variant in self._get_truth_variants(region)
+        if variant.start == truth_variant.start
     ]
+
     if not matches:
       return None
     elif len(matches) > 1:

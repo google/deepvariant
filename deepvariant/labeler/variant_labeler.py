@@ -145,6 +145,27 @@ class VariantLabeler(object):
     """
     raise NotImplementedError
 
+  def _get_truth_variants(self, region):
+    """Gets truth variants within region to use in labeling calculations.
+
+    This function queries _truth_vcf_reader in region to get a complete list of
+    truth variants that overlap region, and then filters them down by removing
+    filtered truth variants and ones that aren't contained in the truth
+    intervals.
+
+    Args:
+      region: nucleus.Range proto describing the region on the genome where we
+        want to get our truth variants.
+
+    Yields:
+      nucleus.Variant proto.
+    """
+    for variant in self._truth_vcf_reader.query(region):
+      if (not variant_utils.is_filtered(variant) and
+          self._confident_regions.variant_overlaps(
+              variant, empty_set_return_value=False)):
+        yield variant
+
 
 def _genotype_from_matched_truth(candidate_variant, truth_variant):
   """Gets the diploid genotype for candidate_variant from matched truth_variant.

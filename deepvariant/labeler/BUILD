@@ -53,6 +53,7 @@ py_test(
     deps = [
         ":variant_labeler",
         "//deepvariant:py_test_utils",
+        "//deepvariant/util:in_memory_vcf_reader",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
