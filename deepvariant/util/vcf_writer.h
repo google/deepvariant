@@ -38,7 +38,7 @@
 #include "htslib/vcf.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/genomics/vcf.pb.h"
+#include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/types.h"

@@ -55,9 +55,8 @@ import collections
 
 from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
-from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import variants_pb2
-from deepvariant.util.genomics import vcf_pb2
+from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import vcf_reader
 from deepvariant.util.python import vcf_writer
 
@@ -77,20 +76,20 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
   """
 
   def __init__(self, input_path, use_index=True, include_likelihoods=False):
-    index_mode = index_pb2.INDEX_BASED_ON_FILENAME
+    index_mode = core_pb2.INDEX_BASED_ON_FILENAME
     if not use_index:
-      index_mode = index_pb2.DONT_USE_INDEX
+      index_mode = core_pb2.DONT_USE_INDEX
 
     # redacted
     # list of strings.
-    desired_vcf_fields = vcf_pb2.OptionalVariantFieldsToParse()
+    desired_vcf_fields = core_pb2.OptionalVariantFieldsToParse()
     if not include_likelihoods:
       desired_vcf_fields.exclude_genotype_quality = True
       desired_vcf_fields.exclude_genotype_likelihood = True
 
     self._reader = vcf_reader.VcfReader.from_file(
         input_path.encode('utf8'),
-        vcf_pb2.VcfReaderOptions(
+        core_pb2.VcfReaderOptions(
             index_mode=index_mode,
             desired_format_entries=desired_vcf_fields))
 
@@ -150,7 +149,7 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
       round_qualities: bool. If True, the QUAL field is rounded to one point
         past the decimal.
     """
-    writer_options = vcf_pb2.VcfWriterOptions(
+    writer_options = core_pb2.VcfWriterOptions(
         contigs=contigs,
         sample_names=samples,
         filters=filters,

@@ -30,8 +30,8 @@
 syntax = "proto3";
 
 import "deepvariant/util/genomics/position.proto";
-import "deepvariant/util/genomics/sam.proto";
 import "deepvariant/util/genomics/variants.proto";
+import "deepvariant/util/protos/core.proto";
 import "deepvariant/protos/realigner.proto";
 
 

@@ -38,7 +38,7 @@
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"
-#include "deepvariant/util/genomics/sam.pb.h"
+#include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/reader_base.h"
 #include "deepvariant/util/samplers.h"
 #include "deepvariant/util/vendor/statusor.h"

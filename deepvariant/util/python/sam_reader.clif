@@ -30,7 +30,7 @@
 from "deepvariant/util/genomics/range_pyclif.h" import *
 from "deepvariant/util/genomics/reads_pyclif.h" import *
 from "deepvariant/util/genomics/reference_pyclif.h" import *
-from "deepvariant/util/genomics/sam_pyclif.h" import *
+from "deepvariant/util/protos/core_pyclif.h" import *
 from "deepvariant/util/vendor/statusor_clif_converters.h" import *
 
 from deepvariant.util.clif_postproc import WrappedCppIterable

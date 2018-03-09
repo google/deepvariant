@@ -43,6 +43,7 @@ import mock
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util import io_utils as io
 from deepvariant.util import test_utils
+from deepvariant.util.protos import core_pb2
 from tensorflow.python.lib.io import python_io
 
 

@@ -241,9 +241,9 @@ py_library(
         "//deepvariant/util:proto_utils",
         "//deepvariant/util:py_utils",
         "//deepvariant/util:ranges",
-        "//deepvariant/util/genomics:sam_py_pb2",
         "//deepvariant/util/io:sam",
         "//deepvariant/util/io:vcf",
+        "//deepvariant/util/protos:core_py_pb2",
         "//deepvariant/util/python:hts_verbose",
         "//deepvariant/vendor:timer",
         "@com_google_absl_py//absl/flags",
@@ -376,7 +376,7 @@ py_library(
         "//deepvariant/python:pileup_image_native",
         "//deepvariant/util:py_utils",
         "//deepvariant/util:ranges",
-        "//deepvariant/util/genomics:sam_py_pb2",
+        "//deepvariant/util/protos:core_py_pb2",
     ],
 )
 
@@ -408,8 +408,8 @@ cc_library(
         "//deepvariant/util/genomics:cigar_cc_pb2",
         "//deepvariant/util/genomics:position_cc_pb2",
         "//deepvariant/util/genomics:reads_cc_pb2",
-        "//deepvariant/util/genomics:sam_cc_pb2",
         "//deepvariant/util/genomics:variants_cc_pb2",
+        "//deepvariant/util/protos:core_cc_pb2",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

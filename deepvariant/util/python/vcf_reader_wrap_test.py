@@ -36,12 +36,11 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
-from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
-from deepvariant.util.genomics import vcf_pb2
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
+from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import vcf_reader
 
 expected_sites_contigs = [
@@ -154,9 +153,9 @@ expected_samples_filters = [
 class WrapVcfReaderTests(absltest.TestCase):
 
   def setUp(self):
-    self.unindexed_options = vcf_pb2.VcfReaderOptions()
-    self.indexed_options = vcf_pb2.VcfReaderOptions(
-        index_mode=index_pb2.INDEX_BASED_ON_FILENAME)
+    self.unindexed_options = core_pb2.VcfReaderOptions()
+    self.indexed_options = core_pb2.VcfReaderOptions(
+        index_mode=core_pb2.INDEX_BASED_ON_FILENAME)
     self.sites_vcf = test_utils.genomics_core_testdata('test_sites.vcf')
     self.samples_vcf = test_utils.genomics_core_testdata('test_samples.vcf.gz')
     self.sites_reader = vcf_reader.VcfReader.from_file(self.sites_vcf,
