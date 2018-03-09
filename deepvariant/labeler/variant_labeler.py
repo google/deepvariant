@@ -111,7 +111,6 @@ class VariantLabeler(object):
 
   See the docs on each individual function to get a better understanding of what
   each function does and the meaning of the return values.
-
   """
 
   __metaclass__ = abc.ABCMeta
@@ -119,6 +118,8 @@ class VariantLabeler(object):
   def __init__(self, truth_vcf_reader, confident_regions):
     if truth_vcf_reader is None:
       raise ValueError('truth_vcf_reader cannot be None')
+    if confident_regions is None:
+      raise ValueError('confident_regions cannot be None')
     self._truth_vcf_reader = truth_vcf_reader
     self._confident_regions = confident_regions
 

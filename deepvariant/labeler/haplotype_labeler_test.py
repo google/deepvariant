@@ -70,6 +70,15 @@ def _variants_from_grouped_positions(grouped_positions):
 
 def _make_labeler(truth_variants=None, confident_regions=None, **kwargs):
   mock_ref_reader = mock.MagicMock()
+
+  if confident_regions is None:
+    # Use the reference of the truth variants if possible, otherwise just use
+    # a dummy placeholder value for the contig name and make the confident
+    # region a giant span.
+    contig = truth_variants[0].reference_name if truth_variants else 'dummy'
+    confident_regions = ranges.RangeSet(
+        [ranges.make_range(contig, 0, 1000000000)])
+
   return haplotype_labeler.HaplotypeLabeler(
       truth_vcf_reader=positional_labeler_test.mock_vcf_reader(
           truth_variants or []),

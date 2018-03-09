@@ -188,7 +188,10 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
     ]
     candidate = test_utils.make_variant(start=21, alleles=['CC', 'A'])
 
-    labeler = self._make_labeler(overlapping, None)
+    labeler = self._make_labeler(
+        overlapping,
+        ranges.RangeSet(
+            [ranges.make_range(overlapping[0].reference_name, 0, 100)]))
     is_confident, truth_variant = labeler._match(candidate)
     self.assertEqual(is_confident, True)
     self.assertEqual(truth_variant, overlapping[1])

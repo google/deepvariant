@@ -74,7 +74,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
       self,
       truth_vcf_reader,
       ref_reader,
-      confident_regions=None,
+      confident_regions,
       max_group_size=_MAX_GROUP_SIZE,
       max_distance_within_grouped_variants=_MAX_DISTANCE_WITHIN_VARIANT_GROUP):
     """Creates a new HaplotypeVariantLabeler.

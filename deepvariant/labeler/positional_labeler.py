@@ -52,7 +52,7 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
   the candidate variants and the truth variants.
   """
 
-  def __init__(self, truth_vcf_reader, confident_regions=None):
+  def __init__(self, truth_vcf_reader, confident_regions):
     """Creates a new VariantLabeler.
 
     Args:
@@ -111,13 +111,10 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
       variant but with a hom-ref genotype.
     """
     matched_variant = self._find_matching_variant_in_reader(variant)
-    if self._confident_regions is None:
-      confident = matched_variant is not None
-    else:
-      confident = self._confident_regions.variant_overlaps(
-          variant, empty_set_return_value=False)
-      if matched_variant is None and confident:
-        matched_variant = self._make_synthetic_hom_ref(variant)
+    confident = self._confident_regions.variant_overlaps(
+        variant, empty_set_return_value=False)
+    if matched_variant is None and confident:
+      matched_variant = self._make_synthetic_hom_ref(variant)
     return confident, matched_variant
 
   def _make_synthetic_hom_ref(self, variant):
