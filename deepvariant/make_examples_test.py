@@ -51,6 +51,7 @@ from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
+from deepvariant.util import variantcall_utils
 from deepvariant.util import vcf_constants
 from deepvariant import make_examples
 from deepvariant import test_utils
@@ -153,6 +154,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   @flagsaver.FlagSaver
   def test_make_examples_end2end(self, mode, num_shards,
                                  labeler_algorithm=None):
+    self.maxDiff = None
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.ref = test_utils.CHR20_FASTA
@@ -276,7 +278,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       self.assertLessEqual(variant.start, region.end)
       self.assertEqual(len(variant.calls), 1)
 
-      call = variant.calls[0]
+      call = variant_utils.only_call(variant)
       self.assertEqual(call.call_set_name,
                        options.variant_caller_options.sample_name)
       if is_gvcf:
@@ -284,8 +286,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         # have genotype likelihoods and a GQ value.
         self.assertEqual(call.genotype, [0, 0])
         self.assertEqual(len(call.genotype_likelihood), 3)
-        self.assertGreaterEqual(
-            variant_utils.genotype_quality(variant, default=None), 0)
+        self.assertGreaterEqual(variantcall_utils.get_gq(call), 0)
 
   def verify_contiguity(self, contiguous_variants, region):
     """Verifies region is fully covered by gvcf records."""
@@ -1141,13 +1142,14 @@ class RegionProcessorTest(parameterized.TestCase):
     # according to our label.
     self.assertEqual(expected_label_value, tf_utils.example_label(labeled))
     labeled_variant = tf_utils.example_variant(labeled)
-    self.assertEqual(tuple(labeled_variant.calls[0].genotype), label.genotype)
+    call = variant_utils.only_call(labeled_variant)
+    self.assertEqual(tuple(call.genotype), label.genotype)
 
     # The original variant and labeled_variant from out tf.Example should be
     # equal except for the genotype field, since this is set by
     # add_label_to_example.
     label.variant.calls[0].genotype[:] = []
-    labeled_variant.calls[0].genotype[:] = []
+    call.genotype[:] = []
     self.assertEqual(label.variant, labeled_variant)
 
   def test_label_variant_raises_for_non_confident_variant(self):

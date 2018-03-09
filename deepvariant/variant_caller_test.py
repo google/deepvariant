@@ -41,6 +41,7 @@ import numpy as np
 import numpy.testing as npt
 
 from deepvariant.util import variant_utils
+from deepvariant.util import variantcall_utils
 from deepvariant import test_utils
 from deepvariant import variant_caller
 from deepvariant.protos import deepvariant_pb2
@@ -323,18 +324,17 @@ class VariantCallerTests(parameterized.TestCase):
                  sample_name=None):
     if chrom:
       self.assertEqual(gvcf.reference_name, chrom)
+    call = variant_utils.only_call(gvcf)
     self.assertNotEmpty(gvcf.reference_name)
     self.assertEqual(gvcf.reference_bases, ref)
     self.assertEqual(gvcf.alternate_bases, ['<*>'])
     self.assertEqual(gvcf.start, start)
     self.assertEqual(gvcf.end, end if end else start + 1)
-    self.assertEqual(len(gvcf.calls), 1)
-    self.assertEqual(variant_utils.genotype_quality(gvcf), gq)
-    self.assertNotEmpty(gvcf.calls[0].genotype_likelihood)
-    self.assertIn('MIN_DP', gvcf.calls[0].info)
-    self.assertLen(gvcf.calls[0].info['MIN_DP'].values, 1)
-    self.assertEqual(gvcf.calls[0].info['MIN_DP'].values[0].number_value,
-                     min_dp)
+    self.assertEqual(variantcall_utils.get_gq(call), gq)
+    self.assertNotEmpty(call.genotype_likelihood)
+    self.assertIn('MIN_DP', call.info)
+    self.assertLen(call.info['MIN_DP'].values, 1)
+    self.assertEqual(variantcall_utils.get_min_dp(call), min_dp)
     if gls is not None:
       npt.assert_allclose(list(gvcf.calls[0].genotype_likelihood), gls)
     if sample_name:

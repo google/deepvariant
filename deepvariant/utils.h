@@ -43,12 +43,6 @@ namespace deepvariant {
 
 using tensorflow::string;
 
-// Gets the integer value of the GQ field from call.
-//
-// Assumes that a field GQ is present in the call. Behavior is undefined if
-// missing,
-int VariantCallGQ(const nucleus::genomics::v1::VariantCall& call);
-
 // Creates an allele with the provided bases, type, and count.
 Allele MakeAllele(const string& bases,
                   const AlleleType type,

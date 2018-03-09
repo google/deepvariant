@@ -45,21 +45,21 @@ from deepvariant.util import ranges
 from deepvariant.util import vcf_constants
 
 
-def _set_variantcall_number_field(variant_call, field_name, value):
-  if isinstance(value, numbers.Number):
-    value = [value]
-  if field_name in variant_call.info:
-    del variant_call.info[field_name]
-  struct_values = [struct_pb2.Value(number_value=v) for v in value]
-  variant_call.info[field_name].values.extend(struct_values)
+def only_call(variant):
+  """Ensures the Variant has exactly one VariantCall, and returns it.
 
+  Args:
+    variant: nucleus.protos.Variant. The variant of interest.
 
-def set_variantcall_gq(variant_call, gq):
-  _set_variantcall_number_field(variant_call, 'GQ', gq)
+  Returns:
+    The single nucleus.protos.VariantCall in the variant.
 
-
-def set_variantcall_min_dp(variant_call, min_dp):
-  _set_variantcall_number_field(variant_call, 'MIN_DP', min_dp)
+  Raises:
+    ValueError: Not exactly one VariantCall is in the variant.
+  """
+  if len(variant.calls) != 1:
+    raise ValueError('Expected exactly one VariantCall in {}'.format(variant))
+  return variant.calls[0]
 
 
 def decode_variants(encoded_iter):
@@ -619,7 +619,7 @@ def genotype_quality(variant, default=None):
     return default
   call = variant.calls[0]
   if 'GQ' in call.info:
-    return call.info['GQ'].values[0].number_value
+    return call.info['GQ'].values[0].int_value
   else:
     return default
 

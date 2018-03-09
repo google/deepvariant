@@ -47,7 +47,7 @@ import numpy as np
 
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
-from deepvariant.util import variant_utils
+from deepvariant.util import variantcall_utils
 from deepvariant.util import vcf_constants
 from deepvariant.python import variant_calling
 
@@ -297,8 +297,8 @@ class VariantCaller(object):
           call_set_name=self.options.sample_name,
           genotype=[0, 0],
           genotype_likelihood=first_record.likelihoods)
-      variant_utils.set_variantcall_gq(call, min_gq)
-      variant_utils.set_variantcall_min_dp(call, min_dp)
+      variantcall_utils.set_gq(call, min_gq)
+      variantcall_utils.set_min_dp(call, min_dp)
       yield variants_pb2.Variant(
           reference_name=first_record.summary_counts.reference_name,
           reference_bases=first_record.summary_counts.ref_base,

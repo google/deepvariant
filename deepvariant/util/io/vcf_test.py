@@ -78,7 +78,7 @@ def _format_test_variant(alleles, call_infos):
       if not isinstance(value, (list, tuple)):
         value = [value]
       call.info[key].values.extend(
-          [struct_pb2.Value(number_value=v) for v in value])
+          [struct_pb2.Value(int_value=v) for v in value])
   return variant
 
 

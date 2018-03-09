@@ -194,8 +194,8 @@ class SamReaderTests(parameterized.TestCase):
                                               expected_values):
         if isinstance(expected_value, float):
           self.assertAlmostEqual(actual_value.number_value, expected_value)
-        elif isinstance(expected_value, int):
-          self.assertEqual(actual_value.number_value, expected_value)
+        elif isinstance(expected_value, (int, long)):
+          self.assertEqual(actual_value.int_value, expected_value)
         elif isinstance(expected_value, str):
           self.assertEqual(actual_value.string_value, expected_value)
         else:

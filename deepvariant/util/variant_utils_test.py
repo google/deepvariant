@@ -54,42 +54,34 @@ EVAL_MISS = variant_utils.AlleleMismatchType.unmatched_eval_alleles
 
 class VariantUtilsTests(parameterized.TestCase):
 
+  def test_only_call(self):
+    expected = variants_pb2.VariantCall(call_set_name='name', genotype=[0, 1])
+    variant = variants_pb2.Variant(calls=[expected])
+    actual = variant_utils.only_call(variant)
+    self.assertEqual(actual, expected)
+
   @parameterized.parameters(
-      dict(values=[0, 1, 2], is_iterable=False),
-      dict(values=[0.0, 1.0, 2.5], is_iterable=False),
-      dict(values=[[0.0], [1.0], [2.5]], is_iterable=True),
-      dict(values=[[1, 1], [0, 2]], is_iterable=True),
-      dict(values=[[0.0, 1.0, 2.0], [2.5, 3.5, 0]], is_iterable=True),
+      0,
+      2,
+      3,
   )
-  def test_set_number_value(self, values, is_iterable):
-    vc = variants_pb2.VariantCall()
-    key = 'MY_KEY'
-    self.assertNotIn(key, vc.info)
-    for value in values:
-      variant_utils._set_variantcall_number_field(vc, key, value)
-      self.assertIn(key, vc.info)
-      self.assertLen(vc.info[key].values, len(value) if is_iterable else 1)
-      actual = [x.number_value for x in vc.info[key].values]
-      expected = value if is_iterable else [value]
-      self.assertEqual(actual, expected)
+  def test_invalid_only_call(self, num_calls):
+    calls = [
+        variants_pb2.VariantCall(call_set_name=str(x)) for x in range(num_calls)
+    ]
+    variant = variants_pb2.Variant(calls=calls)
+    with self.assertRaisesRegexp(ValueError,
+                                 'Expected exactly one VariantCall'):
+      variant_utils.only_call(variant)
 
-  def test_set_variantcall_gq(self):
-    vc = variants_pb2.VariantCall()
-    self.assertNotIn('GQ', vc.info)
-    for value in range(10):
-      variant_utils.set_variantcall_gq(vc, value)
-      self.assertIn('GQ', vc.info)
-      self.assertLen(vc.info['GQ'].values, 1)
-      self.assertEqual(value, vc.info['GQ'].values[0].number_value)
-
-  def test_set_variantcall_min_dp(self):
-    vc = variants_pb2.VariantCall()
-    self.assertNotIn('MIN_DP', vc.info)
-    for value in range(10):
-      variant_utils.set_variantcall_min_dp(vc, value)
-      self.assertIn('MIN_DP', vc.info)
-      self.assertLen(vc.info['MIN_DP'].values, 1)
-      self.assertEqual(value, vc.info['MIN_DP'].values[0].number_value)
+  def test_modify_only_call(self):
+    variant = variants_pb2.Variant(calls=[variants_pb2.VariantCall()])
+    call = variant_utils.only_call(variant)
+    call.call_set_name = 'name'
+    call.genotype[:] = [0, 1]
+    self.assertLen(variant.calls, 1)
+    self.assertEqual(variant.calls[0].call_set_name, 'name')
+    self.assertEqual(variant.calls[0].genotype, [0, 1])
 
   def test_decode_variants(self):
     variants = [

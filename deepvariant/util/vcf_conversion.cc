@@ -263,7 +263,11 @@ class FormatFieldAdapter {
       auto found = vc.info().find(field_name_);
       if (found != vc.info().end()) {
         for (auto& list_value : (*found).second.values()) {
-          values[i].push_back(list_value.number_value());
+          if (std::is_integral<T>::value) {
+            values[i].push_back(list_value.int_value());
+          } else {
+            values[i].push_back(list_value.number_value());
+          }
         }
       }
       // Since we don't have a field_name_ key/value pair in this sample, we

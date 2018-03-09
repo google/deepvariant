@@ -124,8 +124,10 @@ def set_list_values(list_value, values):
   def format_one(value):
     if isinstance(value, str):
       return struct_pb2.Value(string_value=value)
-    elif isinstance(value, (float, int)):
+    elif isinstance(value, float):
       return struct_pb2.Value(number_value=value)
+    elif isinstance(value, (int, long)):
+      return struct_pb2.Value(int_value=value)
     else:
       raise ValueError('Unsupported type ', value)
 

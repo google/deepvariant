@@ -538,7 +538,7 @@ TEST(SetValuesValue, WorksWithInt) {
   nucleus::genomics::v1::Value value;
   int v = 10;
   SetValuesValue<int>(v, &value);
-  EXPECT_THAT(value.number_value(), Eq(v));
+  EXPECT_THAT(value.int_value(), Eq(v));
 }
 
 TEST(SetValuesValue, WorksWithDouble) {

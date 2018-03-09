@@ -54,6 +54,7 @@ from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
+from deepvariant.util import variantcall_utils
 from deepvariant.util import vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
@@ -137,11 +138,8 @@ def _extract_single_sample_name(record):
         call_set_name of the VariantCall is not populated.
   """
   variant = record.variant
-  if len(variant.calls) != 1:
-    raise ValueError(
-        'Error extracting name: expected one call in {}, not {}'.format(
-            record, len(variant.calls)))
-  name = variant.calls[0].call_set_name
+  call = variant_utils.only_call(variant)
+  name = call.call_set_name
   if not name:
     raise ValueError(
         'Error extracting name: no call_set_name set: {}'.format(record))
@@ -277,19 +275,15 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   Raises:
     ValueError: If variant doesn't have exactly one variant.call record.
   """
-  if len(variant.calls) != 1:
-    raise ValueError('Variant must have exactly one VariantCall record',
-                     variant)
+  call = variant_utils.only_call(variant)
   n_alleles = len(variant.alternate_bases) + 1
   index, genotype = most_likely_genotype(predictions, n_alleles=n_alleles)
   gq, variant.quality = compute_quals(predictions, index)
-  call = variant.calls[0]
   call.call_set_name = sample_name
-  call.genotype[:] = genotype
-  variant_utils.set_variantcall_gq(call, gq)
-  call.genotype_likelihood[:] = [
-      genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions
-  ]
+  variantcall_utils.set_gt(call, genotype)
+  variantcall_utils.set_gq(call, gq)
+  gls = [genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions]
+  variantcall_utils.set_gl(call, gls)
   variant.filter[:] = compute_filter_fields(variant, qual_filter)
   return variant
 
@@ -315,8 +309,9 @@ def compute_quals(predictions, prediction_index):
   """
   # GQ is prob(genotype) / prob(all genotypes)
   # GQ is rounded to the nearest integer to comply with the VCF spec.
-  gq = np.around(
-      genomics_math.ptrue_to_bounded_phred(predictions[prediction_index]))
+  gq = int(
+      np.around(
+          genomics_math.ptrue_to_bounded_phred(predictions[prediction_index])))
   # QUAL is prob(variant genotype) / prob(all genotypes)
   # Taking the min to avoid minor numerical issues than can push sum > 1.0.
   # redacted
@@ -760,11 +755,10 @@ def _transform_to_gvcf_record(variant):
     # Add one new GL for het allele/gVCF for each of the other alleles, plus one
     # for the homozygous gVCF allele.
     num_new_gls = len(variant.alternate_bases) + 1
-    variant.calls[0].genotype_likelihood.extend(
-        [_GVCF_ALT_ALLELE_GL] * num_new_gls)
+    call = variant_utils.only_call(variant)
+    call.genotype_likelihood.extend([_GVCF_ALT_ALLELE_GL] * num_new_gls)
     if variant.calls[0].info and 'AD' in variant.calls[0].info:
-      variant.calls[0].info['AD'].values.extend(
-          [struct_pb2.Value(number_value=0)])
+      variant.calls[0].info['AD'].values.extend([struct_pb2.Value(int_value=0)])
     if variant.calls[0].info and 'VAF' in variant.calls[0].info:
       variant.calls[0].info['VAF'].values.extend(
           [struct_pb2.Value(number_value=0)])

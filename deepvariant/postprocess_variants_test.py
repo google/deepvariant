@@ -269,7 +269,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     ]
     variant = variants_pb2.Variant(calls=variant_calls)
     record = deepvariant_pb2.CallVariantsOutput(variant=variant)
-    with self.assertRaisesRegexp(ValueError, 'Error extracting name:'):
+    with self.assertRaisesRegexp(ValueError, 'Expected exactly one VariantCal'):
       postprocess_variants._extract_single_sample_name(record)
 
   @parameterized.parameters(
@@ -877,9 +877,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     variant = _create_variant_with_alleles(alts=alts)
     test_utils.set_list_values(variant.calls[0].info['AD'], orig_ad)
     actual = postprocess_variants.prune_alleles(variant, to_remove)
-    self.assertEqual(
-        [v.number_value for v in actual.calls[0].info['AD'].values],
-        expected_ad)
+    self.assertEqual([v.int_value for v in actual.calls[0].info['AD'].values],
+                     expected_ad)
 
   @parameterized.parameters(
       (1, [[0]]),

@@ -130,7 +130,7 @@ Variant MakeExpectedVariant(const string& ref, const std::vector<string>& alts,
         "genotype_likelihood: -0.47712125472 "
         "genotype_likelihood: -0.47712125472 "
         "genotype_likelihood: -0.47712125472 "
-        "info: { key: \"GQ\" value { values { number_value: 1 } } }",
+        "info: { key: \"GQ\" value { values { int_value: 1 } } }",
         variant.add_calls()));
   } else {
     // End is start + ref length according to Variant.proto spec.

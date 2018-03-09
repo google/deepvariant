@@ -185,10 +185,18 @@ void SetValuesValue(T value, nucleus::genomics::v1::Value* protobuf_value) {
   protobuf_value->set_string_value(value);
 }
 
-// Sets the value with set_number_value for any arithmetic C++ type.
+// Sets the value with set_int_value for any integral C++ type.
 template <typename T>
 void SetValuesValue(
-    typename std::enable_if<std::is_arithmetic<T>::value, T>::type value,
+    typename std::enable_if<std::is_integral<T>::value, T>::type value,
+    nucleus::genomics::v1::Value* protobuf_value) {
+  protobuf_value->set_int_value(value);
+}
+
+// Sets the value with set_number_value for any floating point C++ type.
+template <typename T>
+void SetValuesValue(
+    typename std::enable_if<std::is_floating_point<T>::value, T>::type value,
     nucleus::genomics::v1::Value* protobuf_value) {
   protobuf_value->set_number_value(value);
 }
@@ -233,8 +241,18 @@ void SetInfoField(const string& key, const Value value,
 // vector<string> floats = ListValues(list_value_containing_strings);
 //
 template <typename T>
-std::vector<typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-    ListValues(const nucleus::genomics::v1::ListValue& list_value) {
+std::vector<typename std::enable_if<std::is_integral<T>::value, T>::type>
+ListValues(const nucleus::genomics::v1::ListValue& list_value) {
+  std::vector<T> values;
+  for (const auto& value : list_value.values()) {
+    values.push_back(value.int_value());
+  }
+  return values;
+}
+
+template <typename T>
+std::vector<typename std::enable_if<std::is_floating_point<T>::value, T>::type>
+ListValues(const nucleus::genomics::v1::ListValue& list_value) {
   std::vector<T> values;
   for (const auto& value : list_value.values()) {
     values.push_back(value.number_value());

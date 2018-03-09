@@ -38,10 +38,6 @@ namespace genomics {
 namespace deepvariant {
 
 
-int VariantCallGQ(const nucleus::genomics::v1::VariantCall& call) {
-  return static_cast<int>(call.info().at("GQ").values(0).number_value());
-}
-
 Allele MakeAllele(const string& bases,
                   const AlleleType type,
                   const int count) {
