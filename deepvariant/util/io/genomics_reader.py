@@ -77,7 +77,6 @@ class GenomicsReader(object):
     """Enter a `with` block."""
     return self
 
-  @abc.abstractmethod
   def __exit__(self, unused_type, unused_value, unused_traceback):
     """Exit a `with` block.  Typically, this will close the file."""
     pass
@@ -134,7 +133,7 @@ class TFRecordReader(GenomicsReader):
           python_io.TFRecordCompressionType.NONE)
     self.tf_options = tf_options
 
-    GenomicsReader.__init__(self)
+    super(TFRecordReader, self).__init__()
 
   def iterate(self):
     # redacted
@@ -171,7 +170,7 @@ class DispatchingGenomicsReader(GenomicsReader):
     logging.info('Reading %s with %s',
                  input_path, self._reader.__class__.__name__)
     self.header = self._reader.header
-    GenomicsReader.__init__(self)
+    super(DispatchingGenomicsReader, self).__init__()
 
   @abc.abstractmethod
   def _get_extensions(self):

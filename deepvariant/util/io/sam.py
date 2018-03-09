@@ -162,7 +162,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
     self.header = SamHeader(contigs=self._reader.contigs,
                             samples=self._reader.samples)
 
-    genomics_reader.GenomicsReader.__init__(self)
+    super(NativeSamReader, self).__init__()
 
   def iterate(self):
     return self._reader.iterate()

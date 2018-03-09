@@ -44,7 +44,7 @@ class DummyReader(genomics_reader.GenomicsReader):
 
   def __init__(self, input_path):
     self.limit = int(input_path)
-    genomics_reader.GenomicsReader.__init__(self)
+    super(DummyReader, self).__init__()
 
   def iterate(self):
     for i in range(self.limit):

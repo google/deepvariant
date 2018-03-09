@@ -98,7 +98,7 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
                             filters=self._reader.filters,
                             samples=self._reader.samples)
 
-    genomics_reader.GenomicsReader.__init__(self)
+    super(NativeVcfReader, self).__init__()
 
   def iterate(self):
     return self._reader.iterate()
@@ -155,6 +155,7 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
         filters=filters,
         round_qual_values=round_qualities)
     self._writer = vcf_writer.VcfWriter.to_file(output_path, writer_options)
+    super(NativeVcfWriter, self).__init__()
 
   def write(self, proto):
     self._writer.write(proto)
