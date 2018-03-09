@@ -76,8 +76,8 @@ py_test(
     deps = [
         ":positional_labeler",
         "//deepvariant:py_test_utils",
+        "//deepvariant/util:in_memory_vcf_reader",
         "//deepvariant/util:ranges",
-        "//deepvariant/util:variant_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -100,7 +100,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":haplotype_labeler",
-        ":positional_labeler_test",
+        "//deepvariant/util:in_memory_vcf_reader",
         "//deepvariant/util:ranges",
         "//deepvariant/util:variant_utils",
         "//deepvariant/util/genomics:variants_py_pb2",

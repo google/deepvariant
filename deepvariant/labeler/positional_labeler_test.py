@@ -36,42 +36,15 @@ from __future__ import print_function
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import mock
 
+from deepvariant.util import in_memory_vcf_reader
 from deepvariant.util import ranges
-from deepvariant.util import variant_utils
 from deepvariant import test_utils
 from deepvariant.labeler import positional_labeler
 
 
 def setUpModule():
   test_utils.init()
-
-
-def mock_vcf_reader(variants):
-  """Creates a Mock vcf_reader returning variants from variants.
-
-  This function creates a mock vcf_reader with a query method that searches for
-  overlapping variant protos from variants.
-
-  Args:
-    variants: list of
-      third_party.nucleus.protos.Variant protos.
-      These variants will be used to return results from this vcf_reader.
-
-  Returns:
-    A Mock.
-  """
-
-  def _fake_query(region):
-    return [
-        variant for variant in variants
-        if ranges.ranges_overlap(variant_utils.variant_range(variant), region)
-    ]
-
-  reader = mock.MagicMock()
-  reader.query.side_effect = _fake_query
-  return reader
 
 
 class PositionalVariantLabelerTest(parameterized.TestCase):
@@ -92,7 +65,7 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
 
   def _make_labeler(self, variants, confident_regions):
     return positional_labeler.PositionalVariantLabeler(
-        truth_vcf_reader=mock_vcf_reader(variants),
+        truth_vcf_reader=in_memory_vcf_reader.InMemoryVcfReader(variants),
         confident_regions=confident_regions)
 
   @parameterized.parameters(
