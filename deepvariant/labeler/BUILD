@@ -4,6 +4,36 @@ package(
     ],
 )
 
+py_binary(
+    name = "labeled_examples_to_vcf",
+    srcs = ["labeled_examples_to_vcf.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        "//deepvariant:tf_utils",
+        "//deepvariant/util:genomics_io",
+        "//deepvariant/util:io_utils",
+        "//deepvariant/util:variant_utils",
+        "//deepvariant/util/io:vcf",
+        "@com_google_absl_py//absl/flags",
+        "@com_google_absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "labeled_examples_to_vcf_test",
+    srcs = ["labeled_examples_to_vcf_test.py"],
+    data = ["//deepvariant:testdata"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":labeled_examples_to_vcf",
+        "//deepvariant:py_test_utils",
+        "//deepvariant/testing:flagsaver",
+        "//deepvariant/util/io:vcf",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
 py_library(
     name = "variant_labeler",
     srcs = ["variant_labeler.py"],
