@@ -149,6 +149,38 @@ class VariantcallUtilsTests(parameterized.TestCase):
       actual = getter(vc)
       self.assertEqual(actual, value)
 
+  @parameterized.parameters(
+      dict(genotype=[], expected=False),
+      dict(genotype=[-1], expected=False),
+      dict(genotype=[-1, -1], expected=False),
+      dict(genotype=[-1, -1073741825], expected=False),
+      dict(genotype=[-1, 0], expected=True),
+      dict(genotype=[0, 0], expected=True),
+      dict(genotype=[0, 1], expected=True),
+      dict(genotype=[0, 1, -1], expected=True),
+      dict(genotype=[-1, 0, -1073741825], expected=True),
+  )
+  def test_has_genotypes(self, genotype, expected):
+    call = variants_pb2.VariantCall(genotype=genotype)
+    actual = variantcall_utils.has_genotypes(call)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      dict(genotype=[], expected=0),
+      dict(genotype=[-1], expected=1),
+      dict(genotype=[-1, -1], expected=2),
+      dict(genotype=[-1, -1073741825], expected=1),
+      dict(genotype=[-1, 0], expected=2),
+      dict(genotype=[0, 0], expected=2),
+      dict(genotype=[0, 1], expected=2),
+      dict(genotype=[0, 1, -1], expected=3),
+      dict(genotype=[-1, 0, -1073741825], expected=2),
+  )
+  def test_ploidy(self, genotype, expected):
+    call = variants_pb2.VariantCall(genotype=genotype)
+    actual = variantcall_utils.ploidy(call)
+    self.assertEqual(actual, expected)
+
 
 if __name__ == '__main__':
   absltest.main()

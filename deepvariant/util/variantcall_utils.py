@@ -191,3 +191,30 @@ def get_min_dp(variant_call):
   """Gets the 'MIN_DP' field of the VariantCall."""
   return struct_utils.get_int_field(
       variant_call.info, 'MIN_DP', is_single_field=True)
+
+
+def has_genotypes(variant_call):
+  """Returns True iff the VariantCall has one or more called genotypes.
+
+  Args:
+    variant_call: VariantCall proto. The VariantCall to evaluate.
+
+  Returns:
+    True if the VariantCall has one or more called genotypes, False otherwise.
+  """
+  return any(gt >= 0 for gt in variant_call.genotype)
+
+
+def ploidy(variant_call):
+  """Returns the ploidy of the VariantCall.
+
+  Args:
+    variant_call: VariantCall proto. The VariantCall to evaluate.
+
+  Returns:
+    The ploidy of the call (a non-negative integer).
+  """
+  # Unknown genotypes are represented as -1 in VariantCall protos. When
+  # a VCF is parsed that contains multiple ploidies in different samples,
+  # a separate padding value of -2**30 - 1 is inserted into the calls.
+  return sum(gt >= -1 for gt in variant_call.genotype)

@@ -37,7 +37,7 @@ import abc
 
 
 from deepvariant.util import variant_utils
-
+from deepvariant.util import variantcall_utils
 
 # ---------------------------------------------------------------------------
 # VariantLabel
@@ -187,9 +187,8 @@ def _genotype_from_matched_truth(candidate_variant, truth_variant):
     raise ValueError('candidate_variant cannot be None')
   if truth_variant is None:
     raise ValueError('truth_variant cannot be None')
-  # redacted
-  if not (truth_variant.calls and
-          any(gt >= 0 for gt in truth_variant.calls[0].genotype)):
+  if not variantcall_utils.has_genotypes(
+      variant_utils.only_call(truth_variant)):
     raise ValueError('truth_variant needs genotypes to be used for labeling',
                      truth_variant)
 

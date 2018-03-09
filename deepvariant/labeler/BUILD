@@ -13,6 +13,7 @@ py_binary(
         "//deepvariant/util:genomics_io",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:variant_utils",
+        "//deepvariant/util:variantcall_utils",
         "//deepvariant/util/io:vcf",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
@@ -40,6 +41,7 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         "//deepvariant/util:variant_utils",
+        "//deepvariant/util:variantcall_utils",
     ],
 )
 
@@ -63,6 +65,7 @@ py_library(
     deps = [
         ":variant_labeler",
         "//deepvariant/util:variant_utils",
+        "//deepvariant/util:variantcall_utils",
         "//deepvariant/util/genomics:variants_py_pb2",
         "@com_google_absl_py//absl/logging",
     ],

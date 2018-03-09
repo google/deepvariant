@@ -38,6 +38,7 @@ from absl import logging
 
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import variant_utils
+from deepvariant.util import variantcall_utils
 from deepvariant.labeler import variant_labeler
 
 
@@ -200,9 +201,8 @@ def _genotype_from_matched_truth(candidate_variant, truth_variant):
     raise ValueError('candidate_variant cannot be None')
   if truth_variant is None:
     raise ValueError('truth_variant cannot be None')
-  # redacted
-  if not (truth_variant.calls and
-          any(gt >= 0 for gt in truth_variant.calls[0].genotype)):
+  if not variantcall_utils.has_genotypes(
+      variant_utils.only_call(truth_variant)):
     raise ValueError('truth_variant needs genotypes to be used for labeling',
                      truth_variant)
 
@@ -210,12 +210,12 @@ def _genotype_from_matched_truth(candidate_variant, truth_variant):
     if true_allele == truth_variant.reference_bases:
       return 0
     else:
-      simplifed_true_allele = variant_utils.simplify_alleles(
+      simplified_true_allele = variant_utils.simplify_alleles(
           truth_variant.reference_bases, true_allele)
       for alt_index, alt_allele in enumerate(candidate_variant.alternate_bases):
-        simplifed_alt_allele = variant_utils.simplify_alleles(
+        simplified_alt_allele = variant_utils.simplify_alleles(
             candidate_variant.reference_bases, alt_allele)
-        if simplifed_true_allele == simplifed_alt_allele:
+        if simplified_true_allele == simplified_alt_allele:
           return alt_index + 1
       # If nothing matched, we don't have this alt, so the alt allele index for
       # should be 0 (i.e., not any alt).

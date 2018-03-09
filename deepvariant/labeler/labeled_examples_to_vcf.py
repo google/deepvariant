@@ -50,6 +50,7 @@ from deepvariant.util.io import vcf
 from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import variant_utils
+from deepvariant.util import variantcall_utils
 
 from deepvariant import tf_utils
 
@@ -114,7 +115,7 @@ def examples_to_variants(examples_path, max_records=None):
   for _, group in itertools.groupby(variants,
                                     variant_utils.variant_range_tuple):
     variant = next(group)
-    if not (variant.calls and any(gt >= 0 for gt in variant.calls[0].genotype)):
+    if not variantcall_utils.has_genotypes(variant_utils.only_call(variant)):
       raise ValueError((
           'Variant {} does not have any genotypes. This tool only works with '
           'variants that have been labeled.').format(
