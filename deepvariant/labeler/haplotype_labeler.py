@@ -60,6 +60,11 @@ _MAX_DISTANCE_WITHIN_VARIANT_GROUP = 30
 # region by this many basepairs to capture nearby truth variants.
 _TRUTH_VARIANTS_QUERY_REGION_EXPANSION_IN_BP = 10
 
+# redacted
+# True we will generate enough information into our logs to help debug bad
+# regions.
+_DEBUG_PRINTING_IS_ENABLED = True
+
 
 # redacted
 # use with the API provided by variant_labeler.VariantLabel.
@@ -434,7 +439,7 @@ def print_haplotypes(name, haplotypes):
 
 
 def print_variants(name, variants):
-  logging.info('variants: %s', name)
+  logging.info('variants: %s [%d]', name, len(variants))
   for v in variants:
     logging.info('  %s gt=%s', variant_utils.variant_key(v),
                  _variant_genotypes([v])[0])
@@ -606,6 +611,10 @@ def label_variants(variants, truth_variants, ref):
   """
   variants = list(variants)
   truth_variants = list(truth_variants)
+
+  if _DEBUG_PRINTING_IS_ENABLED:
+    print_variants('candidates', variants)
+    print_variants('truth', truth_variants)
 
   if not variant_utils.variants_are_sorted(variants):
     raise ValueError('Variants are not sorted', variants)
