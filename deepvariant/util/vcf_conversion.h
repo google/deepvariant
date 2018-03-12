@@ -43,11 +43,15 @@
 
 namespace nucleus {
 
+// Convert a VCF line parsed by htslib into a Variant protocol buffer.
+// The parsed line is passed in v, and the parsed header is in h.
 tensorflow::Status ConvertToPb(
     const bcf_hdr_t *h, bcf1_t *v,
     const OptionalVariantFieldsToParse &desired_format_entries,
     nucleus::genomics::v1::Variant *variant_message);
 
+// Convert a Variant protocol buffer into htslib's representation of a VCF
+// line.
 tensorflow::Status ConvertFromPb(
     const nucleus::genomics::v1::Variant &variant_message, const bcf_hdr_t &h,
     bcf1_t *v);
