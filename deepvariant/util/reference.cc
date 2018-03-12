@@ -33,6 +33,7 @@
 #include "deepvariant/util/reference.h"
 
 #include <algorithm>
+#include <numeric>
 
 #include "deepvariant/util/protos/core.pb.h"
 #include "tensorflow/core/lib/strings/strcat.h"
