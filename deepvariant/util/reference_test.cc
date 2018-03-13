@@ -94,6 +94,7 @@ TEST_P(GenomeReferenceTest, TestIsValidInterval) {
     }
     EXPECT_FALSE(Ref().IsValidInterval(MakeRange(chr, -10, 0)));
     EXPECT_FALSE(Ref().IsValidInterval(MakeRange(chr, -1, 0)));
+    EXPECT_FALSE(Ref().IsValidInterval(MakeRange(chr, 10, 9)));
     EXPECT_FALSE(Ref().IsValidInterval(MakeRange(chr, 0, n_bases + 1)));
     EXPECT_FALSE(Ref().IsValidInterval(MakeRange(chr, 0, n_bases + 100)));
     EXPECT_FALSE(Ref().IsValidInterval(MakeRange(chr, n_bases, n_bases)));
@@ -184,9 +185,9 @@ TEST_P(GenomeReferenceTest, TestGetBasesParts) {
   // crosses the boundary of the index when max_bin_size is 5
   CheckGetBases(Ref(), "chrM", 4, 6, "AC");
 
-  // We fail when requesting a 0-bp interval.
-  // redacted
-  // CheckGetBases(Ref(), "chrM", 0, 0, "");
+  // 0-bp interval requests should return the empty string.
+  CheckGetBases(Ref(), "chrM", 0, 0, "");
+  CheckGetBases(Ref(), "chrM", 10, 10, "");
 }
 
 }  // namespace nucleus

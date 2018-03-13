@@ -105,6 +105,12 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
     return tensorflow::errors::InvalidArgument(
       StrCat("Invalid interval: ", range.ShortDebugString()));
 
+  if (range.start() == range.end()) {
+    // We are requesting an empty string. faidx_fetch_seq does not allow this,
+    // so we have to special case it here.
+    return string("");
+  }
+
   bool use_cache = (cache_size_bases_ > 0) &&
       (range.end() - range.start() <= cache_size_bases_);
   Range range_to_fetch;

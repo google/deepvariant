@@ -87,8 +87,8 @@ bool GenomeReference::IsValidInterval(const Range& range) const {
       Contig(range.reference_name());
   if (!contig_status.ok()) return false;
   const int64 n_bases = contig_status.ValueOrDie()->n_bases();
-  return range.start() >= 0 && range.start() < n_bases &&
-         range.end() <= n_bases;
+  return range.start() >= 0 && range.start() <= range.end() &&
+         range.start() < n_bases && range.end() <= n_bases;
 }
 
 int64 GenomeReference::NTotalBasepairs() const {
