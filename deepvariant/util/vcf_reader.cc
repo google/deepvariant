@@ -291,23 +291,6 @@ VcfReader::VcfReader(const string& variants_path,
   for (int i = 0; i < n_samples; i++) {
     vcf_header_.add_sample_names(header_->samples[i]);
   }
-
-  // Populate the caches of contigs_, filters_, formats_, and samples_.
-  // redacted
-  for (const nucleus::genomics::v1::ContigInfo& contig : vcf_header_.contigs()) {
-    contigs_.push_back(contig);
-  }
-  for (const nucleus::genomics::v1::VcfFilterInfo& filter :
-       vcf_header_.filters()) {
-    filters_.push_back(filter);
-  }
-  for (const nucleus::genomics::v1::VcfFormatInfo& format :
-       vcf_header_.formats()) {
-    formats_.push_back(format);
-  }
-  for (const string& sample : vcf_header_.sample_names()) {
-    samples_.push_back(sample);
-  }
 }
 
 VcfReader::~VcfReader() {

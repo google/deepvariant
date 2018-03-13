@@ -61,6 +61,4 @@ from "deepvariant/util/vcf_reader.h":
       def PythonEnter(self) -> Status
       @__exit__
       def Close(self) -> Status
-      contigs: list<ContigInfo> = property(`Contigs`)
-      filters: list<VcfFilterInfo> = property(`Filters`)
-      samples: list<str> = property(`Samples`)
+      header: VcfHeader = property(`Header`)

@@ -130,24 +130,8 @@ class VcfReader : public Reader {
   // Returns the VCF header associated with this reader.
   const nucleus::genomics::v1::VcfHeader Header() const { return vcf_header_; }
 
-  // redacted
-  // through to use the header is supported.
-  // Gets a list of the contigs used by this VCF file.
-  const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs() const {
-    return contigs_;
-  }
-
-  // Get a list of the filters described in the VCF header.
-  const std::vector<nucleus::genomics::v1::VcfFilterInfo>& Filters() const {
-    return filters_;
-  }
-
   // Get the options controlling the behavior of this VcfReader.
   const VcfReaderOptions& Options() const { return options_; }
-
-  // Gets a list of the sample names for which this VCF file contains calls,
-  // in the same order listed in the file.
-  const std::vector<string>& Samples() const { return samples_; }
 
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
@@ -177,22 +161,6 @@ class VcfReader : public Reader {
   // The VcfHeader data structure that represents the information in the header
   // of the VCF.
   nucleus::genomics::v1::VcfHeader vcf_header_;
-
-  // A list of ContigInfo, each of which contains the information about the
-  // contigs used by this VCF file.
-  std::vector<nucleus::genomics::v1::ContigInfo> contigs_;
-
-  // A list of the variant filters described in this VCF file, in the order
-  // listed in the VCF header.
-  std::vector<nucleus::genomics::v1::VcfFilterInfo> filters_;
-
-  // A list of the FORMAT descriptors in the VCF header, in-order. This is
-  // used to determine how to parse the entries associated with variant calls.
-  std::vector<nucleus::genomics::v1::VcfFormatInfo> formats_;
-
-  // A list of sample names for which this VCF file contains variant calls,
-  // in the order listed in the file.
-  std::vector<string> samples_;
 };
 
 }  // namespace nucleus

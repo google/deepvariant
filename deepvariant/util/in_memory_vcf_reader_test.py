@@ -40,6 +40,7 @@ from absl.testing import parameterized
 
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
+from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import in_memory_vcf_reader
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
@@ -57,7 +58,7 @@ class InMemoryVcfReaderTests(parameterized.TestCase):
         test_utils.make_variant(chrom='2', start=55),
         test_utils.make_variant(chrom='3', start=10),
     ]
-    self.header = vcf.VcfHeader(
+    self.header = variants_pb2.VcfHeader(
         contigs=[
             reference_pb2.ContigInfo(name='1', n_bases=100),
             reference_pb2.ContigInfo(name='2', n_bases=100),
@@ -65,7 +66,7 @@ class InMemoryVcfReaderTests(parameterized.TestCase):
             reference_pb2.ContigInfo(name='4', n_bases=100),
         ],
         filters=[],
-        samples=['NA12878'])
+        sample_names=['NA12878'])
     self.reader = in_memory_vcf_reader.InMemoryVcfReader(
         self.variants, self.header)
 

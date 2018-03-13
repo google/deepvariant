@@ -63,10 +63,6 @@ from deepvariant.util.python import vcf_writer
 
 _VCF_EXTENSIONS = frozenset(['.vcf'])
 
-# redacted
-VcfHeader = collections.namedtuple(
-    'VcfHeader', ['contigs', 'filters', 'samples'])
-
 
 class NativeVcfReader(genomics_reader.GenomicsReader):
   """Class for reading from native VCF files.
@@ -94,10 +90,7 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
             index_mode=index_mode,
             desired_format_entries=desired_vcf_fields))
 
-    # redacted
-    self.header = VcfHeader(contigs=self._reader.contigs,
-                            filters=self._reader.filters,
-                            samples=self._reader.samples)
+    self.header = self._reader.header
 
     super(NativeVcfReader, self).__init__()
 

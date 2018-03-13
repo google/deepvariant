@@ -168,15 +168,22 @@ class WrapVcfReaderTests(absltest.TestCase):
     iterable = self.sites_reader.iterate()
     self.assertEqual(test_utils.iterable_len(iterable), 5)
 
+  def test_vcf_header(self):
+    header = self.sites_reader.header
+    self.assertLen(header.structured_extras, 1)
+
   def test_vcf_contigs(self):
-    self.assertEqual(expected_sites_contigs, self.sites_reader.contigs)
+    self.assertEqual(expected_sites_contigs,
+                     list(self.sites_reader.header.contigs))
 
   def test_vcf_filters(self):
-    self.assertEqual(expected_samples_filters, self.samples_reader.filters)
+    self.assertEqual(expected_samples_filters,
+                     list(self.samples_reader.header.filters))
 
   def test_vcf_samples(self):
-    self.assertEqual(self.sites_reader.samples, [])
-    self.assertEqual(self.samples_reader.samples, ['NA12878_18_99'])
+    self.assertEqual(list(self.sites_reader.header.sample_names), [])
+    self.assertEqual(
+        list(self.samples_reader.header.sample_names), ['NA12878_18_99'])
 
   def test_vcf_query(self):
     range1 = ranges.parse_literal('chr3:100,000-500,000')
@@ -223,7 +230,7 @@ class WrapVcfReaderTests(absltest.TestCase):
   def test_context_manager(self):
     with vcf_reader.VcfReader.from_file(self.sites_vcf,
                                         self.unindexed_options) as f:
-      self.assertEqual(expected_sites_contigs, f.contigs)
+      self.assertEqual(expected_sites_contigs, list(f.header.contigs))
 
   # Commented out because we in fact don't detect the malformed VCF yet. It is
   # unclear if it's even possible to detect the issue with the API provided by

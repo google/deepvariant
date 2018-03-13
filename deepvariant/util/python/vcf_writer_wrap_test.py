@@ -231,7 +231,7 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
 
     writer_options = vcf_pb2.VcfWriterOptions(
         contigs=v1_reader.header.contigs,
-        sample_names=v1_reader.header.samples,
+        sample_names=v1_reader.header.sample_names,
         filters=v1_reader.header.filters)
 
     with vcf_writer.VcfWriter.to_file(out_file, writer_options) as writer:
