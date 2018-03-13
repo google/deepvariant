@@ -127,12 +127,17 @@ class VcfReader : public Reader {
   // Returns True if this VcfReader loaded an index file.
   bool HasIndex() const { return idx_ != nullptr; }
 
+  // Returns the VCF header associated with this reader.
+  const nucleus::genomics::v1::VcfHeader Header() const { return vcf_header_; }
+
+  // redacted
+  // through to use the header is supported.
   // Gets a list of the contigs used by this VCF file.
   const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs() const {
     return contigs_;
   }
 
-  // Get a list of the filters described in the VCF header
+  // Get a list of the filters described in the VCF header.
   const std::vector<nucleus::genomics::v1::VcfFilterInfo>& Filters() const {
     return filters_;
   }
@@ -168,6 +173,10 @@ class VcfReader : public Reader {
   // The htslib tbx_t data structure for tabix indexed files. May be NULL if no
   // index was loaded.
   tbx_t* idx_;
+
+  // The VcfHeader data structure that represents the information in the header
+  // of the VCF.
+  nucleus::genomics::v1::VcfHeader vcf_header_;
 
   // A list of ContigInfo, each of which contains the information about the
   // contigs used by this VCF file.

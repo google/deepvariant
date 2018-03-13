@@ -67,6 +67,10 @@ blaze run -c opt internal:vcf_to_tfrecord -- \
   --input=$(pwd)/$TESTDATA/test_likelihoods_input.vcf \
   --output=$(pwd)/$TESTDATA/test_likelihoods.vcf.golden.tfrecord
 */
+
+constexpr char kValidVcfHeaderFilename[] = "test_valid_vcf_header_parsing.vcf";
+constexpr char kInvalidVcfHeaderFilename[] =
+    "test_invalid_vcf_header_parsing.vcf";
 constexpr char kVcfLikelihoodsFilename[] = "test_likelihoods_input.vcf";
 constexpr char kVcfLikelihoodsGoldenFilename[] = "test_likelihoods.vcf.golden.tfrecord";  // NOLINT
 constexpr char kVcfPhasesetFilename[] = "test_phaseset.vcf";
@@ -80,6 +84,102 @@ constexpr int CHR1_SIZE = 248956422;
 constexpr int CHR2_SIZE = 242193529;
 constexpr int CHR3_SIZE = 198295559;
 constexpr int CHRX_SIZE = 156040895;
+
+void AddTestContig(nucleus::genomics::v1::VcfHeader& header, const string& name,
+                   const string& description = "", const int n_bases = 0,
+                   const int pos_in_fasta = 0,
+                   const std::vector<string>& kvExtra = {}) {
+  nucleus::genomics::v1::ContigInfo* contig = header.add_contigs();
+  contig->set_name(name);
+  contig->set_description(description);
+  contig->set_n_bases(n_bases);
+  contig->set_pos_in_fasta(pos_in_fasta);
+  for (int i = 0; i < kvExtra.size(); i += 2) {
+    (*contig->mutable_extra())[kvExtra[i]] = kvExtra[i + 1];
+  }
+}
+
+void AddTestFilter(nucleus::genomics::v1::VcfHeader& header, const string& id,
+                   const string& description = "") {
+  nucleus::genomics::v1::VcfFilterInfo* filter = header.add_filters();
+  filter->set_id(id);
+  filter->set_description(description);
+}
+
+void AddTestInfo(nucleus::genomics::v1::VcfHeader& header, const string& id,
+                 const string& number, const string& type,
+                 const string& description, const string& source = "",
+                 const string& version = "") {
+  nucleus::genomics::v1::VcfInfo* info = header.add_infos();
+  info->set_id(id);
+  info->set_number(number);
+  info->set_type(type);
+  info->set_description(description);
+  info->set_source(source);
+  info->set_version(version);
+}
+
+void AddTestFormat(nucleus::genomics::v1::VcfHeader& header, const string& id,
+                   const string& number, const string& type,
+                   const string& description) {
+  nucleus::genomics::v1::VcfFormatInfo* format = header.add_formats();
+  format->set_id(id);
+  format->set_number(number);
+  format->set_type(type);
+  format->set_description(description);
+}
+
+void AddTestStructuredExtra(nucleus::genomics::v1::VcfHeader& header,
+                            const string& key,
+                            const std::vector<string>& extra_pairs) {
+  nucleus::genomics::v1::VcfStructuredExtra* extra =
+      header.add_structured_extras();
+  extra->set_key(key);
+  for (int i = 0; i < extra_pairs.size(); i += 2) {
+    (*extra->mutable_fields())[extra_pairs[i]] = extra_pairs[i + 1];
+  }
+}
+
+void AddTestExtra(nucleus::genomics::v1::VcfHeader& header, const string& key,
+                  const string& value) {
+  nucleus::genomics::v1::VcfExtra* extra = header.add_extras();
+  extra->set_key(key);
+  extra->set_value(value);
+}
+
+TEST(ValidVcfHeaderParsing, MatchesProto) {
+  std::unique_ptr<VcfReader> reader =
+      std::move(VcfReader::FromFile(GetTestData(kValidVcfHeaderFilename),
+                                    VcfReaderOptions())
+                    .ValueOrDie());
+  nucleus::genomics::v1::VcfHeader header_proto;
+  header_proto.set_fileformat("VCFv4.2");
+  AddTestFilter(header_proto, "PASS", "All filters passed");
+  AddTestInfo(header_proto, "DP", "1", "Integer",
+              "Read depth of all samples summed together.");
+  AddTestInfo(header_proto, "DB", "0", "Flag", "dbSNP membership", "dbSNP",
+              "build 129");
+  AddTestFormat(header_proto, "GT", "1", "String", "Genotype");
+  AddTestFormat(header_proto, "GQ", "1", "Integer", "Genotype Quality");
+  AddTestFormat(header_proto, "AD", "R", "Integer",
+                "Read depth of all passing filters reads for each allele.");
+  AddTestFormat(header_proto, "GL", "G", "Float",
+                "Genotype likelihoods, log10 encoded");
+  AddTestContig(header_proto, "Chr1", "", 50);
+  AddTestContig(header_proto, "chr2", "", 81195210, 1,
+                {"URL", "ftp://somewhere.org/assembly.fa", "md5", "fakemd5",
+                 "species", "Homo sapiens"});
+  AddTestStructuredExtra(header_proto, "META",
+                         {"ID", "Assay", "Type", "String", "Number", ".",
+                          "Values", "[WholeGenome, Exome]"});
+  AddTestStructuredExtra(
+      header_proto, "PEDIGREE",
+      {"Name_0", "G0-ID", "Name_1", "G1-ID", "Name_3", "GN-ID"});
+  AddTestExtra(header_proto, "pedigreeDB", "http://url.to.pedigre.es/search");
+  header_proto.add_sample_names("Fido");
+  header_proto.add_sample_names("Spot");
+  EXPECT_THAT(reader->Header(), EqualsProto(header_proto));
+}
 
 TEST(VcfFileOnlySites, IterationWorks) {
   std::unique_ptr<VcfReader> reader = std::move(

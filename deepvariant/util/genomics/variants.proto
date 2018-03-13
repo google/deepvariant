@@ -199,6 +199,10 @@ message VcfHeader {
   repeated string sample_names = 6;
 
   // A list of all header lines that are not one represented above, represented
+  // in a key=value format. The key within the extras may be duplicated.
+  repeated VcfStructuredExtra structured_extras = 8;
+
+  // A list of all header lines that are not one represented above, represented
   // in an unstructured format. The key within the extras may be duplicated.
   repeated VcfExtra extras = 7;
 }
@@ -267,11 +271,25 @@ message VcfFormatInfo {
   string description = 4;
 }
 
+// This record type is a catch-all for other headers containing multiple
+// key-value pairs. For example, headers may have META lines that provide
+// metadata about the VCF as a whole, e.g.
+// ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>
+// The VcfStructuredExtra message would represent this with key="META",
+// and fields mapping "ID" -> "Assay", "Type" -> "String", etc.
+message VcfStructuredExtra {
+  // Required by VCF. The key of the extra header field. Note that this key does
+  // not have to be unique within a VcfHeader.
+  string key = 1;
+
+  // Required by VCF. The map between keys and values.
+  map<string, string> fields = 2;
+}
+
 // This record type is a catch-all for other types of headers. For example,
-// headers may have META lines that provide metadata about the VCF as a whole,
-// e.g. ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>
-// The VcfExtra message would represent this with key="META",
-// value="<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>".
+// ##pedigreeDB=http://url_of_pedigrees
+// The VcfExtra message would represent this with key="pedigreeDB",
+// value="http://url_of_pedigrees".
 message VcfExtra {
   // Required by VCF. The key of the extra header field. Note that this key does
   // not have to be unique within a VcfHeader.

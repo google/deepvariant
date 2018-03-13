@@ -56,12 +56,13 @@ message ContigInfo {
   // The length of this contig in basepairs.
   int64 n_bases = 3;
 
-  // Unstructured additional information used when reading and writing VCF
-  // headers. An example extra would be
-  // 'assembly=B36,taxonomy=x,species="Homo sapiens"'. We never use this
-  // information internally, other than reading it in so we can write the contig
-  // out again.
-  string extra = 5;
+  // Additional information used when reading and writing VCF headers. An
+  // example map of key-value extra fields would transform an input line
+  // containing 'assembly=B36,taxonomy=x,species="Homo sapiens"' to a map with
+  // "assembly" -> "B36", "taxonomy" -> "x", "species" -> "Homo sapiens". We
+  // never use this information internally, other than reading it in so we can
+  // write the contig out again.
+  map<string, string> extra = 5;
 
   // The position of this contig in the src_fasta file. The first contig would
   // have position 0.

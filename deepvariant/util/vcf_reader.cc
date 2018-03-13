@@ -57,6 +57,113 @@ using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using tensorflow::strings::StrCat;
 
+namespace {
+
+// Returns the hrec that contains information or nullptr if none does.
+const bcf_hrec_t* GetPopulatedHrec(const bcf_idpair_t& idPair) {
+  for (int i = 0; i < 3; i++) {
+    const bcf_hrec_t* hrec = idPair.val->hrec[i];
+    if (hrec != nullptr) {
+      return hrec;
+    }
+  }
+  LOG(ERROR) << "No populated hrec in idPair. Error in htslib.";
+  return nullptr;
+}
+
+// Adds Contig information from the idPair to the ContigInfo object.
+void AddContigInfo(const bcf_idpair_t& idPair,
+                   nucleus::genomics::v1::ContigInfo* contig,
+                   int pos_in_fasta) {
+  // ID and length are special-cased in the idPair.
+  contig->set_name(idPair.key);
+  contig->set_n_bases(idPair.val->info[0]);
+  contig->set_pos_in_fasta(pos_in_fasta);
+  const bcf_hrec_t* hrec0 = GetPopulatedHrec(idPair);
+  if (hrec0 != nullptr) {
+    for (int j = 0; j < hrec0->nkeys; j++) {
+      // Add any non-ID and non-length info to the structured map of additional
+      // information. "IDX" is an htslib-internal key that should also be
+      // ignored.
+      if (string(hrec0->keys[j]) != "ID" &&
+          string(hrec0->keys[j]) != "length" &&
+          string(hrec0->keys[j]) != "IDX") {
+        (*contig->mutable_extra())[hrec0->keys[j]] =
+            Unquote(hrec0->vals[j]).ToString();
+      }
+    }
+  }
+}
+
+// Adds FILTER information from the bcf_hrec_t to the VcfFilterInfo object.
+void AddFilterInfo(const bcf_hrec_t* hrec,
+                   nucleus::genomics::v1::VcfFilterInfo* filter) {
+  if (hrec->nkeys >= 2 && string(hrec->keys[0]) == "ID" &&
+      string(hrec->keys[1]) == "Description") {
+    filter->set_id(hrec->vals[0]);
+    // "Unquote" the description identifier.
+    filter->set_description(Unquote(hrec->vals[1]).ToString());
+  } else {
+    LOG(WARNING) << "Malformed FILTER field detected in header, leaving this "
+                    "filter empty";
+  }
+}
+
+// Adds INFO information from the bcf_hrec_t to the VcfInfo object.
+void AddInfo(const bcf_hrec_t* hrec, nucleus::genomics::v1::VcfInfo* info) {
+  if (hrec->nkeys >= 4 && string(hrec->keys[0]) == "ID" &&
+      string(hrec->keys[1]) == "Number" && string(hrec->keys[2]) == "Type" &&
+      string(hrec->keys[3]) == "Description") {
+    info->set_id(hrec->vals[0]);
+    info->set_number(hrec->vals[1]);
+    info->set_type(hrec->vals[2]);
+    info->set_description(Unquote(hrec->vals[3]).ToString());
+    for (int i = 4; i < hrec->nkeys; i++) {
+      if (string(hrec->keys[i]) == "Source") {
+        info->set_source(Unquote(hrec->vals[i]).ToString());
+      } else if (string(hrec->keys[i]) == "Version") {
+        info->set_version(Unquote(hrec->vals[i]).ToString());
+      }
+    }
+  } else {
+    LOG(WARNING) << "Malformed INFO field detected in header, leaving this "
+                    "info empty";
+  }
+}
+
+// Adds FORMAT information from the bcf_hrec_t to the VcfFormatInfo object.
+void AddFormatInfo(const bcf_hrec_t* hrec,
+                   nucleus::genomics::v1::VcfFormatInfo* format) {
+  if (hrec->nkeys >= 4 && string(hrec->keys[0]) == "ID" &&
+      string(hrec->keys[1]) == "Number" && string(hrec->keys[2]) == "Type" &&
+      string(hrec->keys[3]) == "Description") {
+    format->set_id(hrec->vals[0]);
+    format->set_number(hrec->vals[1]);
+    format->set_type(hrec->vals[2]);
+    format->set_description(Unquote(hrec->vals[3]).ToString());
+  } else {
+    LOG(WARNING) << "Malformed FORMAT field detected in header, leaving this "
+                    "format empty";
+  }
+}
+
+// Adds structured information from the bcf_hrec_t to the VcfStructuredExtra.
+void AddStructuredExtra(const bcf_hrec_t* hrec,
+                        nucleus::genomics::v1::VcfStructuredExtra* extra) {
+  extra->set_key(hrec->key);
+  for (int i = 0; i < hrec->nkeys; i++) {
+    (*extra->mutable_fields())[hrec->keys[i]] =
+        Unquote(hrec->vals[i]).ToString();
+  }
+}
+
+// Adds unstructured information from the bcf_hrec_t to the VcfExtra object.
+void AddExtra(const bcf_hrec_t* hrec, nucleus::genomics::v1::VcfExtra* extra) {
+  extra->set_key(hrec->key);
+  extra->set_value(hrec->value);
+}
+
+}  // namespace
 
 // Iterable class for traversing VCF records found in a query window.
 class VcfQueryIterable : public VariantIterable {
@@ -130,64 +237,76 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
 VcfReader::VcfReader(const string& variants_path,
                      const VcfReaderOptions& options, htsFile* fp,
                      bcf_hdr_t* header, tbx_t* idx)
-    : options_(options),
-      fp_(fp),
-      header_(header),
-      idx_(idx) {
+    : options_(options), fp_(fp), header_(header), idx_(idx) {
+  if (header_->nhrec < 1) {
+    LOG(WARNING) << "Empty header, not a valid VCF.";
+    return;
+  }
+  if (string(header_->hrec[0]->key) != "fileformat") {
+    LOG(WARNING) << "Not a valid VCF, fileformat needed: " << variants_path;
+  }
+  vcf_header_.set_fileformat(header_->hrec[0]->value);
+
   // Fill in the contig info for each contig in the VCF header. Directly
   // accesses the low-level C struct because there are no indirection
   // macros/functions by htslib API.
   // BCF_DT_CTG: offset for contig (CTG) information in BCF dictionary (DT).
   const int n_contigs = header_->n[BCF_DT_CTG];
   for (int i = 0; i < n_contigs; ++i) {
-    nucleus::genomics::v1::ContigInfo contig;
-    contig.set_name(header_->id[BCF_DT_CTG][i].key);
-    contig.set_n_bases(header_->id[BCF_DT_CTG][i].val->info[0]);
-    contig.set_pos_in_fasta(i);
-    contigs_.push_back(contig);
+    const bcf_idpair_t& idPair = header->id[BCF_DT_CTG][i];
+    AddContigInfo(idPair, vcf_header_.add_contigs(), i);
   }
 
-  // Populate FILTER and FORMAT info.
-  int n_id_headers = header_->n[BCF_DT_ID];
-  for (int i = 0; i < n_id_headers; i++) {
-    const bcf_idpair_t& idPair = header_->id[BCF_DT_ID][i];
-    const bcf_hrec_t* hrec0 = idPair.val->hrec[0];
-    if (hrec0 != nullptr && hrec0->type == BCF_HL_FLT) {
-      nucleus::genomics::v1::VcfFilterInfo filter;
-      if (hrec0->nkeys >= 2 && string(hrec0->keys[0]) == "ID" &&
-          string(hrec0->keys[1]) == "Description") {
-        filter.set_id(hrec0->vals[0]);
-        // "Unquote" the description identifier
-        filter.set_description(Unquote(hrec0->vals[1]).ToString());
-        filters_.push_back(filter);
-      } else {
-        LOG(WARNING) << "Malformed filter field detected in header, aborting "
-                        "header parsing";
+  // Iterate through all hrecs (except the first, which was 'fileformat') to
+  // populate the rest of the headers.
+  for (int i = 1; i < header_->nhrec; i++) {
+    const bcf_hrec_t* hrec0 = header_->hrec[i];
+    switch (hrec0->type) {
+      case BCF_HL_CTG:
+        // Contigs are populated above, since they store length in the
+        // bcf_idinfo_t* structure.
         break;
-      }
-    } else if (hrec0 != nullptr && hrec0->type == BCF_HL_FMT) {
-      nucleus::genomics::v1::VcfFormatInfo format;
-      if (hrec0->nkeys >= 4 && string(hrec0->keys[0]) == "ID" &&
-          string(hrec0->keys[1]) == "Number" &&
-          string(hrec0->keys[2]) == "Type" &&
-          string(hrec0->keys[3]) == "Description") {
-        format.set_id(hrec0->keys[0]);
-        format.set_number(hrec0->keys[1]);
-        format.set_type(hrec0->keys[2]);
-        format.set_description(Unquote(hrec0->keys[3]).ToString());
-        formats_.push_back(format);
-      } else {
-        LOG(WARNING) << "Malformed format field detected in header, aborting "
-                        "header parsing";
+      case BCF_HL_FLT:
+        AddFilterInfo(hrec0, vcf_header_.add_filters());
         break;
-      }
+      case BCF_HL_INFO:
+        AddInfo(hrec0, vcf_header_.add_infos());
+        break;
+      case BCF_HL_FMT:
+        AddFormatInfo(hrec0, vcf_header_.add_formats());
+        break;
+      case BCF_HL_STR:
+        AddStructuredExtra(hrec0, vcf_header_.add_structured_extras());
+        break;
+      case BCF_HL_GEN:
+        AddExtra(hrec0, vcf_header_.add_extras());
+        break;
+      default:
+        LOG(WARNING) << "Unknown hrec0->type: " << hrec0->type;
     }
   }
 
   // Populate samples info.
   int n_samples = bcf_hdr_nsamples(header_);
   for (int i = 0; i < n_samples; i++) {
-    samples_.push_back(header_->samples[i]);
+    vcf_header_.add_sample_names(header_->samples[i]);
+  }
+
+  // Populate the caches of contigs_, filters_, formats_, and samples_.
+  // redacted
+  for (const nucleus::genomics::v1::ContigInfo& contig : vcf_header_.contigs()) {
+    contigs_.push_back(contig);
+  }
+  for (const nucleus::genomics::v1::VcfFilterInfo& filter :
+       vcf_header_.filters()) {
+    filters_.push_back(filter);
+  }
+  for (const nucleus::genomics::v1::VcfFormatInfo& format :
+       vcf_header_.formats()) {
+    formats_.push_back(format);
+  }
+  for (const string& sample : vcf_header_.sample_names()) {
+    samples_.push_back(sample);
   }
 }
 
