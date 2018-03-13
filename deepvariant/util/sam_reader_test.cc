@@ -112,6 +112,16 @@ TEST(SamReaderTest, TestBamSampleExtraction) {
   EXPECT_EQ(*samples.begin(), "NA12878");
 }
 
+TEST(SamReaderTest, TestHeaderlessSamIsNotOkay) {
+  std::unique_ptr<SamReader> reader = std::move(
+      SamReader::FromFile(GetTestData("headerless.sam"), SamReaderOptions())
+          .ValueOrDie());
+  auto iterator = reader->Iterate().ValueOrDie();
+  Read r;
+  StatusOr<bool> status =  iterator->Next(&r);
+  ASSERT_EQ(status.ok(), false);
+}
+
 class SamReaderQueryTest : public ::testing::Test {
  protected:
   void SetUp() override {

@@ -184,6 +184,13 @@ class SamReaderTest(absltest.TestCase):
     with self.assertRaises(ValueError):
       list(iterable)
 
+  def test_headless_sam_raises(self):
+    headerless = test_utils.genomics_core_testdata('headerless.sam')
+    reader = sam_reader.SamReader.from_file(headerless, self.options)
+    iterable = iter(reader.iterate())
+    with self.assertRaises(ValueError):
+      next(iterable)
+
 
 if __name__ == '__main__':
   absltest.main()
