@@ -129,9 +129,9 @@ proto_library(
     name = "variants_proto",
     srcs = ["variants.proto"],
     deps = [
-        ":reference_proto",
-        ":struct_proto",
-    ],  # NO COPYBARA
+        ":reference_proto",  # NO COPYBARA
+        ":struct_proto",  # NO COPYBARA
+    ],
 )
 
 cc_proto_library(
@@ -233,4 +233,115 @@ py_proto_library(
 pyclif_proto_library(
     name = "reference_pyclif",
     proto_lib = ":reference_proto",  # NO COPYBARA
+)
+
+# ----------------------------------------------------------------------
+# Index
+# ----------------------------------------------------------------------
+
+proto_library(
+    name = "index_proto",
+    srcs = ["index.proto"],
+)
+
+cc_proto_library(
+    name = "index_cc_pb2",
+    srcs = ["index.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+)
+
+py_proto_library(
+    name = "index_py_pb2",
+    srcs = ["index.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+)
+
+pyclif_proto_library(
+    name = "index_pyclif",
+    proto_lib = ":index_proto",  # NO COPYBARA
+)
+
+# ----------------------------------------------------------------------
+# SAM/BAM
+# ----------------------------------------------------------------------
+
+proto_library(
+    name = "sam_proto",
+    srcs = ["sam.proto"],
+    deps = [
+        ":index_proto",  # NO COPYBARA
+    ],
+)
+
+cc_proto_library(
+    name = "sam_cc_pb2",
+    srcs = ["sam.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [
+        ":index_cc_pb2",
+    ],
+)
+
+py_proto_library(
+    name = "sam_py_pb2",
+    srcs = ["sam.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":index_py_pb2",
+    ],
+)
+
+pyclif_proto_library(
+    name = "sam_pyclif",
+    proto_lib = ":sam_proto",  # NO COPYBARA
+)
+
+# ----------------------------------------------------------------------
+# VCF
+# ----------------------------------------------------------------------
+
+proto_library(
+    name = "vcf_proto",
+    srcs = ["vcf.proto"],
+    deps = [
+        ":index_proto",  # NO COPYBARA
+        ":reference_proto",  # NO COPYBARA
+        ":variants_proto",  # NO COPYBARA
+    ],
+)
+
+cc_proto_library(
+    name = "vcf_cc_pb2",
+    srcs = ["vcf.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [
+        ":index_cc_pb2",
+        ":reference_cc_pb2",
+        ":variants_cc_pb2",
+    ],
+)
+
+py_proto_library(
+    name = "vcf_py_pb2",
+    srcs = ["vcf.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":index_py_pb2",
+        ":reference_py_pb2",
+        ":variants_py_pb2",
+    ],
+)
+
+pyclif_proto_library(
+    name = "vcf_pyclif",
+    proto_lib = ":vcf_proto",  # NO COPYBARA
 )

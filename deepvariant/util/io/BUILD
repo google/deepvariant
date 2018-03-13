@@ -37,8 +37,9 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//deepvariant/util/genomics:index_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
-        "//deepvariant/util/protos:core_py_pb2",
+        "//deepvariant/util/genomics:vcf_py_pb2",
         "//deepvariant/util/python:vcf_reader",
         "//deepvariant/util/python:vcf_writer",
     ],
@@ -68,8 +69,9 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//deepvariant/util/genomics:index_py_pb2",
         "//deepvariant/util/genomics:reads_py_pb2",
-        "//deepvariant/util/protos:core_py_pb2",
+        "//deepvariant/util/genomics:sam_py_pb2",
         "//deepvariant/util/python:sam_reader",
         # "//third_party/py/tfbam_lib",
     ],

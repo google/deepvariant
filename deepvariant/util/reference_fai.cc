@@ -36,7 +36,6 @@
 
 #include "htslib/tbx.h"
 #include "deepvariant/util/hts_path.h"
-#include "deepvariant/util/protos/core.pb.h"
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/gtl/optional.h"
 #include "tensorflow/core/lib/strings/str_util.h"

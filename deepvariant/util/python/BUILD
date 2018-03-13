@@ -18,10 +18,10 @@ py_clif_cc(
         "//deepvariant/util:clif_postproc",
     ],
     pyclif_deps = [
-        "//deepvariant/util/protos:core_pyclif",
         "//deepvariant/util/genomics:range_pyclif",
         "//deepvariant/util/genomics:reference_pyclif",
         "//deepvariant/util/genomics:variants_pyclif",
+        "//deepvariant/util/genomics:vcf_pyclif",
     ],
     deps = [
         "//deepvariant/util:vcf_reader",
@@ -43,7 +43,7 @@ py_test(
         "//deepvariant/util:ranges",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
-        "//deepvariant/util/protos:core_py_pb2",
+        "//deepvariant/util/genomics:vcf_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -55,7 +55,7 @@ py_clif_cc(
     py_deps = [],
     pyclif_deps = [
         "//deepvariant/util/genomics:variants_pyclif",
-        "//deepvariant/util/protos:core_pyclif",
+        "//deepvariant/util/genomics:vcf_pyclif",
     ],
     deps = [
         "//deepvariant/util:vcf_writer",
@@ -77,8 +77,8 @@ py_test(
         "//deepvariant/util:py_test_utils",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/genomics:vcf_py_pb2",
         "//deepvariant/util/io:vcf",
-        "//deepvariant/util/protos:core_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -92,10 +92,10 @@ py_clif_cc(
         "//deepvariant/util:clif_postproc",
     ],
     pyclif_deps = [
-        "//deepvariant/util/protos:core_pyclif",
         "//deepvariant/util/genomics:range_pyclif",
         "//deepvariant/util/genomics:reads_pyclif",
         "//deepvariant/util/genomics:reference_pyclif",
+        "//deepvariant/util/genomics:sam_pyclif",
     ],
     deps = [
         "//deepvariant/util:sam_reader",
@@ -116,8 +116,9 @@ py_test(
         "//deepvariant/util:clif_postproc",
         "//deepvariant/util:py_test_utils",
         "//deepvariant/util:ranges",
+        "//deepvariant/util/genomics:index_py_pb2",
         "//deepvariant/util/genomics:reference_py_pb2",
-        "//deepvariant/util/protos:core_py_pb2",
+        "//deepvariant/util/genomics:sam_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -128,7 +129,6 @@ py_clif_cc(
     pyclif_deps = [
         "//deepvariant/util/genomics:range_pyclif",
         "//deepvariant/util/genomics:reference_pyclif",
-        "//deepvariant/util/protos:core_pyclif",
     ],
     deps = [
         "//deepvariant/util:reference_fai",

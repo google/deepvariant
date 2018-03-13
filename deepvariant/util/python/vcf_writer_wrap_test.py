@@ -40,9 +40,9 @@ import tensorflow as tf
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
+from deepvariant.util.genomics import vcf_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import test_utils
-from deepvariant.util.protos import core_pb2
 from deepvariant.util.python import vcf_writer
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed VcfWriter'
@@ -59,7 +59,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
 
   def setUp(self):
     self.out_fname = test_utils.test_tmpfile('output.vcf')
-    self.options = core_pb2.VcfWriterOptions(
+    self.options = vcf_pb2.VcfWriterOptions(
         contigs=[
             reference_pb2.ContigInfo(name='Chr1', n_bases=50, pos_in_fasta=0),
             reference_pb2.ContigInfo(name='Chr2', n_bases=25, pos_in_fasta=1),
@@ -79,7 +79,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
     tfrecord_file = test_utils.genomics_core_testdata(
         'test_samples.vcf.golden.tfrecord')
 
-    writer_options = core_pb2.VcfWriterOptions(
+    writer_options = vcf_pb2.VcfWriterOptions(
         contigs=[
             reference_pb2.ContigInfo(name='chr1', n_bases=248956422),
             reference_pb2.ContigInfo(name='chr2', n_bases=242193529),
@@ -229,7 +229,7 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
     v1_records = list(v1_reader.iterate())
     self.assertTrue(v1_records, 'Reader failed to find records')
 
-    writer_options = core_pb2.VcfWriterOptions(
+    writer_options = vcf_pb2.VcfWriterOptions(
         contigs=v1_reader.header.contigs,
         sample_names=v1_reader.header.samples,
         filters=v1_reader.header.filters)

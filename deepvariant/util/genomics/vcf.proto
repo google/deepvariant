@@ -1,0 +1,75 @@
+// Copyright 2018 Google Inc.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+
+package nucleus;
+
+import "deepvariant/util/genomics/index.proto";
+import "deepvariant/util/genomics/reference.proto";
+import "deepvariant/util/genomics/variants.proto";
+
+message OptionalVariantFieldsToParse {
+  // These booleans are the reverse sense of what we want, to give the desired
+  // default behavior.
+  bool exclude_genotype = 1;
+  bool exclude_genotype_likelihood = 2;
+  bool exclude_genotype_quality = 3;
+  bool exclude_allele_depth = 4;  // "AD" in FORMAT
+  bool exclude_read_depth = 5;  // "DP" in FORMAT
+  bool exclude_variant_allele_frequencies = 6;  // "VAF" in FORMAT
+  bool exclude_min_read_depth = 7;  // "MIN_DP" in FORMAT, used by gVCF records
+}
+
+message VcfReaderOptions {
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+  // What FORMAT entries should we parse from every call?
+  OptionalVariantFieldsToParse desired_format_entries = 2;
+}
+
+message VcfWriterOptions {
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+
+  // Info about the genome contigs:
+  repeated nucleus.genomics.v1.ContigInfo contigs = 2;
+
+  // Sample names
+  repeated string sample_names = 3;
+
+  // Variant filters
+  repeated nucleus.genomics.v1.VcfFilterInfo filters = 4;
+
+  // What FORMAT entries should we write out for each call?
+  OptionalVariantFieldsToParse desired_format_entries = 5;
+
+  // Should QUAL field values be rounded to one point past the decimal?
+  bool round_qual_values = 6;
+}

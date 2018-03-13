@@ -35,7 +35,6 @@
 #include <algorithm>
 #include <numeric>
 
-#include "deepvariant/util/protos/core.pb.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 

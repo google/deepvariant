@@ -14,8 +14,8 @@ proto_library(
     deps = [
         ":realigner_proto",  # NO COPYBARA
         "//deepvariant/util/genomics:position_proto",  # NO COPYBARA
+        "//deepvariant/util/genomics:sam_proto",  # NO COPYBARA
         "//deepvariant/util/genomics:variants_proto",  # NO COPYBARA
-        "//deepvariant/util/protos:core_proto",  # NO COPYBARA
     ],
 )
 
@@ -27,8 +27,8 @@ cc_proto_library(
     deps = [
         ":realigner_cc_pb2",
         "//deepvariant/util/genomics:position_cc_pb2",
+        "//deepvariant/util/genomics:sam_cc_pb2",
         "//deepvariant/util/genomics:variants_cc_pb2",
-        "//deepvariant/util/protos:core_cc_pb2",
     ],
 )
 
@@ -41,8 +41,8 @@ py_proto_library(
     deps = [
         ":realigner_py_pb2",
         "//deepvariant/util/genomics:position_py_pb2",
+        "//deepvariant/util/genomics:sam_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
-        "//deepvariant/util/protos:core_py_pb2",
     ],
 )
 

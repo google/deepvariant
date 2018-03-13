@@ -30,8 +30,7 @@ syntax = "proto3";
 
 package nucleus;
 
-import "deepvariant/util/genomics/reference.proto";
-import "deepvariant/util/genomics/variants.proto";
+import "deepvariant/util/genomics/index.proto";
 
 // Describes requirements for a read for us to use it in BioTF.
 message ReadRequirements {
@@ -79,56 +78,6 @@ message ReadRequirements {
     ENFORCED_BY_CLIENT = 1;
   }
   MinBaseQualityMode min_base_quality_mode = 9;
-}
-
-enum IndexHandlingMode {
-  // Don't try to use an index.
-  //  Reader: index won't be loaded; query will not work.
-  //  Writer: index won't be written
-  DONT_USE_INDEX = 0;
-  // Expect index file, with filename based on filename of SAM/BAM/etc file.
-  //  Reader: load index automatically
-  //  Writer: write index automatically
-  INDEX_BASED_ON_FILENAME = 1;
-}
-
-message OptionalVariantFieldsToParse {
-  // These booleans are the reverse sense of what we want, to give the desired
-  // default behavior.
-  bool exclude_genotype = 1;
-  bool exclude_genotype_likelihood = 2;
-  bool exclude_genotype_quality = 3;
-  bool exclude_allele_depth = 4;  // "AD" in FORMAT
-  bool exclude_read_depth = 5;  // "DP" in FORMAT
-  bool exclude_variant_allele_frequencies = 6;  // "VAF" in FORMAT
-  bool exclude_min_read_depth = 7;  // "MIN_DP" in FORMAT, used by gVCF records
-}
-
-message VcfReaderOptions {
-  // How should we handle VCF file indices?
-  IndexHandlingMode index_mode = 1;
-  // What FORMAT entries should we parse from every call?
-  OptionalVariantFieldsToParse desired_format_entries = 2;
-}
-
-message VcfWriterOptions {
-  // How should we handle VCF file indices?
-  IndexHandlingMode index_mode = 1;
-
-  // Info about the genome contigs:
-  repeated nucleus.genomics.v1.ContigInfo contigs = 2;
-
-  // Sample names
-  repeated string sample_names = 3;
-
-  // Variant filters
-  repeated nucleus.genomics.v1.VcfFilterInfo filters = 4;
-
-  // What FORMAT entries should we write out for each call?
-  OptionalVariantFieldsToParse desired_format_entries = 5;
-
-  // Should QUAL field values be rounded to one point past the decimal?
-  bool round_qual_values = 6;
 }
 
 message SamReaderOptions {
