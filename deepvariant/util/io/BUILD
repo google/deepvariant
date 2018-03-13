@@ -95,3 +95,29 @@ py_test(
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
+
+py_library(
+    name = "fasta",
+    srcs = ["fasta.py"],
+    deps = [
+        ":genomics_reader",
+        "//deepvariant/util/python:reference_fai",
+    ],
+)
+
+py_test(
+    name = "fasta_test",
+    size = "small",
+    srcs = ["fasta_test.py"],
+    data = [
+        "//deepvariant/util:testdata",
+    ],
+    deps = [
+        ":fasta",
+        "//deepvariant/util:py_test_utils",
+        "//deepvariant/util:ranges",
+        "//deepvariant/util/genomics:struct_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)

@@ -76,7 +76,7 @@ class DummyReferenceReader(object):
         '2': 'GCAGTGACGTAGCGATGACGTAGACGCTTACG'
     }
 
-  def bases(self, region):
+  def query(self, region):
     chrom = region.reference_name
     if chrom not in self._bases or region.end > len(self._bases[chrom]):
       raise ValueError('Invalid region for dummy reader: {}'.format(region))

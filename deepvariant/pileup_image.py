@@ -201,8 +201,8 @@ class PileupImageCreator(object):
     start = variant.start - self.half_width
     end = start + self._options.width
     region = ranges.make_range(variant.reference_name, start, end)
-    if self._ref_reader.is_valid_interval(region):
-      return self._ref_reader.bases(region)
+    if self._ref_reader.is_valid(region):
+      return self._ref_reader.query(region)
     else:
       return None
 

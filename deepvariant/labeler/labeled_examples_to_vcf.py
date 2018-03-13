@@ -46,8 +46,8 @@ from absl import app
 from tensorflow import flags
 from absl import logging
 
+from deepvariant.util.io import fasta
 from deepvariant.util.io import vcf
-from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import variant_utils
 from deepvariant.util import variantcall_utils
@@ -147,7 +147,7 @@ def peek_sample_name(variants_iter):
 def main(argv):
   del argv
 
-  contigs = genomics_io.make_ref_reader(FLAGS.ref).contigs
+  contigs = fasta.RefFastaReader(FLAGS.ref).header.contigs
   max_records = FLAGS.max_records if FLAGS.max_records >= 0 else None
   variants_iter = examples_to_variants(FLAGS.examples, max_records=max_records)
 

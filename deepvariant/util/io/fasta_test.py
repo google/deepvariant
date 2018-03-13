@@ -27,24 +27,35 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Higher-level APIs for reading and writing genomics data."""
+"""Tests for deepvariant.util.io.fasta."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 
+from absl.testing import absltest
+from absl.testing import parameterized
 
-from deepvariant.util.python import reference_fai
+from deepvariant.util.io import fasta
+from deepvariant.util import ranges
+from deepvariant.util import test_utils
 
 
-def make_ref_reader(reference_filename, cache_size=None):
-  """Creates an indexed GenomeReference for reference_filename."""
-  fasta_path = reference_filename.encode('utf8')
-  fai_path = fasta_path + '.fai'
-  if cache_size is None:
-    # Use the C++-defined default cache size.
-    return reference_fai.GenomeReferenceFai.from_file(fasta_path, fai_path)
-  else:
-    return reference_fai.GenomeReferenceFai.from_file(fasta_path, fai_path,
-                                                      cache_size)
+class RefFastaReaderTests(parameterized.TestCase):
+
+  @parameterized.parameters('test.fasta', 'test.fasta.gz')
+  def test_make_ref_reader_default(self, fasta_filename):
+    fasta_path = test_utils.genomics_core_testdata(fasta_filename)
+    with fasta.RefFastaReader(fasta_path) as reader:
+      self.assertEqual(reader.query(ranges.make_range('chrM', 1, 6)), 'ATCAC')
+
+  @parameterized.parameters('test.fasta', 'test.fasta.gz')
+  def test_make_ref_reader_cache_specified(self, fasta_filename):
+    fasta_path = test_utils.genomics_core_testdata(fasta_filename)
+    with fasta.RefFastaReader(fasta_path, cache_size=10) as reader:
+      self.assertEqual(reader.query(ranges.make_range('chrM', 1, 5)), 'ATCA')
+
+
+if __name__ == '__main__':
+  absltest.main()

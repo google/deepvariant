@@ -40,9 +40,9 @@ import mock
 import numpy as np
 import numpy.testing as npt
 
+from deepvariant.util.io import fasta
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
-from deepvariant.util.python import reference_fai
 from deepvariant import pileup_image
 from deepvariant import test_utils
 from deepvariant.protos import deepvariant_pb2
@@ -484,9 +484,9 @@ class PileupImageCreatorTest(parameterized.TestCase):
   def setUp(self):
     self.options = pileup_image.default_options()
     self.options.width = 5
-    self.mock_ref_reader = mock.MagicMock(spec=reference_fai.GenomeReferenceFai)
-    self.mock_ref_reader.bases.return_value = 'ACGT'
-    self.mock_ref_reader.is_valid_interval.return_value = True
+    self.mock_ref_reader = mock.MagicMock(spec=fasta.RefFastaReader)
+    self.mock_ref_reader.query.return_value = 'ACGT'
+    self.mock_ref_reader.is_valid.return_value = True
     self.mock_sam_reader = mock.MagicMock()
     self.mock_sam_reader.query.return_value = ['read1', 'read2']
     self.dv_call = _make_dv_call()
@@ -524,25 +524,23 @@ class PileupImageCreatorTest(parameterized.TestCase):
 
     actual = self.pic.get_reference_bases(self.variant)
     self.assertEqual('ACGT', actual)
-    self.mock_ref_reader.is_valid_interval.assert_called_once_with(region)
-    self.mock_ref_reader.bases.assert_called_once_with(region)
+    self.mock_ref_reader.is_valid.assert_called_once_with(region)
+    self.mock_ref_reader.query.assert_called_once_with(region)
 
   def test_get_reference_bases_bad_region_returns_none(self):
-    self.mock_ref_reader.is_valid_interval.return_value = False
+    self.mock_ref_reader.is_valid.return_value = False
     self.dv_call.variant.start = 3
 
     self.assertIsNone(self.pic.get_reference_bases(self.variant))
-    test_utils.assert_called_once_workaround(
-        self.mock_ref_reader.is_valid_interval)
-    self.mock_ref_reader.bases.assert_not_called()
+    test_utils.assert_called_once_workaround(self.mock_ref_reader.is_valid)
+    self.mock_ref_reader.query.assert_not_called()
 
   def test_create_pileup_image_returns_none_for_bad_region(self):
-    self.mock_ref_reader.is_valid_interval.return_value = False
+    self.mock_ref_reader.is_valid.return_value = False
     self.dv_call.variant.start = 3
     self.assertIsNone(self.pic.create_pileup_images(self.dv_call))
-    test_utils.assert_called_once_workaround(
-        self.mock_ref_reader.is_valid_interval)
-    self.mock_ref_reader.bases.assert_not_called()
+    test_utils.assert_called_once_workaround(self.mock_ref_reader.is_valid)
+    self.mock_ref_reader.query.assert_not_called()
 
   def test_create_pileup_image(self):
     self.dv_call.variant.alternate_bases[:] = ['C', 'T']
@@ -558,7 +556,7 @@ class PileupImageCreatorTest(parameterized.TestCase):
       ], self.pic.create_pileup_images(self.dv_call))
 
       def _expected_call(alts):
-        return mock.call(self.dv_call, self.mock_ref_reader.bases.return_value,
+        return mock.call(self.dv_call, self.mock_ref_reader.query.return_value,
                          self.mock_sam_reader.query.return_value, alts)
 
       self.assertEqual(mock_encoder.call_count, 3)

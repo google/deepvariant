@@ -42,10 +42,10 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
 
+from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util.genomics import sam_pb2
-from deepvariant.util import genomics_io
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant import test_utils
@@ -184,7 +184,7 @@ class ReadAssignmentTests(parameterized.TestCase):
 class RealignerTest(parameterized.TestCase):
 
   def setUp(self):
-    self.ref_reader = genomics_io.make_ref_reader(test_utils.CHR20_FASTA)
+    self.ref_reader = fasta.RefFastaReader(test_utils.CHR20_FASTA)
     self.config = realigner.realigner_config(FLAGS)
     self.reads_realigner = realigner.Realigner(self.config, self.ref_reader)
 
@@ -338,7 +338,7 @@ class RealignerTest(parameterized.TestCase):
 class RealignerIntegrationTest(absltest.TestCase):
 
   def test_realigner_end2end(self):
-    ref_reader = genomics_io.make_ref_reader(test_utils.CHR20_FASTA)
+    ref_reader = fasta.RefFastaReader(test_utils.CHR20_FASTA)
     config = realigner.realigner_config(FLAGS)
     reads_realigner = realigner.Realigner(config, ref_reader)
     region_str = 'chr20:10,000,000-10,009,999'
@@ -363,7 +363,7 @@ class RealignerIntegrationTest(absltest.TestCase):
       # Check each window to make sure it's reasonable.
       for window in windows:
         # We always expect the reference sequence to be one of our haplotypes.
-        ref_seq = ref_reader.bases(window.span)
+        ref_seq = ref_reader.query(window.span)
         self.assertIn(ref_seq, set(window.haplotypes))
 
 

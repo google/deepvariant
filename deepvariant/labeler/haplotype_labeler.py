@@ -190,7 +190,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     end = max(x.end for x in all_variants)
     # redacted
     region = ranges.make_range(contig, start - 1, end + bufsize)
-    ref_bases = self._ref_reader.bases(region)
+    ref_bases = self._ref_reader.query(region)
     return Reference(ref_bases, start=region.start)
 
 

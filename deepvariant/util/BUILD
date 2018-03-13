@@ -32,7 +32,6 @@ py_library(
     name = "core_py",
     srcs = [],
     deps = [
-        ":genomics_io",
         ":io_utils",
         ":ranges",
         ":variant_utils",
@@ -500,29 +499,6 @@ py_test(
         ":struct_utils",
         ":vcf_constants",
         "//deepvariant/util/genomics:variants_py_pb2",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
-    name = "genomics_io",
-    srcs = ["genomics_io.py"],
-    deps = ["//deepvariant/util/python:reference_fai"],
-)
-
-py_test(
-    name = "genomics_io_test",
-    size = "small",
-    srcs = ["genomics_io_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
-    deps = [
-        ":genomics_io",
-        ":py_test_utils",
-        ":ranges",
-        "//deepvariant/util/genomics:struct_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

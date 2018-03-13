@@ -44,11 +44,11 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.util.io import fasta
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import errors
-from deepvariant.util import genomics_io
 from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
@@ -734,7 +734,7 @@ def _create_record_from_template(template, start, end, fasta_reader):
   retval.start = start
   retval.end = end
   if start != template.start:
-    retval.reference_bases = fasta_reader.bases(
+    retval.reference_bases = fasta_reader.query(
         ranges.make_range(retval.reference_name, start, start + 1))
   return retval
 
@@ -846,9 +846,8 @@ def main(argv=()):
 
     logging_level.set_from_flag()
 
-    fasta_reader = genomics_io.make_ref_reader(
-        FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
-    contigs = fasta_reader.contigs
+    fasta_reader = fasta.RefFastaReader(FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
+    contigs = fasta_reader.header.contigs
     paths = io_utils.maybe_generate_sharded_filenames(FLAGS.infile)
     with tempfile.NamedTemporaryFile() as temp:
       postprocess_variants_lib.process_single_sites_tfrecords(

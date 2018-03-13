@@ -220,11 +220,11 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     expected_bases = 'A' * (expected_end - expected_start)
 
     labeler = _make_labeler()
-    labeler._ref_reader.bases.return_value = expected_bases
+    labeler._ref_reader.query.return_value = expected_bases
 
     labeler_ref = labeler.make_labeler_ref(candidates, truths, bufsize=bufsize)
 
-    labeler._ref_reader.bases.assert_called_once_with(
+    labeler._ref_reader.query.assert_called_once_with(
         ranges.make_range('20', expected_start, expected_end))
     self.assertEqual(labeler_ref.start, expected_start)
     self.assertEqual(labeler_ref.end, expected_end)

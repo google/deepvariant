@@ -40,11 +40,11 @@ import tensorflow as tf
 
 from absl import logging
 
+from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import sam_pb2
 from deepvariant.util import errors
-from deepvariant.util import genomics_io
 from deepvariant.util import htslib_gcp_oauth
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
@@ -684,7 +684,7 @@ class RegionProcessor(object):
     self.variant_caller = None
 
   def _make_allele_counter_for_region(self, region):
-    return allelecounter.AlleleCounter(self.ref_reader, region,
+    return allelecounter.AlleleCounter(self.ref_reader.get_c_reader(), region,
                                        self.options.allele_counter_options)
 
   def _encode_tensor(self, image_tensor):
@@ -703,8 +703,7 @@ class RegionProcessor(object):
     if self.initialized:
       raise ValueError('Cannot initialize this object twice')
 
-    self.ref_reader = genomics_io.make_ref_reader(
-        self.options.reference_filename)
+    self.ref_reader = fasta.RefFastaReader(self.options.reference_filename)
     self.sam_reader = self._make_sam_reader()
     self.in_memory_sam_reader = utils.InMemorySamReader([])
 
@@ -934,7 +933,7 @@ def processing_regions_from_options(options):
     regions we should process. The second is a RangeSet containing the confident
     regions for labeling, or None if we are running in training mode.
   """
-  ref_contigs = genomics_io.make_ref_reader(options.reference_filename).contigs
+  ref_contigs = fasta.RefFastaReader(options.reference_filename).header.contigs
   sam_contigs = sam.SamReader(options.reads_filename).header.contigs
 
   # Add in confident regions and vcf_contigs if in training mode.

@@ -10,10 +10,10 @@ py_binary(
     srcs_version = "PY2AND3",
     deps = [
         "//deepvariant:tf_utils",
-        "//deepvariant/util:genomics_io",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:variant_utils",
         "//deepvariant/util:variantcall_utils",
+        "//deepvariant/util/io:fasta",
         "//deepvariant/util/io:vcf",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
