@@ -160,14 +160,11 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
            'algorithm very slow.'), len(variants), len(truths),
           self.max_group_size)
       # redacted
-      # simply not label variants, which was ok because the inputs were
-      # already labeled and leaving them alone was an actual option. Here we
-      # need to proceed with labeling the variants. Right now we just brute
-      # force the answer by going ahead and labeling, but this might be
-      # intractible computationally. The medium-term solution is to move to a
-      # better grouping algorithm that groups truth and candidate together, or
-      # even better to move to the dynamic programming version of this code so
-      # we don't even have to group up variants at all.
+      logging.warning('Returning all variants with not-confident markers.')
+      for variant in variants:
+        yield variant_labeler.VariantLabel(
+            is_confident=False, genotype=(-1, -1), variant=variant)
+      return
     ref = self.make_labeler_ref(variants, truths)
     labeled_variants = label_variants(variants, truths, ref)
 
@@ -294,7 +291,6 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
       for haplotypes in create_haplotypes(remaining, next_pos, depth + 1):
         for result in extend_haplotypes(frags, haplotypes):
           yield result
-
   genotype_options = genotype_options_for_variants(variants, enumeration_type)
   for genotypes in itertools.product(*genotype_options):
     paired = [VariantAndGenotypes(v, g) for v, g in zip(variants, genotypes)]
