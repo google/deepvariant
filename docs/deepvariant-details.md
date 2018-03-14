@@ -37,11 +37,10 @@ in detail in the [quick start].
 *   Files with the `.gz` suffix are interpreted as being compressed with gzip
     and are read/written accordingly.
 *   All of the DeepVariant tools can read/write their inputs/outputs from local
-    disk as well as directly from a cloud storage bucket. Directly accessing BAM
-    and reference files from cloud storage is currently not as efficient as we'd
-    like and will certainly improve over time, both in the current
-    implementation as well as when [htsget] is widely available. See the
-    discussion below on reading directly from cloud buckets for details.
+    disk as well as directly from a cloud storage bucket (through gcsfuse). In
+    the [whole genome case study] and [exome case study], we didn't use gcsfuse
+    because there is not much benefit on a single machine compared to just
+    copying the files first.
 
 ### make_examples
 
@@ -322,66 +321,72 @@ different machine types. Moreover, the optimal configuration may change over
 time as DeepVariant, TensorFlow, and the CPU, GPU, and
 [TPU](https://cloud.google.com/tpu/) hardware evolves.
 
-## Reading directly from Google Cloud Storage (GCS) buckets
+## Reading from Google Cloud Storage (GCS) using gcsfuse
 
-DeepVariant can read SAM/BAM and fasta sources from GCS buckets, as well as read
-and write TFRecord (i.e., TensorFlow examples) to/from GCS buckets. In fact, in
-general DeepVariant can read SAM/BAM/FASTA files from any source supported by
-[htslib] and/or TensorFlow.
+[gcsfuse](https://github.com/GoogleCloudPlatform/gcsfuse) allows access to files
+in the GCS bucket much like local files.
 
-DeepVariant runs slightly slower when processing reads directly from GCS; our
-current best estimates are roughly a ~3-5% slowdown for an end-to-end run of
-`make_examples` compared to first localizing the entire BAM to a local
-persistent SSD on the cloud instance. Consequently, the choice of whether to
-first copy the BAM to local disk or directly read from a GCS bucket depends on
-how one is running DeepVariant. If running `make_examples` on a single big
-multi-core machine as in the Case Study examples, it is likely advantageous to
-first localize the BAM as copying the full 50x BAM to local disk only takes
-10-20 minutes, a small overhead compared to the end-to-end runtime of
-`make_examples`. However, more advanced distributed runs of DeepVariant, such as
-running distributed DeepVariant with [dsub] and the [Pipelines API] as
-exemplified by the [DeepVariant with docker], can benefit
-enormously from this capability. When there are N instances running
-`make_examples` in a distributed fashion, the overhead of localization is N
-times larger, all the worse since each `make_examples` run is only accessing
-roughly 1 / N of the BAM reads. Moreover, distributing `make_examples` over many
-machines enables far more parallelizing than even the largest instance, so the
-per-instance runtime can be only marginally longer than the cost to localize the
-BAM itself. In this situation direct GCS access is likely the best option
-despite its slight overhead.
+### Install gcsfuse
 
-As of 12/4/17, there are some limitations to remote file access that we are
-working to overcome:
+Install gcsfuse package as explained
+[here](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/installing.md)
+(recommended).
 
-*   GCS BAM: there's a race condition in [htslib] when running multiple
-    `make_examples` jobs `parallel` on a single instance. [htslib] downloads the
-    BAI file to local disk, and multiple parallel executions of `make_examples`
-    will all try to load this BAI file at the same time, resulting in data
-    corruption. In this situation it is safest to simply localize the BAI file
-    (but not the BAM) to the directory where you are running `make_examples`.
-    This is not necessary if you are just running a single `make_examples`
-    process on the machine or run each `make_examples` job in separate working
-    directories.
-*   GCS fasta: there is a problem in [htslib] where the connection to the FASTA
-    file is getting dropped, so long-running `make_examples` can fail using a
-    remote FASTA can fail. We are looking at how to fix this issue.
+### Mount GCS Bucket
 
-Note these concerns do not apply to persistent mounted remote filesystems like
-NFS or Fuse, only to non-POSIX remote systems like GCS or FTP.
+First ensure your "application default" credential for GCP is available. The
+easiest way to set this up is to run gcloud tool.
 
-As of today, the safest, performant approach to using remote reads and reference
-files with DeepVariant `make_examples` is to localize the reference fasta and
-associated fai/gzi metadata as well as the BAI, while leaving the BAM itself
-remote, which is almost always the largest data source needed by DeepVariant.
+```
+gcloud auth application-default login
+```
 
-The examples output of `make_examples` and both the input examples and output
-calls of `call_variants` can be read from / written to GCS.
+Then mount the bucket to a dir on your local machine.
 
-Currently `postprocess_variants` supports reading its inputs directly from GCS
-but the output must go to a local disk.
+```
+mkdir -p $local_dir                  # E.g. local_dir=$HOME/input
+gcsfuse $gcs_bucket_name $local_dir  # E.g. gcs_bucket_name=deepvariant
+```
 
-[htsget]: http://samtools.github.io/hts-specs/htsget.html
-[htslib]: http://www.htslib.org/
+Confirm it is mounted successfully by doing `ls` on `$local_dir`. If there is a
+problem, you may want to unmount and mount again.
+
+```
+fusermount -u $local_dir  # Linux
+umount $local_dir         # OS X
+```
+
+Now you can run DeepVariant as if the input files are stored locally under
+`$local_dir`.
+
+### Known Issue
+
+Currently gcsfuse does not work well with DeepVariant in multi-tasking scenarios
+, i.e. one gcsfuse daemon and multiple DeepVariant tasks (see the
+[issue](https://github.com/GoogleCloudPlatform/gcsfuse/issues/262)). There are
+two workarounds for this:
+
+1.  Run multiple gcsfuse; one gcsfuse daemon for every DeepVariant task.
+
+    ```
+    for i in `seq 1 $num_task`;do
+      mkdir -p $local_dir_task_$i
+      gcsfuse $gcs_bucket_name $local_dir_task_$i
+    done
+    ```
+
+2.  Reduce read sizes in DeepVariant tasks. For example, we observed that the
+    issue disappears for `make_examples` if hts block size is reduced to `128KB`
+    (from default `128MB`). Use `--hts_block_size` flag for this.
+
+### Useful gcsfuse links
+
+*   [gcsfuse installing
+    doc](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/installing.md)
+*   [mounting
+    doc](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/mounting.md)
+    (if you exprienced credentional issue)
+
 [dsub]: https://cloud.google.com/genomics/v1alpha2/dsub
 [Pipelines API]: https://cloud.google.com/genomics/v1alpha2/pipelines
 [DeepVariant with docker]: deepvariant-docker.md
