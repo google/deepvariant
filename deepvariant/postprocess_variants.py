@@ -336,12 +336,16 @@ def expected_alt_allele_indices(num_alternate_bases):
 
 
 def _check_alt_allele_indices(call_variants_outputs):
+  """Returns True if and only if the alt allele indices are valid."""
   all_alt_allele_indices = sorted([
       list(call_variants_output.alt_allele_indices.indices)
       for call_variants_output in call_variants_outputs
   ])
   if all_alt_allele_indices != expected_alt_allele_indices(
       len(call_variants_outputs[0].variant.alternate_bases)):
+    logging.warning('Alt allele indices found from call_variants_outputs for '
+                    'variant %s is %s, which is invalid.',
+                    call_variants_outputs[0].variant, all_alt_allele_indices)
     return False
   return True
 
