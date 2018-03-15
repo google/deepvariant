@@ -58,6 +58,11 @@ FLOAT_TYPE = 'Float'
 INTEGER_TYPE = 'Integer'
 STRING_TYPE = 'String'
 
+# Reserved FILTER field definitions.
+RESERVED_FILTER_FIELDS = [
+    variants_pb2.VcfFilterInfo(id='PASS', description='All filters passed'),
+]
+
 # Reserved INFO field definitions, as per the VCF 4.3 spec.
 RESERVED_INFO_FIELDS = [
     variants_pb2.VcfInfo(
@@ -240,6 +245,40 @@ SET_FN_LOOKUP = {
     CHARACTER_TYPE: struct_utils.set_string_field,
     FLAG_TYPE: struct_utils.set_bool_field,
 }
+
+
+def _get_reserved_field(field_id, reserved_fields):
+  """Returns the desired reserved field.
+
+  Args:
+    field_id: str. The id of the field to retrieve.
+    reserved_fields: list(fields). The reserved fields to search.
+
+  Returns:
+    The reserved field with the given `field_id`.
+
+  Raises:
+    ValueError: `field_id` is not a known reserved field.
+  """
+  matching_fields = [field for field in reserved_fields if field.id == field_id]
+  if not matching_fields:
+    raise ValueError('No reserved field with id `{}`'.format(field_id))
+  return matching_fields[0]
+
+
+def reserved_filter_field(field_id):
+  """Returns the reserved FILTER field with the given ID."""
+  return _get_reserved_field(field_id, RESERVED_FILTER_FIELDS)
+
+
+def reserved_info_field(field_id):
+  """Returns the reserved INFO field with the given ID."""
+  return _get_reserved_field(field_id, RESERVED_INFO_FIELDS)
+
+
+def reserved_format_field(field_id):
+  """Returns the reserved FORMAT field with the given ID."""
+  return _get_reserved_field(field_id, RESERVED_FORMAT_FIELDS)
 
 
 def create_get_fn(value_type, number):

@@ -42,6 +42,11 @@ from deepvariant.util import vcf_constants
 
 class VcfConstantsTest(parameterized.TestCase):
 
+  def test_unique_reserved_filter(self):
+    num_reserved_filter = len(vcf_constants.RESERVED_FILTER_FIELDS)
+    unique_filt_ids = {filt.id for filt in vcf_constants.RESERVED_FILTER_FIELDS}
+    self.assertLen(unique_filt_ids, num_reserved_filter)
+
   def test_unique_reserved_info(self):
     num_reserved_info = len(vcf_constants.RESERVED_INFO_FIELDS)
     unique_info_ids = {info.id for info in vcf_constants.RESERVED_INFO_FIELDS}
@@ -51,6 +56,74 @@ class VcfConstantsTest(parameterized.TestCase):
     num_reserved_format = len(vcf_constants.RESERVED_FORMAT_FIELDS)
     unique_format_ids = {f.id for f in vcf_constants.RESERVED_FORMAT_FIELDS}
     self.assertLen(unique_format_ids, num_reserved_format)
+
+  def test_get_reserved_filter(self):
+    filt = vcf_constants.reserved_filter_field('PASS')
+    self.assertIsInstance(filt, variants_pb2.VcfFilterInfo)
+    self.assertEqual(filt.id, 'PASS')
+    self.assertEqual(filt.description, 'All filters passed')
+
+  @parameterized.parameters(
+      'RefCall',
+      'LowQual',
+      'AD',
+      'DP',
+      'GT',
+      'GQ',
+  )
+  def test_invalid_get_reserved_filter(self, field_id):
+    with self.assertRaisesRegexp(ValueError, 'No reserved field with id'):
+      vcf_constants.reserved_filter_field(field_id)
+
+  @parameterized.parameters(
+      'AA',
+      'AC',
+      'AD',
+      'ADF',
+      'END',
+      'H2',
+  )
+  def test_get_reserved_info(self, field_id):
+    info = vcf_constants.reserved_info_field(field_id)
+    self.assertIsInstance(info, variants_pb2.VcfInfo)
+    self.assertEqual(info.id, field_id)
+
+  @parameterized.parameters(
+      'PASS',
+      'GT',
+      'GQ',
+      'GL',
+      'FT',
+  )
+  def test_invalid_get_reserved_info(self, field_id):
+    with self.assertRaisesRegexp(ValueError, 'No reserved field with id'):
+      vcf_constants.reserved_info_field(field_id)
+
+  @parameterized.parameters(
+      'AD',
+      'ADF',
+      'DP',
+      'GT',
+      'GQ',
+      'GL',
+      'FT',
+      'PL',
+  )
+  def test_get_reserved_format(self, field_id):
+    fmt = vcf_constants.reserved_format_field(field_id)
+    self.assertIsInstance(fmt, variants_pb2.VcfFormatInfo)
+    self.assertEqual(fmt.id, field_id)
+
+  @parameterized.parameters(
+      'PASS',
+      'AN',
+      '1000G',
+      'END',
+      'H2',
+  )
+  def test_invalid_get_reserved_format(self, field_id):
+    with self.assertRaisesRegexp(ValueError, 'No reserved field with id'):
+      vcf_constants.reserved_format_field(field_id)
 
   @parameterized.parameters(
       dict(
