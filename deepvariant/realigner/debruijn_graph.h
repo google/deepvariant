@@ -41,6 +41,7 @@
 #include "boost/graph/graph_traits.hpp"
 #include "deepvariant/util/genomics/reads.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
+#include "tensorflow/core/lib/hash/hash.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
