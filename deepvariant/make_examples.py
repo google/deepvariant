@@ -45,7 +45,6 @@ from deepvariant.util.io import sam
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import sam_pb2
 from deepvariant.util import errors
-from deepvariant.util import htslib_gcp_oauth
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import ranges
@@ -1067,9 +1066,6 @@ def main(argv=()):
 
     logging_level.set_from_flag()
     hts_verbose.set(hts_verbose.htsLogLevel[FLAGS.hts_logging_level])
-
-    # Give htslib authentication access to GCS.
-    htslib_gcp_oauth.init()
 
     # Set up options; may do I/O.
     options = default_options(add_flags=True, flags_obj=FLAGS)

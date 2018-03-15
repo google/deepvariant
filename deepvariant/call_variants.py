@@ -44,7 +44,6 @@ from absl import logging
 
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import errors
-from deepvariant.util import htslib_gcp_oauth
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import variant_utils
@@ -367,9 +366,6 @@ def main(argv=()):
     proto_utils.uses_fast_cpp_protos_or_die()
 
     logging_level.set_from_flag()
-
-    # Give htslib authentication access to GCS.
-    htslib_gcp_oauth.init()
 
     model = modeling.get_model(FLAGS.model_name)
     call_variants(

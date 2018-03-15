@@ -646,25 +646,6 @@ py_test(
     ],
 )
 
-py_library(
-    name = "htslib_gcp_oauth_lib",
-    srcs = ["htslib_gcp_oauth.py"],
-    deps = [
-        ":cloud_utils",
-        "@com_google_absl_py//absl:app",
-    ],
-)
-
-py_binary(
-    name = "htslib_gcp_oauth",
-    srcs = ["htslib_gcp_oauth.py"],
-    main = "htslib_gcp_oauth.py",
-    deps = [
-        ":cloud_utils",
-        "@com_google_absl_py//absl:app",
-    ],
-)
-
 cc_test(
     name = "hts_test",
     size = "small",
