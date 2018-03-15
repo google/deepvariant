@@ -136,7 +136,9 @@ void AddTestStructuredExtra(nucleus::genomics::v1::VcfHeader& header,
       header.add_structured_extras();
   extra->set_key(key);
   for (int i = 0; i < extra_pairs.size(); i += 2) {
-    (*extra->mutable_fields())[extra_pairs[i]] = extra_pairs[i + 1];
+    nucleus::genomics::v1::VcfExtra toAdd = *extra->mutable_fields()->Add();
+    toAdd.set_key(extra_pairs[i]);
+    toAdd.set_value(extra_pairs[i + 1]);
   }
 }
 

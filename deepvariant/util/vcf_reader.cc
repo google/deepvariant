@@ -152,8 +152,9 @@ void AddStructuredExtra(const bcf_hrec_t* hrec,
                         nucleus::genomics::v1::VcfStructuredExtra* extra) {
   extra->set_key(hrec->key);
   for (int i = 0; i < hrec->nkeys; i++) {
-    (*extra->mutable_fields())[hrec->keys[i]] =
-        Unquote(hrec->vals[i]).ToString();
+    nucleus::genomics::v1::VcfExtra toAdd = *extra->mutable_fields()->Add();
+    toAdd.set_key(hrec->keys[i]);
+    toAdd.set_value(Unquote(hrec->vals[i]).ToString());
   }
 }
 

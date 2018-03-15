@@ -282,8 +282,8 @@ message VcfStructuredExtra {
   // not have to be unique within a VcfHeader.
   string key = 1;
 
-  // Required by VCF. The map between keys and values.
-  map<string, string> fields = 2;
+  // Required by VCF. The key=value pairs contained in the structure.
+  repeated VcfExtra fields = 2;
 }
 
 // This record type is a catch-all for other types of headers. For example,
