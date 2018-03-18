@@ -392,15 +392,6 @@ tensorflow::Status ConvertToPb(
     std::vector<std::vector<float>> vaf_values =
         ReadFormatValues<float>(h, v, "VAF");
 
-    // If GL and PL are *both* present, we could convert it to proto per
-    // the variants.proto spec, but we'd rather fail---better not to allow
-    // input with ambiguous data encoding.
-    if (!gl_values.empty() && !pl_values.empty()) {
-      return tensorflow::errors::Internal(
-          "We do not support VCF records encoding likelihood using both PL and "
-          "GL tags.");
-    }
-
     for (int i = 0; i < v->n_sample; i++) {
       // Each indicator here is true iff the format field is present for this
       // variant, *and* is non-missing for this sample.
@@ -428,6 +419,9 @@ tensorflow::Status ConvertToPb(
         SetInfoField("GQ", gq_values[i][0], call);
       }
       if (want_ll) {
+        // If GL and PL are *both* present, we populate the genotype_likelihood
+        // fields with the GL values per the variants.proto spec, since PLs are
+        // a lower resolution version of the same information.
         if (have_gl) {
           for (int gl : gl_values[i]) {
             call->add_genotype_likelihood(gl);
