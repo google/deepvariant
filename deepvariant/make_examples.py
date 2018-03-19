@@ -180,7 +180,7 @@ flags.DEFINE_integer(
 flags.DEFINE_integer('pileup_image_width', 0,
                      'Width for the pileup image. If 0, uses the default width')
 flags.DEFINE_string(
-    'labeler_algorithm', 'positional_labeler',
+    'labeler_algorithm', 'haplotype_labeler',
     'Algorithm to use to label examples in training mode. Must be one of the '
     'LabelerAlgorithm enum values in the DeepVariantOptions proto.')
 
