@@ -126,11 +126,6 @@ class SamReader : public Reader {
   // Returns True if this SamReader loaded an index file.
   bool HasIndex() const { return idx_ != nullptr; }
 
-  // Gets a list of the contigs used by this SAM file.
-  const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs() const {
-    return contigs_;
-  }
-
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
   tensorflow::Status Close();
@@ -143,8 +138,7 @@ class SamReader : public Reader {
 
   const SamReaderOptions& options() const { return options_; }
 
-  // Returns all unique sample names from the read groups of the SAM/BAM.
-  const std::set<string>& Samples() const { return samples_; }
+  const SamHeader& header() const { return sam_header_; }
 
  private:
   // Private constructor; use FromFile to safely create a SamReader from a
@@ -165,12 +159,7 @@ class SamReader : public Reader {
   // index was loaded.
   hts_idx_t* idx_;
 
-  // A list of ContigInfo, each of which contains the information about the
-  // contigs used by this BAM file.
-  std::vector<nucleus::genomics::v1::ContigInfo> contigs_;
-
-  // A set of sample names for which this SAM/BAM file contains reads.
-  std::set<string> samples_;
+  SamHeader sam_header_;
 
   void ParseSamplesFromHeader();
 

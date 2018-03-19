@@ -73,8 +73,7 @@ class SamReaderTest(absltest.TestCase):
   def test_bam_samples(self):
     reader = sam_reader.SamReader.from_file(self.bam, self.options)
     with reader:
-      self.assertIsInstance(reader.samples, set)
-      self.assertEqual(reader.samples, {'NA12878'})
+      self.assertEqual(reader.header.samples, ['NA12878'])
 
   def test_sam_contigs(self):
     reader = sam_reader.SamReader.from_file(self.bam, self.options)
@@ -129,7 +128,7 @@ class SamReaderTest(absltest.TestCase):
               name='chrX', pos_in_fasta=23, n_bases=155270560),
           reference_pb2.ContigInfo(
               name='chrY', pos_in_fasta=24, n_bases=59373566),
-      ], reader.contigs)
+      ], list(reader.header.contigs))
 
   def test_context_manager(self):
     """Test that we can use context manager to do two queries in sequence."""

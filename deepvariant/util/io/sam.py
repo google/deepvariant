@@ -50,8 +50,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import collections
-import logging
 
 
 from deepvariant.util.io import genomics_reader
@@ -62,10 +60,6 @@ from deepvariant.util.genomics import sam_pb2
 from deepvariant.util.python import sam_reader
 
 _SAM_EXTENSIONS = frozenset(['.bam', '.sam', '.tfbam'])
-
-# redacted
-SamHeader = collections.namedtuple(
-    'SamHeader', ['contigs', 'samples'])
 
 
 class NativeSamReader(genomics_reader.GenomicsReader):
@@ -115,7 +109,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
       ValueError: If downsample_fraction is not None and not in the interval
         (0.0, 1.0].
       ImportError: If someone tries to load a tfbam file.
-  """
+    """
     if input_path.endswith('.tfbam'):
       # Delayed loading of tfbam_lib.
       try:
@@ -159,9 +153,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
               downsample_fraction=downsample_fraction,
               random_seed=random_seed))
 
-    # redacted
-    self.header = SamHeader(contigs=self._reader.contigs,
-                            samples=self._reader.samples)
+      self.header = self._reader.header
 
     super(NativeSamReader, self).__init__()
 
@@ -195,13 +187,14 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
   files or TFRecords files, based on the output filename's extensions.
   """
 
-  def __init__(self, output_path, contigs):
+  def __init__(self, output_path, header):
     """Initializer for NativeSamWriter.
 
     Args:
       output_path: str. A path where we'll write our SAM/BAM file.
-      contigs: Iterable of nucleus.genomics.v1.ContigInfo protobufs
-        used to populate the contigs info in the SAM header.
+      header: A nucleus.SamHeader protobuf.  The header is used both
+        for writing the header, and to control the sorting applied to
+        the rest of the file.
     """
     raise NotImplementedError
 
@@ -218,5 +211,5 @@ class SamWriter(genomics_writer.DispatchingGenomicsWriter):
   def _get_extensions(self):
     return _SAM_EXTENSIONS
 
-  def _native_writer(self, output_path, contigs):
-    return NativeSamWriter(output_path, contigs)
+  def _native_writer(self, output_path, header):
+    return NativeSamWriter(output_path, header)

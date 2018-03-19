@@ -100,7 +100,7 @@ TEST(SamReaderTest, TestSamSampleExtraction) {
   std::unique_ptr<SamReader> reader = std::move(
       SamReader::FromFile(GetTestData(kSamTestFilename), SamReaderOptions())
           .ValueOrDie());
-  const auto& samples = reader->Samples();
+  const auto& samples = reader->header().samples();
   EXPECT_THAT(samples, IsEmpty());
 }
 
@@ -108,7 +108,7 @@ TEST(SamReaderTest, TestBamSampleExtraction) {
   std::unique_ptr<SamReader> reader = std::move(
       SamReader::FromFile(GetTestData(kBamTestFilename), SamReaderOptions())
           .ValueOrDie());
-  const auto& samples = reader->Samples();
+  const auto& samples = reader->header().samples();
   EXPECT_THAT(samples, SizeIs(1));
   EXPECT_EQ(*samples.begin(), "NA12878");
 }

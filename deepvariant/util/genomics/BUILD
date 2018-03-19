@@ -273,6 +273,7 @@ proto_library(
     srcs = ["sam.proto"],
     deps = [
         ":index_proto",  # NO COPYBARA
+        ":reference_proto",  # NO COPYBARA
     ],
 )
 
@@ -283,6 +284,7 @@ cc_proto_library(
     protoc = "@protobuf_archive//:protoc",
     deps = [
         ":index_cc_pb2",
+        ":reference_cc_pb2",
     ],
 )
 
@@ -294,6 +296,7 @@ py_proto_library(
     srcs_version = "PY2AND3",
     deps = [
         ":index_py_pb2",
+        ":reference_py_pb2",
     ],
 )
 

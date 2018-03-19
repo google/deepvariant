@@ -31,6 +31,7 @@ syntax = "proto3";
 package nucleus;
 
 import "deepvariant/util/genomics/index.proto";
+import "deepvariant/util/genomics/reference.proto";
 
 // Describes requirements for a read for us to use it in BioTF.
 message ReadRequirements {
@@ -113,4 +114,34 @@ message SamReaderOptions {
 
   // Random seed to use with downsampling fraction.
   int64 random_seed = 6;
+}
+
+message SamHeader {
+  // The VN field from the HD line.  Empty if not present (valid formats
+  // will match /^[0-9]+\.[0-9]+$/).
+  string format_version = 1;
+
+  // The SO field from the HD line.
+  enum SortingOrder {
+    UNKNOWN = 0;
+    UNSORTED = 1;
+    QUERYNAME = 2;
+    COORDINATE = 3;
+  }
+  SortingOrder sorting_order = 2;
+
+  // The GO field from the HD line.
+  enum AlignmentGrouping {
+    NONE = 0;
+    QUERY = 1;
+    REFERENCE = 2;
+  }
+  AlignmentGrouping alignment_grouping = 3;
+
+  // Reference sequences from the @SQ header lines.  The order of the contigs
+  // defines the sorting order.
+  repeated nucleus.genomics.v1.ContigInfo contigs = 4;
+
+  // The sample names.
+  repeated string samples = 5;
 }

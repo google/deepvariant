@@ -56,8 +56,7 @@ from "deepvariant/util/sam_reader.h":
         return WrappedCppIterable(...)
       def `Query` as query(self, region: Range) -> StatusOr<SamIterable>:
         return WrappedCppIterable(...)
-      contigs: list<ContigInfo> = property(`Contigs`)
-      samples: `std::set` as set<str> = property(`Samples`)
+      header: SamHeader = property(`header`)
       @__enter__
       def PythonEnter(self) -> Status
       @__exit__

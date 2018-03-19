@@ -382,15 +382,18 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
   CHECK(fp != nullptr) << "pointer to SAM/BAM cannot be null";
   CHECK(header_ != nullptr) << "pointer to header cannot be null";
 
+  // redacted
+  // sorting_order, etc.).
+
   // Fill in the contig info for each contig in the sam header. Directly
   // accesses the low-level C struct because there are no indirection
   // macros/functions by htslib API.
   for (int i = 0; i < header_->n_targets; ++i) {
-    nucleus::genomics::v1::ContigInfo contig;
-    contig.set_name(header_->target_name[i]);
-    contig.set_n_bases(header_->target_len[i]);
-    contig.set_pos_in_fasta(i);
-    contigs_.push_back(contig);
+    nucleus::genomics::v1::ContigInfo* contig =
+        sam_header_.mutable_contigs()->Add();
+    contig->set_name(header_->target_name[i]);
+    contig->set_n_bases(header_->target_len[i]);
+    contig->set_pos_in_fasta(i);
   }
 
   // Fill in the sample name for each sample in the sam header. This is the "SM"
@@ -465,7 +468,8 @@ void SamReader::ParseSamplesFromHeader() {
         tensorflow::str_util::Split(rg_line, '\t');
     for (const string& token : rg_tokens) {
       if (StartsWith(token, SM_TAG, SM_TAG_LENGTH)) {
-        samples_.insert(token.substr(SM_TAG_LENGTH + 1));
+        sam_header_.mutable_samples()->Add(
+            token.substr(SM_TAG_LENGTH + 1));
       }
     }
   }
