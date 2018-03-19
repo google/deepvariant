@@ -88,8 +88,7 @@ RESERVED_INFO_FIELDS = [
         id='ADR',
         number='R',
         type=INTEGER_TYPE,
-        description='Read depth for each allele on the reverse '
-        'strand'),
+        description='Read depth for each allele on the reverse strand'),
     variants_pb2.VcfInfo(
         id='AF',
         number='A',
@@ -101,8 +100,7 @@ RESERVED_INFO_FIELDS = [
         id='AN',
         number='1',
         type=INTEGER_TYPE,
-        description='Total number of alleles in called '
-        'genotypes'),
+        description='Total number of alleles in called genotypes'),
     variants_pb2.VcfInfo(
         id='BQ', number='1', type=FLOAT_TYPE, description='RMS base quality'),
     variants_pb2.VcfInfo(
@@ -122,8 +120,7 @@ RESERVED_INFO_FIELDS = [
         id='END',
         number='1',
         type=INTEGER_TYPE,
-        description='End position (for use with symbolic '
-        'alleles)'),
+        description='End position (for use with symbolic alleles)'),
     variants_pb2.VcfInfo(
         id='H2', number='0', type=FLAG_TYPE, description='HapMap2 membership'),
     variants_pb2.VcfInfo(

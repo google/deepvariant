@@ -64,39 +64,98 @@ namespace {
 constexpr char kOpenModeCompressed[] = "wz";
 constexpr char kOpenModeUncompressed[] = "w";
 
-constexpr char kFormatHeaderGT[] =
-    "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">";
-constexpr char kFormatHeaderGQ[] =
-    "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">";
-constexpr char kFormatHeaderDP[] =
-    "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
-    "passing filters reads.\">";  // NOLINT
-constexpr char kFormatHeaderMINDP[] =
-    "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
-    "observed within the GVCF block.\">";
-constexpr char kFormatHeaderAD[] =
-    "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
-    "passing filters reads for each allele.\">";  // NOLINT
-constexpr char kFormatHeaderVAF[] =
-    "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
-    "fractions.\">";  // NOLINT
-constexpr char kFormatHeaderPL[] =
-    "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype likelihoods, "
-    "Phred encoded\">";  // NOLINT
-constexpr char kFormatHeaderGL[] =
-    "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype likelihoods, "
-    "log10 encoded\">";  // NOLINT
-constexpr char kInfoHeaderEND[] =
-    "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of the "
-    "interval\">";  // NOLINT
-
-constexpr char kContigHeaderFmt[] = "##contig=<ID=%s,length=%lld>";
 constexpr char kFilterHeaderFmt[] = "##FILTER=<ID=%s,Description=\"%s\">";
+constexpr char kInfoHeaderFmt[] =
+    "##INFO=<ID=%s,Number=%s,Type=%s,Description=\"%s\"%s>";
+constexpr char kFormatHeaderFmt[] =
+    "##FORMAT=<ID=%s,Number=%s,Type=%s,Description=\"%s\">";
+constexpr char kContigHeaderFmt[] = "##contig=<ID=%s%s>";
+constexpr char kStructuredExtraHeaderFmt[] = "##%s=<%s>";
+constexpr char kExtraHeaderFmt[] = "##%s=\"%s\"";
+
+// Adds a FILTER field to the bcf_hdr_t header based on the VcfFilterInfo
+// object.
+void AddFilterToHeader(const nucleus::genomics::v1::VcfFilterInfo& filter,
+                       bcf_hdr_t* header) {
+  string filterStr = tensorflow::strings::Printf(
+      kFilterHeaderFmt, filter.id().c_str(), filter.description().c_str());
+  bcf_hdr_append(header, filterStr.c_str());
+}
+
+// Adds an INFO field to the bcf_hdr_t header based on the VcfInfo object.
+void AddInfoToHeader(const nucleus::genomics::v1::VcfInfo& info,
+                     bcf_hdr_t* header) {
+  string extra = string("");
+  if (!info.source().empty()) {
+    extra = StrCat(",Source=\"", info.source(), "\"");
+  }
+  if (!info.version().empty()) {
+    extra = StrCat(extra, ",Version=\"", info.version(), "\"");
+  }
+  string infoStr = tensorflow::strings::Printf(
+      kInfoHeaderFmt, info.id().c_str(), info.number().c_str(),
+      info.type().c_str(), info.description().c_str(), extra.c_str());
+  bcf_hdr_append(header, infoStr.c_str());
+}
+
+// Adds a FORMAT field to the bcf_hdr_t header based on the VcfFormatInfo
+// object.
+void AddFormatToHeader(const nucleus::genomics::v1::VcfFormatInfo& format,
+                       bcf_hdr_t* header) {
+  string formatStr = tensorflow::strings::Printf(
+      kFormatHeaderFmt, format.id().c_str(), format.number().c_str(),
+      format.type().c_str(), format.description().c_str());
+  bcf_hdr_append(header, formatStr.c_str());
+}
+
+// Adds a structured extra field to the bcf_hdr_t header based on the
+// VcfStructuredExtra object.
+void AddStructuredExtraToHeader(
+    const nucleus::genomics::v1::VcfStructuredExtra& sExtra,
+    bcf_hdr_t* header) {
+  string fieldStr = string("");
+  for (auto const& kv : sExtra.fields()) {
+    fieldStr = StrCat(fieldStr, kv.key(), "=\"", kv.value(), "\",");
+  }
+  if (!fieldStr.empty()) {
+    // Cut off the dangling comma.
+    fieldStr.pop_back();
+  }
+  string result = tensorflow::strings::Printf(
+      kStructuredExtraHeaderFmt, sExtra.key().c_str(), fieldStr.c_str());
+  bcf_hdr_append(header, result.c_str());
+}
+
+// Adds an unstructured extra field to the bcf_hdr_t header based on the
+// VcfExtra object.
+void AddExtraToHeader(const nucleus::genomics::v1::VcfExtra& extra,
+                      bcf_hdr_t* header) {
+  string result = tensorflow::strings::Printf(
+      kExtraHeaderFmt, extra.key().c_str(), extra.value().c_str());
+  bcf_hdr_append(header, result.c_str());
+}
+
+// Adds a contig field to the bcf_hdr_t header based on the ContigInfo object.
+void AddContigToHeader(const nucleus::genomics::v1::ContigInfo& contig,
+                       bcf_hdr_t* header) {
+  string extra =
+      contig.n_bases() ? StrCat(",length=", contig.n_bases()) : string("");
+  if (!contig.description().empty()) {
+    extra = StrCat(extra, ",description=\"", contig.description(), "\"");
+  }
+  for (auto const& kv : contig.extra()) {
+    extra = StrCat(extra, ",", kv.first, "=\"", kv.second, "\"");
+  }
+  string contigStr = tensorflow::strings::Printf(
+      kContigHeaderFmt, contig.name().c_str(), extra.c_str());
+  bcf_hdr_append(header, contigStr.c_str());
+}
 
 }  // namespace
 
 StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
-    const string& variants_path, const VcfWriterOptions& options) {
+    const string& variants_path, const nucleus::genomics::v1::VcfHeader& header,
+    const VcfWriterOptions& options) {
   const char* const openMode = EndsWith(variants_path, ".gz")
                                    ? kOpenModeCompressed
                                    : kOpenModeUncompressed;
@@ -105,40 +164,45 @@ StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
     return tf::errors::Unknown(
         StrCat("Could not open variants_path ", variants_path));
 
-  auto writer = absl::WrapUnique(new VcfWriter(options, fp));
+  auto writer = absl::WrapUnique(new VcfWriter(header, options, fp));
   TF_RETURN_IF_ERROR(writer->WriteHeader());
   return std::move(writer);
 }
 
-VcfWriter::VcfWriter(const VcfWriterOptions& options, htsFile* fp)
-    : fp_(fp), options_(options) {
+VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
+                     const VcfWriterOptions& options, htsFile* fp)
+    : fp_(fp), options_(options), vcf_header_(header) {
   CHECK(fp != nullptr);
 
+  // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>
+  // filter automatically.
   header_ = bcf_hdr_init("w");
-  for (const nucleus::genomics::v1::VcfFilterInfo& filter : options.filters()) {
-    string filterStr = tensorflow::strings::Printf(
-        kFilterHeaderFmt, filter.id().c_str(), filter.description().c_str());
-    bcf_hdr_append(header_, filterStr.c_str());
+  for (const nucleus::genomics::v1::VcfFilterInfo& filter :
+       vcf_header_.filters()) {
+    if (filter.id() != "PASS") {
+      AddFilterToHeader(filter, header_);
+    }
+  }
+  for (const nucleus::genomics::v1::VcfInfo& info : vcf_header_.infos()) {
+    AddInfoToHeader(info, header_);
+  }
+  for (const nucleus::genomics::v1::VcfFormatInfo& format :
+       vcf_header_.formats()) {
+    AddFormatToHeader(format, header_);
+  }
+  for (const nucleus::genomics::v1::VcfStructuredExtra& sExtra :
+       vcf_header_.structured_extras()) {
+    AddStructuredExtraToHeader(sExtra, header_);
+  }
+  for (const nucleus::genomics::v1::VcfExtra& extra : vcf_header_.extras()) {
+    AddExtraToHeader(extra, header_);
+  }
+  for (const nucleus::genomics::v1::ContigInfo& contig :
+       vcf_header_.contigs()) {
+    AddContigToHeader(contig, header_);
   }
 
-  bcf_hdr_append(header_, kFormatHeaderGT);
-  bcf_hdr_append(header_, kFormatHeaderGQ);
-  bcf_hdr_append(header_, kFormatHeaderDP);
-  bcf_hdr_append(header_, kFormatHeaderMINDP);
-  bcf_hdr_append(header_, kFormatHeaderAD);
-  bcf_hdr_append(header_, kFormatHeaderVAF);
-  bcf_hdr_append(header_, kFormatHeaderGL);
-  bcf_hdr_append(header_, kFormatHeaderPL);
-  bcf_hdr_append(header_, kInfoHeaderEND);
-
-  for (const nucleus::genomics::v1::ContigInfo& contig : options.contigs()) {
-    string ctgStr =
-        tensorflow::strings::Printf(kContigHeaderFmt, contig.name().c_str(),
-                                    static_cast<int64>(contig.n_bases()));
-    bcf_hdr_append(header_, ctgStr.c_str());
-  }
-
-  for (const string& sampleName : options.sample_names()) {
+  for (const string& sampleName : vcf_header_.sample_names()) {
     bcf_hdr_add_sample(header_, sampleName.c_str());
   }
   bcf_hdr_add_sample(header_, nullptr);

@@ -32,6 +32,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
+
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -59,27 +61,43 @@ class WrapVcfWriterTest(parameterized.TestCase):
 
   def setUp(self):
     self.out_fname = test_utils.test_tmpfile('output.vcf')
-    self.options = vcf_pb2.VcfWriterOptions(
+    self.header = variants_pb2.VcfHeader(
         contigs=[
             reference_pb2.ContigInfo(name='Chr1', n_bases=50, pos_in_fasta=0),
             reference_pb2.ContigInfo(name='Chr2', n_bases=25, pos_in_fasta=1),
         ],
         sample_names=['Fido', 'Spot'],
-        filters=[])
-    self.writer = vcf_writer.VcfWriter.to_file(self.out_fname, self.options)
+        formats=[
+            variants_pb2.VcfFormatInfo(
+                id='GT', number='1', type='String', description='Genotype'),
+            variants_pb2.VcfFormatInfo(
+                id='GQ',
+                number='1',
+                type='Float',
+                description='Genotype Quality')
+        ],
+    )
+    self.options = vcf_pb2.VcfWriterOptions()
+    self.writer = vcf_writer.VcfWriter.to_file(self.out_fname, self.header,
+                                               self.options)
     self.variant = test_utils.make_variant(
-        chrom='Chr1', start=10, alleles=['A', 'C'])
-    self.variant.calls.add(genotype=[0, 0], call_set_name='Fido')
-    self.variant.calls.add(genotype=[0, 1], call_set_name='Spot')
+        chrom='Chr1',
+        start=10,
+        alleles=['A', 'C'],
+    )
+    self.variant.calls.extend([
+        variants_pb2.VariantCall(genotype=[0, 0], call_set_name='Fido'),
+        variants_pb2.VariantCall(genotype=[0, 1], call_set_name='Spot'),
+    ])
 
   def test_writing_canned_variants(self):
     """Tests writing all the variants that are 'canned' in our tfrecord file."""
-
     # This file is in the TF record format
     tfrecord_file = test_utils.genomics_core_testdata(
         'test_samples.vcf.golden.tfrecord')
 
-    writer_options = vcf_pb2.VcfWriterOptions(
+    writer_options = vcf_pb2.VcfWriterOptions()
+    header = variants_pb2.VcfHeader(
         contigs=[
             reference_pb2.ContigInfo(name='chr1', n_bases=248956422),
             reference_pb2.ContigInfo(name='chr2', n_bases=242193529),
@@ -88,7 +106,9 @@ class WrapVcfWriterTest(parameterized.TestCase):
         ],
         sample_names=['NA12878_18_99'],
         filters=[
-            variants_pb2.VcfFilterInfo(id='LowQual'),
+            variants_pb2.VcfFilterInfo(
+                id='PASS', description='All filters passed'),
+            variants_pb2.VcfFilterInfo(id='LowQual', description=''),
             variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL95.00to96.00'),
             variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL96.00to97.00'),
             variants_pb2.VcfFilterInfo(id='VQSRTrancheINDEL97.00to99.00'),
@@ -103,12 +123,60 @@ class WrapVcfWriterTest(parameterized.TestCase):
             variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.90to99.95'),
             variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.95to100.00+'),
             variants_pb2.VcfFilterInfo(id='VQSRTrancheSNP99.95to100.00'),
-        ])
-
+        ],
+        infos=[
+            variants_pb2.VcfInfo(
+                id='END',
+                number='1',
+                type='Integer',
+                description='Stop position of the interval')
+        ],
+        formats=[
+            variants_pb2.VcfFormatInfo(
+                id='GT', number='1', type='String', description='Genotype'),
+            variants_pb2.VcfFormatInfo(
+                id='GQ',
+                number='1',
+                type='Integer',
+                description='Genotype Quality'),
+            variants_pb2.VcfFormatInfo(
+                id='DP',
+                number='1',
+                type='Integer',
+                description='Read depth of all passing filters reads.'),
+            variants_pb2.VcfFormatInfo(
+                id='MIN_DP',
+                number='1',
+                type='Integer',
+                description='Minimum DP observed within the GVCF block.'),
+            variants_pb2.VcfFormatInfo(
+                id='AD',
+                number='R',
+                type='Integer',
+                description=
+                'Read depth of all passing filters reads for each allele.'),
+            variants_pb2.VcfFormatInfo(
+                id='VAF',
+                number='A',
+                type='Float',
+                description='Variant allele fractions.'),
+            variants_pb2.VcfFormatInfo(
+                id='GL',
+                number='G',
+                type='Float',
+                description='Genotype likelihoods, log10 encoded'),
+            variants_pb2.VcfFormatInfo(
+                id='PL',
+                number='G',
+                type='Integer',
+                description='Genotype likelihoods, Phred encoded'),
+        ],
+    )
     variant_records = list(
         io_utils.read_tfrecords(tfrecord_file, proto=variants_pb2.Variant))
     out_fname = test_utils.test_tmpfile('output.vcf')
-    with vcf_writer.VcfWriter.to_file(out_fname, writer_options) as writer:
+    with vcf_writer.VcfWriter.to_file(out_fname, header,
+                                      writer_options) as writer:
       for record in variant_records[:5]:
         writer.write(record)
 
@@ -132,6 +200,8 @@ class WrapVcfWriterTest(parameterized.TestCase):
         '##FILTER=<ID=VQSRTrancheSNP99.90to99.95,Description="">\n',
         '##FILTER=<ID=VQSRTrancheSNP99.95to100.00+,Description="">\n',
         '##FILTER=<ID=VQSRTrancheSNP99.95to100.00,Description="">\n',
+        '##INFO=<ID=END,Number=1,Type=Integer,Description="Stop position of '
+        'the interval">\n',
         '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n',
         '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">\n',
         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth of all '
@@ -146,8 +216,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
         'likelihoods, log10 encoded">\n',
         '##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Genotype '
         'likelihoods, Phred encoded">\n',
-        '##INFO=<ID=END,Number=1,Type=Integer,Description="Stop position of '
-        'the interval">\n', '##contig=<ID=chr1,length=248956422>\n',
+        '##contig=<ID=chr1,length=248956422>\n',
         '##contig=<ID=chr2,length=242193529>\n',
         '##contig=<ID=chr3,length=198295559>\n',
         '##contig=<ID=chrX,length=156040895>\n',
@@ -229,12 +298,11 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
     v1_records = list(v1_reader.iterate())
     self.assertTrue(v1_records, 'Reader failed to find records')
 
-    writer_options = vcf_pb2.VcfWriterOptions(
-        contigs=v1_reader.header.contigs,
-        sample_names=v1_reader.header.sample_names,
-        filters=v1_reader.header.filters)
+    header = copy.deepcopy(v1_reader.header)
+    writer_options = vcf_pb2.VcfWriterOptions()
 
-    with vcf_writer.VcfWriter.to_file(out_file, writer_options) as writer:
+    with vcf_writer.VcfWriter.to_file(out_file, header,
+                                      writer_options) as writer:
       for record in v1_records:
         writer.write(record)
 

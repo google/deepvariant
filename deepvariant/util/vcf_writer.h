@@ -54,7 +54,9 @@ class VcfWriter {
   // opened and created if needed. Returns either a unique_ptr to the VcfWriter
   // or a Status indicating why an error occurred.
   static StatusOr<std::unique_ptr<VcfWriter>> ToFile(
-      const string& variants_path, const VcfWriterOptions& options);
+      const string& variants_path,
+      const nucleus::genomics::v1::VcfHeader& header,
+      const VcfWriterOptions& options);
   ~VcfWriter();
 
   // Disable copy or assignment
@@ -78,7 +80,8 @@ class VcfWriter {
   void PythonEnter() const {}
 
  private:
-  VcfWriter(const VcfWriterOptions& options, htsFile* fp);
+  VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
+            const VcfWriterOptions& options, htsFile* fp);
 
   tensorflow::Status WriteHeader();
 
@@ -87,6 +90,9 @@ class VcfWriter {
 
   // The options controlling the behavior of this VcfWriter.
   const VcfWriterOptions options_;
+
+  // The VcfHeader proto representation of the VCF header.
+  const nucleus::genomics::v1::VcfHeader vcf_header_;
 
   // A pointer to the VCF header object.
   bcf_hdr_t* header_;

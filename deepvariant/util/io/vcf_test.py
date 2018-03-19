@@ -40,6 +40,7 @@ from absl.testing import parameterized
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import struct_pb2
+from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
 from tensorflow.python.platform import gfile
@@ -101,11 +102,19 @@ class VcfWriterTests(parameterized.TestCase):
 
   def write_variant_to_tempfile(self, variant):
     output_path = test_utils.test_tmpfile('test.vcf')
-    writer = vcf.VcfWriter(
-        output_path,
+    header = variants_pb2.VcfHeader(
         contigs=[reference_pb2.ContigInfo(name='20')],
-        samples=[call.call_set_name for call in variant.calls],
-        filters=[])
+        sample_names=[call.call_set_name for call in variant.calls],
+        formats=[
+            variants_pb2.VcfFormatInfo(
+                id='DP', number='1', type='Integer', description='Read depth'),
+            variants_pb2.VcfFormatInfo(
+                id='AD',
+                number='R',
+                type='Integer',
+                description='Read depth for each allele')
+        ])
+    writer = vcf.VcfWriter(output_path, header=header)
     with writer:
       writer.write(variant)
     return output_path

@@ -52,6 +52,7 @@ from deepvariant.util import io_utils
 from deepvariant.util import variant_utils
 from deepvariant.util import variantcall_utils
 
+from deepvariant import dv_vcf_constants
 from deepvariant import tf_utils
 
 FLAGS = flags.FLAGS
@@ -155,11 +156,9 @@ def main(argv):
     sample_name, variants_iter = peek_sample_name(variants_iter)
   else:
     sample_name = FLAGS.sample_name
-
-  with vcf.VcfWriter(
-      FLAGS.output_vcf, contigs=contigs, samples=[sample_name],
-      filters=[]) as writer:
-
+  header = dv_vcf_constants.deepvariant_header(
+      contigs=contigs, sample_names=[sample_name])
+  with vcf.VcfWriter(FLAGS.output_vcf, header=header) as writer:
     for variant in variants_iter:
       variant.calls[0].call_set_name = sample_name
       logging.log_every_n(logging.INFO, 'Converted %s', FLAGS.log_every,

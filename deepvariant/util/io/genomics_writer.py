@@ -120,7 +120,6 @@ class DispatchingGenomicsWriter(GenomicsWriter):
     Returns:
       A list of strings.
     """
-    pass
 
   @abc.abstractmethod
   def _native_writer(self, output_path, **kwargs):
@@ -133,7 +132,6 @@ class DispatchingGenomicsWriter(GenomicsWriter):
     Returns:
       A GenomicsWriter.
     """
-    pass
 
   def write(self, proto):
     self._writer.write(proto)

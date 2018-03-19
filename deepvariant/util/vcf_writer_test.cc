@@ -66,30 +66,141 @@ using std::vector;
 constexpr char kVcfLikelihoodsVcfOutput[] = "test_likelihoods_output.vcf";
 constexpr char kVcfLikelihoodsGoldenFilename[] = "test_likelihoods.vcf.golden.tfrecord";  // NOLINT
 
+// This is the expected output header of the DogVcfWriter defined below.
+constexpr char kExpectedHeaderFmt[] =
+    "##fileformat=VCFv4.2\n"
+    "##FILTER=<ID=PASS,Description=\"All filters passed\">\n"
+    "##FILTER=<ID=RefCall,Description=\"Most likely reference\">\n"
+    "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of "
+    "the interval\">\n"  // NOLINT
+    "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP "
+    "membership\",Source=\"dbSNP\",Version=\"build 129\">\n"  // NOLINT
+    "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+    "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype "
+    "Quality\">\n"  // NOLINT
+    "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
+    "passing filters reads.\">\n"  // NOLINT
+    "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
+    "observed within the GVCF block.\">\n"  // NOLINT
+    "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
+    "passing filters reads for each allele.\">\n"  // NOLINT
+    "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
+    "fractions.\">\n"  // NOLINT
+    "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype "
+    "likelihoods, log10 encoded\">\n"  // NOLINT
+    "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype "
+    "likelihoods, Phred encoded\">\n"  // NOLINT
+    "##PEDIGREE=<Name_1=\"Val_1\",Name_2=\"Val_2\">\n"
+    "##pedigreeDb=\"http://my.pedigre.es\"\n"
+    "##contig=<ID=Chr1,length=50,description=\"Dog chromosome 1\">\n"
+    "##contig=<ID=Chr2,length=25>\n"
+    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\tSpot\n";
 
 // Build the skeleton of a VCF file for some pretend variants.
-// This routine will populated headers but not any records.
+// This routine will populate headers but not any records.
 std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname,
                                             const bool round_qual) {
-  VcfWriterOptions writer_options;
-  auto& contig1 = *writer_options.mutable_contigs()->Add();
+  nucleus::genomics::v1::VcfHeader header;
+  // FILTERs. Note that the PASS filter automatically gets added even though it
+  // is not present here.
+  auto& filter = *header.mutable_filters()->Add();
+  filter.set_id("RefCall");
+  filter.set_description("Most likely reference");
+
+  // INFOs.
+  auto& infoEnd = *header.mutable_infos()->Add();
+  infoEnd.set_id("END");
+  infoEnd.set_number("1");
+  infoEnd.set_type("Integer");
+  infoEnd.set_description("Stop position of the interval");
+  auto& infodbsnp = *header.mutable_infos()->Add();
+  infodbsnp.set_id("DB");
+  infodbsnp.set_number("0");
+  infodbsnp.set_type("Flag");
+  infodbsnp.set_description("dbSNP membership");
+  infodbsnp.set_source("dbSNP");
+  infodbsnp.set_version("build 129");
+
+  // FORMATs.
+  auto& format1 = *header.mutable_formats()->Add();
+  format1.set_id("GT");
+  format1.set_number("1");
+  format1.set_type("String");
+  format1.set_description("Genotype");
+  auto& format2 = *header.mutable_formats()->Add();
+  format2.set_id("GQ");
+  format2.set_number("1");
+  format2.set_type("Integer");
+  format2.set_description("Genotype Quality");
+  auto& format3 = *header.mutable_formats()->Add();
+  format3.set_id("DP");
+  format3.set_number("1");
+  format3.set_type("Integer");
+  format3.set_description("Read depth of all passing filters reads.");
+  auto& format4 = *header.mutable_formats()->Add();
+  format4.set_id("MIN_DP");
+  format4.set_number("1");
+  format4.set_type("Integer");
+  format4.set_description("Minimum DP observed within the GVCF block.");
+  auto& format5 = *header.mutable_formats()->Add();
+  format5.set_id("AD");
+  format5.set_number("R");
+  format5.set_type("Integer");
+  format5.set_description(
+      "Read depth of all passing filters reads for each allele.");
+  auto& format6 = *header.mutable_formats()->Add();
+  format6.set_id("VAF");
+  format6.set_number("A");
+  format6.set_type("Float");
+  format6.set_description("Variant allele fractions.");
+  auto& format7 = *header.mutable_formats()->Add();
+  format7.set_id("GL");
+  format7.set_number("G");
+  format7.set_type("Float");
+  format7.set_description("Genotype likelihoods, log10 encoded");
+  auto& format8 = *header.mutable_formats()->Add();
+  format8.set_id("PL");
+  format8.set_number("G");
+  format8.set_type("Integer");
+  format8.set_description("Genotype likelihoods, Phred encoded");
+
+  // Structured extras.
+  auto& sExtra = *header.mutable_structured_extras()->Add();
+  sExtra.set_key("PEDIGREE");
+  auto& f1 = *sExtra.mutable_fields()->Add();
+  f1.set_key("Name_1");
+  f1.set_value("Val_1");
+  auto& f2 = *sExtra.mutable_fields()->Add();
+  f2.set_key("Name_2");
+  f2.set_value("Val_2");
+
+  // Unstructured extras.
+  auto& extra = *header.mutable_extras()->Add();
+  extra.set_key("pedigreeDb");
+  extra.set_value("http://my.pedigre.es");
+
+  // Contigs.
+  auto& contig1 = *header.mutable_contigs()->Add();
   contig1.set_name("Chr1");
   contig1.set_description("Dog chromosome 1");
   contig1.set_n_bases(50);
   contig1.set_pos_in_fasta(0);
-  auto& contig2 = *writer_options.mutable_contigs()->Add();
+  auto& contig2 = *header.mutable_contigs()->Add();
   contig2.set_name("Chr2");
-  contig2.set_description("Dog chromosome 2");
   contig2.set_n_bases(25);
   contig2.set_pos_in_fasta(1);
-  writer_options.mutable_sample_names()->Add("Fido");
-  writer_options.mutable_sample_names()->Add("Spot");
+
+  // Samples.
+  header.mutable_sample_names()->Add("Fido");
+  header.mutable_sample_names()->Add("Spot");
+
+  VcfWriterOptions writer_options;
   if (round_qual) {
     writer_options.set_round_qual_values(true);
   }
 
   return std::move(
-      VcfWriter::ToFile(fname.ToString(), writer_options).ValueOrDie());
+      VcfWriter::ToFile(fname.ToString(), header, writer_options).ValueOrDie());
 }
 
 Variant MakeVariant(const vector<string>& names, const string& refName,
@@ -176,29 +287,8 @@ TEST(VcfWriterTest, WritesVCF) {
   TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
                                            output_filename, &vcf_contents));
 
-  const char kExpectedVcfContent[] =
-      "##fileformat=VCFv4.2\n"
-      "##FILTER=<ID=PASS,Description=\"All filters passed\">\n"
-      "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-      "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype "
-      "Quality\">\n"  // NOLINT
-      "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
-      "passing filters reads.\">\n"  // NOLINT
-      "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
-      "observed within the GVCF block.\">\n"
-      "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
-      "passing filters reads for each allele.\">\n"  // NOLINT
-      "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
-      "fractions.\">\n"  // NOLINT
-      "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype likelihoods, "
-      "log10 encoded\">\n"  // NOLINT
-      "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype "
-      "likelihoods, Phred encoded\">\n"  // NOLINT
-      "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of the "
-      "interval\">\n"  // NOLINT
-      "##contig=<ID=Chr1,length=50>\n"
-      "##contig=<ID=Chr2,length=25>\n"
-      "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\tSpot\n"
+  const string kExpectedVcfContent =
+      string(kExpectedHeaderFmt) +
       "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t11\t.\tC\tG,T\t10\tPASS\t.\tGT\t0/0\t0/1\n"
       "Chr2\t16\tDogSNP3;Woof10003\tC\t,T\t10.567\tPASS\t.\tGT\t./.\t.|1\n"
@@ -237,29 +327,8 @@ TEST(VcfWriterTest, RoundsVCFQuals) {
   TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
                                            output_filename, &vcf_contents));
 
-  const char kExpectedVcfContent[] =
-      "##fileformat=VCFv4.2\n"
-      "##FILTER=<ID=PASS,Description=\"All filters passed\">\n"
-      "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-      "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype "
-      "Quality\">\n"  // NOLINT
-      "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
-      "passing filters reads.\">\n"  // NOLINT
-      "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
-      "observed within the GVCF block.\">\n"
-      "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
-      "passing filters reads for each allele.\">\n"  // NOLINT
-      "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
-      "fractions.\">\n"  // NOLINT
-      "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype likelihoods, "
-      "log10 encoded\">\n"  // NOLINT
-      "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype "
-      "likelihoods, Phred encoded\">\n"  // NOLINT
-      "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of the "
-      "interval\">\n"  // NOLINT
-      "##contig=<ID=Chr1,length=50>\n"
-      "##contig=<ID=Chr2,length=25>\n"
-      "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\tSpot\n"
+  const string kExpectedVcfContent =
+      string(kExpectedHeaderFmt) +
       "Chr1\t21\tDogSNP1\tA\tT\t10.4\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t11\t.\tC\tG,T\t10.5\tPASS\t.\tGT\t0/0\t0/1\n";
 

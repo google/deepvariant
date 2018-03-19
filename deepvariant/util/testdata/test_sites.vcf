@@ -1,5 +1,7 @@
 ##fileformat=VCFv4.2
-##ALT=<ID=NON_REF,Description="foo">
+##FILTER=<ID=PASS,Description="All filters passed">
+##ALT=<ID=NON_REF,Description="Represents	any	possible	alternative	allele	at	this	location">
+##META=<ID=TESTMETA,Description="blah">
 ##FILTER=<ID=LowQual,Description="foo">
 ##FILTER=<ID=VQSRTrancheINDEL95.00to96.00,Description="foo">
 ##FILTER=<ID=VQSRTrancheINDEL96.00to97.00,Description="foo">

@@ -1,4 +1,5 @@
 ##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
 ##ALT=<ID=NON_REF,Description="Represents	any	possible	alternative	allele	at	this	location">
 ##FILTER=<ID=LowQual,Description="Low	quality">
 ##FILTER=<ID=VQSRTrancheINDEL95.00to96.00,Description="Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.9364	<=	x	<	1.0415">

@@ -1,4 +1,4 @@
-# Copyright 2018 Google Inc.
+# Copyright 2017 Google Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,20 +26,41 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""Tests for deepvariant .dv_vcf_constants."""
 
-from "deepvariant/util/genomics/variants_pyclif.h" import *
-from "deepvariant/util/genomics/vcf_pyclif.h" import *
-from "deepvariant/util/vendor/statusor_clif_converters.h" import *
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from "deepvariant/util/vcf_writer.h":
-  namespace `nucleus`:
-    class VcfWriter:
-      @classmethod
-      def `ToFile` as to_file(cls, variantsPath: str, vcfHeader: VcfHeader,
-                              options: VcfWriterOptions)
-        -> StatusOr<VcfWriter>
-      def `Write` as write(self, variantMessage: Variant) -> Status
-      @__enter__
-      def PythonEnter(self)
-      @__exit__
-      def Close(self) -> Status
+from absl.testing import absltest
+from absl.testing import parameterized
+from deepvariant.util.genomics import reference_pb2
+from deepvariant import dv_vcf_constants
+
+
+class DvVcfConstantsTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      dict(contigs=[], sample_names=[]),
+      dict(
+          contigs=[reference_pb2.ContigInfo(name='chr1')],
+          sample_names=['single_sample']),
+      dict(
+          contigs=[
+              reference_pb2.ContigInfo(name='1'),
+              reference_pb2.ContigInfo(name='2')
+          ],
+          sample_names=['multiple', 'samples']),
+  )
+  def test_deepvariant_header(self, contigs, sample_names):
+    header = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=sample_names)
+    self.assertCountEqual(header.contigs, contigs)
+    self.assertCountEqual(header.sample_names, sample_names)
+    self.assertGreater(len(header.filters), 0)
+    self.assertGreater(len(header.infos), 0)
+    self.assertGreater(len(header.formats), 0)
+
+
+if __name__ == '__main__':
+  absltest.main()

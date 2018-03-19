@@ -170,7 +170,24 @@ class WrapVcfReaderTests(absltest.TestCase):
 
   def test_vcf_header(self):
     header = self.sites_reader.header
-    self.assertLen(header.structured_extras, 1)
+    expected1 = variants_pb2.VcfStructuredExtra(
+        key='ALT',
+        fields=[
+            variants_pb2.VcfExtra(key='ID', value='NON_REF'),
+            variants_pb2.VcfExtra(
+                key='Description',
+                value='Represents	any	possible	alternative	allele	at	th'
+                'is	location')
+        ])
+    expected2 = variants_pb2.VcfStructuredExtra(
+        key='META',
+        fields=[
+            variants_pb2.VcfExtra(key='ID', value='TESTMETA'),
+            variants_pb2.VcfExtra(key='Description', value='blah')
+        ])
+    self.assertLen(header.structured_extras, 2)
+    self.assertEqual(header.structured_extras[1], expected2)
+    self.assertEqual(header.structured_extras[0], expected1)
 
   def test_vcf_contigs(self):
     self.assertEqual(expected_sites_contigs,

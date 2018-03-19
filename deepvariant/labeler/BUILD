@@ -9,6 +9,7 @@ py_binary(
     srcs = ["labeled_examples_to_vcf.py"],
     srcs_version = "PY2AND3",
     deps = [
+        "//deepvariant:dv_vcf_constants",
         "//deepvariant:tf_utils",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:variant_utils",

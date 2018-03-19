@@ -47,6 +47,7 @@ py_library(
     deps = [
         ":call_variants_lib",
         ":data_providers",
+        ":dv_vcf_constants",
         ":haplotypes",
         ":make_examples_lib",
         ":model_eval_lib",
@@ -418,6 +419,7 @@ py_library(
     srcs = ["postprocess_variants.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":dv_vcf_constants",
         ":logging_level",
         "//deepvariant:haplotypes",
         "//deepvariant/protos:deepvariant_py_pb2",
@@ -717,5 +719,28 @@ py_test(
     deps = [
         ":exclude_contigs",
         "@com_google_absl_py//absl/testing:absltest",
+    ],
+)
+
+py_library(
+    name = "dv_vcf_constants",
+    srcs = ["dv_vcf_constants.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        "//deepvariant/util:vcf_constants",
+        "//deepvariant/util/genomics:variants_py_pb2",
+    ],
+)
+
+py_test(
+    name = "dv_vcf_constants_test",
+    size = "small",
+    srcs = ["dv_vcf_constants_test.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":dv_vcf_constants",
+        "//deepvariant/util/genomics:reference_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
     ],
 )

@@ -51,6 +51,7 @@ from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
 from deepvariant.util import vcf_constants
+from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
 from deepvariant import test_utils
 from deepvariant.protos import deepvariant_pb2
@@ -507,40 +508,40 @@ class PostprocessVariantsTest(parameterized.TestCase):
   @parameterized.parameters(
       ([0.01, 0.0, 0.99],
        _create_variant('GL000220.1', 1, 'A', ['.'], 20.0,
-                       postprocess_variants.DEEP_VARIANT_PASS, [1, 1], 20,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
                        [-2.0, -15.0003472607, -0.0043648054])),
       ([0.01, 0.0, 0.99],
        _create_variant('GL000220.1', 10000210, 'C', ['T'], 20.0,
-                       postprocess_variants.DEEP_VARIANT_PASS, [1, 1], 20,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
                        [-2.0, -15.0003472607, -0.0043648054])),
       ([0.001, 0.999, 0.0],
        _create_variant('20', 10000210, 'C', ['CT'], 30.0,
-                       postprocess_variants.DEEP_VARIANT_PASS, [0, 1], 30,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 1], 30,
                        [-3.0, -0.00043451177, -15.0003472607])),
       ([0.0001, 0.0, 0.9999],
        _create_variant('1', 1, 'C', ['T'], 40.0,
-                       postprocess_variants.DEEP_VARIANT_PASS, [1, 1], 40,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 40,
                        [-4.0, -15.0003472607, -0.00004343161])),
       ([0.1, 0.90, 0.0],
        _create_variant('20', 10000210, 'A', ['T'], 10.0,
-                       postprocess_variants.DEEP_VARIANT_PASS, [0, 1], 10,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 1], 10,
                        [-1.0, -0.04575749056, -15.0003472607])),
       ([0.99, 0.005, 0.005],
        _create_variant('X', 10000210, 'CACA', ['C'], 0.04364805402,
-                       postprocess_variants.DEEP_VARIANT_REF_FILTER, [0, 0], 20,
+                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 20,
                        [-0.0043648054, -2.30102999566, -2.30102999566])),
       ([0.9999, 0.0001, 0.0],
        _create_variant('chrY', 10000210, 'C', ['T'], 0.00043431619,
-                       postprocess_variants.DEEP_VARIANT_REF_FILTER, [0, 0], 40,
+                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 40,
                        [-0.00004343161, -4.0, -15.0003472607])),
       # Multi-allelic test examples.
       ([0.995, 0.001, 0.001, 0.001, 0.001, 0.001],
        _create_variant('X', 10000210, 'CACA', ['C', 'A'], 0.0217691925,
-                       postprocess_variants.DEEP_VARIANT_REF_FILTER, [0, 0], 23,
+                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 23,
                        [-0.00217691925, -3, -3, -3, -3, -3])),
       ([0.001, 0.001, 0.001, 0.995, 0.001, 0.001],
        _create_variant('X', 10000210, 'CACA', ['C', 'A'], 30,
-                       postprocess_variants.DEEP_VARIANT_PASS, [0, 2], 23,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 2], 23,
                        [-3, -3, -3, -0.00217691925, -3, -3])),
   )
   def test_add_call_to_variant(self, probs, expected):
@@ -681,8 +682,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
       variant = variants_pb2.Variant()
       variant.quality = qual
       expected = []
-      expected.append(postprocess_variants.DEEP_VARIANT_PASS if qual >= min_qual
-                      else postprocess_variants.DEEP_VARIANT_QUAL_FILTER)
+      expected.append(dv_vcf_constants.DEEP_VARIANT_PASS if qual >= min_qual
+                      else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER)
       self.assertEqual(
           postprocess_variants.compute_filter_fields(variant, min_qual),
           expected)
@@ -690,7 +691,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       del variant.filter[:]
       variant.calls.add(genotype=[0, 0])
       expected = []
-      expected.append(postprocess_variants.DEEP_VARIANT_REF_FILTER)
+      expected.append(dv_vcf_constants.DEEP_VARIANT_REF_FILTER)
       self.assertEqual(
           postprocess_variants.compute_filter_fields(variant, min_qual),
           expected)
@@ -699,8 +700,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
       del variant.calls[:]
       variant.calls.add(genotype=[0, 1])
       expected = []
-      expected.append(postprocess_variants.DEEP_VARIANT_PASS if qual >= min_qual
-                      else postprocess_variants.DEEP_VARIANT_QUAL_FILTER)
+      expected.append(dv_vcf_constants.DEEP_VARIANT_PASS if qual >= min_qual
+                      else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER)
       self.assertEqual(
           postprocess_variants.compute_filter_fields(variant, min_qual),
           expected)

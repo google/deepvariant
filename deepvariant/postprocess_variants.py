@@ -56,6 +56,7 @@ from deepvariant.util import ranges
 from deepvariant.util import variant_utils
 from deepvariant.util import variantcall_utils
 from deepvariant.util import vcf_constants
+from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
@@ -90,23 +91,6 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'gvcf_outfile', None,
     'Optional. Destination path where we will write the Genomic VCF output.')
-
-# The filter field strings to add to variants created by this method.
-DEEP_VARIANT_REF_FILTER = 'RefCall'
-DEEP_VARIANT_QUAL_FILTER = 'LowQual'
-DEEP_VARIANT_PASS = 'PASS'
-DEEP_VARIANT_ALL_FILTER_VALUES = frozenset(
-    [DEEP_VARIANT_REF_FILTER, DEEP_VARIANT_QUAL_FILTER, DEEP_VARIANT_PASS])
-
-FILTERS = [
-    variants_pb2.VcfFilterInfo(
-        id=DEEP_VARIANT_REF_FILTER,
-        description='Genotyping model thinks this site is reference.'),
-    variants_pb2.VcfFilterInfo(
-        id=DEEP_VARIANT_QUAL_FILTER,
-        description=
-        'Confidence in this variant being real is below calling threshold.'),
-]
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -161,11 +145,11 @@ def compute_filter_fields(variant, min_quality):
     Filter field strings to be added to the variant.
   """
   if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.hom_ref:
-    return [DEEP_VARIANT_REF_FILTER]
+    return [dv_vcf_constants.DEEP_VARIANT_REF_FILTER]
   elif variant.quality < min_quality:
-    return [DEEP_VARIANT_QUAL_FILTER]
+    return [dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER]
   else:
-    return [DEEP_VARIANT_PASS]
+    return [dv_vcf_constants.DEEP_VARIANT_PASS]
 
 
 def most_likely_genotype(predictions, ploidy=2, n_alleles=2):
@@ -598,31 +582,17 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
   return canonical_variant, [i / denominator for i in predictions]
 
 
-def write_variants_to_vcf(contigs,
-                          variant_generator,
-                          output_vcf_path,
-                          sample_name,
-                          filters=None):
+def write_variants_to_vcf(variant_generator, output_vcf_path, header):
   """Writes Variant protos to a VCF file.
 
   Args:
-    contigs: list(ContigInfo). A list of the reference genome contigs for
-      writers that need contig information.
     variant_generator: generator. A generator that yields sorted Variant protos.
     output_vcf_path: str. Output file in VCF format.
-    sample_name: str. Sample name to write to VCF file.
-    filters: list(VcfFilterInfo). A list of filters to include in the VCF
-      header. If not specified, the default DeepVariant headers are used.
+    header: VcfHeader proto. The VCF header to use for writing the variants.
   """
-  if filters is None:
-    filters = FILTERS
   logging.info('Writing output to VCF file: %s', output_vcf_path)
   with vcf.VcfWriter(
-      output_vcf_path,
-      contigs=contigs,
-      samples=[sample_name],
-      filters=filters,
-      round_qualities=True) as writer:
+      output_vcf_path, header=header, round_qualities=True) as writer:
     for variant in variant_generator:
       writer.write(variant)
 
@@ -853,18 +823,19 @@ def main(argv=()):
     fasta_reader = fasta.RefFastaReader(FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
     contigs = fasta_reader.header.contigs
     paths = io_utils.maybe_generate_sharded_filenames(FLAGS.infile)
+    # Read one CallVariantsOutput record and extract the sample name from it.
+    # Note that this assumes that all CallVariantsOutput protos in the infile
+    # contain a single VariantCall within their constituent Variant proto, and
+    # that the call_set_name is identical in each of the records.
+    record = next(
+        io_utils.read_tfrecords(
+            paths[0], proto=deepvariant_pb2.CallVariantsOutput, max_records=1))
+    sample_name = _extract_single_sample_name(record)
+    header = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[sample_name])
     with tempfile.NamedTemporaryFile() as temp:
       postprocess_variants_lib.process_single_sites_tfrecords(
           contigs, paths, temp.name)
-      # Read one CallVariantsOutput record and extract the sample name from it.
-      # Note that this assumes that all CallVariantsOutput protos in the infile
-      # contain a single VariantCall within their constituent Variant proto, and
-      # that the call_set_name is identical in each of the records.
-      record = next(
-          io_utils.read_tfrecords(
-              paths[0], proto=deepvariant_pb2.CallVariantsOutput,
-              max_records=1))
-      sample_name = _extract_single_sample_name(record)
       independent_variants = _transform_call_variants_output_to_variants(
           input_sorted_tfrecord_path=temp.name,
           qual_filter=FLAGS.qual_filter,
@@ -873,10 +844,9 @@ def main(argv=()):
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
       write_variants_to_vcf(
-          contigs=contigs,
           variant_generator=variant_generator,
           output_vcf_path=FLAGS.outfile,
-          sample_name=sample_name)
+          header=header)
 
     # Also write out the gVCF file if it was provided.
     if FLAGS.nonvariant_site_tfrecord_path:
@@ -894,11 +864,9 @@ def main(argv=()):
         merged_variants = merge_variants_and_nonvariants(
             gvcf_variants, nonvariant_generator, lessthanfn, fasta_reader)
         write_variants_to_vcf(
-            contigs=contigs,
             variant_generator=merged_variants,
             output_vcf_path=FLAGS.gvcf_outfile,
-            sample_name=sample_name,
-            filters=FILTERS)
+            header=header)
 
 
 if __name__ == '__main__':
