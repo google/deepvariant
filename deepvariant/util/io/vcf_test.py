@@ -65,6 +65,12 @@ class VcfReaderTests(absltest.TestCase):
     self.assertEqual(
         test_utils.iterable_len(self.samples_reader.query(range1)), 4)
 
+  def test_vcf_iter(self):
+    n = 0
+    for _ in self.sites_reader:
+      n += 1
+    self.assertEqual(n, 5)
+
 
 def _format_expected_variant(ref, alts, format_spec, *samples):
   base = ['20', 1, '.', ref, alts, 0, '.', '.', format_spec]

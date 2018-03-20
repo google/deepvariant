@@ -60,9 +60,11 @@ class WrappedCppIterable(object):
     self._cc_iterable.__exit__(type_, value, traceback)
 
   def __iter__(self):
-    while True:
-      not_done, record = self._cc_iterable.Next()
-      if not_done:
-        yield record
-      else:
-        return
+    return self
+
+  def next(self):
+    not_done, record = self._cc_iterable.Next()
+    if not_done:
+      return record
+    else:
+      raise StopIteration
