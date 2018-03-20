@@ -47,6 +47,7 @@ from absl import logging
 
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
+from deepvariant.util.genomics import sam_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
@@ -409,7 +410,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()
-    mock_sample_reader.header.samples = ['sample_name']
+    mock_sample_reader.header = sam_pb2.SamHeader(
+        read_groups=[sam_pb2.ReadGroup(sample_id='sample_name')])
     self.assertEqual(
         make_examples.extract_sample_name_from_sam_reader(mock_sample_reader),
         'sample_name')
@@ -418,16 +420,15 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       # No samples could be found in the reads.
       dict(
           samples=[],
-          expected_error_message='No sample name found in the input reads. '
-          'Please provide the name of the sample with the --sample_name '
+          expected_error_message='No non-empty sample name found in the input '
+          'reads. Please provide the name of the sample with the --sample_name '
           'argument.'),
       # Check that we detect an empty sample name and raise an exception.
       dict(
           samples=[''],
-          expected_error_message=
-          'A single sample name was found in the input reads but it was the '
-          'empty string. Please provide the name of the sample with the '
-          '--sample_name argument.'),
+          expected_error_message='No non-empty sample name found in the input '
+          'reads. Please provide the name of the sample '
+          'with the --sample_name argument.'),
       # We have more than one sample in the reads.
       dict(
           samples=['sample1', 'sample2'],
@@ -439,7 +440,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
   def test_extract_sample_name_from_reads_detects_bad_samples(
       self, samples, expected_error_message):
     mock_sample_reader = mock.Mock()
-    mock_sample_reader.header.samples = samples
+    mock_sample_reader.header = sam_pb2.SamHeader(
+        read_groups=[sam_pb2.ReadGroup(sample_id=sample) for sample in samples])
     with self.assertRaisesRegexp(ValueError, expected_error_message):
       make_examples.extract_sample_name_from_sam_reader(mock_sample_reader)
 

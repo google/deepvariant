@@ -73,7 +73,8 @@ class SamReaderTest(absltest.TestCase):
   def test_bam_samples(self):
     reader = sam_reader.SamReader.from_file(self.bam, self.options)
     with reader:
-      self.assertEqual(reader.header.samples, ['NA12878'])
+      self.assertLen(reader.header.read_groups, 1)
+      self.assertEqual(reader.header.read_groups[0].sample_id, 'NA12878')
 
   def test_sam_contigs(self):
     reader = sam_reader.SamReader.from_file(self.bam, self.options)

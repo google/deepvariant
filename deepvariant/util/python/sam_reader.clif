@@ -56,7 +56,7 @@ from "deepvariant/util/sam_reader.h":
         return WrappedCppIterable(...)
       def `Query` as query(self, region: Range) -> StatusOr<SamIterable>:
         return WrappedCppIterable(...)
-      header: SamHeader = property(`header`)
+      header: SamHeader = property(`Header`)
       @__enter__
       def PythonEnter(self) -> Status
       @__exit__

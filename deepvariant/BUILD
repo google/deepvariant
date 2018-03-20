@@ -283,6 +283,7 @@ py_test(
         "//deepvariant/util:variantcall_utils",
         "//deepvariant/util:vcf_constants",
         "//deepvariant/util/genomics:reference_py_pb2",
+        "//deepvariant/util/genomics:sam_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
         "//deepvariant/util/io:vcf",
         "@com_google_absl_py//absl/flags",

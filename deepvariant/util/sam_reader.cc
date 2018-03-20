@@ -46,6 +46,7 @@
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
+#include "tensorflow/core/lib/strings/numbers.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
@@ -66,6 +67,128 @@ using tensorflow::int32;
 
 using google::protobuf::RepeatedField;
 using tensorflow::strings::StrCat;
+
+namespace {
+constexpr char kSamHeaderTag[] = "@HD";
+constexpr char kSamReferenceSequenceTag[] = "@SQ";
+constexpr char kSamReadGroupTag[] = "@RG";
+constexpr char kSamProgramTag[] = "@PG";
+constexpr char kSamCommentTag[] = "@CO";
+
+void AddHeaderLineToHeader(const string& line, nucleus::SamHeader& header) {
+  static constexpr char kVersionTag[] = "VN:";
+  static constexpr char kSortingOrderTag[] = "SO:";
+  static constexpr char kAlignmentGroupingTag[] = "GO:";
+  int tagLen = 3;
+
+  static const std::map<string, nucleus::SamHeader_SortingOrder>
+      sorting_order_map = {{"coordinate", nucleus::SamHeader::COORDINATE},
+                           {"queryname", nucleus::SamHeader::QUERYNAME},
+                           {"unknown", nucleus::SamHeader::UNKNOWN},
+                           {"unsorted", nucleus::SamHeader::UNSORTED}};
+
+  static const std::map<string, nucleus::SamHeader_AlignmentGrouping>
+      alignment_grouping_map = {{"none", nucleus::SamHeader::NONE},
+                                {"query", nucleus::SamHeader::QUERY},
+                                {"reference", nucleus::SamHeader::REFERENCE}};
+
+  for (const string& token : tensorflow::str_util::Split(line, '\t')) {
+    if (token == kSamHeaderTag) continue;
+    const string tag = token.substr(0, tagLen);
+    const string value = token.substr(tagLen);
+    if (tag == kVersionTag) {
+      header.set_format_version(value);
+    } else if (tag == kSortingOrderTag) {
+      const auto& it = sorting_order_map.find(value);
+      if (it == sorting_order_map.end()) {
+        LOG(WARNING) << "Unknown sorting order, defaulting to unknown: "
+                     << line;
+        header.set_sorting_order(nucleus::SamHeader::UNKNOWN);
+      } else {
+        header.set_sorting_order(it->second);
+      }
+    } else if (tag == kAlignmentGroupingTag) {
+      const auto& it = alignment_grouping_map.find(value);
+      if (it == alignment_grouping_map.end()) {
+        LOG(WARNING) << "Unknown alignment grouping, defaulting to none: "
+                     << line;
+        header.set_alignment_grouping(nucleus::SamHeader::NONE);
+      } else {
+        header.set_alignment_grouping(it->second);
+      }
+    } else if (tag == kSamHeaderTag) {
+      // Skip this since it's the header line token.
+    } else {
+      LOG(WARNING) << "Unknown tag " << tag
+                   << " in header line, ignoring: " << line;
+    }
+  }
+}
+
+void AddReadGroupToHeader(const string& line, nucleus::ReadGroup* readgroup) {
+  int tagLen = 3;
+  for (const string& token : tensorflow::str_util::Split(line, '\t')) {
+    if (token == kSamReadGroupTag) continue;
+    const string tag = token.substr(0, tagLen);
+    const string value = token.substr(tagLen);
+    if (tag == "ID:") {
+      readgroup->set_name(value);
+    } else if (tag == "CN:") {
+      readgroup->set_sequencing_center(value);
+    } else if (tag == "DS:") {
+      readgroup->set_description(value);
+    } else if (tag == "DT:") {
+      readgroup->set_date(value);
+    } else if (tag == "FO:") {
+      readgroup->set_flow_order(value);
+    } else if (tag == "KS:") {
+      readgroup->set_key_sequence(value);
+    } else if (tag == "LB:") {
+      readgroup->set_library_id(value);
+    } else if (tag == "PG:") {
+      readgroup->add_program_ids(value);
+    } else if (tag == "PI:") {
+      int size;
+      tensorflow::strings::safe_strto32(value, &size);
+      readgroup->set_predicted_insert_size(size);
+    } else if (tag == "PL:") {
+      readgroup->set_platform(value);
+    } else if (tag == "PM:") {
+      readgroup->set_platform_model(value);
+    } else if (tag == "PU:") {
+      readgroup->set_platform_unit(value);
+    } else if (tag == "SM:") {
+      readgroup->set_sample_id(value);
+    } else {
+      LOG(WARNING) << "Unknown tag " << tag
+                   << " in RG line, ignoring: " << line;
+    }
+  }
+}
+
+void AddProgramToHeader(const string& line, nucleus::Program* program) {
+  int tagLen = 3;
+  for (const string& token : tensorflow::str_util::Split(line, '\t')) {
+    if (token == kSamProgramTag) continue;
+    const string tag = token.substr(0, tagLen);
+    const string value = token.substr(tagLen);
+    if (tag == "ID:") {
+      program->set_id(value);
+    } else if (tag == "PN:") {
+      program->set_name(value);
+    } else if (tag == "CL:") {
+      program->set_command_line(value);
+    } else if (tag == "PP:") {
+      program->set_prev_program_id(value);
+    } else if (tag == "DS:") {
+      program->set_description(value);
+    } else if (tag == "VN:") {
+      program->set_version(value);
+    }
+  }
+}
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 //
@@ -382,9 +505,27 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
   CHECK(fp != nullptr) << "pointer to SAM/BAM cannot be null";
   CHECK(header_ != nullptr) << "pointer to header cannot be null";
 
-  // redacted
-  // sorting_order, etc.).
+  const std::vector<string> header_lines_split =
+      tensorflow::str_util::Split(header_->text, '\n');
 
+  for (const string& header_line : header_lines_split) {
+    const string& header_tag = header_line.substr(0, 3);
+    if (header_tag == kSamHeaderTag) {
+      AddHeaderLineToHeader(header_line, sam_header_);
+    } else if (header_tag == kSamReferenceSequenceTag) {
+      // We parse contigs separately below since they are structured by SAM
+      // already.
+    } else if (header_tag == kSamReadGroupTag) {
+      AddReadGroupToHeader(header_line,
+                           sam_header_.mutable_read_groups()->Add());
+    } else if (header_tag == kSamProgramTag) {
+      AddProgramToHeader(header_line, sam_header_.mutable_programs()->Add());
+    } else if (header_tag == kSamCommentTag) {
+      sam_header_.add_comments(header_line);
+    } else {
+      LOG(WARNING) << "Unrecognized SAM header type, ignoring: " << header_line;
+    }
+  }
   // Fill in the contig info for each contig in the sam header. Directly
   // accesses the low-level C struct because there are no indirection
   // macros/functions by htslib API.
@@ -395,10 +536,6 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
     contig->set_n_bases(header_->target_len[i]);
     contig->set_pos_in_fasta(i);
   }
-
-  // Fill in the sample name for each sample in the sam header. This is the "SM"
-  // tag within the readgroup header lines.
-  ParseSamplesFromHeader();
 }
 
 StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
@@ -447,31 +584,6 @@ SamReader::~SamReader() {
     // We cannot return a value from the destructor, so the best we can do is
     // CHECK-fail if the Close() wasn't successful.
     TF_CHECK_OK(Close());
-  }
-}
-
-// Populates the samples_ vector with read group sample names.
-void SamReader::ParseSamplesFromHeader() {
-  static constexpr char RG_LINE_PREFIX[] = "@RG";
-  static constexpr auto RG_LINE_PREFIX_LENGTH = 3;
-  static constexpr char SM_TAG[] = "SM";
-  static constexpr auto SM_TAG_LENGTH = 2;
-  const std::vector<string> header_lines_split =
-      tensorflow::str_util::Split(header_->text, '\n');
-  std::vector<string> rg_lines;
-  std::copy_if(header_lines_split.begin(), header_lines_split.end(),
-               std::back_inserter(rg_lines), [](const string& line) {
-                 return StartsWith(line, RG_LINE_PREFIX, RG_LINE_PREFIX_LENGTH);
-               });
-  for (const string& rg_line : rg_lines) {
-    const std::vector<string> rg_tokens =
-        tensorflow::str_util::Split(rg_line, '\t');
-    for (const string& token : rg_tokens) {
-      if (StartsWith(token, SM_TAG, SM_TAG_LENGTH)) {
-        sam_header_.mutable_samples()->Add(
-            token.substr(SM_TAG_LENGTH + 1));
-      }
-    }
   }
 }
 

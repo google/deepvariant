@@ -138,10 +138,103 @@ message SamHeader {
   }
   AlignmentGrouping alignment_grouping = 3;
 
-  // Reference sequences from the @SQ header lines.  The order of the contigs
-  // defines the sorting order.
+  // @SQ header field in SAM spec.
+  // The order of the contigs defines the sorting order.
   repeated nucleus.genomics.v1.ContigInfo contigs = 4;
 
-  // The sample names.
-  repeated string samples = 5;
+  // @RG header field in SAM spec.
+  // Read groups.
+  repeated ReadGroup read_groups = 5;
+
+  // @PG header field in SAM spec.
+  // A program run to generate the alignment data.
+  repeated Program programs = 6;
+
+  // @CO header field in SAM spec.
+  // One-line text comments.
+  repeated string comments = 7;
+}
+
+// A read group is all the data that's processed the same way by the sequencer.
+message ReadGroup {
+  // RG@ ID field in SAM spec.
+  // The read group name.
+  string name = 1;
+
+  // RG@ CN field in SAM spec.
+  // The name of the sequencing center producing the read.
+  string sequencing_center = 2;
+
+  // @RG DS field in SAM spec.
+  // A free-form text description of this read group.
+  string description = 3;
+
+  // @RG DT field in SAM spec.
+  string date = 4;
+
+  // @RG FO field in SAM spec.
+  string flow_order = 5;
+
+  // @RG KS field in SAM spec.
+  string key_sequence = 6;
+
+  // @RG LB field in SAM spec.
+  // A library is a collection of DNA fragments which have been prepared for
+  // sequencing from a sample. This field is important for quality control as
+  // error or bias can be introduced during sample preparation.
+  string library_id = 7;
+
+  // @RG PG field in SAM spec.
+  repeated string program_ids = 8;
+
+  // @RG PI field in SAM spec.
+  // The predicted insert size of this read group. The insert size is the length
+  // of the sequenced DNA fragment from end-to-end, not including the adapters.
+  int32 predicted_insert_size = 9;
+
+  // @RG PL field in SAM spec.
+  // The platform/technology used to produce the reads.
+  string platform = 10;
+
+  // @RG PM field in SAM spec.
+  // The platform model used as part of this run.
+  string platform_model = 11;
+
+  // @RG PU field in SAM spec.
+  // The platform unit used as part of this experiment, for example
+  // flowcell-barcode.lane for Illumina or slide for SOLiD. A unique identifier.
+  string platform_unit = 12;
+
+  // @RG SM field in SAM spec.
+  // A client-supplied sample identifier for the reads in this read group.
+  string sample_id = 13;
+}
+
+// A Program is used in the SAM header to track how alignment data is generated.
+message Program {
+  // @PG ID field in SAM spec.
+  // The locally unique ID of the program. Used along with
+  // `prev_program_id` to define an ordering between programs.
+  string id = 2;
+
+  // @PG PN field in SAM spec.
+  // The display name of the program. This is typically the colloquial name of
+  // the tool used, for example 'bwa' or 'picard'.
+  string name = 3;
+
+  // @PG CL field in SAM spec.
+  // The command line used to run this program.
+  string command_line = 1;
+
+  // @PG PP field in SAM spec.
+  // The ID of the program run before this one.
+  string prev_program_id = 4;
+
+  // @PG DS field in SAM spec.
+  // The description of the program.
+  string description = 6;
+
+  // @PG VN field in SAM spec.
+  // The version of the program run.
+  string version = 5;
 }

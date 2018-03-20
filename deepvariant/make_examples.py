@@ -390,23 +390,21 @@ def extract_sample_name_from_sam_reader(sam_reader):
   Raises:
     ValueError: There is not exactly one unique sample name in the SAM/BAM.
   """
-  samples = sam_reader.header.samples
+  samples = {
+      rg.sample_id
+      for rg in sam_reader.header.read_groups
+      if rg.sample_id
+  }
   if not samples:
     raise ValueError(
-        'No sample name found in the input reads. Please provide the name of '
-        'the sample with the --sample_name argument.')
+        'No non-empty sample name found in the input reads. Please provide the '
+        'name of the sample with the --sample_name argument.')
   elif len(samples) > 1:
     raise ValueError(
         'Multiple samples ({}) were found in the input reads. DeepVariant can '
         'only call variants from a BAM file containing a single sample.'.format(
             ', '.join(sorted(samples))))
-  sample = next(iter(samples))
-  if not sample:
-    raise ValueError(
-        'A single sample name was found in the input reads but it was the '
-        'empty string. Please provide the name of the sample with the '
-        '--sample_name argument.')
-  return sample
+  return next(iter(samples))
 
 
 def _set_variant_genotype(variant, genotype):

@@ -96,21 +96,46 @@ TEST(SamReaderTest, TestIterationRespectsReadRequirements) {
   EXPECT_THAT(as_vector(reader->Iterate()), SizeIs(5));
 }
 
-TEST(SamReaderTest, TestSamSampleExtraction) {
+TEST(SamReaderTest, TestSamHeaderExtraction) {
   std::unique_ptr<SamReader> reader = std::move(
       SamReader::FromFile(GetTestData(kSamTestFilename), SamReaderOptions())
           .ValueOrDie());
-  const auto& samples = reader->header().samples();
-  EXPECT_THAT(samples, IsEmpty());
+  const nucleus::SamHeader& header = reader->Header();
+  EXPECT_EQ(header.format_version(), "1.3");
+  EXPECT_EQ(header.sorting_order(), nucleus::SamHeader::COORDINATE);
+  EXPECT_EQ(header.alignment_grouping(), nucleus::SamHeader::NONE);
+  EXPECT_THAT(header.contigs(), SizeIs(493));
+  EXPECT_THAT(header.read_groups(), SizeIs(1));
+  const nucleus::ReadGroup& rg = header.read_groups(0);
+  EXPECT_EQ(rg.name(), "'Illumina3D.4");
+  EXPECT_EQ(rg.sequencing_center(), "GOOG");
+  EXPECT_EQ(rg.description(), "description");
+  EXPECT_EQ(rg.date(), "12/10/2012");
+  EXPECT_EQ(rg.flow_order(), "ACMG");
+  EXPECT_EQ(rg.key_sequence(), "GATTACA");
+  EXPECT_THAT(rg.program_ids(), SizeIs(1));
+  EXPECT_EQ(rg.program_ids(0), "bwa");
+  EXPECT_EQ(rg.predicted_insert_size(), 300);
+  EXPECT_EQ(rg.platform(), "illumina");
+  EXPECT_EQ(rg.platform_model(), "HiSeq");
+  EXPECT_EQ(rg.platform_unit(), "abcde");
+  EXPECT_THAT(rg.sample_id(), IsEmpty());
+  EXPECT_THAT(header.comments(), SizeIs(1));
+  EXPECT_EQ(header.comments(0), "@CO\tA single line comment.");
 }
 
 TEST(SamReaderTest, TestBamSampleExtraction) {
   std::unique_ptr<SamReader> reader = std::move(
       SamReader::FromFile(GetTestData(kBamTestFilename), SamReaderOptions())
           .ValueOrDie());
-  const auto& samples = reader->header().samples();
-  EXPECT_THAT(samples, SizeIs(1));
-  EXPECT_EQ(*samples.begin(), "NA12878");
+  const nucleus::SamHeader& header = reader->Header();
+  EXPECT_THAT(header.format_version(), IsEmpty());
+  EXPECT_EQ(header.sorting_order(), nucleus::SamHeader::UNKNOWN);
+  EXPECT_EQ(header.alignment_grouping(), nucleus::SamHeader::NONE);
+  EXPECT_THAT(header.contigs(), SizeIs(25));
+  EXPECT_THAT(header.read_groups(), SizeIs(1));
+  EXPECT_EQ(header.read_groups(0).sample_id(), "NA12878");
+  EXPECT_THAT(header.comments(), IsEmpty());
 }
 
 TEST(SamReaderTest, TestHeaderlessSamIsNotOkay) {

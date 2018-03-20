@@ -138,7 +138,8 @@ class SamReader : public Reader {
 
   const SamReaderOptions& options() const { return options_; }
 
-  const SamHeader& header() const { return sam_header_; }
+  // Returns a SamHeader message representing the structured header information.
+  const SamHeader& Header() const { return sam_header_; }
 
  private:
   // Private constructor; use FromFile to safely create a SamReader from a
@@ -159,9 +160,9 @@ class SamReader : public Reader {
   // index was loaded.
   hts_idx_t* idx_;
 
+  // The sam.proto SamHeader message representing the structured header
+  // information.
   SamHeader sam_header_;
-
-  void ParseSamplesFromHeader();
 
   // For downsampling reads.
   mutable PhiloxFractionalSampler sampler_;
