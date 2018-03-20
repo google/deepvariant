@@ -673,7 +673,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
 
   def test_invalid_nonref_genotype_count(self):
     zero_calls_variant = test_utils.make_variant()
-    with self.assertRaisesRegexp(ValueError, 'Expecting only single-sample'):
+    with self.assertRaisesRegexp(ValueError, 'Expected exactly one VariantCal'):
       haplotypes._nonref_genotype_count(zero_calls_variant)
 
   def _assert_generator_of_variants_equals_expected(self, actual, expected):

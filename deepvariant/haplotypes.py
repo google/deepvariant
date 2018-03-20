@@ -45,13 +45,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 import itertools
-
 from tensorflow import flags
 import numpy as np
 
 from absl import logging
-from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
 from deepvariant.util import variant_utils
 
@@ -413,10 +412,10 @@ def _resolve_overlapping_variants(overlapping_variants):
 
     for variant, allele_indices, gls in zip(
         overlapping_variants, most_likely_allele_indices_config, scaled_gls):
-      newvariant = variants_pb2.Variant()
-      newvariant.CopyFrom(variant)
-      newvariant.calls[0].genotype[:] = allele_indices
-      newvariant.calls[0].genotype_likelihood[:] = gls
+      newvariant = copy.deepcopy(variant)
+      call = variant_utils.only_call(newvariant)
+      call.genotype[:] = allele_indices
+      call.genotype_likelihood[:] = gls
       yield newvariant
   else:
     logging.warning(
@@ -480,13 +479,11 @@ def _allele_indices_configuration_likelihood(variants, allele_indices_config):
 
   retval = 0
   for variant, alleles in zip(variants, allele_indices_config):
-    retval += variant_utils.genotype_likelihood(variant.calls[0], alleles)
+    retval += variant_utils.genotype_likelihood(
+        variant_utils.only_call(variant), alleles)
   return retval
 
 
 def _nonref_genotype_count(variant):
   """Returns the number of non-reference alleles in the called genotype."""
-  if len(variant.calls) != 1:
-    raise ValueError(
-        'Expecting only single-sample variant calls: {}'.format(variant))
-  return sum(g > 0 for g in variant.calls[0].genotype)
+  return sum(g > 0 for g in variant_utils.only_call(variant).genotype)

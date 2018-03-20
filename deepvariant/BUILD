@@ -537,7 +537,6 @@ py_library(
     deps = [
         "//deepvariant/util:genomics_math",
         "//deepvariant/util:variant_utils",
-        "//deepvariant/util/genomics:variants_py_pb2",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],

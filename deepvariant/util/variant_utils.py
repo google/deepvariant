@@ -33,13 +33,11 @@ from __future__ import division
 from __future__ import print_function
 
 import itertools
-import numbers
 
 
 
 import enum
 
-from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 from deepvariant.util import vcf_constants
@@ -137,13 +135,13 @@ class GenotypeType(enum.Enum):
 @enum.unique
 class VariantType(enum.Enum):
   """An enumeration of the types of variants."""
-  # a variant.proto where there is no alt allele
+  # A variant.proto where there is no alt allele.
   ref = 0
-  # a non-reference variant.proto where all ref and alt alleles
-  # are single basepairs
+  # A non-reference variant.proto where all ref and alt alleles are single
+  # basepairs.
   snp = 1
-  # a non-reference variant.proto where at least one of ref or alt alleles
-  # are longer than 1 bp
+  # A non-reference variant.proto where at least one of ref or alt alleles are
+  # longer than 1 bp.
   indel = 2
 
 
@@ -166,7 +164,7 @@ def format_filters(variant):
 
 
 def format_alleles(variant):
-  """Gets a string representation of the variants alleles.
+  """Gets a string representation of the variant's alleles.
 
   Args:
     variant: third_party.nucleus.protos.Variant.
@@ -179,7 +177,7 @@ def format_alleles(variant):
 
 
 def format_position(variant):
-  """Gets a string representation of the variants position.
+  """Gets a string representation of the variant's position.
 
   Args:
     variant: third_party.nucleus.protos.Variant.
@@ -358,7 +356,7 @@ def has_deletion(variant):
 @enum.unique
 class AlleleMismatchType(enum.Enum):
   """An enumeration of the types of allele mismatches we detect."""
-  # Duplicate alleles
+  # Duplicate alleles.
   duplicate_eval_alleles = 1
   duplicate_true_alleles = 2
   # Truth has an allele that doesn't match any allele in eval.
@@ -556,7 +554,7 @@ def genotype_type(variant):
   elif len(variant.calls) > 1:
     raise ValueError('Unsupported: multiple genotypes found at', variant)
   else:
-    gt = set(variant.calls[0].genotype)
+    gt = set(only_call(variant).genotype)
     if gt == {-1}:
       return GenotypeType.no_call
     elif gt == {0}:
@@ -567,7 +565,7 @@ def genotype_type(variant):
       return GenotypeType.hom_var
 
 
-def genotype_as_alleles(variant):
+def genotype_as_alleles(variant, call_ix=0):
   """Gets genotype of the sample in variant as a list of actual alleles.
 
   Returns the alleles specified by the genotype indices of variant.calls[0].
@@ -577,19 +575,20 @@ def genotype_as_alleles(variant):
 
   Args:
     variant: third_party.nucleus.protos.Variant.
+    call_ix: int. The index into the calls attribute indicating which
+      VariantCall to return alleles for.
 
   Returns:
     A list of allele (string) from variant, one for each genotype in
-    variant.calls[0], in order.
+    variant.calls[call_ix], in order.
 
   Raises:
-    ValueError: If variant doesn't have genotypes.
-    ValueError: If variant has more than one call (i.e., is multi-sample).
+    ValueError: If variant doesn't have a call at the specified index.
   """
-  if not has_calls(variant):
-    raise ValueError('Not genotypes present in', variant)
-  elif len(variant.calls) > 1:
-    raise ValueError('Unsupported: multiple genotypes found at', variant)
+  if not 0 <= call_ix < len(variant.calls):
+    raise ValueError(
+        'Unsupported: requesting call {} in variant with {} calls: {}'.format(
+            call_ix, len(variant.calls), variant))
   else:
     # Genotypes are encoded as integers, where 0 is the reference allele,
     # indices > 0 refer to alt alleles, and the no-call genotypes is encoded
@@ -597,7 +596,7 @@ def genotype_as_alleles(variant):
     # reference into the alleles by adding 1 to the genotype index.
     alleles = ([vcf_constants.MISSING_FIELD, variant.reference_bases] +
                list(variant.alternate_bases))
-    return [alleles[i + 1] for i in variant.calls[0].genotype]
+    return [alleles[i + 1] for i in variant.calls[call_ix].genotype]
 
 
 def is_gvcf(variant):
@@ -674,6 +673,22 @@ def genotype_ordering_in_likelihoods(variant):
     yield i, j, alleles[i], alleles[j]
 
 
+def genotype_likelihood(variant_call, allele_indices):
+  """Returns the genotype likelihood for the given allele indices.
+
+  Args:
+    variant_call: third_party.nucleus.protos.VariantCall. The VariantCall from
+      which to extract the genotype likelihood of the allele indices.
+    allele_indices: list(int). The list of allele indices for a given genotype.
+      E.g. diploid heterozygous alternate can be represented as [0, 1].
+
+  Returns:
+    The float value of the genotype likelihood of this set of alleles.
+  """
+  return variant_call.genotype_likelihood[genotype_likelihood_index(
+      allele_indices)]
+
+
 def genotype_likelihood_index(allele_indices):
   """Returns the genotype likelihood index for the given allele indices.
 
@@ -731,22 +746,6 @@ def allele_indices_for_genotype_likelihood_index(gl_index, ploidy=2):
   else:
     raise NotImplementedError(
         'Allele calculations only supported for haploid and diploid.')
-
-
-def genotype_likelihood(variantcall, allele_indices):
-  """Returns the genotype likelihood for the given allele indices.
-
-  Args:
-    variantcall: third_party.nucleus.protos.VariantCall. The VariantCall from
-      which to extract the genotype likelihood of the allele indices.
-    allele_indices: list(int). The list of allele indices for a given genotype.
-      E.g. diploid heterozygous alternate can be represented as [0, 1].
-
-  Returns:
-    The float value of the genotype likelihood of this set of alleles.
-  """
-  return variantcall.genotype_likelihood[genotype_likelihood_index(
-      allele_indices)]
 
 
 def allele_indices_with_num_alts(variant, num_alts, ploidy=2):

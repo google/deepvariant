@@ -731,11 +731,10 @@ def _transform_to_gvcf_record(variant):
     num_new_gls = len(variant.alternate_bases) + 1
     call = variant_utils.only_call(variant)
     call.genotype_likelihood.extend([_GVCF_ALT_ALLELE_GL] * num_new_gls)
-    if variant.calls[0].info and 'AD' in variant.calls[0].info:
-      variant.calls[0].info['AD'].values.extend([struct_pb2.Value(int_value=0)])
-    if variant.calls[0].info and 'VAF' in variant.calls[0].info:
-      variant.calls[0].info['VAF'].values.extend(
-          [struct_pb2.Value(number_value=0)])
+    if call.info and 'AD' in call.info:
+      call.info['AD'].values.extend([struct_pb2.Value(int_value=0)])
+    if call.info and 'VAF' in call.info:
+      call.info['VAF'].values.extend([struct_pb2.Value(number_value=0)])
 
   return variant
 

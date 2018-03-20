@@ -453,6 +453,9 @@ class VariantUtilsTests(parameterized.TestCase):
     with self.assertRaises(Exception):
       variant_utils.genotype_as_alleles(test_utils.make_variant(gt=None))
     with self.assertRaises(Exception):
+      variant_utils.genotype_as_alleles(
+          test_utils.make_variant(alleles=['A', 'C'], gt=[0, 0]), call_ix=1)
+    with self.assertRaises(Exception):
       variant_utils.genotype_type(None)
 
   @parameterized.parameters(
