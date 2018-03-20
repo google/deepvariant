@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <math.h>
 
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
