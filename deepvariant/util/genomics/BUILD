@@ -348,3 +348,35 @@ pyclif_proto_library(
     name = "vcf_pyclif",
     proto_lib = ":vcf_proto",  # NO COPYBARA
 )
+
+# ----------------------------------------------------------------------
+# FASTQ records
+# ----------------------------------------------------------------------
+
+proto_library(
+    name = "fastq_proto",
+    srcs = ["fastq.proto"],
+    deps = [],
+)
+
+cc_proto_library(
+    name = "fastq_cc_pb2",
+    srcs = ["fastq.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [],
+)
+
+py_proto_library(
+    name = "fastq_py_pb2",
+    srcs = ["fastq.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [],
+)
+
+pyclif_proto_library(
+    name = "fastq_pyclif",
+    proto_lib = ":fastq_proto",  # NO COPYBARA
+)
