@@ -238,7 +238,11 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
 VcfReader::VcfReader(const string& variants_path,
                      const VcfReaderOptions& options, htsFile* fp,
                      bcf_hdr_t* header, tbx_t* idx)
-    : options_(options), fp_(fp), header_(header), idx_(idx) {
+    : options_(options),
+      fp_(fp),
+      header_(header),
+      idx_(idx),
+      record_converter_(options_.desired_format_entries()) {
   if (header_->nhrec < 1) {
     LOG(WARNING) << "Empty header, not a valid VCF.";
     return;
@@ -372,8 +376,8 @@ StatusOr<bool> VcfQueryIterable::Next(Variant* out) {
     return tf::errors::DataLoss(StrCat("Failed to parse VCF record: ", str_.s));
   }
   const VcfReader* reader = static_cast<const VcfReader*>(reader_);
-  TF_RETURN_IF_ERROR(ConvertToPb(
-      header_, bcf1_, reader->Options().desired_format_entries(), out));
+  TF_RETURN_IF_ERROR(
+      reader->RecordConverter().ConvertToPb(header_, bcf1_, out));
   return true;
 }
 
@@ -402,14 +406,14 @@ StatusOr<bool> VcfFullFileIterable::Next(Variant* out) {
   TF_RETURN_IF_ERROR(CheckIsAlive());
   if (bcf_read(fp_, header_, bcf1_) < 0) {
     if (bcf1_->errcode) {
-      return tf::errors::DataLoss(StrCat("Failed to parse VCF record"));
+      return tf::errors::DataLoss("Failed to parse VCF record");
     } else {
       return false;
     }
   }
   const VcfReader* reader = static_cast<const VcfReader*>(reader_);
-  TF_RETURN_IF_ERROR(ConvertToPb(
-      header_, bcf1_, reader->Options().desired_format_entries(), out));
+  TF_RETURN_IF_ERROR(
+      reader->RecordConverter().ConvertToPb(header_, bcf1_, out));
   return true;
 }
 

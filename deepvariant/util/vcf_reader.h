@@ -33,8 +33,6 @@
 #ifndef THIRD_PARTY_NUCLEUS_UTIL_VCF_READER_H_
 #define THIRD_PARTY_NUCLEUS_UTIL_VCF_READER_H_
 
-#include "deepvariant/util/reader_base.h"
-
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htslib/tbx.h"
@@ -44,6 +42,8 @@
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/genomics/vcf.pb.h"
+#include "deepvariant/util/reader_base.h"
+#include "deepvariant/util/vcf_conversion.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -141,6 +141,11 @@ class VcfReader : public Reader {
   // not use it! Returns a Status indicating whether the enter was successful.
   tensorflow::Status PythonEnter() const { return tensorflow::Status::OK(); }
 
+  // Access to the record converter.
+  const VcfRecordConverter& RecordConverter() const {
+    return record_converter_;
+  }
+
  private:
   VcfReader(const string& variants_path, const VcfReaderOptions& options,
             htsFile* fp, bcf_hdr_t* header, tbx_t* idx);
@@ -161,6 +166,9 @@ class VcfReader : public Reader {
   // The VcfHeader data structure that represents the information in the header
   // of the VCF.
   nucleus::genomics::v1::VcfHeader vcf_header_;
+
+  // Object for converting VCF records to to Variant proto.
+  VcfRecordConverter record_converter_;
 };
 
 }  // namespace nucleus

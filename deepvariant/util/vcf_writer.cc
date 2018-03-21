@@ -34,8 +34,8 @@
 #include "deepvariant/util/vcf_writer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
-#include <math.h>
 
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
@@ -172,7 +172,11 @@ StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
 
 VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
                      const VcfWriterOptions& options, htsFile* fp)
-    : fp_(fp), options_(options), vcf_header_(header) {
+    : fp_(fp),
+      options_(options),
+      vcf_header_(header),
+      record_converter_(options_.desired_format_entries()) {
+
   CHECK(fp != nullptr);
 
   // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>
@@ -230,7 +234,8 @@ tf::Status VcfWriter::Write(const Variant& variant_message) {
   bcf1_t* v = bcf_init();
   if (v == nullptr)
     return tf::errors::Unknown("bcf_init call failed");
-  TF_RETURN_IF_ERROR(ConvertFromPb(variant_message, *header_, v));
+  TF_RETURN_IF_ERROR(
+      RecordConverter().ConvertFromPb(variant_message, *header_, v));
   if (options_.round_qual_values() && !bcf_float_is_missing(v->qual)) {
     // Round quality value printed out to one digit past the decimal point.
     double rounded_quality = floor(variant_message.quality() * 10 + 0.5) / 10;

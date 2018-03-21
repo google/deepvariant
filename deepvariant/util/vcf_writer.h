@@ -39,6 +39,7 @@
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/genomics/vcf.pb.h"
+#include "deepvariant/util/vcf_conversion.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/types.h"
@@ -79,6 +80,11 @@ class VcfWriter {
   // not use it!
   void PythonEnter() const {}
 
+  // Access to the record converter.
+  const VcfRecordConverter& RecordConverter() const {
+    return record_converter_;
+  }
+
  private:
   VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
             const VcfWriterOptions& options, htsFile* fp);
@@ -96,6 +102,9 @@ class VcfWriter {
 
   // A pointer to the VCF header object.
   bcf_hdr_t* header_;
+
+  // VCF record interconverter.
+  VcfRecordConverter record_converter_;
 };
 
 }  // namespace nucleus

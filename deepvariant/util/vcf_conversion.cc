@@ -42,6 +42,11 @@ namespace nucleus {
 
 namespace {
 
+// -----------------------------------------------------------------------------
+// "Raw" low-level interface to encoding/decoding to FORMAT fields.  We use
+// these directly for FORMAT fields that have special semantics and so cannot be
+// handled by VcfFormatFieldAdapter.
+
 // Read in one of the format tags for a variant line of a VCF file, and return
 // a vector of vectors, where each subvector records values for a single sample.
 // An empty subvector represents that the field is "missing" for this sample.
@@ -109,14 +114,6 @@ std::vector<string> ReadFormatStrings(const bcf_hdr_t* h, const bcf1_t* v,
   return values;
 }
 
-static const std::map<string, int>* FIELD_TYPE = new std::map<string, int>({
-    {"AD", BCF_HT_INT},
-    {"DP", BCF_HT_INT},
-    {"MIN_DP", BCF_HT_INT},
-    {"GQ", BCF_HT_INT},
-    {"VAF", BCF_HT_REAL},
-});
-
 // Sentinel value used to set variant.quality if one was not specified.
 constexpr double kQualUnset = -1;
 
@@ -141,7 +138,7 @@ int32_t vcfEncodeAllele(int pbAllele, bool isPhased) {
 //     an empty vector, it means the values are MISSING for this sample.
 //   - the subvectors of vv should all be the same length, except for potential
 //     empty subvectors
-// (This the inverse of the ReadFormatValues utility used by VcfReader)
+// (This the inverse of ReadFormatValues)
 template <class ValueType>
 tensorflow::Status EncodeFormatValues(
     const std::vector<std::vector<ValueType>>& values, const char* tag,
@@ -187,126 +184,97 @@ tensorflow::Status EncodeFormatValues(
   return VT::PutFormatValues(tag, flat_values.data(), flat_values.size(), h, v);
 }
 
-// Private helper class for encoding VariantCall.info values in VCF FORMAT
-// field values.
-//
-// The standard was to interact with this class is:
-//
-// Create an adaptor for an .info map key "DP".
-// FormatFieldAdapter adapter("DP");
-//
-// For each variant, we check if we need to encode values.
-// if (adapter.IsPresentInAnyVariantCalls(variant)) {
-//   // And if so, encode them into our htslib bcf_record passing in the
-//   // required htslib header object as well.
-//   EncodeValues(variant, header, bcf_record);
-// }
-//
-// redacted
-// code to other data types. This code isn't templated on purpose, because we
-// don't in fact know the proper types in C++ at compile time. We need to look
-// up the type in the VCF header, and handle the including datatype based on the
-// info in the header. We should look up information in the header when these
-// are constructed, and then go through our VariantCall fields to fetch the
-// appropriate data and get the appropriate values from our info fields here.
-class FormatFieldAdapter {
- public:
-  // Creates a new adapter for a field name field_name.
-  explicit FormatFieldAdapter(const string& field_name)
-      : field_name_(field_name) {}
-
-  // Returns true if the format field field_name occurs in any VariantCall.info
-  // maps present in Variant.
-  bool IsPresentInAnyVariantCalls(
-      const nucleus::genomics::v1::Variant& variant) const {
-    for (const nucleus::genomics::v1::VariantCall& vc : variant.calls()) {
-      if (vc.info().find(field_name_) != vc.info().end()) return true;
-    }
-    return false;
-  }
-
-  // Adds the values for our field_name from variant's calls into our bcf1_t
-  // record bcf_record.
-  //
-  // This function supports both single value (DP) and multi-value (AD) info
-  // fields.
-  //
-  // This function only works if the values in the VariantCall info maps don't
-  // need to be modified in any way before adding them to the bcf_record. For
-  // example, if DP in the VariantCall.info["DP"] map is 10, then we will write
-  // a 10 in the bcf_record for the DP field. An example of a field that isn't
-  // support by this class is the repeated genotype_likelihood field in the
-  // VariantCall proto. These aren't stored in the info field, but are inlined
-  // directly in the proto, even though they are written to the FORMAT field
-  // in VCF.
-  //
-  // WARNING: This code currently assumes that all field values are real
-  // numbers for "VAF" field. For all other field, it assumes the field values
-  // are integers.
-  template <class T>
-  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
-                                  const bcf_hdr_t* header, uint32_t header_type,
-                                  bcf1_t* bcf_record) const {
-    const int id = bcf_hdr_id2int(header, BCF_HL_FLT, field_name_.c_str());
-    if (id < 0)
-      return tensorflow::errors::FailedPrecondition(tensorflow::strings::StrCat(
-          "Field ", field_name_, " not in the VCF header"));
-    if (bcf_hdr_id2type(header, BCF_HL_FMT, id) != header_type)
-      return tensorflow::errors::FailedPrecondition(tensorflow::strings::StrCat(
-          "Field ", field_name_,
-          " isn't the right type. Expected header_type: ", header_type));
-
-    const int n_calls = variant.calls().size();
-    std::vector<std::vector<T>> values(n_calls, std::vector<T>{});
-    for (int i = 0; i < n_calls; ++i) {
-      const nucleus::genomics::v1::VariantCall& vc = variant.calls(i);
-      auto found = vc.info().find(field_name_);
-      if (found != vc.info().end()) {
-        for (auto& list_value : (*found).second.values()) {
-          if (std::is_integral<T>::value) {
-            values[i].push_back(list_value.int_value());
-          } else {
-            values[i].push_back(list_value.number_value());
-          }
-        }
-      }
-      // Since we don't have a field_name_ key/value pair in this sample, we
-      // just leave the values[i] empty.
-    }
-
-    // Encode the values from our vector into the htslib bcf_t record.
-    return EncodeFormatValues(values, field_name_.c_str(), header, bcf_record);
-  }
-
-  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
-                                  const bcf_hdr_t* header,
-                                  bcf1_t* bcf_record) const {
-    if (FIELD_TYPE->count(field_name_) <= 0)
-      return tensorflow::errors::FailedPrecondition(tensorflow::strings::StrCat(
-          "Field ", field_name_, " not in the FIELD_TYPE map."));
-    int header_type = FIELD_TYPE->find(field_name_)->second;
-    if (header_type == BCF_HT_REAL) {
-      return EncodeValues<float>(variant, header, header_type, bcf_record);
-    } else if (header_type == BCF_HT_INT) {
-      return EncodeValues<int>(variant, header, header_type, bcf_record);
-    } else {
-      return tensorflow::errors::FailedPrecondition(tensorflow::strings::StrCat(
-          "Unrecognized type for field ", field_name_));
-    }
-    return tensorflow::Status::OK();
-  }
-
-  // The name of our field, such as "DP", "AD", or "VAF".
-  const string field_name_;
-};
 
 }  // namespace
 
-// Parses the htslib VCF record v into Variant protobuf variant_message.
-tensorflow::Status ConvertToPb(
+// -----------------------------------------------------------------------------
+// VcfFormatFieldAdapter implemenation.
+
+VcfFormatFieldAdapter::VcfFormatFieldAdapter(const string& field_name,
+                                             int vcf_type)
+    : field_name_(field_name), vcf_type_(vcf_type) {}
+
+bool VcfFormatFieldAdapter::IsPresentInAnyVariantCalls(
+    const nucleus::genomics::v1::Variant& variant) const {
+  for (const nucleus::genomics::v1::VariantCall& vc : variant.calls()) {
+    if (vc.info().find(field_name_) != vc.info().end()) return true;
+  }
+  return false;
+}
+
+tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
+    const nucleus::genomics::v1::Variant& variant,
+    const bcf_hdr_t* header,
+    bcf1_t* bcf_record) const {
+
+  if (vcf_type_ == BCF_HT_REAL) {
+    return EncodeValues<float>(variant, header, bcf_record);
+  } else if (vcf_type_ == BCF_HT_INT) {
+    return EncodeValues<int>(variant, header, bcf_record);
+  } else {
+    // redacted
+    return tensorflow::errors::FailedPrecondition(
+        "Unrecognized type for field ", field_name_);
+  }
+  return tensorflow::Status::OK();
+}
+
+template <class T> tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
+    const nucleus::genomics::v1::Variant& variant,
+    const bcf_hdr_t* header,
+    bcf1_t* bcf_record) const {
+
+  const int id = bcf_hdr_id2int(header, BCF_HL_FLT, field_name_.c_str());
+  if (id < 0)
+      return tensorflow::errors::FailedPrecondition(
+      "Field ", field_name_, " not in the VCF header");
+  if (bcf_hdr_id2type(header, BCF_HL_FMT, id) != vcf_type_)
+      return tensorflow::errors::FailedPrecondition(
+      "Field ", field_name_,
+      " isn't the right type. Expected header_type: ", vcf_type_);
+
+  const int n_calls = variant.calls().size();
+  std::vector<std::vector<T>> values(n_calls, std::vector<T>{});
+  for (int i = 0; i < n_calls; ++i) {
+    const nucleus::genomics::v1::VariantCall& vc = variant.calls(i);
+    auto found = vc.info().find(field_name_);
+    if (found != vc.info().end()) {
+      for (auto& list_value : (*found).second.values()) {
+        if (std::is_integral<T>::value) {
+          values[i].push_back(list_value.int_value());
+        } else {
+          values[i].push_back(list_value.number_value());
+        }
+      }
+    }
+    // Since we don't have a field_name_ key/value pair in this sample, we
+    // just leave the values[i] empty.
+  }
+
+  // Encode the values from our vector into the htslib bcf_t record.
+  return EncodeFormatValues(values, field_name_.c_str(), header, bcf_record);
+}
+
+
+
+
+// -----------------------------------------------------------------------------
+// VcfRecordConverter implementation.
+
+VcfRecordConverter::VcfRecordConverter(
+    const OptionalVariantFieldsToParse& desired_format_entries)
+    // redacted
+    : format_adapters_({VcfFormatFieldAdapter("GQ", BCF_HT_INT),
+                        VcfFormatFieldAdapter("DP", BCF_HT_INT),
+                        VcfFormatFieldAdapter("MIN_DP", BCF_HT_INT),
+                        VcfFormatFieldAdapter("AD", BCF_HT_INT),
+                        VcfFormatFieldAdapter("VAF", BCF_HT_REAL)}),
+      desired_format_entries_(desired_format_entries) {}
+
+tensorflow::Status VcfRecordConverter::ConvertToPb(
     const bcf_hdr_t* h, bcf1_t* v,
-    const OptionalVariantFieldsToParse& desired_format_entries,
-    nucleus::genomics::v1::Variant* variant_message) {
+    nucleus::genomics::v1::Variant* variant_message) const {
+
   CHECK(h != nullptr) << "BCF header cannot be null";
   CHECK(v != nullptr) << "bcf1_t record cannot be null";
   CHECK(variant_message != nullptr) << "variant_message record cannot be null";
@@ -348,13 +316,13 @@ tensorflow::Status ConvertToPb(
     variant_message->add_filter(h->id[BCF_DT_ID][v->d.flt[i]].key);
   }
 
-  bool want_gq = !desired_format_entries.exclude_genotype_quality();
-  bool want_ll = !desired_format_entries.exclude_genotype_likelihood();
-  bool want_gt = !desired_format_entries.exclude_genotype();
-  bool want_ad = !desired_format_entries.exclude_allele_depth();
-  bool want_dp = !desired_format_entries.exclude_read_depth();
-  bool want_min_dp = !desired_format_entries.exclude_min_read_depth();
-  bool want_vaf = !desired_format_entries.exclude_variant_allele_frequencies();
+  bool want_gq = !desired_format_entries_.exclude_genotype_quality();
+  bool want_ll = !desired_format_entries_.exclude_genotype_likelihood();
+  bool want_gt = !desired_format_entries_.exclude_genotype();
+  bool want_ad = !desired_format_entries_.exclude_allele_depth();
+  bool want_dp = !desired_format_entries_.exclude_read_depth();
+  bool want_min_dp = !desired_format_entries_.exclude_min_read_depth();
+  bool want_vaf = !desired_format_entries_.exclude_variant_allele_frequencies();
 
   // Parse the calls of the variant.
   if (v->n_sample > 0) {
@@ -444,10 +412,11 @@ tensorflow::Status ConvertToPb(
   return tensorflow::Status::OK();
 }
 
-// Parses the Variant protobuf variant_message into an htslib VCF record
-tensorflow::Status ConvertFromPb(
+
+tensorflow::Status VcfRecordConverter::ConvertFromPb(
     const nucleus::genomics::v1::Variant& variant_message, const bcf_hdr_t& h,
-    bcf1_t* v) {
+    bcf1_t* v) const {
+
   CHECK(v != nullptr) << "bcf1_t record cannot be null";
 
   v->rid = bcf_hdr_name2id(&h, variant_message.reference_name().c_str());
@@ -536,12 +505,11 @@ tensorflow::Status ConvertFromPb(
             "Too many genotypes given the ploidy");
       if (vc.call_set_name() != h.samples[c])
         return tensorflow::errors::FailedPrecondition(
-            tensorflow::strings::StrCat(
-                "Out-of-order call set names, or unrecognized call set name, "
-                "with respect to samples declared in VCF header. Variant has ",
-                vc.call_set_name(), " at position ", c,
-                " while the VCF header expected a sample named ",
-                h.samples[c], " at this position"));
+          "Out-of-order call set names, or unrecognized call set name, "
+          "with respect to samples declared in VCF header. Variant has ",
+          vc.call_set_name(), " at position ", c,
+          " while the VCF header expected a sample named ",
+          h.samples[c], " at this position");
 
       const bool isPhased = !vc.phaseset().empty();
       int a = 0;
@@ -563,14 +531,7 @@ tensorflow::Status ConvertFromPb(
       }
     }
 
-    // The order of adapter definitions here determines the order of the fields
-    // in the VCF.
-    std::vector<FormatFieldAdapter> format_field_adapters = {
-        FormatFieldAdapter("GQ"),     FormatFieldAdapter("DP"),
-        FormatFieldAdapter("MIN_DP"), FormatFieldAdapter("AD"),
-        FormatFieldAdapter("VAF"),
-    };
-    for (const FormatFieldAdapter& field : format_field_adapters) {
+    for (const VcfFormatFieldAdapter& field : format_adapters_) {
       if (field.IsPresentInAnyVariantCalls(variant_message)) {
         TF_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
       }
