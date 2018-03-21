@@ -86,7 +86,7 @@ message Allele {
 
   // The number of times this Allele was seen in the NGS data. The count
   // should be >= 0, where 0 indicates that no observations of the allele
-  // where observed (which can happen if you want to record that you checked
+  // were observed (which can happen if you want to record that you checked
   // for some allele in the data and never saw any evidence for it).
   int32 count = 3;
 }
@@ -185,7 +185,7 @@ message Allele {
 //
 // coverage =
 //    // reads supporting an observed alternate allele.
-//    sum(read_allele_i.count)      // [also equal to read_allele_size()]
+//    sum(read_allele_i.count)      // [also equal to read_alleles_size()]
 //    // All of the reads confidently asserting reference.
 //    + ref_supporting_read_count
 //    // All of the reads supporting ref without a confident alignment.
@@ -420,7 +420,7 @@ message PileupImageOptions {
 }
 
 
-// High-level options that encapsolates all of the parameters needed to run
+// High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
 // Next ID: 28.
 message DeepVariantOptions {
