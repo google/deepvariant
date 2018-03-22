@@ -125,55 +125,48 @@ struct VcfType<float> {
 
 // -----------------------------------------------------------------------------
 // Helper class for encoding VariantCall.info values in VCF FORMAT field values.
+// This class is only intended for use with FORMAT fields that can be directly
+// mapped between a VCF record and the FORMAT info dictionary, without special
+// logic.  Where special logic is needed (e.g. for GT, GL/PL, etc.), the lower
+// level functions `ReadFormatValues` and `EncodeFormatValues` are called
+// directly.
 //
 // The standard way to interact with this class is:
 //
 // Create an adaptor for an .info map key "DP".
-// FormatFieldAdapter adapter("DP");
+//   FormatFieldAdapter adapter("DP");
 //
-// For each variant, we check if we need to encode values.
-// if (adapter.IsPresentInAnyVariantCalls(variant)) {
-//   // And if so, encode them into our htslib bcf_record passing in the
-//   // required htslib header object as well.
+// For each variant, we encode this format field into the vcf record as follows:
 //   adapter.EncodeValues(variant, header, bcf_record);
-// }
+//
 class VcfFormatFieldAdapter {
  public:
   // Creates a new adapter for a field name field_name.
-  explicit VcfFormatFieldAdapter(const string& field_name, int vcf_type);
-
-  // Returns true if the format field field_name occurs in any VariantCall.info
-  // maps present in Variant.
-  bool IsPresentInAnyVariantCalls(
-      const nucleus::genomics::v1::Variant& variant) const;
+  VcfFormatFieldAdapter(const string& field_name, int vcf_type);
 
   // Adds the values for our field_name from variant's calls into our bcf1_t
   // record bcf_record.
-  //
-  // This function supports both single value (DP) and multi-value (AD) info
-  // fields.
-  //
-  // This function only works if the values in the VariantCall info maps don't
-  // need to be modified in any way before adding them to the bcf_record. For
-  // example, if DP in the VariantCall.info["DP"] map is 10, then we will write
-  // a 10 in the bcf_record for the DP field. An example of a field that isn't
-  // supported by this class is the repeated genotype_likelihood field in the
-  // VariantCall proto. These aren't stored in the info field, but are inlined
-  // directly in the proto, even though they are written to the FORMAT field
-  // in VCF.
-  //
-  // WARNING: This code currently assumes that all field values are real
-  // numbers for "VAF" field. For all other field, it assumes the field values
-  // are integers.
   tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
                                   const bcf_hdr_t* header,
                                   bcf1_t* bcf_record) const;
+
+  // Add the values for this genotype field in the bcf1_t `bcf_record` to the
+  // VariantCall info maps within this Variant proto message `variant`.
+  tensorflow::Status DecodeValues(
+      const bcf_hdr_t *header, const bcf1_t *bcf_record,
+      nucleus::genomics::v1::Variant *variant) const;
 
  private:  // Non-API methods
   template <class T>
   tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
                                   const bcf_hdr_t* header,
                                   bcf1_t* bcf_record) const;
+
+  template <class T>
+  tensorflow::Status DecodeValues(
+      const bcf_hdr_t *header, const bcf1_t *bcf_record,
+      nucleus::genomics::v1::Variant *variant) const;
+
 
  private:  // Fields
   // The name of our field, such as "DP", "AD", or "VAF".
@@ -186,9 +179,13 @@ class VcfFormatFieldAdapter {
 // Helper class for converting between Variant proto messages and VCF records.
 class VcfRecordConverter {
  public:
-  // Constructor.
+  // Primary constructor.
   VcfRecordConverter(
-      const OptionalVariantFieldsToParse &desired_format_entries);
+      const nucleus::genomics::v1::VcfHeader& vcf_header,
+      const OptionalVariantFieldsToParse& desired_format_entries);
+
+  // Not the constructor you want.
+  VcfRecordConverter() = default;
 
   // Convert a VCF line parsed by htslib into a Variant protocol buffer.
   // The parsed line is passed in v, and the parsed header is in h.
@@ -206,10 +203,10 @@ class VcfRecordConverter {
   // Lookup table for genotype field adapters by VCF tag name.
   // The order of adapter definitions here determines the order of the fields
   // in a written VCF.
-  const std::vector<VcfFormatFieldAdapter> format_adapters_;
+  std::vector<VcfFormatFieldAdapter> format_adapters_;
   // Configuration of the FORMAT entries should we parse in from, or write out
   // to, VCF.
-  const OptionalVariantFieldsToParse desired_format_entries_;
+  OptionalVariantFieldsToParse desired_format_entries_;
 };
 
 }  // namespace nucleus

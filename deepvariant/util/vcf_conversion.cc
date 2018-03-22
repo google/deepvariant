@@ -194,13 +194,6 @@ VcfFormatFieldAdapter::VcfFormatFieldAdapter(const string& field_name,
                                              int vcf_type)
     : field_name_(field_name), vcf_type_(vcf_type) {}
 
-bool VcfFormatFieldAdapter::IsPresentInAnyVariantCalls(
-    const nucleus::genomics::v1::Variant& variant) const {
-  for (const nucleus::genomics::v1::VariantCall& vc : variant.calls()) {
-    if (vc.info().find(field_name_) != vc.info().end()) return true;
-  }
-  return false;
-}
 
 tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
     const nucleus::genomics::v1::Variant& variant,
@@ -219,19 +212,12 @@ tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
   return tensorflow::Status::OK();
 }
 
+// redacted
+// the intermediate vectors contain variant objects (Value).
 template <class T> tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
     const nucleus::genomics::v1::Variant& variant,
     const bcf_hdr_t* header,
     bcf1_t* bcf_record) const {
-
-  const int id = bcf_hdr_id2int(header, BCF_HL_FLT, field_name_.c_str());
-  if (id < 0)
-      return tensorflow::errors::FailedPrecondition(
-      "Field ", field_name_, " not in the VCF header");
-  if (bcf_hdr_id2type(header, BCF_HL_FMT, id) != vcf_type_)
-      return tensorflow::errors::FailedPrecondition(
-      "Field ", field_name_,
-      " isn't the right type. Expected header_type: ", vcf_type_);
 
   const int n_calls = variant.calls().size();
   std::vector<std::vector<T>> values(n_calls, std::vector<T>{});
@@ -256,20 +242,83 @@ template <class T> tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
 }
 
 
+tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
+    const bcf_hdr_t* header, const bcf1_t* bcf_record,
+    nucleus::genomics::v1::Variant* variant) const {
 
+  if (vcf_type_ == BCF_HT_REAL) {
+    return DecodeValues<float>(header, bcf_record, variant);
+  } else if (vcf_type_ == BCF_HT_INT) {
+    return DecodeValues<int>(header, bcf_record, variant);
+  } else {
+    // redacted
+    return tensorflow::errors::FailedPrecondition(
+        "Unrecognized type for field ", field_name_);
+  }
+  return tensorflow::Status::OK();
+}
+
+template <class T> tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
+    const bcf_hdr_t *header, const bcf1_t *bcf_record,
+    nucleus::genomics::v1::Variant *variant) const {
+
+  if (bcf_record->n_sample > 0) {
+    std::vector<std::vector<T>> values =
+        ReadFormatValues<T>(header, bcf_record, field_name_.c_str());
+    for (int i = 0; i < bcf_record->n_sample; i++) {
+      // Is the format field present for this variant, *and* non-missing for
+      // this sample?
+      bool have_field = !values.empty() && !values[i].empty();
+      if (have_field) {
+        nucleus::genomics::v1::VariantCall* call = variant->mutable_calls(i);
+        SetInfoField(field_name_, values[i], call);
+      }
+    }
+  }
+  return tensorflow::Status::OK();
+}
 
 // -----------------------------------------------------------------------------
 // VcfRecordConverter implementation.
 
 VcfRecordConverter::VcfRecordConverter(
+    const nucleus::genomics::v1::VcfHeader& vcf_header,
     const OptionalVariantFieldsToParse& desired_format_entries)
+    : desired_format_entries_(desired_format_entries)
+{
+  for (const auto& format_spec : vcf_header.formats()) {
+    string tag = format_spec.id();
+    string type = format_spec.type();
+
+    // These fields are handled specially.
+    if (tag == "GT" || tag == "GL" || tag == "PL" || tag == "PS") continue;
+
+    // Check if configuration has disabled this FORMAT field.
+    if ((tag == "GQ" && desired_format_entries_.exclude_genotype_quality()) ||
+        (tag == "AD" && desired_format_entries_.exclude_allele_depth()) ||
+        (tag == "DP" && desired_format_entries_.exclude_read_depth()) ||
+        (tag == "VAF" &&
+         desired_format_entries_.exclude_variant_allele_frequencies()) ||
+        (tag == "MIN_DP" && desired_format_entries_.exclude_allele_depth())) {
+      continue;
+    }
+
     // redacted
-    : format_adapters_({VcfFormatFieldAdapter("GQ", BCF_HT_INT),
-                        VcfFormatFieldAdapter("DP", BCF_HT_INT),
-                        VcfFormatFieldAdapter("MIN_DP", BCF_HT_INT),
-                        VcfFormatFieldAdapter("AD", BCF_HT_INT),
-                        VcfFormatFieldAdapter("VAF", BCF_HT_REAL)}),
-      desired_format_entries_(desired_format_entries) {}
+    int vcf_type;
+    if (type == "Integer") {
+      vcf_type = BCF_HT_INT;
+    } else if (type == "Float") {
+      vcf_type = BCF_HT_REAL;
+    } else {
+      // redacted
+      LOG(WARNING) << "Unhandled FORMAT field type: field " << tag
+                   << " of type " << type;
+      continue;
+    }
+    format_adapters_.emplace_back(tag, vcf_type);
+  }
+}
+
 
 tensorflow::Status VcfRecordConverter::ConvertToPb(
     const bcf_hdr_t* h, bcf1_t* v,
@@ -316,13 +365,8 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     variant_message->add_filter(h->id[BCF_DT_ID][v->d.flt[i]].key);
   }
 
-  bool want_gq = !desired_format_entries_.exclude_genotype_quality();
   bool want_ll = !desired_format_entries_.exclude_genotype_likelihood();
   bool want_gt = !desired_format_entries_.exclude_genotype();
-  bool want_ad = !desired_format_entries_.exclude_allele_depth();
-  bool want_dp = !desired_format_entries_.exclude_read_depth();
-  bool want_min_dp = !desired_format_entries_.exclude_min_read_depth();
-  bool want_vaf = !desired_format_entries_.exclude_variant_allele_frequencies();
 
   // Parse the calls of the variant.
   if (v->n_sample > 0) {
@@ -347,45 +391,28 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     }
     free(gt_arr);
 
-    // Augment the calls with extra information described in FORMAT
-    std::vector<std::vector<int>> ad_values = ReadFormatValues<int>(h, v, "AD");
-    std::vector<std::vector<int>> dp_values = ReadFormatValues<int>(h, v, "DP");
-    std::vector<std::vector<int>> min_dp_values =
-        ReadFormatValues<int>(h, v, "MIN_DP");
-    std::vector<std::vector<int>> gq_values = ReadFormatValues<int>(h, v, "GQ");
+    // Parse "generic" FORMAT fields.
+    for (const auto& adapter : format_adapters_) {
+      TF_RETURN_IF_ERROR(adapter.DecodeValues(h, v, variant_message));
+    }
+
+    // Handle FORMAT fields requiring special logic.
     std::vector<std::vector<int>> pl_values = ReadFormatValues<int>(h, v, "PL");
     std::vector<std::vector<float>> gl_values =
         ReadFormatValues<float>(h, v, "GL");
+    // redacted
     std::vector<string> ps_values = ReadFormatStrings(h, v, "PS");
-    std::vector<std::vector<float>> vaf_values =
-        ReadFormatValues<float>(h, v, "VAF");
 
     for (int i = 0; i < v->n_sample; i++) {
       // Each indicator here is true iff the format field is present for this
       // variant, *and* is non-missing for this sample.
-      bool have_ad = !ad_values.empty() && !ad_values[i].empty();
-      bool have_dp = !dp_values.empty() && !dp_values[i].empty();
-      bool have_min_dp = !min_dp_values.empty() && !min_dp_values[i].empty();
-      bool have_gq = !gq_values.empty() && !gq_values[i].empty();
       bool have_gl = !gl_values.empty() && !gl_values[i].empty();
       bool have_pl = !pl_values.empty() && !pl_values[i].empty();
       bool have_ps = !ps_values.empty() && !ps_values[i].empty();
-      bool have_vaf = !vaf_values.empty() && !vaf_values[i].empty();
 
       nucleus::genomics::v1::VariantCall* call =
           variant_message->mutable_calls(i);
-      if (want_ad && have_ad) {
-        SetInfoField("AD", ad_values[i], call);
-      }
-      if (want_dp && have_dp) {
-        SetInfoField("DP", dp_values[i][0], call);
-      }
-      if (want_min_dp && have_min_dp) {
-        SetInfoField("MIN_DP", min_dp_values[i][0], call);
-      }
-      if (want_gq && have_gq) {
-        SetInfoField("GQ", gq_values[i][0], call);
-      }
+
       if (want_ll) {
         // If GL and PL are *both* present, we populate the genotype_likelihood
         // fields with the GL values per the variants.proto spec, since PLs are
@@ -403,9 +430,6 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
       // Don't add the missing "." marker to the phaseset field.
       if (have_ps && ps_values[i] != ".") {
         call->set_phaseset(ps_values[i]);
-      }
-      if (want_vaf && have_vaf) {
-        SetInfoField("VAF", vaf_values[i], call);
       }
     }
   }
@@ -532,9 +556,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
     }
 
     for (const VcfFormatFieldAdapter& field : format_adapters_) {
-      if (field.IsPresentInAnyVariantCalls(variant_message)) {
-        TF_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
-      }
+      TF_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
     }
 
     std::vector<std::vector<int>> ll_values_phred;

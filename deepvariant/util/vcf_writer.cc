@@ -175,7 +175,7 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
     : fp_(fp),
       options_(options),
       vcf_header_(header),
-      record_converter_(options_.desired_format_entries()) {
+      record_converter_(vcf_header_, options_.desired_format_entries()) {
 
   CHECK(fp != nullptr);
 

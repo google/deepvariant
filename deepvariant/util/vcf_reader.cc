@@ -238,11 +238,7 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
 VcfReader::VcfReader(const string& variants_path,
                      const VcfReaderOptions& options, htsFile* fp,
                      bcf_hdr_t* header, tbx_t* idx)
-    : options_(options),
-      fp_(fp),
-      header_(header),
-      idx_(idx),
-      record_converter_(options_.desired_format_entries()) {
+    : options_(options), fp_(fp), header_(header), idx_(idx) {
   if (header_->nhrec < 1) {
     LOG(WARNING) << "Empty header, not a valid VCF.";
     return;
@@ -296,6 +292,8 @@ VcfReader::VcfReader(const string& variants_path,
   for (int i = 0; i < n_samples; i++) {
     vcf_header_.add_sample_names(header_->samples[i]);
   }
+  record_converter_ =
+      VcfRecordConverter(vcf_header_, options.desired_format_entries());
 }
 
 VcfReader::~VcfReader() {

@@ -40,7 +40,7 @@ message OptionalVariantFieldsToParse {
   // default behavior.
   bool exclude_genotype = 1;
   bool exclude_genotype_likelihood = 2;
-  bool exclude_genotype_quality = 3;
+  bool exclude_genotype_quality = 3;  // "GQ" in FORMAT
   bool exclude_allele_depth = 4;  // "AD" in FORMAT
   bool exclude_read_depth = 5;  // "DP" in FORMAT
   bool exclude_variant_allele_frequencies = 6;  // "VAF" in FORMAT
