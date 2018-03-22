@@ -864,3 +864,48 @@ def variants_are_sorted(variants):
     if r2 < r1:
       return False
   return True
+
+
+def set_info(variant, field_name, value, vcf_object=None):
+  """Sets a field of the info map of the `Variant` to the given value(s).
+
+  `variant.info` is analogous to the INFO field of a VCF record.
+
+  Args:
+    variant: Variant proto. The Variant to modify.
+    field_name: str. The name of the field to set.
+    value: A single value or list of values to update the Variant with. The type
+      of the value is determined by the `vcf_object` if one is given, otherwise
+      is looked up based on the reserved INFO fields in the VCF specification.
+    vcf_object: (Optional) nucleus.io.vcf.Vcf{Reader,Writer}. If not None, the
+      type of the field is inferred from the associated VcfReader or VcfWriter
+      based on its name. Otherwise, the type is inferred if it is a reserved
+      field.
+  """
+  if vcf_object is None:
+    set_field_fn = vcf_constants.reserved_info_field_set_fn(field_name)
+  else:
+    set_field_fn = vcf_object.field_access_cache.info_field_set_fn(field_name)
+  set_field_fn(variant.info, field_name, value)
+
+
+def get_info(variant, field_name, vcf_object=None):
+  """Returns the value of the `field_name` INFO field.
+
+  The `vcf_object` is used to determine the type of the resulting value. If it
+  is a single value or a Flag, that single value will be returned. Otherwise,
+  the list of values is returned.
+
+  Args:
+    variant: Variant proto. The Variant of interest.
+    field_name: str. The name of the field to retrieve values from.
+    vcf_object: (Optional) nucleus.io.vcf.Vcf{Reader,Writer}. If not None, the
+      type of the field is inferred from the associated VcfReader or VcfWriter
+      based on its name. Otherwise, the type is inferred if it is a reserved
+      field.
+  """
+  if vcf_object is None:
+    get_field_fn = vcf_constants.reserved_info_field_get_fn(field_name)
+  else:
+    get_field_fn = vcf_object.field_access_cache.info_field_get_fn(field_name)
+  return get_field_fn(variant.info, field_name)

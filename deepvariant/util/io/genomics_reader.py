@@ -122,6 +122,8 @@ class TFRecordReader(GenomicsReader):
         __init__ will create one with the compression type based on
         whether input_path ends in '.gz' or not.
     """
+    super(TFRecordReader, self).__init__()
+
     self.input_path = input_path
     self.proto = proto
     self.header = None
@@ -133,7 +135,6 @@ class TFRecordReader(GenomicsReader):
           python_io.TFRecordCompressionType.NONE)
     self.tf_options = tf_options
 
-    super(TFRecordReader, self).__init__()
 
   def iterate(self):
     # redacted
@@ -161,6 +162,8 @@ class DispatchingGenomicsReader(GenomicsReader):
   """
 
   def __init__(self, input_path, **kwargs):
+    super(DispatchingGenomicsReader, self).__init__()
+
     if '.tfrecord' not in input_path and any(
         ext in input_path for ext in self._get_extensions()):
       self._reader = self._native_reader(input_path, **kwargs)
@@ -170,7 +173,6 @@ class DispatchingGenomicsReader(GenomicsReader):
     logging.info('Reading %s with %s',
                  input_path, self._reader.__class__.__name__)
     self.header = self._reader.header
-    super(DispatchingGenomicsReader, self).__init__()
 
   @abc.abstractmethod
   def _get_extensions(self):

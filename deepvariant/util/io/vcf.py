@@ -56,10 +56,74 @@ from deepvariant.util.io import genomics_writer
 from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util.genomics import vcf_pb2
+from deepvariant.util import vcf_constants
 from deepvariant.util.python import vcf_reader
 from deepvariant.util.python import vcf_writer
 
 _VCF_EXTENSIONS = frozenset(['.vcf'])
+
+
+def _create_get_fn_cache(fields):
+  """Returns a dictionary from field to a callable that extracts its value."""
+  return {
+      field.id: vcf_constants.create_get_fn(field.type, field.number)
+      for field in fields
+  }
+
+
+def _create_set_fn_cache(fields):
+  """Returns a dictionary from field to a callable that sets its value."""
+  return {field.id: vcf_constants.SET_FN_LOOKUP[field.type] for field in fields}
+
+
+class VcfHeaderCache(object):
+  """This class creates a cache of accessors to structured fields in Variants.
+
+  The INFO and FORMAT fields within Variant protos are structured and typed,
+  with types defined by the corresponding VCF header. This cache object provides
+  provides {info,format}_field_{get,set}_fn functions that can be used to
+  extract information from the structured Variant protos based on the types
+  defined therein.
+
+  Note: Users should not need to interact with this class at all. It is used
+  by the variant_utils.{get,set}_info and variantcall_utils.{get,set}_format
+  functions for interacting with the INFO and FORMAT fields in a Variant proto.
+  """
+
+  def __init__(self, header):
+    """Constructor.
+
+    Args:
+      header: nucleus.genomics.v1.VcfHeader proto. Used to define the accessor
+        functions needed.
+    """
+    self._info_get_cache = _create_get_fn_cache(header.infos)
+    self._info_set_cache = _create_set_fn_cache(header.infos)
+    self._format_get_cache = _create_get_fn_cache(header.formats)
+    self._format_set_cache = _create_set_fn_cache(header.formats)
+
+  def info_field_get_fn(self, field_name):
+    """Returns a callable that extracts the given INFO field based on its type.
+
+    Args:
+      field_name: str. The INFO field name of interest, e.g. 'AA', 'DB', 'AF'.
+
+    Returns:
+      A callable used to extract the given INFO field from a Variant proto.
+    """
+    return self._info_get_cache[field_name]
+
+  def info_field_set_fn(self, field_name):
+    """Returns a callable that sets the given INFO field based on its type."""
+    return self._info_set_cache[field_name]
+
+  def format_field_get_fn(self, field_name):
+    """Returns a callable that gets the given FORMAT field based on its type."""
+    return self._format_get_cache[field_name]
+
+  def format_field_set_fn(self, field_name):
+    """Returns a callable that sets the given FORMAT field based on its type."""
+    return self._format_set_cache[field_name]
 
 
 class NativeVcfReader(genomics_reader.GenomicsReader):
@@ -71,6 +135,8 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
   """
 
   def __init__(self, input_path, use_index=True, include_likelihoods=False):
+    super(NativeVcfReader, self).__init__()
+
     index_mode = index_pb2.INDEX_BASED_ON_FILENAME
     if not use_index:
       index_mode = index_pb2.DONT_USE_INDEX
@@ -90,7 +156,8 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
 
     self.header = self._reader.header
 
-    super(NativeVcfReader, self).__init__()
+    self.field_access_cache = VcfHeaderCache(self.header)
+
 
   def iterate(self):
     return self._reader.iterate()
@@ -114,6 +181,10 @@ class VcfReader(genomics_reader.DispatchingGenomicsReader):
   def _record_proto(self):
     return variants_pb2.Variant
 
+  @property
+  def field_access_cache(self):
+    return getattr(self._reader, 'field_access_cache', None)
+
 
 class NativeVcfWriter(genomics_writer.GenomicsWriter):
   """Class for writing to native VCF files.
@@ -134,13 +205,15 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
       round_qualities: bool. If True, the QUAL field is rounded to one point
         past the decimal.
     """
+    super(NativeVcfWriter, self).__init__()
+
     if header is None:
       header = variants_pb2.VcfHeader()
     writer_options = vcf_pb2.VcfWriterOptions(
         round_qual_values=round_qualities)
     self._writer = vcf_writer.VcfWriter.to_file(output_path, header,
                                                 writer_options)
-    super(NativeVcfWriter, self).__init__()
+    self.field_access_cache = VcfHeaderCache(header)
 
   def write(self, proto):
     self._writer.write(proto)
@@ -158,3 +231,7 @@ class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
   def _native_writer(self, output_path, header, round_qualities=False):
     return NativeVcfWriter(
         output_path, header=header, round_qualities=round_qualities)
+
+  @property
+  def field_access_cache(self):
+    return getattr(self._writer, 'field_access_cache', None)

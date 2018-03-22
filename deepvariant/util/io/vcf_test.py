@@ -32,8 +32,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -44,6 +42,71 @@ from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
 from tensorflow.python.platform import gfile
+
+
+class VcfHeaderCacheTests(parameterized.TestCase):
+  """Test the functionality of the VcfHeaderCache class."""
+
+  def setUp(self):
+    self.vcf_reader = vcf.VcfReader(
+        test_utils.genomics_core_testdata('test_sites.vcf'), use_index=False)
+    self.cache = self.vcf_reader.field_access_cache
+
+  @parameterized.parameters(
+      'DP',
+      'AF',
+      'END',
+      'ExcessHet',
+      'culprit',
+  )
+  def test_valid_info_get_funcs(self, field_name):
+    fn = self.cache.info_field_get_fn(field_name)
+    self.assertTrue(callable(fn))
+
+  @parameterized.parameters(
+      'DP',
+      'AF',
+      'END',
+      'ExcessHet',
+      'culprit',
+      'HaplotypeScore',
+      'InbreedingCoeff',
+  )
+  def test_valid_info_set_funcs(self, field_name):
+    fn = self.cache.info_field_set_fn(field_name)
+    self.assertTrue(callable(fn))
+
+  def test_invalid_info_funcs(self):
+    with self.assertRaises(KeyError):
+      self.cache.info_field_get_fn('RGQ')
+    with self.assertRaises(KeyError):
+      self.cache.info_field_set_fn('PID')
+
+  @parameterized.parameters(
+      'AD',
+      'DP',
+      'PID',
+      'RGQ',
+  )
+  def test_valid_format_get_funcs(self, field_name):
+    fn = self.cache.format_field_get_fn(field_name)
+    self.assertTrue(callable(fn))
+
+  @parameterized.parameters(
+      'AD',
+      'DP',
+      'PID',
+      'RGQ',
+  )
+  def test_valid_format_set_funcs(self, field_name):
+    fn = self.cache.format_field_set_fn(field_name)
+    self.assertTrue(callable(fn))
+
+  def test_invalid_format_funcs(self):
+    with self.assertRaises(KeyError):
+      self.cache.format_field_get_fn('culprit')
+    with self.assertRaises(KeyError):
+      self.cache.format_field_set_fn('ExcessHet')
 
 
 class VcfReaderTests(absltest.TestCase):

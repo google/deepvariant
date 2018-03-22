@@ -33,15 +33,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import functools
 import itertools
 
 from absl.testing import absltest
-from absl import logging
 from absl.testing import parameterized
 import mock
 
+from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
+from deepvariant.util import struct_utils
 from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 
@@ -673,6 +675,54 @@ class VariantUtilsTests(parameterized.TestCase):
     self.assertEqual(
         variant_utils.variant_key(variant, sort_alleles=sort_alleles),
         expected_key)
+
+  @parameterized.parameters(
+      dict(
+          field_name='AD',
+          value=[23, 25],
+          reader=None,
+          expected=[
+              struct_pb2.Value(int_value=23),
+              struct_pb2.Value(int_value=25)
+          ],
+      ),
+      dict(
+          field_name='AA',
+          value='C',
+          reader=True,
+          expected=[struct_pb2.Value(string_value='C')],
+      ),
+  )
+  def test_set_info(self, field_name, value, reader, expected):
+    if reader is not None:
+      reader = mock.Mock()
+      reader.field_access_cache.info_field_set_fn.return_value = (
+          struct_utils.set_string_field)
+    variant = variants_pb2.Variant()
+    variant_utils.set_info(variant, field_name, value, reader)
+    actual = variant.info[field_name].values
+    self.assertEqual(len(actual), len(expected))
+    for actual_elem, expected_elem in zip(actual, expected):
+      self.assertEqual(actual_elem, expected_elem)
+
+  @parameterized.parameters(
+      dict(field_name='AD', reader=None, expected=[23, 25]),
+      dict(field_name='AA', reader=True, expected='C'),
+      dict(field_name='1000G', reader=None, expected=True),
+  )
+  def test_get_info(self, field_name, reader, expected):
+    if reader is not None:
+      reader = mock.Mock()
+      reader.field_access_cache.info_field_get_fn.return_value = (
+          functools.partial(
+              struct_utils.get_string_field, is_single_field=True))
+    variant = variants_pb2.Variant()
+    variant_utils.set_info(variant, 'AD', [23, 25])
+    variant_utils.set_info(variant, 'AA', 'C')
+    variant_utils.set_info(variant, '1000G', True)
+    variant_utils.set_info(variant, 'DB', False)
+    actual = variant_utils.get_info(variant, field_name, vcf_object=reader)
+    self.assertEqual(actual, expected)
 
 
 if __name__ == '__main__':

@@ -42,31 +42,31 @@ _GL = 'GL'
 _GT = 'GT'
 
 
-def set_format(variant_call, field_name, value, vcf_header=None):
+def set_format(variant_call, field_name, value, vcf_object=None):
   """Sets a field of the info map of the `VariantCall` to the given value(s).
 
   `variant_call.info` is analogous to the FORMAT field of a VCF call.
 
   Example usage:
   with vcf.VcfReader('/path/to/my.vcf') as vcf_reader:
-    header = vcf_reader.header
     for variant in vcf_reader:
       first_call = variant.calls[0]
       # Type can be inferred for reserved VCF fields.
       set_format(first_call, 'AD', 25)
       # Specify the reader explicitly for unknown fields.
-      set_format(first_call, 'MYFIELD', 30, header)
+      set_format(first_call, 'MYFIELD', 30, vcf_reader)
 
   Args:
     variant_call: VariantCall proto. The VariantCall to modify.
     field_name: str. The name of the field to set.
     value: A single value or list of values to update the VariantCall with.
-      The type of the value is determined by the `vcf_reader` if one is given,
+      The type of the value is determined by the `vcf_object` if one is given,
       otherwise is looked up based on the reserved FORMAT fields in the VCF
       specification.
-    vcf_header: (Optional) nucleus.io.vcf.VcfHeader. If not None, the VcfHeader
-      is used to infer the type of the field based on its name. Otherwise, the
-      type is inferred if it is a reserved field.
+    vcf_object: (Optional) nucleus.io.vcf.Vcf{Reader,Writer}. If not None, the
+      type of the field is inferred from the associated VcfReader or VcfWriter
+      based on its name. Otherwise, the type is inferred if it is a reserved
+      field.
   """
   if field_name == _GL:
     set_gl(variant_call, value)
@@ -75,36 +75,37 @@ def set_format(variant_call, field_name, value, vcf_header=None):
     set_gt(variant_call, value)
     return
 
-  if vcf_header is None:
+  if vcf_object is None:
     set_field_fn = vcf_constants.reserved_format_field_set_fn(field_name)
   else:
-    set_field_fn = vcf_header.format_field_set_fn(field_name)
+    set_field_fn = vcf_object.field_access_cache.format_field_set_fn(field_name)
   set_field_fn(variant_call.info, field_name, value)
 
 
-def get_format(variant_call, field_name, vcf_header=None):
+def get_format(variant_call, field_name, vcf_object=None):
   """Returns the value of the `field_name` FORMAT field.
 
-  The `vcf_header` is used to determine the type of the resulting value. If it
+  The `vcf_object` is used to determine the type of the resulting value. If it
   is a single value or a Flag, that single value will be returned. Otherwise,
   the list of values is returned.
 
   Args:
     variant_call: VariantCall proto. The VariantCall of interest.
     field_name: str. The name of the field to retrieve values from.
-    vcf_header: (Optional) nucleus.io.vcf.VcfHeader. If not None, the VcfHeader
-      is used to infer the type of the field based on its name. Otherwise, the
-      type is inferred if it is a reserved field.
+    vcf_object: (Optional) nucleus.io.vcf.Vcf{Reader,Writer}. If not None, the
+      type of the field is inferred from the associated VcfReader or VcfWriter
+      based on its name. Otherwise, the type is inferred if it is a reserved
+      field.
   """
   if field_name == _GL:
     return get_gl(variant_call)
   if field_name == _GT:
     return get_gt(variant_call)
 
-  if vcf_header is None:
+  if vcf_object is None:
     get_field_fn = vcf_constants.reserved_format_field_get_fn(field_name)
   else:
-    get_field_fn = vcf_header.format_field_get_fn(field_name)
+    get_field_fn = vcf_object.field_access_cache.format_field_get_fn(field_name)
   return get_field_fn(variant_call.info, field_name)
 
 

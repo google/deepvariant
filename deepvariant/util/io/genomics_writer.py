@@ -80,12 +80,13 @@ class TFRecordWriter(GenomicsWriter):
   """A GenomicsWriter that writes to a TFRecord file."""
 
   def __init__(self, output_path):
+    super(TFRecordWriter, self).__init__()
+
     compressed = output_path.endswith('.gz')
     options = python_io.TFRecordOptions(
         python_io.TFRecordCompressionType.GZIP if compressed else
         python_io.TFRecordCompressionType.NONE)
     self._writer = python_io.TFRecordWriter(output_path, options=options)
-    super(TFRecordWriter, self).__init__()
 
   def write(self, proto):
     self._writer.write(proto.SerializeToString())
@@ -104,6 +105,8 @@ class DispatchingGenomicsWriter(GenomicsWriter):
   """
 
   def __init__(self, output_path, **kwargs):
+    super(DispatchingGenomicsWriter, self).__init__()
+
     if '.tfrecord' not in output_path and any(
         ext in output_path for ext in self._get_extensions()):
       self._writer = self._native_writer(output_path, **kwargs)
@@ -111,7 +114,6 @@ class DispatchingGenomicsWriter(GenomicsWriter):
       self._writer = TFRecordWriter(output_path)
     logging.info('Writing %s with %s',
                  output_path, self._writer.__class__.__name__)
-    super(DispatchingGenomicsWriter, self).__init__()
 
   @abc.abstractmethod
   def _get_extensions(self):
