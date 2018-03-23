@@ -71,8 +71,8 @@ cc_library(
     name = "zlib_compression_options",
     hdrs = ["zlib_compression_options.h"],
     deps = [
-        "//third_party/zlib:zlibsystem",
         "@org_tensorflow//tensorflow/core:lib",
+        "@zlib_archive//:zlib",
     ],
 )
 
@@ -81,8 +81,8 @@ cc_library(
     hdrs = ["zlib_inputstream.h"],
     deps = [
         ":zlib_compression_options",
-        "//third_party/zlib:zlibsystem",
         "@org_tensorflow//tensorflow/core:lib",
+        "@zlib_archive//:zlib",
     ],
 )
 
@@ -91,7 +91,7 @@ cc_library(
     hdrs = ["zlib_outputbuffer.h"],
     deps = [
         ":zlib_compression_options",
-        "//third_party/zlib:zlibsystem",
         "@org_tensorflow//tensorflow/core:lib",
+        "@zlib_archive//:zlib",
     ],
 )
