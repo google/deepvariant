@@ -63,3 +63,35 @@ cc_library(
         ":statusor",
     ],
 )
+
+# The zlib_* headers come from tensorflow/core/lib/io/.
+# The corresponding implementations are not included as that causes multiple
+# definition conflicts in the CLIF/Python readers.
+cc_library(
+    name = "zlib_compression_options",
+    hdrs = ["zlib_compression_options.h"],
+    deps = [
+        "//third_party/zlib:zlibsystem",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_library(
+    name = "zlib_inputstream",
+    hdrs = ["zlib_inputstream.h"],
+    deps = [
+        ":zlib_compression_options",
+        "//third_party/zlib:zlibsystem",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_library(
+    name = "zlib_outputbuffer",
+    hdrs = ["zlib_outputbuffer.h"],
+    deps = [
+        ":zlib_compression_options",
+        "//third_party/zlib:zlibsystem",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)

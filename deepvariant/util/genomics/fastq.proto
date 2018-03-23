@@ -28,10 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 syntax = "proto3";
 
-package nucleus;
+package nucleus.genomics.v1;
 
 // This message represents a single FASTQ record.
-message Fastq {
+message FastqRecord {
   // The first line of a FASTQ record begins with '@' and is followed by a
   // sequence identifier (up to the first whitespace character) and then an
   // optional description. This line is parsed into its constituent id and
@@ -51,4 +51,16 @@ message Fastq {
   // (-10 * log_10(Pr{call is incorrect})) but differs for some older versions
   // of FASTQs.
   string quality = 4;
+}
+
+message FastqReaderOptions {
+  enum CompressionType {
+    NONE = 0;
+    GZIP = 1;
+  }
+  CompressionType compression_type = 1;
+
+  // If true, simply drop invalid records. Otherwise, raise an error on invalid
+  // records.
+  bool skip_invalid_records = 2;
 }
