@@ -27,7 +27,6 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
 // Implementation of fastq_reader.h
@@ -43,6 +42,7 @@
 #include "tensorflow/core/lib/io/compression.h"
 #include "tensorflow/core/lib/io/random_inputstream.h"
 #include "tensorflow/core/lib/strings/str_util.h"
+#include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/file_system.h"
 #include "tensorflow/core/platform/logging.h"
@@ -106,19 +106,23 @@ class FastqFullFileIterable : public FastqIterable {
 StatusOr<std::unique_ptr<FastqReader>> FastqReader::FromFile(
     const string& fastq_path,
     const nucleus::genomics::v1::FastqReaderOptions& options) {
-  return std::unique_ptr<FastqReader>(new FastqReader(fastq_path, options));
+  std::unique_ptr<tensorflow::RandomAccessFile> fp;
+  tf::Status status =
+      tf::Env::Default()->NewRandomAccessFile(fastq_path.c_str(), &fp);
+  if (!status.ok()) {
+    return tf::errors::NotFound(
+        tf::strings::StrCat("Could not open ", fastq_path));
+  }
+  return std::unique_ptr<FastqReader>(new FastqReader(fp.release(), options));
 }
 
 FastqReader::FastqReader(
-    const string& fastq_path,
+    tensorflow::RandomAccessFile* fp,
     const nucleus::genomics::v1::FastqReaderOptions& options)
-    : options_(options) {
-  TF_CHECK_OK(
-      tf::Env::Default()->NewRandomAccessFile(fastq_path.c_str(), &src_));
-
+    : options_(options), src_(fp) {
   if (options.compression_type() ==
       nucleus::genomics::v1::FastqReaderOptions::GZIP) {
-    file_stream_.reset(new tf::io::RandomAccessInputStream(src_.get()));
+    file_stream_.reset(new tf::io::RandomAccessInputStream(src_));
     zlib_stream_.reset(new tf::io::ZlibInputStream(
         file_stream_.get(), READER_BUFFER_SIZE, READER_BUFFER_SIZE,
         tf::io::ZlibCompressionOptions::GZIP()));
@@ -126,7 +130,7 @@ FastqReader::FastqReader(
         zlib_stream_.get(), READER_BUFFER_SIZE));
   } else {
     buffered_inputstream_.reset(
-        new tf::io::BufferedInputStream(src_.get(), READER_BUFFER_SIZE));
+        new tf::io::BufferedInputStream(src_, READER_BUFFER_SIZE));
   }
 }
 
@@ -136,7 +140,10 @@ tf::Status FastqReader::Close() {
   buffered_inputstream_.reset();
   zlib_stream_.reset();
   file_stream_.reset();
-  src_.reset();
+  if (src_) {
+    delete src_;
+    src_ = nullptr;
+  }
   return tf::Status::OK();
 }
 

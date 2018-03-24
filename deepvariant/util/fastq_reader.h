@@ -105,14 +105,15 @@ class FastqReader : public Reader {
  private:
   // Private constructor; use FromFile to safely create a FastqReader from a
   // file.
-  FastqReader(const string& fastq_path,
+  FastqReader(tensorflow::RandomAccessFile* fp,
               const nucleus::genomics::v1::FastqReaderOptions& options);
 
   // Our options that control the behavior of this class.
   const nucleus::genomics::v1::FastqReaderOptions options_;
 
-  // Must outlive buffered_inputstream_.
-  std::unique_ptr<tensorflow::RandomAccessFile> src_;
+  // The file pointer for the given FASTQ path. The FastqReader owns its file
+  // pointer and is responsible for its deletion.
+  tensorflow::RandomAccessFile* src_;
   // Must outlive buffered_inputstream_.
   std::unique_ptr<tensorflow::io::RandomAccessInputStream> file_stream_;
   // Must outlive buffered_inputstream_.

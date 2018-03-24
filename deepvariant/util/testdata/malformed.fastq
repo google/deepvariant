@@ -1,0 +1,11 @@
+@okayrecord
+CGATGCATAC
++
+AAAAAAAAAA
+@okheader but no pad line
+CAGTGATGAT
+AAAAAAAAAA
+@anotherokayrecord but we will not get here
+CGATGCATAC
++
+AAAAAAAAAA

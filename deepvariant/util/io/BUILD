@@ -123,3 +123,28 @@ py_test(
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
+
+py_library(
+    name = "fastq",
+    srcs = ["fastq.py"],
+    deps = [
+        ":genomics_reader",
+        "//deepvariant/util/genomics:fastq_py_pb2",
+        "//deepvariant/util/python:fastq_reader",
+    ],
+)
+
+py_test(
+    name = "fastq_test",
+    size = "small",
+    srcs = ["fastq_test.py"],
+    data = [
+        "//deepvariant/util:testdata",
+    ],
+    deps = [
+        ":fastq",
+        "//deepvariant/util:py_test_utils",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
