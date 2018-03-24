@@ -289,13 +289,13 @@ sudo docker run -it \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
   "${TRUTH_VCF}" \
   "${OUTPUT_VCF}" \
-  --preprocess-truth \
   -f "${TRUTH_BED}" \
   -r "${UNCOMPRESSED_REF}" \
-  -o "${OUTPUT_DIR}/happy.output"
+  -o "${OUTPUT_DIR}/happy.output" \
+  --engine=vcfeval
 ```
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 2291 | 918  | 0.995271 | 0.99810   | 0.996684
-SNP   | 1909 | 885  | 0.999374 | 0.99971   | 0.999542
+INDEL | 2116 | 1066 | 0.995447 | 0.997794  | 0.996619
+SNP   | 1684 | 916  | 0.999447 | 0.999699  | 0.999573

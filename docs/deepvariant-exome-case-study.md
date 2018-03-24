@@ -249,19 +249,19 @@ sudo docker run -it \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
   "${TRUTH_VCF}" \
   "${OUTPUT_VCF}" \
-  --preprocess-truth \
   -f "${TRUTH_BED}" \
   -T "${CAPTURE_BED}" \
   -r "${UNCOMPRESSED_REF}" \
-  -o "${OUTPUT_DIR}/happy.output"
+  -o "${OUTPUT_DIR}/happy.output" \
+  --engine=vcfeval
 ```
 
 Here are the results:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 150  | 48   | 0.943117 | 0.981080  | 0.961724
-SNP   | 46   | 24   | 0.998636 | 0.999288  | 0.998962
+INDEL | 140  | 51   | 0.946154 | 0.979898  | 0.962730
+SNP   | 45   | 24   | 0.998666 | 0.999288  | 0.998977
 
 ## Separate models for calling whole genome and exome data
 
