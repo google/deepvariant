@@ -11,6 +11,19 @@ licenses(["notice"])
 exports_files(["LICENSE"])
 
 py_binary(
+    name = "add_ad_to_vcf",
+    srcs = ["add_ad_to_vcf.py"],
+    deps = [
+        "//deepvariant/util:variant_utils",
+        "//deepvariant/util:variantcall_utils",
+        "//deepvariant/util:vcf_constants",
+        "//deepvariant/util/io:vcf",
+    ],
+)
+
+# redacted
+
+py_binary(
     name = "count_variants",
     srcs = ["count_variants.py"],
     deps = [
