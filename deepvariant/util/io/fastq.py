@@ -49,9 +49,16 @@ from deepvariant.util.io import genomics_reader
 from deepvariant.util.genomics import fastq_pb2
 from deepvariant.util.python import fastq_reader
 
+_FASTQ_EXTENSIONS = frozenset(['.fq', '.fastq'])
+
 
 class NativeFastqReader(genomics_reader.GenomicsReader):
-  """Class for reading from FASTQ files containing a reference genome."""
+  """Class for reading from native FASTQ files.
+
+  Most users will want to use FastqReader instead, because it dynamically
+  dispatches between reading native FASTQ files and TFRecord files based on the
+  filename's extension.
+  """
 
   def __init__(self, input_path):
     """Initializes a NativeFastqReader.
@@ -68,6 +75,7 @@ class NativeFastqReader(genomics_reader.GenomicsReader):
     else:
       options = fastq_pb2.FastqReaderOptions()
     self._reader = fastq_reader.FastqReader.from_file(fastq_path, options)
+    self.header = None
 
   def query(self):
     raise NotImplementedError('Can not query a FASTQ file')
@@ -78,3 +86,16 @@ class NativeFastqReader(genomics_reader.GenomicsReader):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
+
+
+class FastqReader(genomics_reader.DispatchingGenomicsReader):
+  """Class for reading FastqRecord protos from FASTQ or TFRecord files."""
+
+  def _get_extensions(self):
+    return _FASTQ_EXTENSIONS
+
+  def _native_reader(self, input_path, **kwargs):
+    return NativeFastqReader(input_path, **kwargs)
+
+  def _record_proto(self):
+    return fastq_pb2.FastqRecord

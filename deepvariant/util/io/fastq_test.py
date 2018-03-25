@@ -42,11 +42,17 @@ from deepvariant.util import test_utils
 
 class FastqReaderTests(parameterized.TestCase):
 
-  @parameterized.parameters('test_reads.fastq', 'test_reads.fastq.gz')
+  @parameterized.parameters('test_reads.fastq', 'test_reads.fastq.gz',
+                            'test_reads.tfrecord', 'test_reads.tfrecord.gz')
   def test_iterate_fastq_reader(self, fastq_filename):
     fastq_path = test_utils.genomics_core_testdata(fastq_filename)
-    with fastq.NativeFastqReader(fastq_path) as reader:
-      self.assertEqual(test_utils.iterable_len(reader.iterate()), 3)
+    expected_ids = [
+        'NODESC:header', 'M01321:49:000000000-A6HWP:1:1101:17009:2216', 'FASTQ'
+    ]
+    with fastq.FastqReader(fastq_path) as reader:
+      records = list(reader.iterate())
+    self.assertLen(records, 3)
+    self.assertEqual([r.id for r in records], expected_ids)
 
 
 if __name__ == '__main__':

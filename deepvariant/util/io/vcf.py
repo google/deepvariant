@@ -155,9 +155,7 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
             desired_format_entries=desired_vcf_fields))
 
     self.header = self._reader.header
-
     self.field_access_cache = VcfHeaderCache(self.header)
-
 
   def iterate(self):
     return self._reader.iterate()
