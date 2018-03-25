@@ -90,30 +90,6 @@ std::vector<std::vector<ValueType>> ReadFormatValues(const bcf_hdr_t* h,
   return values;
 }
 
-// Read in one of the string format tags from a variant line of a VCF file and
-// return a vector of strings, one for each sample.
-std::vector<string> ReadFormatStrings(const bcf_hdr_t* h, const bcf1_t* v,
-                                      const char* tag) {
-  if (bcf_get_fmt(h, const_cast<bcf1_t*>(v), tag) == nullptr) {
-    return std::vector<string>();
-  }
-
-  int n_dst = 0;
-  char** dst = nullptr;
-  std::vector<string> values(v->n_sample);
-  if (bcf_get_format_string(h, const_cast<bcf1_t*>(v), tag, &dst, &n_dst) > 0) {
-    for (int i = 0; i < bcf_hdr_nsamples(h); i++) {
-      values[i] = dst[i];
-    }
-    // As noted in bcf_get_format_string declaration in vcf.h, the format
-    // function we are using here allocates two arrays and both must be cleaned
-    // by the user.
-    free(dst[0]);
-    free(dst);
-  }
-  return values;
-}
-
 // Sentinel value used to set variant.quality if one was not specified.
 constexpr double kQualUnset = -1;
 
@@ -378,14 +354,27 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     }
     ploidy = n_gts / v->n_sample;
 
+    std::vector<std::vector<int>> ps_values = ReadFormatValues<int>(h, v, "PS");
+
     for (int i = 0; i < v->n_sample; i++) {
+      bool have_ps = !ps_values.empty() && !ps_values[i].empty();
       nucleus::genomics::v1::VariantCall* call = variant_message->add_calls();
       call->set_call_set_name(h->samples[i]);
       // Get the GT calls, if requested and available.
       if (want_gt) {
+        bool gt_is_phased = false;
         for (int j = 0; j < ploidy; j++) {
-          int gt = bcf_gt_allele(gt_arr[i * ploidy + j]);
+          int gt_idx = gt_arr[i * ploidy + j];
+          int gt = bcf_gt_allele(gt_idx);
+          gt_is_phased = gt_is_phased || bcf_gt_is_phased(gt_idx);
           call->add_genotype(gt);
+        }
+        // We need to set the phaseset, if available in field PS. If this is a
+        // phased genotype and there is no PS field, phaseset is "*".
+        if (have_ps) {
+          call->set_phaseset(std::to_string(ps_values[i][0]));
+        } else if (gt_is_phased) {
+          call->set_phaseset("*");
         }
       }
     }
@@ -400,15 +389,12 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     std::vector<std::vector<int>> pl_values = ReadFormatValues<int>(h, v, "PL");
     std::vector<std::vector<float>> gl_values =
         ReadFormatValues<float>(h, v, "GL");
-    // redacted
-    std::vector<string> ps_values = ReadFormatStrings(h, v, "PS");
 
     for (int i = 0; i < v->n_sample; i++) {
       // Each indicator here is true iff the format field is present for this
       // variant, *and* is non-missing for this sample.
       bool have_gl = !gl_values.empty() && !gl_values[i].empty();
       bool have_pl = !pl_values.empty() && !pl_values[i].empty();
-      bool have_ps = !ps_values.empty() && !ps_values[i].empty();
 
       nucleus::genomics::v1::VariantCall* call =
           variant_message->mutable_calls(i);
@@ -426,10 +412,6 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
             call->add_genotype_likelihood(PhredToLog10PError(pl));
           }
         }
-      }
-      // Don't add the missing "." marker to the phaseset field.
-      if (have_ps && ps_values[i] != ".") {
-        call->set_phaseset(ps_values[i]);
       }
     }
   }
