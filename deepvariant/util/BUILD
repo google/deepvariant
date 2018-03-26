@@ -87,6 +87,7 @@ cc_library(
         "//deepvariant/util/vendor:statusor",
         "//deepvariant/util/vendor:zlib_compression_options",
         "//deepvariant/util/vendor:zlib_outputbuffer",
+        "@com_google_absl//absl/memory",
         "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",
     ],

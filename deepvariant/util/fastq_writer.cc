@@ -32,6 +32,7 @@
 // Implementation of fastq_writer.h
 #include "deepvariant/util/fastq_writer.h"
 
+#include "absl/memory/memory.h"
 #include "deepvariant/util/genomics/fastq.pb.h"
 #include "deepvariant/util/utils.h"
 #include "deepvariant/util/vendor/zlib_compression_options.h"
