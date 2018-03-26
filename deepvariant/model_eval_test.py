@@ -218,7 +218,7 @@ class ModelEvalTest(
     #  1 0
     # 12 1
     # 35 2
-    expected_values_for_all = {
+    expected_values_for_all_exact = {
         # We have 12 correct calls [there are 12 variants with a label of 1] and
         # 1 label 0 + 35 with a label of 2, so we have an accuracy of 12 / 48,
         # which is 0.25.
@@ -227,8 +227,6 @@ class ModelEvalTest(
         'FNs/All': 0,
         # One of our labels is 0, which we call het, giving us 1 FP.
         'FPs/All': 1.0,
-        # We called 47 / 48 correctly.
-        'Precision/All': 0.979167,
         # We call everything as het, so the recall has to be 1.
         'Recall/All': 1.0,
         # redacted
@@ -237,8 +235,15 @@ class ModelEvalTest(
         # We find all positives, so this has to be 47.
         'TPs/All': 47,
     }
-    for key, expected_value in expected_values_for_all.iteritems():
+    for key, expected_value in expected_values_for_all_exact.iteritems():
       self.assertEqual(metrics[0][key], expected_value)
+
+    expected_values_for_all_close = {
+        # We called 47 / 48 correctly.
+        'Precision/All': 47. / 48,
+    }
+    for key, expected_value in expected_values_for_all_close.iteritems():
+      self.assertAlmostEqual(metrics[0][key], expected_value, places=6)
 
     for m1, m2 in zip(metrics, metrics[1:]):
       self.assertEqual(m1, m2)
