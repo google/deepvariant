@@ -24,6 +24,15 @@ py_binary(
 # redacted
 
 py_binary(
+    name = "ascii_pileup",
+    srcs = ["ascii_pileup.py"],
+    deps = [
+        "//deepvariant/util:ranges",
+        "//deepvariant/util/io:sam",
+    ],
+)
+
+py_binary(
     name = "count_variants",
     srcs = ["count_variants.py"],
     deps = [
