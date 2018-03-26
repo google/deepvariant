@@ -45,7 +45,6 @@ import tensorflow as tf
 from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util.genomics import reads_pb2
-from deepvariant.util.genomics import sam_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant import test_utils
@@ -347,7 +346,7 @@ class RealignerIntegrationTest(absltest.TestCase):
     for region in regions.partition(1000):
       with sam.SamReader(
           test_utils.CHR20_BAM,
-          read_requirements=sam_pb2.ReadRequirements()) as sam_reader:
+          read_requirements=reads_pb2.ReadRequirements()) as sam_reader:
         in_reads = list(sam_reader.query(region))
       windows, out_reads = reads_realigner.realign_reads(in_reads, region)
 

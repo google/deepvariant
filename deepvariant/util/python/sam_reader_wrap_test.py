@@ -38,7 +38,7 @@ from absl.testing import absltest
 
 from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import reference_pb2
-from deepvariant.util.genomics import sam_pb2
+from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import clif_postproc
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
@@ -49,8 +49,8 @@ class SamReaderTest(absltest.TestCase):
 
   def setUp(self):
     self.bam = test_utils.genomics_core_testdata('test.bam')
-    self.options = sam_pb2.SamReaderOptions()
-    self.indexed_options = sam_pb2.SamReaderOptions(
+    self.options = reads_pb2.SamReaderOptions()
+    self.indexed_options = reads_pb2.SamReaderOptions(
         index_mode=index_pb2.INDEX_BASED_ON_FILENAME)
 
   def test_bam_iterate(self):

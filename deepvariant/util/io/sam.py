@@ -56,7 +56,6 @@ from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
 from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import reads_pb2
-from deepvariant.util.genomics import sam_pb2
 from deepvariant.util.python import sam_reader
 
 _SAM_EXTENSIONS = frozenset(['.bam', '.sam', '.tfbam'])
@@ -129,9 +128,9 @@ class NativeSamReader(genomics_reader.GenomicsReader):
       if not use_index:
         index_mode = index_pb2.DONT_USE_INDEX
 
-      aux_field_handling = sam_pb2.SamReaderOptions.SKIP_AUX_FIELDS
+      aux_field_handling = reads_pb2.SamReaderOptions.SKIP_AUX_FIELDS
       if parse_aux_fields:
-        aux_field_handling = sam_pb2.SamReaderOptions.PARSE_ALL_AUX_FIELDS
+        aux_field_handling = reads_pb2.SamReaderOptions.PARSE_ALL_AUX_FIELDS
 
       if downsample_fraction:
         if not 0.0 < downsample_fraction <= 1.0:
@@ -145,7 +144,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 
       self._reader = sam_reader.SamReader.from_file(
           input_path.encode('utf8'),
-          sam_pb2.SamReaderOptions(
+          reads_pb2.SamReaderOptions(
               read_requirements=read_requirements,
               index_mode=index_mode,
               aux_field_handling=aux_field_handling,

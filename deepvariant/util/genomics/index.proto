@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 syntax = "proto3";
 
-package nucleus;
+package nucleus.genomics.v1;
 
 enum IndexHandlingMode {
   // Don't try to use an index.

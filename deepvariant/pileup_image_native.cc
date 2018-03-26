@@ -40,7 +40,6 @@
 #include "deepvariant/util/genomics/cigar.pb.h"
 #include "deepvariant/util/genomics/position.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
-#include "deepvariant/util/genomics/sam.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "tensorflow/core/platform/logging.h"
 

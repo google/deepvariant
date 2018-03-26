@@ -52,6 +52,8 @@ namespace nucleus {
 
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::SamHeader;
+using nucleus::genomics::v1::SamReaderOptions;
 using nucleus::proto::IgnoringFieldPaths;
 using nucleus::proto::Partially;
 using std::vector;
@@ -100,13 +102,13 @@ TEST(SamReaderTest, TestSamHeaderExtraction) {
   std::unique_ptr<SamReader> reader = std::move(
       SamReader::FromFile(GetTestData(kSamTestFilename), SamReaderOptions())
           .ValueOrDie());
-  const nucleus::SamHeader& header = reader->Header();
+  const SamHeader& header = reader->Header();
   EXPECT_EQ(header.format_version(), "1.3");
-  EXPECT_EQ(header.sorting_order(), nucleus::SamHeader::COORDINATE);
-  EXPECT_EQ(header.alignment_grouping(), nucleus::SamHeader::NONE);
+  EXPECT_EQ(header.sorting_order(), SamHeader::COORDINATE);
+  EXPECT_EQ(header.alignment_grouping(), SamHeader::NONE);
   EXPECT_THAT(header.contigs(), SizeIs(493));
   EXPECT_THAT(header.read_groups(), SizeIs(1));
-  const nucleus::ReadGroup& rg = header.read_groups(0);
+  const nucleus::genomics::v1::ReadGroup& rg = header.read_groups(0);
   EXPECT_EQ(rg.name(), "'Illumina3D.4");
   EXPECT_EQ(rg.sequencing_center(), "GOOG");
   EXPECT_EQ(rg.description(), "description");
@@ -128,10 +130,10 @@ TEST(SamReaderTest, TestBamSampleExtraction) {
   std::unique_ptr<SamReader> reader = std::move(
       SamReader::FromFile(GetTestData(kBamTestFilename), SamReaderOptions())
           .ValueOrDie());
-  const nucleus::SamHeader& header = reader->Header();
+  const SamHeader& header = reader->Header();
   EXPECT_THAT(header.format_version(), IsEmpty());
-  EXPECT_EQ(header.sorting_order(), nucleus::SamHeader::UNKNOWN);
-  EXPECT_EQ(header.alignment_grouping(), nucleus::SamHeader::NONE);
+  EXPECT_EQ(header.sorting_order(), SamHeader::UNKNOWN);
+  EXPECT_EQ(header.alignment_grouping(), SamHeader::NONE);
   EXPECT_THAT(header.contigs(), SizeIs(25));
   EXPECT_THAT(header.read_groups(), SizeIs(1));
   EXPECT_EQ(header.read_groups(0).sample_id(), "NA12878");
@@ -151,7 +153,8 @@ TEST(SamReaderTest, TestHeaderlessSamIsNotOkay) {
 class SamReaderQueryTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    options_.set_index_mode(IndexHandlingMode::INDEX_BASED_ON_FILENAME);
+    options_.set_index_mode(
+        nucleus::genomics::v1::IndexHandlingMode::INDEX_BASED_ON_FILENAME);
     indexed_bam_ = GetTestData(kBamTestFilename);
     RecreateReader();
   }

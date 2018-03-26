@@ -38,7 +38,6 @@
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"
-#include "deepvariant/util/genomics/sam.pb.h"
 #include "deepvariant/util/reader_base.h"
 #include "deepvariant/util/samplers.h"
 #include "deepvariant/util/vendor/statusor.h"
@@ -87,7 +86,8 @@ class SamReader : public Reader {
   // Returns a StatusOr that is OK if the SamReader could be successfully
   // created or an error code indicating the error that occurred.
   static StatusOr<std::unique_ptr<SamReader>> FromFile(
-      const string& reads_path, const SamReaderOptions& options);
+      const string& reads_path,
+      const nucleus::genomics::v1::SamReaderOptions& options);
 
   ~SamReader();
 
@@ -136,19 +136,22 @@ class SamReader : public Reader {
 
   bool KeepRead(const nucleus::genomics::v1::Read& read) const;
 
-  const SamReaderOptions& options() const { return options_; }
+  const nucleus::genomics::v1::SamReaderOptions& options() const {
+    return options_;
+  }
 
   // Returns a SamHeader message representing the structured header information.
-  const SamHeader& Header() const { return sam_header_; }
+  const nucleus::genomics::v1::SamHeader& Header() const { return sam_header_; }
 
  private:
   // Private constructor; use FromFile to safely create a SamReader from a
   // file.
-  SamReader(const string& reads_path, const SamReaderOptions& options,
-            htsFile* fp, bam_hdr_t* header, hts_idx_t* idx);
+  SamReader(const string& reads_path,
+            const nucleus::genomics::v1::SamReaderOptions& options, htsFile* fp,
+            bam_hdr_t* header, hts_idx_t* idx);
 
   // Our options that control the behavior of this class.
-  const SamReaderOptions options_;
+  const nucleus::genomics::v1::SamReaderOptions options_;
 
   // A pointer to the htslib file used to access the SAM/BAM data.
   htsFile * fp_;
@@ -162,7 +165,7 @@ class SamReader : public Reader {
 
   // The sam.proto SamHeader message representing the structured header
   // information.
-  SamHeader sam_header_;
+  nucleus::genomics::v1::SamHeader sam_header_;
 
   // For downsampling reads.
   mutable PhiloxFractionalSampler sampler_;

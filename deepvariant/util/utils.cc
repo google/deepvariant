@@ -38,6 +38,7 @@
 #include "deepvariant/util/utils.h"
 
 #include "deepvariant/util/genomics/cigar.pb.h"
+#include "deepvariant/util/genomics/reads.pb.h"
 
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
@@ -49,6 +50,7 @@ using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Position;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::ReadRequirements;
 using nucleus::genomics::v1::Variant;
 
 using tensorflow::strings::StrCat;

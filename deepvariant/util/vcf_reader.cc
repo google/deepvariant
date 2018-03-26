@@ -223,7 +223,8 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
 
   // Try to load the Tabix index if requested.
   tbx_t* idx = nullptr;
-  if (options.index_mode() == IndexHandlingMode::INDEX_BASED_ON_FILENAME) {
+  if (options.index_mode() ==
+      nucleus::genomics::v1::IndexHandlingMode::INDEX_BASED_ON_FILENAME) {
     // tbx_index_load() computes the expected index filename from the
     // filename fn of the htsFile fp.
     idx = tbx_index_load(fp->fn);

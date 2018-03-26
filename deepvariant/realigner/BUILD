@@ -35,7 +35,6 @@ py_test(
         "//deepvariant/util:io_utils",
         "//deepvariant/util:ranges",
         "//deepvariant/util/genomics:reads_py_pb2",
-        "//deepvariant/util/genomics:sam_py_pb2",
         "//deepvariant/util/io:fasta",
         "//deepvariant/util/io:sam",
         "@com_google_absl_py//absl/flags",

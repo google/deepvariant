@@ -55,12 +55,14 @@ namespace nucleus {
 
 namespace tf = tensorflow;
 
-using std::vector;
-using nucleus::genomics::v1::Range;
-using nucleus::genomics::v1::Read;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::CigarUnit_Operation;
 using nucleus::genomics::v1::Position;
+using nucleus::genomics::v1::Range;
+using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::SamHeader;
+using nucleus::genomics::v1::SamReaderOptions;
+using std::vector;
 
 using tensorflow::WARNING;
 using tensorflow::int32;
@@ -75,22 +77,23 @@ constexpr char kSamReadGroupTag[] = "@RG";
 constexpr char kSamProgramTag[] = "@PG";
 constexpr char kSamCommentTag[] = "@CO";
 
-void AddHeaderLineToHeader(const string& line, nucleus::SamHeader& header) {
+void AddHeaderLineToHeader(const string& line, SamHeader& header) {
   static constexpr char kVersionTag[] = "VN:";
   static constexpr char kSortingOrderTag[] = "SO:";
   static constexpr char kAlignmentGroupingTag[] = "GO:";
   int tagLen = 3;
 
-  static const std::map<string, nucleus::SamHeader_SortingOrder>
-      sorting_order_map = {{"coordinate", nucleus::SamHeader::COORDINATE},
-                           {"queryname", nucleus::SamHeader::QUERYNAME},
-                           {"unknown", nucleus::SamHeader::UNKNOWN},
-                           {"unsorted", nucleus::SamHeader::UNSORTED}};
+  static const std::map<string, nucleus::genomics::v1::SamHeader_SortingOrder>
+      sorting_order_map = {{"coordinate", SamHeader::COORDINATE},
+                           {"queryname", SamHeader::QUERYNAME},
+                           {"unknown", SamHeader::UNKNOWN},
+                           {"unsorted", SamHeader::UNSORTED}};
 
-  static const std::map<string, nucleus::SamHeader_AlignmentGrouping>
-      alignment_grouping_map = {{"none", nucleus::SamHeader::NONE},
-                                {"query", nucleus::SamHeader::QUERY},
-                                {"reference", nucleus::SamHeader::REFERENCE}};
+  static const std::map<string,
+                        nucleus::genomics::v1::SamHeader_AlignmentGrouping>
+      alignment_grouping_map = {{"none", SamHeader::NONE},
+                                {"query", SamHeader::QUERY},
+                                {"reference", SamHeader::REFERENCE}};
 
   for (const string& token : tensorflow::str_util::Split(line, '\t')) {
     if (token == kSamHeaderTag) continue;
@@ -103,7 +106,7 @@ void AddHeaderLineToHeader(const string& line, nucleus::SamHeader& header) {
       if (it == sorting_order_map.end()) {
         LOG(WARNING) << "Unknown sorting order, defaulting to unknown: "
                      << line;
-        header.set_sorting_order(nucleus::SamHeader::UNKNOWN);
+        header.set_sorting_order(SamHeader::UNKNOWN);
       } else {
         header.set_sorting_order(it->second);
       }
@@ -112,7 +115,7 @@ void AddHeaderLineToHeader(const string& line, nucleus::SamHeader& header) {
       if (it == alignment_grouping_map.end()) {
         LOG(WARNING) << "Unknown alignment grouping, defaulting to none: "
                      << line;
-        header.set_alignment_grouping(nucleus::SamHeader::NONE);
+        header.set_alignment_grouping(SamHeader::NONE);
       } else {
         header.set_alignment_grouping(it->second);
       }
@@ -125,7 +128,8 @@ void AddHeaderLineToHeader(const string& line, nucleus::SamHeader& header) {
   }
 }
 
-void AddReadGroupToHeader(const string& line, nucleus::ReadGroup* readgroup) {
+void AddReadGroupToHeader(const string& line,
+                          nucleus::genomics::v1::ReadGroup* readgroup) {
   int tagLen = 3;
   for (const string& token : tensorflow::str_util::Split(line, '\t')) {
     if (token == kSamReadGroupTag) continue;
@@ -166,7 +170,8 @@ void AddReadGroupToHeader(const string& line, nucleus::ReadGroup* readgroup) {
   }
 }
 
-void AddProgramToHeader(const string& line, nucleus::Program* program) {
+void AddProgramToHeader(const string& line,
+                        nucleus::genomics::v1::Program* program) {
   int tagLen = 3;
   for (const string& token : tensorflow::str_util::Split(line, '\t')) {
     if (token == kSamProgramTag) continue;
@@ -543,9 +548,9 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
   // Validate that we support the requested read requirements.
   if (options.has_read_requirements() &&
       options.read_requirements().min_base_quality_mode() !=
-          ReadRequirements::UNSPECIFIED &&
+          nucleus::genomics::v1::ReadRequirements::UNSPECIFIED &&
       options.read_requirements().min_base_quality_mode() !=
-          ReadRequirements::ENFORCED_BY_CLIENT) {
+          nucleus::genomics::v1::ReadRequirements::ENFORCED_BY_CLIENT) {
     return tf::errors::InvalidArgument(
         StrCat("Unsupported min_base_quality mode in options ",
                options.ShortDebugString()));
@@ -567,7 +572,8 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
     return tf::errors::Unknown(StrCat("Couldn't parse header for ", fp->fn));
 
   hts_idx_t* idx = nullptr;
-  if (options.index_mode() == IndexHandlingMode::INDEX_BASED_ON_FILENAME) {
+  if (options.index_mode() ==
+      nucleus::genomics::v1::IndexHandlingMode::INDEX_BASED_ON_FILENAME) {
     // redacted
     idx = sam_index_load(fp, fp->fn);
     if (idx == nullptr) {

@@ -33,6 +33,7 @@
 #include "deepvariant/util/utils.h"
 
 #include "deepvariant/util/genomics/cigar.pb.h"
+#include "deepvariant/util/genomics/reads.pb.h"
 #include "deepvariant/util/genomics/struct.pb.h"
 #include "deepvariant/util/test_utils.h"
 
@@ -49,6 +50,7 @@ namespace nucleus {
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::ReadRequirements;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using ::testing::ElementsAre;

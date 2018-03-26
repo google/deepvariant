@@ -38,7 +38,7 @@ import itertools
 
 import numpy as np
 
-from deepvariant.util.genomics import sam_pb2
+from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import ranges
 from deepvariant.util import utils
 from deepvariant.protos import deepvariant_pb2
@@ -53,10 +53,10 @@ DEFAULT_NUM_CHANNEL = 6
 def default_options(read_requirements=None):
   """Creates a PileupImageOptions populated with good default values."""
   if not read_requirements:
-    read_requirements = sam_pb2.ReadRequirements(
+    read_requirements = reads_pb2.ReadRequirements(
         min_base_quality=DEFAULT_MIN_BASE_QUALITY,
         min_mapping_quality=DEFAULT_MIN_MAPPING_QUALITY,
-        min_base_quality_mode=sam_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
 
   return deepvariant_pb2.PileupImageOptions(
       reference_band_height=5,

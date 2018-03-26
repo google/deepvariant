@@ -41,7 +41,6 @@ from absl.testing import parameterized
 from deepvariant.util.io import sam
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util.genomics import reference_pb2
-from deepvariant.util.genomics import sam_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
 from deepvariant.util import test_utils
@@ -253,7 +252,7 @@ class ReadWriterTests(parameterized.TestCase):
         reference_pb2.ContigInfo(name='chr1'),
         reference_pb2.ContigInfo(name='chr2'),
     ]
-    self.header = sam_pb2.SamHeader()
+    self.header = reads_pb2.SamHeader()
 
   def test_make_read_writer_tfrecords(self):
     outfile = test_utils.test_tmpfile('test.tfrecord')

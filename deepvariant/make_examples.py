@@ -43,7 +43,7 @@ from absl import logging
 from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util.io import vcf
-from deepvariant.util.genomics import sam_pb2
+from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import errors
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
@@ -249,10 +249,10 @@ def default_options(add_flags=True, flags_obj=None):
   if not flags_obj:
     flags_obj = FLAGS
 
-  read_reqs = sam_pb2.ReadRequirements(
+  read_reqs = reads_pb2.ReadRequirements(
       min_base_quality=10,
       min_mapping_quality=10,
-      min_base_quality_mode=sam_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+      min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
 
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 

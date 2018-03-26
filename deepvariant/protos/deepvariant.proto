@@ -30,7 +30,7 @@
 syntax = "proto3";
 
 import "deepvariant/util/genomics/position.proto";
-import "deepvariant/util/genomics/sam.proto";
+import "deepvariant/util/genomics/reads.proto";
 import "deepvariant/util/genomics/variants.proto";
 import "deepvariant/protos/realigner.proto";
 
@@ -267,7 +267,7 @@ message AlleleCounterOptions {
   int32 partition_size = 1;
 
   // The requirements for reads to be used when counting alleles.
-  nucleus.ReadRequirements read_requirements = 2;
+  nucleus.genomics.v1.ReadRequirements read_requirements = 2;
 }
 
 // Variant call for a single site, in a pseudo-biallelic manner. This is an
@@ -402,7 +402,7 @@ message PileupImageOptions {
   int32 read_overlap_buffer_bp = 17;
 
   // The requirements for reads to be used when creating pileup images.
-  nucleus.ReadRequirements read_requirements = 18;
+  nucleus.genomics.v1.ReadRequirements read_requirements = 18;
 
   enum MultiAllelicMode {
     UNSPECIFIED = 0;
@@ -454,7 +454,7 @@ message DeepVariantOptions {
   // Only reads satisfying these requirements will be used in DeepVariant.
   // This parameters are propagated as appropriate to read_requirement fields
   // in our tool-specific options.
-  nucleus.ReadRequirements read_requirements = 9;
+  nucleus.genomics.v1.ReadRequirements read_requirements = 9;
 
   // Options to control out input data sources and output data sinks.
   // Path to our genome reference.

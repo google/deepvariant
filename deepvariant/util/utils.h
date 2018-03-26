@@ -43,7 +43,6 @@
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"
-#include "deepvariant/util/genomics/sam.pb.h"
 #include "deepvariant/util/genomics/struct.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
@@ -145,8 +144,9 @@ int64 ReadEnd(const nucleus::genomics::v1::Read& read);
 bool IsReadProperlyPlaced(const nucleus::genomics::v1::Read& read);
 
 // Returns false if Read does not satisfy all of the ReadRequirements.
-bool ReadSatisfiesRequirements(const nucleus::genomics::v1::Read& read,
-                               const ReadRequirements& requirements);
+bool ReadSatisfiesRequirements(
+    const nucleus::genomics::v1::Read& read,
+    const nucleus::genomics::v1::ReadRequirements& requirements);
 
 // Return a string_view that reflects removing quotation from the ends the
 // input.  (e.g. '"foo"' -> "foo"; '\'foo\'' -> 'foo')

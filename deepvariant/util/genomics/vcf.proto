@@ -49,14 +49,14 @@ message OptionalVariantFieldsToParse {
 
 message VcfReaderOptions {
   // How should we handle VCF file indices?
-  IndexHandlingMode index_mode = 1;
+  nucleus.genomics.v1.IndexHandlingMode index_mode = 1;
   // What FORMAT entries should we parse from every call?
   OptionalVariantFieldsToParse desired_format_entries = 2;
 }
 
 message VcfWriterOptions {
   // How should we handle VCF file indices?
-  IndexHandlingMode index_mode = 1;
+  nucleus.genomics.v1.IndexHandlingMode index_mode = 1;
 
   // Info about the genome contigs:
   repeated nucleus.genomics.v1.ContigInfo contigs = 2;
