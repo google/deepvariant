@@ -698,21 +698,6 @@ cc_test(
     ],
 )
 
-py_binary(
-    name = "cloud_utils",
-    srcs = ["cloud_utils.py"],
-    deps = ["@protobuf_archive//:protobuf_python"],
-)
-
-py_test(
-    name = "cloud_utils_test",
-    srcs = ["cloud_utils_test.py"],
-    deps = [
-        ":cloud_utils",
-        "@com_google_absl_py//absl/testing:absltest",
-    ],
-)
-
 cc_test(
     name = "hts_test",
     size = "small",
