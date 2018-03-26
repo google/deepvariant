@@ -35,7 +35,6 @@
 
 #include "htslib/vcf.h"
 #include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/genomics/vcf.pb.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
@@ -180,9 +179,9 @@ class VcfFormatFieldAdapter {
 class VcfRecordConverter {
  public:
   // Primary constructor.
-  VcfRecordConverter(
-      const nucleus::genomics::v1::VcfHeader& vcf_header,
-      const OptionalVariantFieldsToParse& desired_format_entries);
+  VcfRecordConverter(const nucleus::genomics::v1::VcfHeader &vcf_header,
+                     const nucleus::genomics::v1::OptionalVariantFieldsToParse
+                         &desired_format_entries);
 
   // Not the constructor you want.
   VcfRecordConverter() = default;
@@ -206,7 +205,7 @@ class VcfRecordConverter {
   std::vector<VcfFormatFieldAdapter> format_adapters_;
   // Configuration of the FORMAT entries should we parse in from, or write out
   // to, VCF.
-  OptionalVariantFieldsToParse desired_format_entries_;
+  nucleus::genomics::v1::OptionalVariantFieldsToParse desired_format_entries_;
 };
 
 }  // namespace nucleus

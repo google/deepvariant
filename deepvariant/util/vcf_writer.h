@@ -38,7 +38,6 @@
 #include "htslib/vcf.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/genomics/vcf.pb.h"
 #include "deepvariant/util/vcf_conversion.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
@@ -57,7 +56,7 @@ class VcfWriter {
   static StatusOr<std::unique_ptr<VcfWriter>> ToFile(
       const string& variants_path,
       const nucleus::genomics::v1::VcfHeader& header,
-      const VcfWriterOptions& options);
+      const nucleus::genomics::v1::VcfWriterOptions& options);
   ~VcfWriter();
 
   // Disable copy or assignment
@@ -87,7 +86,8 @@ class VcfWriter {
 
  private:
   VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
-            const VcfWriterOptions& options, htsFile* fp);
+            const nucleus::genomics::v1::VcfWriterOptions& options,
+            htsFile* fp);
 
   tensorflow::Status WriteHeader();
 
@@ -95,7 +95,7 @@ class VcfWriter {
   htsFile* fp_;
 
   // The options controlling the behavior of this VcfWriter.
-  const VcfWriterOptions options_;
+  const nucleus::genomics::v1::VcfWriterOptions options_;
 
   // The VcfHeader proto representation of the VCF header.
   const nucleus::genomics::v1::VcfHeader vcf_header_;

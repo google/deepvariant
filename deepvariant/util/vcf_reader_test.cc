@@ -32,6 +32,7 @@
 
 #include "deepvariant/util/vcf_reader.h"
 
+#include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/testing/protocol-buffer-matchers.h"
 #include "deepvariant/util/test_utils.h"
 #include "deepvariant/util/utils.h"
@@ -152,7 +153,7 @@ void AddTestExtra(nucleus::genomics::v1::VcfHeader& header, const string& key,
 TEST(ValidVcfHeaderParsing, MatchesProto) {
   std::unique_ptr<VcfReader> reader =
       std::move(VcfReader::FromFile(GetTestData(kValidVcfHeaderFilename),
-                                    VcfReaderOptions())
+                                    nucleus::genomics::v1::VcfReaderOptions())
                     .ValueOrDie());
   nucleus::genomics::v1::VcfHeader header_proto;
   header_proto.set_fileformat("VCFv4.2");
@@ -184,9 +185,10 @@ TEST(ValidVcfHeaderParsing, MatchesProto) {
 }
 
 TEST(VcfFileOnlySites, IterationWorks) {
-  std::unique_ptr<VcfReader> reader = std::move(
-      VcfReader::FromFile(GetTestData(kVcfSitesFilename), VcfReaderOptions())
-          .ValueOrDie());
+  std::unique_ptr<VcfReader> reader =
+      std::move(VcfReader::FromFile(GetTestData(kVcfSitesFilename),
+                                    nucleus::genomics::v1::VcfReaderOptions())
+                    .ValueOrDie());
 
   vector<Variant> golden =
       ReadProtosFromTFRecord<Variant>(GetTestData(kVcfSitesGoldenFilename));
@@ -207,13 +209,15 @@ class VcfWithSamplesReaderTest : public ::testing::Test {
     RecreateReader();
   }
 
-  void RecreateReader(VcfReaderOptions* options_override = nullptr) {
-    VcfReaderOptions* options = options_override ? options_override : &options_;
+  void RecreateReader(
+      nucleus::genomics::v1::VcfReaderOptions* options_override = nullptr) {
+    nucleus::genomics::v1::VcfReaderOptions* options =
+        options_override ? options_override : &options_;
     reader_ =
         std::move(VcfReader::FromFile(indexed_vcf_, *options).ValueOrDie());
   }
 
-  VcfReaderOptions options_;
+  nucleus::genomics::v1::VcfReaderOptions options_;
   string indexed_vcf_;
   vector<Variant> golden_;
   vector<string> ignored_fields_;
@@ -223,7 +227,7 @@ class VcfWithSamplesReaderTest : public ::testing::Test {
 TEST_F(VcfWithSamplesReaderTest, IterationWorksWithoutIndex) {
   // Checks that iterate() produces all of the variants in our golden file
   // in order for an unindexed VCF file.
-  VcfReaderOptions options;
+  nucleus::genomics::v1::VcfReaderOptions options;
   RecreateReader(&options);
   EXPECT_THAT(
       as_vector(reader_->Iterate()),
@@ -291,7 +295,7 @@ TEST_F(VcfWithSamplesReaderTest, WholeChromosomeQueries) {
 TEST(VcfReaderLikelihoodsTest, MatchesGolden) {
   std::unique_ptr<VcfReader> reader =
       std::move(VcfReader::FromFile(GetTestData(kVcfLikelihoodsFilename),
-                                    VcfReaderOptions())
+                                    nucleus::genomics::v1::VcfReaderOptions())
                     .ValueOrDie());
   vector<Variant> golden = ReadProtosFromTFRecord<Variant>(
       GetTestData(kVcfLikelihoodsGoldenFilename));
@@ -302,7 +306,7 @@ TEST(VcfReaderPhasesetTest, MatchesGolden) {
   // Verify that we can still read the phaseset fields correctly.
   std::unique_ptr<VcfReader> reader =
       std::move(VcfReader::FromFile(GetTestData(kVcfPhasesetFilename),
-                                    VcfReaderOptions())
+                                    nucleus::genomics::v1::VcfReaderOptions())
                     .ValueOrDie());
   vector<Variant> golden =
       ReadProtosFromTFRecord<Variant>(GetTestData(kVcfPhasesetGoldenFilename));
@@ -313,7 +317,7 @@ TEST(VcfReaderAlleleDepthTest, MatchesGolden) {
   // Verify that we can still read the AD and DP fields correctly.
   std::unique_ptr<VcfReader> reader =
       std::move(VcfReader::FromFile(GetTestData(kVcfAlleleDepthFilename),
-                                    VcfReaderOptions())
+                                    nucleus::genomics::v1::VcfReaderOptions())
                     .ValueOrDie());
   vector<Variant> golden =
       ReadProtosFromTFRecord<Variant>(
@@ -325,7 +329,7 @@ TEST(VcfReaderVariantAlleleFrequencyTest, MatchesGolden) {
   // Verify that we can still read the VAF field correctly.
   std::unique_ptr<VcfReader> reader = std::move(
       VcfReader::FromFile(GetTestData(kVcfVariantAlleleFrequencyFilename),
-                          VcfReaderOptions())
+                          nucleus::genomics::v1::VcfReaderOptions())
           .ValueOrDie());
   vector<Variant> golden = ReadProtosFromTFRecord<Variant>(
       GetTestData(kVcfVariantAlleleFrequencyGoldenFilename));

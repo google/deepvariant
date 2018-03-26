@@ -40,7 +40,6 @@ py_library(
         "//deepvariant/util:vcf_constants",
         "//deepvariant/util/genomics:index_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
-        "//deepvariant/util/genomics:vcf_py_pb2",
         "//deepvariant/util/python:vcf_reader",
         "//deepvariant/util/python:vcf_writer",
     ],

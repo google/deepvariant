@@ -200,7 +200,7 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname,
   header.mutable_sample_names()->Add("Fido");
   header.mutable_sample_names()->Add("Spot");
 
-  VcfWriterOptions writer_options;
+  nucleus::genomics::v1::VcfWriterOptions writer_options;
   if (round_qual) {
     writer_options.set_round_qual_values(true);
   }

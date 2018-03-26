@@ -30,6 +30,7 @@ syntax = "proto3";
 
 package nucleus.genomics.v1;
 
+import "deepvariant/util/genomics/index.proto";
 import "deepvariant/util/genomics/reference.proto";
 import "deepvariant/util/genomics/struct.proto";
 
@@ -299,4 +300,43 @@ message VcfExtra {
 
   // Required by VCF. The value of the extra header field.
   string value = 2;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// I/O-related messages.
+///////////////////////////////////////////////////////////////////////////////
+
+// The Vcf{Reader,Writer}Options messages are used to alter the properties of
+// reading and writing variants. They enables certain fields to be omitted from
+// parsing.
+message VcfReaderOptions {
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+  // What FORMAT entries should we parse from every call?
+  OptionalVariantFieldsToParse desired_format_entries = 2;
+}
+
+message VcfWriterOptions {
+  reserved 2, 3, 4;
+
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+
+  // What FORMAT entries should we write out for each call?
+  OptionalVariantFieldsToParse desired_format_entries = 5;
+
+  // Should QUAL field values be rounded to one point past the decimal?
+  bool round_qual_values = 6;
+}
+
+message OptionalVariantFieldsToParse {
+  // These booleans are the reverse sense of what we want, to give the desired
+  // default behavior.
+  bool exclude_genotype = 1;
+  bool exclude_genotype_likelihood = 2;
+  bool exclude_genotype_quality = 3;            // "GQ" in FORMAT
+  bool exclude_allele_depth = 4;                // "AD" in FORMAT
+  bool exclude_read_depth = 5;                  // "DP" in FORMAT
+  bool exclude_variant_allele_frequencies = 6;  // "VAF" in FORMAT
+  bool exclude_min_read_depth = 7;  // "MIN_DP" in FORMAT, used by gVCF records
 }

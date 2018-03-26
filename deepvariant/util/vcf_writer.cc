@@ -156,7 +156,7 @@ void AddContigToHeader(const nucleus::genomics::v1::ContigInfo& contig,
 
 StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
     const string& variants_path, const nucleus::genomics::v1::VcfHeader& header,
-    const VcfWriterOptions& options) {
+    const nucleus::genomics::v1::VcfWriterOptions& options) {
   const char* const openMode = EndsWith(variants_path, ".gz")
                                    ? kOpenModeCompressed
                                    : kOpenModeUncompressed;
@@ -171,12 +171,12 @@ StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
 }
 
 VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
-                     const VcfWriterOptions& options, htsFile* fp)
+                     const nucleus::genomics::v1::VcfWriterOptions& options,
+                     htsFile* fp)
     : fp_(fp),
       options_(options),
       vcf_header_(header),
       record_converter_(vcf_header_, options_.desired_format_entries()) {
-
   CHECK(fp != nullptr);
 
   // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>

@@ -42,7 +42,6 @@ import tensorflow as tf
 from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
-from deepvariant.util.genomics import vcf_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import test_utils
 from deepvariant.util.python import vcf_writer
@@ -77,7 +76,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
                 description='Genotype Quality')
         ],
     )
-    self.options = vcf_pb2.VcfWriterOptions()
+    self.options = variants_pb2.VcfWriterOptions()
     self.writer = vcf_writer.VcfWriter.to_file(self.out_fname, self.header,
                                                self.options)
     self.variant = test_utils.make_variant(
@@ -96,7 +95,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
     tfrecord_file = test_utils.genomics_core_testdata(
         'test_samples.vcf.golden.tfrecord')
 
-    writer_options = vcf_pb2.VcfWriterOptions()
+    writer_options = variants_pb2.VcfWriterOptions()
     header = variants_pb2.VcfHeader(
         contigs=[
             reference_pb2.ContigInfo(name='chr1', n_bases=248956422),
@@ -299,7 +298,7 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
     self.assertTrue(v1_records, 'Reader failed to find records')
 
     header = copy.deepcopy(v1_reader.header)
-    writer_options = vcf_pb2.VcfWriterOptions()
+    writer_options = variants_pb2.VcfWriterOptions()
 
     with vcf_writer.VcfWriter.to_file(out_file, header,
                                       writer_options) as writer:

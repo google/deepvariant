@@ -122,13 +122,14 @@ pyclif_proto_library(
 )
 
 # ----------------------------------------------------------------------
-# Variants
+# Variants (VCF)
 # ----------------------------------------------------------------------
 
 proto_library(
     name = "variants_proto",
     srcs = ["variants.proto"],
     deps = [
+        ":index_proto",  # NO COPYBARA
         ":reference_proto",  # NO COPYBARA
         ":struct_proto",  # NO COPYBARA
     ],
@@ -140,6 +141,7 @@ cc_proto_library(
     default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
     deps = [
+        ":index_cc_pb2",
         ":reference_cc_pb2",
         ":struct_cc_pb2",
     ],
@@ -152,6 +154,7 @@ py_proto_library(
     protoc = "@protobuf_archive//:protoc",
     srcs_version = "PY2AND3",
     deps = [
+        ":index_py_pb2",
         ":reference_py_pb2",
         ":struct_py_pb2",
     ],
@@ -268,50 +271,6 @@ py_proto_library(
 pyclif_proto_library(
     name = "index_pyclif",
     proto_lib = ":index_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# VCF
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "vcf_proto",
-    srcs = ["vcf.proto"],
-    deps = [
-        ":index_proto",  # NO COPYBARA
-        ":reference_proto",  # NO COPYBARA
-        ":variants_proto",  # NO COPYBARA
-    ],
-)
-
-cc_proto_library(
-    name = "vcf_cc_pb2",
-    srcs = ["vcf.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
-    deps = [
-        ":index_cc_pb2",
-        ":reference_cc_pb2",
-        ":variants_cc_pb2",
-    ],
-)
-
-py_proto_library(
-    name = "vcf_py_pb2",
-    srcs = ["vcf.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-    deps = [
-        ":index_py_pb2",
-        ":reference_py_pb2",
-        ":variants_py_pb2",
-    ],
-)
-
-pyclif_proto_library(
-    name = "vcf_pyclif",
-    proto_lib = ":vcf_proto",  # NO COPYBARA
 )
 
 # ----------------------------------------------------------------------

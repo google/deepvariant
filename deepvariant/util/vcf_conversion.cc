@@ -259,9 +259,9 @@ template <class T> tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
 
 VcfRecordConverter::VcfRecordConverter(
     const nucleus::genomics::v1::VcfHeader& vcf_header,
-    const OptionalVariantFieldsToParse& desired_format_entries)
-    : desired_format_entries_(desired_format_entries)
-{
+    const nucleus::genomics::v1::OptionalVariantFieldsToParse&
+        desired_format_entries)
+    : desired_format_entries_(desired_format_entries) {
   for (const auto& format_spec : vcf_header.formats()) {
     string tag = format_spec.id();
     string type = format_spec.type();

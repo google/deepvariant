@@ -55,7 +55,6 @@ from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
 from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import variants_pb2
-from deepvariant.util.genomics import vcf_pb2
 from deepvariant.util import vcf_constants
 from deepvariant.util.python import vcf_reader
 from deepvariant.util.python import vcf_writer
@@ -141,16 +140,15 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
 
     # redacted
     # list of strings.
-    desired_vcf_fields = vcf_pb2.OptionalVariantFieldsToParse()
+    desired_vcf_fields = variants_pb2.OptionalVariantFieldsToParse()
     if not include_likelihoods:
       desired_vcf_fields.exclude_genotype_quality = True
       desired_vcf_fields.exclude_genotype_likelihood = True
 
     self._reader = vcf_reader.VcfReader.from_file(
         input_path.encode('utf8'),
-        vcf_pb2.VcfReaderOptions(
-            index_mode=index_mode,
-            desired_format_entries=desired_vcf_fields))
+        variants_pb2.VcfReaderOptions(
+            index_mode=index_mode, desired_format_entries=desired_vcf_fields))
 
     self.header = self._reader.header
     self.field_access_cache = VcfHeaderCache(self.header)
@@ -202,7 +200,7 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
 
     if header is None:
       header = variants_pb2.VcfHeader()
-    writer_options = vcf_pb2.VcfWriterOptions(
+    writer_options = variants_pb2.VcfWriterOptions(
         round_qual_values=round_qualities)
     self._writer = vcf_writer.VcfWriter.to_file(output_path, header,
                                                 writer_options)

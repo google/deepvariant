@@ -41,7 +41,6 @@
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/genomics/vcf.pb.h"
 #include "deepvariant/util/reader_base.h"
 #include "deepvariant/util/vcf_conversion.h"
 #include "deepvariant/util/vendor/statusor.h"
@@ -87,7 +86,8 @@ class VcfReader : public Reader {
   // Returns a StatusOr that is OK if the VcfReader could be successfully
   // created or an error code indicating the error that occurred.
   static StatusOr<std::unique_ptr<VcfReader>> FromFile(
-      const string& variants_path, const VcfReaderOptions& options);
+      const string& variants_path,
+      const nucleus::genomics::v1::VcfReaderOptions& options);
 
   ~VcfReader();
 
@@ -131,7 +131,9 @@ class VcfReader : public Reader {
   const nucleus::genomics::v1::VcfHeader Header() const { return vcf_header_; }
 
   // Get the options controlling the behavior of this VcfReader.
-  const VcfReaderOptions& Options() const { return options_; }
+  const nucleus::genomics::v1::VcfReaderOptions& Options() const {
+    return options_;
+  }
 
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
@@ -147,11 +149,12 @@ class VcfReader : public Reader {
   }
 
  private:
-  VcfReader(const string& variants_path, const VcfReaderOptions& options,
-            htsFile* fp, bcf_hdr_t* header, tbx_t* idx);
+  VcfReader(const string& variants_path,
+            const nucleus::genomics::v1::VcfReaderOptions& options, htsFile* fp,
+            bcf_hdr_t* header, tbx_t* idx);
 
   // The options controlling the behavior of this VcfReader.
-  const VcfReaderOptions options_;
+  const nucleus::genomics::v1::VcfReaderOptions options_;
 
   // A pointer to the htslib file used to access the VCF data.
   htsFile * fp_;

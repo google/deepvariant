@@ -211,7 +211,8 @@ class VcfFullFileIterable : public VariantIterable {
 };
 
 StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
-    const string& variants_path, const VcfReaderOptions& options) {
+    const string& variants_path,
+    const nucleus::genomics::v1::VcfReaderOptions& options) {
   htsFile* fp = hts_open_x(variants_path.c_str(), "r");
   if (fp == nullptr) {
     return tf::errors::NotFound(StrCat("Could not open ", variants_path));
@@ -237,8 +238,8 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
 }
 
 VcfReader::VcfReader(const string& variants_path,
-                     const VcfReaderOptions& options, htsFile* fp,
-                     bcf_hdr_t* header, tbx_t* idx)
+                     const nucleus::genomics::v1::VcfReaderOptions& options,
+                     htsFile* fp, bcf_hdr_t* header, tbx_t* idx)
     : options_(options), fp_(fp), header_(header), idx_(idx) {
   if (header_->nhrec < 1) {
     LOG(WARNING) << "Empty header, not a valid VCF.";
