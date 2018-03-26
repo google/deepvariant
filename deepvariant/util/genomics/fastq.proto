@@ -64,3 +64,10 @@ message FastqReaderOptions {
   // records.
   bool skip_invalid_records = 2;
 }
+
+// Options for writing FASTQ files.
+// Currently this is a placeholder message but could be used to support
+// different choices on output like whether the pad line should include the
+// header or not.
+message FastqWriterOptions {
+}

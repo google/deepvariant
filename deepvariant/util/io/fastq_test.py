@@ -37,6 +37,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from deepvariant.util.io import fastq
+from deepvariant.util.genomics import fastq_pb2
 from deepvariant.util import test_utils
 
 
@@ -53,6 +54,34 @@ class FastqReaderTests(parameterized.TestCase):
       records = list(reader.iterate())
     self.assertLen(records, 3)
     self.assertEqual([r.id for r in records], expected_ids)
+
+
+class FastqWriterTests(parameterized.TestCase):
+  """Tests for FastqWriter."""
+
+  def setUp(self):
+    self.records = [
+        fastq_pb2.FastqRecord(id='id1', sequence='ACGTG', quality='ABCDE'),
+        fastq_pb2.FastqRecord(id='id2', sequence='ATTT', quality='ABC@'),
+        fastq_pb2.FastqRecord(
+            id='ID3',
+            description='multi desc',
+            sequence='GATAC',
+            quality='ABC@!'),
+    ]
+
+  @parameterized.parameters('test_raw.fastq', 'test_zipped.fastq.gz',
+                            'test_raw.tfrecord', 'test_zipped.tfrecord.gz')
+  def test_roundtrip_writer(self, filename):
+    output_path = test_utils.test_tmpfile(filename)
+    with fastq.FastqWriter(output_path) as writer:
+      for record in self.records:
+        writer.write(record)
+
+    with fastq.FastqReader(output_path) as reader:
+      v2_records = list(reader.iterate())
+
+    self.assertEqual(self.records, v2_records)
 
 
 if __name__ == '__main__':

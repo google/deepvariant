@@ -33,9 +33,16 @@ API for reading:
     for record in reader:
       print(record)
 
+API for writing:
+  with FastqWriter(output_path) as writer:
+    for record in records:
+      writer.write(record)
+
 where `record` is a nucleus.genomics.v1.FastqRecord protocol buffer.
 
-If input_path ends with '.gz', it is assumed to be compressed.
+If the path contains '.fastq' or '.fq' as an extension, then a true FASTQ file
+will be input/output. Otherwise, a TFRecord file is assumed. In either case, an
+extension of '.gz' will cause the file to be treated as compressed.
 """
 
 from __future__ import absolute_import
@@ -44,10 +51,11 @@ from __future__ import print_function
 
 import collections
 
-
 from deepvariant.util.io import genomics_reader
+from deepvariant.util.io import genomics_writer
 from deepvariant.util.genomics import fastq_pb2
 from deepvariant.util.python import fastq_reader
+from deepvariant.util.python import fastq_writer
 
 _FASTQ_EXTENSIONS = frozenset(['.fq', '.fastq'])
 
@@ -99,3 +107,38 @@ class FastqReader(genomics_reader.DispatchingGenomicsReader):
 
   def _record_proto(self):
     return fastq_pb2.FastqRecord
+
+
+class NativeFastqWriter(genomics_writer.GenomicsWriter):
+  """Class for writing to native FASTQ files.
+
+  Most users will want FastqWriter, which will write to either native FASTQ
+  files or TFRecord files, based on the output filename's extension.
+  """
+
+  def __init__(self, output_path):
+    """Initializer for NativeFastqWriter.
+
+    Args:
+      output_path: str. The path to which to write the FASTQ file.
+    """
+    super(NativeFastqWriter, self).__init__()
+
+    writer_options = fastq_pb2.FastqWriterOptions()
+    self._writer = fastq_writer.FastqWriter.to_file(output_path, writer_options)
+
+  def write(self, proto):
+    self._writer.write(proto)
+
+  def __exit__(self, exit_type, exit_value, exit_traceback):
+    self._writer.__exit__(exit_type, exit_value, exit_traceback)
+
+
+class FastqWriter(genomics_writer.DispatchingGenomicsWriter):
+  """Class for writing FastqRecord protos to FASTQ or TFRecord files."""
+
+  def _get_extensions(self):
+    return _FASTQ_EXTENSIONS
+
+  def _native_writer(self, output_path):
+    return NativeFastqWriter(output_path)

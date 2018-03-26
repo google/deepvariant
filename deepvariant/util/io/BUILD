@@ -129,8 +129,10 @@ py_library(
     srcs = ["fastq.py"],
     deps = [
         ":genomics_reader",
+        ":genomics_writer",
         "//deepvariant/util/genomics:fastq_py_pb2",
         "//deepvariant/util/python:fastq_reader",
+        "//deepvariant/util/python:fastq_writer",
     ],
 )
 
@@ -144,6 +146,7 @@ py_test(
     deps = [
         ":fastq",
         "//deepvariant/util:py_test_utils",
+        "//deepvariant/util/genomics:fastq_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

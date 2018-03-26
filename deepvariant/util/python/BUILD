@@ -186,6 +186,39 @@ py_test(
 )
 
 py_clif_cc(
+    name = "fastq_writer",
+    srcs = ["fastq_writer.clif"],
+    clif_deps = [],
+    py_deps = [],
+    pyclif_deps = [
+        "//deepvariant/util/genomics:fastq_pyclif",
+    ],
+    deps = [
+        "//deepvariant/util:fastq_writer",
+        "//deepvariant/util/vendor:statusor_clif_converters",
+    ],
+)
+
+py_test(
+    name = "fastq_writer_wrap_test",
+    size = "small",
+    srcs = ["fastq_writer_wrap_test.py"],
+    data = [
+        "//deepvariant/util:testdata",
+    ],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":fastq_writer",
+        "//deepvariant/util:io_utils",
+        "//deepvariant/util:py_test_utils",
+        "//deepvariant/util/genomics:fastq_py_pb2",
+        "//deepvariant/util/io:fastq",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_clif_cc(
     name = "math",
     srcs = ["math.clif"],
     clif_deps = [],

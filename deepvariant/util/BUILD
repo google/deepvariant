@@ -78,6 +78,38 @@ cc_test(
 )
 
 cc_library(
+    name = "fastq_writer",
+    srcs = ["fastq_writer.cc"],
+    hdrs = ["fastq_writer.h"],
+    deps = [
+        ":cpp_utils",
+        "//deepvariant/util/genomics:fastq_cc_pb2",
+        "//deepvariant/util/vendor:statusor",
+        "//deepvariant/util/vendor:zlib_compression_options",
+        "//deepvariant/util/vendor:zlib_outputbuffer",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "fastq_writer_test",
+    size = "small",
+    srcs = ["fastq_writer_test.cc"],
+    data = [":testdata"],
+    deps = [
+        ":cpp_test_utils",
+        ":cpp_utils",
+        ":fastq_writer",
+        "//deepvariant/util/genomics:fastq_cc_pb2",
+        "//deepvariant/util/vendor:status_matchers",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
     name = "sam_reader",
     srcs = ["sam_reader.cc"],
     hdrs = ["sam_reader.h"],
