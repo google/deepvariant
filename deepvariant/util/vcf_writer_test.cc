@@ -90,6 +90,7 @@ constexpr char kExpectedHeaderFmt[] =
     "likelihoods, log10 encoded\">\n"  // NOLINT
     "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype "
     "likelihoods, Phred encoded\">\n"  // NOLINT
+    "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set\">\n"
     "##PEDIGREE=<Name_1=\"Val_1\",Name_2=\"Val_2\">\n"
     "##pedigreeDb=\"http://my.pedigre.es\"\n"
     "##contig=<ID=Chr1,length=50,description=\"Dog chromosome 1\">\n"
@@ -163,6 +164,11 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname,
   format8.set_number("G");
   format8.set_type("Integer");
   format8.set_description("Genotype likelihoods, Phred encoded");
+  auto& format9 = *header.mutable_formats()->Add();
+  format9.set_id("PS");
+  format9.set_number("1");
+  format9.set_type("Integer");
+  format9.set_description("Phase set");
 
   // Structured extras.
   auto& sExtra = *header.mutable_structured_extras()->Add();
@@ -256,7 +262,8 @@ TEST(VcfWriterTest, WritesVCF) {
   v3.set_quality(10.567);
   *v3.add_calls() = MakeVariantCall("Fido", {-1, -1});
   VariantCall call2 = MakeVariantCall("Spot", {-1, 1});
-  call2.set_phaseset("*");
+  call2.set_is_phased(true);
+  SetInfoField("PS", 10, &call2);
   *v3.add_calls() = call2;
   ASSERT_THAT(writer->Write(v3), IsOK());
 
@@ -291,7 +298,8 @@ TEST(VcfWriterTest, WritesVCF) {
       string(kExpectedHeaderFmt) +
       "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t11\t.\tC\tG,T\t10\tPASS\t.\tGT\t0/0\t0/1\n"
-      "Chr2\t16\tDogSNP3;Woof10003\tC\t,T\t10.567\tPASS\t.\tGT\t./.\t.|1\n"
+      "Chr2\t16\tDogSNP3;Woof10003\tC\t,T\t10.567\tPASS\t.\tGT:PS\t./"
+      ".:.\t.|1:10\n"
       "Chr2\t18\tDogSNP4\tT\tA\t.\t.\t.\tGT\t0/1/0\t0/1\n"
       "Chr2\t20\tDogSNP5\tTT\t\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n";

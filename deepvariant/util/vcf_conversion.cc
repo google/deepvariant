@@ -267,7 +267,7 @@ VcfRecordConverter::VcfRecordConverter(
     string type = format_spec.type();
 
     // These fields are handled specially.
-    if (tag == "GT" || tag == "GL" || tag == "PL" || tag == "PS") continue;
+    if (tag == "GT" || tag == "GL" || tag == "PL") continue;
 
     // Check if configuration has disabled this FORMAT field.
     if ((tag == "GQ" && desired_format_entries_.exclude_genotype_quality()) ||
@@ -354,10 +354,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     }
     ploidy = n_gts / v->n_sample;
 
-    std::vector<std::vector<int>> ps_values = ReadFormatValues<int>(h, v, "PS");
-
     for (int i = 0; i < v->n_sample; i++) {
-      bool have_ps = !ps_values.empty() && !ps_values[i].empty();
       nucleus::genomics::v1::VariantCall* call = variant_message->add_calls();
       call->set_call_set_name(h->samples[i]);
       // Get the GT calls, if requested and available.
@@ -369,13 +366,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
           gt_is_phased = gt_is_phased || bcf_gt_is_phased(gt_idx);
           call->add_genotype(gt);
         }
-        // We need to set the phaseset, if available in field PS. If this is a
-        // phased genotype and there is no PS field, phaseset is "*".
-        if (have_ps) {
-          call->set_phaseset(std::to_string(ps_values[i][0]));
-        } else if (gt_is_phased) {
-          call->set_phaseset("*");
-        }
+        call->set_is_phased(gt_is_phased);
       }
     }
     free(gt_arr);
@@ -517,7 +508,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
           " while the VCF header expected a sample named ",
           h.samples[c], " at this position");
 
-      const bool isPhased = !vc.phaseset().empty();
+      const bool isPhased = vc.is_phased();
       int a = 0;
       for (; a < vc.genotype_size(); a++) {
         gts.get()[c * ploidy + a] = vcfEncodeAllele(vc.genotype(a), isPhased);

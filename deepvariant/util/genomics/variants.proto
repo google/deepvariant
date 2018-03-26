@@ -125,25 +125,27 @@ message VariantCall {
   string call_set_name = 9;
 
   // The genotype of this variant call. Each value represents either the value
-  // of the `referenceBases` field or a 1-based index into
-  // `alternateBases`. If a variant had a `referenceBases`
-  // value of `T` and an `alternateBases`
-  // value of `["A", "C"]`, and the `genotype` was
-  // `[2, 1]`, that would mean the call
-  // represented the heterozygous value `CA` for this variant.
-  // If the `genotype` was instead `[0, 1]`, the
-  // represented value would be `TA`. Ordering of the
-  // genotype values is important if the `phaseset` is present.
-  // Uncalled genotypes (represented as `.` in the GT string) are represented
-  // by -1 in this array.
+  // of the `referenceBases` field or a 1-based index into `alternateBases`. If
+  // a variant had a `referenceBases` value of `T` and an `alternateBases` value
+  // of `["A", "C"]`, and the `genotype` was `[2, 1]`, that would mean the call
+  // represented the heterozygous value `CA` for this variant. If the `genotype`
+  // was instead `[0, 1]`, the represented value would be `TA`. Ordering of the
+  // genotype values is important if the `phaseset` is present ('PS' field in
+  // the call.info map). Uncalled genotypes (represented as `.` in the GT
+  // string) are represented by -1 in this array.
   repeated int32 genotype = 7;
 
-  // If this field is present, this variant call's genotype ordering implies
-  // the phase of the bases and is consistent with any other variant calls in
-  // the same reference sequence which have the same phaseset value.
-  // When importing data from VCF, if the genotype data was phased but no
-  // phase set was specified this field will be set to `*`.
-  string phaseset = 5;
+  // If true, this variant call's genotype ordering implies the phase of the
+  // bases and is consistent with any other variant calls in the same reference
+  // sequence which have the same phaseset value (the integer 'PS' field in the
+  // call.info map). If this is true but the 'PS' field is not set, the call is
+  // assumed to be phased with all other calls for which the same state applies.
+  bool is_phased = 10;
+
+  // DEPRECATED. This previously was used as a special-cased field for capturing
+  // phasing information. This field should no longer be set, in favor of using
+  // the 'PS' field in the call.info map and the `is_phased` boolean attribute.
+  string phaseset = 5;  // DEPRECATED.
 
   // The genotype likelihoods for this variant call. Each array entry
   // represents how likely a specific genotype is for this call. The value
