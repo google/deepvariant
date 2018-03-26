@@ -40,24 +40,20 @@ API for writing:
 
 where `record` is a nucleus.genomics.v1.FastqRecord protocol buffer.
 
-If the path contains '.fastq' or '.fq' as an extension, then a true FASTQ file
-will be input/output. Otherwise, a TFRecord file is assumed. In either case, an
-extension of '.gz' will cause the file to be treated as compressed.
+If the path contains '.tfrecord' as an extension, a TFRecord file is
+assumed.  Otherwise, it is treated as a true FASTQ file.  In either case,
+an extension of '.gz' will cause the file to be treated as compressed.
 """
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import collections
-
 from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
 from deepvariant.util.genomics import fastq_pb2
 from deepvariant.util.python import fastq_reader
 from deepvariant.util.python import fastq_writer
-
-_FASTQ_EXTENSIONS = frozenset(['.fq', '.fastq'])
 
 
 class NativeFastqReader(genomics_reader.GenomicsReader):
@@ -99,9 +95,6 @@ class NativeFastqReader(genomics_reader.GenomicsReader):
 class FastqReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading FastqRecord protos from FASTQ or TFRecord files."""
 
-  def _get_extensions(self):
-    return _FASTQ_EXTENSIONS
-
   def _native_reader(self, input_path, **kwargs):
     return NativeFastqReader(input_path, **kwargs)
 
@@ -136,9 +129,6 @@ class NativeFastqWriter(genomics_writer.GenomicsWriter):
 
 class FastqWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing FastqRecord protos to FASTQ or TFRecord files."""
-
-  def _get_extensions(self):
-    return _FASTQ_EXTENSIONS
 
   def _native_writer(self, output_path):
     return NativeFastqWriter(output_path)

@@ -135,7 +135,6 @@ class TFRecordReader(GenomicsReader):
           python_io.TFRecordCompressionType.NONE)
     self.tf_options = tf_options
 
-
   def iterate(self):
     # redacted
     for buf in python_io.tf_record_iterator(self.input_path, self.tf_options):
@@ -152,35 +151,28 @@ class TFRecordReader(GenomicsReader):
 class DispatchingGenomicsReader(GenomicsReader):
   """A GenomicsReader that dispatches based on the file extension.
 
+  If '.tfrecord' is present in the filename, a TFRecordReader is used,
+  otherwise a native reader is.
+
   Sub-classes of DispatchingGenomicsReader must define the following methods:
-    * _get_extensions()
     * _native_reader()
     * _record_proto()
-  Using those methods, the object will then use the native reader if one of
-  the extensions is present in the output filename, and use a TFRecordReader
-  otherwise.
   """
 
   def __init__(self, input_path, **kwargs):
     super(DispatchingGenomicsReader, self).__init__()
 
-    if '.tfrecord' not in input_path and any(
-        ext in input_path for ext in self._get_extensions()):
-      self._reader = self._native_reader(input_path, **kwargs)
-    else:
+    if '.tfrecord' in input_path:
       self._reader = TFRecordReader(input_path, proto=self._record_proto(),
                                     tf_options=kwargs.get('tf_options', None))
+    else:
+      # Remove tf_options, if present, from the arguments we pass to the
+      # native reader.
+      kwargs.pop('tf_options', None)
+      self._reader = self._native_reader(input_path, **kwargs)
     logging.info('Reading %s with %s',
                  input_path, self._reader.__class__.__name__)
-    self.header = self._reader.header
-
-  @abc.abstractmethod
-  def _get_extensions(self):
-    """Returns a list of file extensions to use the native reader for.
-
-    Returns:
-      A list of strings.
-    """
+    self.header = getattr(self._reader, 'header', None)
 
   @abc.abstractmethod
   def _native_reader(self, output_path, **kwargs):

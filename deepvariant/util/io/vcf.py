@@ -40,9 +40,9 @@ API for writing:
 
 where variant is a nucleus.genomics.v1.Variant protocol buffer.
 
-If the path contains '.vcf' as an extension, then a true VCF file
-will be input/output.  Otherwise, a TFRecord file will be assumed.  In either
-case, an extension of '.gz' will cause the file to be treated as compressed.
+If the path contains '.tfrecord', then a TFRecord file is assumed.
+Otherwise, it is treated as a true VCF file.  In either case, an
+extension of '.gz' will cause the file to be treated as compressed.
 """
 
 from __future__ import absolute_import
@@ -59,8 +59,6 @@ from deepvariant.util.genomics import vcf_pb2
 from deepvariant.util import vcf_constants
 from deepvariant.util.python import vcf_reader
 from deepvariant.util.python import vcf_writer
-
-_VCF_EXTENSIONS = frozenset(['.vcf'])
 
 
 def _create_get_fn_cache(fields):
@@ -170,9 +168,6 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
 class VcfReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Variant protos from VCF or TFRecord files."""
 
-  def _get_extensions(self):
-    return _VCF_EXTENSIONS
-
   def _native_reader(self, input_path, **kwargs):
     return NativeVcfReader(input_path, **kwargs)
 
@@ -222,9 +217,6 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
 
 class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Variant protos to VCF or TFRecord files."""
-
-  def _get_extensions(self):
-    return _VCF_EXTENSIONS
 
   def _native_writer(self, output_path, header, round_qualities=False):
     return NativeVcfWriter(

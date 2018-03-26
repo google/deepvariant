@@ -98,30 +98,22 @@ class TFRecordWriter(GenomicsWriter):
 class DispatchingGenomicsWriter(GenomicsWriter):
   """A GenomicsWriter that dispatches based on the file extension.
 
-  Sub-classes of DispatchingGenomicsWriter must define _get_extensions()
-  and _native_writer() methods.  Using those methods, the object will then
-  use the native writer if one of the extensions is present in the
-  output filename, and use a TFRecordWriter otherwise.
+  If '.tfrecord' is present in the filename, a TFRecordWriter is used.
+  Otherwise, a native writer is.
+
+  Sub-classes of DispatchingGenomicsWriter must define a _native_writer()
+  method.
   """
 
   def __init__(self, output_path, **kwargs):
     super(DispatchingGenomicsWriter, self).__init__()
 
-    if '.tfrecord' not in output_path and any(
-        ext in output_path for ext in self._get_extensions()):
-      self._writer = self._native_writer(output_path, **kwargs)
-    else:
+    if '.tfrecord' in output_path:
       self._writer = TFRecordWriter(output_path)
+    else:
+      self._writer = self._native_writer(output_path, **kwargs)
     logging.info('Writing %s with %s',
                  output_path, self._writer.__class__.__name__)
-
-  @abc.abstractmethod
-  def _get_extensions(self):
-    """Returns a list of file extensions to use the native writer for.
-
-    Returns:
-      A list of strings.
-    """
 
   @abc.abstractmethod
   def _native_writer(self, output_path, **kwargs):

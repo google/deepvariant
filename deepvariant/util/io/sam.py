@@ -41,9 +41,9 @@ API for writing:
 
 where read is a nucleus.genomics.v1.Read protocol buffer.
 
-Paths containing '.sam' or '.bam' as extensions will be treated as true
-SAM files.  Otherwise, TFRecord files are assumed.  Also, file names ending
-with '.gz' will be assumed to be compressed.
+If the path contains '.tfrecord', a TFRecord file is assumed; otherwise
+it is treated as a true SAM file.  Also, file names ending with '.gz'
+are assumed to be compressed.
 """
 
 from __future__ import absolute_import
@@ -57,8 +57,6 @@ from deepvariant.util.io import genomics_writer
 from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util.python import sam_reader
-
-_SAM_EXTENSIONS = frozenset(['.bam', '.sam', '.tfbam'])
 
 
 class NativeSamReader(genomics_reader.GenomicsReader):
@@ -169,9 +167,6 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 class SamReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Read protos from SAM or TFRecord files."""
 
-  def _get_extensions(self):
-    return _SAM_EXTENSIONS
-
   def _native_reader(self, input_path, **kwargs):
     return NativeSamReader(input_path, **kwargs)
 
@@ -206,9 +201,6 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
 
 class SamWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Variant protos to SAM or TFRecord files."""
-
-  def _get_extensions(self):
-    return _SAM_EXTENSIONS
 
   def _native_writer(self, output_path, header):
     return NativeSamWriter(output_path, header)
