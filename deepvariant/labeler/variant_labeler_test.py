@@ -37,7 +37,7 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from deepvariant.util import in_memory_vcf_reader
+from deepvariant.util.io import vcf
 from deepvariant.util import ranges
 from deepvariant import test_utils
 from deepvariant.labeler import variant_labeler
@@ -72,7 +72,7 @@ class VariantLabelerTest(parameterized.TestCase):
     v5_non_confident = test_utils.make_variant(chrom='1', start=150)
 
     variants = [v1, v2, v3_filtered, v4_del, v5_non_confident]
-    reader = in_memory_vcf_reader.InMemoryVcfReader(variants=variants)
+    reader = vcf.InMemoryVcfReader(variants=variants)
     confident_regions = ranges.RangeSet([ranges.make_range('1', 1, 100)])
     labeler = DummyVariantLabeler(
         truth_vcf_reader=reader, confident_regions=confident_regions)

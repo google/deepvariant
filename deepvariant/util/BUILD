@@ -716,32 +716,6 @@ py_library(
     srcs = ["clif_postproc.py"],
 )
 
-py_library(
-    name = "in_memory_vcf_reader",
-    srcs = ["in_memory_vcf_reader.py"],
-    deps = [
-        "//deepvariant/util:ranges",
-        "//deepvariant/util:variant_utils",
-        "//deepvariant/util/io:genomics_reader",
-        "//deepvariant/util/io:vcf",
-    ],
-)
-
-py_test(
-    name = "in_memory_vcf_reader_test",
-    srcs = ["in_memory_vcf_reader_test.py"],
-    deps = [
-        ":in_memory_vcf_reader",
-        "//deepvariant/util:py_test_utils",
-        "//deepvariant/util:ranges",
-        "//deepvariant/util:variant_utils",
-        "//deepvariant/util/genomics:reference_py_pb2",
-        "//deepvariant/util/genomics:variants_py_pb2",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
-    ],
-)
-
 # -----------------------------------------------------------
 #
 # These deps are purged by copybara and are not really part

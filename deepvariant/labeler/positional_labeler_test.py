@@ -37,7 +37,7 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from deepvariant.util import in_memory_vcf_reader
+from deepvariant.util.io import vcf
 from deepvariant.util import ranges
 from deepvariant import test_utils
 from deepvariant.labeler import positional_labeler
@@ -62,7 +62,7 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
 
   def _make_labeler(self, variants, confident_regions):
     return positional_labeler.PositionalVariantLabeler(
-        truth_vcf_reader=in_memory_vcf_reader.InMemoryVcfReader(variants),
+        truth_vcf_reader=vcf.InMemoryVcfReader(variants),
         confident_regions=confident_regions)
 
   @parameterized.parameters(

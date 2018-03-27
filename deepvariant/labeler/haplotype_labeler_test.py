@@ -37,8 +37,8 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
+from deepvariant.util.io import vcf
 from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import in_memory_vcf_reader
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
 
@@ -80,8 +80,7 @@ def _make_labeler(truth_variants=None, confident_regions=None, **kwargs):
         [ranges.make_range(contig, 0, 1000000000)])
 
   return haplotype_labeler.HaplotypeLabeler(
-      truth_vcf_reader=in_memory_vcf_reader.InMemoryVcfReader(
-          truth_variants or []),
+      truth_vcf_reader=vcf.InMemoryVcfReader(truth_variants or []),
       ref_reader=mock_ref_reader,
       confident_regions=confident_regions,
       **kwargs)
