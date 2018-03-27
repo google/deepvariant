@@ -51,7 +51,7 @@ py_test(
     name = "vcf_test",
     size = "small",
     srcs = ["vcf_test.py"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":vcf",
         "//deepvariant/util:py_test_utils",
@@ -81,7 +81,7 @@ py_test(
     name = "sam_test",
     size = "small",
     srcs = ["sam_test.py"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":sam",
         "//deepvariant/util:io_utils",
@@ -108,7 +108,7 @@ py_test(
     name = "bed_test",
     size = "small",
     srcs = ["bed_test.py"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":bed",
         "//deepvariant/util:py_test_utils",
@@ -131,7 +131,7 @@ py_test(
     name = "fasta_test",
     size = "small",
     srcs = ["fasta_test.py"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":fasta",
         "//deepvariant/util:py_test_utils",
@@ -158,7 +158,7 @@ py_test(
     name = "fastq_test",
     size = "small",
     srcs = ["fastq_test.py"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":fastq",
         "//deepvariant/util:py_test_utils",

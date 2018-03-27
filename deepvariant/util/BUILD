@@ -58,7 +58,7 @@ cc_test(
     name = "bed_reader_test",
     size = "small",
     srcs = ["bed_reader_test.cc"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":bed_reader",
         ":cpp_test_utils",
@@ -92,7 +92,7 @@ cc_test(
     name = "fastq_reader_test",
     size = "small",
     srcs = ["fastq_reader_test.cc"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -126,7 +126,7 @@ cc_test(
     name = "fastq_writer_test",
     size = "small",
     srcs = ["fastq_writer_test.cc"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -165,7 +165,7 @@ cc_test(
     name = "sam_reader_test",
     size = "small",
     srcs = ["sam_reader_test.cc"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -219,7 +219,7 @@ cc_test(
     name = "vcf_reader_test",
     size = "small",
     srcs = ["vcf_reader_test.cc"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -255,7 +255,7 @@ cc_test(
     name = "vcf_writer_test",
     size = "small",
     srcs = ["vcf_writer_test.cc"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -287,7 +287,7 @@ cc_library(
     testonly = True,
     srcs = ["reference_test.cc"],
     hdrs = ["reference_test.h"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -494,7 +494,7 @@ py_test(
     name = "ranges_test",
     size = "small",
     srcs = ["ranges_test.py"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":py_test_utils",
         ":ranges",
@@ -615,7 +615,7 @@ py_test(
     name = "io_utils_test",
     size = "small",
     srcs = ["io_utils_test.py"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":io_utils",
         ":py_test_utils",
@@ -724,7 +724,7 @@ cc_test(
     name = "hts_test",
     size = "small",
     srcs = ["hts_test.cc"],
-    data = ["//third_party/nucleus/testdata"],
+    data = ["//deepvariant/util/testdata"],
     deps = [
         ":cpp_test_utils",
         ":hts_path",

@@ -53,7 +53,7 @@ DATADIR = ''
 DEFAULT_WORKSPACE = ''
 
 # In the OSS version this becomes 'deepvariant/testdata'
-RELATIVE_TESTDATA_PATH = 'deepvariant/testdata'
+RELATIVE_TESTDATA_PATH = 'deepvariant/util/testdata'
 
 
 def genomics_testdata(path, datadir=DATADIR):
