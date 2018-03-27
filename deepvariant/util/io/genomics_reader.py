@@ -173,6 +173,7 @@ class DispatchingGenomicsReader(GenomicsReader):
     logging.info('Reading %s with %s',
                  input_path, self._reader.__class__.__name__)
     self.header = getattr(self._reader, 'header', None)
+    self._post_init_hook()
 
   @abc.abstractmethod
   def _native_reader(self, output_path, **kwargs):
@@ -198,3 +199,7 @@ class DispatchingGenomicsReader(GenomicsReader):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
+
+  def _post_init_hook(self):
+    """Hook for sub-classes to run code at the end of __init__."""
+    pass

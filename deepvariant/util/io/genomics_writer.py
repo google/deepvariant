@@ -79,7 +79,7 @@ class GenomicsWriter(object):
 class TFRecordWriter(GenomicsWriter):
   """A GenomicsWriter that writes to a TFRecord file."""
 
-  def __init__(self, output_path):
+  def __init__(self, output_path, header=None):
     super(TFRecordWriter, self).__init__()
 
     compressed = output_path.endswith('.gz')
@@ -87,6 +87,7 @@ class TFRecordWriter(GenomicsWriter):
         python_io.TFRecordCompressionType.GZIP if compressed else
         python_io.TFRecordCompressionType.NONE)
     self._writer = python_io.TFRecordWriter(output_path, options=options)
+    self.header = header
 
   def write(self, proto):
     self._writer.write(proto.SerializeToString())
@@ -107,13 +108,15 @@ class DispatchingGenomicsWriter(GenomicsWriter):
 
   def __init__(self, output_path, **kwargs):
     super(DispatchingGenomicsWriter, self).__init__()
+    self.header = kwargs.get('header', None)
 
     if '.tfrecord' in output_path:
-      self._writer = TFRecordWriter(output_path)
+      self._writer = TFRecordWriter(output_path, header=self.header)
     else:
       self._writer = self._native_writer(output_path, **kwargs)
     logging.info('Writing %s with %s',
                  output_path, self._writer.__class__.__name__)
+    self._post_init_hook()
 
   @abc.abstractmethod
   def _native_writer(self, output_path, **kwargs):
@@ -132,3 +135,7 @@ class DispatchingGenomicsWriter(GenomicsWriter):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
+
+  def _post_init_hook(self):
+    """Hook for sub-classes to run code at the end of __init__."""
+    pass

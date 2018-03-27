@@ -94,6 +94,8 @@ class VcfHeaderCache(object):
       header: nucleus.genomics.v1.VcfHeader proto. Used to define the accessor
         functions needed.
     """
+    if header is None:
+      header = variants_pb2.VcfHeader()
     self._info_get_cache = _create_get_fn_cache(header.infos)
     self._info_set_cache = _create_set_fn_cache(header.infos)
     self._format_get_cache = _create_get_fn_cache(header.formats)
@@ -172,9 +174,12 @@ class VcfReader(genomics_reader.DispatchingGenomicsReader):
   def _record_proto(self):
     return variants_pb2.Variant
 
-  @property
-  def field_access_cache(self):
-    return getattr(self._reader, 'field_access_cache', None)
+  def _post_init_hook(self):
+    # Initialize field_access_cache.  If we are dispatching to a
+    # NativeVcfReader, we use its field_access_cache.  Otherwise, we
+    # need to create a new one.
+    self.field_access_cache = getattr(
+        self._reader, 'field_access_cache', VcfHeaderCache(self.header))
 
 
 class NativeVcfWriter(genomics_writer.GenomicsWriter):
@@ -220,6 +225,9 @@ class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
     return NativeVcfWriter(
         output_path, header=header, round_qualities=round_qualities)
 
-  @property
-  def field_access_cache(self):
-    return getattr(self._writer, 'field_access_cache', None)
+  def _post_init_hook(self):
+    # Initialize field_access_cache.  If we are dispatching to a
+    # NativeVcfWriter, we use its field_access_cache.  Otherwise, we
+    # need to create a new one.
+    self.field_access_cache = getattr(
+        self._writer, 'field_access_cache', VcfHeaderCache(self.header))
