@@ -205,7 +205,7 @@ class VcfWithSamplesReaderTest : public ::testing::Test {
     indexed_vcf_ = GetTestData(kVcfIndexSamplesFilename);
     golden_ =
         ReadProtosFromTFRecord<Variant>(GetTestData(kVcfSamplesGoldenFilename));
-    ignored_fields_ = {"quality", "info", "calls.info"};
+    ignored_fields_ = {"quality", "info"};
     RecreateReader();
   }
 
