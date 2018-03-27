@@ -43,12 +43,46 @@ py_library(
 )
 
 cc_library(
+    name = "bed_reader",
+    srcs = ["bed_reader.cc"],
+    hdrs = ["bed_reader.h"],
+    deps = [
+        ":cpp_utils",
+        ":reader_base",
+        "//deepvariant/util/genomics:bed_cc_pb2",
+        "//deepvariant/util/vendor:statusor",
+        "//deepvariant/util/vendor:zlib_compression_options",
+        "//deepvariant/util/vendor:zlib_inputstream",
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "bed_reader_test",
+    size = "small",
+    srcs = ["bed_reader_test.cc"],
+    data = [":testdata"],
+    deps = [
+        ":bed_reader",
+        ":cpp_test_utils",
+        ":cpp_utils",
+        "//deepvariant/util/genomics:bed_cc_pb2",
+        "//deepvariant/util/testing:gunit_extras",
+        "//deepvariant/util/vendor:status_matchers",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
     name = "fastq_reader",
     srcs = ["fastq_reader.cc"],
     hdrs = ["fastq_reader.h"],
     deps = [
         ":cpp_utils",
-        ":hts_path",
         ":reader_base",
         "//deepvariant/util/genomics:fastq_cc_pb2",
         "//deepvariant/util/vendor:statusor",

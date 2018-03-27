@@ -99,6 +99,32 @@ py_test(
 )
 
 py_library(
+    name = "bed",
+    srcs = ["bed.py"],
+    deps = [
+        ":genomics_reader",
+        "//deepvariant/util/genomics:bed_py_pb2",
+        "//deepvariant/util/python:bed_reader",
+    ],
+)
+
+py_test(
+    name = "bed_test",
+    size = "small",
+    srcs = ["bed_test.py"],
+    data = [
+        "//deepvariant/util:testdata",
+    ],
+    deps = [
+        ":bed",
+        "//deepvariant/util:py_test_utils",
+        "//deepvariant/util/genomics:bed_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
     name = "fasta",
     srcs = ["fasta.py"],
     deps = [

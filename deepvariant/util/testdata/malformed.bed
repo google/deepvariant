@@ -1,0 +1,4 @@
+# Valid first record
+chr1	10	20	first	100	+	12	18	255,124,1	3	2,6,2	10,12,18
+# Malformed second record.
+chr1	100
