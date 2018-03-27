@@ -42,6 +42,14 @@ py_binary(
 )
 
 py_binary(
+    name = "filter_vcf",
+    srcs = ["filter_vcf.py"],
+    deps = [
+        "//deepvariant/util/io:vcf",
+    ],
+)
+
+py_binary(
     name = "validate_vcf",
     srcs = ["validate_vcf.py"],
     deps = [
