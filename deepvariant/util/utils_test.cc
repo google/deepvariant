@@ -575,7 +575,7 @@ TEST(SetInfoField, WorksWithVectorOfStrings) {
   VariantCall call;
   const string key = "key";
   SetInfoField(key, std::vector<string>{"str1", "str2"}, &call);
-  EXPECT_THAT(ListValues(call.info().at(key)), ElementsAre("str1", "str2"));
+  EXPECT_THAT(ListValues<string>(call.info().at(key)), ElementsAre("str1", "str2"));
 }
 
 TEST(SetInfoField, WorksWithSingleInt) {
@@ -589,7 +589,7 @@ TEST(SetInfoField, WorksWithSingleString) {
   VariantCall call;
   const string key = "key";
   SetInfoField(key, "foo", &call);
-  EXPECT_THAT(ListValues(call.info().at(key)), ElementsAre("foo"));
+  EXPECT_THAT(ListValues<string>(call.info().at(key)), ElementsAre("foo"));
 }
 
 TEST(SetInfoField, WorksWithVariantProto) {

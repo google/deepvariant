@@ -90,6 +90,33 @@ std::vector<std::vector<ValueType>> ReadFormatValues(const bcf_hdr_t* h,
   return values;
 }
 
+
+// Specialized instantiation for string fields, which require different
+// memory management and semantics.
+template<>
+std::vector<std::vector<string>> ReadFormatValues(const bcf_hdr_t* h,
+                                                  const bcf1_t* v,
+                                                  const char* tag) {
+  if (bcf_get_fmt(h, const_cast<bcf1_t*>(v), tag) == nullptr) {
+    return {};
+  }
+
+  int n_dst = 0;
+  char** dst = nullptr;
+  std::vector<std::vector<string>> values(v->n_sample);
+  if (bcf_get_format_string(h, const_cast<bcf1_t*>(v), tag, &dst, &n_dst) > 0) {
+    for (int i = 0; i < bcf_hdr_nsamples(h); i++) {
+      values[i] = {dst[i]};
+    }
+    // As noted in bcf_get_format_string declaration in vcf.h, the format
+    // function we are using here allocates two arrays and both must be cleaned
+    // by the user.
+    free(dst[0]);
+    free(dst);
+  }
+  return values;
+}
+
 // Sentinel value used to set variant.quality if one was not specified.
 constexpr double kQualUnset = -1;
 
@@ -161,6 +188,50 @@ tensorflow::Status EncodeFormatValues(
 }
 
 
+// Specialized instantiation for string.
+template<>
+tensorflow::Status EncodeFormatValues(
+    const std::vector<std::vector<string>>& values, const char* tag,
+    const bcf_hdr_t* h, bcf1_t* v) {
+
+  if (values.empty()) {
+    return tensorflow::Status::OK();
+  }
+
+  if (values.size() != bcf_hdr_nsamples(h))
+    return tensorflow::errors::FailedPrecondition("Values.size() != nsamples");
+  size_t n_samples = values.size();
+
+  size_t values_per_sample = 0;
+  for (size_t s = 0; s < n_samples; s++) {
+    values_per_sample = std::max(values_per_sample, values[s].size());
+  }
+  if (values_per_sample > 1) {
+    return tensorflow::errors::FailedPrecondition(
+        "Can't currently handle > 1 string format entry per sample.");
+  }
+  auto c_values_up = absl::make_unique<const char*[]>(n_samples);
+  const char** c_values = c_values_up.get();
+  CHECK(c_values != nullptr);
+  for (int i = 0; i < n_samples; ++i) {
+    if (values[i].empty()) {
+      c_values[i] = ".";
+    } else {
+      c_values[i] = values[i][0].c_str();
+    }
+  }
+  int rc = bcf_update_format_string(h, v, tag, c_values,
+                                    values_per_sample * n_samples);
+  if (rc < 0) {
+    return tensorflow::errors::Internal(
+        "Failure to write VCF FORMAT field");
+  }
+
+  return tensorflow::Status::OK();
+}
+
+
+
 }  // namespace
 
 // -----------------------------------------------------------------------------
@@ -180,8 +251,9 @@ tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
     return EncodeValues<float>(variant, header, bcf_record);
   } else if (vcf_type_ == BCF_HT_INT) {
     return EncodeValues<int>(variant, header, bcf_record);
+  } else if (vcf_type_ == BCF_HT_STR) {
+    return EncodeValues<string>(variant, header, bcf_record);
   } else {
-    // redacted
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
   }
@@ -201,13 +273,7 @@ template <class T> tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
     const nucleus::genomics::v1::VariantCall& vc = variant.calls(i);
     auto found = vc.info().find(field_name_);
     if (found != vc.info().end()) {
-      for (auto& list_value : (*found).second.values()) {
-        if (std::is_integral<T>::value) {
-          values[i].push_back(list_value.int_value());
-        } else {
-          values[i].push_back(list_value.number_value());
-        }
-      }
+      values[i] = ListValues<T>((*found).second);
     }
     // Since we don't have a field_name_ key/value pair in this sample, we
     // just leave the values[i] empty.
@@ -226,8 +292,9 @@ tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
     return DecodeValues<float>(header, bcf_record, variant);
   } else if (vcf_type_ == BCF_HT_INT) {
     return DecodeValues<int>(header, bcf_record, variant);
+  } else if (vcf_type_ == BCF_HT_STR) {
+    return DecodeValues<string>(header, bcf_record, variant);
   } else {
-    // redacted
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
   }
@@ -285,8 +352,9 @@ VcfRecordConverter::VcfRecordConverter(
       vcf_type = BCF_HT_INT;
     } else if (type == "Float") {
       vcf_type = BCF_HT_REAL;
+    } else if (type == "String") {
+      vcf_type = BCF_HT_STR;
     } else {
-      // redacted
       LOG(WARNING) << "Unhandled FORMAT field type: field " << tag
                    << " of type " << type;
       continue;

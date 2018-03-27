@@ -291,13 +291,4 @@ bool EndsWith(const string& s, const string& t) {
   return std::equal(t.rbegin(), t.rend(), s.rbegin());
 }
 
-std::vector<string> ListValues(
-    const nucleus::genomics::v1::ListValue& list_value) {
-  std::vector<string> values;
-  for (const auto& value : list_value.values()) {
-    values.push_back(value.string_value());
-  }
-  return values;
-}
-
 }  // namespace nucleus

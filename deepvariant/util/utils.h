@@ -260,8 +260,15 @@ ListValues(const nucleus::genomics::v1::ListValue& list_value) {
   return values;
 }
 
-std::vector<string> ListValues(
-    const nucleus::genomics::v1::ListValue& list_value);
+template <typename T>
+std::vector<typename std::enable_if<std::is_same<T, string>::value, T>::type>
+ListValues(const nucleus::genomics::v1::ListValue& list_value) {
+  std::vector<string> values;
+  for (const auto& value : list_value.values()) {
+    values.push_back(value.string_value());
+  }
+  return values;
+}
 
 }  // namespace nucleus
 
