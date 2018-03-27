@@ -27,7 +27,7 @@ py_test(
     srcs = ["allelecounter_wrap_test.py"],
     data = [
         "//deepvariant:testdata",
-        "//deepvariant/util:testdata",
+        "//third_party/nucleus/testdata",
     ],
     srcs_version = "PY2AND3",
     deps = [

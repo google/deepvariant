@@ -12,11 +12,6 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-filegroup(
-    name = "testdata",
-    srcs = glob(["testdata/*"]),
-)
-
 test_suite(
     name = "smoke_tests",
     tests = ["hts_test"],
@@ -63,7 +58,7 @@ cc_test(
     name = "bed_reader_test",
     size = "small",
     srcs = ["bed_reader_test.cc"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":bed_reader",
         ":cpp_test_utils",
@@ -97,7 +92,7 @@ cc_test(
     name = "fastq_reader_test",
     size = "small",
     srcs = ["fastq_reader_test.cc"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -131,7 +126,7 @@ cc_test(
     name = "fastq_writer_test",
     size = "small",
     srcs = ["fastq_writer_test.cc"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -170,7 +165,7 @@ cc_test(
     name = "sam_reader_test",
     size = "small",
     srcs = ["sam_reader_test.cc"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -224,7 +219,7 @@ cc_test(
     name = "vcf_reader_test",
     size = "small",
     srcs = ["vcf_reader_test.cc"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -260,7 +255,7 @@ cc_test(
     name = "vcf_writer_test",
     size = "small",
     srcs = ["vcf_writer_test.cc"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -292,10 +287,7 @@ cc_library(
     testonly = True,
     srcs = ["reference_test.cc"],
     hdrs = ["reference_test.h"],
-    data = [
-        "testdata/test.fasta",
-        "testdata/test.fasta.fai",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":cpp_test_utils",
         ":cpp_utils",
@@ -502,7 +494,7 @@ py_test(
     name = "ranges_test",
     size = "small",
     srcs = ["ranges_test.py"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":py_test_utils",
         ":ranges",
@@ -623,9 +615,7 @@ py_test(
     name = "io_utils_test",
     size = "small",
     srcs = ["io_utils_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":io_utils",
         ":py_test_utils",
@@ -734,8 +724,9 @@ cc_test(
     name = "hts_test",
     size = "small",
     srcs = ["hts_test.cc"],
-    data = [":testdata"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
+        ":cpp_test_utils",
         ":hts_path",
         ":port",
         "@com_google_absl//absl/strings",

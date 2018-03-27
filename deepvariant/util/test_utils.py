@@ -52,8 +52,8 @@ FLAGS = flags.FLAGS
 DATADIR = ''
 DEFAULT_WORKSPACE = ''
 
-# In the OSS version this becomes 'deepvariant/util/testdata'
-RELATIVE_TESTDATA_PATH = 'deepvariant/util/testdata'
+# In the OSS version this becomes 'deepvariant/testdata'
+RELATIVE_TESTDATA_PATH = 'deepvariant/testdata'
 
 
 def genomics_testdata(path, datadir=DATADIR):

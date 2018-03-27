@@ -38,18 +38,17 @@
 #include "htslib/kstring.h"
 #include "deepvariant/util/hts_path.h"
 #include "deepvariant/util/port.h"
+#include "deepvariant/util/test_utils.h"
 
 using absl::StrCat;
 
-namespace {
+namespace nucleus {
 
 // This tests minimal htslib functionality.
 TEST(FileTest, HtsOpen) {
   hts_set_log_level(HTS_LOG_TRACE);
-  string test_srcdir = getenv("TEST_SRCDIR");
-  string test_workspace = getenv("TEST_WORKSPACE");
-  string path = StrCat(test_srcdir, "/", test_workspace, "/",
-                       "deepvariant/util/testdata/test.fasta");
+
+  string path = GetTestData("test.fasta");
   errno = 0;
   htsFile* f = hts_open(path.c_str(), "rb");
   EXPECT_EQ(errno, 0);
@@ -66,4 +65,4 @@ TEST(FileTest, HtsOpen) {
   EXPECT_EQ(close_ok, 0);
 }
 
-}  // namespace
+}  // namespace nucleus

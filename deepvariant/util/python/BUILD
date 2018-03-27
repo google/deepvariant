@@ -32,9 +32,7 @@ py_test(
     name = "vcf_reader_wrap_test",
     size = "small",
     srcs = ["vcf_reader_wrap_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":vcf_reader",
@@ -64,9 +62,7 @@ py_test(
     name = "vcf_writer_wrap_test",
     size = "small",
     srcs = ["vcf_writer_wrap_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":vcf_writer",
@@ -102,9 +98,7 @@ py_test(
     name = "sam_reader_wrap_test",
     size = "small",
     srcs = ["sam_reader_wrap_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":sam_reader",
@@ -135,9 +129,7 @@ py_test(
     name = "reference_wrap_test",
     size = "small",
     srcs = ["reference_wrap_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":reference_fai",
@@ -168,9 +160,7 @@ py_test(
     name = "bed_reader_wrap_test",
     size = "small",
     srcs = ["bed_reader_wrap_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":bed_reader",
@@ -201,9 +191,7 @@ py_test(
     name = "fastq_reader_wrap_test",
     size = "small",
     srcs = ["fastq_reader_wrap_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":fastq_reader",
@@ -231,9 +219,7 @@ py_test(
     name = "fastq_writer_wrap_test",
     size = "small",
     srcs = ["fastq_writer_wrap_test.py"],
-    data = [
-        "//deepvariant/util:testdata",
-    ],
+    data = ["//third_party/nucleus/testdata"],
     srcs_version = "PY2AND3",
     deps = [
         ":fastq_writer",

@@ -57,7 +57,7 @@ using tensorflow::StringPiece;
 using tensorflow::string;
 using tensorflow::uint64;
 
-constexpr char kBioTFCoreTestDataDir[] = "deepvariant/util/testdata";
+constexpr char kBioTFCoreTestDataDir[] = "third_party/nucleus/testdata";
 
 // Simple getter for test files in the right testdata path.
 // This uses JoinPath, so no leading or trailing "/" are necessary.
