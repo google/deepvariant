@@ -119,7 +119,7 @@ from deepvariant.util.io import fasta
 from deepvariant.util.io import genomics_writer
 from deepvariant.util.io import sam
 from deepvariant.util.io import vcf
-from deepvariant.util.genomics import sam_pb2
+from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import cigar
 from deepvariant.util import ranges
 from deepvariant.util import utils
@@ -229,7 +229,7 @@ def main(argv):
   # proto to the reader so it enables standard filtering based on the default
   # values of ReadRequirements. Also explicitly allow the reader to access an
   # unindexed BAM, so only the iterate() function is enabled.
-  read_requirements = sam_pb2.ReadRequirements()
+  read_requirements = reads_pb2.ReadRequirements()
   sam_reader = sam.SamReader(
       FLAGS.bam, use_index=False, read_requirements=read_requirements)
 

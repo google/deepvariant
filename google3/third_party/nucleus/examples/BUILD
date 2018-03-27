@@ -69,7 +69,7 @@ py_binary(
         "//deepvariant/util:py_utils",
         "//deepvariant/util:ranges",
         "//deepvariant/util:variant_utils",
-        "//deepvariant/util/genomics:sam_py_pb2",
+        "//deepvariant/util/genomics:reads_py_pb2",
         "//deepvariant/util/io:fasta",
         "//deepvariant/util/io:genomics_writer",
         "//deepvariant/util/io:sam",
