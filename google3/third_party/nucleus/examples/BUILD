@@ -52,3 +52,19 @@ py_binary(
 )
 
 # redacted
+
+py_binary(
+    name = "ngs_errors",
+    srcs = ["ngs_errors.py"],
+    deps = [
+        "//deepvariant/util:cigar",
+        "//deepvariant/util:py_utils",
+        "//deepvariant/util:ranges",
+        "//deepvariant/util:variant_utils",
+        "//deepvariant/util/genomics:sam_py_pb2",
+        "//deepvariant/util/io:fasta",
+        "//deepvariant/util/io:genomics_writer",
+        "//deepvariant/util/io:sam",
+        "//deepvariant/util/io:vcf",
+    ],
+)
