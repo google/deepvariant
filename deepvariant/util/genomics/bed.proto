@@ -1,0 +1,115 @@
+// Copyright 2018 Google Inc.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+syntax = "proto3";
+
+package nucleus.genomics.v1;
+
+// This message represents a single BED record. See
+// https://genome.ucsc.edu/FAQ/FAQformat.html#format1 for details.
+message BedRecord {
+  // The reference on which this variant occurs. Corresponds to "CHROM" in UCSC.
+  string reference_name = 1;
+
+  // The position at which this region occurs (0-based inclusive).
+  int64 start = 2;
+
+  // The position at which this region ends (0-based exclusive).
+  int64 end = 3;
+
+  // The name of the record.
+  string name = 4;
+
+  // As described in https://genome.ucsc.edu/FAQ/FAQformat.html#format1, score
+  // should be an integer in [0, 1000]. However, many non-integer values are
+  // seen in BED records in the wild, so we represent this as a double.
+  double score = 5;
+
+  enum Strand {
+    // The strand is unspecified, unknown, or not meaningful.
+    NO_STRAND = 0;
+    FORWARD_STRAND = 1;
+    REVERSE_STRAND = 2;
+  }
+  // The strand on the genome that the record is on.
+  Strand strand = 6;
+
+  // For visualization purposes, the position at which the feature starts to be
+  // drawn thickly. In gene structures this corresponds to the start codon.
+  // This is zero-based inclusive numbering, like the `start` field.
+  int64 thick_start = 7;
+
+  // For visualization purposes, the position at which the feature stops being
+  // drawn thickly. In gene structures this corresponds to the stop codon.
+  // This is zero-based exclusive numbering, like the `end` field.
+  int64 thick_end = 8;
+
+  // A comma-separated RGB value R,G,B for visualization.
+  string item_rgb = 9;
+
+  // The number of distinct blocks in the BED line (e.g. exon count in gene
+  // structures).
+  int32 block_count = 10;
+
+  // Comma-separated list of block sizes. The number of items in the list should
+  // be equal to `block_count`.
+  string block_sizes = 11;
+
+  // Comma-separated list of block start positions. The number of items in the
+  // list should be equal to `block_count`.
+  // This is zero-based inclusive numbering, like the `start` field.
+  string block_starts = 12;
+}
+
+message BedHeader {
+  // The number of fields in the BED file.
+  int32 num_fields = 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// I/O-related messages.
+///////////////////////////////////////////////////////////////////////////////
+
+// Options for reading BED files.
+message BedReaderOptions {
+  enum CompressionType {
+    NONE = 0;
+    GZIP = 1;
+  }
+  CompressionType compression_type = 1;
+
+  // Optional. The number of fields to read from the BED file. If this is unset,
+  // or set to more fields than are present in the BED file, all fields are
+  // read.
+  int32 num_fields = 2;
+}
+
+// Options for writing BED files.
+// Currently this is a placeholder message.
+message BedWriterOptions {
+}
