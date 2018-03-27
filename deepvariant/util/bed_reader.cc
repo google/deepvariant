@@ -53,6 +53,8 @@ namespace nucleus {
 
 namespace tf = tensorflow;
 
+using tensorflow::int32;
+using tensorflow::int64;
 using tensorflow::string;
 
 // 256 KB read buffer.
