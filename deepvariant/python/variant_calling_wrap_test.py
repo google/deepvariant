@@ -38,21 +38,22 @@ from absl.testing import absltest
 from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util import ranges
-from deepvariant import test_utils
+from deepvariant import testdata
+
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter as _allelecounter
 from deepvariant.python import variant_calling
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class WrapVariantCallingTest(absltest.TestCase):
 
   def test_call_from_allele_counter(self):
-    ref = fasta.RefFastaReader(test_utils.CHR20_FASTA)
-    sam_reader = sam.SamReader(test_utils.CHR20_BAM)
+    ref = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    sam_reader = sam.SamReader(testdata.CHR20_BAM)
     size = 1000
     region = ranges.make_range('chr20', 10000000, 10000000 + size)
     allele_counter = _allelecounter.AlleleCounter(

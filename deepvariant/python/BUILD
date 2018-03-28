@@ -32,7 +32,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":allelecounter",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/util:ranges",
         "//deepvariant/util/io:fasta",
@@ -77,7 +77,7 @@ py_test(
     deps = [
         ":allelecounter",
         ":variant_calling",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/util:ranges",
         "//deepvariant/util/io:fasta",

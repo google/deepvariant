@@ -28,7 +28,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":labeled_examples_to_vcf",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/testing:flagsaver",
         "//deepvariant/util/io:vcf",
         "@com_google_absl_py//absl/testing:absltest",
@@ -53,7 +53,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":variant_labeler",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/util/io:vcf",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
@@ -80,7 +80,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":positional_labeler",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/util:ranges",
         "//deepvariant/util/io:vcf",
         "@com_google_absl_py//absl/testing:absltest",

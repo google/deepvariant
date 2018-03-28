@@ -26,7 +26,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":debruijn_graph",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/util:ranges",
         "//deepvariant/util/io:fasta",

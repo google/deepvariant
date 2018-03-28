@@ -38,7 +38,8 @@ from absl.testing import parameterized
 
 from deepvariant.util.io import vcf
 
-from deepvariant import test_utils
+from deepvariant.util import test_utils
+from deepvariant import testdata
 from deepvariant.labeler import labeled_examples_to_vcf
 from deepvariant.testing import flagsaver
 
@@ -46,28 +47,28 @@ FLAGS = flags.FLAGS
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class ExamplesToVCFUnitTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_end2end(self):
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.examples = test_utils.GOLDEN_TRAINING_EXAMPLES + '@3'  # Sharded.
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES + '@3'  # Sharded.
     FLAGS.output_vcf = test_utils.test_tmpfile('examples_to_vcf.vcf')
 
     labeled_examples_to_vcf.main(0)
 
     self.assertEqual(
         open(FLAGS.output_vcf).readlines(),
-        open(test_utils.deepvariant_testdata('golden.training_examples.vcf'))
+        open(testdata.deepvariant_testdata('golden.training_examples.vcf'))
         .readlines())
 
   @flagsaver.FlagSaver
   def test_sample_name_flag(self):
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.examples = test_utils.GOLDEN_TRAINING_EXAMPLES
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES
     FLAGS.sample_name = 'sample_name'
     FLAGS.output_vcf = test_utils.test_tmpfile('no_sample_name.vcf')
 
@@ -79,8 +80,8 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_raises_for_unlabeled_examples(self):
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.examples = test_utils.GOLDEN_CALLING_EXAMPLES
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.examples = testdata.GOLDEN_CALLING_EXAMPLES
     FLAGS.output_vcf = test_utils.test_tmpfile('unlabeled.vcf')
 
     with self.assertRaisesRegexp(

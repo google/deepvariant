@@ -42,33 +42,33 @@ import mock
 import tensorflow as tf
 
 from deepvariant.util import io_utils
+from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from tensorflow.core.example import example_pb2
 from deepvariant import data_providers
 from deepvariant import modeling
 from deepvariant import pileup_image
-from deepvariant import test_utils
+from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
 
 slim = tf.contrib.slim
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 def make_golden_dataset(compressed_inputs=False):
   if compressed_inputs:
     source_path = test_utils.test_tmpfile('make_golden_dataset.tfrecord.gz')
     io_utils.write_tfrecords(
-        io_utils.read_tfrecords(test_utils.GOLDEN_TRAINING_EXAMPLES),
-        source_path)
+        io_utils.read_tfrecords(testdata.GOLDEN_TRAINING_EXAMPLES), source_path)
   else:
-    source_path = test_utils.GOLDEN_TRAINING_EXAMPLES
+    source_path = testdata.GOLDEN_TRAINING_EXAMPLES
   return data_providers.DeepVariantDataSet(
       name='labeled_golden',
       source=source_path,
-      num_examples=test_utils.N_GOLDEN_TRAINING_EXAMPLES)
+      num_examples=testdata.N_GOLDEN_TRAINING_EXAMPLES)
 
 
 def _test_dataset_config(filename, **kwargs):

@@ -38,20 +38,21 @@ from absl.testing import absltest
 from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util import ranges
-from deepvariant import test_utils
+from deepvariant import testdata
+
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter as _allelecounter
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class WrapAlleleCounterTest(absltest.TestCase):
 
   def test_wrap(self):
-    ref = fasta.RefFastaReader(test_utils.CHR20_FASTA)
-    sam_reader = sam.SamReader(test_utils.CHR20_BAM)
+    ref = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    sam_reader = sam.SamReader(testdata.CHR20_BAM)
     size = 100
     region = ranges.make_range('chr20', 10000000, 10000000 + size)
     options = deepvariant_pb2.AlleleCounterOptions(partition_size=size)

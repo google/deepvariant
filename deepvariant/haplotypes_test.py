@@ -40,8 +40,9 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
 
+from deepvariant.util import test_utils
+
 from deepvariant import haplotypes
-from deepvariant import test_utils
 from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS

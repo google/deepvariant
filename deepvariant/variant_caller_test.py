@@ -40,15 +40,16 @@ import mock
 import numpy as np
 import numpy.testing as npt
 
+from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from deepvariant.util import variantcall_utils
-from deepvariant import test_utils
+from deepvariant import testdata
 from deepvariant import variant_caller
 from deepvariant.protos import deepvariant_pb2
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 def _reference_model_options(p_error, max_gq, gq_resolution=1):

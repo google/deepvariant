@@ -39,12 +39,13 @@ from absl.testing import parameterized
 
 from deepvariant.util.io import vcf
 from deepvariant.util import ranges
-from deepvariant import test_utils
+from deepvariant.util import test_utils
+from deepvariant import testdata
 from deepvariant.labeler import variant_labeler
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class DummyVariantLabeler(variant_labeler.VariantLabeler):

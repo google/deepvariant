@@ -50,10 +50,11 @@ from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import genomics_math
 from deepvariant.util import io_utils
+from deepvariant.util import test_utils
 from deepvariant.util import vcf_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
-from deepvariant import test_utils
+from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver
 
@@ -85,7 +86,7 @@ class DummyReferenceReader(object):
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 def _create_variant(ref_name, start, ref_base, alt_bases, qual, filter_field,
@@ -186,10 +187,10 @@ def make_golden_dataset(compressed_inputs=False):
         'golden.postprocess_single_site_input.tfrecord.gz')
     io_utils.write_tfrecords(
         io_utils.read_tfrecords(
-            test_utils.GOLDEN_POSTPROCESS_INPUT,
+            testdata.GOLDEN_POSTPROCESS_INPUT,
             proto=deepvariant_pb2.CallVariantsOutput), source_path)
   else:
-    source_path = test_utils.GOLDEN_POSTPROCESS_INPUT
+    source_path = testdata.GOLDEN_POSTPROCESS_INPUT
   return source_path
 
 
@@ -237,21 +238,20 @@ class PostprocessVariantsTest(parameterized.TestCase):
   @flagsaver.FlagSaver
   def test_call_end2end(self, compressed_inputs):
     FLAGS.infile = make_golden_dataset(compressed_inputs)
-    FLAGS.ref = test_utils.CHR20_FASTA
+    FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('calls.vcf')
     FLAGS.nonvariant_site_tfrecord_path = (
-        test_utils.GOLDEN_POSTPROCESS_GVCF_INPUT)
+        testdata.GOLDEN_POSTPROCESS_GVCF_INPUT)
     FLAGS.gvcf_outfile = test_utils.test_tmpfile('gvcf_calls.vcf')
 
     postprocess_variants.main(['postprocess_variants.py'])
 
     self.assertEqual(
         tf.gfile.FastGFile(FLAGS.outfile).readlines(),
-        tf.gfile.FastGFile(test_utils.GOLDEN_POSTPROCESS_OUTPUT).readlines())
+        tf.gfile.FastGFile(testdata.GOLDEN_POSTPROCESS_OUTPUT).readlines())
     self.assertEqual(
         tf.gfile.FastGFile(FLAGS.gvcf_outfile).readlines(),
-        tf.gfile.FastGFile(
-            test_utils.GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
+        tf.gfile.FastGFile(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
 
   def test_extract_single_variant_name(self):
     record = _create_call_variants_output(
@@ -818,7 +818,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
           alt_alleles_to_remove=['C'],
           expected_alleles=['CA', 'C'],
           expected_end=6),
-      # Removing the CA allele doens't allow any simplification.
+      # Removing the CA allele doesn't allow any simplification.
       dict(
           alleles=['CAA', 'CA', 'C'],
           start=3,
@@ -901,7 +901,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_catches_bad_argv(self):
     # Define valid flags to ensure raise occurs due to argv issues.
     FLAGS.infile = make_golden_dataset(False)
-    FLAGS.ref = test_utils.CHR20_FASTA
+    FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('nonempty_outfile.vcf')
     with mock.patch.object(logging, 'error') as mock_logging,\
         mock.patch.object(sys, 'exit') as mock_exit:
@@ -915,10 +915,10 @@ class PostprocessVariantsTest(parameterized.TestCase):
   @flagsaver.FlagSaver
   def test_catches_bad_flags(self):
     FLAGS.infile = make_golden_dataset(False)
-    FLAGS.ref = test_utils.CHR20_FASTA
+    FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = 'nonempty_outfile.vcf'
     FLAGS.nonvariant_site_tfrecord_path = (
-        test_utils.GOLDEN_POSTPROCESS_GVCF_INPUT)
+        testdata.GOLDEN_POSTPROCESS_GVCF_INPUT)
     # This is the bad flag.
     FLAGS.gvcf_outfile = ''
     with mock.patch.object(logging, 'error') as mock_logging, \

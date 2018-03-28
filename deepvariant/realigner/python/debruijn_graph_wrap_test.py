@@ -39,13 +39,14 @@ from absl.testing import absltest
 from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util import ranges
-from deepvariant import test_utils
+from deepvariant.util import test_utils
+from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner.python import debruijn_graph
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class DeBruijnGraphWrapTest(absltest.TestCase):
@@ -246,8 +247,8 @@ class DeBruijnGraphWrapTest(absltest.TestCase):
         """, dbg)
 
   def test_straightforward_region(self):
-    ref_reader = fasta.RefFastaReader(test_utils.CHR20_FASTA)
-    bam_reader = sam.SamReader(test_utils.CHR20_BAM)
+    ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    bam_reader = sam.SamReader(testdata.CHR20_BAM)
     region = ranges.parse_literal('chr20:10,000,000-10,000,100')
     ref_seq = ref_reader.query(region)
 
@@ -260,8 +261,8 @@ class DeBruijnGraphWrapTest(absltest.TestCase):
   def test_complex_region(self):
     # There is a heterozygous 9 bp deletion of tandem TGA repeat.
     # "chr20:10,095,379-10,095,500"
-    ref_reader = fasta.RefFastaReader(test_utils.CHR20_FASTA)
-    bam_reader = sam.SamReader(test_utils.CHR20_BAM)
+    ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    bam_reader = sam.SamReader(testdata.CHR20_BAM)
     region = ranges.parse_literal('chr20:10,095,379-10,095,500')
     ref_seq = ref_reader.query(region)
     reads = list(bam_reader.query(region))

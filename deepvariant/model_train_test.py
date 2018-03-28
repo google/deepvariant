@@ -42,10 +42,11 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
+from deepvariant.util import test_utils
 from deepvariant import data_providers_test
 from deepvariant import model_train
 from deepvariant import modeling
-from deepvariant import test_utils
+from deepvariant import testdata
 from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
@@ -53,7 +54,7 @@ MOCK_SENTINEL_RETURN_VALUE = 'mocked_return_value'
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class ModelTrainTest(parameterized.TestCase):

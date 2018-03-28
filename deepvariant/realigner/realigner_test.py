@@ -47,7 +47,8 @@ from deepvariant.util.io import sam
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
-from deepvariant import test_utils
+from deepvariant.util import test_utils
+from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import realigner
 from deepvariant.realigner import utils
@@ -56,11 +57,11 @@ FLAGS = flags.FLAGS
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 def _get_reads(region):
-  with sam.SamReader(test_utils.CHR20_BAM) as in_sam_reader:
+  with sam.SamReader(testdata.CHR20_BAM) as in_sam_reader:
     return list(in_sam_reader.query(region))
 
 
@@ -183,7 +184,7 @@ class ReadAssignmentTests(parameterized.TestCase):
 class RealignerTest(parameterized.TestCase):
 
   def setUp(self):
-    self.ref_reader = fasta.RefFastaReader(test_utils.CHR20_FASTA)
+    self.ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
     self.config = realigner.realigner_config(FLAGS)
     self.reads_realigner = realigner.Realigner(self.config, self.ref_reader)
 
@@ -337,7 +338,7 @@ class RealignerTest(parameterized.TestCase):
 class RealignerIntegrationTest(absltest.TestCase):
 
   def test_realigner_end2end(self):
-    ref_reader = fasta.RefFastaReader(test_utils.CHR20_FASTA)
+    ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
     config = realigner.realigner_config(FLAGS)
     reads_realigner = realigner.Realigner(config, ref_reader)
     region_str = 'chr20:10,000,000-10,009,999'
@@ -345,7 +346,7 @@ class RealignerIntegrationTest(absltest.TestCase):
     regions = ranges.RangeSet.from_regions([region_str])
     for region in regions.partition(1000):
       with sam.SamReader(
-          test_utils.CHR20_BAM,
+          testdata.CHR20_BAM,
           read_requirements=reads_pb2.ReadRequirements()) as sam_reader:
         in_reads = list(sam_reader.query(region))
       windows, out_reads = reads_realigner.realign_reads(in_reads, region)

@@ -39,13 +39,14 @@ from absl.testing import parameterized
 import six
 import tensorflow as tf
 
+from deepvariant.util import test_utils
 from deepvariant import call_variants
 from deepvariant import modeling
-from deepvariant import test_utils
+from deepvariant import testdata
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class CallVariantsAcceleratorTests(
@@ -54,7 +55,7 @@ class CallVariantsAcceleratorTests(
   @parameterized.parameters(modeling.production_models())
   def test_call_variants_runs_on_gpus(self, model):
     call_variants.call_variants(
-        examples_filename=test_utils.GOLDEN_CALLING_EXAMPLES,
+        examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
         checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
         model=model,
         execution_hardware='accelerator',

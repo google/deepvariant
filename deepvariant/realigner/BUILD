@@ -30,7 +30,7 @@ py_test(
     deps = [
         ":realigner",
         ":utils",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:ranges",
@@ -59,7 +59,7 @@ py_test(
     srcs = ["window_selector_test.py"],
     deps = [
         ":window_selector",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/util/genomics:range_py_pb2",
         "@com_google_absl_py//absl/testing:absltest",
@@ -96,7 +96,7 @@ py_test(
     srcs = ["aligner_test.py"],
     deps = [
         ":aligner",
-        "//deepvariant:py_test_utils",
+        "//deepvariant:py_testdata",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/util:cigar",
         "//deepvariant/util:ranges",

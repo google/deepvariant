@@ -51,11 +51,12 @@ from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
+from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from deepvariant.util import variantcall_utils
 from deepvariant.util import vcf_constants
 from deepvariant import make_examples
-from deepvariant import test_utils
+from deepvariant import testdata
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
@@ -99,7 +100,7 @@ def decode_example(example):
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 def _make_contigs(specs):
@@ -158,8 +159,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.maxDiff = None
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.reads = test_utils.CHR20_BAM
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(
         _sharded('vsc.tfrecord', num_shards))
     FLAGS.examples = test_utils.test_tmpfile(
@@ -175,8 +176,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.gvcf = test_utils.test_tmpfile(
           _sharded('gvcf.tfrecord', num_shards))
     else:
-      FLAGS.truth_variants = test_utils.TRUTH_VARIANTS_VCF
-      FLAGS.confident_regions = test_utils.CONFIDENT_REGIONS_BED
+      FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+      FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
 
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
@@ -204,14 +205,14 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # calling modes to produce deterministic order because we fix the random
     # seed.
     if mode == 'calling':
-      golden_file = _sharded(test_utils.GOLDEN_CALLING_EXAMPLES, num_shards)
+      golden_file = _sharded(testdata.GOLDEN_CALLING_EXAMPLES, num_shards)
     else:
-      golden_file = _sharded(test_utils.GOLDEN_TRAINING_EXAMPLES, num_shards)
+      golden_file = _sharded(testdata.GOLDEN_TRAINING_EXAMPLES, num_shards)
     self.assertDeepVariantExamplesEqual(
         examples, list(io_utils.read_tfrecords(golden_file)))
 
     if mode == 'calling':
-      nist_reader = vcf.VcfReader(test_utils.TRUTH_VARIANTS_VCF)
+      nist_reader = vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF)
       nist_variants = list(nist_reader.query(region))
       self.verify_nist_concordance(example_variants, nist_variants)
 
@@ -220,7 +221,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           io_utils.read_tfrecords(FLAGS.gvcf, proto=variants_pb2.Variant))
       self.verify_variants(gvcfs, region, options, is_gvcf=True)
       self.verify_contiguity(gvcfs, region)
-      gvcf_golden_file = _sharded(test_utils.GOLDEN_POSTPROCESS_GVCF_INPUT,
+      gvcf_golden_file = _sharded(testdata.GOLDEN_POSTPROCESS_GVCF_INPUT,
                                   num_shards)
       expected_gvcfs = list(
           io_utils.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant))
@@ -380,10 +381,10 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_default_options_with_training_random_emit_ref_sites(self):
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.reads = test_utils.CHR20_BAM
-    FLAGS.truth_variants = test_utils.TRUTH_VARIANTS_VCF
-    FLAGS.confident_regions = test_utils.CONFIDENT_REGIONS_BED
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
 
@@ -394,10 +395,10 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_default_options_without_training_random_emit_ref_sites(self):
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.reads = test_utils.CHR20_BAM
-    FLAGS.truth_variants = test_utils.TRUTH_VARIANTS_VCF
-    FLAGS.confident_regions = test_utils.CONFIDENT_REGIONS_BED
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
 
@@ -448,10 +449,10 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_confident_regions(self):
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.reads = test_utils.CHR20_BAM
-    FLAGS.truth_variants = test_utils.TRUTH_VARIANTS_VCF
-    FLAGS.confident_regions = test_utils.CONFIDENT_REGIONS_BED
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
 
@@ -752,14 +753,14 @@ class MakeExamplesUnitTest(parameterized.TestCase):
   def test_catches_bad_flags(self):
     # Set all of the requested flag values.
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.reads = test_utils.CHR20_BAM
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile('vsc.tfrecord')
     FLAGS.examples = test_utils.test_tmpfile('examples.tfrecord')
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
-    FLAGS.truth_variants = test_utils.TRUTH_VARIANTS_VCF
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     # This is the bad flag.
     FLAGS.confident_regions = ''
 
@@ -844,8 +845,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
   @flagsaver.FlagSaver
   def test_regions_and_exclude_regions_flags(self):
     FLAGS.mode = 'calling'
-    FLAGS.ref = test_utils.CHR20_FASTA
-    FLAGS.reads = test_utils.CHR20_BAM
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
     FLAGS.regions = 'chr20:10,000,000-11,000,000'
     FLAGS.examples = 'examples.tfrecord'
     FLAGS.exclude_regions = 'chr20:10,010,000-10,100,000'
@@ -866,9 +867,9 @@ class RegionProcessorTest(parameterized.TestCase):
 
     FLAGS.reads = ''
     self.options = make_examples.default_options(add_flags=False)
-    self.options.reference_filename = test_utils.CHR20_FASTA
-    self.options.reads_filename = test_utils.CHR20_BAM
-    self.options.truth_variants_filename = test_utils.TRUTH_VARIANTS_VCF
+    self.options.reference_filename = testdata.CHR20_FASTA
+    self.options.reads_filename = testdata.CHR20_BAM
+    self.options.truth_variants_filename = testdata.TRUTH_VARIANTS_VCF
     self.options.mode = deepvariant_pb2.DeepVariantOptions.TRAINING
 
     self.processor = make_examples.RegionProcessor(self.options)

@@ -186,7 +186,7 @@ py_test(
     srcs = ["variant_caller_test.py"],
     srcs_version = "PY2AND3",
     deps = [
-        ":py_test_utils",
+        ":py_testdata",
         ":variant_caller",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/util:variant_utils",
@@ -271,7 +271,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":make_examples",
-        ":py_test_utils",
+        ":py_testdata",
         ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
@@ -333,7 +333,7 @@ py_test(
     deps = [
         ":call_variants",
         ":modeling",
-        ":py_test_utils",
+        ":py_testdata",
         ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/testing:flagsaver",
@@ -361,7 +361,7 @@ py_test(
     deps = [
         ":call_variants",
         ":modeling",
-        ":py_test_utils",
+        ":py_testdata",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -388,7 +388,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":pileup_image",
-        ":py_test_utils",
+        ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:pileup_image_native",
         "//deepvariant/util:ranges",
@@ -461,7 +461,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":postprocess_variants_py_lib",
-        ":py_test_utils",
+        ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/testing:flagsaver",
         "//deepvariant/util:errors",
@@ -478,9 +478,9 @@ py_test(
 )
 
 py_library(
-    name = "py_test_utils",
+    name = "py_testdata",
     testonly = True,
-    srcs = ["test_utils.py"],
+    srcs = ["testdata.py"],
     srcs_version = "PY2AND3",
     deps = [
         "//deepvariant/util:py_test_utils",
@@ -508,7 +508,7 @@ py_library(
         ":data_providers",
         ":modeling",
         ":pileup_image",
-        ":py_test_utils",
+        ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/util:io_utils",
         "//deepvariant/util:variant_utils",
@@ -548,7 +548,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":haplotypes",
-        ":py_test_utils",
+        ":py_testdata",
         "//deepvariant/testing:flagsaver",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
@@ -618,7 +618,7 @@ py_test(
         ":data_providers_test_lib",
         ":model_train",
         ":modeling",
-        ":py_test_utils",
+        ":py_testdata",
         "//deepvariant/testing:flagsaver",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
@@ -663,7 +663,7 @@ py_test(
         ":model_eval",
         ":modeling",
         ":pileup_image",
-        ":py_test_utils",
+        ":py_testdata",
         "//deepvariant/testing:flagsaver",
         "//deepvariant/util:variant_utils",
         "@com_google_absl_py//absl/flags",
@@ -690,7 +690,7 @@ py_test(
     srcs = ["tf_utils_test.py"],
     srcs_version = "PY2AND3",
     deps = [
-        ":py_test_utils",
+        ":py_testdata",
         ":tf_utils",
         "//deepvariant/util:io_utils",
         "//deepvariant/util/genomics:variants_py_pb2",

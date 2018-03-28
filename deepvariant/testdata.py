@@ -36,11 +36,7 @@ import os
 
 
 
-# We want to do the wildcard import here so we reexport all of the functionality
-# provided by test_utils in core but with extensions for deepvariant code. This
-# has a side-effect of introducing expected lint errors here which we disable:
-# pylint: disable=wildcard-import,undefined-variable
-from deepvariant.util.test_utils import *
+from deepvariant.util import test_utils as nucleus_test_utils
 
 DEEPVARIANT_DATADIR = ''
 
@@ -60,7 +56,7 @@ def deepvariant_testdata(filename):
   Returns:
     The absolute path to a testdata file.
   """
-  return genomics_testdata(
+  return nucleus_test_utils.genomics_testdata(
       os.path.join('deepvariant/testdata', filename), DEEPVARIANT_DATADIR)
 
 

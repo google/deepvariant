@@ -48,10 +48,11 @@ import tensorflow as tf
 
 from absl import logging
 from deepvariant.util import io_utils
+from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from deepvariant import call_variants
 from deepvariant import modeling
-from deepvariant import test_utils
+from deepvariant import testdata
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver
@@ -60,7 +61,7 @@ FLAGS = flags.FLAGS
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class CallVariantsEndToEndTests(
@@ -86,7 +87,7 @@ class CallVariantsEndToEndTests(
     # Get only up to 10 examples.
     examples = list(
         io_utils.read_tfrecords(
-            test_utils.GOLDEN_CALLING_EXAMPLES, max_records=10))
+            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10))
     # Write to 15 shards, which means there will be multiple empty shards.
     source_path = test_utils.test_tmpfile('sharded@{}'.format(15))
     io_utils.write_tfrecords(examples, source_path)
@@ -97,7 +98,7 @@ class CallVariantsEndToEndTests(
     # Get only up to 10 examples.
     examples = list(
         io_utils.read_tfrecords(
-            test_utils.GOLDEN_CALLING_EXAMPLES, max_records=10))
+            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10))
     empty_first_file = test_utils.test_tmpfile('empty_1st_shard-00000-of-00002')
     io_utils.write_tfrecords([], empty_first_file)
     second_file = test_utils.test_tmpfile('empty_1st_shard-00001-of-00002')
@@ -118,14 +119,14 @@ class CallVariantsEndToEndTests(
   @flagsaver.FlagSaver
   def test_call_end2end(self, model, shard_inputs, include_debug_info):
     FLAGS.include_debug_info = include_debug_info
-    examples = list(io_utils.read_tfrecords(test_utils.GOLDEN_CALLING_EXAMPLES))
+    examples = list(io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
 
     if shard_inputs:
       # Create a sharded version of our golden examples.
       source_path = test_utils.test_tmpfile('sharded@{}'.format(3))
       io_utils.write_tfrecords(examples, source_path)
     else:
-      source_path = test_utils.GOLDEN_CALLING_EXAMPLES
+      source_path = testdata.GOLDEN_CALLING_EXAMPLES
 
     batch_size = 4
     if model.name == 'random_guess':
@@ -214,7 +215,7 @@ class CallVariantsEndToEndTests(
                             for bad_format in ['', 'png'])
   def test_call_variants_with_invalid_format(self, model, bad_format):
     # Read one good record from a valid file.
-    example = next(io_utils.read_tfrecords(test_utils.GOLDEN_CALLING_EXAMPLES))
+    example = next(io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
     # Overwrite the image/format field to be an invalid value
     # (anything but 'raw').
     example.features.feature['image/format'].bytes_list.value[0] = bad_format
@@ -234,7 +235,7 @@ class CallVariantsEndToEndTests(
   @parameterized.parameters(model for model in modeling.production_models())
   def test_call_variants_with_no_shape(self, model):
     # Read one good record from a valid file.
-    example = next(io_utils.read_tfrecords(test_utils.GOLDEN_CALLING_EXAMPLES))
+    example = next(io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
     # Remove image/shape.
     del example.features.feature['image/shape']
     source_path = test_utils.test_tmpfile('make_examples_out_noshape.tfrecord')
@@ -258,7 +259,7 @@ class CallVariantsUnitTests(
   @classmethod
   def setUpClass(cls):
     cls.examples = list(
-        io_utils.read_tfrecords(test_utils.GOLDEN_CALLING_EXAMPLES))
+        io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
     cls.variants = [tf_utils.example_variant(ex) for ex in cls.examples]
     cls.model = modeling.get_model('random_guess')
 
@@ -307,7 +308,7 @@ class CallVariantsUnitTests(
     # despite being very similar to the parameterized test below.
     outfile = test_utils.test_tmpfile('call_variants_cpu_only.tfrecord')
     call_variants.call_variants(
-        examples_filename=test_utils.GOLDEN_CALLING_EXAMPLES,
+        examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
         checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
         model=self.model,
         execution_hardware=execution_hardware,
@@ -352,7 +353,7 @@ class CallVariantsUnitTests(
 
       def _run():
         call_variants.call_variants(
-            examples_filename=test_utils.GOLDEN_CALLING_EXAMPLES,
+            examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
             checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
             model=self.model,
             execution_hardware=hardware_env,

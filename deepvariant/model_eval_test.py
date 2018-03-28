@@ -44,19 +44,20 @@ import numpy.testing as npt
 import six
 import tensorflow as tf
 
+from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from deepvariant import data_providers_test
 from deepvariant import model_eval
 from deepvariant import modeling
 from deepvariant import pileup_image
-from deepvariant import test_utils
+from deepvariant import testdata
 from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
 
 def setUpModule():
-  test_utils.init()
+  testdata.init()
 
 
 class ModelEvalTest(
