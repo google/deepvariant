@@ -231,6 +231,44 @@ tensorflow::Status EncodeFormatValues(
 }
 
 
+// -----------------------------------------------------------------------------
+// "Raw" low-level interface to encoding/decoding to INFO fields. These
+// functions parallel the "FORMAT" functions above.
+
+template <class ValueType>
+std::vector<ValueType> ReadInfoValue(const bcf_hdr_t* h,
+                                     const bcf1_t* v,
+                                     const char* tag) {
+  using VT = VcfType<ValueType>;
+
+  if (bcf_get_info(h, const_cast<bcf1_t*>(v), tag) == nullptr) {
+    return {};
+  }
+
+  int n_values, n_dst = 0;
+  ValueType* dst = nullptr;
+  n_values = VT::GetInfoValues(h, v, tag, &dst, &n_dst);
+  // redacted
+  CHECK_GE(n_values, 0);
+  CHECK(dst != nullptr);
+
+  std::vector<ValueType> value(dst, dst + n_values);
+
+  free(dst);
+  return value;
+}
+
+template <class ValueType>
+tensorflow::Status EncodeInfoValue(
+    const std::vector<ValueType>& value, const char* tag,
+    const bcf_hdr_t* h, bcf1_t* v) {
+  using VT = VcfType<ValueType>;
+
+  if (value.empty()) {
+    return tensorflow::Status::OK();
+  }
+  return VT::PutInfoValues(tag, value.data(), value.size(), h, v);
+}
 
 }  // namespace
 
@@ -322,6 +360,72 @@ template <class T> tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
 }
 
 // -----------------------------------------------------------------------------
+// VcfInfoFieldAdapter implementation.
+
+VcfInfoFieldAdapter::VcfInfoFieldAdapter(const string& field_name,
+                                         int vcf_type)
+    : field_name_(field_name), vcf_type_(vcf_type) {}
+
+
+tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
+    const nucleus::genomics::v1::Variant& variant, const bcf_hdr_t* header,
+    bcf1_t* bcf_record) const {
+  if (vcf_type_ == BCF_HT_REAL) {
+    return EncodeValues<float>(variant, header, bcf_record);
+  } else if (vcf_type_ == BCF_HT_INT) {
+    return EncodeValues<int>(variant, header, bcf_record);
+  // } else if (vcf_type_ == BCF_HT_STR) {
+  //   return EncodeValues<string>(variant, header, bcf_record);
+  } else {
+    return tensorflow::errors::FailedPrecondition(
+        "Unrecognized type for field ", field_name_);
+  }
+  return tensorflow::Status::OK();
+}
+
+template <class T> tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
+    const nucleus::genomics::v1::Variant& variant,
+    const bcf_hdr_t* header,
+    bcf1_t* bcf_record) const {
+
+  std::vector<T> value {};
+
+  auto found = variant.info().find(field_name_);
+  if (found != variant.info().end()) {
+    value = ListValues<T>((*found).second);
+  }
+  return EncodeInfoValue(value, field_name_.c_str(), header, bcf_record);
+}
+
+
+tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
+    const bcf_hdr_t* header, const bcf1_t* bcf_record,
+    nucleus::genomics::v1::Variant* variant) const {
+  if (vcf_type_ == BCF_HT_REAL) {
+    return DecodeValues<float>(header, bcf_record, variant);
+  } else if (vcf_type_ == BCF_HT_INT) {
+    return DecodeValues<int>(header, bcf_record, variant);
+  // } else if (vcf_type_ == BCF_HT_STR) {
+  //   return DecodeValues<string>(header, bcf_record, variant);
+  } else {
+    return tensorflow::errors::FailedPrecondition(
+        "Unrecognized type for field ", field_name_);
+  }
+  return tensorflow::Status::OK();
+}
+
+template <class T> tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
+    const bcf_hdr_t *header, const bcf1_t *bcf_record,
+    nucleus::genomics::v1::Variant *variant) const {
+  std::vector<T> value =
+      ReadInfoValue<T>(header, bcf_record, field_name_.c_str());
+  SetInfoField(field_name_, value, variant);
+  return tensorflow::Status::OK();
+}
+
+
+
+// -----------------------------------------------------------------------------
 // VcfRecordConverter implementation.
 
 VcfRecordConverter::VcfRecordConverter(
@@ -329,6 +433,30 @@ VcfRecordConverter::VcfRecordConverter(
     const nucleus::genomics::v1::OptionalVariantFieldsToParse&
         desired_format_entries)
     : desired_format_entries_(desired_format_entries) {
+
+  // Install adapters for INFO fields.
+  for (const auto& format_spec : vcf_header.infos()) {
+    string tag = format_spec.id();
+    string type = format_spec.type();
+
+    // Skip fields that are handled specially.
+    if (tag == "END") continue;
+
+    int vcf_type;
+    if (type == "Integer") {
+      vcf_type = BCF_HT_INT;
+    } else if (type == "Float") {
+      vcf_type = BCF_HT_REAL;
+    } else {
+      LOG(WARNING) << "Unhandled INFO field type: field " << tag
+                   << " of type " << type;
+      continue;
+    }
+    info_adapters_.emplace_back(tag, vcf_type);
+  }
+
+
+  // Install adapters for FORMAT fields.
   for (const auto& format_spec : vcf_header.formats()) {
     string tag = format_spec.id();
     string type = format_spec.type();
@@ -407,6 +535,11 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
   // Parse out the FILTER field.
   for (int i = 0; i < v->d.n_flt; ++i) {
     variant_message->add_filter(h->id[BCF_DT_ID][v->d.flt[i]].key);
+  }
+
+  // Parse the generic INFO fields.
+  for (const auto& adapter : info_adapters_) {
+    TF_RETURN_IF_ERROR(adapter.DecodeValues(h, v, variant_message));
   }
 
   bool want_ll = !desired_format_entries_.exclude_genotype_likelihood();
@@ -543,6 +676,11 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
       filterIds.get()[i] = filterId;
     }
     bcf_update_filter(&h, v, filterIds.get(), nFilters);
+  }
+
+  // Generic INFO fields
+  for (const VcfInfoFieldAdapter& field : info_adapters_) {
+    TF_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
   }
 
   // Variant calls

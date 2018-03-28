@@ -75,6 +75,10 @@ constexpr char kExpectedHeaderFmt[] =
     "the interval\">\n"  // NOLINT
     "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP "
     "membership\",Source=\"dbSNP\",Version=\"build 129\">\n"  // NOLINT
+    "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele "
+    "counts\">\n"  // NOLINT
+    "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Frequency of each "
+    "ALT allele\">\n"  // NOLINT
     "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
     "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype "
     "Quality\">\n"  // NOLINT
@@ -121,6 +125,16 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname,
   infodbsnp.set_description("dbSNP membership");
   infodbsnp.set_source("dbSNP");
   infodbsnp.set_version("build 129");
+  auto& infoAc = *header.mutable_infos()->Add();
+  infoAc.set_id("AC");
+  infoAc.set_number("A");
+  infoAc.set_type("Integer");
+  infoAc.set_description("Allele counts");
+  auto& infoAf = *header.mutable_infos()->Add();
+  infoAf.set_id("AF");
+  infoAf.set_number("A");
+  infoAf.set_type("Float");
+  infoAf.set_description("Frequency of each ALT allele");
 
   // FORMATs.
   auto& format1 = *header.mutable_formats()->Add();
@@ -286,6 +300,15 @@ TEST(VcfWriterTest, WritesVCF) {
   *v6.add_calls() = MakeVariantCall("Spot", {1, 0});
   ASSERT_THAT(writer->Write(v6), IsOK());
 
+  // A variant with INFO fields.
+  Variant v7 = MakeVariant({"DogSNP7"}, "Chr2", 23, 24, "A", {"T", "G"});
+  *v7.add_calls() = MakeVariantCall("Fido", {0, 1});
+  *v7.add_calls() = MakeVariantCall("Spot", {0, 0});
+  SetInfoField("AC", std::vector<int>{1, 0}, &v7);
+  SetInfoField("AF", std::vector<float>{0.75, 0.0}, &v7);
+  ASSERT_THAT(writer->Write(v7), IsOK());
+
+
   // Check that the written data is as expected.
   // (close file to guarantee flushed to disk)
   writer.reset();
@@ -302,8 +325,8 @@ TEST(VcfWriterTest, WritesVCF) {
       ".:.\t.|1:10\n"
       "Chr2\t18\tDogSNP4\tT\tA\t.\t.\t.\tGT\t0/1/0\t0/1\n"
       "Chr2\t20\tDogSNP5\tTT\t\t0\t.\t.\tGT\t0/1\t0/0\n"
-      "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n";
-
+      "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n"
+      "Chr2\t24\tDogSNP7\tA\tT,G\t0\t.\tAC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n";
   EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
 

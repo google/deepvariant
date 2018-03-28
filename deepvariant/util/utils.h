@@ -211,10 +211,10 @@ void SetValuesValue(
 //
 //   Variant variant;
 //   VariantCall call;
-//   SetInfoField(variant, "DP", 10);
-//   SetInfoField(call, "AD", vector<int>{10, 20});
-//   SetInfoField(variant, "FLOAT_KEY", 1.234);
-//   SetInfoField(variant, "STRING_KEY", "a_string");
+//   SetInfoField("DP", 10, &variant);
+//   SetInfoField("AD", vector<int>{10, 20}, &call);
+//   SetInfoField("FLOAT_KEY", 1.234, &variant);
+//   SetInfoField("STRING_KEY", "a_string", &variant);
 //
 // Note that any existing binding for key will be overwritten.
 template <typename ListValueInfoProto, typename Value>

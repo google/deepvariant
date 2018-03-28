@@ -57,20 +57,35 @@ struct VcfType {
   // Set argument to vector end sentinel
   static void SetVectorEnd(T* v);
 
-  // Format field extraction: wrapper for bcf_get_format_*()
-  // Given a VCF record, this will grab format tag "tag" from the record, a
+  // FORMAT field extraction: wrapper for bcf_get_format_*()
+  // Given a VCF record, this will grab FORMAT tag "tag" from the record, a
   // buffer *dst for the contents, and copy them there.  The return value will
   // be either negative (for error) or the number of values copied.  *ndst
   // should not be used.
   static int GetFormatValues(const bcf_hdr_t *hdr, const bcf1_t *line,
                              const char *tag, T **dst, int *ndst);
 
-  // Format field writing: wrapper for bcf_update_format_*()
-  // Given a VCF record, this routine will populate the format field specified
+  // FORMAT field writing: wrapper for bcf_update_format_*()
+  // Given a VCF record, this routine will populate the FORMAT field specified
   // by "tag" with the values src[0]...src[nsrc-1].
   static tensorflow::Status PutFormatValues(const char *tag, const T *src,
                                             int nsrc, const bcf_hdr_t *hdr,
                                             bcf1_t *line);
+
+  // INFO field extraction: wrapper for bcf_get_info_*()
+  // Given a VCF record, this will grab INFO tag "tag" from the record, a
+  // buffer *dst for the contents, and copy them there.  The return value will
+  // be either negative (for error) or the number of values copied.  *ndst
+  // should not be used.
+  static int GetInfoValues(const bcf_hdr_t *hdr, const bcf1_t *line,
+                           const char *tag, T **dst, int *ndst);
+
+  // INFO field writing: wrapper for bcf_update_info_*()
+  // Given a VCF record, this routine will populate the INFO field specified
+  // by "tag" with the values src[0]...src[nsrc-1].
+  static tensorflow::Status PutInfoValues(const char *tag, const T *src,
+                                          int nsrc, const bcf_hdr_t *hdr,
+                                          bcf1_t *line);
 };
 
 // See interface description comment above.
@@ -92,6 +107,20 @@ struct VcfType<int> {
                                             bcf1_t *line) {
     if (bcf_update_format_int32(hdr, line, tag, src, nsrc) != 0)
       return tensorflow::errors::Internal("bcf_update_format_int32 failed");
+    else
+      return tensorflow::Status::OK();
+  }
+
+  static int GetInfoValues(const bcf_hdr_t *hdr, const bcf1_t *line,
+                           const char *tag, int **dst, int *ndst) {
+    return bcf_get_info_int32(hdr, const_cast<bcf1_t *>(line), tag, dst, ndst);
+  }
+
+  static tensorflow::Status PutInfoValues(const char *tag, const int *src,
+                                          int nsrc, const bcf_hdr_t *hdr,
+                                          bcf1_t *line) {
+    if (bcf_update_info_int32(hdr, line, tag, src, nsrc) != 0)
+      return tensorflow::errors::Internal("bcf_update_info_int32 failed");
     else
       return tensorflow::Status::OK();
   }
@@ -119,6 +148,20 @@ struct VcfType<float> {
     else
       return tensorflow::Status::OK();
   }
+
+  static int GetInfoValues(const bcf_hdr_t *hdr, const bcf1_t *line,
+                           const char *tag, float **dst, int *ndst) {
+    return bcf_get_info_float(hdr, const_cast<bcf1_t *>(line), tag, dst, ndst);
+  }
+
+  static tensorflow::Status PutInfoValues(const char *tag, const float *src,
+                                          int nsrc, const bcf_hdr_t *hdr,
+                                          bcf1_t *line) {
+    if (bcf_update_info_float(hdr, line, tag, src, nsrc) != 0)
+      return tensorflow::errors::Internal("bcf_update_info_float failed");
+    else
+      return tensorflow::Status::OK();
+  }
 };
 
 
@@ -130,12 +173,12 @@ struct VcfType<float> {
 // level functions `ReadFormatValues` and `EncodeFormatValues` are called
 // directly.
 //
-// The standard way to interact with this class is:
+// The standard way to interact with this class is as follows.
 //
-// Create an adaptor for an .info map key "DP".
-//   FormatFieldAdapter adapter("DP");
+// Create an adaptor for FORMAT field "DP" of integer type:
+//   VcfFormatFieldAdapter adapter("DP", BCF_HT_INT32);
 //
-// For each variant, we encode this format field into the vcf record as follows:
+// For each variant, we encode this format field into the vcf record:
 //   adapter.EncodeValues(variant, header, bcf_record);
 //
 class VcfFormatFieldAdapter {
@@ -175,6 +218,48 @@ class VcfFormatFieldAdapter {
 };
 
 
+// -----------------------------------------------------------------------------
+// Helper class for encoding Variant.info values in VCF INFO field values.
+//
+// (Usage of this class is completely analogous to the VcfFormatFieldAdapter
+// class.)
+class VcfInfoFieldAdapter {
+ public:
+  // Creates a new adapter for a field name field_name.
+  VcfInfoFieldAdapter(const string& field_name, int vcf_type);
+
+  // Adds the values for our field_name from the Variant into our bcf1_t
+  // record bcf_record.
+  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
+                                  const bcf_hdr_t* header,
+                                  bcf1_t* bcf_record) const;
+
+  // Add the values for this INFO field in the bcf1_t `bcf_record` to the
+  // Variant message info map.
+  tensorflow::Status DecodeValues(
+      const bcf_hdr_t *header, const bcf1_t *bcf_record,
+      nucleus::genomics::v1::Variant *variant) const;
+
+ private:  // Non-API methods
+  template <class T>
+  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
+                                  const bcf_hdr_t* header,
+                                  bcf1_t* bcf_record) const;
+
+  template <class T>
+  tensorflow::Status DecodeValues(
+      const bcf_hdr_t *header, const bcf1_t *bcf_record,
+      nucleus::genomics::v1::Variant *variant) const;
+
+
+ private:  // Fields
+  // The name of our info field, such as "H2" or "END"
+  string field_name_;
+  // The htslib/VCF "type" of this field, such as BCF_HT_INT.
+  int vcf_type_;
+};
+
+
 // Helper class for converting between Variant proto messages and VCF records.
 class VcfRecordConverter {
  public:
@@ -199,7 +284,11 @@ class VcfRecordConverter {
       bcf1_t *v) const;
 
  private:
-  // Lookup table for genotype field adapters by VCF tag name.
+  // Lookup table for variant INFO fields adapters by VCF tag name.
+  // The order of adapter definitions here determines the order of the fields
+  // in a written VCF.
+  std::vector<VcfInfoFieldAdapter> info_adapters_;
+  // Lookup table for genotype FORMAT field adapters by VCF tag name.
   // The order of adapter definitions here determines the order of the fields
   // in a written VCF.
   std::vector<VcfFormatFieldAdapter> format_adapters_;
