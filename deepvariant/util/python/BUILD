@@ -172,6 +172,36 @@ py_test(
 )
 
 py_clif_cc(
+    name = "bed_writer",
+    srcs = ["bed_writer.clif"],
+    clif_deps = [],
+    py_deps = [],
+    pyclif_deps = [
+        "//deepvariant/util/genomics:bed_pyclif",
+    ],
+    deps = [
+        "//deepvariant/util:bed_writer",
+        "//deepvariant/util/vendor:statusor_clif_converters",
+    ],
+)
+
+py_test(
+    name = "bed_writer_wrap_test",
+    size = "small",
+    srcs = ["bed_writer_wrap_test.py"],
+    data = ["//deepvariant/util/testdata"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":bed_writer",
+        "//deepvariant/util:io_utils",
+        "//deepvariant/util:py_test_utils",
+        "//deepvariant/util/genomics:bed_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_clif_cc(
     name = "fastq_reader",
     srcs = ["fastq_reader.clif"],
     clif_deps = [],

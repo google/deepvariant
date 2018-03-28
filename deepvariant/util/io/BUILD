@@ -99,8 +99,10 @@ py_library(
     srcs = ["bed.py"],
     deps = [
         ":genomics_reader",
+        ":genomics_writer",
         "//deepvariant/util/genomics:bed_py_pb2",
         "//deepvariant/util/python:bed_reader",
+        "//deepvariant/util/python:bed_writer",
     ],
 )
 

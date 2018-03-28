@@ -64,5 +64,33 @@ class BedReaderTests(parameterized.TestCase):
       self.assertEqual(native_reader.header.num_fields, 12)
 
 
+class BedWriterTests(parameterized.TestCase):
+  """Tests for BedWriter."""
+
+  def setUp(self):
+    self.records = [
+        bed_pb2.BedRecord(
+            reference_name='chr1', start=30, end=40, name='first', score=55.5),
+        bed_pb2.BedRecord(
+            reference_name='chr2', start=32, end=38, name='second', score=0),
+        bed_pb2.BedRecord(
+            reference_name='chr3', start=40, end=50, name='third', score=99),
+    ]
+
+  @parameterized.parameters('test_raw.bed', 'test_zipped.bed.gz',
+                            'test_raw.tfrecord', 'test_zipped.tfrecord.gz')
+  def test_roundtrip_writer(self, filename):
+    output_path = test_utils.test_tmpfile(filename)
+    with bed.BedWriter(
+        output_path, header=bed_pb2.BedHeader(num_fields=5)) as writer:
+      for record in self.records:
+        writer.write(record)
+
+    with bed.BedReader(output_path) as reader:
+      v2_records = list(reader.iterate())
+
+    self.assertEqual(self.records, v2_records)
+
+
 if __name__ == '__main__':
   absltest.main()

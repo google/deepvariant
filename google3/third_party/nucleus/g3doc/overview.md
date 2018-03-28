@@ -120,12 +120,13 @@ Phred-scale, quality = -10 * log_10(probability), and
 Here's a table to summarize the file types currently supported by Nucleus,
 and their associated protocol buffer types:
 
-| Format     |  Record Type  |  Header Type   |  Reader?  |  Writer?  |
-|------------|---------------|----------------|-----------|-----------|
-| Fasta Ref  |  string       | RefFastaHeader |    Y      |     N     |
-| Fastq      |  FastqRecord  | none           |    Y      |     N     |
-| SAM/BAM    |  Read         | SamHeader      |    Y      |     N     |
-| VCF        |  Variant      | VcfHeader      |    Y      |     Y     |
+Format    | Record Type | Header Type    | Reader? | Writer?
+--------- | ----------- | -------------- | ------- | -------
+BED       | BedRecord   | BedHeader      | Y       | Y
+FASTA Ref | string      | RefFastaHeader | Y       | N
+FastQ     | FastqRecord | none           | Y       | Y
+SAM/BAM   | Read        | SamHeader      | Y       | N
+VCF       | Variant     | VcfHeader      | Y       | Y
 
 Don't despair if your favorite genomics format isn't listed, though, as we
 hope to add more soon.  (And

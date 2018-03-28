@@ -45,8 +45,10 @@ from __future__ import division
 from __future__ import print_function
 
 from deepvariant.util.io import genomics_reader
+from deepvariant.util.io import genomics_writer
 from deepvariant.util.genomics import bed_pb2
 from deepvariant.util.python import bed_reader
+from deepvariant.util.python import bed_writer
 
 
 class NativeBedReader(genomics_reader.GenomicsReader):
@@ -95,3 +97,39 @@ class BedReader(genomics_reader.DispatchingGenomicsReader):
 
   def _record_proto(self):
     return bed_pb2.BedRecord
+
+
+class NativeBedWriter(genomics_writer.GenomicsWriter):
+  """Class for writing to native BED files.
+
+  Most users will want BedWriter, which will write to either native BED
+  files or TFRecord files, based on the output filename's extension.
+  """
+
+  def __init__(self, output_path, header=None):
+    """Initializer for NativeBedWriter.
+
+    Args:
+      output_path: str. The path to which to write the BED file.
+      header: nucleus.genomics.v1.BedHeader. The header that defines all
+        information germane to the constituent BED records.
+    """
+    super(NativeBedWriter, self).__init__()
+    if header is None:
+      header = bed_pb2.BedHeader(num_fields=3)
+    writer_options = bed_pb2.BedWriterOptions()
+    self._writer = bed_writer.BedWriter.to_file(output_path, header,
+                                                writer_options)
+
+  def write(self, proto):
+    self._writer.write(proto)
+
+  def __exit__(self, exit_type, exit_value, exit_traceback):
+    self._writer.__exit__(exit_type, exit_value, exit_traceback)
+
+
+class BedWriter(genomics_writer.DispatchingGenomicsWriter):
+  """Class for writing BedRecord protos to BED or TFRecord files."""
+
+  def _native_writer(self, output_path, header):
+    return NativeBedWriter(output_path, header=header)

@@ -73,6 +73,40 @@ cc_test(
 )
 
 cc_library(
+    name = "bed_writer",
+    srcs = ["bed_writer.cc"],
+    hdrs = ["bed_writer.h"],
+    deps = [
+        ":cpp_utils",
+        "//deepvariant/util/genomics:bed_cc_pb2",
+        "//deepvariant/util/vendor:statusor",
+        "//deepvariant/util/vendor:zlib_compression_options",
+        "//deepvariant/util/vendor:zlib_outputbuffer",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "bed_writer_test",
+    size = "small",
+    srcs = ["bed_writer_test.cc"],
+    data = ["//deepvariant/util/testdata"],
+    deps = [
+        ":bed_writer",
+        ":cpp_test_utils",
+        ":cpp_utils",
+        "//deepvariant/util/genomics:bed_cc_pb2",
+        "//deepvariant/util/vendor:status_matchers",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
     name = "fastq_reader",
     srcs = ["fastq_reader.cc"],
     hdrs = ["fastq_reader.h"],
