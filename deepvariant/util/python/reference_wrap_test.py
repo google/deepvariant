@@ -37,8 +37,8 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from deepvariant.util.testing import test_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 from deepvariant.util.python import reference_fai
 
 

@@ -31,8 +31,8 @@
  */
 
 // Testing C++ utilities.
-#ifndef THIRD_PARTY_NUCLEUS_UTIL_TEST_UTILS_H_
-#define THIRD_PARTY_NUCLEUS_UTIL_TEST_UTILS_H_
+#ifndef THIRD_PARTY_NUCLEUS_TESTING_TEST_UTILS_H_
+#define THIRD_PARTY_NUCLEUS_TESTING_TEST_UTILS_H_
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -151,4 +151,4 @@ std::vector<Record> as_vector(const std::shared_ptr<Iterable<Record>>& it) {
 
 }  // namespace nucleus
 
-#endif  // THIRD_PARTY_NUCLEUS_UTIL_TEST_UTILS_H_
+#endif  // THIRD_PARTY_NUCLEUS_TESTING_TEST_UTILS_H_

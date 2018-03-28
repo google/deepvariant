@@ -35,7 +35,7 @@
 #include "deepvariant/utils.h"
 #include "google/protobuf/repeated_field.h"
 #include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/test_utils.h"
+#include "deepvariant/util/testing/test_utils.h"
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"

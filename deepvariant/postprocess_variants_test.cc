@@ -33,7 +33,7 @@
 
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/test_utils.h"
+#include "deepvariant/util/testing/test_utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 
 #include <gmock/gmock-generated-matchers.h>

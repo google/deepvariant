@@ -36,10 +36,10 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":vcf_reader",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util:ranges",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -67,10 +67,10 @@ py_test(
     deps = [
         ":vcf_writer",
         "//deepvariant/util:io_utils",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
         "//deepvariant/util/io:vcf",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -103,11 +103,11 @@ py_test(
     deps = [
         ":sam_reader",
         "//deepvariant/util:clif_postproc",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util:ranges",
         "//deepvariant/util/genomics:index_py_pb2",
         "//deepvariant/util/genomics:reads_py_pb2",
         "//deepvariant/util/genomics:reference_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -133,8 +133,8 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":reference_fai",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util:ranges",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -164,8 +164,8 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":bed_reader",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util/genomics:bed_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -194,8 +194,8 @@ py_test(
     deps = [
         ":bed_writer",
         "//deepvariant/util:io_utils",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util/genomics:bed_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -225,8 +225,8 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":fastq_reader",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util/genomics:fastq_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -254,9 +254,9 @@ py_test(
     deps = [
         ":fastq_writer",
         "//deepvariant/util:io_utils",
-        "//deepvariant/util:py_test_utils",
         "//deepvariant/util/genomics:fastq_py_pb2",
         "//deepvariant/util/io:fastq",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

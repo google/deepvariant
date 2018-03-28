@@ -38,7 +38,7 @@ from absl.testing import parameterized
 
 from deepvariant.util.io import fastq
 from deepvariant.util.genomics import fastq_pb2
-from deepvariant.util import test_utils
+from deepvariant.util.testing import test_utils
 
 
 class FastqReaderTests(parameterized.TestCase):

@@ -40,8 +40,8 @@ from absl.testing import parameterized
 import tensorflow as tf
 
 from deepvariant.util.genomics import bed_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import io_utils
-from deepvariant.util import test_utils
 from deepvariant.util.python import bed_writer
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed BedWriter'

@@ -37,11 +37,11 @@ from __future__ import print_function
 from absl.testing import absltest
 
 from deepvariant.util.genomics import index_pb2
-from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import reads_pb2
+from deepvariant.util.genomics import reference_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import clif_postproc
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 from deepvariant.util.python import sam_reader
 
 

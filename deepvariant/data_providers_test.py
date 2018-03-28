@@ -41,8 +41,8 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
+from deepvariant.util.testing import test_utils
 from deepvariant.util import io_utils
-from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from tensorflow.core.example import example_pb2
 from deepvariant import data_providers

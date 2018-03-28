@@ -39,8 +39,8 @@ from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 from tensorflow.python.platform import gfile
 
 

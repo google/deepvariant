@@ -34,8 +34,8 @@
 #define THIRD_PARTY_NUCLEUS_UTIL_REFERENCE_TEST_H_
 
 #include "tensorflow/core/platform/test.h"
+#include "deepvariant/util/testing/test_utils.h"
 #include "deepvariant/util/reference.h"
-#include "deepvariant/util/test_utils.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace nucleus {

@@ -39,7 +39,7 @@ from absl.testing import parameterized
 import six
 import tensorflow as tf
 
-from deepvariant.util import test_utils
+from deepvariant.util.testing import test_utils
 from deepvariant import call_variants
 from deepvariant import modeling
 from deepvariant import testdata

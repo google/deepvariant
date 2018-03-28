@@ -38,7 +38,7 @@ from absl.testing import parameterized
 
 from deepvariant.util.io import vcf
 
-from deepvariant.util import test_utils
+from deepvariant.util.testing import test_utils
 from deepvariant import testdata
 from deepvariant.labeler import labeled_examples_to_vcf
 from deepvariant.testing import flagsaver

@@ -47,8 +47,8 @@ import six
 import tensorflow as tf
 
 from absl import logging
+from deepvariant.util.testing import test_utils
 from deepvariant.util import io_utils
-from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from deepvariant import call_variants
 from deepvariant import modeling

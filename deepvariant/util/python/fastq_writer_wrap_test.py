@@ -41,8 +41,8 @@ import tensorflow as tf
 
 from deepvariant.util.io import fastq
 from deepvariant.util.genomics import fastq_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import io_utils
-from deepvariant.util import test_utils
 from deepvariant.util.python import fastq_writer
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed FastqWriter'

@@ -34,7 +34,7 @@
 
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/testing/protocol-buffer-matchers.h"
-#include "deepvariant/util/test_utils.h"
+#include "deepvariant/util/testing/test_utils.h"
 #include "deepvariant/util/utils.h"
 
 #include <gmock/gmock-generated-matchers.h>

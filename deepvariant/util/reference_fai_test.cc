@@ -36,8 +36,8 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/util/testing/test_utils.h"
 #include "deepvariant/util/reference_test.h"
-#include "deepvariant/util/test_utils.h"
 #include "deepvariant/util/utils.h"
 #include "deepvariant/util/vendor/status_matchers.h"
 

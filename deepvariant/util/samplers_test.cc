@@ -32,7 +32,7 @@
 
 #include "deepvariant/util/samplers.h"
 
-#include "deepvariant/util/test_utils.h"
+#include "deepvariant/util/testing/test_utils.h"
 #include "tensorflow/core/lib/random/simple_philox.h"
 
 #include "tensorflow/core/platform/test.h"

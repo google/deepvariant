@@ -37,9 +37,9 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from deepvariant.util.testing import test_utils
 from deepvariant.util import genomics_io
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 
 
 class RefReaderTests(parameterized.TestCase):

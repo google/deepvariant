@@ -86,11 +86,11 @@ cc_test(
     deps = [
         ":allelecounter",
         ":utils",
-        "//deepvariant/util:cpp_test_utils",
         "//deepvariant/util:cpp_utils",
         "//deepvariant/util:reference_fai",
         "//deepvariant/util:reference_test",
         "//deepvariant/util/genomics:position_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -122,9 +122,9 @@ cc_test(
     ],
     deps = [
         ":postprocess_variants_lib",
-        "//deepvariant/util:cpp_test_utils",
         "//deepvariant/util/genomics:reference_cc_pb2",
         "//deepvariant/util/genomics:variants_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
@@ -155,9 +155,9 @@ cc_test(
         ":utils",
         ":variant_calling",
         "//deepvariant/protos:deepvariant_cc_pb2",
-        "//deepvariant/util:cpp_test_utils",
         "//deepvariant/util:cpp_utils",
         "//deepvariant/util/genomics:variants_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -213,7 +213,7 @@ cc_test(
     srcs = ["utils_test.cc"],
     deps = [
         ":utils",
-        "//deepvariant/util:cpp_test_utils",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
@@ -483,7 +483,7 @@ py_library(
     srcs = ["testdata.py"],
     srcs_version = "PY2AND3",
     deps = [
-        "//deepvariant/util:py_test_utils",
+        "//deepvariant/util/testing:py_test_utils",
     ],
 )
 

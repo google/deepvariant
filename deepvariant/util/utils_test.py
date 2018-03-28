@@ -42,8 +42,8 @@ from absl.testing import parameterized
 import numpy as np
 import numpy.testing as npt
 
+from deepvariant.util.testing import test_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 from deepvariant.util import utils
 
 

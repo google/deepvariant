@@ -42,8 +42,8 @@ import numpy.testing as npt
 
 from deepvariant.util.io import fasta
 from deepvariant.util.genomics import variants_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 
 from deepvariant import pileup_image
 from deepvariant.protos import deepvariant_pb2

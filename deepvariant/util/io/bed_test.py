@@ -38,7 +38,7 @@ from absl.testing import parameterized
 
 from deepvariant.util.io import bed
 from deepvariant.util.genomics import bed_pb2
-from deepvariant.util import test_utils
+from deepvariant.util.testing import test_utils
 
 _VALID_NUM_BED_FIELDS = [3, 4, 5, 6, 8, 9, 12]
 

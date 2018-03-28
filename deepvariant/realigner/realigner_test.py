@@ -45,9 +45,9 @@ import tensorflow as tf
 from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util.genomics import reads_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import realigner

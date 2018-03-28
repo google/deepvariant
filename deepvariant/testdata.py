@@ -36,7 +36,7 @@ import os
 
 
 
-from deepvariant.util import test_utils as nucleus_test_utils
+from deepvariant.util.testing import test_utils as nucleus_test_utils
 
 DEEPVARIANT_DATADIR = ''
 

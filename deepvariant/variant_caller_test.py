@@ -40,7 +40,7 @@ import mock
 import numpy as np
 import numpy.testing as npt
 
-from deepvariant.util import test_utils
+from deepvariant.util.testing import test_utils
 from deepvariant.util import variant_utils
 from deepvariant.util import variantcall_utils
 from deepvariant import testdata

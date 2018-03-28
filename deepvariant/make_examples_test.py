@@ -49,9 +49,9 @@ from deepvariant.util.io import vcf
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import io_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 from deepvariant.util import variant_utils
 from deepvariant.util import variantcall_utils
 from deepvariant.util import vcf_constants

@@ -43,8 +43,8 @@ import mock
 from deepvariant.util.genomics import position_pb2
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import variants_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 
 _TEST_BED_REGIONS = [
     ranges.make_range('chr1', 1, 10),

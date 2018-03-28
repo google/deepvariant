@@ -37,10 +37,10 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from deepvariant.util.genomics import cigar_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import cigar as _cigar
-from deepvariant.util import ranges
 
-from deepvariant.util import test_utils
+from deepvariant.util import ranges
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import aligner
 

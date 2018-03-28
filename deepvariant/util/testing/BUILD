@@ -41,3 +41,34 @@ cc_test(
         "@protobuf_archive//:protobuf",
     ],
 )
+
+cc_library(
+    name = "cpp_test_utils",
+    testonly = True,
+    srcs = ["test_utils.cc"],
+    hdrs = ["test_utils.h"],
+    deps = [
+        "//deepvariant/util:cpp_utils",
+        "//deepvariant/util:reader_base",
+        "//deepvariant/util/genomics:cigar_cc_pb2",
+        "//deepvariant/util/genomics:reads_cc_pb2",
+        "//deepvariant/util/genomics:reference_cc_pb2",
+        "//deepvariant/util/vendor:statusor",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+py_library(
+    name = "py_test_utils",
+    testonly = True,
+    srcs = ["test_utils.py"],
+    deps = [
+        "//deepvariant/util:cigar",
+        "//deepvariant/util/genomics:position_py_pb2",
+        "//deepvariant/util/genomics:reads_py_pb2",
+        "//deepvariant/util/genomics:struct_py_pb2",
+        "//deepvariant/util/genomics:variants_py_pb2",
+        "@com_google_absl_py//absl/flags",
+    ],
+)

@@ -36,9 +36,9 @@
 #include "absl/strings/str_cat.h"
 #include "htslib/hts_log.h"
 #include "htslib/kstring.h"
+#include "deepvariant/util/testing/test_utils.h"
 #include "deepvariant/util/hts_path.h"
 #include "deepvariant/util/port.h"
-#include "deepvariant/util/test_utils.h"
 
 using absl::StrCat;
 

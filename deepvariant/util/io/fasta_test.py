@@ -38,8 +38,8 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from deepvariant.util.io import fasta
+from deepvariant.util.testing import test_utils
 from deepvariant.util import ranges
-from deepvariant.util import test_utils
 
 
 class RefFastaReaderTests(parameterized.TestCase):

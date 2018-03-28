@@ -35,7 +35,7 @@
 #include "deepvariant/util/genomics/cigar.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
 #include "deepvariant/util/genomics/struct.pb.h"
-#include "deepvariant/util/test_utils.h"
+#include "deepvariant/util/testing/test_utils.h"
 
 #include "deepvariant/util/testing/protocol-buffer-matchers.h"
 

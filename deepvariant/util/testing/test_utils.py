@@ -85,6 +85,7 @@ def genomics_testdata(path, datadir=DATADIR):
   return os.path.join(test_srcdir, datadir, path)
 
 
+# redacted
 def genomics_core_testdata(filename):
   """Gets the path to a testdata named filename in util/testdata.
 

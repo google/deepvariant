@@ -38,8 +38,8 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from deepvariant.util.genomics import bed_pb2
+from deepvariant.util.testing import test_utils
 from deepvariant.util import clif_postproc
-from deepvariant.util import test_utils
 from deepvariant.util.python import bed_reader
 
 

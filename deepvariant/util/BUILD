@@ -61,9 +61,9 @@ cc_test(
     data = ["//deepvariant/util/testdata"],
     deps = [
         ":bed_reader",
-        ":cpp_test_utils",
         ":cpp_utils",
         "//deepvariant/util/genomics:bed_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
@@ -96,9 +96,9 @@ cc_test(
     data = ["//deepvariant/util/testdata"],
     deps = [
         ":bed_writer",
-        ":cpp_test_utils",
         ":cpp_utils",
         "//deepvariant/util/genomics:bed_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -128,10 +128,10 @@ cc_test(
     srcs = ["fastq_reader_test.cc"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         ":fastq_reader",
         "//deepvariant/util/genomics:fastq_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
@@ -162,10 +162,10 @@ cc_test(
     srcs = ["fastq_writer_test.cc"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         ":fastq_writer",
         "//deepvariant/util/genomics:fastq_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -201,10 +201,10 @@ cc_test(
     srcs = ["sam_reader_test.cc"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         ":sam_reader",
         "//deepvariant/util/genomics:index_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
@@ -255,10 +255,10 @@ cc_test(
     srcs = ["vcf_reader_test.cc"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         ":vcf_reader",
         "//deepvariant/util/genomics:variants_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
@@ -291,10 +291,10 @@ cc_test(
     srcs = ["vcf_writer_test.cc"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         ":vcf_writer",
         "//deepvariant/util/genomics:variants_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -323,9 +323,9 @@ cc_library(
     hdrs = ["reference_test.h"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         ":reference",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -353,10 +353,10 @@ cc_test(
     size = "small",
     srcs = ["reference_fai_test.cc"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         ":reference_fai",
         ":reference_test",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -385,11 +385,11 @@ cc_test(
     size = "small",
     srcs = ["utils_test.cc"],
     deps = [
-        ":cpp_test_utils",
         ":cpp_utils",
         "//deepvariant/util/genomics:cigar_cc_pb2",
         "//deepvariant/util/genomics:reads_cc_pb2",
         "//deepvariant/util/genomics:struct_cc_pb2",
+        "//deepvariant/util/testing:cpp_test_utils",
         "//deepvariant/util/testing:gunit_extras",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
@@ -431,42 +431,11 @@ py_test(
     srcs = ["utils_test.py"],
     main = "utils_test.py",
     deps = [
-        ":py_test_utils",
         ":py_utils",
         ":ranges",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
-    ],
-)
-
-cc_library(
-    name = "cpp_test_utils",
-    testonly = True,
-    srcs = ["test_utils.cc"],
-    hdrs = ["test_utils.h"],
-    deps = [
-        ":cpp_utils",
-        ":reader_base",
-        "//deepvariant/util/genomics:cigar_cc_pb2",
-        "//deepvariant/util/genomics:reads_cc_pb2",
-        "//deepvariant/util/genomics:reference_cc_pb2",
-        "//deepvariant/util/vendor:statusor",
-        "@org_tensorflow//tensorflow/core:lib",
-        "@org_tensorflow//tensorflow/core:test",
-    ],
-)
-
-py_library(
-    name = "py_test_utils",
-    testonly = True,
-    srcs = ["test_utils.py"],
-    deps = [
-        "//deepvariant/util:cigar",
-        "//deepvariant/util/genomics:position_py_pb2",
-        "//deepvariant/util/genomics:reads_py_pb2",
-        "//deepvariant/util/genomics:struct_py_pb2",
-        "//deepvariant/util/genomics:variants_py_pb2",
-        "@com_google_absl_py//absl/flags",
     ],
 )
 
@@ -530,11 +499,11 @@ py_test(
     srcs = ["ranges_test.py"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":py_test_utils",
         ":ranges",
         "//deepvariant/util/genomics:position_py_pb2",
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -579,10 +548,10 @@ py_test(
     size = "small",
     srcs = ["variant_utils_test.py"],
     deps = [
-        ":py_test_utils",
         ":ranges",
         ":variant_utils",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -634,8 +603,8 @@ py_test(
     size = "small",
     srcs = ["genomics_io_noplugin_test.py"],
     deps = [
-        ":py_test_utils",
         "//deepvariant/util/io:sam",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -652,8 +621,8 @@ py_test(
     data = ["//deepvariant/util/testdata"],
     deps = [
         ":io_utils",
-        ":py_test_utils",
         "//deepvariant/util/genomics:reference_py_pb2",
+        "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -689,7 +658,7 @@ cc_test(
     srcs = ["samplers_test.cc"],
     deps = [
         ":samplers",
-        "//deepvariant/util:cpp_test_utils",
+        "//deepvariant/util/testing:cpp_test_utils",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
@@ -760,9 +729,9 @@ cc_test(
     srcs = ["hts_test.cc"],
     data = ["//deepvariant/util/testdata"],
     deps = [
-        ":cpp_test_utils",
         ":hts_path",
         ":port",
+        "//deepvariant/util/testing:cpp_test_utils",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@htslib",
