@@ -40,6 +40,8 @@ from deepvariant.util.io import bed
 from deepvariant.util.genomics import bed_pb2
 from deepvariant.util import test_utils
 
+_VALID_NUM_BED_FIELDS = [3, 4, 5, 6, 8, 9, 12]
+
 
 class BedReaderTests(parameterized.TestCase):
 
@@ -63,6 +65,12 @@ class BedReaderTests(parameterized.TestCase):
     with bed.NativeBedReader(bed_path) as native_reader:
       self.assertEqual(native_reader.header.num_fields, 12)
 
+  @parameterized.parameters(1, 2, 7, 10, 11, 13)
+  def test_invalid_num_fields(self, invalid_num_fields):
+    bed_path = test_utils.genomics_core_testdata('test_regions.bed')
+    with self.assertRaisesRegexp(ValueError, 'Invalid requested number of fie'):
+      reader = bed.BedReader(bed_path, num_fields=invalid_num_fields)
+
 
 class BedWriterTests(parameterized.TestCase):
   """Tests for BedWriter."""
@@ -75,6 +83,20 @@ class BedWriterTests(parameterized.TestCase):
             reference_name='chr2', start=32, end=38, name='second', score=0),
         bed_pb2.BedRecord(
             reference_name='chr3', start=40, end=50, name='third', score=99),
+    ]
+    self.tokens = [
+        [
+            'chr1', '30', '40', 'first', '55.5', '+', '35', '38', '128,242,16',
+            '2', '5,3', '30,37'
+        ],
+        [
+            'chr2', '32', '38', 'second', '0', '.', '32', '38', '128,128,128',
+            '1', '6', '32'
+        ],
+        [
+            'chr3', '40', '50', 'third', '99', '-', '40', '44', '0,0,0', '3',
+            '40,43,48', '3,2,2'
+        ],
     ]
 
   @parameterized.parameters('test_raw.bed', 'test_zipped.bed.gz',
@@ -90,6 +112,29 @@ class BedWriterTests(parameterized.TestCase):
       v2_records = list(reader.iterate())
 
     self.assertEqual(self.records, v2_records)
+
+  @parameterized.parameters(3, 4, 5, 6, 8, 9, 12)
+  def test_roundtrip_num_fields(self, num_fields):
+    all_num_fields_in_file = [
+        n for n in _VALID_NUM_BED_FIELDS if n >= num_fields
+    ]
+    for num_fields_in_file in all_num_fields_in_file:
+      lines = ['\t'.join(line[:num_fields_in_file]) for line in self.tokens]
+      contents = '{}\n'.format('\n'.join(lines))
+      input_path = test_utils.test_tmpfile('test_field.bed', contents=contents)
+
+      with bed.BedReader(input_path, num_fields=num_fields) as reader:
+        records = list(reader.iterate())
+      output_path = test_utils.test_tmpfile('test_field2.bed')
+      with bed.BedWriter(output_path, header=reader.header) as writer:
+        for record in records:
+          writer.write(record)
+
+      with bed.BedReader(output_path) as reader2:
+        v2_records = list(reader2.iterate())
+
+      self.assertLen(records, 3)
+      self.assertEqual(records, v2_records)
 
 
 if __name__ == '__main__':
