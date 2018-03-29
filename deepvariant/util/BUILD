@@ -25,10 +25,9 @@ py_library(
         ":io_utils",
         ":ranges",
         ":variant_utils",
-        "//deepvariant/util/io:reference_fai",
-        "//deepvariant/util/io:sam_reader",
-        "//deepvariant/util/io:vcf_reader",
-        "//deepvariant/util/io:vcf_writer",
+        "//deepvariant/util/io:fasta",
+        "//deepvariant/util/io:sam",
+        "//deepvariant/util/io:vcf",
     ],
 )
 
