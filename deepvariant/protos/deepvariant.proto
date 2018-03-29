@@ -359,9 +359,9 @@ message PileupImageOptions {
   // Controls how bases are encoded as red pixel values.
   //
   // A is base_color_offset_a_and_g + base_color_stride * 3
-  // C is base_color_offset_a_and_g + base_color_stride * 2
-  // G is base_color_offset_t_and_c + base_color_stride * 1
-  // T is base_color_offset_t_and_c + base_color_stride * 0
+  // G is base_color_offset_a_and_g + base_color_stride * 2
+  // T is base_color_offset_t_and_c + base_color_stride * 1
+  // C is base_color_offset_t_and_c + base_color_stride * 0
   //
   // The offset in red color space for A and G bases.
   int32 base_color_offset_a_and_g = 4;
