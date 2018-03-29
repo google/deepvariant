@@ -20,7 +20,7 @@ from nucleus.io import vcf
 ```
 
 `nucleus/io` is the directory containing Nucleus's Python classes for
-doing reading and writing.  There are files there for each of the genomics
+doing reading and writing.  There are modules for each of the genomics
 formats that Nucleus supports, including FASTA, FASTQ, SAM/BAM and VCF.
 That directory also contains the base classes that define the APIs for all
 of the various readers and writers.  In brief, each reader can either be
@@ -36,7 +36,7 @@ We use Python's `with` pattern because the reader object returned by
 when we do.  `vcf.VcfReader` is also smart enough to realize that this
 particular input file is compressed, and deal with that transparently.
 Of course, vcf files don't have to be compressed; `VcfReader` would have
-accepted an uncompressed `/tmp/example2.vcf' just as well.
+accepted an uncompressed `/tmp/example2.vcf` just as well.
 
 By default, we *do* assume that VCF files come along with a
 [TABIX](http://www.htslib.org/doc/tabix.html) index that allows us to
