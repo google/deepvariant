@@ -35,7 +35,7 @@ from "deepvariant/util/vendor/statusor_clif_converters.h" import *
 from deepvariant.util.io.clif_postproc import WrappedCppIterable
 
 
-from "third_party/nucleus/io/sam_reader.h":
+from "deepvariant/util/io/sam_reader.h":
   namespace `nucleus`:
 
     class SamIterable:

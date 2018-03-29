@@ -30,12 +30,12 @@
  *
  */
 
-#include "third_party/nucleus/io/reference_fai.h"
+#include "deepvariant/util/io/reference_fai.h"
 
 #include <algorithm>
 
 #include "htslib/tbx.h"
-#include "third_party/nucleus/io/hts_path.h"
+#include "deepvariant/util/io/hts_path.h"
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/gtl/optional.h"
 #include "tensorflow/core/lib/strings/str_util.h"

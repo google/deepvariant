@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/hts_verbose.h"
+#include "deepvariant/util/io/hts_verbose.h"
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>

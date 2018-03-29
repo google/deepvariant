@@ -32,7 +32,7 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 
-#include "third_party/nucleus/io/reader_base.h"
+#include "deepvariant/util/io/reader_base.h"
 #include "deepvariant/util/genomics/bed.pb.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "deepvariant/util/vendor/zlib_inputstream.h"

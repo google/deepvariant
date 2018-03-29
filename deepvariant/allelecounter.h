@@ -40,7 +40,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "third_party/nucleus/io/reference.h"
+#include "deepvariant/util/io/reference.h"
 #include "deepvariant/util/genomics/cigar.pb.h"
 #include "deepvariant/util/genomics/position.pb.h"
 #include "deepvariant/util/genomics/range.pb.h"

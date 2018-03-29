@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/sam_reader.h"
+#include "deepvariant/util/io/sam_reader.h"
 
 #include <string>
 

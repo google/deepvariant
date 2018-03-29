@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/hts_verbose.h"
+#include "deepvariant/util/io/hts_verbose.h"
 #include "htslib/hts_log.h"
 
 namespace nucleus {

@@ -37,7 +37,7 @@
 #include <vector>
 
 #include "htslib/faidx.h"
-#include "third_party/nucleus/io/reference.h"
+#include "deepvariant/util/io/reference.h"
 #include "deepvariant/util/vendor/statusor.h"
 #include "tensorflow/core/lib/gtl/optional.h"
 #include "tensorflow/core/platform/types.h"

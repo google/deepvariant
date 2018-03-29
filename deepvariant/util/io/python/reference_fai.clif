@@ -31,7 +31,7 @@ from "deepvariant/util/genomics/range_pyclif.h" import *
 from "deepvariant/util/genomics/reference_pyclif.h" import *
 from "deepvariant/util/vendor/statusor_clif_converters.h" import *
 
-from "third_party/nucleus/io/reference_fai.h":
+from "deepvariant/util/io/reference_fai.h":
   namespace `nucleus`:
     class GenomeReferenceFai:
       n_contigs: int = property(`NContigs`)

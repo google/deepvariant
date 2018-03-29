@@ -35,7 +35,7 @@
 
 #include "htslib/hts.h"
 #include "htslib/sam.h"
-#include "third_party/nucleus/io/reader_base.h"
+#include "deepvariant/util/io/reader_base.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reads.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"

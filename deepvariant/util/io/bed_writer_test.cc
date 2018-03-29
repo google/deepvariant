@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/bed_writer.h"
+#include "deepvariant/util/io/bed_writer.h"
 
 #include <vector>
 

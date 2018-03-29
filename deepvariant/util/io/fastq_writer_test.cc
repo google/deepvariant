@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/fastq_writer.h"
+#include "deepvariant/util/io/fastq_writer.h"
 
 #include <vector>
 

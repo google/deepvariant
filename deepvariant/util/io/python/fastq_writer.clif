@@ -30,7 +30,7 @@
 from "deepvariant/util/genomics/fastq_pyclif.h" import *
 from "deepvariant/util/vendor/statusor_clif_converters.h" import *
 
-from "third_party/nucleus/io/fastq_writer.h":
+from "deepvariant/util/io/fastq_writer.h":
   namespace `nucleus`:
     class FastqWriter:
       @classmethod

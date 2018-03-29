@@ -30,7 +30,7 @@
  */
 
 // Implementation of fastq_reader.h
-#include "third_party/nucleus/io/fastq_reader.h"
+#include "deepvariant/util/io/fastq_reader.h"
 
 #include "deepvariant/util/genomics/fastq.pb.h"
 #include "deepvariant/util/utils.h"

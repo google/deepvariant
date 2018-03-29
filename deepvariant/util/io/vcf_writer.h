@@ -36,7 +36,7 @@
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htslib/vcf.h"
-#include "third_party/nucleus/io/vcf_conversion.h"
+#include "deepvariant/util/io/vcf_conversion.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/vendor/statusor.h"

@@ -31,14 +31,14 @@
  */
 
 // Implementation of vcf_writer.h
-#include "third_party/nucleus/io/vcf_writer.h"
+#include "deepvariant/util/io/vcf_writer.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 
-#include "third_party/nucleus/io/hts_path.h"
-#include "third_party/nucleus/io/vcf_conversion.h"
+#include "deepvariant/util/io/hts_path.h"
+#include "deepvariant/util/io/vcf_conversion.h"
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/utils.h"

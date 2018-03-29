@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/reader_base.h"
+#include "deepvariant/util/io/reader_base.h"
 
 namespace nucleus {
 

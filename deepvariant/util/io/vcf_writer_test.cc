@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/vcf_writer.h"
+#include "deepvariant/util/io/vcf_writer.h"
 
 #include <memory>
 #include <vector>

@@ -30,11 +30,11 @@
  *
  */
 
-#include "third_party/nucleus/io/reference.h"
+#include "deepvariant/util/io/reference.h"
 
 #include <vector>
 
-#include "third_party/nucleus/io/reference_test.h"
+#include "deepvariant/util/io/reference_test.h"
 #include "deepvariant/util/utils.h"
 #include "deepvariant/util/vendor/status_matchers.h"
 

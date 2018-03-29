@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/vcf_conversion.h"
+#include "deepvariant/util/io/vcf_conversion.h"
 
 #include "absl/memory/memory.h"
 #include "deepvariant/util/math.h"

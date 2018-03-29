@@ -31,13 +31,13 @@
  */
 
 // Implementation of sam_reader.h
-#include "third_party/nucleus/io/sam_reader.h"
+#include "deepvariant/util/io/sam_reader.h"
 
 #include "google/protobuf/repeated_field.h"
 #include "htslib/hts.h"
 #include "htslib/hts_endian.h"
 #include "htslib/sam.h"
-#include "third_party/nucleus/io/hts_path.h"
+#include "deepvariant/util/io/hts_path.h"
 #include "deepvariant/util/genomics/cigar.pb.h"
 #include "deepvariant/util/genomics/index.pb.h"
 #include "deepvariant/util/genomics/position.pb.h"

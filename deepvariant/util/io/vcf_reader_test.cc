@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/vcf_reader.h"
+#include "deepvariant/util/io/vcf_reader.h"
 
 #include "deepvariant/util/genomics/variants.pb.h"
 #include "deepvariant/util/testing/protocol-buffer-matchers.h"

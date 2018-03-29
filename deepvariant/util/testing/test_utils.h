@@ -40,7 +40,7 @@
 
 
 #include "tensorflow/core/platform/test.h"
-#include "third_party/nucleus/io/reader_base.h"
+#include "deepvariant/util/io/reader_base.h"
 #include "deepvariant/util/genomics/reads.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/vendor/statusor.h"

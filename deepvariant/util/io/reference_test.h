@@ -34,7 +34,7 @@
 #define THIRD_PARTY_NUCLEUS_IO_REFERENCE_TEST_H_
 
 #include "tensorflow/core/platform/test.h"
-#include "third_party/nucleus/io/reference.h"
+#include "deepvariant/util/io/reference.h"
 #include "deepvariant/util/testing/test_utils.h"
 #include "tensorflow/core/platform/types.h"
 

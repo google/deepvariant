@@ -30,7 +30,7 @@
 from "deepvariant/util/genomics/variants_pyclif.h" import *
 from "deepvariant/util/vendor/statusor_clif_converters.h" import *
 
-from "third_party/nucleus/io/vcf_writer.h":
+from "deepvariant/util/io/vcf_writer.h":
   namespace `nucleus`:
     class VcfWriter:
       @classmethod

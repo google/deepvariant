@@ -30,7 +30,7 @@
  */
 
 // Implementation of bed_writer.h
-#include "third_party/nucleus/io/bed_writer.h"
+#include "deepvariant/util/io/bed_writer.h"
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"

@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/hts_path.h"
+#include "deepvariant/util/io/hts_path.h"
 #include <string>
 #include "htslib/faidx.h"
 #include "htslib/hts.h"

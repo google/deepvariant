@@ -30,13 +30,13 @@
  *
  */
 
-#include "third_party/nucleus/io/reference_fai.h"
+#include "deepvariant/util/io/reference_fai.h"
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "third_party/nucleus/io/reference_test.h"
+#include "deepvariant/util/io/reference_test.h"
 #include "deepvariant/util/testing/test_utils.h"
 #include "deepvariant/util/utils.h"
 #include "deepvariant/util/vendor/status_matchers.h"

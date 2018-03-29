@@ -30,7 +30,7 @@
  */
 
 // Implementation of fastq_writer.h
-#include "third_party/nucleus/io/fastq_writer.h"
+#include "deepvariant/util/io/fastq_writer.h"
 
 #include "absl/memory/memory.h"
 #include "deepvariant/util/genomics/fastq.pb.h"

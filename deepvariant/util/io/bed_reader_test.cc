@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/bed_reader.h"
+#include "deepvariant/util/io/bed_reader.h"
 
 #include "deepvariant/util/testing/protocol-buffer-matchers.h"
 #include "deepvariant/util/testing/test_utils.h"

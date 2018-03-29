@@ -31,12 +31,12 @@
  */
 
 // Implementation of vcf_reader.h
-#include "third_party/nucleus/io/vcf_reader.h"
+#include "deepvariant/util/io/vcf_reader.h"
 
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
-#include "third_party/nucleus/io/hts_path.h"
-#include "third_party/nucleus/io/vcf_conversion.h"
+#include "deepvariant/util/io/hts_path.h"
+#include "deepvariant/util/io/vcf_conversion.h"
 #include "deepvariant/util/genomics/range.pb.h"
 #include "deepvariant/util/genomics/reference.pb.h"
 #include "deepvariant/util/genomics/variants.pb.h"

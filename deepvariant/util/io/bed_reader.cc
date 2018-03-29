@@ -30,7 +30,7 @@
  */
 
 // Implementation of bed_reader.h
-#include "third_party/nucleus/io/bed_reader.h"
+#include "deepvariant/util/io/bed_reader.h"
 
 #include "absl/strings/str_split.h"
 #include "deepvariant/util/genomics/bed.pb.h"
