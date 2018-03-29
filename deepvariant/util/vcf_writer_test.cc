@@ -304,7 +304,7 @@ TEST(VcfWriterTest, WritesVCF) {
   Variant v7 = MakeVariant({"DogSNP7"}, "Chr2", 23, 24, "A", {"T", "G"});
   *v7.add_calls() = MakeVariantCall("Fido", {0, 1});
   *v7.add_calls() = MakeVariantCall("Spot", {0, 0});
-  SetInfoField("DB", std::vector<int>{1}, &v7);
+  SetInfoField("DB", std::vector<bool>{true}, &v7);
   SetInfoField("AC", std::vector<int>{1, 0}, &v7);
   SetInfoField("AF", std::vector<float>{0.75, 0.0}, &v7);
   ASSERT_THAT(writer->Write(v7), IsOK());
@@ -315,7 +315,7 @@ TEST(VcfWriterTest, WritesVCF) {
   Variant v8 = MakeVariant({"DogSNP8"}, "Chr2", 24, 25, "A", {"T", "G"});
   *v8.add_calls() = MakeVariantCall("Fido", {0, 1});
   *v8.add_calls() = MakeVariantCall("Spot", {0, 0});
-  SetInfoField("DB", std::vector<int>{0}, &v8);
+  SetInfoField("DB", std::vector<bool>{false}, &v8);
   SetInfoField("AC", std::vector<int>{1, 0}, &v8);
   SetInfoField("AF", std::vector<float>{0.75, 0.0}, &v8);
   ASSERT_THAT(writer->Write(v8), IsOK());

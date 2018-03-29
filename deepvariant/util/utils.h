@@ -185,11 +185,20 @@ void SetValuesValue(T value, nucleus::genomics::v1::Value* protobuf_value) {
   protobuf_value->set_string_value(value);
 }
 
-// Sets the value with set_int_value for any integral C++ type.
+// Sets the value with set_bool_value for the bool C++ type.
 template <typename T>
 void SetValuesValue(
-    typename std::enable_if<std::is_integral<T>::value, T>::type value,
+    typename std::enable_if<std::is_same<T, bool>::value, T>::type value,
     nucleus::genomics::v1::Value* protobuf_value) {
+  protobuf_value->set_bool_value(value);
+}
+
+// Sets the value with set_int_value for any integral C++ type that is not bool.
+template <typename T>
+void SetValuesValue(typename std::enable_if<std::is_integral<T>::value &&
+                                                !std::is_same<T, bool>::value,
+                                            T>::type value,
+                    nucleus::genomics::v1::Value* protobuf_value) {
   protobuf_value->set_int_value(value);
 }
 
@@ -238,10 +247,20 @@ void SetInfoField(const string& key, const Value value,
 //
 // vector<int> ints = ListValues<int>(list_value_containing_ints);
 // vector<float> floats = ListValues<float>(list_value_containing_floats);
-// vector<string> floats = ListValues(list_value_containing_strings);
-//
+// vector<string> strings = ListValues(list_value_containing_strings);
 template <typename T>
-std::vector<typename std::enable_if<std::is_integral<T>::value, T>::type>
+std::vector<typename std::enable_if<std::is_same<T, bool>::value, T>::type>
+ListValues(const nucleus::genomics::v1::ListValue& list_value) {
+  std::vector<T> values;
+  for (const auto& value : list_value.values()) {
+    values.push_back(value.bool_value());
+  }
+  return values;
+}
+
+template <typename T>
+std::vector<typename std::enable_if<
+    std::is_integral<T>::value && !std::is_same<T, bool>::value, T>::type>
 ListValues(const nucleus::genomics::v1::ListValue& list_value) {
   std::vector<T> values;
   for (const auto& value : list_value.values()) {
