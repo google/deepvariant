@@ -135,24 +135,35 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
   on the filename's extensions.
   """
 
-  def __init__(self, input_path, use_index=True, include_likelihoods=False):
+  def __init__(self,
+               input_path,
+               use_index=True,
+               excluded_info_fields=None,
+               excluded_format_fields=None):
+    """Initializer for NativeVcfReader.
+
+    Args:
+      input_path: str. The path to the VCF file to read.
+      use_index: bool. If True, the input is assumed to be bgzipped and tabix
+        indexed, and the `query` functionality is supported.
+      excluded_info_fields: list(str). A list of INFO field IDs that should not
+        be parsed into the Variants. If None, all INFO fields are included.
+      excluded_format_fields: list(str). A list of FORMAT field IDs that should
+        not be parsed into the Variants. If None, all FORMAT fields are
+        included.
+    """
     super(NativeVcfReader, self).__init__()
 
     index_mode = index_pb2.INDEX_BASED_ON_FILENAME
     if not use_index:
       index_mode = index_pb2.DONT_USE_INDEX
 
-    # redacted
-    # list of strings.
-    desired_vcf_fields = variants_pb2.OptionalVariantFieldsToParse()
-    if not include_likelihoods:
-      desired_vcf_fields.exclude_genotype_quality = True
-      desired_vcf_fields.exclude_genotype_likelihood = True
-
     self._reader = vcf_reader.VcfReader.from_file(
         input_path.encode('utf8'),
         variants_pb2.VcfReaderOptions(
-            index_mode=index_mode, desired_format_entries=desired_vcf_fields))
+            index_mode=index_mode,
+            excluded_info_fields=excluded_info_fields,
+            excluded_format_fields=excluded_format_fields))
 
     self.header = self._reader.header
     self.field_access_cache = VcfHeaderCache(self.header)
@@ -191,7 +202,12 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
   files or TFRecords files, based on the output filename's extensions.
   """
 
-  def __init__(self, output_path, header=None, round_qualities=False):
+  def __init__(self,
+               output_path,
+               header=None,
+               round_qualities=False,
+               excluded_info_fields=None,
+               excluded_format_fields=None):
     """Initializer for NativeVcfWriter.
 
     Args:
@@ -202,13 +218,20 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
         structured and unstructured header lines.
       round_qualities: bool. If True, the QUAL field is rounded to one point
         past the decimal.
+      excluded_info_fields: list(str). A list of INFO field IDs that should not
+        be written to the output. If None, all INFO fields are included.
+      excluded_format_fields: list(str). A list of FORMAT field IDs that should
+        not be written to the output. If None, all FORMAT fields are included.
     """
     super(NativeVcfWriter, self).__init__()
 
     if header is None:
       header = variants_pb2.VcfHeader()
     writer_options = variants_pb2.VcfWriterOptions(
-        round_qual_values=round_qualities)
+        round_qual_values=round_qualities,
+        excluded_info_fields=excluded_info_fields,
+        excluded_format_fields=excluded_format_fields,
+    )
     self._writer = vcf_writer.VcfWriter.to_file(output_path, header,
                                                 writer_options)
     self.field_access_cache = VcfHeaderCache(header)

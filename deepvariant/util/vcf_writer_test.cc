@@ -103,8 +103,10 @@ constexpr char kExpectedHeaderFmt[] =
 
 // Build the skeleton of a VCF file for some pretend variants.
 // This routine will populate headers but not any records.
-std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname,
-                                            const bool round_qual) {
+std::unique_ptr<VcfWriter> MakeDogVcfWriter(
+    StringPiece fname, const bool round_qual,
+    const std::vector<string>& excluded_infos = {},
+    const std::vector<string>& excluded_formats = {}) {
   nucleus::genomics::v1::VcfHeader header;
   // FILTERs. Note that the PASS filter automatically gets added even though it
   // is not present here.
@@ -217,6 +219,12 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(StringPiece fname,
   nucleus::genomics::v1::VcfWriterOptions writer_options;
   if (round_qual) {
     writer_options.set_round_qual_values(true);
+  }
+  for (const string& info : excluded_infos) {
+    writer_options.add_excluded_info_fields(info);
+  }
+  for (const string& fmt : excluded_formats) {
+    writer_options.add_excluded_format_fields(fmt);
   }
 
   return std::move(
@@ -378,6 +386,48 @@ TEST(VcfWriterTest, RoundsVCFQuals) {
   EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
 
+TEST(VcfWriterTest, ExcludesFields) {
+  // This test verifies that VcfWriter writes the expected VCF file with
+  // INFO and FORMAT fields excluded.
+  string output_filename = MakeTempFile("excluded_fields.vcf");
+  auto writer = MakeDogVcfWriter(output_filename, true, {"DB", "AF"}, {"GQ"});
+
+  // A named variant with no qual, phase
+  Variant v1 = MakeVariant({"DogSNP1"}, "Chr1", 20, 21, "A", {"T"});
+  v1.set_quality(10.44999);
+  SetInfoField("DB", std::vector<bool>{false}, &v1);
+  SetInfoField("AC", std::vector<int>{1, 0}, &v1);
+  SetInfoField("AF", std::vector<float>{0.75, 0.0}, &v1);
+
+  *v1.add_calls() = MakeVariantCall("Fido", {0, 1});
+  VariantCall call2 = MakeVariantCall("Spot", {0, 0});
+  SetInfoField("GQ", std::vector<float>{15}, &call2);
+  *v1.add_calls() = call2;
+  ASSERT_THAT(writer->Write(v1), IsOK());
+
+  Variant v2 = MakeVariant({}, "Chr2", 10, 11, "C", {"G", "T"});
+  v2.mutable_filter()->Add("PASS");
+  v2.set_quality(10.4500);
+  *v2.add_calls() = MakeVariantCall("Fido", {0, 0});
+  *v2.add_calls() = MakeVariantCall("Spot", {0, 1});
+  SetInfoField("DB", std::vector<bool>{true}, &v2);
+  ASSERT_THAT(writer->Write(v2), IsOK());
+
+  // Check that the written data is as expected.
+  // (close file to guarantee flushed to disk)
+  writer.reset();
+
+  string vcf_contents;
+  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
+                                           output_filename, &vcf_contents));
+
+  const string kExpectedVcfContent =
+      string(kExpectedHeaderFmt) +
+      "Chr1\t21\tDogSNP1\tA\tT\t10.4\t.\tAC=1,0\tGT\t0/1\t0/0\n"
+      "Chr2\t11\t.\tC\tG,T\t10.5\tPASS\t.\tGT\t0/0\t0/1\n";
+
+  EXPECT_EQ(kExpectedVcfContent, vcf_contents);
+}
 TEST(VcfWriterTest, WritesVCFWithLikelihoods) {
   std::vector<Variant> variants = ReadProtosFromTFRecord<Variant>(
       GetTestData(kVcfLikelihoodsGoldenFilename));

@@ -853,9 +853,7 @@ def main(argv=()):
           FLAGS.nonvariant_site_tfrecord_path,
           key=_get_contig_based_variant_sort_keyfn(contigs),
           proto=variants_pb2.Variant)
-      with vcf.VcfReader(
-          FLAGS.outfile, use_index=False,
-          include_likelihoods=True) as variant_reader:
+      with vcf.VcfReader(FLAGS.outfile, use_index=False) as variant_reader:
         lessthanfn = _get_contig_based_lessthan(contigs)
         gvcf_variants = (
             _transform_to_gvcf_record(variant)

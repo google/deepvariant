@@ -48,10 +48,12 @@ namespace nucleus {
 using std::vector;
 
 using ::testing::Eq;
+using ::testing::Not;
 using ::testing::Pointwise;
 using ::testing::SizeIs;
 
 using nucleus::genomics::v1::Variant;
+using nucleus::proto::IgnoringFieldPaths;
 
 // These files are made using the Verily converter.  See:
 //  g3doc/learning/genomics/g3doc/variant-encoding.md
@@ -232,6 +234,81 @@ TEST_F(VcfWithSamplesReaderTest, IterationWorksWithIndex) {
   // Checks that iterate() produces all of the variants in our golden file
   // in order for an indexed VCF file.
   EXPECT_THAT(as_vector(reader_->Iterate()), Pointwise(EqualsProto(), golden_));
+}
+
+TEST_F(VcfWithSamplesReaderTest, FilteringInfoFieldsWorks) {
+  // Checks that iterate() filters FORMAT fields out as we expect.
+  nucleus::genomics::v1::VcfReaderOptions options;
+  RecreateReader(&options);
+  std::vector<Variant> all_infos = as_vector(reader_->Iterate());
+
+  // No genotype (a special-cased field in all records in the test data).
+  options.add_excluded_info_fields("AC");
+  RecreateReader(&options);
+  std::vector<Variant> no_ac = as_vector(reader_->Iterate());
+
+  // Cut the golden data down to the first 700 records that all contain AC
+  // so that pointwise comparisons work.
+  int numRecordsToCompare = 700;
+  golden_.resize(numRecordsToCompare);
+  all_infos.resize(numRecordsToCompare);
+  no_ac.resize(numRecordsToCompare);
+
+  EXPECT_THAT(all_infos, Pointwise(EqualsProto(), golden_));
+
+  EXPECT_THAT(no_ac, Pointwise(Not(EqualsProto()), golden_));
+  EXPECT_THAT(no_ac,
+              Pointwise(IgnoringFieldPaths({"info"}, EqualsProto()), golden_));
+}
+
+TEST_F(VcfWithSamplesReaderTest, FilteringFormatFieldsWorks) {
+  // Checks that iterate() filters FORMAT fields out as we expect.
+  nucleus::genomics::v1::VcfReaderOptions options;
+  RecreateReader(&options);
+  std::vector<Variant> all_formats = as_vector(reader_->Iterate());
+
+  // No genotype (a special-cased field in all records in the test data).
+  options.add_excluded_format_fields("GT");
+  RecreateReader(&options);
+  std::vector<Variant> no_genotype = as_vector(reader_->Iterate());
+
+  // No GQ (a normal FORMAT field set in all records in the test data).
+  options.Clear();
+  options.add_excluded_format_fields("GQ");
+  RecreateReader(&options);
+  std::vector<Variant> no_gq = as_vector(reader_->Iterate());
+
+  // No genotype or GQ.
+  options.Clear();
+  options.add_excluded_format_fields("GT");
+  options.add_excluded_format_fields("GQ");
+  RecreateReader(&options);
+  std::vector<Variant> no_gt_or_gq = as_vector(reader_->Iterate());
+
+  EXPECT_THAT(all_formats, Pointwise(EqualsProto(), golden_));
+
+  EXPECT_THAT(no_genotype, Pointwise(Not(EqualsProto()), golden_));
+  EXPECT_THAT(no_genotype,
+              Pointwise(IgnoringFieldPaths({"calls.genotype"}, EqualsProto()),
+                        golden_));
+
+  EXPECT_THAT(no_gq, Pointwise(Not(EqualsProto()), golden_));
+  EXPECT_THAT(
+      no_gq,
+      Pointwise(IgnoringFieldPaths({"calls.info"}, EqualsProto()), golden_));
+
+  EXPECT_THAT(no_gt_or_gq, Pointwise(Not(EqualsProto()), golden_));
+  EXPECT_THAT(no_gt_or_gq,
+              Pointwise(Not(IgnoringFieldPaths({"calls.info"}, EqualsProto())),
+                        golden_));
+  EXPECT_THAT(
+      no_gt_or_gq,
+      Pointwise(Not(IgnoringFieldPaths({"calls.genotype"}, EqualsProto())),
+                golden_));
+  EXPECT_THAT(no_gt_or_gq,
+              Pointwise(IgnoringFieldPaths({"calls.genotype", "calls.info"},
+                                           EqualsProto()),
+                        golden_));
 }
 
 TEST_F(VcfWithSamplesReaderTest, QueryWorks) {

@@ -176,7 +176,12 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
     : fp_(fp),
       options_(options),
       vcf_header_(header),
-      record_converter_(vcf_header_, options_.desired_format_entries()) {
+      record_converter_(
+          vcf_header_,
+          std::vector<string>(options_.excluded_info_fields().begin(),
+                              options_.excluded_info_fields().end()),
+          std::vector<string>(options_.excluded_format_fields().begin(),
+                              options_.excluded_format_fields().end())) {
   CHECK(fp != nullptr);
 
   // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>

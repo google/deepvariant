@@ -721,7 +721,9 @@ class RegionProcessor(object):
     self.initialized = True
 
   def _make_labeler_from_options(self):
-    truth_vcf_reader = vcf.VcfReader(self.options.truth_variants_filename)
+    truth_vcf_reader = vcf.VcfReader(
+        self.options.truth_variants_filename,
+        excluded_format_fields=['GL', 'GQ', 'PL'])
     confident_regions = read_confident_regions(self.options)
 
     if (self.options.labeler_algorithm ==

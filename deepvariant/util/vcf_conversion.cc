@@ -511,10 +511,8 @@ template <class T> tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
 
 VcfRecordConverter::VcfRecordConverter(
     const nucleus::genomics::v1::VcfHeader& vcf_header,
-    const nucleus::genomics::v1::OptionalVariantFieldsToParse&
-        desired_format_entries)
-    : desired_format_entries_(desired_format_entries) {
-
+    const std::vector<string>& infos_to_exclude,
+    const std::vector<string>& formats_to_exclude) {
   // Install adapters for INFO fields.
   for (const auto& format_spec : vcf_header.infos()) {
     string tag = format_spec.id();
@@ -522,6 +520,11 @@ VcfRecordConverter::VcfRecordConverter(
 
     // Skip fields that are handled specially.
     if (tag == "END") continue;
+
+    // Check if configuration has disabled this INFO field.
+    if (std::find(infos_to_exclude.begin(), infos_to_exclude.end(), tag) !=
+        infos_to_exclude.end())
+      continue;
 
     int vcf_type;
     if (type == "Integer") {
@@ -540,7 +543,6 @@ VcfRecordConverter::VcfRecordConverter(
     info_adapters_.emplace_back(tag, vcf_type);
   }
 
-
   // Install adapters for FORMAT fields.
   for (const auto& format_spec : vcf_header.formats()) {
     string tag = format_spec.id();
@@ -550,14 +552,9 @@ VcfRecordConverter::VcfRecordConverter(
     if (tag == "GT" || tag == "GL" || tag == "PL") continue;
 
     // Check if configuration has disabled this FORMAT field.
-    if ((tag == "GQ" && desired_format_entries_.exclude_genotype_quality()) ||
-        (tag == "AD" && desired_format_entries_.exclude_allele_depth()) ||
-        (tag == "DP" && desired_format_entries_.exclude_read_depth()) ||
-        (tag == "VAF" &&
-         desired_format_entries_.exclude_variant_allele_frequencies()) ||
-        (tag == "MIN_DP" && desired_format_entries_.exclude_allele_depth())) {
+    if (std::find(formats_to_exclude.begin(), formats_to_exclude.end(), tag) !=
+        formats_to_exclude.end())
       continue;
-    }
 
     // redacted
     int vcf_type;
@@ -574,6 +571,19 @@ VcfRecordConverter::VcfRecordConverter(
     }
     format_adapters_.emplace_back(tag, vcf_type);
   }
+
+  // Update special-cased variant fields.
+  want_variant_end_ =
+      std::find(infos_to_exclude.begin(), infos_to_exclude.end(), "END") ==
+      infos_to_exclude.end();
+  want_genotypes_ =
+      std::find(formats_to_exclude.begin(), formats_to_exclude.end(), "GT") ==
+      formats_to_exclude.end();
+  want_genotype_likelihoods_ =
+      (std::find(formats_to_exclude.begin(), formats_to_exclude.end(), "GL") ==
+       formats_to_exclude.end()) ||
+      (std::find(formats_to_exclude.begin(), formats_to_exclude.end(), "PL") ==
+       formats_to_exclude.end());
 }
 
 
@@ -627,9 +637,6 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     TF_RETURN_IF_ERROR(adapter.DecodeValues(h, v, variant_message));
   }
 
-  bool want_ll = !desired_format_entries_.exclude_genotype_likelihood();
-  bool want_gt = !desired_format_entries_.exclude_genotype();
-
   // Parse the calls of the variant.
   if (v->n_sample > 0) {
     int* gt_arr = nullptr;
@@ -644,7 +651,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
       nucleus::genomics::v1::VariantCall* call = variant_message->add_calls();
       call->set_call_set_name(h->samples[i]);
       // Get the GT calls, if requested and available.
-      if (want_gt) {
+      if (want_genotypes_) {
         bool gt_is_phased = false;
         for (int j = 0; j < ploidy; j++) {
           int gt_idx = gt_arr[i * ploidy + j];
@@ -676,7 +683,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
       nucleus::genomics::v1::VariantCall* call =
           variant_message->mutable_calls(i);
 
-      if (want_ll) {
+      if (want_genotype_likelihoods_) {
         // If GL and PL are *both* present, we populate the genotype_likelihood
         // fields with the GL values per the variants.proto spec, since PLs are
         // a lower resolution version of the same information.
@@ -716,7 +723,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
 
   // Workaround: if our ALT is just a single symbolic allele, this is
   // a gVCF record and we need to populate END, because htslib won't.
-  if (variant_message.alternate_bases_size() == 1 &&
+  if (want_variant_end_ && variant_message.alternate_bases_size() == 1 &&
       !variant_message.alternate_bases()[0].empty() &&
       variant_message.alternate_bases()[0][0] == '<') {
     int end = v->pos + v->rlen;

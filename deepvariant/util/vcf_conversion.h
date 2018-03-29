@@ -265,8 +265,8 @@ class VcfRecordConverter {
  public:
   // Primary constructor.
   VcfRecordConverter(const nucleus::genomics::v1::VcfHeader &vcf_header,
-                     const nucleus::genomics::v1::OptionalVariantFieldsToParse
-                         &desired_format_entries);
+                     const std::vector<string> &infos_to_exclude,
+                     const std::vector<string> &formats_to_exclude);
 
   // Not the constructor you want.
   VcfRecordConverter() = default;
@@ -292,9 +292,12 @@ class VcfRecordConverter {
   // The order of adapter definitions here determines the order of the fields
   // in a written VCF.
   std::vector<VcfFormatFieldAdapter> format_adapters_;
-  // Configuration of the FORMAT entries should we parse in from, or write out
-  // to, VCF.
-  nucleus::genomics::v1::OptionalVariantFieldsToParse desired_format_entries_;
+
+  // Individual special-cased INFO fields.
+  bool want_variant_end_;
+  // Individual special-cased FORMAT fields.
+  bool want_genotypes_;
+  bool want_genotype_likelihoods_;
 };
 
 }  // namespace nucleus

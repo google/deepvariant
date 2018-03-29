@@ -294,8 +294,12 @@ VcfReader::VcfReader(const string& variants_path,
   for (int i = 0; i < n_samples; i++) {
     vcf_header_.add_sample_names(header_->samples[i]);
   }
+  vector<string> infos_to_exclude(options.excluded_info_fields().begin(),
+                                  options.excluded_info_fields().end());
+  vector<string> formats_to_exclude(options.excluded_format_fields().begin(),
+                                    options.excluded_format_fields().end());
   record_converter_ =
-      VcfRecordConverter(vcf_header_, options.desired_format_entries());
+      VcfRecordConverter(vcf_header_, infos_to_exclude, formats_to_exclude);
 }
 
 VcfReader::~VcfReader() {
