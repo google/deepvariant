@@ -600,19 +600,6 @@ py_library(
 #
 # -----------------------------------------------------------
 
-cc_test(
-    name = "hts_google_test",
-    srcs = ["hts_google_test.cc"],
-    data = ["//deepvariant/util/testdata"],
-    deps = [
-        ":hts_path",
-        "//deepvariant/util/testing:cpp_test_utils",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
-        "@htslib",
-    ],
-)
-
 # -----------------------------------------------------------
 # Done with non-OSS targets
 # -----------------------------------------------------------
