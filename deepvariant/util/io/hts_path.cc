@@ -41,7 +41,7 @@ using tensorflow::string;
 
 namespace nucleus {
 
-const char dflt[] = "";
+const char dflt[] = "google:";
 
 // Use the default file scheme, unless one is provided.
 string fix_path(const char *path) {
