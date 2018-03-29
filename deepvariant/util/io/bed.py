@@ -46,9 +46,9 @@ from __future__ import print_function
 
 from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
+from deepvariant.util.io.python import bed_reader
+from deepvariant.util.io.python import bed_writer
 from deepvariant.util.genomics import bed_pb2
-from deepvariant.util.python import bed_reader
-from deepvariant.util.python import bed_writer
 
 
 class NativeBedReader(genomics_reader.GenomicsReader):

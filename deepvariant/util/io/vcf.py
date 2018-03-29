@@ -53,13 +53,13 @@ from __future__ import print_function
 
 from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
+from deepvariant.util.io.python import vcf_reader
+from deepvariant.util.io.python import vcf_writer
 from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import variants_pb2
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
 from deepvariant.util import vcf_constants
-from deepvariant.util.python import vcf_reader
-from deepvariant.util.python import vcf_writer
 
 
 def _create_get_fn_cache(fields):

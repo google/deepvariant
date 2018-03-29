@@ -54,9 +54,9 @@ from __future__ import print_function
 
 from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
+from deepvariant.util.io.python import sam_reader
 from deepvariant.util.genomics import index_pb2
 from deepvariant.util.genomics import reads_pb2
-from deepvariant.util.python import sam_reader
 
 
 class NativeSamReader(genomics_reader.GenomicsReader):

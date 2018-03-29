@@ -43,13 +43,13 @@ from absl import logging
 from deepvariant.util.io import fasta
 from deepvariant.util.io import sam
 from deepvariant.util.io import vcf
+from deepvariant.util.io.python import hts_verbose
 from deepvariant.util.genomics import reads_pb2
 from deepvariant.util import errors
 from deepvariant.util import io_utils
 from deepvariant.util import proto_utils
 from deepvariant.util import ranges
 from deepvariant.util import utils
-from deepvariant.util.python import hts_verbose
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import pileup_image

@@ -49,10 +49,10 @@ cc_library(
     hdrs = ["test_utils.h"],
     deps = [
         "//deepvariant/util:cpp_utils",
-        "//deepvariant/util:reader_base",
         "//deepvariant/util/genomics:cigar_cc_pb2",
         "//deepvariant/util/genomics:reads_cc_pb2",
         "//deepvariant/util/genomics:reference_cc_pb2",
+        "//deepvariant/util/io:reader_base",
         "//deepvariant/util/vendor:statusor",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",

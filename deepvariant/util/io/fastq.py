@@ -51,9 +51,9 @@ from __future__ import print_function
 
 from deepvariant.util.io import genomics_reader
 from deepvariant.util.io import genomics_writer
+from deepvariant.util.io.python import fastq_reader
+from deepvariant.util.io.python import fastq_writer
 from deepvariant.util.genomics import fastq_pb2
-from deepvariant.util.python import fastq_reader
-from deepvariant.util.python import fastq_writer
 
 
 class NativeFastqReader(genomics_reader.GenomicsReader):

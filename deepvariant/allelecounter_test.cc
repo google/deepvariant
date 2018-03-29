@@ -33,10 +33,10 @@
 #include "deepvariant/allelecounter.h"
 
 #include "deepvariant/utils.h"
+#include "third_party/nucleus/io/reference_fai.h"
+#include "third_party/nucleus/io/reference_test.h"
 #include "deepvariant/util/genomics/position.pb.h"
 #include "deepvariant/util/testing/test_utils.h"
-#include "deepvariant/util/reference_fai.h"
-#include "deepvariant/util/reference_test.h"
 #include "deepvariant/util/utils.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"

@@ -39,7 +39,7 @@ py_test(
 py_clif_cc(
     name = "ssw",
     srcs = ["ssw.clif"],
-    py_deps = ["//deepvariant/util:clif_postproc"],
+    py_deps = ["//deepvariant/util/io:clif_postproc"],
     deps = ["//deepvariant/realigner:ssw"],
 )
 

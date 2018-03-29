@@ -10,7 +10,7 @@ py_clif_cc(
     name = "allelecounter",
     srcs = ["allelecounter.clif"],
     clif_deps = [
-        "//deepvariant/util/python:reference_fai",  # other py_clif_cc rules
+        "//deepvariant/util/io/python:reference_fai",  # other py_clif_cc rules
     ],
     py_deps = [],
     pyclif_deps = [
@@ -59,7 +59,7 @@ py_clif_cc(
     srcs = ["variant_calling.clif"],
     clif_deps = [
         ":allelecounter",
-        "//deepvariant/util/python:reference_fai",  # other py_clif_cc rules
+        "//deepvariant/util/io/python:reference_fai",  # other py_clif_cc rules
     ],
     py_deps = [],
     pyclif_deps = [

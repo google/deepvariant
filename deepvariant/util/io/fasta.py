@@ -47,7 +47,7 @@ import collections
 
 
 from deepvariant.util.io import genomics_reader
-from deepvariant.util.python import reference_fai
+from deepvariant.util.io.python import reference_fai
 
 # redacted
 RefFastaHeader = collections.namedtuple(
