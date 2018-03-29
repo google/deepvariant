@@ -259,6 +259,104 @@ class VcfWriterTests(parameterized.TestCase):
         self.write_variant_to_tempfile(variant), [expected_vcf_line])
 
 
+class VcfRoundtripTests(parameterized.TestCase):
+  """Test the ability to round-trip VCF files."""
+
+  def setUp(self):
+    self.header = (
+        '##fileformat=VCFv4.2\n'
+        '##FILTER=<ID=PASS,Description="All filters passed">\n'
+        '##INFO=<ID=DB,Number=0,Type=Flag,Description="In dbSNP">\n'
+        '##INFO=<ID=MIN_DP,Number=1,Type=Integer,Description="Min DP">\n'
+        '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
+        '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths">\n'
+        '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">\n'
+        '##contig=<ID=chr1,length=248956422>\n'
+        '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\tS2\n')
+    self.record_format_strings = [
+        'chr1\t13613\t.\tT\tA\t39.88\tPASS\t{info}\t{fmt}\t0/1{efmts1}\t1/1{efmts2}\n',
+        'chr1\t13813\trs1\tT\tG\t90.28\tPASS\t{info}\t{fmt}\t1/1{efmts1}\t0|1{efmts2}\n',
+        'chr1\t13838\t.\tC\tT\t62.74\tPASS\t{info}\t{fmt}\t0/1{efmts1}\t0/1{efmts2}\n',
+    ]
+
+  @parameterized.parameters(
+      dict(
+          expected_infos=['DB;MIN_DP=4', 'MIN_DP=15', 'DB;MIN_DP=10'],
+          expected_fmt='GT:AD:DP',
+          expected_fmt1=[':1,3:4', ':11,13:24', ':5,5:10'],
+          expected_fmt2=[':1,19:20', ':7,8:15', ':.:10'],
+      ),
+      dict(
+          expected_infos=['DB', '.', 'DB'],
+          expected_fmt='GT:AD:DP',
+          expected_fmt1=[':1,3:4', ':11,13:24', ':5,5:10'],
+          expected_fmt2=[':1,19:20', ':7,8:15', ':.:10'],
+          reader_excluded_info=['MIN_DP'],
+      ),
+      dict(
+          expected_infos=['DB', '.', 'DB'],
+          expected_fmt='GT',
+          expected_fmt1=['', '', ''],
+          expected_fmt2=['', '', ''],
+          reader_excluded_info=['MIN_DP'],
+          reader_excluded_format=['AD', 'DP'],
+      ),
+      dict(
+          expected_infos=['DB', '.', 'DB'],
+          expected_fmt='GT',
+          expected_fmt1=['', '', ''],
+          expected_fmt2=['', '', ''],
+          writer_excluded_info=['MIN_DP'],
+          writer_excluded_format=['AD', 'DP'],
+      ),
+      dict(
+          expected_infos=['DB', '.', 'DB'],
+          expected_fmt='GT',
+          expected_fmt1=['', '', ''],
+          expected_fmt2=['', '', ''],
+          reader_excluded_info=['MIN_DP'],
+          reader_excluded_format=['AD'],
+          writer_excluded_info=['MIN_DP'],
+          writer_excluded_format=['DP'],
+      ),
+  )
+  def test_roundtrip(self,
+                     expected_infos,
+                     expected_fmt,
+                     expected_fmt1,
+                     expected_fmt2,
+                     reader_excluded_info=None,
+                     reader_excluded_format=None,
+                     writer_excluded_info=None,
+                     writer_excluded_format=None):
+    expected_records = [
+        record.format(info=info, fmt=expected_fmt, efmts1=e1,
+                      efmts2=e2) for record, info, e1, e2 in zip(
+                          self.record_format_strings, expected_infos,
+                          expected_fmt1, expected_fmt2)
+    ]
+    expected = self.header + ''.join(expected_records)
+    with vcf.VcfReader(
+        test_utils.genomics_core_testdata('test_py_roundtrip.vcf'),
+        use_index=False,
+        excluded_info_fields=reader_excluded_info,
+        excluded_format_fields=reader_excluded_format) as reader:
+
+      records = list(reader.iterate())
+      output_path = test_utils.test_tmpfile('test_roundtrip_tmpfile.vcf')
+      with vcf.VcfWriter(
+          output_path,
+          header=reader.header,
+          excluded_info_fields=writer_excluded_info,
+          excluded_format_fields=writer_excluded_format) as writer:
+        for record in records:
+          writer.write(record)
+
+    with open(output_path) as f:
+      actual = f.read()
+    self.assertEqual(actual, expected)
+
+
 class InMemoryVcfReaderTests(parameterized.TestCase):
   """Test the functionality provided by vcf.InMemoryVcfReader."""
 

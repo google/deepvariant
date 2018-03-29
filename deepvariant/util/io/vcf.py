@@ -246,9 +246,18 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
 class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Variant protos to VCF or TFRecord files."""
 
-  def _native_writer(self, output_path, header, round_qualities=False):
+  def _native_writer(self,
+                     output_path,
+                     header,
+                     round_qualities=False,
+                     excluded_info_fields=None,
+                     excluded_format_fields=None):
     return NativeVcfWriter(
-        output_path, header=header, round_qualities=round_qualities)
+        output_path,
+        header=header,
+        round_qualities=round_qualities,
+        excluded_info_fields=excluded_info_fields,
+        excluded_format_fields=excluded_format_fields)
 
   def _post_init_hook(self):
     # Initialize field_access_cache.  If we are dispatching to a

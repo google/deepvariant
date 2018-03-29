@@ -1,0 +1,12 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="In dbSNP">
+##INFO=<ID=MIN_DP,Number=1,Type=Integer,Description="Min DP">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##contig=<ID=chr1,length=248956422>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1	S2
+chr1	13613	.	T	A	39.88	PASS	DB;MIN_DP=4	GT:AD:DP	0/1:1,3:4	1/1:1,19:20
+chr1	13813	rs1	T	G	90.28	PASS	MIN_DP=15	GT:AD:DP	1/1:11,13:24	0|1:7,8:15
+chr1	13838	.	C	T	62.74	PASS	DB;MIN_DP=10	GT:AD:DP	0/1:5,5:10	0/1:.:10
