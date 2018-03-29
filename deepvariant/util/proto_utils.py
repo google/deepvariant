@@ -37,6 +37,7 @@ from google.protobuf.internal import api_implementation
 
 
 def uses_fast_cpp_protos_or_die():
+  """Raises an error if a slow protobuf implementation is being used."""
   if api_implementation.Type() != 'cpp':
     raise ValueError('Expected to be using C++ protobuf implementation '
                      '(api_implementation.Type() == "cpp") but it is {}'.format(

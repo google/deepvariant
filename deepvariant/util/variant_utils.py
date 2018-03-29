@@ -127,6 +127,7 @@ class GenotypeType(enum.Enum):
   no_call = ('no call', [-1, -1], -1)
 
   def __init__(self, full_name, example_gt, class_id):
+    """Create a GenotypeType with the given name, GT and class_id."""
     self.full_name = full_name
     self.example_gt = example_gt
     self.class_id = class_id

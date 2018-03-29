@@ -239,6 +239,7 @@ class RangeSet(object):
   __bool__ = __nonzero__  # Python 3 compatibility.
 
   def variant_overlaps(self, variant, empty_set_return_value=True):
+    """Returns True if the variant's range overlaps with any in this set."""
     if not self:
       return empty_set_return_value
     else:

@@ -109,6 +109,7 @@ class InMemorySamReader(object):
     self.replace_reads(reads, is_sorted=is_sorted)
 
   def replace_reads(self, reads, is_sorted=False):
+    """Replace the reads stored by this reader."""
     self.reads = reads
     self.is_sorted = is_sorted
 
