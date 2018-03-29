@@ -79,7 +79,8 @@ CigarUnit_Operation parse_cigar_op_str(const char op) {
 // Simple getter for test files in the right testdata path.
 string GetTestData(StringPiece path, StringPiece test_data_dir) {
   const string test_srcdir = getenv("TEST_SRCDIR");
-  const string test_workspace = getenv("TEST_WORKSPACE");
+  const char* test_workspace = getenv("TEST_WORKSPACE");
+  test_workspace = test_workspace ? test_workspace : kDefaultWorkspace;
   return tensorflow::io::JoinPath(test_srcdir, test_workspace, test_data_dir,
                                   path);
 }

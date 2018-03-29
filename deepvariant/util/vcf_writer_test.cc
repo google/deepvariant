@@ -304,10 +304,21 @@ TEST(VcfWriterTest, WritesVCF) {
   Variant v7 = MakeVariant({"DogSNP7"}, "Chr2", 23, 24, "A", {"T", "G"});
   *v7.add_calls() = MakeVariantCall("Fido", {0, 1});
   *v7.add_calls() = MakeVariantCall("Spot", {0, 0});
+  SetInfoField("DB", std::vector<int>{1}, &v7);
   SetInfoField("AC", std::vector<int>{1, 0}, &v7);
   SetInfoField("AF", std::vector<float>{0.75, 0.0}, &v7);
   ASSERT_THAT(writer->Write(v7), IsOK());
 
+
+  // A variant with a false INFO flag, which should be coded as omitting the
+  // flag from the INFO fields in the VCF line.
+  Variant v8 = MakeVariant({"DogSNP8"}, "Chr2", 24, 25, "A", {"T", "G"});
+  *v8.add_calls() = MakeVariantCall("Fido", {0, 1});
+  *v8.add_calls() = MakeVariantCall("Spot", {0, 0});
+  SetInfoField("DB", std::vector<int>{0}, &v8);
+  SetInfoField("AC", std::vector<int>{1, 0}, &v8);
+  SetInfoField("AF", std::vector<float>{0.75, 0.0}, &v8);
+  ASSERT_THAT(writer->Write(v8), IsOK());
 
   // Check that the written data is as expected.
   // (close file to guarantee flushed to disk)
@@ -326,7 +337,8 @@ TEST(VcfWriterTest, WritesVCF) {
       "Chr2\t18\tDogSNP4\tT\tA\t.\t.\t.\tGT\t0/1/0\t0/1\n"
       "Chr2\t20\tDogSNP5\tTT\t\t0\t.\t.\tGT\t0/1\t0/0\n"
       "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n"
-      "Chr2\t24\tDogSNP7\tA\tT,G\t0\t.\tAC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n";
+      "Chr2\t24\tDogSNP7\tA\tT,G\t0\t.\tDB;AC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n"
+      "Chr2\t25\tDogSNP8\tA\tT,G\t0\t.\tAC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n";
   EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
 

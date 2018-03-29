@@ -59,6 +59,10 @@ using tensorflow::uint64;
 
 constexpr char kBioTFCoreTestDataDir[] = "deepvariant/util/testdata";
 
+// N.B. this will be set to "" in OSS.
+constexpr char kDefaultWorkspace[] = "";
+
+
 // Simple getter for test files in the right testdata path.
 // This uses JoinPath, so no leading or trailing "/" are necessary.
 string GetTestData(

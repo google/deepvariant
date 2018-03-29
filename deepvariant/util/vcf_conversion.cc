@@ -258,6 +258,42 @@ std::vector<ValueType> ReadInfoValue(const bcf_hdr_t* h,
   return value;
 }
 
+template <>
+std::vector<string> ReadInfoValue(const bcf_hdr_t* h,
+                                  const bcf1_t* v,
+                                  const char* tag) {
+  if (bcf_get_info(h, const_cast<bcf1_t*>(v), tag) == nullptr) {
+    return {};
+  }
+
+  int n_dst = 0;
+  char* dst = nullptr;
+  if (bcf_get_info_string(h, const_cast<bcf1_t*>(v), tag, &dst, &n_dst) < 0) {
+    // redacted
+    LOG(FATAL) << "Failure to get INFO string";
+  }
+  std::string string_value(dst);
+  free(dst);
+  return std::vector<string> { string_value };
+}
+
+template <>
+std::vector<bool> ReadInfoValue(const bcf_hdr_t* h,
+                                const bcf1_t* v,
+                                const char* tag) {
+  void* dst;
+  int n_dst = 0;
+  int rc = bcf_get_info_flag(h, const_cast<bcf1_t*>(v), tag, &dst, &n_dst);
+  if (rc == 1) {
+    return {true};
+  } else if (rc == 0) {
+    return {false};
+  } else {
+    // redacted
+    LOG(FATAL) << "Failure to get INFO flag.";
+  }
+}
+
 template <class ValueType>
 tensorflow::Status EncodeInfoValue(
     const std::vector<ValueType>& value, const char* tag,
@@ -268,6 +304,47 @@ tensorflow::Status EncodeInfoValue(
     return tensorflow::Status::OK();
   }
   return VT::PutInfoValues(tag, value.data(), value.size(), h, v);
+}
+
+template <>
+tensorflow::Status EncodeInfoValue(
+    const std::vector<string>& value, const char* tag,
+    const bcf_hdr_t* h, bcf1_t* v) {
+  if (value.empty()) {
+    return tensorflow::Status::OK();
+  }
+  if (value.size() != 1) {
+    return tensorflow::errors::FailedPrecondition(
+        "VCF string INFO fields can only contain a single string.");
+  }
+  const char* string_value = value[0].c_str();
+  int rc = bcf_update_info_string(h, v, tag, string_value);
+  if (rc < 0) {
+    return tensorflow::errors::Internal(
+        "Failure to write VCF INFO field");
+  }
+  return tensorflow::Status::OK();
+}
+
+template <>
+tensorflow::Status EncodeInfoValue(const std::vector<bool>& value,
+                                   const char* tag, const bcf_hdr_t* h,
+                                   bcf1_t* v) {
+  bool flag_setting;
+  if (value.size() == 1 && value[0] == false) {
+    flag_setting = false;
+  } else if (value.size() == 1 && value[0] == true) {
+    flag_setting = true;
+  } else {
+    return tensorflow::errors::FailedPrecondition(
+        "Illegal setting of INFO FLAG value in Variant message.");
+  }
+  int rc = bcf_update_info_flag(h, v, tag, "", flag_setting);
+  if (rc < 0) {
+    return tensorflow::errors::Internal(
+        "Failure to write VCF INFO field");
+  }
+  return tensorflow::Status::OK();
 }
 
 }  // namespace
@@ -374,8 +451,10 @@ tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
     return EncodeValues<float>(variant, header, bcf_record);
   } else if (vcf_type_ == BCF_HT_INT) {
     return EncodeValues<int>(variant, header, bcf_record);
-  // } else if (vcf_type_ == BCF_HT_STR) {
-  //   return EncodeValues<string>(variant, header, bcf_record);
+  } else if (vcf_type_ == BCF_HT_STR) {
+    return EncodeValues<string>(variant, header, bcf_record);
+  } else if (vcf_type_ == BCF_HT_FLAG) {
+    return EncodeValues<bool>(variant, header, bcf_record);
   } else {
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
@@ -388,13 +467,13 @@ template <class T> tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
     const bcf_hdr_t* header,
     bcf1_t* bcf_record) const {
 
-  std::vector<T> value {};
-
   auto found = variant.info().find(field_name_);
   if (found != variant.info().end()) {
-    value = ListValues<T>((*found).second);
+    std::vector<T> value = ListValues<T>((*found).second);
+    return EncodeInfoValue(value, field_name_.c_str(), header, bcf_record);
+  } else {
+    return tensorflow::Status::OK();
   }
-  return EncodeInfoValue(value, field_name_.c_str(), header, bcf_record);
 }
 
 
@@ -405,8 +484,10 @@ tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
     return DecodeValues<float>(header, bcf_record, variant);
   } else if (vcf_type_ == BCF_HT_INT) {
     return DecodeValues<int>(header, bcf_record, variant);
-  // } else if (vcf_type_ == BCF_HT_STR) {
-  //   return DecodeValues<string>(header, bcf_record, variant);
+  } else if (vcf_type_ == BCF_HT_STR) {
+    return DecodeValues<string>(header, bcf_record, variant);
+  } else if (vcf_type_ == BCF_HT_FLAG) {
+    return DecodeValues<bool>(header, bcf_record, variant);
   } else {
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
@@ -447,6 +528,10 @@ VcfRecordConverter::VcfRecordConverter(
       vcf_type = BCF_HT_INT;
     } else if (type == "Float") {
       vcf_type = BCF_HT_REAL;
+    } else if (type == "String") {
+      vcf_type = BCF_HT_STR;
+    } else if (type == "Flag") {
+      vcf_type = BCF_HT_FLAG;
     } else {
       LOG(WARNING) << "Unhandled INFO field type: field " << tag
                    << " of type " << type;

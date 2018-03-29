@@ -30,41 +30,42 @@
  *
  */
 
-#include "deepvariant/util/hts_path.h"
-#include <string>
-#include "htslib/faidx.h"
-#include "htslib/hts.h"
-#include "tensorflow/core/lib/strings/strcat.h"
+#include "base/commandlineflags_declare.h"
 
-using tensorflow::strings::StrCat;
-using tensorflow::string;
+#include "tensorflow/core/platform/test.h"
+#include "absl/strings/str_cat.h"
+#include "htslib/hts.h"
+#include "deepvariant/util/testing/test_utils.h"
+#include "deepvariant/util/hts_path.h"
+
+using absl::StrCat;
 
 namespace nucleus {
 
-const char dflt[] = "google:";
+// This tests that htslib can open a Google file the way we
+// expect, including all the proper include paths and library
+// depenencies, from outside of third_party.
+TEST(FileTest, HtsIO) {
+  errno = 0;
+  string path = GetTestData("test.fasta");
+  htsFile* f = hts_open(StrCat("google:", "/readahead/1M", path).c_str(), "r");
+  EXPECT_EQ(errno, 0);
+  ASSERT_NE(f, nullptr);
 
-// Use the default file scheme, unless one is provided.
-string fix_path(const char *path) {
-  string s(path);
-  size_t i = s.find(':');
-  if (i > 0 && i < 20) {
-    return s;
-  }
-  return StrCat(dflt, s);
+  int close_ok = hts_close(f);
+  EXPECT_EQ(close_ok, 0);
 }
 
-htsFile *hts_open_x(const char *path, const char *mode) {
-  string new_path = fix_path(path);
-  return hts_open(new_path.c_str(), mode);
-}
+// This tests that the wrapper adds the "google:" protocol
+// in front of the path for hts_open.
+TEST(FileTest, HtsWrappedIO) {
+  string path = GetTestData("test.fasta");
+  htsFile* f = nucleus::hts_open_x(StrCat("/readahead/1M", path).c_str(), "r");
+  EXPECT_EQ(errno, 0);
+  ASSERT_NE(f, nullptr);
 
-faidx_t *fai_load3_x(const char *fa, const char *fai, const char *gzi,
-                     int flags) {
-  string nfa = fix_path(fa);
-  string nfai = fix_path(fai);
-  string ngzi = fix_path(gzi);
-  return fai_load3(fa ? nfa.c_str() : nullptr, fai ? nfai.c_str() : nullptr,
-                   gzi ? ngzi.c_str() : nullptr, flags);
+  int close_ok = hts_close(f);
+  EXPECT_EQ(close_ok, 0);
 }
 
 }  // namespace nucleus

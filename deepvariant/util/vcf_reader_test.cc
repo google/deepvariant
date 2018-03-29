@@ -52,7 +52,6 @@ using ::testing::Pointwise;
 using ::testing::SizeIs;
 
 using nucleus::genomics::v1::Variant;
-using nucleus::proto::IgnoringFieldPaths;
 
 // These files are made using the Verily converter.  See:
 //  g3doc/learning/genomics/g3doc/variant-encoding.md
@@ -192,9 +191,7 @@ TEST(VcfFileOnlySites, IterationWorks) {
 
   vector<Variant> golden =
       ReadProtosFromTFRecord<Variant>(GetTestData(kVcfSitesGoldenFilename));
-  EXPECT_THAT(as_vector(reader->Iterate()),
-              Pointwise(IgnoringFieldPaths({"info"}, EqualsProto()),
-                        golden));
+  EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), golden));
 }
 
 class VcfWithSamplesReaderTest : public ::testing::Test {
@@ -205,7 +202,6 @@ class VcfWithSamplesReaderTest : public ::testing::Test {
     indexed_vcf_ = GetTestData(kVcfIndexSamplesFilename);
     golden_ =
         ReadProtosFromTFRecord<Variant>(GetTestData(kVcfSamplesGoldenFilename));
-    ignored_fields_ = {"info"};
     RecreateReader();
   }
 
@@ -220,7 +216,6 @@ class VcfWithSamplesReaderTest : public ::testing::Test {
   nucleus::genomics::v1::VcfReaderOptions options_;
   string indexed_vcf_;
   vector<Variant> golden_;
-  vector<string> ignored_fields_;
   std::unique_ptr<VcfReader> reader_;
 };
 
@@ -230,16 +225,13 @@ TEST_F(VcfWithSamplesReaderTest, IterationWorksWithoutIndex) {
   nucleus::genomics::v1::VcfReaderOptions options;
   RecreateReader(&options);
   EXPECT_THAT(
-      as_vector(reader_->Iterate()),
-      Pointwise(IgnoringFieldPaths(ignored_fields_, EqualsProto()), golden_));
+      as_vector(reader_->Iterate()), Pointwise(EqualsProto(), golden_));
 }
 
 TEST_F(VcfWithSamplesReaderTest, IterationWorksWithIndex) {
   // Checks that iterate() produces all of the variants in our golden file
   // in order for an indexed VCF file.
-  EXPECT_THAT(
-      as_vector(reader_->Iterate()),
-      Pointwise(IgnoringFieldPaths(ignored_fields_, EqualsProto()), golden_));
+  EXPECT_THAT(as_vector(reader_->Iterate()), Pointwise(EqualsProto(), golden_));
 }
 
 TEST_F(VcfWithSamplesReaderTest, QueryWorks) {
@@ -251,9 +243,8 @@ TEST_F(VcfWithSamplesReaderTest, QueryWorks) {
   }
 
   // Compare the chr1 golden variants to those we get from Query.
-  EXPECT_THAT(
-      as_vector(reader_->Query(MakeRange("chr1", 0, CHR1_SIZE))),
-      Pointwise(IgnoringFieldPaths(ignored_fields_, EqualsProto()), subgolden));
+  EXPECT_THAT(as_vector(reader_->Query(MakeRange("chr1", 0, CHR1_SIZE))),
+              Pointwise(EqualsProto(), subgolden));
 }
 
 TEST_F(VcfWithSamplesReaderTest, QueryRangesIsCorrect) {
