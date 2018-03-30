@@ -1,5 +1,21 @@
 # Example programs
 
+After running ``source install.sh``, the executable versions of the
+example programs can be located in ``bazel-bin/nucleus/examples/``.
+For example, to run ``ascii_pileup``, you would actually run a command
+like
+
+```shell
+bazel-bin/nucleus/examples/ascii_pileup input.sam chr3:99393
+```
+
+If you would like to rebuild just the example programs -- after modifying
+one of them, perhaps -- this can be done with
+
+```shell
+bazel build -c opt $COPT_FLAGS nucleus/examples:all
+```
+
 Here is a summary of the [example
 programs](https://github.com/google/nucleus/blob/master/nucleus/examples)
 included with Nucleus:
