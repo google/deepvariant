@@ -66,15 +66,6 @@ _TRUTH_VARIANTS_QUERY_REGION_EXPANSION_IN_BP = 10
 _DEBUG_PRINTING_IS_ENABLED = True
 
 
-# redacted
-# use with the API provided by variant_labeler.VariantLabel.
-# new_label = label_from_genotypes(labeled, alt_indices)
-# redacted
-def label_from_genotypes(variant, alt_alleles_indices):
-  gt_matches = {index + 1 for index in alt_alleles_indices}
-  return sum(gt in gt_matches for gt in variant.calls[0].genotype)
-
-
 class HaplotypeLabeler(variant_labeler.VariantLabeler):
   """Haplotype-based variant labeler."""
 
@@ -172,7 +163,6 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
       raise ValueError('Failed to assign labels for variants', variants)
     else:
       for labeled in labeled_variants:
-        # redacted
         yield variant_labeler.VariantLabel(
             # redacted
             # now. Rethink how we establish a variant is confident. Seems like
@@ -563,13 +553,6 @@ class LabelerMatch(object):
       else:
         variant.calls.add(genotype=gt)
     return with_gts
-
-
-def print_duplicates(haplotypes):
-  for i, (vh1, vg1) in enumerate(haplotypes):
-    for j, (vh2, vg2) in enumerate(haplotypes):
-      if i < j and vh1 == vh2:
-        logging.info('*** Duplicates: %s with %s %s', vh1, vg1, vg2)
 
 
 def deduplicate_haplotypes(haplotypes):

@@ -254,40 +254,6 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
                      [label for group in labeled_groups for label in group])
 
 
-class HaplotypeLabelerUtilitiesUnitTest(parameterized.TestCase):
-
-  @parameterized.parameters(
-      # Bi-allelic.
-      dict(n_alleles=2, indices=[0], genotype=[0, 0], expected=0),
-      dict(n_alleles=2, indices=[0], genotype=[0, 1], expected=1),
-      dict(n_alleles=2, indices=[0], genotype=[1, 1], expected=2),
-      # Multi-allelic.
-      dict(n_alleles=3, indices=[0], genotype=[0, 0], expected=0),
-      dict(n_alleles=3, indices=[1], genotype=[0, 0], expected=0),
-      dict(n_alleles=3, indices=[0, 1], genotype=[0, 0], expected=0),
-      dict(n_alleles=3, indices=[0], genotype=[0, 1], expected=1),
-      dict(n_alleles=3, indices=[1], genotype=[0, 1], expected=0),
-      dict(n_alleles=3, indices=[0, 1], genotype=[0, 1], expected=1),
-      dict(n_alleles=3, indices=[0], genotype=[1, 1], expected=2),
-      dict(n_alleles=3, indices=[1], genotype=[1, 1], expected=0),
-      dict(n_alleles=3, indices=[0, 1], genotype=[1, 1], expected=2),
-      dict(n_alleles=3, indices=[0], genotype=[0, 2], expected=0),
-      dict(n_alleles=3, indices=[1], genotype=[0, 2], expected=1),
-      dict(n_alleles=3, indices=[0, 1], genotype=[0, 2], expected=1),
-      dict(n_alleles=3, indices=[0], genotype=[1, 2], expected=1),
-      dict(n_alleles=3, indices=[1], genotype=[1, 2], expected=1),
-      dict(n_alleles=3, indices=[0, 1], genotype=[1, 2], expected=2),
-      dict(n_alleles=3, indices=[0], genotype=[2, 2], expected=0),
-      dict(n_alleles=3, indices=[1], genotype=[2, 2], expected=2),
-      dict(n_alleles=3, indices=[0, 1], genotype=[2, 2], expected=2),
-  )
-  def test_label_from_genotypes(self, n_alleles, indices, genotype, expected):
-    alleles = ['A', 'C', 'G', 'T'][0:n_alleles]
-    variant = _test_variant(start=1, alleles=alleles, gt=genotype)
-    self.assertEqual(
-        haplotype_labeler.label_from_genotypes(variant, indices), expected)
-
-
 class LabelerMatchTests(parameterized.TestCase):
 
   def setUp(self):
