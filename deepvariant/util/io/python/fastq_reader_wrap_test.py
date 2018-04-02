@@ -35,6 +35,7 @@ from __future__ import print_function
 
 
 from absl.testing import absltest
+from absl.testing import parameterized
 
 from deepvariant.util.io import clif_postproc
 from deepvariant.util.io.python import fastq_reader
@@ -42,7 +43,7 @@ from deepvariant.util.genomics import fastq_pb2
 from deepvariant.util.testing import test_utils
 
 
-class FastqReaderTest(absltest.TestCase):
+class FastqReaderTest(parameterized.TestCase):
 
   def setUp(self):
     self.fastq = test_utils.genomics_core_testdata('test_reads.fastq')
@@ -77,8 +78,9 @@ class FastqReaderTest(absltest.TestCase):
     with self.assertRaisesRegexp(ValueError, 'Cannot Iterate a closed'):
       reader.iterate()
 
-  def test_fastq_iterate_raises_on_malformed_record(self):
-    malformed = test_utils.genomics_core_testdata('malformed.fastq')
+  @parameterized.parameters('malformed.fastq', 'malformed2.fastq')
+  def test_fastq_iterate_raises_on_malformed_record(self, filename):
+    malformed = test_utils.genomics_core_testdata(filename)
     reader = fastq_reader.FastqReader.from_file(malformed, self.options)
     iterable = iter(reader.iterate())
     self.assertIsNotNone(next(iterable))

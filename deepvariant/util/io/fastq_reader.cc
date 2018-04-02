@@ -72,7 +72,8 @@ tf::Status ConvertToPb(const string& header, const string& sequence,
   record->Clear();
 
   // Validate the four lines as appropriate.
-  if (!header.length() || header[0] != HEADER_SYMBOL ||
+  if (!header.length() || header[0] != HEADER_SYMBOL || !pad.length() ||
+      pad[0] != SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL ||
       sequence.length() != quality.length()) {
     return tf::errors::DataLoss("Failed to parse FASTQ record");
   }
@@ -149,11 +150,6 @@ tf::Status FastqReader::Close() {
 
 tf::Status FastqReader::Next(string* header, string* sequence, string* pad,
                              string* quality) const {
-  header->clear();
-  sequence->clear();
-  pad->clear();
-  quality->clear();
-
   // Read the four lines, returning early if we are at the end of the stream or
   // the record is truncated.
   TF_RETURN_IF_ERROR(buffered_inputstream_->ReadLine(header));

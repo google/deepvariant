@@ -228,6 +228,7 @@ py_test(
         "//deepvariant/util/genomics:fastq_py_pb2",
         "//deepvariant/util/testing:py_test_utils",
         "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
 
