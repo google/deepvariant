@@ -470,6 +470,7 @@ py_test(
         "//deepvariant/util/genomics:reference_py_pb2",
         "//deepvariant/util/genomics:struct_py_pb2",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/io:fasta",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",

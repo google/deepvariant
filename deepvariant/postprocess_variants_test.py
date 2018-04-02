@@ -45,6 +45,7 @@ import numpy as np
 import tensorflow as tf
 
 from absl import logging
+from deepvariant.util.io import fasta
 from deepvariant.util.genomics import reference_pb2
 from deepvariant.util.genomics import struct_pb2
 from deepvariant.util.genomics import variants_pb2
@@ -70,19 +71,11 @@ _CONTIGS = [
 ]
 
 
-class DummyReferenceReader(object):
-
-  def __init__(self):
-    self._bases = {
-        '1': 'AACCGGTTACGTTCGATTTTAAAACCCCGGGG',
-        '2': 'GCAGTGACGTAGCGATGACGTAGACGCTTACG'
-    }
-
-  def query(self, region):
-    chrom = region.reference_name
-    if chrom not in self._bases or region.end > len(self._bases[chrom]):
-      raise ValueError('Invalid region for dummy reader: {}'.format(region))
-    return self._bases[chrom][region.start:region.end]
+def dummy_reference_reader():
+  return fasta.InMemoryRefReader(chromosomes=[
+      ('1', 0, 'AACCGGTTACGTTCGATTTTAAAACCCCGGGG'),
+      ('2', 0, 'GCAGTGACGTAGCGATGACGTAGACGCTTACG'),
+  ])
 
 
 def setUpModule():
@@ -964,7 +957,7 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
        _create_nonvariant('2', 3, 4, 'G')),
   )
   def test_create_record_from_template(self, template, start, end, expected):
-    reader = DummyReferenceReader()
+    reader = dummy_reference_reader()
     actual = postprocess_variants._create_record_from_template(
         template, start, end, reader)
     self.assertEqual(actual, expected)
@@ -1098,7 +1091,7 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     viter = (_simple_variant(*v) for v in variants)
     nonviter = (_create_nonvariant(*nv) for nv in nonvariants)
     lessthan = postprocess_variants._get_contig_based_lessthan(_CONTIGS)
-    reader = DummyReferenceReader()
+    reader = dummy_reference_reader()
     actual = postprocess_variants.merge_variants_and_nonvariants(
         viter, nonviter, lessthan, reader)
     self.assertEqual(list(actual), expected)
