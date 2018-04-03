@@ -96,6 +96,7 @@ py_library(
         ":variant_labeler",
         "//deepvariant/util:ranges",
         "//deepvariant/util:variant_utils",
+        "//deepvariant/util/io:fasta",
     ],
 )
 
@@ -108,6 +109,7 @@ py_test(
         "//deepvariant/util:ranges",
         "//deepvariant/util:variant_utils",
         "//deepvariant/util/genomics:variants_py_pb2",
+        "//deepvariant/util/io:fasta",
         "//deepvariant/util/io:vcf",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",

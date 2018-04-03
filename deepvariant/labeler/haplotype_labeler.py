@@ -42,6 +42,7 @@ import itertools
 from absl import logging
 import enum
 
+from deepvariant.util.io import fasta
 from deepvariant.util import ranges
 from deepvariant.util import variant_utils
 from deepvariant.labeler import variant_labeler
@@ -178,10 +179,9 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     contig = all_variants[0].reference_name
     start = min(x.start for x in all_variants)
     end = max(x.end for x in all_variants)
-    # redacted
     region = ranges.make_range(contig, start - 1, end + bufsize)
     ref_bases = self._ref_reader.query(region)
-    return Reference(ref_bases, start=region.start)
+    return ReferenceRegion(ref_bases, start=region.start)
 
 
 class EnumerationType(enum.Enum):
@@ -189,30 +189,23 @@ class EnumerationType(enum.Enum):
   TRUTH = 2
 
 
-# redacted
-# redacted
-class Reference(object):
+class ReferenceRegion(fasta.InMemoryRefReader):
   """Allows us to get bases from a cached reference interval."""
 
+  # We don't want to worry about the chromosome we are working on for code
+  # clarity, so we create a InMemoryRefReader that has a single chromosome named
+  # _DUMMY_CHROM_NAME which allows us to provide a bases(start, end) function
+  # for convenient reading of bases.
+  _DUMMY_CHROM_NAME = '*'
+
   def __init__(self, bases, start):
-    self._bases = bases
+    super(ReferenceRegion, self).__init__([(self._DUMMY_CHROM_NAME, start,
+                                            bases)])
     self.start = start
     self.end = start + len(bases)
 
   def bases(self, start, end):
-    if start > end:
-      raise ValueError('start={} must be <= end={}'.format(start, end))
-    if start < self.start:
-      raise ValueError('start={} must be >= self.start={}'.format(
-          start, self.start))
-    if end > self.end:
-      raise ValueError('end={} must be >= self.end={}'.format(end, self.end))
-    return self._bases[start - self.start:end - self.start]
-
-  def __str__(self):
-    return 'Reference(bases={}, start={}, end={})'.format(
-        self._bases, self.start, self.end)
-  __repr__ = __str__
+    return self.query(ranges.make_range(self._DUMMY_CHROM_NAME, start, end))
 
 
 def with_false_negative_genotypes(gt):
@@ -255,8 +248,8 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
   Args:
     variants: list[nucleus.protos.Variant]. A list of candidate variants, in
       coordinate-sorted order, all on the same chromosome.
-    ref: Reference. Used to get reference bases for variants. Must cover at
-      least the span of the variants.
+    ref: ReferenceRegion. Used to get reference bases for variants. Must cover
+      at least the span of the variants.
     enumeration_type: EnumerationType enum value. What kind of enumeration do we
       want to do? Can be either CANDIDATES or TRUTH.
 
@@ -578,8 +571,8 @@ def label_variants(variants, truth_variants, ref):
       coordinate-sorted order, all on the same chromosome.
     truth_variants: list[nucleus.protos.Variant]. A list of truth variants, in
       coordinate-sorted order, for the same interval on the genome as variants.
-    ref: Reference. Used to get reference bases for variants. Must cover at
-      least the span of the variants.
+    ref: ReferenceRegion. Used to get reference bases for variants. Must cover
+      at least the span of the variants.
 
   Returns:
     A list of new variants, copied from variants, but with their

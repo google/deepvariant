@@ -443,24 +443,42 @@ class LabelExamplesTest(parameterized.TestCase):
 
   @parameterized.parameters(
       # All possible genotypes for a simple tri-allelic case.
-      (dict(
-          variants=[
-              _test_variant(11, ['TG', 'A', 'TGC'], gt),
-          ],
-          ref=haplotype_labeler.Reference('TG', 11),
-          expected_frags=expected,
-          expected_next_pos=13) for gt, expected in {
-              # Simple bi-allelic configurations:
-              (0, 0): {(0,): 'TG'},
-              (0, 1): {(0,): 'TG', (1,): 'A'},
-              (1, 0): {(0,): 'TG', (1,): 'A'},
-              (1, 1): {(1,): 'A'},
-              # Multi-allelic configurations:
-              (0, 2): {(0,): 'TG', (2,): 'TGC'},
-              (1, 2): {(1,): 'A', (2,): 'TGC'},
-              (2, 2): {(2,): 'TGC'},
-          }.iteritems()),
-  )
+      (
+          dict(
+              variants=[
+                  _test_variant(11, ['TG', 'A', 'TGC'], gt),
+              ],
+              ref=haplotype_labeler.ReferenceRegion('TG', 11),
+              expected_frags=expected,
+              expected_next_pos=13) for gt, expected in {
+                  # Simple bi-allelic configurations:
+                  (0, 0): {
+                      (0,): 'TG'
+                  },
+                  (0, 1): {
+                      (0,): 'TG',
+                      (1,): 'A'
+                  },
+                  (1, 0): {
+                      (0,): 'TG',
+                      (1,): 'A'
+                  },
+                  (1, 1): {
+                      (1,): 'A'
+                  },
+                  # Multi-allelic configurations:
+                  (0, 2): {
+                      (0,): 'TG',
+                      (2,): 'TGC'
+                  },
+                  (1, 2): {
+                      (1,): 'A',
+                      (2,): 'TGC'
+                  },
+                  (2, 2): {
+                      (2,): 'TGC'
+                  },
+              }.iteritems()),)
   def test_build_all_haplotypes_single_variant(
       self, variants, ref, expected_frags, expected_next_pos):
     variants_and_genotypes = [
@@ -492,7 +510,7 @@ class LabelExamplesTest(parameterized.TestCase):
                   _test_variant(pos, [ref, alt]), gt)
           ],
           last_pos=pos,
-          ref=haplotype_labeler.Reference(ref, pos))
+          ref=haplotype_labeler.ReferenceRegion(ref, pos))
       self.assertEqual(next_pos, pos + len(ref))
 
   @parameterized.parameters(
@@ -505,12 +523,12 @@ class LabelExamplesTest(parameterized.TestCase):
               _test_variant(11, ['TG', 'A'], (0, 1)),
               _test_variant(12, ['G', 'C'], (0, 1)),
           ],
-          ref=haplotype_labeler.Reference('xTG', 10),
+          ref=haplotype_labeler.ReferenceRegion('xTG', 10),
           expected_frags={
-              (0, 0): 'xTG',    # haplotype 0|0.
-              (0, 1): 'xTC',    # haplotype 0|1.
-              (1, 0): 'xA',     # haplotype 1|0.
-              (1, 1): None,     # haplotype 1|1 => invalid.
+              (0, 0): 'xTG',  # haplotype 0|0.
+              (0, 1): 'xTC',  # haplotype 0|1.
+              (1, 0): 'xA',  # haplotype 1|0.
+              (1, 1): None,  # haplotype 1|1 => invalid.
           },
           expected_next_pos=13),
       # Deletion overlapping two downstream events (SNP and insertion):
@@ -524,16 +542,16 @@ class LabelExamplesTest(parameterized.TestCase):
               _test_variant(12, ['G', 'C'], (0, 1)),
               _test_variant(13, ['C', 'TTT'], (0, 1)),
           ],
-          ref=haplotype_labeler.Reference('xTGC', 10),
+          ref=haplotype_labeler.ReferenceRegion('xTGC', 10),
           expected_frags={
-              (0, 0, 0): 'xTGC',    # haplotype 0|0|0.
+              (0, 0, 0): 'xTGC',  # haplotype 0|0|0.
               (0, 0, 1): 'xTGTTT',  # haplotype 0|0|1.
-              (0, 1, 0): 'xTCC',    # haplotype 0|1|0.
+              (0, 1, 0): 'xTCC',  # haplotype 0|1|0.
               (0, 1, 1): 'xTCTTT',  # haplotype 0|1|1.
-              (1, 0, 0): 'xA',      # haplotype 1|0|0.
-              (1, 0, 1): None,      # haplotype 1|0|1 => invalid.
-              (1, 1, 0): None,      # haplotype 1|1|0 => invalid.
-              (1, 1, 1): None,      # haplotype 1|1|1 => invalid.
+              (1, 0, 0): 'xA',  # haplotype 1|0|0.
+              (1, 0, 1): None,  # haplotype 1|0|1 => invalid.
+              (1, 1, 0): None,  # haplotype 1|1|0 => invalid.
+              (1, 1, 1): None,  # haplotype 1|1|1 => invalid.
           },
           expected_next_pos=14),
       # Two incompatible deletions to check that the end extension is working:
@@ -546,12 +564,12 @@ class LabelExamplesTest(parameterized.TestCase):
               _test_variant(11, ['TG', 'T'], (0, 1)),
               _test_variant(12, ['GC', 'G'], (0, 1)),
           ],
-          ref=haplotype_labeler.Reference('xTGCA', 10),
+          ref=haplotype_labeler.ReferenceRegion('xTGCA', 10),
           expected_frags={
-              (0, 0): 'xTGC',   # haplotype 0|0.
-              (0, 1): 'xTG',    # haplotype 0|1.
-              (1, 0): 'xTC',    # haplotype 1|0.
-              (1, 1): None,     # haplotype 1|1 => invalid.
+              (0, 0): 'xTGC',  # haplotype 0|0.
+              (0, 1): 'xTG',  # haplotype 0|1.
+              (1, 0): 'xTC',  # haplotype 1|0.
+              (1, 1): None,  # haplotype 1|1 => invalid.
           },
           expected_next_pos=14),
       # Multiple overlapping deletions with complex incompatibilities:
@@ -569,40 +587,40 @@ class LabelExamplesTest(parameterized.TestCase):
               _test_variant(14, ['GA', 'G'], (0, 1)),
               _test_variant(15, ['A', 'C'], (0, 1)),
           ],
-          ref=haplotype_labeler.Reference('xTGCGA', 10),
+          ref=haplotype_labeler.ReferenceRegion('xTGCGA', 10),
           expected_frags={
-              (0, 0, 0, 0, 0): 'xTGCGA',    # haplotype 0|0|0|0|0.
-              (0, 0, 0, 0, 1): 'xTGCGC',    # haplotype 0|0|0|0|1.
-              (0, 0, 0, 1, 0): 'xTGCG',     # haplotype 0|0|0|1|0.
-              (0, 0, 0, 1, 1): None,        # haplotype 0|0|0|1|1.
-              (0, 0, 1, 0, 0): 'xTGCA',     # haplotype 0|0|1|0|0.
-              (0, 0, 1, 0, 1): 'xTGCC',     # haplotype 0|0|1|0|1.
-              (0, 0, 1, 1, 0): None,        # haplotype 0|0|1|1|0.
-              (0, 0, 1, 1, 1): None,        # haplotype 0|0|1|1|1.
-              (0, 1, 0, 0, 0): 'xTG',       # haplotype 0|1|0|0|0.
-              (0, 1, 0, 0, 1): None,        # haplotype 0|1|0|0|1.
-              (0, 1, 0, 1, 0): None,        # haplotype 0|1|0|1|0.
-              (0, 1, 0, 1, 1): None,        # haplotype 0|1|0|1|1.
-              (0, 1, 1, 0, 0): None,        # haplotype 0|1|1|0|0.
-              (0, 1, 1, 0, 1): None,        # haplotype 0|1|1|0|1.
-              (0, 1, 1, 1, 0): None,        # haplotype 0|1|1|1|0.
-              (0, 1, 1, 1, 1): None,        # haplotype 0|1|1|1|1.
-              (1, 0, 0, 0, 0): 'xAGA',      # haplotype 1|0|0|0|0.
-              (1, 0, 0, 0, 1): 'xAGC',      # haplotype 1|0|0|0|1.
-              (1, 0, 0, 1, 0): 'xAG',       # haplotype 1|0|0|1|0.
-              (1, 0, 0, 1, 1): None,        # haplotype 1|0|0|1|1.
-              (1, 0, 1, 0, 0): None,        # haplotype 1|0|1|0|0.
-              (1, 0, 1, 0, 1): None,        # haplotype 1|0|1|0|1.
-              (1, 0, 1, 1, 0): None,        # haplotype 1|0|1|1|0.
-              (1, 0, 1, 1, 1): None,        # haplotype 1|0|1|1|1.
-              (1, 1, 0, 0, 0): None,        # haplotype 1|1|0|0|0.
-              (1, 1, 0, 0, 1): None,        # haplotype 1|1|0|0|1.
-              (1, 1, 0, 1, 0): None,        # haplotype 1|1|0|1|0.
-              (1, 1, 0, 1, 1): None,        # haplotype 1|1|0|1|1.
-              (1, 1, 1, 0, 0): None,        # haplotype 1|1|1|0|0.
-              (1, 1, 1, 0, 1): None,        # haplotype 1|1|1|0|1.
-              (1, 1, 1, 1, 0): None,        # haplotype 1|1|1|1|0.
-              (1, 1, 1, 1, 1): None,        # haplotype 1|1|1|1|1.
+              (0, 0, 0, 0, 0): 'xTGCGA',  # haplotype 0|0|0|0|0.
+              (0, 0, 0, 0, 1): 'xTGCGC',  # haplotype 0|0|0|0|1.
+              (0, 0, 0, 1, 0): 'xTGCG',  # haplotype 0|0|0|1|0.
+              (0, 0, 0, 1, 1): None,  # haplotype 0|0|0|1|1.
+              (0, 0, 1, 0, 0): 'xTGCA',  # haplotype 0|0|1|0|0.
+              (0, 0, 1, 0, 1): 'xTGCC',  # haplotype 0|0|1|0|1.
+              (0, 0, 1, 1, 0): None,  # haplotype 0|0|1|1|0.
+              (0, 0, 1, 1, 1): None,  # haplotype 0|0|1|1|1.
+              (0, 1, 0, 0, 0): 'xTG',  # haplotype 0|1|0|0|0.
+              (0, 1, 0, 0, 1): None,  # haplotype 0|1|0|0|1.
+              (0, 1, 0, 1, 0): None,  # haplotype 0|1|0|1|0.
+              (0, 1, 0, 1, 1): None,  # haplotype 0|1|0|1|1.
+              (0, 1, 1, 0, 0): None,  # haplotype 0|1|1|0|0.
+              (0, 1, 1, 0, 1): None,  # haplotype 0|1|1|0|1.
+              (0, 1, 1, 1, 0): None,  # haplotype 0|1|1|1|0.
+              (0, 1, 1, 1, 1): None,  # haplotype 0|1|1|1|1.
+              (1, 0, 0, 0, 0): 'xAGA',  # haplotype 1|0|0|0|0.
+              (1, 0, 0, 0, 1): 'xAGC',  # haplotype 1|0|0|0|1.
+              (1, 0, 0, 1, 0): 'xAG',  # haplotype 1|0|0|1|0.
+              (1, 0, 0, 1, 1): None,  # haplotype 1|0|0|1|1.
+              (1, 0, 1, 0, 0): None,  # haplotype 1|0|1|0|0.
+              (1, 0, 1, 0, 1): None,  # haplotype 1|0|1|0|1.
+              (1, 0, 1, 1, 0): None,  # haplotype 1|0|1|1|0.
+              (1, 0, 1, 1, 1): None,  # haplotype 1|0|1|1|1.
+              (1, 1, 0, 0, 0): None,  # haplotype 1|1|0|0|0.
+              (1, 1, 0, 0, 1): None,  # haplotype 1|1|0|0|1.
+              (1, 1, 0, 1, 0): None,  # haplotype 1|1|0|1|0.
+              (1, 1, 0, 1, 1): None,  # haplotype 1|1|0|1|1.
+              (1, 1, 1, 0, 0): None,  # haplotype 1|1|1|0|0.
+              (1, 1, 1, 0, 1): None,  # haplotype 1|1|1|0|1.
+              (1, 1, 1, 1, 0): None,  # haplotype 1|1|1|1|0.
+              (1, 1, 1, 1, 1): None,  # haplotype 1|1|1|1|1.
           },
           expected_next_pos=16),
   )
@@ -643,7 +661,7 @@ class LabelExamplesTest(parameterized.TestCase):
     self.assertGetsCorrectLabels(
         candidates=[candidate],
         true_variants=[truth],
-        ref=haplotype_labeler.Reference('x' + ref_allele + 'y', 41),
+        ref=haplotype_labeler.ReferenceRegion('x' + ref_allele + 'y', 41),
         expected_genotypes=[expected_genotype])
 
   @parameterized.parameters(
@@ -696,11 +714,11 @@ class LabelExamplesTest(parameterized.TestCase):
       self.assertGetsCorrectLabels(
           candidates=[candidate],
           true_variants=[truth],
-          ref=haplotype_labeler.Reference('x' + ref_allele + 'y', 41),
+          ref=haplotype_labeler.ReferenceRegion('x' + ref_allele + 'y', 41),
           expected_genotypes=[expected_gt])
 
   def test_false_variants_get_homref_genotype(self):
-    ref = haplotype_labeler.Reference('xACGTAy', 10)
+    ref = haplotype_labeler.ReferenceRegion('xACGTAy', 10)
     v1 = _test_variant(11, ['A', 'T'], [0, 1])
     v2 = _test_variant(13, ['G', 'GG'], [1, 1])
     all_fps = [
@@ -718,7 +736,7 @@ class LabelExamplesTest(parameterized.TestCase):
             expected_genotypes=haplotype_labeler._variant_genotypes(candidates))
 
   def test_false_negatives(self):
-    ref = haplotype_labeler.Reference('xACGTAy', 10)
+    ref = haplotype_labeler.ReferenceRegion('xACGTAy', 10)
     v1 = _test_variant(11, ['A', 'T'], [0, 1])
     v2 = _test_variant(13, ['G', 'GG'], [1, 1])
     all_fns = [
@@ -748,7 +766,7 @@ class LabelExamplesTest(parameterized.TestCase):
             _test_variant(3528534, ['G', 'A'], [1, 1]),
             _test_variant(3528536, ['TA', 'T'], [1, 1]),
         ],
-        ref=haplotype_labeler.Reference('xATAGTTATC', 3528530),
+        ref=haplotype_labeler.ReferenceRegion('xATAGTTATC', 3528530),
         expected_genotypes=[
             [1, 1],
             [1, 1],
@@ -764,7 +782,7 @@ class LabelExamplesTest(parameterized.TestCase):
         true_variants=[
             _test_variant(4030071, ['CC', 'G'], [1, 1]),
         ],
-        ref=haplotype_labeler.Reference('xTCCCCCA', 4030066),
+        ref=haplotype_labeler.ReferenceRegion('xTCCCCCA', 4030066),
         expected_genotypes=[
             [1, 1],
             [1, 1],
@@ -786,7 +804,7 @@ class LabelExamplesTest(parameterized.TestCase):
             _test_variant(4568156, ['G', 'T'], [1, 1]),
             _test_variant(4568157, ['A', 'ACCCTTT'], [1, 1]),
         ],
-        ref=haplotype_labeler.Reference('xACATGGATGGA', 4568150),
+        ref=haplotype_labeler.ReferenceRegion('xACATGGATGGA', 4568150),
         expected_genotypes=[
             [1, 1],
             [1, 1],
@@ -811,7 +829,7 @@ class LabelExamplesTest(parameterized.TestCase):
             _test_variant(1689640, ['G', 'A'], [1, 0]),
             _test_variant(1689641, ['A', 'G'], [1, 0]),
         ],
-        ref=haplotype_labeler.Reference('xCGTGAATGAAA', 1689632),
+        ref=haplotype_labeler.ReferenceRegion('xCGTGAATGAAA', 1689632),
         expected_genotypes=[
             [0, 1],
             [0, 1],
@@ -830,7 +848,7 @@ class LabelExamplesTest(parameterized.TestCase):
             _test_variant(2401511, ['TG', 'A'], [1, 1]),
             _test_variant(2401513, ['TAC', 'T'], [1, 1]),
         ],
-        ref=haplotype_labeler.Reference('xATGTACACAG', 2401509),
+        ref=haplotype_labeler.ReferenceRegion('xATGTACACAG', 2401509),
         expected_genotypes=[
             [1, 1],
             [1, 1],
@@ -853,7 +871,7 @@ class LabelExamplesTest(parameterized.TestCase):
         true_variants=[
             _test_variant(2525696, ['AAT', 'A'], [0, 1]),
         ],
-        ref=haplotype_labeler.Reference('xAATT', 2525695),
+        ref=haplotype_labeler.ReferenceRegion('xAATT', 2525695),
         expected_genotypes=[
             [0, 1],
             [0, 0],
@@ -883,7 +901,7 @@ class LabelExamplesTest(parameterized.TestCase):
         true_variants=[
             _test_variant(279773, ['A', 'C'], [0, 1]),
         ],
-        ref=haplotype_labeler.Reference('CGCCCCATACCTTTT', 279767),
+        ref=haplotype_labeler.ReferenceRegion('CGCCCCATACCTTTT', 279767),
         expected_genotypes=[
             [0, 0],
             [0, 2],
@@ -914,7 +932,7 @@ class LabelExamplesTest(parameterized.TestCase):
   #       true_variants=[
   #           _test_variant(32274470, ['C', 'G'], (1, 1)),
   #       ],
-  #       ref=haplotype_labeler.Reference(
+  #       ref=haplotype_labeler.ReferenceRegion(
   #           'GCTGGAGGCGTGGGGACACCGGAACATAGGCCCCGCCCCGCCCCGACGC', 32274451),
   #       expected_genotypes=[
   #           [0, 0],
@@ -974,8 +992,8 @@ class LabelExamplesTest(parameterized.TestCase):
         true_variants=[
             _test_variant(214012404, ['A', 'C'], [1, 1]),
         ],
-        ref=haplotype_labeler.Reference('AGACACACACACACAAAAAAAAATCAT',
-                                        214012389),
+        ref=haplotype_labeler.ReferenceRegion('AGACACACACACACAAAAAAAAATCAT',
+                                              214012389),
         expected_genotypes=[
             [0, 1],
             [0, 1],
@@ -988,7 +1006,7 @@ class LabelExamplesTest(parameterized.TestCase):
         ])
 
   # Variant group: 5 candidates 2 truth variants
-  # ref: Reference(bases=TGTTTTTTTTTAAAAAAATTATTTCTTCTTT, start=167012239)
+  # ref: ReferenceRegion(bases=TGTTTTTTTTTAAAAAAATTATTTCTTCTTT, start=167012239)
   #   candidates 4:167012240:GT->G
   #   candidates 4:167012246:TTTT->A
   #   candidates 4:167012247:T->A
@@ -1014,8 +1032,8 @@ class LabelExamplesTest(parameterized.TestCase):
             _test_variant(167012240, ['GTTT', 'G', 'GTT'], [1, 2]),
             _test_variant(167012249, ['T', 'A', 'TAA'], [1, 2]),
         ],
-        ref=haplotype_labeler.Reference('TGTTTTTTTTTAAAAAAATTATTTCTTCTTT',
-                                        167012239),
+        ref=haplotype_labeler.ReferenceRegion('TGTTTTTTTTTAAAAAAATTATTTCTTCTTT',
+                                              167012239),
         expected_genotypes=[
             [1, 1],
             [0, 0],
@@ -1057,7 +1075,7 @@ class LabelExamplesTest(parameterized.TestCase):
             _test_variant(9508943, ['GGT', 'G'], [0, 1]),
             _test_variant(9508967, ['T', 'C', 'TGC'], [1, 2]),
         ],
-        ref=haplotype_labeler.Reference(
+        ref=haplotype_labeler.ReferenceRegion(
             'GGGTGTGTGTGTGTGTGTGTGTGTGTGCGTGTGTGTGTTTGTGTTG', 9508942),
         expected_genotypes=[
             [0, 1],
