@@ -36,9 +36,9 @@
 #include <cstddef>
 
 #include "deepvariant/utils.h"
-#include "deepvariant/util/genomics/cigar.pb.h"
-#include "deepvariant/util/genomics/position.pb.h"
-#include "deepvariant/util/utils.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
+#include "third_party/nucleus/protos/position.pb.h"
+#include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"

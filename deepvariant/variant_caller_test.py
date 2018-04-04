@@ -40,9 +40,9 @@ import mock
 import numpy as np
 import numpy.testing as npt
 
-from deepvariant.util.testing import test_utils
-from deepvariant.util import variant_utils
-from deepvariant.util import variantcall_utils
+from third_party.nucleus.testing import test_utils
+from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 from deepvariant import testdata
 from deepvariant import variant_caller
 from deepvariant.protos import deepvariant_pb2

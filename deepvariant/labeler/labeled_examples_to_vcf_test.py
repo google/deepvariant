@@ -36,9 +36,9 @@ from tensorflow import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from deepvariant.util.io import vcf
+from third_party.nucleus.io import vcf
 
-from deepvariant.util.testing import test_utils
+from third_party.nucleus.testing import test_utils
 from deepvariant import testdata
 from deepvariant.labeler import labeled_examples_to_vcf
 from deepvariant.testing import flagsaver

@@ -42,9 +42,9 @@ import itertools
 from absl import logging
 import enum
 
-from deepvariant.util.io import fasta
-from deepvariant.util import ranges
-from deepvariant.util import variant_utils
+from third_party.nucleus.io import fasta
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import variant_utils
 from deepvariant.labeler import variant_labeler
 
 

@@ -38,9 +38,9 @@ import itertools
 
 import numpy as np
 
-from deepvariant.util.genomics import reads_pb2
-from deepvariant.util import ranges
-from deepvariant.util import utils
+from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import utils
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
 

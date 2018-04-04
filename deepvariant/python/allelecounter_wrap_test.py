@@ -35,9 +35,9 @@ from __future__ import print_function
 
 from absl.testing import absltest
 
-from deepvariant.util.io import fasta
-from deepvariant.util.io import sam
-from deepvariant.util import ranges
+from third_party.nucleus.io import fasta
+from third_party.nucleus.io import sam
+from third_party.nucleus.util import ranges
 from deepvariant import testdata
 
 from deepvariant.protos import deepvariant_pb2

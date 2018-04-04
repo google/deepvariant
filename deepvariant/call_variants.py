@@ -42,11 +42,11 @@ import tensorflow as tf
 
 from absl import logging
 
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import errors
-from deepvariant.util import io_utils
-from deepvariant.util import proto_utils
-from deepvariant.util import variant_utils
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import errors
+from third_party.nucleus.util import io_utils
+from third_party.nucleus.util import proto_utils
+from third_party.nucleus.util import variant_utils
 from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils

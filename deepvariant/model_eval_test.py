@@ -44,8 +44,8 @@ import numpy.testing as npt
 import six
 import tensorflow as tf
 
-from deepvariant.util.testing import test_utils
-from deepvariant.util import variant_utils
+from third_party.nucleus.testing import test_utils
+from third_party.nucleus.util import variant_utils
 from deepvariant import data_providers_test
 from deepvariant import model_eval
 from deepvariant import modeling

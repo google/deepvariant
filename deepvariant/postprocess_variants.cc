@@ -32,9 +32,9 @@
 #include "deepvariant/postprocess_variants.h"
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/util/genomics/reference.pb.h"
-#include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/utils.h"
+#include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/io/compression.h"
 #include "tensorflow/core/lib/io/record_reader.h"

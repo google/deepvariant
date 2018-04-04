@@ -42,7 +42,7 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
-from deepvariant.util.testing import test_utils
+from third_party.nucleus.testing import test_utils
 from deepvariant import data_providers_test
 from deepvariant import model_train
 from deepvariant import modeling

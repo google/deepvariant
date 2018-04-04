@@ -36,9 +36,9 @@ from __future__ import print_function
 
 from absl import logging
 
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import variant_utils
-from deepvariant.util import variantcall_utils
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 from deepvariant.labeler import variant_labeler
 
 

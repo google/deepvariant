@@ -36,8 +36,8 @@ import abc
 
 
 
-from deepvariant.util import variant_utils
-from deepvariant.util import variantcall_utils
+from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 
 # ---------------------------------------------------------------------------
 # VariantLabel

@@ -46,11 +46,11 @@ from absl import app
 from tensorflow import flags
 from absl import logging
 
-from deepvariant.util.io import fasta
-from deepvariant.util.io import vcf
-from deepvariant.util import io_utils
-from deepvariant.util import variant_utils
-from deepvariant.util import variantcall_utils
+from third_party.nucleus.io import fasta
+from third_party.nucleus.io import vcf
+from third_party.nucleus.util import io_utils
+from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 
 from deepvariant import dv_vcf_constants
 from deepvariant import tf_utils

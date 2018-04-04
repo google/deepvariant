@@ -40,16 +40,16 @@ import tensorflow as tf
 
 from absl import logging
 
-from deepvariant.util.io import fasta
-from deepvariant.util.io import sam
-from deepvariant.util.io import vcf
-from deepvariant.util.io.python import hts_verbose
-from deepvariant.util.genomics import reads_pb2
-from deepvariant.util import errors
-from deepvariant.util import io_utils
-from deepvariant.util import proto_utils
-from deepvariant.util import ranges
-from deepvariant.util import utils
+from third_party.nucleus.io import fasta
+from third_party.nucleus.io import sam
+from third_party.nucleus.io import vcf
+from third_party.nucleus.io.python import hts_verbose
+from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.util import errors
+from third_party.nucleus.util import io_utils
+from third_party.nucleus.util import proto_utils
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import utils
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import pileup_image

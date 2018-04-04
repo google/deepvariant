@@ -34,8 +34,8 @@ from __future__ import print_function
 
 from collections import defaultdict
 
-from deepvariant.util.genomics import cigar_pb2
-from deepvariant.util.genomics import range_pb2
+from third_party.nucleus.protos import cigar_pb2
+from third_party.nucleus.protos import range_pb2
 from deepvariant.realigner import utils
 
 

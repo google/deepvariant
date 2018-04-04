@@ -45,10 +45,10 @@ import operator
 
 import numpy as np
 
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import genomics_math
-from deepvariant.util import variantcall_utils
-from deepvariant.util import vcf_constants
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import variantcall_utils
+from third_party.nucleus.util import vcf_constants
 from deepvariant.python import variant_calling
 
 # Reference bases with genotype calls must be one of these four values.

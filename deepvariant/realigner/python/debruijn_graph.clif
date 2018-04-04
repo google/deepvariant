@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "deepvariant/protos/realigner_pyclif.h" import *
-from "deepvariant/util/genomics/reads_pyclif.h" import *
+from "third_party/nucleus/protos/reads_pyclif.h" import *
 
 from "deepvariant/realigner/debruijn_graph.h":
   namespace `learning::genomics::deepvariant`:

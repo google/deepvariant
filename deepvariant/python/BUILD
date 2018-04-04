@@ -10,12 +10,12 @@ py_clif_cc(
     name = "allelecounter",
     srcs = ["allelecounter.clif"],
     clif_deps = [
-        "//deepvariant/util/io/python:reference_fai",  # other py_clif_cc rules
+        "//third_party/nucleus/io/python:reference_fai",  # other py_clif_cc rules
     ],
     py_deps = [],
     pyclif_deps = [
-        "//deepvariant/util/genomics:reads_pyclif",
-        "//deepvariant/util/genomics:range_pyclif",
+        "//third_party/nucleus/protos:reads_pyclif",
+        "//third_party/nucleus/protos:range_pyclif",
         "//deepvariant/protos:deepvariant_pyclif",
     ],
     deps = ["//deepvariant:allelecounter"],
@@ -27,16 +27,16 @@ py_test(
     srcs = ["allelecounter_wrap_test.py"],
     data = [
         "//deepvariant:testdata",
-        "//deepvariant/util/testdata",
+        "//third_party/nucleus/testdata",
     ],
     srcs_version = "PY2AND3",
     deps = [
         ":allelecounter",
         "//deepvariant:py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
-        "//deepvariant/util:ranges",
-        "//deepvariant/util/io:fasta",
-        "//deepvariant/util/io:sam",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:sam",
+        "//third_party/nucleus/util:ranges",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -48,7 +48,7 @@ py_clif_cc(
     ],
     py_deps = [],
     pyclif_deps = [
-        "//deepvariant/util/genomics:reference_pyclif",
+        "//third_party/nucleus/protos:reference_pyclif",
         "//deepvariant/protos:deepvariant_pyclif",
     ],
     deps = ["//deepvariant:postprocess_variants_lib"],
@@ -59,7 +59,7 @@ py_clif_cc(
     srcs = ["variant_calling.clif"],
     clif_deps = [
         ":allelecounter",
-        "//deepvariant/util/io/python:reference_fai",  # other py_clif_cc rules
+        "//third_party/nucleus/io/python:reference_fai",  # other py_clif_cc rules
     ],
     py_deps = [],
     pyclif_deps = [
@@ -79,9 +79,9 @@ py_test(
         ":variant_calling",
         "//deepvariant:py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
-        "//deepvariant/util:ranges",
-        "//deepvariant/util/io:fasta",
-        "//deepvariant/util/io:sam",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:sam",
+        "//third_party/nucleus/util:ranges",
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
@@ -96,7 +96,7 @@ py_clif_cc(
         "//deepvariant:pileup_image_native",
         "//deepvariant/protos:deepvariant_pyclif",
         "//deepvariant/python:clif_converters",
-        "//deepvariant/util/genomics:reads_pyclif",
+        "//third_party/nucleus/protos:reads_pyclif",
     ],
 )
 

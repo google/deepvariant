@@ -44,18 +44,18 @@ import tensorflow as tf
 
 from absl import logging
 
-from deepvariant.util.io import fasta
-from deepvariant.util.io import vcf
-from deepvariant.util.genomics import struct_pb2
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import errors
-from deepvariant.util import genomics_math
-from deepvariant.util import io_utils
-from deepvariant.util import proto_utils
-from deepvariant.util import ranges
-from deepvariant.util import variant_utils
-from deepvariant.util import variantcall_utils
-from deepvariant.util import vcf_constants
+from third_party.nucleus.io import fasta
+from third_party.nucleus.io import vcf
+from third_party.nucleus.protos import struct_pb2
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import errors
+from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import io_utils
+from third_party.nucleus.util import proto_utils
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
+from third_party.nucleus.util import vcf_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level

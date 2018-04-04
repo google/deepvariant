@@ -45,14 +45,14 @@ import numpy as np
 import tensorflow as tf
 
 from absl import logging
-from deepvariant.util.io import fasta
-from deepvariant.util.genomics import reference_pb2
-from deepvariant.util.genomics import struct_pb2
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util.testing import test_utils
-from deepvariant.util import genomics_math
-from deepvariant.util import io_utils
-from deepvariant.util import vcf_constants
+from third_party.nucleus.io import fasta
+from third_party.nucleus.protos import reference_pb2
+from third_party.nucleus.protos import struct_pb2
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.testing import test_utils
+from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import io_utils
+from third_party.nucleus.util import vcf_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
 from deepvariant import testdata

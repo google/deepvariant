@@ -36,9 +36,9 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/math.h"
-#include "deepvariant/util/utils.h"
+#include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/math.h"
+#include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 

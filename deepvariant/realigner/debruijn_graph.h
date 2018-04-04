@@ -39,7 +39,7 @@
 #include "deepvariant/protos/realigner.pb.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
-#include "deepvariant/util/genomics/reads.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/hash/hash.h"
 #include "tensorflow/core/platform/types.h"

@@ -37,10 +37,10 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
-from deepvariant.util.io import vcf
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import ranges
-from deepvariant.util import variant_utils
+from third_party.nucleus.io import vcf
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import variant_utils
 
 from deepvariant.labeler import haplotype_labeler
 

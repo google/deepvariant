@@ -34,7 +34,7 @@ from __future__ import print_function
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from deepvariant.util.genomics import reference_pb2
+from third_party.nucleus.protos import reference_pb2
 from deepvariant import dv_vcf_constants
 
 

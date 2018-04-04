@@ -11,11 +11,11 @@ py_binary(
     deps = [
         "//deepvariant:dv_vcf_constants",
         "//deepvariant:tf_utils",
-        "//deepvariant/util:io_utils",
-        "//deepvariant/util:variant_utils",
-        "//deepvariant/util:variantcall_utils",
-        "//deepvariant/util/io:fasta",
-        "//deepvariant/util/io:vcf",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/util:io_utils",
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
     ],
@@ -30,7 +30,7 @@ py_test(
         ":labeled_examples_to_vcf",
         "//deepvariant:py_testdata",
         "//deepvariant/testing:flagsaver",
-        "//deepvariant/util/io:vcf",
+        "//third_party/nucleus/io:vcf",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -41,8 +41,8 @@ py_library(
     srcs = ["variant_labeler.py"],
     srcs_version = "PY2AND3",
     deps = [
-        "//deepvariant/util:variant_utils",
-        "//deepvariant/util:variantcall_utils",
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
     ],
 )
 
@@ -54,7 +54,7 @@ py_test(
     deps = [
         ":variant_labeler",
         "//deepvariant:py_testdata",
-        "//deepvariant/util/io:vcf",
+        "//third_party/nucleus/io:vcf",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -66,9 +66,9 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         ":variant_labeler",
-        "//deepvariant/util:variant_utils",
-        "//deepvariant/util:variantcall_utils",
-        "//deepvariant/util/genomics:variants_py_pb2",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
         "@com_google_absl_py//absl/logging",
     ],
 )
@@ -81,8 +81,8 @@ py_test(
     deps = [
         ":positional_labeler",
         "//deepvariant:py_testdata",
-        "//deepvariant/util:ranges",
-        "//deepvariant/util/io:vcf",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/util:ranges",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -94,9 +94,9 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         ":variant_labeler",
-        "//deepvariant/util:ranges",
-        "//deepvariant/util:variant_utils",
-        "//deepvariant/util/io:fasta",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:variant_utils",
     ],
 )
 
@@ -106,11 +106,11 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":haplotype_labeler",
-        "//deepvariant/util:ranges",
-        "//deepvariant/util:variant_utils",
-        "//deepvariant/util/genomics:variants_py_pb2",
-        "//deepvariant/util/io:fasta",
-        "//deepvariant/util/io:vcf",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:variant_utils",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

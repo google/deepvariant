@@ -45,16 +45,16 @@ import mock
 
 from absl import logging
 
-from deepvariant.util.io import vcf
-from deepvariant.util.genomics import reads_pb2
-from deepvariant.util.genomics import reference_pb2
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util.testing import test_utils
-from deepvariant.util import io_utils
-from deepvariant.util import ranges
-from deepvariant.util import variant_utils
-from deepvariant.util import variantcall_utils
-from deepvariant.util import vcf_constants
+from third_party.nucleus.io import vcf
+from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.protos import reference_pb2
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.testing import test_utils
+from third_party.nucleus.util import io_utils
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
+from third_party.nucleus.util import vcf_constants
 from deepvariant import make_examples
 from deepvariant import testdata
 from deepvariant import tf_utils

@@ -34,9 +34,9 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "google/protobuf/repeated_field.h"
-#include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/testing/test_utils.h"
-#include "deepvariant/util/utils.h"
+#include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 
@@ -45,7 +45,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "deepvariant/util/testing/protocol-buffer-matchers.h"
+#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 
 namespace learning {
 namespace genomics {

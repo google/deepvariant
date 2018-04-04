@@ -36,7 +36,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/util/genomics/reference.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 
 namespace learning {

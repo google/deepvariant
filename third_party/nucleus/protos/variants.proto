@@ -1,0 +1,339 @@
+// Copyright 2018 Google Inc.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+syntax = "proto3";
+
+package nucleus.genomics.v1;
+
+import "third_party/nucleus/protos/index.proto";
+import "third_party/nucleus/protos/reference.proto";
+import "third_party/nucleus/protos/struct.proto";
+
+option cc_enable_arenas = true;
+
+// A variant represents a change in DNA sequence relative to a reference
+// sequence. For example, a variant could represent a SNP or an insertion.
+//
+// The definition of the Variant message closely follows the common VCF variant
+// representation.
+//
+// Each of the calls on a variant represent a determination of genotype with
+// respect to that variant. For example, a call might assign probability of 0.32
+// to the occurrence of a SNP named rs1234 in a sample named NA12345.
+// NextID: 17
+message Variant {
+  reserved 1, 4, 5;
+
+  // The reference on which this variant occurs.
+  // (such as `chr20` or `X`)
+  // Corresponds to the "CHROM" field of VCF 4.3.
+  string reference_name = 14;
+
+  // The position at which this variant occurs (0-based inclusive).
+  // This corresponds to the first base of the string of reference bases.
+  int64 start = 16;
+
+  // The end position (0-based exclusive) of this variant. This corresponds to
+  // the first base after the last base in the reference allele. So, the length
+  // of the reference allele is (end - start). This is useful for variants
+  // that don't explicitly give alternate bases, for example large deletions.
+  int64 end = 13;
+
+  // Names for the variant, for example a dbSNP ID.
+  // Corresponds to the "ID" field of VCF 4.3.
+  repeated string names = 3;
+
+  // The reference bases for this variant. They start at the given
+  // position.
+  string reference_bases = 6;
+
+  // The bases that appear instead of the reference bases.
+  repeated string alternate_bases = 7;
+
+  // A measure of how likely this variant is to be real.
+  // A higher value is better.
+  // Since this is a Phred-scaled probability (i.e. is -10 * log_10(p) for some
+  // p, which depends on whether this is a variant or non-variant site) it is
+  // guaranteed to be non-negative. We use -1 to represent the `unset` value.
+  double quality = 8;
+
+  // A list of filters (normally quality filters) this variant has failed.
+  // `PASS` indicates this variant has passed all filters.
+  repeated string filter = 9;
+
+  // A map of additional variant information. This must be of the form
+  // map<string, string[]> (string key mapping to a list of string values).
+  map<string, ListValue> info = 10;
+
+  // The variant calls for this particular variant. Each one represents the
+  // determination of genotype with respect to this variant.
+  repeated VariantCall calls = 11;
+
+  /////////////////////////////////////////////////////////////////////////
+  // DEPRECATED or unused fields of the Variant proto below.
+  // These are relics of the Google Genomics API and/or are used to support
+  // GA4GH specs.
+  //
+  // The ID of the variant set this variant belongs to.
+  // DEPRECATED.
+  string variant_set_id = 15;
+
+  // The server-generated variant ID, unique across all variants.
+  // DEPRECATED.
+  string id = 2;
+
+  // The date this variant was created, in milliseconds from the epoch.
+  // (-- GA4GH also specifies an "updated" timestamp. --)
+  // DEPRECATED.
+  int64 created = 12;
+}
+
+// A call represents the determination of genotype with respect to a particular
+// variant. It may include associated information such as quality and phasing.
+// For example, a call might assign a probability of 0.32 to the occurrence of
+// a SNP named rs1234 in a call set with the name NA12345.
+// NextID: 10
+message VariantCall {
+  reserved 1, 3, 4;
+
+  // The name of the call set this variant call belongs to. Also known as
+  // "sample".
+  string call_set_name = 9;
+
+  // The genotype of this variant call. Each value represents either the value
+  // of the `referenceBases` field or a 1-based index into `alternateBases`. If
+  // a variant had a `referenceBases` value of `T` and an `alternateBases` value
+  // of `["A", "C"]`, and the `genotype` was `[2, 1]`, that would mean the call
+  // represented the heterozygous value `CA` for this variant. If the `genotype`
+  // was instead `[0, 1]`, the represented value would be `TA`. Ordering of the
+  // genotype values is important if the `phaseset` is present ('PS' field in
+  // the call.info map). Uncalled genotypes (represented as `.` in the GT
+  // string) are represented by -1 in this array.
+  repeated int32 genotype = 7;
+
+  // If true, this variant call's genotype ordering implies the phase of the
+  // bases and is consistent with any other variant calls in the same reference
+  // sequence which have the same phaseset value (the integer 'PS' field in the
+  // call.info map). If this is true but the 'PS' field is not set, the call is
+  // assumed to be phased with all other calls for which the same state applies.
+  bool is_phased = 10;
+
+  // DEPRECATED. This previously was used as a special-cased field for capturing
+  // phasing information. This field should no longer be set, in favor of using
+  // the 'PS' field in the call.info map and the `is_phased` boolean attribute.
+  string phaseset = 5;  // DEPRECATED.
+
+  // The genotype likelihoods for this variant call. Each array entry
+  // represents how likely a specific genotype is for this call. The value
+  // ordering is defined by the GL tag in the VCF spec.
+  // If Phred-scaled genotype likelihood scores (PL) are available and
+  // log10(P) genotype likelihood scores (GL) are not, PL scores are converted
+  // to GL scores.  If both are available, the GL scores are stored here and
+  // PL scores are omitted (as they are just a lower-resolution representation
+  // of GL scores).
+  repeated double genotype_likelihood = 6;
+
+  // A map of additional variant call information. This must be of the form
+  // map<string, string[]> (string key mapping to a list of string values).
+  map<string, ListValue> info = 2;
+
+  /////////////////////////////////////////////////////////////////////////
+  // DEPRECATED or unused fields of the VariantCall proto below.
+  // These are relics of the Google Genomics API and/or are used to support
+  // GA4GH specs.
+  //
+  // The ID of the call set this variant call belongs to.
+  string call_set_id = 8;
+}
+
+// This record type mirrors a VCF header. See
+// https://samtools.github.io/hts-specs/VCFv4.3.pdf for details on the spec.
+message VcfHeader {
+  // The required first line of the VCF. Values e.g. "VCFv4.3".
+  string fileformat = 1;
+
+  // The list of contigs used to produce this VCF. All variants within the VCF
+  // must lie on a contig represented here. All contigs must have distinct IDs.
+  repeated ContigInfo contigs = 2;
+
+  // A list of all filters used to produce this VCF. All variants within the VCF
+  // must only use filters represented here. All filters must have distinct IDs.
+  repeated VcfFilterInfo filters = 3;
+
+  // A list of all info tags used to annotate variants within the VCF. All info
+  // fields present in Variants must only use infos with IDs represented here.
+  // All infos must have distinct IDs.
+  repeated VcfInfo infos = 4;
+
+  // A list of all format fields used to annotate genotypes within the VCF. All
+  // fields present in VariantCalls must only use formats with IDs represented
+  // here. All formats must have distinct IDs.
+  repeated VcfFormatInfo formats = 5;
+
+  // An ordered list of all the sample names present in the VCF. All Variants
+  // within the VCF must contain `len(sample_names)` VariantCalls and must be
+  // in the same order. I.e. for any Variant v,
+  // v.calls[i].call_set_name == sample_names[i] for all i.
+  repeated string sample_names = 6;
+
+  // A list of all header lines that are not one represented above, represented
+  // in a key=value format. The key within the extras may be duplicated.
+  repeated VcfStructuredExtra structured_extras = 8;
+
+  // A list of all header lines that are not one represented above, represented
+  // in an unstructured format. The key within the extras may be duplicated.
+  repeated VcfExtra extras = 7;
+}
+
+// The below messages are sub-messages of the VCF header. They are not nested
+// within VcfHeader simply to avoid verbosity.
+//
+// We comment fields in one of three states:
+// "Required": Required by both the VCF file format and for downstream users of
+//             Variant and VariantCall protos.
+// "Required by VCF": Required by the VCF file format, unused otherwise.
+// "Optional": Optional within the VCF file format, unused otherwise.
+//
+// This record type mirrors a VCF "FILTER" header.
+message VcfFilterInfo {
+  // Required. The unique ID of the filter. Examples include "PASS", "RefCall".
+  string id = 1;
+
+  // Required by VCF. The description of the filter.
+  string description = 2;
+}
+
+// This message type mirrors a VCF "INFO" header.
+message VcfInfo {
+  // Required. The unique ID of the INFO field. Examples include "MQ0" or "END".
+  string id = 1;
+
+  // Required. The number of values included with the info field. This should be
+  // the string representation of the number, e.g. "1" for a single entry, "2"
+  // for a pair of entries, etc. Special cases arise when the number of entries
+  // depend on attributes of the Variant or are unknown in advance, and include:
+  // "A": The field has one value per alternate allele.
+  // "R": The field has one value per allele (including the reference).
+  // "G": The field has one value for each possible genotype.
+  // ".": The number of values varies, is unknown, or is unbounded.
+  string number = 2;
+
+  // Required. The type of the INFO field. Valid values are "Integer", "Float",
+  // "Flag", "Character", and "String".
+  string type = 3;
+
+  // Required by VCF. The description of the field.
+  string description = 4;
+
+  // Optional. The annotation source used to generate the field.
+  string source = 5;
+
+  // Optional. The version of the annotation source used to generate the field.
+  string version = 6;
+}
+
+// This record type mirrors a VCF "FORMAT" header.
+message VcfFormatInfo {
+  // Required. The unique ID of the FORMAT field. Examples include "GT", "PL".
+  string id = 1;
+
+  // Required. The number of entries expected. See description above in the
+  // VcfInfo message.
+  string number = 2;
+
+  // Required. The type of the field. Valid values are "Integer", "Float",
+  // "Character", and "String" (same as INFO except "Flag" is not supported).
+  string type = 3;
+
+  // Required by VCF. The description of the field.
+  string description = 4;
+}
+
+// This record type is a catch-all for other headers containing multiple
+// key-value pairs. For example, headers may have META lines that provide
+// metadata about the VCF as a whole, e.g.
+// ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>
+// The VcfStructuredExtra message would represent this with key="META",
+// and fields mapping "ID" -> "Assay", "Type" -> "String", etc.
+message VcfStructuredExtra {
+  // Required by VCF. The key of the extra header field. Note that this key does
+  // not have to be unique within a VcfHeader.
+  string key = 1;
+
+  // Required by VCF. The key=value pairs contained in the structure.
+  repeated VcfExtra fields = 2;
+}
+
+// This record type is a catch-all for other types of headers. For example,
+// ##pedigreeDB=http://url_of_pedigrees
+// The VcfExtra message would represent this with key="pedigreeDB",
+// value="http://url_of_pedigrees".
+message VcfExtra {
+  // Required by VCF. The key of the extra header field. Note that this key does
+  // not have to be unique within a VcfHeader.
+  string key = 1;
+
+  // Required by VCF. The value of the extra header field.
+  string value = 2;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// I/O-related messages.
+///////////////////////////////////////////////////////////////////////////////
+
+// The Vcf{Reader,Writer}Options messages are used to alter the properties of
+// reading and writing variants. They enables certain fields to be omitted from
+// parsing.
+message VcfReaderOptions {
+  reserved 2;
+
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+
+  // A list of all INFO field IDs that should be excluded from parsing.
+  repeated string excluded_info_fields = 3;
+
+  // A list of all FORMAT field IDs that should be excluded from parsing.
+  repeated string excluded_format_fields = 4;
+}
+
+message VcfWriterOptions {
+  reserved 2, 3, 4, 5;
+
+  // How should we handle VCF file indices?
+  IndexHandlingMode index_mode = 1;
+
+  // A list of all INFO field IDs that should be excluded from writing.
+  repeated string excluded_info_fields = 7;
+
+  // A list of all FORMAT field IDs that should be excluded from writing.
+  repeated string excluded_format_fields = 8;
+
+  // Should QUAL field values be rounded to one point past the decimal?
+  bool round_qual_values = 6;
+}

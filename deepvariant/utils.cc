@@ -31,7 +31,7 @@
 
 #include "deepvariant/utils.h"
 
-#include "deepvariant/util/utils.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace learning {
 namespace genomics {

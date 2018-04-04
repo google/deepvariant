@@ -33,8 +33,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from deepvariant.util.genomics import variants_pb2
-from deepvariant.util import vcf_constants
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import vcf_constants
 
 # FILTER field IDs.
 DEEP_VARIANT_PASS = 'PASS'

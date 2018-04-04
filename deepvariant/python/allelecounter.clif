@@ -28,9 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "deepvariant/protos/deepvariant_pyclif.h" import *
-from "deepvariant/util/io/python/reference_fai.h" import *
-from "deepvariant/util/genomics/range_pyclif.h" import *
-from "deepvariant/util/genomics/reads_pyclif.h" import *
+from "third_party/nucleus/io/python/reference_fai.h" import *
+from "third_party/nucleus/protos/range_pyclif.h" import *
+from "third_party/nucleus/protos/reads_pyclif.h" import *
 
 from "deepvariant/allelecounter.h":
   namespace `learning::genomics::deepvariant`:

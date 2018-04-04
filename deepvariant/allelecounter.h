@@ -40,11 +40,11 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "deepvariant/util/io/reference.h"
-#include "deepvariant/util/genomics/cigar.pb.h"
-#include "deepvariant/util/genomics/position.pb.h"
-#include "deepvariant/util/genomics/range.pb.h"
-#include "deepvariant/util/genomics/reads.pb.h"
+#include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
+#include "third_party/nucleus/protos/position.pb.h"
+#include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {

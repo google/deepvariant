@@ -33,11 +33,11 @@
 #include "deepvariant/allelecounter.h"
 
 #include "deepvariant/utils.h"
-#include "deepvariant/util/io/reference_fai.h"
-#include "deepvariant/util/io/reference_test.h"
-#include "deepvariant/util/genomics/position.pb.h"
-#include "deepvariant/util/testing/test_utils.h"
-#include "deepvariant/util/utils.h"
+#include "third_party/nucleus/io/reference_fai.h"
+#include "third_party/nucleus/io/reference_test.h"
+#include "third_party/nucleus/protos/position.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -46,7 +46,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "deepvariant/util/testing/protocol-buffer-matchers.h"
+#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 
 namespace learning {
 namespace genomics {

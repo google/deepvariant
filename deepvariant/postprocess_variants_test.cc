@@ -31,9 +31,9 @@
 
 #include "deepvariant/postprocess_variants.h"
 
-#include "deepvariant/util/genomics/reference.pb.h"
-#include "deepvariant/util/genomics/variants.pb.h"
-#include "deepvariant/util/testing/test_utils.h"
+#include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 
 #include <gmock/gmock-generated-matchers.h>

@@ -45,9 +45,9 @@ import os.path
 from tensorflow import flags
 import tensorflow as tf
 
-from deepvariant.util.io import sam
-from deepvariant.util import ranges
-from deepvariant.util import utils
+from third_party.nucleus.io import sam
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import utils
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import aligner
 from deepvariant.realigner import window_selector

@@ -45,8 +45,8 @@ import tensorflow as tf
 
 from absl import logging
 
-from deepvariant.util import proto_utils
-from deepvariant.util import variant_utils
+from third_party.nucleus.util import proto_utils
+from third_party.nucleus.util import variant_utils
 from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling

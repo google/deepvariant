@@ -41,7 +41,7 @@ from __future__ import print_function
 import tensorflow as tf
 
 from google.protobuf import text_format
-from deepvariant.util import io_utils
+from third_party.nucleus.util import io_utils
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 
