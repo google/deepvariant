@@ -197,7 +197,12 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
     raise ValueError('Unknown contig', contig_name)
 
   def __str__(self):
-    return 'InMemoryRefReader(contigs={})'.format(
-        ''.join('chrom={} start={}, end={}'.format(chrom, start, end)
-                for chrom, (start, end, _) in self._chroms.iteritems()))
+    contigs_strs = [
+        'Contig(chrom={} start={}, end={}, bases={})'.format(
+            chrom, start, end, bases
+            if len(bases) < 50 else bases[0:50] + '...')
+        for chrom, (start, end, bases) in self._chroms.iteritems()
+    ]
+    return 'InMemoryRefReader(contigs={})'.format(''.join(contigs_strs))
+
   __repr__ = __str__
