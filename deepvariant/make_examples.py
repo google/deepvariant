@@ -702,7 +702,7 @@ class RegionProcessor(object):
 
     self.ref_reader = fasta.RefFastaReader(self.options.reference_filename)
     self.sam_reader = self._make_sam_reader()
-    self.in_memory_sam_reader = utils.InMemorySamReader([])
+    self.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.realigner_enabled:
       self.realigner = realigner.Realigner(self.options.realigner_options,
