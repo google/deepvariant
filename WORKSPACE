@@ -1,4 +1,7 @@
-workspace(name = "deepvariant")
+# The workspace name appears at the top of the runfiles tree,
+# and in paths to tests, so to keep python happy it is best
+# if it is unique.
+workspace(name = "com_google_deepvariant")
 
 # Abseil libraries
 git_repository(
