@@ -778,8 +778,9 @@ class RegionProcessor(object):
           for example in self.create_pileup_examples(candidate)
       ]
 
-    logging.info('Found %s candidates in %s [%0.2fs elapsed]', len(examples),
-                 ranges.to_literal(region), region_timer.Stop())
+    logging.info('Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
+                 len(examples), ranges.to_literal(region),
+                 ranges.length(region), region_timer.Stop())
     return candidates, examples, gvcfs
 
   def region_reads(self, region):
