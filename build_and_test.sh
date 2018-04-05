@@ -48,8 +48,14 @@ else
   bazel test -c opt ${DV_COPT_FLAGS} "$@" deepvariant/...
 fi
 
-# Create some build artifacts.
+# Create some build artifacts (two ways), and execute one of them.
 bazel build -c opt ${DV_COPT_FLAGS} "$@" deepvariant:binaries
+echo 'Expect a nice usage message:'
+bazel-bin/deepvariant/call_variants --help
+
+bazel build -c opt ${DV_COPT_FLAGS} "$@" deepvariant:binaries --build_python_zip
+echo 'Expect a nice usage message:'
+bazel-bin/deepvariant/call_variants --help
 
 # Bundle the licenses.
 bazel build :licenses_zip
