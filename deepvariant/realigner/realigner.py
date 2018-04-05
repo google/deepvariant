@@ -274,6 +274,13 @@ class AssemblyRegion(object):
     self.reads = []
     self._read_span = None
 
+  def __str__(self):
+    return ('AssemblyRegion(region={}, span={}) with {} haplotypes and {} '
+            'reads').format(
+                ranges.to_literal(self.region),
+                ranges.to_literal(self.read_span), len(self.haplotypes),
+                len(self.reads))
+
   @property
   def haplotypes(self):
     """Returns the haplotypes list[str] of our candidate_haplotypes."""
