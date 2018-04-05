@@ -74,7 +74,7 @@ sudo -H pip install contextlib2
 sudo -H pip install enum34
 sudo -H pip install intervaltree
 sudo -H pip install 'mock>=2.0.0'
-sudo -H pip install 'numpy==1.12'
+sudo -H pip install 'numpy==1.14'  # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 sudo -H pip install 'requests>=2.18'
 sudo -H pip install 'scipy==1.0'
 sudo -H pip install 'oauth2client>=4.0.0'
