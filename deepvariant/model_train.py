@@ -219,8 +219,6 @@ def run(target, is_chief, device_fn):
 
       # Setup the moving averages:
       moving_average_variables = slim.get_model_variables()
-      moving_average_variables.extend(slim.losses.get_losses())
-      moving_average_variables.append(total_loss)
 
       variable_averages = tf.train.ExponentialMovingAverage(
           FLAGS.moving_average_decay, slim.get_or_create_global_step())
