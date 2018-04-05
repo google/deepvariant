@@ -900,7 +900,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [])
     mock_cir.assert_called_once_with(self.region)
-    mock_lc.assert_called_once_with(candidates)
+    mock_lc.assert_called_once_with(candidates, self.region)
 
   def test_on_demand_initialization_not_called_if_initialized(self):
     self.processor.initialized = True
@@ -929,7 +929,7 @@ class RegionProcessorTest(parameterized.TestCase):
         [])
     mock_cir.assert_called_once_with(self.region)
     test_utils.assert_not_called_workaround(mock_cpe)
-    mock_lc.assert_called_once_with([])
+    mock_lc.assert_called_once_with([], self.region)
 
   @parameterized.parameters([
       deepvariant_pb2.DeepVariantOptions.TRAINING,
@@ -959,7 +959,7 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_cpe.assert_called_once_with(mock_candidate)
 
     if mode == deepvariant_pb2.DeepVariantOptions.TRAINING:
-      mock_lc.assert_called_once_with([mock_candidate])
+      mock_lc.assert_called_once_with([mock_candidate], self.region)
       mock_alte.assert_called_once_with(mock_example, mock_label)
     else:
       # In training mode we don't label our candidates.
@@ -996,7 +996,7 @@ class RegionProcessorTest(parameterized.TestCase):
       test_utils.assert_not_called_workaround(mock_lc)
       test_utils.assert_not_called_workaround(mock_alte)
     else:
-      mock_lc.assert_called_once_with([c1, c2])
+      mock_lc.assert_called_once_with([c1, c2], self.region)
       self.assertEqual([
           mock.call(e1, l1),
           mock.call(e2, l2),

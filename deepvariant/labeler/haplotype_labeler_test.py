@@ -37,6 +37,7 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
+from third_party.nucleus.io import fasta
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
@@ -65,7 +66,7 @@ def _variants_from_grouped_positions(grouped_positions):
       [_test_variant(start=s) for s in starts] for starts in grouped_positions
   ]
   variants = [v for subgroup in groups for v in subgroup]
-  return variants, groups
+  return variants, [(g, []) for g in groups]
 
 
 def _make_labeler(truth_variants=None, confident_regions=None, **kwargs):
@@ -111,34 +112,35 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
       dict(grouped_positions=[[10, 20, 30, 40]]),
   )
   def test_group_variants_examples(self, grouped_positions):
-    labeler = _make_labeler(max_distance_within_grouped_variants=10)
     variants, groups = _variants_from_grouped_positions(grouped_positions)
-    self.assertEqual(labeler.group_variants(variants), groups)
+    self.assertEqual(
+        groups, haplotype_labeler.group_variants(
+            variants, [], max_separation=10))
 
   @parameterized.parameters(
-      dict(separation=s, max_dist_within_group=d)
+      dict(separation=s, max_separation=d)
       for d in range(5)
       for s in range(d + 1))
-  def test_group_variants_respects_max_dist(self, separation,
-                                            max_dist_within_group):
-    labeler = _make_labeler(
-        max_distance_within_grouped_variants=max_dist_within_group)
+  def test_group_variants_respects_max_dist(self, separation, max_separation):
+    self.assertLessEqual(separation, max_separation)
     variants = [
         _test_variant(start=10),
         _test_variant(start=10 + separation),
     ]
-    self.assertLessEqual(separation, max_dist_within_group)
-    # Because separation <= max_dist_within_group, all variants should be in a
+    # Because separation <= max_separation, all variants should be in a
     # single group.
-    self.assertEqual(labeler.group_variants(variants), [variants])
+    self.assertEqual([(variants, [])],
+                     haplotype_labeler.group_variants(
+                         variants, [], max_separation=max_separation))
 
   @parameterized.parameters(range(1, 10))
   def test_group_variants_works_with_any_number_of_variants(self, n_variants):
-    labeler = _make_labeler(
-        max_group_size=n_variants,
-        max_distance_within_grouped_variants=n_variants)
     variants = [_test_variant(start=10 + i) for i in range(n_variants)]
-    self.assertEqual(labeler.group_variants(variants), [variants])
+    self.assertEqual([(variants, [])],
+                     haplotype_labeler.group_variants(
+                         variants, [],
+                         max_group_size=n_variants,
+                         max_separation=n_variants))
 
   @parameterized.parameters(
       dict(
@@ -160,10 +162,126 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
   )
   def test_group_variants_group_size_works(self, grouped_positions,
                                            max_group_size):
-    labeler = _make_labeler(
-        max_distance_within_grouped_variants=10, max_group_size=max_group_size)
     variants, groups = _variants_from_grouped_positions(grouped_positions)
-    self.assertEqual(labeler.group_variants(variants), groups)
+    self.assertEqual(
+        groups,
+        haplotype_labeler.group_variants(
+            variants, [], max_group_size=max_group_size))
+
+  @parameterized.parameters(
+      # A few basic tests of functionality to start:
+      # We group a single variant without associated truth variants.
+      dict(
+          variant_positions=[10],
+          truth_positions=[],
+          expected_positions=[([10], [])],
+      ),
+      # We group an isolated truth variant in isolation without any candidates.
+      dict(
+          variant_positions=[],
+          truth_positions=[10],
+          expected_positions=[([], [10])],
+      ),
+      # A single candidate + truth at the same position are grouped together.
+      dict(
+          variant_positions=[10],
+          truth_positions=[10],
+          expected_positions=[([10], [10])],
+      ),
+      # We respect our distance between variants across positional boundaries.
+      dict(
+          variant_positions=[10],
+          truth_positions=[11],
+          expected_positions=[([10], [11])],
+      ),
+      # Another test of grouping across candidates and truth.
+      dict(
+          variant_positions=[9, 11],
+          truth_positions=[10, 12],
+          expected_positions=[([9, 11], [10, 12])],
+      ),
+      # These tests actually result in broken up groups, with isolated truth
+      # and candidates as well as grouped ones.
+      dict(
+          variant_positions=[1, 9, 11, 20, 25, 50],
+          truth_positions=[10, 12, 23, 45, 100],
+          expected_positions=[
+              ([1], []),
+              ([9, 11], [10, 12]),
+              ([20, 25], [23]),
+              ([50], [45]),
+              ([], [100]),
+          ],
+      ),
+      # Now some tests to exercise the max group size with both candidates and
+      # truth variants. We vary the max group size to make sure the grouping
+      # algorithm splits correctly.
+      dict(
+          variant_positions=[1, 2, 3, 4, 5],
+          truth_positions=[1, 2, 3, 4, 5],
+          expected_positions=[
+              ([1, 2], [1, 2]),
+              ([3, 4], [3, 4]),
+              ([5], [5]),
+          ],
+          max_group_size=2,
+      ),
+      dict(
+          variant_positions=[1, 2, 3, 4, 5],
+          truth_positions=[1, 2, 3, 4, 5],
+          expected_positions=[
+              ([1, 2, 3], [1, 2, 3]),
+              ([4, 5], [4, 5]),
+          ],
+          max_group_size=3,
+      ),
+  )
+  def test_group_variants_with_truth(self,
+                                     variant_positions,
+                                     truth_positions,
+                                     expected_positions,
+                                     max_group_size=10):
+    variants = [_test_variant(start=pos) for pos in variant_positions]
+    truths = [_test_variant(start=pos) for pos in truth_positions]
+    actual = haplotype_labeler.group_variants(
+        variants, truths, max_group_size=max_group_size, max_separation=5)
+    self.assertEqual([([v.start
+                        for v in variant_group], [v.start
+                                                  for v in truth_group])
+                      for variant_group, truth_group in actual],
+                     expected_positions)
+
+  @parameterized.parameters(
+      dict(truth_position=7, expected_together=False),
+      dict(truth_position=8, expected_together=False),
+      dict(truth_position=9, expected_together=True),
+      dict(truth_position=10, expected_together=True),
+      dict(truth_position=11, expected_together=True),
+      dict(truth_position=12, expected_together=True),
+      dict(truth_position=13, expected_together=True),
+      dict(truth_position=14, expected_together=True),
+      dict(truth_position=15, expected_together=True),
+      dict(truth_position=16, expected_together=False),
+      dict(truth_position=17, expected_together=False),
+  )
+  def test_group_variants_respects_end(self, truth_position, expected_together):
+    # Deletion spans from 10-15 as it's a deletion.
+    deletion = _test_variant(start=10, alleles=('AAAAA', 'A'))
+    truth = _test_variant(start=truth_position)
+
+    # The actual result returned by group_variants is a list of tuples
+    # containing the grouped candidates and truth. The order they appear depends
+    # on the truth_position, since our deletion starts at 10.
+    if expected_together:
+      expected = [([deletion], [truth])]
+    elif truth_position < 10:
+      expected = [([], [truth]), ([deletion], [])]
+    else:
+      expected = [([deletion], []), ([], [truth])]
+
+    self.assertEqual(
+        haplotype_labeler.group_variants([deletion], [truth], max_separation=1),
+        expected)
 
   @parameterized.parameters(
       # Check a simple case of two SNPs.
@@ -231,27 +349,54 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         labeler_ref.bases(expected_start, expected_end), expected_bases)
 
   def test_label_variants(self):
-    v1 = _test_variant(start=10, alleles=['A', 'C'])
-    v2 = _test_variant(start=20, alleles=['A', 'C'])
-    v3 = _test_variant(start=30, alleles=['A', 'C'])
-    v4 = _test_variant(start=40, alleles=['A', 'C'])
-    l1, l2, l3, l4 = ['l1', 'l2', 'l3', 'l4']
+    variants = [
+        _test_variant(start=10),
+        _test_variant(start=11),
+        _test_variant(start=20),
+        _test_variant(start=30),
+        _test_variant(start=31),
+    ]
+    truth_variants = [
+        _test_variant(start=10, gt=(0, 1)),
+        _test_variant(start=30, gt=(1, 1)),
+    ]
 
-    variants = [v1, v2, v3, v4]
-    variant_groups = [[v1, v2], [v3, v4]]
-    labeled_groups = [[l1, l2], [l3, l4]]
+    labeler = _make_labeler(truth_variants=truth_variants, max_separation=5)
+    labeler._ref_reader = fasta.InMemoryRefReader([('20', 0, 'A' * 100)])
+    region = ranges.make_range('20', 1, 50)
+    result = list(labeler.label_variants(variants, region))
 
-    labeler = _make_labeler()
-    labeler.group_variants = mock.Mock(return_value=variant_groups)
-    labeler._label_grouped_variants = mock.Mock(side_effect=labeled_groups)
+    expected_genotypes_by_pos = {
+        10: (0, 1),
+        11: (0, 0),
+        20: (0, 0),
+        30: (1, 1),
+        31: (0, 0),
+    }
+    self.assertEqual(len(result), len(variants))
+    for variant, label in zip(variants, result):
+      self.assertEqual(variant.start, label.variant.start)
+      self.assertTrue(label.is_confident)
+      self.assertEqual(
+          tuple(label.variant.calls[0].genotype),
+          expected_genotypes_by_pos[variant.start],
+          'Bad genotype for ' + str(label.variant))
 
-    result = list(labeler.label_variants(variants))
+  def test_label_variants_bug1(self):
+    # Test for a bug encountered in make_examples.
+    #
+    # variants: candidates [0]
+    # variants: truth [1]
+    #    20:6299587:C->T gt=(1, 1)
+    # Top-level exception: ('Failed to assign labels for variants', [])
+    labeler = _make_labeler(
+        truth_variants=[_test_variant(6299586, alleles=('C', 'T'), gt=(1, 1))])
+    labeler._ref_reader = fasta.InMemoryRefReader([('20', 6299585,
+                                                    'TCCTGCTTTCTCTTGTGGGCAT')])
 
-    labeler.group_variants.assert_called_once_with(variants)
-    self.assertEqual(labeler._label_grouped_variants.call_args_list,
-                     [mock.call(g) for g in variant_groups])
-    self.assertEqual(result,
-                     [label for group in labeled_groups for label in group])
+    region = ranges.make_range('20', 6299000, 6299999)
+    result = list(labeler.label_variants([], region))
+    self.assertIsNotNone(result)
 
 
 class LabelerMatchTests(parameterized.TestCase):
@@ -665,6 +810,126 @@ class LabelExamplesTest(parameterized.TestCase):
         expected_genotypes=[expected_genotype])
 
   @parameterized.parameters(
+      dict(true_genotype=(0, 1)),
+      dict(true_genotype=(1, 1)),
+  )
+  def test_no_candidates_only_truth_variants(self, true_genotype):
+    labeled_variants = haplotype_labeler.label_variants(
+        variants=[],
+        truth_variants=[_test_variant(42, gt=true_genotype)],
+        ref=haplotype_labeler.ReferenceRegion('xAy', 41))
+
+    self.assertIsNotNone(labeled_variants)
+
+    # Since we don't have any candidates, variant_genotypes should return [].
+    self.assertEqual(haplotype_labeler._variant_genotypes(labeled_variants), [])
+
+    # redacted
+    # def truth_genotypes(self):
+    # def n_true_positives(self):
+    # def n_false_positives(self):
+    # def n_false_negatives(self):
+    # def variants_with_assigned_genotypes(self):
+
+  @parameterized.parameters(
+      dict(empty='variants'),
+      dict(empty='truth'),
+  )
+  def test_no_variants_or_truth_is_fast(self, empty):
+    # This test will time out if we aren't able to efficiently handle the case
+    # where we have a lot of candidate or truth variants but none of the other.
+    many_variants = [_test_variant(i, gt=(0, 1)) for i in range(10, 50)]
+    if empty == 'truth':
+      variants, truth = many_variants, []
+    else:
+      variants, truth = [], many_variants
+
+    labeled_variants = haplotype_labeler.label_variants(
+        variants=variants,
+        truth_variants=truth,
+        ref=haplotype_labeler.ReferenceRegion('A' * 50, 10))
+
+    # Since we don't have any truth variants, all of the variants should get a
+    # (0, 0) [i.e., hom-ref] genotype assigned.
+    self.assertEqual(
+        haplotype_labeler._variant_genotypes(labeled_variants),
+        [(0, 0)] * len(variants))
+
+  def test_genotype_options_for_variants_truth_enum(self):
+    # Check all configurations for the TRUTH enumeration:
+    enum_type = haplotype_labeler.EnumerationType.TRUTH
+
+    # Bi-allelic cases.
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, gt=(0, 0))], enum_type), [{(0, 0)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, gt=(0, 1))], enum_type), [{(0, 0), (0, 1)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, gt=(1, 1))], enum_type), [{(0, 0), (0, 1),
+                                                         (1, 1)}])
+
+    # Multi-allelic cases.
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, alleles=('A', 'C', 'G'), gt=(0, 0))], enum_type),
+        [{(0, 0)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, alleles=('A', 'C', 'G'), gt=(0, 1))], enum_type),
+        [{(0, 0), (0, 1)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, alleles=('A', 'C', 'G'), gt=(1, 1))], enum_type),
+        [{(0, 0), (0, 1), (1, 1)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, alleles=('A', 'C', 'G'), gt=(0, 2))], enum_type),
+        [{(0, 0), (0, 2)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, alleles=('A', 'C', 'G'), gt=(2, 2))], enum_type),
+        [{(0, 0), (0, 2), (2, 2)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, alleles=('A', 'C', 'G'), gt=(1, 2))], enum_type),
+        [{(0, 0), (0, 1), (0, 2), (1, 2)}])
+
+  def test_genotype_options_for_variants_candidates_enum(self):
+    # Check all configurations for the CANDIDATES enumeration:
+    enum_type = haplotype_labeler.EnumerationType.CANDIDATES
+    # Note we don't need to provide a genotype for the candidate enumeration.
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1)], enum_type), [{(0, 0), (0, 1), (1, 1)}])
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(
+            [_test_variant(1, alleles=('A', 'C', 'G'))], enum_type),
+        [{(0, 0), (0, 1), (1, 1), (0, 2), (1, 2), (2, 2)}])
+
+  def test_genotype_options_for_variants_only_hom_ref(self):
+    # Check all configurations for the ONLY_HOM_REF enumeration:
+    enum_type = haplotype_labeler.EnumerationType.ONLY_HOM_REF
+    variants = [
+        _test_variant(1),
+        _test_variant(1, gt=(0, 1)),
+        _test_variant(1, gt=(1, 1)),
+        _test_variant(1, alleles=('A', 'C', 'G')),
+        _test_variant(1, alleles=('A', 'C', 'G'), gt=(1, 2)),
+    ]
+    self.assertEqual(
+        haplotype_labeler.genotype_options_for_variants(variants, enum_type),
+        [{(0, 0)}] * len(variants))
+
+  def test_genotype_options_for_variants_no_variants(self):
+    # All enumeration types return [] if not provided with any variants.
+    for enum_type in haplotype_labeler.EnumerationType:
+      self.assertEqual(
+          haplotype_labeler.genotype_options_for_variants([], enum_type), [])
+
+  @parameterized.parameters(
       dict(
           candidate_alleles=['A', 'C'],
           truth_alleles=['A', 'G', 'C'],
@@ -745,7 +1010,6 @@ class LabelExamplesTest(parameterized.TestCase):
         _test_variant(15, ['A', 'AA'], [1, 1]),
     ]
     for n_fns in [1]:
-      # for n_fns in range(1, len(all_fns) + 1):
       for fns in itertools.combinations(all_fns, n_fns):
         candidates = [v1, v2]
         self.assertGetsCorrectLabels(

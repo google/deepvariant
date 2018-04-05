@@ -37,6 +37,7 @@ from __future__ import print_function
 
 import collections
 import copy
+import heapq
 import itertools
 
 from absl import logging
@@ -53,13 +54,11 @@ VariantAndGenotypes = collections.namedtuple('VariantAndGenotype',
 
 # The default maximum size of a variant group we'll try to label. See
 # the HaplotypeLabeler class for more information.
-_MAX_GROUP_SIZE = 6
+_MAX_GROUP_SIZE = 8
+
 # The default maximum distance between subsequent variants within a group. See
 # the HaplotypeLabeler class for more information.
-_MAX_DISTANCE_WITHIN_VARIANT_GROUP = 30
-# When querying for the truth variants within our span, we extend the query
-# region by this many basepairs to capture nearby truth variants.
-_TRUTH_VARIANTS_QUERY_REGION_EXPANSION_IN_BP = 10
+_MAX_SEPARATION_WITHIN_VARIANT_GROUP = 30
 
 # redacted
 # True we will generate enough information into our logs to help debug bad
@@ -70,13 +69,12 @@ _DEBUG_PRINTING_IS_ENABLED = True
 class HaplotypeLabeler(variant_labeler.VariantLabeler):
   """Haplotype-based variant labeler."""
 
-  def __init__(
-      self,
-      truth_vcf_reader,
-      ref_reader,
-      confident_regions,
-      max_group_size=_MAX_GROUP_SIZE,
-      max_distance_within_grouped_variants=_MAX_DISTANCE_WITHIN_VARIANT_GROUP):
+  def __init__(self,
+               truth_vcf_reader,
+               ref_reader,
+               confident_regions,
+               max_group_size=_MAX_GROUP_SIZE,
+               max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP):
     """Creates a new HaplotypeVariantLabeler.
 
     Args:
@@ -87,7 +85,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
         receive a special not-confident marker.
       max_group_size: int >= 1. The maximum number of variants we'll attempt to
         label together. Larger values increase the runtime of the algorithm.
-      max_distance_within_grouped_variants: int >= 0. The maximum distance
+      max_separation: int >= 0. The maximum distance
         between variants within a group. Sequential variants separated by more
         than this value will be placed in separate groups for labeling.
 
@@ -98,78 +96,36 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
         truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions)
     self._ref_reader = ref_reader
     self.max_group_size = max_group_size
-    self.max_distance_within_grouped_variants = (
-        max_distance_within_grouped_variants)
+    self.max_separation = max_separation
 
-  def label_variants(self, variants):
-    # redacted
-    for variant_group in self.group_variants(variants):
-      for label in self._label_grouped_variants(variant_group):
-        yield label
+  def label_variants(self, variants, region):
+    # Grab our truth variants and group up variants + truth into small enough
+    # chunks that we can safely send them into our label_variants function.
+    grouped = group_variants(
+        list(variants),
+        truth_variants=list(self._get_truth_variants(region)),
+        max_group_size=self.max_group_size,
+        max_separation=self.max_separation)
 
-  def group_variants(self, variants):
-    # redacted
-    # redacted
-    # we don't want to miss any truths (for FN counts) or double count truths.
-    groups = []
-    current_group = []
-    for variant in variants:
-      if self._include_in_variant_group(current_group, variant):
-        current_group.append(variant)
-      else:
-        groups.append(current_group)
-        current_group = [variant]
+    # Now loop over our grouped variants, labeling them, and yielding
+    # VariantLabel objects.
+    for variant_group, truth_group in grouped:
+      assert len(variant_group) <= self.max_group_size
+      assert len(truth_group) <= self.max_group_size
 
-    if current_group:
-      groups.append(current_group)
-    return groups
-
-  def _include_in_variant_group(self, group, variant):
-    if not group:
-      return True
-    elif len(group) >= self.max_group_size:
-      return False
-    else:
-      last_variant = group[-1]
-      assert variant.reference_name == last_variant.reference_name
-      return (variant.start - last_variant.start <=
-              self.max_distance_within_grouped_variants)
-
-  def _label_grouped_variants(self, variants):
-    # redacted
-
-    # redacted
-    # they should be computed in the grouping.
-    span = ranges.span([variant_utils.variant_range(v) for v in variants])
-    truths = list(
-        self._get_truth_variants(
-            ranges.expand(span, _TRUTH_VARIANTS_QUERY_REGION_EXPANSION_IN_BP)))
-
-    if len(truths) > self.max_group_size:
-      logging.warning(
-          ('Found a large number of variants to label (n_candidates=%d, '
-           'n_truth=%d) relative to candidate cap of %d. This may make the '
-           'algorithm very slow.'), len(variants), len(truths),
-          self.max_group_size)
-      # redacted
-      logging.warning('Returning all variants with not-confident markers.')
-      for variant in variants:
-        yield variant_labeler.VariantLabel(
-            is_confident=False, genotype=(-1, -1), variant=variant)
-      return
-    ref = self.make_labeler_ref(variants, truths)
-    labeled_variants = label_variants(variants, truths, ref)
-
-    if not labeled_variants:
-      raise ValueError('Failed to assign labels for variants', variants)
-    else:
+      ref = self.make_labeler_ref(variant_group, truth_group)
+      labeled_variants = label_variants(variant_group, truth_group, ref)
+      if labeled_variants is None:
+        # Note this test must be 'is None' since labeled_variants can return an
+        # empty list.
+        raise ValueError('Failed to assign labels for variants', variant_group,
+                         truth_group, ref)
       for labeled in labeled_variants:
+        # redacted
+        # now. Rethink how we establish a variant is confident. Seems like
+        # it'd be confident if it has a non-ref genotype (as we only consider
+        # confident truth variants) or if it overlaps the confident regions.
         yield variant_labeler.VariantLabel(
-            # redacted
-            # now. Rethink how we establish a variant is confident. Seems like
-            # it'd be confident if it has a non-ref genotype (as we only
-            # consider confident truth variants) or if it overlaps the confident
-            # regions.
             is_confident=self._confident_regions.variant_overlaps(labeled),
             genotype=tuple(labeled.calls[0].genotype),
             variant=labeled)
@@ -182,11 +138,6 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     region = ranges.make_range(contig, start - 1, end + bufsize)
     ref_bases = self._ref_reader.query(region)
     return ReferenceRegion(ref_bases, start=region.start)
-
-
-class EnumerationType(enum.Enum):
-  CANDIDATES = 1
-  TRUTH = 2
 
 
 class ReferenceRegion(fasta.InMemoryRefReader):
@@ -206,6 +157,120 @@ class ReferenceRegion(fasta.InMemoryRefReader):
 
   def bases(self, start, end):
     return self.query(ranges.make_range(self._DUMMY_CHROM_NAME, start, end))
+
+
+_CANDIDATE_MARKER = 'candidate'
+_TRUTH_MARKER = 'truth'
+_VariantToGroup = collections.namedtuple('_VariantToGroup',
+                                         ['start', 'type', 'variant'])
+
+
+def _raise_if_not_sorted_or_not_on_same_chromosome(variants):
+  """Raises a ValueError if variants isn't sorted on the same chromosome."""
+  if not variant_utils.variants_are_sorted(variants):
+    raise ValueError('Variants must be sorted', variants)
+  for v in variants[1:]:
+    if variants[0].reference_name != v.reference_name:
+      raise ValueError(
+          'Variants (v1={}, v2={}) not on the same chromosome'.format(
+              v.reference_name, variants[0].reference_name))
+
+
+def group_variants(candidate_variants,
+                   truth_variants,
+                   max_group_size=_MAX_GROUP_SIZE,
+                   max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP):
+  """Splits candidate and truth variants into smaller groups if necessary.
+
+  This function takes in a list of candidate and truth variants and splits up
+  those lists into groups that respect the requirements of the max_group_size
+  and max_separation arguments. This is necessary because the labeling algorithm
+  is very expensive as a function of the number of input variants, so to avoid
+  excessive runtime we break up our potentially large list of candidate and
+  truth variants into smaller groups (max number controlled by max_group_size)
+  based on a maximum distance allowed between the closest variants within the
+  group.
+
+  The current algorithm is a simple greedy one; we effectively merge the two
+  variant lists together, make groups greedily on that list until either the
+  maximum number of elements of a specific type (i.e., max_group_size of 2
+  implies we can have up to two candidate variants or truth variants within a
+  group) or we encounter a variant further away from the closest variant within
+  the current group than allowed by max_separation.
+
+  Args:
+    candidate_variants: list[nucleus.proto.Variant]. A sorted list of candidate
+      variants on the same chromosome.
+    truth_variants: list[nucleus.proto.Variant]. A sorted list of truth
+      variants on the same chromosome.
+    max_group_size: int >= 0. The maximum number of variants of a specific type
+      allowed within a group.
+    max_separation: int >= 0. The maximum distance, in basepairs, allowed
+      between the closest variants within a group.
+
+  Returns:
+    A list of grouped variants in 2-tuples, such as:
+
+      [(candidate_variants1, truth_variants1), ...]
+
+    where each tuple contains the candidate and truth variants for that group.
+
+  Raises:
+    ValueError: if any of the inputs are malformed.
+  """
+  if max_group_size < 0:
+    raise ValueError('max_group_size={} must be >= 0'.format(max_group_size))
+  if max_separation < 0:
+    raise ValueError('max_separation={} must be >= 0'.format(max_separation))
+  _raise_if_not_sorted_or_not_on_same_chromosome(candidate_variants)
+  _raise_if_not_sorted_or_not_on_same_chromosome(truth_variants)
+
+  def to_grouped_variants(variants, candidate_type):
+    """Converts a Variant proto to a _VariantToGroup tuple."""
+    return [_VariantToGroup(v.start, candidate_type, v) for v in variants]
+
+  def _of_type(group, required_type):
+    """Selects a list of Variant protos from list[_VariantToGroup] of type."""
+    return [gv.variant for gv in group if gv.type == required_type]
+
+  def _split_grouped_variants(group):
+    """Splits a list of _VariantToGroup into candidate and truth variants."""
+    return _of_type(group, _CANDIDATE_MARKER), _of_type(group, _TRUTH_MARKER)
+
+  def _include_in_variant_group(group, group_variant):
+    if not group:
+      return True
+    n_of_type = sum(1 for g in group if g.type == group_variant.type)
+    if n_of_type >= max_group_size:
+      return False
+    else:
+      return any(
+          group_variant.variant.start - g.variant.end + 1 <= max_separation
+          for g in group)
+
+  # Convert our lists of variant protos into _VariantToGroup tuples compatible
+  # with the heapq API (sorts on tuples), so we get a single iterable of
+  # variants with marked types and sorted by start position (first element of
+  # each tuple).
+  groupable_variants = heapq.merge(
+      to_grouped_variants(candidate_variants, _CANDIDATE_MARKER),
+      to_grouped_variants(truth_variants, _TRUTH_MARKER))
+
+  # Go through out groupable_variants and split them up into groups according to
+  # the predicate _include_in_variant_group.
+  groups = []
+  current_group = []
+  for group_variant in groupable_variants:
+    if _include_in_variant_group(current_group, group_variant):
+      current_group.append(group_variant)
+    else:
+      groups.append(current_group)
+      current_group = [group_variant]
+  if current_group:
+    groups.append(current_group)
+
+  # Finally split up each group into candidate_variants and truth_variants.
+  return [_split_grouped_variants(g) for g in groups]
 
 
 def with_false_negative_genotypes(gt):
@@ -304,17 +369,66 @@ def all_diploid_haplotypes(variants_and_genotypes, genotypes2haplotype):
       yield {haplotype, complement_haplotype}
 
 
+class EnumerationType(enum.Enum):
+  """Enumeration type indicating how we should explore genotype configurations.
+
+  See genotype_options_for_variants for more information.
+  """
+  # This enumeration produces all possible genotype combinations for a variant.
+  CANDIDATES = 1
+  # This enumeration type will produce all combinations of the provided genotype
+  # for the variant with genotypes that allow for one or more of the
+  # non-reference genotypes to be missed.
+  TRUTH = 2
+  # This enumeration type will only produce a single (0, 0) genotype option for
+  # each variant.
+  ONLY_HOM_REF = 3
+
+
 def genotype_options_for_variants(variants, enumeration_type):
+  """Returns a list of sets of possible genotypes for each variant in variants.
+
+  This function takes a list of variants and enumeration_type and produces a
+  list of possible genotypes for each variant in order.
+
+  If enumeration_type is ONLY_HOM_REF, then we return a singleton set for each
+  variant containing only the hom-ref genotype (0, 0). If enumeration_type is
+  TRUTH, then each variant must have an associated genotype field values, say
+  (A, B), and we return the set genotype as well as all possible false negative
+  genotypes. In our example, this means we'd return {(A, B), (0, A), (0, B),
+  (0, 0)} as we could miss either the A, the B, or both alleles. If the
+  enumeration_type is CANDIDATES, we don't require the Variant protos to have
+  existing genotype field values and instead enumerate all possible unphased
+  genotypes for each variant given its alternative alleles of each variant. For
+  example, if we have a Variant with alleles = 'A' and 'C', we would return the
+  three possible diploid genotypes {(0, 0), (0, 1), (1, 1)}.
+
+  Args:
+    variants: List[nucleus.protos.Variant]. A list of Variant protos to provide
+      genotype options for. Some enumeration types may require the protos to
+      have existing genotypes in their calls[] subfield.
+    enumeration_type: EnumerationType. The kind of genotypes we want to explore
+      for each variant.
+
+  Returns:
+    A list of sets with the same length and "order" as variants. Each set
+    contains one or more diploid genotype tuples [e.g., (0, 1)] that
+    collectively represent the possible genotypes we need to explore.
+
+  Raises:
+    ValueError: if enumeration_type isn't one of the valid options.
+  """
   if enumeration_type == EnumerationType.TRUTH:
     return [
         with_false_negative_genotypes(x) for x in _variant_genotypes(variants)
     ]
   elif enumeration_type == EnumerationType.CANDIDATES:
-    return [
-        [(i, j)
-         for i, j, _, _ in variant_utils.genotype_ordering_in_likelihoods(v)]
-        for v in variants
-    ]
+    return [{(i, j)
+             for i, j, _, _ in variant_utils.genotype_ordering_in_likelihoods(v)
+            }
+            for v in variants]
+  elif enumeration_type == EnumerationType.ONLY_HOM_REF:
+    return [{(0, 0)}] * len(variants)
   else:
     raise ValueError('Unexpected EnumerationType', enumeration_type)
 
@@ -560,6 +674,8 @@ def deduplicate_haplotypes(haplotypes):
 # truth variant sequentially. This should be the primary API. Refactor
 # label_examples to use this new API. Then create a new implementation that does
 # the fast version.
+# redacted
+# information about the labeling to compute statistics.
 def label_variants(variants, truth_variants, ref):
   """Assigns genotypes to each variant to best match truth_variants.
 
@@ -593,13 +709,19 @@ def label_variants(variants, truth_variants, ref):
   if not variant_utils.variants_are_sorted(truth_variants):
     raise ValueError('truth_variants are not sorted', truth_variants)
 
+  def _hom_ref_enum_if_empty(list_of_variants, non_empty_enum):
+    """If list_of_variants is empty, use a ONLY_HOM_REF enum for speed."""
+    return non_empty_enum if list_of_variants else EnumerationType.ONLY_HOM_REF
+
   truth_haplotypes = deduplicate_haplotypes(
-      enumerate_all_possible_haplotypes(truth_variants, ref,
-                                        EnumerationType.TRUTH))
+      enumerate_all_possible_haplotypes(
+          truth_variants, ref,
+          _hom_ref_enum_if_empty(variants, EnumerationType.TRUTH)))
 
   # redacted
   variant_haplotypes = enumerate_all_possible_haplotypes(
-      variants, ref, EnumerationType.CANDIDATES)
+      variants, ref,
+      _hom_ref_enum_if_empty(truth_variants, EnumerationType.CANDIDATES))
 
   found = []
   for vh, vgt in variant_haplotypes:

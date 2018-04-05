@@ -124,7 +124,7 @@ class VariantLabeler(object):
     self._confident_regions = confident_regions
 
   @abc.abstractmethod
-  def label_variants(self, variants):
+  def label_variants(self, variants, region):
     """Gets label information for each variant in variants.
 
     This is the primary API for assigning labels to variants. This function
@@ -139,6 +139,10 @@ class VariantLabeler(object):
       variants: iterable[nucleus.protos.Variant]: An iterable of variants to
         label. The variants should be in coordinate-sorted order and all on the
         same chromosome.
+      region: A nucleus.genomics.v1.Range object specifying the region over
+        which we are labeling variants. This should span at least the span of
+        variants, but may be larger. Statistics about the labeling will be
+        computed over region.
 
     Yields:
       A VariantLabel object for each variant in variants, in order.
