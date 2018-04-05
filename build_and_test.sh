@@ -50,12 +50,12 @@ fi
 
 # Create some build artifacts (two ways), and execute one of them.
 bazel build -c opt ${DV_COPT_FLAGS} "$@" deepvariant:binaries
-echo 'Expect a nice usage message:'
-bazel-bin/deepvariant/call_variants --help
+echo 'Expect a usage message:'
+bazel-bin/deepvariant/call_variants --help | grep '/call_variants.py:'
 
 bazel build -c opt ${DV_COPT_FLAGS} "$@" deepvariant:binaries --build_python_zip
-echo 'Expect a nice usage message:'
-bazel-bin/deepvariant/call_variants --help
+echo 'Expect a usage message:'
+bazel-bin/deepvariant/call_variants --help | grep '/call_variants.py:'
 
 # Bundle the licenses.
 bazel build :licenses_zip
