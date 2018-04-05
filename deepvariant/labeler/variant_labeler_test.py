@@ -58,7 +58,7 @@ class DummyVariantLabeler(variant_labeler.VariantLabeler):
   def __init__(self, *pos, **kwargs):
     super(DummyVariantLabeler, self).__init__(*pos, **kwargs)
 
-  def label_variants(self, variants):
+  def label_variants(self, variants, region):
     raise NotImplementedError
 
 

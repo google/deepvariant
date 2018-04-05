@@ -68,7 +68,7 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     super(PositionalVariantLabeler, self).__init__(
         truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions)
 
-  def label_variants(self, variants):
+  def label_variants(self, variants, region=None):
     for variant in variants:
       is_confident, truth_variant = self._match(variant)
 

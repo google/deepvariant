@@ -769,7 +769,7 @@ class RegionProcessor(object):
     if in_training_mode(self.options):
       examples = [
           self.add_label_to_example(example, label)
-          for candidate, label in self.label_candidates(candidates)
+          for candidate, label in self.label_candidates(candidates, region)
           for example in self.create_pileup_examples(candidate)
       ]
     else:
@@ -810,7 +810,7 @@ class RegionProcessor(object):
 
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we
-      want to get candidates for.
+        want to get candidates for.
 
     Returns:
       A 2-tuple. The first value is a list of deepvariant_pb2.DeepVariantCalls
@@ -865,12 +865,14 @@ class RegionProcessor(object):
               image_format=tensor_format))
     return examples
 
-  def label_candidates(self, candidates):
+  def label_candidates(self, candidates, region):
     """Gets label information for each candidate.
 
     Args:
       candidates: list[DeepVariantCalls]: The list of candidate variant calls we
         want to label.
+      region: A nucleus.genomics.v1.Range object specifying the region we
+        want to get candidates for.
 
     Yields:
       Tuples of (candidate, label_variants.Label objects) for each candidate in
@@ -879,7 +881,7 @@ class RegionProcessor(object):
     """
     # Get our list of labels for each candidate variant.
     labels = self.labeler.label_variants(
-        [candidate.variant for candidate in candidates])
+        [candidate.variant for candidate in candidates], region)
 
     # Remove any candidates we couldn't label, yielding candidate, label pairs.
     for candidate, label in zip(candidates, labels):
