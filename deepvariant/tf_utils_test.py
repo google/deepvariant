@@ -203,6 +203,30 @@ class TFUtilsTest(parameterized.TestCase):
     with self.assertRaisesRegexp(Exception, expected_partial_message):
       tf_utils.get_shape_from_examples_path(source_paths)
 
+  def testStringToIntTensor(self):
+    with tf.Session() as sess:
+      s = '\001\002\003\004\005\006\007'
+      it = tf_utils.string_to_int_tensor(s)
+      x = sess.run(it)
+      a = x[0]
+      self.assertEqual(a, len(s))
+      b = list(x[1:a + 1])
+      self.assertEqual(b, [1, 2, 3, 4, 5, 6, 7])
+
+  def testIntTensorToString(self):
+    with tf.Session() as sess:
+      s = '\001\002\003\004\005\006\007'
+      it = tf_utils.string_to_int_tensor(s)
+      x = sess.run(it)
+      t = tf_utils.int_tensor_to_string(x)
+      self.assertEqual(t, s)
+
+  def testCompressionTypeOfFiles(self):
+    self.assertEqual(
+        'GZIP', tf_utils.compression_type_of_files(['/tmp/foo.tfrecord.gz']))
+    self.assertEqual(None,
+                     tf_utils.compression_type_of_files(['/tmp/foo.tfrecord']))
+
 
 if __name__ == '__main__':
   absltest.main()

@@ -120,6 +120,18 @@ class DeepVariantModel(object):
     """
     raise NotImplementedError
 
+  def preprocess_images(self, images):
+    """Preprocessing steps needed for this model to process a batch of images.
+
+    Args:
+      images: A (batch_size, height, width, channels) 4-D Tensor of type uint8.
+
+    Returns:
+      A new batch of images, potentially with different dimensions, based on the
+      input but transformed as necessary to use with this model.
+    """
+    raise NotImplementedError
+
   def initialize_from_checkpoint(self, checkpoint_path, num_classes,
                                  is_training):
     """Creates init_fn that loads a model from checkpoint in checkpoint_path.
@@ -264,6 +276,54 @@ class DeepVariantSlimModel(DeepVariantModel):
       h, w, _ = image.get_shape().as_list()
       image = tf.image.resize_image_with_crop_or_pad(image, max(h, 107), w)
     return image
+
+  def pad_images(self, images, height, width, target_height, target_width):
+    """Pad a batch of images up to the specified dimensions."""
+    target_width = max(width, target_width)
+    target_height = max(height, target_height)
+
+    height_diff = target_height - height
+    offset_height = max(height_diff // 2, 0)
+    after_padding_height = target_height - offset_height - height
+
+    width_diff = target_width - width
+    offset_width = max(width_diff // 2, 0)
+    after_padding_width = target_width - offset_width - width
+
+    images = tf.pad(
+        images,
+        [
+            [0, 0],  # batch
+            [offset_height, after_padding_height],  # center in height
+            [offset_width, after_padding_width],  # center in width
+            [0, 0]
+        ])  # channels
+    images = tf.cast(images, tf.float32)
+    return images
+
+  def preprocess_images(self, images):
+    """Applies preprocessing operations for Inception images.
+
+    Because this will run in model_fn, on the accelerator, we use operations
+    that efficiently execute there.
+
+    Args:
+      images: An Tensor of shape [batch_size height, width, channel] with
+             uint8 values.
+
+    Returns:
+      A tensor of images of shape [batch_size height, width, channel]
+      containing floating point values, with all points rescaled between
+      -1 and 1 and possibly resized.
+    """
+    images = tf.to_float(images)
+    images = tf.subtract(images, 128.0)
+    images = tf.div(images, 128.0)
+
+    if self.name == 'inception_v3':
+      _, height, width, _ = images.get_shape().as_list()
+      images = self.pad_images(images, height, width, 107, width)
+    return images
 
   def initialize_from_checkpoint(self, checkpoint_path, num_classes,
                                  is_training):
@@ -501,6 +561,17 @@ class DeepVariantDummyModel(DeepVariantModel):
     image = tf.div(image, 128.0)
     image = tf.reshape(image, (100, 221, pileup_image.DEFAULT_NUM_CHANNEL))
     return image
+
+  def preprocess_images(self, images):
+    """Preprocess images for dummy model."""
+    # Note these calculations aren't necessary, but they are included here to
+    # mimic the data processing pipeline used by inception. We may consider
+    # removing them in a future CL, or making them optional, to reduce CPU cost
+    # of this model.
+    images = tf.to_float(images)
+    images = tf.subtract(images, 128.0)
+    images = tf.div(images, 128.0)
+    return images
 
   def initialize_from_checkpoint(self, checkpoint_path, num_classes,
                                  is_training):

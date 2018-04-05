@@ -34,7 +34,6 @@ from __future__ import division
 from __future__ import print_function
 
 import json
-import math
 import os
 
 
@@ -82,6 +81,7 @@ flags.DEFINE_float('moving_average_decay', 0.9999,
                    'The decay to use for the moving average.')
 
 
+# Note that py_func can't run on TPU, so this programm cannot either.
 def select_variants_weights(variant_p_func, encoded_variants, name=None):
   """Creates a Tensor with 1.0 values anywhere variant_p_func returns True.
 
@@ -229,12 +229,18 @@ def eval_loop(master, dataset_config_pbtxt, checkpoint_dir, model_name,
 
       # redacted
       model = modeling.get_model(model_name)
-      dataset = data_providers.get_dataset(dataset_config_pbtxt)
-      logging.info('Running evaluations on %s with model %s', dataset, model)
 
-      images, labels, encoded_variant = data_providers.make_batches(
-          dataset.get_slim_dataset(), model, batch_size, mode='EVAL')
-      endpoints = model.create(images, dataset.num_classes, is_training=False)
+      tf_dataset = data_providers.get_input_fn_from_dataset(
+          dataset_config_filename=dataset_config_pbtxt,
+          mode=tf.estimator.ModeKeys.EVAL,
+      )
+      logging.info('Running evaluations on %s with model %s', tf_dataset, model)
+
+      images, labels, encoded_variant = data_providers.get_batches(
+          tf_dataset, model, batch_size)
+
+      endpoints = model.create(
+          images, tf_dataset.num_classes, is_training=False)
       predictions = tf.argmax(endpoints['Predictions'], 1)
 
       # For eval, explicitly add moving_mean and moving_variance variables to
@@ -256,12 +262,12 @@ def eval_loop(master, dataset_config_pbtxt, checkpoint_dir, model_name,
       for name, value in names_to_values.iteritems():
         slim.summaries.add_scalar_summary(value, name, print_summary=True)
 
-      num_batches = int(
-          math.floor(
-              min(max_examples, dataset.num_examples) / float(batch_size)))
+      num_batches = min(max_examples, tf_dataset.num_examples) // batch_size
       num_samples = batch_size * num_batches
-      logging.info('Dataset has %d samples, doing eval over %d',
-                   dataset.num_examples, num_samples)
+      logging.info(
+          'Dataset has %d samples, doing eval over %d; '
+          'max_examples is %d, num_batches is %d', tf_dataset.num_examples,
+          num_samples, max_examples, num_batches)
 
       names_to_values = slim.evaluation.evaluate_once(
           master=master,

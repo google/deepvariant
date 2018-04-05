@@ -68,9 +68,9 @@ class ModelTrainTest(parameterized.TestCase):
 
   def _run_tiny_training(self, model_name, dataset):
     with mock.patch(
-        'deepvariant.data_providers.get_dataset'
-    ) as mock_get_dataset:
-      mock_get_dataset.return_value = dataset
+        'deepvariant.data_providers.'
+        'get_input_fn_from_dataset') as mock_get_input_fn_from_dataset:
+      mock_get_input_fn_from_dataset.return_value = dataset
       FLAGS.train_dir = test_utils.test_tmpfile(model_name)
       FLAGS.batch_size = 2
       FLAGS.model_name = model_name
@@ -80,7 +80,9 @@ class ModelTrainTest(parameterized.TestCase):
       FLAGS.start_from_checkpoint = ''
       model_train.parse_and_run()
       # We have a checkpoint after training.
-      mock_get_dataset.assert_called_once_with(FLAGS.dataset_config_pbtxt)
+      mock_get_input_fn_from_dataset.assert_called_once_with(
+          dataset_config_filename=FLAGS.dataset_config_pbtxt,
+          mode=tf.estimator.ModeKeys.TRAIN)
       self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
 
   @mock.patch('deepvariant'

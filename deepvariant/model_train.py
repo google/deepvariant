@@ -203,17 +203,22 @@ def run(target, is_chief, device_fn):
   g = tf.Graph()
   with g.as_default():
     model = modeling.get_model(FLAGS.model_name)
-    dataset = data_providers.get_dataset(FLAGS.dataset_config_pbtxt)
-    print('Running training on {} with model {}\n'.format(dataset, model))
 
     with tf.device(device_fn):
       # If ps_tasks is zero, the local device is used. When using multiple
       # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
       # across the different devices.
-      images, labels, _ = data_providers.make_batches(
-          dataset.get_slim_dataset(), model, FLAGS.batch_size, mode='TRAIN')
-      endpoints = model.create(images, dataset.num_classes, is_training=True)
-      labels = slim.one_hot_encoding(labels, dataset.num_classes)
+
+      tf_dataset = data_providers.get_input_fn_from_dataset(
+          dataset_config_filename=FLAGS.dataset_config_pbtxt,
+          mode=tf.estimator.ModeKeys.TRAIN,
+      )
+      print('Running training on {} with model {}\n'.format(tf_dataset, model))
+      images, labels, _ = data_providers.get_batches(tf_dataset, model,
+                                                     FLAGS.batch_size)
+
+      endpoints = model.create(images, tf_dataset.num_classes, is_training=True)
+      labels = slim.one_hot_encoding(labels, tf_dataset.num_classes)
       total_loss = loss(
           endpoints['Logits'], labels, label_smoothing=FLAGS.label_smoothing)
 
@@ -227,7 +232,7 @@ def run(target, is_chief, device_fn):
                            variable_averages.apply(moving_average_variables))
 
       # Configure the learning rate using an exponetial decay.
-      decay_steps = int(((1.0 * dataset.num_examples) / FLAGS.batch_size) *
+      decay_steps = int(((1.0 * tf_dataset.num_examples) / FLAGS.batch_size) *
                         FLAGS.num_epochs_per_decay)
 
       learning_rate = tf.train.exponential_decay(
@@ -260,7 +265,7 @@ def run(target, is_chief, device_fn):
       # Set start-up delay
       startup_delay_steps = FLAGS.task * FLAGS.startup_delay_steps
 
-      init_fn = model_init_function(model, dataset.num_classes,
+      init_fn = model_init_function(model, tf_dataset.num_classes,
                                     FLAGS.start_from_checkpoint)
 
       saver = tf.train.Saver(

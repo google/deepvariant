@@ -37,6 +37,7 @@ from __future__ import division
 from __future__ import print_function
 
 
+import numpy as np
 
 import tensorflow as tf
 
@@ -46,6 +47,13 @@ from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import ranges
 from tensorflow.core.example import example_pb2
 from deepvariant.protos import deepvariant_pb2
+
+# Convert strings up to this length, then clip.  We picked a number that
+# was less than 1K, with a bit of extra space for the length element,
+# to give enough space without overflowing to a larger multiple of 128.
+STRING_TO_INT_MAX_CONTENTS_LEN = 1020
+# This is the length of the resulting buffer (including the length entry).
+STRING_TO_INT_BUFFER_LENGTH = STRING_TO_INT_MAX_CONTENTS_LEN + 1
 
 
 def example_locus(example):
@@ -249,3 +257,32 @@ def model_shapes(checkpoint_path, variables_to_get=None):
   var_to_shape_map = reader.get_variable_to_shape_map()
   keys = variables_to_get if variables_to_get else var_to_shape_map.keys()
   return {key: tuple(var_to_shape_map[key]) for key in keys}
+
+
+def string_to_int_tensor(x):
+  """Graph operations decode a string into a fixed-size tensor of ints."""
+  decoded = tf.decode_raw(x, tf.uint8)
+  clipped = decoded[:STRING_TO_INT_MAX_CONTENTS_LEN]  # clip to allowed max_len
+  shape = tf.shape(clipped)
+  slen = shape[0]
+  # pad to desired max_len
+  padded = tf.pad(clipped, [[0, STRING_TO_INT_MAX_CONTENTS_LEN - slen]])
+  casted = tf.cast(padded, tf.int32)
+  casted.set_shape([STRING_TO_INT_MAX_CONTENTS_LEN])
+  return tf.concat([[slen], casted], 0)
+
+
+def int_tensor_to_string(x):
+  """Python operations to encode a tensor of ints into string of bytes."""
+  slen = x[0]
+  v = x[1:slen + 1]
+  return np.array(v, dtype=np.uint8).tostring()
+
+
+def compression_type_of_files(files):
+  """Return GZIP or None for the compression type of the files."""
+  reader_options = io_utils.make_tfrecord_options(files)
+  if reader_options.compression_type == (
+      tf.python_io.TFRecordCompressionType.GZIP):
+    return 'GZIP'
+  return None
