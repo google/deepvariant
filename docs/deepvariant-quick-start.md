@@ -66,9 +66,9 @@ The DeepVariant binaries can be downloaded to your instance with the
 
 ```bash
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.5.1"
-MODEL_VERSION="0.5.0"
-MODEL_CL="182548131"
+BIN_VERSION="0.6.0"
+MODEL_VERSION="0.6.0"
+MODEL_CL="191676894"
 
 # Note that we don't specify the CL number for the binary, only the bin version.
 BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
@@ -117,13 +117,13 @@ In this bucket models are organized into subdirectories by program name and
 version, such as for the model to run on whole genome sequencing data:
 
 ```
-DeepVariant/0.5.0/DeepVariant-inception_v3-0.5.0+cl-182548131.data-wgs_standard/
+DeepVariant/0.6.0/DeepVariant-inception_v3-0.6.0+cl-191676894.data-wgs_standard/
 ```
 
 and for the model to run on whole exome sequencing data.
 
 ```
-DeepVariant/0.5.0/DeepVariant-inception_v3-0.5.0+cl-181413382.data-wes_standard/
+DeepVariant/0.6.0/DeepVariant-inception_v3-0.6.0+cl-191676894.data-wes_standard/
 ```
 
 The model files are tagged with the program name and version, model name and the
@@ -322,10 +322,10 @@ sudo docker pull pkrusche/hap.py
 sudo docker run -it -v `pwd`:/data pkrusche/hap.py /opt/hap.py/bin/hap.py \
   /data/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
   "/data/${FINAL_OUTPUT_VCF}" \
-  --preprocess-truth \
   -f /data/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed \
   -r "/data/${REF}" \
   -o "/data/${OUTPUT_DIR}/happy.output" \
+  --engine=vcfeval \
   -l chr20:10000000-10010000
 ```
 
@@ -334,8 +334,8 @@ You should see output similar to the following.
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.166667
- INDEL   PASS            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.166667
-   SNP    ALL           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
-   SNP   PASS           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
+ INDEL    ALL            4         4         0           13         0          9      0              1                 1        0.692308                1                     NaN                     NaN                   0.333333                   1.000000
+ INDEL   PASS            4         4         0           13         0          9      0              1                 1        0.692308                1                     NaN                     NaN                   0.333333                   1.000000
+   SNP    ALL           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.363636
+   SNP   PASS           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.363636
 ```

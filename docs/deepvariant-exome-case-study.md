@@ -22,9 +22,9 @@ Set a number of shell variables, to make what follows easier to read.
 ```bash
 BASE="${HOME}/exome-case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.5.1"
-MODEL_VERSION="0.5.0"
-MODEL_CL="181413382"
+BIN_VERSION="0.6.0"
+MODEL_VERSION="0.6.0"
+MODEL_CL="191676894"
 
 # Note that we don't specify the CL number for the binary, only the bin version.
 BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
@@ -213,11 +213,11 @@ study](deepvariant-case-study.md#run_postprocess_variants).
 
 Step                               | wall time
 ---------------------------------- | ---------
-`make_examples`                    | 69m 22s
-`call_variants`                    | 6m 32s
+`make_examples`                    | 65m 45s
+`call_variants`                    | 6m 21s
 `postprocess_variants` (no gVCF)   | 0m 13s
-`postprocess_variants` (with gVCF) | 0m 41s
-total time (single machine)        | ~ 1h 16m
+`postprocess_variants` (with gVCF) | 1m 24s
+total time (single machine)        | ~ 1h 13m
 
 ## Variant call quality
 
@@ -260,8 +260,8 @@ Here are the results:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 140  | 51   | 0.946154 | 0.979898  | 0.962730
-SNP   | 45   | 24   | 0.998666 | 0.999288  | 0.998977
+INDEL | 127  | 35   | 0.951154 | 0.986193  | 0.968357
+SNP   | 43   | 26   | 0.998725 | 0.999229  | 0.998977
 
 ## Separate models for calling whole genome and exome data
 
