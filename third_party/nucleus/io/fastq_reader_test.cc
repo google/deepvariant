@@ -50,6 +50,7 @@ using ::testing::Pointwise;
 
 constexpr char kFastqFilename[] = "test_reads.fastq";
 constexpr char kGzippedFastqFilename[] = "test_reads.fastq.gz";
+constexpr char kBgzippedFastqFilename[] = "test_reads.bgzip.fastq.gz";
 
 void CreateRecord(const string& id, const string& description,
                   const string& sequence, const string& quality,
@@ -63,7 +64,7 @@ void CreateRecord(const string& id, const string& description,
 class FastqReaderTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    nucleus::genomics::v1::FastqRecord first, second, third;
+    nucleus::genomics::v1::FastqRecord first, second, third, fourth;
     CreateRecord("NODESC:header", "", "GATTACA", "BB>B@FA", &first);
     CreateRecord(
         "M01321:49:000000000-A6HWP:1:1101:17009:2216", "1:N:0:1",
@@ -73,7 +74,8 @@ class FastqReaderTest : public ::testing::Test {
     CreateRecord("FASTQ", "contains multiple spaces in description",
                  "CGGCTGGTCAGGCTGACATCGCCGCCGGCCTGCAGCGAGCCGCTGC",
                  "FAFAF;F/9;.:/;999B/9A.DFFF;-->.AAB/FC;9-@-=;=.", &third);
-    golden_ = {first, second, third};
+    CreateRecord("FASTQ_with_trailing_space", "", "CGG", "FAD", &fourth);
+    golden_ = {first, second, third, fourth};
   }
 
   vector<nucleus::genomics::v1::FastqRecord> golden_;
@@ -90,9 +92,17 @@ TEST_F(FastqReaderTest, NormalIterationWorks) {
 
 TEST_F(FastqReaderTest, GzippedIterationWorks) {
   auto opts = nucleus::genomics::v1::FastqReaderOptions();
-  opts.set_compression_type(nucleus::genomics::v1::FastqReaderOptions::GZIP);
   std::unique_ptr<FastqReader> reader =
       std::move(FastqReader::FromFile(GetTestData(kGzippedFastqFilename), opts)
+                    .ValueOrDie());
+
+  EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), golden_));
+}
+
+TEST_F(FastqReaderTest, BgzippedIterationWorks) {
+  auto opts = nucleus::genomics::v1::FastqReaderOptions();
+  std::unique_ptr<FastqReader> reader =
+      std::move(FastqReader::FromFile(GetTestData(kBgzippedFastqFilename), opts)
                     .ValueOrDie());
 
   EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), golden_));
