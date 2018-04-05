@@ -716,6 +716,18 @@ class RangesTests(parameterized.TestCase):
               '2': reference_pb2.ContigInfo(name='2', n_bases=50),
           })
 
+  @parameterized.parameters(
+      dict(
+          region=ranges.make_range(chrom, start, start + length),
+          expected_length=length,
+      )
+      for length in range(10)
+      for start in [10, 20, 1000]
+      for chrom in ['1', '20']
+  )
+  def test_length_is_correct(self, region, expected_length):
+    self.assertEqual(expected_length, ranges.length(region))
+
 
 if __name__ == '__main__':
   absltest.main()
