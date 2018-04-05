@@ -54,11 +54,7 @@ message FastqRecord {
 }
 
 message FastqReaderOptions {
-  enum CompressionType {
-    NONE = 0;
-    GZIP = 1;
-  }
-  CompressionType compression_type = 1;
+  reserved 1;
 
   // If true, simply drop invalid records. Otherwise, raise an error on invalid
   // records.

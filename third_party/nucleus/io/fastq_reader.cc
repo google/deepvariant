@@ -32,19 +32,13 @@
 // Implementation of fastq_reader.h
 #include "third_party/nucleus/io/fastq_reader.h"
 
+#include "htslib/kstring.h"
+#include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/vendor/zlib_compression_options.h"
-#include "third_party/nucleus/vendor/zlib_inputstream.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/lib/io/buffered_inputstream.h"
-#include "tensorflow/core/lib/io/compression.h"
-#include "tensorflow/core/lib/io/random_inputstream.h"
-#include "tensorflow/core/lib/strings/str_util.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/env.h"
-#include "tensorflow/core/platform/file_system.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -52,9 +46,7 @@ namespace nucleus {
 
 namespace tf = tensorflow;
 
-// 256 KB read buffer.
-constexpr int READER_BUFFER_SIZE = 256 * 1024 - 1;
-
+// For validation of the FASTQ format.
 constexpr char HEADER_SYMBOL = '@';
 constexpr char SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL = '+';
 
@@ -65,30 +57,28 @@ constexpr char SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL = '+';
 // -----------------------------------------------------------------------------
 
 namespace {
-tf::Status ConvertToPb(const string& header, const string& sequence,
-                       const string& pad, const string& quality,
+tf::Status ConvertToPb(const kstring_t& header, const kstring_t& sequence,
+                       const kstring_t& pad, const kstring_t& quality,
                        nucleus::genomics::v1::FastqRecord* record) {
   CHECK(record != nullptr) << "FASTQ record cannot be null";
+  if (!header.l || header.s[0] != HEADER_SYMBOL || !pad.l ||
+      pad.s[0] != SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL || !sequence.l ||
+      sequence.l != quality.l) {
+    return tf::errors::DataLoss("Invalid FASTQ record");
+  }
   record->Clear();
-
-  // Validate the four lines as appropriate.
-  if (!header.length() || header[0] != HEADER_SYMBOL || !pad.length() ||
-      pad[0] != SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL ||
-      sequence.length() != quality.length()) {
-    return tf::errors::DataLoss("Failed to parse FASTQ record");
-  }
-
-  size_t spaceix = header.find(" ");
-  if (spaceix == string::npos) {
-    record->set_id(header.substr(1));
+  char* spaceix = strchr(header.s, ' ');
+  if (spaceix == NULL) {
+    record->set_id(header.s + 1);
   } else {
-    record->set_id(header.substr(1, spaceix - 1));
-    record->set_description(header.substr(spaceix + 1));
+    // ID is the string up to the first space.
+    header.s[spaceix - header.s] = 0;
+    record->set_id(header.s + 1);
+    // Description is the string after the first space.
+    record->set_description(spaceix + 1);
   }
-
-  record->set_sequence(sequence);
-  record->set_quality(quality);
-
+  record->set_sequence(sequence.s);
+  record->set_quality(quality.s);
   return tf::Status::OK();
 }
 }  // namespace
@@ -107,61 +97,55 @@ class FastqFullFileIterable : public FastqIterable {
 StatusOr<std::unique_ptr<FastqReader>> FastqReader::FromFile(
     const string& fastq_path,
     const nucleus::genomics::v1::FastqReaderOptions& options) {
-  std::unique_ptr<tensorflow::RandomAccessFile> fp;
-  tf::Status status =
-      tf::Env::Default()->NewRandomAccessFile(fastq_path.c_str(), &fp);
-  if (!status.ok()) {
-    return tf::errors::NotFound(
-        tf::strings::StrCat("Could not open ", fastq_path));
+  htsFile* fp = hts_open_x(fastq_path.c_str(), "r");
+  if (fp == nullptr) {
+    return tf::errors::NotFound("Could not open ", fastq_path);
   }
-  return std::unique_ptr<FastqReader>(new FastqReader(fp.release(), options));
+  return std::unique_ptr<FastqReader>(new FastqReader(fp, options));
 }
 
 FastqReader::FastqReader(
-    tensorflow::RandomAccessFile* fp,
-    const nucleus::genomics::v1::FastqReaderOptions& options)
-    : options_(options), src_(fp) {
-  if (options.compression_type() ==
-      nucleus::genomics::v1::FastqReaderOptions::GZIP) {
-    file_stream_.reset(new tf::io::RandomAccessInputStream(src_));
-    zlib_stream_.reset(new tf::io::ZlibInputStream(
-        file_stream_.get(), READER_BUFFER_SIZE, READER_BUFFER_SIZE,
-        tf::io::ZlibCompressionOptions::GZIP()));
-    buffered_inputstream_.reset(new tf::io::BufferedInputStream(
-        zlib_stream_.get(), READER_BUFFER_SIZE));
-  } else {
-    buffered_inputstream_.reset(
-        new tf::io::BufferedInputStream(src_, READER_BUFFER_SIZE));
+    htsFile* fp, const nucleus::genomics::v1::FastqReaderOptions& options)
+    : options_(options), fp_(fp) {}
+
+FastqReader::~FastqReader() {
+  if (fp_) {
+    TF_CHECK_OK(Close());
   }
 }
 
-FastqReader::~FastqReader() { TF_CHECK_OK(Close()); }
-
 tf::Status FastqReader::Close() {
-  buffered_inputstream_.reset();
-  zlib_stream_.reset();
-  file_stream_.reset();
-  if (src_) {
-    delete src_;
-    src_ = nullptr;
+  if (fp_ == nullptr) {
+    return tf::errors::FailedPrecondition("FastqReader already closed");
+  }
+  int retval = hts_close(fp_);
+  fp_ = nullptr;
+  if (retval < 0) {
+    return tf::errors::Internal("hts_close() failed with return code ", retval);
   }
   return tf::Status::OK();
 }
 
-tf::Status FastqReader::Next(string* header, string* sequence, string* pad,
-                             string* quality) const {
+tf::Status FastqReader::Next(kstring_t* header, kstring_t* sequence,
+                             kstring_t* pad, kstring_t* quality) const {
   // Read the four lines, returning early if we are at the end of the stream or
   // the record is truncated.
-  TF_RETURN_IF_ERROR(buffered_inputstream_->ReadLine(header));
-  TF_RETURN_IF_ERROR(buffered_inputstream_->ReadLine(sequence));
-  TF_RETURN_IF_ERROR(buffered_inputstream_->ReadLine(pad));
-  TF_RETURN_IF_ERROR(buffered_inputstream_->ReadLine(quality));
-
+  int ret = hts_getline(fp_, '\n', header);
+  if (ret == -1) {
+    return tf::errors::OutOfRange("");
+  } else if (ret < 0)
+    return tf::errors::DataLoss("Failed to parse FASTQ record");
+  ret = hts_getline(fp_, '\n', sequence);
+  if (ret < 0) return tf::errors::DataLoss("Failed to parse FASTQ record");
+  ret = hts_getline(fp_, '\n', pad);
+  if (ret < 0) return tf::errors::DataLoss("Failed to parse FASTQ record");
+  ret = hts_getline(fp_, '\n', quality);
+  if (ret < 0) return tf::errors::DataLoss("Failed to parse FASTQ record");
   return tf::Status::OK();
 }
 
 StatusOr<std::shared_ptr<FastqIterable>> FastqReader::Iterate() const {
-  if (src_ == nullptr)
+  if (fp_ == nullptr)
     return tf::errors::FailedPrecondition(
         "Cannot Iterate a closed FastqReader.");
   return StatusOr<std::shared_ptr<FastqIterable>>(
@@ -173,17 +157,26 @@ StatusOr<bool> FastqFullFileIterable::Next(
     nucleus::genomics::v1::FastqRecord* out) {
   TF_RETURN_IF_ERROR(CheckIsAlive());
   const FastqReader* fastq_reader = static_cast<const FastqReader*>(reader_);
-  string header;
-  string sequence;
-  string pad;
-  string quality;
+  kstring_t header = {0, 0, NULL}, sequence = {0, 0, NULL}, pad = {0, 0, NULL},
+            quality = {0, 0, NULL};
   tf::Status status = fastq_reader->Next(&header, &sequence, &pad, &quality);
-  if (tf::errors::IsOutOfRange(status)) {
-    return false;
-  } else if (!status.ok()) {
-    return status;
+  if (!status.ok()) {
+    free(header.s);
+    free(sequence.s);
+    free(pad.s);
+    free(quality.s);
+    if (tf::errors::IsOutOfRange(status)) {
+      return false;
+    } else {
+      return status;
+    }
   }
-  TF_RETURN_IF_ERROR(ConvertToPb(header, sequence, pad, quality, out));
+  status = ConvertToPb(header, sequence, pad, quality, out);
+  free(header.s);
+  free(sequence.s);
+  free(pad.s);
+  free(quality.s);
+  TF_RETURN_IF_ERROR(status);
   return true;
 }
 

@@ -73,11 +73,7 @@ class NativeFastqReader(genomics_reader.GenomicsReader):
     super(NativeFastqReader, self).__init__()
 
     fastq_path = input_path.encode('utf8')
-    if fastq_path.endswith('.gz'):
-      options = fastq_pb2.FastqReaderOptions(
-          compression_type=fastq_pb2.FastqReaderOptions.GZIP)
-    else:
-      options = fastq_pb2.FastqReaderOptions()
+    options = fastq_pb2.FastqReaderOptions()
     self._reader = fastq_reader.FastqReader.from_file(fastq_path, options)
     self.header = None
 

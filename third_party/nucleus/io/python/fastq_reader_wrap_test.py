@@ -47,23 +47,16 @@ class FastqReaderTest(parameterized.TestCase):
 
   def setUp(self):
     self.fastq = test_utils.genomics_core_testdata('test_reads.fastq')
-    self.zipped_fastq = test_utils.genomics_core_testdata('test_reads.fastq.gz')
     self.options = fastq_pb2.FastqReaderOptions()
 
-  def test_fastq_iterate(self):
-    with fastq_reader.FastqReader.from_file(self.fastq, self.options) as reader:
+  @parameterized.parameters('test_reads.fastq', 'test_reads.fastq.gz',
+                            'test_reads.bgzip.fastq.gz')
+  def test_fastq_iterate(self, filename):
+    path = test_utils.genomics_core_testdata(filename)
+    with fastq_reader.FastqReader.from_file(path, self.options) as reader:
       iterable = reader.iterate()
       self.assertIsInstance(iterable, clif_postproc.WrappedCppIterable)
-      self.assertEqual(test_utils.iterable_len(iterable), 3)
-
-    zreader = fastq_reader.FastqReader.from_file(
-        self.zipped_fastq,
-        fastq_pb2.FastqReaderOptions(
-            compression_type=fastq_pb2.FastqReaderOptions.GZIP))
-    with zreader:
-      ziterable = zreader.iterate()
-      self.assertIsInstance(ziterable, clif_postproc.WrappedCppIterable)
-      self.assertEqual(test_utils.iterable_len(ziterable), 3)
+      self.assertEqual(test_utils.iterable_len(iterable), 4)
 
   def test_from_file_raises_with_missing_fastq(self):
     with self.assertRaisesRegexp(ValueError,

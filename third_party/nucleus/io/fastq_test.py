@@ -43,16 +43,18 @@ from third_party.nucleus.testing import test_utils
 
 class FastqReaderTests(parameterized.TestCase):
 
-  @parameterized.parameters('test_reads.fastq', 'test_reads.fastq.gz',
-                            'test_reads.tfrecord', 'test_reads.tfrecord.gz')
+  @parameterized.parameters(
+      'test_reads.fastq', 'test_reads.fastq.gz', 'test_reads.bgzip.fastq.gz',
+      'test_reads.fastq.tfrecord', 'test_reads.fastq.tfrecord.gz')
   def test_iterate_fastq_reader(self, fastq_filename):
     fastq_path = test_utils.genomics_core_testdata(fastq_filename)
     expected_ids = [
-        'NODESC:header', 'M01321:49:000000000-A6HWP:1:1101:17009:2216', 'FASTQ'
+        'NODESC:header', 'M01321:49:000000000-A6HWP:1:1101:17009:2216', 'FASTQ',
+        'FASTQ_with_trailing_space'
     ]
     with fastq.FastqReader(fastq_path) as reader:
       records = list(reader.iterate())
-    self.assertLen(records, 3)
+    self.assertLen(records, 4)
     self.assertEqual([r.id for r in records], expected_ids)
 
 

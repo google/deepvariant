@@ -54,14 +54,22 @@ class WrapFastqWriterTest(parameterized.TestCase):
     out_fname = test_utils.test_tmpfile('output.fastq')
     self.writer = fastq_writer.FastqWriter.to_file(out_fname, writer_options)
     self.expected_fastq_content = [
-        '@NODESC:header\n', 'GATTACA\n', '+\n', 'BB>B@FA\n',
+        '@NODESC:header\n',
+        'GATTACA\n',
+        '+\n',
+        'BB>B@FA\n',
         '@M01321:49:000000000-A6HWP:1:1101:17009:2216 1:N:0:1\n',
         'CGTTAGCGCAGGGGGCATCTTCACACTGGTGACAGGTAACCGCCGTAGTAAAGGTTCCGCCTTTCACT\n',
         '+\n',
         'AAAAABF@BBBDGGGG?FFGFGHBFBFBFABBBHGGGFHHCEFGGGGG?FGFFHEDG3EFGGGHEGHG\n',
         '@FASTQ contains multiple spaces in description\n',
-        'CGGCTGGTCAGGCTGACATCGCCGCCGGCCTGCAGCGAGCCGCTGC\n', '+\n',
-        'FAFAF;F/9;.:/;999B/9A.DFFF;-->.AAB/FC;9-@-=;=.\n'
+        'CGGCTGGTCAGGCTGACATCGCCGCCGGCCTGCAGCGAGCCGCTGC\n',
+        '+\n',
+        'FAFAF;F/9;.:/;999B/9A.DFFF;-->.AAB/FC;9-@-=;=.\n',
+        '@FASTQ_with_trailing_space\n',
+        'CGG\n',
+        '+\n',
+        'FAD\n',
     ]
     self.record = fastq_pb2.FastqRecord(
         id='ID', description='desc', sequence='ACGTAC', quality='ABCDEF')
@@ -69,7 +77,8 @@ class WrapFastqWriterTest(parameterized.TestCase):
   def test_writing_canned_records(self):
     """Tests writing all the variants that are 'canned' in our tfrecord file."""
     # This file is in TFRecord format.
-    tfrecord_file = test_utils.genomics_core_testdata('test_reads.tfrecord')
+    tfrecord_file = test_utils.genomics_core_testdata(
+        'test_reads.fastq.tfrecord')
 
     writer_options = fastq_pb2.FastqWriterOptions()
     fastq_records = list(
