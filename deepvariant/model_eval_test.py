@@ -156,9 +156,9 @@ class ModelEvalTest(
 
   @parameterized.parameters(['inception_v3'])
   @flagsaver.FlagSaver
-  @mock.patch(
-      'deepvariant.data_providers.get_dataset')
-  def test_end2end(self, model_name, mock_get_dataset):
+  @mock.patch('deepvariant.data_providers.'
+              'get_input_fn_from_dataset')
+  def test_end2end(self, model_name, mock_get_input_fn_from_dataset):
     """End-to-end test of model_eval."""
     self._write_fake_checkpoint(model_name)
 
@@ -173,17 +173,19 @@ class ModelEvalTest(
     # Always try to read in compressed inputs to stress that case. Uncompressed
     # inputs are certain to work. This test is expensive to run, so we want to
     # minimize the number of times we need to run this.
-    mock_get_dataset.return_value = data_providers_test.make_golden_dataset(
-        compressed_inputs=True)
+    mock_get_input_fn_from_dataset.return_value = (
+        data_providers_test.make_golden_dataset(compressed_inputs=True))
     model_eval.main(0)
-    mock_get_dataset.assert_called_once_with(FLAGS.dataset_config_pbtxt)
+    mock_get_input_fn_from_dataset.assert_called_once_with(
+        dataset_config_filename=FLAGS.dataset_config_pbtxt,
+        mode=tf.estimator.ModeKeys.EVAL)
 
   @flagsaver.FlagSaver
   @mock.patch(
       'deepvariant.model_eval.checkpoints_iterator')
-  @mock.patch(
-      'deepvariant.data_providers.get_dataset')
-  def test_fixed_eval_sees_the_same_evals(self, mock_get_dataset,
+  @mock.patch('deepvariant.data_providers.'
+              'get_input_fn_from_dataset')
+  def test_fixed_eval_sees_the_same_evals(self, mock_get_input_fn_from_dataset,
                                           mock_checkpoints_iterator):
     dataset = data_providers_test.make_golden_dataset()
     n_checkpoints = 3
@@ -194,7 +196,7 @@ class ModelEvalTest(
 
     # Setup our mocks.
     mock_checkpoints_iterator.return_value = checkpoints
-    mock_get_dataset.return_value = dataset
+    mock_get_input_fn_from_dataset.return_value = dataset
 
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
@@ -205,8 +207,11 @@ class ModelEvalTest(
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
     model_eval.main(0)
 
-    self.assertEqual(mock_get_dataset.call_args_list,
-                     [mock.call(FLAGS.dataset_config_pbtxt)] * n_checkpoints)
+    self.assertEqual(mock_get_input_fn_from_dataset.call_args_list, [
+        mock.call(
+            dataset_config_filename=FLAGS.dataset_config_pbtxt,
+            mode=tf.estimator.ModeKeys.EVAL)
+    ] * n_checkpoints)
 
     metrics = [
         model_eval.read_metrics(checkpoint, eval_dir=FLAGS.eval_dir)

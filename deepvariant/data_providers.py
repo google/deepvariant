@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Data providers for deepvariant images.
 
-tf.slim datasets and data providers for standard DeepVariant datasets for
+tf.data.Dataset and data providers for standard DeepVariant datasets for
 training and evaluating germline calling accuracy.
 """
 
@@ -47,178 +47,396 @@ from deepvariant.protos import deepvariant_pb2
 
 slim = tf.contrib.slim
 
+# TF 1.7 or later.  Note that CopyBara will set this.
+_TF_HAS_LIST_FILES_SHUFFLE = False
+
 # Number of classes represented in the data set. The three classes are
 # homozygous reference (0), heterozygous (1) and homozygous alternative (2).
 DEFAULT_NUM_CLASSES = 3
 
-
-def make_batches(dataset, model, batch_size, mode):
-  """Provides batches of pileup images from this dataset.
-
-  Creates a DataSetProvider for dataset, extracts image, label, and variant
-  from it, preprocesses each image with model.preprocess_image() and finally
-  batches these up.
-
-  Args:
-    dataset: a slim DataSet we want to turn into batches. Must provide data
-      items "image", "label", and "variant".
-    model: a DeepVariantModel to use for preprocessing each image before
-      batching.
-    batch_size: the number of images in each batch.
-    mode: str; one of TRAIN or EVAL.
-
-  Returns:
-    images: 4-D float Tensor of a batch of images with shape
-      (batch_size, height, width, 3).
-    labels: a 1-D integer Tensor shape (batch_size,) containing the labels for
-      each image, in the same order.
-    encoded_variants: Tensor of strings with shape (batch_size,).
-      Each element of this tensor is a byte-encoded nucleus.genomics.v1.Variant
-      protobuf in the same order as images and one_hot_labels.
-
-  Raises:
-    ValueError: if mode is not one of TRAIN or EVAL.
-  """
-  if mode not in {'TRAIN', 'EVAL'}:
-    raise ValueError(
-        'mode is {} but must be one of TRAIN or EVAL.'.format(mode))
-
-  if mode == 'TRAIN':
-    data_provider = slim.dataset_data_provider.DatasetDataProvider(
-        dataset,
-        common_queue_capacity=2 * batch_size,
-        common_queue_min=batch_size,
-        reader_kwargs={
-            'options': io_utils.make_tfrecord_options(dataset.data_sources)
-        })
-  else:
-    data_provider = slim.dataset_data_provider.DatasetDataProvider(
-        dataset,
-        num_readers=1,
-        shuffle=False,
-        reader_kwargs={
-            'options': io_utils.make_tfrecord_options(dataset.data_sources)
-        })
-
-  # Load the data.
-  image, label, variant = data_provider.get(['image', 'label', 'variant'])
-  image = model.preprocess_image(image)
-
-  if mode == 'TRAIN':
-    return tf.train.shuffle_batch(
-        [image, label, variant],
-        batch_size=batch_size,
-        num_threads=4,
-        capacity=5000,
-        # redacted
-        min_after_dequeue=min(1000, dataset.num_samples))
-  else:
-    return tf.train.batch(
-        [image, label, variant], batch_size=batch_size, num_threads=1)
+# These are emperically determined to work well on TPU with our data sets,
+# where lots of buffering and concurrency is necessary to keep the device
+# busy.
+# These are settable in the constructor.
+_DEFAULT_INPUT_READ_THREADS = 32
+_DEFAULT_INPUT_MAP_THREADS = 48
+_DEFAULT_SHUFFLE_BUFFER_ELEMENTS = 100
+_DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS = 1024
+_DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
+# This one doesn't seem useful to adjust at runtime.
+_PREFETCH_BATCHES = 4
 
 
-# redacted
-class DeepVariantDataSet(object):
-  """All of the information needed to create and use a DeepVariant dataset."""
+class DeepVariantInput(object):
+  """This class serves as an `input_fn` for the `tf.estimator` framework."""
 
-  def __init__(self,
-               name,
-               source,
-               num_examples,
-               num_classes=DEFAULT_NUM_CLASSES,
-               tensor_shape=None):
-    """Creates a dataset.
+  # Calling this object like a function returns a stream of variadic tuples.
+  # Essentially it is a buffered io library, that handles concurrently
+  # reading and possibly shuffling input records from a set of files. It
+  # knows how to parse features we care about from tf.examples. It records
+  # some extra information about the source of the input, such as the name
+  # and number of classes.
+
+  def __init__(
+      self,
+      mode,
+      input_file_spec,
+      num_examples=None,
+      num_classes=DEFAULT_NUM_CLASSES,
+      tensor_shape=None,
+      name=None,
+      use_tpu=False,
+      input_read_threads=_DEFAULT_INPUT_READ_THREADS,
+      input_map_threads=_DEFAULT_INPUT_MAP_THREADS,
+      shuffle_buffer_size=_DEFAULT_SHUFFLE_BUFFER_ELEMENTS,
+      initial_shuffle_buffer_size=_DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS,
+      prefetch_dataset_buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
+      sloppy=True,
+      list_files_shuffle=True):
+    """Create an DeepVariantInput object, usable as an `input_fn`.
 
     Args:
-      name: str. The name of this dataset. Used to refer to this dataset on
-        the command line.
-      source: str or list[str]. A file path pattern or a comma-separated list of
-        file path patterns pointing to TF.Example PIC images containing the data
-        for this dataset.
-      num_examples: A positive integer. The number of examples in this dataset.
-      num_classes: A positive integer. The number of classes in the labels of
+      mode: the mode string (from `tf.estimator.ModeKeys`).
+      input_file_spec: the input filename for a tfrecord[.gz] file containing
+        examples.  Can contain sharding designators.
+      num_examples: the number of examples contained in the input file.
+        Required for setting learning rate schedule in train/eval only.
+      num_classes: The number of classes in the labels of
         this dataset. Currently defaults to DEFAULT_NUM_CLASSES.
-      tensor_shape: None (whihc means we get the shape from the first example in
+      tensor_shape: None (which means we get the shape from the first example in
         source), or list of int [height, width, channel] for testing.
+      name: string, name of the dataset.
+      use_tpu: use code paths tuned for TPU, in particular protobuf encoding.
+        Default False.
+      input_read_threads: number of threads for reading data.  Default 32.
+      input_map_threads: number of threads for mapping data.  Default 48.
+      shuffle_buffer_size: size of the final shuffle buffer, in elements.
+        Default 100.
+      initial_shuffle_buffer_size: int; the size of the dataset.shuffle buffer
+        in elements.  Default is 1024.
+      prefetch_dataset_buffer_size: int; the size of the TFRecordDataset buffer
+        in bytes.  Default is 16 * 1000 * 1000.
+      sloppy: boolean, allow parallel_interleave to be sloppy.  Default True.
+      list_files_shuffle: boolean, allow list_files to shuffle.  Default True.
+
+    Raises:
+      ValueError: if `num_examples` not provided, in a context requiring
+      it.
     """
+    self.mode = mode
+    self.input_file_spec = input_file_spec
     self.name = name
-    self.source = source
     self.num_examples = num_examples
     self.num_classes = num_classes
+
+    self.use_tpu = use_tpu
+    self.sloppy = sloppy
+    self.list_files_shuffle = list_files_shuffle
+    self.input_read_threads = input_read_threads
+    self.input_map_threads = input_map_threads
+    self.shuffle_buffer_size = shuffle_buffer_size
+    self.initial_shuffle_buffer_size = initial_shuffle_buffer_size
+    self.prefetch_dataset_buffer_size = prefetch_dataset_buffer_size
+
+    self.feature_extraction_spec = self.features_extraction_spec_for_mode(mode)
+
+    if num_examples is None and mode != tf.estimator.ModeKeys.PREDICT:
+      raise ValueError('num_examples argument required for DeepVariantInput'
+                       'in TRAIN/EVAL modes.')
     if tensor_shape:
       self.tensor_shape = tensor_shape
     else:
-      self.tensor_shape = tf_utils.get_shape_from_examples_path(source)
+      self.tensor_shape = tf_utils.get_shape_from_examples_path(input_file_spec)
 
-  def __str__(self):
-    return ('DeepVariantDataSet(name={}, source={}, num_examples={}, '
-            'num_classes={}').format(self.name, self.source, self.num_examples,
-                                     self.num_classes)
+    self.input_files = tf.gfile.Glob(
+        io_utils.NormalizeToShardedFilePattern(self.input_file_spec))
 
-  def get_slim_dataset(self):
-    """Returns a Slim dataset for this dataset.
-
-    Returns:
-      A tf.slim.dataset.Dataset with the data in this DataSet.
-    """
-    keys_to_features = {
+  def features_extraction_spec_for_mode(self, mode):
+    """Returns a dict describing features from a TF.example for given mode."""
+    spec = {
         'image/encoded': tf.FixedLenFeature((), tf.string),
         'variant/encoded': tf.FixedLenFeature((), tf.string),
-        'image/format': tf.FixedLenFeature((), tf.string),
-        'label': tf.FixedLenFeature((1,), tf.int64),
-        'locus': tf.FixedLenFeature((), tf.string),
+        'alt_allele_indices/encoded': tf.FixedLenFeature((), tf.string),
     }
-    items_to_handlers = {
-        'image':
-            slim.tfexample_decoder.Image(
-                'image/encoded', 'image/format', shape=self.tensor_shape),
-        'label':
-            slim.tfexample_decoder.Tensor('label', shape=[]),
-        'locus':
-            slim.tfexample_decoder.Tensor('locus', shape=[]),
-        'variant':
-            slim.tfexample_decoder.Tensor('variant/encoded', shape=[]),
-    }
+    if mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL):
+      # N.B. int32 fails here on TPU.
+      spec['label'] = tf.FixedLenFeature((), tf.int64)
+      spec['locus'] = tf.FixedLenFeature((), tf.string)
+    return spec
 
-    # redacted
-    # shuffled correctly in training.
-    return slim.dataset.Dataset(
-        data_sources=self.source.split(','),
-        reader=tf.TFRecordReader,
-        decoder=slim.tfexample_decoder.TFExampleDecoder(keys_to_features,
-                                                        items_to_handlers),
-        num_samples=self.num_examples,
-        items_to_descriptions=None)
+  def parse_tfexample(self, tf_example):
+    """Parse a DeepVariant pileup tf.Example to features and labels.
+
+    This potentially stores parsed strings as fixed length tensors of integers,
+    as required by TPU.  They have to be handled properly by consumers.
+
+    Args:
+      tf_example: a serialized tf.Example for a DeepVariant "pileup".
+    Returns:
+      If mode is EVAL or TRAIN,
+        (features, label) ...
+      If mode is PREDICT,
+        features ...
+    """
+    with tf.name_scope('input'):
+      parsed = tf.parse_single_example(tf_example, self.feature_extraction_spec)
+
+      image = parsed['image/encoded']
+      image = tf.reshape(tf.decode_raw(image, tf.uint8), self.tensor_shape)
+      if self.use_tpu:
+        # Cast to int32 for loading onto the TPU
+        image = tf.cast(image, tf.int32)
+
+      variant = parsed['variant/encoded']
+      alt_allele_indices = parsed['alt_allele_indices/encoded']
+      if self.use_tpu:
+        # Strings that vary in size between examples cannot be passed to the
+        # TPU, so they have to be encoded as fixed size tensors first.
+        # Contrast with image/encoded, where they are all the same size.
+        # redacted
+        # instead of making a tensor of int.
+        variant = tf_utils.string_to_int_tensor(variant)
+        alt_allele_indices = tf_utils.string_to_int_tensor(alt_allele_indices)
+
+      features = {
+          'image': image,
+          'variant': variant,
+          'alt_allele_indices': alt_allele_indices,
+      }
+
+      if self.mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL):
+        if self.use_tpu:
+          features['locus'] = tf_utils.string_to_int_tensor(parsed['locus'])
+        else:
+          features['locus'] = parsed['locus']
+
+        label = parsed['label']
+        return features, label
+
+      # For predict model, label is not present. So, returns features only.
+      return features
+
+  def __call__(self, params):
+    """Interface to get a data batch, fulfilling `input_fn` contract.
+
+    Args:
+      params: a dict containing an integer value for key 'batch_size'.
+
+    Returns:
+      the tuple (features, labels), where:
+        - features is a dict of Tensor-valued input features; keys populated
+          are:
+            'image'
+            'variant'
+            'alt_allele_indices'
+          and, if not PREDICT mode, also:
+            'locus'
+
+          Aside from 'image', these may be encoded specially for TPU.
+
+        - label is the Tensor-valued prediction label; in train/eval
+          mode the label value is is populated from the data source; in
+          inference mode, the value is a constant empty Tensor value "()".
+    """
+    # See https://cloud.google.com/tpu/docs/tutorials/inception-v3-advanced
+    # for some background on tuning this on TPU.
+
+    batch_size = params['batch_size']
+
+    compression_type = tf_utils.compression_type_of_files(self.input_files)
+
+    # NOTE: The order of the file names returned can be non-deterministic,
+    # even if shuffle is false.  See b/73959787 and the note in cl/187434282.
+    # (We want the shuffle flag to be able to disable reordering.)
+    if _TF_HAS_LIST_FILES_SHUFFLE:
+      dataset = tf.data.Dataset.list_files(
+          io_utils.NormalizeToShardedFilePattern(self.input_file_spec),
+          shuffle=self.list_files_shuffle,
+      )
+    else:
+      dataset = tf.data.Dataset.list_files(
+          io_utils.NormalizeToShardedFilePattern(self.input_file_spec))
+
+    # This shuffle applies to the set of files.
+    if (self.mode == tf.estimator.ModeKeys.TRAIN and
+        self.initial_shuffle_buffer_size > 0):
+      dataset = dataset.shuffle(self.initial_shuffle_buffer_size)
+
+    def load_dataset(filename):
+      dataset = tf.data.TFRecordDataset(
+          filename,
+          buffer_size=self.prefetch_dataset_buffer_size,
+          compression_type=compression_type)
+      return dataset
+
+    if self.mode == tf.estimator.ModeKeys.EVAL:
+      # When EVAL, avoid parallel reads for the sake of reproducibility.
+      dataset = dataset.interleave(
+          load_dataset, cycle_length=self.input_read_threads, block_length=1)
+    else:
+      dataset = dataset.apply(
+          # parallel_interleave requires tf 1.5 or later; this is
+          # necessary for good performance.
+          tf.contrib.data.parallel_interleave(
+              load_dataset,
+              cycle_length=self.input_read_threads,
+              sloppy=self.sloppy))
+
+    if self.mode == tf.estimator.ModeKeys.TRAIN:
+      dataset = dataset.repeat()
+
+    dataset = dataset.map(
+        self.parse_tfexample, num_parallel_calls=self.input_map_threads)
+
+    dataset = dataset.prefetch(_PREFETCH_BATCHES * batch_size)
+
+    # This shuffle applies to the set of records.
+    if self.mode == tf.estimator.ModeKeys.TRAIN:
+      if self.shuffle_buffer_size > 0:
+        dataset = dataset.shuffle(self.shuffle_buffer_size)
+
+    if self.mode == tf.estimator.ModeKeys.PREDICT:
+      dataset = dataset.batch(batch_size)
+    else:
+      # N.B.: we drop the final partial batch in eval mode, to work around TPU
+      # static shape limitations in the current TPUEstimator.
+      dataset = dataset.apply(
+          tf.contrib.data.batch_and_drop_remainder(batch_size))
+
+    return dataset
+
+  def __str__(self):
+    return (
+        'DeepVariantInput(name={}, input_file_spec={}, num_examples={}, mode={}'
+    ).format(self.name, self.input_file_spec, self.num_examples, self.mode)
 
 
-def _get_dataset(name, path, num_examples, tensor_shape=None):
-  """Creates a dataset with a specified name a path to the source file.
+# This is the entry point to get a DeepVariantInput when you start with
+# a dataset configuration file name.
+def get_input_fn_from_dataset(dataset_config_filename,
+                              mode,
+                              tensor_shape=None,
+                              use_tpu=False,
+                              shuffle=True):
+  """Creates an input_fn from the dataset config file.
 
   Args:
-    name: String. The name of the dataset.
-    path: String. The path to the source file of the dataset.
-    num_examples: int. The number of examples in the dataset.
+    dataset_config_filename: str. Path to the dataset config pbtxt file.
+    mode: one of tf.estimator.ModeKeys.{TRAIN,EVAL,PREDICT}
     tensor_shape: None, or list of int [height, width, channel] for testing.
+    use_tpu: use the tpu code path in the input_fn.
+    shuffle: shuffle the input.
 
   Returns:
-    A DeepVariantDataSet where name is the specified name, and the source is the
-    path.
+    An input_fn from the specified split in the dataset_config file.
 
   Raises:
-    ValueError: if name and path are not specified.
+    ValueError: if the dataset config doesn't have the necessary information.
   """
-  if not name:
-    raise ValueError('Name must not be None', name)
-  if not path:
-    raise ValueError('Path must not be None', path)
+  # Get the metadata.
+  dataset_config = read_dataset_config(dataset_config_filename)
+  # Return a reader for the data.
+  return get_input_fn_from_filespec(
+      input_file_spec=dataset_config.tfrecord_path,
+      num_examples=dataset_config.num_examples,
+      name=dataset_config.name,
+      mode=mode,
+      tensor_shape=tensor_shape,
+      use_tpu=use_tpu,
+      shuffle=shuffle)
 
-  return DeepVariantDataSet(
-      name=name,
-      source=path,
-      num_examples=num_examples,
-      tensor_shape=tensor_shape)
+
+# This is the entry point to get a DeepVariantInput when you start with
+# a tf.example file specification, and associated metadata.
+def get_input_fn_from_filespec(input_file_spec,
+                               num_examples,
+                               name,
+                               mode,
+                               tensor_shape=None,
+                               use_tpu=False,
+                               shuffle=True):
+  """Create a DeepVariantInput function object from a file spec.
+
+  Args:
+    input_file_spec: the tf.example input file specification, possibly sharded.
+    num_examples: the number of examples in the files (or None).
+    name: the name for this data set (or None).
+    mode: tf.estimator.ModeKeys
+    tensor_shape: None, or list of int [height, width, channel] for testing.
+    use_tpu: use the tpu code path in the input_fn.
+    shuffle: shuffle the input.
+
+  Returns:
+    A DeepVariantInput object usable as an input_fn.
+  """
+
+  # When mode is EVAL, this sets the input to be as deterministic as possible,
+  # even if that's more than what is strictly necessary for EVAL.
+  # We may want to remove that whole case when we have more experience.
+  if mode == tf.estimator.ModeKeys.EVAL:
+    shuffle = False
+  if shuffle:
+    return DeepVariantInput(
+        mode=mode,
+        input_file_spec=input_file_spec,
+        num_examples=num_examples,
+        tensor_shape=tensor_shape,
+        name=name,
+        use_tpu=use_tpu,
+    )
+  else:
+    return DeepVariantInput(
+        mode=mode,
+        input_file_spec=input_file_spec,
+        num_examples=num_examples,
+        tensor_shape=tensor_shape,
+        name=name,
+        use_tpu=use_tpu,
+        initial_shuffle_buffer_size=0,
+        shuffle_buffer_size=0,
+        sloppy=False,
+        list_files_shuffle=False,
+    )
 
 
+# Return the stream of batched images from a dataset.
+def get_batches(tf_dataset, model, batch_size):
+  """Provides batches of pileup images from this dataset.
+
+  Creates a DeepVariantInput for tf_dataset. It instantiates an iterator
+  on the dataset, and returns the images, labels, encoded_variant
+  features in batches. This calls model.preprocess_images on the images
+  (but note that we will be moving that step into model_fn for the
+  Estimator api).
+
+  Args:
+    tf_dataset: a DeepVariantInput object
+    model: a model object
+    batch_size: int batch size
+
+  Returns:
+    (images, labels, encoded_variant)
+
+  Raises:
+    ValueError: if the dataset has the wrong mode.
+  """
+  if tf_dataset.mode not in (tf.estimator.ModeKeys.TRAIN,
+                             tf.estimator.ModeKeys.EVAL):
+    raise ValueError(
+        'tf_dataset.mode is {} but must be one of TRAIN or EVAL.'.format(
+            tf_dataset.mode))
+
+  params = dict(batch_size=batch_size)
+  features, labels = tf_dataset(params).make_one_shot_iterator().get_next()
+
+  images = features['image']
+  encoded_variant = features['variant']
+
+  images = model.preprocess_images(images)
+  return images, labels, encoded_variant
+
+
+# This reads a pbtxt file and returns the config proto.
 def read_dataset_config(dataset_config_filename):
   """Returns a DeepVariantDatasetConfig proto read from the dataset config file.
 
@@ -249,27 +467,6 @@ def read_dataset_config(dataset_config_filename):
                      'num_examples.'.format(dataset_config_filename))
 
   return dataset_config
-
-
-def get_dataset(dataset_config_filename, tensor_shape=None):
-  """Creates a DeepVariantDataSet from the dataset config file.
-
-  Args:
-    dataset_config_filename: String. Path to the dataset config pbtxt file.
-    tensor_shape: None, or list of int [height, width, channel] for testing.
-
-  Returns:
-    A DeepVariantDataSet from the specified split in the dataset_config file.
-
-  Raises:
-    ValueError: if the dataset config doesn't have the necessary information.
-  """
-  dataset_config = read_dataset_config(dataset_config_filename)
-  return _get_dataset(
-      dataset_config.name,
-      dataset_config.tfrecord_path,
-      dataset_config.num_examples,
-      tensor_shape=tensor_shape)
 
 
 def write_dataset_config_to_pbtxt(dataset_config, dataset_config_filename):
