@@ -30,6 +30,7 @@
  */
 
 #include "deepvariant/variant_calling.h"
+#include <numeric>
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"

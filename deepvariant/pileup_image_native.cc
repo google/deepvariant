@@ -32,6 +32,7 @@
 #include "deepvariant/pileup_image_native.h"
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <string>
