@@ -45,7 +45,6 @@ from __future__ import print_function
 
 import collections
 
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import reference_fai
 from third_party.nucleus.protos import reference_pb2

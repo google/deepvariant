@@ -36,8 +36,6 @@ import collections
 import gzip
 import re
 
-
-
 import intervaltree
 
 from third_party.nucleus.protos import position_pb2

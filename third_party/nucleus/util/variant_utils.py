@@ -34,8 +34,6 @@ from __future__ import print_function
 
 import itertools
 
-
-
 import enum
 
 from third_party.nucleus.protos import variants_pb2
