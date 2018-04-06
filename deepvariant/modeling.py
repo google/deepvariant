@@ -42,9 +42,9 @@ from __future__ import print_function
 import math
 
 
+from absl import logging
 
 import tensorflow as tf
-from absl import logging
 from nets import inception
 from nets import mobilenet_v1
 from nets import resnet_v2

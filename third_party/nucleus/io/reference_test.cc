@@ -44,7 +44,6 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-
 #include "tensorflow/core/platform/test.h"
 
 namespace nucleus {

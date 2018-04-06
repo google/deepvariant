@@ -69,19 +69,19 @@ def _variants_from_grouped_positions(grouped_positions):
   return variants, [(g, []) for g in groups]
 
 
-def _make_labeler(truth_variants=None, confident_regions=None, **kwargs):
+def _make_labeler(truths=None, confident_regions=None, **kwargs):
   mock_ref_reader = mock.MagicMock()
 
   if confident_regions is None:
     # Use the reference of the truth variants if possible, otherwise just use
     # a dummy placeholder value for the contig name and make the confident
     # region a giant span.
-    contig = truth_variants[0].reference_name if truth_variants else 'dummy'
+    contig = truths[0].reference_name if truths else 'dummy'
     confident_regions = ranges.RangeSet(
         [ranges.make_range(contig, 0, 1000000000)])
 
   return haplotype_labeler.HaplotypeLabeler(
-      truth_vcf_reader=vcf.InMemoryVcfReader(truth_variants or []),
+      truth_vcf_reader=vcf.InMemoryVcfReader(truths or []),
       ref_reader=mock_ref_reader,
       confident_regions=confident_regions,
       **kwargs)
@@ -356,12 +356,12 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         _test_variant(start=30),
         _test_variant(start=31),
     ]
-    truth_variants = [
+    truths = [
         _test_variant(start=10, gt=(0, 1)),
         _test_variant(start=30, gt=(1, 1)),
     ]
 
-    labeler = _make_labeler(truth_variants=truth_variants, max_separation=5)
+    labeler = _make_labeler(truths=truths, max_separation=5)
     labeler._ref_reader = fasta.InMemoryRefReader([('20', 0, 'A' * 100)])
     region = ranges.make_range('20', 1, 50)
     result = list(labeler.label_variants(variants, region))
@@ -390,7 +390,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     #    20:6299587:C->T gt=(1, 1)
     # Top-level exception: ('Failed to assign labels for variants', [])
     labeler = _make_labeler(
-        truth_variants=[_test_variant(6299586, alleles=('C', 'T'), gt=(1, 1))])
+        truths=[_test_variant(6299586, alleles=('C', 'T'), gt=(1, 1))])
     labeler._ref_reader = fasta.InMemoryRefReader([('20', 6299585,
                                                     'TCCTGCTTTCTCTTGTGGGCAT')])
 
@@ -399,7 +399,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     self.assertIsNotNone(result)
 
 
-class LabelerMatchTests(parameterized.TestCase):
+class HaplotypeMatchTests(parameterized.TestCase):
 
   def setUp(self):
     self.haplotypes = ['AC', 'GT']
@@ -408,46 +408,44 @@ class LabelerMatchTests(parameterized.TestCase):
         _test_variant(43, ['G', 'A']),
         _test_variant(44, ['C', 'T']),
     ]
-    self.truth_variants = [
+    self.truths = [
         _test_variant(42, ['A', 'G'], [0, 1]),
         _test_variant(44, ['C', 'T'], [0, 1]),
         _test_variant(45, ['G', 'A'], [1, 1]),
     ]
-    self.matched_variant_genotypes = [(0, 1), (0, 0), (0, 1)]
-    self.matched_truth_genotypes = [(0, 1), (0, 1), (0, 0)]
-    self.match = haplotype_labeler.LabelerMatch(
-        self.haplotypes, self.variants, self.matched_variant_genotypes,
-        self.truth_variants, self.matched_truth_genotypes)
+    self.candidate_genotypes = [(0, 1), (0, 0), (0, 1)]
+    self.truth_genotypes = [(0, 1), (0, 1), (0, 0)]
+    self.match = haplotype_labeler.HaplotypeMatch(
+        self.haplotypes, self.variants, self.candidate_genotypes, self.truths,
+        self.truth_genotypes)
 
   def test_fields_are_expected(self):
     self.assertEqual(self.match.haplotypes, self.haplotypes)
-    self.assertEqual(self.match.variants, self.variants)
-    self.assertEqual(self.match.truth_variants, self.truth_variants)
-    self.assertEqual(self.match.matched_variant_genotypes,
-                     self.matched_variant_genotypes)
-    self.assertEqual(self.match.matched_truth_genotypes,
-                     self.matched_truth_genotypes)
+    self.assertEqual(self.match.candidates, self.variants)
+    self.assertEqual(self.match.truths, self.truths)
+    self.assertEqual(self.match.candidate_genotypes, self.candidate_genotypes)
+    self.assertEqual(self.match.truth_genotypes, self.truth_genotypes)
 
     # Computed fields.
-    self.assertEqual(self.match.truth_genotypes,
-                     haplotype_labeler._variant_genotypes(self.truth_variants))
+    self.assertEqual(self.match.original_truth_genotypes,
+                     haplotype_labeler._variant_genotypes(self.truths))
     self.assertEqual(self.match.n_false_positives, 1)
     self.assertEqual(self.match.n_false_negatives, 2)
     self.assertEqual(self.match.n_true_positives, 2)
-    self.assertEqual(self.match.match_quality, (2, 1, 2))
+    self.assertEqual(self.match.match_metrics, (2, 1, 2))
 
   def test_str(self):
-    self.assertIn('LabelerMatch(', str(self.match))
+    self.assertIn('HaplotypeMatch(', str(self.match))
 
-  def test_variants_with_assigned_genotypes(self):
-    self.assertEqual(self.match.variants_with_assigned_genotypes(), [
+  def test_candidates_with_assigned_genotypes(self):
+    self.assertEqual(self.match.candidates_with_assigned_genotypes(), [
         _test_variant(42, ['A', 'G'], [0, 1]),
         _test_variant(43, ['G', 'A'], [0, 0]),
         _test_variant(44, ['C', 'T'], [0, 1]),
     ])
     # Assert that we have no genotypes in self.variants to check that
-    # variants_with_assigned_genotypes isn't modifying our variants.
-    for v in self.match.variants:
+    # candidates_with_assigned_genotypes isn't modifying our variants.
+    for v in self.match.candidates:
       self.assertFalse(v.calls, 'Variant genotypes modified')
 
   @parameterized.parameters(
@@ -532,23 +530,23 @@ class LabelerMatchTests(parameterized.TestCase):
   )
   def test_fns_fps(self, vgenotypes, matched_tgenotypes, tgenotypes,
                    expected_fns, expected_fps, expected_tps):
-    match = haplotype_labeler.LabelerMatch(
+    match = haplotype_labeler.HaplotypeMatch(
         haplotypes=self.haplotypes,
-        variants=[
+        candidates=[
             _test_variant(42, ['A', 'G']),
             _test_variant(43, ['G', 'A']),
         ],
-        matched_variant_genotypes=vgenotypes,
-        truth_variants=[
+        candidate_genotypes=vgenotypes,
+        truths=[
             _test_variant(42, ['A', 'G'], tgenotypes[0]),
             _test_variant(43, ['G', 'A'], tgenotypes[1]),
         ],
-        matched_truth_genotypes=matched_tgenotypes)
+        truth_genotypes=matched_tgenotypes)
     self.assertEqual(match.n_false_negatives, expected_fns)
     self.assertEqual(match.n_false_positives, expected_fps)
     self.assertEqual(match.n_true_positives, expected_tps)
     self.assertEqual(match.n_true_positives + match.n_false_positives, 2)
-    self.assertEqual(match.match_quality,
+    self.assertEqual(match.match_metrics,
                      (expected_fns, expected_fps, expected_tps))
 
 
@@ -816,7 +814,7 @@ class LabelExamplesTest(parameterized.TestCase):
   def test_no_candidates_only_truth_variants(self, true_genotype):
     labeled_variants = haplotype_labeler.label_variants(
         variants=[],
-        truth_variants=[_test_variant(42, gt=true_genotype)],
+        truths=[_test_variant(42, gt=true_genotype)],
         ref=haplotype_labeler.ReferenceRegion('xAy', 41))
 
     self.assertIsNotNone(labeled_variants)
@@ -825,6 +823,7 @@ class LabelExamplesTest(parameterized.TestCase):
     self.assertEqual(haplotype_labeler._variant_genotypes(labeled_variants), [])
 
     # redacted
+    # HaplotypeMatch.
     # def truth_genotypes(self):
     # def n_true_positives(self):
     # def n_false_positives(self):
@@ -846,7 +845,7 @@ class LabelExamplesTest(parameterized.TestCase):
 
     labeled_variants = haplotype_labeler.label_variants(
         variants=variants,
-        truth_variants=truth,
+        truths=truth,
         ref=haplotype_labeler.ReferenceRegion('A' * 50, 10))
 
     # Since we don't have any truth variants, all of the variants should get a

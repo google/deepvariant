@@ -588,3 +588,169 @@ message DeepVariantInputDatasets {
 message DeepVariantInputDatasetsGroup {
   repeated DeepVariantInputDatasets groups = 1;
 }
+
+// Metrics on the labeling of candidate / truth variants when running
+// DeepVariant's make_examples in training mode.
+message LabelingMetrics {
+  // Notes on counting by site or by allele:
+  //
+  // Throughout this proto we often measure the same quantity (e.g., false
+  // positives) by site and by alleles. This reflects two different ways of
+  // counting errors in genomes where the number of chromosomes > 1. We can give
+  // a concrete example:
+  //
+  //  Candidate: chr20:10 with A/C
+  //  Truth: chr20:10 with A/C alleles and with genotype (0, 1)
+  //
+  // Since we have the same variant with the same alleles at the same position
+  // in both the candidates and the truth, the matching is trivial. For this
+  // variant, we'd update our counts as follows:
+  //
+  //   # We have only a single site, so we +1 to each truth and candidates.
+  //   n_truth_variant_sites += 1
+  //   n_candidate_variant_sites += 1
+  //
+  //   # Both the candidate and truth variants only have 1 alternative allele,
+  //   # so we increment the allele counts by 1 as well.
+  //   n_truth_variant_alleles += 1
+  //   n_candidate_variant_alleles += 1
+  //
+  // A similar logic would apply to counting true positives (+1), false
+  // negatives (+0), and false positives (+0) for both sites and alleles.
+  //
+  // Now let's take a more complex example where candidates and truth differ
+  // in their alleles:
+  //
+  //  Candidate: chr20:20 with A/C/T
+  //  Truth: chr20:20 with A/C/G alleles and with genotype (1, 2)
+  //
+  // Here we have a candidate and truth at the same position but they can only
+  // be partially matched, since the truth variant includes a G allele (e.g.,
+  // genotype == 2) that isn't even present in the candidate. And the candidate
+  // has an extra allele T that isn't real. Matching these variants produces a
+  // genotype of (0, 1) for the candidate, since we have one copy of the C
+  // allele (e.g., genotype == 1) but we cannot match the true G allele, so we
+  // are forced to say one allele is reference (e.g., genotype == 0).
+  //
+  // Now let's update our counts:
+  //
+  //   # We have only a single site, so we +1 to each truth and candidates, even
+  //   # though they both have multiple alt allele, as this is the sites-level
+  //   # metric.
+  //   n_truth_variant_sites += 1
+  //   n_candidate_variant_sites += 1
+  //
+  //   # Both variants have 2 alternative alleles, so we +2 each of the alleles
+  //   # counts.
+  //   n_truth_variant_alleles += 2
+  //   n_candidate_variant_alleles += 2
+  //
+  //   # Now for the complex TP/FN/FP counts.
+  //   # We found a candidate for this true site, even though we didn't get all
+  //   # of the alleles, so we increment the n_true_positive_sites by 1 and get
+  //   # +0 for each of the FN and FP sites metrics:
+  //   n_true_positive_sites  += 1
+  //   n_false_negative_sites += 0
+  //   n_false_positive_sites += 0
+  //
+  //   # However, we only got one of the two true positive alleles, so we get
+  //   # one TP allele (the C), one FN allele (the missed G), and one FP allele
+  //   # (the bad T allele in the candidate).
+  //   n_true_positive_alleles  += 1
+  //   n_false_negative_alleles += 1
+  //   n_false_positive_alleles += 1
+
+  // Notes on deriving higher-level metrics from the counts here:
+  //
+  // This proto only contains counts, not ratios like PPV, since we want to make
+  // it easy to sum up the metrics in this protos across shared make_example
+  // runs. That said, it's valuable to note here how to compute common
+  // ratiometric statistics from the counts in this proto since there are many
+  // fields to choose from. I give the sites-level metrics here, but the
+  // allele-level values can be computed similarily.
+  //
+  // See https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values
+  // for a general description of these metrics.
+  //
+  // PPV is TP / (TP + FP):
+  // n_true_positive_sites / (n_true_positive_sites + n_false_positive_sites)
+  //
+  // Sensitivity: TP / (TP + FN)
+  // n_true_positive_sites / (n_true_positive_sites + n_false_negative_sites)
+
+  // Counts of candidate and truth variants by site and by allele.
+  //
+  // The sites metrics are essentially the number of records seen of each type,
+  // after removing non-PASS truth variants, regardless of the number of alleles
+  // in the records. The allele metrics are like the sites metrics, but instead
+  // of getting a +1 for each record we get +N for each site where N is the
+  // number of alternative alleles.
+  //
+  // See above for more information on the difference between sites and alleles
+  // counting.
+  int32 n_truth_variant_sites = 1;
+  int32 n_truth_variant_alleles = 2;
+  int32 n_candidate_variant_sites = 3;
+  int32 n_candidate_variant_alleles = 4;
+
+  // Counts of TP, FN, and FP implied by the labeling of candidates against
+  // truth.
+  //
+  // See above for more information on the difference between sites and alleles
+  // counting.
+  //
+  // Note that we don't track true negatives since true negatives are poorly
+  // defined in the variant calling problem.
+
+  // FNs:
+  //
+  // The number of true variants assigned a non-ref genotype in the match for
+  // the sites calculation. For the allele calculation, the number of true
+  // variant alleles with a gt > 0 in the assignment.
+  int32 n_true_positive_sites = 5;
+  int32 n_true_positive_alleles = 6;
+
+  // FNs:
+  //
+  // The number of true variants assigned 0/0 genotypes for the sites
+  // calculation. For the allele calculation, the number of true variant alleles
+  // without a gt > 0 in the assignment.
+  int32 n_false_negative_sites = 7;
+  int32 n_false_negative_alleles = 8;
+
+  // FPs:
+  //
+  // The number of candidate variants assigned a 0/0 genotype for the sites
+  // calculation. For the allele calculation, the number of candidate variant
+  // alternative alleles without a genotype > 0 in the assignment.
+  int32 n_false_positive_sites = 9;
+  int32 n_false_positive_alleles = 10;
+
+  // A few more complex metrics that aren't derivable from the above metrics as
+  // their calculation requires access to the underlying matched variants
+  // themselves.
+
+  // The number of candidate variants (counted by site) that are assigned a
+  // non-reference genotype (e.g., != 0/0) but that don't have an exact
+  // position/allele match in truth.
+  int32 n_inexact_matches = 11;
+
+  // The number of sites in candidates and truth that occur at the position in
+  // the genome but the labeling match assigned discordant (e.g., !=) genotypes
+  // to both candidate and truth.
+  int32 n_shared_sites_with_discordant_genotypes = 12;
+
+  // A count of the number of sites where the candidate and truth variants have
+  // exactly the same position and alleles. For the first field
+  // (n_perfect_site_and_allele_matches), we don't require the genotypes to be
+  // exactly the same. For the second field
+  // (n_perfect_site_and_allele_and_genotype_matches) we additional require the
+  // matched genotypes to be identical as well.
+  int32 n_perfect_site_and_allele_matches = 13;
+  int32 n_perfect_site_and_allele_and_genotype_matches = 14;
+
+  // Number of truth variants (counted by site) with more than one alternative
+  // allele where at least one alternative allele was missed (i.e., was assigned
+  // a genotype of 0 in the match).
+  int32 n_truth_multiallelics_sites_with_missed_alleles = 15;
+}

@@ -31,7 +31,6 @@
  */
 
 #include "htslib/hts.h"
-
 #include "tensorflow/core/platform/test.h"
 #include "absl/strings/str_cat.h"
 #include "htslib/hts_log.h"

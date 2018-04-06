@@ -38,13 +38,13 @@ import sys
 
 
 from tensorflow import flags
+from absl import logging
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 import numpy as np
 import tensorflow as tf
 
-from absl import logging
 from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import struct_pb2

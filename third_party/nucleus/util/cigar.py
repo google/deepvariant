@@ -84,7 +84,7 @@ def format_cigar_units(cigar_units):
     cigar_units: iterable[CigarUnit] protos.
 
   Returns:
-    A third_party.nucleus.protos.Range for read.
+    A nucleus.genomics.v1.Range for read.
   """
   return ''.join(
       str(unit.operation_length) + CIGAR_OPS_TO_CHAR[unit.operation]

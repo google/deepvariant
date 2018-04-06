@@ -103,7 +103,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     # chunks that we can safely send them into our label_variants function.
     grouped = group_variants(
         list(variants),
-        truth_variants=list(self._get_truth_variants(region)),
+        truths=list(self._get_truth_variants(region)),
         max_group_size=self.max_group_size,
         max_separation=self.max_separation)
 
@@ -177,7 +177,7 @@ def _raise_if_not_sorted_or_not_on_same_chromosome(variants):
 
 
 def group_variants(candidate_variants,
-                   truth_variants,
+                   truths,
                    max_group_size=_MAX_GROUP_SIZE,
                    max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP):
   """Splits candidate and truth variants into smaller groups if necessary.
@@ -201,7 +201,7 @@ def group_variants(candidate_variants,
   Args:
     candidate_variants: list[nucleus.proto.Variant]. A sorted list of candidate
       variants on the same chromosome.
-    truth_variants: list[nucleus.proto.Variant]. A sorted list of truth
+    truths: list[nucleus.proto.Variant]. A sorted list of truth
       variants on the same chromosome.
     max_group_size: int >= 0. The maximum number of variants of a specific type
       allowed within a group.
@@ -223,7 +223,7 @@ def group_variants(candidate_variants,
   if max_separation < 0:
     raise ValueError('max_separation={} must be >= 0'.format(max_separation))
   _raise_if_not_sorted_or_not_on_same_chromosome(candidate_variants)
-  _raise_if_not_sorted_or_not_on_same_chromosome(truth_variants)
+  _raise_if_not_sorted_or_not_on_same_chromosome(truths)
 
   def to_grouped_variants(variants, candidate_type):
     """Converts a Variant proto to a _VariantToGroup tuple."""
@@ -254,7 +254,7 @@ def group_variants(candidate_variants,
   # each tuple).
   groupable_variants = heapq.merge(
       to_grouped_variants(candidate_variants, _CANDIDATE_MARKER),
-      to_grouped_variants(truth_variants, _TRUTH_MARKER))
+      to_grouped_variants(truths, _TRUTH_MARKER))
 
   # Go through out groupable_variants and split them up into groups according to
   # the predicate _include_in_variant_group.
@@ -269,7 +269,7 @@ def group_variants(candidate_variants,
   if current_group:
     groups.append(current_group)
 
-  # Finally split up each group into candidate_variants and truth_variants.
+  # Finally split up each group into candidate_variants and truths.
   return [_split_grouped_variants(g) for g in groups]
 
 
@@ -480,108 +480,173 @@ def extend_haplotypes(fragments_list, haplotypes):
 # redacted
 # redacted
 def build_all_haplotypes(variants_and_genotypes, last_pos, ref):
-  # redacted
-  if len(variants_and_genotypes) == 1:
-    variant = variants_and_genotypes[0].variant
-    genotypes = variants_and_genotypes[0].genotypes
-    ref_prefix = ref.bases(last_pos, variant.start)
-    base_choices = [variant.reference_bases] + list(variant.alternate_bases)
-    frags = {(alt,): ref_prefix + base_choices[alt] for alt in set(genotypes)}
-    return frags, variant.end
-  else:
-    frags = {}
-    genotypes = [vg.genotypes for vg in variants_and_genotypes]
-    variants = [vg.variant for vg in variants_and_genotypes]
-    all_haploid_genotypes = sorted(set(itertools.product(*genotypes)))
-    end = max(v.end for v in variants)
-    for phased in all_haploid_genotypes:
-      haplotype = build_haplotype(variants, phased, last_pos, end, ref)
-      if haplotype:
-        frags[phased] = haplotype
-    return frags, end
+  """Returns a map from phased genotypes => haplotype sequences."""
+  frags = {}
+  genotypes = [vg.genotypes for vg in variants_and_genotypes]
+  variants = [vg.variant for vg in variants_and_genotypes]
+  all_haploid_genotypes = sorted(set(itertools.product(*genotypes)))
+  end = max(v.end for v in variants)
+  for phased in all_haploid_genotypes:
+    haplotype = build_haplotype(variants, phased, ref, last_pos, end)
+    if haplotype:
+      frags[phased] = haplotype
+  return frags, end
 
 
 # redacted
-# redacted
-# redacted
-# redacted
-def build_haplotype(variants, phased_genotypes, last_pos, end, ref):
-  """Builds the haplotype string from variants and its phased gneotypes."""
+def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
+  """Builds the haplotype string from variants and its phased gneotypes.
+
+  This function takes a list of variants and associated phased genotypes and
+  constructs the haplotype sequence implied by variants and its genotypes. For
+  example, suppose we have two variants:
+
+    ref: CAGC where the first base (C) is at position 10.
+    chr20:10 A=>C
+    chr20:11 G=>T
+    allele_indices: [0, 1]
+
+  We would receive arguments here of a list of two variants and a list of the
+  allele_indices [0, 1]. We now look up which base is implied for the variant
+  (e.g., [0, 1] takes the reference bases from variant 1 at 10 and then the
+  first alternate allele of variant 2 at 11). If ref_start is 9, we would then
+  construct the haplotype as:
+
+  haplotype is 'CATC' derived as follows:
+    'C' [ref_prefix, since ref_start=]
+    +
+    'A' (variant1 has a genotype of 0)
+    +
+    'T' (variant2 has a genotype of 1)
+    +
+    'C' [ref_postfix if ref_end == 13]
+    = 'CATC'
+
+  Args:
+    variants: list[nucleus.protos.Variant]: The variants to use in constructing
+      the haplotype.
+    allele_indices: list[int]: The list of allele_indexes (where 0 means
+      reference_bases and > 0 implies alternative bases, following the
+      VariantCall genotypes semantics).
+    ref: ReferenceRegion. Used to get the reference bases.
+    ref_start: int >= 0. The first position (zero-indexed, inclusive) in the
+      genome where we want to start constructing our haplotype.
+    ref_end: int >= 0 and > ref_start. The last position (zero-indexed,
+      exclusive) in the genome where we want to end constructing our haplotype.
+
+  Returns:
+    A string containing the haplotype bases, or None, if any variant starts
+    before ref_start and has a non-reference genotype.
+
+  Raises:
+    ValueError: If any of the input arguments are malformed or otherwise violate
+    the assumptions of this algorithm.
+  """
+  if len(variants) != len(allele_indices):
+    raise ValueError(
+        'Expected the same number of variants {} as allele_indices {}'.format(
+            len(variants), len(allele_indices)))
+  if ref_start < 0 or ref_start >= ref_end:
+    raise ValueError('expected ref_start {} < ref_end {}'.format(
+        ref_start, ref_end))
+
   parts = []
-  for variant, genotype in zip(variants, phased_genotypes):
-    if variant.start < last_pos:
-      if genotype != 0:
+  for variant, allele_index in zip(variants, allele_indices):
+    if variant.start < ref_start:
+      if allele_index != 0:
         return None
     else:
-      ref_prefix = ref.bases(last_pos, variant.start)
-      base_choices = [variant.reference_bases[0]] + list(
-          variant.alternate_bases)
-      last_pos = variant.start + 1 if genotype == 0 else variant.end
-      parts.append(ref_prefix + base_choices[genotype])
+      ref_prefix = ref.bases(ref_start, variant.start)
+      allele = _allele_from_index(variant, allele_index)
+      if allele_index == 0:
+        # Update our ref_start variable to be the next reference base we want to
+        # use when further constructing our haplotype string. If we are using
+        # the reference base, we start our ref_start at the base after variant
+        # start, whereas if we are using a non-reference base we use the
+        # variant.end.
+        #
+        # This special-case is needed to handle deletion alleles properly. If we
+        # have a deletion (e.g., AA => A with start = 10 and end = 12) then we
+        # only want to skip to position 12 for the next reference bases if we
+        # have have the deletion, otherwise we'd miss the second 'A' base which
+        # is really there (the variant isn't present, after all). Another
+        # consequence of this choice we only want to add the first base of the
+        # reference allele, not the whole string, since this would append all of
+        # deletion bases inappropriately to our haplotype.
+        allele = allele[0]
+        ref_start = variant.start + 1
+      else:
+        ref_start = variant.end
+      parts.append(ref_prefix + allele)
 
-  if last_pos < end:
-    parts.append(ref.bases(last_pos, end))
+  if ref_start < ref_end:
+    parts.append(ref.bases(ref_start, ref_end))
 
   return ''.join(parts)
 
 
-def print_haplotypes(name, haplotypes):
-  logging.info('haplotypes: %s', name)
-  for haplotype, genotypes in haplotypes:
-    logging.info('  %s with %s', haplotype, genotypes)
+class HaplotypeMatch(object):
+  """DataClass holding information about a matching of variants.
 
+  The haplotype labeling algorithm, at its core, searches for an assignment of
+  genotypes to the candidate variants and the truth variants that result in the
+  same diploid haplotype sequences, which we call a match. All of the
+  information in that previous sentence is captured here as class attributes:
 
-def print_variants(name, variants):
-  logging.info('variants: %s [%d]', name, len(variants))
-  for v in variants:
-    logging.info('  %s gt=%s', variant_utils.variant_key(v),
-                 _variant_genotypes([v])[0])
+  Attributes:
+    haplotypes: list[str]. The sorted list of haplotypes produced by this match.
+    candidates: list[nucleus.proto.Variant]: The list of candidate variants.
+    truths: list[nucleus.proto.Variant]: The list of true variants.
+    candidate_genotypes: list[tuple]: The genotypes that, when assigned
+      to the candidate variants, give rise to haplotypes.
+    truth_genotypes: list[tuple]: The genotypes that, when assigned
+      to the known variants, give rise to haplotypes.
+  """
 
+  def __init__(self, haplotypes, candidates, candidate_genotypes, truths,
+               truth_genotypes):
+    if len(haplotypes) not in {1, 2}:
+      raise ValueError('Expected 1 or 2 haplotypes but got', haplotypes)
+    if len(candidates) != len(candidate_genotypes):
+      raise ValueError(
+          'candidates and candidate_genotypes should have the same length')
+    if len(truths) != len(truth_genotypes):
+      raise ValueError(('truths and truth_genotypes should have the same '
+                        'length'))
+    if any(sum(gt) == 0 for gt in _variant_genotypes(truths)):
+      raise ValueError('No truth genotypes should be hom-ref')
 
-# redacted
-# redacted
-class LabelerMatch(object):
-  """DataClass holding information about a labeling of variants."""
-
-  def __init__(self, haplotypes, variants, matched_variant_genotypes,
-               truth_variants, matched_truth_genotypes):
     self.haplotypes = sorted(haplotypes)
-    self.variants = variants
-    self.truth_variants = truth_variants
-    self.matched_variant_genotypes = matched_variant_genotypes
-    self.matched_truth_genotypes = matched_truth_genotypes
+    self.candidates = candidates
+    self.truths = truths
+    self.candidate_genotypes = candidate_genotypes
+    self.truth_genotypes = truth_genotypes
 
     # Computed on-demand.
     self._n_false_positives = None
     self._n_false_negatives = None
 
-    if any(sum(gt) == 0 for gt in _variant_genotypes(self.truth_variants)):
-      raise ValueError('No truth genotypes should be hom-ref')
-    assert len(self.matched_variant_genotypes) == len(self.variants)
-    assert len(self.matched_truth_genotypes) == len(self.truth_variants)
-
   def __str__(self):
-    return ('LabelerMatch(haplotypes={}, false_negatives={}, '
-            'false_positives={} true_positives={} match_quality={}, '
+    return ('HaplotypeMatch(haplotypes={}, false_negatives={}, '
+            'false_positives={} true_positives={} match_metrics={}, '
             'variant_gts={}, true_gts={})').format(
                 self.haplotypes, self.n_false_negatives, self.n_false_positives,
-                self.n_true_positives, self.match_quality,
-                self.matched_variant_genotypes, self.truth_genotypes)
+                self.n_true_positives, self.match_metrics,
+                self.candidate_genotypes, self.truth_genotypes)
 
   __repr__ = __str__
 
   @property
-  def truth_genotypes(self):
-    return _variant_genotypes(self.truth_variants)
+  def original_truth_genotypes(self):
+    return _variant_genotypes(self.truths)
 
-  # redacted
   @property
-  def match_quality(self):
+  def match_metrics(self):
     """Quality of this match. Lower scores are better.
 
     Returns:
       tuple[int] where all elements are >= 0: The tuple is suitable for sorting
-      matches, so that sorted(matches, key=lambda x: x.match_quality) will rank
+      matches, so that sorted(matches, key=lambda x: x.match_metrics) will rank
       matches so that the best option is first.
     """
     return (self.n_false_negatives, self.n_false_positives,
@@ -590,33 +655,32 @@ class LabelerMatch(object):
   # redacted
   @property
   def n_true_positives(self):
-    """Gets the number of variants whose matched genotype is not (0, 0).
+    """Gets the number of candidates whose matched genotype is not (0, 0).
 
-    Since the variants don't have expected genotypes, we can only count each
-    site instead of each genotype. So this is the number of variants whose
+    Since the candidates don't have expected genotypes, we can only count each
+    site instead of each genotype. So this is the number of candidates whose
     matched genotype is not (0, 0).
 
     Returns:
       int >= 0.
     """
-    return len(self.matched_variant_genotypes) - self.n_false_positives
+    return len(self.candidate_genotypes) - self.n_false_positives
 
   # redacted
   @property
   def n_false_positives(self):
-    """Gets the number of variants whose matched genotype is (0, 0).
+    """Gets the number of candidates whose matched genotype is (0, 0).
 
-    Since the variants don't have expected genotypes, we can only count each
-    site instead of each genotype. So this is the number of variants whose
+    Since the candidates don't have expected genotypes, we can only count each
+    site instead of each genotype. So this is the number of candidates whose
     matched genotype is (0, 0).
 
     Returns:
       int >= 0.
     """
-
     if self._n_false_positives is None:
       self._n_false_positives = sum(
-          sum(gt) == 0 for gt in self.matched_variant_genotypes)
+          sum(gt) == 0 for gt in self.candidate_genotypes)
     return self._n_false_positives
 
   # redacted
@@ -632,52 +696,68 @@ class LabelerMatch(object):
       int >= 0.
     """
     if self._n_false_negatives is None:
-
-      def n_zeroes(l):
-        return sum(1 for x in l if x == 0)
-
-      # redacted
       self._n_false_negatives = sum(
-          n_zeroes(assigned_gt) - n_zeroes(true_gt)
-          for true_gt, assigned_gt in zip(self.truth_genotypes,
-                                          self.matched_truth_genotypes))
-
+          n_zeroes(assigned_gt) - n_zeroes(original_gt)
+          for original_gt, assigned_gt in zip(self.original_truth_genotypes,
+                                              self.truth_genotypes))
     return self._n_false_negatives
 
-  def variants_with_assigned_genotypes(self):
-    """Gets a copy of our variants with their matched genotypes.
+  def candidates_with_assigned_genotypes(self):
+    """Gets a copy of our candidates with their matched genotypes.
 
     Returns:
-      list[Variant protobuf]: Returns a copy of self.variants in order, with
+      list[Variant protobuf]: Returns a copy of self.candidates in order, with
       genotypes corresponding to their matched genotypes. Any previous genotypes
       in these Variants will be overwrite. If no VariantCall is present one will
       be added.
     """
-    with_gts = [copy.deepcopy(v) for v in self.variants]
-    for variant, gt in zip(with_gts, self.matched_variant_genotypes):
+    with_gts = [copy.deepcopy(v) for v in self.candidates]
+    for variant, gt in zip(with_gts, self.candidate_genotypes):
       if variant.calls:
         variant.calls[0].genotype[:] = gt
       else:
         variant.calls.add(genotype=gt)
+      # redacted
+      # function in nucleus, and make sure that function works in all of the
+      # cases needed here (where variant.call is missing and is present).
     return with_gts
 
 
-def deduplicate_haplotypes(haplotypes):
-  haplotypes = list(haplotypes)
-  return [(vh1, vg1)
-          for i, (vh1, vg1) in enumerate(haplotypes)
-          if not any(vh1 == vh2 for (vh2, _) in haplotypes[i + 1:])]
+def deduplicate_haplotypes(haplotypes_and_genotypes):
+  """Returns a new list of haplotypes_and_genotypes with duplicates removed.
+
+  This function goes through the haplotypes_and_genotypes iterable and keeps
+  only a single example of (haplotypes, genotypes) if there are multiple
+  elements of the list that have the same haplotypes. Duplicates are expected
+  in the list because different genotype configurations can sometimes produce
+  the same set of haplotypes, and analyzing a list of possible
+  haplotypes/genotypes combinations with duplicates is much harder and less
+  efficient than the deduplicated list.
+
+  Args:
+    haplotypes_and_genotypes: iterable[(haplotype, genotype)]. The
+      haplotype/genotype tuples we want to deduplicate.
+
+  Returns:
+    A subset of haplotype/genotype tuples, as a list, without duplicates.
+  """
+  haplotypes_and_genotypes = list(haplotypes_and_genotypes)
+  return [
+      (vh1, vg1)
+      for i, (vh1, vg1) in enumerate(haplotypes_and_genotypes)
+      if not any(vh1 == vh2 for (vh2, _) in haplotypes_and_genotypes[i + 1:])
+  ]
 
 
 # redacted
-# variants and truth_variants, and yields information about each variant and
+# variants and truths, and yields information about each variant and
 # truth variant sequentially. This should be the primary API. Refactor
 # label_examples to use this new API. Then create a new implementation that does
 # the fast version.
 # redacted
 # information about the labeling to compute statistics.
-def label_variants(variants, truth_variants, ref):
-  """Assigns genotypes to each variant to best match truth_variants.
+def label_variants(variants, truths, ref):
+  """Assigns genotypes to each variant to best match truths.
 
   See the module-level documentation for general information on how this
   algorithm works.
@@ -685,7 +765,7 @@ def label_variants(variants, truth_variants, ref):
   Args:
     variants: list[nucleus.protos.Variant]. A list of candidate variants, in
       coordinate-sorted order, all on the same chromosome.
-    truth_variants: list[nucleus.protos.Variant]. A list of truth variants, in
+    truths: list[nucleus.protos.Variant]. A list of truth variants, in
       coordinate-sorted order, for the same interval on the genome as variants.
     ref: ReferenceRegion. Used to get reference bases for variants. Must cover
       at least the span of the variants.
@@ -698,16 +778,16 @@ def label_variants(variants, truth_variants, ref):
     ValueError: If any inputs are malformed.
   """
   variants = list(variants)
-  truth_variants = list(truth_variants)
+  truths = list(truths)
 
   if _DEBUG_PRINTING_IS_ENABLED:
-    print_variants('candidates', variants)
-    print_variants('truth', truth_variants)
+    _log_variants('candidates', variants)
+    _log_variants('truth', truths)
 
   if not variant_utils.variants_are_sorted(variants):
     raise ValueError('Variants are not sorted', variants)
-  if not variant_utils.variants_are_sorted(truth_variants):
-    raise ValueError('truth_variants are not sorted', truth_variants)
+  if not variant_utils.variants_are_sorted(truths):
+    raise ValueError('truths are not sorted', truths)
 
   def _hom_ref_enum_if_empty(list_of_variants, non_empty_enum):
     """If list_of_variants is empty, use a ONLY_HOM_REF enum for speed."""
@@ -715,49 +795,48 @@ def label_variants(variants, truth_variants, ref):
 
   truth_haplotypes = deduplicate_haplotypes(
       enumerate_all_possible_haplotypes(
-          truth_variants, ref,
-          _hom_ref_enum_if_empty(variants, EnumerationType.TRUTH)))
+          truths, ref, _hom_ref_enum_if_empty(variants, EnumerationType.TRUTH)))
 
   # redacted
   variant_haplotypes = enumerate_all_possible_haplotypes(
-      variants, ref,
-      _hom_ref_enum_if_empty(truth_variants, EnumerationType.CANDIDATES))
+      variants, ref, _hom_ref_enum_if_empty(truths, EnumerationType.CANDIDATES))
 
   found = []
   for vh, vgt in variant_haplotypes:
     for th, tgt in truth_haplotypes:
       if th == vh:
         found.append(
-            LabelerMatch(
+            HaplotypeMatch(
                 haplotypes=th,
-                variants=variants,
-                matched_variant_genotypes=vgt,
-                truth_variants=truth_variants,
-                matched_truth_genotypes=tgt))
+                candidates=variants,
+                candidate_genotypes=vgt,
+                truths=truths,
+                truth_genotypes=tgt))
 
   if not found:
     return None
   else:
     best = select_best_match(found)
-    return best.variants_with_assigned_genotypes()
+    return best.candidates_with_assigned_genotypes()
 
 
 def select_best_match(all_matches):
-  """Returns the best LabelerMatch among all_matches.
+  """Returns the best HaplotypeMatch among all_matches.
 
-  The best matching LabelerMatch is the one with the lowest match_quality score.
+  The best matching HaplotypeMatch is the one with the lowest match_metrics
+  score.
 
   Args:
-    all_matches: iterable[LabelerMatch]. An iterable of LabelerMatch objects we
-      want to select the best match from.
+    all_matches: iterable[HaplotypeMatch]. An iterable of HaplotypeMatch objects
+      we want to select the best match from.
 
   Returns:
-    The best matching LabelerMatch object.
+    The best matching HaplotypeMatch object.
   """
-  sorted_matches = sorted(all_matches, key=lambda x: x.match_quality)
+  sorted_matches = sorted(all_matches, key=lambda x: x.match_metrics)
   best = sorted_matches[0]
   equivalents = [
-      f for f in all_matches if f.match_quality == best.match_quality
+      f for f in all_matches if f.match_metrics == best.match_metrics
   ]
 
   # redacted
@@ -777,7 +856,47 @@ def select_best_match(all_matches):
 
 
 def _variant_genotypes(variants, missing_genotypes_default=(-1, -1)):
+  """Returns the genotypes of variants as a list of tuples.
+
+  Args:
+    variants: iterable[nucleus.protos.Variant]. The variants whose genotypes we
+      want to get.
+    missing_genotypes_default: tuple. If a variant in variants doesn't have
+      genotypes, this value is returned. The default value is (-1, -1), the
+      standard representation for "missing" diploid genotypes.
+
+  Returns:
+    list[nucleus.protos.Variant] protos in the same order as variants.
+  """
   return [
       tuple(v.calls[0].genotype) if v.calls else missing_genotypes_default
       for v in variants
   ]
+
+
+def _log_haplotypes(name, haplotypes):
+  """Write basic information about haplotypes to logging.info."""
+  logging.info('haplotypes: %s', name)
+  for haplotype, genotypes in haplotypes:
+    logging.info('  %s with %s', haplotype, genotypes)
+
+
+def _log_variants(name, variants):
+  """Write basic information about variants to logging.info."""
+  logging.info('variants: %s [%d]', name, len(variants))
+  for v in variants:
+    logging.info('  %s gt=%s', variant_utils.variant_key(v),
+                 _variant_genotypes([v])[0])
+
+
+def n_zeroes(l):
+  """Returns the number of elements of l that are 0."""
+  return sum(1 for x in l if x == 0)
+
+
+def _allele_from_index(variant, allele_index):
+  """Gets the reference_bases or alternative_bases for allele_index."""
+  if allele_index == 0:
+    return variant.reference_bases
+  else:
+    return variant.alternate_bases[allele_index - 1]

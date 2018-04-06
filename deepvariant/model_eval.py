@@ -39,10 +39,9 @@ import os
 
 
 from tensorflow import flags
+from absl import logging
 import numpy as np
 import tensorflow as tf
-
-from absl import logging
 
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils

@@ -45,7 +45,7 @@ def read_range(read):
     read: the read to calculate range
 
   Returns:
-    A third_party.nucleus.protos.Range for read.
+    A nucleus.genomics.v1.Range for read.
   """
   start = read.alignment.position.position
   end = start + cigar.alignment_length(read.alignment.cigar)
