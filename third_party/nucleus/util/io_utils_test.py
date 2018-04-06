@@ -35,7 +35,6 @@ from __future__ import print_function
 
 import types
 
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock

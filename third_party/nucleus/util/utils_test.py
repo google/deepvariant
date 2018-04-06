@@ -34,8 +34,6 @@ from __future__ import print_function
 
 import collections
 
-
-
 from absl.testing import absltest
 
 from absl.testing import parameterized

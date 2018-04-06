@@ -45,8 +45,6 @@ import math
 import os
 import re
 
-
-
 import contextlib2
 
 from tensorflow.core.example import example_pb2

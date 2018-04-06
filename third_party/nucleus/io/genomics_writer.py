@@ -42,7 +42,6 @@ from __future__ import print_function
 
 import abc
 
-
 from absl import logging
 
 from tensorflow.python.lib.io import python_io
