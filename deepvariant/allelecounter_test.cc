@@ -31,6 +31,7 @@
 
 // UnitTests for allelecounter.{h,cc}.
 #include "deepvariant/allelecounter.h"
+#include <numeric>
 
 #include "deepvariant/utils.h"
 #include "third_party/nucleus/io/reference_fai.h"
