@@ -305,7 +305,7 @@ class InMemoryVcfReader(genomics_reader.GenomicsReader):
     """Creates a VCFReader backed by a collection of variants.
 
     Args:
-      variants: list of third_party.nucleus.protos.Variant protos we will "read"
+      variants: list of nucleus.genomics.v1.Variant protos we will "read"
         from.
       header: a VCFHeader object to provide as a result to calls to self.header,
         or None, indicating that we don't have a header associated with this

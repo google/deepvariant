@@ -36,7 +36,6 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/vendor/statusor.h"
 

@@ -39,11 +39,10 @@ import sys
 
 
 from tensorflow import flags
+from absl import logging
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
-
-from absl import logging
 
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reads_pb2

@@ -32,7 +32,6 @@
 
 #include "third_party/nucleus/testing/test_utils.h"
 
-
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/io/path.h"

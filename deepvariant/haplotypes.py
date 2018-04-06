@@ -48,9 +48,9 @@ from __future__ import print_function
 import copy
 import itertools
 from tensorflow import flags
+from absl import logging
 import numpy as np
 
-from absl import logging
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import variant_utils
 

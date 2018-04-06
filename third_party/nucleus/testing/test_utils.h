@@ -38,7 +38,6 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/protos/reads.pb.h"

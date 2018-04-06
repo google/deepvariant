@@ -278,7 +278,7 @@ class RangeSet(object):
         interval.
 
     Yields:
-      third_party.nucleus.protos.Range protos
+      nucleus.genomics.v1.Range protos
       in an arbitrary (but not necessarily random) order.
 
     Raises:
@@ -294,7 +294,7 @@ class RangeSet(object):
 
 
 def make_position(chrom, position, reverse_strand=False):
-  """Makes a third_party.nucleus.protos.Position."""
+  """Makes a nucleus.genomics.v1.Position."""
   return position_pb2.Position(
       reference_name=chrom, position=position, reverse_strand=reverse_strand)
 
@@ -308,7 +308,7 @@ def make_range(chrom, start, end):
     end: The end position (0-based, exclusive, integer) of this range.
 
   Returns:
-    A third_party.nucleus.protos.Range.
+    A nucleus.genomics.v1.Range.
   """
   return range_pb2.Range(reference_name=chrom, start=start, end=end)
 
@@ -319,7 +319,7 @@ def position_overlaps(chrom, pos, interval):
   Args:
     chrom: The chromosome name as a string.
     pos: The position (0-based, integer).
-    interval: third_party.nucleus.protos.Range object.
+    interval: nucleus.genomics.v1.Range object.
 
   Returns:
     True if interval overlaps chr:pos.
@@ -332,8 +332,8 @@ def ranges_overlap(i1, i2):
   """Checks whether ranges i1 and i2 overlap.
 
   Args:
-    i1: third_party.nucleus.protos.Range object.
-    i2: third_party.nucleus.protos.Range object.
+    i1: nucleus.genomics.v1.Range object.
+    i2: nucleus.genomics.v1.Range object.
 
   Returns:
     True if i1 and i2 overlap.
@@ -356,7 +356,7 @@ def bedpe_parser(fd):
     fd: An iterable producing string, one per line in BEDPE format.
 
   Yields:
-    third_party.nucleus.protos.Range protobuf objects.
+    nucleus.genomics.v1.Range protobuf objects.
   """
   for line in fd:
     parts = line.split('\t')
@@ -375,7 +375,7 @@ def bed_parser(fd):
     fd: An iterable producing string, one per line in BED format.
 
   Yields:
-    third_party.nucleus.protos.Range protobuf objects.
+    nucleus.genomics.v1.Range protobuf objects.
   """
   for line in fd:
     parts = line.split('\t')
@@ -445,7 +445,7 @@ def to_literal(range_pb):
   while the literal form is one-based inclusive on both ends.
 
   Args:
-    range_pb: A third_party.nucleus.protos.Range object.
+    range_pb: A nucleus.genomics.v1.Range object.
 
   Returns:
     A string.
@@ -480,7 +480,7 @@ def parse_literal(region_literal, contig_map=None):
       end=n_bases where n_bases comes from the ContigInfo.
 
   Returns:
-    third_party.nucleus.protos.Range.
+    nucleus.genomics.v1.Range.
 
   Raises:
     ValueError: if region_literal cannot be parsed.
@@ -639,14 +639,14 @@ def expand(region, n_bp, contig_map=None):
      where max_bp is contig_map[chrom].n_bp.
 
   Args:
-    region: A third_party.nucleus.protos.Range proto.
+    region: A nucleus.genomics.v1.Range proto.
     n_bp: int >= 0; how many basepairs to increase region by.
     contig_map: None, or dict[string, ContigInfo]. If not None, used to get the
       maximum extent to increase stop by. Must have region.reference_name as a
       key.
 
   Returns:
-    third_party.nucleus.protos.Range proto.
+    nucleus.genomics.v1.Range proto.
 
   Raises:
     ValueError: if n_bp is invalid.

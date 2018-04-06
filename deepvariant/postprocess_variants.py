@@ -39,10 +39,9 @@ import tempfile
 
 
 from tensorflow import flags
+from absl import logging
 import numpy as np
 import tensorflow as tf
-
-from absl import logging
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import vcf

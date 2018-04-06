@@ -210,7 +210,7 @@ class InMemorySamReader(object):
   """Python interface class for in-memory sam reader.
 
   Attributes:
-    reads: [third_party.nucleus.protos.Read], the list of in-memory reads.
+    reads: [nucleus.genomics.v1.Read], the list of in-memory reads.
     is_sorted: bool, if reads are sorted.
   """
 

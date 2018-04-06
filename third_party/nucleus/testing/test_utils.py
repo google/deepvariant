@@ -173,7 +173,7 @@ def make_variant(chrom='chr1',
       genotype_likelihoods of our VariantCall to this value.
 
   Returns:
-    third_party.nucleus.protos.Variant proto.
+    nucleus.genomics.v1.Variant proto.
   """
   if alleles is None:
     alleles = ['A', 'C']
@@ -217,7 +217,7 @@ def make_read(bases,
               chrom='chr1',
               start=1,
               name='read'):
-  """Makes a third_party.nucleus.protos.Read for testing."""
+  """Makes a nucleus.genomics.v1.Read for testing."""
   if quals and len(bases) != len(quals):
     raise ValueError('Incompatable bases and quals', bases, quals)
   read = reads_pb2.Read(

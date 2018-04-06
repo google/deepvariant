@@ -38,9 +38,8 @@ import os
 
 
 from tensorflow import flags
-import tensorflow as tf
-
 from absl import logging
+import tensorflow as tf
 
 from third_party.nucleus.util import proto_utils
 from deepvariant import data_providers
