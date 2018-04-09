@@ -591,15 +591,3 @@ py_library(
     name = "clif_postproc",
     srcs = ["clif_postproc.py"],
 )
-
-# -----------------------------------------------------------
-#
-# These deps are purged by copybara and are not really part
-# of the open-source version of genomics. They should
-# probably be moved elsewhere.
-#
-# -----------------------------------------------------------
-
-# -----------------------------------------------------------
-# Done with non-OSS targets
-# -----------------------------------------------------------
