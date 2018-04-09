@@ -298,6 +298,7 @@ py_library(
     srcs = ["call_variants.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":data_providers",
         ":logging_level",
         ":modeling",
         ":tf_utils",

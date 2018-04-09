@@ -47,9 +47,6 @@ from deepvariant.protos import deepvariant_pb2
 
 slim = tf.contrib.slim
 
-# TF 1.7 or later.  Note that CopyBara will set this.
-_TF_HAS_LIST_FILES_SHUFFLE = False
-
 # Number of classes represented in the data set. The three classes are
 # homozygous reference (0), heterozygous (1) and homozygous alternative (2).
 DEFAULT_NUM_CLASSES = 3
@@ -180,12 +177,13 @@ class DeepVariantInput(object):
     """
     with tf.name_scope('input'):
       parsed = tf.parse_single_example(tf_example, self.feature_extraction_spec)
-
       image = parsed['image/encoded']
-      image = tf.reshape(tf.decode_raw(image, tf.uint8), self.tensor_shape)
-      if self.use_tpu:
-        # Cast to int32 for loading onto the TPU
-        image = tf.cast(image, tf.int32)
+      if self.tensor_shape:
+        # If the input is empty there won't be a tensor_shape.
+        image = tf.reshape(tf.decode_raw(image, tf.uint8), self.tensor_shape)
+        if self.use_tpu:
+          # Cast to int32 for loading onto the TPU
+          image = tf.cast(image, tf.int32)
 
       variant = parsed['variant/encoded']
       alt_allele_indices = parsed['alt_allele_indices/encoded']
@@ -247,15 +245,11 @@ class DeepVariantInput(object):
 
     # NOTE: The order of the file names returned can be non-deterministic,
     # even if shuffle is false.  See b/73959787 and the note in cl/187434282.
-    # (We want the shuffle flag to be able to disable reordering.)
-    if _TF_HAS_LIST_FILES_SHUFFLE:
-      dataset = tf.data.Dataset.list_files(
-          io_utils.NormalizeToShardedFilePattern(self.input_file_spec),
-          shuffle=self.list_files_shuffle,
-      )
-    else:
-      dataset = tf.data.Dataset.list_files(
-          io_utils.NormalizeToShardedFilePattern(self.input_file_spec))
+    # We need the shuffle flag to be able to disable reordering in EVAL mode.
+    dataset = tf.data.Dataset.list_files(
+        io_utils.NormalizeToShardedFilePattern(self.input_file_spec),
+        shuffle=self.mode == tf.estimator.ModeKeys.TRAIN,
+    )
 
     # This shuffle applies to the set of files.
     if (self.mode == tf.estimator.ModeKeys.TRAIN and
@@ -316,8 +310,7 @@ class DeepVariantInput(object):
 def get_input_fn_from_dataset(dataset_config_filename,
                               mode,
                               tensor_shape=None,
-                              use_tpu=False,
-                              shuffle=True):
+                              use_tpu=False):
   """Creates an input_fn from the dataset config file.
 
   Args:
@@ -325,7 +318,6 @@ def get_input_fn_from_dataset(dataset_config_filename,
     mode: one of tf.estimator.ModeKeys.{TRAIN,EVAL,PREDICT}
     tensor_shape: None, or list of int [height, width, channel] for testing.
     use_tpu: use the tpu code path in the input_fn.
-    shuffle: shuffle the input.
 
   Returns:
     An input_fn from the specified split in the dataset_config file.
@@ -342,61 +334,42 @@ def get_input_fn_from_dataset(dataset_config_filename,
       name=dataset_config.name,
       mode=mode,
       tensor_shape=tensor_shape,
-      use_tpu=use_tpu,
-      shuffle=shuffle)
+      use_tpu=use_tpu)
 
 
 # This is the entry point to get a DeepVariantInput when you start with
 # a tf.example file specification, and associated metadata.
 def get_input_fn_from_filespec(input_file_spec,
-                               num_examples,
-                               name,
                                mode,
+                               num_examples=None,
+                               name=None,
                                tensor_shape=None,
                                use_tpu=False,
-                               shuffle=True):
+                               input_read_threads=_DEFAULT_INPUT_READ_THREADS):
   """Create a DeepVariantInput function object from a file spec.
 
   Args:
     input_file_spec: the tf.example input file specification, possibly sharded.
+    mode: tf.estimator.ModeKeys.
     num_examples: the number of examples in the files (or None).
     name: the name for this data set (or None).
-    mode: tf.estimator.ModeKeys
     tensor_shape: None, or list of int [height, width, channel] for testing.
     use_tpu: use the tpu code path in the input_fn.
-    shuffle: shuffle the input.
+    input_read_threads: number of threads reading the input files.
 
   Returns:
     A DeepVariantInput object usable as an input_fn.
   """
 
-  # When mode is EVAL, this sets the input to be as deterministic as possible,
-  # even if that's more than what is strictly necessary for EVAL.
-  # We may want to remove that whole case when we have more experience.
-  if mode == tf.estimator.ModeKeys.EVAL:
-    shuffle = False
-  if shuffle:
-    return DeepVariantInput(
-        mode=mode,
-        input_file_spec=input_file_spec,
-        num_examples=num_examples,
-        tensor_shape=tensor_shape,
-        name=name,
-        use_tpu=use_tpu,
-    )
-  else:
-    return DeepVariantInput(
-        mode=mode,
-        input_file_spec=input_file_spec,
-        num_examples=num_examples,
-        tensor_shape=tensor_shape,
-        name=name,
-        use_tpu=use_tpu,
-        initial_shuffle_buffer_size=0,
-        shuffle_buffer_size=0,
-        sloppy=False,
-        list_files_shuffle=False,
-    )
+  return DeepVariantInput(
+      mode=mode,
+      input_file_spec=input_file_spec,
+      num_examples=num_examples,
+      tensor_shape=tensor_shape,
+      name=name,
+      use_tpu=use_tpu,
+      input_read_threads=input_read_threads,
+  )
 
 
 # Return the stream of batched images from a dataset.
@@ -434,6 +407,43 @@ def get_batches(tf_dataset, model, batch_size):
 
   images = model.preprocess_images(images)
   return images, labels, encoded_variant
+
+
+# Return the stream of batched images from a dataset.
+def get_infer_batches(tf_dataset, model, batch_size):
+  """Provides batches of pileup images from this dataset.
+
+  This instantiates an iterator on the dataset, and returns the
+  image, variant, alt_allele_indices, features in batches. It calls
+  model.preprocess_images on the images (but note that we will be moving
+  that step into model_fn for the Estimator api).
+
+  Args:
+    tf_dataset: DeepVariantInput.
+    model: DeepVariantModel.
+    batch_size: int.  The batch size.
+
+  Returns:
+    (image, variant, alt_allele_indices)
+
+  Raises:
+    ValueError: if the dataset has the wrong mode.
+  """
+  if tf_dataset.mode != tf.estimator.ModeKeys.PREDICT:
+    raise ValueError('tf_dataset.mode is {} but must be PREDICT.'.format(
+        tf_dataset.mode))
+
+  params = dict(batch_size=batch_size)
+  features = tf_dataset(params).make_one_shot_iterator().get_next()
+
+  images = features['image']
+  if tf_dataset.tensor_shape:
+    # This will be None if the input was empty.
+    images = model.preprocess_images(images)
+  variant = features['variant']
+  alt_allele_indices = features['alt_allele_indices']
+
+  return images, variant, alt_allele_indices
 
 
 # This reads a pbtxt file and returns the config proto.

@@ -46,6 +46,7 @@ from third_party.nucleus.util import errors
 from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
+from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
@@ -95,7 +96,8 @@ flags.DEFINE_string(
     'least some hardware accelerator (GPU/TPU) was available for us. This '
     'option is primarily for QA purposes to allow users to validate their '
     'accelerator environment is correctly configured. In auto mode, the '
-    'default, op placement is entirely left up to TensorFlow')
+    'default, op placement is entirely left up to TensorFlow.  In tpu mode, '
+    'use and require TPU.')
 
 
 class ExecutionHardwareError(Exception):
@@ -107,14 +109,14 @@ def prepare_inputs(source_path, model, batch_size, num_readers=None):
 
   Reads image / encoded_variant tuples from source_path, extracting the image
   and encoded_variant tensors from source_path. The image is decoded from its
-  png encoding and preprocessed with model.preprocess_image as well. Every
+  png encoding and preprocessed with model.preprocess_images as well. Every
   example in source_path is read once (num_epoch=1).
 
   Args:
     source_path: Path to a TFRecord file containing deepvariant tf.Example
       protos.
-    model: A DeepVariantModel whose preprocess_image function will be used on
-      image.
+    model: A DeepVariantModel whose preprocess_images function will be used on
+      the batch of images.
     batch_size: int > 0. Size of batches to use during inference.
     num_readers: int > 0 or None. Number of parallel readers to use to read
       examples from source_path. If None, uses FLAGS.num_readers instead.
@@ -131,51 +133,14 @@ def prepare_inputs(source_path, model, batch_size, num_readers=None):
   if not num_readers:
     num_readers = FLAGS.num_readers
 
-  tensor_shape = tf_utils.get_shape_from_examples_path(source_path)
+  # redacted
+  tf_dataset = data_providers.get_input_fn_from_filespec(
+      input_file_spec=source_path,
+      mode=tf.estimator.ModeKeys.PREDICT,
+      use_tpu=FLAGS.execution_hardware == 'tpu',
+      input_read_threads=num_readers)
 
-  def _parse_single_example(serialized_example):
-    """Parses serialized example into a dictionary of de-serialized features."""
-    features = tf.parse_single_example(
-        serialized_example,
-        features={
-            'image/encoded': tf.FixedLenFeature([], tf.string),
-            'variant/encoded': tf.FixedLenFeature([], tf.string),
-            # deepvariant_pb2.CallVariantsOutput.AltAlleleIndices
-            'alt_allele_indices/encoded': tf.FixedLenFeature([], tf.string),
-        })
-    return features
-
-  with tf.name_scope('input'):
-
-    def _preprocess_image(features):
-      """Preprocess images (decode, reshape, and apply model-specific steps)."""
-      image = features['image/encoded']
-      # Bypassing the reshaping and preprocessing if there is no tensor_shape.
-      # Currently that could happen when the input file is empty.
-      if tensor_shape:
-        image = tf.reshape(tf.decode_raw(image, tf.uint8), tensor_shape)
-        image = model.preprocess_image(image)
-      features['image/encoded'] = image
-      return features
-
-    files = tf.gfile.Glob(io_utils.NormalizeToShardedFilePattern(source_path))
-    reader_options = io_utils.make_tfrecord_options(files)
-    if reader_options.compression_type == (
-        tf.python_io.TFRecordCompressionType.GZIP):
-      compression_type = 'GZIP'
-    else:
-      compression_type = None
-    dataset = tf.data.TFRecordDataset(files, compression_type=compression_type)
-    dataset = dataset.map(
-        _parse_single_example, num_parallel_calls=FLAGS.num_readers)
-    dataset = dataset.map(
-        _preprocess_image, num_parallel_calls=FLAGS.num_readers)
-    dataset = dataset.prefetch(10 * batch_size)
-    dataset = dataset.batch(batch_size)
-    iterator = dataset.make_one_shot_iterator()
-    features = iterator.get_next()
-    return (features['image/encoded'], features['variant/encoded'],
-            features['alt_allele_indices/encoded'])
+  return data_providers.get_infer_batches(tf_dataset, model, batch_size)
 
 
 def round_gls(gls, precision=None):

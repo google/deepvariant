@@ -61,7 +61,6 @@ def setUpModule():
 # Run with shuffling off, and in eval mode.
 def make_golden_dataset(compressed_inputs=False,
                         mode=tf.estimator.ModeKeys.EVAL,
-                        shuffle=False,
                         use_tpu=False):
   if compressed_inputs:
     source_path = test_utils.test_tmpfile('make_golden_dataset.tfrecord.gz')
@@ -75,8 +74,7 @@ def make_golden_dataset(compressed_inputs=False,
       name='labeled_golden',
       mode=mode,
       tensor_shape=None,
-      use_tpu=use_tpu,
-      shuffle=shuffle)
+      use_tpu=use_tpu)
 
 
 def _test_dataset_config(filename, **kwargs):
@@ -212,8 +210,7 @@ class DataProviderTest(parameterized.TestCase):
         use_tpu=use_tpu)
 
   # It looks like tf.data.Dataset.list_files is potentially nondeterministic.
-  # There's no guaranteed way to get around that (yet, b/73959787), but
-  # the get_input_fn(shuffle=False) flag tries as hard as it can.
+  # There's no guaranteed way to get around that (yet, b/73959787).
   # A list_files() flag I want is only available in tf 1.7,
   # so for the short term, work around the problem by asking
   # self.assertTfDataSetExamplesMatchExpected to sort the
@@ -237,9 +234,9 @@ class DataProviderTest(parameterized.TestCase):
         data_providers.get_input_fn_from_dataset(
             config_file, mode=tf.estimator.ModeKeys.EVAL),
         golden_dataset,
+        # workaround_list_files is needed because wildcards, and so sharded
+        # files, are nondeterministicly ordered (for now).
         workaround_list_files=True,
-        # We'd prefer to use data_providers._TF_HAS_LIST_FILES_SHUFFLE,
-        # but even that isn't enough when globs are randomized.
     )
 
   @parameterized.parameters(
