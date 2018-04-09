@@ -44,6 +44,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 
 from deepvariant.labeler import haplotype_labeler
+from deepvariant.protos import deepvariant_pb2
 
 
 def _test_variant(start=10, alleles=('A', 'C'), gt=None):
@@ -395,8 +396,212 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
                                                     'TCCTGCTTTCTCTTGTGGGCAT')])
 
     region = ranges.make_range('20', 6299000, 6299999)
-    result = list(labeler.label_variants([], region))
-    self.assertIsNotNone(result)
+    self.assertIsNotNone(labeler.label_variants([], region))
+
+  @parameterized.parameters(
+      # A single TP bi-allelic variant.
+      dict(
+          candidates=[
+              _test_variant(start=2, alleles=('A', 'C')),
+          ],
+          truths=[
+              _test_variant(start=2, alleles=('A', 'C'), gt=(0, 1)),
+          ],
+          n_truth_variant_sites=1,
+          n_truth_variant_alleles=1,
+          n_candidate_variant_sites=1,
+          n_candidate_variant_alleles=1,
+          n_true_positive_sites=1,
+          n_true_positive_alleles=1,
+          n_false_negative_sites=0,
+          n_false_negative_alleles=0,
+          n_false_positive_sites=0,
+          n_false_positive_alleles=0,
+          n_inexact_position_matches=0,
+          n_exact_position_matches=1,
+          n_exact_position_and_allele_matches=1,
+          n_exact_position_and_allele_and_genotype_matches=1,
+          n_truth_multiallelics_sites_with_missed_alleles=0,
+      ),
+      # A single TP tri-allelic variant.
+      dict(
+          candidates=[
+              _test_variant(start=2, alleles=('A', 'C', 'G')),
+          ],
+          truths=[
+              _test_variant(start=2, alleles=('A', 'C', 'G'), gt=(1, 2)),
+          ],
+          n_truth_variant_sites=1,
+          n_truth_variant_alleles=2,
+          n_candidate_variant_sites=1,
+          n_candidate_variant_alleles=2,
+          n_true_positive_sites=1,
+          n_true_positive_alleles=2,
+          n_false_negative_sites=0,
+          n_false_negative_alleles=0,
+          n_false_positive_sites=0,
+          n_false_positive_alleles=0,
+          n_inexact_position_matches=0,
+          n_exact_position_matches=1,
+          n_exact_position_and_allele_matches=1,
+          n_exact_position_and_allele_and_genotype_matches=1,
+          n_truth_multiallelics_sites_with_missed_alleles=0,
+      ),
+      # Here we have an extra alt in our candidate and one tri-allelic truth.
+      # Because of this we have a FP allele and our exact matching counts are
+      # different than the above example.
+      dict(
+          candidates=[
+              _test_variant(start=2, alleles=('A', 'C', 'G', 'T')),
+          ],
+          truths=[
+              _test_variant(start=2, alleles=('A', 'C', 'G'), gt=(1, 2)),
+          ],
+          n_truth_variant_sites=1,
+          n_truth_variant_alleles=2,
+          n_candidate_variant_sites=1,
+          n_candidate_variant_alleles=3,
+          n_true_positive_sites=1,
+          n_true_positive_alleles=2,
+          n_false_negative_sites=0,
+          n_false_negative_alleles=0,
+          n_false_positive_sites=0,
+          n_false_positive_alleles=1,
+          n_inexact_position_matches=0,
+          n_exact_position_matches=1,
+          n_exact_position_and_allele_matches=0,
+          n_exact_position_and_allele_and_genotype_matches=0,
+          n_truth_multiallelics_sites_with_missed_alleles=0,
+      ),
+      # A single FP variant in candidates with 3 alt alleles.
+      dict(
+          candidates=[
+              _test_variant(start=2, alleles=('A', 'C', 'G')),
+          ],
+          truths=[],
+          n_truth_variant_sites=0,
+          n_truth_variant_alleles=0,
+          n_candidate_variant_sites=1,
+          n_candidate_variant_alleles=2,
+          n_true_positive_sites=0,
+          n_true_positive_alleles=0,
+          n_false_negative_sites=0,
+          n_false_negative_alleles=0,
+          n_false_positive_sites=1,
+          n_false_positive_alleles=2,
+          n_inexact_position_matches=0,
+          n_exact_position_matches=0,
+          n_exact_position_and_allele_matches=0,
+          n_exact_position_and_allele_and_genotype_matches=0,
+          n_truth_multiallelics_sites_with_missed_alleles=0,
+      ),
+      # A single FN variant in truth with 4 alt alleles.
+      dict(
+          candidates=[],
+          truths=[
+              _test_variant(start=2, alleles=('A', 'C', 'G', 'T'), gt=(1, 2)),
+          ],
+          n_truth_variant_sites=1,
+          # We only have 2 non-ref alleles in truth, so this is 2 not 3.
+          n_truth_variant_alleles=2,
+          n_candidate_variant_sites=0,
+          n_candidate_variant_alleles=0,
+          n_true_positive_sites=0,
+          n_true_positive_alleles=0,
+          n_false_negative_sites=1,
+          n_false_negative_alleles=2,
+          n_false_positive_sites=0,
+          n_false_positive_alleles=0,
+          n_inexact_position_matches=0,
+          n_exact_position_matches=0,
+          n_exact_position_and_allele_matches=0,
+          n_exact_position_and_allele_and_genotype_matches=0,
+          n_truth_multiallelics_sites_with_missed_alleles=1,
+      ),
+  )
+  def test_metrics(self, candidates, truths, **kwargs):
+    self.assertMetricsEqual(candidates=candidates, truths=truths, **kwargs)
+
+  @parameterized.parameters(range(1, 5))
+  def test_metrics_multiple_variants(self, max_separation):
+    # This is parameterized over the max_separation so we can test that the
+    # metrics are properly calculated no matter the grouping. The candidates and
+    # truth variants below should give the same metrics regardless of grouping.
+    self.assertMetricsEqual(
+        candidates=[
+            # Example one from our narrative in LabelerMetrics proto.
+            _test_variant(start=2, alleles=('A', 'C')),
+            # Example two from our narrative in LabelerMetrics proto.
+            _test_variant(start=3, alleles=('A', 'C', 'T')),
+            # A genuine false positive => no corresponding truth variant.
+            _test_variant(start=4, alleles=('A', 'G', 'C')),
+        ],
+        truths=[
+            _test_variant(start=2, alleles=('A', 'C'), gt=(0, 1)),
+            _test_variant(start=3, alleles=('A', 'C', 'G'), gt=(1, 2)),
+            # A genuine false negative => no corresponding variant in truth.
+            _test_variant(start=5, alleles=('A', 'C'), gt=(0, 1)),
+        ],
+        max_separation=max_separation,
+        n_truth_variant_sites=3,
+        n_truth_variant_alleles=4,
+        n_candidate_variant_sites=3,
+        n_candidate_variant_alleles=5,
+        n_true_positive_sites=2,
+        n_true_positive_alleles=2,
+        n_false_negative_sites=1,
+        n_false_negative_alleles=2,
+        n_false_positive_sites=1,
+        n_false_positive_alleles=3,
+        n_inexact_position_matches=0,
+        n_exact_position_matches=2,
+        n_exact_position_and_allele_matches=1,
+        n_exact_position_and_allele_and_genotype_matches=1,
+        n_truth_multiallelics_sites_with_missed_alleles=1)
+
+  def test_metrics_inexact_matches(self):
+    # ref looks like AACTG. Truth is just a single SNP turning the C into a G.
+    # Candidates do the same but via an insertion + deletion. This test ensures
+    # that the metrics work even in the case where we have different
+    # representations for the same haplotype.
+    self.assertMetricsEqual(
+        candidates=[
+            _test_variant(start=1, alleles=('A', 'AG')),
+            _test_variant(start=2, alleles=('CT', 'T')),
+        ],
+        truths=[
+            _test_variant(start=2, alleles=('C', 'G'), gt=(0, 1)),
+        ],
+        ref_prefix='AACTG',
+        n_truth_variant_sites=1,
+        n_truth_variant_alleles=1,
+        n_candidate_variant_sites=2,
+        n_candidate_variant_alleles=2,
+        n_true_positive_sites=1,
+        n_true_positive_alleles=1,
+        n_false_negative_sites=0,
+        n_false_negative_alleles=0,
+        n_false_positive_sites=0,
+        n_false_positive_alleles=0,
+        n_inexact_position_matches=1,
+        n_exact_position_matches=1,
+        n_exact_position_and_allele_matches=0,
+        n_exact_position_and_allele_and_genotype_matches=0,
+        n_truth_multiallelics_sites_with_missed_alleles=0)
+
+  def assertMetricsEqual(self,
+                         candidates,
+                         truths,
+                         ref_prefix='',
+                         max_separation=10,
+                         **metric_kwargs):
+    labeler = _make_labeler(truths=truths, max_separation=max_separation)
+    labeler._ref_reader = fasta.InMemoryRefReader([('20', 0,
+                                                    ref_prefix + 'A' * 50)])
+    region = ranges.make_range('20', 1, 10)
+    _ = list(labeler.label_variants(candidates, region))
+    self.assertEqual(labeler.metrics,
+                     deepvariant_pb2.LabelingMetrics(**metric_kwargs))
 
 
 class HaplotypeMatchTests(parameterized.TestCase):
@@ -563,11 +768,12 @@ class LabelExamplesTest(parameterized.TestCase):
                               end=None):
     start = start or ref.start
     end = end or ref.end
-    labeled_variants = haplotype_labeler.find_best_matching_haplotypes(
+    labeling = haplotype_labeler.find_best_matching_haplotypes(
         candidates, true_variants, ref)
-    self.assertIsNotNone(labeled_variants)
+    self.assertIsNotNone(labeling)
 
     # Check that the genotypes of our labeled variants are the ones we expect.
+    labeled_variants = labeling.candidates_with_assigned_genotypes()
     self.assertEqual(
         haplotype_labeler._variant_genotypes(labeled_variants),
         [tuple(x) for x in expected_genotypes])
@@ -812,23 +1018,14 @@ class LabelExamplesTest(parameterized.TestCase):
       dict(true_genotype=(1, 1)),
   )
   def test_no_candidates_only_truth_variants(self, true_genotype):
-    labeled_variants = haplotype_labeler.find_best_matching_haplotypes(
+    labeling = haplotype_labeler.find_best_matching_haplotypes(
         candidates=[],
         truths=[_test_variant(42, gt=true_genotype)],
         ref=haplotype_labeler.ReferenceRegion('xAy', 41))
+    self.assertIsNotNone(labeling)
 
-    self.assertIsNotNone(labeled_variants)
-
-    # Since we don't have any candidates, variant_genotypes should return [].
-    self.assertEqual(haplotype_labeler._variant_genotypes(labeled_variants), [])
-
-    # redacted
-    # HaplotypeMatch.
-    # def truth_genotypes(self):
-    # def n_true_positives(self):
-    # def n_false_positives(self):
-    # def n_false_negatives(self):
-    # def variants_with_assigned_genotypes(self):
+    # Since we don't have any candidates, our relabeled variants should be [].
+    self.assertEqual(labeling.candidates_with_assigned_genotypes(), [])
 
   @parameterized.parameters(
       dict(empty='variants'),
@@ -843,7 +1040,7 @@ class LabelExamplesTest(parameterized.TestCase):
     else:
       variants, truth = [], many_variants
 
-    labeled_variants = haplotype_labeler.find_best_matching_haplotypes(
+    labeling = haplotype_labeler.find_best_matching_haplotypes(
         candidates=variants,
         truths=truth,
         ref=haplotype_labeler.ReferenceRegion('A' * 50, 10))
@@ -851,7 +1048,8 @@ class LabelExamplesTest(parameterized.TestCase):
     # Since we don't have any truth variants, all of the variants should get a
     # (0, 0) [i.e., hom-ref] genotype assigned.
     self.assertEqual(
-        haplotype_labeler._variant_genotypes(labeled_variants),
+        haplotype_labeler._variant_genotypes(
+            labeling.candidates_with_assigned_genotypes()),
         [(0, 0)] * len(variants))
 
   def test_genotype_options_for_variants_truth_enum(self):
