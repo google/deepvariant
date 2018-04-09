@@ -49,7 +49,6 @@ from nets import inception
 from nets import mobilenet_v1
 from nets import resnet_v2
 
-from deepvariant import pileup_image
 from deepvariant import tf_utils
 
 # The decay factor to use for the moving average.
@@ -105,18 +104,6 @@ class DeepVariantModel(object):
       A dictionary, containing string keys mapped to endpoint tensors of this
       model. The dictionary must contain a key 'Predictions' that contains the
       probability of having each of 'num_classes' classes.
-    """
-    raise NotImplementedError
-
-  def preprocess_image(self, image):
-    """Add preprocessing steps needed for this model to process image.
-
-    Args:
-      image: A (height, width, channels) 3-D Tensor of type uint8.
-
-    Returns:
-      A new image, potentially with different dimensions, based on image but
-      transformed as necessary to use with this model.
     """
     raise NotImplementedError
 
@@ -249,34 +236,6 @@ class DeepVariantSlimModel(DeepVariantModel):
     self.n_classes_model_variable = n_classes_model_variable
     self.excluded_scopes = excluded_scopes
 
-  def preprocess_image(self, image):
-    """Applies tf-slim preprocessing operations to image.
-
-    Args:
-      image: An single image Tensor of shape [height, width, channel] with
-             uint8 values.
-
-    Returns:
-      A single image of shape [height, width, channel] containing floating point
-      values, with all points rescaled between -1 and 1 and rescaled via
-      resize_image_with_crop_or_pad.
-    """
-    image = tf.to_float(image)
-    image = tf.subtract(image, 128.0)
-    image = tf.div(image, 128.0)
-    # redacted
-    # Specifically, our current image height is 100, which is too small so that
-    # in inception_v3, this final pool:
-    # net = slim.avg_pool2d(net, kernel_size, padding='VALID',
-    #                       scope='AvgPool_1a_{}x{}'.format(*kernel_size))
-    # actually end up having a kernel_size dimension as 1, but the default
-    # stride of that function is (2, 2). So, for inception_v3, we had to resize
-    # the height to at least 107 if the height is smaller than that.
-    if self.name == 'inception_v3':
-      h, w, _ = image.get_shape().as_list()
-      image = tf.image.resize_image_with_crop_or_pad(image, max(h, 107), w)
-    return image
-
   def pad_images(self, images, height, width, target_height, target_width):
     """Pad a batch of images up to the specified dimensions."""
     target_width = max(width, target_width)
@@ -320,6 +279,13 @@ class DeepVariantSlimModel(DeepVariantModel):
     images = tf.subtract(images, 128.0)
     images = tf.div(images, 128.0)
 
+    # Specifically, our current image height is 100, which is too small so that
+    # in inception_v3, this final pool:
+    # net = slim.avg_pool2d(net, kernel_size, padding='VALID',
+    #                       scope='AvgPool_1a_{}x{}'.format(*kernel_size))
+    # actually end up having a kernel_size dimension as 1, but the default
+    # stride of that function is (2, 2). So, for inception_v3, we had to resize
+    # the height to at least 107 if the height is smaller than that.
     if self.name == 'inception_v3':
       _, height, width, _ = images.get_shape().as_list()
       images = self.pad_images(images, height, width, 107, width)
@@ -550,17 +516,6 @@ class DeepVariantDummyModel(DeepVariantModel):
     # string so here we just return "UNUSED".
     super(DeepVariantDummyModel, self).__init__(
         name=name, pretrained_model_path='UNUSED')
-
-  def preprocess_image(self, image):
-    # Note these calculations aren't necessary, but they are included here to
-    # mimic the data processing pipeline used by inception. We may consider
-    # removing them in a future CL, or making them optional, to reduce CPU cost
-    # of this model.
-    image = tf.to_float(image)
-    image = tf.subtract(image, 128.0)
-    image = tf.div(image, 128.0)
-    image = tf.reshape(image, (100, 221, pileup_image.DEFAULT_NUM_CHANNEL))
-    return image
 
   def preprocess_images(self, images):
     """Preprocess images for dummy model."""

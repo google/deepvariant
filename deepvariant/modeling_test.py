@@ -139,34 +139,39 @@ class HiddenFromUnitTest(object):
       self.assertIn('Logits', endpoints)
       self.assertEqual(endpoints['Predictions'].shape, (4, 3))
 
-    def test_preprocess_image(self):
+    def test_preprocess_images(self):
       with self.test_session() as sess:
+        batch_size = 3
         values = [91, 92, 93, 94, 95, 96]
-        raw = np.array(values, dtype='uint8').reshape((2, 1, 3))
-        image = sess.run(self.model.preprocess_image(raw))
+        all_values = values * batch_size
+        raw = np.array(all_values, dtype='uint8').reshape((batch_size, 2, 1, 3))
+        images = sess.run(self.model.preprocess_images(raw))
+        for i in range(batch_size):
+          image = images[i]
 
-        # Check that our image has the right shape and that all values are
-        # floats between between -1 and 1.
-        self.assertEqual(tf.float32, image.dtype)
-        self.assertTrue((image >= -1).all() and (image <= 1).all())
-        # Check that the shape is the same, except for inception_v3 model we had
-        # to resize the height to at least 107.
-        if self.model.name == 'inception_v3':
-          self.assertEqual((107, 1, 3), image.shape)
-        else:
-          self.assertEqual((2, 1, 3), image.shape)
+          # Check that our image has the right shape and that all values are
+          # floats between between -1 and 1.
+          self.assertEqual(tf.float32, image.dtype)
+          self.assertTrue((image >= -1).all() and (image <= 1).all())
 
-        # The preprocess step resizes the image to h x w as needed by
-        # inception. We don't really care where it goes in the image (and the
-        # calculation is complex. So we are simply checking here that all values
-        # are zero except for the transformed values we see in values. We are
-        # relying here on the tf operations to be correct and to not change
-        # their behavior over time. Because we are doing assertEqual we are also
-        # testing the order of the values, which means that we are sure that the
-        # pixels have been translated in the right order in the image, wherever
-        # the actual translation might be.
-        self.assertEqual([(x - 128.0) / 128.0 for x in values],
-                         [x for x in np.nditer(image) if x != 0.0])
+          # Check that the shape is the same, except for inception_v3 model we
+          # had to resize the height to at least 107.
+          if self.model.name == 'inception_v3':
+            self.assertEqual((107, 1, 3), image.shape)
+          else:
+            self.assertEqual((2, 1, 3), image.shape)
+
+          # The preprocess step resizes the image to h x w as needed by
+          # inception. We don't really care where it goes in the image (and the
+          # calculation is complex. So we are simply checking here that all
+          # values are zero except for the transformed values we see in values.
+          # We are relying here on the tf operations to be correct and to not
+          # change their behavior over time. Because we are doing assertEqual
+          # we are also testing the order of the values, which means that we
+          # are sure that the pixels have been translated in the right order in
+          # the image, wherever the actual translation might be.
+          self.assertEqual([(x - 128.0) / 128.0 for x in values],
+                           [x for x in np.nditer(image) if x != 0.0])
 
     @parameterized.parameters([(3, True), (1000, True), (3, False)])
     @mock.patch('deepvariant'
