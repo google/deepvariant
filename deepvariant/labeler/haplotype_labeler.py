@@ -28,7 +28,31 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Haplotype-based labeling algorithm for DeepVariant.
 
-redacted
+This module provides a haplotype-aware labeling algorithm. This is a more
+sophisticated approach to labeling that allows for slight representational
+differences between candidate and truth variant sets. See:
+
+https://github.com/ga4gh/benchmarking-tools
+https://www.biorxiv.org/content/early/2018/03/15/270157
+
+for an introduction to the concepts and why this is important.
+
+
+The module is implemented in two big pieces of functionality:
+
+find_best_matching_haplotypes(candidates, truths) provides an function that
+accepts a list of candidate variants and a list of truth variants with known
+genotypes and finds an assignment of genotypes for candidates and truth that
+results in the same two haplotype sequences in the region. Since the truth
+variants have known genotypes, the search there is constrained to those
+genotypes and their potential set of false negatives (e.g., if truth is (0, 1)
+we may have missed the variant so we consider both (0, 1) and (0, 0)). The
+returned value is a HaplotypeMatch object describing the genotype assignments
+for candidates and truth.
+
+HaplotypeLabeler implements the variant_labeler.VariantLabeler API by calling
+our find_best_matching_haplotypes function to get teh HaplotypeMatch objects and
+returning variant_labeler.VariantLabel objects for each candidate variant.
 """
 
 from __future__ import absolute_import
@@ -46,6 +70,7 @@ import enum
 from third_party.nucleus.io import fasta
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 from deepvariant.labeler import variant_labeler
 
 
@@ -60,7 +85,6 @@ _MAX_GROUP_SIZE = 8
 # the HaplotypeLabeler class for more information.
 _MAX_SEPARATION_WITHIN_VARIANT_GROUP = 30
 
-# redacted
 # True we will generate enough information into our logs to help debug bad
 # regions.
 _DEBUG_PRINTING_IS_ENABLED = True
@@ -100,26 +124,28 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
 
   def label_variants(self, variants, region):
     # Grab our truth variants and group up variants + truth into small enough
-    # chunks that we can safely send them into our label_variants function.
+    # chunks that we can safely send them into our find_best_matching_haplotypes
+    # function.
     grouped = group_variants(
-        list(variants),
+        candidates=list(variants),
         truths=list(self._get_truth_variants(region)),
         max_group_size=self.max_group_size,
         max_separation=self.max_separation)
 
     # Now loop over our grouped variants, labeling them, and yielding
     # VariantLabel objects.
-    for variant_group, truth_group in grouped:
-      assert len(variant_group) <= self.max_group_size
+    for candidates_group, truth_group in grouped:
+      assert len(candidates_group) <= self.max_group_size
       assert len(truth_group) <= self.max_group_size
 
-      ref = self.make_labeler_ref(variant_group, truth_group)
-      labeled_variants = label_variants(variant_group, truth_group, ref)
+      ref = self.make_labeler_ref(candidates_group, truth_group)
+      labeled_variants = find_best_matching_haplotypes(candidates_group,
+                                                       truth_group, ref)
       if labeled_variants is None:
         # Note this test must be 'is None' since labeled_variants can return an
         # empty list.
-        raise ValueError('Failed to assign labels for variants', variant_group,
-                         truth_group, ref)
+        raise ValueError('Failed to assign labels for variants',
+                         candidates_group, truth_group, ref)
       for labeled in labeled_variants:
         # redacted
         # now. Rethink how we establish a variant is confident. Seems like
@@ -130,8 +156,8 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
             genotype=tuple(labeled.calls[0].genotype),
             variant=labeled)
 
-  def make_labeler_ref(self, candidate_variants, true_variants, bufsize=20):
-    all_variants = candidate_variants + true_variants
+  def make_labeler_ref(self, candidates, true_variants, bufsize=20):
+    all_variants = candidates + true_variants
     contig = all_variants[0].reference_name
     start = min(x.start for x in all_variants)
     end = max(x.end for x in all_variants)
@@ -176,7 +202,7 @@ def _raise_if_not_sorted_or_not_on_same_chromosome(variants):
               v.reference_name, variants[0].reference_name))
 
 
-def group_variants(candidate_variants,
+def group_variants(candidates,
                    truths,
                    max_group_size=_MAX_GROUP_SIZE,
                    max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP):
@@ -199,7 +225,7 @@ def group_variants(candidate_variants,
   the current group than allowed by max_separation.
 
   Args:
-    candidate_variants: list[nucleus.proto.Variant]. A sorted list of candidate
+    candidates: list[nucleus.proto.Variant]. A sorted list of candidate
       variants on the same chromosome.
     truths: list[nucleus.proto.Variant]. A sorted list of truth
       variants on the same chromosome.
@@ -211,7 +237,7 @@ def group_variants(candidate_variants,
   Returns:
     A list of grouped variants in 2-tuples, such as:
 
-      [(candidate_variants1, truth_variants1), ...]
+      [(candidates1, truth_variants1), ...]
 
     where each tuple contains the candidate and truth variants for that group.
 
@@ -222,7 +248,7 @@ def group_variants(candidate_variants,
     raise ValueError('max_group_size={} must be >= 0'.format(max_group_size))
   if max_separation < 0:
     raise ValueError('max_separation={} must be >= 0'.format(max_separation))
-  _raise_if_not_sorted_or_not_on_same_chromosome(candidate_variants)
+  _raise_if_not_sorted_or_not_on_same_chromosome(candidates)
   _raise_if_not_sorted_or_not_on_same_chromosome(truths)
 
   def to_grouped_variants(variants, candidate_type):
@@ -253,7 +279,7 @@ def group_variants(candidate_variants,
   # variants with marked types and sorted by start position (first element of
   # each tuple).
   groupable_variants = heapq.merge(
-      to_grouped_variants(candidate_variants, _CANDIDATE_MARKER),
+      to_grouped_variants(candidates, _CANDIDATE_MARKER),
       to_grouped_variants(truths, _TRUTH_MARKER))
 
   # Go through out groupable_variants and split them up into groups according to
@@ -269,7 +295,7 @@ def group_variants(candidate_variants,
   if current_group:
     groups.append(current_group)
 
-  # Finally split up each group into candidate_variants and truths.
+  # Finally split up each group into candidates and truths.
   return [_split_grouped_variants(g) for g in groups]
 
 
@@ -327,18 +353,18 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
     is not the same as [(0, 1), (1, 0)].
   """
   def create_haplotypes(variants_and_genotypes, last_pos, depth=0):
-
     if not variants_and_genotypes:
       yield {ref.bases(last_pos, ref.end)}
     else:
-      # redacted
       group, remaining = split_independent_variants(variants_and_genotypes)
-      group_haplotypes, next_pos = build_all_haplotypes(group, last_pos, ref)
+      group_haplotypes, next_pos = phased_genotypes_to_haplotypes(
+          group, last_pos, ref)
       frags = list(all_diploid_haplotypes(group, group_haplotypes))
 
       for haplotypes in create_haplotypes(remaining, next_pos, depth + 1):
         for result in extend_haplotypes(frags, haplotypes):
           yield result
+
   genotype_options = genotype_options_for_variants(variants, enumeration_type)
   for genotypes in itertools.product(*genotype_options):
     paired = [VariantAndGenotypes(v, g) for v, g in zip(variants, genotypes)]
@@ -346,9 +372,6 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
       yield haplotypes, genotypes
 
 
-# redacted
-# review of all of the function and variable names and replace with more
-# meaningful options.
 def all_diploid_haplotypes(variants_and_genotypes, genotypes2haplotype):
   """Returns all diploid haplotypes for variants given their genotypes."""
 
@@ -477,20 +500,38 @@ def extend_haplotypes(fragments_list, haplotypes):
         yield {f1 + h2, f2 + h1}
 
 
-# redacted
-# redacted
-def build_all_haplotypes(variants_and_genotypes, last_pos, ref):
-  """Returns a map from phased genotypes => haplotype sequences."""
-  frags = {}
+def phased_genotypes_to_haplotypes(variants_and_genotypes, start, ref):
+  """Returns a map from phased genotypes => haplotype sequences.
+
+  This function creates a map from all possible haploid genotypes of the
+  genotypes in variants_and_genotypes to their corresponding haplotype sequences
+  implied by the variants, ref, start, and their genotypes. This map can be used
+  to efficiently look up the haplotype sequence for any haploid genotype.
+
+  Args:
+    variants_and_genotypes: list[VariantAndGenotypes]. The variants and
+      associated genotypes to use to build the dictionary.
+    start: int >= 0. The position on the genome to start constructing our
+      haplotypes at.
+    ref: ReferenceRegion. Object containing the reference genome bases we use to
+      construct our haplotypes.
+
+  Returns:
+    A 2-tuple. The first element is a dictionary[tuple, string], where each key
+    is a phased haploid genotype and its value is the haplotype sequence implied
+    by that genotype given the variants and the reference genome. The second
+    position is the ending position of the haplotype on the reference genome.
+  """
+  genotypes_to_haplotypes = {}
   genotypes = [vg.genotypes for vg in variants_and_genotypes]
   variants = [vg.variant for vg in variants_and_genotypes]
   all_haploid_genotypes = sorted(set(itertools.product(*genotypes)))
   end = max(v.end for v in variants)
   for phased in all_haploid_genotypes:
-    haplotype = build_haplotype(variants, phased, ref, last_pos, end)
+    haplotype = build_haplotype(variants, phased, ref, start, end)
     if haplotype:
-      frags[phased] = haplotype
-  return frags, end
+      genotypes_to_haplotypes[phased] = haplotype
+  return genotypes_to_haplotypes, end
 
 
 # redacted
@@ -652,7 +693,6 @@ class HaplotypeMatch(object):
     return (self.n_false_negatives, self.n_false_positives,
             self.n_true_positives)
 
-  # redacted
   @property
   def n_true_positives(self):
     """Gets the number of candidates whose matched genotype is not (0, 0).
@@ -666,7 +706,6 @@ class HaplotypeMatch(object):
     """
     return len(self.candidate_genotypes) - self.n_false_positives
 
-  # redacted
   @property
   def n_false_positives(self):
     """Gets the number of candidates whose matched genotype is (0, 0).
@@ -683,7 +722,6 @@ class HaplotypeMatch(object):
           sum(gt) == 0 for gt in self.candidate_genotypes)
     return self._n_false_positives
 
-  # redacted
   @property
   def n_false_negatives(self):
     """Gets the number of missed true genotypes.
@@ -713,13 +751,8 @@ class HaplotypeMatch(object):
     """
     with_gts = [copy.deepcopy(v) for v in self.candidates]
     for variant, gt in zip(with_gts, self.candidate_genotypes):
-      if variant.calls:
-        variant.calls[0].genotype[:] = gt
-      else:
-        variant.calls.add(genotype=gt)
-      # redacted
-      # function in nucleus, and make sure that function works in all of the
-      # cases needed here (where variant.call is missing and is present).
+      call = variant.calls[0] if variant.calls else variant.calls.add()
+      variantcall_utils.set_gt(call, gt)
     return with_gts
 
 
@@ -756,14 +789,14 @@ def deduplicate_haplotypes(haplotypes_and_genotypes):
 # the fast version.
 # redacted
 # information about the labeling to compute statistics.
-def label_variants(variants, truths, ref):
+def find_best_matching_haplotypes(candidates, truths, ref):
   """Assigns genotypes to each variant to best match truths.
 
   See the module-level documentation for general information on how this
   algorithm works.
 
   Args:
-    variants: list[nucleus.protos.Variant]. A list of candidate variants, in
+    candidates: list[nucleus.protos.Variant]. A list of candidate variants, in
       coordinate-sorted order, all on the same chromosome.
     truths: list[nucleus.protos.Variant]. A list of truth variants, in
       coordinate-sorted order, for the same interval on the genome as variants.
@@ -771,21 +804,22 @@ def label_variants(variants, truths, ref):
       at least the span of the variants.
 
   Returns:
-    A list of new variants, copied from variants, but with their
-    call[0].genotype field assigned values for the optimal labeling of variants.
+    A list of new variants, copied from candidates, but with their
+    call[0].genotype field assigned values for the optimal labeling of
+    candidates.
 
   Raises:
     ValueError: If any inputs are malformed.
   """
-  variants = list(variants)
+  candidates = list(candidates)
   truths = list(truths)
 
   if _DEBUG_PRINTING_IS_ENABLED:
-    _log_variants('candidates', variants)
+    _log_variants('candidates', candidates)
     _log_variants('truth', truths)
 
-  if not variant_utils.variants_are_sorted(variants):
-    raise ValueError('Variants are not sorted', variants)
+  if not variant_utils.variants_are_sorted(candidates):
+    raise ValueError('candidates are not sorted', candidates)
   if not variant_utils.variants_are_sorted(truths):
     raise ValueError('truths are not sorted', truths)
 
@@ -795,11 +829,13 @@ def label_variants(variants, truths, ref):
 
   truth_haplotypes = deduplicate_haplotypes(
       enumerate_all_possible_haplotypes(
-          truths, ref, _hom_ref_enum_if_empty(variants, EnumerationType.TRUTH)))
+          truths, ref, _hom_ref_enum_if_empty(candidates,
+                                              EnumerationType.TRUTH)))
 
-  # redacted
+  # Note, it may be worth deduplicating these haplotypes as well.
   variant_haplotypes = enumerate_all_possible_haplotypes(
-      variants, ref, _hom_ref_enum_if_empty(truths, EnumerationType.CANDIDATES))
+      candidates, ref, _hom_ref_enum_if_empty(truths,
+                                              EnumerationType.CANDIDATES))
 
   found = []
   for vh, vgt in variant_haplotypes:
@@ -808,7 +844,7 @@ def label_variants(variants, truths, ref):
         found.append(
             HaplotypeMatch(
                 haplotypes=th,
-                candidates=variants,
+                candidates=candidates,
                 candidate_genotypes=vgt,
                 truths=truths,
                 truth_genotypes=tgt))
@@ -816,11 +852,11 @@ def label_variants(variants, truths, ref):
   if not found:
     return None
   else:
-    best = select_best_match(found)
+    best = select_best_haplotype_match(found)
     return best.candidates_with_assigned_genotypes()
 
 
-def select_best_match(all_matches):
+def select_best_haplotype_match(all_matches):
   """Returns the best HaplotypeMatch among all_matches.
 
   The best matching HaplotypeMatch is the one with the lowest match_metrics
