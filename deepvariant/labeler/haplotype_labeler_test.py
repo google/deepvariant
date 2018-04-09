@@ -563,8 +563,8 @@ class LabelExamplesTest(parameterized.TestCase):
                               end=None):
     start = start or ref.start
     end = end or ref.end
-    labeled_variants = haplotype_labeler.label_variants(candidates,
-                                                        true_variants, ref)
+    labeled_variants = haplotype_labeler.find_best_matching_haplotypes(
+        candidates, true_variants, ref)
     self.assertIsNotNone(labeled_variants)
 
     # Check that the genotypes of our labeled variants are the ones we expect.
@@ -622,13 +622,13 @@ class LabelExamplesTest(parameterized.TestCase):
                       (2,): 'TGC'
                   },
               }.iteritems()),)
-  def test_build_all_haplotypes_single_variant(
+  def test_phased_genotypes_to_haplotypes_single_variant(
       self, variants, ref, expected_frags, expected_next_pos):
     variants_and_genotypes = [
         haplotype_labeler.VariantAndGenotypes(v, tuple(v.calls[0].genotype))
         for v in variants
     ]
-    frags, next_pos = haplotype_labeler.build_all_haplotypes(
+    frags, next_pos = haplotype_labeler.phased_genotypes_to_haplotypes(
         variants_and_genotypes, ref.start, ref)
     self.assertEqual(frags, expected_frags)
     self.assertEqual(next_pos, expected_next_pos)
@@ -643,16 +643,16 @@ class LabelExamplesTest(parameterized.TestCase):
       ('A', 'GGG'),
       ('A', 'GGGG'),
   )
-  def test_build_all_haplotypes_next_pos_is_correct(self, ref, alt):
+  def test_phased_genotypes_to_haplotypes_next_pos_is_correct(self, ref, alt):
     # Check that the next_pos calculation is working.
     pos = 10
     for gt in [(0, 0), (0, 1), (1, 1)]:
-      _, next_pos = haplotype_labeler.build_all_haplotypes(
+      _, next_pos = haplotype_labeler.phased_genotypes_to_haplotypes(
           [
               haplotype_labeler.VariantAndGenotypes(
                   _test_variant(pos, [ref, alt]), gt)
           ],
-          last_pos=pos,
+          start=pos,
           ref=haplotype_labeler.ReferenceRegion(ref, pos))
       self.assertEqual(next_pos, pos + len(ref))
 
@@ -767,14 +767,14 @@ class LabelExamplesTest(parameterized.TestCase):
           },
           expected_next_pos=16),
   )
-  def test_build_all_haplotypes_overlapping(
+  def test_phased_genotypes_to_haplotypes_overlapping(
       self, variants, ref, expected_frags, expected_next_pos):
     # redacted
     variants_and_genotypes = [
         haplotype_labeler.VariantAndGenotypes(v, tuple(v.calls[0].genotype))
         for v in variants
     ]
-    frags, next_pos = haplotype_labeler.build_all_haplotypes(
+    frags, next_pos = haplotype_labeler.phased_genotypes_to_haplotypes(
         variants_and_genotypes, ref.start, ref)
     self.assertEqual(
         frags, {k: v
@@ -812,8 +812,8 @@ class LabelExamplesTest(parameterized.TestCase):
       dict(true_genotype=(1, 1)),
   )
   def test_no_candidates_only_truth_variants(self, true_genotype):
-    labeled_variants = haplotype_labeler.label_variants(
-        variants=[],
+    labeled_variants = haplotype_labeler.find_best_matching_haplotypes(
+        candidates=[],
         truths=[_test_variant(42, gt=true_genotype)],
         ref=haplotype_labeler.ReferenceRegion('xAy', 41))
 
@@ -843,8 +843,8 @@ class LabelExamplesTest(parameterized.TestCase):
     else:
       variants, truth = [], many_variants
 
-    labeled_variants = haplotype_labeler.label_variants(
-        variants=variants,
+    labeled_variants = haplotype_labeler.find_best_matching_haplotypes(
+        candidates=variants,
         truths=truth,
         ref=haplotype_labeler.ReferenceRegion('A' * 50, 10))
 

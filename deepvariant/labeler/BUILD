@@ -97,6 +97,7 @@ py_library(
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
     ],
 )
 
