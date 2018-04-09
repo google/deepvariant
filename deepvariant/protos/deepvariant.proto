@@ -702,7 +702,7 @@ message LabelingMetrics {
   // Note that we don't track true negatives since true negatives are poorly
   // defined in the variant calling problem.
 
-  // FNs:
+  // TPs:
   //
   // The number of true variants assigned a non-ref genotype in the match for
   // the sites calculation. For the allele calculation, the number of true
@@ -732,22 +732,21 @@ message LabelingMetrics {
 
   // The number of candidate variants (counted by site) that are assigned a
   // non-reference genotype (e.g., != 0/0) but that don't have an exact
-  // position/allele match in truth.
-  int32 n_inexact_matches = 11;
+  // position match in truth.
+  int32 n_inexact_position_matches = 11;
 
-  // The number of sites in candidates and truth that occur at the position in
-  // the genome but the labeling match assigned discordant (e.g., !=) genotypes
-  // to both candidate and truth.
-  int32 n_shared_sites_with_discordant_genotypes = 12;
-
-  // A count of the number of sites where the candidate and truth variants have
-  // exactly the same position and alleles. For the first field
-  // (n_perfect_site_and_allele_matches), we don't require the genotypes to be
-  // exactly the same. For the second field
-  // (n_perfect_site_and_allele_and_genotype_matches) we additional require the
-  // matched genotypes to be identical as well.
-  int32 n_perfect_site_and_allele_matches = 13;
-  int32 n_perfect_site_and_allele_and_genotype_matches = 14;
+  // A count of the number of sites where the candidate and truth variants occur
+  // at the same position, with increasingly strict additional matching
+  // criteria. These metrics are all computed over sites, not alleles.
+  //
+  // The number of sites where candidate and truth have the same start position.
+  int32 n_exact_position_matches = 12;
+  // Same criteria as above but with the additional requirement that all of the
+  // alleles be exactly the same between candidate and truth.
+  int32 n_exact_position_and_allele_matches = 13;
+  // Same criteria as above but with the additional requirement that the matched
+  // genotypes to be identical as well.
+  int32 n_exact_position_and_allele_and_genotype_matches = 14;
 
   // Number of truth variants (counted by site) with more than one alternative
   // allele where at least one alternative allele was missed (i.e., was assigned

@@ -94,6 +94,7 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         ":variant_labeler",
+        "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",

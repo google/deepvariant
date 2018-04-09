@@ -72,6 +72,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from deepvariant.labeler import variant_labeler
+from deepvariant.protos import deepvariant_pb2
 
 
 VariantAndGenotypes = collections.namedtuple('VariantAndGenotype',
@@ -121,6 +122,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     self._ref_reader = ref_reader
     self.max_group_size = max_group_size
     self.max_separation = max_separation
+    self._metrics = deepvariant_pb2.LabelingMetrics()
 
   def label_variants(self, variants, region):
     # Grab our truth variants and group up variants + truth into small enough
@@ -139,14 +141,16 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
       assert len(truth_group) <= self.max_group_size
 
       ref = self.make_labeler_ref(candidates_group, truth_group)
-      labeled_variants = find_best_matching_haplotypes(candidates_group,
-                                                       truth_group, ref)
-      if labeled_variants is None:
-        # Note this test must be 'is None' since labeled_variants can return an
+      labeling = find_best_matching_haplotypes(candidates_group, truth_group,
+                                               ref)
+      if labeling is None:
+        # Note this test must be 'is None' since label_variants can return an
         # empty list.
         raise ValueError('Failed to assign labels for variants',
                          candidates_group, truth_group, ref)
-      for labeled in labeled_variants:
+
+      self._update_metrics(labeling)
+      for labeled in labeling.candidates_with_assigned_genotypes():
         # redacted
         # now. Rethink how we establish a variant is confident. Seems like
         # it'd be confident if it has a non-ref genotype (as we only consider
@@ -155,6 +159,100 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
             is_confident=self._confident_regions.variant_overlaps(labeled),
             genotype=tuple(labeled.calls[0].genotype),
             variant=labeled)
+
+  @property
+  def metrics(self):
+    """Gets the LabelingMetrics proto tracking metrics for this labeler."""
+    return self._metrics
+
+  def _update_metrics(self, labeling):
+    """Update self._metrics with the HaplotypeMatch labeling results.
+
+    This function updates the LabelingMetrics information in self._metrics using
+    the labeling results in labeling.
+
+    Args:
+      labeling: HaplotypeMatch. The labeling information to use to update our
+        LabelingMetrics.
+    """
+
+    def _n_alts_by_genotype(gt):
+      """Returns the number of distinct alt alleles with non-zero genotype."""
+      return len({g for g in gt if g > 0})
+
+    def _is_hom_ref(gt):
+      """Are all genotypes in gt the reference alleles (i.e., == 0)?"""
+      return all(g == 0 for g in gt)
+
+    def _has_alt_genotypes(gt):
+      """Is any genotype in gt a non-ref (> 0) genotype?"""
+      return any(g > 0 for g in gt)
+
+    # Iterate over the truth variant and its associated original genotypes
+    # (those provided by the input VCF) and the assigned genotypes (i.e., the
+    # genotypes assigned to truth to make candidates and truth match haplotypes)
+    # and compute a few metric values.
+    for truth, original_gt, assigned_gt in zip(
+        labeling.truths, labeling.original_truth_genotypes,
+        labeling.truth_genotypes):
+      n_alts_original = _n_alts_by_genotype(original_gt)
+
+      self._metrics.n_truth_variant_sites += 1
+      self._metrics.n_truth_variant_alleles += n_alts_original
+      self._metrics.n_true_positive_sites += _has_alt_genotypes(assigned_gt)
+      self._metrics.n_false_negative_sites += _is_hom_ref(assigned_gt)
+
+      # If we have more than one alt allele in the original genotypes and the
+      # assigned genotypes imply more or more are missing then we've got a
+      # multi-allelic truth variant with some missing alleles.
+      if (n_alts_original > 1 and
+          _n_alts_by_genotype(assigned_gt) < n_alts_original):
+        self._metrics.n_truth_multiallelics_sites_with_missed_alleles += 1
+
+      # Iterate over the original and assigned genotypes for the truth variants
+      # and count up the number of true positive alleles (i.e. original and
+      # assigned genotypes are non-ref) and false negative alleles (i.e.,
+      # original is non-ref but assigned is ref).
+      for og, ag in zip(original_gt, assigned_gt):
+        if og > 0:
+          if ag > 0:
+            self._metrics.n_true_positive_alleles += 1
+          elif ag == 0:
+            self._metrics.n_false_negative_alleles += 1
+
+    # Create a dict from the start of truth to the truth variant itself and its
+    # assigned genotypes. This is needed to compute site match counts below.
+    truth_by_pos = {
+        truth.start: (truth, gt)
+        for truth, gt in zip(labeling.truths, labeling.truth_genotypes)
+    }
+
+    # redacted
+    # Iterate over the candidates and their assigned genotypes to compute
+    # the remaining metrics.
+    for candidate, genotype in zip(labeling.candidates,
+                                   labeling.candidate_genotypes):
+      n_alt_alleles = len(candidate.alternate_bases)
+      self._metrics.n_candidate_variant_sites += 1
+      self._metrics.n_candidate_variant_alleles += n_alt_alleles
+      self._metrics.n_false_positive_sites += _is_hom_ref(genotype)
+      self._metrics.n_false_positive_alleles += (
+          n_alt_alleles - _n_alts_by_genotype(genotype))
+
+      # Use the truth_by_pos dict to determine which candidates occur at the
+      # same position as a truth variant. If there is one, grab it and its
+      # genotypes so we can compute metrics on exact position, allele, genotype
+      # matches. If not, update the number of inexact matches if our candidate
+      # is non-reference itself.
+      truth, assigned_gt = truth_by_pos.get(candidate.start, (None, None))
+      if truth:
+        self._metrics.n_exact_position_matches += 1
+        if sorted(candidate.alternate_bases) == sorted(truth.alternate_bases):
+          self._metrics.n_exact_position_and_allele_matches += 1
+          if sorted(genotype) == sorted(assigned_gt):
+            self._metrics.n_exact_position_and_allele_and_genotype_matches += 1
+      elif _has_alt_genotypes(genotype):
+        self._metrics.n_inexact_position_matches += 1
 
   def make_labeler_ref(self, candidates, true_variants, bufsize=20):
     all_variants = candidates + true_variants
@@ -804,9 +902,9 @@ def find_best_matching_haplotypes(candidates, truths, ref):
       at least the span of the variants.
 
   Returns:
-    A list of new variants, copied from candidates, but with their
-    call[0].genotype field assigned values for the optimal labeling of
-    candidates.
+    A HaplotypeMatch object describing the best assignment of genotypes between
+    the candidates and truth_variants, or None, if no consistent assignment can
+    be found.
 
   Raises:
     ValueError: If any inputs are malformed.
@@ -852,8 +950,7 @@ def find_best_matching_haplotypes(candidates, truths, ref):
   if not found:
     return None
   else:
-    best = select_best_haplotype_match(found)
-    return best.candidates_with_assigned_genotypes()
+    return select_best_haplotype_match(found)
 
 
 def select_best_haplotype_match(all_matches):
