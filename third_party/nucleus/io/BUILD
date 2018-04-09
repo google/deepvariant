@@ -532,17 +532,6 @@ cc_library(
     ],
 )
 
-py_test(
-    name = "genomics_io_noplugin_test",
-    size = "small",
-    srcs = ["genomics_io_noplugin_test.py"],
-    deps = [
-        "//third_party/nucleus/io:sam",
-        "//third_party/nucleus/testing:py_test_utils",
-        "@com_google_absl_py//absl/testing:absltest",
-    ],
-)
-
 cc_library(
     name = "hts_path",
     srcs = ["hts_path.cc"],
@@ -587,7 +576,22 @@ cc_test(
     ],
 )
 
+#
+# Misc
+#
+
 py_library(
     name = "clif_postproc",
     srcs = ["clif_postproc.py"],
+)
+
+py_test(
+    name = "genomics_io_noplugin_test",
+    size = "small",
+    srcs = ["genomics_io_noplugin_test.py"],
+    deps = [
+        "//third_party/nucleus/io:sam",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@com_google_absl_py//absl/testing:absltest",
+    ],
 )

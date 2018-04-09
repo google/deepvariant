@@ -75,9 +75,7 @@ py_library(
 py_library(
     name = "cigar",
     srcs = ["cigar.py"],
-    deps = [
-        "//third_party/nucleus/protos:cigar_py_pb2",
-    ],
+    deps = ["//third_party/nucleus/protos:cigar_py_pb2"],
 )
 
 py_test(
@@ -109,9 +107,7 @@ py_test(
 py_library(
     name = "proto_utils",
     srcs = ["proto_utils.py"],
-    deps = [
-        "@protobuf_archive//:protobuf_python",
-    ],
+    deps = ["@protobuf_archive//:protobuf_python"],
 )
 
 cc_library(
@@ -227,9 +223,7 @@ py_test(
 py_library(
     name = "struct_utils",
     srcs = ["struct_utils.py"],
-    deps = [
-        "//third_party/nucleus/protos:struct_py_pb2",
-    ],
+    deps = ["//third_party/nucleus/protos:struct_py_pb2"],
 )
 
 py_test(
@@ -287,9 +281,7 @@ py_test(
 py_library(
     name = "errors",
     srcs = ["errors.py"],
-    deps = [
-        "@com_google_absl_py//absl/logging",
-    ],
+    deps = ["@com_google_absl_py//absl/logging"],
 )
 
 py_test(
