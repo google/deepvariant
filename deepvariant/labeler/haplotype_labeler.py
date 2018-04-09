@@ -632,7 +632,6 @@ def phased_genotypes_to_haplotypes(variants_and_genotypes, start, ref):
   return genotypes_to_haplotypes, end
 
 
-# redacted
 def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
   """Builds the haplotype string from variants and its phased gneotypes.
 
@@ -690,17 +689,18 @@ def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
         ref_start, ref_end))
 
   parts = []
+  position = ref_start
   for variant, allele_index in zip(variants, allele_indices):
-    if variant.start < ref_start:
+    if variant.start < position:
       if allele_index != 0:
         return None
     else:
-      ref_prefix = ref.bases(ref_start, variant.start)
+      ref_prefix = ref.bases(position, variant.start)
       allele = _allele_from_index(variant, allele_index)
       if allele_index == 0:
-        # Update our ref_start variable to be the next reference base we want to
+        # Update our position variable to be the next reference base we want to
         # use when further constructing our haplotype string. If we are using
-        # the reference base, we start our ref_start at the base after variant
+        # the reference base, we start our position at the base after variant
         # start, whereas if we are using a non-reference base we use the
         # variant.end.
         #
@@ -713,13 +713,15 @@ def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
         # reference allele, not the whole string, since this would append all of
         # deletion bases inappropriately to our haplotype.
         allele = allele[0]
-        ref_start = variant.start + 1
+        position = variant.start + 1
       else:
-        ref_start = variant.end
+        position = variant.end
       parts.append(ref_prefix + allele)
 
-  if ref_start < ref_end:
-    parts.append(ref.bases(ref_start, ref_end))
+  # We have some bases left to add between the position of our last variant
+  # and the ref_end, so append those now.
+  if position < ref_end:
+    parts.append(ref.bases(position, ref_end))
 
   return ''.join(parts)
 

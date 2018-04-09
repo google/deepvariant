@@ -790,6 +790,89 @@ class LabelExamplesTest(parameterized.TestCase):
     self.assertEqual(
         haplotype_labeler.with_false_negative_genotypes(genotype), expected)
 
+  # The reference sequence is xAAAAAy.
+  @parameterized.parameters(
+      # Test a SNP at a few positions.
+      dict(
+          variants=[
+              _test_variant(1, alleles=('A', 'C')),
+          ],
+          allele_indices_and_expected={
+              (0,): 'xAAAAAy',
+              (1,): 'xCAAAAy',
+          }),
+      dict(
+          variants=[
+              _test_variant(3, alleles=('A', 'C')),
+          ],
+          allele_indices_and_expected={
+              (0,): 'xAAAAAy',
+              (1,): 'xAACAAy',
+          }),
+      # Test an insertion at a few positions.
+      dict(
+          variants=[
+              _test_variant(1, alleles=('A', 'CC')),
+          ],
+          allele_indices_and_expected={
+              (0,): 'xAAAAAy',
+              (1,): 'xCCAAAAy',
+          }),
+      dict(
+          variants=[
+              _test_variant(3, alleles=('A', 'CC')),
+          ],
+          allele_indices_and_expected={
+              (0,): 'xAAAAAy',
+              (1,): 'xAACCAAy',
+          }),
+      # Test an deletion at a few positions.
+      dict(
+          variants=[
+              _test_variant(1, alleles=('AAA', 'A')),
+          ],
+          allele_indices_and_expected={
+              (0,): 'xAAAAAy',
+              (1,): 'xAAAy',
+          }),
+      dict(
+          variants=[
+              _test_variant(3, alleles=('AAA', 'A')),
+          ],
+          allele_indices_and_expected={
+              (0,): 'xAAAAAy',
+              (1,): 'xAAAy',
+          }),
+      # A complete example with multiple variants.
+      dict(
+          variants=[
+              _test_variant(1, alleles=('A', 'C')),
+              _test_variant(2, alleles=('A', 'CC')),
+              _test_variant(4, alleles=('AA', 'A')),
+          ],
+          allele_indices_and_expected={
+              (0, 0, 0): 'xAAAAAy',
+              (0, 0, 1): 'xAAAAy',
+              (0, 1, 0): 'xACCAAAy',
+              (0, 1, 1): 'xACCAAy',
+              (1, 0, 0): 'xCAAAAy',
+              (1, 0, 1): 'xCAAAy',
+              (1, 1, 0): 'xCCCAAAy',
+              (1, 1, 1): 'xCCCAAy',
+          }),
+  )
+  def test_build_haplotype(self, variants, allele_indices_and_expected):
+    refseq = 'xAAAAAy'
+    for allele_indices, expected in allele_indices_and_expected.iteritems():
+      self.assertEqual(
+          expected,
+          haplotype_labeler.build_haplotype(
+              variants,
+              allele_indices,
+              ref=haplotype_labeler.ReferenceRegion(refseq, 0),
+              ref_start=0,
+              ref_end=len(refseq)))
+
   @parameterized.parameters(
       # All possible genotypes for a simple tri-allelic case.
       (
