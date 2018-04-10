@@ -70,8 +70,12 @@ def _variants_from_grouped_positions(grouped_positions):
   return variants, [(g, []) for g in groups]
 
 
-def _make_labeler(truths=None, confident_regions=None, **kwargs):
-  mock_ref_reader = mock.MagicMock()
+def _make_labeler(truths=None,
+                  confident_regions=None,
+                  ref_reader=None,
+                  **kwargs):
+  if ref_reader is None:
+    ref_reader = mock.MagicMock()
 
   if confident_regions is None:
     # Use the reference of the truth variants if possible, otherwise just use
@@ -83,7 +87,7 @@ def _make_labeler(truths=None, confident_regions=None, **kwargs):
 
   return haplotype_labeler.HaplotypeLabeler(
       truth_vcf_reader=vcf.InMemoryVcfReader(truths or []),
-      ref_reader=mock_ref_reader,
+      ref_reader=ref_reader,
       confident_regions=confident_regions,
       **kwargs)
 
@@ -362,8 +366,10 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         _test_variant(start=30, gt=(1, 1)),
     ]
 
-    labeler = _make_labeler(truths=truths, max_separation=5)
-    labeler._ref_reader = fasta.InMemoryRefReader([('20', 0, 'A' * 100)])
+    labeler = _make_labeler(
+        truths=truths,
+        max_separation=5,
+        ref_reader=fasta.InMemoryRefReader([('20', 0, 'A' * 100)]))
     region = ranges.make_range('20', 1, 50)
     result = list(labeler.label_variants(variants, region))
 
@@ -391,10 +397,9 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     #    20:6299587:C->T gt=(1, 1)
     # Top-level exception: ('Failed to assign labels for variants', [])
     labeler = _make_labeler(
-        truths=[_test_variant(6299586, alleles=('C', 'T'), gt=(1, 1))])
-    labeler._ref_reader = fasta.InMemoryRefReader([('20', 6299585,
-                                                    'TCCTGCTTTCTCTTGTGGGCAT')])
-
+        truths=[_test_variant(6299586, alleles=('C', 'T'), gt=(1, 1))],
+        ref_reader=fasta.InMemoryRefReader([('20', 6299585,
+                                             'TCCTGCTTTCTCTTGTGGGCAT')]))
     region = ranges.make_range('20', 6299000, 6299999)
     self.assertIsNotNone(labeler.label_variants([], region))
 
@@ -595,13 +600,35 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
                          ref_prefix='',
                          max_separation=10,
                          **metric_kwargs):
-    labeler = _make_labeler(truths=truths, max_separation=max_separation)
-    labeler._ref_reader = fasta.InMemoryRefReader([('20', 0,
-                                                    ref_prefix + 'A' * 50)])
+    labeler = _make_labeler(
+        truths=truths,
+        max_separation=max_separation,
+        confident_regions=ranges.RangeSet([ranges.make_range('20', 0, 1000)]),
+        ref_reader=fasta.InMemoryRefReader([('20', 0, ref_prefix + 'A' * 50)]))
     region = ranges.make_range('20', 1, 10)
     _ = list(labeler.label_variants(candidates, region))
     self.assertEqual(labeler.metrics,
                      deepvariant_pb2.LabelingMetrics(**metric_kwargs))
+
+  def test_metrics_respects_confident_regions(self):
+    # The confident region is 2-4, so we should only count the variant starting
+    # at 3.
+    candidates = [
+        _test_variant(start=1),
+        _test_variant(start=3),
+        _test_variant(start=5),
+    ]
+    labeler = _make_labeler(
+        truths=[],
+        confident_regions=ranges.RangeSet(
+            [ranges.make_range(candidates[0].reference_name, 2, 4)]),
+        ref_reader=fasta.InMemoryRefReader([('20', 0, 'A' * 50)]))
+    _ = list(labeler.label_variants(candidates, ranges.make_range('20', 1, 10)))
+    self.assertEqual(labeler.metrics.n_candidate_variant_sites, 1)
+    self.assertEqual(labeler.metrics.n_candidate_variant_alleles, 1)
+    self.assertEqual(labeler.metrics.n_non_confident_candidate_variant_sites, 2)
+    self.assertEqual(labeler.metrics.n_false_positive_sites, 1)
+    self.assertEqual(labeler.metrics.n_false_positive_alleles, 1)
 
 
 class HaplotypeMatchTests(parameterized.TestCase):

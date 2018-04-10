@@ -39,6 +39,7 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import vcf
@@ -60,6 +61,7 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.realigner import realigner
 from deepvariant.vendor import timer
+
 
 FLAGS = flags.FLAGS
 
@@ -182,6 +184,11 @@ flags.DEFINE_string(
     'labeler_algorithm', 'haplotype_labeler',
     'Algorithm to use to label examples in training mode. Must be one of the '
     'LabelerAlgorithm enum values in the DeepVariantOptions proto.')
+flags.DEFINE_string(
+    'labeling_metrics', None,
+    'Optional. If provided, should be a path where we will write out a '
+    'text-format protobuf containing metrics about how the labeling of '
+    'variants. Only valid in training mode.')
 
 
 # ---------------------------------------------------------------------------
@@ -311,6 +318,8 @@ def default_options(add_flags=True, flags_obj=None):
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
+    if flags_obj.labeling_metrics:
+      options.labeling_metrics_filename = flags_obj.labeling_metrics
 
     if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
       options.downsample_fraction = flags_obj.downsample_fraction
@@ -411,6 +420,24 @@ def _set_variant_genotype(variant, genotype):
     variant.calls.add(genotype=genotype)
   else:
     variant.calls[0].genotype[:] = genotype
+
+
+# ---------------------------------------------------------------------------
+# Utilities for working with labeling metrics
+#
+# ---------------------------------------------------------------------------
+
+
+def read_labeling_metrics(path):
+  """Reads a LabelingMetrics proto in text_format from path."""
+  with tf.gfile.GFile(path) as f:
+    return text_format.Parse(f.read(), deepvariant_pb2.LabelingMetrics())
+
+
+def write_labeling_metrics(metrics, path):
+  """Writes a LabelingMetrics proto in text_format to path."""
+  with tf.gfile.GFile(path, mode='w') as writer:
+    writer.write(text_format.MessageToString(metrics))
 
 
 # ---------------------------------------------------------------------------
@@ -1052,6 +1079,17 @@ def make_examples_runner(options):
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
 
+  if options.labeling_metrics_filename:
+    if region_processor.labeler.metrics is not None:
+      logging.info('Writing labeling metrics to %s',
+                   options.labeling_metrics_filename)
+      write_labeling_metrics(region_processor.labeler.metrics,
+                             options.labeling_metrics_filename)
+    else:
+      logging.warning(
+          'Labeling metrics requested but the selected labeling '
+          'algorithm %s does not collect metrics; skipping.',
+          options.labeler_algorithm)
   logging.info('Found %s candidate variants', n_candidates)
 
 
@@ -1107,6 +1145,9 @@ def main(argv=()):
       if options.variant_caller_options.gq_resolution < 1:
         errors.log_and_raise('gq_resolution must be a non-negative integer.',
                              errors.CommandLineError)
+      if options.labeling_metrics_filename:
+        errors.log_and_raise(
+            'labeling_metrics argument only allowed in training mode.')
 
     # Run!
     make_examples_runner(options)
