@@ -1,0 +1,12 @@
+n_truth_variant_sites: 48
+n_truth_variant_alleles: 48
+n_candidate_variant_sites: 49
+n_candidate_variant_alleles: 49
+n_non_confident_candidate_variant_sites: 25
+n_true_positive_sites: 48
+n_true_positive_alleles: 84
+n_false_positive_sites: 1
+n_false_positive_alleles: 1
+n_exact_position_matches: 48
+n_exact_position_and_allele_matches: 48
+n_exact_position_and_allele_and_genotype_matches: 48

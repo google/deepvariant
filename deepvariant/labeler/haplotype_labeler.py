@@ -241,6 +241,13 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     # confident regions.
     for candidate, genotype in zip(labeling.candidates,
                                    labeling.candidate_genotypes):
+      # If candidate isn't confident, add it to the non_confident count and
+      # continue as the other metrics are only computed over confident
+      # candidates.
+      if not self._confident_regions.variant_overlaps(candidate):
+        self._metrics.n_non_confident_candidate_variant_sites += 1
+        continue
+
       n_alt_alleles = len(candidate.alternate_bases)
       self._metrics.n_candidate_variant_sites += 1
       self._metrics.n_candidate_variant_alleles += n_alt_alleles

@@ -123,6 +123,17 @@ class VariantLabeler(object):
     self._truth_vcf_reader = truth_vcf_reader
     self._confident_regions = confident_regions
 
+  @property
+  def metrics(self):
+    """Gets the LabelingMetrics proto tracking metrics for this labeler.
+
+    A variant labeler may provide information information about the labeling of
+    variants via the metrics property. If the labeler provides metrics, a
+    filled in LabelingMetrics protobuf will be returned by this property. If
+    metrics aren't supported, a None value will be returned.
+    """
+    return None
+
   @abc.abstractmethod
   def label_variants(self, variants, region):
     """Gets label information for each variant in variants.
