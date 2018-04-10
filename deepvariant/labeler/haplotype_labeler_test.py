@@ -790,6 +790,59 @@ class LabelExamplesTest(parameterized.TestCase):
     self.assertEqual(
         haplotype_labeler.with_false_negative_genotypes(genotype), expected)
 
+  @parameterized.parameters(
+      dict(
+          prefix_haplotypes_list=[{'a'}],
+          haplotypes={'A'},
+          expected=[{'aA'}],
+      ),
+      dict(
+          prefix_haplotypes_list=[{'a', 'b'}],
+          haplotypes={'A'},
+          expected=[{'aA', 'bA'}],
+      ),
+      dict(
+          prefix_haplotypes_list=[{'a'}],
+          haplotypes={'A', 'B'},
+          expected=[{'aA', 'aB'}],
+      ),
+      dict(
+          prefix_haplotypes_list=[{'a', 'b'}],
+          haplotypes={'A', 'B'},
+          expected=[{'aA', 'bB'}, {'aB', 'bA'}],
+      ),
+      dict(
+          prefix_haplotypes_list=[{'a', 'b'}, {'c'}, {'d', 'e'}],
+          haplotypes={'A'},
+          expected=[{'aA', 'bA'}, {'cA'}, {'dA', 'eA'}],
+      ),
+      dict(
+          prefix_haplotypes_list=[{'a', 'b'}, {'c'}, {'d', 'e'}],
+          haplotypes={'A', 'B'},
+          expected=[{'aA', 'bB'}, {'aB', 'bA'}, {'cA', 'cB'}, {'dA', 'eB'},
+                    {'dB', 'eA'}],
+      ),
+  )
+  def test_extend_haplotypes(self, prefix_haplotypes_list, haplotypes,
+                             expected):
+    self.assertCountEqual(
+        expected,
+        list(
+            haplotype_labeler.extend_haplotypes(prefix_haplotypes_list,
+                                                haplotypes)))
+
+  def test_extend_haplotypes_raises_on_empty_prefix_list(self):
+    with self.assertRaisesRegexp(ValueError, 'prefix_haplotypes_list.*empty'):
+      list(haplotype_labeler.extend_haplotypes([], {'A'}))
+
+  def test_extend_haplotypes_raises_on_empty_haplotypes(self):
+    with self.assertRaisesRegexp(ValueError, 'haplotypes'):
+      list(haplotype_labeler.extend_haplotypes([{'A'}], set()))
+
+  def test_extend_haplotypes_raises_on_too_many_haplotypes(self):
+    with self.assertRaisesRegexp(ValueError, 'haplotypes'):
+      list(haplotype_labeler.extend_haplotypes([{'A'}], {'a', 'b', 'c'}))
+
   # The reference sequence is xAAAAAy.
   @parameterized.parameters(
       # Test a SNP at a few positions.
@@ -1058,7 +1111,6 @@ class LabelExamplesTest(parameterized.TestCase):
   )
   def test_phased_genotypes_to_haplotypes_overlapping(
       self, variants, ref, expected_frags, expected_next_pos):
-    # redacted
     variants_and_genotypes = [
         haplotype_labeler.VariantAndGenotypes(v, tuple(v.calls[0].genotype))
         for v in variants
