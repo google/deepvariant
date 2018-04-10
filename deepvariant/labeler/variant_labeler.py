@@ -44,7 +44,6 @@ from third_party.nucleus.util import variantcall_utils
 #
 
 
-# redacted
 class VariantLabel(object):
   """Dataclass containing information about a label assigned to a variant.
 

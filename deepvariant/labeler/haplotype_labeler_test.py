@@ -1573,38 +1573,38 @@ class LabelExamplesTest(parameterized.TestCase):
   #           [0, 0],
   #       ])
 
-# Variants were getting incorrect genotypes in an exome callset.
-#
-# ref: AGACACACACACACAAAAAAAAATCATAAAATGAAG, start=214012389
-# candidates 2:214012390:G->GAC
-# candidates 2:214012402:CAA->C
-# candidates 2:214012404:A->C
-# true_variants 2:214012404:A->C
-#
-# 2:214012390:G->GAC => gt=(1, 1) new_label=2 old_label=0 alts=[0]
-# 2:214012402:CAA->C => gt=(1, 1) new_label=2 old_label=0 alts=[0]
-# 2:214012404:A->C => gt=(0, 0) new_label=0 old_label=2 alts=[0]
-#
-#           90--------- 0---------10--------20---
-# pos    : 90  1234567890123456789012345678901234
-# ref    : AG  ACACACACACACAAAAAAAAATCATAAAATGAAG
-# truth  :                  C => AGACACACACACACACAAAAAAATCATAAAATGAAG
-# DV 1   :  GAC               => [doesn't match]
-# DV 2   :                C-- => [doesn't match]
-# DV 1+2 : AGACACACACACACAC  AAAAAAATCATAAAATGAAG
-# DV 1+2 :                    => AGACACACACACACACAAAAAAATCATAAAATGAAG [match]
-# DV 3   :                  C => AGACACACACACACACAAAAAAATCATAAAATGAAG [match]
-#
-# So this is an interesting case. G->GAC + CAA->C matches the true haplotype,
-# and the SNP itself gets assigned a FP status since we can have either two
-# FPs (dv1 and dv2 candidates) or have just one (dv3). What's annoying here is
-# that DV3 exactly matches the variant as described in the truth set. It's
-# also strange that we've generated multiple equivalent potential variants
-# here.
-#
-# This test ensures that we are picking the most parsimonous genotype
-# assignment (e.g., fewest number of TPs) needed to explain the truth, after
-# accounting for minimizing the number of FNs and FPs.
+  # Variants were getting incorrect genotypes in an exome callset.
+  #
+  # ref: AGACACACACACACAAAAAAAAATCATAAAATGAAG, start=214012389
+  # candidates 2:214012390:G->GAC
+  # candidates 2:214012402:CAA->C
+  # candidates 2:214012404:A->C
+  # true_variants 2:214012404:A->C
+  #
+  # 2:214012390:G->GAC => gt=(1, 1) new_label=2 old_label=0 alts=[0]
+  # 2:214012402:CAA->C => gt=(1, 1) new_label=2 old_label=0 alts=[0]
+  # 2:214012404:A->C => gt=(0, 0) new_label=0 old_label=2 alts=[0]
+  #
+  #           90--------- 0---------10--------20---
+  # pos    : 90  1234567890123456789012345678901234
+  # ref    : AG  ACACACACACACAAAAAAAAATCATAAAATGAAG
+  # truth  :                  C => AGACACACACACACACAAAAAAATCATAAAATGAAG
+  # DV 1   :  GAC               => [doesn't match]
+  # DV 2   :                C-- => [doesn't match]
+  # DV 1+2 : AGACACACACACACAC  AAAAAAATCATAAAATGAAG
+  # DV 1+2 :                    => AGACACACACACACACAAAAAAATCATAAAATGAAG [match]
+  # DV 3   :                  C => AGACACACACACACACAAAAAAATCATAAAATGAAG [match]
+  #
+  # So this is an interesting case. G->GAC + CAA->C matches the true haplotype,
+  # and the SNP itself gets assigned a FP status since we can have either two
+  # FPs (dv1 and dv2 candidates) or have just one (dv3). What's annoying here is
+  # that DV3 exactly matches the variant as described in the truth set. It's
+  # also strange that we've generated multiple equivalent potential variants
+  # here.
+  #
+  # This test ensures that we are picking the most parsimonous genotype
+  # assignment (e.g., fewest number of TPs) needed to explain the truth, after
+  # accounting for minimizing the number of FNs and FPs.
   def test_exome_variants_multiple_equivalent_representations(self):
     self.assertGetsCorrectLabels(
         candidates=[
