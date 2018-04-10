@@ -151,10 +151,15 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
 
       self._update_metrics(labeling)
       for labeled in labeling.candidates_with_assigned_genotypes():
-        # redacted
-        # now. Rethink how we establish a variant is confident. Seems like
-        # it'd be confident if it has a non-ref genotype (as we only consider
-        # confident truth variants) or if it overlaps the confident regions.
+        # This logic doesn't make a huge amount of sense when you are doing
+        # haplotype-based labeling. Currently we only say a variant is confident
+        # if it overlaps the confident regions, which is the baseline behavior.
+        # However, it may be useful to rethink how we establish a variant is
+        # confident, as the "event" may be within the confident regions but
+        # shifted outside due to differences in representational choices. Seems
+        # like another approach would be to assign confidence if it has a
+        # non-ref genotype (as we only consider confident truth variants) or if
+        # it overlaps the confident regions.
         yield variant_labeler.VariantLabel(
             is_confident=self._confident_regions.variant_overlaps(labeled),
             genotype=tuple(labeled.calls[0].genotype),
@@ -227,9 +232,13 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
         for truth, gt in zip(labeling.truths, labeling.truth_genotypes)
     }
 
-    # redacted
     # Iterate over the candidates and their assigned genotypes to compute
     # the remaining metrics.
+    #
+    # Note that this counts all candidates, not just the ones in the confident
+    # regions of the genome. This seems like a reasonable first approach, but it
+    # may be necessary to restrict ourselves to only those overlapping the
+    # confident regions.
     for candidate, genotype in zip(labeling.candidates,
                                    labeling.candidate_genotypes):
       n_alt_alleles = len(candidate.alternate_bases)
@@ -431,6 +440,11 @@ def with_false_negative_genotypes(gt):
   return {(0, 0), tuple(gt)} | {(0, alt) for alt in alts}
 
 
+class ImpossibleHaplotype(Exception):
+  """Indicates that an impossible haplotype configuration has been observed."""
+  pass
+
+
 def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
   """Yields all possible haplotype/genotype combinations for variants.
 
@@ -450,18 +464,42 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
     assignment for each variant. These genotypes are phased, so [(0, 1), (0, 1)]
     is not the same as [(0, 1), (1, 0)].
   """
-  def create_haplotypes(variants_and_genotypes, last_pos, depth=0):
+
+  def create_haplotypes_recursive(variants_and_genotypes, last_pos):
     if not variants_and_genotypes:
       yield {ref.bases(last_pos, ref.end)}
     else:
       group, remaining = split_independent_variants(variants_and_genotypes)
       group_haplotypes, next_pos = phased_genotypes_to_haplotypes(
           group, last_pos, ref)
-      frags = list(all_diploid_haplotypes(group, group_haplotypes))
+      prefix_haplotypes = list(all_diploid_haplotypes(group, group_haplotypes))
 
-      for haplotypes in create_haplotypes(remaining, next_pos, depth + 1):
-        for result in extend_haplotypes(frags, haplotypes):
+      if not prefix_haplotypes:
+        # prefix_haplotypes can be empty when group contains incompatible
+        # variants making it impossible to construct any haplotypes for group.
+        # For example, if group is:
+        #   variant(start=6, alleles=("AAT", "A"), genotype=(0, 1))
+        #   variant(start=7, alleles=("AT", "T"), genotype=(1, 1))
+        # prefix_haplotypes will be empty because there's no way to construct
+        # the haplotype where the variant@6 has a 1 genotype since it is
+        # deleting away bases that overlap the variant@7 which has a genotype of
+        # (1, 1), meaning it *has* to be present in some haplotype. In this
+        # situation we raise a ImpossibleHaplotype exception, which is caught
+        # in the outer loop, allowing us to bail out of the search ASAP.
+        raise ImpossibleHaplotype
+
+      for haplotypes in create_haplotypes_recursive(remaining, next_pos):
+        for result in extend_haplotypes(prefix_haplotypes, haplotypes):
           yield result
+
+  def create_haplotypes(variants_and_genotypes, last_pos):
+    try:
+      for r in create_haplotypes_recursive(variants_and_genotypes, last_pos):
+        yield r
+    except ImpossibleHaplotype:
+      # See comment in create_haplotypes_recursive for more information, but in
+      # this case we simply `pass`, as we cannot construct any valid haplotypes.
+      pass
 
   genotype_options = genotype_options_for_variants(variants, enumeration_type)
   for genotypes in itertools.product(*genotype_options):
@@ -569,31 +607,38 @@ def split_independent_variants(variants_and_genotypes):
   return overlaps, []
 
 
-def extend_haplotypes(fragments_list, haplotypes):
-  """Yields all diploid combinations of frags x haplotypes.
+def extend_haplotypes(prefix_haplotypes_list, haplotypes):
+  """Yields all diploid combinations of prefix_haplotypes_list x haplotypes.
 
   Args:
-    fragments_list: list[set[string]]: fragments_list contains a list of
-      set[string], which are just like haplotypes (i.e., contains 1 or 2
+    prefix_haplotypes_list: list[set[string]]: prefix_haplotypes_list contains a
+      list of set[string], which are just like haplotypes (i.e., contains 1 or 2
       strings), that collectively represent all possible prefixes of haplotypes.
     haplotypes: set[string]. A set containing 1 or 2 haplotype strings. So it
       looks like {h} or {h1, h2}.
 
   Yields:
     A series of set[string], each containing 1 or 2 haplotype strings.
+
+  Raises:
+    ValueError: if any of the arguments are invalid.
   """
-  # redacted
-  for frags in fragments_list:
-    if len(frags) == 1:
-      f = next(iter(frags))
+  if not prefix_haplotypes_list:
+    raise ValueError('prefix_haplotypes_list cannot be empty')
+  if len(haplotypes) not in {1, 2}:
+    raise ValueError('haplotypes must have exactly 1 or 2 elements', haplotypes)
+
+  for prefix_haplotypes in prefix_haplotypes_list:
+    if len(prefix_haplotypes) == 1:
+      f, = prefix_haplotypes
       yield {f + h for h in haplotypes}
     else:
-      f1, f2 = list(frags)
+      f1, f2 = prefix_haplotypes
       if len(haplotypes) == 1:
-        h = next(iter(haplotypes))
+        h, = haplotypes
         yield {f1 + h, f2 + h}
       else:
-        h1, h2 = list(haplotypes)
+        h1, h2 = haplotypes
         yield {f1 + h1, f2 + h2}
         yield {f1 + h2, f2 + h1}
 
@@ -887,8 +932,6 @@ def deduplicate_haplotypes(haplotypes_and_genotypes):
 # truth variant sequentially. This should be the primary API. Refactor
 # label_examples to use this new API. Then create a new implementation that does
 # the fast version.
-# redacted
-# information about the labeling to compute statistics.
 def find_best_matching_haplotypes(candidates, truths, ref):
   """Assigns genotypes to each variant to best match truths.
 
