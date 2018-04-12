@@ -74,8 +74,7 @@ class ResourceMonitor(object):
         total_memory_mb=_get_total_memory())
 
   def __enter__(self):
-    self.start()
-    return self
+    return self.start()
 
   def __exit__(self, unused_type, unused_value, unused_traceback):
     pass
@@ -84,8 +83,12 @@ class ResourceMonitor(object):
     """Starts timers associated with resource collection.
 
     This method must be called before metrics().
+
+    Returns:
+      self to enable the idiom `monitor = ResourceMonitor().start()`.
     """
     self.wall_start = time.time()
+    return self
 
   def metrics(self):
     """Collects and return runtime metrics as a ResourceMetrics proto.
