@@ -37,8 +37,8 @@ cc_test(
     srcs = ["gunit_extras_test.cc"],
     deps = [
         ":gunit_extras",
+        "//net/proto2/proto:empty_cc_pb2",
         "@com_google_googletest//:gtest_main",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
