@@ -105,6 +105,10 @@ class ResourcesTest(absltest.TestCase):
         self.assertEqual(metrics.read_bytes, 12)
         self.assertEqual(metrics.write_bytes, 34)
 
+  def test_start_returns_self(self):
+    monitor = resources.ResourceMonitor()
+    self.assertIs(monitor.start(), monitor)
+
   def test_metrics_without_start_raises_exception(self):
     monitor = resources.ResourceMonitor()
     with self.assertRaises(RuntimeError):
