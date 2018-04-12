@@ -63,7 +63,7 @@ def set_format(variant_call, field_name, value, vcf_object=None):
       The type of the value is determined by the `vcf_object` if one is given,
       otherwise is looked up based on the reserved FORMAT fields in the VCF
       specification.
-    vcf_object: (Optional) nucleus.io.vcf.Vcf{Reader,Writer}. If not None, the
+    vcf_object: (Optional) A VcfReader or VcfWriter object. If not None, the
       type of the field is inferred from the associated VcfReader or VcfWriter
       based on its name. Otherwise, the type is inferred if it is a reserved
       field.
@@ -92,7 +92,7 @@ def get_format(variant_call, field_name, vcf_object=None):
   Args:
     variant_call: VariantCall proto. The VariantCall of interest.
     field_name: str. The name of the field to retrieve values from.
-    vcf_object: (Optional) nucleus.io.vcf.Vcf{Reader,Writer}. If not None, the
+    vcf_object: (Optional) A VcfReader or VcfWriter object. If not None, the
       type of the field is inferred from the associated VcfReader or VcfWriter
       based on its name. Otherwise, the type is inferred if it is a reserved
       field.
