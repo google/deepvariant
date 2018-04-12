@@ -72,8 +72,8 @@ message ResourceMetrics {
   // for more details.
   //
   // The number of bytes read (cumulative).
-  int32 read_bytes = 9;
+  int64 read_bytes = 9;
   // The number of bytes written (cumulative).
-  int32 write_bytes = 10;
+  int64 write_bytes = 10;
 }
 
