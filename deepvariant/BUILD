@@ -229,6 +229,7 @@ py_library(
         ":exclude_contigs",
         ":logging_level",
         ":pileup_image",
+        ":resources",
         ":tf_utils",
         ":variant_caller",
         "//deepvariant/labeler:haplotype_labeler",

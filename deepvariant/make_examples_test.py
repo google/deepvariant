@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import copy
 import errno
+import platform
 import sys
 
 
@@ -183,10 +184,14 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       options = make_examples.default_options(add_flags=True)
       make_examples.make_examples_runner(options)
 
-      # Check that our options are written out as expected.
+      # Check that our run_info proto contains the basic fields we'd expect:
+      # (a) our options are written to the run_info.options field.
       run_info = make_examples.read_make_examples_run_info(
           options.run_info_filename)
       self.assertEqual(run_info.options, options)
+      # (b) run_info.resource_metrics is present and contains our hostname.
+      self.assertTrue(run_info.HasField('resource_metrics'))
+      self.assertEqual(run_info.resource_metrics.host_name, platform.node())
 
     # Test that our candidates are reasonable, calling specific helper functions
     # to check lots of properties of the output.

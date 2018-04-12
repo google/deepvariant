@@ -53,6 +53,7 @@ from third_party.nucleus.util import utils
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import pileup_image
+from deepvariant import resources
 from deepvariant import tf_utils
 from deepvariant import variant_caller
 from deepvariant.labeler import haplotype_labeler
@@ -1048,6 +1049,7 @@ class OutputsWriter(object):
 
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
+  resource_monitor = resources.ResourceMonitor().start()
   logging.info('Preparing inputs')
   regions = processing_regions_from_options(options)
 
@@ -1078,7 +1080,8 @@ def make_examples_runner(options):
       writer.write_examples(*examples)
 
   # Construct and then write out our MakeExamplesRunInfo proto.
-  run_info = deepvariant_pb2.MakeExamplesRunInfo(options=options)
+  run_info = deepvariant_pb2.MakeExamplesRunInfo(
+      options=options, resource_metrics=resource_monitor.metrics())
   if in_training_mode(options):
     if region_processor.labeler.metrics is not None:
       run_info.labeling_metrics.CopyFrom(region_processor.labeler.metrics)

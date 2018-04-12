@@ -17,6 +17,7 @@ proto_library(
     srcs = ["deepvariant.proto"],
     deps = [
         ":realigner_proto",  # NO COPYBARA
+        ":resources_proto",  # NO COPYBARA
         "//third_party/nucleus/protos:position_proto",  # NO COPYBARA
         "//third_party/nucleus/protos:reads_proto",  # NO COPYBARA
         "//third_party/nucleus/protos:variants_proto",  # NO COPYBARA
@@ -30,6 +31,7 @@ cc_proto_library(
     protoc = "@protobuf_archive//:protoc",
     deps = [
         ":realigner_cc_pb2",
+        ":resources_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
@@ -44,6 +46,7 @@ py_proto_library(
     srcs_version = "PY2AND3",
     deps = [
         ":realigner_py_pb2",
+        ":resources_py_pb2",
         "//third_party/nucleus/protos:position_py_pb2",
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
