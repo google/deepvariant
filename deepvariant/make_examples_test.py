@@ -178,14 +178,15 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
       FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
 
-    writing_labeling_metrics = mode == 'training' and num_shards == 0
-    if writing_labeling_metrics:
-      FLAGS.labeling_metrics = test_utils.test_tmpfile('labeler_metrics.pbtxt')
-
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
       options = make_examples.default_options(add_flags=True)
       make_examples.make_examples_runner(options)
+
+      # Check that our options are written out as expected.
+      run_info = make_examples.read_make_examples_run_info(
+          options.run_info_filename)
+      self.assertEqual(run_info.options, options)
 
     # Test that our candidates are reasonable, calling specific helper functions
     # to check lots of properties of the output.
@@ -230,12 +231,14 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           io_utils.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant))
       self.assertItemsEqual(gvcfs, expected_gvcfs)
 
-    if writing_labeling_metrics and labeler_algorithm != 'positional_labeler':
+    if (mode == 'training' and num_shards == 0 and
+        labeler_algorithm != 'positional_labeler'):
       # The positional labeler doesn't track metrics, so don't try to read them
       # in when that's the mode.
       self.assertEqual(
-          make_examples.read_labeling_metrics(testdata.GOLDEN_LABELING_METRICS),
-          make_examples.read_labeling_metrics(FLAGS.labeling_metrics))
+          make_examples.read_make_examples_run_info(
+              testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO).labeling_metrics,
+          run_info.labeling_metrics)
 
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call all of the real variants (according to NIST's Genome
@@ -367,26 +370,30 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
 class MakeExamplesUnitTest(parameterized.TestCase):
 
-  def test_read_write_metrics(self):
+  def test_read_write_run_info(self):
 
     def _read_lines(path):
       with open(path) as fin:
         return list(fin.readlines())
 
-    golden_actual = make_examples.read_labeling_metrics(
-        testdata.GOLDEN_LABELING_METRICS)
+    golden_actual = make_examples.read_make_examples_run_info(
+        testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO)
     # We don't really want to inject too much knowledge about the golden right
-    # here, so we only use a minimal test that the number of candidates sites
-    # is greater than 0. Any reasonable golden output will have at least one
-    # candidate variant, and the reader should have filled in the value.
-    self.assertEqual(golden_actual.n_candidate_variant_sites,
+    # here, so we only use a minimal test that (a) the run_info_filename is
+    # a non-empty string and (b) the number of candidates sites in the labeling
+    # metrics field is greater than 0. Any reasonable golden output will have at
+    # least one candidate variant, and the reader should have filled in the
+    # value.
+    self.assertGreater(len(golden_actual.options.run_info_filename), 0)
+    self.assertEqual(golden_actual.labeling_metrics.n_candidate_variant_sites,
                      testdata.N_GOLDEN_TRAINING_EXAMPLES)
 
     # Check that reading + writing the data produces the same lines:
-    tmp_output = test_utils.test_tmpfile('written_labeler_metrics.pbtxt')
-    make_examples.write_labeling_metrics(golden_actual, tmp_output)
+    tmp_output = test_utils.test_tmpfile('written_run_info.pbtxt')
+    make_examples.write_make_examples_run_info(golden_actual, tmp_output)
     self.assertEqual(
-        _read_lines(testdata.GOLDEN_LABELING_METRICS), _read_lines(tmp_output))
+        _read_lines(testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO),
+        _read_lines(tmp_output))
 
   @parameterized.parameters(
       dict(

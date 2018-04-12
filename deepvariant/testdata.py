@@ -71,7 +71,7 @@ GOLDEN_POSTPROCESS_INPUT = None
 GOLDEN_POSTPROCESS_OUTPUT = None
 GOLDEN_POSTPROCESS_GVCF_INPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT = None
-GOLDEN_LABELING_METRICS = None
+GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
 
 N_GOLDEN_TRAINING_EXAMPLES = 49
 N_GOLDEN_CALLING_EXAMPLES = 82
@@ -90,7 +90,7 @@ def init():
   global GOLDEN_POSTPROCESS_OUTPUT
   global GOLDEN_POSTPROCESS_GVCF_INPUT
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT
-  global GOLDEN_LABELING_METRICS
+  global GOLDEN_MAKE_EXAMPLES_RUN_INFO
 
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
@@ -112,5 +112,5 @@ def init():
       'golden.postprocess_gvcf_input.tfrecord')
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_output.g.vcf')
-  GOLDEN_LABELING_METRICS = deepvariant_testdata(
-      'golden.training_labeling_metrics.pbtxt')
+  GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
+      'golden.training_examples.tfrecord.run_info.pbtxt')
