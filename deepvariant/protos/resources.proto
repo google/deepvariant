@@ -1,0 +1,79 @@
+// Copyright 2017 Google Inc.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+// Protocol buffers for describing resource usage metrics for a program.
+
+syntax = "proto3";
+
+package learning.genomics.deepvariant;
+
+// This proto encodes basic runtime performance metrics for the
+// execution of a command---the command that was executed, the
+// start/stop times, CPU, memory, and disk utilization, etc.
+message ResourceMetrics {
+  // ---------------------------------------------------------------------------
+  // Information about the runtime environment
+  // ---------------------------------------------------------------------------
+
+  // Fully qualified host name.
+  string host_name = 1;
+  // The count of physical CPU cores. If the default value (0) indicates that
+  // the value couldn't be determined.
+  int32 physical_core_count = 2;
+  // Nominal (maximum) CPU frequency in MHz. If the default value (0.0)
+  // indicates that the value couldn't be determined.
+  double cpu_frequency_mhz = 3;
+  // Total physical memory, in megabytes.
+  int32 total_memory_mb = 4;
+
+  // ---------------------------------------------------------------------------
+  // Information about the resource usage of the process itself.
+  // ---------------------------------------------------------------------------
+
+  // Total wall clock time in seconds.
+  double wall_time_seconds = 5;
+  // CPU time in seconds in user mode. If the default value (0.0) indicates that
+  // the value couldn't be determined.
+  double cpu_user_time_seconds = 6;
+  // CPU time in seconds in system mode. If the default value (0.0) indicates
+  // that the value couldn't be determined.
+  double cpu_system_time_seconds = 7;
+  // Peak memory usage in megabytes (RSS). If the default value (0.0) indicates
+  // that the value couldn't be determined.
+  int32 memory_peak_rss_mb = 8;
+
+  // See https://psutil.readthedocs.io/en/latest/#psutil.Process.io_counters
+  // for more details.
+  //
+  // The number of bytes read (cumulative).
+  int32 read_bytes = 9;
+  // The number of bytes written (cumulative).
+  int32 write_bytes = 10;
+}
+

@@ -745,3 +745,20 @@ py_test(
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
+
+py_binary(
+    name = "resources",
+    srcs = ["resources.py"],
+    srcs_version = "PY2AND3",
+    deps = ["//deepvariant/protos:resources_py_pb2"],
+)
+
+py_test(
+    name = "resources_test",
+    srcs = ["resources_test.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":resources",
+        "@com_google_absl_py//absl/testing:absltest",
+    ],
+)

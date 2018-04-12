@@ -8,6 +8,10 @@ package(
     ],
 )
 
+# ------------------------------------------------------------------------------
+# deepvariant proto
+# ------------------------------------------------------------------------------
+
 proto_library(
     name = "deepvariant_proto",
     srcs = ["deepvariant.proto"],
@@ -51,6 +55,10 @@ pyclif_proto_library(
     proto_lib = ":deepvariant_proto",  # NO COPYBARA
 )
 
+# ------------------------------------------------------------------------------
+# realigner proto
+# ------------------------------------------------------------------------------
+
 py_proto_library(
     name = "realigner_py_pb2",
     srcs = ["realigner.proto"],
@@ -77,4 +85,28 @@ proto_library(
 pyclif_proto_library(
     name = "realigner_pyclif",
     proto_lib = ":realigner_proto",  # NO COPYBARA
+)
+
+# ------------------------------------------------------------------------------
+# resources proto
+# ------------------------------------------------------------------------------
+
+py_proto_library(
+    name = "resources_py_pb2",
+    srcs = ["resources.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+)
+
+cc_proto_library(
+    name = "resources_cc_pb2",
+    srcs = ["resources.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+)
+
+proto_library(
+    name = "resources_proto",
+    srcs = ["resources.proto"],
 )
