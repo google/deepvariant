@@ -33,6 +33,7 @@ import "third_party/nucleus/protos/position.proto";
 import "third_party/nucleus/protos/reads.proto";
 import "third_party/nucleus/protos/variants.proto";
 import "deepvariant/protos/realigner.proto";
+import "deepvariant/protos/resources.proto";
 
 
 package learning.genomics.deepvariant;
@@ -760,10 +761,9 @@ message LabelingMetrics {
 
 // Configuration and runtime information about a MakeExamples run in
 // DeepVariant.
-// Next ID: 3.
+// Next ID: 4.
 message MakeExamplesRunInfo {
   DeepVariantOptions options = 1;
   LabelingMetrics labeling_metrics = 2;
-
-  // redacted
+  ResourceMetrics resource_metrics = 3;
 }

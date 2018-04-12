@@ -3513,3 +3513,15 @@ labeling_metrics {
   n_exact_position_and_allele_matches: 48
   n_exact_position_and_allele_and_genotype_matches: 48
 }
+resource_metrics {
+  host_name: "redacted"
+  physical_core_count: 24
+  cpu_frequency_mhz: 1302.7469375
+  total_memory_mb: 64400
+  wall_time_seconds: 6.1003510952
+  cpu_user_time_seconds: 14.568
+  cpu_system_time_seconds: 6.652
+  memory_peak_rss_mb: 397
+  read_bytes: 857284608
+  write_bytes: 32768
+}
