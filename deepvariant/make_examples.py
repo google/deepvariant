@@ -75,6 +75,10 @@ NO_RANDOM_REF = 0.0
 # The name used for a sample if one is not specified or present in the reads.
 _UNKNOWN_SAMPLE = 'UNKNOWN'
 
+# The extension we add to our examples path to write our MakeExamplesRunInfo
+# protobuf.
+_RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
+
 # Use a default hts_block_size value of 128 MB (see b/69330994 for details) to
 # improve SAM/BAM reading throughput, particularly on remote filesystems. Do not
 # modify this default parameter without a systematic evaluation of the impact
@@ -184,11 +188,6 @@ flags.DEFINE_string(
     'labeler_algorithm', 'haplotype_labeler',
     'Algorithm to use to label examples in training mode. Must be one of the '
     'LabelerAlgorithm enum values in the DeepVariantOptions proto.')
-flags.DEFINE_string(
-    'labeling_metrics', None,
-    'Optional. If provided, should be a path where we will write out a '
-    'text-format protobuf containing metrics about how the labeling of '
-    'variants. Only valid in training mode.')
 
 
 # ---------------------------------------------------------------------------
@@ -318,8 +317,6 @@ def default_options(add_flags=True, flags_obj=None):
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
-    if flags_obj.labeling_metrics:
-      options.labeling_metrics_filename = flags_obj.labeling_metrics
 
     if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
       options.downsample_fraction = flags_obj.downsample_fraction
@@ -344,6 +341,7 @@ def default_options(add_flags=True, flags_obj=None):
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
+    options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
 
     options.calling_regions.extend(parse_regions_flag(flags_obj.regions))
     options.exclude_calling_regions.extend(
@@ -428,16 +426,16 @@ def _set_variant_genotype(variant, genotype):
 # ---------------------------------------------------------------------------
 
 
-def read_labeling_metrics(path):
-  """Reads a LabelingMetrics proto in text_format from path."""
+def read_make_examples_run_info(path):
+  """Reads a MakeExamplesRunInfo proto in text_format from path."""
   with tf.gfile.GFile(path) as f:
-    return text_format.Parse(f.read(), deepvariant_pb2.LabelingMetrics())
+    return text_format.Parse(f.read(), deepvariant_pb2.MakeExamplesRunInfo())
 
 
-def write_labeling_metrics(metrics, path):
-  """Writes a LabelingMetrics proto in text_format to path."""
+def write_make_examples_run_info(run_info_proto, path):
+  """Writes a MakeExamplesRunInfo proto in text_format to path."""
   with tf.gfile.GFile(path, mode='w') as writer:
-    writer.write(text_format.MessageToString(metrics))
+    writer.write(text_format.MessageToString(run_info_proto))
 
 
 # ---------------------------------------------------------------------------
@@ -1079,17 +1077,19 @@ def make_examples_runner(options):
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
 
-  if options.labeling_metrics_filename:
+  # Construct and then write out our MakeExamplesRunInfo proto.
+  run_info = deepvariant_pb2.MakeExamplesRunInfo(options=options)
+  if in_training_mode(options):
     if region_processor.labeler.metrics is not None:
-      logging.info('Writing labeling metrics to %s',
-                   options.labeling_metrics_filename)
-      write_labeling_metrics(region_processor.labeler.metrics,
-                             options.labeling_metrics_filename)
+      run_info.labeling_metrics.CopyFrom(region_processor.labeler.metrics)
     else:
       logging.warning(
           'Labeling metrics requested but the selected labeling '
           'algorithm %s does not collect metrics; skipping.',
           options.labeler_algorithm)
+  logging.info('Writing MakeExamplesRunInfo to %s', options.run_info_filename)
+  write_make_examples_run_info(run_info, path=options.run_info_filename)
+
   logging.info('Found %s candidate variants', n_candidates)
 
 
@@ -1145,9 +1145,6 @@ def main(argv=()):
       if options.variant_caller_options.gq_resolution < 1:
         errors.log_and_raise('gq_resolution must be a non-negative integer.',
                              errors.CommandLineError)
-      if options.labeling_metrics_filename:
-        errors.log_and_raise(
-            'labeling_metrics argument only allowed in training mode.')
 
     # Run!
     make_examples_runner(options)

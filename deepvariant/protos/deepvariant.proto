@@ -423,6 +423,7 @@ message PileupImageOptions {
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
 // Next ID: 29.
+// redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -537,7 +538,7 @@ message DeepVariantOptions {
   // The labeling algorithm we are using in this DeepVariant run. Only needed
   // when in CALLING mode.
   LabelerAlgorithm labeler_algorithm = 27;
-  string labeling_metrics_filename = 28;
+  string run_info_filename = 28;
 }
 
 // Config describe information needed for a dataset that can be used for
@@ -592,6 +593,7 @@ message DeepVariantInputDatasetsGroup {
 
 // Metrics on the labeling of candidate / truth variants when running
 // DeepVariant's make_examples in training mode.
+// Next ID: 17.
 message LabelingMetrics {
   // Notes on counting by site or by allele:
   //
@@ -754,4 +756,14 @@ message LabelingMetrics {
   // allele where at least one alternative allele was missed (i.e., was assigned
   // a genotype of 0 in the match).
   int32 n_truth_multiallelics_sites_with_missed_alleles = 16;
+}
+
+// Configuration and runtime information about a MakeExamples run in
+// DeepVariant.
+// Next ID: 3.
+message MakeExamplesRunInfo {
+  DeepVariantOptions options = 1;
+  LabelingMetrics labeling_metrics = 2;
+
+  // redacted
 }
