@@ -66,6 +66,12 @@ assign genotype likelihoods from the experimental data produced by the
 instrument. Read additional information on the [Google Research
 blog](https://research.googleblog.com/2017/12/deepvariant-highly-accurate-genomes.html).
 
+Under the hood, DeepVariant relies on
+[Nucleus](https://github.com/google/nucleus), a library of Python and C++ code
+for reading and writing data in common genomics file formats (like SAM and VCF)
+designed for painless integration with the
+[TensorFlow](https://www.tensorflow.org/) machine learning framework.
+
 ## Evaluating DeepVariant
 
 We are delighted to see several external evaluations of the DeepVariant method.
@@ -122,6 +128,8 @@ specifically call out a few key ones:
 *   [GNU Parallel](https://www.gnu.org/software/parallel/)
 
 *   [htslib & samtools](http://www.htslib.org/)
+
+*   [Nucleus](https://github.com/google/nucleus)
 
 *   [numpy](http://www.numpy.org/)
 
