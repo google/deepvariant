@@ -37,6 +37,7 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 
+import six
 from third_party.nucleus.io import sam
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
@@ -68,7 +69,7 @@ class SamReaderTests(parameterized.TestCase):
     with reader:
       iterable = reader.iterate()
       # We expect 106 records in total.
-      for _ in xrange(10):
+      for _ in range(10):
         results = list(itertools.islice(iterable, 10))
         self.assertEqual(len(results), 10)
       results = list(itertools.islice(iterable, 10))
@@ -193,7 +194,7 @@ class SamReaderTests(parameterized.TestCase):
                                               expected_values):
         if isinstance(expected_value, float):
           self.assertAlmostEqual(actual_value.number_value, expected_value)
-        elif isinstance(expected_value, (int, long)):
+        elif isinstance(expected_value, six.integer_types):
           self.assertEqual(actual_value.int_value, expected_value)
         elif isinstance(expected_value, str):
           self.assertEqual(actual_value.string_value, expected_value)

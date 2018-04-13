@@ -33,11 +33,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys
+
 from absl.testing import absltest
 from absl.testing import parameterized
-from third_party.nucleus.util import struct_utils
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import struct_utils
 
 
 def _set_protomap_from_dict(d):
@@ -189,8 +191,8 @@ class StructUtilsTest(parameterized.TestCase):
       dict(value=[], is_single_field=False, expected=[]),
       dict(value=[], is_single_field=True, expected=[]),
       dict(value=[1], is_single_field=False, expected=[1]),
-      dict(value=[1L], is_single_field=True, expected=1),
-      dict(value=[1, 2L], is_single_field=False, expected=[1, 2]),
+      dict(value=[1], is_single_field=True, expected=1),
+      dict(value=[1, 2], is_single_field=False, expected=[1, 2]),
       dict(value=[1, 2], is_single_field=True, expected=1),
   )
   def test_get_int_field(self, value, is_single_field, expected):
@@ -199,6 +201,12 @@ class StructUtilsTest(parameterized.TestCase):
     struct_utils.set_int_field(field_map, key, value)
     actual = struct_utils.get_int_field(field_map, key, is_single_field)
     self.assertEqual(actual, expected)
+    # Test long handling in Python 2
+    if sys.version_info.major < 3:
+      field_map = _set_protomap_from_dict({})
+      struct_utils.set_int_field(field_map, key, [long(v) for v in value])
+      actual = struct_utils.get_int_field(field_map, key, is_single_field)
+      self.assertEqual(actual, expected)
 
   @parameterized.parameters(
       dict(initial_fields={}, value='hello', expected=['hello']),

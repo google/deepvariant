@@ -46,6 +46,7 @@ import os
 import re
 
 import contextlib2
+import six
 
 from tensorflow.core.example import example_pb2
 from tensorflow.python.lib.io import python_io
@@ -248,9 +249,9 @@ def maybe_generate_sharded_filenames(filespec):
     A list of file paths.
 
   Raises:
-    TypeError: if filespec is not valid basestring type.
+    TypeError: if filespec is not in valid string_types.
   """
-  if not isinstance(filespec, basestring):
+  if not isinstance(filespec, six.string_types):
     raise TypeError('Invalid filespec: %s' % filespec)
   if IsShardedFileSpec(filespec):
     return GenerateShardedFilenames(filespec)
