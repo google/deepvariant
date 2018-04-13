@@ -49,7 +49,7 @@ py_library(
     deps = [
         ":utils",
         "//third_party/nucleus/protos:cigar_py_pb2",
-        "//third_party/nucleus/protos:range_py_pb2",
+        "//third_party/nucleus/util:ranges",
     ],
 )
 
@@ -61,8 +61,9 @@ py_test(
         ":window_selector",
         "//deepvariant:py_testdata",
         "//deepvariant/protos:realigner_py_pb2",
-        "//third_party/nucleus/protos:range_py_pb2",
+        "//third_party/nucleus/util:ranges",
         "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
 

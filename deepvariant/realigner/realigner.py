@@ -356,16 +356,7 @@ class Realigner(object):
     """
     self.config = config
     self.ref_reader = ref_reader
-    self.window_sel = window_selector.WindowSelector(self.config.ws_config)
     self.diagnostic_logger = DiagnosticLogger(self.config.diagnostics)
-
-  def call_window_selector(self, region, reads):
-    """Helper function to call window_selector module."""
-    return sorted(
-        self.window_sel.process_reads(
-            self.ref_reader.query(region), reads, region.reference_name,
-            region.start),
-        key=ranges.as_tuple)
 
   def call_debruijn_graph(self, windows, reads):
     """Helper function to call debruijn_graph module."""
@@ -464,7 +455,9 @@ class Realigner(object):
         ORDER AS BEFORE.
     """
     # Compute the windows where we need to assemble in the region.
-    candidate_windows = self.call_window_selector(region, reads)
+    candidate_windows = window_selector.select_windows(
+        self.config.ws_config, self.ref_reader, reads, region)
+
     # Assemble each of those regions.
     candidate_haplotypes = self.call_debruijn_graph(candidate_windows, reads)
     # Create our simple container to store candidate / read mappings.
