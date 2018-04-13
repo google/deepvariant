@@ -34,7 +34,7 @@ from __future__ import division
 from __future__ import print_function
 
 import re
-
+import six
 from third_party.nucleus.protos import cigar_pb2
 
 # A frozenset of all CigarUnit.Operation enum values at advance the alignment
@@ -156,14 +156,14 @@ def to_cigar_unit(source):
   try:
     if isinstance(source, cigar_pb2.CigarUnit):
       return source
-    elif isinstance(source, basestring):
+    elif isinstance(source, six.string_types):
       l, op = source[:-1], source[-1]
     elif isinstance(source, (tuple, list)):
       l, op = source
     else:
       raise ValueError('Unexpected source', source)
 
-    if isinstance(op, basestring):
+    if isinstance(op, six.string_types):
       op = CHAR_TO_CIGAR_OPS[op]
     l = int(l)
     if l < 1:
@@ -188,7 +188,7 @@ def to_cigar_units(source):
   Returns:
     list[CigarUnit].
   """
-  if isinstance(source, basestring):
+  if isinstance(source, six.string_types):
     return parse_cigar_string(source)
   else:
     return [to_cigar_unit(singleton) for singleton in source]

@@ -37,6 +37,7 @@ import os
 
 from tensorflow import flags
 from absl.testing import absltest
+import six
 
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import reads_pb2
@@ -126,7 +127,7 @@ def set_list_values(list_value, values):
       return struct_pb2.Value(string_value=value)
     elif isinstance(value, float):
       return struct_pb2.Value(number_value=value)
-    elif isinstance(value, (int, long)):
+    elif isinstance(value, six.integer_types):
       return struct_pb2.Value(int_value=value)
     else:
       raise ValueError('Unsupported type ', value)

@@ -39,6 +39,7 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
+import six
 
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
@@ -538,7 +539,7 @@ class VariantUtilsTests(parameterized.TestCase):
       variant_utils.genotype_likelihood(variantcall, [0, 1, 1])
 
   def test_haploid_allele_indices_for_genotype_likelihood_index(self):
-    for aix in xrange(20):
+    for aix in six.moves.xrange(20):
       allele_indices = (aix,)
       ix = variant_utils.genotype_likelihood_index(allele_indices)
       actual = variant_utils.allele_indices_for_genotype_likelihood_index(
