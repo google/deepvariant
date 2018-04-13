@@ -33,11 +33,11 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
-import gzip
 import re
 
 import intervaltree
 
+from third_party.nucleus.io import bed
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
 from tensorflow.python.platform import gfile
@@ -133,10 +133,7 @@ class RangeSet(object):
     Returns:
       A RangeSet.
     """
-    with gfile.GFile(source) as fin:
-      if source.endswith('.gz'):
-        fin = gzip.GzipFile(fileobj=fin)
-      return cls(bed_parser(fin))
+    return cls(bed_parser(source))
 
   def intersection(self, *others):
     """Computes the intersection among this RangeSet and *others RangeSets.
@@ -342,7 +339,7 @@ def ranges_overlap(i1, i2):
           i1.start < i2.end)
 
 
-def bedpe_parser(fd):
+def bedpe_parser(filename):
   """Parses Range objects from a BEDPE-formatted file object.
 
   See http://bedtools.readthedocs.org/en/latest/content/general-usage.html
@@ -353,33 +350,33 @@ def bedpe_parser(fd):
   not appear in the output.
 
   Args:
-    fd: An iterable producing string, one per line in BEDPE format.
+    filename: file name of a BEDPE-formatted file.
 
   Yields:
     nucleus.genomics.v1.Range protobuf objects.
   """
-  for line in fd:
+  for line in gfile.GFile(filename):
     parts = line.split('\t')
     if parts[0] == parts[3]:
       # only keep events on the same chromosome
       yield make_range(parts[0], int(parts[1]), int(parts[5]))
 
 
-def bed_parser(fd):
+def bed_parser(filename):
   """Parses Range objects from a BED-formatted file object.
 
   See http://bedtools.readthedocs.org/en/latest/content/general-usage.html
   for more information on the BED format.
 
   Args:
-    fd: An iterable producing string, one per line in BED format.
+    filename: file name of a BED-formatted file.
 
   Yields:
     nucleus.genomics.v1.Range protobuf objects.
   """
-  for line in fd:
-    parts = line.split('\t')
-    yield make_range(parts[0], int(parts[1]), int(parts[2]))
+  with bed.BedReader(filename) as fin:
+    for r in fin.iterate():
+      yield make_range(r.reference_name, r.start, r.end)
 
 
 def from_regions(regions, contig_map=None):
@@ -412,9 +409,8 @@ def from_regions(regions, contig_map=None):
   for region in regions:
     reader = _get_parser_for_file(region)
     if reader:
-      with gfile.GFile(region) as fin:
-        for elt in reader(fin):
-          yield elt
+      for elt in reader(region):
+        yield elt
     else:
       yield parse_literal(region, contig_map)
 
@@ -512,34 +508,6 @@ def parse_literals(region_literals, contig_map=None):
   """Parses each literal of region_literals in order."""
   return [parse_literal(literal, contig_map) for literal in region_literals]
 
-
-def parse_lines(lines, file_format=None):
-  """Creates a generator of Range objects from source lines in file_format.
-
-  This is a genetic function for reading Range objects from a source. A parser
-  will be created suitable for file_format, and each line of lines will be
-  parsed.
-
-  Args:
-    lines: An iterable yielding single lines in file_format format, in order.
-    file_format: A string specification of the format of the lines. Currently
-      can be one of BED and BEDPE.
-
-  Returns:
-    A generator of Range objects.
-
-  Raises:
-    ValueError: If no suitable parser for file_format could be found.
-  """
-  readers = {
-      'bedpe': bedpe_parser,
-      'bed': bed_parser,
-  }
-  parser = readers.get(file_format.lower(), None)
-  if not parser:
-    raise ValueError('Unsupported file format', file_format)
-  else:
-    return parser(lines)
 
 
 def contigs_n_bases(contigs):
