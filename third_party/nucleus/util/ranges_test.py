@@ -26,7 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 """Tests for ranges.py."""
 from __future__ import absolute_import
 from __future__ import division
@@ -407,18 +406,14 @@ class RangesTests(parameterized.TestCase):
     self.assertCountEqual([ranges.make_range(*args) for args in expected],
                           rangeset.partition(interval_size))
 
-  def test_unknown_filetype(self):
-    with self.assertRaises(ValueError):
-      ranges.parse_lines([], file_format='png')
-
   def test_bed_parser(self):
-    data = [
-        'chr20\t61724611\t61725646',
-        'chr20\t61304163\t61305182',
-        'chr20\t61286467\t61286789',
-    ]
+    test_bed_path = test_utils.test_tmpfile(
+        'test_bed_parser.bed', '\n'.join([
+            'chr20\t61724611\t61725646', 'chr20\t61304163\t61305182',
+            'chr20\t61286467\t61286789'
+        ]))
     self.assertEqual(
-        list(ranges.parse_lines(data, 'bed')), [
+        list(ranges.bed_parser(test_bed_path)), [
             ranges.make_range('chr20', 61724611, 61725646),
             ranges.make_range('chr20', 61304163, 61305182),
             ranges.make_range('chr20', 61286467, 61286789),
@@ -426,13 +421,14 @@ class RangesTests(parameterized.TestCase):
 
   def test_bedpe_parser(self):
     # pylint: disable=line-too-long
-    data = [
+    data = '\n'.join([
         'chr20\t25763416\t25765517\tchr20\t25825181\t25826882\tP2_PM_20_1549\t63266\t+\tTYPE:DELETION',
         'chr20\t25972820\t25972991\tchr20\t26045347\t26045538\tP2_PM_20_696\t72548\t+\tTYPE:DELETION',
         'chr20\t23719873\t23721974\tchr20\t23794822\t23796523\tP2_PM_20_1548\t76450\t+\tTYPE:DELETION',
-    ]
+    ])
+    test_bedpe_path = test_utils.test_tmpfile('test_bedpe_parser.bedpe', data)
     self.assertEqual(
-        list(ranges.parse_lines(data, 'bedpe')), [
+        list(ranges.bedpe_parser(test_bedpe_path)), [
             ranges.make_range('chr20', 25763416, 25826882),
             ranges.make_range('chr20', 25972820, 26045538),
             ranges.make_range('chr20', 23719873, 23796523),
@@ -440,13 +436,14 @@ class RangesTests(parameterized.TestCase):
 
   def test_bedpe_parser_skips_cross_chr_events(self):
     # pylint: disable=line-too-long
-    data = [
+    data = '\n'.join([
         'chr20\t25763416\t25765517\tchr21\t25825181\t25826882\tP2_PM_20_1549\t63266\t+\tTYPE:DELETION',
         'chr20\t25972820\t25972991\tchr20\t26045347\t26045538\tP2_PM_20_696\t72548\t+\tTYPE:DELETION',
         'chr20\t23719873\t23721974\tchr20\t23794822\t23796523\tP2_PM_20_1548\t76450\t+\tTYPE:DELETION',
-    ]
+    ])
+    test_bedpe_path = test_utils.test_tmpfile('test_bedpe_parser2.bedpe', data)
     self.assertEqual(
-        list(ranges.parse_lines(data, 'bedpe')), [
+        list(ranges.bedpe_parser(test_bedpe_path)), [
             ranges.make_range('chr20', 25972820, 26045538),
             ranges.make_range('chr20', 23719873, 23796523),
         ])
