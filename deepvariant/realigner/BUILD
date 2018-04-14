@@ -135,3 +135,33 @@ cc_test(
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
+
+cc_library(
+    name = "fast_pass_aligner",
+    srcs = [
+        "fast_pass_aligner.cc",
+    ],
+    hdrs = [
+        "fast_pass_aligner.h",
+    ],
+    deps = [
+        ":ssw",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "@com_googlesource_code_re2//:re2",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "fast_pass_aligner_test",
+    size = "small",
+    srcs = ["fast_pass_aligner_test.cc"],
+    deps = [
+        "fast_pass_aligner",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
