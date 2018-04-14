@@ -243,28 +243,23 @@ data we used.
 
 ### WGS models
 
-|      | Replicates                             | #examples   |
-| ---- | -------------------------------------- | ----------- |
-| v0.4 | 9 HG001                                | 85,323,867  |
-| v0.5 | 9 HG001<br>78 HG001 WES<br>1 HG005     | 115,975,740 |
-:      : WES<sup>[(1)](#myfootnote1)</sup><br>2 :             :
-:      : HG005                                  :             :
-| v0.6 | 9 HG001<br>2 HG005<br>5 HG001 PCR+     | 156,571,227 |
+version | Replicates                             | #examples
+------- | -------------------------------------- | -----------
+v0.4    | 9 HG001                                | 85,323,867
+v0.5    | 9 HG001<br>2 HG005<br>78 HG001 WES<br>1 HG005 WES<sup>[(1)](#myfootnote1)</sup> | 115,975,740
+v0.6    | 9 HG001<br>2 HG005<br>5 HG001 PCR+     | 156,571,227
 
 ### WES models
 
-     | Replicates                  | #examples
----- | --------------------------- | -----------------------------------------
-v0.5 | 78 HG001 WES<br>1 HG005 WES | 15,714,062
-v0.6 | 78 HG001 WES<br>1 HG005 WES | 15,705,449 <sup>[(2)](#myfootnote2)</sup>
+version | Replicates                  | #examples
+------- | --------------------------- | ------------------------------
+v0.5    | 78 HG001 WES<br>1 HG005 WES | 15,714,062
+v0.6    | 78 HG001 WES<br>1 HG005 WES<sup>[(2)](#myfootnote2)</sup> | 15,705,449
 
-<a name="myfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
-sequencing data into training data. In v0.6, we took it out because it didn't
-improve the WGS accuracy.
 
-<a name="myfootnote2">(2)</a>: The training data are from the same replicates as
-v0.5. The number of examples changed because of the update in
-[haplotype_labeler](https://github.com/google/deepvariant/tree/r0.6/deepvariant/labeler/haplotype_labeler.py).
+<a name="myfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome sequencing data into training data. In v0.6, we took it out because it didn't improve the WGS accuracy.
+
+<a name="myfootnote2">(2)</a>: The training data are from the same replicates as v0.5. The number of examples changed because of the update in [haplotype_labeler](https://github.com/google/deepvariant/tree/r0.6/deepvariant/labeler/haplotype_labeler.py).
 
 ## Optimizing DeepVariant
 
