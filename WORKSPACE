@@ -40,13 +40,16 @@ local_repository(
 )
 
 # Required boilerplate for tf_workspace(), apparently.
+# This is copied from https://github.com/tensorflow/tensorflow/blob/v1.7.0/WORKSPACE.
+# Because in build-prereq.sh we are pinning by "git checkout v1.7.0".
+# Note: Make sure to update both in future versions.
 http_archive(
     name = "io_bazel_rules_closure",
-    sha256 = "25f5399f18d8bf9ce435f85c6bbf671ec4820bc4396b3022cc5dc4bc66303609",
-    strip_prefix = "rules_closure-0.4.2",
+    sha256 = "6691c58a2cd30a86776dd9bb34898b041e37136f2dc7e24cadaeaf599c95c657",
+    strip_prefix = "rules_closure-08039ba8ca59f64248bb3b6ae016460fe9c9914f",
     urls = [
-        "http://mirror.bazel.build/github.com/bazelbuild/rules_closure/archive/0.4.2.tar.gz",  # 2017-08-29
-        "https://github.com/bazelbuild/rules_closure/archive/0.4.2.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_closure/archive/08039ba8ca59f64248bb3b6ae016460fe9c9914f.tar.gz",
+        "https://github.com/bazelbuild/rules_closure/archive/08039ba8ca59f64248bb3b6ae016460fe9c9914f.tar.gz",  # 2018-01-16
     ],
 )
 
