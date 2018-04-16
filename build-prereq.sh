@@ -150,6 +150,7 @@ note_build_stage "Download and configure TensorFlow sources"
 (cd .. &&
  git clone https://github.com/tensorflow/tensorflow &&
  cd tensorflow &&
+ git checkout v1.7.0 &&
  echo | ./configure)
 
 note_build_stage "build-prereq.sh complete"
