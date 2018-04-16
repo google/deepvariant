@@ -146,6 +146,7 @@ def _process_read(config, ref, read, ref_offset):
       positions.update(
           _process_soft_clip(config, cigar, ref, read, ref_pos, read_pos))
       read_pos += cigar.operation_length
+    # redacted
     elif (cigar.operation == cigar_pb2.CigarUnit.DELETE or
           cigar.operation == cigar_pb2.CigarUnit.SKIP):
       positions.update(
