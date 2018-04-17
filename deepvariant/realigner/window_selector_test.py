@@ -166,10 +166,9 @@ class WindowSelectorTest(parameterized.TestCase):
       dict(bases='AA', cigar='1M1S', expected=[11]),
       dict(bases='AAA', cigar='1M2S', expected=[11, 12]),
       dict(bases='AAAA', cigar='1M3S', expected=[11, 12, 13]),
-      # The skip (S), hard clip (H), and pad (P) operators are all ignored.
-      # redacted
-      # dict(bases='AA', cigar='1M1N1M', expected=[]),
-      # dict(bases='AA', cigar='1M2N1M', expected=[]),
+      # The skip (N) and hard clip (H) operators are both ignored.
+      dict(bases='AA', cigar='1M1N1M', expected=[]),
+      dict(bases='AA', cigar='1M2N1M', expected=[]),
       dict(bases='A', cigar='1M1H', expected=[]),
       dict(bases='A', cigar='1M1H', expected=[]),
       # The current code raises an exception about an unsupported CIGAR

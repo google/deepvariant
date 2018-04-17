@@ -146,9 +146,7 @@ def _process_read(config, ref, read, ref_offset):
       positions.update(
           _process_soft_clip(config, cigar, ref, read, ref_pos, read_pos))
       read_pos += cigar.operation_length
-    # redacted
-    elif (cigar.operation == cigar_pb2.CigarUnit.DELETE or
-          cigar.operation == cigar_pb2.CigarUnit.SKIP):
+    elif cigar.operation == cigar_pb2.CigarUnit.DELETE:
       positions.update(
           _process_delete(config, cigar, ref, read, ref_pos, read_pos))
       ref_pos += cigar.operation_length
@@ -156,7 +154,8 @@ def _process_read(config, ref, read, ref_offset):
       ref_pos += cigar.operation_length
       read_pos += cigar.operation_length
     elif (cigar.operation == cigar_pb2.CigarUnit.CLIP_HARD or
-          cigar.operation == cigar_pb2.CigarUnit.PAD):
+          cigar.operation == cigar_pb2.CigarUnit.PAD or
+          cigar.operation == cigar_pb2.CigarUnit.SKIP):
       pass
 
   # Yield positions within the range
@@ -176,7 +175,6 @@ def _candidates_from_reads(config, ref, reads, region):
     - INSERT: at positions within
         [cigar_start - cigar_len, cigar_start + cigar_len)
     - CLIP_SOFT: at positions within [cigar_start, cigar_start + cigar_len)
-    - SKIP: at positions within [cigar_start, cigar_start + cigar_len)
 
   Following filters are applied:
    - A read with low-quality alignment score is ignored.
