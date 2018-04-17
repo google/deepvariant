@@ -265,7 +265,7 @@ SNP   | 43   | 26   | 0.998725 | 0.999229  | 0.998977
 
 ## Separate models for calling whole genome and exome data
 
-In the DeepVariant 0.5.\* release, we recommend a separate model for calling
-exome sequencing data. Here is how the exome model is trained: we used a WGS
-model as the starting checkpoint (instead of an ImageNet one), and trained only
-on examples created from exome data.
+Starting from DeepVariant 0.5.\* and later releases, we recommend a separate
+model for calling exome sequencing data. Here is how the exome model is trained:
+we used a WGS model as the starting checkpoint (instead of an ImageNet one), and
+trained only on examples created from exome data.
