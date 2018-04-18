@@ -37,6 +37,7 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from third_party.nucleus.io import fasta
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 from deepvariant.protos import realigner_pb2
@@ -348,6 +349,23 @@ class WindowSelectorTest(parameterized.TestCase):
     self.assertEqual(
         window_selector._candidates_to_windows(self.config, candidates, 'ref'),
         expected)
+
+  def test_select_windows(self):
+    # Simple end-to-end test of the high-level select_windows function. We give
+    # it a few reads with a single candidate at 100 and we expect a window back
+    # centered at 100.
+    reads = [
+        test_utils.make_read('AGA', start=99, cigar='3M', quals=[64] * 3),
+        test_utils.make_read('AGA', start=99, cigar='3M', quals=[63] * 3),
+        test_utils.make_read('AGA', start=99, cigar='3M', quals=[62] * 3),
+    ]
+    chrom = reads[0].alignment.position.reference_name
+    ref_reader = fasta.InMemoryRefReader([(chrom, 0, 'A' * 300)])
+    region = ranges.make_range(chrom, 0, 200)
+
+    self.assertEqual(
+        window_selector.select_windows(self.config, ref_reader, reads, region),
+        [ranges.make_range(chrom, 96, 104)])
 
 
 if __name__ == '__main__':
