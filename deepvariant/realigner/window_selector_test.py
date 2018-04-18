@@ -44,8 +44,6 @@ from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import window_selector
 
 
-# redacted
-# (e.g., deletion + mismatch)
 class WindowSelectorTest(parameterized.TestCase):
 
   def setUp(self):
@@ -212,6 +210,20 @@ class WindowSelectorTest(parameterized.TestCase):
   def test_candidates_from_reads_respects_region(self, read, expected):
     self.assertCandidatesFromReadsEquals(
         reads=[read], expected=expected, start=5, end=8)
+
+  def test_candidates_from_reads_counts_overlapping_events(self):
+    # This read has a mismatch at position 2 and a 2 bp insertion at position 4,
+    # so we need to double count the candidate positions from the mismatch and
+    # insertion at position 2.
+    read = test_utils.make_read(
+        'AAGACCAAA', start=0, cigar='4M2I3M', quals=[64] * 9)
+    expected = {
+        2: 2,
+        3: 1,
+        4: 1,
+        5: 1,
+    }
+    self.assertCandidatesFromReadsEquals(reads=[read], expected=expected)
 
   # Our region is 5-8 and we have a 4 basepair deletion in our read. We expect
   # a mismatch count of one for each position in the deletion that overlaps the

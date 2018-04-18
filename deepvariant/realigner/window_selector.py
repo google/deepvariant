@@ -32,7 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from collections import defaultdict
+import collections
 
 from third_party.nucleus.protos import cigar_pb2
 from third_party.nucleus.util import ranges
@@ -104,8 +104,9 @@ def _process_read(config, ref, read, ref_offset):
     ref_offset: Start offset for reference position.
 
   Yields:
-    reference positions within range of [0, seq_len], corresponding
-    to read's variations.
+    A tuple of (reference_position, count). The reference positions is within
+    the range of [0, seq_len], corresponding to read's variations, and count is
+    the number of "non-reference" events that occurred at that position.
 
   Raises:
     ValueError: for unsupported cigar operation.
@@ -116,11 +117,7 @@ def _process_read(config, ref, read, ref_offset):
 
   ref_pos = read.alignment.position.position - ref_offset
   read_pos = 0
-  # Use set(), as some cigar operations might generate duplicated positions,
-  # E.g. for insertions, it extends the candidate positions to
-  # [ins_pos - ins_len, ins_pos + ins_len] which might overlap with some
-  # nearby mismatches.
-  positions = set()
+  positions = []
   for cigar in read.alignment.cigar:
     # Break if it reached the end of reference sequence.
     if ref_pos >= len(ref):
@@ -129,25 +126,25 @@ def _process_read(config, ref, read, ref_offset):
       raise ValueError('Unexpected CIGAR operation', cigar, read)
 
     if cigar.operation == cigar_pb2.CigarUnit.ALIGNMENT_MATCH:
-      positions.update(
+      positions.extend(
           _process_align_match(config, cigar, ref, read, ref_pos, read_pos))
       read_pos += cigar.operation_length
       ref_pos += cigar.operation_length
     elif cigar.operation == cigar_pb2.CigarUnit.SEQUENCE_MISMATCH:
-      positions.update(
+      positions.extend(
           _process_seq_mismatch(config, cigar, ref, read, ref_pos, read_pos))
       read_pos += cigar.operation_length
       ref_pos += cigar.operation_length
     elif cigar.operation == cigar_pb2.CigarUnit.INSERT:
-      positions.update(
+      positions.extend(
           _process_insert(config, cigar, ref, read, ref_pos, read_pos))
       read_pos += cigar.operation_length
     elif cigar.operation == cigar_pb2.CigarUnit.CLIP_SOFT:
-      positions.update(
+      positions.extend(
           _process_soft_clip(config, cigar, ref, read, ref_pos, read_pos))
       read_pos += cigar.operation_length
     elif cigar.operation == cigar_pb2.CigarUnit.DELETE:
-      positions.update(
+      positions.extend(
           _process_delete(config, cigar, ref, read, ref_pos, read_pos))
       ref_pos += cigar.operation_length
     elif cigar.operation == cigar_pb2.CigarUnit.SEQUENCE_MATCH:
@@ -158,10 +155,10 @@ def _process_read(config, ref, read, ref_offset):
           cigar.operation == cigar_pb2.CigarUnit.SKIP):
       pass
 
-  # Yield positions within the range
-  for pos in sorted(positions):
+  # Yield positions within the range.
+  for pos, count in collections.Counter(positions).iteritems():
     if pos >= 0 and pos < len(ref):
-      yield pos + ref_offset
+      yield pos + ref_offset, count
 
 
 def _candidates_from_reads(config, ref, reads, region):
@@ -196,11 +193,11 @@ def _candidates_from_reads(config, ref, reads, region):
     position keys that would have a value of 0 (i.e., it's sparse).
   """
   # A list of candidate positions mapping to their number of supporting reads.
-  candidates = defaultdict(int)
+  candidates = collections.defaultdict(int)
 
   for read in reads:
-    for ref_pos in _process_read(config, ref, read, region.start):
-      candidates[ref_pos] += 1
+    for ref_pos, count in _process_read(config, ref, read, region.start):
+      candidates[ref_pos] += count
 
   return candidates
 
