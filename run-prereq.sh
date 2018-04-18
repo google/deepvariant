@@ -138,24 +138,25 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
 
     # from https://cloud.google.com/compute/docs/gpus/add-gpus
     echo "Checking for CUDA..."
-    if ! dpkg-query -W cuda-8-0; then
+    if ! dpkg-query -W cuda-9-0; then
       echo "Installing CUDA..."
-      CUDA_DEB="cuda-repo-ubuntu1604_8.0.61-1_amd64.deb"
+      CUDA_DEB="cuda-repo-ubuntu1604_9.0.176-1_amd64.deb"
       curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
-      sudo -H dpkg -i ./cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
+      sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
+      sudo -H dpkg -i ./cuda-repo-ubuntu1604_9.0.176-1_amd64.deb
       sudo -H apt-get update
-      sudo -H apt-get -y install cuda-8-0
+      sudo -H apt-get -y install cuda-9-0
     fi
 
     echo "Checking for CUDNN..."
-    if [[ ! -e /usr/local/cuda-8.0/include/cudnn.h ]]; then
+    if [[ ! -e /usr/local/cuda-9.0/include/cudnn.h ]]; then
       echo "Installing CUDNN..."
-      CUDNN_TAR_FILE="cudnn-8.0-linux-x64-v6.0.tgz"
-      wget http://developer.download.nvidia.com/compute/redist/cudnn/v6.0/${CUDNN_TAR_FILE}
+      CUDNN_TAR_FILE="cudnn-9.0-linux-x64-v7.tgz"
+      wget http://developer.download.nvidia.com/compute/redist/cudnn/v7.0.5/${CUDNN_TAR_FILE}
       tar -xzvf ${CUDNN_TAR_FILE}
-      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-8.0/include
-      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-8.0/lib64/
-      sudo chmod a+r /usr/local/cuda-8.0/lib64/libcudnn*
+      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-9.0/include
+      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-9.0/lib64/
+      sudo chmod a+r /usr/local/cuda-9.0/lib64/libcudnn*
       sudo ldconfig
     fi
 
