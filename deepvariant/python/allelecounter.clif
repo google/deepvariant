@@ -42,3 +42,7 @@ from "deepvariant/allelecounter.h":
       def `Add` as add(self, read: Read)
       def `Counts` as counts(self) -> list<AlleleCount>
       def `SummaryCounts` as summary_counts(self) -> list<AlleleCountSummary>
+
+      @add__init__
+      def `FromReferenceBases` as from_reference_bases(
+          self, ref: str, interval: Range, options: AlleleCounterOptions)
