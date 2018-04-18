@@ -50,6 +50,7 @@ namespace deepvariant {
 // Separator string that will appear between the fragment name and read number
 // the string key constructed from a Read with ReadKey().
 static constexpr char kFragmentNameReadNumberSeparator[] = "/";
+constexpr int _REFERENCE_END_PADDING_BASEPAIRS = 128;
 
 using nucleus::GenomeReference;
 using nucleus::genomics::v1::CigarUnit;
@@ -133,13 +134,43 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
   return true;
 }
 
+// Fetch a reference base string suitable for use with an AlleleCounter
+// operating over range from the GenomeReference ref.
+//
+// The AlleleCounter class operates on reference base strings which we often
+// want to fetch from a GenomeReference object. However, because the
+// AlleleCounter may need the reference bases slightly outside of range, this
+// function provides a single API call that will fetch an appropriately sized
+// reference base string for range.
+string ReferenceBasesForAlleleCounter(const GenomeReference* const ref,
+                                      const Range& range) {
+  const int64 end = std::min(
+      range.end() + _REFERENCE_END_PADDING_BASEPAIRS,
+      ref->Contig(range.reference_name()).ValueOrDie()->n_bases());
+  return ref
+      ->GetBases(nucleus::MakeRange(range.reference_name(), range.start(), end))
+      .ValueOrDie();
+}
+
 AlleleCounter::AlleleCounter(const GenomeReference* const ref,
                              const Range& range,
                              const AlleleCounterOptions& options)
-    : ref_(ref), interval_(range), options_(options) {
+    : AlleleCounter(ReferenceBasesForAlleleCounter(ref, range), range,
+                    options) {}
+
+AlleleCounter::AlleleCounter(const string& ref_bases, const Range& range,
+                             const AlleleCounterOptions& options)
+    : ref_start_(range.start()),
+      ref_bases_(ref_bases),
+      interval_(range),
+      options_(options) {
+  CHECK_GE(ref_bases.length(), range.end() - range.start())
+      << "The length of ref_bases " << ref_bases.length()
+      << " must be at least as long as the provided interval "
+      << range.ShortDebugString();
+
   // Initialize our counts vector of AlleleCounts with proper position and
   // reference base information. Initially the alleles repeated field is empty.
-  const string bases = ref_->GetBases(range).ValueOrDie();
   const int64 len = IntervalLength();
   counts_.reserve(len);
   for (int i = 0; i < len; ++i) {
@@ -147,7 +178,7 @@ AlleleCounter::AlleleCounter(const GenomeReference* const ref,
     const int64 pos = range.start() + i;
     *(allele_count.mutable_position()) =
         nucleus::MakePosition(range.reference_name(), pos);
-    allele_count.set_ref_base(bases.substr(i, 1));
+    allele_count.set_ref_base(ref_bases.substr(i, 1));
     counts_.push_back(allele_count);
   }
 }
@@ -157,13 +188,12 @@ string AlleleCounter::RefBases(const int64 rel_start, const int64 len) {
 
   // If our region isn't valid (e.g., it is off the end of the chromosome),
   // return an empty string, otherwise get the actual bases from reference.
-  const int abs_start = interval_.start() + rel_start;
-  const Range region = nucleus::MakeRange(interval_.reference_name(), abs_start,
-                                          abs_start + len);
-  if (!ref_->IsValidInterval(region)) {
+  const int64 abs_start = rel_start + ref_start_;
+  const int64 rel_end = rel_start + len;
+  if (abs_start < ref_start_ || rel_end > ref_bases_.length()) {
     return "";
   } else {
-    return ref_->GetBases(region).ValueOrDie();
+    return ref_bases_.substr(rel_start, len);
   }
 }
 

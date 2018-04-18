@@ -59,6 +59,7 @@ using nucleus::MakePosition;
 using nucleus::MakeRange;
 using nucleus::TestFastaPath;
 using nucleus::genomics::v1::LinearAlignment;
+using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
 using tensorflow::strings::StrCat;
 using ::testing::Contains;
@@ -99,7 +100,7 @@ class AlleleCounterTest : public ::testing::Test {
   std::unique_ptr<AlleleCounter> MakeCounter(const string& chr,
                                              const int64 start,
                                              const int64 end) {
-    ::nucleus::genomics::v1::Range range = MakeRange(chr, start, end);
+    Range range = MakeRange(chr, start, end);
     // redacted
     // tensorflow/compiler/xla/ptr_util.h.
     return std::unique_ptr<AlleleCounter>(
@@ -343,7 +344,7 @@ TEST_F(AlleleCounterTest, TestDiffInsertionSizes) {
   }
 }
 
-TEST_F(AlleleCounterTest, TestStartInsertion) {
+TEST_F(AlleleCounterTest, TestStartInsertionIsDroppedAtStartOfInterval) {
   // Starting insertion at the start of our interval gets dropped.
   AddAndCheckReads(MakeRead(chr_, start_, "AAATCCGT", {"3I", "5M"}),
                    {
@@ -353,7 +354,9 @@ TEST_F(AlleleCounterTest, TestStartInsertion) {
                        {MakeAllele("G", AlleleType::REFERENCE, 1)},
                        {MakeAllele("T", AlleleType::REFERENCE, 1)},
                    });
+}
 
+TEST_F(AlleleCounterTest, TestStartInsertionIsKeptWithinInterval) {
   // Starting an insertion is recorded when the read doesn't start at the start
   // of the interval.
   AddAndCheckReads(MakeRead(chr_, start_ + 1, "AAACCGT", {"3I", "4M"}),
@@ -453,7 +456,7 @@ TEST_F(AlleleCounterTest, TestStartingDeletions) {
                    });
 }
 
-TEST_F(AlleleCounterTest, TestEndingDeletions) {
+TEST_F(AlleleCounterTest, TestDeletionSpanningToEndOfInterval) {
   // It's no problem to have a deletion go up to the end of the interval.
   AddAndCheckReads(MakeRead(chr_, start_, "TCCG", {"4M", "1D"}),
                    {
@@ -463,7 +466,9 @@ TEST_F(AlleleCounterTest, TestEndingDeletions) {
                        {MakeAllele("GT", AlleleType::DELETION, 1)},
                        {},
                    });
+}
 
+TEST_F(AlleleCounterTest, TestDeletionSpanningOffInterval) {
   // We can have a deletion span off the interval, and it's handled properly.
   // Here our deletion spans 2 bp beyond the end of our interval.
   AddAndCheckReads(MakeRead(chr_, start_, "TCCG", {"4M", "3D"}),
@@ -474,6 +479,22 @@ TEST_F(AlleleCounterTest, TestEndingDeletions) {
                        {MakeAllele("GTGA", AlleleType::DELETION, 1)},
                        {},
                    });
+}
+
+TEST_F(AlleleCounterTest, TestDeletionLongerThanRefBases) {
+  // We can have a deletion that's so large it not only spans off the interval
+  // it's even larger than the ref_bases string provided to the AlleleCounter.
+  // Make sure we run without crashing on this input.
+  Range range = MakeRange("chr1", 0, 4);
+  AlleleCounter allele_counter("ACGT", range, options_);
+  allele_counter.Add(MakeRead("chr1", 1, "CGTA", {"3M", "20D", "1M"}));
+
+  // Get the allele count at the 3rd base ("G").
+  const AlleleCount& allele_count = allele_counter.Counts()[2];
+  const std::vector<Allele> alleles_sum = SumAlleleCounts(allele_count);
+  EXPECT_THAT(alleles_sum,
+              UnorderedPointwise(EqualsProto(),
+                                 {MakeAllele("G", AlleleType::REFERENCE, 1)}));
 }
 
 TEST_F(AlleleCounterTest, TestMultipleReads) {
