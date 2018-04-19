@@ -175,11 +175,11 @@ class DispatchingGenomicsReader(GenomicsReader):
     self._post_init_hook()
 
   @abc.abstractmethod
-  def _native_reader(self, output_path, **kwargs):
-    """Returns a GenomicsReader for writing the records `natively`.
+  def _native_reader(self, input_path, **kwargs):
+    """Returns a GenomicsReader for reading the records `natively`.
 
     Args:
-      output_path: The path to write the records to.
+      input_path: The path to the native file to read.
       **kwargs:  Zero or more keyword arguments.
 
     Returns:
