@@ -188,23 +188,33 @@ class RealignerTest(parameterized.TestCase):
     self.config = realigner.realigner_config(FLAGS)
     self.reads_realigner = realigner.Realigner(self.config, self.ref_reader)
 
-  @parameterized.parameters((
-      'chr20:10,095,379-10,095,500', 'chr20:10095363-10095543', {
-          'TCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGGTCACCTGACATAGACACA'
-          'AGTGATGATGATGATGATGATGATGATGATGATGATGATGATGATGA'
-          'TATCCATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCAT',
-          'TCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGGTCACCTGACATAGACACA'
-          'AGTGATGATGATGATGATGATGATGATGATGATGATGA'
-          'TATCCATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCAT'
-      }, 'There is a heterozygous 9 bp deletion of tandem TGA repeat.'
-  ), ('chr20:10,046,080-10,046,307', 'chr20:10046107-10046276', {
-      'AGTTAGGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAAAAGGAAAGAAAAAAAAG'
-      'AAAGAAAGAAAGAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAGAGA'
-      'AAGAGAAAGAGAAGGAAAGAGAAAGAAAGAGAAGGAAAGAGAGAAAGAGA',
-      'AGTTAGGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAAAAGGAAAGAAAAAAAAG'
-      'AAAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAGAGAAAGAGAAAGA'
-      'GAAGGAAAGAGAAAGAAAGAGAAGGAAAGAGAGAAAGAGA'
-  }, 'There is a heterozygous 10 bp deletion.'))
+  @parameterized.parameters(
+      dict(
+          region_literal='chr20:10,095,379-10,095,500',
+          expected_window_literal='chr20:10,095,358-10,095,543',
+          expected_haplotypes={
+              'TCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGGTCACCTGAC'
+              'ATAGACACAAGTGATGATGATGATGATGATGATGATGATGATGATGATGATGATGATATCCATG'
+              'TTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCAT',
+              'TCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGGTCACCTGAC'
+              'ATAGACACAAGTGATGATGATGATGATGATGATGATGATGATGATGATATCCATGTTCAAGTAC'
+              'TAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCAT',
+          },
+          comment='There is a heterozygous 9 bp deletion of tandem TGA repeat.'
+      ),
+      dict(
+          region_literal='chr20:10,046,080-10,046,307',
+          expected_window_literal='chr20:10,046,106-10,046,276',
+          expected_haplotypes={
+              'GAGTTAGGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAAAAGGAAAGAA'
+              'AAAAAAGAAAGAAAGAAAGAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAGAGAAAGAGAA'
+              'AGAGAAGGAAAGAGAAAGAAAGAGAAGGAAAGAGAGAAAGAGA',
+              'GAGTTAGGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAAAAGGAAAGAA'
+              'AAAAAAGAAAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAGAGAAAGAGAAAGAGAAGGAA'
+              'AGAGAAAGAAAGAGAAGGAAAGAGAGAAAGAGA',
+          },
+          comment='There is a heterozygous 10 bp deletion.'),
+  )
   def test_realigner_example_region(self, region_literal,
                                     expected_window_literal,
                                     expected_haplotypes, comment):
@@ -216,12 +226,15 @@ class RealignerTest(parameterized.TestCase):
     self.assertEqual(len(reads), len(realigned_reads))
     self.assertEqual(
         ranges.parse_literal(expected_window_literal),
-        windows_haplotypes[0].span, comment)
-    self.assertEqual(expected_haplotypes, set(windows_haplotypes[0].haplotypes),
-                     comment)
+        windows_haplotypes[0].span)
+    self.assertEqual(expected_haplotypes, set(windows_haplotypes[0].haplotypes))
 
-  @parameterized.parameters(('chr20:10,046,080-10,046,307',
-                             'chr20:10,046,179-10,046,188'))
+  @parameterized.parameters(
+      [
+          dict(
+              region_literal='chr20:10,046,080-10,046,307',
+              variant_literal='chr20:10,046,179-10,046,188')
+      ],)
   def test_realigner_example_variant(self, region_literal, variant_literal):
     """All overlapping reads should include 10bp deletion at chr20:10046178."""
     region = ranges.parse_literal(region_literal)
