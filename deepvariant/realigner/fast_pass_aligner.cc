@@ -77,6 +77,11 @@ void FastPassAligner::set_read_size(int read_size) {
   read_size_ = read_size;
 }
 
+void FastPassAligner::set_max_num_of_mismatches(int max_num_of_mismatches) {
+  CHECK_GE(max_num_of_mismatches, 0);
+  this->max_num_of_mismatches_ = max_num_of_mismatches;
+}
+
 void FastPassAligner::set_score_schema(uint8_t match_score,
                                        uint8_t mismatch_penalty,
                                        uint8_t gap_opening_penalty,
@@ -104,7 +109,97 @@ void FastPassAligner::InitSswLib() {
 
 // For each haplotype try to find all reads that can be aligned using index.
 void FastPassAligner::FastAlignReadsToHaplotypes() {
-  // redacted
+  std::vector<ReadAlignment> read_alignment_scores(reads_.size());
+  for (int i = 0; i < haplotypes_.size(); i++) {
+    const auto& haplotype = haplotypes_[i];
+    int haplotype_score = 0;
+    for (auto& readAlignment : read_alignment_scores) {
+      readAlignment.reset();
+    }
+    FastAlignReadsToHaplotype(haplotype,
+                              &haplotype_score,
+                              &read_alignment_scores);
+    read_to_haplotype_alignments_.push_back(
+        HaplotypeReadsAlignment(i, haplotype_score, read_alignment_scores));
+  }
+}
+
+void FastPassAligner::FastAlignReadsToHaplotype(
+    const string& haplotype, int* haplotype_score,
+    std::vector<ReadAlignment>* haplotype_read_alignment_scores) {
+  CHECK(haplotype_score != nullptr);
+  CHECK(haplotype_read_alignment_scores != nullptr);
+  tensorflow::StringPiece bases_view(haplotype);
+
+  // In the loop we try to align reads for each position in haplotype up to
+  // lastPos.
+  const auto& lastPos = haplotype.length() - kmer_size_;
+  for (int i = 0; i <= lastPos; i++) {
+    // get all reads that are aligned against i-th position
+    auto index_it = kmer_index_.find(bases_view.substr(i, kmer_size_));
+    if (index_it == kmer_index_.end()) {
+      continue;
+    }
+    // Iterate through all the reads that are found in the index for the current
+    // kmer.
+    for (const auto& it : index_it->second) {
+      uint64_t read_id_index = static_cast<uint64_t>(it.read_id);
+      CHECK(read_id_index < reads_.size() && it.read_id.is_set);
+      size_t target_start_pos = std::max(
+          static_cast<int64_t>(0),
+          static_cast<int64_t>(i) - static_cast<int64_t>(it.read_pos.pos));
+      size_t readStartPos = 0;
+      size_t cur_read_size = reads_[read_id_index].size();
+      size_t span = cur_read_size;
+      if (target_start_pos + cur_read_size > haplotype.length()) {
+        continue;
+      }
+      CHECK(target_start_pos + span <= bases_view.size());
+      int num_of_mismatches = 0;
+      int new_read_alignment_score = FastAlignStrings(
+          bases_view.substr(target_start_pos, span),
+          reads_[read_id_index].substr(readStartPos, span),
+          max_num_of_mismatches_ + 1, &num_of_mismatches);
+
+      if (num_of_mismatches <= max_num_of_mismatches_) {
+        CHECK(it.read_id.is_set &&
+            read_id_index < haplotype_read_alignment_scores->size());
+        auto& read_alignment =
+            (*haplotype_read_alignment_scores)[read_id_index];
+        int oldScore = read_alignment.score;
+        if (oldScore < new_read_alignment_score) {
+          read_alignment.score = new_read_alignment_score;
+          *haplotype_score -= oldScore;
+          *haplotype_score += read_alignment.score;
+          read_alignment.position = target_start_pos;
+          read_alignment.cigar = std::to_string(cur_read_size) + "=";
+        }
+      }
+    }  // for (matching reads)
+  }    // for (all k-mer positions)
+}
+
+// Align 2 same length strings by comparing each character.
+int FastPassAligner::FastAlignStrings(const tensorflow::StringPiece& s1,
+                                      const tensorflow::StringPiece& s2,
+                                      int max_mismatches,
+                                      int* num_of_mismatches) const {
+  int num_of_matches = 0;
+  *num_of_mismatches = 0;
+  CHECK(s1.size() == s2.size());
+  for (int i = 0; i < s1.size(); i++) {
+    if (s1[i] != s2[i] && (s1[i] != 'N' && s2[i] != 'N')) {
+      if (s1[i] != s2[i]) {
+        (*num_of_mismatches)++;
+      }
+      if (*num_of_mismatches == max_mismatches) {
+        return 0;
+      }
+    } else {
+      num_of_matches++;
+    }
+  }
+  return num_of_matches * match_score_ - *num_of_mismatches * mismatch_penalty_;
 }
 
 // Align haplotypes to reference using ssw library and update bestHaplotypes
@@ -123,21 +218,6 @@ void FastPassAligner::RealignReadsToReference(
   // redacted
 }
 
-// Align 2 same length strings by comparing each character.
-int FastPassAligner::FastAlignStrings(
-    const tensorflow::StringPiece& s1,
-    const tensorflow::StringPiece& s2, int max_mismatches,
-    int* num_of_mismatches) const {
-  // redacted
-  return -1;
-}
-
-void FastPassAligner::AlignHaplotype(
-    const string& haplotype, int* haplotype_score,
-    std::vector<ReadAlignment>* current_read_scores) {
-  // redacted
-}
-
 void FastPassAligner::AddKmerToIndex(tensorflow::StringPiece kmer,
                                      ReadId read_id,
                                      KmerOffset pos) {
@@ -146,16 +226,16 @@ void FastPassAligner::AddKmerToIndex(tensorflow::StringPiece kmer,
 
 void FastPassAligner::AddReadToIndex(const string& read, ReadId read_id) {
   CHECK(read.length() > kmer_size_);
-  auto lastPos = read.length() - kmer_size_;
+  auto last_pos = read.length() - kmer_size_;
   tensorflow::StringPiece bases_view(read);
-  for (int i = 0; i <= lastPos; i++) {
+  for (int i = 0; i <= last_pos; i++) {
     AddKmerToIndex(bases_view.substr(i, kmer_size_), read_id, KmerOffset(i));
   }
 }
 
 void FastPassAligner::BuildIndex() {
   size_t read_id = 0;
-  for (auto& read : reads_) {
+  for (const auto& read : reads_) {
     AddReadToIndex(read, ReadId(read_id++));
   }
 }

@@ -110,6 +110,11 @@ struct ReadAlignment {
                 int score_param)
       : position(position_param), cigar(cigar_param), score(score_param) {}
 
+  bool operator==(const ReadAlignment& that) const {
+    return score == that.score && position == that.position &&
+           cigar == that.cigar;
+  }
+
   void reset() {
     score = 0;
     position = 0;
@@ -207,13 +212,17 @@ class FastPassAligner {
  public:
   void set_reference(const string& reference);
   void set_reads(const std::vector<string>& reads);
+  std::vector<string> get_reads() const { return reads_; }
   void set_ref_start(const string& chromosome, uint64_t position);
   void set_haplotypes(const std::vector<string>& haplotypes);
   void set_score_schema(uint8_t match_score, uint8_t mismatch_penalty,
                         uint8_t gap_opening_penalty,
                         uint8_t gap_extending_penalty);
+  uint8_t get_match_score() const { return match_score_; }
+  uint8_t get_mismatch_penalty() const {return mismatch_penalty_;}
   void set_kmer_size(int kmer_size);
   void set_read_size(int read_size);
+  void set_max_num_of_mismatches(int max_num_of_mismatches);
   void set_is_debug(bool is_debug) { debug_out_ = is_debug; }
   void set_debug_read_id(int read_id) { debug_read_id_ = read_id; }
 
@@ -229,6 +238,11 @@ class FastPassAligner {
 
   KmerIndexType GetKmerIndex() const { return kmer_index_; }
 
+  // Align all reads to a haplotype using fast pass alignment.
+  void FastAlignReadsToHaplotype(
+      const string& haplotype, int* haplotype_score,
+      std::vector<ReadAlignment>* haplotype_read_alignment_scores);
+
  private:
   // Reference sequence for the window
   string reference_;
@@ -241,6 +255,8 @@ class FastPassAligner {
 
   // Vector of haploptypes sequences
   std::vector<string> haplotypes_;
+
+  std::vector<HaplotypeReadsAlignment> read_to_haplotype_alignments_;
 
   // index of reads. Allows to find all reads that contain a given k-mer
   // and their align position.
@@ -256,6 +272,8 @@ class FastPassAligner {
   // be different sizes. Although, actual read sizes should be close to
   // read_size.
   int read_size_;
+
+  int max_num_of_mismatches_ = 2;
 
   // Four parameters below specify alignment scoring schema.
   uint8_t match_score_ = 4;
@@ -291,9 +309,6 @@ class FastPassAligner {
   void AddKmerToIndex(tensorflow::StringPiece kmer,
                       ReadId read_id,
                       KmerOffset pos);
-
-  void AlignHaplotype(const string& haplotype, int* haplotype_score,
-                      std::vector<ReadAlignment>* current_read_scores);
 
   int FastAlignStrings(const tensorflow::StringPiece& s1,
                        const tensorflow::StringPiece& s2,
