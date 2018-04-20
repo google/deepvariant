@@ -653,9 +653,7 @@ def regions_to_process(contigs,
   regions = ranges.RangeSet.from_contigs(contigs)
   if calling_regions:
     regions = regions.intersection(calling_regions)
-  # redacted
   partitioned = regions.partition(partition_size)
-  partitioned = ranges.sorted_ranges(partitioned, contigs)
 
   if num_shards:
     return (r for i, r in enumerate(partitioned) if i % num_shards == task_id)
