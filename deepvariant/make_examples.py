@@ -145,6 +145,10 @@ flags.DEFINE_string(
     'How to handle multi-allelic candidate variants. For DEBUGGING')
 flags.DEFINE_bool('realign_reads', True,
                   'If True, locally realign reads before calling variants.')
+flags.DEFINE_bool(
+    'write_run_info', True,
+    'If True, write out a MakeExamplesRunInfo proto besides our examples in '
+    'text_format.')
 flags.DEFINE_float(
     'downsample_fraction', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
@@ -342,7 +346,8 @@ def default_options(add_flags=True, flags_obj=None):
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
-    options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
+    if flags_obj.write_run_info:
+      options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
 
     options.calling_regions.extend(parse_regions_flag(flags_obj.regions))
     options.exclude_calling_regions.extend(
@@ -1080,18 +1085,19 @@ def make_examples_runner(options):
       writer.write_examples(*examples)
 
   # Construct and then write out our MakeExamplesRunInfo proto.
-  run_info = deepvariant_pb2.MakeExamplesRunInfo(
-      options=options, resource_metrics=resource_monitor.metrics())
-  if in_training_mode(options):
-    if region_processor.labeler.metrics is not None:
-      run_info.labeling_metrics.CopyFrom(region_processor.labeler.metrics)
-    else:
-      logging.warning(
-          'Labeling metrics requested but the selected labeling '
-          'algorithm %s does not collect metrics; skipping.',
-          options.labeler_algorithm)
-  logging.info('Writing MakeExamplesRunInfo to %s', options.run_info_filename)
-  write_make_examples_run_info(run_info, path=options.run_info_filename)
+  if options.run_info_filename:
+    run_info = deepvariant_pb2.MakeExamplesRunInfo(
+        options=options, resource_metrics=resource_monitor.metrics())
+    if in_training_mode(options):
+      if region_processor.labeler.metrics is not None:
+        run_info.labeling_metrics.CopyFrom(region_processor.labeler.metrics)
+      else:
+        logging.warning(
+            'Labeling metrics requested but the selected labeling '
+            'algorithm %s does not collect metrics; skipping.',
+            options.labeler_algorithm)
+    logging.info('Writing MakeExamplesRunInfo to %s', options.run_info_filename)
+    write_make_examples_run_info(run_info, path=options.run_info_filename)
 
   logging.info('Found %s candidate variants', n_candidates)
 
