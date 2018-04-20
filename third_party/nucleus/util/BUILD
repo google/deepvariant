@@ -321,3 +321,18 @@ cc_library(
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
+
+py_library(
+    name = "sequence_utils",
+    srcs = ["sequence_utils.py"],
+)
+
+py_test(
+    name = "sequence_utils_test",
+    srcs = ["sequence_utils_test.py"],
+    deps = [
+        ":sequence_utils",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
