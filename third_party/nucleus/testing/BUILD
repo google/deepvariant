@@ -74,6 +74,18 @@ py_library(
 )
 
 py_test(
+    name = "py_test_utils_test",
+    size = "small",
+    srcs = ["test_utils_test.py"],
+    main = "test_utils_test.py",
+    deps = [
+        ":py_test_utils",
+        "//third_party/nucleus/protos:cigar_py_pb2",
+        "@com_google_absl_py//absl/testing:absltest",
+    ],
+)
+
+py_test(
     name = "protobuf_implementation_test",
     size = "small",
     srcs = ["protobuf_implementation_test.py"],

@@ -217,12 +217,12 @@ def make_read(bases,
               mapq=50,
               chrom='chr1',
               start=1,
-              name='read'):
+              name=None):
   """Makes a nucleus.genomics.v1.Read for testing."""
   if quals and len(bases) != len(quals):
     raise ValueError('Incompatable bases and quals', bases, quals)
   read = reads_pb2.Read(
-      fragment_name=name,
+      fragment_name=name if name else 'read_' + str(make_read.counter),
       proper_placement=True,
       read_number=1,
       number_reads=2,
@@ -232,7 +232,9 @@ def make_read(bases,
           position=position_pb2.Position(reference_name=chrom, position=start),
           mapping_quality=mapq,
           cigar=_cigar.to_cigar_units(cigar) if cigar else []))
+  make_read.counter += 1
   return read
+make_read.counter = 0
 
 
 def cc_iterable_len(cc_iterable):
