@@ -39,7 +39,7 @@ from third_party.nucleus.util import ranges
 from deepvariant.realigner import utils
 
 
-def _process_align_match(config, cigar, ref, read, ref_pos, read_pos):
+def _process_aligned_bases(config, cigar, ref, read, ref_pos, read_pos):
   for _ in range(cigar.operation_length):
     # Check for ref_pos ranges, if the read is partially overlapped with
     # ref sequence, it might be out-of-range and result in index error.
@@ -53,34 +53,13 @@ def _process_align_match(config, cigar, ref, read, ref_pos, read_pos):
     ref_pos += 1
 
 
-def _process_seq_mismatch(config, cigar, ref, read, ref_pos, read_pos):
-  del ref  # Unused in processing cigar seq_mismatch operation.
-  for _ in range(cigar.operation_length):
-    if read.aligned_quality[read_pos] >= config.min_base_quality:
-      yield ref_pos
-    read_pos += 1
-    ref_pos += 1
-
-
-def _process_insert(config, cigar, ref, read, ref_pos, read_pos):
+def _process_insert_soft_clip(config, cigar, ref, read, ref_pos, read_pos):
   del ref  # Unused in processing cigar insert operation.
-  for i in range(cigar.operation_length):
-    if read.aligned_quality[read_pos] >= config.min_base_quality:
+  if all(read.aligned_quality[read_pos + i] >= config.min_base_quality
+         for i in range(cigar.operation_length)):
+    for i in range(cigar.operation_length):
       yield ref_pos + i
       yield ref_pos - cigar.operation_length + i
-    read_pos += 1
-
-
-def _process_soft_clip(config, cigar, ref, read, ref_pos, read_pos):
-  del ref  # Unused in processing cigar soft_clip operation.
-  if ref_pos == read.alignment.position.position:
-    offset = -cigar.operation_length
-  else:
-    offset = 0
-  for i in range(cigar.operation_length):
-    if read.aligned_quality[read_pos] >= config.min_base_quality:
-      yield ref_pos + offset + i
-    read_pos += 1
 
 
 def _process_delete(config, cigar, ref, read, ref_pos, read_pos):
@@ -91,7 +70,7 @@ def _process_delete(config, cigar, ref, read, ref_pos, read_pos):
     ref_pos += 1
 
 
-def _process_read(config, ref, read, ref_offset):
+def _process_read(config, ref, read, region):
   """Yields reference positions corresponding to read's variations.
 
   See _candidates_from_reads for more details on this algorithm.
@@ -101,7 +80,7 @@ def _process_read(config, ref, read, ref_offset):
       options determining the behavior of this window selector.
     ref: reference sequence
     read: A genomics.Read record.
-    ref_offset: Start offset for reference position.
+    region: nucleus.protos.Range. The region we are constructing windows in.
 
   Yields:
     A tuple of (reference_position, count). The reference positions is within
@@ -115,41 +94,36 @@ def _process_read(config, ref, read, ref_offset):
   if read.alignment.mapping_quality < config.min_mapq:
     return
 
-  ref_pos = read.alignment.position.position - ref_offset
+  region_size = region.end - region.start
+  ref_pos = read.alignment.position.position - region.start
   read_pos = 0
   positions = []
   for cigar in read.alignment.cigar:
     # Break if it reached the end of reference sequence.
-    if ref_pos >= len(ref):
+    if ref_pos >= region_size:
       break
     if cigar.operation not in utils.CIGAR_OPS:
       raise ValueError('Unexpected CIGAR operation', cigar, read)
 
-    if cigar.operation == cigar_pb2.CigarUnit.ALIGNMENT_MATCH:
+    if cigar.operation in {
+        cigar_pb2.CigarUnit.ALIGNMENT_MATCH, cigar_pb2.CigarUnit.SEQUENCE_MATCH,
+        cigar_pb2.CigarUnit.SEQUENCE_MISMATCH
+    }:
       positions.extend(
-          _process_align_match(config, cigar, ref, read, ref_pos, read_pos))
+          _process_aligned_bases(config, cigar, ref, read, ref_pos, read_pos))
       read_pos += cigar.operation_length
       ref_pos += cigar.operation_length
-    elif cigar.operation == cigar_pb2.CigarUnit.SEQUENCE_MISMATCH:
+    elif cigar.operation in {
+        cigar_pb2.CigarUnit.INSERT, cigar_pb2.CigarUnit.CLIP_SOFT
+    }:
       positions.extend(
-          _process_seq_mismatch(config, cigar, ref, read, ref_pos, read_pos))
-      read_pos += cigar.operation_length
-      ref_pos += cigar.operation_length
-    elif cigar.operation == cigar_pb2.CigarUnit.INSERT:
-      positions.extend(
-          _process_insert(config, cigar, ref, read, ref_pos, read_pos))
-      read_pos += cigar.operation_length
-    elif cigar.operation == cigar_pb2.CigarUnit.CLIP_SOFT:
-      positions.extend(
-          _process_soft_clip(config, cigar, ref, read, ref_pos, read_pos))
+          _process_insert_soft_clip(config, cigar, ref, read, ref_pos,
+                                    read_pos))
       read_pos += cigar.operation_length
     elif cigar.operation == cigar_pb2.CigarUnit.DELETE:
       positions.extend(
           _process_delete(config, cigar, ref, read, ref_pos, read_pos))
       ref_pos += cigar.operation_length
-    elif cigar.operation == cigar_pb2.CigarUnit.SEQUENCE_MATCH:
-      ref_pos += cigar.operation_length
-      read_pos += cigar.operation_length
     elif (cigar.operation == cigar_pb2.CigarUnit.CLIP_HARD or
           cigar.operation == cigar_pb2.CigarUnit.PAD or
           cigar.operation == cigar_pb2.CigarUnit.SKIP):
@@ -157,25 +131,26 @@ def _process_read(config, ref, read, ref_offset):
 
   # Yield positions within the range.
   for pos, count in collections.Counter(positions).iteritems():
-    if pos >= 0 and pos < len(ref):
-      yield pos + ref_offset, count
+    if pos >= 0 and pos < region_size:
+      yield pos + region.start, count
 
 
 def _candidates_from_reads(config, ref, reads, region):
   """Returns a dictionary mapping positions to non-reference counts.
 
   Following cigar operations generate candidate position:
-    - ALIGNMENT_MATCH: at mismatch positions
-    - SEQUENCE_MISMATCH: at positions within
-        [cigar_start, cigar_start + cigar_len)
+    - ALIGNMENT_MATCH, SEQUENCE_MISMATCH, SEQUENCE_MATCH: at mismatch positions
+      in the read when compared to the reference sequence.
     - DELETE: at positions within [cigar_start, cigar_start + cigar_len)
-    - INSERT: at positions within
+    - INSERT, CLIP_SOFT: at positions within
         [cigar_start - cigar_len, cigar_start + cigar_len)
-    - CLIP_SOFT: at positions within [cigar_start, cigar_start + cigar_len)
 
   Following filters are applied:
    - A read with low-quality alignment score is ignored.
-   - A variation position corresponding to a low quality base is ignored.
+   - A variation position corresponding to a low quality base is ignored. For
+     multi-base events (e.g., insertions) variant positions are generated for
+     all affected bases provided *all* of the read qualities of the
+     corresponding bases are high-quality.
 
   Args:
     config: learning.genomics.deepvariant.realigner.WindowSelectorOptions
@@ -196,7 +171,7 @@ def _candidates_from_reads(config, ref, reads, region):
   candidates = collections.defaultdict(int)
 
   for read in reads:
-    for ref_pos, count in _process_read(config, ref, read, region.start):
+    for ref_pos, count in _process_read(config, ref, read, region):
       candidates[ref_pos] += count
 
   return candidates
@@ -252,7 +227,6 @@ def _candidates_to_windows(config, candidate_pos, ref_name):
   return sorted(windows, key=ranges.as_tuple)
 
 
-# redacted
 def select_windows(config, ref_reader, reads, region):
   """"Process reads to determine candidate windows for local assembly.
 

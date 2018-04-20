@@ -64,7 +64,7 @@ class WindowSelectorTest(parameterized.TestCase):
     if region is None:
       chrom = reads[0].alignment.position.reference_name
       start = 0 if start is None else start
-      end = 100 if end is None else end
+      end = 20 if end is None else end
       region = ranges.make_range(chrom, start, end)
 
     if ref is None:
@@ -88,50 +88,72 @@ class WindowSelectorTest(parameterized.TestCase):
       dict(
           read=test_utils.make_read(
               'AAGA', start=10, cigar='4M', quals=[64] * 4),
-          expected_candidate_positions=[12]),
+          expected=[12]),
       dict(
           read=test_utils.make_read(
               'AAGTA', start=10, cigar='2M2I1M', quals=[64] * 5),
-          expected_candidate_positions=[10, 11, 12, 13]),
+          expected=[10, 11, 12, 13]),
       dict(
           read=test_utils.make_read(
               'AAA', start=10, cigar='2M2D1M', quals=[64] * 3),
-          expected_candidate_positions=[12, 13]),
+          expected=[12, 13]),
       dict(
           read=test_utils.make_read(
               'TGATAC', start=10, cigar='2S3M1S', quals=[64] * 6),
-          expected_candidate_positions=[8, 9, 11, 13]),
+          expected={
+              8: 1,
+              9: 1,
+              10: 1,
+              11: 2,
+              12: 1,
+              13: 1
+          }),
       dict(
           read=test_utils.make_read(
               'AAGA', start=10, cigar='2M1X1M', quals=[64] * 4),
-          expected_candidate_positions=[12]),
+          expected=[12]),
       # ------------------------------------------------------------------------
       # These reads test that we correctly ignore bases with low qualities.
       # ------------------------------------------------------------------------
       dict(
           read=test_utils.make_read(
               'AAGA', start=10, cigar='4M', quals=[64, 64, 10, 30]),
-          expected_candidate_positions=[]),
+          expected=[]),
+      # Only insertions/soft clips where all bases have above our minimum base
+      # quality are included.
       dict(
           read=test_utils.make_read(
               'AAGTA', start=10, cigar='2M2I1M', quals=[64, 64, 10, 30, 64]),
-          expected_candidate_positions=[11, 13]),
+          expected=[]),
+      # The left 2S operator is ignored because one base has a 10 quality.
       dict(
           read=test_utils.make_read(
               'TGATAC',
               start=10,
               cigar='2S3M1S',
               quals=[64, 10, 64, 64, 64, 64]),
-          expected_candidate_positions=[8, 11, 13]),
+          expected=[11, 12, 13]),
+      # The right 1S operator is ignored because one base has a 10 quality.
+      dict(
+          read=test_utils.make_read(
+              'TGATAC',
+              start=10,
+              cigar='2S3M1S',
+              quals=[64, 64, 64, 64, 64, 10]),
+          expected={
+              8: 1,
+              9: 1,
+              10: 1,
+              11: 2
+          }),
       dict(
           read=test_utils.make_read(
               'AAGA', start=10, cigar='2M1X1M', quals=[64, 64, 30, 10]),
-          expected_candidate_positions=[12]),
+          expected=[12]),
   )
-  def test_candidates_from_one_read(self, read, expected_candidate_positions):
+  def test_candidates_from_one_read(self, read, expected):
     """Test WindowSelector.process_read() with reads of low quality."""
-    self.assertCandidatesFromReadsEquals(
-        reads=[read], expected=expected_candidate_positions)
+    self.assertCandidatesFromReadsEquals(reads=[read], expected=expected)
 
   # Systematically test all combinations of cigar operations and positions in a
   # read.
@@ -140,36 +162,44 @@ class WindowSelectorTest(parameterized.TestCase):
       # genome to decide if it generates a position at 10.
       dict(bases='A', cigar='1M', expected=[]),
       dict(bases='C', cigar='1M', expected=[10]),
-      # The mismatch operator X generates positions regardless of whether it
-      # actually matches the genome or not.
-      dict(bases='A', cigar='1X', expected=[10]),
+      # The mismatch operator X indicates that a position mismatches the
+      # reference regardless of whether it actually matches the genome or not.
+      # The window selector inspects the actual reference genome bases, though,
+      # and generates candidate positions only if we genuinely mismatch.
+      dict(bases='A', cigar='1X', expected=[]),
       dict(bases='C', cigar='1X', expected=[10]),
-      # The match operator = doesn't generates positions even if the base
-      # mismatches the reference genome.
+      # The match operator = indicates that a position matches the reference
+      # even if that base actually mismatches the reference genome. The window
+      # selector inspects the actual reference genome bases, though, and
+      # generates candidate positions only if we genuinely mismatch.
       dict(bases='A', cigar='1=', expected=[]),
-      dict(bases='C', cigar='1=', expected=[]),
+      dict(bases='C', cigar='1=', expected=[10]),
       # The deletion operator generates positions at start for operator length
       # in the 5' direction starting at the base after the deletion.
       dict(bases='A', cigar='1M1D', expected=[11]),
       dict(bases='A', cigar='1M2D', expected=[11, 12]),
       dict(bases='A', cigar='1M3D', expected=[11, 12, 13]),
+      dict(bases='A', cigar='1M4D', expected=[11, 12, 13, 14]),
       # The insertion operator generates positions at start for + length
       # basepairs in the 5' direction and length - 1 in the 3' direction.
-      # redacted
-      # with the description of the function.
       dict(bases='AA', cigar='1M1I', expected=[10, 11]),
       dict(bases='AAA', cigar='1M2I', expected=[9, 10, 11, 12]),
       dict(bases='AAAA', cigar='1M3I', expected=[8, 9, 10, 11, 12, 13]),
       # The soft-clip operator generates positions at the start for operator
       # length bases.
-      dict(bases='AA', cigar='1M1S', expected=[11]),
-      dict(bases='AAA', cigar='1M2S', expected=[11, 12]),
-      dict(bases='AAAA', cigar='1M3S', expected=[11, 12, 13]),
+      dict(bases='AA', cigar='1M1S', expected=[10, 11]),
+      dict(bases='AAA', cigar='1M2S', expected=[9, 10, 11, 12]),
+      dict(bases='AAAA', cigar='1M3S', expected=[8, 9, 10, 11, 12, 13]),
+      dict(bases='AA', cigar='1S1M', expected=[9, 10]),
+      dict(bases='AAA', cigar='2S1M', expected=[8, 9, 10, 11]),
+      dict(bases='AAAA', cigar='3S1M', expected=[7, 8, 9, 10, 11, 12]),
       # The skip (N) and hard clip (H) operators are both ignored.
       dict(bases='AA', cigar='1M1N1M', expected=[]),
       dict(bases='AA', cigar='1M2N1M', expected=[]),
       dict(bases='A', cigar='1M1H', expected=[]),
       dict(bases='A', cigar='1M1H', expected=[]),
+      dict(bases='A', cigar='1H1M', expected=[]),
+      dict(bases='A', cigar='1H1M', expected=[]),
       # The current code raises an exception about an unsupported CIGAR
       # operation for the PAD operation. That's a reasonable behavior.
       dict(bases='AA', cigar='1M1P1M', expected=ValueError),
@@ -187,18 +217,15 @@ class WindowSelectorTest(parameterized.TestCase):
               'AGA', start=read_start, cigar='3M', quals=[64] * 3),
           region_start=region_start,
           region_end=region_start + 100,
-          expected_candidate_positions=[read_start + 1],
+          expected=[read_start + 1],
       ) for region_start in range(10) for read_start in range(region_start, 10))
-  def test_candidates_from_reads_position_invariance(
-      self, read, region_start, region_end, expected_candidate_positions):
+  def test_candidates_from_reads_position_invariance(self, read, region_start,
+                                                     region_end, expected):
     # Tests that a read with a mismatch at position read_start + 1 produces a
     # single candidate position at read_start + 1 regardless of where it occurs
     # within a single region spanning region_start - region_end.
     self.assertCandidatesFromReadsEquals(
-        reads=[read],
-        expected=expected_candidate_positions,
-        start=region_start,
-        end=region_end)
+        reads=[read], expected=expected, start=region_start, end=region_end)
 
   # Our region is 5-8 and we are testing that the read's mismatch is only
   # included when it's within the region and not when it's outside.
@@ -238,7 +265,7 @@ class WindowSelectorTest(parameterized.TestCase):
       ) for start in range(10))
   def test_candidates_from_reads_respects_region_deletion(self, read, expected):
     self.assertCandidatesFromReadsEquals(
-        reads=[read], expected=expected, start=5, end=8)
+        reads=[read], expected=expected, start=5, end=8, ref='A' * 100)
 
   @parameterized.parameters(
       dict(
