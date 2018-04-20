@@ -104,7 +104,29 @@ std::unique_ptr<ReadsVectorType> FastPassAligner::AlignReads(
 
 void FastPassAligner::InitSswLib() {
   // Initialize ssw library. Set reference.
-  // redacted
+  Filter filter;
+  ssw_aligner_ = absl::make_unique<Aligner>(
+      match_score_,
+      mismatch_penalty_,
+      gap_opening_penalty_,
+      gap_extending_penalty_);
+}
+
+void FastPassAligner::SswSetReference(const string& reference) {
+  CHECK(ssw_aligner_);
+  ssw_aligner_->SetReferenceSequence(reference);
+}
+
+Alignment FastPassAligner::SswAlign(const string& target) const {
+  CHECK(ssw_aligner_);
+  Filter filter;
+  Alignment alignment;
+  if (ssw_aligner_->Align(target, filter, &alignment)) {
+    return alignment;
+  } else {
+    // redacted
+    return Alignment();
+  }
 }
 
 // For each haplotype try to find all reads that can be aligned using index.
@@ -205,7 +227,7 @@ int FastPassAligner::FastAlignStrings(const tensorflow::StringPiece& s1,
 // Align haplotypes to reference using ssw library and update bestHaplotypes
 // vector.
 void FastPassAligner::AlignHaplotypesToReference() {
-  // redacted
+// redacted
 }
 
 void FastPassAligner::AlignReadsToHaplotypes(uint16_t score_threshold) {

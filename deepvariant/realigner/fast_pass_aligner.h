@@ -243,6 +243,15 @@ class FastPassAligner {
       const string& haplotype, int* haplotype_score,
       std::vector<ReadAlignment>* haplotype_read_alignment_scores);
 
+  // Initialize SSW library.
+  void InitSswLib();
+
+  void SswSetReference(const string& reference);
+
+  // Align target sequence to the reference using SSW library. InitSswLib must
+  // be called prior to calling SswAlign.
+  Alignment SswAlign(const string& target) const;
+
  private:
   // Reference sequence for the window
   string reference_;
@@ -287,8 +296,6 @@ class FastPassAligner {
   // These attributes allow debug output.
   bool debug_out_ = false;
   int debug_read_id_ = 0;
-
-  void InitSswLib();
 
   void FastAlignReadsToHaplotypes();
 

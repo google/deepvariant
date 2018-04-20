@@ -210,6 +210,16 @@ TEST_F(FastPassAlignerTest,
               testing::UnorderedElementsAreArray(expected_read_scores));
 }
 
+// This test is not intended to test SSW library. It is a sanity check that
+// library can be called and results are as excepted.
+TEST_F(FastPassAlignerTest, SswAlignerSanityCheck) {
+  aligner_.InitSswLib();
+  Filter filter;
+  aligner_.SswSetReference("TTTGCCGAAGTTAAACCC");
+  Alignment alignment = aligner_.SswAlign("GCCGAAGTTA");
+  EXPECT_EQ(alignment.cigar_string, "10=");
+  EXPECT_EQ(alignment.ref_begin, 3);
+}
 
 }  // namespace deepvariant
 }  // namespace genomics
