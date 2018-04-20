@@ -62,8 +62,7 @@ class RangeSet(object):
   ranges held by the class.
   """
 
-  # redacted
-  def __init__(self, ranges=None):
+  def __init__(self, ranges=None, contigs=None):
     """Creates an RangeSet backed by ranges.
 
     Note that the Range objects in ranges are *not* stored directly here, so
@@ -74,13 +73,35 @@ class RangeSet(object):
         reference_name, start, and end properties following the
         genomics.Range convention). If None, no ranges will be used,
         and overlaps() will always return False.
+      contigs: a list of ContigInfo protos, used to define the iteration order
+        over contigs (i.e., by contig.pos_in_fasta).  If this dict is not
+        provided, the iteration order will be determined by the alphabetical
+        order of the contig names.
+    Raises:
+      ValueError: if any range's reference_name does not correspond to any
+        contig in `contigs`.
     """
+    if contigs is not None:
+      self._contigs = contigs
+      self._contig_map = contigs_dict(contigs)
+      self._contig_sort_key_fn = (
+          lambda name: self._contig_map[name].pos_in_fasta)
+      self._is_valid_contig = lambda name: name in self._contig_map
+    else:
+      self._contigs = None
+      self._contig_map = None
+      self._contig_sort_key_fn = lambda name: name
+      self._is_valid_contig = lambda name: True
+
     if ranges is None:
       ranges = []
 
     # Add each range to our contig-specific intervaltrees.
     self._by_chr = collections.defaultdict(intervaltree.IntervalTree)
     for range_ in ranges:
+      if not self._is_valid_contig(range_.reference_name):
+        raise ValueError(
+            'Range {} is on an unrecognized contig.'.format(range_))
       self._by_chr[range_.reference_name].addi(range_.start, range_.end, None)
 
     # Merge overlapping / adjacent intervals in each tree.
@@ -91,11 +112,14 @@ class RangeSet(object):
     """Iterate over the ranges in this RangeSet.
 
     Yields:
-      Each range of this RangeSet, in an arbitrary order. These objects are new
-      range protos so can be freely modified.
+      Each range of this RangeSet, in sorted order (by chromosome, then start
+      end positions).  Relative ordering of chromosomes is defined by the
+      contig.pos_in_fasta integer key for the associated contig. These objects
+      are new range protos so can be freely modified.
     """
-    for refname, chr_ranges in self._by_chr.iteritems():
-      for start, end, _ in chr_ranges:
+    for refname in sorted(
+        self._by_chr.iterkeys(), key=self._contig_sort_key_fn):
+      for start, end, _ in sorted(self._by_chr[refname]):
         yield make_range(refname, start, end)
 
   @classmethod
@@ -108,7 +132,9 @@ class RangeSet(object):
       contig_map: An optional dictionary mapping from contig names to ContigInfo
         protobufs. If provided, allows literals of the format "contig_name",
         which will be parsed into a Range with reference_name=contig_name,
-        start=0, end=n_bases where n_bases comes from the ContigInfo.
+        start=0, end=n_bases where n_bases comes from the ContigInfo;
+        additionally the sort order of the RangeSet will be determined by
+        contig.pos_in_fasta.
 
     Returns:
       A RangeSet object.
@@ -121,19 +147,23 @@ class RangeSet(object):
   @classmethod
   def from_contigs(cls, contigs):
     """Creates a RangeSet with an interval covering each base of each contig."""
-    return cls(make_range(contig.name, 0, contig.n_bases) for contig in contigs)
+    return cls(
+        (make_range(contig.name, 0, contig.n_bases) for contig in contigs),
+        contigs)
 
   @classmethod
-  def from_bed(cls, source):
+  def from_bed(cls, source, contigs=None):
     """Creates a RangeSet containing the intervals from source.
 
     Args:
       source: A path to a BED (or equivalent) file of intervals.
+      contigs: An optional list of ContigInfo proto, used by RangeSet
+        constructor.
 
     Returns:
       A RangeSet.
     """
-    return cls(bed_parser(source))
+    return cls(bed_parser(source), contigs)
 
   def intersection(self, *others):
     """Computes the intersection among this RangeSet and *others RangeSets.
@@ -152,7 +182,7 @@ class RangeSet(object):
       other2 : chr1:3-7, chr3:10-30
 
     self.intersection(other1, other2) produces a RangeSet with one interval
-    chr1:3-7, the common bases on chr1 in self, other1, and other2. No intervals
+    chr1:5-7, the common bases on chr1 in self, other1, and other2. No intervals
     on chr2 or chr3 are included since the chr2 only occurs in self and the two
     intervals on chr3, despite having some shared bases, don't have an
     overlapping interval in self.
@@ -198,7 +228,7 @@ class RangeSet(object):
               _intersect2(refname, intervals, other_chr))
 
       # Update our intersected RangeSet with the new intervals.
-      intersected = RangeSet(intersected_intervals)
+      intersected = RangeSet(intersected_intervals, self._contigs)
 
     return intersected
 
@@ -275,8 +305,8 @@ class RangeSet(object):
         interval.
 
     Yields:
-      nucleus.genomics.v1.Range protos
-      in an arbitrary (but not necessarily random) order.
+      nucleus.genomics.v1.Range protos, in sorted order (see comment about order
+      in __iter__).
 
     Raises:
       ValueError: if max_size <= 0.
@@ -507,7 +537,6 @@ def parse_literal(region_literal, contig_map=None):
 def parse_literals(region_literals, contig_map=None):
   """Parses each literal of region_literals in order."""
   return [parse_literal(literal, contig_map) for literal in region_literals]
-
 
 
 def contigs_n_bases(contigs):

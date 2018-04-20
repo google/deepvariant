@@ -50,6 +50,12 @@ _TEST_BED_REGIONS = [
     ranges.make_range('chr3', 80, 90),
 ]
 
+_TEST_CONTIGS = [
+    reference_pb2.ContigInfo(name='chr1', n_bases=10, pos_in_fasta=0),
+    reference_pb2.ContigInfo(name='chr2', n_bases=100, pos_in_fasta=1),
+    reference_pb2.ContigInfo(name='chr3', n_bases=500, pos_in_fasta=2),
+]
+
 
 class RangesTests(parameterized.TestCase):
 
@@ -85,20 +91,22 @@ class RangesTests(parameterized.TestCase):
 
   def test_from_regions_not_empty(self):
     literals = ['chr1', 'chr2:10-20']
-    contig_map = {
-        'chr1': reference_pb2.ContigInfo(name='chr1', n_bases=10),
-        'chr2': reference_pb2.ContigInfo(name='chr2', n_bases=100),
-    }
     self.assertItemsEqual(
         [ranges.make_range('chr1', 0, 10),
          ranges.make_range('chr2', 9, 20)],
-        ranges.RangeSet.from_regions(literals, contig_map))
+        ranges.RangeSet.from_regions(
+            literals, ranges.contigs_dict(_TEST_CONTIGS)))
 
   def test_from_regions_empty_literals(self):
-    range_set = ranges.RangeSet.from_regions([], contig_map=None)
+    range_set = ranges.RangeSet.from_regions([])
     # The set is empty.
     self.assertItemsEqual([], range_set)
     self.assertFalse(range_set)
+
+  def test_unrecognized_contig_triggers_exception(self):
+    with self.assertRaises(ValueError):
+      _ = ranges.RangeSet([ranges.make_range('bogus_chromosome', 1, 10)],
+                          _TEST_CONTIGS)
 
   @parameterized.parameters(
       # Overlapping intervals get merged.
@@ -366,14 +374,14 @@ class RangesTests(parameterized.TestCase):
 
   @parameterized.parameters(
       # Chop our contigs into 50 bp pieces.
-      (50, [('chrM', 0, 50), ('chrM', 50, 100), ('chr1', 0, 50),
-            ('chr1', 50, 76), ('chr2', 0, 50), ('chr2', 50, 100),
-            ('chr2', 100, 121)]),
+      (50, [('chr1', 0, 50), ('chr1', 50, 76), ('chr2', 0, 50),
+            ('chr2', 50, 100), ('chr2', 100, 121), ('chrM', 0, 50),
+            ('chrM', 50, 100)]),
       # Chop our contigs in 120 bp pieces, leaving a 1 bp fragment in chr2.
-      (120, [('chrM', 0, 100), ('chr1', 0, 76), ('chr2', 0, 120),
-             ('chr2', 120, 121)]),
+      (120, [('chr1', 0, 76), ('chr2', 0, 120), ('chr2', 120, 121),
+             ('chrM', 0, 100)]),
       # A 500 max size spans each of our contigs fully.
-      (500, [('chrM', 0, 100), ('chr1', 0, 76), ('chr2', 0, 121)]),
+      (500, [('chr1', 0, 76), ('chr2', 0, 121), ('chrM', 0, 100)]),
   )
   def test_partitions(self, interval_size, expected):
     rangeset = ranges.RangeSet([
@@ -381,8 +389,8 @@ class RangesTests(parameterized.TestCase):
         ranges.make_range('chr1', 0, 76),
         ranges.make_range('chr2', 0, 121),
     ])
-    self.assertCountEqual([ranges.make_range(*args) for args in expected],
-                          rangeset.partition(interval_size))
+    self.assertEqual([ranges.make_range(*args) for args in expected],
+                     list(rangeset.partition(interval_size)))
 
   def test_partitions_bad_interval_size_raises(self):
     # list() is necessary to force the generator to execute.
@@ -458,6 +466,31 @@ class RangesTests(parameterized.TestCase):
     self.assertEqual(150, ranges.contigs_n_bases([c1, c2]))
     self.assertEqual(125, ranges.contigs_n_bases([c1, c3]))
     self.assertEqual(175, ranges.contigs_n_bases([c1, c2, c3]))
+
+  def test_rangeset_iteration_order(self):
+    contigs = [
+        reference_pb2.ContigInfo(name='c', n_bases=100, pos_in_fasta=0),
+        reference_pb2.ContigInfo(name='b', n_bases=121, pos_in_fasta=2),
+        reference_pb2.ContigInfo(name='a', n_bases=76, pos_in_fasta=1),
+    ]
+    unsorted = ranges.parse_literals(
+        ['a:10', 'c:20', 'b:30', 'b:10-15', 'a:5'])
+
+    # Iteration order over a RangeSet instantiated with a contigs list is
+    # determined by pos_in_fasta, start, end.
+    range_set_with_contigs = ranges.RangeSet(unsorted, contigs)
+    self.assertEqual(
+        ranges.parse_literals(
+            ['c:20', 'a:5', 'a:10', 'b:10-15', 'b:30']),
+        [range_ for range_ in range_set_with_contigs])
+
+    # For a RangeSet instantiated *without* a contig map, the iteration order
+    # is determined by reference_name, start, end.
+    range_set_no_contigs = ranges.RangeSet(unsorted)
+    self.assertEqual(
+        ranges.parse_literals(
+            ['a:5', 'a:10', 'b:10-15', 'b:30', 'c:20']),
+        [range_ for range_ in range_set_no_contigs])
 
   def test_sort_ranges(self):
     contigs = [
