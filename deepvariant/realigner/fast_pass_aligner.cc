@@ -39,6 +39,7 @@
 #include <string>
 #include "re2/re2.h"
 
+#include "absl/memory/memory.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 
