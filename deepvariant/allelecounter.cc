@@ -246,7 +246,13 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
         // know that, and the read's cigar reflect true differences of the read
         // to the alignment at the start of the contig.  Nasty, I know.
         LOG(WARNING) << "Deletion spans off the chromosome for read: "
-                     << read.ShortDebugString();
+                     << read.ShortDebugString()
+            << " at cigar " << cigar.ShortDebugString()
+            << " with interval " << Interval().ShortDebugString()
+            << " with interval_offset " << interval_offset
+            << " and read_offset " << read_offset
+            << " ref_start_ " << ref_start_
+            << " abs_start " << ref_start_ + interval_offset;
         return ReadAllele();
       }
 
@@ -329,6 +335,11 @@ void AlleleCounter::AddReadAlleles(const Read& read,
 
 void AlleleCounter::Add(const Read& read) {
   // redacted
+  // Make sure our incoming read has a mapping quality above our min. threshold.
+  if (read.alignment().mapping_quality() <
+      options_.read_requirements().min_mapping_quality()) {
+    return;
+  }
 
   const LinearAlignment& aln = read.alignment();
   std::vector<ReadAllele> to_add;

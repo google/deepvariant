@@ -627,6 +627,21 @@ TEST_F(AlleleCounterTest, TestDeletionAtChrStart) {
                    MakeCounter(chr_, chr_start, 4).get());
 }
 
+TEST_F(AlleleCounterTest, TestLowMapqReadsAreIgnored) {
+  Range range = MakeRange("chr1", 0, 4);
+  AlleleCounterOptions options;
+  options.mutable_read_requirements()->set_min_mapping_quality(10);
+  AlleleCounter allele_counter("ACGT", range, options);
+  auto read = MakeRead("chr1", 0, "ACGT", {"4M"});
+  read.mutable_alignment()->set_mapping_quality(0);
+  allele_counter.Add(read);
+
+  // Since the read has a mapping quality below our minimum, we have no counts.
+  for (int i = 0; i < 4; i++) {
+    EXPECT_THAT(TotalAlleleCounts(allele_counter.Counts()[i]), Eq(0));
+  }
+}
+
 TEST_F(AlleleCounterTest, TestMinBaseQualSNP) {
   for (const int bad_pos : {0, 1, 2, 3, 4}) {
     auto read = MakeRead(chr_, start_, "TCCGT", {"5M"});
