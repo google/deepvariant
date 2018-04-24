@@ -13,7 +13,6 @@ exports_files(["LICENSE"])
 py_clif_cc(
     name = "vcf_reader",
     srcs = ["vcf_reader.clif"],
-    clif_deps = [],
     py_deps = [
         "//third_party/nucleus/io:clif_postproc",
     ],
@@ -47,8 +46,6 @@ py_test(
 py_clif_cc(
     name = "vcf_writer",
     srcs = ["vcf_writer.clif"],
-    clif_deps = [],
-    py_deps = [],
     pyclif_deps = [
         "//third_party/nucleus/protos:variants_pyclif",
     ],
@@ -79,7 +76,6 @@ py_test(
 py_clif_cc(
     name = "sam_reader",
     srcs = ["sam_reader.clif"],
-    clif_deps = [],  # other py_clif_cc rules
     py_deps = [
         "//third_party/nucleus/io:clif_postproc",
     ],
@@ -113,11 +109,23 @@ py_test(
 )
 
 py_clif_cc(
-    name = "reference_fai",
-    srcs = ["reference_fai.clif"],
+    name = "reference",
+    srcs = ["reference.clif"],
     pyclif_deps = [
         "//third_party/nucleus/protos:range_pyclif",
         "//third_party/nucleus/protos:reference_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
+py_clif_cc(
+    name = "reference_fai",
+    srcs = ["reference_fai.clif"],
+    clif_deps = [
+        ":reference",
     ],
     deps = [
         "//third_party/nucleus/io:reference_fai",
@@ -144,7 +152,6 @@ py_clif_cc(
     name = "fasta_reader",
     srcs = ["fasta_reader.clif"],
     pyclif_deps = [
-        "//third_party/nucleus/protos:range_pyclif",
         "//third_party/nucleus/protos:reference_pyclif",
     ],
     deps = [
@@ -156,7 +163,6 @@ py_clif_cc(
 py_clif_cc(
     name = "bed_reader",
     srcs = ["bed_reader.clif"],
-    clif_deps = [],
     py_deps = [
         "//third_party/nucleus/io:clif_postproc",
     ],
@@ -187,8 +193,6 @@ py_test(
 py_clif_cc(
     name = "bed_writer",
     srcs = ["bed_writer.clif"],
-    clif_deps = [],
-    py_deps = [],
     pyclif_deps = [
         "//third_party/nucleus/protos:bed_pyclif",
     ],
@@ -217,7 +221,6 @@ py_test(
 py_clif_cc(
     name = "fastq_reader",
     srcs = ["fastq_reader.clif"],
-    clif_deps = [],
     py_deps = [
         "//third_party/nucleus/io:clif_postproc",
     ],
@@ -248,8 +251,6 @@ py_test(
 py_clif_cc(
     name = "fastq_writer",
     srcs = ["fastq_writer.clif"],
-    clif_deps = [],
-    py_deps = [],
     pyclif_deps = [
         "//third_party/nucleus/protos:fastq_pyclif",
     ],
@@ -279,9 +280,6 @@ py_test(
 py_clif_cc(
     name = "hts_verbose",
     srcs = ["hts_verbose.clif"],
-    clif_deps = [],
-    py_deps = [],
-    pyclif_deps = [],
     deps = [
         "//third_party/nucleus/io:hts_verbose",
     ],
