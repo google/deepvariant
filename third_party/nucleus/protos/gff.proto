@@ -1,0 +1,158 @@
+// Copyright 2018 Google Inc.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+syntax = "proto3";
+
+package nucleus.genomics.v1;
+
+import "third_party/nucleus/protos/range.proto";
+
+// This message represents a single GFF3 record.  See
+// https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
+// for details on the file format; that document is quoted below.
+//
+// redacted
+message GffRecord {
+  // `range` field, reflecting the genomic location of the feature.
+  // NOTE: this is a 0-based, end-exclusive interval, in contrast to the 1-based
+  // encoding used natively in the GFF text format.  For reference, consult the
+  // documentation for `Range`.
+  Range range = 1;
+
+  // `source` designation, as defined by GFF spec:
+  // "The source is a free text qualifier intended to describe the algorithm or
+  // operating procedure that generated this feature. Typically this is the name
+  // of a piece of software, such as "Genescan" or a database name, such as
+  // "Genbank." In effect, the source is used to extend the feature ontology by
+  // adding a qualifier to the type creating a new composite type that is a
+  // subclass of the type in the type column."
+  string source = 2;
+
+  // `type` designation, as defined by GFF spec:
+  // "The type of the feature (previously called the "method"). This is
+  // constrained to be either a term from the Sequence Ontology or an SO
+  // accession number. The latter alternative is distinguished using the syntax
+  // SO:000000. In either case, it must be sequence_feature (SO:0000110) or an
+  // is_a child of it."
+  string type = 3;
+
+  // `score` designation, as defined by GFF spec:
+  // "The score of the feature, a floating point number. As in earlier versions
+  // of the format, the semantics of the score are ill-defined. It is strongly
+  // recommended that E-values be used for sequence similarity features, and
+  // that P-values be used for ab initio gene prediction features."
+  double score = 4;
+
+  // redacted
+  enum Strand {
+    // The strand is unspecified, unknown, or not meaningful.
+    UNSPECIFIED_STRAND = 0;
+    FORWARD_STRAND = 1;
+    REVERSE_STRAND = 2;
+  }
+
+  // The strand if the feature, if relevant.
+  Strand strand = 5;
+
+  // `phase` designation, as defined by the GFF spec:
+  // "For features of type "CDS", the phase indicates where the feature begins
+  // with reference to the reading frame. The phase is one of the integers 0, 1,
+  // or 2, indicating the number of bases that should be removed from the
+  // beginning of this feature to reach the first base of the next codon. In
+  // other words, a phase of "0" indicates that the next codon begins at the
+  // first base of the region described by the current line, a phase of "1"
+  // indicates that the next codon begins at the second base of this region, and
+  // a phase of "2" indicates that the codon begins at the third base of this
+  // region. This is NOT to be confused with the frame, which is simply start
+  // modulo 3.
+  //
+  // For forward strand features, phase is counted from the start field. For
+  // reverse strand features, phase is counted from the end field.
+  //
+  // The phase is REQUIRED for all CDS features."
+  int32 phase = 6;
+
+  // `attributes`, a free-form map of keys to string values, corresponding to
+  // the semi-colon separated attributes field in the GFF text format.
+  map<string, string> attributes = 7;
+}
+
+
+// A message encoding the directives contained in a GFF3 file header.
+// Consult the file format reference for detailed descriptions of
+// these directives.  Note that we do NOT handle the FASTA directive
+// (a rarely-used method to bundle reference sequences within a GFF
+// file.)
+message GffHeader {
+  // `gff_version`, a string of the format "gff-version 3.#.#"
+  // encoding the exact GFF spec version used.
+  string gff_version = 1;
+
+  // A SequenceRegion message encodes a span of a sequence contig.
+  // redacted
+  message SequenceRegion {
+    string seqid = 1;
+    // N.B. the `start`, `end` interval is 0-based, end-exclusive as
+    // in the Range proto, and unlike the native representation in a
+    // GFF text file.
+    int64 start = 2;
+    int64 end = 3;
+  };
+  // `sequence_regions` is a list of the sequence regions that are
+  // referenced by GFF records.
+  repeated string sequence_regions = 2;
+
+  // An OntologyDirective holds the URI to a sequence ontology
+  // database, reflecting the ontology over the entities in the
+  // `type`, `source`, and `attributes` fields of a GffRecord.
+  message OntologyDirective {
+    string uri = 1;
+  }
+  repeated OntologyDirective feature_ontologies = 3;
+  repeated OntologyDirective attribute_ontologies = 4;
+  repeated OntologyDirective source_ontologies = 5;
+
+  // A string name for the biological species analyzed.
+  // "This directive indicates the species that the annotations apply
+  // to. The preferred format is a NCBI URL that points to the
+  // relevant species page in either of the following formats:
+  //   http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=6239
+  //   http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name=Caenorhabditis+elegans"
+  string species = 6;
+
+  message GenomeBuildDirective {
+    string source = 1;
+    string name = 2;
+  }
+  GenomeBuildDirective genome_build = 7;
+}
+
+
+message GffReaderOptions {}
+
+message GffWriterOptions {}
