@@ -93,4 +93,5 @@ export DV_COPT_FLAGS="--copt=-msse4.1 --copt=-msse4.2 --copt=-mavx --copt=-O3"
 
 function note_build_stage {
   echo "========== [$(date)] Stage '${1}' starting"
+  python --version
 }
