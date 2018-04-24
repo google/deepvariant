@@ -35,11 +35,9 @@
 
 set -euo pipefail
 
-python --version
 echo ========== Load config settings.
 
 source settings.sh
-python --version
 
 ################################################################################
 # misc setup
