@@ -481,22 +481,6 @@ TEST_F(AlleleCounterTest, TestDeletionSpanningOffInterval) {
                    });
 }
 
-TEST_F(AlleleCounterTest, TestDeletionLongerThanRefBases) {
-  // We can have a deletion that's so large it not only spans off the interval
-  // it's even larger than the ref_bases string provided to the AlleleCounter.
-  // Make sure we run without crashing on this input.
-  Range range = MakeRange("chr1", 0, 4);
-  AlleleCounter allele_counter("ACGT", range, options_);
-  allele_counter.Add(MakeRead("chr1", 1, "CGTA", {"3M", "20D", "1M"}));
-
-  // Get the allele count at the 3rd base ("G").
-  const AlleleCount& allele_count = allele_counter.Counts()[2];
-  const std::vector<Allele> alleles_sum = SumAlleleCounts(allele_count);
-  EXPECT_THAT(alleles_sum,
-              UnorderedPointwise(EqualsProto(),
-                                 {MakeAllele("G", AlleleType::REFERENCE, 1)}));
-}
-
 TEST_F(AlleleCounterTest, TestMultipleReads) {
   // Tests that we can add up multiple reads with different starts, cigars, and
   // ends.
@@ -631,7 +615,7 @@ TEST_F(AlleleCounterTest, TestLowMapqReadsAreIgnored) {
   Range range = MakeRange("chr1", 0, 4);
   AlleleCounterOptions options;
   options.mutable_read_requirements()->set_min_mapping_quality(10);
-  AlleleCounter allele_counter("ACGT", range, options);
+  AlleleCounter allele_counter(ref_.get(), range, options);
   auto read = MakeRead("chr1", 0, "ACGT", {"4M"});
   read.mutable_alignment()->set_mapping_quality(0);
   allele_counter.Add(read);
