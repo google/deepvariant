@@ -134,10 +134,17 @@ struct CigarOp {
         length(0) {}
   CigarOp(CigarUnit::Operation op, int len) : operation(op), length(len) {}
 
+  bool operator==(const CigarOp& that) const {
+    return operation == that.operation && length == that.length;
+  }
+
   CigarUnit::Operation operation;
   int length;
 };
 
+// redacted
+// It contains not only read alignments to haplotype but also haplotype to
+// reference alignment.
 // Stores alignment scores for all reads to one haplotype.
 // haplotype_score = sum of all aligned read scores, where read score
 // is a number of matched bases. This way we can order haplotypes by number of
@@ -151,6 +158,14 @@ struct HaplotypeReadsAlignment {
         : haplotype_index(haplotype_index), haplotype_score(score) {
     this->read_alignment_scores.assign(read_alignment_scores.begin(),
                                        read_alignment_scores.end());
+  }
+
+  bool operator==(const HaplotypeReadsAlignment& that) const {
+    return haplotype_index == that.haplotype_index &&
+           haplotype_score == that.haplotype_score &&
+           read_alignment_scores == that.read_alignment_scores &&
+           cigar == that.cigar && cigar_ops == that.cigar_ops &&
+           hap_to_ref_positions_map == that.hap_to_ref_positions_map;
   }
 
   // halpotype index in haplotypes member of FastPassAligner class
@@ -252,6 +267,14 @@ class FastPassAligner {
   // be called prior to calling SswAlign.
   Alignment SswAlign(const string& target) const;
 
+  // Align all haplotypes to the reference using SSW library.
+  void AlignHaplotypesToReference();
+
+  const std::vector<HaplotypeReadsAlignment>& GetReadToHaplotypeAlignments()
+      const {
+    return read_to_haplotype_alignments_;
+  }
+
  private:
   // Reference sequence for the window
   string reference_;
@@ -301,8 +324,6 @@ class FastPassAligner {
 
   void AlignReadsToHaplotypes(uint16_t score_threshold);
 
-  void AlignHaplotypesToReference();
-
   // Changes alignment for each read that we could realign.
   // realigned_reads are eventually passed to Python wrapped in unique_ptr
   // as per clif requirements.
@@ -332,9 +353,6 @@ class FastPassAligner {
   void CalculateCigarForRead(
       size_t read_index,
       std::list<CigarOp>* read_to_ref_cigar) const;
-
-  static void CigarStringToVector(const string& cigar,
-                                  std::list<CigarOp>* cigar_ops);
 };
 
 }  // namespace deepvariant

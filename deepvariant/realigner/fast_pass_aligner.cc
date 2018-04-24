@@ -37,15 +37,17 @@
 #include <set>
 #include <sstream>
 #include <string>
-#include "re2/re2.h"
 
 #include "absl/memory/memory.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
+#include "re2/re2.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+
+using re2::StringPiece;  // copybara
 
 void FastPassAligner::set_reference(const string& reference) {
   this->reference_ = reference;
@@ -225,10 +227,60 @@ int FastPassAligner::FastAlignStrings(const tensorflow::StringPiece& s1,
   return num_of_matches * match_score_ - *num_of_mismatches * mismatch_penalty_;
 }
 
-// Align haplotypes to reference using ssw library and update bestHaplotypes
-// vector.
+CigarUnit::Operation CigarOperationFromChar(char op) {
+  switch (op) {
+    case '=':
+    case 'X':
+      return nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH;
+    case 'S':
+      return nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT;
+    case 'D':
+      return nucleus::genomics::v1::CigarUnit_Operation_DELETE;
+    case 'I':
+      return nucleus::genomics::v1::CigarUnit_Operation_INSERT;
+    default:
+      return nucleus::genomics::v1::CigarUnit_Operation_OPERATION_UNSPECIFIED;
+  }
+}
+
+std::list<CigarOp> CigarStringToVector(const string& cigar) {
+  std::list<CigarOp> cigarOps;
+  StringPiece input(cigar);
+  RE2 pattern("(\\d+)([XIDS=])");
+  int opLen;
+  string opType;
+  while (RE2::Consume(&input, pattern, &opLen, &opType)) {
+    CHECK_EQ(opType.length(), 1);
+    CigarUnit::Operation op = CigarOperationFromChar(opType[0]);
+    cigarOps.push_back(CigarOp(op, opLen));
+  }
+  return cigarOps;
+}
+
+// Align haplotypes to reference using ssw library.
 void FastPassAligner::AlignHaplotypesToReference() {
-// redacted
+  SswSetReference(reference_);
+
+  // Initialize read_to_haplotype_alignments_ if it is not initialized yet.
+  if (read_to_haplotype_alignments_.empty()) {
+    for (int i = 0; i < haplotypes_.size(); i++) {
+      read_to_haplotype_alignments_.push_back(HaplotypeReadsAlignment(
+          i, -1, std::vector<ReadAlignment>(reads_.size())));
+    }
+  }
+
+  for (auto& haplotype_alignment : read_to_haplotype_alignments_) {
+    Filter filter;
+    CHECK(haplotype_alignment.haplotype_index < haplotypes_.size());
+    Alignment alignment =
+        SswAlign(haplotypes_[haplotype_alignment.haplotype_index]);
+    if (alignment.sw_score > 0) {
+      haplotype_alignment.cigar = alignment.cigar_string;
+      haplotype_alignment.cigar_ops =
+          CigarStringToVector(haplotype_alignment.cigar);
+      haplotype_alignment.ref_pos = alignment.ref_begin;
+    }
+  }
 }
 
 void FastPassAligner::AlignReadsToHaplotypes(uint16_t score_threshold) {
@@ -261,16 +313,6 @@ void FastPassAligner::BuildIndex() {
   for (const auto& read : reads_) {
     AddReadToIndex(read, ReadId(read_id++));
   }
-}
-
-CigarUnit::Operation CigarOperationFromChar(char op) {
-  // redacted
-  return nucleus::genomics::v1::CigarUnit_Operation_OPERATION_UNSPECIFIED;
-}
-
-void FastPassAligner::CigarStringToVector(const string& cigar,
-                                          std::list<CigarOp>* cigar_ops) {
-  // redacted
 }
 
 void FastPassAligner::CalculatePositionMaps() {

@@ -221,6 +221,50 @@ TEST_F(FastPassAlignerTest, SswAlignerSanityCheck) {
   EXPECT_EQ(alignment.ref_begin, 3);
 }
 
+TEST_F(FastPassAlignerTest, AlignHaplotypesToReference_Test) {
+  aligner_.InitSswLib();
+  Filter filter;
+  const string REF_SEQ = "AGAAGGTCCCTTTGCCGAAGTTAAACCCTTTCGCGC";
+  aligner_.set_reference(REF_SEQ);
+  std::vector<string> haplotypes = {
+      "GTCCCTTTGCCGAAGTTAAACCCTTT",  // equals to reference
+      "GTCCCTTTGCCGAGTTAAACCCTTT",   // has deletion
+      "GTCCCTATGCCGAAGTTAAACCCTTT"   // has mismatch
+  };
+
+  HaplotypeReadsAlignment ha1(0, -1, std::vector<ReadAlignment>());
+  ha1.cigar = "26=";
+  ha1.cigar_ops = std::list<CigarOp>({CigarOp(
+      nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 26)});
+  ha1.ref_pos = 5;
+
+  HaplotypeReadsAlignment ha2(1, -1, std::vector<ReadAlignment>());
+  ha2.cigar = "12=1D13=";
+  ha2.cigar_ops = std::list<CigarOp>(
+      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 12),
+       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 1),
+       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH,
+               13)});
+  ha2.ref_pos = 5;
+
+  HaplotypeReadsAlignment ha3(2, -1, std::vector<ReadAlignment>());
+  ha3.cigar = "6=1X19=";
+  ha3.cigar_ops = std::list<CigarOp>(
+      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 6),
+       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 1),
+       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH,
+               19)});
+  ha3.ref_pos = 5;
+
+  std::vector<HaplotypeReadsAlignment> expectedHaplotypeAlignments = {ha1, ha2,
+                                                                      ha3};
+
+  aligner_.set_haplotypes(haplotypes);
+  aligner_.AlignHaplotypesToReference();
+  EXPECT_THAT(aligner_.GetReadToHaplotypeAlignments(),
+              testing::UnorderedElementsAreArray(expectedHaplotypeAlignments));
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
