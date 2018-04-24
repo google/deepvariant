@@ -50,34 +50,20 @@ def setUpModule():
 
 class WrapAlleleCounterTest(absltest.TestCase):
 
-  def setUp(self):
-    self.ref = fasta.RefFastaReader(testdata.CHR20_FASTA)
-    self.size = 100
-    self.region = ranges.make_range('chr20', 10000000, 10000000 + self.size)
-    self.options = deepvariant_pb2.AlleleCounterOptions(
-        partition_size=self.size)
-
   def test_wrap(self):
-    allele_counter = _allelecounter.AlleleCounter(self.ref.get_c_reader(),
-                                                  self.region, self.options)
-    self._verify_allele_counter(allele_counter)
-
-  def test_wrap_with_string_ref(self):
-    ref_bases = self.ref.query(
-        ranges.make_range(self.region.reference_name, self.region.start,
-                          self.region.end + 128))
-    allele_counter = _allelecounter.AlleleCounter.from_reference_bases(
-        ref_bases, self.region, self.options)
-    self._verify_allele_counter(allele_counter)
-
-  def _verify_allele_counter(self, allele_counter):
+    ref = fasta.RefFastaReader(testdata.CHR20_FASTA)
     sam_reader = sam.SamReader(testdata.CHR20_BAM)
-    reads = list(sam_reader.query(self.region))
+    size = 100
+    region = ranges.make_range('chr20', 10000000, 10000000 + size)
+    options = deepvariant_pb2.AlleleCounterOptions(partition_size=size)
+    allele_counter = _allelecounter.AlleleCounter(ref.get_c_reader(), region,
+                                                  options)
+    reads = list(sam_reader.query(region))
     self.assertGreater(len(reads), 0)
     for read in reads:
       allele_counter.add(read)
     counts = allele_counter.counts()
-    self.assertEqual(len(counts), self.size)
+    self.assertEqual(len(counts), size)
 
 
 if __name__ == '__main__':

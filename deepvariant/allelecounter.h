@@ -203,35 +203,9 @@ class AlleleCounter {
   // get reference data in that interval, using the options to determine which
   // reads and bases are counted.
   //
-  // The GenomeReference is not used after constructing this AlleleCounter
-  // object.
-  //
-  // This constructor fetches an appropriate reference base string via
-  // ReferenceBasesForAlleleCounter(ref, range) and forwards the actual
-  // construction work to the lower-level constructor that accepts just a
-  // reference base string.
+  // The GenomeReference must be available throughout the lifetime of this
+  // AlleleCounter object.
   AlleleCounter(const nucleus::GenomeReference* const ref,
-                const ::nucleus::genomics::v1::Range& range,
-                const AlleleCounterOptions& options);
-
-  // Creates an AlleleCounter.
-  //
-  // The counter will track AlleleCounts over the interval range, using ref for
-  // the reference bases in that interval, using the options to determine which
-  // reads and bases are counted.
-  //
-  // The AlleleCounter has some basic requirements on the relationship between
-  // ref_bases and range. The first base of ref_bases should be the reference
-  // base at range.start(). range.start() + ref_bases.length() must be at least
-  // range.end() but it's best to include a few hundred additional bases after
-  // range.end() to allow this AlleleCounter to construct large deletions that
-  // start within range but span off the end. The constraint is that the
-  // AlleleCounter will only create deletion alleles where:
-  //
-  //   deletion.start() + deletion.length() < range.start() + ref_bases.length()
-  //
-  // as we need a full reference base sequence to construct the deletion allele.
-  AlleleCounter(const string& ref_bases,
                 const ::nucleus::genomics::v1::Range& range,
                 const AlleleCounterOptions& options);
 
@@ -307,8 +281,7 @@ class AlleleCounter {
 
   // Our GenomeReference, which we use to get information about the reference
   // bases in our interval.
-  const int64 ref_start_;
-  const string ref_bases_;
+  const nucleus::GenomeReference* const ref_;
 
   // The interval chr from start (0-based, inclusive) to end (0-based,
   // exclusive) describing where we are counting on the genome. We will produce
