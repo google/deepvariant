@@ -46,8 +46,10 @@ from __future__ import print_function
 import collections
 
 from third_party.nucleus.io import genomics_reader
+from third_party.nucleus.io.python import fasta_reader
 from third_party.nucleus.io.python import reference_fai
 from third_party.nucleus.protos import reference_pb2
+from third_party.nucleus.util import ranges
 
 # redacted
 RefFastaHeader = collections.namedtuple(
@@ -104,12 +106,6 @@ class RefFastaReader(genomics_reader.GenomicsReader):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
 
-# Private data structure used by the InMemoryRefReader to store the bases for
-# a single chromosomal region.
-_InMemoryChromosome = collections.namedtuple('_InMemoryChromosome',
-                                             ['start', 'end', 'bases'])
-
-
 class InMemoryRefReader(genomics_reader.GenomicsReader):
   """A RefFastaReader getting its bases in a in-memory data structure.
 
@@ -140,67 +136,59 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
     """
     super(InMemoryRefReader, self).__init__()
 
-    self._chroms = {}
+    ref_seqs = []
     contigs = []
     for i, (contig_name, start, bases) in enumerate(chromosomes):
       if start < 0:
         raise ValueError('start={} must be >= for chromosome={}'.format(
             start, contig_name))
-      if contig_name in self._chroms:
-        raise ValueError('Duplicate chromosome={} detect'.format(contig_name))
       if not bases:
         raise ValueError(
             'Bases must contain at least one base, but got "{}"'.format(bases))
 
       end = start + len(bases)
-      self._chroms[contig_name] = _InMemoryChromosome(start, end, bases)
+      ref_seqs.append(reference_pb2.ReferenceSequence(
+          region=ranges.make_range(contig_name, start, end), bases=bases))
       contigs.append(
           reference_pb2.ContigInfo(
               name=contig_name, n_bases=end, pos_in_fasta=i))
 
-    self.header = RefFastaHeader(contigs=contigs)
-
-  def query(self, region):
-    start, _, bases = self._lookup_chromosome(region)
-    return bases[region.start - start:region.end - start]
-
-  def _lookup_chromosome(self, region):
-    if region.start > region.end:
-      raise ValueError('Malformed query region={}'.format(region))
-    if region.reference_name not in self._chroms:
-      raise ValueError('Unknown reference_name in {}'.format(region))
-    start, end, bases = self._chroms[region.reference_name]
-    if region.start < start or region.end > end:
-      raise ValueError(
-          'Cannot query region={} as this InMemoryRefReader only has bases '
-          'from start={} to end={} on chromosome={}'.format(
-              region, start, end, region.reference_name))
-    return start, end, bases
+    self._reader = fasta_reader.InMemoryGenomeReference.create(
+        contigs, ref_seqs)
+    self.header = RefFastaHeader(contigs=self._reader.contigs)
 
   def iterate(self):
     raise NotImplementedError('Can not iterate through a FASTA file')
 
+  def query(self, region):
+    """Returns the base pairs (as a string) in the given region."""
+    return self._reader.bases(region)
+
   def is_valid(self, region):
     """Returns whether the region is contained in this FASTA file."""
-    try:
-      self._lookup_chromosome(region)
-      return True
-    except ValueError:
-      return False
+    return self._reader.is_valid_interval(region)
 
   def contig(self, contig_name):
     """Returns a ContigInfo proto for contig_name."""
-    for contig in self.header.contigs:
-      if contig.name == contig_name:
-        return contig
-    raise ValueError('Unknown contig', contig_name)
+    return self._reader.contig(contig_name)
+
+  def get_c_reader(self):
+    """Returns the underlying C++ reader."""
+    return self._reader
 
   def __str__(self):
+
+    def _format_refseq(refseq):
+      bases = refseq.bases
+      if len(bases) >= 50:
+        bases = bases[0:50] + '...'
+      return 'Contig(chrom={} start={}, end={}, bases={})'.format(
+          refseq.region.reference_name, refseq.region.start, refseq.region.end,
+          bases)
+
     contigs_strs = [
-        'Contig(chrom={} start={}, end={}, bases={})'.format(
-            chrom, start, end, bases
-            if len(bases) < 50 else bases[0:50] + '...')
-        for chrom, (start, end, bases) in self._chroms.iteritems()
+        _format_refseq(refseq)
+        for refseq in self._reader.reference_sequences.itervalues()
     ]
     return 'InMemoryRefReader(contigs={})'.format(''.join(contigs_strs))
 

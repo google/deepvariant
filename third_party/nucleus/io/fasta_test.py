@@ -72,7 +72,6 @@ class InMemoryRefReaderTests(parameterized.TestCase):
          for contig in cls.fasta_reader.header.contigs])
 
   def test_non_zero_start_query(self):
-    """Checks all of the ways we can construct an InMemoryRefReader."""
     bases = 'ACGTAACCGGTT'
     for start in range(len(bases)):
       reader = fasta.InMemoryRefReader([('1', start, bases[start:])])
@@ -96,6 +95,15 @@ class InMemoryRefReaderTests(parameterized.TestCase):
     reader = fasta.InMemoryRefReader([('1', 10, 'ACGT')])
     with self.assertRaises(ValueError):
       reader.query(ranges.make_range('1', start, end))
+
+  def test_query_edge_cases(self):
+    reader = fasta.InMemoryRefReader([('1', 0, 'ACGT')])
+    # Check that we can query the first base correctly.
+    self.assertEqual(reader.query(ranges.make_range('1', 0, 1)), 'A')
+    # Check that we can query the last base correctly.
+    self.assertEqual(reader.query(ranges.make_range('1', 3, 4)), 'T')
+    # Check that we can query the entire sequence correctly.
+    self.assertEqual(reader.query(ranges.make_range('1', 0, 4)), 'ACGT')
 
   def test_contigs(self):
     # Our contigs can have a different order, descriptions are dropped, etc so
@@ -159,6 +167,13 @@ class InMemoryRefReaderTests(parameterized.TestCase):
     for reader in [self.fasta_reader, self.in_mem]:
       with self.assertRaises(ValueError):
         reader.query(region)
+
+  def test_bad_create_args(self):
+    with self.assertRaisesRegexp(ValueError, 'multiple ones were found on 1'):
+      fasta.InMemoryRefReader([
+          ('1', 10, 'AC'),
+          ('1', 20, 'AC'),
+      ])
 
 
 if __name__ == '__main__':

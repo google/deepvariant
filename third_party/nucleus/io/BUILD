@@ -130,7 +130,9 @@ py_library(
     srcs = ["fasta.py"],
     deps = [
         ":genomics_reader",
+        "//third_party/nucleus/io/python:fasta_reader",
         "//third_party/nucleus/io/python:reference_fai",
+        "//third_party/nucleus/util:ranges",
     ],
 )
 
@@ -492,6 +494,20 @@ cc_test(
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
+    name = "fasta_reader",
+    srcs = ["fasta_reader.cc"],
+    hdrs = ["fasta_reader.h"],
+    deps = [
+        ":reference",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:statusor",
+        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
