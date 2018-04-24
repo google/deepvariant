@@ -224,6 +224,9 @@ pyclif_proto_library(
 proto_library(
     name = "reference_proto",
     srcs = ["reference.proto"],
+    deps = [
+        ":range_proto",
+    ],
 )
 
 cc_proto_library(
@@ -231,6 +234,9 @@ cc_proto_library(
     srcs = ["reference.proto"],
     default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
+    deps = [
+        ":range_cc_pb2",
+    ],
 )
 
 py_proto_library(
@@ -239,6 +245,9 @@ py_proto_library(
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
     srcs_version = "PY2AND3",
+    deps = [
+        ":range_py_pb2",
+    ],
 )
 
 pyclif_proto_library(
