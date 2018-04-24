@@ -10,9 +10,8 @@ py_clif_cc(
     name = "allelecounter",
     srcs = ["allelecounter.clif"],
     clif_deps = [
-        "//third_party/nucleus/io/python:reference_fai",  # other py_clif_cc rules
+        "//third_party/nucleus/io/python:reference",
     ],
-    py_deps = [],
     pyclif_deps = [
         "//third_party/nucleus/protos:reads_pyclif",
         "//third_party/nucleus/protos:range_pyclif",
@@ -44,9 +43,6 @@ py_test(
 py_clif_cc(
     name = "postprocess_variants",
     srcs = ["postprocess_variants.clif"],
-    clif_deps = [
-    ],
-    py_deps = [],
     pyclif_deps = [
         "//third_party/nucleus/protos:reference_pyclif",
         "//deepvariant/protos:deepvariant_pyclif",
@@ -61,7 +57,6 @@ py_clif_cc(
         ":allelecounter",
         "//third_party/nucleus/io/python:reference_fai",  # other py_clif_cc rules
     ],
-    py_deps = [],
     pyclif_deps = [
         "//deepvariant/protos:deepvariant_pyclif",
     ],
@@ -89,9 +84,6 @@ py_test(
 py_clif_cc(
     name = "pileup_image_native",
     srcs = ["pileup_image_native.clif"],
-    clif_deps = [],
-    py_deps = [],
-    pyclif_deps = [],
     deps = [
         "//deepvariant:pileup_image_native",
         "//deepvariant/protos:deepvariant_pyclif",

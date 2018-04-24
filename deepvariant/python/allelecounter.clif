@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "deepvariant/protos/deepvariant_pyclif.h" import *
-from "third_party/nucleus/io/python/reference_fai.h" import *
+from "third_party/nucleus/io/python/reference.h" import *
 from "third_party/nucleus/protos/range_pyclif.h" import *
 from "third_party/nucleus/protos/reads_pyclif.h" import *
 
@@ -36,7 +36,7 @@ from "deepvariant/allelecounter.h":
   namespace `learning::genomics::deepvariant`:
     class AlleleCounter:
       def __init__(self,
-                   ref: GenomeReferenceFai,
+                   ref: GenomeReference,
                    interval: Range,
                    options: AlleleCounterOptions)
       def `Add` as add(self, read: Read)
