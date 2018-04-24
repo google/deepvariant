@@ -141,6 +141,19 @@ py_test(
 )
 
 py_clif_cc(
+    name = "fasta_reader",
+    srcs = ["fasta_reader.clif"],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:range_pyclif",
+        "//third_party/nucleus/protos:reference_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:fasta_reader",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
+py_clif_cc(
     name = "bed_reader",
     srcs = ["bed_reader.clif"],
     clif_deps = [],
