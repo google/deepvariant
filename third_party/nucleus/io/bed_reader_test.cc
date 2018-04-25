@@ -98,7 +98,6 @@ TEST_F(BedReaderTest, NormalIterationWorks) {
 
 TEST_F(BedReaderTest, GzippedIterationWorks) {
   auto opts = nucleus::genomics::v1::BedReaderOptions();
-  opts.set_compression_type(nucleus::genomics::v1::BedReaderOptions::GZIP);
   std::unique_ptr<BedReader> reader = std::move(
       BedReader::FromFile(GetTestData(kGzippedBedFilename), opts).ValueOrDie());
 

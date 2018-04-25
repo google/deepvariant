@@ -70,11 +70,7 @@ class NativeBedReader(genomics_reader.GenomicsReader):
     super(NativeBedReader, self).__init__()
 
     bed_path = input_path.encode('utf8')
-    if bed_path.endswith('.gz'):
-      options = bed_pb2.BedReaderOptions(
-          compression_type=bed_pb2.BedReaderOptions.GZIP, num_fields=num_fields)
-    else:
-      options = bed_pb2.BedReaderOptions(num_fields=num_fields)
+    options = bed_pb2.BedReaderOptions(num_fields=num_fields)
     self._reader = bed_reader.BedReader.from_file(bed_path, options)
     self.header = self._reader.header
 

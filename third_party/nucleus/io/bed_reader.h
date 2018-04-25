@@ -32,10 +32,10 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 
+#include "htslib/hts.h"
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "third_party/nucleus/vendor/zlib_inputstream.h"
 #include "tensorflow/core/lib/io/buffered_inputstream.h"
 #include "tensorflow/core/lib/io/random_inputstream.h"
 #include "tensorflow/core/platform/file_system.h"
@@ -103,18 +103,13 @@ class BedReader : public Reader {
   // reader.
   const nucleus::genomics::v1::BedHeader& Header() const { return header_; }
 
-  // Provides access to the input stream.
-  const std::unique_ptr<tensorflow::io::BufferedInputStream>& Stream() const {
-    return buffered_inputstream_;
-  }
-
   // Returns OK if the input numTokens equals num_fields in the header.
   tensorflow::Status Validate(const int numTokens) const;
 
  private:
   // Private constructor; use FromFile to safely create a BedReader from a
   // file.
-  BedReader(tensorflow::RandomAccessFile* fp,
+  BedReader(htsFile* fp,
             const nucleus::genomics::v1::BedReaderOptions& options,
             const nucleus::genomics::v1::BedHeader& header);
 
@@ -124,14 +119,11 @@ class BedReader : public Reader {
   // The header that tracks the number of fields in each record in the file.
   const nucleus::genomics::v1::BedHeader header_;
 
-  // The file pointer for the given BED path. The BedReader owns its file
-  // pointer and is responsible for its deletion.
-  tensorflow::RandomAccessFile* src_;
-  // Must outlive buffered_inputstream_.
-  std::unique_ptr<tensorflow::io::RandomAccessInputStream> file_stream_;
-  // Must outlive buffered_inputstream_.
-  std::unique_ptr<tensorflow::io::ZlibInputStream> zlib_stream_;
-  std::unique_ptr<tensorflow::io::BufferedInputStream> buffered_inputstream_;
+  // A pointer to the htslib file used to access the BED data.
+  htsFile* fp_;
+
+  // Allow BedIterable objects to access fp_.
+  friend class BedFullFileIterable;
 };
 
 }  // namespace nucleus

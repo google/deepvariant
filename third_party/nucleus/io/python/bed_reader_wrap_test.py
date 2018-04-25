@@ -72,8 +72,7 @@ class BedReaderTest(parameterized.TestCase):
 
     zreader = bed_reader.BedReader.from_file(
         self.zipped_bed,
-        bed_pb2.BedReaderOptions(
-            compression_type=bed_pb2.BedReaderOptions.GZIP))
+        bed_pb2.BedReaderOptions())
     self.assertEqual(zreader.header.num_fields, 12)
     with zreader:
       ziterable = zreader.iterate()
