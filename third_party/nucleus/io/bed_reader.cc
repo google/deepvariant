@@ -32,20 +32,16 @@
 // Implementation of bed_reader.h
 #include "third_party/nucleus/io/bed_reader.h"
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/vendor/zlib_compression_options.h"
-#include "third_party/nucleus/vendor/zlib_inputstream.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/lib/io/buffered_inputstream.h"
-#include "tensorflow/core/lib/io/compression.h"
-#include "tensorflow/core/lib/io/random_inputstream.h"
 #include "tensorflow/core/lib/strings/numbers.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/env.h"
-#include "tensorflow/core/platform/file_system.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -61,7 +57,7 @@ using tensorflow::string;
 constexpr int READER_BUFFER_SIZE = 256 * 1024;
 
 // BED-specific attributes.
-constexpr char BED_COMMENT_CHAR = '#';
+constexpr char BED_COMMENT_PREFIX[] = "#";
 
 // -----------------------------------------------------------------------------
 //
@@ -77,14 +73,27 @@ bool ValidNumBedFields(const int fields) {
 }
 
 // Read the next non-comment line.
-tf::Status NextNonCommentLine(
-    const std::unique_ptr<tf::io::BufferedInputStream>& instream,
-    string* line) {
-  TF_RETURN_IF_ERROR(instream->ReadLine(line));
-  while ((*line)[0] == BED_COMMENT_CHAR) {
-    TF_RETURN_IF_ERROR(instream->ReadLine(line));
+tf::Status NextNonCommentLine(htsFile* fp, string* line) {
+  CHECK(fp != nullptr);
+  CHECK(line != nullptr);
+  tf::Status status = tf::Status::OK();
+  kstring_t k_line = {0, 0, nullptr};
+  do {
+    int ret = hts_getline(fp, '\n', &k_line);
+    if (ret == -1) {
+      status = tf::errors::OutOfRange("");
+      break;
+    } else if (ret < 0) {
+      status = tf::errors::DataLoss("Failed to parse FASTQ record");
+      break;
+    }
+    *line = string(k_line.s);
+  } while (absl::StartsWith(*line, BED_COMMENT_PREFIX));
+
+  if (k_line.s) {
+    free(k_line.s);
   }
-  return tf::Status::OK();
+  return status;
 }
 
 tf::Status ConvertToPb(const string& line, const int desiredNumFields,
@@ -146,37 +155,22 @@ tf::Status ConvertToPb(const string& line, const int desiredNumFields,
 // NOTE: This is quite heavyweight. Reading upon initialization and then
 // rewinding the stream to 0 is a nicer solution, but currently has a memory
 // leak in the compressed stream reset implementation.
-tf::Status GetNumFields(const string& path, bool isCompressed, int* numFields) {
-  std::unique_ptr<tensorflow::RandomAccessFile> sp;
-  tf::Status status =
-      tf::Env::Default()->NewRandomAccessFile(path.c_str(), &sp);
-  if (!status.ok()) {
-    return tf::errors::NotFound(tf::strings::StrCat("Could not open ", path));
-  }
-  tensorflow::RandomAccessFile* fp = sp.release();
-  std::unique_ptr<tensorflow::io::BufferedInputStream> bi;
+tf::Status GetNumFields(const string& path, int* numFields) {
+  CHECK(numFields != nullptr);
   string line;
-  if (isCompressed) {
-    std::unique_ptr<tensorflow::io::RandomAccessInputStream> fs;
-    std::unique_ptr<tensorflow::io::ZlibInputStream> zs;
-    fs.reset(new tf::io::RandomAccessInputStream(fp));
-    zs.reset(new tf::io::ZlibInputStream(
-        fs.get(), READER_BUFFER_SIZE, READER_BUFFER_SIZE,
-        tf::io::ZlibCompressionOptions::GZIP()));
-    bi.reset(new tf::io::BufferedInputStream(zs.get(), READER_BUFFER_SIZE));
-    TF_RETURN_IF_ERROR(NextNonCommentLine(bi, &line));
-    bi.reset();
-    zs.reset();
-    fs.reset();
+  tf::Status status = tf::Status::OK();
+  htsFile* fp = hts_open_x(path.c_str(), "r");
+  if (!fp) {
+    status = tf::errors::NotFound("Could not open ", path);
   } else {
-    bi.reset(new tf::io::BufferedInputStream(fp, READER_BUFFER_SIZE));
-    TF_RETURN_IF_ERROR(NextNonCommentLine(bi, &line));
-    bi.reset();
+    status = NextNonCommentLine(fp, &line);
+    hts_close(fp);
   }
-  delete fp;
-  std::vector<string> tokens = absl::StrSplit(line, '\t');
-  *numFields = static_cast<int>(tokens.size());
-  return tf::Status::OK();
+  if (status.ok()) {
+    std::vector<string> tokens = absl::StrSplit(line, '\t');
+    *numFields = static_cast<int>(tokens.size());
+  }
+  return status;
 }
 }  // namespace
 
@@ -195,11 +189,7 @@ StatusOr<std::unique_ptr<BedReader>> BedReader::FromFile(
     const string& bed_path,
     const nucleus::genomics::v1::BedReaderOptions& options) {
   int numFieldsInBed;
-  TF_RETURN_IF_ERROR(
-      GetNumFields(bed_path,
-                   options.compression_type() ==
-                       nucleus::genomics::v1::BedReaderOptions::GZIP,
-                   &numFieldsInBed));
+  TF_RETURN_IF_ERROR(GetNumFields(bed_path, &numFieldsInBed));
   nucleus::genomics::v1::BedHeader header;
   header.set_num_fields(numFieldsInBed);
   // Ensure options are valid.
@@ -208,50 +198,35 @@ StatusOr<std::unique_ptr<BedReader>> BedReader::FromFile(
     return tf::errors::InvalidArgument(
         "Invalid requested number of fields to parse");
   }
-  std::unique_ptr<tensorflow::RandomAccessFile> fp;
-  tf::Status status =
-      tf::Env::Default()->NewRandomAccessFile(bed_path.c_str(), &fp);
-  if (!status.ok()) {
+  htsFile* fp = hts_open_x(bed_path.c_str(), "r");
+  if (fp == nullptr) {
     return tf::errors::NotFound(
         tf::strings::StrCat("Could not open ", bed_path));
   }
-  return std::unique_ptr<BedReader>(
-      new BedReader(fp.release(), options, header));
+  return std::unique_ptr<BedReader>(new BedReader(fp, options, header));
 }
 
-BedReader::BedReader(tensorflow::RandomAccessFile* fp,
+BedReader::BedReader(htsFile* fp,
                      const nucleus::genomics::v1::BedReaderOptions& options,
                      const nucleus::genomics::v1::BedHeader& header)
-    : options_(options), header_(header), src_(fp) {
-  if (options.compression_type() ==
-      nucleus::genomics::v1::BedReaderOptions::GZIP) {
-    file_stream_.reset(new tf::io::RandomAccessInputStream(src_));
-    zlib_stream_.reset(new tf::io::ZlibInputStream(
-        file_stream_.get(), READER_BUFFER_SIZE, READER_BUFFER_SIZE,
-        tf::io::ZlibCompressionOptions::GZIP()));
-    buffered_inputstream_.reset(new tf::io::BufferedInputStream(
-        zlib_stream_.get(), READER_BUFFER_SIZE));
-  } else {
-    buffered_inputstream_.reset(
-        new tf::io::BufferedInputStream(src_, READER_BUFFER_SIZE));
-  }
-}
+    : options_(options), header_(header), fp_(fp)
+{}
 
 BedReader::~BedReader() {
-  if (src_) {
+  if (fp_) {
     TF_CHECK_OK(Close());
   }
 }
 
 tf::Status BedReader::Close() {
-  if (src_ == nullptr) {
+  if (fp_ == nullptr) {
     return tf::errors::FailedPrecondition("BedReader already closed");
   }
-  buffered_inputstream_.reset();
-  zlib_stream_.reset();
-  file_stream_.reset();
-  delete src_;
-  src_ = nullptr;
+  int retval = hts_close(fp_);
+  fp_ = nullptr;
+  if (retval < 0) {
+    return tf::errors::Internal("hts_close() failed with return code ", retval);
+  }
   return tf::Status::OK();
 }
 
@@ -265,7 +240,7 @@ tf::Status BedReader::Validate(const int numTokens) const {
 }
 
 StatusOr<std::shared_ptr<BedIterable>> BedReader::Iterate() const {
-  if (src_ == nullptr)
+  if (fp_ == nullptr)
     return tf::errors::FailedPrecondition("Cannot Iterate a closed BedReader.");
   return StatusOr<std::shared_ptr<BedIterable>>(
       MakeIterable<BedFullFileIterable>(this));
@@ -277,7 +252,7 @@ StatusOr<bool> BedFullFileIterable::Next(
   TF_RETURN_IF_ERROR(CheckIsAlive());
   const BedReader* bed_reader = static_cast<const BedReader*>(reader_);
   string line;
-  tf::Status status = NextNonCommentLine(bed_reader->Stream(), &line);
+  tf::Status status = NextNonCommentLine(bed_reader->fp_, &line);
   if (tf::errors::IsOutOfRange(status)) {
     return false;
   } else if (!status.ok()) {

@@ -97,11 +97,7 @@ message BedHeader {
 
 // Options for reading BED files.
 message BedReaderOptions {
-  enum CompressionType {
-    NONE = 0;
-    GZIP = 1;
-  }
-  CompressionType compression_type = 1;
+  reserved 1;
 
   // Optional. The number of fields to read from the BED file. If this is unset,
   // or set to more fields than are present in the BED file, all fields are
