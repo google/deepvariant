@@ -62,3 +62,16 @@ py_test(
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
+
+py_clif_cc(
+    name = "window_selector",
+    srcs = ["window_selector.clif"],
+    clif_deps = [
+        "//deepvariant/python:allelecounter",
+    ],
+    py_deps = [],
+    pyclif_deps = [
+        "//deepvariant/protos:deepvariant_pyclif",
+    ],
+    deps = ["//deepvariant/realigner:cpp_window_selector"],
+)

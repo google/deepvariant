@@ -43,12 +43,26 @@ py_test(
     ],
 )
 
+cc_library(
+    name = "cpp_window_selector",
+    srcs = ["window_selector.cc"],
+    hdrs = ["window_selector.h"],
+    deps = [
+        "//deepvariant:allelecounter",
+    ],
+)
+
 py_library(
     name = "window_selector",
     srcs = ["window_selector.py"],
     deps = [
         ":utils",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/python:allelecounter",
+        "//deepvariant/realigner/python:window_selector",
+        "//deepvariant/vendor:timer",
         "//third_party/nucleus/protos:cigar_py_pb2",
+        "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/util:ranges",
     ],
 )
