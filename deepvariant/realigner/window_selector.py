@@ -34,9 +34,26 @@ from __future__ import print_function
 
 import collections
 
+from absl import logging
+
 from third_party.nucleus.protos import cigar_pb2
+from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import ranges
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import allelecounter
 from deepvariant.realigner import utils
+from deepvariant.realigner.python import window_selector as cpp_window_selector
+from deepvariant.vendor import timer
+
+# redacted
+# If True, we will run both the C++ and Python versions of the window selector
+# and compare the results.
+_COMPARE_CPP_PY = False
+
+# redacted
+# If True, we will use the C++ version of the window selector code. If False,
+# we will use the original Python version.
+_USE_CPP_IMPLEMENTATION = True
 
 
 def _process_aligned_bases(config, cigar, ref, read, ref_pos, read_pos):
@@ -135,7 +152,7 @@ def _process_read(config, ref, read, region):
       yield pos + region.start, count
 
 
-def _candidates_from_reads(config, ref, reads, region):
+def _candidates_from_reads(config, ref_reader, reads, region):
   """Returns a dictionary mapping positions to non-reference counts.
 
   Following cigar operations generate candidate position:
@@ -155,8 +172,7 @@ def _candidates_from_reads(config, ref, reads, region):
   Args:
     config: learning.genomics.deepvariant.realigner.WindowSelectorOptions
       options determining the behavior of this window selector.
-    ref: str. The reference bases as a string, where the first character of
-      ref starts at region.start and the last position in region.end.
+    ref_reader: GenomeReference. Indexed reference genome to query bases.
     reads: list[nucleus.protos.Read]. The reads we are processing into
       candidate positions.
     region: nucleus.protos.Range. The region we are processing.
@@ -167,14 +183,80 @@ def _candidates_from_reads(config, ref, reads, region):
     position summed up over all reads. The dictionary doesn't contain any
     position keys that would have a value of 0 (i.e., it's sparse).
   """
+  if _COMPARE_CPP_PY or _USE_CPP_IMPLEMENTATION:
+    with timer.Timer() as t2:
+      cpp_candidates = _candidates_from_reads_cpp(config, ref_reader, reads,
+                                                  region)
+      candidates = cpp_candidates
+
+  if _COMPARE_CPP_PY or not _USE_CPP_IMPLEMENTATION:
+    with timer.Timer() as t1:
+      python_candidates = _candidates_from_reads_python(config, ref_reader,
+                                                        reads, region)
+      if not _USE_CPP_IMPLEMENTATION:
+        candidates = python_candidates
+
+  if _COMPARE_CPP_PY:
+    logging.info('Region %s', ranges.to_literal(region))
+    logging.info('N. reads %s', len(reads))
+    logging.info('Python candidates %s', python_candidates)
+    logging.info('C++    candidates %s', cpp_candidates)
+    logging.info('Speed up: python: %5f, c++ %5f, relative cost %2f%%',
+                 t1.GetDuration(), t2.GetDuration(),
+                 (100.0 * t2.GetDuration()) / t1.GetDuration())
+    if python_candidates != cpp_candidates:
+      s = _show_diff(python_candidates, cpp_candidates)
+      # raise ValueError('Python and C++ candidates are different: %s' % s)
+      logging.warn('Python and C++ candidates are different: %s', s)
+
+  return candidates
+
+
+# redacted
+def _show_diff(py_candidates, cpp_candidates):
+  keys = set(py_candidates) | set(cpp_candidates)
+  result = {}
+  for key in keys:
+    pyr = py_candidates.get(key)
+    cppr = cpp_candidates.get(key)
+    result[key] = (pyr, cppr, '*** BAD' if pyr != cppr else '')
+  return '\n'.join('@{}: py={} cpp={} {}'.format(k, p, c, d)
+                   for k, (p, c, d) in sorted(result.iteritems()))
+
+
+# redacted
+def _candidates_from_reads_python(config, ref_reader, reads, region):
+  """See candidates_from_reads."""
   # A list of candidate positions mapping to their number of supporting reads.
   candidates = collections.defaultdict(int)
 
+  ref = ref_reader.query(region)
   for read in reads:
     for ref_pos, count in _process_read(config, ref, read, region):
       candidates[ref_pos] += count
 
   return candidates
+
+
+# redacted
+def _candidates_from_reads_cpp(config, ref_reader, reads, region):
+  """See candidates_from_reads."""
+  allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
+      read_requirements=reads_pb2.ReadRequirements(
+          min_mapping_quality=config.min_mapq,
+          min_base_quality=config.min_base_quality))
+
+  allele_counter = allelecounter.AlleleCounter(ref_reader.get_c_reader(),
+                                               region, allele_counter_options)
+
+  for read in reads:
+    allele_counter.add(read)
+
+  counts_vec = cpp_window_selector.candidates_from_allele_counter(
+      allele_counter)
+  return {
+      region.start + i: count for i, count in enumerate(counts_vec) if count > 0
+  }
 
 
 def _candidates_to_windows(config, candidate_pos, ref_name):
@@ -243,6 +325,10 @@ def select_windows(config, ref_reader, reads, region):
   Returns:
     A list of nucleus.protos.Range protos sorted by their genomic position.
   """
-  ref = ref_reader.query(region)
-  candidates = _candidates_from_reads(config, ref, reads, region)
+  # This is a fast path for the case where we have no reads, so we have no
+  # windows to assemble.
+  if not reads:
+    return []
+
+  candidates = _candidates_from_reads(config, ref_reader, reads, region)
   return _candidates_to_windows(config, candidates, region.reference_name)

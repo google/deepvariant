@@ -264,24 +264,26 @@ class RealignerTest(parameterized.TestCase):
 
   def test_realigner_doesnt_create_invalid_intervals(self):
     """Tests that read sets don't result in a crash in reference_fai.cc."""
-    read = test_utils.make_read(
-        'ACCGT' * 50,
-        start=63025520 - 250,
-        cigar='250M',
-        quals=range(30, 35) * 50,
-        name='read1')
-    reads = [read] * 20
     region = ranges.parse_literal('chr20:63,025,320-63,025,520')
+
+    reads = [
+        test_utils.make_read(
+            'ACCGT' * 50,
+            start=63025520 - 250,
+            cigar='250M',
+            quals=range(30, 35) * 50) for _ in range(20)
+    ]
     self.reads_realigner.realign_reads(reads, region)
 
-    # These reads are aligned off the edge of the contig.
-    read = test_utils.make_read(
-        'TTATA' * 50,
-        start=63025520 - 200,
-        cigar='200M50S',
-        quals=range(30, 35) * 50,
-        name='read1')
-    reads = [read] * 20
+    # These reads are aligned off the edge of the contig. Note that the
+    # reference bases in this interval are all Ns as well.
+    reads = [
+        test_utils.make_read(
+            'TTATA' * 50,
+            start=63025520 - 200,
+            cigar='200M50S',
+            quals=range(30, 35) * 50) for _ in range(20)
+    ]
     self.reads_realigner.realign_reads(reads, region)
 
   @parameterized.parameters(
@@ -292,7 +294,7 @@ class RealignerTest(parameterized.TestCase):
   def test_realigner_diagnostics(self, enabled, emit_reads):
     # Make sure that by default we aren't emitting any diagnostic outputs.
     dx_dir = test_utils.test_tmpfile('dx')
-    region_str = 'chr20:10046179-10046188'
+    region_str = 'chr20:10046178-10046188'
     region = ranges.parse_literal(region_str)
     assembled_region_str = 'chr20:10046109-10046257'
     reads = _get_reads(region)
