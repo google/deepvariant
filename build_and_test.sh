@@ -34,6 +34,12 @@ set -eux -o pipefail
 
 source settings.sh
 
+# bazel should have been installed in build-prereq.sh, but the PATH might
+# need to be added in this script.
+if ! bazel; then
+  PATH="$HOME/bin:$PATH"
+fi
+
 # Run all deepvariant tests.  Take bazel options from args, if any.
 # Note: If running with GPU, tests must be executed serially due to a GPU
 # contention issue.
