@@ -246,16 +246,24 @@ def _candidates_from_reads_cpp(config, ref_reader, reads, region):
           min_mapping_quality=config.min_mapq,
           min_base_quality=config.min_base_quality))
 
-  allele_counter = allelecounter.AlleleCounter(ref_reader.get_c_reader(),
-                                               region, allele_counter_options)
+  expanded_region = ranges.expand(
+      region,
+      config.region_expansion_in_bp,
+      contig_map=ranges.contigs_dict(ref_reader.header.contigs))
+  allele_counter = allelecounter.AlleleCounter(
+      ref_reader.get_c_reader(), expanded_region, allele_counter_options)
 
   for read in reads:
     allele_counter.add(read)
 
   counts_vec = cpp_window_selector.candidates_from_allele_counter(
       allele_counter)
+
   return {
-      region.start + i: count for i, count in enumerate(counts_vec) if count > 0
+      expanded_region.start + i: count
+      for i, count in enumerate(counts_vec)
+      if count > 0 and ranges.position_overlaps(
+          region.reference_name, expanded_region.start + i, region)
   }
 
 

@@ -52,7 +52,8 @@ class WindowSelectorTest(parameterized.TestCase):
         max_num_supporting_reads=10,
         min_mapq=20,
         min_base_quality=20,
-        min_windows_distance=4)
+        min_windows_distance=4,
+        region_expansion_in_bp=20)
 
   def assertCandidatesFromReadsEquals(self,
                                       reads,
@@ -246,19 +247,17 @@ class WindowSelectorTest(parameterized.TestCase):
   # Our region is 5-8 and we have a 4 basepair deletion in our read. We expect
   # a mismatch count of one for each position in the deletion that overlaps the
   # interval.
-  # redacted
-  # @parameterized.parameters(
-  #     dict(
-  #         read=test_utils.make_read(
-  #             'AA', start=start, cigar='1M4D1M', quals=[64, 64]),
-  #         expected={
-  #             pos: 1 for pos in range(start + 1, start + 5) if 5 <= pos < 8
-  #         },
-  #     ) for start in range(10))
-  # def test_candidates_from_reads_respects_region_deletion(self, read,
-  #                                                         expected):
-  #   self.assertCandidatesFromReadsEquals(
-  #       reads=[read], expected=expected, start=5, end=8, ref='A' * 100)
+  @parameterized.parameters(
+      dict(
+          read=test_utils.make_read(
+              'AA', start=start, cigar='1M4D1M', quals=[64, 64]),
+          expected={
+              pos: 1 for pos in range(start + 1, start + 5) if 5 <= pos < 8
+          },
+      ) for start in range(10))
+  def test_candidates_from_reads_respects_region_deletion(self, read, expected):
+    self.assertCandidatesFromReadsEquals(
+        reads=[read], expected=expected, start=5, end=8, ref='A' * 100)
 
   def test_candidates_from_reads_counts_overlapping_events(self):
     # This read has a mismatch at position 2 and a 2 bp insertion at position 4,

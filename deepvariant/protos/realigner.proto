@@ -69,6 +69,15 @@ message RealignerOptions {
     // Maximum window size to consider for local assembly. Large noisy regions
     // are skipped for realignment.
     int32 max_window_size = 6;
+
+    // How much should we expand the region we compute the candidate positions?
+    // This is needed because we want variants near, but not within, our actual
+    // window region to contribute evidence towards our window sites. Larger
+    // values allow larger events (i.e., an 50 bp deletion) 49 bp away from the
+    // region to contribute. However, larger values also means greater
+    // computation overhead as we are processing extra positions that aren't
+    // themselves directly used.
+    int32 region_expansion_in_bp = 7;
   }
 
   // Config parameters for "de-Bruijn graph (dbg)" phase.

@@ -77,6 +77,11 @@ flags.DEFINE_integer(
     'ws_max_window_size', 1000,
     'Maximum window size to consider for local assembly. Large noisy regions '
     'are skipped for realignment.')
+flags.DEFINE_integer(
+    'ws_region_expansion_in_bp', 20,
+    'Number of bases to expand the region when calculating windows; larger '
+    'values add overhead but allow larger nearby events to contribute evidence '
+    'for assembling an region even if they are not contained by the region.')
 flags.DEFINE_integer('dbg_min_k', 10, 'Initial k-mer size to build the graph.')
 flags.DEFINE_integer(
     'dbg_max_k', 100,
@@ -146,7 +151,8 @@ def realigner_config(flags_obj):
       min_mapq=flags_obj.ws_min_mapq,
       min_base_quality=flags_obj.ws_min_base_quality,
       min_windows_distance=flags_obj.ws_min_windows_distance,
-      max_window_size=flags_obj.ws_max_window_size)
+      max_window_size=flags_obj.ws_max_window_size,
+      region_expansion_in_bp=flags_obj.ws_region_expansion_in_bp)
 
   dbg_config = realigner_pb2.RealignerOptions.DeBruijnGraphOptions(
       min_k=flags_obj.dbg_min_k,
