@@ -80,7 +80,7 @@ def _candidates_from_reads(config, ref_reader, reads, region):
       config.region_expansion_in_bp,
       contig_map=ranges.contigs_dict(ref_reader.header.contigs))
   allele_counter = allelecounter.AlleleCounter(
-      ref_reader.get_c_reader(), expanded_region, allele_counter_options)
+      ref_reader.c_reader, expanded_region, allele_counter_options)
 
   for read in reads:
     allele_counter.add(read)

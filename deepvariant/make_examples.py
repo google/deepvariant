@@ -709,7 +709,7 @@ class RegionProcessor(object):
     self.variant_caller = None
 
   def _make_allele_counter_for_region(self, region):
-    return allelecounter.AlleleCounter(self.ref_reader.get_c_reader(), region,
+    return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
                                        self.options.allele_counter_options)
 
   def _encode_tensor(self, image_tensor):
