@@ -57,7 +57,7 @@ class WrapVariantCallingTest(absltest.TestCase):
     size = 1000
     region = ranges.make_range('chr20', 10000000, 10000000 + size)
     allele_counter = _allelecounter.AlleleCounter(
-        ref.get_c_reader(),
+        ref.c_reader,
         region,
         deepvariant_pb2.AlleleCounterOptions(partition_size=size))
     caller = variant_calling.VariantCaller(

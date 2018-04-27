@@ -56,8 +56,7 @@ class WrapAlleleCounterTest(absltest.TestCase):
     size = 100
     region = ranges.make_range('chr20', 10000000, 10000000 + size)
     options = deepvariant_pb2.AlleleCounterOptions(partition_size=size)
-    allele_counter = _allelecounter.AlleleCounter(ref.get_c_reader(), region,
-                                                  options)
+    allele_counter = _allelecounter.AlleleCounter(ref.c_reader, region, options)
     reads = list(sam_reader.query(region))
     self.assertGreater(len(reads), 0)
     for read in reads:
