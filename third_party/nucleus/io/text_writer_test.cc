@@ -1,0 +1,139 @@
+/*
+ * Copyright 2018 Google Inc.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
+
+#include "third_party/nucleus/io/text_writer.h"
+
+#include <fstream>
+
+#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock-more-matchers.h>
+
+#include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/testing/test_utils.h"
+
+using tensorflow::string;
+
+namespace tf = tensorflow;
+
+namespace {
+
+const string FileContents(const string& path) {
+  std::ifstream ifs(path, std::ifstream::binary);
+  std::ostringstream oss;
+  oss << ifs.rdbuf();
+  return oss.str();
+}
+
+}  // namespace
+
+
+namespace nucleus {
+
+const char kHelloWorld[] = "Hello, world!\n";
+const string kHelloWorldStr(kHelloWorld);
+
+// Array generated via:
+//  printf 'Hello, world!\n' | bgzip -c | hexdump -v -e '"0x" /1 "%02X" ", "'
+const unsigned char kHelloWorldBGZF[] = {
+  0x1F, 0x8B, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x06, 0x00,
+  0x42, 0x43, 0x02, 0x00, 0x29, 0x00, 0xF3, 0x48, 0xCD, 0xC9, 0xC9, 0xD7,
+  0x51, 0x28, 0xCF, 0x2F, 0xCA, 0x49, 0x51, 0xE4, 0x02, 0x00, 0x18, 0xA7,
+  0x55, 0x7B, 0x0E, 0x00, 0x00, 0x00, 0x1F, 0x8B, 0x08, 0x04, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0xFF, 0x06, 0x00, 0x42, 0x43, 0x02, 0x00, 0x1B, 0x00,
+  0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+const string kHelloWorldBGZFStr(reinterpret_cast<const char*>(kHelloWorldBGZF),
+                                sizeof(kHelloWorldBGZF));
+
+
+
+// Test that we can write to an uncompressed file stream.
+TEST(TextWriterTest, WritesUncompressedOutput) {
+  string dest = MakeTempFile("uncompressed.txt");
+  const auto writer = std::move(
+      TextWriter::ToFile(dest, TextWriter::NO_COMPRESS).ValueOrDie());
+  tf::Status status;
+  status = writer->Write(kHelloWorld);
+  EXPECT_EQ(tf::Status::OK(), status);
+  status = writer->Close();
+  EXPECT_EQ(tf::Status::OK(), status);
+
+  EXPECT_EQ(kHelloWorldStr, FileContents(dest));
+}
+
+// Test that we can write to a compresed file stream.
+TEST(TextWriterTest, WritesCompressedOutput) {
+  string dest = MakeTempFile("compressed.txt.gz");
+  const auto writer = std::move(
+      TextWriter::ToFile(dest, TextWriter::COMPRESS).ValueOrDie());
+  tf::Status status;
+  status = writer->Write(kHelloWorld);
+  EXPECT_EQ(tf::Status::OK(), status);
+  status = writer->Close();
+  EXPECT_EQ(tf::Status::OK(), status);
+
+  EXPECT_EQ(kHelloWorldBGZFStr, FileContents(dest));
+}
+
+// Test that we get compression when filename is *.gz.
+TEST(TextWriterTest, UsesCompressionWhenExtensionIsGz) {
+  string destGz = MakeTempFile("test_file.txt.gz");
+  const auto writer = std::move(TextWriter::ToFile(destGz).ValueOrDie());
+  tf::Status status;
+  status = writer->Write(kHelloWorld);
+  EXPECT_EQ(tf::Status::OK(), status);
+  status = writer->Close();
+  EXPECT_EQ(tf::Status::OK(), status);
+
+  EXPECT_EQ(kHelloWorldBGZFStr, FileContents(destGz));
+}
+
+// And no  compression when filename is NOT *.gz.
+TEST(TextWriterTest, NoCompressionWhenExtensionIsNotGz) {
+  string dest = MakeTempFile("test_file.txt");
+  const auto writer = std::move(TextWriter::ToFile(dest).ValueOrDie());
+  tf::Status status;
+  status = writer->Write(kHelloWorld);
+  EXPECT_EQ(tf::Status::OK(), status);
+  status = writer->Close();
+  EXPECT_EQ(tf::Status::OK(), status);
+
+  EXPECT_EQ(kHelloWorld, FileContents(dest));
+}
+
+
+
+
+
+
+}  // namespace nucleus

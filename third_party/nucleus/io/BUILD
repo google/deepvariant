@@ -611,3 +611,27 @@ py_test(
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
+
+cc_library(
+    name = "text_writer",
+    srcs = ["text_writer.cc"],
+    hdrs = ["text_writer.h"],
+    deps = [
+        ":hts_path",
+        "//third_party/nucleus/vendor:statusor",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@htslib",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "text_writer_test",
+    srcs = ["text_writer_test.cc"],
+    deps = [
+        ":text_writer",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
