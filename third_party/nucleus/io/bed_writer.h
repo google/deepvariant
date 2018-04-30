@@ -32,10 +32,9 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_BED_WRITER_H_
 #define THIRD_PARTY_NUCLEUS_IO_BED_WRITER_H_
 
+#include "third_party/nucleus/io/text_writer.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "third_party/nucleus/vendor/zlib_outputbuffer.h"
-#include "tensorflow/core/platform/file_system.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace nucleus {
@@ -81,10 +80,9 @@ class BedWriter {
 
  private:
   // Private constructor; use ToFile to safely create a BedWriter.
-  BedWriter(std::unique_ptr<tensorflow::WritableFile> fp,
+  BedWriter(std::unique_ptr<TextWriter> text_writer,
             const nucleus::genomics::v1::BedHeader& header,
-            const nucleus::genomics::v1::BedWriterOptions& options,
-            const bool isCompressed);
+            const nucleus::genomics::v1::BedWriterOptions& options);
 
   // The header of the BED file.
   const nucleus::genomics::v1::BedHeader header_;
@@ -92,16 +90,9 @@ class BedWriter {
   // Our options that control the behavior of this class.
   const nucleus::genomics::v1::BedWriterOptions options_;
 
-  // The file pointer for the given BED path. The BedWriter owns its file
-  // pointer and is responsible for its deletion. Must outlive writer_.
-  std::shared_ptr<tensorflow::WritableFile> raw_file_;
+  // Underlying file writer.
+  std::unique_ptr<TextWriter> text_writer_;
 
-  // The file pointer used to write. For uncompressed output, this is the same
-  // as raw_file_, but for compressed output it is distinct.
-  std::shared_ptr<tensorflow::WritableFile> writer_;
-
-  // Whether the output is written with compression.
-  const bool isCompressed_;
 };
 
 }  // namespace nucleus
