@@ -297,6 +297,7 @@ def call_variants(examples_filename,
     logging.warning('Unable to read any records from %s. Output will contain '
                     'zero records.', examples_filename)
     io_utils.write_tfrecords([], output_file)
+    return
   elif example_format != 'raw':
     raise ValueError('The TF examples in {} has image/format \'{}\' '
                      '(expected \'raw\') which means you might need to rerun '
