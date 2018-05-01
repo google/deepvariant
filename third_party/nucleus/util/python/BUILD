@@ -20,7 +20,7 @@ py_clif_cc(
     deps = ["//third_party/nucleus/util:cpp_math"],
 )
 
-py2and3_test(
+py_test(
     name = "math_wrap_test",
     size = "small",
     srcs = ["math_wrap_test.py"],

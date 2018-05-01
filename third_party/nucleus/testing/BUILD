@@ -74,7 +74,7 @@ py_library(
     ],
 )
 
-py2and3_test(
+py_test(
     name = "py_test_utils_test",
     size = "small",
     srcs = ["test_utils_test.py"],
@@ -86,13 +86,13 @@ py2and3_test(
     ],
 )
 
-py2and3_test(
+py_test(
     name = "protobuf_implementation_test",
     size = "small",
     srcs = ["protobuf_implementation_test.py"],
     deps = [
-        "//net/proto2/python/public",
         "//third_party/nucleus/io:sam",
         "@com_google_absl_py//absl/testing:absltest",
+        "@protobuf_archive//:protobuf_python",
     ],
 )
