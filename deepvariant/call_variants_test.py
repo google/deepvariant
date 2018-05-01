@@ -56,6 +56,7 @@ from deepvariant import testdata
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver
+from deepvariant.testing import tf_test_utils
 
 FLAGS = flags.FLAGS
 
@@ -66,6 +67,28 @@ def setUpModule():
 
 class CallVariantsEndToEndTests(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+
+  def setUp(self):
+    self.checkpoint_dir = tf.test.get_temp_dir()
+
+  def assertCallVariantsEmitsNRecordsForInceptionV3(self, filename,
+                                                    num_examples):
+    outfile = test_utils.test_tmpfile('inception_v3.call_variants.tfrecord')
+    model = modeling.get_model('inception_v3')
+    checkpoint_path = tf_test_utils.write_fake_checkpoint(
+        'inception_v3', self.test_session(), self.checkpoint_dir)
+
+    call_variants.call_variants(
+        examples_filename=filename,
+        checkpoint_path=checkpoint_path,
+        model=model,
+        output_file=outfile,
+        batch_size=4,
+        max_batches=None)
+    call_variants_outputs = list(
+        io_utils.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
+    # Check that we have the right number of output protos.
+    self.assertEqual(len(call_variants_outputs), num_examples)
 
   def assertCallVariantsEmitsNRecordsForRandomGuess(self, filename,
                                                     num_examples):
@@ -106,10 +129,10 @@ class CallVariantsEndToEndTests(
     self.assertCallVariantsEmitsNRecordsForRandomGuess(
         test_utils.test_tmpfile('empty_1st_shard@2'), len(examples))
 
-  def test_call_end2end_zero_record_file(self):
+  def test_call_end2end_zero_record_file_for_inception_v3(self):
     zero_record_file = test_utils.test_tmpfile('zero_record_file')
     io_utils.write_tfrecords([], zero_record_file)
-    self.assertCallVariantsEmitsNRecordsForRandomGuess(
+    self.assertCallVariantsEmitsNRecordsForInceptionV3(
         test_utils.test_tmpfile('zero_record_file'), 0)
 
   @parameterized.parameters((model, shard_inputs, include_debug_info)
@@ -368,8 +391,8 @@ class CallVariantsUnitTests(
         _run()
 
   def test_catches_bad_argv(self):
-    with mock.patch.object(logging, 'error') as mock_logging,\
-        mock.patch.object(sys, 'exit') as mock_exit:
+    with mock.patch.object(logging, 'error') as mock_logging, mock.patch.object(
+        sys, 'exit') as mock_exit:
       call_variants.main(['call_variants.py', 'extra_arg'])
     mock_logging.assert_called_once_with(
         'Command line parsing failure: call_variants does not accept '
