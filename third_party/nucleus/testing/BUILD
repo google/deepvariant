@@ -1,6 +1,6 @@
 # Testing utilities that are temporarily located here until they can
 # be separately open source.
-load("//devtools/python/blaze:python3.bzl", "py2and3_test")
+# load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
 package(default_visibility = ["//visibility:public"])
 
