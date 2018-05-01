@@ -33,6 +33,7 @@ from __future__ import division
 from __future__ import print_function
 
 from absl.testing import absltest
+import six
 
 from third_party.nucleus.io import genomics_reader
 from tensorflow.python.lib.io import python_io
@@ -61,15 +62,14 @@ class GenomicsReaderTests(absltest.TestCase):
 
   def testIteration(self):
     dreader = DummyReader('10')
-    values = list(dreader)
-    self.assertEqual(range(10), values)
+    self.assertEqual(list(range(10)), list(dreader))
 
   def testTwoIteratorsAtTheSameTime(self):
     dreader = DummyReader('100')
     iter2 = iter(dreader)
     for i in range(100):
-      self.assertEqual(i, dreader.next())
-      self.assertEqual(i, iter2.next())
+      self.assertEqual(i, six.next(dreader))
+      self.assertEqual(i, six.next(iter2))
 
 
 class DummyProto(object):
@@ -87,14 +87,14 @@ class TFRecordReaderTests(absltest.TestCase):
 
   def testMock(self):
     reader = genomics_reader.TFRecordReader('a,b,c,d,e', DummyProto())
-    self.assertEqual(['a','b','c','d','e'], list(reader))
+    self.assertEqual(['a', 'b', 'c', 'd', 'e'], list(reader))
 
   def testTwoIteratorsAtTheSameTime(self):
     dreader = genomics_reader.TFRecordReader('0,1,2,3,4,5', DummyProto())
     iter2 = iter(dreader)
     for i in range(6):
-      self.assertEqual(str(i), dreader.next())
-      self.assertEqual(str(i), iter2.next())
+      self.assertEqual(str(i), six.next(dreader))
+      self.assertEqual(str(i), six.next(iter2))
 
 
 if __name__ == '__main__':

@@ -35,6 +35,7 @@ from __future__ import print_function
 import itertools
 
 import enum
+import six
 
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
@@ -414,7 +415,7 @@ def allele_mismatches(evalv, truev):
     types.add(AlleleMismatchType.duplicate_true_alleles)
   if unmatched_eval_alleles:
     types.add(AlleleMismatchType.unmatched_eval_alleles)
-  if any(len(match) != 1 for match in allele_matches.itervalues()):
+  if any(len(match) != 1 for match in six.itervalues(allele_matches)):
     types.add(AlleleMismatchType.unmatched_true_alleles)
   return types
 
@@ -857,7 +858,7 @@ def variants_are_sorted(variants):
   def _pairwise(iterable):
     a, b = itertools.tee(iterable)
     next(b, None)
-    return itertools.izip(a, b)
+    return six.moves.zip(a, b)
 
   for r1, r2 in _pairwise(variant_range_tuple(v) for v in variants):
     if r2 < r1:

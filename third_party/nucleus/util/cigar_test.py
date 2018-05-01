@@ -85,7 +85,7 @@ class CigarTests(parameterized.TestCase):
 
   @parameterized.parameters((cigar_units, cigar_str)
                             for cigar_str, cigar_units in
-                            _example_cigar_string_and_units(3).iteritems())
+                            _example_cigar_string_and_units(3).items())
   def test_format_cigar_units(self, cigar_units, expected):
     self.assertEqual(cigar.format_cigar_units(cigar_units), expected)
 
@@ -147,7 +147,7 @@ class CigarTests(parameterized.TestCase):
       cigar.to_cigar_unit(bad)
 
   @parameterized.parameters(
-      zip(*to_convert)
+      list(zip(*to_convert))
       for to_convert in itertools.product(
           _CIGAR_TUPLES_AND_CIGAR_UNITS, repeat=3))
   def test_to_cigar_units(self, to_convert, expected):
@@ -168,7 +168,7 @@ class CigarTests(parameterized.TestCase):
   def test_parse_cigar_string_single(self, cigar_str, expected):
     self.assertEqual(cigar.parse_cigar_string(cigar_str), expected)
 
-  @parameterized.parameters(_example_cigar_string_and_units(3).iteritems())
+  @parameterized.parameters(_example_cigar_string_and_units(3).items())
   def test_parse_cigar_string_three_pieces(self, cigar_str, expected):
     self.assertEqual(cigar.parse_cigar_string(cigar_str), expected)
 

@@ -121,7 +121,7 @@ class InMemoryRefReaderTests(parameterized.TestCase):
     mem_contigs = {contig.name: contig for contig in self.in_mem.header.contigs}
 
     self.assertEqual(fasta_contigs.keys(), mem_contigs.keys())
-    for name, fasta_contig in fasta_contigs.iteritems():
+    for name, fasta_contig in fasta_contigs.items():
       self.assertContigsAreEqual(mem_contigs[name], fasta_contig)
 
   def assertContigsAreEqual(self, actual, expected):

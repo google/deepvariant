@@ -144,7 +144,7 @@ def _format_test_variant(alleles, call_infos):
   variant = test_utils.make_variant(chrom='20', start=0, alleles=alleles)
   for i, call_info in enumerate(call_infos):
     call = variant.calls.add(call_set_name='sample' + str(i))
-    for key, value in call_info.iteritems():
+    for key, value in call_info.items():
       if not isinstance(value, (list, tuple)):
         value = [value]
       call.info[key].values.extend(

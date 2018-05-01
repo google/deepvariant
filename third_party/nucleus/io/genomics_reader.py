@@ -44,11 +44,12 @@ from __future__ import print_function
 import abc
 
 from absl import logging
+import six
 
 from tensorflow.python.lib.io import python_io
 
 
-class GenomicsReader(object):
+class GenomicsReader(six.Iterator):
   """Abstract base class for reading genomics data.
 
   In addition to the abstractmethods defined below, sub-classes should
@@ -90,11 +91,11 @@ class GenomicsReader(object):
     """Allows users to use the object as an iterator."""
     return self.iterate()
 
-  def next(self):
+  def __next__(self):
     """Allows users to use the object as an iterator."""
     if self.iterator is None:
       self.iterator = self.iterate()
-    return self.iterator.next()
+    return six.next(self.iterator)
 
 
 class TFRecordReader(GenomicsReader):

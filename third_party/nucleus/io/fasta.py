@@ -45,6 +45,8 @@ from __future__ import print_function
 
 import collections
 
+import six
+
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import fasta_reader
 from third_party.nucleus.io.python import reference_fai
@@ -70,7 +72,7 @@ class RefFastaReader(genomics_reader.GenomicsReader):
     """
     super(RefFastaReader, self).__init__()
 
-    fasta_path = input_path.encode('utf8')
+    fasta_path = input_path
     fai_path = fasta_path + '.fai'
     if cache_size is None:
       # Use the C++-defined default cache size.
@@ -190,7 +192,7 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
 
     contigs_strs = [
         _format_refseq(refseq)
-        for refseq in self._reader.reference_sequences.itervalues()
+        for refseq in six.itervalues(self._reader.reference_sequences)
     ]
     return 'InMemoryRefReader(contigs={})'.format(''.join(contigs_strs))
 

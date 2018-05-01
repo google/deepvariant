@@ -1,4 +1,5 @@
 # Code for reading and writing genomics data.
+load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
 package(
     default_visibility = [
@@ -20,7 +21,7 @@ py_library(
     deps = ["@com_google_absl_py//absl/logging"],
 )
 
-py_test(
+py2and3_test(
     name = "genomics_reader_test",
     srcs = ["genomics_reader_test.py"],
     deps = [
@@ -51,7 +52,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "vcf_test",
     size = "small",
     srcs = ["vcf_test.py"],
@@ -63,6 +64,7 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/py/tensorflow",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -82,7 +84,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "sam_test",
     size = "small",
     srcs = ["sam_test.py"],
@@ -94,6 +96,8 @@ py_test(
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/py/six",
+        "//third_party/py/tensorflow",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -111,7 +115,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "bed_test",
     size = "small",
     srcs = ["bed_test.py"],
@@ -136,7 +140,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "fasta_test",
     size = "small",
     srcs = ["fasta_test.py"],
@@ -146,6 +150,7 @@ py_test(
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/py/six",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -163,7 +168,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "fastq_test",
     size = "small",
     srcs = ["fastq_test.py"],
@@ -382,7 +387,7 @@ cc_library(
 
 cc_test(
     name = "vcf_reader_test",
-    size = "small",
+    size = "medium",
     srcs = ["vcf_reader_test.cc"],
     data = ["//third_party/nucleus/testdata"],
     deps = [
@@ -599,7 +604,7 @@ py_library(
     srcs = ["clif_postproc.py"],
 )
 
-py_test(
+py2and3_test(
     name = "genomics_io_noplugin_test",
     size = "small",
     srcs = ["genomics_io_noplugin_test.py"],

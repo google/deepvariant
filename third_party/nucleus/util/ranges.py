@@ -36,6 +36,7 @@ import collections
 import re
 
 import intervaltree
+import six
 
 from third_party.nucleus.io import bed
 from third_party.nucleus.protos import position_pb2
@@ -105,7 +106,7 @@ class RangeSet(object):
       self._by_chr[range_.reference_name].addi(range_.start, range_.end, None)
 
     # Merge overlapping / adjacent intervals in each tree.
-    for tree in self._by_chr.itervalues():
+    for tree in six.itervalues(self._by_chr):
       tree.merge_overlaps()
 
   def __iter__(self):
@@ -118,7 +119,7 @@ class RangeSet(object):
       are new range protos so can be freely modified.
     """
     for refname in sorted(
-        self._by_chr.iterkeys(), key=self._contig_sort_key_fn):
+        six.iterkeys(self._by_chr), key=self._contig_sort_key_fn):
       for start, end, _ in sorted(self._by_chr[refname]):
         yield make_range(refname, start, end)
 
@@ -217,7 +218,7 @@ class RangeSet(object):
       intersected_intervals = []
       # pylint: disable=protected-access
       # So we can intersect intervals within each contig separately.
-      for refname, intervals in intersected._by_chr.iteritems():
+      for refname, intervals in six.iteritems(intersected._by_chr):
         # If refname is present in other, intersect those two IntervalTrees
         # directly and add those contigs to our growing list of intersected
         # intervals. If refname isn't present, all of the intervals on refname
@@ -243,7 +244,7 @@ class RangeSet(object):
         RangeSet.
     """
     # pylint: disable=protected-access
-    for chrname, chr_intervals in other._by_chr.iteritems():
+    for chrname, chr_intervals in six.iteritems(other._by_chr):
       # If refname is present in self, difference those two IntervalTrees.
       self_intervals = self._by_chr.get(chrname, None)
       if self_intervals:
@@ -255,7 +256,7 @@ class RangeSet(object):
 
   def __len__(self):
     """Gets the number of ranges used by this RangeSet."""
-    return sum(len(for_chr) for for_chr in self._by_chr.itervalues())
+    return sum(len(for_chr) for for_chr in six.itervalues(self._by_chr))
 
   def __nonzero__(self):
     """Returns True if this RangeSet is not empty."""
@@ -454,7 +455,7 @@ _REGION_FILE_READERS = {
 
 
 def _get_parser_for_file(filename):
-  for reader, exts in _REGION_FILE_READERS.iteritems():
+  for reader, exts in six.iteritems(_REGION_FILE_READERS):
     if any(filename.lower().endswith(ext) for ext in exts):
       return reader
   return None

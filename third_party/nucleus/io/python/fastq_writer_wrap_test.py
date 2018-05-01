@@ -34,13 +34,13 @@ from __future__ import print_function
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import tensorflow as tf
 
 from third_party.nucleus.io import fastq
 from third_party.nucleus.io.python import fastq_writer
 from third_party.nucleus.protos import fastq_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import io_utils
+from tensorflow.python.platform import gfile
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed FastqWriter'
 _WRITE_TO_CLOSED_ERROR = 'Cannot write to closed FASTQ stream'
@@ -87,7 +87,7 @@ class WrapFastqWriterTest(parameterized.TestCase):
       for record in fastq_records:
         writer.write(record)
 
-    with tf.gfile.GFile(out_fname, 'r') as f:
+    with gfile.GFile(out_fname, 'r') as f:
       self.assertEqual(f.readlines(), self.expected_fastq_content)
 
   def test_context_manager(self):

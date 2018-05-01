@@ -44,6 +44,17 @@ class StatusorClifWrapTest(absltest.TestCase):
     with self.assertRaisesRegexp(ValueError, 'Invalid argument: MakeIntFail'):
       statusor_examples.MakeIntFail()
 
+  def test_make_str_ok(self):
+    self.assertEqual(statusor_examples.MakeStrOK(), 'hello')
+
+  # See CLIF wrapper for a discussion of why this is commented out.
+  # def test_make_str_ok_stripped_type(self):
+  #   self.assertEqual(statusor_examples.MakeStrOKStrippedType(), 'hello')
+
+  def test_make_str_fail(self):
+    with self.assertRaisesRegexp(ValueError, 'Invalid argument: MakeStrFail'):
+      statusor_examples.MakeStrFail()
+
   def test_make_int_unique_ptr_ok(self):
     self.assertEqual(statusor_examples.MakeIntUniquePtrOK(), 421)
 

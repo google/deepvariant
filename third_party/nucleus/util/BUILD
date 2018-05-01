@@ -1,4 +1,5 @@
 # Utility routines for working with genomics data and genomics protobufs.
+load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
 package(
     default_visibility = [
@@ -78,7 +79,7 @@ py_library(
     deps = ["//third_party/nucleus/protos:cigar_py_pb2"],
 )
 
-py_test(
+py2and3_test(
     name = "cigar_test",
     size = "small",
     srcs = ["cigar_test.py"],
@@ -90,7 +91,7 @@ py_test(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "py_utils_test",
     size = "small",
     srcs = ["utils_test.py"],
@@ -99,6 +100,7 @@ py_test(
         ":py_utils",
         ":ranges",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/numpy",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -136,12 +138,13 @@ py_library(
     deps = ["//third_party/nucleus/util/python:math"],
 )
 
-py_test(
+py2and3_test(
     name = "genomics_math_test",
     size = "small",
     srcs = ["genomics_math_test.py"],
     deps = [
         ":genomics_math",
+        "//third_party/py/numpy",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -157,7 +160,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "ranges_test",
     size = "small",
     srcs = ["ranges_test.py"],
@@ -168,6 +171,7 @@ py_test(
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/mock",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -183,7 +187,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "variantcall_utils_test",
     size = "small",
     srcs = ["variantcall_utils_test.py"],
@@ -191,6 +195,7 @@ py_test(
         ":variantcall_utils",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/py/mock",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -207,7 +212,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "variant_utils_test",
     size = "small",
     srcs = ["variant_utils_test.py"],
@@ -216,6 +221,8 @@ py_test(
         ":variant_utils",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/mock",
+        "//third_party/py/six",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -227,13 +234,14 @@ py_library(
     deps = ["//third_party/nucleus/protos:struct_py_pb2"],
 )
 
-py_test(
+py2and3_test(
     name = "struct_utils_test",
     srcs = ["struct_utils_test.py"],
     deps = [
         ":struct_utils",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/py/six",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -248,7 +256,7 @@ py_library(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "vcf_constants_test",
     srcs = ["vcf_constants_test.py"],
     deps = [
@@ -265,7 +273,7 @@ py_library(
     srcs = ["io_utils.py"],
 )
 
-py_test(
+py2and3_test(
     name = "io_utils_test",
     size = "small",
     srcs = ["io_utils_test.py"],
@@ -274,6 +282,8 @@ py_test(
         ":io_utils",
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/mock",
+        "//third_party/py/tensorflow",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -285,11 +295,12 @@ py_library(
     deps = ["@com_google_absl_py//absl/logging"],
 )
 
-py_test(
+py2and3_test(
     name = "errors_test",
     srcs = ["errors_test.py"],
     deps = [
         ":errors",
+        "//third_party/py/mock",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -327,7 +338,7 @@ py_library(
     srcs = ["sequence_utils.py"],
 )
 
-py_test(
+py2and3_test(
     name = "sequence_utils_test",
     srcs = ["sequence_utils_test.py"],
     deps = [
