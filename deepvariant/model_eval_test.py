@@ -32,8 +32,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-
 
 
 from tensorflow import flags
@@ -48,10 +46,9 @@ from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from deepvariant import data_providers_test
 from deepvariant import model_eval
-from deepvariant import modeling
-from deepvariant import pileup_image
 from deepvariant import testdata
 from deepvariant.testing import flagsaver
+from deepvariant.testing import tf_test_utils
 
 FLAGS = flags.FLAGS
 
@@ -125,42 +122,15 @@ class ModelEvalTest(
   def setUp(self):
     self.checkpoint_dir = tf.test.get_temp_dir()
 
-  def _write_fake_checkpoint(self,
-                             model_name,
-                             checkpoint_dir=None,
-                             name='model'):
-    if checkpoint_dir is None:
-      checkpoint_dir = self.checkpoint_dir
-
-    path = os.path.join(checkpoint_dir, name)
-    with self.test_session() as sess:
-      model = modeling.get_model(model_name)
-      # Needed to protect ourselves for models without an input image shape.
-      h, w = getattr(model, 'input_image_shape', (100, 221))
-      images = tf.placeholder(
-          tf.float32, shape=(4, h, w, pileup_image.DEFAULT_NUM_CHANNEL))
-      model.create(images, num_classes=3, is_training=True)
-      # This is gross, but necessary as model_eval assumes the model was trained
-      # with model_train which uses exp moving averages. Unfortunately we cannot
-      # just call into model_train as it uses FLAGS which conflict with the
-      # flags in use by model_eval. So we inline the creation of the EMA here.
-      variable_averages = tf.train.ExponentialMovingAverage(
-          FLAGS.moving_average_decay, tf.train.get_or_create_global_step())
-      tf.add_to_collection(tf.GraphKeys.UPDATE_OPS,
-                           variable_averages.apply(
-                               tf.contrib.framework.get_model_variables()))
-      sess.run(tf.global_variables_initializer())
-      save = tf.train.Saver(tf.contrib.framework.get_variables())
-      save.save(sess, path)
-    return path
-
   @parameterized.parameters(['inception_v3'])
   @flagsaver.FlagSaver
   @mock.patch('deepvariant.data_providers.'
               'get_input_fn_from_dataset')
   def test_end2end(self, model_name, mock_get_input_fn_from_dataset):
     """End-to-end test of model_eval."""
-    self._write_fake_checkpoint(model_name)
+    tf_test_utils.write_fake_checkpoint('inception_v3', self.test_session(),
+                                        self.checkpoint_dir,
+                                        FLAGS.moving_average_decay)
 
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
@@ -190,8 +160,12 @@ class ModelEvalTest(
     dataset = data_providers_test.make_golden_dataset()
     n_checkpoints = 3
     checkpoints = [
-        self._write_fake_checkpoint('constant', name='model' + str(i))
-        for i in range(n_checkpoints)
+        tf_test_utils.write_fake_checkpoint(
+            'constant',
+            self.test_session(),
+            self.checkpoint_dir,
+            FLAGS.moving_average_decay,
+            name='model' + str(i)) for i in range(n_checkpoints)
     ]
 
     # Setup our mocks.
