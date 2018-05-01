@@ -61,5 +61,6 @@ cc_library(
     hdrs = ["statusor_examples.h"],
     deps = [
         ":statusor",
+        "@org_tensorflow//tensorflow/core:lib",
     ],
 )

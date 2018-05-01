@@ -104,7 +104,7 @@ class UtilsTest(parameterized.TestCase):
         for _ in range(n_replicates)
         for item in utils.reservoir_sample(range(iterable_size), k, random))
     expected_frequency = min(k / float(iterable_size), 1.0)
-    for c in counts.itervalues():
+    for c in counts.values():
       observed_frequency = c / float(n_replicates)
       npt.assert_allclose(observed_frequency, expected_frequency, atol=0.01)
 

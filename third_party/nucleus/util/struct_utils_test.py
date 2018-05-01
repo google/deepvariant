@@ -54,7 +54,7 @@ def _set_protomap_from_dict(d):
   # We use a Variant as an intermediate data structure since it contains the
   # desired output map types.
   v = variants_pb2.Variant()
-  for key, values in d.iteritems():
+  for key, values in d.items():
     v.info[key].values.extend(values)
   return v.info
 

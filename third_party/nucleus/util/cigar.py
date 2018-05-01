@@ -61,7 +61,7 @@ CIGAR_OPS_TO_CHAR = {
 
 # A map from single character cigar codes (e.g., 'M') to their corresponding
 # CigarUnit.Operation (e.g., CigarUnit.ALIGNMENT_MATCH) enum values.
-CHAR_TO_CIGAR_OPS = {v: k for k, v in CIGAR_OPS_TO_CHAR.iteritems()}
+CHAR_TO_CIGAR_OPS = {v: k for k, v in CIGAR_OPS_TO_CHAR.items()}
 
 # All of the CigarUnit.Operation values in a frozen set.
 ALL_CIGAR_OPS = frozenset(CIGAR_OPS_TO_CHAR.keys())

@@ -547,8 +547,8 @@ class VariantUtilsTests(parameterized.TestCase):
       self.assertEqual(actual, aix)
 
   def test_diploid_allele_indices_for_genotype_likelihood_index(self):
-    for aix in xrange(20):
-      for bix in xrange(20):
+    for aix in range(20):
+      for bix in range(20):
         allele_indices = (aix, bix)
         expected = tuple(sorted(allele_indices))
         ix = variant_utils.genotype_likelihood_index(allele_indices)

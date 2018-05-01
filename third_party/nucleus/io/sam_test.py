@@ -187,7 +187,7 @@ class SamReaderTests(parameterized.TestCase):
     self.assertCountEqual(info_map.keys(), expected_info.keys(),
                           'info has {} keys but we expected {}'.format(
                               info_map.keys(), expected_info.keys()))
-    for key, expected_values in expected_info.iteritems():
+    for key, expected_values in expected_info.items():
       if not isinstance(expected_values, list):
         expected_values = [expected_values]
       for actual_value, expected_value in zip(info_map[key].values,
