@@ -32,8 +32,8 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 
-#include "htslib/hts.h"
 #include "third_party/nucleus/io/reader_base.h"
+#include "third_party/nucleus/io/text_reader.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/io/buffered_inputstream.h"
@@ -109,7 +109,7 @@ class BedReader : public Reader {
  private:
   // Private constructor; use FromFile to safely create a BedReader from a
   // file.
-  BedReader(htsFile* fp,
+  BedReader(std::unique_ptr<TextReader> text_reader,
             const nucleus::genomics::v1::BedReaderOptions& options,
             const nucleus::genomics::v1::BedHeader& header);
 
@@ -119,8 +119,8 @@ class BedReader : public Reader {
   // The header that tracks the number of fields in each record in the file.
   const nucleus::genomics::v1::BedHeader header_;
 
-  // A pointer to the htslib file used to access the BED data.
-  htsFile* fp_;
+  // A pointer to a raw TextReader object.
+  std::unique_ptr<TextReader> text_reader_;
 
   // Allow BedIterable objects to access fp_.
   friend class BedFullFileIterable;

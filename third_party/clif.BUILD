@@ -12,14 +12,11 @@ sh_binary(
 
 cc_library(
     name = "cpp_runtime",
-    srcs = glob(
-        ["clif/python/*.cc"],
-        exclude = ["clif/python/*_test.cc"],
-    ),
+    srcs = glob(["clif/python/*.cc"], exclude = ["clif/python/*_test.cc"]),
     hdrs = glob(["clif/python/*.h"]),
-    visibility = ["//visibility:public"],
     deps = [
         "@local_config_python//:python_headers",
         "@protobuf_archive//:protobuf",
     ],
+    visibility = ["//visibility:public"],
 )

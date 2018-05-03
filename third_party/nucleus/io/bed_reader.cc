@@ -34,7 +34,6 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
-#include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
@@ -73,27 +72,18 @@ bool ValidNumBedFields(const int fields) {
 }
 
 // Read the next non-comment line.
-tf::Status NextNonCommentLine(htsFile* fp, string* line) {
-  CHECK(fp != nullptr);
+tf::Status NextNonCommentLine(TextReader& text_reader,
+                              string* line) {
   CHECK(line != nullptr);
-  tf::Status status = tf::Status::OK();
-  kstring_t k_line = {0, 0, nullptr};
+  string tmp;
   do {
-    int ret = hts_getline(fp, '\n', &k_line);
-    if (ret == -1) {
-      status = tf::errors::OutOfRange("");
-      break;
-    } else if (ret < 0) {
-      status = tf::errors::DataLoss("Failed to parse FASTQ record");
-      break;
-    }
-    *line = string(k_line.s);
-  } while (absl::StartsWith(*line, BED_COMMENT_PREFIX));
+    StatusOr<string> line_or = text_reader.ReadLine();
+    TF_RETURN_IF_ERROR(line_or.status());
+    tmp = line_or.ValueOrDie();
+  } while (absl::StartsWith(tmp, BED_COMMENT_PREFIX));
 
-  if (k_line.s) {
-    free(k_line.s);
-  }
-  return status;
+  *line = tmp;
+  return tf::Status::OK();
 }
 
 tf::Status ConvertToPb(const string& line, const int desiredNumFields,
@@ -153,24 +143,18 @@ tf::Status ConvertToPb(const string& line, const int desiredNumFields,
 // Peeks into the path to the first BED record and returns the number of fields
 // in the record.
 // NOTE: This is quite heavyweight. Reading upon initialization and then
-// rewinding the stream to 0 is a nicer solution, but currently has a memory
-// leak in the compressed stream reset implementation.
+// rewinding the stream to 0 would be a nicer solution.
 tf::Status GetNumFields(const string& path, int* numFields) {
   CHECK(numFields != nullptr);
   string line;
-  tf::Status status = tf::Status::OK();
-  htsFile* fp = hts_open_x(path.c_str(), "r");
-  if (!fp) {
-    status = tf::errors::NotFound("Could not open ", path);
-  } else {
-    status = NextNonCommentLine(fp, &line);
-    hts_close(fp);
-  }
-  if (status.ok()) {
-    std::vector<string> tokens = absl::StrSplit(line, '\t');
-    *numFields = static_cast<int>(tokens.size());
-  }
-  return status;
+  StatusOr<std::unique_ptr<TextReader>> status_or = TextReader::FromFile(path);
+  TF_RETURN_IF_ERROR(status_or.status());
+  std::unique_ptr<TextReader> text_reader = std::move(status_or.ValueOrDie());
+  TF_RETURN_IF_ERROR(NextNonCommentLine(*text_reader, &line));
+  TF_RETURN_IF_ERROR(text_reader->Close());
+  std::vector<string> tokens = absl::StrSplit(line, '\t');
+  *numFields = static_cast<int>(tokens.size());
+  return tf::Status::OK();
 }
 }  // namespace
 
@@ -198,36 +182,32 @@ StatusOr<std::unique_ptr<BedReader>> BedReader::FromFile(
     return tf::errors::InvalidArgument(
         "Invalid requested number of fields to parse");
   }
-  htsFile* fp = hts_open_x(bed_path.c_str(), "r");
-  if (fp == nullptr) {
-    return tf::errors::NotFound(
-        tf::strings::StrCat("Could not open ", bed_path));
-  }
-  return std::unique_ptr<BedReader>(new BedReader(fp, options, header));
+  StatusOr<std::unique_ptr<TextReader>> status_or =
+      TextReader::FromFile(bed_path);
+  TF_RETURN_IF_ERROR(status_or.status());
+  return std::unique_ptr<BedReader>(
+      new BedReader(std::move(status_or.ValueOrDie()), options, header));
 }
 
-BedReader::BedReader(htsFile* fp,
+BedReader::BedReader(std::unique_ptr<TextReader> text_reader,
                      const nucleus::genomics::v1::BedReaderOptions& options,
                      const nucleus::genomics::v1::BedHeader& header)
-    : options_(options), header_(header), fp_(fp)
+    : options_(options), header_(header), text_reader_(std::move(text_reader))
 {}
 
 BedReader::~BedReader() {
-  if (fp_) {
+  if (text_reader_) {
     TF_CHECK_OK(Close());
   }
 }
 
 tf::Status BedReader::Close() {
-  if (fp_ == nullptr) {
+  if (!text_reader_) {
     return tf::errors::FailedPrecondition("BedReader already closed");
   }
-  int retval = hts_close(fp_);
-  fp_ = nullptr;
-  if (retval < 0) {
-    return tf::errors::Internal("hts_close() failed with return code ", retval);
-  }
-  return tf::Status::OK();
+  tf::Status status = text_reader_->Close();
+  text_reader_ = nullptr;
+  return status;
 }
 
 // Ensures the number of fields is consistent across all records in the BED.
@@ -240,7 +220,7 @@ tf::Status BedReader::Validate(const int numTokens) const {
 }
 
 StatusOr<std::shared_ptr<BedIterable>> BedReader::Iterate() const {
-  if (fp_ == nullptr)
+  if (!text_reader_)
     return tf::errors::FailedPrecondition("Cannot Iterate a closed BedReader.");
   return StatusOr<std::shared_ptr<BedIterable>>(
       MakeIterable<BedFullFileIterable>(this));
@@ -252,7 +232,7 @@ StatusOr<bool> BedFullFileIterable::Next(
   TF_RETURN_IF_ERROR(CheckIsAlive());
   const BedReader* bed_reader = static_cast<const BedReader*>(reader_);
   string line;
-  tf::Status status = NextNonCommentLine(bed_reader->fp_, &line);
+  tf::Status status = NextNonCommentLine(*bed_reader->text_reader_, &line);
   if (tf::errors::IsOutOfRange(status)) {
     return false;
   } else if (!status.ok()) {
