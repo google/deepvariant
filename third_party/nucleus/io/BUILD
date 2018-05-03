@@ -625,10 +625,24 @@ cc_library(
     ],
 )
 
-cc_test(
-    name = "text_writer_test",
-    srcs = ["text_writer_test.cc"],
+cc_library(
+    name = "text_reader",
+    srcs = ["text_reader.cc"],
+    hdrs = ["text_reader.h"],
     deps = [
+        ":hts_path",
+        "//third_party/nucleus/vendor:statusor",
+        "@com_google_absl//absl/memory",
+        "@htslib",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "text_io_test",
+    srcs = ["text_io_test.cc"],
+    deps = [
+        ":text_reader",
         ":text_writer",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_googletest//:gtest_main",
