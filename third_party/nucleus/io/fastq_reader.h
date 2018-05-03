@@ -32,8 +32,8 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_FASTQ_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_FASTQ_READER_H_
 
-#include "htslib/hts.h"
 #include "third_party/nucleus/io/reader_base.h"
+#include "third_party/nucleus/io/text_reader.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/platform/types.h"
@@ -95,21 +95,24 @@ class FastqReader : public Reader {
     return options_;
   }
 
-  // Populates the four kstring_t pointers with values from the input file.
-  tensorflow::Status Next(kstring_t* header, kstring_t* sequence,
-                          kstring_t* pad, kstring_t* quality) const;
-
  private:
   // Private constructor; use FromFile to safely create a FastqReader from a
   // file.
-  FastqReader(htsFile* fp,
+  FastqReader(std::unique_ptr<TextReader> text_reader,
               const nucleus::genomics::v1::FastqReaderOptions& options);
+
+  // Populates the four string  pointers with values from the input file.
+  tensorflow::Status Next(string* header, string* sequence,
+                          string* pad, string* quality) const;
 
   // Our options that control the behavior of this class.
   const nucleus::genomics::v1::FastqReaderOptions options_;
 
-  // A pointer to the htslib file used to access the FASTQ data.
-  htsFile* fp_;
+  // Underlying file reader.
+  std::unique_ptr<TextReader> text_reader_;
+
+  // Give Iterator classes access to Next().
+  friend class FastqFullFileIterable;
 };
 
 }  // namespace nucleus
