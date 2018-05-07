@@ -7,7 +7,6 @@ ADD LICENSE AUTHORS /
 
 RUN apt-get -y update && \
     apt-get -y install python-pip python-dev build-essential && \
-    pip install --upgrade pip && \
     pip install --upgrade virtualenv && \
     virtualenv /venv && \
     . /venv/bin/activate && \
