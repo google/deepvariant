@@ -11,6 +11,15 @@ licenses(["notice"])
 exports_files(["LICENSE"])
 
 cc_library(
+    name = "vendor_cpp",
+    deps = [
+        ":statusor",
+        ":statusor_clif_converters",
+        ":statusor_examples",
+    ],
+)
+
+cc_library(
     name = "statusor",
     hdrs = [
         "statusor.h",

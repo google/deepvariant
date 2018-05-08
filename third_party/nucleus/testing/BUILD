@@ -16,6 +16,21 @@ test_suite(
 )
 
 cc_library(
+    name = "testing_cpp",
+    testonly = True,
+    deps = [
+        ":cpp_test_utils",
+        ":gunit_extras",
+    ],
+)
+
+py_library(
+    name = "testing_py",
+    testonly = True,
+    deps = [":py_test_utils"],
+)
+
+cc_library(
     name = "gunit_extras",
     testonly = True,
     srcs = [
