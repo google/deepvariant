@@ -11,6 +11,35 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
+py_library(
+    name = "util_py",
+    deps = [
+        ":cigar",
+        ":errors",
+        ":genomics_math",
+        ":io_utils",
+        ":proto_utils",
+        ":py_utils",
+        ":ranges",
+        ":sequence_utils",
+        ":struct_utils",
+        ":variant_utils",
+        ":variantcall_utils",
+        ":vcf_constants",
+    ],
+)
+
+cc_library(
+    name = "util_cpp",
+    deps = [
+        ":cpp_math",
+        ":cpp_utils",
+        ":port",
+        ":samplers",
+        ":tf_str",
+    ],
+)
+
 # C++ header providing portabililty macros and functions.
 cc_library(
     name = "port",

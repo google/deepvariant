@@ -16,6 +16,20 @@ exports_files(["LICENSE"])
 #
 
 py_library(
+    name = "io_py",
+    deps = [
+        ":bed",
+        ":clif_postproc",
+        ":fasta",
+        ":fastq",
+        ":genomics_reader",
+        ":genomics_writer",
+        ":sam",
+        ":vcf",
+    ],
+)
+
+py_library(
     name = "genomics_reader",
     srcs = ["genomics_reader.py"],
     deps = ["@com_google_absl_py//absl/logging"],
@@ -178,9 +192,36 @@ py_test(
     ],
 )
 
+py_library(
+    name = "clif_postproc",
+    srcs = ["clif_postproc.py"],
+)
+
 #
 # C++ API
 #
+
+cc_library(
+    name = "io_cpp",
+    deps = [
+        ":bed_reader",
+        ":bed_writer",
+        ":fasta_reader",
+        ":fastq_reader",
+        ":fastq_writer",
+        ":hts_path",
+        ":hts_verbose",
+        ":reader_base",
+        ":reference",
+        ":reference_fai",
+        ":sam_reader",
+        ":text_reader",
+        ":text_writer",
+        ":vcf_conversion",
+        ":vcf_reader",
+        ":vcf_writer",
+    ],
+)
 
 test_suite(
     name = "smoke_tests",
@@ -591,26 +632,6 @@ cc_test(
     ],
 )
 
-#
-# Misc
-#
-
-py_library(
-    name = "clif_postproc",
-    srcs = ["clif_postproc.py"],
-)
-
-py_test(
-    name = "genomics_io_noplugin_test",
-    size = "small",
-    srcs = ["genomics_io_noplugin_test.py"],
-    deps = [
-        "//third_party/nucleus/io:sam",
-        "//third_party/nucleus/testing:py_test_utils",
-        "@com_google_absl_py//absl/testing:absltest",
-    ],
-)
-
 cc_library(
     name = "text_writer",
     srcs = ["text_writer.cc"],
@@ -646,5 +667,20 @@ cc_test(
         ":text_writer",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_googletest//:gtest_main",
+    ],
+)
+
+#
+# Misc
+#
+
+py_test(
+    name = "genomics_io_noplugin_test",
+    size = "small",
+    srcs = ["genomics_io_noplugin_test.py"],
+    deps = [
+        "//third_party/nucleus/io:sam",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@com_google_absl_py//absl/testing:absltest",
     ],
 )
