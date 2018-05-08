@@ -337,3 +337,23 @@ py_test(
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
+
+cc_library(
+    name = "proto_ptr",
+    hdrs = [
+        "proto_ptr.h",
+    ],
+    deps = [
+    ],
+)
+
+cc_library(
+    name = "proto_clif_converter",
+    hdrs = ["proto_clif_converter.h"],
+    deps = [
+        ":proto_ptr",
+        "//net/proto2/python/public:python_cc_pb2buf",
+        "@clif//:cpp_runtime",
+        "@protobuf_archive//:protobuf",
+    ],
+)

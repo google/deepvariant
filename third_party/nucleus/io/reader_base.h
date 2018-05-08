@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <memory>
 
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/mutex.h"
@@ -148,6 +149,13 @@ class Iterable : public IterableBase {
   //  true if we successfully got the record (is put in *out);
   //  false if there are no more records.
   virtual StatusOr<bool> Next(Record* record) = 0;
+
+  // PythonNext is the same as Next, except the Record is wrapped
+  // with a ProtoPtr<> template to avoid CLIF copies when being
+  // called from Python.
+  StatusOr<bool> PythonNext(ProtoPtr<Record> p) {
+    return Next(p.p_);
+  }
 
  public:
   // C++ const iterator class.
