@@ -514,6 +514,7 @@ cc_library(
     srcs = ["reader_base.cc"],
     hdrs = ["reader_base.h"],
     deps = [
+        "//third_party/nucleus/util:proto_ptr",
         "//third_party/nucleus/vendor:statusor",
         "@org_tensorflow//tensorflow/core:lib",
     ],
