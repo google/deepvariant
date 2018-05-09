@@ -73,3 +73,11 @@ cc_library(
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
+
+cc_library(
+    name = "python_protobuf",
+    hdrs = ["python_protobuf.h"],
+    deps = [
+        "//third_party/python_runtime:headers",
+    ],
+)
