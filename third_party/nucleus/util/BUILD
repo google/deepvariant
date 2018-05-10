@@ -383,6 +383,7 @@ cc_library(
         ":proto_ptr",
         "//net/proto2/python/public:python_cc_pb2buf",
         "@clif//:cpp_runtime",
+        "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",
     ],
 )

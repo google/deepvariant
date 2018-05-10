@@ -36,6 +36,7 @@
 #include "google/protobuf/message.h"
 #include "net/proto2/python/public/python_protobuf.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "tensorflow/core/platform/logging.h"
 
 namespace clif {
 
