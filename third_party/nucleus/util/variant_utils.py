@@ -64,12 +64,11 @@ def decode_variants(encoded_iter):
 
   Args:
     encoded_iter: An iterable that produces binary encoded
-      third_party.nucleus.genomics.v1.Variant strings.
+      nucleus.genomics.v1.Variant strings.
 
   Yields:
-    A parsed nucleus.genomics.v1.Variant for each
-    encoded element of encoded_iter
-    in order.
+    A parsed nucleus.genomics.v1.Variant for each encoded element of
+    encoded_iter in order.
   """
   for encoded in encoded_iter:
     yield variants_pb2.Variant.FromString(encoded)
@@ -79,7 +78,7 @@ def variant_position(variant):
   """Returns a new Range at the start position of variant.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A new Range with the same reference_name as variant and start but an end
@@ -94,7 +93,7 @@ def variant_range(variant):
   """Returns a new Range covering variant.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A new Range with the same reference_name, start, and end as variant.
@@ -109,7 +108,7 @@ def variant_range_tuple(variant):
   location, with usage like `sorted(variants, key=variant_range_tuple)`.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A three-tuple with the same reference_name, start, and end as variant.
@@ -152,7 +151,7 @@ def format_filters(variant):
   If the filter field isn't set, returns vcf_constants.MISSING_FIELD ('.').
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A string.
@@ -167,7 +166,7 @@ def format_alleles(variant):
   """Gets a string representation of the variant's alleles.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A string ref_bases/alt1,alt2 etc.
@@ -180,7 +179,7 @@ def format_position(variant):
   """Gets a string representation of the variant's position.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A string chr:start + 1 (as start is zero-based).
@@ -192,7 +191,7 @@ def is_snp(variant):
   """Is variant a SNP?
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     True if all alleles of variant are 1 bp in length.
@@ -209,7 +208,7 @@ def is_indel(variant):
   is > 1.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     True if the alleles in variant indicate an insertion/deletion event
@@ -231,7 +230,7 @@ def is_multiallelic(variant):
   """Does variant have multiple alt alleles?
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     True if variant has more than one alt allele.
@@ -247,7 +246,7 @@ def is_ref(variant):
   no mutation present (i.e., alt is the missing value).
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A boolean.
@@ -260,7 +259,7 @@ def variant_type(variant):
   """Gets the VariantType of variant.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     VariantType indicating the type of this variant.
@@ -327,7 +326,7 @@ def has_insertion(variant):
   """Does variant have an insertion?
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     True if the alleles in variant indicate an insertion event
@@ -342,7 +341,7 @@ def has_deletion(variant):
   """Does variant have a deletion?
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     True if the alleles in variant indicate an deletion event
@@ -383,8 +382,8 @@ def allele_mismatches(evalv, truev):
   the reference genome than the C=>T allele.
 
   Args:
-    evalv: A third_party.nucleus.genomics.v1.Variant.
-    truev: A third_party.nucleus.genomics.v1.Variant.
+    evalv: A nucleus.genomics.v1.Variant.
+    truev: A nucleus.genomics.v1.Variant.
 
   Returns:
     A set of AlleleMismatchType values.
@@ -487,7 +486,7 @@ def is_variant_call(variant,
   a variant call.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
     require_non_ref_genotype: Should we require a site with a genotype call to
       have a non-reference (het, hom-var) genotype for the site to be considered
       a variant call?
@@ -522,7 +521,7 @@ def has_calls(variant):
   """Does variant have any genotype calls?
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     True if variant has one or more VariantCalls.
@@ -541,7 +540,7 @@ def genotype_type(variant):
   status of the genotypes in the call field of variant.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     A GenotypeType.
@@ -574,7 +573,7 @@ def genotype_as_alleles(variant, call_ix=0):
   ['A', 'C'].
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
     call_ix: int. The index into the calls attribute indicating which
       VariantCall to return alleles for.
 
@@ -606,7 +605,7 @@ def is_gvcf(variant):
   canonical gVCF allele vcf_constants.GVCF_ALT_ALLELE.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Returns:
     Boolean. True if variant is a gVCF record, False otherwise.
@@ -662,7 +661,7 @@ def genotype_ordering_in_likelihoods(variant):
   Currently this function only implements for diploid cases.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant.
+    variant: nucleus.genomics.v1.Variant.
 
   Yields:
     allele indices and strings (i, j, allele_i, allele_j) in the correct order.
@@ -677,7 +676,7 @@ def genotype_likelihood(variant_call, allele_indices):
   """Returns the genotype likelihood for the given allele indices.
 
   Args:
-    variant_call: third_party.nucleus.genomics.v1.VariantCall. The VariantCall from
+    variant_call: nucleus.genomics.v1.VariantCall. The VariantCall from
       which to extract the genotype likelihood of the allele indices.
     allele_indices: list(int). The list of allele indices for a given genotype.
       E.g. diploid heterozygous alternate can be represented as [0, 1].
@@ -752,7 +751,7 @@ def allele_indices_with_num_alts(variant, num_alts, ploidy=2):
   """Returns a list of allele indices configurations with `num_alts` alternates.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant. The variant of interest, which
+    variant: nucleus.genomics.v1.Variant. The variant of interest, which
       defines the candidate alternate alleles that can be used to generate
       allele indices configurations.
     num_alts: int in [0, `ploidy`]. The number of non-reference alleles for
@@ -794,8 +793,8 @@ def variants_overlap(variant1, variant2):
     ranges_overlap(variant_range(variant1), variant_range(variant2))
 
   Args:
-    variant1: third_party.nucleus.genomics.v1.Variant we want to compare for overlap.
-    variant2: third_party.nucleus.genomics.v1.Variant we want to compare for overlap.
+    variant1: nucleus.genomics.v1.Variant we want to compare for overlap.
+    variant2: nucleus.genomics.v1.Variant we want to compare for overlap.
 
   Returns:
     True if the variants overlap, False otherwise.
@@ -825,7 +824,7 @@ def variant_key(variant, sort_alleles=True):
   specification works.
 
   Args:
-    variant: third_party.nucleus.genomics.v1.Variant to make into a key.
+    variant: nucleus.genomics.v1.Variant to make into a key.
     sort_alleles: bool. If True, the alternative_bases of variant will be sorted
       according to their lexicographic order. If False, the alternative_bases
       will be displayed in their order in the Variant.
@@ -849,7 +848,7 @@ def variants_are_sorted(variants):
   """Returns True if variants are sorted w.r.t. variant_range.
 
   Args:
-    variants: list[third_party.nucleus.genomics.v1.Variant]. A list of Variant
+    variants: list[nucleus.genomics.v1.Variant]. A list of Variant
       protos that may or may not be sorted.
 
   Returns:
