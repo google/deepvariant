@@ -52,7 +52,7 @@ FLAGS = flags.FLAGS
 DATADIR = ''
 DEFAULT_WORKSPACE = ''
 
-# In the OSS version this becomes 'deepvariant/testdata'
+# In the OSS version this becomes 'nucleus/testdata'
 RELATIVE_TESTDATA_PATH = 'third_party/nucleus/testdata'
 
 
@@ -62,8 +62,8 @@ def genomics_testdata(path, datadir=DATADIR):
   Args:
     path: A path to a testdata file *relative* to the genomics root
       directory. For example, if you have a test file in
-      "datadir/deepvariant/core/testdata/foo.txt", path should be
-      "deepvariant/core/testdata/foo.txt" to get a path to it.
+      "datadir/nucleus/testdata/foo.txt", path should be
+      "nucleus/testdata/foo.txt" to get a path to it.
     datadir: The path of the genomics root directory *relative* to
       the testing source directory.
 
@@ -288,7 +288,7 @@ def assert_not_called_workaround(mock):
     mock: The mock to assert hasn't been called.
 
   Raises:
-    AssertionError if mock has been called.
+    AssertionError: mock has been called.
   """
   if mock.call_count != 0:
     raise AssertionError("Expected no calls to '{}' but was called {} times"
@@ -306,7 +306,7 @@ def assert_called_once_workaround(mock):
     mock: The mock that should have been called exactly once.
 
   Raises:
-    AssertionError if mock wasn't called exactly once.
+    AssertionError: mock wasn't called exactly once.
   """
   if mock.call_count != 1:
     raise AssertionError(
