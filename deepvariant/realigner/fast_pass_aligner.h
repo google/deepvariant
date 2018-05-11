@@ -39,11 +39,13 @@
 #include <vector>
 
 #include "deepvariant/realigner/ssw.h"
+#include "absl/memory/memory.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/hash/hash.h"
 #include "tensorflow/core/platform/types.h"
+#include "re2/re2.h"
 
 namespace learning {
 namespace genomics {
@@ -52,6 +54,10 @@ namespace deepvariant {
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Position;
+
+using tensorflow::StringPieceHasher;
+
+using re2::StringPiece;  // copybara
 
 // redacted
 
@@ -194,9 +200,14 @@ struct HaplotypeReadsAlignment {
   std::vector<int> hap_to_ref_positions_map;
 };
 
+// Calculate a shift for each position of a haplotype from a haplotype to
+// reference alignment.
+void SetPositionsMap(size_t haplotype_size,
+                     HaplotypeReadsAlignment* hyplotype_alignment);
+
 using KmerIndexType =
-std::unordered_map<tensorflow::StringPiece, std::vector<KmerOccurrence>,
-                   tensorflow::StringPieceHasher>;
+    std::unordered_map<tensorflow::StringPiece, std::vector<KmerOccurrence>,
+                       tensorflow::StringPieceHasher>;
 
 using ReadsVectorType = std::vector<nucleus::genomics::v1::Read>;
 
@@ -338,14 +349,17 @@ class FastPassAligner {
                       ReadId read_id,
                       KmerOffset pos);
 
-  int FastAlignStrings(const tensorflow::StringPiece& s1,
-                       const tensorflow::StringPiece& s2,
+  int FastAlignStrings(tensorflow::StringPiece s1, tensorflow::StringPiece s2,
                        int max_mismatches, int* num_of_mismatches) const;
 
   void UpdateBestHaplotypes(
       size_t haplotype_index, int haplotype_score,
       const std::vector<ReadAlignment>& current_read_scores);
 
+  // Update position map for each haplotype. Position map stores shifts for
+  // each position of a haplotype in respect to haplotype to reference
+  // alignment. This map helps to quickly calculate reference position for
+  // a read from a read to haplotype alignment.
   void CalculatePositionMaps();
 
   bool GetBestReadAlignment(size_t readId, int* best_hap_index) const;

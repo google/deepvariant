@@ -205,8 +205,8 @@ void FastPassAligner::FastAlignReadsToHaplotype(
 }
 
 // Align 2 same length strings by comparing each character.
-int FastPassAligner::FastAlignStrings(const tensorflow::StringPiece& s1,
-                                      const tensorflow::StringPiece& s2,
+int FastPassAligner::FastAlignStrings(tensorflow::StringPiece s1,
+                                      tensorflow::StringPiece s2,
                                       int max_mismatches,
                                       int* num_of_mismatches) const {
   int num_of_matches = 0;
@@ -294,8 +294,7 @@ void FastPassAligner::RealignReadsToReference(
 }
 
 void FastPassAligner::AddKmerToIndex(tensorflow::StringPiece kmer,
-                                     ReadId read_id,
-                                     KmerOffset pos) {
+                                     ReadId read_id, KmerOffset pos) {
   kmer_index_[kmer].push_back(KmerOccurrence(read_id, pos));
 }
 
@@ -315,8 +314,59 @@ void FastPassAligner::BuildIndex() {
   }
 }
 
+void SetPositionsMap(size_t haplotype_size,
+                     HaplotypeReadsAlignment* hyplotype_alignment) {
+  std::vector<int>& positions_map =
+      hyplotype_alignment->hap_to_ref_positions_map;
+  positions_map.resize(haplotype_size);
+  RE2 pattern("(\\d+)([XIDS=])");  // matches cigar operation
+  StringPiece input(hyplotype_alignment->cigar);
+  int cur_shift = 0;
+  int haplotype_pos = 0;
+  int last_pos = 0;
+  int operation_len;
+  string operation_type;
+  while (RE2::Consume(&input, pattern, &operation_len, &operation_type)) {
+    CHECK_EQ(operation_type.length(), 1);
+
+    char op = operation_type[0];
+    switch (op) {
+      case '=':
+      case 'X':
+        last_pos = haplotype_pos + operation_len;
+        while (haplotype_pos != last_pos) {
+          positions_map[haplotype_pos] = cur_shift;
+          haplotype_pos++;
+        }
+        break;
+      case 'S':
+        last_pos = haplotype_pos + operation_len;
+        cur_shift -= operation_len;
+        while (haplotype_pos != last_pos) {
+          positions_map[haplotype_pos] = cur_shift;
+          haplotype_pos++;
+        }
+        break;
+      case 'D':
+        cur_shift += operation_len;
+        break;
+      case 'I':
+        last_pos = haplotype_pos + operation_len;
+        while (haplotype_pos != last_pos) {
+          positions_map[haplotype_pos] = cur_shift;
+          cur_shift--;
+          haplotype_pos++;
+        }
+        break;
+    }
+  }
+}
+
 void FastPassAligner::CalculatePositionMaps() {
-  // redacted
+  for (auto& hyplotype_alignment : read_to_haplotype_alignments_) {
+    SetPositionsMap(haplotypes_[hyplotype_alignment.haplotype_index].size(),
+                    &hyplotype_alignment);
+  }
 }
 
 // Return true if cigar has at least one structural variation

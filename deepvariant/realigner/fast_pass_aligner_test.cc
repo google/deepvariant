@@ -265,6 +265,66 @@ TEST_F(FastPassAlignerTest, AlignHaplotypesToReference_Test) {
               testing::UnorderedElementsAreArray(expectedHaplotypeAlignments));
 }
 
+TEST_F(FastPassAlignerTest, SetPositionsMapForNotStructuralAlignment_Test) {
+  HaplotypeReadsAlignment haplotype_alignment;
+  haplotype_alignment.cigar = "10=1X3=";  // Length = 24
+  SetPositionsMap(24, &haplotype_alignment);
+  std::vector<int> expected_positions_map(24, 0);
+  EXPECT_THAT(haplotype_alignment.hap_to_ref_positions_map,
+              testing::ElementsAreArray(expected_positions_map));
+}
+
+// Reference:  A  C  T  -  -  -  -  G  A
+// Haplotype:  A  C  T  C  A  C  A  G  A
+// Shifts:     0  0  0  0 -1 -2 -3 -4 -4
+// If read to haplotype alignment has position = 3 then we can calculate
+// read to reference position as pos_map[3] + 3 = 0 + 3 = 3
+// for position = 4, pos_map[4] + 4 = -1 + 4 = 3
+// etc.
+TEST_F(FastPassAlignerTest, SetPositionsMapWithIns_Test) {
+  HaplotypeReadsAlignment haplotype_alignment;
+  haplotype_alignment.cigar = "3=4I2=";  // Length = 9
+  SetPositionsMap(9, &haplotype_alignment);
+  std::vector<int> expected_positions_map = {0, 0, 0, 0, -1, -2, -3, -4, -4};
+  EXPECT_THAT(haplotype_alignment.hap_to_ref_positions_map,
+              testing::ElementsAreArray(expected_positions_map));
+}
+
+TEST_F(FastPassAlignerTest, SetPositionsMapWithDel_Test) {
+  HaplotypeReadsAlignment haplotype_alignment;
+  haplotype_alignment.cigar = "3=4D2=";  // Length = 5
+  SetPositionsMap(5, &haplotype_alignment);
+  std::vector<int> expected_positions_map = {0, 0, 0, 4, 4};
+  EXPECT_THAT(haplotype_alignment.hap_to_ref_positions_map,
+              testing::ElementsAreArray(expected_positions_map));
+}
+
+// Reference:  A  C  T  A  C  C  T  G  T  -  -  G  A
+// Haplotype:  A  C  T  -  -  -  -  G  T  C  A  G  A
+// Shifts:     0  0  0              4  4  4  3  2  2
+TEST_F(FastPassAlignerTest, SetPositionsMapWithDelAndIns_Test) {
+  HaplotypeReadsAlignment haplotype_alignment;
+  haplotype_alignment.cigar = "3=4D2=2I2=";  // Length = 9
+  SetPositionsMap(9, &haplotype_alignment);
+  std::vector<int> expected_positions_map = {0, 0, 0, 4, 4, 4, 3, 2, 2};
+  EXPECT_THAT(haplotype_alignment.hap_to_ref_positions_map,
+              testing::ElementsAreArray(expected_positions_map));
+}
+
+// Reference:  A  C  T  -  -  -  -  G  T  C  A  G  A
+// Haplotype:  A  C  T  A  C  C  T  G  T  -  -  G  A
+// Shifts:     0  0  0  0 -1 -2 -3 -4 -4       -2 -2
+TEST_F(FastPassAlignerTest, SetPositionsMapWithInsAndDel_Test) {
+  HaplotypeReadsAlignment haplotype_alignment;
+  haplotype_alignment.cigar = "3=4I2=2D2=";  // Length = 11
+  SetPositionsMap(11, &haplotype_alignment);
+  std::vector<int> expected_positions_map = {
+      0, 0, 0, 0, -1, -2, -3, -4, -4, -2, -2,
+  };
+  EXPECT_THAT(haplotype_alignment.hap_to_ref_positions_map,
+              testing::ElementsAreArray(expected_positions_map));
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
