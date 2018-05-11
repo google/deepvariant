@@ -214,7 +214,6 @@ TEST_F(FastPassAlignerTest,
 // library can be called and results are as excepted.
 TEST_F(FastPassAlignerTest, SswAlignerSanityCheck) {
   aligner_.InitSswLib();
-  Filter filter;
   aligner_.SswSetReference("TTTGCCGAAGTTAAACCC");
   Alignment alignment = aligner_.SswAlign("GCCGAAGTTA");
   EXPECT_EQ(alignment.cigar_string, "10=");
@@ -323,6 +322,61 @@ TEST_F(FastPassAlignerTest, SetPositionsMapWithInsAndDel_Test) {
   };
   EXPECT_THAT(haplotype_alignment.hap_to_ref_positions_map,
               testing::ElementsAreArray(expected_positions_map));
+}
+
+// This test checks SswAlignReadsToHaplotypes.
+// There are 2 haplotypes, and 5 reads. Some of the reads are better aligned
+// to haplotype 1, some of the reads are better aligned to hap 2. This is
+// reflected in the comments for each read.
+// For example, last read has the best alignment to haplotype 1, but this
+// alignment has a bad score (32). SswAlignReadsToHaplotypes is expected to
+// not realign this read because it's score is lower than a threshold.
+TEST_F(FastPassAlignerTest, SswAlignReadsToHaplotypes_Test) {
+  aligner_.InitSswLib();
+  std::vector<string> haplotypes = {
+      // reference with 1 del
+      "AAGTGCCCAGGGCCAAATGTTTTGGGTTTTGCAGGACAAAGTATGGTT",
+      // reference with 1 sub
+      "AAGTGCCCAGGGCCAAATATGCACAGGGTTTTGCAGGACAAAGTATGGTT"};
+
+  // Read 1: exactly matches a subset of haplotype_1
+  // Read 2: matches haplotype_2 with 2 mismatches
+  // Read 3: subset of haploype_1 with 2 base del
+  // Read 4: subset of haplotype_2 with one ins
+  // Read 5: alignment score is less than threshold
+  aligner_.set_reads({
+                         "CAGGGCCAAATGTTT",         // "15=", 60
+                         "GCCATATATGCACAGGGTTATG",  // "4=1X14=1X2=", 68
+                         "TTGGGTTGCAGGACA",         // "5=2D10=", 51
+                         "ACAGGGTTTTTTGCAGGACAA",   // "6=2I13=", 67
+                         "TGTTGGGTTCAGCAGTTTT"      // "2S7=2X4=4S", 32
+                     });
+  aligner_.set_kmer_size(3);
+  aligner_.set_haplotypes(haplotypes);
+  aligner_.AlignHaplotypesToReference();
+  aligner_.SswAlignReadsToHaplotypes(40);
+  std::vector<string> aligner_reads = aligner_.get_reads();
+  std::vector<ReadAlignment> expected_read_alignments_for_hap1(
+      aligner_reads.size());
+  std::vector<ReadAlignment> expected_read_alignments_for_hap2(
+      aligner_reads.size());
+  expected_read_alignments_for_hap1[0] = ReadAlignment(7, "15=", 60);
+  expected_read_alignments_for_hap1[1] = ReadAlignment(0, "", 0);
+  expected_read_alignments_for_hap1[2] = ReadAlignment(21, "5=2D10=", 51);
+  expected_read_alignments_for_hap1[3] = ReadAlignment(23, "3S3=2I13=", 55);
+  expected_read_alignments_for_hap1[4] = ReadAlignment(0, "", 0);
+
+  expected_read_alignments_for_hap2[0] = ReadAlignment(7, "11=4S", 44);
+  expected_read_alignments_for_hap2[1] = ReadAlignment(11, "4=1X14=1X2=", 68);
+  expected_read_alignments_for_hap2[2] = ReadAlignment(25, "2S3=2D10=", 43);
+  expected_read_alignments_for_hap2[3] = ReadAlignment(22, "6=2I13=", 67);
+  expected_read_alignments_for_hap2[4] = ReadAlignment(0, "", 0);
+
+  const auto& haplotype_alignments = aligner_.GetReadToHaplotypeAlignments();
+  EXPECT_THAT(haplotype_alignments[0].read_alignment_scores,
+              testing::ElementsAreArray(expected_read_alignments_for_hap1));
+  EXPECT_THAT(haplotype_alignments[1].read_alignment_scores,
+              testing::ElementsAreArray(expected_read_alignments_for_hap2));
 }
 
 }  // namespace deepvariant
