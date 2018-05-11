@@ -283,8 +283,38 @@ void FastPassAligner::AlignHaplotypesToReference() {
   }
 }
 
-void FastPassAligner::AlignReadsToHaplotypes(uint16_t score_threshold) {
-  // redacted
+void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
+  // For each read
+  for (int i = 0; i < reads_.size(); i++) {
+    bool has_at_least_one_alignment = false;
+    // Check if this read is aligned to at least one haplotype
+    for (const auto& hap_alignment : read_to_haplotype_alignments_) {
+      if (hap_alignment.read_alignment_scores[i].score > 0) {
+        has_at_least_one_alignment = true;
+        break;
+      }
+    }
+    // If this read is not aligned to any of the haplotypes we try SSW.
+    if (!has_at_least_one_alignment) {
+      for (auto& hap_alignment : read_to_haplotype_alignments_) {
+        CHECK(hap_alignment.haplotype_index < haplotypes_.size());
+        SswSetReference(haplotypes_[hap_alignment.haplotype_index]);
+        Alignment alignment = SswAlign(reads_[i]);
+        if (alignment.sw_score > 0) {
+          if (alignment.sw_score >= score_threshold) {
+            if (hap_alignment.read_alignment_scores[i].score <
+                alignment.sw_score) {
+              hap_alignment.read_alignment_scores[i].score = alignment.sw_score;
+              hap_alignment.read_alignment_scores[i].cigar =
+                  alignment.cigar_string;
+              hap_alignment.read_alignment_scores[i].position =
+                  alignment.ref_begin;
+            }
+          }
+        }
+      }
+    }
+  }  // for all reads
 }
 
 void FastPassAligner::RealignReadsToReference(

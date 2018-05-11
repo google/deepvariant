@@ -269,6 +269,11 @@ class FastPassAligner {
       const string& haplotype, int* haplotype_score,
       std::vector<ReadAlignment>* haplotype_read_alignment_scores);
 
+  // Align reads to haplotypes using SSW library. Only reads that could not
+  // be aligned with FastAlignReadsToHaplotype are aligned here.
+  // Only alignment with better than score_threshold score are kept.
+  void SswAlignReadsToHaplotypes(uint16_t score_threshold);
+
   // Initialize SSW library.
   void InitSswLib();
 
@@ -331,9 +336,9 @@ class FastPassAligner {
   bool debug_out_ = false;
   int debug_read_id_ = 0;
 
+  // Alingn reads to haplotypes by simply comparing strings. This way we will
+  // be able align all the reads that are aligned to haplotypes w/o indels.
   void FastAlignReadsToHaplotypes();
-
-  void AlignReadsToHaplotypes(uint16_t score_threshold);
 
   // Changes alignment for each read that we could realign.
   // realigned_reads are eventually passed to Python wrapped in unique_ptr
