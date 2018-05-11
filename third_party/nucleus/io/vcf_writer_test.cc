@@ -42,7 +42,6 @@
 
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
-#include "tensorflow/core/platform/env.h"
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>

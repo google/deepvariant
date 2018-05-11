@@ -47,7 +47,6 @@
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/io/record_reader.h"
 #include "tensorflow/core/lib/io/record_writer.h"
-#include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace nucleus {
