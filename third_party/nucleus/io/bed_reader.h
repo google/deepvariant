@@ -36,9 +36,6 @@
 #include "third_party/nucleus/io/text_reader.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/io/buffered_inputstream.h"
-#include "tensorflow/core/lib/io/random_inputstream.h"
-#include "tensorflow/core/platform/file_system.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace nucleus {
