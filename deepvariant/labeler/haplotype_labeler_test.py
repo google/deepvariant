@@ -353,6 +353,38 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     self.assertEqual(
         labeler_ref.bases(expected_start, expected_end), expected_bases)
 
+  # Check that we don't issue a query with a bad start if the variant is at
+  # position 0 on the genome. See b/79493732.
+  def test_make_labeler_ref_handles_variant_at_pos_zero(self):
+    labeler = _make_labeler(
+        ref_reader=fasta.InMemoryRefReader([('20', 0, 'ACGT')]))
+    labeler_ref = labeler.make_labeler_ref(
+        candidates=[
+            _test_variant(start=0, alleles=['A', 'C']),
+        ],
+        true_variants=[],
+        bufsize=2)
+    expected_start, expected_end = 0, 3
+    self.assertEqual(labeler_ref.start, expected_start)
+    self.assertEqual(labeler_ref.end, expected_end)
+    self.assertEqual(labeler_ref.bases(expected_start, expected_end), 'ACG')
+
+  # Check that we don't issue a query with a bad end if the variant is at
+  # the last position on the genome. See b/79493732.
+  def test_make_labeler_ref_handles_variant_at_end_of_chrom(self):
+    labeler = _make_labeler(
+        ref_reader=fasta.InMemoryRefReader([('20', 0, 'ACGT')]))
+    labeler_ref = labeler.make_labeler_ref(
+        candidates=[
+            _test_variant(start=3, alleles=['T', 'A']),
+        ],
+        true_variants=[],
+        bufsize=2)
+    expected_start, expected_end = 2, 4
+    self.assertEqual(labeler_ref.start, expected_start)
+    self.assertEqual(labeler_ref.end, expected_end)
+    self.assertEqual(labeler_ref.bases(expected_start, expected_end), 'GT')
+
   def test_label_variants(self):
     variants = [
         _test_variant(start=10),
@@ -1703,6 +1735,28 @@ class LabelExamplesTest(parameterized.TestCase):
         expected_genotypes=[
             [0, 1],
             [1, 2],
+        ])
+
+  def test_variants_at_edge_of_contig_work_end_to_end(self):
+    # This test checks that we can label end-to-end variants at occur at the
+    # start and at the end of a chromosome. This is unlikely in humans but can
+    # occur in bacterial genomes. See b/79493732 for a motivating example.
+    self.assertGetsCorrectLabels(
+        candidates=[
+            # At chrom start.
+            _test_variant(0, ['A', 'G']),
+            # At chrom end. I've included an insertion here because that's a
+            # common representation when there are bases at the start.
+            _test_variant(3, ['T', 'C', 'TCCC']),
+        ],
+        true_variants=[
+            _test_variant(0, ['A', 'G'], [1, 1]),
+            _test_variant(3, ['T', 'C'], [0, 1]),
+        ],
+        ref=haplotype_labeler.ReferenceRegion('ACGT', 0),
+        expected_genotypes=[
+            [1, 1],
+            [0, 1],
         ])
 
 
