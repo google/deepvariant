@@ -275,7 +275,9 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     contig = all_variants[0].reference_name
     start = min(x.start for x in all_variants)
     end = max(x.end for x in all_variants)
-    region = ranges.make_range(contig, start - 1, end + bufsize)
+    contig_nbp = self._ref_reader.contig(contig).n_bases
+    region = ranges.make_range(contig, max(start - 1, 0),
+                               min(end + bufsize, contig_nbp))
     ref_bases = self._ref_reader.query(region)
     return ReferenceRegion(ref_bases, start=region.start)
 
@@ -473,8 +475,9 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
   """
 
   def create_haplotypes_recursive(variants_and_genotypes, last_pos):
+    """Recursive driver to enumerate all haplotypes."""
     if not variants_and_genotypes:
-      yield {ref.bases(last_pos, ref.end)}
+      yield {ref.bases(last_pos, ref.end)} if last_pos != ref.end else {''}
     else:
       group, remaining = split_independent_variants(variants_and_genotypes)
       group_haplotypes, next_pos = phased_genotypes_to_haplotypes(
