@@ -37,28 +37,29 @@
 #include <cmath>
 #include <cstring>
 
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+
+#include "htslib/hts.h"
+#include "htslib/sam.h"
+
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/io/vcf_conversion.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/utils.h"
 
-#include "absl/memory/memory.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/lib/strings/stringprintf.h"
-
-#include "htslib/hts.h"
-#include "htslib/sam.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
 namespace tf = tensorflow;
 
+using absl::StrCat;
 using nucleus::genomics::v1::Variant;
-using tensorflow::strings::StrCat;
 
 namespace {
 

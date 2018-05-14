@@ -39,13 +39,11 @@
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/gtl/optional.h"
 #include "tensorflow/core/lib/strings/str_util.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
 using nucleus::genomics::v1::Range;
-using tensorflow::strings::StrCat;
 
 namespace {
 // Gets information about the contigs from the fai index faidx.
@@ -74,7 +72,7 @@ StatusOr<std::unique_ptr<GenomeReferenceFai>> GenomeReferenceFai::FromFile(
       fai_load3_x(fasta_path.c_str(), fai_path.c_str(), gzi.c_str(), 0);
   if (faidx == nullptr) {
     return tensorflow::errors::NotFound(
-        StrCat("could not load fasta and/or fai for fasta ", fasta_path));
+        "could not load fasta and/or fai for fasta ", fasta_path);
   }
   return std::unique_ptr<GenomeReferenceFai>(
       new GenomeReferenceFai(fasta_path, faidx, cache_size_bases));
@@ -101,8 +99,8 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
         "can't read from closed GenomeReferenceFai object.");
   }
   if (!IsValidInterval(range))
-    return tensorflow::errors::InvalidArgument(
-      StrCat("Invalid interval: ", range.ShortDebugString()));
+    return tensorflow::errors::InvalidArgument("Invalid interval: ",
+                                               range.ShortDebugString());
 
   if (range.start() == range.end()) {
     // We are requesting an empty string. faidx_fetch_seq does not allow this,
@@ -146,8 +144,8 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
       faidx_, range_to_fetch.reference_name().c_str(),
       range_to_fetch.start(), range_to_fetch.end() - 1, &len);
   if (len <= 0)
-    return tensorflow::errors::InvalidArgument(
-        StrCat("Couldn't fetch bases for ", range.ShortDebugString()));
+    return tensorflow::errors::InvalidArgument("Couldn't fetch bases for ",
+                                               range.ShortDebugString());
   string result = tensorflow::str_util::Uppercase(bases);
   free(bases);
 

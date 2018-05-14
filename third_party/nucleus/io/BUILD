@@ -240,7 +240,6 @@ cc_library(
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -338,8 +337,8 @@ cc_library(
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -446,12 +445,11 @@ cc_library(
         ":vcf_conversion",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
-        "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],
@@ -482,6 +480,7 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/vendor:statusor",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -512,7 +511,6 @@ cc_library(
     deps = [
         ":hts_path",
         ":reference",
-        "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
         "@htslib",
@@ -530,6 +528,7 @@ cc_test(
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:status_matchers",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
@@ -593,6 +592,7 @@ cc_library(
     srcs = ["hts_path.cc"],
     hdrs = ["hts_path.h"],
     deps = [
+        "@com_google_absl//absl/strings",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],

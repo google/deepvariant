@@ -35,13 +35,13 @@
 #include <algorithm>
 #include <numeric>
 
-#include "tensorflow/core/lib/strings/strcat.h"
+#include "absl/strings/str_cat.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
+using absl::StrCat;
 using nucleus::genomics::v1::Range;
-using tensorflow::strings::StrCat;
 
 // ###########################################################################
 //
