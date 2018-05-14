@@ -73,6 +73,7 @@ cc_library(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

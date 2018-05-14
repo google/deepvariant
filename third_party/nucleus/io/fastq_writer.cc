@@ -33,12 +33,13 @@
 #include "third_party/nucleus/io/fastq_writer.h"
 
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/strings/str_util.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -93,12 +94,12 @@ tf::Status FastqWriter::Write(
     return tf::errors::FailedPrecondition(
         "Cannot write to closed FASTQ stream.");
   string out = "@";
-  tf::strings::StrAppend(&out, record.id());
+  absl::StrAppend(&out, record.id());
   if (!record.description().empty()) {
-    tf::strings::StrAppend(&out, " ", record.description());
+    absl::StrAppend(&out, " ", record.description());
   }
-  tf::strings::StrAppend(&out, "\n", record.sequence(), "\n+\n",
-                         record.quality(), "\n");
+  absl::StrAppend(&out, "\n", record.sequence(), "\n+\n", record.quality(),
+                  "\n");
   TF_RETURN_IF_ERROR(text_writer_->Write(out));
 
   return tf::Status::OK();
