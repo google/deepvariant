@@ -34,6 +34,8 @@
 
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 
+#include "absl/strings/substitute.h"
+
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
@@ -46,7 +48,6 @@
 
 #include "tensorflow/core/platform/test.h"
 
-#include "tensorflow/core/lib/strings/stringprintf.h"
 #include "re2/re2.h"
 
 namespace nucleus {
@@ -61,13 +62,13 @@ class StringErrorCollector : public google::protobuf::io::ErrorCollector {
   explicit StringErrorCollector(string* error_text) : error_text_(error_text) {}
 
   void AddError(int line, int column, const string& message) override {
-    tensorflow::strings::Appendf(error_text_, "%d(%d): %s\n", line, column,
-                                 message.c_str());
+    absl::SubstituteAndAppend(error_text_, "$0($1): $2\n",
+                              line, column, message.c_str());
   }
 
   void AddWarning(int line, int column, const string& message) override {
-    tensorflow::strings::Appendf(error_text_, "%d(%d): %s\n", line, column,
-                                 message.c_str());
+    absl::SubstituteAndAppend(error_text_, "$0($1): $2\n",
+                              line, column, message.c_str());
   }
 
  private:

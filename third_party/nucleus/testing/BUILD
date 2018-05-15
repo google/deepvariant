@@ -40,6 +40,7 @@ cc_library(
         "protocol-buffer-matchers.h",
     ],
     deps = [
+        "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
