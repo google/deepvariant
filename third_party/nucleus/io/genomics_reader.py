@@ -26,15 +26,48 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""Classes that provide the interface for reading genomics data.
 
-"""Abstract base class for objects reading genomics data.
+`GenomicsReader` defines the core API supported by readers, and is subclassed
+directly or indirectly (via `DispatchingGenomicsReader`) for all concrete
+implementations.
 
-Most users will want to use a subclass of GenomicsReader, with code like
-the following:
+`TFRecordReader` is an implementation of the `GenomicsReader` API for reading
+`TFRecord` files. This is usable for all data types when encoding data in
+protocol buffers.
 
-  with GenomicsReaderSubClass(output_path, options) as reader:
-    for proto in reader:
-      do_something(reader.header, proto)
+`DispatchingGenomicsReader` is an abstract class defined for convenience on top
+of `GenomicsReader` that supports reading from either the native file format or
+from `TFRecord` files of the corresponding protocol buffer used to encode data
+of that file type. The input format assumed is dependent upon the filename of
+the input data.
+
+Concrete implementations for individual file types (e.g. BED, SAM, VCF, etc.)
+reside in type-specific modules in this package. The instantiation of readers
+may have reader-specific requirements documented there. General examples of the
+`iterate()` and `query()` functionality are shown below.
+
+```python
+# Equivalent ways to iterate through all elements in a reader.
+# 1. Using the reader itself as an iterable object.
+kwargs = ...  # Reader-specific keyword arguments.
+with GenomicsReaderSubClass(output_path, **kwargs) as reader:
+  for proto in reader:
+    do_something(reader.header, proto)
+
+# 2. Calling the iterate() method of the reader explicitly.
+with GenomicsReaderSubClass(output_path, **kwargs) as reader:
+  for proto in reader.iterate():
+    do_something(reader.header, proto)
+
+# Querying for all elements within a specific region of the genome.
+from third_party.nucleus.protos import range_pb2
+region = range_pb2.Range(reference_name='chr1', start=10, end=20)
+
+with GenomicsReaderSubClass(output_path, **kwargs) as reader:
+  for proto in reader.query(region):
+    do_something(reader.header, proto)
+```
 """
 
 from __future__ import absolute_import
@@ -52,15 +85,15 @@ from tensorflow.python.lib.io import python_io
 class GenomicsReader(six.Iterator):
   """Abstract base class for reading genomics data.
 
-  In addition to the abstractmethods defined below, sub-classes should
-  also set a .header member variable in their objects.
+  In addition to the abstractmethods defined below, subclasses should
+  also set a `header` member variable in their objects.
   """
 
   __metaclass__ = abc.ABCMeta
 
   @abc.abstractmethod
   def iterate(self):
-    """Returns an iterator for going through the file's records."""
+    """Returns an iterator for going through all the file's records."""
 
   @abc.abstractmethod
   def query(self, region):
@@ -70,7 +103,7 @@ class GenomicsReader(six.Iterator):
       region:  A nucleus.genomics.v1.Range.
 
     Returns:
-      An iterator.
+      An iterator containing all and only records within the specified region.
     """
 
   def __enter__(self):
@@ -79,27 +112,26 @@ class GenomicsReader(six.Iterator):
 
   def __exit__(self, unused_type, unused_value, unused_traceback):
     """Exit a `with` block.  Typically, this will close the file."""
-    pass
 
   def __init__(self):
-    """Allows users to use the object as an iterator."""
+    """Initializer."""
     # Some readers can only support one iterator at a time, so don't
     # create one now.  Rather, create it when needed in next().
     self.iterator = None
 
   def __iter__(self):
-    """Allows users to use the object as an iterator."""
+    """Allows users to use the object itself as an iterator."""
     return self.iterate()
 
   def __next__(self):
-    """Allows users to use the object as an iterator."""
+    """Allows users to use the object itself as an iterator."""
     if self.iterator is None:
       self.iterator = self.iterate()
     return six.next(self.iterator)
 
 
 class TFRecordReader(GenomicsReader):
-  """A GenomicsReader that reads from a TFRecord file.
+  """A GenomicsReader that reads protocol buffers from a TFRecord file.
 
   Example usage:
     reader = TFRecordReader('/tmp/my_file.tfrecords.gz',
@@ -136,11 +168,18 @@ class TFRecordReader(GenomicsReader):
     self.tf_options = tf_options
 
   def iterate(self):
+    """Returns an iterator for going through all the file's records."""
     # redacted
     for buf in python_io.tf_record_iterator(self.input_path, self.tf_options):
       yield self.proto.FromString(buf)
 
   def query(self, region):
+    """Returns an iterator for going through the records in the region.
+
+    NOTE: This function is not currently implemented by TFRecordReader as the
+    TFRecord format does not provide a general mechanism for fast random access
+    to elements in genome order.
+    """
     raise NotImplementedError('Can not query TFRecord file')
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
@@ -151,10 +190,10 @@ class TFRecordReader(GenomicsReader):
 class DispatchingGenomicsReader(GenomicsReader):
   """A GenomicsReader that dispatches based on the file extension.
 
-  If '.tfrecord' is present in the filename, a TFRecordReader is used,
-  otherwise a native reader is.
+  If '.tfrecord' is present in the filename, a TFRecordReader is used.
+  Otherwise, a native reader is.
 
-  Sub-classes of DispatchingGenomicsReader must define the following methods:
+  Subclasses of DispatchingGenomicsReader must define the following methods:
     * _native_reader()
     * _record_proto()
   """
@@ -201,5 +240,4 @@ class DispatchingGenomicsReader(GenomicsReader):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
   def _post_init_hook(self):
-    """Hook for sub-classes to run code at the end of __init__."""
-    pass
+    """Hook for subclasses to run code at the end of __init__."""

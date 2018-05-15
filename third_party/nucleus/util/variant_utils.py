@@ -26,8 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 """Variant utilities."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -145,7 +145,7 @@ class VariantType(enum.Enum):
 
 
 def format_filters(variant):
-  """Gets a human-readable string showing the filters applied to variant.
+  """Returns a human-readable string showing the filters applied to variant.
 
   Returns a string with the filter field values of variant separated by commas.
   If the filter field isn't set, returns vcf_constants.MISSING_FIELD ('.').
@@ -242,7 +242,7 @@ def is_ref(variant):
   """Returns true if variant is a reference record.
 
   Variant protos can encode sites that aren't actually mutations in the
-  sample.  For example, the record ref='A', alt='.' indicates that there is
+  sample. For example, the record ref='A', alt='.' indicates that there is
   no mutation present (i.e., alt is the missing value).
 
   Args:
@@ -480,7 +480,7 @@ def is_variant_call(variant,
   Note that this code allows a variant without a calls field to be variant,
   but one with a genotype call must have a non-reference genotype to be
   considered variant (if require_non_ref_genotype is True, the default). If
-  False, a variant that passes all fo the site-level requirements for being
+  False, a variant that passes all of the site-level requirements for being
   a variant_call will return a True value, regardless of the genotypes, which
   means that we'll consider a site with a sample with a hom-ref or no-call site
   a variant call.

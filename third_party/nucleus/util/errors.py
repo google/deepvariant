@@ -26,7 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 """Library of application-specific errors.
 """
 
@@ -43,12 +42,10 @@ from absl import logging
 
 class Error(Exception):
   """Base class for core error types."""
-  pass
 
 
 class CommandLineError(Error):
   """Exception class related to invalid command-line flags."""
-  pass
 
 
 def log_and_raise(msg, exception_class=Error):
@@ -74,17 +71,18 @@ def clean_commandline_error_exit(
   to provide a mechanism for user errors to exit abnormally without causing
   exceptions to be thrown. Any exceptions that are subclasses of those listed
   in `allowed_exceptions` will be caught and the program will quietly exit with
-  `exit_value`. Other exceptions are propagated normally. It should only be used
-  as a context manager and its usage should be limited to main().
+  `exit_value`. Other exceptions are propagated normally.
+
+  NOTE: This function should only be used as a context manager and its usage
+  should be limited to main().
 
   Args:
     allowed_exceptions: [`tuple of Exception`]. A tuple of Exception classes
-        that should not be raised, but instead quietly caused to exit the
-        program.
+      that should not be raised, but instead quietly caused to exit the program.
     exit_value: [`int`]. The value to return upon program exit.
 
   Yields:
-    The yield in this function is used to allow the block nested in the with
+    The yield in this function is used to allow the block nested in the "with"
     statement to be executed.
   """
   try:

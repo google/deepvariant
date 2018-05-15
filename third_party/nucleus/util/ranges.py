@@ -26,8 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 """Utilities for Range overlap detection."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -43,18 +43,18 @@ from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
 from tensorflow.python.platform import gfile
 
-
 # Regular expressions for matching literal chr:start-stop strings.
 _REGION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)-([0-9,]+)$')
+
 # Regular expressions for matching literal chr:start strings.
 _POSITION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)$')
 
 
 class RangeSet(object):
-  """Fast overlap detection of a genomic position against a db of Ranges.
+  """Fast overlap detection of a genomic position against a database of Ranges.
 
-  Enables very fast O(log n) computation of whether a point chr:pos falls within
-  one of a large number of genomic ranges.
+  Enables O(log n) computation of whether a point chr:pos falls within one of a
+  large number of genomic ranges.
 
   This class does not supports overlapping or adjacent intervals. Any such
   intervals will be automatically merged together in the constructor.
@@ -64,20 +64,21 @@ class RangeSet(object):
   """
 
   def __init__(self, ranges=None, contigs=None):
-    """Creates an RangeSet backed by ranges.
+    """Creates a RangeSet backed by ranges.
 
     Note that the Range objects in ranges are *not* stored directly here, so
     they can safely be modified after they are passed to this RangeSet.
 
     Args:
-      ranges: A list of genomics.Range objects (or anything with
-        reference_name, start, and end properties following the
-        genomics.Range convention). If None, no ranges will be used,
-        and overlaps() will always return False.
-      contigs: a list of ContigInfo protos, used to define the iteration order
-        over contigs (i.e., by contig.pos_in_fasta).  If this dict is not
-        provided, the iteration order will be determined by the alphabetical
-        order of the contig names.
+      ranges: list(nucleus.genomics.v1.Range) protos (or anything with
+        reference_name, start, and end properties following the Range
+        convention). If None, no ranges will be used, and overlaps() will always
+        return False.
+      contigs: list(nucleus.genomics.v1.ContigInfo) protos. Used to define the
+        iteration order over contigs (i.e., by contig.pos_in_fasta).  If this
+        list is not provided, the iteration order will be determined by the
+        alphabetical order of the contig names.
+
     Raises:
       ValueError: if any range's reference_name does not correspond to any
         contig in `contigs`.
@@ -114,7 +115,7 @@ class RangeSet(object):
 
     Yields:
       Each range of this RangeSet, in sorted order (by chromosome, then start
-      end positions).  Relative ordering of chromosomes is defined by the
+      end positions). Relative ordering of chromosomes is defined by the
       contig.pos_in_fasta integer key for the associated contig. These objects
       are new range protos so can be freely modified.
     """
@@ -236,8 +237,8 @@ class RangeSet(object):
   def exclude_regions(self, other):
     """Chops out all of the intervals in other from this this RangeSet.
 
-    This is a *MUTATING* operation for performance reasons. Make a copy of self
-    if you want to avoid modifying the RangeSet.
+    NOTE: This is a *MUTATING* operation for performance reasons. Make a copy
+    of self if you want to avoid modifying the RangeSet.
 
     Args:
       other: A RangeSet object whose intervals will be removed from this
@@ -251,7 +252,7 @@ class RangeSet(object):
         for begin, end, _ in chr_intervals:
           self_intervals.chop(begin, end)
         if self_intervals.is_empty():
-          # Cleanup after ourselves by removing empty trees from out map.
+          # Cleanup after ourselves by removing empty trees from our map.
           del self._by_chr[chrname]
 
   def __len__(self):
@@ -277,8 +278,8 @@ class RangeSet(object):
     Uses a fast bisection algorithm to determine the overlap in O(log n) time.
 
     Args:
-      chrom: The chromosome name as a string.
-      pos: The position (0-based) as an integer.
+      chrom: str. The chromosome name.
+      pos: int. The position (0-based).
 
     Returns:
       True if chr:pos overlaps with a range.
@@ -291,19 +292,18 @@ class RangeSet(object):
   def partition(self, max_size):
     """Splits our intervals so that none are larger than max_size.
 
-    Slices up the intervals in this RangeSet into a equivalent set of interval (
-    i.e., spanning the same set of bases), each of which is at most max_size in
+    Slices up the intervals in this RangeSet into a equivalent set of intervals
+    (i.e., spanning the same set of bases), each of which is at most max_size in
     length.
 
     This function does not modify this RangeSet.
 
-    Because RangeSet merges adjacent intervals, this function cannot return use
-    a RangeSet to represent the partitioned intervals and so instead generates
+    Because RangeSet merges adjacent intervals, this function cannot use a
+    RangeSet to represent the partitioned intervals and so instead generates
     these intervals via a yield statement.
 
     Args:
-      max_size: A positive integer (> 0) indicating the maximum size of any
-        interval.
+      max_size: int > 0. The maximum size of any interval.
 
     Yields:
       nucleus.genomics.v1.Range protos, in sorted order (see comment about order
@@ -313,7 +313,7 @@ class RangeSet(object):
       ValueError: if max_size <= 0.
     """
     if max_size <= 0:
-      raise ValueError('max_size must be > 0', max_size)
+      raise ValueError('max_size must be > 0: {}'.format(max_size))
 
     for interval in self:
       refname = interval.reference_name
@@ -322,18 +322,25 @@ class RangeSet(object):
 
 
 def make_position(chrom, position, reverse_strand=False):
-  """Makes a nucleus.genomics.v1.Position."""
+  """Returns a nucleus.genomics.v1.Position.
+
+  Args:
+    chrom: str. The chromosome name.
+    position: int. The start position (0-based, inclusive).
+    reverse_strand: bool. If True, indicates the position is on the negative
+      strand.
+  """
   return position_pb2.Position(
       reference_name=chrom, position=position, reverse_strand=reverse_strand)
 
 
 def make_range(chrom, start, end):
-  """Creates a genomics.Range object chr:start-end.
+  """Returns a nucleus.genomics.v1.Range.
 
   Args:
-    chrom: The chromosome name as a string.
-    start: The start position (0-based, inclusive, integer) of this range.
-    end: The end position (0-based, exclusive, integer) of this range.
+    chrom: str. The chromosome name.
+    start: int. The start position (0-based, inclusive) of this range.
+    end: int. The end position (0-based, exclusive) of this range.
 
   Returns:
     A nucleus.genomics.v1.Range.
@@ -342,11 +349,11 @@ def make_range(chrom, start, end):
 
 
 def position_overlaps(chrom, pos, interval):
-  """Does interval overlap the position chr:pos?
+  """Returns True iff the position chr:pos overlaps the interval.
 
   Args:
-    chrom: The chromosome name as a string.
-    pos: The position (0-based, integer).
+    chrom: str. The chromosome name.
+    pos: int. The position (0-based, inclusive).
     interval: nucleus.genomics.v1.Range object.
 
   Returns:
@@ -357,14 +364,14 @@ def position_overlaps(chrom, pos, interval):
 
 
 def ranges_overlap(i1, i2):
-  """Checks whether ranges i1 and i2 overlap.
+  """Returns True iff ranges i1 and i2 overlap.
 
   Args:
     i1: nucleus.genomics.v1.Range object.
     i2: nucleus.genomics.v1.Range object.
 
   Returns:
-    True if i1 and i2 overlap.
+    True if and only if i1 and i2 overlap.
   """
   return (i1.reference_name == i2.reference_name and i1.end > i2.start and
           i1.start < i2.end)
@@ -475,7 +482,7 @@ def to_literal(range_pb):
     range_pb: A nucleus.genomics.v1.Range object.
 
   Returns:
-    A string.
+    A string representation of the Range.
   """
   return '{}:{}-{}'.format(range_pb.reference_name, range_pb.start + 1,
                            range_pb.end)
@@ -491,7 +498,7 @@ def parse_literal(region_literal, contig_map=None):
     chromosome  [if contig_map is provided]
 
   chromosome can be any non-empty string without whitespace. start and end must
-  both be positive integers. They can contain commas for readibility. start and
+  both be positive integers. They can contain commas for readability. start and
   end are positions not offsets, so start == 1 means an offset of zero. If only
   a single position is provided, this creates a 1 bp interval starting at
   position - 1 and ending at position.
@@ -500,7 +507,7 @@ def parse_literal(region_literal, contig_map=None):
   http://www.htslib.org/doc/samtools.html
 
   Args:
-    region_literal: string literal to parse.
+    region_literal: str. The literal to parse.
     contig_map: An optional dictionary mapping from contig names to ContigInfo
       protobufs. If provided, allows literals of the format "contig_name", which
       will be parsed into a Range with reference_name=contig_name, start=0,
@@ -561,13 +568,13 @@ def sorted_ranges(ranges, contigs=None):
   """Sorts ranges by reference_name, start, and end.
 
   Args:
-    ranges: A sequence of google.v1.genomics.Range protos that we want to sort.
-    contigs: None or an iterable of ConfigInfo protos. If not None, we will use
+    ranges: Iterable of nucleus.genomics.v1.Range protos that we want to sort.
+    contigs: None or an iterable of ContigInfo protos. If not None, we will use
       the order of the contigs (as defined by their pos_in_fasta field values)
       to sort the Ranges on different contigs with respect to each other.
 
   Returns:
-    A newly allocated list of google.v1.genomics.Range protos.
+    A newly allocated list of nucleus.genomics.v1.Range protos.
   """
   if contigs:
     contig_map = contigs_dict(contigs)
@@ -590,8 +597,8 @@ def overlap_len(range1, range2):
   """Computes the number of overlapping bases of range1 and range2.
 
   Args:
-    range1: learning.genomics.genomics.Range.
-    range2: learning.genomics.genomics.Range.
+    range1: nucleus.genomics.v1.Range.
+    range2: nucleus.genomics.v1.Range.
 
   Returns:
     int. The number of basepairs in common. 0 if the ranges are not on the same
@@ -608,10 +615,10 @@ def find_max_overlapping(query_range, search_ranges):
   In case of ties, selects the lowest index range in search_ranges.
 
   Args:
-    query_range: learning.genomics.genomics.core.Range, read genomic range.
-    search_ranges: list[learning.genomics.genomics.core.Read]. Cannot be an
-      iterable as we loop over the search_ranges multiple times. The list of
-      regions we want to search for the maximal overlap with query_range.
+    query_range: nucleus.genomics.v1.Range, read genomic range.
+    search_ranges: list[nucleus.genomics.v1.Read]. The list of regions we want
+      to search for the maximal overlap with query_range. NOTE: this must be a
+      list (not a generator) as we loop over the search_ranges multiple times.
 
   Returns:
     int, the search_ranges index with the maximum read overlap. Returns None
@@ -638,8 +645,8 @@ def expand(region, n_bp, contig_map=None):
 
   Args:
     region: A nucleus.genomics.v1.Range proto.
-    n_bp: int >= 0; how many basepairs to increase region by.
-    contig_map: None, or dict[string, ContigInfo]. If not None, used to get the
+    n_bp: int >= 0. how many basepairs to increase region by.
+    contig_map: dict[string, ContigInfo] or None. If not None, used to get the
       maximum extent to increase stop by. Must have region.reference_name as a
       key.
 
@@ -668,10 +675,10 @@ def span(regions):
   freshly allocated.
 
   Args:
-    regions: list[Range]: an list of Range protos.
+    regions: list[Range]: a list of Range protos.
 
   Returns:
-    Range proto.
+    A single Range proto.
 
   Raises:
     ValueError: if not all regions have the same reference_name.

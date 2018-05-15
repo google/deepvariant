@@ -26,18 +26,48 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Class for reading BED files.
+"""Classes for reading and writing BED files.
+
+The BED format is described at
+https://genome.ucsc.edu/FAQ/FAQformat.html#format1
 
 API for reading:
-  with BedReader(input_path) as reader:
-    for record in reader:
-      print(record)
 
-where `record` is a nucleus.genomics.v1.BedRecord protocol buffer.
+```python
+from third_party.nucleus.io import bed
 
-If the path contains '.tfrecord' as an extension, a TFRecord file is
-assumed. Otherwise, it is treated as a true BED file. In either case,
-an extension of '.gz' will cause the file to be treated as compressed.
+# Iterate through all records.
+with bed.BedReader(input_path) as reader:
+  for record in reader:
+    print(record)
+```
+
+where `record` is a `nucleus.genomics.v1.BedRecord` protocol buffer.
+
+API for writing:
+
+```python
+from third_party.nucleus.io import bed
+from third_party.nucleus.protos import bed_pb2
+
+# records is an iterable of nucleus.genomics.v1.BedRecord protocol buffers.
+records = ...
+
+# header defines how many fields to write out.
+header = bed_pb2.BedHeader(num_fields=5)
+
+# Write all records to the desired output path.
+with bed.BedWriter(output_path, header) as writer:
+  for record in records:
+    writer.write(record)
+```
+
+For both reading and writing, if the path provided to the constructor contains
+'.tfrecord' as an extension, a `TFRecord` file is assumed and attempted to be
+read or written. Otherwise, the filename is treated as a true BED file.
+
+Files that end in a '.gz' suffix cause the file to be treated as compressed
+(with BGZF if it is a true BED file, and with gzip if it is a TFRecord file).
 """
 
 from __future__ import absolute_import
@@ -75,7 +105,12 @@ class NativeBedReader(genomics_reader.GenomicsReader):
     self.header = self._reader.header
 
   def query(self):
-    raise NotImplementedError('Can not query a BED file')
+    """Returns an iterator for going through the records in the region.
+
+    NOTE: This function is not currently implemented by NativeBedReader though
+    it could be implemented for sorted, tabix-indexed BED files.
+    """
+    raise NotImplementedError('Can not currently query a BED file')
 
   def iterate(self):
     """Returns an iterable of BedRecord protos in the file."""
