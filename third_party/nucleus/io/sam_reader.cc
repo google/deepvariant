@@ -34,6 +34,8 @@
 #include "third_party/nucleus/io/sam_reader.h"
 
 #include "google/protobuf/repeated_field.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_split.h"
 #include "htslib/hts.h"
 #include "htslib/hts_endian.h"
 #include "htslib/sam.h"
@@ -46,7 +48,6 @@
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -54,6 +55,7 @@ namespace nucleus {
 
 namespace tf = tensorflow;
 
+using absl::string_view;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::CigarUnit_Operation;
 using nucleus::genomics::v1::Position;
@@ -67,7 +69,6 @@ using tensorflow::WARNING;
 using tensorflow::int32;
 
 using google::protobuf::RepeatedField;
-using tensorflow::strings::StrCat;
 
 namespace {
 constexpr char kSamHeaderTag[] = "@HD";
@@ -94,10 +95,11 @@ void AddHeaderLineToHeader(const string& line, SamHeader& header) {
                                 {"query", SamHeader::QUERY},
                                 {"reference", SamHeader::REFERENCE}};
 
-  for (const string& token : tensorflow::str_util::Split(line, '\t')) {
+  for (const string_view& token : absl::StrSplit(line, '\t')) {
     if (token == kSamHeaderTag) continue;
-    const string tag = token.substr(0, tagLen);
-    const string value = token.substr(tagLen);
+    // redacted
+    const string tag = string(token.substr(0, tagLen));
+    const string value = string(token.substr(tagLen));
     if (tag == kVersionTag) {
       header.set_format_version(value);
     } else if (tag == kSortingOrderTag) {
@@ -130,10 +132,11 @@ void AddHeaderLineToHeader(const string& line, SamHeader& header) {
 void AddReadGroupToHeader(const string& line,
                           nucleus::genomics::v1::ReadGroup* readgroup) {
   int tagLen = 3;
-  for (const string& token : tensorflow::str_util::Split(line, '\t')) {
+  for (const string_view token : absl::StrSplit(line, '\t')) {
     if (token == kSamReadGroupTag) continue;
-    const string tag = token.substr(0, tagLen);
-    const string value = token.substr(tagLen);
+    // redacted
+    const string tag = string(token.substr(0, tagLen));
+    const string value = string(token.substr(tagLen));
     if (tag == "ID:") {
       readgroup->set_name(value);
     } else if (tag == "CN:") {
@@ -152,7 +155,7 @@ void AddReadGroupToHeader(const string& line,
       readgroup->add_program_ids(value);
     } else if (tag == "PI:") {
       int size;
-      tensorflow::strings::safe_strto32(value, &size);
+      CHECK(absl::SimpleAtoi(value, &size));
       readgroup->set_predicted_insert_size(size);
     } else if (tag == "PL:") {
       readgroup->set_platform(value);
@@ -172,10 +175,11 @@ void AddReadGroupToHeader(const string& line,
 void AddProgramToHeader(const string& line,
                         nucleus::genomics::v1::Program* program) {
   int tagLen = 3;
-  for (const string& token : tensorflow::str_util::Split(line, '\t')) {
+  for (const string_view token : absl::StrSplit(line, '\t')) {
     if (token == kSamProgramTag) continue;
-    const string tag = token.substr(0, tagLen);
-    const string value = token.substr(tagLen);
+    // redacted
+    const string tag = string(token.substr(0, tagLen));
+    const string value = string(token.substr(tagLen));
     if (tag == "ID:") {
       program->set_id(value);
     } else if (tag == "PN:") {
@@ -440,8 +444,8 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
     Position* mate_position = read_message->mutable_next_mate_position();
     if (c->mtid < 0)
       return tf::errors::DataLoss(
-          StrCat("Expected mtid >= 0 as mate is supposedly mapped: ",
-                 read_message->ShortDebugString()));
+          "Expected mtid >= 0 as mate is supposedly mapped: ",
+          read_message->ShortDebugString());
     mate_position->set_reference_name(h->target_name[c->mtid]);
     mate_position->set_position(c->mpos);
     mate_position->set_reverse_strand(bam_is_mrev(b));
@@ -510,7 +514,7 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
   CHECK(header_ != nullptr) << "pointer to header cannot be null";
 
   const std::vector<string> header_lines_split =
-      tensorflow::str_util::Split(header_->text, '\n');
+      absl::StrSplit(header_->text, '\n');
 
   for (const string& header_line : header_lines_split) {
     const string& header_tag = header_line.substr(0, 3);
@@ -551,24 +555,24 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
       options.read_requirements().min_base_quality_mode() !=
           nucleus::genomics::v1::ReadRequirements::ENFORCED_BY_CLIENT) {
     return tf::errors::InvalidArgument(
-        StrCat("Unsupported min_base_quality mode in options ",
-               options.ShortDebugString()));
+        "Unsupported min_base_quality mode in options ",
+        options.ShortDebugString());
   }
 
   htsFile* fp = hts_open_x(reads_path.c_str(), "r");
   if (!fp) {
-    return tf::errors::NotFound(StrCat("Could not open ", reads_path));
+    return tf::errors::NotFound("Could not open ", reads_path);
   }
 
   if (options.hts_block_size() > 0) {
     LOG(INFO) << "Setting HTS_OPT_BLOCK_SIZE to " << options.hts_block_size();
     if (hts_set_opt(fp, HTS_OPT_BLOCK_SIZE, options.hts_block_size()) != 0)
-      return tf::errors::Unknown(StrCat("Failed to set HTS_OPT_BLOCK_SIZE"));
+      return tf::errors::Unknown("Failed to set HTS_OPT_BLOCK_SIZE");
   }
 
   bam_hdr_t* header = sam_hdr_read(fp);
   if (header == nullptr)
-    return tf::errors::Unknown(StrCat("Couldn't parse header for ", fp->fn));
+    return tf::errors::Unknown("Couldn't parse header for ", fp->fn);
 
   hts_idx_t* idx = nullptr;
   if (options.index_mode() ==
@@ -576,7 +580,7 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
     // redacted
     idx = sam_index_load(fp, fp->fn);
     if (idx == nullptr) {
-      return tf::errors::NotFound(StrCat("No index found for ", fp->fn));
+      return tf::errors::NotFound("No index found for ", fp->fn);
     }
   }
 
@@ -623,7 +627,7 @@ StatusOr<std::shared_ptr<SamIterable>> SamReader::Query(
   const int tid = bam_name2id(header_, region.reference_name().c_str());
   if (tid < 0) {
     return tf::errors::NotFound(
-        StrCat("Unknown reference_name ", region.ShortDebugString()));
+        "Unknown reference_name ", region.ShortDebugString());
   }
 
   // Note that query is 0-based inclusive on start and exclusive on end,
@@ -632,8 +636,8 @@ StatusOr<std::shared_ptr<SamIterable>> SamReader::Query(
   if (iter == nullptr) {
     // The region isn't valid according to sam_itr_query(), blow up.
     return tf::errors::NotFound(
-        StrCat("region '", region.ShortDebugString(),
-               "' specifies an unknown reference interval"));
+        "region '", region.ShortDebugString(),
+        "' specifies an unknown reference interval");
   }
 
   return StatusOr<std::shared_ptr<SamIterable>>(
