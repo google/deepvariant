@@ -26,14 +26,37 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Abstract base class for objects writing genomics data.
+"""Classes that provide the interface for writing genomics data.
 
-Most users will want to use a subclass of GenomicsWriter, with code like
-the following:
+`GenomicsWriter` defines the core API supported by writers, and is subclassed
+directly or indirectly (via `DispatchingGenomicsWriter`) for all concrete
+implementations.
 
-  with GenomicsWriterSubClass(output_path, options) as writer:
-    for proto in records:
-      writer.write(proto)
+`TFRecordWriter` is an implementation of the `GenomicsWriter` API for reading
+`TFRecord` files. This is usable for all data types when writing data as
+serialized protocol buffers.
+
+`DispatchingGenomicsWriter` is an abstract class defined for convenience on top
+of `GenomicsWriter` that supports writing to either the native file format or to
+`TFRecord` files of the corresponding protocol buffer used to encode data of
+that file type. The output format chosen is dependent upon the filename to which
+the data are being written.
+
+Concrete implementations for individual file types (e.g. BED, SAM, VCF, etc.)
+reside in type-specific modules in this package. A general example of the write
+functionality is shown below.
+
+```python
+# options is a writer-specific set of options.
+options = ...
+
+# records is an iterable of protocol buffers of the specific data type.
+records = ...
+
+with GenomicsWriterSubClass(output_path, options) as writer:
+  for proto in records:
+    writer.write(proto)
+```
 """
 
 from __future__ import absolute_import
@@ -63,7 +86,6 @@ class GenomicsWriter(object):
     Args:
       proto:  A protocol buffer.
     """
-    pass
 
   def __enter__(self):
     """Enter a `with` block."""
@@ -72,13 +94,29 @@ class GenomicsWriter(object):
   @abc.abstractmethod
   def __exit__(self, unused_type, unused_value, unused_traceback):
     """Exit a `with` block.  Typically, this will close the file."""
-    pass
 
 
 class TFRecordWriter(GenomicsWriter):
-  """A GenomicsWriter that writes to a TFRecord file."""
+  """A GenomicsWriter that writes to a TFRecord file.
+
+  Example usage:
+    writer = TFRecordWriter('/tmp/my_output.tfrecord.gz')
+    for record in records:
+      writer.write(record)
+
+  Note that TFRecord files do not need to be wrapped in a "with" block.
+  """
 
   def __init__(self, output_path, header=None):
+    """Initializer.
+
+    Args:
+      output_path: str. The output path to which the records are written.
+      header: An optional header for the particular data type. This can be
+        useful for file types that have logical headers where some operations
+        depend on that header information (e.g. VCF using its headers to
+        determine type information of annotation fields).
+    """
     super(TFRecordWriter, self).__init__()
 
     compressed = output_path.endswith('.gz')
@@ -89,6 +127,7 @@ class TFRecordWriter(GenomicsWriter):
     self.header = header
 
   def write(self, proto):
+    """Writes the proto to the TFRecord file."""
     self._writer.write(proto.SerializeToString())
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
@@ -106,6 +145,13 @@ class DispatchingGenomicsWriter(GenomicsWriter):
   """
 
   def __init__(self, output_path, **kwargs):
+    """Initializer.
+
+    Args:
+      output_path: str. The output path to which the records are written.
+      **kwargs: k=v named args. Keyword arguments used to instantiate the native
+        writer, if applicable.
+    """
     super(DispatchingGenomicsWriter, self).__init__()
     self.header = kwargs.get('header', None)
 
@@ -136,5 +182,4 @@ class DispatchingGenomicsWriter(GenomicsWriter):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
 
   def _post_init_hook(self):
-    """Hook for sub-classes to run code at the end of __init__."""
-    pass
+    """Hook for subclasses to run code at the end of __init__."""

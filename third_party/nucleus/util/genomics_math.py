@@ -26,8 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-"""Mathematics functions.
+"""Mathematics functions for working with genomics data.
 
 A quick note on terminology here.
 
@@ -53,17 +52,17 @@ semi-equivalent spaces:
    represented as log10(p). How the p == 0 case is handled is often function
    dependent, which may accept/return -Inf or not handle the case entirely.
 -- Phred-scaled: See https://en.wikipedia.org/wiki/Phred_quality_score for
-   more information. But briefly, the Phred-scale maintains resolution in the
-   lower parts of the probability space using integer quality scores (though
-   using ints is optional, really). The phred-scale is defined as
+   more information. Briefly, the Phred-scale maintains resolution in the lower
+   parts of the probability space using integer quality scores (though using
+   ints is optional, really). The phred-scale is defined as
 
      `phred(p) = -10 * log10(p)`
 
    where p is a real-space probability.
 
-The code in math.h dealing with probabilities is very explicit about what
-kind probability and representation is expects and returns, as unfortunately
-these are all represented commonly as doubles in C++. Though tempting to
+The functions in math.h dealing with probabilities are very explicit about what
+kinds of probability and representation they expect and return, as unfortunately
+these are all commonly represented as doubles in C++. Though it is tempting to
 address this issue with classic software engineering practices like creating
 a Probability class, in practice this is extremely difficult to do as this
 code is often performance critical and the low-level mathematical operations
@@ -124,8 +123,8 @@ def perror_to_bounded_log10_perror(perror, min_prob=1.0 - _MAX_CONFIDENCE):
   The log10 probability is capped by -_MAX_CONFIDENCE.
 
   Args:
-    perror: the probability to log10
-    min_prob: minimum allowed probability
+    perror: float. The probability to log10.
+    min_prob: float. The minimum allowed probability.
 
   Returns:
     log10(p).
@@ -134,28 +133,28 @@ def perror_to_bounded_log10_perror(perror, min_prob=1.0 - _MAX_CONFIDENCE):
     ValueError: If probability is outside of [0.0, 1.0].
   """
   if not 0 <= perror <= 1:
-    raise ValueError('perror must be between zero and one:', perror)
+    raise ValueError('perror must be between zero and one: {}'.format(perror))
   return perror_to_log10_perror(max(perror, min_prob))
 
 
 def ptrue_to_bounded_phred(ptrue, max_prob=_MAX_CONFIDENCE):
-  """Computes the phred scaled confidence from the given ptrue probability.
+  """Computes the Phred-scaled confidence from the given ptrue probability.
 
   See https://en.wikipedia.org/wiki/Phred_quality_score for more information.
   The quality score is capped by _MAX_CONFIDENCE.
 
   Args:
-    ptrue: the ptrue probability to phred scale.
-    max_prob: maximum allowed probability
+    ptrue: float. The ptrue probability to Phred scale.
+    max_prob: float. The maximum allowed probability.
 
   Returns:
-    Phred scaled version of the 1 - ptrue.
+    Phred-scaled version of 1 - ptrue.
 
   Raises:
     ValueError: If ptrue is outside of [0.0, 1.0].
   """
   if not 0 <= ptrue <= 1:
-    raise ValueError('ptrue must be between zero and one:', ptrue)
+    raise ValueError('ptrue must be between zero and one: {}'.format(ptrue))
   return perror_to_phred(1.0 - min(ptrue, max_prob))
 
 
@@ -181,7 +180,7 @@ def log10_binomial(k, n, p):
 
   Args:
     k: int >= 0. Number of successes.
-    n: int >= 0. Number of trials.
+    n: int >= k. Number of trials.
     p: 0.0 <= float <= 1.0. Probability of success.
 
   Returns:

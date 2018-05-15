@@ -26,8 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 """Utility functions for working with reads."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -42,7 +42,7 @@ def read_range(read):
   """Creates a Range proto from the alignment of Read.
 
   Args:
-    read: the read to calculate range
+    read: nucleus.genomics.v1.Read. The read to calculate the range for.
 
   Returns:
     A nucleus.genomics.v1.Range for read.
@@ -77,8 +77,10 @@ def reservoir_sample(iterable, k, random=None):
     iterable: Python iterable. The iterable to sample from.
     k: int. The number of elements to sample.
     random: A random number generator or None.
+
   Returns:
     A list containing the k sampled elements.
+
   Raises:
     ValueError: If k is negative.
   """

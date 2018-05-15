@@ -26,8 +26,14 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""Utility functions for working with alignment CIGAR operations.
 
-"""Utility functions for working with alignment cigars."""
+The CIGAR format is defined within the SAM spec, available at
+https://samtools.github.io/hts-specs/SAMv1.pdf
+
+This module provides utility functions for interacting with the parsed
+representations of CIGAR strings.
+"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -37,8 +43,8 @@ import re
 import six
 from third_party.nucleus.protos import cigar_pb2
 
-# A frozenset of all CigarUnit.Operation enum values at advance the alignment
-# w.r.t. the reference genome.
+# A frozenset of all CigarUnit.Operation enum values that advance the alignment
+# with respect to the reference genome.
 REF_ADVANCING_OPS = frozenset([
     cigar_pb2.CigarUnit.ALIGNMENT_MATCH, cigar_pb2.CigarUnit.SEQUENCE_MATCH,
     cigar_pb2.CigarUnit.DELETE, cigar_pb2.CigarUnit.SKIP,
@@ -84,7 +90,8 @@ def format_cigar_units(cigar_units):
     cigar_units: iterable[CigarUnit] protos.
 
   Returns:
-    A nucleus.genomics.v1.Range for read.
+    A string representation of the CigarUnit protos that conforms to the
+    CIGAR string specification.
   """
   return ''.join(
       str(unit.operation_length) + CIGAR_OPS_TO_CHAR[unit.operation]

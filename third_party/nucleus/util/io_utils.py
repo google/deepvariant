@@ -26,15 +26,15 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""Generic utilities for I/O.
 
-"""Generic utilities for IO.
-
-Important: Please keep this module free of TensorFlow c++ extensions.
-This makes it easy to build pure python packages for training that work with
-CMLE.
-
-redacted
+These utilities primarily support easy creation of `TFRecord` files and handle
+reading and writing sharded files transparently.
 """
+
+# Important: Please keep this module free of TensorFlow c++ extensions.
+# This makes it easy to build pure python packages for training that work with
+# CMLE.
 
 from __future__ import absolute_import
 from __future__ import division
@@ -55,16 +55,15 @@ SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 
 
 class ShardError(Exception):
-  """An IO error."""
-  pass
+  """An I/O error."""
 
 
 def ParseShardedFileSpec(spec):  # pylint:disable=invalid-name
   """Parse a sharded file specification.
 
   Args:
-    spec: The sharded file specification. A sharded file spec is one like
-       gs://some/file@200.txt. In this case @200 specifies the number of shards.
+    spec: str. The sharded file specification. A sharded file spec is one like
+      'gs://some/file@200.txt'. Here, '@200' specifies the number of shards.
 
   Returns:
     basename: The basename for the files.
@@ -96,7 +95,8 @@ def GenerateShardedFilenames(spec):  # pylint:disable=invalid-name
   """Generate the list of filenames corresponding to the sharding path.
 
   Args:
-    spec: Sharding specification.
+    spec: str. Represents a filename with a sharding specification.
+      e.g., 'gs://some/file@200.txt' represents a file sharded 200 ways.
 
   Returns:
     List of filenames.
@@ -118,9 +118,9 @@ def GenerateShardedFilePattern(basename, num_shards, suffix):  # pylint:disable=
   """Generate a sharded file pattern.
 
   Args:
-    basename: str; The basename for the files.
-    num_shards: int; The number of shards.
-    suffix: str; The suffix if there is one or ''.
+    basename: str. The basename for the files.
+    num_shards: int. The number of shards.
+    suffix: str. The suffix if there is one or ''.
   Returns:
     pattern:
   """
@@ -137,10 +137,10 @@ def NormalizeToShardedFilePattern(spec_or_pattern):  # pylint:disable=invalid-na
   pattern (e.g. '/some/file-?????-of-00010)
 
   Args:
-    spec_or_pattern: A sharded file specification or sharded file pattern.
+    spec_or_pattern: str. A sharded file specification or sharded file pattern.
 
   Returns:
-    sharded file pattern.
+    A sharded file pattern.
   """
   try:
     basename, num_shards, suffix = ParseShardedFileSpec(spec_or_pattern)
@@ -150,12 +150,9 @@ def NormalizeToShardedFilePattern(spec_or_pattern):  # pylint:disable=invalid-na
 
 
 def IsShardedFileSpec(spec):  # pylint:disable=invalid-name
-  """Returns true if spec is a sharded file specification."""
+  """Returns True if spec is a sharded file specification."""
   m = SHARD_SPEC_PATTERN.match(spec)
   return m is not None
-
-
-VCF_EXTENSIONS = frozenset(['.vcf', '.vcf.gz'])
 
 
 # redacted
@@ -169,19 +166,18 @@ def sharded_filename(spec, i):
 def resolve_filespecs(shard, *filespecs):
   """Transforms potentially sharded filespecs into their paths for single shard.
 
-  This function takes a shard number and a varargs potentially sharded
+  This function takes a shard number and a varargs of potentially-sharded
   filespecs, and returns a list where the filespecs have been resolved into
   concrete file paths for a single shard.
 
   This function has a concept of a master filespec, which is used to constrain
-  and check the validity of other filespecs in filespecs. The first filespec is
-  considered the master, and it cannot be None. For example, if master is not
-  sharded, none of the other specs can be sharded, and vice versa. They
-  must all also have a consistent sharding (e.g., master is @10, then all others
-  must be @10).
+  and check the validity of other filespecs. The first filespec is considered
+  the master, and it cannot be None. For example, if master is not sharded, none
+  of the other specs can be sharded, and vice versa. They must all also have a
+  consistent sharding (e.g., master is @10, then all others must be @10).
 
   Note that filespecs (except the master) may be None or any other False value,
-  which are returned as is in the output list.
+  which are returned as-is in the output list.
 
   Args:
     shard: int >= 0. Our shard number.
@@ -193,7 +189,7 @@ def resolve_filespecs(shard, *filespecs):
     shard-specific paths for each filespec, in order.
 
   Raises:
-    ValueError: if any filespecs are consistent.
+    ValueError: if any filespecs are inconsistent.
   """
   if not filespecs:
     raise ValueError('filespecs must have at least one element.')
@@ -205,10 +201,10 @@ def resolve_filespecs(shard, *filespecs):
   if master_is_sharded:
     _, master_num_shards, _ = ParseShardedFileSpec(master)
     if shard >= master_num_shards or shard < 0:
-      raise ValueError('Invalid shard={} value with master={} sharding', shard,
-                       master)
+      raise ValueError('Invalid shard={} value with master={} sharding'.format(
+          shard, master))
   elif shard > 0:
-    raise ValueError('Output is not sharded but shard > 0', shard)
+    raise ValueError('Output is not sharded but shard > 0: {}'.format(shard))
 
   def resolve_one(filespec):
     """Resolves a single filespec into a concrete filepath."""
@@ -227,7 +223,6 @@ def resolve_filespecs(shard, *filespecs):
     if filespec_num_shards != master_num_shards:
       raise ValueError('Master={} and {} have inconsistent sharding'.format(
           master, filespec))
-    # return GenerateShardedFilename(basename, shard, filespec_shards)
     return sharded_filename(filespec, shard)
 
   return [master_num_shards] + [resolve_one(spec) for spec in filespecs]
@@ -260,13 +255,14 @@ def maybe_generate_sharded_filenames(filespec):
 
 
 def read_tfrecords(path, proto=None, max_records=None, options=None):
-  """Yields the parsed records in tfrecord formatted file path.
+  """Yields the parsed records in a TFRecord file path.
 
   Note that path can be sharded filespec (path@N) in which case this function
-  will read each shard in order.
+  will read each shard in order; i.e. shard 0 will read each entry in order,
+  then shard 1, ...
 
   Args:
-    path: String. A path to a tfrecord formatted file containing protos.
+    path: String. A path to a TFRecord file containing protos.
     proto: A proto class. proto.FromString() will be called on each serialized
       record in path to parse it.
     max_records: int >= 0 or None. Maximum number of records to read from path.
@@ -301,7 +297,7 @@ def read_shard_sorted_tfrecords(path,
                                 proto=None,
                                 max_records=None,
                                 options=None):
-  """Yields the parsed records in TFRecord-formatted file path in sorted order.
+  """Yields the parsed records in a TFRecord file path in sorted order.
 
   The input TFRecord file must have each shard already in sorted order when
   using the key function for comparison (but elements can be interleaved across
@@ -352,7 +348,7 @@ def write_tfrecords(protos, output_path, options=None):
   This function writes serialized strings of each proto in protos to output_path
   in their original order. If output_path is a sharded file (e.g., foo@2), this
   function will write the protos spread out as evenly as possible among the
-  individual componented of the sharded spec (e.g., foo-00000-of-00002 and
+  individual components of the sharded spec (e.g., foo-00000-of-00002 and
   foo-00001-of-00002). Note that the order of records in the sharded files may
   differ from the order in protos due to the striping.
 
@@ -381,13 +377,15 @@ def write_tfrecords(protos, output_path, options=None):
 
 
 def make_tfrecord_options(filenames):
-  """Creates a python_io.TFRecordOptions for the specified filename.
+  """Returns a python_io.TFRecordOptions for the specified filename.
 
   Args:
     filenames: str or list[str]. A path or a list of paths where we'll
       read/write our TFRecord.
+
   Returns:
     A python_io.TFRecordOptions object.
+
   Raises:
     ValueError: If the filenames contain inconsistent file types.
   """
@@ -395,7 +393,7 @@ def make_tfrecord_options(filenames):
   if not isinstance(filenames, list):
     filenames = [filenames]
 
-  # If there are multiple file patterns, they have to be all the same type.
+  # If there are multiple file patterns, they all have to be the same type.
   extensions = set(os.path.splitext(filename)[1] for filename in filenames)
   if len(extensions) != 1:
     raise ValueError(
@@ -409,12 +407,13 @@ def make_tfrecord_options(filenames):
 
 
 def make_tfrecord_writer(outfile, options=None):
-  """Creates a python_io.TFRecordWriter for the specified outfile.
+  """Returns a python_io.TFRecordWriter for the specified outfile.
 
   Args:
     outfile: str. A path where we'll write our TFRecords.
     options: python_io.TFRecordOptions or None. If None, one
       will be inferred from the filename.
+
   Returns:
     A python_io.TFRecordWriter object.
   """
@@ -424,13 +423,13 @@ def make_tfrecord_writer(outfile, options=None):
 
 
 def make_proto_writer(outfile):
-  """Creates a write to outfile writing general Protos.
+  """Returns a writer capable of writing general Protos to outfile.
 
   Args:
-    outfile: A path to a file where we want to write protos.
+    outfile: str. A path to a file where we want to write protos.
 
   Returns:
-    An writer object and a write_fn accepting a proto that writes to writer.
+    A writer object and a write_fn accepting a proto that writes to writer.
   """
   writer = make_tfrecord_writer(outfile)
   write_fn = lambda proto: writer.write(proto.SerializeToString())
@@ -448,7 +447,7 @@ class RawProtoWriterAdaptor(object):
   After wrapping this low-level writer will have a write(proto) method that
   accepts a protocol message `proto` and calls the low-level writer with
   `proto.SerializeToString()`. Given that many C++ writers require the proto
-  to write properly (e.g., VCF writer) this allows us to provide a uniform API
+  to write properly (e.g., VCF writer), this allows us to provide a uniform API
   to clients who call write(proto) and either have that write call go directly
   to a type-specific writer or to a low-level writer via this
   RawProtoWriterAdaptor.
@@ -458,10 +457,10 @@ class RawProtoWriterAdaptor(object):
     """Creates a new RawProtoWriterAdaptor.
 
     Arguments:
-      raw_writer: A low-level writer with a write() method accepting a
+      raw_writer: A low-level writer with a write() method that accepts a
         serialized protobuf. Must also support __enter__ and __exit__ if
         take_ownership is True.
-      take_ownership: bool. If True, we will all __enter__ and __exit__ on the
+      take_ownership: bool. If True, we will call __enter__ and __exit__ on the
         raw_writer if/when this object's __enter__ and __exit__ are called. If
         False, no calls to these methods will be invoked on raw_writer.
     """
