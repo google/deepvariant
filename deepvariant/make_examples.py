@@ -958,6 +958,9 @@ def processing_regions_from_options(options):
     options: deepvariant.DeepVariantOptions proto containing information about
       our input data sources.
 
+  Raises:
+    ValueError: if the regions to call is empty.
+
   Returns:
     Two values. The first is a list of nucleus.genomics.v1.Range protos of the
     regions we should process. The second is a RangeSet containing the confident
@@ -975,13 +978,18 @@ def processing_regions_from_options(options):
                                        options.exclude_contigs,
                                        options.min_shared_contigs_basepairs)
   logging.info('Common contigs are %s', [c.name for c in contigs])
-
+  calling_regions = build_calling_regions(ref_contigs, options.calling_regions,
+                                          options.exclude_calling_regions)
+  if not calling_regions:
+    raise ValueError('The regions to call is empty. Check your --regions and '
+                     '--exclude_regions flags to make sure they are not '
+                     'resulting in set of empty region to process. This also '
+                     'happens if you use "chr20" for a BAM where contig names '
+                     'don\'t have "chr"s (or vice versa).')
   regions = regions_to_process(
       contigs=contigs,
       partition_size=options.allele_counter_options.partition_size,
-      calling_regions=build_calling_regions(ref_contigs,
-                                            options.calling_regions,
-                                            options.exclude_calling_regions),
+      calling_regions=calling_regions,
       task_id=options.task_id,
       num_shards=options.num_shards)
 

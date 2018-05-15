@@ -156,7 +156,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   @flagsaver.FlagSaver
   def test_make_examples_end2end(self, mode, num_shards,
                                  labeler_algorithm=None):
-    self.maxDiff = None
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.ref = testdata.CHR20_FASTA
@@ -901,6 +900,19 @@ class MakeExamplesUnitTest(parameterized.TestCase):
                 make_examples.processing_regions_from_options(options))),
         _from_literals_list(
             ['chr20:10,000,000-10,009,999', 'chr20:10,100,001-11,000,000']))
+
+  @flagsaver.FlagSaver
+  def test_incorrect_empty_regions(self):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    # Deliberately incorrect contig name.
+    FLAGS.regions = '20:10,000,000-11,000,000'
+    FLAGS.examples = 'examples.tfrecord'
+
+    options = make_examples.default_options(add_flags=True)
+    with self.assertRaisesRegexp(ValueError, 'The regions to call is empty.'):
+      make_examples.processing_regions_from_options(options)
 
 
 class RegionProcessorTest(parameterized.TestCase):
