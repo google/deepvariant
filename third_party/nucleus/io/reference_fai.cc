@@ -34,11 +34,11 @@
 
 #include <algorithm>
 
+#include "absl/strings/ascii.h"
 #include "htslib/tbx.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/gtl/optional.h"
-#include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
@@ -146,7 +146,7 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
   if (len <= 0)
     return tensorflow::errors::InvalidArgument("Couldn't fetch bases for ",
                                                range.ShortDebugString());
-  string result = tensorflow::str_util::Uppercase(bases);
+  string result = absl::AsciiStrToUpper(bases);
   free(bases);
 
   if (use_cache) {

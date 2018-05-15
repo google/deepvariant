@@ -44,7 +44,6 @@
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
@@ -55,7 +54,6 @@ using std::vector;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
-using tensorflow::strings::StrCat;
 
 namespace {
 
@@ -215,12 +213,12 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
     const nucleus::genomics::v1::VcfReaderOptions& options) {
   htsFile* fp = hts_open_x(variants_path.c_str(), "r");
   if (fp == nullptr) {
-    return tf::errors::NotFound(StrCat("Could not open ", variants_path));
+    return tf::errors::NotFound("Could not open ", variants_path);
   }
 
   bcf_hdr_t* header = bcf_hdr_read(fp);
   if (header == nullptr)
-    return tf::errors::Unknown(StrCat("Couldn't parse header for ", fp->fn));
+    return tf::errors::Unknown("Couldn't parse header for ", fp->fn);
 
   // Try to load the Tabix index if requested.
   tbx_t* idx = nullptr;
@@ -230,7 +228,7 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
     // filename fn of the htsFile fp.
     idx = tbx_index_load(fp->fn);
     if (idx == nullptr)
-      return tf::errors::NotFound(StrCat("No index found for ", fp->fn));
+      return tf::errors::NotFound("No index found for ", fp->fn);
   }
 
   return std::unique_ptr<VcfReader>(
@@ -328,11 +326,11 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
   const char* reference_name = region.reference_name().c_str();
   if (bcf_hdr_name2id(header_, reference_name) < 0) {
     return tf::errors::NotFound(
-        StrCat("Unknown reference_name '", region.reference_name(), "'"));
+        "Unknown reference_name '", region.reference_name(), "'");
   }
   if (region.start() < 0 || region.start() >= region.end())
     return tf::errors::InvalidArgument(
-        StrCat("Malformed region '", region.ShortDebugString(), "'"));
+        "Malformed region '", region.ShortDebugString(), "'");
 
   // Get the tid (index of reference_name in our tabix index),
   const int tid = tbx_name2id(idx_, reference_name);
@@ -343,8 +341,8 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
     iter = tbx_itr_queryi(idx_, tid, region.start(), region.end());
     if (iter == nullptr) {
       return tf::errors::NotFound(
-          StrCat("region '", region.ShortDebugString(),
-                 "' returned an invalid hts_itr_queryi result"));
+          "region '", region.ShortDebugString(),
+          "' returned an invalid hts_itr_queryi result");
     }
   }  // implicit else case:
   // The chromosome isn't reflected in the tabix index (meaning, no
@@ -377,7 +375,7 @@ StatusOr<bool> VcfQueryIterable::Next(Variant* out) {
   TF_RETURN_IF_ERROR(CheckIsAlive());
   if (tbx_itr_next(fp_, idx_, iter_, &str_) < 0) return false;
   if (vcf_parse1(&str_, header_, bcf1_) < 0) {
-    return tf::errors::DataLoss(StrCat("Failed to parse VCF record: ", str_.s));
+    return tf::errors::DataLoss("Failed to parse VCF record: ", str_.s);
   }
   const VcfReader* reader = static_cast<const VcfReader*>(reader_);
   TF_RETURN_IF_ERROR(
