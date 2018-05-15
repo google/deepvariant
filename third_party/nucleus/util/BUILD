@@ -36,7 +36,6 @@ cc_library(
         ":cpp_utils",
         ":port",
         ":samplers",
-        ":tf_str",
     ],
 )
 
@@ -342,14 +341,6 @@ cc_test(
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
-    ],
-)
-
-cc_library(
-    name = "tf_str",
-    srcs = ["tf_str.cc"],
-    deps = [
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
