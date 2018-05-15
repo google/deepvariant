@@ -39,6 +39,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/substitute.h"
 
 #include "htslib/hts.h"
 #include "htslib/sam.h"
@@ -51,7 +52,6 @@
 
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
-#include "tensorflow/core/lib/strings/stringprintf.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
@@ -66,20 +66,20 @@ namespace {
 constexpr char kOpenModeCompressed[] = "wz";
 constexpr char kOpenModeUncompressed[] = "w";
 
-constexpr char kFilterHeaderFmt[] = "##FILTER=<ID=%s,Description=\"%s\">";
+constexpr char kFilterHeaderFmt[] = "##FILTER=<ID=$0,Description=\"$1\">";
 constexpr char kInfoHeaderFmt[] =
-    "##INFO=<ID=%s,Number=%s,Type=%s,Description=\"%s\"%s>";
+    "##INFO=<ID=$0,Number=$1,Type=$2,Description=\"$3\"$4>";
 constexpr char kFormatHeaderFmt[] =
-    "##FORMAT=<ID=%s,Number=%s,Type=%s,Description=\"%s\">";
-constexpr char kContigHeaderFmt[] = "##contig=<ID=%s%s>";
-constexpr char kStructuredExtraHeaderFmt[] = "##%s=<%s>";
-constexpr char kExtraHeaderFmt[] = "##%s=\"%s\"";
+    "##FORMAT=<ID=$0,Number=$1,Type=$2,Description=\"$3\">";
+constexpr char kContigHeaderFmt[] = "##contig=<ID=$0$1>";
+constexpr char kStructuredExtraHeaderFmt[] = "##$0=<$1>";
+constexpr char kExtraHeaderFmt[] = "##$0=\"$1\"";
 
 // Adds a FILTER field to the bcf_hdr_t header based on the VcfFilterInfo
 // object.
 void AddFilterToHeader(const nucleus::genomics::v1::VcfFilterInfo& filter,
                        bcf_hdr_t* header) {
-  string filterStr = tensorflow::strings::Printf(
+  string filterStr = absl::Substitute(
       kFilterHeaderFmt, filter.id().c_str(), filter.description().c_str());
   bcf_hdr_append(header, filterStr.c_str());
 }
@@ -94,7 +94,7 @@ void AddInfoToHeader(const nucleus::genomics::v1::VcfInfo& info,
   if (!info.version().empty()) {
     extra = StrCat(extra, ",Version=\"", info.version(), "\"");
   }
-  string infoStr = tensorflow::strings::Printf(
+  string infoStr = absl::Substitute(
       kInfoHeaderFmt, info.id().c_str(), info.number().c_str(),
       info.type().c_str(), info.description().c_str(), extra.c_str());
   bcf_hdr_append(header, infoStr.c_str());
@@ -104,7 +104,7 @@ void AddInfoToHeader(const nucleus::genomics::v1::VcfInfo& info,
 // object.
 void AddFormatToHeader(const nucleus::genomics::v1::VcfFormatInfo& format,
                        bcf_hdr_t* header) {
-  string formatStr = tensorflow::strings::Printf(
+  string formatStr = absl::Substitute(
       kFormatHeaderFmt, format.id().c_str(), format.number().c_str(),
       format.type().c_str(), format.description().c_str());
   bcf_hdr_append(header, formatStr.c_str());
@@ -123,7 +123,7 @@ void AddStructuredExtraToHeader(
     // Cut off the dangling comma.
     fieldStr.pop_back();
   }
-  string result = tensorflow::strings::Printf(
+  string result = absl::Substitute(
       kStructuredExtraHeaderFmt, sExtra.key().c_str(), fieldStr.c_str());
   bcf_hdr_append(header, result.c_str());
 }
@@ -132,7 +132,7 @@ void AddStructuredExtraToHeader(
 // VcfExtra object.
 void AddExtraToHeader(const nucleus::genomics::v1::VcfExtra& extra,
                       bcf_hdr_t* header) {
-  string result = tensorflow::strings::Printf(
+  string result = absl::Substitute(
       kExtraHeaderFmt, extra.key().c_str(), extra.value().c_str());
   bcf_hdr_append(header, result.c_str());
 }
@@ -148,7 +148,7 @@ void AddContigToHeader(const nucleus::genomics::v1::ContigInfo& contig,
   for (auto const& kv : contig.extra()) {
     extra = StrCat(extra, ",", kv.first, "=\"", kv.second, "\"");
   }
-  string contigStr = tensorflow::strings::Printf(
+  string contigStr = absl::Substitute(
       kContigHeaderFmt, contig.name().c_str(), extra.c_str());
   bcf_hdr_append(header, contigStr.c_str());
 }

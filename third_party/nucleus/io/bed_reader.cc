@@ -33,12 +33,13 @@
 #include "third_party/nucleus/io/bed_reader.h"
 
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/lib/strings/numbers.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -100,14 +101,14 @@ tf::Status ConvertToPb(const string& line, const int desiredNumFields,
       desiredNumFields == 0 ? numTokens : std::min(numTokens, desiredNumFields);
   int64 int64Value;
   record->set_reference_name(tokens[0]);
-  tf::strings::safe_strto64(tokens[1], &int64Value);
+  CHECK(absl::SimpleAtoi(tokens[1], &int64Value));
   record->set_start(int64Value);
-  tf::strings::safe_strto64(tokens[2], &int64Value);
+  CHECK(absl::SimpleAtoi(tokens[2], &int64Value));
   record->set_end(int64Value);
   if (numFields > 3) record->set_name(tokens[3]);
   if (numFields > 4) {
     double value;
-    tf::strings::safe_strtod(tokens[4].c_str(), &value);
+    CHECK(absl::SimpleAtod(tokens[4].c_str(), &value));
     record->set_score(value);
   }
   if (numFields > 5) {
@@ -121,15 +122,15 @@ tf::Status ConvertToPb(const string& line, const int desiredNumFields,
       return tf::errors::Unknown("Invalid BED record with unknown strand");
   }
   if (numFields > 7) {
-    tf::strings::safe_strto64(tokens[6], &int64Value);
+    CHECK(absl::SimpleAtoi(tokens[6], &int64Value));
     record->set_thick_start(int64Value);
-    tf::strings::safe_strto64(tokens[7], &int64Value);
+    CHECK(absl::SimpleAtoi(tokens[7], &int64Value));
     record->set_thick_end(int64Value);
   }
   if (numFields > 8) record->set_item_rgb(tokens[8]);
   if (numFields >= 12) {
     int32 int32Value;
-    tf::strings::safe_strto32(tokens[9], &int32Value);
+    CHECK(absl::SimpleAtoi(tokens[9], &int32Value));
     record->set_block_count(int32Value);
     record->set_block_sizes(tokens[10]);
     record->set_block_starts(tokens[11]);
