@@ -39,6 +39,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
@@ -51,7 +52,6 @@
 
 namespace nucleus {
 
-using tensorflow::StringPiece;
 using tensorflow::string;
 using tensorflow::uint64;
 
@@ -64,20 +64,20 @@ constexpr char kDefaultWorkspace[] = "";
 // Simple getter for test files in the right testdata path.
 // This uses JoinPath, so no leading or trailing "/" are necessary.
 string GetTestData(
-    tensorflow::StringPiece path,
-    tensorflow::StringPiece test_data_dir = kBioTFCoreTestDataDir);
+    absl::string_view path,
+    absl::string_view test_data_dir = kBioTFCoreTestDataDir);
 
 // Returns a path to a temporary file with filename in the appropriate test
 // directory.
-string MakeTempFile(tensorflow::StringPiece filename);
+string MakeTempFile(absl::string_view filename);
 
 // Reads all of the records from path into a vector of parsed Proto. Path
 // must point to a TFRecord formatted file.
 template <typename Proto>
-std::vector<Proto> ReadProtosFromTFRecord(tensorflow::StringPiece path) {
+std::vector<Proto> ReadProtosFromTFRecord(const string& path) {
   tensorflow::Env* env = tensorflow::Env::Default();
   std::unique_ptr<tensorflow::RandomAccessFile> read_file;
-  TF_CHECK_OK(env->NewRandomAccessFile(path.ToString(), &read_file));
+  TF_CHECK_OK(env->NewRandomAccessFile(path, &read_file));
   tensorflow::io::RecordReader reader(read_file.get());
   std::vector<Proto> results;
   uint64 offset = 0;
@@ -93,10 +93,9 @@ std::vector<Proto> ReadProtosFromTFRecord(tensorflow::StringPiece path) {
 // Writes all `protos` to a TFRecord formatted file.
 template <typename Proto>
 void WriteProtosToTFRecord(const std::vector<Proto>& protos,
-                           tensorflow::StringPiece output_path) {
+                           const string& output_path) {
   std::unique_ptr<tensorflow::WritableFile> file;
-  TF_CHECK_OK(tensorflow::Env::Default()->NewWritableFile(
-      output_path.ToString(), &file));
+  TF_CHECK_OK(tensorflow::Env::Default()->NewWritableFile(output_path, &file));
   tensorflow::io::RecordWriter record_writer(file.get());
   for (const Proto& proto : protos) {
     TF_CHECK_OK(record_writer.WriteRecord(proto.SerializeAsString()));
@@ -151,6 +150,10 @@ std::vector<Record> as_vector(const std::shared_ptr<Iterable<Record>>& it) {
     const string& chr, int start, const string& bases,
     const std::vector<string>& cigar_elements);
 
+// Determines whether file content represents GZIP'd data, based on file magic.
+bool IsGzipped(absl::string_view file_contents);
+
 }  // namespace nucleus
+
 
 #endif  // THIRD_PARTY_NUCLEUS_TESTING_TEST_UTILS_H_

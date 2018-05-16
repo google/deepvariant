@@ -39,19 +39,12 @@
 #include "third_party/nucleus/vendor/status_matchers.h"
 
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
 
 #include "tensorflow/core/platform/test.h"
 
 namespace nucleus {
 
 using std::vector;
-
-bool IsGzipped(const StringPiece& input) {
-  const char gzip_magic[2] = {'\x1f', '\x8b'};
-  return (input.size() >= 2 && input[0] == gzip_magic[0] &&
-          input[1] == gzip_magic[1]);
-}
 
 class BedWriterTest : public ::testing::Test {
  protected:

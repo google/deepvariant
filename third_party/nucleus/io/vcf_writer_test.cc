@@ -41,7 +41,7 @@
 #include "third_party/nucleus/vendor/status_matchers.h"
 
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
+#include "tensorflow/core/platform/types.h"
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -51,10 +51,10 @@
 
 namespace nucleus {
 
-using tensorflow::StringPiece;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using std::vector;
+using tensorflow::string;
 
 // redacted
 
@@ -103,7 +103,7 @@ constexpr char kExpectedHeaderFmt[] =
 // Build the skeleton of a VCF file for some pretend variants.
 // This routine will populate headers but not any records.
 std::unique_ptr<VcfWriter> MakeDogVcfWriter(
-    StringPiece fname, const bool round_qual,
+    const string& fname, const bool round_qual,
     const std::vector<string>& excluded_infos = {},
     const std::vector<string>& excluded_formats = {}) {
   nucleus::genomics::v1::VcfHeader header;
@@ -227,7 +227,7 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(
   }
 
   return std::move(
-      VcfWriter::ToFile(fname.ToString(), header, writer_options).ValueOrDie());
+      VcfWriter::ToFile(fname, header, writer_options).ValueOrDie());
 }
 
 Variant MakeVariant(const vector<string>& names, const string& refName,
@@ -247,9 +247,9 @@ Variant MakeVariant(const vector<string>& names, const string& refName,
   return v;
 }
 
-VariantCall MakeVariantCall(StringPiece callSetName, vector<int> genotypes) {
+VariantCall MakeVariantCall(const string& callSetName, vector<int> genotypes) {
   VariantCall vc;
-  vc.set_call_set_name(callSetName.ToString());
+  vc.set_call_set_name(callSetName);
   for (int gt : genotypes) {
     vc.add_genotype(gt);
   }
@@ -427,6 +427,7 @@ TEST(VcfWriterTest, ExcludesFields) {
 
   EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
+
 TEST(VcfWriterTest, WritesVCFWithLikelihoods) {
   std::vector<Variant> variants = ReadProtosFromTFRecord<Variant>(
       GetTestData(kVcfLikelihoodsGoldenFilename));
@@ -447,13 +448,6 @@ TEST(VcfWriterTest, WritesVCFWithLikelihoods) {
                                            out_fname, &vcf_contents));
 
   EXPECT_EQ(expected_vcf_contents, vcf_contents);
-}
-
-bool IsGzipped(StringPiece input) {
-  const char gzip_magic[2] = {'\x1f', '\x8b'};
-  return (input.size() >= 2 &&
-          input[0] == gzip_magic[0] &&
-          input[1] == gzip_magic[1]);
 }
 
 TEST(VcfWriterTest, WritesGzippedVCF) {

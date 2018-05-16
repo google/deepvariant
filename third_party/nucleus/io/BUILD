@@ -284,7 +284,6 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":bed_writer",
-        "//third_party/nucleus/protos:bed_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:status_matchers",
@@ -349,7 +348,6 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":fastq_writer",
-        "//third_party/nucleus/protos:fastq_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:status_matchers",
@@ -395,7 +393,6 @@ cc_test(
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
