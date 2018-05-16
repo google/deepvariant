@@ -288,7 +288,8 @@ class DeepVariantSlimModel(DeepVariantModel):
     # the height to at least 107 if the height is smaller than that.
     if self.name == 'inception_v3':
       _, height, width, _ = images.get_shape().as_list()
-      images = self.pad_images(images, height, width, 107, width)
+      images = self.pad_images(
+          images, height, width, target_height=107, target_width=width)
     return images
 
   def initialize_from_checkpoint(self, checkpoint_path, num_classes,
