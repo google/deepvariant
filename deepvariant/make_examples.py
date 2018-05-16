@@ -1073,11 +1073,12 @@ def make_examples_runner(options):
   if options.gvcf_filename:
     logging.info('Writing gvcf records to %s', options.gvcf_filename)
 
-  n_regions, n_candidates = 0, 0
+  n_regions, n_candidates, n_examples = 0, 0, 0
   with OutputsWriter(options) as writer:
     for region in regions:
       candidates, examples, gvcfs = region_processor.process(region)
       n_candidates += len(candidates)
+      n_examples += len(examples)
       n_regions += 1
 
       writer.write_candidates(*candidates)
@@ -1106,6 +1107,7 @@ def make_examples_runner(options):
     write_make_examples_run_info(run_info, path=options.run_info_filename)
 
   logging.info('Found %s candidate variants', n_candidates)
+  logging.info('Created %s examples', n_examples)
 
 
 def main(argv=()):
