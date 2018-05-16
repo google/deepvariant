@@ -231,7 +231,7 @@ class RangesTests(parameterized.TestCase):
 
   @parameterized.parameters(['x', 'chr1', 'chr1:', 'chr1:10-', 'chr1:-1-10'])
   def test_parse_literal_bad(self, bad_literal):
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegexp(ValueError, bad_literal):
       ranges.parse_literal(bad_literal)
 
   @parameterized.parameters('test.bed', 'test.bed.gz')
