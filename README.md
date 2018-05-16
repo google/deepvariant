@@ -89,6 +89,12 @@ read sets from HG001, HG002, and HG005. They have also evaluated DeepVariant
 under a variety of [noisy sequencing
 conditions](https://blog.dnanexus.com/2018-01-16-evaluating-the-performance-of-ngs-pipelines-on-noisy-wgs-data/).
 
+Independent evaluations of DeepVariant v0.6 from both
+[DNAnexus](https://blog.dnanexus.com/2018-04-18-deepvariant-amplified/) and
+[bcbio](https://github.com/bcbio/bcbio_validations/tree/master/deepvariant#deepvariant-v06-release-strelka2-stratification-and-initial-gatk-cnn)
+are also available. Their analyses support our findings of improved indel
+accuracy, and also include comparisons to other variant calling tools.
+
 ## Support
 
 The [Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/)
