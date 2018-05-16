@@ -538,8 +538,11 @@ def parse_literal(region_literal, contig_map=None):
     # If the region_literals is an exact contig name like chr1 or MT return a
     # range over the entire contig.
     return make_range(region_literal, 0, contig_map[region_literal].n_bases)
-  else:
-    raise ValueError('Could not parse: ', region_literal)
+  raise ValueError(
+      'Could not parse "{}" as a region literal.  Region literals '
+      'should have the form "chr:start-stop" or "chr:start" or '
+      'just "chr".  A common error is to use the "chr" prefix on '
+      'inputs that don\'t have it, or vice-versa.'.format(region_literal))
 
 
 def parse_literals(region_literals, contig_map=None):
