@@ -251,6 +251,19 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
   def setUpClass(cls):
     cls.model = modeling.get_model('inception_v3')
 
+  # Note this test is only applied to inception_v3 since v2 and mobilenet don't
+  # support some of these dimensions.
+  @parameterized.parameters(
+      dict(width=221, height=100),
+      dict(width=221, height=200),
+      dict(width=75, height=362),
+  )
+  def test_image_dimensions(self, width, height):
+    with self.test_session():
+      images = tf.placeholder(tf.float32, (4, height, width, 3))
+      # We shouldn't get an exception creating images with these sizes.
+      _ = self.model.create(images, 3, is_training=True)
+
 
 class InceptionV2ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
 
