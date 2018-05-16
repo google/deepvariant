@@ -36,6 +36,8 @@
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/io/path.h"
 
+#include "absl/strings/str_join.h"
+
 namespace nucleus {
 
 using nucleus::MakePosition;
@@ -73,20 +75,28 @@ CigarUnit_Operation parse_cigar_op_str(const char op) {
       LOG(FATAL) << "Unexpected cigar op " << op;
   }
 }
+
+// redacted
+template<class T>
+string JoinPaths(std::initializer_list<T> paths) {
+  return absl::StrJoin(paths, "/");
+}
+
 }  // namespace
 
 // Simple getter for test files in the right testdata path.
-string GetTestData(StringPiece path, StringPiece test_data_dir) {
-  const string test_srcdir = getenv("TEST_SRCDIR");
-  const char* test_workspace = getenv("TEST_WORKSPACE");
-  test_workspace = test_workspace ? test_workspace : kDefaultWorkspace;
-  return tensorflow::io::JoinPath(test_srcdir, test_workspace, test_data_dir,
-                                  path);
+string GetTestData(absl::string_view path, absl::string_view test_data_dir) {
+  // const string test_srcdir = getenv("TEST_SRCDIR");
+  // const char* test_workspace = getenv("TEST_WORKSPACE");
+  absl::string_view test_srcdir = getenv("TEST_SRCDIR");
+  absl::string_view test_workspace = getenv("TEST_WORKSPACE");
+  test_workspace = !test_workspace.empty() ? test_workspace : kDefaultWorkspace;
+  return JoinPaths({test_srcdir, test_workspace, test_data_dir, path});
 }
 
-string MakeTempFile(StringPiece filename) {
-  const string test_tmpdir = getenv("TEST_TMPDIR");
-  return tensorflow::io::JoinPath(test_tmpdir, filename);
+string MakeTempFile(absl::string_view filename) {
+  absl::string_view test_tmpdir = getenv("TEST_TMPDIR");
+  return JoinPaths({test_tmpdir, filename});
 }
 
 std::vector<nucleus::genomics::v1::ContigInfo> CreateContigInfos(
@@ -127,5 +137,13 @@ Read MakeRead(const string& chr, const int start, const string& bases,
 
   return read;
 }
+
+bool IsGzipped(absl::string_view file_contents) {
+  const char gzip_magic[2] = {'\x1f', '\x8b'};
+  return (file_contents.size() >= 2 && file_contents[0] == gzip_magic[0] &&
+          file_contents[1] == gzip_magic[1]);
+}
+
+
 
 }  // namespace nucleus
