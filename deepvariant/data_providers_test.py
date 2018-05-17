@@ -47,7 +47,7 @@ from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import variant_utils
 from tensorflow.core.example import example_pb2
 from deepvariant import data_providers
-from deepvariant import pileup_image
+from deepvariant import dv_constants
 from deepvariant import testdata
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
@@ -97,12 +97,12 @@ class DataProviderTest(parameterized.TestCase):
     ds = data_providers.get_input_fn_from_dataset(
         dataset_config_pbtext_filename,
         mode=tf.estimator.ModeKeys.EVAL,
-        tensor_shape=[3, 4, pileup_image.DEFAULT_NUM_CHANNEL])
+        tensor_shape=[3, 4, dv_constants.PILEUP_NUM_CHANNELS])
 
     self.assertEqual('some_dataset_name', ds.name)
     self.assertEqual('/dev/null', ds.input_file_spec)
     self.assertEqual(1000, ds.num_examples)
-    self.assertEqual([3, 4, pileup_image.DEFAULT_NUM_CHANNEL], ds.tensor_shape)
+    self.assertEqual([3, 4, dv_constants.PILEUP_NUM_CHANNELS], ds.tensor_shape)
 
   def test_get_dataset_raises_error_for_empty_name(self):
     dataset_config_pbtext_filename = _test_dataset_config(
@@ -141,13 +141,13 @@ class DataProviderTest(parameterized.TestCase):
         name='name',
         input_file_spec='test.tfrecord',
         num_examples=10,
-        num_classes=2,
-        tensor_shape=[11, 13, pileup_image.DEFAULT_NUM_CHANNEL])
+        num_classes=dv_constants.NUM_CLASSES,
+        tensor_shape=[11, 13, dv_constants.PILEUP_NUM_CHANNELS])
     self.assertEqual('name', ds.name)
     self.assertEqual('test.tfrecord', ds.input_file_spec)
     self.assertEqual(10, ds.num_examples)
-    self.assertEqual(2, ds.num_classes)
-    self.assertEqual([11, 13, pileup_image.DEFAULT_NUM_CHANNEL],
+    self.assertEqual(dv_constants.NUM_CLASSES, ds.num_classes)
+    self.assertEqual([11, 13, dv_constants.PILEUP_NUM_CHANNELS],
                      ds.tensor_shape)
 
   def assertTfDataSetExamplesMatchExpected(self,
@@ -195,7 +195,7 @@ class DataProviderTest(parameterized.TestCase):
     self.assertEqual(expected_loci, seen)
     # Note that this expected shape comes from the golden dataset. If the data
     # is remade in the future, the values might need to be modified accordingly.
-    self.assertEqual([100, 221, pileup_image.DEFAULT_NUM_CHANNEL],
+    self.assertEqual(dv_constants.PILEUP_DEFAULT_DIMS,
                      expected_dataset.tensor_shape)
 
   @parameterized.parameters(
@@ -262,11 +262,12 @@ class DataProviderTest(parameterized.TestCase):
       # Checks that our labels are the right shape and are one-hot encoded.
       # Note that the shape is 100, not 107, because we only adjust the image
       # in the model_fn now, where previously it was done in the input_fn.
-      self.assertEqual((batch_size, 100, 221, pileup_image.DEFAULT_NUM_CHANNEL),
-                       images.shape)
+      self.assertEqual([batch_size] + dv_constants.PILEUP_DEFAULT_DIMS,
+                       list(images.shape))
       self.assertEqual((batch_size,), labels.shape)
       for label in labels:
-        self.assertTrue(0 <= label <= 2)
+        # pylint: disable=g-generic-assert
+        self.assertTrue(0 <= label < dv_constants.NUM_CLASSES)
 
       # Check that our variants has the shape we expect and actually contain
       # variants by decoding them and checking the reference_name.
@@ -349,7 +350,9 @@ class InputTest(
           self.assertEqual(a.dtype, np.dtype('uint8'))
         current_batch_size = a.shape[0]
         self.assertLessEqual(current_batch_size, expected_batch_size)
-        self.assertEqual(a.shape, (current_batch_size, 100, 221, 6))
+        self.assertEqual(
+            list(a.shape),
+            [current_batch_size] + dv_constants.PILEUP_DEFAULT_DIMS)
         n_valid_entries += current_batch_size
 
       self.assertEqual(expected_n_batches, n)
@@ -413,7 +416,7 @@ class InputTest(
         # Compare against the parsed batch feed.
 
         a = features['image'][0]  # np.ndarray
-        self.assertEqual(a.shape, (100, 221, 6))
+        self.assertEqual(list(a.shape), dv_constants.PILEUP_DEFAULT_DIMS)
         self.assertIsNotNone(a)
         if use_tpu:
           self.assertEqual(a.dtype, np.dtype('int32'))

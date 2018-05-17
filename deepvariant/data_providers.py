@@ -42,14 +42,11 @@ import tensorflow as tf
 
 from google.protobuf import text_format
 from third_party.nucleus.util import io_utils
+from deepvariant import dv_constants
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 
 slim = tf.contrib.slim
-
-# Number of classes represented in the data set. The three classes are
-# homozygous reference (0), heterozygous (1) and homozygous alternative (2).
-DEFAULT_NUM_CLASSES = 3
 
 # These are emperically determined to work well on TPU with our data sets,
 # where lots of buffering and concurrency is necessary to keep the device
@@ -79,7 +76,7 @@ class DeepVariantInput(object):
       mode,
       input_file_spec,
       num_examples=None,
-      num_classes=DEFAULT_NUM_CLASSES,
+      num_classes=dv_constants.NUM_CLASSES,
       tensor_shape=None,
       name=None,
       use_tpu=False,

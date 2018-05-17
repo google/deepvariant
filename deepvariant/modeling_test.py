@@ -42,6 +42,7 @@ import numpy as np
 import six
 import tensorflow as tf
 
+from deepvariant import dv_constants
 from deepvariant import modeling
 
 slim = tf.contrib.slim
@@ -128,23 +129,29 @@ class HiddenFromUnitTest(object):
     def test_create(self, is_training):
       # Creates a training=False model.
       self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
-      h, w = (100, 221)
-      images = tf.placeholder(tf.float32, (4, h, w, 3))
-      endpoints = self.model.create(images, 3, is_training=is_training)
+      images = tf.placeholder(
+          tf.float32,
+          (4, dv_constants.PILEUP_DEFAULT_HEIGHT,
+           dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS))
+      endpoints = self.model.create(
+          images, dv_constants.NUM_CLASSES, is_training=is_training)
       if is_training:
         self.assertNotEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
       else:
         self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
       self.assertIn('Predictions', endpoints)
       self.assertIn('Logits', endpoints)
-      self.assertEqual(endpoints['Predictions'].shape, (4, 3))
+      self.assertEqual(endpoints['Predictions'].shape,
+                       (4, dv_constants.NUM_CLASSES))
 
     def test_preprocess_images(self):
       with self.test_session() as sess:
         batch_size = 3
-        values = [91, 92, 93, 94, 95, 96]
+        values = range(91, 91 + 2 * 1 * dv_constants.PILEUP_NUM_CHANNELS)
         all_values = values * batch_size
-        raw = np.array(all_values, dtype='uint8').reshape((batch_size, 2, 1, 3))
+        raw = np.array(
+            all_values, dtype='uint8').reshape(
+                (batch_size, 2, 1, dv_constants.PILEUP_NUM_CHANNELS))
         images = sess.run(self.model.preprocess_images(raw))
         for i in range(batch_size):
           image = images[i]
@@ -157,9 +164,11 @@ class HiddenFromUnitTest(object):
           # Check that the shape is the same, except for inception_v3 model we
           # had to resize the height to at least 107.
           if self.model.name == 'inception_v3':
-            self.assertEqual((107, 1, 3), image.shape)
+            self.assertEqual((107, 1, dv_constants.PILEUP_NUM_CHANNELS),
+                             image.shape)
           else:
-            self.assertEqual((2, 1, 3), image.shape)
+            self.assertEqual((2, 1, dv_constants.PILEUP_NUM_CHANNELS),
+                             image.shape)
 
           # The preprocess step resizes the image to h x w as needed by
           # inception. We don't really care where it goes in the image (and the

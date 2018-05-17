@@ -37,27 +37,29 @@ import os
 
 from tensorflow import flags
 import tensorflow as tf
+from deepvariant import dv_constants
 from deepvariant import modeling
-from deepvariant import pileup_image
 
 FLAGS = flags.FLAGS
 # Constants dictating moving average.
-MOVING_AVERAGE_DECAY = 0.995
+_MOVING_AVERAGE_DECAY = 0.995
 
 
 def write_fake_checkpoint(model_name,
                           session,
                           checkpoint_dir,
-                          moving_average_decay=MOVING_AVERAGE_DECAY,
+                          moving_average_decay=_MOVING_AVERAGE_DECAY,
                           name='model'):
   """Writes a fake TensorFlow checkpoint to checkpoint_dir."""
   path = os.path.join(checkpoint_dir, name)
   with session as sess:
     model = modeling.get_model(model_name)
     # Needed to protect ourselves for models without an input image shape.
-    h, w = getattr(model, 'input_image_shape', (100, 221))
+    h, w = getattr(
+        model, 'input_image_shape',
+        (dv_constants.PILEUP_DEFAULT_HEIGHT, dv_constants.PILEUP_DEFAULT_WIDTH))
     images = tf.placeholder(
-        tf.float32, shape=(4, h, w, pileup_image.DEFAULT_NUM_CHANNEL))
+        tf.float32, shape=(4, h, w, dv_constants.PILEUP_NUM_CHANNELS))
     model.create(images, num_classes=3, is_training=True)
     # This is gross, but necessary as model_eval assumes the model was trained
     # with model_train which uses exp moving averages. Unfortunately we cannot

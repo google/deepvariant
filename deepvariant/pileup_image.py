@@ -41,21 +41,17 @@ import numpy as np
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
+from deepvariant import dv_constants
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
-
-DEFAULT_MIN_BASE_QUALITY = 10
-DEFAULT_MIN_MAPPING_QUALITY = 10
-# redacted
-DEFAULT_NUM_CHANNEL = 6
 
 
 def default_options(read_requirements=None):
   """Creates a PileupImageOptions populated with good default values."""
   if not read_requirements:
     read_requirements = reads_pb2.ReadRequirements(
-        min_base_quality=DEFAULT_MIN_BASE_QUALITY,
-        min_mapping_quality=DEFAULT_MIN_MAPPING_QUALITY,
+        min_base_quality=10,
+        min_mapping_quality=10,
         min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
 
   return deepvariant_pb2.PileupImageOptions(
@@ -74,18 +70,14 @@ def default_options(read_requirements=None):
       negative_strand_color=240,
       base_quality_cap=40,
       mapping_quality_cap=60,
-      height=100,
-      width=221,
+      height=dv_constants.PILEUP_DEFAULT_HEIGHT,
+      width=dv_constants.PILEUP_DEFAULT_WIDTH,
+      num_channels=dv_constants.PILEUP_NUM_CHANNELS,
       read_overlap_buffer_bp=5,
       read_requirements=read_requirements,
       multi_allelic_mode=deepvariant_pb2.PileupImageOptions.ADD_HET_ALT_IMAGES,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=2101079370)
-
-
-def _empty_image_row(width):
-  """Creates an empty image row as an uint8 np.array."""
-  return np.zeros((1, width, DEFAULT_NUM_CHANNEL), dtype=np.uint8)
 
 
 def _compute_half_width(width):
@@ -311,11 +303,15 @@ class PileupImageCreator(object):
     n_missing_rows = self.height - len(rows)
     if n_missing_rows > 0:
       # Add values to rows to fill it out with zeros.
-      rows += [_empty_image_row(len(refbases))] * n_missing_rows
+      rows += [self._empty_image_row()] * n_missing_rows
 
     # Vertically stack the image rows to create a single
     # h x w x DEFAULT_NUM_CHANNEL image.
     return np.vstack(rows)
+
+  def _empty_image_row(self):
+    """Creates an empty image row as an uint8 np.array."""
+    return np.zeros((1, self.width, self.num_channels), dtype=np.uint8)
 
   def create_pileup_images(self, dv_call):
     """Creates a DeepVariant TF.Example for the DeepVariant call dv_call.

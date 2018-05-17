@@ -376,6 +376,7 @@ py_library(
     srcs = ["pileup_image.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":dv_constants",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:pileup_image_native",
         "//third_party/nucleus/protos:reads_py_pb2",
@@ -496,6 +497,7 @@ py_library(
     srcs = ["data_providers.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":dv_constants",
         ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:io_utils",
@@ -510,8 +512,8 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         ":data_providers",
+        ":dv_constants",
         ":modeling",
-        ":pileup_image",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:io_utils",
@@ -565,7 +567,6 @@ py_library(
     srcs = ["modeling.py"],
     srcs_version = "PY2AND3",
     deps = [
-        ":pileup_image",
         ":tf_utils",
         "@com_google_absl_py//absl/logging",
         "@org_tensorflow_slim//:inception",
@@ -580,6 +581,7 @@ py_test(
     srcs = ["modeling_test.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":dv_constants",
         ":modeling",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
@@ -723,6 +725,13 @@ py_test(
         ":exclude_contigs",
         "@com_google_absl_py//absl/testing:absltest",
     ],
+)
+
+py_library(
+    name = "dv_constants",
+    srcs = ["dv_constants.py"],
+    srcs_version = "PY2AND3",
+    deps = [],
 )
 
 py_library(

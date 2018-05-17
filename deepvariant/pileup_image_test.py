@@ -82,6 +82,9 @@ def _make_image_creator(ref_reader, sam_reader_obj, **kwargs):
 
 class PileupImageEncoderTest(parameterized.TestCase):
 
+  def setUp(self):
+    self.options = pileup_image.default_options()
+
   @parameterized.parameters(('A', 250), ('G', 180), ('T', 100), ('C', 30),
                             ('N', 0), ('X', 0))
   def test_base_color(self, base, expected_color):
@@ -219,7 +222,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
         (50, 50, 254, 50, 50)
     ]).astype(np.uint8)
     expected = np.zeros(
-        (1, ref_size, pileup_image.DEFAULT_NUM_CHANNEL), dtype=np.uint8)
+        (1, ref_size, self.options.num_channels), dtype=np.uint8)
     for i in range(read_start, read_start + len(read_bases)):
       if ref_start <= i < ref_start + ref_size:
         expected[0, i - ref_start] = full_expected[0, i - ref_start]
@@ -300,7 +303,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     pie = _make_encoder()
 
     # Get the threshold the encoder uses.
-    min_qual = pileup_image.DEFAULT_MIN_BASE_QUALITY
+    min_qual = self.options.read_requirements.min_base_quality
 
     for qual in range(0, min_qual + 5):
       quals = [min_qual - 1, qual, min_qual + 1]
@@ -376,22 +379,18 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
 
     self.expected_rows = {
         'ref':
-            np.asarray(
-                range(0, 3 * pileup_image.DEFAULT_NUM_CHANNEL), np.uint8)
-            .reshape(1, 3, pileup_image.DEFAULT_NUM_CHANNEL),
+            np.asarray(range(0, 3 * self.pic.num_channels), np.uint8).reshape(
+                1, 3, self.pic.num_channels),
         'empty':
-            np.zeros((1, 3, pileup_image.DEFAULT_NUM_CHANNEL), dtype=np.uint8),
+            np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
         'read1':
-            np.full(
-                (1, 3, pileup_image.DEFAULT_NUM_CHANNEL), 1, dtype=np.uint8),
+            np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
         'read2':
-            np.full(
-                (1, 3, pileup_image.DEFAULT_NUM_CHANNEL), 2, dtype=np.uint8),
+            np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
         'read3':
             None,
         'read4':
-            np.full(
-                (1, 3, pileup_image.DEFAULT_NUM_CHANNEL), 3, dtype=np.uint8),
+            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
     }
 
     # Setup our shared mocks.
@@ -411,9 +410,8 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
 
   def assertImageMatches(self, actual_image, *row_names):
     """Checks that actual_image matches an image from constructed row_names."""
-    self.assertEqual(
-        actual_image.shape,
-        (self.pic.height, self.pic.width, pileup_image.DEFAULT_NUM_CHANNEL))
+    self.assertEqual(actual_image.shape,
+                     (self.pic.height, self.pic.width, self.pic.num_channels))
     expected_image = np.vstack([self.expected_rows[name] for name in row_names])
     npt.assert_equal(actual_image, expected_image)
 

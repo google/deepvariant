@@ -45,6 +45,8 @@ namespace deepvariant {
 
 using tensorflow::string;
 
+constexpr int NUM_CHANNELS = 6;
+
 struct ImageRow {
   std::vector<unsigned char> base;
   std::vector<unsigned char> base_quality;

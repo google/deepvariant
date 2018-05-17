@@ -15,8 +15,8 @@ py_library(
     srcs = ["tf_test_utils.py"],
     srcs_version = "PY2AND3",
     deps = [
+        "//deepvariant:dv_constants",
         "//deepvariant:modeling",
-        "//deepvariant:pileup_image",
         "@com_google_absl_py//absl/flags",
     ],
 )
