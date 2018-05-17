@@ -216,11 +216,12 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "google/protobuf/util/message_differencer.h"
 #include "google/protobuf/util/field_comparator.h"
+#include "google/protobuf/util/message_differencer.h"
+#include "absl/strings/string_view.h"
 
-#include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/logging.h"
+#include "tensorflow/core/platform/types.h"
 
 namespace nucleus {
 
@@ -688,7 +689,7 @@ class WhenDeserializedMatcherBase {
     return MatchAndExplain(&input, listener);
   }
 
-  bool MatchAndExplain(tensorflow::StringPiece sp,
+  bool MatchAndExplain(absl::string_view sp,
                        ::testing::MatchResultListener* listener) const {
     google::protobuf::io::ArrayInputStream input(sp.data(), sp.size());
     return MatchAndExplain(&input, listener);

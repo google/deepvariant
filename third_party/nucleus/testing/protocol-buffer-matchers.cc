@@ -34,6 +34,7 @@
 
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 
+#include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
 
 #include "google/protobuf/io/tokenizer.h"
@@ -53,6 +54,7 @@
 namespace nucleus {
 namespace internal {
 
+using absl::string_view;
 using re2::StringPiece;  // copybara
 
 // Utilities.
@@ -92,10 +94,10 @@ bool ProtoComparable(const google::protobuf::Message& p, const google::protobuf:
 }
 
 template <typename Container>
-string JoinStringPieces(const Container& strings, StringPiece separator) {
+string JoinStringPieces(const Container& strings, string_view separator) {
   std::stringstream stream;
-  StringPiece sep = "";
-  for (const StringPiece& str : strings) {
+  string_view sep = "";
+  for (const string_view str : strings) {
     stream << sep << str;
     sep = separator;
   }
@@ -107,7 +109,7 @@ std::vector<const google::protobuf::FieldDescriptor*> GetFieldDescriptors(
     const google::protobuf::Descriptor* proto_descriptor,
     const std::vector<string>& ignore_fields) {
   std::vector<const google::protobuf::FieldDescriptor*> ignore_descriptors;
-  std::vector<StringPiece> remaining_descriptors;
+  std::vector<string_view> remaining_descriptors;
 
   const google::protobuf::DescriptorPool* pool = proto_descriptor->file()->pool();
   for (const string& name : ignore_fields) {
