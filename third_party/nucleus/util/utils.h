@@ -39,13 +39,13 @@
 #include <type_traits>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -68,7 +68,7 @@ enum class CanonicalBases {
 // is nullptr nothing will be written to this location.
 //
 // bases must not be the empty string.
-bool AreCanonicalBases(tensorflow::StringPiece bases,
+bool AreCanonicalBases(absl::string_view bases,
                        CanonicalBases canon = CanonicalBases::ACGT,
                        size_t* bad_position = nullptr);
 
@@ -78,16 +78,16 @@ bool IsCanonicalBase(const char base,
                      CanonicalBases canon = CanonicalBases::ACGT);
 
 // Creates a Position proto from chr and pos.
-nucleus::genomics::v1::Position MakePosition(
-    tensorflow::StringPiece chr, int64 pos, const bool reverse_strand = false);
+nucleus::genomics::v1::Position MakePosition(absl::string_view chr, int64 pos,
+                                             const bool reverse_strand = false);
 
 // Creates a Position proto from reference_name and start position of Variant.
 nucleus::genomics::v1::Position MakePosition(
     const nucleus::genomics::v1::Variant& variant);
 
 // Creates a Range proto from chr, start, and end arguments.
-nucleus::genomics::v1::Range MakeRange(tensorflow::StringPiece chr,
-                                        int64 start, int64 end);
+nucleus::genomics::v1::Range MakeRange(absl::string_view chr, int64 start,
+                                       int64 end);
 
 // Creates a Range proto from the reference_name, start, and end of Variant.
 nucleus::genomics::v1::Range MakeRange(
@@ -102,7 +102,7 @@ bool RangeContains(const nucleus::genomics::v1::Range& haystack,
                    const nucleus::genomics::v1::Range& needle);
 
 // Creates an interval string from its arguments, like chr:start-end.
-string MakeIntervalStr(tensorflow::StringPiece chr, int64 start, int64 end,
+string MakeIntervalStr(absl::string_view chr, int64 start, int64 end,
                        bool base_zero = true);
 
 // Makes an interval string from a Position proto.
@@ -152,7 +152,7 @@ bool ReadSatisfiesRequirements(
 // input.  (e.g. '"foo"' -> "foo"; '\'foo\'' -> 'foo')
 // If the input string not quoted (on both sides, using the same quote mark),
 // returns the input.
-tensorflow::StringPiece Unquote(tensorflow::StringPiece input);
+absl::string_view Unquote(absl::string_view input);
 
 // Creates a mapping from string to int for mapping of contig names to position
 // in FASTA. This is used with the CompareVariants function.

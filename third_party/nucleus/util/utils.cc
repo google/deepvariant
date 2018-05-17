@@ -38,11 +38,8 @@
 #include "third_party/nucleus/util/utils.h"
 
 #include "absl/strings/substitute.h"
-
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
-
-#include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
@@ -54,14 +51,14 @@ using nucleus::genomics::v1::Read;
 using nucleus::genomics::v1::ReadRequirements;
 using nucleus::genomics::v1::Variant;
 
+using absl::string_view;
 using absl::Substitute;
-using tensorflow::StringPiece;
 
 namespace {
 
 // Returns a StringPiece containing the canonical base characters corresponding
 // to the requested CanonicalBases in canon.
-StringPiece GetCanonicalBases(const CanonicalBases canon) {
+string_view GetCanonicalBases(const CanonicalBases canon) {
   switch (canon) {
     case CanonicalBases::ACGT:
       return "ACGT";
@@ -98,7 +95,7 @@ bool IsCanonicalBase(const char base, const CanonicalBases canon) {
   return false;
 }
 
-size_t FindNonCanonicalBase(StringPiece bases, const CanonicalBases canon) {
+size_t FindNonCanonicalBase(string_view bases, const CanonicalBases canon) {
   for (size_t i = 0; i < bases.size(); i++) {
     // Meh.  This should be a static lookup table.
     if (!IsCanonicalBase(bases[i], canon)) {
@@ -108,7 +105,7 @@ size_t FindNonCanonicalBase(StringPiece bases, const CanonicalBases canon) {
   return string::npos;
 }
 
-bool AreCanonicalBases(StringPiece bases, const CanonicalBases canon,
+bool AreCanonicalBases(string_view bases, const CanonicalBases canon,
                        size_t* bad_position) {
   CHECK(!bases.empty()) << "bases cannot be empty";
   const size_t bad_pos = FindNonCanonicalBase(bases, canon);
@@ -117,11 +114,10 @@ bool AreCanonicalBases(StringPiece bases, const CanonicalBases canon,
   return false;
 }
 
-Position MakePosition(StringPiece chr, const int64 pos,
+Position MakePosition(string_view chr, const int64 pos,
                       const bool reverse_strand) {
   Position position;
-  // hm.  set_reference_name doesn't take a tensorflow::StringPiece.
-  position.set_reference_name(chr.ToString());
+  position.set_reference_name(string(chr));  // redacted
   position.set_position(pos);
   position.set_reverse_strand(reverse_strand);
   return position;
@@ -131,9 +127,9 @@ Position MakePosition(const Variant& variant) {
   return MakePosition(variant.reference_name(), variant.start());
 }
 
-Range MakeRange(StringPiece chr, const int64 start, const int64 end) {
+Range MakeRange(string_view chr, const int64 start, const int64 end) {
   Range range;
-  range.set_reference_name(chr.ToString());
+  range.set_reference_name(string(chr));  // redacted
   range.set_start(start);
   range.set_end(end);
   return range;
@@ -154,16 +150,15 @@ bool RangeContains(const Range& haystack, const Range& needle) {
 }
 
 // Creates an interval string from its arguments, like chr:start-end
-string MakeIntervalStr(StringPiece chr, const int64 start, const int64 end,
+string MakeIntervalStr(string_view chr, const int64 start, const int64 end,
                        bool base_zero) {
   int offset = base_zero ? 1 : 0;
   if (start == end) {
     // redacted
-    return Substitute("$0:$1", string(chr.ToString()), start + offset);
+    return Substitute("$0:$1", string(chr), start + offset);
   } else {
     // redacted
-    return Substitute("$0:$1-$2", string(chr.ToString()), start + offset,
-                      end + offset);
+    return Substitute("$0:$1-$2", string(chr), start + offset, end + offset);
   }
 }
 
@@ -248,19 +243,17 @@ bool ReadSatisfiesRequirements(const Read& read,
                                        requirements.min_mapping_quality());
 }
 
-// redacted
-// StringPiece to ABSL string_view.
-inline StringPiece ClippedSubstr(StringPiece s, size_t pos, size_t n) {
+inline string_view ClippedSubstr(string_view s, size_t pos, size_t n) {
   pos = std::min(pos, static_cast<size_t>(s.size()));
   return s.substr(pos, n);
 }
 
-StringPiece Unquote(StringPiece input) {
+string_view Unquote(string_view input) {
   if (input.size() < 2) return input;
   char firstChar = input[0];
   char lastChar = input[input.size() - 1];
   if ((firstChar == '"' || firstChar == '\'') && (firstChar == lastChar)) {
-    return ClippedSubstr(input, 1, input.size() - 2);
+    return nucleus::ClippedSubstr(input, 1, input.size() - 2);
   } else {
     return input;
   }
