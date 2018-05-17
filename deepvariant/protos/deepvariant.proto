@@ -346,7 +346,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 22.
+// Next ID: 23.
 message PileupImageOptions {
   // The height, in pixels, of the pileup image we'll construct.
   int32 height = 1;
@@ -418,6 +418,9 @@ message PileupImageOptions {
 
   // The random seed to use in our Pileup Image Creation.
   uint32 random_seed = 21;
+
+  // The number of data channels in our pileup images.
+  int32 num_channels = 22;
 }
 
 

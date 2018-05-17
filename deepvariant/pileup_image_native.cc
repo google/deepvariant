@@ -111,6 +111,9 @@ PileupImageEncoderNative::PileupImageEncoderNative(
     : options_(options) {
     CHECK((options_.width() % 2 == 1) && options_.width() >= 3)
         << "Width must be odd; found " << options_.width();
+    CHECK(options_.num_channels() == NUM_CHANNELS)
+        << "Expected options.num_channels to be " << NUM_CHANNELS
+        << " but saw " << options_.num_channels() << " instead";
 }
 
 // Gets the pixel color (int) for a base.
