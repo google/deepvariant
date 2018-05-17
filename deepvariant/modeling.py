@@ -59,6 +59,10 @@ SKIP_MODEL_INITIALIZATION_IN_TEST = '__SKIP_MODEL_INITIALIZATION_IN_TEST__'
 slim = tf.contrib.slim
 
 
+class UnsupportedImageDimensions(Exception):
+  """Exception indicating the image dimensions aren't supported by our model."""
+
+
 class DeepVariantModel(object):
   """Base class for models that compute genotype likelihoods from an image.
 
@@ -70,6 +74,14 @@ class DeepVariantModel(object):
   The base class cannot be used directly; concrete subclasses actually implement
   specific models and all of the associated machinery to create/load/save
   models.
+
+  Attributes:
+    name: str. The name of this model, such as `inception_v3`.
+    pretrained_model_path: str. Path to a root checkpoint where we can start
+      training the model, if we are not starting from scratch.
+    supported_dimensions_message: str. A human-readable string containing info
+      about what image dimensions are supported by this model. E.g., "only
+      widths between 42 and 189".
   """
 
   def __init__(self, name, pretrained_model_path):
@@ -88,6 +100,7 @@ class DeepVariantModel(object):
       raise ValueError('Got an empty value for name', name)
     self.name = name
     self.pretrained_model_path = pretrained_model_path
+    self.supported_dimensions_message = 'unknown'
 
   def create(self, images, num_classes, is_training):
     """Creates a new model.
@@ -105,6 +118,28 @@ class DeepVariantModel(object):
       model. The dictionary must contain a key 'Predictions' that contains the
       probability of having each of 'num_classes' classes.
     """
+    try:
+      return self._create(images, num_classes, is_training)
+    except (ValueError, tf.errors.OpError), e:
+      if self._is_bad_image_dimension_exception(e):
+        _, height, width, _ = images.get_shape().as_list()
+        message = (
+            'Unsupported image dimensions detected: model {} was given images '
+            'of w={} x h={} but a TensorFlow exception occurred while building '
+            'the model, which typically indicates those dimensions are not '
+            'supported by the model. The supported dimensions for {} are {}'
+        ).format(self.name, width, height, self.name,
+                 self.supported_dimensions_message)
+        raise UnsupportedImageDimensions(message)
+      else:
+        raise
+
+  def _is_bad_image_dimension_exception(self, exception):
+    return any(
+        x in str(exception) for x in ['Negative dimension', 'SpatialSqueeze'])
+
+  def _create(self, images, num_classes, is_training):
+    """To be overloaded by subclasses to actually create the model."""
     raise NotImplementedError
 
   def preprocess_images(self, images):
@@ -356,8 +391,10 @@ class DeepVariantInceptionV3(DeepVariantSlimModel):
         excluded_scopes=['InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'],
         pretrained_model_path=('/namespace/vale-project/models/classification/'
                                'imagenet/inception_v3/model.ckpt-9591376'))
+    self.supported_dimensions_message = (
+        'odd widths between 75-361 and any heights between 75-362')
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(inception.inception_v3_arg_scope()):
       _, endpoints = inception.inception_v3(
@@ -377,7 +414,7 @@ class DeepVariantInceptionV2(DeepVariantSlimModel):
         pretrained_model_path=('/namespace/vale-project/models/classification/'
                                'imagenet/inception_v2/model.ckpt-14284043'))
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(inception.inception_v2_arg_scope()):
       _, endpoints = inception.inception_v2(
@@ -401,7 +438,7 @@ class DeepVariantResnet50(DeepVariantSlimModel):
                                'imagenet/resnet_v2_50_inception_preprocessed/'
                                'model.ckpt-5136169'))
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(resnet_v2.resnet_arg_scope()):
       _, endpoints = resnet_v2.resnet_v2_50(
@@ -434,7 +471,7 @@ class DeepVariantResnet101(DeepVariantSlimModel):
                                'imagenet/resnet_v2_101_inception_preprocessed/'
                                'model.ckpt-5562630'))
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(resnet_v2.resnet_arg_scope()):
       _, endpoints = resnet_v2.resnet_v2_101(
@@ -467,7 +504,7 @@ class DeepVariantResnet152(DeepVariantSlimModel):
                                'imagenet/resnet_v2_152_inception_preprocessed/'
                                'model.ckpt-5686729'))
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(resnet_v2.resnet_arg_scope()):
       _, endpoints = resnet_v2.resnet_v2_152(
@@ -500,7 +537,7 @@ class DeepVariantMobileNetV1(DeepVariantSlimModel):
                                'mobilenet_asynch_100_224_ds_s5_cr_2.5_50/train/'
                                'model.ckpt-19527265'))
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(mobilenet_v1.mobilenet_v1_arg_scope()):
       _, endpoints = mobilenet_v1.mobilenet_v1(
@@ -556,7 +593,7 @@ class DeepVariantRandomGuessModel(DeepVariantDummyModel):
     super(DeepVariantRandomGuessModel, self).__init__(name='random_guess')
     self.seed = seed
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     """The Random model emits a random uniform probability for each class."""
     batch_size = tf.shape(images)[0]
     rand_probs = tf.random_uniform(
@@ -589,7 +626,7 @@ class DeepVariantConstantModel(DeepVariantDummyModel):
     else:
       self.predictions = predictions
 
-  def create(self, images, num_classes, is_training):
+  def _create(self, images, num_classes, is_training):
     assert num_classes == len(self.predictions)
     batch_size = tf.shape(images)[0]
     pred_const = tf.constant(self.predictions)

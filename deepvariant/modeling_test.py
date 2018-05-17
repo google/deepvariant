@@ -273,6 +273,21 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
       # We shouldn't get an exception creating images with these sizes.
       _ = self.model.create(images, 3, is_training=True)
 
+  @parameterized.parameters(
+      dict(width=73, height=100),
+      dict(width=221, height=2000),
+      dict(width=73, height=2000),
+  )
+  def test_bad_inception_v3_image_dimensions_get_custom_exception(
+      self, width, height):
+    with self.test_session():
+      images = tf.placeholder(tf.float32, (4, height, width, 3))
+      expected_message = ('Unsupported image dimensions.* model '
+                          'inception_v3.*w={} x h={}.*').format(width, height)
+      with self.assertRaisesRegexp(modeling.UnsupportedImageDimensions,
+                                   expected_message):
+        self.model.create(images, 3, is_training=True)
+
 
 class InceptionV2ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
 
