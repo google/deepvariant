@@ -115,7 +115,7 @@ else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow wheel"
-      sudo -H pip install --upgrade 'tensorflow-gpu==1.7'
+      sudo -H pip install --upgrade 'tensorflow-gpu==1.8'
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
       echo "Installing Google Cloud Platform optimized CPU-only TensorFlow wheel"
       curl "${GCP_OPTIMIZED_TF_WHL_CURL_PATH}/${GCP_OPTIMIZED_TF_WHL_FILENAME}" \
@@ -123,7 +123,7 @@ else
       sudo -H pip install --upgrade "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
     else
       echo "Installing standard CPU-only TensorFlow wheel"
-      sudo -H pip install --upgrade 'tensorflow==1.7'
+      sudo -H pip install --upgrade 'tensorflow==1.8'
     fi
   fi
 fi
