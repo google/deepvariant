@@ -41,6 +41,9 @@ option cc_enable_arenas = true;
 
 // This record type records information about a contig. This is used both in
 // VCF header parsing and by GenomeReference objects for querying references.
+// Due to its generality, this message is also used by the FastaReader to
+// provide detailed information on the description line of a FASTA record even
+// in cases where the record does not correspond to a reference genome contig.
 message ContigInfo {
   // Required. The name of the contig. Canonically this is the first
   // non-whitespace-containing string after the > marker in a FASTA file.

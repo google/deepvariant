@@ -285,6 +285,47 @@ pyclif_proto_library(
 )
 
 # ----------------------------------------------------------------------
+# FASTA records
+# ----------------------------------------------------------------------
+
+proto_library(
+    name = "fasta_proto",
+    srcs = ["fasta.proto"],
+    deps = [
+        ":range_proto",
+        ":reference_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "fasta_cc_pb2",
+    srcs = ["fasta.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [
+        ":range_cc_pb2",
+        ":reference_cc_pb2",
+    ],
+)
+
+py_proto_library(
+    name = "fasta_py_pb2",
+    srcs = ["fasta.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":range_py_pb2",
+        ":reference_py_pb2",
+    ],
+)
+
+pyclif_proto_library(
+    name = "fasta_pyclif",
+    proto_lib = ":fasta_proto",  # NO COPYBARA
+)
+
+# ----------------------------------------------------------------------
 # FASTQ records
 # ----------------------------------------------------------------------
 
