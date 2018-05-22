@@ -45,21 +45,6 @@ cc_library(
     hdrs = ["port.h"],
 )
 
-# redacted
-# /util.
-py_library(
-    name = "core_py",
-    srcs = [],
-    deps = [
-        ":io_utils",
-        ":ranges",
-        ":variant_utils",
-        "//third_party/nucleus/io:fasta",
-        "//third_party/nucleus/io:sam",
-        "//third_party/nucleus/io:vcf",
-    ],
-)
-
 cc_library(
     name = "cpp_utils",
     srcs = ["utils.cc"],
