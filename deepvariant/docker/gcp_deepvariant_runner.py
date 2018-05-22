@@ -478,7 +478,7 @@ def run(argv=None):
       '--sample_name',
       help=('By default, make_examples extracts sample_name from input BAM '
             'file. However, for BAM file with missing sample_name, this has to '
-            'be manually set'))
+            'be manually set.'))
 
   # Optional gVCF args.
   parser.add_argument(
