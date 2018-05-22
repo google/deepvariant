@@ -213,6 +213,8 @@ def _run_make_examples(pipeline_args):
            str(pipeline_args.gvcf_gq_binsize)])
     if pipeline_args.regions:
       extra_args.extend(['--regions', ' '.join(pipeline_args.regions)])
+    if pipeline_args.sample_name:
+      extra_args.extend(['--sample_name', pipeline_args.sample_name])
     return extra_args
 
   num_workers = min(pipeline_args.make_examples_workers, pipeline_args.shards)
@@ -470,6 +472,13 @@ def run(argv=None):
       '--logging',
       help=('A folder in Google Cloud Storage to use for storing logs. '
             'Defaults to --staging + "/logs".'))
+
+  # Optinal make_examples args.
+  parser.add_argument(
+      '--sample_name',
+      help=('By default, make_examples extracts sample_name from input BAM '
+            'file. However, for BAM file with missing sample_name, this has to '
+            'be manually set'))
 
   # Optional gVCF args.
   parser.add_argument(
