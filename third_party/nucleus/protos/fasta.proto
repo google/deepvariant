@@ -1,0 +1,93 @@
+// Copyright 2018 Google Inc.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+syntax = "proto3";
+
+import "third_party/nucleus/protos/range.proto";
+import "third_party/nucleus/protos/reference.proto";
+
+package nucleus.genomics.v1;
+
+// This message represents a single FASTA record. This can be any FASTA file,
+// representing DNA, RNA, protein, or other sequence.
+message FastaRecord {
+  // If the FastaReaderOptions.parse_header field is false, this field is
+  // populated with the raw text of the description line, stripping the leading
+  // '>' and any trailing whitespace and the newline. Otherwise this field is
+  // empty.
+  string defline = 1;
+
+  // If the FastaReaderOptions.parse_header field is true, this message is
+  // populated based on the contents of the description and sequence lines.
+  // Otherwise this field is empty.
+  // NOTE: the "contig" info provided here is solely based on the record itself,
+  // and provides a mechanism to separate the sequence name from its description
+  // and includes the number of basepairs in the sequence.
+  ContigInfo contig = 2;
+
+  // Iff the FastaReaderOptions.include_range field is true, this message is
+  // populated with the location of the sequence within the contig.
+  // `region.end - region.start` should thus equal the length of the sequence.
+  // This could differ from the range [0, len(sequence)) in the case of a
+  // query operation for a particular region of a FASTA sequence.
+  Range region = 3;
+
+  // The raw sequence letters. Depending on the
+  // `FastaReaderOptions.uppercase_sequence` field, these may be uppercased or
+  // not.
+  string sequence = 4;
+}
+
+message FastaReaderOptions {
+  // If true, casts all bases to uppercase before returning them.
+  bool uppercase_sequence = 1;
+
+  // If set, all sequences are verified to contain only characters present in
+  // the input alphabet defined here.
+  string alphabet = 2;
+
+  enum DeflineParsing {
+    // No parsing is performed, and the `defline` field holds the raw string of
+    // the line.
+    NONE = 0;
+
+    // Parses the description line of each record into a ContigInfo object in
+    // the `contig` field.
+    CONTIG_INFO = 1;
+  }
+  DeflineParsing defline_parsing = 3;
+
+  // If true, the `region` field is populated in each FastaRecord.
+  bool include_range_in_records = 4;
+}
+
+// Options for writing FASTA files.
+// Currently this is a placeholder message but could be used to support
+// different choices on output like the number of columns per line.
+message FastaWriterOptions {
+}
