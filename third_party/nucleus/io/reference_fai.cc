@@ -159,10 +159,6 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
   return result;
 }
 
-string GenomeReferenceFai::Info() const {
-  return "GenomeReference backed by htslib FAI index";
-}
-
 tensorflow::Status GenomeReferenceFai::Close() {
   if (faidx_ == nullptr) {
     return tensorflow::errors::FailedPrecondition(

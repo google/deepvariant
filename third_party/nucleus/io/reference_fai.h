@@ -99,12 +99,6 @@ class GenomeReferenceFai : public GenomeReference {
   GenomeReferenceFai(const GenomeReferenceFai& other) = delete;
   GenomeReferenceFai& operator=(const GenomeReferenceFai&) = delete;
 
-  // Gets the path to the fasta file used by this GenomeReference.
-  const string& FastaPath() const override { return fasta_path_; }
-
-  // Gets a human-readable string describing this GenomeReference.
-  string Info() const override;
-
   const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs()
       const override {
     return contigs_;

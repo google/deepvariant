@@ -49,11 +49,7 @@ class WrapReferenceTest(parameterized.TestCase):
     fasta = test_utils.genomics_core_testdata(fasta_filename)
     fai = test_utils.genomics_core_testdata(fasta_filename + '.fai')
     with reference_fai.GenomeReferenceFai.from_file(fasta, fai) as ref:
-      self.assertEqual(ref.n_contigs, 3)
-      self.assertIn(fasta, ref.fasta_path)
-      self.assertIn('GenomeReference backed by htslib FAI index', str(ref))
       self.assertEqual(ref.contig_names, chr_names)
-      self.assertEqual(ref.n_bp, sum(chr_lengths))
       self.assertEqual(ref.bases(ranges.make_range('chrM', 1, 10)), 'ATCACAGGT')
 
       self.assertTrue(ref.is_valid_interval(ranges.make_range('chrM', 1, 10)))

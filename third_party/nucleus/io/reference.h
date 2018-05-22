@@ -76,24 +76,11 @@ class GenomeReference {
 
   virtual ~GenomeReference() {}
 
-  // Gets the path to the fasta file used to create this index.
-  virtual const string& FastaPath() const = 0;
-
-  // Gets a human-readable string describing the properties of this
-  // GenomeReference.
-  virtual string Info() const = 0;
-
   virtual const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs()
       const = 0;
 
-  // Gets the number of contigs in this reference.
-  virtual int NContigs() const;
-
   // Returns true if reference has a contig named contig_name.
   virtual bool HasContig(const string& contig_name) const;
-
-  // Gets the total number of basepairs across all contigs.
-  virtual int64 NTotalBasepairs() const;
 
   // Gets a vector of the contig names in this reference, in the order that they
   // appeared in the original FASTA file. For example, would return:
