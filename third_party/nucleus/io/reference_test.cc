@@ -53,14 +53,9 @@ using ::testing::Not;
 using ::testing::UnorderedElementsAre;
 
 TEST_P(GenomeReferenceTest, TestBasic) {
-  // redacted
-  //   EXPECT_EQ(Ref().FastaPath(), TestFastaPath());
-  EXPECT_THAT(Ref().Info(), Not(IsEmpty()));
-
   EXPECT_THAT(Ref().ContigNames(),
               UnorderedElementsAre("chrM", "chr1", "chr2"));
-  EXPECT_THAT(Ref().NContigs(), 3);
-  EXPECT_THAT(Ref().NTotalBasepairs(), 100 + 76 + 121);
+  EXPECT_THAT(Ref().Contigs().size(), 3);
 
   const auto& chrm = *Ref().Contig("chrM").ValueOrDie();
   EXPECT_EQ(100, chrm.n_bases());

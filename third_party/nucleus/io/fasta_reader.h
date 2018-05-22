@@ -73,11 +73,6 @@ class InMemoryGenomeReference : public GenomeReference {
   InMemoryGenomeReference(const InMemoryGenomeReference& other) = delete;
   InMemoryGenomeReference& operator=(const InMemoryGenomeReference&) = delete;
 
-  // Gets the path to the fasta file used by this GenomeReference.
-  const string& FastaPath() const override { return fasta_path_; }
-
-  string Info() const override { return "InMemoryGenomeReference"; }
-
   const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs()
       const override {
     return contigs_;
@@ -99,7 +94,6 @@ class InMemoryGenomeReference : public GenomeReference {
           seqs)
       : contigs_(contigs), seqs_(seqs) {}
 
-  const string fasta_path_ = "";
   const std::vector<nucleus::genomics::v1::ContigInfo> contigs_;
   const std::unordered_map<string, nucleus::genomics::v1::ReferenceSequence>
       seqs_;

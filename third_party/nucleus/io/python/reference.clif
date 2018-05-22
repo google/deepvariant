@@ -34,10 +34,7 @@ from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
 from "third_party/nucleus/io/reference.h":
   namespace `nucleus`:
     class GenomeReference:
-      n_contigs: int = property(`NContigs`)
-      n_bp: int = property(`NTotalBasepairs`)
       contig_names: list<str> = property(`ContigNames`)
-      def `Info` as __str__(self) -> str
       def `Contig` as contig(self, chrom: str) -> StatusOr<ContigInfo>
       def `GetBases` as bases(self, region: Range) -> StatusOr<str>
       def `HasContig` as has_contig(self, contig_name: str) -> bool
@@ -45,7 +42,6 @@ from "third_party/nucleus/io/reference.h":
 
       # These are pure virtual superclass methods but including these above
       # results in a linker error.
-      fasta_path: str = property(`FastaPath`)
       contigs: list<ContigInfo> = property(`Contigs`)
 
       @__enter__

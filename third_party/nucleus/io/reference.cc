@@ -35,12 +35,10 @@
 #include <algorithm>
 #include <numeric>
 
-#include "absl/strings/str_cat.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
-using absl::StrCat;
 using nucleus::genomics::v1::Range;
 
 // ###########################################################################
@@ -49,7 +47,13 @@ using nucleus::genomics::v1::Range;
 //
 // ###########################################################################
 
-int GenomeReference::NContigs() const { return Contigs().size(); }
+bool GenomeReference::HasContig(const string& contig_name) const {
+  const auto& contigs = Contigs();
+  return std::any_of(contigs.cbegin(), contigs.cend(),
+                     [&](const nucleus::genomics::v1::ContigInfo& contig) {
+                       return contig.name() == contig_name;
+                     });
+}
 
 std::vector<string> GenomeReference::ContigNames() const {
   const auto& contigs = Contigs();
@@ -61,14 +65,6 @@ std::vector<string> GenomeReference::ContigNames() const {
   return keys;
 }
 
-bool GenomeReference::HasContig(const string& contig_name) const {
-  const auto& contigs = Contigs();
-  return std::any_of(contigs.cbegin(), contigs.cend(),
-                     [&](const nucleus::genomics::v1::ContigInfo& contig) {
-                       return contig.name() == contig_name;
-                     });
-}
-
 StatusOr<const nucleus::genomics::v1::ContigInfo*> GenomeReference::Contig(
     const string& contig_name) const {
   for (const auto& contig : Contigs()) {
@@ -76,7 +72,7 @@ StatusOr<const nucleus::genomics::v1::ContigInfo*> GenomeReference::Contig(
       return &contig;
     }
   }
-  return tensorflow::errors::NotFound(StrCat("Unknown contig ", contig_name));
+  return tensorflow::errors::NotFound("Unknown contig ", contig_name);
 }
 
 // Note that start and end are 0-based, and end is exclusive. So end
@@ -89,14 +85,4 @@ bool GenomeReference::IsValidInterval(const Range& range) const {
   return range.start() >= 0 && range.start() <= range.end() &&
          range.start() < n_bases && range.end() <= n_bases;
 }
-
-int64 GenomeReference::NTotalBasepairs() const {
-  const auto& contigs = Contigs();
-  return std::accumulate(
-      contigs.cbegin(), contigs.cend(), static_cast<int64>(0),
-      [](int64 acc, const nucleus::genomics::v1::ContigInfo& contig) {
-        return acc + contig.n_bases();
-      });
-}
-
 }  // namespace nucleus
