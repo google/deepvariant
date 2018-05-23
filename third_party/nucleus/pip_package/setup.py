@@ -104,7 +104,7 @@ TensorFlow tfrecords file may be substituted.
 
     # redacted
     # these install_requires.
-    install_requires=['contextlib2', 'intervaltree',
+    install_requires=['contextlib2', 'intervaltree', 'absl-py',
                       'mock', 'numpy', 'scipy', 'six'],
 
     extras_require={
