@@ -61,6 +61,7 @@ using re2::StringPiece;  // copybara
 
 // redacted
 
+
 struct Kmer {
   string sequence;
 };
@@ -205,6 +206,9 @@ struct HaplotypeReadsAlignment {
 void SetPositionsMap(size_t haplotype_size,
                      HaplotypeReadsAlignment* hyplotype_alignment);
 
+void MergeCigarOp(const CigarOp& op, int read_len, std::list<CigarOp>* cigar);
+
+
 using KmerIndexType =
     std::unordered_map<tensorflow::StringPiece, std::vector<KmerOccurrence>,
                        tensorflow::StringPieceHasher>;
@@ -245,7 +249,7 @@ class FastPassAligner {
                         uint8_t gap_opening_penalty,
                         uint8_t gap_extending_penalty);
   uint8_t get_match_score() const { return match_score_; }
-  uint8_t get_mismatch_penalty() const {return mismatch_penalty_;}
+  uint8_t get_mismatch_penalty() const { return mismatch_penalty_; }
   void set_kmer_size(int kmer_size);
   void set_read_size(int read_size);
   void set_max_num_of_mismatches(int max_num_of_mismatches);
@@ -290,6 +294,26 @@ class FastPassAligner {
       const {
     return read_to_haplotype_alignments_;
   }
+
+  // Finds the best alignment by iterating all haplotype alignments.
+  // redacted
+  bool GetBestReadAlignment(size_t readId, int* best_hap_index) const;
+
+  // Calculate a read alignment by merging read to haplotype and haplotype to
+  // reference alignments.
+  // 1. Extracts a portion of haplotype to reference cigar that overlaps
+  //    positions of read to haplotype alignment.
+  // 2. Iterates through each cigar operation for both alignments, merging 2
+  //    operations of the same length at a time.
+  // 3. Different logic is implemented for each type of merges: =:=, DEL:=,
+  //    =:DEL, INS:=, =:INS, DEL:DEL, INS:INS
+  // redacted
+  // worth to think about an alternative implementation.
+  void CalculateReadToRefAlignment(
+      size_t read_index,
+      const ReadAlignment& read_to_haplotype_alignment,
+      const std::list<CigarOp>& haplotype_to_ref_cigar_ops_input,
+      std::list<CigarOp>* read_to_ref_cigar_ops) const;
 
  private:
   // Reference sequence for the window
@@ -346,12 +370,11 @@ class FastPassAligner {
   void RealignReadsToReference(
       const std::vector<nucleus::genomics::v1::Read>& reads,
       std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
-        realigned_reads);
+          realigned_reads);
 
   void AddReadToIndex(const string& read, ReadId read_id);
 
-  void AddKmerToIndex(tensorflow::StringPiece kmer,
-                      ReadId read_id,
+  void AddKmerToIndex(tensorflow::StringPiece kmer, ReadId read_id,
                       KmerOffset pos);
 
   int FastAlignStrings(tensorflow::StringPiece s1, tensorflow::StringPiece s2,
@@ -366,12 +389,6 @@ class FastPassAligner {
   // alignment. This map helps to quickly calculate reference position for
   // a read from a read to haplotype alignment.
   void CalculatePositionMaps();
-
-  bool GetBestReadAlignment(size_t readId, int* best_hap_index) const;
-
-  void CalculateCigarForRead(
-      size_t read_index,
-      std::list<CigarOp>* read_to_ref_cigar) const;
 };
 
 }  // namespace deepvariant
