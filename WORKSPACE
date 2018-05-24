@@ -12,6 +12,16 @@ git_repository(
 )
 # Note: com_google_absl (the C++ abseil library) is provided by TensorFlow.
 
+# CCTZ (Time-zone framework).
+# redacted
+# work in bazel, so we need to include this to enable nucleus's use of
+# //absl/{time,synchronization}
+http_archive(
+    name = "com_googlesource_code_cctz",
+    urls = ["https://github.com/google/cctz/archive/master.zip"],
+    strip_prefix = "cctz-master",
+)
+
 # Note: we are using a post-1.6 build release that fixes a double-free.
 new_http_archive(
     name = "htslib",
