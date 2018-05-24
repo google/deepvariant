@@ -38,7 +38,6 @@
 #include "htslib/tbx.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/gtl/optional.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
