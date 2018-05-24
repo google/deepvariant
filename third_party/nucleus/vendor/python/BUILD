@@ -20,7 +20,7 @@ py_clif_cc(
     ],
 )
 
-py2and3_test(
+py_test(
     name = "statusor_examples_test",
     size = "small",
     srcs = ["statusor_examples_test.py"],
