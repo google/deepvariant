@@ -13,3 +13,11 @@
     images/tensors](visualizing_examples.ipynb)
 *   [Getting Started with GCP](deepvariant-gcp-info.md) (It is not required to
     run DeepVariant on GCP.)
+
+# Other resources
+
+*   [Google Developer Codelab: Variant Calling on a Rice genome with
+    DeepVariant](https://codelabs.developers.google.com/codelabs/genomics-deepvariant)
+*   [Improve DeepVariant for BGISEQ germline variant
+    calling](http://bit.ly/train-deepvariant) |
+    [slides](https://github.com/SVAI/RecausalNucleotideNetworks/blob/master/ReCausalNucleotideNetwork.pdf)
