@@ -36,10 +36,11 @@
 #include <algorithm>
 #include <memory>
 
+#include "absl/synchronization/mutex.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/core/platform/mutex.h"
+
 
 namespace nucleus {
 
@@ -63,7 +64,7 @@ class Reader {
   // Weak reference to live extant iterable, or null
   mutable IterableBase* live_iterable_ = nullptr;
   // Mutex protecting live_iterable_count.
-  mutable tensorflow::mutex mutex_;
+  mutable absl::Mutex mutex_;
 
  protected:
   // Construct a new Iterable object, *if* we can guarantee that there
@@ -73,7 +74,7 @@ class Reader {
   // Iterables.
   template<class Iterable, typename... Args>
   std::shared_ptr<Iterable> MakeIterable(Args&&... args) const {
-    tensorflow::mutex_lock lock(mutex_);
+    absl::MutexLock lock(&mutex_);
     if (live_iterable_ != nullptr) {
       LOG(WARNING) << "Returning null from MakeIterable because there's "
                    " already an active iterator";

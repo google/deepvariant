@@ -39,7 +39,7 @@ namespace nucleus {
 Reader::~Reader() {
   // If there is an outstanding iterable, we need to tell it that
   // the reader is dead so it doesn't still try to use it.
-  tensorflow::mutex_lock lock(mutex_);
+  absl::MutexLock lock(&mutex_);
   if (live_iterable_ != nullptr) {
     live_iterable_->reader_ = nullptr;
   }
@@ -60,7 +60,7 @@ IterableBase::~IterableBase() {
 
 tensorflow::Status IterableBase::Release() {
   if (IsAlive()) {
-    tensorflow::mutex_lock lock(reader_->mutex_);
+    absl::MutexLock lock(&reader_->mutex_);
     if (reader_->live_iterable_ == nullptr) {
       return tensorflow::errors::FailedPrecondition(
           "reader_->live_iterable_ is null");
