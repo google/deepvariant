@@ -28,7 +28,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "vcf_reader_wrap_test",
     size = "small",
     srcs = ["vcf_reader_wrap_test.py"],
@@ -56,7 +56,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "vcf_writer_wrap_test",
     size = "small",
     srcs = ["vcf_writer_wrap_test.py"],
@@ -69,6 +69,7 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:io_utils",
+        "//third_party/py/tensorflow",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -91,7 +92,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "sam_reader_wrap_test",
     size = "small",
     srcs = ["sam_reader_wrap_test.py"],
@@ -134,7 +135,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "reference_wrap_test",
     size = "small",
     srcs = ["reference_wrap_test.py"],
@@ -176,7 +177,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "bed_reader_wrap_test",
     size = "small",
     srcs = ["bed_reader_wrap_test.py"],
@@ -203,7 +204,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "bed_writer_wrap_test",
     size = "small",
     srcs = ["bed_writer_wrap_test.py"],
@@ -214,6 +215,7 @@ py_test(
         "//third_party/nucleus/protos:bed_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:io_utils",
+        "//third_party/py/tensorflow",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -234,7 +236,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "fastq_reader_wrap_test",
     size = "small",
     srcs = ["fastq_reader_wrap_test.py"],
@@ -261,7 +263,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "fastq_writer_wrap_test",
     size = "small",
     srcs = ["fastq_writer_wrap_test.py"],
@@ -273,6 +275,7 @@ py_test(
         "//third_party/nucleus/protos:fastq_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:io_utils",
+        "//third_party/py/tensorflow",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],
@@ -286,7 +289,7 @@ py_clif_cc(
     ],
 )
 
-py_test(
+py2and3_test(
     name = "hts_verbose_test",
     size = "small",
     srcs = ["hts_verbose_test.py"],
