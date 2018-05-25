@@ -51,18 +51,29 @@ from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import variant_utils
 from deepvariant import call_variants
+from deepvariant import data_providers
 from deepvariant import modeling
 from deepvariant import testdata
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.testing import flagsaver
-from deepvariant.testing import tf_test_utils
 
 FLAGS = flags.FLAGS
 
 
+# NB. This entire collection of tests will be invoked with '--use_tpu=' 'true'
+# and 'false' by the BUILD file, and a tpu device will be allocated when
+# necessary.
+
+
 def setUpModule():
   testdata.init()
+
+
+# For tests that don't actually want to read a real checkpoint,
+# return a fake one.  The estimator understands None to mean
+# that all the variables should be left uninitialized.
+_LEAVE_MODEL_UNINITIALIZED = None
 
 
 class CallVariantsEndToEndTests(
@@ -75,8 +86,7 @@ class CallVariantsEndToEndTests(
                                                     num_examples):
     outfile = test_utils.test_tmpfile('inception_v3.call_variants.tfrecord')
     model = modeling.get_model('inception_v3')
-    checkpoint_path = tf_test_utils.write_fake_checkpoint(
-        'inception_v3', self.test_session(), self.checkpoint_dir)
+    checkpoint_path = _LEAVE_MODEL_UNINITIALIZED
 
     call_variants.call_variants(
         examples_filename=filename,
@@ -92,15 +102,18 @@ class CallVariantsEndToEndTests(
 
   def assertCallVariantsEmitsNRecordsForRandomGuess(self, filename,
                                                     num_examples):
+    checkpoint_path = _LEAVE_MODEL_UNINITIALIZED
     outfile = test_utils.test_tmpfile('call_variants.tfrecord')
     model = modeling.get_model('random_guess')
     call_variants.call_variants(
         examples_filename=filename,
-        checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
+        checkpoint_path=checkpoint_path,
         model=model,
         output_file=outfile,
         batch_size=4,
-        max_batches=None)
+        max_batches=None,
+        master='',
+        use_tpu=FLAGS.use_tpu)
     call_variants_outputs = list(
         io_utils.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
     # Check that we have the right number of output protos.
@@ -151,7 +164,13 @@ class CallVariantsEndToEndTests(
     else:
       source_path = testdata.GOLDEN_CALLING_EXAMPLES
 
-    batch_size = 4
+    # If we point the test at a headless server, it will often be 2x2,
+    # which has 8 replicas.  Otherwise a smaller batch size is fine.
+    if FLAGS.use_tpu:
+      batch_size = 8
+    else:
+      batch_size = 4
+
     if model.name == 'random_guess':
       # For the random guess model we can run everything.
       max_batches = None
@@ -162,11 +181,14 @@ class CallVariantsEndToEndTests(
     outfile = test_utils.test_tmpfile('call_variants.tfrecord')
     call_variants.call_variants(
         examples_filename=source_path,
-        checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
+        checkpoint_path=_LEAVE_MODEL_UNINITIALIZED,
         model=model,
         output_file=outfile,
         batch_size=batch_size,
-        max_batches=max_batches)
+        max_batches=max_batches,
+        master='',
+        use_tpu=FLAGS.use_tpu,
+    )
 
     call_variants_outputs = list(
         io_utils.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
@@ -249,11 +271,12 @@ class CallVariantsEndToEndTests(
     with self.assertRaises(ValueError):
       call_variants.call_variants(
           examples_filename=source_path,
-          checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
+          checkpoint_path=_LEAVE_MODEL_UNINITIALIZED,
           model=model,
           output_file=outfile,
           batch_size=1,
-          max_batches=1)
+          max_batches=1,
+          use_tpu=FLAGS.use_tpu)
 
   @parameterized.parameters(model for model in modeling.production_models())
   def test_call_variants_with_no_shape(self, model):
@@ -266,14 +289,25 @@ class CallVariantsEndToEndTests(
     with self.assertRaisesRegexp(
         ValueError, 'Invalid image/shape: we expect to find an image/shape '
         'field with length 3.'):
-      call_variants.prepare_inputs(source_path, model, batch_size=1)
+      ds = call_variants.prepare_inputs(source_path)
+      _ = list(data_providers.get_infer_batches(ds, model=model, batch_size=1))
 
   def test_call_variants_with_empty_input(self):
     source_path = test_utils.test_tmpfile('empty.tfrecord')
     io_utils.write_tfrecords([], source_path)
     # Make sure that prepare_inputs don't crash on empty input.
-    call_variants.prepare_inputs(
-        source_path, modeling.get_model('random_guess'), batch_size=1)
+    ds = call_variants.prepare_inputs(source_path)
+    m = modeling.get_model('random_guess')
+
+    # The API specifies that OutOfRangeError is thrown in this case.
+    batches = list(data_providers.get_infer_batches(ds, model=m, batch_size=1))
+    with self.test_session() as sess:
+      sess.run(tf.local_variables_initializer())
+      sess.run(tf.global_variables_initializer())
+      try:
+        _ = sess.run(batches)
+      except tf.errors.OutOfRangeError:
+        pass
 
 
 class CallVariantsUnitTests(
@@ -299,10 +333,12 @@ class CallVariantsUnitTests(
       source_path = io_utils.NormalizeToShardedFilePattern(source_path)
 
     with self.test_session() as sess:
-      _, variants, _ = call_variants.prepare_inputs(
-          source_path, self.model, batch_size=1)
       sess.run(tf.local_variables_initializer())
       sess.run(tf.global_variables_initializer())
+
+      ds = call_variants.prepare_inputs(source_path)
+      _, variants, _ = data_providers.get_infer_batches(
+          ds, model=self.model, batch_size=1)
 
       seen_variants = []
       try:
@@ -327,17 +363,21 @@ class CallVariantsUnitTests(
   @parameterized.parameters('auto', 'cpu')
   def test_call_variants_non_accelerated_execution_runs(self,
                                                         execution_hardware):
-    # This doesn't mock out the list_devices call so it's worth keeping
-    # despite being very similar to the parameterized test below.
+    if FLAGS.use_tpu:
+      # predict batch size must be divisible by number of replicas.
+      batch_size = 2
+    else:
+      batch_size = 1
     outfile = test_utils.test_tmpfile('call_variants_cpu_only.tfrecord')
     call_variants.call_variants(
         examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
-        checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
+        checkpoint_path=_LEAVE_MODEL_UNINITIALIZED,
         model=self.model,
         execution_hardware=execution_hardware,
         max_batches=1,
-        batch_size=1,
-        output_file=outfile)
+        batch_size=batch_size,
+        output_file=outfile,
+        use_tpu=FLAGS.use_tpu)
 
   @parameterized.parameters(
       dict(hardware_env='auto', devices=['cpu'], expect_exception=False),
@@ -368,16 +408,24 @@ class CallVariantsUnitTests(
     # namedtuple with the same field names instead.
     device = collections.namedtuple('_DeviceAttribute', ['name', 'device_type'])
 
+    # Mocking the list_devices call means the framework attempts to use a bogus
+    # TPU device, which fails, so don't do that.  Handle the TPU case elsewhere.
+    if 'tpu' in devices or FLAGS.use_tpu:
+      return
+
     with mock.patch.object(call_variants.tf.Session, 'list_devices') as mock_ld:
       mock_ld.return_value = [
           device(name=dt + '/' + str(i), device_type=dt.upper())
           for i, dt in enumerate(devices)
       ]
 
+      # Only run the tpu cases when we have an actual tpu device, supplied
+      # by the flags from the BUILD rule.
       def _run():
         call_variants.call_variants(
+            use_tpu=FLAGS.use_tpu,
             examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
-            checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
+            checkpoint_path=_LEAVE_MODEL_UNINITIALIZED,
             model=self.model,
             execution_hardware=hardware_env,
             max_batches=1,

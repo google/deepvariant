@@ -32,12 +32,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
 
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import mock
 import numpy as np
 import six
 import tensorflow as tf
@@ -182,77 +180,6 @@ class HiddenFromUnitTest(object):
           self.assertEqual([(x - 128.0) / 128.0 for x in values],
                            [x for x in np.nditer(image) if x != 0.0])
 
-    @parameterized.parameters([(3, True), (1000, True), (3, False)])
-    @mock.patch('deepvariant'
-                '.tf_utils.model_shapes')
-    def test_initialize_from_checkpoint(self, n_checkpoint_classes, is_training,
-                                        mock_model_shapes):
-
-      def _create_checkpoint(checkpoint_dir, decay_factor):
-        with self.test_session() as sess:
-          checkpoint_prefix = os.path.join(checkpoint_dir, 'model')
-          checkpoint_state_name = 'checkpoint'
-          v1_data = [10.0] * 12
-          v1 = slim.variables.Variable(v1_data, name='v1')
-          slim.add_model_variable(v1)
-          assign_to_v1 = v1.assign([20.0] * 12)
-          variable_averages = tf.train.ExponentialMovingAverage(
-              decay_factor, num_updates=999, zero_debias=False)
-          average_op = variable_averages.apply([v1])
-          v1_average = variable_averages.average(v1)
-          self.assertItemsEqual([v1], slim.variables.moving_average_variables())
-          self.assertEqual('v1/ExponentialMovingAverage:0', v1_average.name)
-          sess.run(slim.variables.global_variables_initializer())
-          sess.run(assign_to_v1)
-          sess.run(average_op)
-          saver = tf.train.Saver()
-          saver.save(
-              sess,
-              checkpoint_prefix,
-              global_step=3,
-              latest_filename=checkpoint_state_name)
-          return tf.train.latest_checkpoint(checkpoint_dir)
-
-      checkpoint_dir = self.get_temp_dir()
-      decay_factor = 0.9753
-      checkpoint_file = _create_checkpoint(checkpoint_dir, decay_factor)
-      n_prediction_classes = 3
-
-      mock_model_shapes.return_value = {
-          self.model.n_classes_model_variable: (n_checkpoint_classes,),
-      }
-      with self.test_session(graph=tf.Graph()) as sess:
-        self.assertItemsEqual([], slim.variables.moving_average_variables())
-        v1 = slim.variable_scope.get_variable('v1', [12])
-        slim.add_model_variable(v1)
-        sess.run(slim.variables.global_variables_initializer())
-        self.model.initialize_from_checkpoint(
-            checkpoint_file, n_prediction_classes, is_training)(
-                sess)
-        mock_model_shapes.assert_called_once_with(
-            checkpoint_file, [self.model.n_classes_model_variable])
-        v1_val = v1.eval(sess)
-        if is_training:
-          v1_expected = [20.0] * 12
-        else:
-          v1_expected = [10.0 * decay_factor + 20.0 * (1 - decay_factor)] * 12
-        self.assertAllClose(v1_expected, v1_val)
-
-    def test_initialize_from_checkpoint_fails_with_bad_path(self):
-      with self.assertRaisesRegexp(ValueError, 'Checkpoint cannot be None'):
-        self.model.initialize_from_checkpoint(None, 3, True)
-
-    @mock.patch('deepvariant.tf_utils.model_shapes')
-    def test_initialize_raises_inference_shape_mismatch(self,
-                                                        mock_model_shapes):
-      mock_model_shapes.return_value = {
-          self.model.n_classes_model_variable: (100,)
-      }
-      with self.assertRaisesRegexp(
-          ValueError, ('Checkpoint has 100 classes but we want to use 3 and '
-                       'is_training=False')):
-        self.model.initialize_from_checkpoint('path', 3, False)
-
 
 class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
 
@@ -294,13 +221,6 @@ class InceptionV2ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
   @classmethod
   def setUpClass(cls):
     cls.model = modeling.get_model('inception_v2')
-
-
-class Resnet50ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
-
-  @classmethod
-  def setUpClass(cls):
-    cls.model = modeling.get_model('resnet_v2_50')
 
 
 class MobileNetModelTest(HiddenFromUnitTest.SlimModelBaseTest):

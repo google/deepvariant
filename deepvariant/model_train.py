@@ -66,6 +66,8 @@ flags.DEFINE_string('master', '',
 flags.DEFINE_string('train_dir', '/tmp/deepvariant/',
                     'Directory where to write event logs.')
 
+flags.DEFINE_boolean('use_tpu', False, 'use tpu if available')
+
 flags.DEFINE_integer('worker_replicas', 1, 'Number of worker replicas.')
 
 flags.DEFINE_integer(
@@ -73,47 +75,10 @@ flags.DEFINE_integer(
     'The number of parameter servers. If the value is 0, then the parameters '
     'are handled locally by the worker.')
 
-flags.DEFINE_integer(
-    'save_summaries_secs', 600,
-    'The frequency with which summaries are saved, in seconds.')
-
-flags.DEFINE_integer('save_interval_secs', 600,
-                     'The frequency with which the model is saved, in seconds.')
-
-flags.DEFINE_integer('startup_delay_steps', 15,
-                     'Number of training steps between replicas startup.')
-
 flags.DEFINE_integer('task', 0, 'Task id of the replica running the training.')
 
 flags.DEFINE_integer('number_of_steps', 30000000,
                      'Maximum number of global steps to take when training.')
-
-# Training parameters.
-flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
-
-flags.DEFINE_float(
-    'label_smoothing', 1e-6,
-    'Amount of label smoothing to use. By default this is 0.0001%'
-    'meaning that we expect a label error at a rate of 1 / 1,000,000')
-
-flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
-
-flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
-
-flags.DEFINE_float('rmsprop_epsilon', 1.0, 'Epsilon term for RMSProp.')
-
-flags.DEFINE_float('learning_rate_decay_factor', 0.94,
-                   'Learning rate decay factor.')
-
-flags.DEFINE_float('num_epochs_per_decay', 2.0,
-                   'Number of epochs after which learning rate decays.')
-
-flags.DEFINE_integer(
-    'replicas_to_aggregate', 1,
-    'The Number of gradients to collect before updating params.')
-
-flags.DEFINE_float('moving_average_decay', 0.9999,
-                   'The decay to use for the moving average.')
 
 flags.DEFINE_integer(
     'num_retries', 0,
@@ -130,12 +95,6 @@ flags.DEFINE_string(
 flags.DEFINE_integer('max_checkpoints_to_keep', 10,
                      'Number of last checkpoints to keep during training. '
                      'Passing "0" preserves all checkpoints.')
-
-flags.DEFINE_float(
-    'keep_checkpoint_every_n_hours', 0.5,
-    'If specified, in addition to keeping the last "max_checkpoints_to_keep" '
-    'checkpoints, an additional checkpoint will be kept for every n hours of '
-    'training.')
 
 
 def loss(logits, one_hot_labels, label_smoothing):
@@ -155,45 +114,14 @@ def loss(logits, one_hot_labels, label_smoothing):
   return slim.losses.get_total_loss()
 
 
-def model_init_function(model, num_classes, checkpoint_path):
-  """Creates an init_fn for slim.learning.train.
-
-  Args:
-    model: DeepVariantModel. The model we want an init_fn for.
-    num_classes: int. The number of class labels we want to predict with this
-      model.
-    checkpoint_path: str or ''/None. A path to a model checkpoint file that we
-      will load our model parameters from. If bool(checkpoint_path) == False, we
-      not load a checkpoint but rather return None, indicating no initialization
-      is needed.
-
-  Returns:
-    A init_fn suitable for use with slim.learning.train, or None if
-    bool(checkpoint_path) == False.
-  """
-  # If the special value "model_default" was passed, ask the model for
-  # its default.
-  if checkpoint_path == 'model_default':
-    checkpoint_path = model.pretrained_model_path
-
-  # If the path is non-False, use it.
-  if checkpoint_path:
-    logging.info('Initializing model from checkpoint at %s', checkpoint_path)
-    return model.initialize_from_checkpoint(
-        checkpoint_path, num_classes, is_training=True)
-  else:
-    logging.info('Initializing model with random parameters')
-    return None
-
-
-def run(target, is_chief, device_fn):
+def run(target, unused_is_chief, device_fn, use_tpu):
   """Run training.
 
   Args:
      target: The target of the TensorFlow standard server to use. Can be the
        empty string to run locally using an inprocess server.
-     is_chief: Boolean indicating whether this process is the chief.
      device_fn: Device function used to assign ops to devices.
+     use_tpu: turn on tpu code path.
   """
   if not FLAGS.dataset_config_pbtxt:
     logging.error('Need to specify --dataset_config_pbtxt')
@@ -201,8 +129,6 @@ def run(target, is_chief, device_fn):
 
   g = tf.Graph()
   with g.as_default():
-    model = modeling.get_model(FLAGS.model_name)
-
     with tf.device(device_fn):
       # If ps_tasks is zero, the local device is used. When using multiple
       # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
@@ -211,78 +137,25 @@ def run(target, is_chief, device_fn):
       tf_dataset = data_providers.get_input_fn_from_dataset(
           dataset_config_filename=FLAGS.dataset_config_pbtxt,
           mode=tf.estimator.ModeKeys.TRAIN,
-      )
-      print('Running training on {} with model {}\n'.format(tf_dataset, model))
-      images, labels, _ = data_providers.get_batches(tf_dataset, model,
-                                                     FLAGS.batch_size)
+          use_tpu=use_tpu)
+      model = modeling.get_model(FLAGS.model_name)
+      logging.info('Running training on %s with model %s and tpu %s',
+                   tf_dataset, FLAGS.model_name, use_tpu)
 
-      endpoints = model.create(images, tf_dataset.num_classes, is_training=True)
-      labels = slim.one_hot_encoding(labels, tf_dataset.num_classes)
-      total_loss = loss(
-          endpoints['Logits'], labels, label_smoothing=FLAGS.label_smoothing)
-
-      # Setup the moving averages:
-      moving_average_variables = slim.get_model_variables()
-
-      variable_averages = tf.train.ExponentialMovingAverage(
-          FLAGS.moving_average_decay, slim.get_or_create_global_step())
-
-      tf.add_to_collection(tf.GraphKeys.UPDATE_OPS,
-                           variable_averages.apply(moving_average_variables))
-
-      # Configure the learning rate using an exponetial decay.
-      decay_steps = int(((1.0 * tf_dataset.num_examples) / FLAGS.batch_size) *
-                        FLAGS.num_epochs_per_decay)
-
-      learning_rate = tf.train.exponential_decay(
-          FLAGS.learning_rate,
-          slim.get_or_create_global_step(),
-          decay_steps,
-          FLAGS.learning_rate_decay_factor,
-          staircase=True)
-
-      opt = tf.train.RMSPropOptimizer(learning_rate, FLAGS.rmsprop_decay,
-                                      FLAGS.rmsprop_momentum,
-                                      FLAGS.rmsprop_epsilon)
-
-      # Create training op
-      train_tensor = slim.learning.create_train_op(
-          total_loss,
-          optimizer=opt,
-          update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS))
-
-      # Summaries:
-      slim.summaries.add_histogram_summaries(slim.get_model_variables())
-      slim.summaries.add_scalar_summaries(slim.losses.get_losses(), 'losses')
-      slim.summaries.add_scalar_summary(total_loss, 'Total_Loss', 'losses')
-      slim.summaries.add_scalar_summary(learning_rate, 'Learning_Rate',
-                                        'training')
-      slim.summaries.add_histogram_summaries(endpoints.values())
-      slim.summaries.add_zero_fraction_summaries(endpoints.values())
-      # redacted
-
-      # Set start-up delay
-      startup_delay_steps = FLAGS.task * FLAGS.startup_delay_steps
-
-      init_fn = model_init_function(model, tf_dataset.num_classes,
-                                    FLAGS.start_from_checkpoint)
-
-      saver = tf.train.Saver(
-          max_to_keep=FLAGS.max_checkpoints_to_keep,
-          keep_checkpoint_every_n_hours=FLAGS.keep_checkpoint_every_n_hours)
-
-      # Train model
-      slim.learning.train(
-          train_tensor,
-          number_of_steps=FLAGS.number_of_steps,
-          logdir=FLAGS.train_dir,
+      batches_per_epoch = tf_dataset.num_examples // FLAGS.batch_size
+      logging.info('Batches per epoch %s', batches_per_epoch)
+      params = dict(batches_per_epoch=batches_per_epoch,)
+      estimator = model.make_estimator(
+          batch_size=FLAGS.batch_size,
+          model_dir=FLAGS.train_dir,
+          params=params,
+          use_tpu=use_tpu,
           master=target,
-          init_fn=init_fn,
-          is_chief=is_chief,
-          saver=saver,
-          startup_delay_steps=startup_delay_steps,
-          save_summaries_secs=FLAGS.save_summaries_secs,
-          save_interval_secs=FLAGS.save_interval_secs)
+      )
+      estimator.train(
+          input_fn=tf_dataset,
+          max_steps=FLAGS.number_of_steps,
+      )
 
 
 def parse_and_run():
@@ -296,14 +169,16 @@ def parse_and_run():
     ValueError: If flags are invalid.
   """
   tf_config = os.environ.get('TF_CONFIG')
+  logging.info('TF_CONFIG %s', tf_config)
 
   for name in ['master', 'task', 'ps_tasks']:
-
     if getattr(FLAGS, name) and tf_config:
       raise ValueError(
           'Either the flag --%s or the environment variable TF_CONFIG can be'
           ' set but not both.' % name)
 
+  # redacted
+  #
   # If TF_CONFIG is not available we are either running locally in Cloud
   # or distributed inside Google. On Cloud the default values of
   # FLAGS.master and FLAGS.task correspond to running training locally.
@@ -313,7 +188,11 @@ def parse_and_run():
   # on various flags.
   if not tf_config:
     device_fn = tf.train.replica_device_setter(FLAGS.ps_tasks)
-    return run(FLAGS.master, FLAGS.task == 0, device_fn=device_fn)
+    return run(
+        FLAGS.master,
+        FLAGS.task == 0,
+        device_fn=device_fn,
+        use_tpu=FLAGS.use_tpu)
 
   tf_config_json = json.loads(tf_config)
 
@@ -324,7 +203,7 @@ def parse_and_run():
   # If cluster information is empty run local
   if job_name is None or task_index is None:
     device_fn = tf.train.replica_device_setter(0)
-    return run('', True, device_fn=device_fn)
+    return run('', True, device_fn=device_fn, use_tpu=FLAGS.use_tpu)
 
   ps = cluster.get('ps', [])
   num_ps = len(ps)
@@ -341,7 +220,11 @@ def parse_and_run():
         num_ps,
         worker_device='/job:%s/task:%d' % (job_name, task_index),
         cluster=cluster_spec)
-    return run(server.target, job_name == 'master', device_fn=device_fn)
+    return run(
+        server.target,
+        job_name == 'master',
+        device_fn=device_fn,
+        use_tpu=FLAGS.use_tpu)
 
 
 def main(_):

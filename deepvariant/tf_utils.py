@@ -286,3 +286,16 @@ def compression_type_of_files(files):
       tf.python_io.TFRecordCompressionType.GZIP):
     return 'GZIP'
   return None
+
+
+def tpu_available(sess=None):
+  """Return true if a TPU device is available to the default session."""
+  if sess is None:
+    init_op = tf.group(tf.global_variables_initializer(),
+                       tf.local_variables_initializer())
+    with tf.Session() as sess:
+      sess.run(init_op)
+      devices = sess.list_devices()
+  else:
+    devices = sess.list_devices()
+  return any(dev.device_type == 'TPU' for dev in devices)

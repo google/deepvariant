@@ -32,18 +32,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 
 
 from tensorflow import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
-import numpy.testing as npt
 import six
 import tensorflow as tf
 
-from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import variant_utils
 from deepvariant import data_providers_test
 from deepvariant import model_eval
 from deepvariant import testdata
@@ -51,6 +49,8 @@ from deepvariant.testing import flagsaver
 from deepvariant.testing import tf_test_utils
 
 FLAGS = flags.FLAGS
+
+# Note that this test suite is invoked twice, with --use_tpu set both ways.
 
 
 def setUpModule():
@@ -60,67 +60,11 @@ def setUpModule():
 class ModelEvalTest(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
 
-  def test_select_variants_weights(self):
-    variants = [
-        test_utils.make_variant(start=10, alleles=['C', 'T']),
-        test_utils.make_variant(start=11, alleles=['C', 'TA']),
-        test_utils.make_variant(start=12, alleles=['C', 'A']),
-        test_utils.make_variant(start=13, alleles=['CA', 'T']),
-    ]
-    encoded = tf.constant([v.SerializeToString() for v in variants])
-
-    with self.test_session() as sess:
-      sess.run(tf.global_variables_initializer())
-      op = model_eval.select_variants_weights(
-          variant_utils.is_snp, encoded, name='tf_is_snp')
-      self.assertTrue(op.name.startswith('tf_is_snp'))
-      npt.assert_array_equal(op.eval(), [1.0, 0.0, 1.0, 0.0])
-
-  def test_calling_metrics(self):
-
-    def make_mock_metric(name):
-      # pylint: disable=unused-argument
-      def _side_effect(predictions, labels, weights):
-        if weights:
-          return name + ':' + ','.join(str(int(w)) for w in weights)
-        else:
-          return name + ':None'
-
-      return mock.MagicMock(side_effect=_side_effect)
-
-    predictions = tf.constant([0, 1, 2, 0])
-    labels = tf.constant([0, 2, 1, 1])
-    metrics = {
-        'm1': make_mock_metric('mock_metric1'),
-        'm2': make_mock_metric('mock_metric2')
-    }
-    selectors = {'s1': [1, 1, 1, 1], 's2': [0, 0, 0, 0], 's3': None}
-
-    # The returned dictionary has the expected keys and values.
-    self.assertEqual({
-        'm1/s1': 'mock_metric1:1,1,1,1',
-        'm1/s2': 'mock_metric1:0,0,0,0',
-        'm1/s3': 'mock_metric1:None',
-        'm2/s1': 'mock_metric2:1,1,1,1',
-        'm2/s2': 'mock_metric2:0,0,0,0',
-        'm2/s3': 'mock_metric2:None',
-    },
-                     model_eval.calling_metrics(
-                         metrics_map=metrics,
-                         selectors_map=selectors,
-                         predictions=predictions,
-                         labels=labels))
-
-    # Check that our mocked metrics have all of the calls we.
-    for mocked in metrics.values():
-      self.assertEqual([
-          mock.call(
-              predictions=predictions, labels=labels, weights=selectors[x])
-          for x in selectors
-      ], mocked.call_args_list)
-
   def setUp(self):
     self.checkpoint_dir = tf.test.get_temp_dir()
+    # Use this to generate a random name.  The framework
+    # will create the directory under self.checkpoint_dir.
+    self.eval_name = os.path.basename(tf.test.get_temp_dir())
 
   @parameterized.parameters(['inception_v3'])
   @flagsaver.FlagSaver
@@ -135,7 +79,7 @@ class ModelEvalTest(
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
     FLAGS.checkpoint_dir = self.checkpoint_dir
-    FLAGS.eval_dir = tf.test.get_temp_dir()
+    FLAGS.eval_name = self.eval_name
     FLAGS.max_evaluations = 1
     FLAGS.max_examples = 2
     FLAGS.model_name = model_name
@@ -144,12 +88,15 @@ class ModelEvalTest(
     # inputs are certain to work. This test is expensive to run, so we want to
     # minimize the number of times we need to run this.
     mock_get_input_fn_from_dataset.return_value = (
-        data_providers_test.make_golden_dataset(compressed_inputs=True))
+        data_providers_test.make_golden_dataset(
+            compressed_inputs=True, use_tpu=FLAGS.use_tpu))
     model_eval.main(0)
     mock_get_input_fn_from_dataset.assert_called_once_with(
         dataset_config_filename=FLAGS.dataset_config_pbtxt,
         mode=tf.estimator.ModeKeys.EVAL)
 
+  # Using a constant model, check that running an eval returns the expected
+  # metrics.
   @flagsaver.FlagSaver
   @mock.patch(
       'deepvariant.model_eval.checkpoints_iterator')
@@ -157,7 +104,7 @@ class ModelEvalTest(
               'get_input_fn_from_dataset')
   def test_fixed_eval_sees_the_same_evals(self, mock_get_input_fn_from_dataset,
                                           mock_checkpoints_iterator):
-    dataset = data_providers_test.make_golden_dataset()
+    dataset = data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu)
     n_checkpoints = 3
     checkpoints = [
         tf_test_utils.write_fake_checkpoint(
@@ -175,7 +122,7 @@ class ModelEvalTest(
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
     FLAGS.checkpoint_dir = self.checkpoint_dir
-    FLAGS.eval_dir = tf.test.get_temp_dir()
+    FLAGS.eval_name = self.eval_name
     FLAGS.max_evaluations = n_checkpoints
     FLAGS.model_name = 'constant'
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
@@ -185,10 +132,10 @@ class ModelEvalTest(
         mock.call(
             dataset_config_filename=FLAGS.dataset_config_pbtxt,
             mode=tf.estimator.ModeKeys.EVAL)
-    ] * n_checkpoints)
+    ])
 
     metrics = [
-        model_eval.read_metrics(checkpoint, eval_dir=FLAGS.eval_dir)
+        model_eval.read_metrics(checkpoint, eval_name=FLAGS.eval_name)
         for checkpoint in checkpoints
     ]
 

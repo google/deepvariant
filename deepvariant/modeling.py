@@ -42,25 +42,149 @@ from __future__ import print_function
 import math
 
 
+
+from tensorflow import flags
 from absl import logging
 
 import tensorflow as tf
+
+from tensorflow.contrib.tpu.python.tpu import tpu_config
+from tensorflow.contrib.tpu.python.tpu import tpu_estimator
+from tensorflow.contrib.tpu.python.tpu import tpu_optimizer
 from nets import inception
 from nets import mobilenet_v1
-from nets import resnet_v2
 
-from deepvariant import tf_utils
+from deepvariant import dv_constants
 
-# The decay factor to use for the moving average.
-MOVING_AVERAGE_DECAY = 0.9999
+flags.DEFINE_float(
+    'label_smoothing', 1e-6,
+    'Amount of label smoothing to use. By default this is 0.0001%'
+    'meaning that we expect a label error at a rate of 1 / 1,000,000')
 
-SKIP_MODEL_INITIALIZATION_IN_TEST = '__SKIP_MODEL_INITIALIZATION_IN_TEST__'
+# Training parameters.
+flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
+
+flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
+
+flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
+
+flags.DEFINE_float('rmsprop_epsilon', 1.0, 'Epsilon term for RMSProp.')
+
+flags.DEFINE_float('learning_rate_decay_factor', 0.94,
+                   'Learning rate decay factor.')
+
+flags.DEFINE_float('num_epochs_per_decay', 2.0,
+                   'Number of epochs after which learning rate decays.')
+
+flags.DEFINE_float('moving_average_decay', 0.9999,
+                   'The decay to use for the moving average.')
+
+flags.DEFINE_integer(
+    'save_summary_steps', 100, 'Number of steps which must have run before '
+    'showing summaries.')
+
+flags.DEFINE_integer(
+    'save_interval_secs', 1000, 'Interval (in seconds) at which the model data '
+    'should be checkpointed. Set to 0 to disable, -1 to ignore. '
+    'Exclusive with save_interval_steps.')
+
+flags.DEFINE_integer(
+    'save_interval_steps', -1, 'Interval (in steps) at which the model data '
+    'should be checkpointed. Set to 0 to disable, -1 to ignore. '
+    'Exclusive with save_interval_secs.')
+
+FLAGS = flags.FLAGS
 
 slim = tf.contrib.slim
 
 
 class UnsupportedImageDimensions(Exception):
   """Exception indicating the image dimensions aren't supported by our model."""
+
+
+# NB. This includes only a subset of our usual metrics.
+# We'll add the rest back in a subsequent change.
+def eval_metric_fn(labels, predictions, unused_encoded_variants):
+  """Calculate eval metrics from Tensors, on CPU host.
+
+  Args:
+    labels: the ground-truth labels for the examples.
+    predictions: the predicted labels for the examples.
+    unused_encoded_variants: the encoded variants.
+
+  Returns:
+    a dictionary of string name to metric.
+  """
+
+  return {
+      'Accuracy/All':
+          tf.metrics.accuracy(labels, tf.argmax(input=predictions, axis=1)),
+      'Precision/All':
+          tf.metrics.precision(labels, tf.argmax(input=predictions, axis=1)),
+      'Recall/All':
+          tf.metrics.recall(labels, tf.argmax(input=predictions, axis=1)),
+      'FPs/All':
+          tf.metrics.false_positives(labels, tf.argmax(
+              input=predictions, axis=1)),
+      'FNs/All':
+          tf.metrics.false_negatives(labels, tf.argmax(
+              input=predictions, axis=1)),
+      'TPs/All':
+          tf.metrics.true_positives(labels, tf.argmax(
+              input=predictions, axis=1)),
+      'TNs/All':
+          tf.metrics.true_negatives(labels, tf.argmax(
+              input=predictions, axis=1)),
+  }
+
+
+# The following two classes support loading exponential moving averages into
+# their corresponding variables when a checkpoint is loaded. They're called
+# as hooks by the Estimators. Note for future work: this is the documented
+# way, but someone on the mailing list suggested that using the scaffold_fn
+# mechanism might be better.
+
+
+class LoadEMAHook(tf.train.SessionRunHook):
+  """Hook to load EMA into their corresponding variables.
+
+  This looks for the latest checkpoint in the model dir.
+  """
+
+  def __init__(self, model_dir):
+    super(LoadEMAHook, self).__init__()
+    self._model_dir = model_dir
+
+  def begin(self):
+    ema = tf.train.ExponentialMovingAverage(FLAGS.moving_average_decay)
+    variables_to_restore = ema.variables_to_restore()
+    self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
+        tf.train.latest_checkpoint(self._model_dir), variables_to_restore)
+
+  def after_create_session(self, sess, coord):
+    tf.logging.info('Reloading EMA...')
+    self._load_ema(sess)
+
+
+class PredictEMAHook(tf.train.SessionRunHook):
+  """Hook to load EMA into their corresponding variables.
+
+  This reads the specified checkpoint.
+  """
+
+  def __init__(self, checkpoint_path):
+    super(PredictEMAHook, self).__init__()
+    self._checkpoint_path = checkpoint_path
+
+  def begin(self):
+    ema = tf.train.ExponentialMovingAverage(FLAGS.moving_average_decay)
+    variables_to_restore = ema.variables_to_restore()
+    self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
+        self._checkpoint_path, variables_to_restore)
+
+  def after_create_session(self, sess, coord):
+    tf.logging.info('Reloading EMA...')
+    self._load_ema(sess)
 
 
 class DeepVariantModel(object):
@@ -101,6 +225,147 @@ class DeepVariantModel(object):
     self.name = name
     self.pretrained_model_path = pretrained_model_path
     self.supported_dimensions_message = 'unknown'
+    self.use_tpu = None
+
+  def make_estimator(self,
+                     batch_size,
+                     model_dir=None,
+                     max_checkpoints_to_keep=100000,
+                     iterations_per_loop=100,
+                     params=None,
+                     unused_device_fn=None,
+                     master='',
+                     use_tpu=False):
+    """Returns a new tf.estimator.Estimator object for prediction.
+
+    The estimator needs to know batch_size. We use the same value for all
+    of eval, train, and predict. The estimator will automatically save
+    checkpoints to model_dir and keep the specified number of them. The value
+    of iterations_per_loop is not critical, and we default to the recommended
+    value. Some optional arguments are only required for use with TPU.
+
+    This function will use self.model_fn and self.use_tpu when constructing the
+    model specific Estimator object.
+
+    Estimators are also sometimes called classifiers.
+
+    Args:
+      batch_size: the batch size to use (for TRAIN, EVAL, and PREDICT modes).
+      model_dir: an (optional) string directory to use as the model directory.
+      max_checkpoints_to_keep: an (optional) integer count of saved checkpoints.
+      iterations_per_loop: an (optional) integer count of log_step_count_steps.
+      params: an (optional) dictionary of parameters to pass to the Estimator
+        constructor.
+      unused_device_fn: a device_fn to pass to RunConfig, if not use_tpu.
+      master: a string necessary for TPU, pass FLAGS.master through.
+      use_tpu: boolean.  set self.use_tpu if not None.
+
+    Returns:
+      an object implementing the tf.estimator.Estimator interface (will be a
+      TPUEstimator if self.use_tpu is True).
+    """
+    if use_tpu is not None:
+      self.use_tpu = use_tpu
+
+    # These flags are exclusive if not None, and 0 means disable.
+    save_checkpoints_secs = None
+    save_checkpoints_steps = None
+    if FLAGS.save_interval_secs >= 0:
+      save_checkpoints_secs = FLAGS.save_interval_secs
+    if FLAGS.save_interval_steps >= 0:
+      save_checkpoints_steps = FLAGS.save_interval_steps
+
+    params = params if params is not None else {}
+    if self.use_tpu:
+      config = tpu_config.RunConfig(
+          master=master,
+          evaluation_master=master,
+          model_dir=model_dir,
+          log_step_count_steps=iterations_per_loop,
+          keep_checkpoint_max=max_checkpoints_to_keep,
+          save_checkpoints_secs=save_checkpoints_secs,
+          save_checkpoints_steps=save_checkpoints_steps,
+          save_summary_steps=FLAGS.save_summary_steps,
+          tpu_config=tpu_config.TPUConfig(
+              iterations_per_loop=iterations_per_loop))
+
+      classifier = tpu_estimator.TPUEstimator(
+          use_tpu=self.use_tpu,
+          model_fn=self.model_fn,
+          config=config,
+          # redacted
+          train_batch_size=batch_size,
+          eval_batch_size=batch_size,
+          predict_batch_size=batch_size,
+          params=params)
+    else:
+      config = tf.estimator.RunConfig(
+          model_dir=model_dir,
+          log_step_count_steps=iterations_per_loop,
+          keep_checkpoint_max=max_checkpoints_to_keep,
+          # device_fn=device_fn,  # Not in tf1.8?
+          save_checkpoints_secs=save_checkpoints_secs,
+          save_checkpoints_steps=save_checkpoints_steps,
+          save_summary_steps=FLAGS.save_summary_steps,
+      )
+      # The TPUEstimator interface implicitly adds batch_size to the params
+      # dict. Do so explicitly here, so that we can use the same model_fn.
+      params_with_batch_size = {'batch_size': batch_size}
+      params_with_batch_size.update(params)
+
+      classifier = tf.estimator.Estimator(
+          model_fn=self.model_fn, config=config, params=params_with_batch_size)
+
+    return classifier
+
+  def model_fn(self, features, labels, mode, params):
+    """A model_fn satisfying the Estimator API.
+
+    Args:
+      features: a dictionary supplying features.
+      labels: a tensor of labels.
+      mode: one of tf.estimator.ModeKeys.{EVAL,TRAIN}
+      params: a dictionary of parameters.
+
+    Returns:
+      a tf.estimator.EstimatorSpec or tpu_estimator.TPUEstimatorSpec,
+      depending on self.use_tpu.
+    """
+    raise NotImplementedError
+
+  def session_eval_hooks(self):
+    """Returns a list of tf.train.SessionRunHook classes.
+
+    A typical use case is to provide a hook to load the EMA variables.
+
+    These will be instantiated and invoked by
+      eval_hooks = [
+          h(model_dir) for h in model.session_eval_hooks()
+      ]
+      estimator.evaluate(hooks=...).
+
+    Note that this is done according to the instructions in
+    cloud_tpu/models/inception/inception_v3.py. A newer idea is in
+    tpuestimator-scaffold, but we haven't tried that approach.
+    """
+    return []
+
+  def session_predict_hooks(self):
+    """Returns a list of tf.train.SessionRunHook classes.
+
+    A typical use case is to provide a hook to load the EMA variables.
+
+    These will be instantiated and invoked by
+      predict_hooks = [
+          h(checkpoint_path) for h in model.session_predict_hooks()
+      ]
+      estimator.predict(hooks=...).
+
+    Note that this is done according to the instructions in
+    cloud_tpu/models/inception/inception_v3.py. A newer idea is in
+    tpuestimator-scaffold, but we haven't tried that approach.
+    """
+    return []
 
   def create(self, images, num_classes, is_training):
     """Creates a new model.
@@ -154,32 +419,11 @@ class DeepVariantModel(object):
     """
     raise NotImplementedError
 
-  def initialize_from_checkpoint(self, checkpoint_path, num_classes,
-                                 is_training):
-    """Creates init_fn that loads a model from checkpoint in checkpoint_path.
-
-    Load a pretrained model checkpoint from checkpoint_path. If the number of
-    classes defined in that checked model is different from the number
-    in our dataset, subclasses may partially load this model, but this is only
-    allowed if is_training=False, otherwise an error is raised.
+  def initialize_from_checkpoint(self, checkpoint_path):
+    """Store the checkpoint path for a warm start in self.warm_start.
 
     Args:
       checkpoint_path: String. Path to a checkpoint.
-      num_classes: The number of classes we are going to predict with this
-        model. Must be integer > 1.
-      is_training: boolean. Is this model being loaded for training purposes or
-        for inference?
-
-    Returns:
-      An init_fn for use with slim.learning.train init_fn argument, which is
-      defined as "a callable to be executed after `init_op` is called. The
-      callable must accept one argument, the session being initialized."
-
-    Raises:
-      ValueError: If the checkpoint_path could not be loaded.
-      ValueError: If the model endpoints in the latest checkpoint in directory
-        aren't perfectly compatible with this model and the num_classes we are
-        prediction and is_training=False.
     """
     raise NotImplementedError
 
@@ -327,57 +571,173 @@ class DeepVariantSlimModel(DeepVariantModel):
           images, height, width, target_height=107, target_width=width)
     return images
 
-  def initialize_from_checkpoint(self, checkpoint_path, num_classes,
-                                 is_training):
+  def initialize_from_checkpoint(self, checkpoint_path):
     """See baseclass."""
-    # Note that this class supports loading from checkpoint with a different
-    # number of classes than requested here, in which case the softmax endpoints
-    # for the model are not loaded.
-    if checkpoint_path is None:
-      raise ValueError('Checkpoint cannot be None')
+    self.warm_start = checkpoint_path
 
-    if checkpoint_path == SKIP_MODEL_INITIALIZATION_IN_TEST:
-      # If the checkpoint path is our magic SKIP_MODEL_INITIALIZATION_IN_TEST we
-      # don't in fact do any initialization.
-      return lambda sess: sess
+  def model_fn(self, features, labels, mode, params):
+    """A model_fn for slim (really inception_v3), satisfying the Estimator API.
 
-    # Figure out how many classes this inception model was trained to predict.
-    shapes = tf_utils.model_shapes(checkpoint_path,
-                                   [self.n_classes_model_variable])
-    # The last dimension of this tensor is the num of classes.
-    checkpoint_num_classes = shapes[self.n_classes_model_variable][-1]
+    Args:
+      features: a single Tensor or dict of same (from input_fn).
+      labels: a single Tensor or dict of same (from input_fn).
+      mode: tf.estimator.ModeKeys.
+      params: dict.
 
-    exclude_scopes = []
-    if checkpoint_num_classes != num_classes:
-      # We have a mismatch between the number of classes the model was trained
-      # with and how many we want to predict. This is fine as long as we are
-      # training, as we simply don't restore the logits variables from the
-      # pre-trained model and start from random weights for those values.
-      if not is_training:
-        raise ValueError('Checkpoint has {} classes but we want to use {} and '
-                         'is_training=False'.format(checkpoint_num_classes,
-                                                    num_classes))
-      logging.info('Checkpoint was trained against %s '
-                   'classes while our dataset is using %s, '
-                   'enabling fine-tuning', checkpoint_num_classes, num_classes)
-      exclude_scopes = self.excluded_scopes
+    Returns:
+      EstimatorSpec or TPUEstimatorSpec depending on self.use_tpu.
+    """
+    # NB. The basic structure of this started from
+    # //third_party/cloud_tpu/models/inception/inception_v3.py
+    # and //third_party/cloud_tpu/models/mobilenet/mobilenet.py
 
-    variables_to_restore = self.variables_to_restore_from_model(exclude_scopes)
-    if not is_training:
-      # Apply the moving averages to the variables we want to restore during
-      # inference.
-      variable_averages = tf.train.ExponentialMovingAverage(
-          MOVING_AVERAGE_DECAY)
-      for var in variables_to_restore:
-        tf.add_to_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES, var)
-      variables_to_restore = variable_averages.variables_to_restore()
+    # redacted
+    num_classes = dv_constants.NUM_CLASSES
 
-    # If it's training mode, we ignore any missing vars because it's ok to be
-    # less strict about a starting checkpoint.
-    # However, in inference, we want to make sure we still fail on missing vars
-    # unless we explicity exclude them.
-    return slim.assign_from_checkpoint_fn(
-        checkpoint_path, variables_to_restore, ignore_missing_vars=is_training)
+    images = features['image']
+    images = self.preprocess_images(images)
+
+    endpoints = self.create(
+        images=images,
+        num_classes=num_classes,
+        is_training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    logits = endpoints['Logits']
+
+    predictions = endpoints
+    predictions.update({
+        'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
+        'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+    })
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      return self._model_fn_predict(mode, features, logits)
+
+    # Compute loss.
+    one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)
+    tf.losses.softmax_cross_entropy(
+        onehot_labels=one_hot_labels,
+        logits=logits,
+        weights=1.0,
+        label_smoothing=FLAGS.label_smoothing)
+    total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
+
+    # Note, below, one of train_op or eval_metrics will be None, and the other
+    # will be populated, depending on mode.
+
+    # There are a lot of arguments here; that's to avoid referencing flags in
+    # leaf functions.
+    train_op = self._model_fn_train(
+        mode=mode,
+        total_loss=total_loss,
+        batches_per_epoch=params['batches_per_epoch'],
+        num_epochs_per_decay=FLAGS.num_epochs_per_decay,
+        initial_learning_rate=FLAGS.learning_rate,
+        learning_rate_decay_factor=FLAGS.learning_rate_decay_factor,
+        rmsprop_decay=FLAGS.rmsprop_decay,
+        rmsprop_momentum=FLAGS.rmsprop_momentum,
+        rmsprop_epsilon=FLAGS.rmsprop_epsilon,
+        moving_average_decay=FLAGS.moving_average_decay)
+
+    eval_metrics = self._model_fn_eval(
+        mode=mode,
+        features=features,
+        labels=labels,
+        endpoints=endpoints,
+        logits=logits,
+        use_logits=False)
+
+    spec = tpu_estimator.TPUEstimatorSpec(
+        mode=mode,
+        loss=total_loss,
+        train_op=train_op,
+        eval_metrics=eval_metrics,
+        predictions=predictions)
+    if self.use_tpu:
+      return spec
+    else:
+      return spec.as_estimator_spec()
+
+  def _model_fn_predict(self, mode, features, logits):
+    """This is the PREDICT part of model_fn."""
+    assert mode == tf.estimator.ModeKeys.PREDICT
+    predictions = {
+        # We don't actually use classes downstream right now.
+        # 'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
+        'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
+        # DV2 call_variants wants these passed through.
+        'variant': features['variant'],
+        'alt_allele_indices': features['alt_allele_indices'],
+    }
+    if self.use_tpu:
+      return tpu_estimator.TPUEstimatorSpec(mode=mode, predictions=predictions)
+    else:
+      return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+  def _model_fn_eval(self, mode, features, labels, endpoints, logits,
+                     use_logits):
+    """This is the EVAL part of model_fn."""
+    if mode != tf.estimator.ModeKeys.EVAL:
+      return None
+    if use_logits:
+      eval_predictions = logits
+    else:
+      eval_predictions = endpoints['Predictions']
+    encoded_variants = features['variant']
+    eval_metrics = (eval_metric_fn,
+                    [labels, eval_predictions, encoded_variants])
+    if not self.use_tpu:
+      for name, value in eval_metrics[0](*eval_metrics[1]).iteritems():
+        tf.contrib.slim.summaries.add_scalar_summary(
+            value, name, print_summary=True)
+    return eval_metrics
+
+  def _model_fn_train(self, mode, total_loss, batches_per_epoch,
+                      num_epochs_per_decay, initial_learning_rate,
+                      learning_rate_decay_factor, rmsprop_decay,
+                      rmsprop_momentum, rmsprop_epsilon, moving_average_decay):
+    """This is the TRAIN part of model_fn."""
+    if mode != tf.estimator.ModeKeys.TRAIN:
+      return None
+    # Configure the learning rate using an exponetial decay.
+    global_step = tf.train.get_or_create_global_step()
+    decay_steps = int(1.0 * batches_per_epoch * num_epochs_per_decay)
+    learning_rate = tf.train.exponential_decay(
+        learning_rate=initial_learning_rate,
+        global_step=global_step,
+        decay_steps=decay_steps,
+        decay_rate=learning_rate_decay_factor,
+        staircase=True)
+    # Set a minimum boundary for the learning rate.
+    learning_rate = tf.maximum(
+        learning_rate, 0.0001 * initial_learning_rate, name='learning_rate')
+    optimizer = tf.train.RMSPropOptimizer(
+        learning_rate,
+        rmsprop_decay,
+        momentum=rmsprop_momentum,
+        epsilon=rmsprop_epsilon)
+    if self.use_tpu:
+      optimizer = tpu_optimizer.CrossShardOptimizer(optimizer)
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+      train_op = optimizer.minimize(total_loss, global_step=global_step)
+
+    # NB. In the inception code this was "tf.trainable_variables()
+    # + tf.moving_average_variables()", but we've settled on just
+    # tf.model_variables() in the existing production DV2.
+    variables_to_average = tf.model_variables()
+    variable_averages = tf.train.ExponentialMovingAverage(
+        decay=moving_average_decay, num_updates=global_step)
+    with tf.control_dependencies([train_op]), tf.name_scope('moving_average'):
+      train_op = variable_averages.apply(variables_to_average)
+    tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, train_op)
+    return train_op
+
+  def session_eval_hooks(self):
+    return [LoadEMAHook]
+
+  def session_predict_hooks(self):
+    return [PredictEMAHook]
 
 
 class DeepVariantInceptionV3(DeepVariantSlimModel):
@@ -419,105 +779,6 @@ class DeepVariantInceptionV2(DeepVariantSlimModel):
     with slim.arg_scope(inception.inception_v2_arg_scope()):
       _, endpoints = inception.inception_v2(
           inputs=images, num_classes=num_classes, is_training=is_training)
-      return endpoints
-
-
-class DeepVariantResnet50(DeepVariantSlimModel):
-  """Resnet v2 50 model.
-
-  References:
-    See slim resnet_v2.py.
-  """
-
-  def __init__(self):
-    super(DeepVariantResnet50, self).__init__(
-        name='resnet_v2_50',
-        n_classes_model_variable='resnet_v2_50/logits/weights',
-        excluded_scopes=['resnet_v2_50/logits', 'resnet_v2_50/conv1'],
-        pretrained_model_path=('/namespace/vale-project/models/classification/'
-                               'imagenet/resnet_v2_50_inception_preprocessed/'
-                               'model.ckpt-5136169'))
-
-  def _create(self, images, num_classes, is_training):
-    """See baseclass."""
-    with slim.arg_scope(resnet_v2.resnet_arg_scope()):
-      _, endpoints = resnet_v2.resnet_v2_50(
-          images, num_classes, is_training=is_training, spatial_squeeze=False)
-      # Resnet's "predictions" endpoint is (n, 1, 1, m) but we really
-      # want to have an (n, m) "Predictions" endpoint.  We add a squeeze
-      # op here to make that happen.
-      endpoints['Predictions'] = tf.squeeze(
-          endpoints['predictions'], [1, 2], name='SqueezePredictions')
-      # Likewise, the endpoint "resnet_v2_50/logits" should be squeezed to
-      # "Logits"
-      endpoints['Logits'] = tf.squeeze(
-          endpoints['resnet_v2_50/logits'], [1, 2], name='SqueezeLogits')
-      return endpoints
-
-
-class DeepVariantResnet101(DeepVariantSlimModel):
-  """Resnet v2 101 model.
-
-  References:
-    See slim resnet_v2.py.
-  """
-
-  def __init__(self):
-    super(DeepVariantResnet101, self).__init__(
-        name='resnet_v2_101',
-        n_classes_model_variable='resnet_v2_101/logits/weights',
-        excluded_scopes=['resnet_v2_101/logits', 'resnet_v2_101/conv1'],
-        pretrained_model_path=('/namespace/vale-project/models/classification/'
-                               'imagenet/resnet_v2_101_inception_preprocessed/'
-                               'model.ckpt-5562630'))
-
-  def _create(self, images, num_classes, is_training):
-    """See baseclass."""
-    with slim.arg_scope(resnet_v2.resnet_arg_scope()):
-      _, endpoints = resnet_v2.resnet_v2_101(
-          images, num_classes, is_training=is_training, spatial_squeeze=False)
-      # Resnet's "predictions" endpoint is (n, 1, 1, m) but we really
-      # want to have an (n, m) "Predictions" endpoint.  We add a squeeze
-      # op here to make that happen.
-      endpoints['Predictions'] = tf.squeeze(
-          endpoints['predictions'], [1, 2], name='SqueezePredictions')
-      # Likewise, the endpoint "resnet_v2_101/logits" should be squeezed to
-      # "Logits"
-      endpoints['Logits'] = tf.squeeze(
-          endpoints['resnet_v2_101/logits'], [1, 2], name='SqueezeLogits')
-      return endpoints
-
-
-class DeepVariantResnet152(DeepVariantSlimModel):
-  """Resnet v2 152 model.
-
-  References:
-    See slim resnet_v2.py.
-  """
-
-  def __init__(self):
-    super(DeepVariantResnet152, self).__init__(
-        name='resnet_v2_152',
-        n_classes_model_variable='resnet_v2_152/logits/weights',
-        excluded_scopes=['resnet_v2_152/logits', 'resnet_v2_152/conv1'],
-        pretrained_model_path=('/namespace/vale-project/models/classification/'
-                               'imagenet/resnet_v2_152_inception_preprocessed/'
-                               'model.ckpt-5686729'))
-
-  def _create(self, images, num_classes, is_training):
-    """See baseclass."""
-    with slim.arg_scope(resnet_v2.resnet_arg_scope()):
-      _, endpoints = resnet_v2.resnet_v2_152(
-          images, num_classes, is_training=is_training, spatial_squeeze=False)
-      # Resnet's "predictions" endpoint is (n, 1, 1, m) but we really
-      # want to have an (n, m) "Predictions" endpoint.  We add a squeeze
-      # op here to make that happen.
-      endpoints['Predictions'] = tf.squeeze(
-          endpoints['predictions'], [1, 2], name='SqueezePredictions')
-      # Likewise, the endpoint "resnet_v2_152/logits" should be squeezed to
-      # "Logits"
-      endpoints['Logits'] = tf.squeeze(
-          endpoints['resnet_v2_152/logits'], [1, 2], name='SqueezeLogits')
       return endpoints
 
 
@@ -566,10 +827,9 @@ class DeepVariantDummyModel(DeepVariantModel):
     images = tf.div(images, 128.0)
     return images
 
-  def initialize_from_checkpoint(self, checkpoint_path, num_classes,
-                                 is_training):
+  def initialize_from_checkpoint(self, checkpoint_path):
     # No initialization is needed, so return a noop.
-    return lambda sess: sess
+    self.warn_start = None
 
   @property
   def is_trainable(self):
@@ -600,6 +860,54 @@ class DeepVariantRandomGuessModel(DeepVariantDummyModel):
         shape=(batch_size, num_classes), seed=self.seed)
     return {'Predictions': tf.nn.softmax(rand_probs)}
 
+  def model_fn(self, features, labels, mode, params):
+    """A model_fn for the random model."""
+    # redacted
+    num_classes = dv_constants.NUM_CLASSES
+
+    # In predict-mode the last batch may be smaller; so use the measured
+    # batch size.
+    encoded_variants = features['variant']
+
+    tf.set_random_seed(self.seed)
+    rand_probs = tf.map_fn(
+        fn=lambda _: tf.random_uniform([num_classes]),
+        elems=features['image'],
+        dtype=tf.float32,
+    )
+
+    # In a normal model we'd call create to get the endpoints,
+    # but it's inconvenient to pass batch size in this case.
+    endpoints = {'Predictions': tf.nn.softmax(rand_probs)}
+
+    predictions = endpoints
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      predictions = {
+          'probabilities': endpoints['Predictions'],
+          'variant': encoded_variants,
+          'alt_allele_indices': features['alt_allele_indices'],
+      }
+
+    if mode == tf.estimator.ModeKeys.EVAL:
+      eval_metrics = (eval_metric_fn,
+                      [labels, endpoints['Predictions'], encoded_variants])
+    else:
+      eval_metrics = None
+
+    loss = tf.constant(0.0)
+    train_op = None
+    spec = tpu_estimator.TPUEstimatorSpec(
+        mode=mode,
+        loss=loss,
+        train_op=train_op,
+        eval_metrics=eval_metrics,
+        predictions=predictions)
+    if self.use_tpu:
+      return spec
+    else:
+      return spec.as_estimator_spec()
+
 
 class DeepVariantConstantModel(DeepVariantDummyModel):
   """Returns a constant probability distribution for each example."""
@@ -626,16 +934,60 @@ class DeepVariantConstantModel(DeepVariantDummyModel):
     else:
       self.predictions = predictions
 
-  def _create(self, images, num_classes, is_training):
-    assert num_classes == len(self.predictions)
-    batch_size = tf.shape(images)[0]
-    pred_const = tf.constant(self.predictions)
+  @staticmethod
+  def _predictions(pred_const, batch_size):
     return {
         'Predictions':
             tf.reshape(
                 tf.tile(pred_const, [batch_size]),
                 shape=(batch_size, tf.shape(pred_const)[0]))
     }
+
+  def _create(self, images, num_classes, is_training):
+    assert num_classes == len(self.predictions)
+    batch_size = tf.shape(images)[0]
+    pred_const = tf.constant(self.predictions)
+    return self._predictions(pred_const, batch_size)
+
+  def model_fn(self, features, labels, mode, params):
+    """A model_fn for the constant model."""
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      batch_size = tf.shape(features['image'])[0]
+      logging.info('actual_batch_size %s', batch_size)
+    else:
+      batch_size = params['batch_size']
+      logging.info('batch_size %s', batch_size)
+    pred_const = tf.constant(self.predictions)
+    endpoints = self._predictions(pred_const, batch_size)
+    encoded_variants = features['variant']
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      predictions = {
+          'probabilities': endpoints['Predictions'],
+          'variant': encoded_variants,
+          'alt_allele_indices': features['alt_allele_indices'],
+      }
+      endpoints.update(predictions)
+
+    if mode == tf.estimator.ModeKeys.EVAL:
+      eval_metrics = (eval_metric_fn,
+                      [labels, endpoints['Predictions'], encoded_variants])
+    else:
+      eval_metrics = None
+
+    loss = tf.constant(0.0)
+    train_op = None
+
+    spec = tpu_estimator.TPUEstimatorSpec(
+        mode=mode,
+        loss=loss,
+        train_op=train_op,
+        eval_metrics=eval_metrics,
+        predictions=endpoints)
+    if self.use_tpu:
+      return spec
+    else:
+      return spec.as_estimator_spec()
 
 
 # Our list of pre-defined models.
@@ -645,9 +997,6 @@ _MODELS = [
     DeepVariantMobileNetV1(),
     DeepVariantRandomGuessModel(),
     DeepVariantConstantModel(),
-    DeepVariantResnet50(),
-    DeepVariantResnet101(),
-    DeepVariantResnet152(),
 ]
 
 

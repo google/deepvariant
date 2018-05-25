@@ -56,7 +56,7 @@ class CallVariantsAcceleratorTests(
   def test_call_variants_runs_on_gpus(self, model):
     call_variants.call_variants(
         examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
-        checkpoint_path=modeling.SKIP_MODEL_INITIALIZATION_IN_TEST,
+        checkpoint_path=None,
         model=model,
         execution_hardware='accelerator',
         output_file=test_utils.test_tmpfile('zzz.tfrecord'))

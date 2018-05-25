@@ -216,9 +216,12 @@ class DataProviderTest(parameterized.TestCase):
   # self.assertTfDataSetExamplesMatchExpected to sort the
   # loci it sees.  That doesn't generalize well, but we should
   # be able to fix this soon.
-  @parameterized.parameters(True, False)
-  def test_reading_sharded_dataset(self, compressed_inputs):
-    golden_dataset = make_golden_dataset(compressed_inputs)
+  @parameterized.parameters(
+      dict(compressed_inputs=compressed_inputs, use_tpu=use_tpu)
+      for compressed_inputs in [True, False]
+      for use_tpu in [True, False])
+  def test_reading_sharded_dataset(self, compressed_inputs, use_tpu):
+    golden_dataset = make_golden_dataset(compressed_inputs, use_tpu=use_tpu)
     n_shards = 3
     sharded_path = test_utils.test_tmpfile('sharded@{}'.format(n_shards))
     io_utils.write_tfrecords(
@@ -240,14 +243,15 @@ class DataProviderTest(parameterized.TestCase):
     )
 
   @parameterized.parameters(
-      dict(compressed_inputs=compressed_inputs, mode=mode)
-      for compressed_inputs in [True, False]
+      dict(compressed_inputs=compressed_inputs, mode=mode, use_tpu=use_tpu)
+      for compressed_inputs in [True, False] for use_tpu in [True, False]
       for mode in ['TRAIN', 'EVAL'])
-  def test_get_batches(self, compressed_inputs, mode):
+  def test_get_batches(self, compressed_inputs, mode, use_tpu):
     mode = (
         tf.estimator.ModeKeys.EVAL
         if mode == 'EVAL' else tf.estimator.ModeKeys.TRAIN)
-    input_fn = make_golden_dataset(compressed_inputs, mode=mode)
+    input_fn = make_golden_dataset(
+        compressed_inputs, mode=mode, use_tpu=use_tpu)
     batch_size = 16
     with tf.Session() as sess:
       batch = input_fn(
@@ -271,9 +275,12 @@ class DataProviderTest(parameterized.TestCase):
 
       # Check that our variants has the shape we expect and actually contain
       # variants by decoding them and checking the reference_name.
-      self.assertEqual((batch_size,), variants.shape)
-      for variant in variant_utils.decode_variants(variants):
-        self.assertEqual(variant.reference_name, 'chr20')
+      self.assertEqual(batch_size, variants.shape[0])
+      for variant in variants:
+        if use_tpu:
+          variant = tf_utils.int_tensor_to_string(variant)
+        for v in variant_utils.decode_variants([variant]):
+          self.assertEqual(v.reference_name, 'chr20')
 
   @parameterized.parameters(
       ('test_shape.gz', 'test_shape.gz'),
