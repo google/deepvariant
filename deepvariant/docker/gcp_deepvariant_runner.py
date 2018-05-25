@@ -215,6 +215,8 @@ def _run_make_examples(pipeline_args):
       extra_args.extend(['--regions', ' '.join(pipeline_args.regions)])
     if pipeline_args.sample_name:
       extra_args.extend(['--sample_name', pipeline_args.sample_name])
+    if pipeline_args.hts_block_size:
+      extra_args.extend(['--hts_block_size', pipeline_args.hts_block_size])
     return extra_args
 
   num_workers = min(pipeline_args.make_examples_workers, pipeline_args.shards)
@@ -479,6 +481,11 @@ def run(argv=None):
       help=('By default, make_examples extracts sample_name from input BAM '
             'file. However, for BAM file with missing sample_name, this has to '
             'be manually set.'))
+  parser.add_argument(
+      '--hts_block_size',
+      help=('Sets the htslib block size (in bytes). Zero or negative uses '
+            'default htslib setting. Currently only applies to SAM/BAM '
+            'reading.'))
 
   # Optional gVCF args.
   parser.add_argument(
