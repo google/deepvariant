@@ -237,6 +237,7 @@ TEST_F(FastPassAlignerTest, AlignHaplotypesToReference_Test) {
   ha1.cigar_ops = std::list<CigarOp>({CigarOp(
       nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 26)});
   ha1.ref_pos = 5;
+  ha1.is_reference = true;
 
   HaplotypeReadsAlignment ha2(1, -1, std::vector<ReadAlignment>());
   ha2.cigar = "12=1D13=";
@@ -246,6 +247,7 @@ TEST_F(FastPassAlignerTest, AlignHaplotypesToReference_Test) {
        CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH,
                13)});
   ha2.ref_pos = 5;
+  ha2.is_reference = false;
 
   HaplotypeReadsAlignment ha3(2, -1, std::vector<ReadAlignment>());
   ha3.cigar = "6=1X19=";
@@ -255,6 +257,7 @@ TEST_F(FastPassAlignerTest, AlignHaplotypesToReference_Test) {
        CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH,
                19)});
   ha3.ref_pos = 5;
+  ha3.is_reference = false;
 
   std::vector<HaplotypeReadsAlignment> expectedHaplotypeAlignments = {ha1, ha2,
                                                                       ha3};
