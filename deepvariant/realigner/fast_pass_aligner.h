@@ -172,6 +172,7 @@ struct HaplotypeReadsAlignment {
            haplotype_score == that.haplotype_score &&
            read_alignment_scores == that.read_alignment_scores &&
            cigar == that.cigar && cigar_ops == that.cigar_ops &&
+           is_reference == that.is_reference &&
            hap_to_ref_positions_map == that.hap_to_ref_positions_map;
   }
 
@@ -199,6 +200,9 @@ struct HaplotypeReadsAlignment {
   //    + haplotype_to_ref_position
   //    + hap_to_ref_positions_map[read_to_haplotype_pos]
   std::vector<int> hap_to_ref_positions_map;
+
+  // If true the haplotype is a reference.
+  bool is_reference;
 };
 
 // Calculate a shift for each position of a haplotype from a haplotype to

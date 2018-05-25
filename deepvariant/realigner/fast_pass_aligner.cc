@@ -39,6 +39,7 @@
 #include <string>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 #include "re2/re2.h"
@@ -257,6 +258,10 @@ std::list<CigarOp> CigarStringToVector(const string& cigar) {
   return cigarOps;
 }
 
+inline bool AlignmentIsRef(const string& cigar, size_t target_len) {
+  return cigar == absl::StrCat(target_len, "=");
+}
+
 // Align haplotypes to reference using ssw library.
 void FastPassAligner::AlignHaplotypesToReference() {
   SswSetReference(reference_);
@@ -274,7 +279,10 @@ void FastPassAligner::AlignHaplotypesToReference() {
     CHECK(haplotype_alignment.haplotype_index < haplotypes_.size());
     Alignment alignment =
         SswAlign(haplotypes_[haplotype_alignment.haplotype_index]);
+    auto hap_len = haplotypes_[haplotype_alignment.haplotype_index].size();
     if (alignment.sw_score > 0) {
+      haplotype_alignment.is_reference =
+          AlignmentIsRef(alignment.cigar_string, hap_len);
       haplotype_alignment.cigar = alignment.cigar_string;
       haplotype_alignment.cigar_ops =
           CigarStringToVector(haplotype_alignment.cigar);
@@ -399,17 +407,30 @@ void FastPassAligner::CalculatePositionMaps() {
   }
 }
 
-// Return true if cigar has at least one structural variation
-bool hasIndels(const std::list<CigarOp>& cigar) {
-  // redacted
-  return false;
-}
-
 bool FastPassAligner::GetBestReadAlignment(
     size_t readId,
     int* best_hap_index) const {
-  // redacted
-  return false;
+  int best_score = 0;
+  bool best_haplotype_found = false;
+  for (int hap_index = 0; hap_index < haplotypes_.size(); hap_index++) {
+    if (read_to_haplotype_alignments_[hap_index]
+                .read_alignment_scores[readId]
+                .score > best_score
+        // If compared scores are equal preference is given to a read alignment
+        // to a non-reference haplotype.
+        || (best_score > 0 &&
+            read_to_haplotype_alignments_[hap_index]
+                    .read_alignment_scores[readId]
+                    .score == best_score &&
+            !read_to_haplotype_alignments_[hap_index].is_reference)) {
+      best_score = read_to_haplotype_alignments_[hap_index]
+                       .read_alignment_scores[readId]
+                       .score;
+      *best_hap_index = hap_index;
+      best_haplotype_found = true;
+    }
+  }
+  return best_haplotype_found;
 }
 
 // Calculate aligned length from cigar.
