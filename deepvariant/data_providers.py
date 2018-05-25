@@ -185,11 +185,10 @@ class DeepVariantInput(object):
       variant = parsed['variant/encoded']
       alt_allele_indices = parsed['alt_allele_indices/encoded']
       if self.use_tpu:
-        # Strings that vary in size between examples cannot be passed to the
-        # TPU, so they have to be encoded as fixed size tensors first.
-        # Contrast with image/encoded, where they are all the same size.
-        # redacted
-        # instead of making a tensor of int.
+        # Passing a string to a TPU draws this error: TypeError: <dtype:
+        # 'string'> is not a supported TPU infeed type. Supported types are:
+        # [tf.float32, tf.int32, tf.complex64, tf.int64, tf.bool, tf.bfloat16]
+        # Thus, we must encode the string as a tensor of int.
         variant = tf_utils.string_to_int_tensor(variant)
         alt_allele_indices = tf_utils.string_to_int_tensor(alt_allele_indices)
 
@@ -435,7 +434,7 @@ def get_infer_batches(tf_dataset, model, batch_size):
 
   images = features['image']
   if tf_dataset.tensor_shape:
-    # This will be None if the input was empty.
+    # tensor_shape will be None if the input was an empty file.
     images = model.preprocess_images(images)
   variant = features['variant']
   alt_allele_indices = features['alt_allele_indices']

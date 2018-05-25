@@ -52,6 +52,8 @@ from deepvariant.testing import flagsaver
 FLAGS = flags.FLAGS
 MOCK_SENTINEL_RETURN_VALUE = 'mocked_return_value'
 
+# Note that this test suite is invoked twice, with --use_tpu set both ways.
+
 
 def setUpModule():
   testdata.init()
@@ -64,7 +66,8 @@ class ModelTrainTest(parameterized.TestCase):
     """End-to-end test of model_train script."""
     self._run_tiny_training(
         model_name='mobilenet_v1',
-        dataset=data_providers_test.make_golden_dataset(compressed_inputs=True))
+        dataset=data_providers_test.make_golden_dataset(
+            compressed_inputs=True, use_tpu=FLAGS.use_tpu))
 
   def _run_tiny_training(self, model_name, dataset):
     with mock.patch(
@@ -74,7 +77,8 @@ class ModelTrainTest(parameterized.TestCase):
       FLAGS.train_dir = test_utils.test_tmpfile(model_name)
       FLAGS.batch_size = 2
       FLAGS.model_name = model_name
-      FLAGS.save_interval_secs = 0
+      FLAGS.save_interval_secs = -1
+      FLAGS.save_interval_steps = 1
       FLAGS.number_of_steps = 1
       FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
       FLAGS.start_from_checkpoint = ''
@@ -82,7 +86,9 @@ class ModelTrainTest(parameterized.TestCase):
       # We have a checkpoint after training.
       mock_get_input_fn_from_dataset.assert_called_once_with(
           dataset_config_filename=FLAGS.dataset_config_pbtxt,
-          mode=tf.estimator.ModeKeys.TRAIN)
+          mode=tf.estimator.ModeKeys.TRAIN,
+          use_tpu=mock.ANY,
+      )
       self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
 
   @mock.patch('deepvariant'
@@ -107,23 +113,7 @@ class ModelTrainTest(parameterized.TestCase):
     """End-to-end test of model_train script."""
     self._run_tiny_training(
         model_name=model_name,
-        dataset=data_providers_test.make_golden_dataset())
-
-  @parameterized.parameters(
-      (None, None),
-      ('', None),
-      ('/path/to/file', MOCK_SENTINEL_RETURN_VALUE),
-      ('USE_FLAG_VALUE', MOCK_SENTINEL_RETURN_VALUE),
-  )
-  def test_model_init_function(self, path, expected):
-    model = mock.Mock(spec=modeling.DeepVariantModel)
-    model.initialize_from_checkpoint.return_value = MOCK_SENTINEL_RETURN_VALUE
-    self.assertEqual(expected, model_train.model_init_function(model, 3, path))
-    if expected:
-      model.initialize_from_checkpoint.assert_called_once_with(
-          path, 3, is_training=True)
-    else:
-      test_utils.assert_not_called_workaround(model.initialize_from_checkpoint)
+        dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu))
 
   @flagsaver.FlagSaver
   @mock.patch('deepvariant.model_train.'
@@ -137,7 +127,8 @@ class ModelTrainTest(parameterized.TestCase):
     model_train.parse_and_run()
 
     mock_device_setter.assert_called_once_with(10)
-    mock_run.assert_called_once_with('some_master', False, device_fn=mock.ANY)
+    mock_run.assert_called_once_with(
+        'some_master', False, device_fn=mock.ANY, use_tpu=mock.ANY)
 
   @mock.patch('deepvariant.model_train.os.environ')
   @mock.patch('deepvariant.model_train.'
@@ -149,7 +140,8 @@ class ModelTrainTest(parameterized.TestCase):
     model_train.parse_and_run()
 
     mock_device_setter.assert_called_once_with(0)
-    mock_run.assert_called_once_with('', True, device_fn=mock.ANY)
+    mock_run.assert_called_once_with(
+        '', True, device_fn=mock.ANY, use_tpu=mock.ANY)
 
   @parameterized.named_parameters(
       ('master', 'master', 0, True, '/job:master/task:0'),
@@ -185,7 +177,7 @@ class ModelTrainTest(parameterized.TestCase):
     mock_device_setter.assert_called_once_with(
         2, worker_device=expected_worker, cluster=mock.ANY)
     mock_run.assert_called_once_with(
-        'some-target', expected_is_chief, device_fn=mock.ANY)
+        'some-target', expected_is_chief, device_fn=mock.ANY, use_tpu=mock.ANY)
 
   @parameterized.parameters(
       ('master', 'some-master'),

@@ -331,6 +331,7 @@ py_test(
     name = "call_variants_test",
     size = "medium",
     srcs = ["call_variants_test.py"],
+    args = ["--use_tpu=false"],
     data = [":testdata"],
     srcs_version = "PY2AND3",
     deps = [
@@ -567,7 +568,10 @@ py_library(
     srcs = ["modeling.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":data_providers",
         ":tf_utils",
+        "//third_party/nucleus/util:variant_utils",
+        "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/logging",
         "@org_tensorflow_slim//:inception",
         "@org_tensorflow_slim//:mobilenet_v1",
@@ -609,6 +613,7 @@ py_binary(
     deps = [
         ":model_train_lib",
         "@com_google_absl_py//absl/flags",
+        "@com_google_absl_py//absl/logging",
     ],
 )
 
@@ -654,6 +659,7 @@ py_binary(
     deps = [
         ":model_eval_lib",
         "@com_google_absl_py//absl/flags",
+        "@com_google_absl_py//absl/logging",
     ],
 )
 
