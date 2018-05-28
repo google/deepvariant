@@ -89,7 +89,7 @@ export DV_INSTALL_GPU_DRIVERS="${DV_INSTALL_GPU_DRIVERS:-0}"
 
 export PYTHON_BIN_PATH=$(which python)
 export USE_DEFAULT_PYTHON_LIB_PATH=1
-export DV_COPT_FLAGS="--copt=-msse4.1 --copt=-msse4.2 --copt=-mavx --copt=-O3"
+export DV_COPT_FLAGS="--copt=-march=sandybridge"
 
 function note_build_stage {
   echo "========== [$(date)] Stage '${1}' starting"
