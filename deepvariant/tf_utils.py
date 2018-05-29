@@ -299,3 +299,16 @@ def tpu_available(sess=None):
   else:
     devices = sess.list_devices()
   return any(dev.device_type == 'TPU' for dev in devices)
+
+
+def resolve_master(master, tpu_name, tpu_zone, gcp_project):
+  """Resolve the master's URL given standard flags."""
+  if master is not None:
+    return master
+  elif tpu_name is not None:
+    tpu_cluster_resolver = (
+        tf.contrib.cluster_resolver.TPUClusterResolver(
+            tpu=[tpu_name], zone=tpu_zone, project=gcp_project))
+    return tpu_cluster_resolver.get_master()
+  else:
+    return ''

@@ -45,6 +45,7 @@ from third_party.nucleus.util import proto_utils
 from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
+from deepvariant import tf_utils
 
 slim = tf.contrib.slim
 
@@ -59,9 +60,24 @@ flags.DEFINE_string('model_name', 'inception_v3',
 
 flags.DEFINE_integer('batch_size', 64, 'The number of samples in each batch.')
 
-flags.DEFINE_string('master', '',
-                    'The TensorFlow master to use. Set to the empty string '
-                    'to let TF pick a default.')
+# Cloud TPU Cluster Resolvers
+flags.DEFINE_string(
+    'gcp_project', None,
+    'Project name for the Cloud TPU-enabled project. If not specified, we '
+    'will attempt to automatically detect the GCE project from metadata.')
+flags.DEFINE_string(
+    'tpu_zone', None,
+    'GCE zone where the Cloud TPU is located in. If not specified, we '
+    'will attempt to automatically detect the GCE project from metadata.')
+flags.DEFINE_string(
+    'tpu_name', None,
+    'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
+    'this flag or --master.')
+
+flags.DEFINE_string(
+    'master', None,
+    'GRPC URL of the master (e.g. grpc://ip.address.of.tpu:8470). You '
+    'must specify either this flag or --tpu_name.')
 
 flags.DEFINE_string('train_dir', '/tmp/deepvariant/',
                     'Directory where to write event logs.')
@@ -188,11 +204,10 @@ def parse_and_run():
   # on various flags.
   if not tf_config:
     device_fn = tf.train.replica_device_setter(FLAGS.ps_tasks)
+    master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
+                                     FLAGS.tpu_zone, FLAGS.gcp_project)
     return run(
-        FLAGS.master,
-        FLAGS.task == 0,
-        device_fn=device_fn,
-        use_tpu=FLAGS.use_tpu)
+        master, FLAGS.task == 0, device_fn=device_fn, use_tpu=FLAGS.use_tpu)
 
   tf_config_json = json.loads(tf_config)
 

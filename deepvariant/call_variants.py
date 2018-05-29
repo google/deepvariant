@@ -99,9 +99,25 @@ flags.DEFINE_string(
     'default, op placement is entirely left up to TensorFlow.  In tpu mode, '
     'use and require TPU.')
 
+# Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
-    'master', '', 'The TensorFlow master to use. Set to the empty string '
-    'to let TF pick a default.')
+    'gcp_project', None,
+    'Project name for the Cloud TPU-enabled project. If not specified, we '
+    'will attempt to automatically detect the GCE project from metadata.')
+flags.DEFINE_string(
+    'tpu_zone', None,
+    'GCE zone where the Cloud TPU is located in. If not specified, we '
+    'will attempt to automatically detect the GCE project from metadata.')
+flags.DEFINE_string(
+    'tpu_name', None,
+    'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
+    'this flag or --master.')
+
+flags.DEFINE_string(
+    'master', None,
+    'GRPC URL of the master (e.g. grpc://ip.address.of.tpu:8470). You '
+    'must specify either this flag or --tpu_name.')
+
 flags.DEFINE_boolean('use_tpu', False, 'Use tpu if available.')
 
 
@@ -330,6 +346,9 @@ def main(argv=()):
 
     logging_level.set_from_flag()
 
+    master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
+                                     FLAGS.tpu_zone, FLAGS.gcp_project)
+
     model = modeling.get_model(FLAGS.model_name)
     call_variants(
         examples_filename=FLAGS.examples,
@@ -339,7 +358,7 @@ def main(argv=()):
         output_file=FLAGS.outfile,
         max_batches=FLAGS.max_batches,
         batch_size=FLAGS.batch_size,
-        master=FLAGS.master,
+        master=master,
         use_tpu=FLAGS.use_tpu,
     )
 

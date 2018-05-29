@@ -82,6 +82,7 @@ class ModelTrainTest(parameterized.TestCase):
       FLAGS.number_of_steps = 1
       FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
       FLAGS.start_from_checkpoint = ''
+      FLAGS.master = ''
       model_train.parse_and_run()
       # We have a checkpoint after training.
       mock_get_input_fn_from_dataset.assert_called_once_with(
