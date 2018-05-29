@@ -46,6 +46,7 @@ from third_party.nucleus.util import proto_utils
 from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
+from deepvariant import tf_utils
 
 
 slim = tf.contrib.slim
@@ -53,9 +54,24 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('batch_size', 64, 'The number of samples in each batch.')
 
-flags.DEFINE_string('master', '',
-                    'The TensorFlow master to use. Set to the empty string '
-                    'to let TF pick a default.')
+# Cloud TPU Cluster Resolvers
+flags.DEFINE_string(
+    'gcp_project', None,
+    'Project name for the Cloud TPU-enabled project. If not specified, we '
+    'will attempt to automatically detect the GCE project from metadata.')
+flags.DEFINE_string(
+    'tpu_zone', None,
+    'GCE zone where the Cloud TPU is located in. If not specified, we '
+    'will attempt to automatically detect the GCE project from metadata.')
+flags.DEFINE_string(
+    'tpu_name', None,
+    'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
+    'this flag or --master.')
+
+flags.DEFINE_string(
+    'master', None,
+    'GRPC URL of the master (e.g. grpc://ip.address.of.tpu:8470). You '
+    'must specify either this flag or --tpu_name.')
 
 flags.DEFINE_string('checkpoint_dir', '/tmp/deepvariant/',
                     'Directory where the model was written to.')
@@ -101,8 +117,10 @@ def main(_):
     logging.error('Need to specify --dataset_config_pbtxt')
   logging_level.set_from_flag()
 
+  master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone,
+                                   FLAGS.gcp_project)
   eval_loop(
-      master=FLAGS.master,
+      master=master,
       dataset_config_pbtxt=FLAGS.dataset_config_pbtxt,
       checkpoint_dir=FLAGS.checkpoint_dir,
       model_name=FLAGS.model_name,

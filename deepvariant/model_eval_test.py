@@ -84,6 +84,7 @@ class ModelEvalTest(
     FLAGS.max_examples = 2
     FLAGS.model_name = model_name
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
+    FLAGS.master = ''
     # Always try to read in compressed inputs to stress that case. Uncompressed
     # inputs are certain to work. This test is expensive to run, so we want to
     # minimize the number of times we need to run this.
@@ -126,6 +127,7 @@ class ModelEvalTest(
     FLAGS.max_evaluations = n_checkpoints
     FLAGS.model_name = 'constant'
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
+    FLAGS.master = ''
     model_eval.main(0)
 
     self.assertEqual(mock_get_input_fn_from_dataset.call_args_list, [
