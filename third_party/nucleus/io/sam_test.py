@@ -206,12 +206,12 @@ class SamReaderTests(parameterized.TestCase):
       # seed in each test.
       # There are 106 total reads if we iterate.
       ('iterate', None, 1.0, 106),
-      ('iterate', None, 0.5, 52),
-      ('iterate', None, 0.25, 25),
+      ('iterate', None, 0.5, 59),
+      ('iterate', None, 0.25, 31),
       # There are 45 total reads if we don't downsample.
       ('query', 'chr20:10,000,000-10,000,000', 1.0, 45),
-      ('query', 'chr20:10,000,000-10,000,000', 0.5, 20),
-      ('query', 'chr20:10,000,000-10,000,000', 0.25, 11),
+      ('query', 'chr20:10,000,000-10,000,000', 0.5, 25),
+      ('query', 'chr20:10,000,000-10,000,000', 0.25, 13),
   )
   def test_downsampling(self, method, maybe_range, fraction, expected_n_reads):
     reader = sam.SamReader(
