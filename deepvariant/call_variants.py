@@ -316,14 +316,14 @@ def call_variants(examples_filename,
   with writer:
     start_time = time.time()
     n_examples, n_batches = 0, 0
-    while max_batches is None or n_batches < max_batches:
+    while max_batches is None or n_batches <= max_batches:
       try:
         prediction = next(predictions)
       except (StopIteration, tf.errors.OutOfRangeError):
         break
       write_variant_call(writer, prediction, use_tpu)
       n_examples += 1
-      n_batches = n_examples // batch_size
+      n_batches = n_examples // batch_size + 1
       duration = time.time() - start_time
 
       logging.log_every_n(
