@@ -158,15 +158,8 @@ class HiddenFromUnitTest(object):
           # floats between between -1 and 1.
           self.assertEqual(tf.float32, image.dtype)
           self.assertTrue((image >= -1).all() and (image <= 1).all())
-
-          # Check that the shape is the same, except for inception_v3 model we
-          # had to resize the height to at least 107.
-          if self.model.name == 'inception_v3':
-            self.assertEqual((107, 1, dv_constants.PILEUP_NUM_CHANNELS),
-                             image.shape)
-          else:
-            self.assertEqual((2, 1, dv_constants.PILEUP_NUM_CHANNELS),
-                             image.shape)
+          self.assertEqual((2, 1, dv_constants.PILEUP_NUM_CHANNELS),
+                           image.shape)
 
           # The preprocess step resizes the image to h x w as needed by
           # inception. We don't really care where it goes in the image (and the

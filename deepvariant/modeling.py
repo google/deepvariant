@@ -515,30 +515,6 @@ class DeepVariantSlimModel(DeepVariantModel):
     self.n_classes_model_variable = n_classes_model_variable
     self.excluded_scopes = excluded_scopes
 
-  def pad_images(self, images, height, width, target_height, target_width):
-    """Pad a batch of images up to the specified dimensions."""
-    target_width = max(width, target_width)
-    target_height = max(height, target_height)
-
-    height_diff = target_height - height
-    offset_height = max(height_diff // 2, 0)
-    after_padding_height = target_height - offset_height - height
-
-    width_diff = target_width - width
-    offset_width = max(width_diff // 2, 0)
-    after_padding_width = target_width - offset_width - width
-
-    images = tf.pad(
-        images,
-        [
-            [0, 0],  # batch
-            [offset_height, after_padding_height],  # center in height
-            [offset_width, after_padding_width],  # center in width
-            [0, 0]
-        ])  # channels
-    images = tf.cast(images, tf.float32)
-    return images
-
   def preprocess_images(self, images):
     """Applies preprocessing operations for Inception images.
 
@@ -557,18 +533,6 @@ class DeepVariantSlimModel(DeepVariantModel):
     images = tf.to_float(images)
     images = tf.subtract(images, 128.0)
     images = tf.div(images, 128.0)
-
-    # Specifically, our current image height is 100, which is too small so that
-    # in inception_v3, this final pool:
-    # net = slim.avg_pool2d(net, kernel_size, padding='VALID',
-    #                       scope='AvgPool_1a_{}x{}'.format(*kernel_size))
-    # actually end up having a kernel_size dimension as 1, but the default
-    # stride of that function is (2, 2). So, for inception_v3, we had to resize
-    # the height to at least 107 if the height is smaller than that.
-    if self.name == 'inception_v3':
-      _, height, width, _ = images.get_shape().as_list()
-      images = self.pad_images(
-          images, height, width, target_height=107, target_width=width)
     return images
 
   def initialize_from_checkpoint(self, checkpoint_path):
