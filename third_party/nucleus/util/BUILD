@@ -324,7 +324,6 @@ cc_test(
         ":samplers",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
