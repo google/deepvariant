@@ -319,6 +319,15 @@ class FastPassAligner {
       const std::list<CigarOp>& haplotype_to_ref_cigar_ops_input,
       std::list<CigarOp>* read_to_ref_cigar_ops) const;
 
+  // Replace each read alignment with the better one (if available), otherwise
+  // an original alignment is preserved.
+  // realigned_reads param is eventually passed to Python wrapped in unique_ptr
+  // as per clif requirements.
+  void RealignReadsToReference(
+      const std::vector<nucleus::genomics::v1::Read>& reads,
+      std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
+          realigned_reads);
+
  private:
   // Reference sequence for the window
   string reference_;
@@ -367,14 +376,6 @@ class FastPassAligner {
   // Alingn reads to haplotypes by simply comparing strings. This way we will
   // be able align all the reads that are aligned to haplotypes w/o indels.
   void FastAlignReadsToHaplotypes();
-
-  // Changes alignment for each read that we could realign.
-  // realigned_reads are eventually passed to Python wrapped in unique_ptr
-  // as per clif requirements.
-  void RealignReadsToReference(
-      const std::vector<nucleus::genomics::v1::Read>& reads,
-      std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
-          realigned_reads);
 
   void AddReadToIndex(const string& read, ReadId read_id);
 

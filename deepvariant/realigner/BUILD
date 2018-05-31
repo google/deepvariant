@@ -159,6 +159,7 @@ cc_library(
     deps = [
         ":ssw",
         "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
