@@ -21,14 +21,19 @@ transitive_hdrs(
 filegroup(
     name = "licenses",
     data = [
+        "//third_party:abseil_cpp.LICENSE",
+        "//third_party:bazel.LICENSE",
+        "//third_party:clif.LICENSE",
+        "//:LICENSE",
+        "@htslib//:LICENSE",
+        # The following dependencies contain LICENSE files, but
+        # don't define proper BUILD files and/or don't export the LICENSE files.
         # redacted
-        # by Nucleus dependencies, including:
-        # "//third_party/nucleus/opensource_only/third_party/abseil_cpp.LICENSE",
-        # "//third_party/nucleus/LICENSE",
-        # "//third_party/htslib/LICENSE",
-        # "@clif//:LICENSE",
+        # write pull requests for exporting them.
         # "@com_google_absl_py//:LICENSE",
         # "@com_google_googletest//:LICENSE",
+        # "@com_googlesource_code_cctz//:LICENSE.txt",
+        # "@io_bazel_rules_closure//:LICENSE",
         "@org_tensorflow//:LICENSE",
         "@protobuf_archive//:LICENSE",
     ],
