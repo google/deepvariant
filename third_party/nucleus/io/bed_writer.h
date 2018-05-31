@@ -35,11 +35,10 @@
 #include "third_party/nucleus/io/text_writer.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 
-using tensorflow::string;
 
 // A BED writer, allowing us to write BED files.
 //

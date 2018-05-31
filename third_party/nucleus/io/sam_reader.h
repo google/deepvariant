@@ -41,11 +41,10 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/util/samplers.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 
-using tensorflow::string;
 
 // Alias for the abstract base class for SAM record iterables.
 using SamIterable = Iterable<nucleus::genomics::v1::Read>;

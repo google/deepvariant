@@ -41,7 +41,7 @@
 #include "third_party/nucleus/vendor/status_matchers.h"
 
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -54,7 +54,6 @@ namespace nucleus {
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using std::vector;
-using tensorflow::string;
 
 // redacted
 

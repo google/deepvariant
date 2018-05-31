@@ -122,7 +122,7 @@ constexpr double kQualUnset = -1;
 
 // Translate the variant call allele encoding used in the protobuf
 // message into the htslib VCF constant.
-int32_t vcfEncodeAllele(int pbAllele, bool isPhased) {
+int32 vcfEncodeAllele(int pbAllele, bool isPhased) {
   // pbAllele is -1 for missing; 0 for ref, 1+ for alt.
   CHECK_GE(pbAllele, -1);
   if (isPhased) {
@@ -757,10 +757,10 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
   // FILTER
   int nFilters = variant_message.filter_size();
   if (nFilters > 0) {
-    auto filterIds = absl::make_unique<int32_t[]>(nFilters);
+    auto filterIds = absl::make_unique<int32[]>(nFilters);
     for (int i = 0; i < nFilters; i++) {
       const char* filterName = variant_message.filter(i).c_str();
-      int32_t filterId = bcf_hdr_id2int(&h, BCF_DT_ID, filterName);
+      int32 filterId = bcf_hdr_id2int(&h, BCF_DT_ID, filterName);
       if (filterId < 0) {
         return tensorflow::errors::NotFound("Filter must be found in header.");
       }
@@ -790,7 +790,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
 
   if (nCalls > 0) {
     // Write genotypes.
-    auto gts = absl::make_unique<int32_t[]>(nCalls * ploidy);
+    auto gts = absl::make_unique<int32[]>(nCalls * ploidy);
     for (int c = 0; c < nCalls; c++) {
       const nucleus::genomics::v1::VariantCall& vc = variant_message.calls(c);
 
