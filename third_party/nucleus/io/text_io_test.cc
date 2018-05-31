@@ -39,9 +39,9 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/testing/test_utils.h"
 
-using tensorflow::string;
 
 namespace tf = tensorflow;
 
@@ -49,6 +49,8 @@ namespace tf = tensorflow;
 // -----------------------------------------------------------------------------
 // Utility functions
 namespace {
+
+using nucleus::string;
 
 const string FileContents(const string& path) {
   std::ifstream ifs(path, std::ifstream::binary);

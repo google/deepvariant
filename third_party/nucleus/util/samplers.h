@@ -36,9 +36,7 @@
 #include <random>
 
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/core/platform/types.h"
-
-using tensorflow::uint64;
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 
@@ -58,7 +56,7 @@ class FractionalSampler {
  public:
   // Creates a new FractionalSampler that keeps fraction_to_keep elements on
   // average among N calls to Keep().
-  explicit FractionalSampler(double fraction_to_keep, uint64_t random_seed)
+  explicit FractionalSampler(double fraction_to_keep, uint64 random_seed)
       : fraction_to_keep_(fraction_to_keep),
         generator_(random_seed),
         uniform_(0.0, 1.0) {

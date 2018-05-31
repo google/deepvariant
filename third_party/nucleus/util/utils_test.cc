@@ -57,7 +57,8 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 
 // Makes an empty Variant with the given position
-Variant MakeVariantAt(const string& chr, const int64 start, const int64 end) {
+Variant MakeVariantAt(const string& chr, const int64 start,
+                      const int64 end) {
   Variant variant;
   variant.set_reference_name(chr);
   variant.set_start(start);

@@ -40,6 +40,7 @@ cc_library(
         "protocol-buffer-matchers.h",
     ],
     deps = [
+        "//third_party/nucleus/platform:types",
         "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
         "@org_tensorflow//tensorflow/core:lib",
@@ -66,6 +67,7 @@ cc_library(
     hdrs = ["test_utils.h"],
     deps = [
         "//third_party/nucleus/io:reader_base",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",

@@ -47,12 +47,9 @@
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
-
-using tensorflow::int64;
-using tensorflow::string;
 
 // Enum specifying a group of canonical DNA sequence bases.
 enum class CanonicalBases {

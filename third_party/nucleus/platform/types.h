@@ -30,47 +30,33 @@
  *
  */
 
-#ifndef THIRD_PARTY_NUCLEUS_IO_TEXT_READER_H_
-#define THIRD_PARTY_NUCLEUS_IO_TEXT_READER_H_
+// This header brings standard integral types into scope, as well as setting up
+// the right string class.
 
-#include "absl/memory/memory.h"
-#include "htslib/hts.h"
-#include "third_party/nucleus/platform/types.h"
-#include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
+#include <string>
+
+// N.B. Copybara will adjust this.
+#define NUCLEUS_PLATFORM_GOOGLE 1
 
 namespace nucleus {
 
+#if NUCLEUS_PLATFORM_GOOGLE
+using ::string;
+#else
+using std::string;
+#endif
 
-// The TextReader class allows reading text from a (possibly compressed) file.
-class TextReader {
- public:
-  // Factory method to construct a TextReader.
-  // File compression is determined from file magic (contents), not filename.
-  static StatusOr<std::unique_ptr<TextReader>> FromFile(const string& path);
+// Adapted from tensorflow/core/platform/default/integral_types.h
+// redacted
+// when it arrives.
+typedef signed char int8;
+typedef short int16;
+typedef int int32;
+typedef long long int64;
 
-  // Destructor; closes the file, if it's still open.
-  ~TextReader();
-
-  // Reads a single line from the file.
-  // Returns:
-  //  - the string line (excluding trailing newline) if read is successful;
-  //  - a status of tf::errors::OutOfRange if at end-of-file;
-  //  - otherwise, an appropriate error Status.
-  StatusOr<string> ReadLine();
-
-  // Explicitly closes the underlying file stream.
-  tensorflow::Status Close();
-
- private:
-  // Private constructor.
-  TextReader(htsFile* hts_file);
-
-  // Underlying htslib file stream.
-  htsFile* hts_file_;
-};
-
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
+typedef unsigned long long uint64;
 
 }  // namespace nucleus
-
-#endif  // THIRD_PARTY_NUCLEUS_IO_TEXT_READER_H_

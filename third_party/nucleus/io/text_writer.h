@@ -39,11 +39,10 @@
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 
-using tensorflow::string;
 
 // TextWriter is a class allowing writing text to a (possibly compressed) file
 // stream

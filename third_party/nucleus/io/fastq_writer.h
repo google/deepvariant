@@ -37,11 +37,10 @@
 #include "third_party/nucleus/io/text_writer.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 
-using tensorflow::string;
 
 // A FASTQ writer, allowing us to write FASTQ files.
 //

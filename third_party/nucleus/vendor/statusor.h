@@ -91,13 +91,13 @@
 #include <type_traits>
 #include <utility>
 
+#include "third_party/nucleus/platform/types.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
-using tensorflow::string;
 
 template<typename T>
 class StatusOr {

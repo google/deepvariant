@@ -36,11 +36,11 @@
 #include <unordered_map>
 
 #include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/vendor/statusor.h"
 
 namespace nucleus {
 
-using tensorflow::string;
 
 // An FASTA reader backed by in-memory ReferenceSequence protos.
 //

@@ -35,10 +35,9 @@
 #include "absl/strings/str_cat.h"
 #include "htslib/faidx.h"
 #include "htslib/hts.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 using absl::StrCat;
-using tensorflow::string;
 
 namespace nucleus {
 

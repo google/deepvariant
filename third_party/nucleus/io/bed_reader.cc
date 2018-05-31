@@ -41,15 +41,11 @@
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/core/platform/types.h"
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 
 namespace tf = tensorflow;
-
-using tensorflow::int32;
-using tensorflow::int64;
-using tensorflow::string;
 
 // 256 KB read buffer.
 constexpr int READER_BUFFER_SIZE = 256 * 1024;

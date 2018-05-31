@@ -235,6 +235,7 @@ cc_library(
     deps = [
         ":reader_base",
         ":text_reader",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:bed_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
@@ -267,6 +268,7 @@ cc_library(
     hdrs = ["bed_writer.h"],
     deps = [
         ":text_writer",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:bed_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
@@ -300,6 +302,7 @@ cc_library(
     deps = [
         ":reader_base",
         ":text_reader",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:fastq_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
@@ -332,6 +335,7 @@ cc_library(
     hdrs = ["fastq_writer.h"],
     deps = [
         ":text_writer",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:fastq_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
@@ -364,6 +368,7 @@ cc_library(
     deps = [
         ":hts_path",
         ":reader_base",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:index_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
@@ -405,6 +410,7 @@ cc_library(
         ":hts_path",
         ":reader_base",
         ":vcf_conversion",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:index_cc_pb2",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
@@ -440,6 +446,7 @@ cc_library(
     deps = [
         ":hts_path",
         ":vcf_conversion",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
@@ -459,6 +466,7 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":vcf_writer",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
@@ -474,6 +482,7 @@ cc_library(
     srcs = ["reference.cc"],
     hdrs = ["reference.h"],
     deps = [
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/vendor:statusor",
@@ -492,6 +501,7 @@ cc_library(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":reference",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:status_matchers",
@@ -508,6 +518,7 @@ cc_library(
     deps = [
         ":hts_path",
         ":reference",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
@@ -540,6 +551,7 @@ cc_library(
     hdrs = ["fasta_reader.h"],
     deps = [
         ":reference",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
@@ -566,6 +578,7 @@ cc_test(
     srcs = ["reader_base_test.cc"],
     deps = [
         ":reader_base",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
@@ -593,9 +606,9 @@ cc_library(
     srcs = ["hts_path.cc"],
     hdrs = ["hts_path.h"],
     deps = [
+        "//third_party/nucleus/platform:types",
         "@com_google_absl//absl/strings",
         "@htslib",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -639,6 +652,7 @@ cc_library(
     hdrs = ["text_writer.h"],
     deps = [
         ":hts_path",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -653,6 +667,7 @@ cc_library(
     hdrs = ["text_reader.h"],
     deps = [
         ":hts_path",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@htslib",
@@ -666,6 +681,7 @@ cc_test(
     deps = [
         ":text_reader",
         ":text_writer",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_googletest//:gtest_main",
     ],
