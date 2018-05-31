@@ -74,8 +74,28 @@ steps:
       - 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
 
 
-# redacted
-# redacted
+  # Run DeepVariant on CPU, and verify the result.
+  - name: 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
+    args:
+      - 'bash'
+      - '/opt/deepvariant_runner/bin/run_deepvariant.sh'
+      - '${PROJECT_ID}
+      - '${COMMIT_SHA}'
+      - '${_MODEL}'
+      - 'cpu'
+
+  # Run DeepVariant with GPU, and verify the result.
+  - name: 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
+    args:
+      - 'bash'
+      - '/opt/deepvariant_runner/bin/run_deepvariant.sh'
+      - '${PROJECT_ID}'
+      - '${COMMIT_SHA}'
+      - '${_MODEL}'
+      - 'gpu'
+
+substitutions:
+    _MODEL: gs://deepvariant/models/DeepVariant/0.6.0/DeepVariant-inception_v3-0.6.0+cl-191676894.data-wgs_standard
 
 timeout: 3h
 images:
