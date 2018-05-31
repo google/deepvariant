@@ -40,6 +40,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "third_party/nucleus/protos/position.pb.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 #include "re2/re2.h"
@@ -328,7 +329,58 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
 void FastPassAligner::RealignReadsToReference(
     const std::vector<nucleus::genomics::v1::Read>& reads,
     std::unique_ptr<ReadsVectorType> realigned_reads) {
-  // redacted
+  // Loop through all reads
+  for (size_t read_index = 0; read_index < reads.size(); read_index++) {
+    const nucleus::genomics::v1::Read& read = reads[read_index];
+    nucleus::genomics::v1::Read realigned_read;
+    realigned_read.MergeFrom(read);
+    int best_hap_index = -1;
+    // See if we have a better alignment
+    if (GetBestReadAlignment(read_index, &best_hap_index)) {
+      const HaplotypeReadsAlignment& bestHaplotypeAlignments =
+          read_to_haplotype_alignments_[best_hap_index];
+      std::unique_ptr<LinearAlignment> new_alignment(new LinearAlignment());
+      new_alignment->MergeFrom(read.alignment());
+      new_alignment->clear_cigar();
+      // Calculate new alignment position.
+      std::unique_ptr<nucleus::genomics::v1::Position> new_position(
+          new nucleus::genomics::v1::Position());
+      new_position->MergeFrom(read.alignment().position());
+      auto read_to_hap_pos = bestHaplotypeAlignments
+          .read_alignment_scores[read_index]
+          .position;
+      CHECK(read_to_hap_pos < bestHaplotypeAlignments
+          .hap_to_ref_positions_map.size());
+      // We only change position of original read alignment and don't change
+      // chromosome, it shouldn't change anyway!
+      new_position->set_position(
+          region_position_in_chr_
+              + bestHaplotypeAlignments.ref_pos
+              + read_to_hap_pos
+              + bestHaplotypeAlignments
+                  .hap_to_ref_positions_map[read_to_hap_pos]);
+      new_alignment->set_allocated_position(new_position.release());
+      std::list<CigarOp> readToRefCigarOps;
+      // Calculate new cigar by merging read to haplotype and haplotype to ref
+      // alignments.
+      CalculateReadToRefAlignment(
+          read_index, bestHaplotypeAlignments.read_alignment_scores[read_index],
+          bestHaplotypeAlignments.cigar_ops,
+          &readToRefCigarOps);
+
+      for (auto& op : readToRefCigarOps) {
+        CigarUnit* cu = new_alignment->add_cigar();
+        cu->set_operation(op.operation);
+        cu->set_operation_length(op.length);
+      }
+      if (!readToRefCigarOps.empty()) {
+        realigned_read.set_allocated_alignment(new_alignment.release());
+      }
+      realigned_reads->push_back(realigned_read);
+    } else {  // keep original alignment
+      realigned_reads->push_back(realigned_read);
+    }
+  }  // for
 }
 
 void FastPassAligner::AddKmerToIndex(tensorflow::StringPiece kmer,
