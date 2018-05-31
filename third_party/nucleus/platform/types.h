@@ -36,7 +36,7 @@
 #include <string>
 
 // N.B. Copybara will adjust this.
-#define NUCLEUS_PLATFORM_GOOGLE 1
+#define NUCLEUS_PLATFORM_GOOGLE 0
 
 namespace nucleus {
 
