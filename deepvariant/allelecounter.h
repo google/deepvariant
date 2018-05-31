@@ -51,6 +51,8 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
+using tensorflow::string;
+using tensorflow::int64;
 
 // Summarizes the counts of all of the distinct alleles present in allele_count.
 //

@@ -42,15 +42,6 @@
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
-namespace {
-// Used for sorting RepeatedPtrField below.
-struct StringPtrLessThan {
-    bool operator() (const string* x, const string* y) const {
-          return *x < *y;
-    }
-};
-}
-
 namespace learning {
 namespace genomics {
 namespace deepvariant {
@@ -61,6 +52,8 @@ using tensorflow::gtl::nullopt;
 using tensorflow::gtl::optional;
 using tensorflow::gtl::make_optional;
 using tensorflow::strings::StrCat;
+using tensorflow::string;
+
 
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
@@ -71,6 +64,15 @@ const char *const kVAFFormatField = "VAF";
 
 // The VCF/Variant allele string to use when you don't have any alt alleles.
 const char* const kNoAltAllele = ".";
+
+namespace {
+// Used for sorting RepeatedPtrField below.
+struct StringPtrLessThan {
+    bool operator() (const string* x, const string* y) const {
+          return *x < *y;
+    }
+};
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
