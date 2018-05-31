@@ -38,22 +38,43 @@ set -e
 
 bazel build -c opt $COPT_FLAGS nucleus/...
 
+function cp_external() {
+  local src_dir=$1
+  local dest_dir=$2
+  for f in `find "$src_dir" -maxdepth 1 -mindepth 1 ! -name '*nucleus*'`; do
+    cp -R "$f" "$dest_dir"
+  done
+}
+
 TMPDIR=$(mktemp -d -t tmp.XXXXXXXXXXX)
 
 RUNFILES=bazel-bin/nucleus/pip_package/build_pip_package.runfiles/nucleus
+
+# $RUNFILES has four subdirectories, each of which gets treated a bit
+# differently.
+
+# Subdirectory #1:  Copy /nucleus to top level.
 cp -R "${RUNFILES}/nucleus" "${TMPDIR}"
 
-so_lib_dir=$(ls $RUNFILES | grep solib) || true
+# Subdirectory #2:  Copy /external to /external, but leave out
+# /external/nucleus.
+mkdir "${TMPDIR}/external"
+cp_external "${RUNFILES}" "${TMPDIR}/external"
+
+# Subdirectory #3: Copy /_solib_k8 (or whatever the binary files directory
+# is called) to top level.
+so_lib_dir=$(ls "$RUNFILES" | grep solib)
 if [ -n "${so_lib_dir}" ]; then
-  mkdir "${TMPDIR}/${so_lib_dir}"
   cp -R "${RUNFILES}/${so_lib_dir}" "${TMPDIR}"
 fi
 
-# redacted
-# protobuf_archive.
+# Subdirectory #4: Copy /third_party to /third_party.
+mkdir "${TMPDIR}/third_party"
+cp -R "${RUNFILES}"/third_party/* "${TMPDIR}/third_party"
 
-cp nucleus/pip_package/MANIFEST.in "${TMPDIR}"
+cp LICENSE "${TMPDIR}"
 cp README.md "${TMPDIR}"
+cp nucleus/pip_package/MANIFEST.in "${TMPDIR}"
 cp nucleus/pip_package/setup.py "${TMPDIR}"
 
 pushd "${TMPDIR}"
