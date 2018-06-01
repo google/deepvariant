@@ -28,7 +28,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Usage:  ./nucleus/pip_package/build_pip_package.sh
+# Usage:  ./nucleus/pip_package/build_pip_package.sh [optional_dir]
+#
+# If [optional_dir] is supplied, the created wheel file is placed there.
 #
 # Important:  You must run
 #   source install.sh
@@ -79,7 +81,16 @@ cp nucleus/pip_package/setup.py "${TMPDIR}"
 
 pushd "${TMPDIR}"
 rm -f MANIFEST
-echo $(date) : "=== Building wheel"
+echo $(date) : "=== Building wheel in ${TMPDIR}"
 python setup.py bdist_wheel
 popd
-echo "Output wheel is in ${TMPDIR}/dist"
+
+if [ $# -gt 0 ]; then
+  DEST=$1
+  mkdir -p "${DEST}"
+  cp "${TMPDIR}/dist"/* "${DEST}"
+else
+  DEST="${TMPDIR}/dist"
+fi
+
+echo "Output wheel is in ${DEST}"
