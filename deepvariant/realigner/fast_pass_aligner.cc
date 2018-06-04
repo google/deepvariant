@@ -87,6 +87,12 @@ void FastPassAligner::set_max_num_of_mismatches(int max_num_of_mismatches) {
   this->max_num_of_mismatches_ = max_num_of_mismatches;
 }
 
+void FastPassAligner::set_similarity_threshold(double similarity_threshold) {
+  CHECK_GT(similarity_threshold, 0.0);
+  CHECK_LT(similarity_threshold, 1.0);
+  this->similarity_threshold_ = similarity_threshold;
+}
+
 void FastPassAligner::set_score_schema(uint8_t match_score,
                                        uint8_t mismatch_penalty,
                                        uint8_t gap_opening_penalty,
@@ -97,14 +103,58 @@ void FastPassAligner::set_score_schema(uint8_t match_score,
   this->gap_extending_penalty_ = gap_extending_penalty;
 }
 
-// Align reads to all haplotypes using reads index. Based on a number of aligned
-// reads choose x[polidy] number of best haplotypes. Having x[ploidy] haplotypes
-// align reads that could not be aligned in the first step using ssw aligner.
-// Keep the best alignment for each read.
+// Fast align reads to haplotypes using reads index.
+// Align reads that could not be aligned in the first step using ssw aligner.
+// Keep the best alignment for each read, or preserve an original one if read
+// could not be realigned with a high enough score.
 std::unique_ptr<ReadsVectorType> FastPassAligner::AlignReads(
     const std::vector<nucleus::genomics::v1::Read>& reads_param) {
-  // redacted
-  return nullptr;
+  // Copy reads
+  for (const auto& read : reads_param) {
+    reads_.push_back(tensorflow::str_util::Uppercase(read.aligned_sequence()));
+  }
+
+  // Build index
+  BuildIndex();
+
+  // Align reads to haplotypes using reads index. This is O(n) operation per
+  // read, where n = read size.
+  FastAlignReadsToHaplotypes();
+
+  // Initialize ssw library. Set reference.
+  InitSswLib();
+
+  // Align haplotypes to the reference.
+  AlignHaplotypesToReference();
+
+  // calculate position shifts.
+  CalculatePositionMaps();
+
+  // This threshold is used when read is aligned to haplotype using ssw library.
+  // For reads that cannot be aligned with a haplotype_score better than
+  // threshold original alignment is preserved. Threshold is defined
+  // empirically.
+  // Most of the reads should almost perfectly align to haplotypes. Read may
+  // not align to haplotype perfectly if:
+  //  - there is a sequencing error;
+  //  - read does not really come from this region;
+  //  - haplotype does not represent a real target genome sequence.
+  uint16_t score_threshold =
+      match_score_ * read_size_ * similarity_threshold_
+          - mismatch_penalty_ * read_size_ * (1 - similarity_threshold_);
+  // Align reads that couldn't be aligned in FastAlignReadsToHaplotypes using
+  // ssw library.
+  SswAlignReadsToHaplotypes(score_threshold);
+
+  // Realign reads that we could successfully realign in previous steps back to
+  // reference. From all read to haplotype alignments the best one is picked.
+  // In the case where read alignments are equally good to ref haplotype and
+  // non-ref haplotype, a non-ref haplotype is preferred.
+  std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads(
+      new std::vector<nucleus::genomics::v1::Read>());
+  RealignReadsToReference(reads_param, &realigned_reads);
+
+  return realigned_reads;
 }
 
 void FastPassAligner::InitSswLib() {
@@ -328,7 +378,7 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
 
 void FastPassAligner::RealignReadsToReference(
     const std::vector<nucleus::genomics::v1::Read>& reads,
-    std::unique_ptr<ReadsVectorType> realigned_reads) {
+    std::unique_ptr<ReadsVectorType>* realigned_reads) {
   // Loop through all reads
   for (size_t read_index = 0; read_index < reads.size(); read_index++) {
     const nucleus::genomics::v1::Read& read = reads[read_index];
@@ -365,8 +415,7 @@ void FastPassAligner::RealignReadsToReference(
       // alignments.
       CalculateReadToRefAlignment(
           read_index, bestHaplotypeAlignments.read_alignment_scores[read_index],
-          bestHaplotypeAlignments.cigar_ops,
-          &readToRefCigarOps);
+          bestHaplotypeAlignments.cigar_ops, &readToRefCigarOps);
 
       for (auto& op : readToRefCigarOps) {
         CigarUnit* cu = new_alignment->add_cigar();
@@ -376,9 +425,9 @@ void FastPassAligner::RealignReadsToReference(
       if (!readToRefCigarOps.empty()) {
         realigned_read.set_allocated_alignment(new_alignment.release());
       }
-      realigned_reads->push_back(realigned_read);
+      (*realigned_reads)->push_back(realigned_read);
     } else {  // keep original alignment
-      realigned_reads->push_back(realigned_read);
+      (*realigned_reads)->push_back(realigned_read);
     }
   }  // for
 }

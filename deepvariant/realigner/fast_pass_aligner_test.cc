@@ -29,14 +29,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <fstream>
 #include <map>
 
 #include "deepvariant/realigner/fast_pass_aligner.h"
+#include "google/protobuf/text_format.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "tensorflow/core/platform/test.h"
+#include "absl/strings/str_cat.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
 
 namespace learning {
 namespace genomics {
@@ -48,9 +54,56 @@ class FastPassAlignerTest : public ::testing::Test {
   static const int kSomeScore = 100;
 
   void SetUp() override {
+    // Test reference for most of the test. Some tests create a different
+    // reference sequence.
     aligner_.set_reference(
         "ATCAAGGGAAAAAGTGCCCAGGGCCAAATATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
             "CTGAAGATATG");
+  }
+
+  // Load read protos from test data human readable file.
+  std::vector<nucleus::genomics::v1::Read> LoadReadProtosFromFile(
+      const string& filename) {
+    string file_path = nucleus::GetTestData(filename,
+        "deepvariant/testdata");
+    std::ifstream reads_stream(file_path);
+
+    std::vector<nucleus::genomics::v1::Read> reads;
+    string proto_str;
+    string line;
+    nucleus::genomics::v1::Read read;
+    while (std::getline(reads_stream, line)) {
+      if (line.empty()) {
+        google::protobuf::TextFormat::ParseFromString(proto_str, &read);
+        reads.push_back(read);
+        proto_str.clear();
+      } else {
+        proto_str.append(line);
+        proto_str.append("\n");
+      }
+    }
+    reads_stream.close();
+    return reads;
+  }
+
+  void LoadReferenceFromFile(const string& filename, string* reference) {
+    string file_path = nucleus::GetTestData(filename,
+        "deepvariant/testdata");
+    std::ifstream ref_stream(file_path);
+    ref_stream >> *reference;
+    ref_stream.close();
+  }
+
+  void LoadHaplotypesFromFile(const string& filename,
+                              std::vector<string>* haplotypes) {
+    string file_path = nucleus::GetTestData(filename,
+        "deepvariant/testdata");
+    std::ifstream haps_stream(file_path);
+    string line;
+    while (std::getline(haps_stream, line)) {
+      haplotypes->push_back(line);
+    }
+    haps_stream.close();
   }
 };
 
@@ -781,6 +834,42 @@ TEST_F(FastPassAlignerTest, MergeCigarOp_alignedLengthOverflow2_Test) {
        CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 5),
        CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 5)
       }));
+}
+
+// This test runs on a real data. Expected realinments are vrified manually.
+// Library: HG002_NIST_150bp_50x.bam
+// Window 20:38091701-38091800
+// Reference: hs37d5.fa.gz
+// ***
+// Read alignments can be verified using BAM files or human readable text files
+// located at https://drive.google.com/drive/folders/14c8xnivuTfDqtCBReHid1b9vHxNbeJux?usp=sharing
+// ***
+// Read protos are loaded from reads.pbtxt files.
+// Haplotypes are loaded from haplotypes.pbtxt
+// Reference interval is loaded from reference.pbtxt
+// Expected read protos are loaded from realigned_reads.pbtxt.
+// redacted
+// steps on how to generate golden data.
+TEST_F(FastPassAlignerTest, Integration_Test) {
+  std::vector<nucleus::genomics::v1::Read> reads =
+      LoadReadProtosFromFile("reads.pbtxt");
+  std::vector<nucleus::genomics::v1::Read> expected_realigned_reads =
+      LoadReadProtosFromFile("realigned_reads.pbtxt");
+  string reference;
+  LoadReferenceFromFile("reference.pbtxt", &reference);
+  std::vector<string> haplotypes;
+  LoadHaplotypesFromFile("haplotypes.pbtxt", &haplotypes);
+  aligner_.set_read_size(148);
+  aligner_.set_reference(reference);
+  aligner_.set_haplotypes(haplotypes);
+  aligner_.set_kmer_size(32);
+  aligner_.set_similarity_threshold(0.85);
+  aligner_.set_max_num_of_mismatches(3);
+  aligner_.set_ref_start("20", 38091533);
+  std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads =
+      aligner_.AlignReads(reads);
+  EXPECT_THAT(*realigned_reads, testing::Pointwise(::nucleus::EqualsProto(),
+                                                   expected_realigned_reads));
 }
 
 }  // namespace deepvariant

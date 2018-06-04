@@ -257,6 +257,7 @@ class FastPassAligner {
   void set_kmer_size(int kmer_size);
   void set_read_size(int read_size);
   void set_max_num_of_mismatches(int max_num_of_mismatches);
+  void set_similarity_threshold(double similarity_threshold);
   void set_is_debug(bool is_debug) { debug_out_ = is_debug; }
   void set_debug_read_id(int read_id) { debug_read_id_ = read_id; }
 
@@ -325,7 +326,7 @@ class FastPassAligner {
   // as per clif requirements.
   void RealignReadsToReference(
       const std::vector<nucleus::genomics::v1::Read>& reads,
-      std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
+      std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>*
           realigned_reads);
 
  private:
@@ -365,6 +366,12 @@ class FastPassAligner {
   uint8_t mismatch_penalty_ = 6;
   uint8_t gap_opening_penalty_ = 8;
   uint8_t gap_extending_penalty_ = 1;
+
+  // Threshold is calculated from this flag using the following formula.
+  // score_threshold = match_score_ * read_size_ * <similarity_threshold_>
+  //    - mismatch_penalty_ * read_size_ * (1 - <similarity_threshold_ >);
+  // This threshold is used for alignments performed with SSW.
+  double similarity_threshold_ = 0.85;
 
   // SSW aligner instance
   std::unique_ptr<Aligner> ssw_aligner_;

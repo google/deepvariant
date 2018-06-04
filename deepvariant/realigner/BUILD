@@ -173,9 +173,15 @@ cc_test(
     name = "fast_pass_aligner_test",
     size = "small",
     srcs = ["fast_pass_aligner_test.cc"],
+    data = ["//deepvariant:testdata"],
     deps = [
         "fast_pass_aligner",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
+        "@protobuf_archive//:protobuf",
     ],
 )
