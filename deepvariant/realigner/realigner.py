@@ -41,7 +41,6 @@ import csv
 import os
 import os.path
 
-
 from tensorflow import flags
 import tensorflow as tf
 
@@ -52,6 +51,7 @@ from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import aligner
 from deepvariant.realigner import window_selector
 from deepvariant.realigner.python import debruijn_graph
+from deepvariant.realigner.python import fast_pass_aligner
 from deepvariant.vendor import timer
 
 flags.DEFINE_integer(
@@ -124,6 +124,20 @@ flags.DEFINE_bool(
     'emit_realigned_reads', False,
     'If True, we will emit realigned reads if our realigner_diagnostics are '
     'also enabled.')
+flags.DEFINE_bool(
+    'use_fast_pass_aligner', False,
+    'If True, fast_pass_aligner (improved performance) implementation is used ')
+flags.DEFINE_integer(
+    'max_num_mismatches', 2,
+    'Num of maximum allowed mismatches for quick read to '
+    'haplotype alignment.')
+flags.DEFINE_float(
+    'realignment_similarity_threshold', 0.85,
+    'Similarity threshold used in realigner in Smith-Waterman'
+    'alignment.')
+flags.DEFINE_integer('kmer_size', 32,
+                     'K-mer size for fast pass alinger reads index.')
+
 
 # Margin added to the reference sequence for the aligner module.
 _REF_ALIGN_MARGIN = 20
@@ -432,6 +446,55 @@ class Realigner(object):
         for target in assembled_region.haplotypes
     ], assembled_region.reads)
 
+  def call_fast_pass_aligner(self, assembled_region):
+    """Helper function to call fast pass aligner module."""
+    if not assembled_region.reads:
+      return []
+
+    contig = assembled_region.region.reference_name
+    ref_start = max(
+        0,
+        min(assembled_region.read_span.start, assembled_region.region.start) -
+        _REF_ALIGN_MARGIN)
+    ref_end = min(
+        self.ref_reader.contig(contig).n_bases,
+        max(assembled_region.read_span.end, assembled_region.region.end) +
+        _REF_ALIGN_MARGIN)
+
+    ref_prefix = self.ref_reader.query(
+        ranges.make_range(contig, ref_start, assembled_region.region.start))
+    ref = self.ref_reader.query(assembled_region.region)
+
+    # If we can't create the ref suffix then return the original alignments.
+    if ref_end <= assembled_region.region.end:
+      return assembled_region.reads
+    else:
+      ref_suffix = self.ref_reader.query(
+          ranges.make_range(contig, assembled_region.region.end, ref_end))
+
+    ref_seq = ref_prefix + ref + ref_suffix
+
+    fast_pass_realigner = fast_pass_aligner.FastPassAligner()
+    fast_pass_realigner.set_score_schema(
+        self.config.aln_config.match, self.config.aln_config.mismatch,
+        self.config.aln_config.gap_open, self.config.aln_config.gap_extend)
+    fast_pass_realigner.set_reference(ref_seq)
+    fast_pass_realigner.set_ref_start(contig, ref_start)
+    fast_pass_realigner.set_kmer_size(flags.FLAGS.kmer_size)
+    # Read sizes may vary. We need this for realigner initialization and sanity
+    # checks.
+    fast_pass_realigner.set_read_size(
+        len(assembled_region.reads[0].aligned_sequence))
+    fast_pass_realigner.set_max_num_of_mismatches(
+        flags.FLAGS.max_num_mismatches)
+    fast_pass_realigner.set_similarity_threshold(
+        flags.FLAGS.realignment_similarity_threshold)
+    fast_pass_realigner.set_haplotypes([
+        ref_prefix + target + ref_suffix
+        for target in assembled_region.haplotypes
+    ])
+    return fast_pass_realigner.realign_reads(assembled_region.reads)
+
   def realign_reads(self, reads, region):
     """Run realigner.
 
@@ -476,7 +539,12 @@ class Realigner(object):
     # Walk over each region and align the reads in that region, adding them to
     # our realigned_reads.
     for assembled_region in assembled_regions:
-      realigned_reads.extend(self.call_aligner(assembled_region))
+      if flags.FLAGS.use_fast_pass_aligner:
+        realigned_reads_copy = self.call_fast_pass_aligner(assembled_region)
+      else:
+        realigned_reads_copy = self.call_aligner(assembled_region)
+
+      realigned_reads.extend(realigned_reads_copy)
 
     self.diagnostic_logger.log_realigned_reads(region, realigned_reads)
 
