@@ -78,7 +78,7 @@ steps:
   - name: 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
     args:
       - 'bash'
-      - '/opt/deepvariant_runner/bin/run_deepvariant.sh'
+      - '/opt/deepvariant_runner/bin/run_and_verify.sh'
       - '${PROJECT_ID}'
       - '${COMMIT_SHA}'
       - '${_MODEL}'
@@ -88,7 +88,7 @@ steps:
   - name: 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
     args:
       - 'bash'
-      - '/opt/deepvariant_runner/bin/run_deepvariant.sh'
+      - '/opt/deepvariant_runner/bin/run_and_verify.sh'
       - '${PROJECT_ID}'
       - '${COMMIT_SHA}'
       - '${_MODEL}'
