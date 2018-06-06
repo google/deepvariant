@@ -64,6 +64,24 @@ IUPAC_DNA_COMPLEMENT_UPPER = {
     'N': 'N',  # N is any base
 }
 
+IUPAC_TO_CANONICAL_BASES_UPPER = {
+    'A': ['A'],
+    'T': ['T'],
+    'C': ['C'],
+    'G': ['G'],
+    'R': ['A', 'G'],
+    'Y': ['C', 'T'],
+    'S': ['C', 'G'],
+    'W': ['A', 'T'],
+    'K': ['G', 'T'],
+    'M': ['A', 'C'],
+    'B': ['C', 'G', 'T'],
+    'V': ['A', 'C', 'G'],
+    'D': ['A', 'G', 'T'],
+    'H': ['A', 'C', 'T'],
+    'N': ['A', 'C', 'G', 'T'],
+}
+
 STRICT_DNA_COMPLEMENT = _add_lowercase(STRICT_DNA_COMPLEMENT_UPPER)
 DNA_COMPLEMENT = _add_lowercase(DNA_COMPLEMENT_UPPER)
 IUPAC_DNA_COMPLEMENT = _add_lowercase(IUPAC_DNA_COMPLEMENT_UPPER)
