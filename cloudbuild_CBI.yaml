@@ -79,7 +79,7 @@ steps:
     args:
       - 'bash'
       - '/opt/deepvariant_runner/bin/run_deepvariant.sh'
-      - '${PROJECT_ID}
+      - '${PROJECT_ID}'
       - '${COMMIT_SHA}'
       - '${_MODEL}'
       - 'cpu'
