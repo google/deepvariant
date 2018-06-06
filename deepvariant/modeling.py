@@ -227,6 +227,31 @@ class DeepVariantModel(object):
     self.supported_dimensions_message = 'unknown'
     self.use_tpu = None
 
+  def _create_warm_start_settings(self, start_from_checkpoint):
+    """Create a proper WarmStartSettings based on start_from_checkpoint."""
+    # If the special value "model_default" was passed, ask the model for
+    # its default.
+    if start_from_checkpoint == 'model_default':
+      start_from_checkpoint = self.pretrained_model_path
+
+    # If the path is non-False, use it.
+    if start_from_checkpoint:
+      logging.info('Initializing model from checkpoint at %s',
+                   start_from_checkpoint)
+      reader = tf.train.NewCheckpointReader(start_from_checkpoint)
+      var_to_shape_map = reader.get_variable_to_shape_map()
+      vars_to_include = [
+          v for v in var_to_shape_map.keys()
+          if not v.startswith(tuple(self.excluded_scopes))
+      ]
+      return tf.estimator.WarmStartSettings(
+          ckpt_to_initialize_from=start_from_checkpoint,
+          vars_to_warm_start='|'.join(vars_to_include))
+    else:
+      # If warm_start_from is an empty string, specifically set it to None.
+      logging.info('Initializing model with random parameters')
+      return None
+
   def make_estimator(self,
                      batch_size,
                      model_dir=None,
@@ -235,7 +260,8 @@ class DeepVariantModel(object):
                      params=None,
                      unused_device_fn=None,
                      master='',
-                     use_tpu=False):
+                     use_tpu=False,
+                     start_from_checkpoint=None):
     """Returns a new tf.estimator.Estimator object for prediction.
 
     The estimator needs to know batch_size. We use the same value for all
@@ -259,6 +285,8 @@ class DeepVariantModel(object):
       unused_device_fn: a device_fn to pass to RunConfig, if not use_tpu.
       master: a string necessary for TPU, pass FLAGS.master through.
       use_tpu: boolean.  set self.use_tpu if not None.
+      start_from_checkpoint: string. If not None, initialize model from this
+      path.
 
     Returns:
       an object implementing the tf.estimator.Estimator interface (will be a
@@ -276,6 +304,7 @@ class DeepVariantModel(object):
       save_checkpoints_steps = FLAGS.save_interval_steps
 
     params = params if params is not None else {}
+    warm_start_from = self._create_warm_start_settings(start_from_checkpoint)
     if self.use_tpu:
       config = tpu_config.RunConfig(
           master=master,
@@ -297,7 +326,9 @@ class DeepVariantModel(object):
           train_batch_size=batch_size,
           eval_batch_size=batch_size,
           predict_batch_size=batch_size,
-          params=params)
+          params=params,
+          warm_start_from=warm_start_from,
+      )
     else:
       config = tf.estimator.RunConfig(
           model_dir=model_dir,
@@ -314,8 +345,10 @@ class DeepVariantModel(object):
       params_with_batch_size.update(params)
 
       classifier = tf.estimator.Estimator(
-          model_fn=self.model_fn, config=config, params=params_with_batch_size)
-
+          model_fn=self.model_fn,
+          config=config,
+          params=params_with_batch_size,
+          warm_start_from=warm_start_from)
     return classifier
 
   def model_fn(self, features, labels, mode, params):
@@ -416,14 +449,6 @@ class DeepVariantModel(object):
     Returns:
       A new batch of images, potentially with different dimensions, based on the
       input but transformed as necessary to use with this model.
-    """
-    raise NotImplementedError
-
-  def initialize_from_checkpoint(self, checkpoint_path):
-    """Store the checkpoint path for a warm start in self.warm_start.
-
-    Args:
-      checkpoint_path: String. Path to a checkpoint.
     """
     raise NotImplementedError
 
@@ -534,10 +559,6 @@ class DeepVariantSlimModel(DeepVariantModel):
     images = tf.subtract(images, 128.0)
     images = tf.div(images, 128.0)
     return images
-
-  def initialize_from_checkpoint(self, checkpoint_path):
-    """See baseclass."""
-    self.warm_start = checkpoint_path
 
   def model_fn(self, features, labels, mode, params):
     """A model_fn for slim (really inception_v3), satisfying the Estimator API.
@@ -790,10 +811,6 @@ class DeepVariantDummyModel(DeepVariantModel):
     images = tf.subtract(images, 128.0)
     images = tf.div(images, 128.0)
     return images
-
-  def initialize_from_checkpoint(self, checkpoint_path):
-    # No initialization is needed, so return a noop.
-    self.warn_start = None
 
   @property
   def is_trainable(self):

@@ -167,6 +167,7 @@ def run(target, unused_is_chief, device_fn, use_tpu):
           params=params,
           use_tpu=use_tpu,
           master=target,
+          start_from_checkpoint=FLAGS.start_from_checkpoint,
       )
       estimator.train(
           input_fn=tf_dataset,

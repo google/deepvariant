@@ -74,3 +74,29 @@ def write_fake_checkpoint(model_name,
     save = tf.train.Saver(tf.contrib.framework.get_variables())
     save.save(sess, path)
   return path
+
+
+def test_tmpdir(name):
+  """Returns a path to a temp directory name in the test tmpdir.
+
+  Args:
+    name: str; the name of the file, should not contain any slashes.
+
+  Returns:
+    str path to a tmpfile with filename name in our test tmpfile directory.
+  """
+  dirname = os.path.join(tf.test.get_temp_dir(), name)
+  tf.gfile.MakeDirs(dirname)
+  return dirname
+
+
+# redacted
+# taking a required_variables_regexps and have a function that looks like:
+# return all(any(re.match(var, pat) for var in var_to_shape_map.keys()
+#   for pat in required_variable_regexps))
+def check_equals_checkpoint_top_scopes(checkpoint, list_of_scopes):
+  """Returns true if list_of_scopes equals the top scopes in checkpoint."""
+  reader = tf.train.NewCheckpointReader(checkpoint)
+  var_to_shape_map = reader.get_variable_to_shape_map()
+  top_scopes_in_ckpt = set([x.split('/')[0] for x in var_to_shape_map.keys()])
+  return top_scopes_in_ckpt == set(list_of_scopes)
