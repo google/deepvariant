@@ -33,6 +33,7 @@ from __future__ import division
 from __future__ import print_function
 
 import json
+import uuid
 
 
 
@@ -42,12 +43,13 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
-from third_party.nucleus.testing import test_utils
+from tensorflow.python.framework.errors_impl import NotFoundError
 from deepvariant import data_providers_test
 from deepvariant import model_train
 from deepvariant import modeling
 from deepvariant import testdata
 from deepvariant.testing import flagsaver
+from deepvariant.testing import tf_test_utils
 
 FLAGS = flags.FLAGS
 MOCK_SENTINEL_RETURN_VALUE = 'mocked_return_value'
@@ -59,7 +61,7 @@ def setUpModule():
   testdata.init()
 
 
-class ModelTrainTest(parameterized.TestCase):
+class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
 
   @flagsaver.FlagSaver
   def test_training_works_with_compressed_inputs(self):
@@ -69,19 +71,20 @@ class ModelTrainTest(parameterized.TestCase):
         dataset=data_providers_test.make_golden_dataset(
             compressed_inputs=True, use_tpu=FLAGS.use_tpu))
 
-  def _run_tiny_training(self, model_name, dataset):
+  def _run_tiny_training(self, model_name, dataset, warm_start_from=''):
+    """Runs one training step. This function always starts a new train_dir."""
     with mock.patch(
         'deepvariant.data_providers.'
         'get_input_fn_from_dataset') as mock_get_input_fn_from_dataset:
       mock_get_input_fn_from_dataset.return_value = dataset
-      FLAGS.train_dir = test_utils.test_tmpfile(model_name)
+      FLAGS.train_dir = tf_test_utils.test_tmpdir(uuid.uuid4().hex)
       FLAGS.batch_size = 2
       FLAGS.model_name = model_name
       FLAGS.save_interval_secs = -1
       FLAGS.save_interval_steps = 1
       FLAGS.number_of_steps = 1
       FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
-      FLAGS.start_from_checkpoint = ''
+      FLAGS.start_from_checkpoint = warm_start_from
       FLAGS.master = ''
       model_train.parse_and_run()
       # We have a checkpoint after training.
@@ -115,6 +118,45 @@ class ModelTrainTest(parameterized.TestCase):
     self._run_tiny_training(
         model_name=model_name,
         dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu))
+
+  @flagsaver.FlagSaver
+  def test_end2end_inception_v3_warm_up_from(self):
+    """End-to-end test of model_train script."""
+    checkpoint_dir = tf_test_utils.test_tmpdir('inception_v3_warm_up_from')
+    tf_test_utils.write_fake_checkpoint('inception_v3', self.test_session(),
+                                        checkpoint_dir)
+    self._run_tiny_training(
+        model_name='inception_v3',
+        dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
+        warm_start_from=checkpoint_dir + '/model')
+
+  @flagsaver.FlagSaver
+  def test_end2end_inception_v3_warm_up_from_mobilenet_v1(self):
+    """Tests the behavior when warm start from mobilenet but train inception."""
+    checkpoint_dir = tf_test_utils.test_tmpdir(
+        'inception_v3_warm_up_from_mobilenet_v1')
+    tf_test_utils.write_fake_checkpoint('mobilenet_v1', self.test_session(),
+                                        checkpoint_dir)
+    self.assertTrue(
+        tf_test_utils.check_equals_checkpoint_top_scopes(
+            checkpoint_dir + '/model', ['MobilenetV1', 'global_step']))
+    self._run_tiny_training(
+        model_name='inception_v3',
+        dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
+        warm_start_from=checkpoint_dir + '/model')
+    self.assertTrue(
+        tf_test_utils.check_equals_checkpoint_top_scopes(
+            FLAGS.train_dir + '/model.ckpt-1', ['InceptionV3', 'global_step']))
+
+  @flagsaver.FlagSaver
+  def test_end2end_inception_v3_failed_warm_up_from(self):
+    """End-to-end test of model_train script with a non-existent path."""
+    with self.assertRaises(NotFoundError):
+      self._run_tiny_training(
+          model_name='inception_v3',
+          dataset=data_providers_test.make_golden_dataset(
+              use_tpu=FLAGS.use_tpu),
+          warm_start_from='this/path/does/not/exist')
 
   @flagsaver.FlagSaver
   @mock.patch('deepvariant.model_train.'

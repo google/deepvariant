@@ -631,6 +631,7 @@ py_test(
         ":modeling",
         ":py_testdata",
         "//deepvariant/testing:flagsaver",
+        "//deepvariant/testing:tf_test_utils",
         "@com_google_absl_py//absl/flags",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
