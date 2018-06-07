@@ -132,7 +132,7 @@ flags.DEFINE_integer(
     'Num of maximum allowed mismatches for quick read to '
     'haplotype alignment.')
 flags.DEFINE_float(
-    'realignment_similarity_threshold', 0.85,
+    'realignment_similarity_threshold', 0.0,
     'Similarity threshold used in realigner in Smith-Waterman'
     'alignment.')
 flags.DEFINE_integer('kmer_size', 32,
