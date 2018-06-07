@@ -156,6 +156,7 @@ def eval_loop(master,
   tf_dataset = data_providers.get_input_fn_from_dataset(
       dataset_config_filename=dataset_config_pbtxt,
       mode=tf.estimator.ModeKeys.EVAL,
+      use_tpu=use_tpu,
   )
 
   model = modeling.get_model(model_name)

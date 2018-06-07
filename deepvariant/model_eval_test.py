@@ -94,7 +94,8 @@ class ModelEvalTest(
     model_eval.main(0)
     mock_get_input_fn_from_dataset.assert_called_once_with(
         dataset_config_filename=FLAGS.dataset_config_pbtxt,
-        mode=tf.estimator.ModeKeys.EVAL)
+        mode=tf.estimator.ModeKeys.EVAL,
+        use_tpu=FLAGS.use_tpu)
 
   # Using a constant model, check that running an eval returns the expected
   # metrics.
@@ -132,6 +133,7 @@ class ModelEvalTest(
 
     self.assertEqual(mock_get_input_fn_from_dataset.call_args_list, [
         mock.call(
+            use_tpu=FLAGS.use_tpu,
             dataset_config_filename=FLAGS.dataset_config_pbtxt,
             mode=tf.estimator.ModeKeys.EVAL)
     ])
