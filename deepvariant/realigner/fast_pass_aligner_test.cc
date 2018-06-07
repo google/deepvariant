@@ -872,6 +872,18 @@ TEST_F(FastPassAlignerTest, Integration_Test) {
                                                    expected_realigned_reads));
 }
 
+// Test that ssw_alignment_score_threshold does not go negative if similarity
+// threshold is less than 0.5.
+TEST_F(FastPassAlignerTest, CalculateSswAlignmentScoreThreshold_Test) {
+  const int read_size = 10;
+  aligner_.set_read_size(read_size);
+  aligner_.set_similarity_threshold(0.1);
+  aligner_.CalculateSswAlignmentScoreThreshold();
+  EXPECT_GE(aligner_.get_ssw_alignment_score_threshold(), 0);
+  EXPECT_LE(aligner_.get_ssw_alignment_score_threshold(),
+            read_size * aligner_.get_match_score());
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
