@@ -176,6 +176,10 @@ struct HaplotypeReadsAlignment {
            hap_to_ref_positions_map == that.hap_to_ref_positions_map;
   }
 
+  bool operator<(const HaplotypeReadsAlignment& that) const {
+    return haplotype_score < that.haplotype_score;
+  }
+
   // halpotype index in haplotypes member of FastPassAligner class
   size_t haplotype_index;
 
@@ -260,6 +264,9 @@ class FastPassAligner {
   void set_similarity_threshold(double similarity_threshold);
   void set_is_debug(bool is_debug) { debug_out_ = is_debug; }
   void set_debug_read_id(int read_id) { debug_read_id_ = read_id; }
+  int16_t get_ssw_alignment_score_threshold() const {
+    return ssw_alignment_score_threshold_;
+  }
 
   // Align reads to the reference by first aligning reads to haplotypes and
   // then by merging haplotype to reference cigars and reads to haplotype
@@ -329,6 +336,8 @@ class FastPassAligner {
       std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>*
           realigned_reads);
 
+  void CalculateSswAlignmentScoreThreshold();
+
  private:
   // Reference sequence for the window
   string reference_;
@@ -360,6 +369,16 @@ class FastPassAligner {
   int read_size_;
 
   int max_num_of_mismatches_ = 2;
+
+  // Only read alignments with the score greater than
+  // ssw_alignment_score_threshold_ are kept. ssw_alignment_score_threshold_
+  // is calculated from similarity_threshold_ and read_size.
+  // Most of the reads should almost perfectly align to haplotypes. Read may
+  // not align to haplotype perfectly if:
+  //  - there is a sequencing error;
+  //  - read does not really come from this region;
+  //  - haplotype does not represent a real target genome sequence.
+  int16_t ssw_alignment_score_threshold_;
 
   // Four parameters below specify alignment scoring schema.
   uint8_t match_score_ = 4;

@@ -88,9 +88,21 @@ void FastPassAligner::set_max_num_of_mismatches(int max_num_of_mismatches) {
 }
 
 void FastPassAligner::set_similarity_threshold(double similarity_threshold) {
-  CHECK_GT(similarity_threshold, 0.0);
-  CHECK_LT(similarity_threshold, 1.0);
+  CHECK_GE(similarity_threshold, 0.0);
+  CHECK_LE(similarity_threshold, 1.0);
   this->similarity_threshold_ = similarity_threshold;
+}
+
+void FastPassAligner::CalculateSswAlignmentScoreThreshold() {
+  ssw_alignment_score_threshold_ = match_score_
+      * read_size_
+      * similarity_threshold_
+          - mismatch_penalty_
+      * read_size_
+      * (1 - similarity_threshold_);
+  if (ssw_alignment_score_threshold_ < 0) {
+    ssw_alignment_score_threshold_ = 1;
+  }
 }
 
 void FastPassAligner::set_score_schema(uint8_t match_score,
@@ -114,6 +126,8 @@ std::unique_ptr<ReadsVectorType> FastPassAligner::AlignReads(
     reads_.push_back(tensorflow::str_util::Uppercase(read.aligned_sequence()));
   }
 
+  CalculateSswAlignmentScoreThreshold();
+
   // Build index
   BuildIndex();
 
@@ -130,21 +144,14 @@ std::unique_ptr<ReadsVectorType> FastPassAligner::AlignReads(
   // calculate position shifts.
   CalculatePositionMaps();
 
-  // This threshold is used when read is aligned to haplotype using ssw library.
-  // For reads that cannot be aligned with a haplotype_score better than
-  // threshold original alignment is preserved. Threshold is defined
-  // empirically.
-  // Most of the reads should almost perfectly align to haplotypes. Read may
-  // not align to haplotype perfectly if:
-  //  - there is a sequencing error;
-  //  - read does not really come from this region;
-  //  - haplotype does not represent a real target genome sequence.
-  uint16_t score_threshold =
-      match_score_ * read_size_ * similarity_threshold_
-          - mismatch_penalty_ * read_size_ * (1 - similarity_threshold_);
   // Align reads that couldn't be aligned in FastAlignReadsToHaplotypes using
   // ssw library.
-  SswAlignReadsToHaplotypes(score_threshold);
+  SswAlignReadsToHaplotypes(ssw_alignment_score_threshold_);
+
+  // Sort haplotypes by number of supporting reads. First haplotype is the one
+  // that has fewer supporting reads.
+  std::sort(read_to_haplotype_alignments_.begin(),
+            read_to_haplotype_alignments_.end());
 
   // Realign reads that we could successfully realign in previous steps back to
   // reference. From all read to haplotype alignments the best one is picked.
