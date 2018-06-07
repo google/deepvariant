@@ -44,7 +44,6 @@ from __future__ import print_function
 import multiprocessing
 import unittest
 
-from dsub.lib import dsub_errors
 import gcp_deepvariant_runner
 
 import mock
@@ -57,8 +56,23 @@ class _HasAllOf(object):
   def __init__(self, *values):
     self._values = set(values)
 
+  def _expand(self, items):
+    expanded = []
+    explode = False
+    for item in items:
+      if explode:
+        explode = False
+        expanded.extend(item.split(','))
+      else:
+        expanded.append(item)
+
+      if item == '--inputs' or item == '--outputs':
+        explode = True
+
+    return expanded
+
   def __eq__(self, other):
-    return self._values.issubset(set(other))
+    return self._values.issubset(set(self._expand(other)))
 
   def __ne__(self, other):
     return not self.__eq__(other)
@@ -90,37 +104,37 @@ class DeepvariantRunnerTest(unittest.TestCase):
         'gs://ref',
     ]
 
-  @patch('dsub.commands.dsub.call')
+  @patch('gcp_deepvariant_runner._run_job')
   @patch.object(multiprocessing, 'Pool')
-  def testRunPipeline(self, mock_pool, mock_dsub_call):
+  def testRunPipeline(self, mock_pool, mock_run_job):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
+
     self._argv.extend(
         ['--make_examples_workers', '1', '--call_variants_workers', '1'])
     gcp_deepvariant_runner.run(self._argv)
 
     mock_apply_async.assert_has_calls([
-        mock.call(
-            func=mock.ANY,
-            args=(_HasAllOf('make_examples', 'gcr.io/dockerimage',
-                            'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
-                            'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
-                            'EXAMPLES=gs://staging/examples/0'), mock.ANY, 0)),
-        mock.call(
-            func=mock.ANY,
-            args=(_HasAllOf(
-                'call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
-                'EXAMPLES=gs://staging/examples/0',
-                'CALLED_VARIANTS=gs://staging/called_variants'), mock.ANY, 0)),
-    ],)
-    mock_dsub_call.assert_called_once_with(
+        mock.call(mock_run_job, [
+            _HasAllOf('make_examples', 'gcr.io/dockerimage',
+                      'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
+                      'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
+                      'EXAMPLES=gs://staging/examples/0/*')
+        ]),
+        mock.call(mock_run_job, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
+                      'EXAMPLES=gs://staging/examples/0/*',
+                      'CALLED_VARIANTS=gs://staging/called_variants/*')
+        ]),
+    ])
+    mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
-                  'CALLED_VARIANTS=gs://staging/called_variants',
+                  'CALLED_VARIANTS=gs://staging/called_variants/*',
                   'OUTFILE=gs://output.vcf'))
 
-  @patch('dsub.commands.dsub.call')
+  @patch('gcp_deepvariant_runner._run_job')
   @patch.object(multiprocessing, 'Pool')
-  def testRunPipeline_WithGVCFOutFile(self, mock_pool, mock_dsub_call):
+  def testRunPipeline_WithGVCFOutFile(self, mock_pool, mock_run_job):
 
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
@@ -131,24 +145,23 @@ class DeepvariantRunnerTest(unittest.TestCase):
     gcp_deepvariant_runner.run(self._argv)
 
     mock_apply_async.assert_has_calls([
-        mock.call(
-            func=mock.ANY,
-            args=(_HasAllOf('make_examples', 'gcr.io/dockerimage',
-                            'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
-                            'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
-                            'EXAMPLES=gs://staging/examples/0',
-                            'GVCF=gs://staging/gvcf'), mock.ANY, 0)),
-        mock.call(
-            func=mock.ANY,
-            args=(_HasAllOf(
-                'call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
-                'EXAMPLES=gs://staging/examples/0',
-                'CALLED_VARIANTS=gs://staging/called_variants'), mock.ANY, 0)),
+        mock.call(mock_run_job, [
+            _HasAllOf('make_examples', 'gcr.io/dockerimage',
+                      'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
+                      'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
+                      'EXAMPLES=gs://staging/examples/0/*',
+                      'GVCF=gs://staging/gvcf/*')
+        ]),
+        mock.call(mock_run_job, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
+                      'EXAMPLES=gs://staging/examples/0/*',
+                      'CALLED_VARIANTS=gs://staging/called_variants/*')
+        ]),
     ],)
-    mock_dsub_call.assert_called_once_with(
+    mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
-                  'CALLED_VARIANTS=gs://staging/called_variants',
-                  'OUTFILE=gs://output.vcf', 'GVCF=gs://staging/gvcf',
+                  'CALLED_VARIANTS=gs://staging/called_variants/*',
+                  'OUTFILE=gs://output.vcf', 'GVCF=gs://staging/gvcf/*',
                   'GVCF_OUTFILE=gs://gvcf_output.vcf'))
 
   @patch.object(multiprocessing, 'Pool')
@@ -172,22 +185,19 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
     mock_apply_async.assert_has_calls(
         [
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                                'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                                'EXAMPLES=gs://staging/examples'), mock.ANY,
-                      0)),
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                                'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9'),
-                      mock.ANY, 1)),
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                                'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14'),
-                      mock.ANY, 2)),
+            mock.call(mock.ANY, [
+                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
+                          'EXAMPLES=gs://staging/examples/*')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14')
+            ]),
         ],
         any_order=True,
     )
@@ -212,21 +222,21 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
     mock_apply_async.assert_has_calls(
         [
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage',
-                                'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                                'CONCURRENT_JOBS=2'), mock.ANY, 0)),
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage',
-                                'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
-                                'CONCURRENT_JOBS=2'), mock.ANY, 1)),
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage',
-                                'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
-                                'CONCURRENT_JOBS=2'), mock.ANY, 2)),
+            mock.call(mock.ANY, [
+                _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
+                          'CONCURRENT_JOBS=2')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
+                          'CONCURRENT_JOBS=2')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
+                          'CONCURRENT_JOBS=2')
+            ]),
         ],
         any_order=True,
     )
@@ -254,30 +264,27 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
     mock_apply_async.assert_has_calls(
         [
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                                'nvidia-tesla-k80', 'SHARD_START_INDEX=0',
-                                'SHARD_END_INDEX=4', 'CONCURRENT_JOBS=1'),
-                      mock.ANY, 0)),
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                                'nvidia-tesla-k80', 'SHARD_START_INDEX=5',
-                                'SHARD_END_INDEX=9', 'CONCURRENT_JOBS=1'),
-                      mock.ANY, 1)),
-            mock.call(
-                func=mock.ANY,
-                args=(_HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                                'nvidia-tesla-k80', 'SHARD_START_INDEX=10',
-                                'SHARD_END_INDEX=14', 'CONCURRENT_JOBS=1'),
-                      mock.ANY, 2)),
+            mock.call(mock.ANY, [
+                _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                          'nvidia-tesla-k80', 'SHARD_START_INDEX=0',
+                          'SHARD_END_INDEX=4', 'CONCURRENT_JOBS=1')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                          'nvidia-tesla-k80', 'SHARD_START_INDEX=5',
+                          'SHARD_END_INDEX=9', 'CONCURRENT_JOBS=1')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                          'nvidia-tesla-k80', 'SHARD_START_INDEX=10',
+                          'SHARD_END_INDEX=14', 'CONCURRENT_JOBS=1')
+            ]),
         ],
         any_order=True,
     )
 
-  @patch('dsub.commands.dsub.call')
-  def testRunPostProcessVariants(self, mock_dsub_call):
+  @patch('gcp_deepvariant_runner._run_job')
+  def testRunPostProcessVariants(self, mock_run_job):
     self._argv.extend([
         '--jobs_to_run',
         'postprocess_variants',
@@ -288,116 +295,11 @@ class DeepvariantRunnerTest(unittest.TestCase):
         'gcr.io/dockerimage_gpu',
     ])
     gcp_deepvariant_runner.run(self._argv)
-    mock_dsub_call.assert_called_once_with(
+    mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
-                  'CALLED_VARIANTS=gs://staging/called_variants',
+                  'CALLED_VARIANTS=gs://staging/called_variants/*',
                   'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
                   'OUTFILE=gs://output.vcf'))
-
-  @patch('dsub.commands.dsub.call')
-  def testRunWithPreemptibles(self, mock_dsub_call):
-    self._argv.extend([
-        '--jobs_to_run',
-        'postprocess_variants',
-        '--preemptible',
-        '--max_preemptible_tries',
-        '2',
-    ])
-    preemptible_exception = dsub_errors.JobExecutionError(
-        'error', ['Error in job - code 10: 14: VM stopped unexpectedly'])
-    mock_dsub_call.side_effect = [
-        preemptible_exception, preemptible_exception, None
-    ]
-    gcp_deepvariant_runner.run(self._argv)
-
-    mock_dsub_call.assert_has_calls([
-        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
-        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
-        mock.call(_HasAllOf('postprocess_variants'))
-    ])
-
-  @patch('dsub.commands.dsub.call')
-  def testRunWithPreemptibles_NonPreemptibleFailure(self, mock_dsub_call):
-    self._argv.extend([
-        '--jobs_to_run',
-        'postprocess_variants',
-        '--preemptible',
-        '--max_preemptible_tries',
-        '2',
-    ])
-    preemptible_exception = dsub_errors.JobExecutionError(
-        'error', ['Error in job - code 10: 13: VM stopped unexpectedly'])
-    # Note that the error code changed to '130' from '13'.
-    non_preemptible_exception = dsub_errors.JobExecutionError(
-        'error', ['Error in job - code 10: 130: VM stopped unexpectedly'])
-    mock_dsub_call.side_effect = [
-        preemptible_exception, non_preemptible_exception
-    ]
-
-    try:
-      gcp_deepvariant_runner.run(self._argv)
-      self.fail('Non-preemptible failures should throw exception.')
-    except RuntimeError:
-      pass
-
-    # Two preemptible tries should have still happened.
-    mock_dsub_call.assert_has_calls([
-        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
-        mock.call(_HasAllOf('postprocess_variants', '--preemptible'))
-    ])
-
-  @patch('dsub.commands.dsub.call')
-  def testRunUnexpectedStopFromRegularVm(self, mock_dsub_call):
-    self._argv.extend([
-        '--jobs_to_run',
-        'postprocess_variants',
-        '--max_non_preemptible_tries',
-        '3',
-    ])
-    unexpected_stop_exception = dsub_errors.JobExecutionError(
-        'error', ['Error in job - code 10: 13: VM stopped unexpectedly'])
-    mock_dsub_call.side_effect = [
-        unexpected_stop_exception, unexpected_stop_exception, None
-    ]
-    gcp_deepvariant_runner.run(self._argv)
-
-    mock_dsub_call.assert_has_calls([
-        mock.call(_HasAllOf('postprocess_variants')),
-        mock.call(_HasAllOf('postprocess_variants')),
-        mock.call(_HasAllOf('postprocess_variants'))
-    ])
-
-  @patch('dsub.commands.dsub.call')
-  def testRunUnexpectedStopFromRegularVm_WithPreemptibles(self, mock_dsub_call):
-    self._argv.extend([
-        '--jobs_to_run',
-        'postprocess_variants',
-        '--preemptible',
-        '--max_preemptible_tries',
-        '1',
-        '--max_non_preemptible_tries',
-        '2',
-    ])
-    preemptible_exception = dsub_errors.JobExecutionError(
-        'error', ['Error in job - code 10: 14: VM stopped unexpectedly'])
-    unexpected_stop_exception = dsub_errors.JobExecutionError(
-        'error', ['Error in job - code 10: 13: VM stopped unexpectedly'])
-    mock_dsub_call.side_effect = [
-        preemptible_exception, unexpected_stop_exception,
-        unexpected_stop_exception
-    ]
-    try:
-      gcp_deepvariant_runner.run(self._argv)
-      self.fail(
-          'Too many unexpected stops from regular VMs should throw exception.')
-    except RuntimeError:
-      pass
-
-    mock_dsub_call.assert_has_calls([
-        mock.call(_HasAllOf('postprocess_variants', '--preemptible')),
-        mock.call(_HasAllOf('postprocess_variants')),
-        mock.call(_HasAllOf('postprocess_variants'))
-    ])
 
 
 if __name__ == '__main__':
