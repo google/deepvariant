@@ -28,10 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 r"""Runs the DeepVariant pipeline using the Google Genomics Pipelines API.
 
-To run this script, first activate virtualenv and install dsub:
-$ virtualenv venv
-$ . venv/bin/activate
-$ pip install dsub
+To run this script, you also need the pipelines tool in your $PATH.  You can
+install it using:
+
+$ go get github.com/googlegenomics/pipelines-tools/...
 
 Sample run command (please run 'python gcp_deepvariant_runner.py --help' for
 details on all available options):
@@ -54,52 +54,40 @@ import argparse
 import logging
 import multiprocessing
 import os
-import re
-import socket
-import time
+import subprocess
 
-from dsub.commands import dsub
-from dsub.lib import dsub_errors
-import googleapiclient
+from subprocess import PIPE
 
 _MAKE_EXAMPLES_JOB_NAME = 'make_examples'
 _CALL_VARIANTS_JOB_NAME = 'call_variants'
 _POSTPROCESS_VARIANTS_JOB_NAME = 'postprocess_variants'
 _DEFAULT_BOOT_DISK_SIZE_GB = '50'
 
-# Error codes returned by the Pipelines API when a VM is stopped unexpectedly.
-# This can be due to preemption or unexpected VM crashes.
-# From https://cloud.google.com/genomics/v1alpha2/pipelines-api-troubleshooting.
-_UNEXPECTED_STOP_ERROR_CODES = ['13', '14']
-
 _MAKE_EXAMPLES_COMMAND = r"""
-cd /opt/deepvariant/bin/ && \
-seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2 \
-  ./make_examples \
-    --mode calling \
-    --examples "${{EXAMPLES}}"/examples_output.tfrecord@"${{SHARDS}}".gz \
-    --reads "${{INPUT_BAM}}" \
-    --ref "${{INPUT_REF}}" \
-    --task {{}} \
+seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
+  /opt/deepvariant/bin/make_examples
+    --mode calling
+    --examples "${{EXAMPLES}}"/examples_output.tfrecord@"${{SHARDS}}".gz
+    --reads "${{INPUT_BAM}}"
+    --ref "${{INPUT_REF}}"
+    --task {{}}
     {EXTRA_ARGS}
 """
 
 _CALL_VARIANTS_COMMAND = r"""
-cd /opt/deepvariant/bin/ && \
-seq -f "%05g" "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | \
-parallel --jobs "${{CONCURRENT_JOBS}}" --halt 2 \
-./call_variants \
-  --examples "${{EXAMPLES}}"/examples_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz \
-  --outfile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz \
+seq -f "%05g" "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" |
+parallel --jobs "${{CONCURRENT_JOBS}}" --halt 2
+/opt/deepvariant/bin/call_variants
+  --examples "${{EXAMPLES}}"/examples_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz
+  --outfile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz
   --checkpoint "${{MODEL}}"/model.ckpt
 """
 
 _POSTPROCESS_VARIANTS_COMMAND = r"""
-cd /opt/deepvariant/bin && \
-./postprocess_variants \
-    --ref "${{INPUT_REF}}" \
-    --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord@"${{SHARDS}}".gz \
-    --outfile "${{OUTFILE}}" \
+/opt/deepvariant/bin/postprocess_variants
+    --ref "${{INPUT_REF}}"
+    --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord@"${{SHARDS}}".gz
+    --outfile "${{OUTFILE}}"
     {EXTRA_ARGS}
 """
 
@@ -128,74 +116,43 @@ def _get_staging_called_variants_folder(pipeline_args):
 
 def _get_base_job_args(pipeline_args):
   """Base arguments that are common among all jobs."""
+  pvm_attempts = 0
+  if pipeline_args.preemptible:
+    pvm_attempts = pipeline_args.max_preemptible_tries
+
   return [
-      '--project', pipeline_args.project, '--logging', pipeline_args.logging,
-      '--boot-disk-size', _DEFAULT_BOOT_DISK_SIZE_GB, '--zones'
-  ] + pipeline_args.zones + ['--wait']
+      'pipelines', '--project', pipeline_args.project, 'run', '--attempts',
+      str(pipeline_args.max_non_preemptible_tries), '--pvm-attempts',
+      str(pvm_attempts), '--boot-disk-size', _DEFAULT_BOOT_DISK_SIZE_GB,
+      '--zones'
+  ] + pipeline_args.zones
 
 
-def _run_job(dsub_args, pipeline_args, worker_index=0):
-  """Runs a particular job with optional retry logic for preemptibles.
+def _run_job(run_args):
+  """Runs a job using the pipelines CLI tool.
 
   Args:
-    dsub_args: A list of arguments (type string) to pass to dsub for running the
-      pipeline.
-    pipeline_args: The parsed arguments from running this pipeline.
-    worker_index: The index (0-based) of the worker running the job.
+    run_args: A list of arguments (type string) to pass to the pipelines tool.
   Raises:
     RuntimeError: if there was an error running the pipeline.
   """
-  # Allow a bit of time for resources to get allocated. Otherwise, there would
-  # be a race condition where all workers would check for available resources on
-  # startup and would get assigned to a single zone as they would all see that
-  # a particular zone has resources available.
-  time.sleep(2 * worker_index)
 
-  def is_unexpected_stop_error(e):
-    # The preemption or unexpected stop error has the form:
-    # "Error in job <job_name> - code 10: 14: VM <VM> stopped unexpectedly."
-    # where the preemption/stop code, 13 or 14, is present after the 'code'
-    # keyword.
-    return any(
-        re.match('.*code.*[ :](%s)[ :].*VM' % (
-            '|'.join(_UNEXPECTED_STOP_ERROR_CODES)), str(error))
-        for error in e.error_list)
+  process = subprocess.Popen(
+      run_args,
+      stdin=PIPE,
+      stdout=PIPE,
+      stderr=PIPE,
+      env={'PATH': os.environ['PATH']})
 
-  max_tries = pipeline_args.max_non_preemptible_tries
-  use_preemptibles = False
-  preemptible_dsub_args = dsub_args[:] + ['--preemptible']
-  if pipeline_args.preemptible:
-    max_tries += pipeline_args.max_preemptible_tries
-    use_preemptibles = True
-
-  num_tries = 0
-  while num_tries < max_tries:
-    try:
-      num_tries += 1
-      dsub.call(preemptible_dsub_args if use_preemptibles else dsub_args)
+  try:
+    _, stderr = process.communicate()
+    if process.returncode == 0:
       return
-    except dsub_errors.JobExecutionError as e:
-      if not is_unexpected_stop_error(e) or num_tries >= max_tries:
-        logging.error('Job failed with error %s. Job args: %s', str(
-            e.error_list), dsub_args)
-        raise RuntimeError('Job failed with error %s.' % str(e.error_list))
-      elif not use_preemptibles:
-        logging.warning('Job stopped unexpectedly. Retrying with a regular VM '
-                        '(%d of %d)', num_tries, max_tries)
-      elif num_tries < pipeline_args.max_preemptible_tries:
-        logging.info('Job was preempted. Retrying (%d of %d).', num_tries,
-                     pipeline_args.max_preemptible_tries)
-      else:
-        logging.warning('Job was preempted %d times (max tries is %d). '
-                        'Retrying WITHOUT a preemptible VM.', num_tries,
-                        pipeline_args.max_preemptible_tries)
-        use_preemptibles = False
-    except (googleapiclient.errors.Error, dsub_errors.JobError) as e:
-      logging.error('Job failed with error %s. Job args: %s', str(e), dsub_args)
-      # Note: Need to raise a native exception due to
-      # https://bugs.python.org/issue9400.
-      raise RuntimeError('Job failed with error %s.' % str(e))
-  assert False  # Should not get here.
+  except KeyboardInterrupt:
+    raise RuntimeError('Job cancelled by user')
+
+  logging.error('Job failed with error %s. Job args: %s', stderr, run_args)
+  raise RuntimeError('Job failed with error %s' % stderr)
 
 
 def _run_make_examples(pipeline_args):
@@ -219,113 +176,104 @@ def _run_make_examples(pipeline_args):
       extra_args.extend(['--hts_block_size', pipeline_args.hts_block_size])
     return extra_args
 
+  command = _MAKE_EXAMPLES_COMMAND.format(EXTRA_ARGS=' '.join(get_extra_args()))
+
+  machine_type = 'custom-{0}-{1}'.format(
+      pipeline_args.make_examples_cores_per_worker,
+      pipeline_args.make_examples_ram_per_worker_gb * 1024)
+
   num_workers = min(pipeline_args.make_examples_workers, pipeline_args.shards)
   shards_per_worker = pipeline_args.shards / num_workers
-  threads = multiprocessing.Pool(processes=num_workers)
+  threads = multiprocessing.Pool(num_workers)
   results = []
   for i in range(num_workers):
-    dsub_args = _get_base_job_args(pipeline_args) + [
-        '--name',
-        pipeline_args.job_name_prefix + _MAKE_EXAMPLES_JOB_NAME,
-        '--image',
-        pipeline_args.docker_image,
-        '--input',
+    inputs = [
         'INPUT_BAM=' + pipeline_args.bam,
         'INPUT_BAI=' + pipeline_args.bai,
         'INPUT_REF=' + pipeline_args.ref,
         'INPUT_REF_FAI=' + pipeline_args.ref_fai,
-        '--output-recursive',
-        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i),
-        '--min-cores',
-        str(pipeline_args.make_examples_cores_per_worker),
-        '--min-ram',
-        str(pipeline_args.make_examples_ram_per_worker_gb),
-        '--disk-size',
-        str(pipeline_args.make_examples_disk_per_worker_gb),
-        '--env',
-        'SHARDS=' + str(pipeline_args.shards),
-        '--env',
-        'SHARD_START_INDEX=' + str(int(i * shards_per_worker)),
-        '--env',
-        'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
-        '--command',
-        _MAKE_EXAMPLES_COMMAND.format(EXTRA_ARGS=' '.join(get_extra_args())),
     ]
     if pipeline_args.ref_gzi:
-      dsub_args.extend(['--input', 'INPUT_REF_GZI=' + pipeline_args.ref_gzi])
+      inputs.extend([pipeline_args.ref_gzi])
+
+    outputs = [
+        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i) + '/*'
+    ]
     if pipeline_args.gvcf_outfile:
-      dsub_args.extend([
-          '--output-recursive',
-          'GVCF=' + _get_staging_gvcf_folder(pipeline_args)
-      ])
-    results.append(
-        threads.apply_async(func=_run_job, args=(dsub_args, pipeline_args, i)))
+      outputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
+    run_args = _get_base_job_args(pipeline_args) + [
+        '--name', pipeline_args.job_name_prefix + _MAKE_EXAMPLES_JOB_NAME,
+        '--image', pipeline_args.docker_image, '--output',
+        os.path.join(pipeline_args.logging, _MAKE_EXAMPLES_JOB_NAME,
+                     str(i)), '--inputs', ','.join(inputs), '--outputs',
+        ','.join(outputs), '--machine-type', machine_type, '--disk-size',
+        str(pipeline_args.make_examples_disk_per_worker_gb), '--set',
+        'SHARDS=' + str(pipeline_args.shards), '--set',
+        'SHARD_START_INDEX=' + str(int(i * shards_per_worker)), '--set',
+        'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
+        '--command', command
+    ]
+    results.append(threads.apply_async(_run_job, [run_args]))
+
+  _wait_for_results(threads, results)
+
+
+def _wait_for_results(threads, results):
   threads.close()
-  threads.join()
-  # Ensure exceptions are re-thrown (ignore socket.timeout errors from dstat
-  # calls).
+  try:
+    threads.join()
+  except KeyboardInterrupt:
+    raise RuntimeError('Cancelled')
+
   for result in results:
     if result:
-      try:
-        result.get()
-      except socket.timeout:
-        logging.warning('Ignoring socket timeout exception.')
+      result.get()
 
 
 def _run_call_variants(pipeline_args):
   """Runs the call_variants job."""
+
+  command = _CALL_VARIANTS_COMMAND.format()
+
+  machine_type = 'custom-{0}-{1}'.format(
+      pipeline_args.call_variants_cores_per_worker,
+      pipeline_args.call_variants_ram_per_worker_gb * 1024)
+
   num_workers = min(pipeline_args.call_variants_workers, pipeline_args.shards)
   shards_per_worker = pipeline_args.shards / num_workers
   threads = multiprocessing.Pool(processes=num_workers)
   results = []
   for i in range(num_workers):
-    dsub_args = _get_base_job_args(pipeline_args) + [
-        '--name',
-        pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME,
-        '--image',
-        (pipeline_args.docker_image_gpu
-         if pipeline_args.gpu else pipeline_args.docker_image),
-        '--input-recursive',
-        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i),
-        'MODEL=' + pipeline_args.model,
-        '--output-recursive',
-        'CALLED_VARIANTS=' + _get_staging_called_variants_folder(pipeline_args),
-        '--min-cores',
-        str(pipeline_args.call_variants_cores_per_worker),
-        '--min-ram',
-        str(pipeline_args.call_variants_ram_per_worker_gb),
-        '--disk-size',
-        str(pipeline_args.call_variants_disk_per_worker_gb),
-        '--env',
-        'SHARDS=' + str(pipeline_args.shards),
-        '--env',
-        'SHARD_START_INDEX=' + str(int(i * shards_per_worker)),
-        '--env',
-        'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
-        '--env',
-        'CONCURRENT_JOBS=' + ('1' if pipeline_args.gpu else (str(
+    inputs = [
+        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i) + '/*'
+    ]
+    outputs = [
+        'CALLED_VARIANTS=' + _get_staging_called_variants_folder(pipeline_args)
+        + '/*'
+    ]
+    run_args = _get_base_job_args(pipeline_args) + [
+        '--name', pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME,
+        '--output',
+        os.path.join(pipeline_args.logging, _CALL_VARIANTS_JOB_NAME,
+                     str(i)), '--image',
+        (pipeline_args.docker_image_gpu if pipeline_args.gpu else
+         pipeline_args.docker_image), '--inputs', ','.join(inputs), '--outputs',
+        ','.join(outputs), '--machine-type', machine_type, '--disk-size',
+        str(pipeline_args.call_variants_disk_per_worker_gb), '--set', 'MODEL=' +
+        pipeline_args.model, '--set', 'SHARDS=' + str(pipeline_args.shards),
+        '--set', 'SHARD_START_INDEX=' + str(int(i * shards_per_worker)),
+        '--set', 'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
+        '--set', 'CONCURRENT_JOBS=' + ('1' if pipeline_args.gpu else (str(
             int(pipeline_args.call_variants_cores_per_worker /
-                pipeline_args.call_variants_cores_per_shard)))),
-        '--command',
-        _CALL_VARIANTS_COMMAND.format(),
+                pipeline_args.call_variants_cores_per_shard)))), '--command',
+        command
     ]
     if pipeline_args.gpu:
-      dsub_args.extend([
-          '--accelerator-type', pipeline_args.accelerator_type,
-          '--accelerator-count', '1'
-      ])
-    results.append(
-        threads.apply_async(func=_run_job, args=(dsub_args, pipeline_args, i)))
-  threads.close()
-  threads.join()
-  # Ensure exceptions are re-thrown (ignore socket.timeout errors from dstat
-  # calls).
-  for result in results:
-    if result:
-      try:
-        result.get()
-      except socket.timeout:
-        logging.warning('Ignoring socket timeout exception.')
+      run_args.extend(
+          ['--gpu-type', pipeline_args.accelerator_type, '--gpus', '1'])
+    results.append(threads.apply_async(_run_job, [run_args]))
+
+  _wait_for_results(threads, results)
 
 
 def _run_postprocess_variants(pipeline_args):
@@ -337,43 +285,44 @@ def _run_postprocess_variants(pipeline_args):
     if pipeline_args.gvcf_outfile:
       extra_args.extend([
           '--nonvariant_site_tfrecord_path',
-          '"${GVCF}"/gvcf_output.tfrecord@"${SHARDS}".gz'
+          '"${GVCF}"/gvcf_output.tfrecord@"${SHARDS}".gz',
+          '--gvcf_outfile',
+          '"${GVCF_OUTFILE}"',
       ])
-      extra_args.extend(['--gvcf_outfile', '"${GVCF_OUTFILE}"'])
     return extra_args
 
-  dsub_args = _get_base_job_args(pipeline_args) + [
-      '--name',
-      pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME,
-      '--image',
-      pipeline_args.docker_image,
-      '--input',
+  machine_type = 'custom-{0}-{1}'.format(
+      pipeline_args.postprocess_variants_cores,
+      pipeline_args.postprocess_variants_ram_gb * 1024)
+
+  inputs = [
+      'CALLED_VARIANTS=' + _get_staging_called_variants_folder(pipeline_args) +
+      '/*',
       'INPUT_REF=' + pipeline_args.ref,
       'INPUT_REF_FAI=' + pipeline_args.ref_fai,
-      '--input-recursive',
-      'CALLED_VARIANTS=' + _get_staging_called_variants_folder(pipeline_args),
-      '--output',
-      'OUTFILE=' + pipeline_args.outfile,
-      '--min-cores',
-      str(pipeline_args.postprocess_variants_cores),
-      '--min-ram',
-      str(pipeline_args.postprocess_variants_ram_gb),
-      '--disk-size',
-      str(pipeline_args.postprocess_variants_disk_gb),
-      '--env',
-      'SHARDS=' + str(pipeline_args.shards),
-      '--command',
-      _POSTPROCESS_VARIANTS_COMMAND.format(
-          EXTRA_ARGS=' '.join(get_extra_args())),
   ]
+  outputs = ['OUTFILE=' + pipeline_args.outfile]
+
   if pipeline_args.ref_gzi:
-    dsub_args.extend(['--input', 'INPUT_REF_GZI=' + pipeline_args.ref_gzi])
+    inputs.extend([pipeline_args.ref_gzi])
+
   if pipeline_args.gvcf_outfile:
-    dsub_args.extend([
-        '--input-recursive', 'GVCF=' + _get_staging_gvcf_folder(pipeline_args)
-    ])
-    dsub_args.extend(['--output', 'GVCF_OUTFILE=' + pipeline_args.gvcf_outfile])
-  _run_job(dsub_args, pipeline_args)
+    inputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
+    outputs.extend(['GVCF_OUTFILE=' + pipeline_args.gvcf_outfile])
+
+  run_args = _get_base_job_args(pipeline_args) + [
+      '--name', pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME,
+      '--output',
+      os.path.join(pipeline_args.logging,
+                   _POSTPROCESS_VARIANTS_JOB_NAME), '--image',
+      pipeline_args.docker_image, '--inputs', ','.join(inputs), '--outputs',
+      ','.join(outputs), '--machine-type', machine_type, '--disk-size',
+      str(pipeline_args.postprocess_variants_disk_gb), '--set',
+      'SHARDS=' + str(pipeline_args.shards), '--command',
+      _POSTPROCESS_VARIANTS_COMMAND.format(
+          EXTRA_ARGS=' '.join(get_extra_args()))
+  ]
+  _run_job(run_args)
 
 
 def _validate_and_complete_args(pipeline_args):
