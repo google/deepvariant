@@ -43,7 +43,6 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
-from tensorflow.python.framework.errors_impl import NotFoundError
 from deepvariant import data_providers_test
 from deepvariant import model_train
 from deepvariant import modeling
@@ -151,7 +150,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
   @flagsaver.FlagSaver
   def test_end2end_inception_v3_failed_warm_up_from(self):
     """End-to-end test of model_train script with a non-existent path."""
-    with self.assertRaises(NotFoundError):
+    with self.assertRaises(tf.errors.OpError):
       self._run_tiny_training(
           model_name='inception_v3',
           dataset=data_providers_test.make_golden_dataset(
