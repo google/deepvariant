@@ -596,6 +596,10 @@ def write_variants_to_vcf(variant_generator, output_vcf_path, header):
       writer.write(variant)
 
 
+def _sort_grouped_variants(group):
+  return sorted(group, key=lambda x: sorted(x.alt_allele_indices.indices))
+
+
 def _transform_call_variants_output_to_variants(
     input_sorted_tfrecord_path, qual_filter, multi_allelic_qual_filter,
     sample_name):
@@ -622,7 +626,7 @@ def _transform_call_variants_output_to_variants(
       io_utils.read_tfrecords(
           input_sorted_tfrecord_path, proto=deepvariant_pb2.CallVariantsOutput),
       lambda x: variant_utils.variant_range(x.variant)):
-    outputs = list(group)
+    outputs = _sort_grouped_variants(group)
     canonical_variant, predictions = merge_predictions(
         outputs, multi_allelic_qual_filter)
     variant = add_call_to_variant(
