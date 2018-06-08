@@ -1096,6 +1096,33 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
         viter, nonviter, lessthan, reader)
     self.assertEqual(list(actual), expected)
 
+  # redacted
+  def test_sort_grouped_variants(self):
+    group = [
+        _create_call_variants_output(
+            indices=[0, 1],
+            probabilities=[0.98, 0.02, 0],
+            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA'])),
+        _create_call_variants_output(
+            indices=[1],
+            probabilities=[0.995, 0.005, 0],
+            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA'])),
+        _create_call_variants_output(
+            indices=[0],
+            probabilities=[0.95, 0.05, 0],
+            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA'])),
+    ]
+    output = postprocess_variants._sort_grouped_variants(group)
+    # In sorted output, 1st has indices=[0].
+    self.assertEqual(output[0], group[2])
+    self.assertEqual(output[0].alt_allele_indices.indices, [0])
+    # In sorted output, 2nd has indices=[0, 1].
+    self.assertEqual(output[1], group[0])
+    self.assertEqual(output[1].alt_allele_indices.indices, [0, 1])
+    # In sorted output, 3rd has indices=[1].
+    self.assertEqual(output[2], group[1])
+    self.assertEqual(output[2].alt_allele_indices.indices, [1])
+
 
 if __name__ == '__main__':
   absltest.main()
