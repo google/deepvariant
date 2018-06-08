@@ -38,12 +38,13 @@ options:
 steps:
   - name: 'ubuntu:16.04'
     args: ['bash', './deepvariant/docker/build_docker_bins.sh']
+    id: 'build-deepvariant-bins'
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '--tag=gcr.io/$PROJECT_ID/deepvariant:${COMMIT_SHA}'
       - '.'
-    id: 'cpu'
+    id: 'build-deepvarint-docker-cpu'
     dir: 'deepvariant/docker'
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -52,7 +53,7 @@ steps:
       - '--build-arg=FROM_IMAGE=nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04'
       - '--build-arg=DV_GPU_BUILD=1'
       - '.'
-    id: 'gpu'
+    id: 'build-deepvariant-docker-gpu'
     dir: 'deepvariant/docker'
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -60,7 +61,7 @@ steps:
       - '--tag=gcr.io/$PROJECT_ID/deepvariant_runner:${COMMIT_SHA}'
       - '--file=Dockerfile.runner'
       - '.'
-    id: 'runner'
+    id: 'build-deepvariant-runner-docker'
     dir: 'deepvariant/docker'
 
   # Push images right away. This is required for testing.
@@ -68,14 +69,17 @@ steps:
     args:
       - 'push'
       - 'gcr.io/${PROJECT_ID}/deepvariant:${COMMIT_SHA}'
+    id: 'push-deepvariant-docker-cpu'
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'gcr.io/${PROJECT_ID}/deepvariant_gpu:${COMMIT_SHA}'
+    id: 'push-deepvariant-docker-gpu'
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
+    id: 'push-deepvariant-runner-docker'
 
 
   # Run DeepVariant on CPU, and verify the result.
@@ -87,6 +91,7 @@ steps:
       - '${COMMIT_SHA}'
       - '${_MODEL}'
       - 'cpu'
+    id: 'run-and-verify-deepvariant-cpu'
 
   # Run DeepVariant with GPU, and verify the result.
   - name: 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
@@ -97,6 +102,7 @@ steps:
       - '${COMMIT_SHA}'
       - '${_MODEL}'
       - 'gpu'
+    id: 'run-and-verify-deepvariant-gpu'
 
 substitutions:
     _MODEL: gs://deepvariant/models/DeepVariant/0.6.0/DeepVariant-inception_v3-0.6.0+cl-191676894.data-wgs_standard
