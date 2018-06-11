@@ -52,6 +52,8 @@ class GffReaderTest(parameterized.TestCase):
     self.first.source = '.'
     self.first.type = 'gene'
     self.first.strand = gff_pb2.GffRecord.FORWARD_STRAND
+    self.first.attributes['ID'] = 'gene00001'
+    self.first.attributes['Name'] = 'EDEN'
 
   @parameterized.parameters('test_features.gff', 'test_features.gff.gz')
   def test_gff_iterate(self, test_features_gff_filename):
