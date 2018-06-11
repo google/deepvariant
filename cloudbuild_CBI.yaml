@@ -50,7 +50,7 @@ steps:
     args:
       - 'build'
       - '--tag=gcr.io/$PROJECT_ID/deepvariant_gpu:${COMMIT_SHA}'
-      - '--build-arg=FROM_IMAGE=nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04'
+      - '--build-arg=FROM_IMAGE=nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04'
       - '--build-arg=DV_GPU_BUILD=1'
       - '.'
     id: 'build-deepvariant-docker-gpu'
