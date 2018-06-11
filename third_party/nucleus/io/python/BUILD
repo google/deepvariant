@@ -296,3 +296,33 @@ py_test(
         "@com_google_absl_py//absl/testing:absltest",
     ],
 )
+
+py_clif_cc(
+    name = "gff_reader",
+    srcs = ["gff_reader.clif"],
+    py_deps = [
+        "//third_party/nucleus/io:clif_postproc",
+    ],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:gff_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:gff_reader",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
+py_test(
+    name = "gff_reader_wrap_test",
+    size = "small",
+    srcs = ["gff_reader_wrap_test.py"],
+    data = ["//third_party/nucleus/testdata"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":gff_reader",
+        "//third_party/nucleus/protos:gff_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
