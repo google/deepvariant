@@ -73,7 +73,6 @@ TEST(GffReaderTest, ReadsExampleFile) {
   EXPECT_EQ(23, gff_records.size());
 
   // Inspect the first record.
-  // redacted
   EXPECT_THAT(gff_records[0], EqualsProto(
     R"(range {
          reference_name: "ctg123"
@@ -83,6 +82,14 @@ TEST(GffReaderTest, ReadsExampleFile) {
        source: "."
        type: "gene"
        strand: FORWARD_STRAND
+       attributes {
+         key: "ID"
+         value: "gene00001"
+       }
+       attributes {
+         key: "Name"
+         value: "EDEN"
+       }
      )"));
 }
 

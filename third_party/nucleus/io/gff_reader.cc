@@ -35,6 +35,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 
 #include "third_party/nucleus/protos/range.pb.h"
@@ -128,6 +129,26 @@ tf::Status NextNonCommentLine(TextReader& text_reader, string* line) {
   return tf::Status::OK();
 }
 
+// Parses the text `attributes_string`, which is a ';'-delimited list
+// of string-to-string '=' assignments, into a proto string->string map.
+tf::Status ParseGffAttributes(const string& attributes_string,
+                              google::protobuf::Map<string, string>* attributes_map) {
+  std::vector<absl::string_view> assignments =
+      absl::StrSplit(attributes_string, ';');
+  for (absl::string_view assignment : assignments) {
+    std::vector<absl::string_view> tokens = absl::StrSplit(assignment, '=');
+    if (tokens.size() != 2) {
+      return tf::errors::Unknown("Cannot parse GFF attributes string");
+    }
+    // redacted
+    // conversions
+    string lhs = string(tokens[0]);
+    string rhs = string(tokens[1]);
+    (*attributes_map)[lhs] = rhs;
+  }
+  return tf::Status::OK();
+}
+
 tf::Status ConvertToPb(const string& line, GffRecord* record) {
   CHECK(record != nullptr);
 
@@ -182,7 +203,9 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
              !((phase >= 0) && (phase < 3))) {
     return tf::errors::Unknown("Invalid GFF record `phase` encoding.");
   }
-  // redacted
+  // Parse attributes dictionary.
+  google::protobuf::Map<string, string> attributes_map;
+  TF_RETURN_IF_ERROR(ParseGffAttributes(fields[8], &attributes_map));
 
   // Write on the record.
   record->Clear();
@@ -194,6 +217,7 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
   record->set_score(score);
   record->set_strand(strand);
   record->set_phase(phase);
+  *record->mutable_attributes() = attributes_map;
 
   return tf::Status::OK();
 }
