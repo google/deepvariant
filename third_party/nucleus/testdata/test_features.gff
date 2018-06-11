@@ -1,0 +1,25 @@
+##gff-version 3.2.1
+##sequence-region ctg123 1 1497228
+ctg123	.	gene	1000	9000	.	+	.	ID=gene00001;Name=EDEN
+ctg123	.	TF_binding_site	1000	1012	.	+	.	Parent=gene00001
+ctg123	.	mRNA	1050	9000	.	+	.	ID=mRNA00001;Parent=gene00001
+ctg123	.	mRNA	1050	9000	.	+	.	ID=mRNA00002;Parent=gene00001
+ctg123	.	mRNA	1300	9000	.	+	.	ID=mRNA00003;Parent=gene00001
+ctg123	.	exon	1300	1500	.	+	.	Parent=mRNA00003
+ctg123	.	exon	1050	1500	.	+	.	Parent=mRNA00001,mRNA00002
+ctg123	.	exon	3000	3902	.	+	.	Parent=mRNA00001,mRNA00003
+ctg123	.	exon	5000	5500	.	+	.	Parent=mRNA00001,mRNA00002,mRNA00003
+ctg123	.	exon	7000	9000	.	+	.	Parent=mRNA00001,mRNA00002,mRNA00003
+ctg123	.	CDS	1201	1500	.	+	0	ID=cds00001;Parent=mRNA00001
+ctg123	.	CDS	3000	3902	.	+	0	ID=cds00001;Parent=mRNA00001
+ctg123	.	CDS	5000	5500	.	+	0	ID=cds00001;Parent=mRNA00001
+ctg123	.	CDS	7000	7600	.	+	0	ID=cds00001;Parent=mRNA00001
+ctg123	.	CDS	1201	1500	.	+	0	ID=cds00002;Parent=mRNA00002
+ctg123	.	CDS	5000	5500	.	+	0	ID=cds00002;Parent=mRNA00002
+ctg123	.	CDS	7000	7600	.	+	0	ID=cds00002;Parent=mRNA00002
+ctg123	.	CDS	3301	3902	.	+	0	ID=cds00003;Parent=mRNA00003
+ctg123	.	CDS	5000	5500	.	+	1	ID=cds00003;Parent=mRNA00003
+ctg123	.	CDS	7000	7600	.	+	1	ID=cds00003;Parent=mRNA00003
+ctg123	.	CDS	3391	3902	.	+	0	ID=cds00004;Parent=mRNA00003
+ctg123	.	CDS	5000	5500	.	+	1	ID=cds00004;Parent=mRNA00003
+ctg123	.	CDS	7000	7600	.	+	1	ID=cds00004;Parent=mRNA00003
