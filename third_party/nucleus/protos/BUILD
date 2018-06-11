@@ -388,3 +388,35 @@ pyclif_proto_library(
     name = "bed_pyclif",
     proto_lib = ":bed_proto",  # NO COPYBARA
 )
+
+# ----------------------------------------------------------------------
+# GFF records
+# ----------------------------------------------------------------------
+
+proto_library(
+    name = "gff_proto",
+    srcs = ["gff.proto"],
+    deps = [":range_proto"],
+)
+
+cc_proto_library(
+    name = "gff_cc_pb2",
+    srcs = ["gff.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [":range_cc_pb2"],
+)
+
+py_proto_library(
+    name = "gff_py_pb2",
+    srcs = ["gff.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [":range_py_pb2"],
+)
+
+pyclif_proto_library(
+    name = "gff_pyclif",
+    proto_lib = ":gff_proto",  # NO COPYBARA
+)

@@ -113,19 +113,9 @@ message GffHeader {
   // encoding the exact GFF spec version used.
   string gff_version = 1;
 
-  // A SequenceRegion message encodes a span of a sequence contig.
-  // redacted
-  message SequenceRegion {
-    string seqid = 1;
-    // N.B. the `start`, `end` interval is 0-based, end-exclusive as
-    // in the Range proto, and unlike the native representation in a
-    // GFF text file.
-    int64 start = 2;
-    int64 end = 3;
-  };
   // `sequence_regions` is a list of the sequence regions that are
   // referenced by GFF records.
-  repeated string sequence_regions = 2;
+  repeated Range sequence_regions = 2;
 
   // An OntologyDirective holds the URI to a sequence ontology
   // database, reflecting the ontology over the entities in the
