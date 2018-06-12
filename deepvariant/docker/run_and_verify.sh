@@ -46,7 +46,7 @@ function init() {
   readonly DATE=$(date '+%Y-%m-%d-%H-%M-%S')
   readonly PROJECT_ID="${project_id}"
   readonly BUCKET="gs://${PROJECT_ID}"
-  readonly ZONES="us-east1-c"
+  readonly ZONES="us-west1-b us-east1-c"
   readonly OUTDIR="${BUCKET}/deepvariant-cbi-${DATE}"
   readonly OUTFILE="${OUTDIR}/output.vcf"
   readonly OUTFILE_GVCF="${OUTDIR}/output.gvcf"
