@@ -42,8 +42,8 @@ Cloud Platform.
 *   [DeepVariant model training](docs/deepvariant-model-training.md)
 *   [Datalab example: visualizing pileup
     images/tensors](docs/visualizing_examples.ipynb)
-*   [Getting Started with GCP](deepvariant-gcp-info.md) (It is not required to
-    run DeepVariant on GCP.)
+*   [Getting Started with GCP](docs/deepvariant-gcp-info.md) (It is not required
+    to run DeepVariant on GCP.)
 
 ## Other resources
 
