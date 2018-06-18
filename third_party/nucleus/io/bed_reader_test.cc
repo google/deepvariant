@@ -50,6 +50,7 @@ using ::testing::Pointwise;
 
 constexpr char kBedFilename[] = "test_regions.bed";
 constexpr char kGzippedBedFilename[] = "test_regions.bed.gz";
+constexpr char kMalformedBedFilename[] = "malformed.bed";
 
 class BedReaderTest : public ::testing::Test {
  protected:
@@ -125,4 +126,15 @@ TEST_F(BedReaderTest, FieldRestrictionWorks) {
 
   EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), expected));
 }
+
+TEST_F(BedReaderTest, MalformedBedRecord) {
+  std::unique_ptr<BedReader> reader =
+      std::move(BedReader::FromFile(GetTestData(kMalformedBedFilename),
+                                    nucleus::genomics::v1::BedReaderOptions())
+                    .ValueOrDie());
+
+  EXPECT_DEATH(as_vector(reader->Iterate()),
+               "BED record has invalid number of fields");
+}
+
 }  // namespace nucleus
