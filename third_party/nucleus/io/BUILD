@@ -595,7 +595,9 @@ cc_test(
         ":reader_base",
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/vendor:status_matchers",
+        "//third_party/nucleus/vendor:statusor",
         "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )

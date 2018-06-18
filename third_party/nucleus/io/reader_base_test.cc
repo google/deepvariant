@@ -32,12 +32,23 @@
 
 #include "third_party/nucleus/io/reader_base.h"
 
+#include <algorithm>
 #include <iostream>
+
+#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
+#include "third_party/nucleus/vendor/statusor.h"
+#include "tensorflow/core/lib/core/errors.h"
 
+namespace tf = tensorflow;
+
+using ::testing::Pointee;
+using ::testing::StrEq;
 
 namespace nucleus {
 
@@ -47,33 +58,40 @@ class ToyIterable;
 class ToyReader : public Reader {
  private:
   // Underlying container.
-  std::vector<string> toys_;
+  std::vector<StatusOr<string>> toys_;
 
  public:
-  explicit ToyReader(const std::vector<string>& toys)
-      : toys_(toys)
-  {}
+  explicit ToyReader(const std::vector<StatusOr<string>>& toys) : toys_(toys) {}
 
-  std::shared_ptr<ToyIterable> IterateFrom(int startingPos = 0)  {
+  explicit ToyReader(const std::vector<string>& toys) {
+    std::transform(toys.begin(), toys.end(), std::back_inserter(toys_),
+                   [](const string& s) { return StatusOr<string>(s); });
+  }
+
+  std::shared_ptr<ToyIterable> IterateFrom(int startingPos = 0) {
     if (startingPos < 0) {
       LOG(ERROR) << "ToyIterable: bad starting pos";
       return nullptr;
     } else {
-      return MakeIterable<ToyIterable>(this, toys_, startingPos);
+      return MakeIterable<ToyIterable>(this, startingPos);
     }
   }
+
+  friend class ToyIterable;
 };
 
-class ToyIterable : public Iterable<string>  {
+class ToyIterable : public Iterable<string> {
  private:
-  const std::vector<string>& toys_;
   uint32 pos_;
 
  public:
   StatusOr<bool> Next(string* out) override {
+    const ToyReader& reader = *static_cast<const ToyReader*>(reader_);
     TF_RETURN_IF_ERROR(CheckIsAlive());
-    if (pos_ < toys_.size()) {
-      *out = toys_[pos_];
+    if (pos_ < reader.toys_.size()) {
+      StatusOr<string> toy_or = reader.toys_[pos_];
+      TF_RETURN_IF_ERROR(toy_or.status());
+      *out = toy_or.ValueOrDie();
       ++pos_;
       return true;
     } else {
@@ -81,21 +99,14 @@ class ToyIterable : public Iterable<string>  {
     }
   }
 
-  ToyIterable(const ToyReader* reader,
-              const std::vector<string>& toys,
-              int startingPos)
-      : Iterable(reader),
-        toys_(toys),
-        pos_(startingPos)
-  {}
+  ToyIterable(const ToyReader* reader, int startingPos)
+      : Iterable(reader), pos_(startingPos) {}
 
   ~ToyIterable() override {}
 };
 
-
-
 TEST(ReaderIterableTest, EmptyReaderRange) {
-  ToyReader tr0({});
+  ToyReader tr0(std::vector<string>{});
   int i = 0;
   for (const StatusOr<string*> toy_status : tr0.IterateFrom(0)) {
     ASSERT_THAT(toy_status, IsOK());
@@ -104,7 +115,6 @@ TEST(ReaderIterableTest, EmptyReaderRange) {
   }
   EXPECT_EQ(0, i);
 }
-
 
 TEST(ReaderIterableTest, SupportsBasicIteration) {
   std::vector<string> toys = {"ball", "doll", "house", "legos"};
@@ -130,6 +140,54 @@ TEST(ReaderIterableTest, SupportsRangeFor) {
     gathered.push_back(*toy.ValueOrDie());
   }
   EXPECT_EQ(from1, gathered);
+}
+
+// Ensure that the Iterable Next() interface properly handles an error, for
+// example as would be encountered upon parsing a malformed record in a file.
+// This interface is used by our Python APIs.
+TEST(ReaderIterableTest, IterationHandlesError) {
+  ToyReader tr({StatusOr<string>("ball"),
+                tf::errors::Unknown("Malformed record: argybarg"),
+                StatusOr<string>("doll")});
+
+  std::shared_ptr<ToyIterable> it = tr.IterateFrom(0);
+  StatusOr<bool> not_eof_or;
+  string line;
+
+  not_eof_or = it->Next(&line);
+  ASSERT_TRUE(not_eof_or.ok() && not_eof_or.ValueOrDie());
+  ASSERT_EQ(line, "ball");
+
+  not_eof_or = it->Next(&line);
+  ASSERT_THAT(not_eof_or, IsNotOKWithMessage("Malformed record: argybarg"));
+
+  // After initially encountering a failure, successive Next() calls will
+  // continue to return the same error--we cannot advance further.
+  not_eof_or = it->Next(&line);
+  ASSERT_THAT(not_eof_or, IsNotOKWithMessage("Malformed record: argybarg"));
+}
+
+// Ensure that C++ iterator interface properly handles an error, for example as
+// would be encountered upon parsing a malformed record in a file.
+TEST(ReaderIterableTest, CppIterationHandlesError) {
+  ToyReader tr({StatusOr<string>("ball"),
+                tf::errors::Unknown("Malformed record: argybarg"),
+                StatusOr<string>("doll")});
+  auto it = tr.IterateFrom(0);
+  auto it_cur = begin(it);
+  auto it_end = end(it);
+
+  ASSERT_FALSE(it_cur == it_end);
+  ASSERT_THAT(*it_cur, IsOK());
+  ASSERT_THAT((*it_cur).ValueOrDie(), Pointee(StrEq("ball")));
+
+  ++it_cur;
+  ASSERT_FALSE(it_cur == it_end);
+  ASSERT_THAT(*it_cur, IsNotOKWithMessage("Malformed record: argybarg"));
+
+  // We cannot advance any further once an error has been encountered.
+  ++it_cur;
+  ASSERT_TRUE(it_cur == it_end);
 }
 
 TEST(ReaderIterableTest, TestProtectionAgainstMultipleIteration) {

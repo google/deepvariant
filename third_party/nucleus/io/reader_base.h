@@ -190,7 +190,6 @@ class Iterable : public IterableBase {
           bool advanced = statusor.ValueOrDie();
           past_end_ = !advanced;
         } else {
-          past_end_ = true;
           iterable_->current_status_ = statusor.status();
         }
       } else {
