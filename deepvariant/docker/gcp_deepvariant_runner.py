@@ -173,7 +173,7 @@ def _run_make_examples(pipeline_args):
     if pipeline_args.sample_name:
       extra_args.extend(['--sample_name', pipeline_args.sample_name])
     if pipeline_args.hts_block_size:
-      extra_args.extend(['--hts_block_size', pipeline_args.hts_block_size])
+      extra_args.extend(['--hts_block_size', str(pipeline_args.hts_block_size)])
     return extra_args
 
   command = _MAKE_EXAMPLES_COMMAND.format(EXTRA_ARGS=' '.join(get_extra_args()))
@@ -213,6 +213,8 @@ def _run_make_examples(pipeline_args):
         'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
         '--command', command
     ]
+    if pipeline_args.gcsfuse:
+      run_args.append('--fuse')
     results.append(threads.apply_async(_run_job, [run_args]))
 
   _wait_for_results(threads, results)
@@ -364,6 +366,11 @@ def _validate_and_complete_args(pipeline_args):
     pipeline_args.ref_gzi = pipeline_args.ref + '.gzi'
   if not pipeline_args.bai:
     pipeline_args.bai = pipeline_args.bam + '.bai'
+  if pipeline_args.gcsfuse and not pipeline_args.hts_block_size:
+    # Set hts_block_size to 128KB. Gcsfuse works better with shorter byte read.
+    # See https://github.com/GoogleCloudPlatform/gcsfuse/issues/262 for more
+    # info.
+    pipeline_args.hts_block_size = 128 * 1024
 
 
 def run(argv=None):
@@ -435,6 +442,17 @@ def run(argv=None):
       help=('Sets the htslib block size (in bytes). Zero or negative uses '
             'default htslib setting. Currently only applies to SAM/BAM '
             'reading.'))
+  parser.add_argument(
+      '--gcsfuse',
+      action='store_true',
+      help=('Only affects make_example step. If set, gcsfuse is used to '
+            'localize input files instead of copying them with gsutil. '
+            'Setting this flag will also set a value for hts_block_size '
+            'that works best for gcsfuse, unless hts_block_size flag is set '
+            'explicitly. It is necessary to have a gcsfuse docker image in '
+            'the Project`s container registry. See '
+            'https://github.com/googlegenomics/pipelines-tools for more '
+            'details.'))
 
   # Optional gVCF args.
   parser.add_argument(
