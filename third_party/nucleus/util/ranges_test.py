@@ -64,8 +64,8 @@ class RangesTests(parameterized.TestCase):
     def check_overlaps(chr1, start1, end1, chr2, start2, end2, expected):
       i1 = ranges.make_range(chr1, start1, end1)
       i2 = ranges.make_range(chr2, start2, end2)
-      self.assertEquals(ranges.ranges_overlap(i1, i2), expected)
-      self.assertEquals(ranges.ranges_overlap(i2, i1), expected)
+      self.assertEqual(ranges.ranges_overlap(i1, i2), expected)
+      self.assertEqual(ranges.ranges_overlap(i2, i1), expected)
 
     check_overlaps('chr1', 0, 3, 'chr1', 4, 10, False)
     check_overlaps('chr1', 0, 3, 'chr1', 3, 10, False)
