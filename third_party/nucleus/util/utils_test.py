@@ -57,7 +57,7 @@ class UtilsTest(parameterized.TestCase):
         cigar='2M1I3M',
         quals=range(10, 16),
         name='read1')
-    self.assertEquals(
+    self.assertEqual(
         ranges.make_range('chrX', start, start + 5), utils.read_range(read))
     read = test_utils.make_read(
         'AAACAG',
@@ -66,7 +66,7 @@ class UtilsTest(parameterized.TestCase):
         cigar='2M16D3M',
         quals=range(10, 16),
         name='read1')
-    self.assertEquals(
+    self.assertEqual(
         ranges.make_range('chrX', start, start + 5 + 16),
         utils.read_range(read))
 
@@ -74,13 +74,13 @@ class UtilsTest(parameterized.TestCase):
     """Tests samples have expected length."""
     first_ten_ints = range(10)
     # Test sampling with k > len(iterable).
-    self.assertEquals(len(utils.reservoir_sample(first_ten_ints, 11)), 10)
+    self.assertEqual(len(utils.reservoir_sample(first_ten_ints, 11)), 10)
     # Test sampling with k == len(iterable).
-    self.assertEquals(len(utils.reservoir_sample(first_ten_ints, 10)), 10)
+    self.assertEqual(len(utils.reservoir_sample(first_ten_ints, 10)), 10)
     # Test sampling with k < len(iterable).
-    self.assertEquals(len(utils.reservoir_sample(first_ten_ints, 9)), 9)
+    self.assertEqual(len(utils.reservoir_sample(first_ten_ints, 9)), 9)
     # Test sampling with k == 0.
-    self.assertEquals(len(utils.reservoir_sample(first_ten_ints, 0)), 0)
+    self.assertEqual(len(utils.reservoir_sample(first_ten_ints, 0)), 0)
     # Test sampling with k < 0 (bad args).
     with self.assertRaises(ValueError):
       utils.reservoir_sample(first_ten_ints, -1)
