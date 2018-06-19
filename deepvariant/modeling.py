@@ -58,7 +58,7 @@ from deepvariant import dv_constants
 
 flags.DEFINE_float(
     'label_smoothing', 1e-6,
-    'Amount of label smoothing to use. By default this is 0.0001%'
+    'Amount of label smoothing to use. By default this is 0.0001% '
     'meaning that we expect a label error at a rate of 1 / 1,000,000')
 
 # Training parameters.
