@@ -32,18 +32,25 @@
 // Implementation of gff_reader.h
 #include "third_party/nucleus/io/gff_reader.h"
 
+#include <limits>
+
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-
+#include "absl/types/optional.h"
 #include "third_party/nucleus/protos/range.pb.h"
 
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
-constexpr char GFF_COMMENT_PREFIX[] = "#";
+// Constants
+// redacted
+constexpr char kGffCommentPrefix[] = "#";
+constexpr char kGffMissingField[] = ".";
+constexpr double kGffMissingDouble = -std::numeric_limits<double>::infinity();
+constexpr int32 kGffMissingInt32 = -1;
 
 namespace tf = tensorflow;
 
@@ -103,7 +110,7 @@ tf::Status ReadGffHeader(const string& path, GffHeader* header) {
   StatusOr<string> line_or;
   string line;
   while ((line_or = text_reader->ReadLine()).ok() &&
-         absl::StartsWith(line = line_or.ValueOrDie(), GFF_COMMENT_PREFIX)) {
+         absl::StartsWith(line = line_or.ValueOrDie(), kGffCommentPrefix)) {
     TF_RETURN_IF_ERROR(ParseGffHeaderLine(line, header));
   }
 
@@ -123,7 +130,7 @@ tf::Status NextNonCommentLine(TextReader& text_reader, string* line) {
     StatusOr<string> line_or = text_reader.ReadLine();
     TF_RETURN_IF_ERROR(line_or.status());
     tmp = line_or.ValueOrDie();
-  } while (absl::StartsWith(tmp, GFF_COMMENT_PREFIX));
+  } while (absl::StartsWith(tmp, kGffCommentPrefix));
 
   *line = tmp;
   return tf::Status::OK();
@@ -133,6 +140,12 @@ tf::Status NextNonCommentLine(TextReader& text_reader, string* line) {
 // of string-to-string '=' assignments, into a proto string->string map.
 tf::Status ParseGffAttributes(const string& attributes_string,
                               google::protobuf::Map<string, string>* attributes_map) {
+  if (attributes_string == kGffMissingField || attributes_string.empty()) {
+    attributes_map->clear();
+    return tf::Status::OK();
+  }
+
+  google::protobuf::Map<string, string> tmp;
   std::vector<absl::string_view> assignments =
       absl::StrSplit(attributes_string, ';');
   for (absl::string_view assignment : assignments) {
@@ -144,11 +157,15 @@ tf::Status ParseGffAttributes(const string& attributes_string,
     // conversions
     string lhs = string(tokens[0]);
     string rhs = string(tokens[1]);
-    (*attributes_map)[lhs] = rhs;
+    tmp[lhs] = rhs;
   }
+  *attributes_map = tmp;
   return tf::Status::OK();
 }
 
+// Converts a text GFF line into a GffRecord proto message, or returns an error
+// code if the line is malformed.  The record will only be modified if the call
+// succeeds.
 tf::Status ConvertToPb(const string& line, GffRecord* record) {
   CHECK(record != nullptr);
 
@@ -159,8 +176,11 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
 
   // Parse line.
   string seq_id = fields[0];
-  string source = fields[1];
-  string type = fields[2];
+  if (seq_id == kGffMissingField || seq_id.empty()) {
+    return tf::errors::Unknown("GFF mandatory seq_id field is missing");
+  }
+  string source = (fields[1] == kGffMissingField ? "" : fields[1]);
+  string type = (fields[2] == kGffMissingField ? "" : fields[2]);
 
   int64 start1, end1;
   if (!absl::SimpleAtoi(fields[3], &start1)) {
@@ -175,16 +195,18 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
   int64 end = end1;
 
   // Parse score.
-  float score = 0.0f;
-  if (fields[5] != ".") {
-    if (!absl::SimpleAtof(fields[5], &score)) {
+  absl::optional<float> score;
+  if (fields[5] != kGffMissingField) {
+    float value;
+    if (!absl::SimpleAtof(fields[5], &value)) {
       return tf::errors::Unknown("Cannot parse GFF record `score`");
     }
+    score = value;
   }
   // Parse strand.
   GffRecord::Strand strand;
   const string& strand_field = fields[6];
-  if (strand_field == ".") {
+  if (strand_field == kGffMissingField) {
     strand = GffRecord::UNSPECIFIED_STRAND;
   } else if (strand_field == "+") {
     strand = GffRecord::FORWARD_STRAND;
@@ -194,14 +216,15 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
     return tf::errors::Unknown("Invalid GFF record `strand` encoding");
   }
   // Parse phase.
-  // redacted
-  int phase;
+  absl::optional<int> phase;
   const string& phase_field = fields[7];
-  if (phase_field == ".") {
-    phase = 0;
-  } else if (!absl::SimpleAtoi(phase_field, &phase) ||
-             !((phase >= 0) && (phase < 3))) {
-    return tf::errors::Unknown("Invalid GFF record `phase` encoding.");
+  if (phase_field != kGffMissingField) {
+    int value;
+    if (!absl::SimpleAtoi(phase_field, &value) ||
+        !((value >= 0) && (value < 3))) {
+      return tf::errors::Unknown("Invalid GFF record `phase` encoding.");
+    }
+    phase = value;
   }
   // Parse attributes dictionary.
   google::protobuf::Map<string, string> attributes_map;
@@ -214,9 +237,9 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
   record->mutable_range()->set_end(end);
   record->set_source(source);
   record->set_type(type);
-  record->set_score(score);
+  record->set_score(score.value_or(kGffMissingDouble));
   record->set_strand(strand);
-  record->set_phase(phase);
+  record->set_phase(phase.value_or(kGffMissingInt32));
   *record->mutable_attributes() = attributes_map;
 
   return tf::Status::OK();

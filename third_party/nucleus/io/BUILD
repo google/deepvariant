@@ -731,6 +731,7 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

@@ -41,7 +41,7 @@ message GffRecord {
   // `range` field, reflecting the genomic location of the feature.
   // NOTE: this is a 0-based, end-exclusive interval, in contrast to the 1-based
   // encoding used natively in the GFF text format.  For reference, consult the
-  // documentation for `Range`.
+  // documentation for `Range`.  This field is required.
   Range range = 1;
 
   // `source` designation, as defined by GFF spec:
@@ -51,6 +51,8 @@ message GffRecord {
   // "Genbank." In effect, the source is used to extend the feature ontology by
   // adding a qualifier to the type creating a new composite type that is a
   // subclass of the type in the type column."
+  //
+  // Missingness of this field is encoded as "".
   string source = 2;
 
   // `type` designation, as defined by GFF spec:
@@ -59,6 +61,8 @@ message GffRecord {
   // accession number. The latter alternative is distinguished using the syntax
   // SO:000000. In either case, it must be sequence_feature (SO:0000110) or an
   // is_a child of it."
+  //
+  // Missingness of this field is encoded as "".
   string type = 3;
 
   // `score` designation, as defined by GFF spec:
@@ -66,6 +70,8 @@ message GffRecord {
   // of the format, the semantics of the score are ill-defined. It is strongly
   // recommended that E-values be used for sequence similarity features, and
   // that P-values be used for ab initio gene prediction features."
+  //
+  // Missingness of this field is encoded by -infinity.
   double score = 4;
 
   // redacted
@@ -95,13 +101,14 @@ message GffRecord {
   // reverse strand features, phase is counted from the end field.
   //
   // The phase is REQUIRED for all CDS features."
+  //
+  // Missingness of this field is encoded by -1.
   int32 phase = 6;
 
   // `attributes`, a free-form map of keys to string values, corresponding to
   // the semi-colon separated attributes field in the GFF text format.
   map<string, string> attributes = 7;
 }
-
 
 // A message encoding the directives contained in a GFF3 file header.
 // Consult the file format reference for detailed descriptions of
@@ -142,7 +149,8 @@ message GffHeader {
   GenomeBuildDirective genome_build = 7;
 }
 
+message GffReaderOptions {
+}
 
-message GffReaderOptions {}
-
-message GffWriterOptions {}
+message GffWriterOptions {
+}

@@ -44,14 +44,51 @@
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 
+namespace nucleus {
 namespace {
 
-using nucleus::EqualsProto;
-using nucleus::GffReader;
 using nucleus::genomics::v1::GffHeader;
 using nucleus::genomics::v1::GffRecord;
-using nucleus::string;
 
+const char kExpectedHeaderRecord[] =
+    R"(gff_version: "gff-version 3.2.1"
+       sequence_regions {
+         reference_name: "ctg123"
+         start: 0
+         end: 1497228
+       }
+    )";
+
+const char kExpectedGffRecord1[] =
+    R"(range {
+         reference_name: "ctg123"
+         start: 999
+         end: 9000
+       }
+       source: "GenBank"
+       type: "gene"
+       score: 2.00
+       strand: FORWARD_STRAND
+       phase: 0
+       attributes {
+         key: "ID"
+         value: "gene00001"
+       }
+       attributes {
+         key: "Name"
+         value: "EDEN"
+       }
+     )";
+
+const char kExpectedGffRecord2[] =
+    R"(range {
+         reference_name: "ctg123"
+         start: 999
+         end: 1012
+       }
+       score: -inf
+       phase: -1
+     )";
 
 TEST(GffReaderTest, ReadsExampleFile) {
   string examples_fname = nucleus::GetTestData("test_features.gff");
@@ -61,38 +98,18 @@ TEST(GffReaderTest, ReadsExampleFile) {
 
   auto reader = std::move(reader_or.ValueOrDie());
   const GffHeader& header = reader->Header();
-
-  EXPECT_EQ("gff-version 3.2.1", header.gff_version());
-
-  EXPECT_EQ(1, header.sequence_regions_size());
-  EXPECT_THAT(header.sequence_regions(0),
-              EqualsProto(R"(reference_name: "ctg123" start: 0 end: 1497228)"));
+  EXPECT_THAT(header, EqualsProto(kExpectedHeaderRecord));
 
   // Load the records.
   std::vector<GffRecord> gff_records = as_vector(reader->Iterate());
-  EXPECT_EQ(23, gff_records.size());
-
-  // Inspect the first record.
-  EXPECT_THAT(gff_records[0], EqualsProto(
-    R"(range {
-         reference_name: "ctg123"
-         start: 999
-         end: 9000
-       }
-       source: "."
-       type: "gene"
-       strand: FORWARD_STRAND
-       attributes {
-         key: "ID"
-         value: "gene00001"
-       }
-       attributes {
-         key: "Name"
-         value: "EDEN"
-       }
-     )"));
+  EXPECT_EQ(2, gff_records.size());
+  // Inspect the records.
+  EXPECT_THAT(gff_records[0], EqualsProto(kExpectedGffRecord1));
+  EXPECT_THAT(gff_records[1], EqualsProto(kExpectedGffRecord2));
 }
 
 // redacted
 
 }  // namespace
+
+}  // namespace nucleus
