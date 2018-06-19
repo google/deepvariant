@@ -152,7 +152,7 @@ The original source of these files are:
 
 1.  Truth VCF and BED
 
-    These come from NIST, as part of the [Genomes in a Bottle
+    These come from NIST, as part of the [Genome in a Bottle
     project](http://jimb.stanford.edu/giab/). They are downloaded from
     [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/)
 
