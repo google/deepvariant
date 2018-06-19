@@ -152,11 +152,9 @@ class Iterable : public IterableBase {
   virtual StatusOr<bool> Next(Record* record) = 0;
 
   // PythonNext is the same as Next, except the Record is wrapped
-  // with a ProtoPtr<> template to avoid CLIF copies when being
+  // with an EmptyProtoPtr<> template to avoid CLIF copies when being
   // called from Python.
-  StatusOr<bool> PythonNext(ProtoPtr<Record> p) {
-    return Next(p.p_);
-  }
+  StatusOr<bool> PythonNext(EmptyProtoPtr<Record> p) { return Next(p.p_); }
 
  public:
   // C++ const iterator class.
