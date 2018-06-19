@@ -38,17 +38,12 @@ namespace clif {
 
 static const google::protobuf::python::PyProto_API* py_proto_api = nullptr;
 
-const ::google::protobuf::Message* GetPyProtoMessagePointer(PyObject* py) {
+const google::protobuf::python::PyProto_API* GetPyProtoApi(PyObject* py) {
   if (py_proto_api == nullptr) {
     py_proto_api = static_cast<const google::protobuf::python::PyProto_API*>(
         PyCapsule_Import(google::protobuf::python::PyProtoAPICapsuleName(), 0));
-    if (py_proto_api == nullptr) {
-      return nullptr;
-    }
   }
-
-  const ::google::protobuf::Message* cpb = py_proto_api->GetMessagePointer(py);
-  return cpb;
+  return py_proto_api;
 }
 
 }  // namespace clif
