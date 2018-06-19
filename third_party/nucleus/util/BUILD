@@ -358,6 +358,7 @@ cc_library(
 
 cc_library(
     name = "proto_clif_converter",
+    srcs = ["proto_clif_converter.cc"],
     hdrs = ["proto_clif_converter.h"],
     deps = [
         ":proto_ptr",
