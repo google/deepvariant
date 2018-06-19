@@ -11,8 +11,7 @@ RUN apt-get -y update && \
     pip install gsutil && \
     add-apt-repository ppa:gophers/archive && \
     apt-get -y install golang-1.10-go && \
-    mkdir -p /opt/deepvariant_runner/bin && \
-    mkdir -p /opt/deepvariant_runner/src
+    mkdir -p /opt/deepvariant_runner/bin
 
 ENV PATH /usr/lib/go-1.10/bin:$PATH
 ENV GOPATH $HOME/go
@@ -21,14 +20,5 @@ ENV GOPATH $HOME/go
 RUN go get github.com/googlegenomics/pipelines-tools/pipelines
 ENV PATH $GOPATH/bin:$PATH
 
-ADD gcp_deepvariant_runner.py /opt/deepvariant_runner/src/
-ADD run_and_verify.sh /opt/deepvariant_runner/bin/
-
-# Create shell wrappers for python files for easier use.
-RUN \
-    BASH_HEADER='#!/bin/bash' && \
-    printf "%s\n%s\n" \
-        "${BASH_HEADER}" \
-        'python /opt/deepvariant_runner/src/gcp_deepvariant_runner.py "$@"' > \
-        /opt/deepvariant_runner/bin/gcp_deepvariant_runner && \
-    chmod +x /opt/deepvariant_runner/bin/gcp_deepvariant_runner
+COPY gcp_deepvariant_runner.py /opt/deepvariant_runner/bin/gcp_deepvariant_runner
+COPY run_and_verify.sh /opt/deepvariant_runner/bin/run_and_verify.sh
