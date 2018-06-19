@@ -34,14 +34,29 @@
 
 // CLIF normally will serialize/deserialize protocol
 // buffers when passing them from C++ to/from Python.
-// This wrapper disables that default handling.
+// These wrappers disable that default handling.
 namespace nucleus {
 
+// Use this wrapper when the C++ code fills in an EMPTY
+// protocol buffer.  DO NOT use this to pass a non-empty
+// protocol buffer from Python to C++; it will fail at
+// runtime.
 template <class T>
-class ProtoPtr {
+class EmptyProtoPtr {
  public:
-  ProtoPtr(T* p): p_(p) {}
-  ProtoPtr(): p_(nullptr) {}
+  EmptyProtoPtr(T* p) : p_(p) {}
+  EmptyProtoPtr() : p_(nullptr) {}
+
+  T* p_;
+};
+
+// Use this wrapper when the C++ code reads, but does
+// not modify, the Python protocol buffer.
+template <class T>
+class ConstProtoPtr {
+ public:
+  ConstProtoPtr(T* p) : p_(p) {}
+  ConstProtoPtr() : p_(nullptr) {}
 
   T* p_;
 };
