@@ -382,20 +382,18 @@ class Realigner(object):
     """Helper function to call debruijn_graph module."""
     windows_haplotypes = []
     # Build and process de-Bruijn graph for each window.
+    sam_reader = sam.InMemorySamReader(reads)
+
     for window in windows:
       if window.end - window.start > self.config.ws_config.max_window_size:
         continue
       if not self.ref_reader.is_valid(window):
         continue
       ref = self.ref_reader.query(window)
-      # redacted
-      dbg_reads = [
-          read for read in reads
-          if ranges.ranges_overlap(window, utils.read_range(read))
-      ]
+      window_reads = list(sam_reader.query(window))
 
       with timer.Timer() as t:
-        graph = debruijn_graph.build(ref, dbg_reads, self.config.dbg_config)
+        graph = debruijn_graph.build(ref, window_reads, self.config.dbg_config)
       graph_building_time = t.GetDuration()
 
       if not graph:
