@@ -526,7 +526,7 @@ py_library(
 
 py_test(
     name = "data_providers_test",
-    size = "small",
+    size = "medium",
     srcs = ["data_providers_test.py"],
     data = [":testdata"],
     main = "data_providers_test.py",

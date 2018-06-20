@@ -144,7 +144,10 @@ def _sharded(basename, num_shards):
     return basename
 
 
+# Golden sets are created with learning/genomics/internal/create_golden.sh
 @parameterized.parameters(
+    # All tests are run with fast_pass_aligner enabled. There are no
+    # golden sets version for ssw realigner.
     dict(mode='calling', num_shards=0),
     dict(mode='calling', num_shards=3),
     dict(mode='training', num_shards=0, labeler_algorithm='positional_labeler'),
@@ -154,8 +157,11 @@ def _sharded(basename, num_shards):
 class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
-  def test_make_examples_end2end(self, mode, num_shards,
-                                 labeler_algorithm=None):
+  def test_make_examples_end2end(self,
+                                 mode,
+                                 num_shards,
+                                 labeler_algorithm=None,
+                                 use_fast_pass_aligner=True):
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.ref = testdata.CHR20_FASTA
@@ -168,6 +174,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
     FLAGS.gvcf_gq_binsize = 5
+    FLAGS.use_fast_pass_aligner = use_fast_pass_aligner
     if labeler_algorithm is not None:
       FLAGS.labeler_algorithm = labeler_algorithm
 

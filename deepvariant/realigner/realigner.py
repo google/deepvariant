@@ -125,7 +125,7 @@ flags.DEFINE_bool(
     'If True, we will emit realigned reads if our realigner_diagnostics are '
     'also enabled.')
 flags.DEFINE_bool(
-    'use_fast_pass_aligner', False,
+    'use_fast_pass_aligner', True,
     'If True, fast_pass_aligner (improved performance) implementation is used ')
 flags.DEFINE_integer(
     'max_num_mismatches', 2,
