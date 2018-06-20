@@ -1,5 +1,3 @@
-#!/usr/bin/env python2.7  // # pylint: disable=g-unknown-interpreter
-#
 # Copyright 2017 Google Inc.
 #
 # Redistribution and use in source and binary forms, with or without
