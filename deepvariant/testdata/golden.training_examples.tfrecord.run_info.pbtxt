@@ -3452,6 +3452,7 @@ options {
     multi_allelic_mode: ADD_HET_ALT_IMAGES
     mapping_quality_cap: 60
     random_seed: 2101079370
+    num_channels: 6
   }
   read_requirements {
     min_mapping_quality: 10
@@ -3474,6 +3475,7 @@ options {
       min_base_quality: 20
       min_windows_distance: 70
       max_window_size: 1000
+      region_expansion_in_bp: 20
     }
     dbg_config {
       min_k: 10
@@ -3502,26 +3504,26 @@ options {
 labeling_metrics {
   n_truth_variant_sites: 48
   n_truth_variant_alleles: 48
-  n_candidate_variant_sites: 49
-  n_candidate_variant_alleles: 49
+  n_candidate_variant_sites: 50
+  n_candidate_variant_alleles: 50
   n_non_confident_candidate_variant_sites: 25
   n_true_positive_sites: 48
   n_true_positive_alleles: 84
-  n_false_positive_sites: 1
-  n_false_positive_alleles: 1
+  n_false_positive_sites: 2
+  n_false_positive_alleles: 2
   n_exact_position_matches: 48
   n_exact_position_and_allele_matches: 48
   n_exact_position_and_allele_and_genotype_matches: 48
 }
 resource_metrics {
   host_name: "redacted"
-  physical_core_count: 24
-  cpu_frequency_mhz: 1362.49416667
-  total_memory_mb: 64400
-  wall_time_seconds: 6.87489795685
-  cpu_user_time_seconds: 16.128
-  cpu_system_time_seconds: 7.576
-  memory_peak_rss_mb: 401
-  read_bytes: 887988224
-  write_bytes: 233472
+  physical_core_count: 6
+  cpu_frequency_mhz: 3598.58633333
+  total_memory_mb: 32159
+  wall_time_seconds: 2.82371592522
+  cpu_user_time_seconds: 8.248
+  cpu_system_time_seconds: 1.42
+  memory_peak_rss_mb: 414
+  read_bytes: 369479680
+  write_bytes: 32768
 }
