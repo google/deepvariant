@@ -119,7 +119,8 @@ void FastPassAligner::set_score_schema(uint8_t match_score,
 // Align reads that could not be aligned in the first step using ssw aligner.
 // Keep the best alignment for each read, or preserve an original one if read
 // could not be realigned with a high enough score.
-std::unique_ptr<ReadsVectorType> FastPassAligner::AlignReads(
+std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
+FastPassAligner::AlignReads(
     const std::vector<nucleus::genomics::v1::Read>& reads_param) {
   // Copy reads
   for (const auto& read : reads_param) {
@@ -385,7 +386,8 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
 
 void FastPassAligner::RealignReadsToReference(
     const std::vector<nucleus::genomics::v1::Read>& reads,
-    std::unique_ptr<ReadsVectorType>* realigned_reads) {
+    std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>*
+        realigned_reads) {
   // Loop through all reads
   for (size_t read_index = 0; read_index < reads.size(); read_index++) {
     const nucleus::genomics::v1::Read& read = reads[read_index];
