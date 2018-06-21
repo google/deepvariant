@@ -51,7 +51,7 @@ class GffReaderTest(parameterized.TestCase):
     self.first.range.end = 9000
     self.first.source = 'GenBank'
     self.first.type = 'gene'
-    self.first.score = 2.0
+    self.first.score = 2.5
     self.first.strand = gff_pb2.GffRecord.FORWARD_STRAND
     self.first.phase = 0
     self.first.attributes['ID'] = 'gene00001'
@@ -72,7 +72,7 @@ class GffReaderTest(parameterized.TestCase):
       self.assertIsInstance(iterable, clif_postproc.WrappedCppIterable)
       actual = list(iterable)
       self.assertLen(actual, 2)
-      self.assertAlmostEqual(actual[0], self.first)
+      self.assertEqual(actual[0], self.first)
       self.assertEqual(actual[1], self.second)
 
   def test_from_file_raises_with_missing_gff(self):

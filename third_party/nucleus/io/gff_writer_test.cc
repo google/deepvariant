@@ -27,11 +27,10 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-// Tests for GffReader class.
-
-#include "third_party/nucleus/io/gff_reader.h"
+#include "third_party/nucleus/io/gff_writer.h"
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -39,18 +38,21 @@
 
 #include "tensorflow/core/platform/test.h"
 
+#include "google/protobuf/text_format.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/gff.pb.h"
-#include "third_party/nucleus/protos/range.pb.h"
-#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/vendor/status_matchers.h"
+#include "third_party/nucleus/vendor/statusor.h"
 
 namespace nucleus {
+
 namespace {
 
 using nucleus::genomics::v1::GffHeader;
 using nucleus::genomics::v1::GffRecord;
 
-const char kExpectedHeaderRecord[] =
+const char kHeaderRecord[] =
     R"(gff_version: "gff-version 3.2.1"
        sequence_regions {
          reference_name: "ctg123"
@@ -59,7 +61,7 @@ const char kExpectedHeaderRecord[] =
        }
     )";
 
-const char kExpectedGffRecord1[] =
+const char kGffRecord1[] =
     R"(range {
          reference_name: "ctg123"
          start: 999
@@ -80,7 +82,7 @@ const char kExpectedGffRecord1[] =
        }
      )";
 
-const char kExpectedGffRecord2[] =
+const char kGffRecord2[] =
     R"(range {
          reference_name: "ctg123"
          start: 999
@@ -90,26 +92,36 @@ const char kExpectedGffRecord2[] =
        phase: -1
      )";
 
-TEST(GffReaderTest, ReadsExampleFile) {
-  string examples_fname = nucleus::GetTestData("test_features.gff");
+const char kExpectedGffText[] =
+    "##gff-version 3.2.1\n"
+    "##sequence-region ctg123 1 1497228\n"
+    "ctg123\tGenBank\tgene\t1000\t9000\t2.5\t+\t0\tID=gene00001;Name=EDEN\n"
+    "ctg123\t.\t.\t1000\t1012\t.\t.\t.\t\n";
 
-  auto reader_or = GffReader::FromFile(examples_fname);
-  EXPECT_TRUE(reader_or.ok());
+TEST(GffWriterTest, WritesGffRecords) {
+  GffHeader header;
+  google::protobuf::TextFormat::ParseFromString(kHeaderRecord, &header);
 
-  auto reader = std::move(reader_or.ValueOrDie());
-  const GffHeader& header = reader->Header();
-  EXPECT_THAT(header, EqualsProto(kExpectedHeaderRecord));
+  GffRecord record1, record2;
+  google::protobuf::TextFormat::ParseFromString(kGffRecord1, &record1);
+  google::protobuf::TextFormat::ParseFromString(kGffRecord2, &record2);
 
-  // Load the records.
-  std::vector<GffRecord> gff_records = as_vector(reader->Iterate());
-  EXPECT_EQ(2, gff_records.size());
-  // Inspect the records.
-  EXPECT_THAT(gff_records[0], EqualsProto(kExpectedGffRecord1));
-  EXPECT_THAT(gff_records[1], EqualsProto(kExpectedGffRecord2));
+  string out_fname = MakeTempFile("gff_writer_test_1.gff");
+  StatusOr<std::unique_ptr<GffWriter>> writer_or =
+      GffWriter::ToFile(out_fname, header);
+
+  ASSERT_THAT(writer_or.status(), IsOK());
+  std::unique_ptr<GffWriter> gff_writer = std::move(writer_or.ValueOrDie());
+
+  ASSERT_THAT(gff_writer->Write(record1), IsOK());
+  ASSERT_THAT(gff_writer->Write(record2), IsOK());
+  ASSERT_THAT(gff_writer->Close(), IsOK());
+
+  string contents;
+  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
+                                           out_fname, &contents));
+  EXPECT_EQ(kExpectedGffText, contents);
 }
 
-// redacted
-
 }  // namespace
-
 }  // namespace nucleus

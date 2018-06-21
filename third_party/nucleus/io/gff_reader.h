@@ -50,7 +50,8 @@ class GffReader : public Reader {
  public:
   // Creates a new GffReader reading reads from the GFF file gff_path.
   //
-  // gff_path must point to an existing GFF formatted file.
+  // gff_path must point to an existing GFF formatted file (or gzipped
+  // equivalent).
   //
   // The GFF format is described here:
   // https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
