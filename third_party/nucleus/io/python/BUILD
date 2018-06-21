@@ -326,3 +326,35 @@ py_test(
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
+
+py_clif_cc(
+    name = "gff_writer",
+    srcs = ["gff_writer.clif"],
+    py_deps = [
+        "//third_party/nucleus/io:clif_postproc",
+    ],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:gff_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:gff_writer",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
+py_test(
+    name = "gff_writer_wrap_test",
+    size = "small",
+    srcs = ["gff_writer_wrap_test.py"],
+    data = ["//third_party/nucleus/testdata"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":gff_writer",
+        "//third_party/nucleus/protos:gff_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/nucleus/util:io_utils",
+        "//third_party/nucleus/util:ranges",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
+    ],
+)
