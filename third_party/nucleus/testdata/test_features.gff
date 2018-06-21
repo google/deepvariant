@@ -1,4 +1,4 @@
 ##gff-version 3.2.1
 ##sequence-region ctg123 1 1497228
-ctg123	GenBank	gene	1000	9000	2.0	+	0	ID=gene00001;Name=EDEN
+ctg123	GenBank	gene	1000	9000	2.5	+	0	ID=gene00001;Name=EDEN
 ctg123	.	.	1000	1012	.	.	.	
