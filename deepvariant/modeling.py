@@ -48,6 +48,7 @@ from absl import logging
 
 import tensorflow as tf
 
+from deepvariant import tf_utils
 from tensorflow.contrib.tpu.python.tpu import tpu_config
 from tensorflow.contrib.tpu.python.tpu import tpu_estimator
 from tensorflow.contrib.tpu.python.tpu import tpu_optimizer
@@ -240,10 +241,25 @@ class DeepVariantModel(object):
                    start_from_checkpoint)
       reader = tf.train.NewCheckpointReader(start_from_checkpoint)
       var_to_shape_map = reader.get_variable_to_shape_map()
-      vars_to_include = [
-          v for v in var_to_shape_map.keys()
-          if not v.startswith(tuple(self.excluded_scopes))
-      ]
+      if tf_utils.model_num_classes(
+          start_from_checkpoint,
+          self.n_classes_model_variable) == dv_constants.NUM_CLASSES:
+        logging.info('The model checkpoint to warm start from has the same '
+                     'number of classes. If this is in training, we will '
+                     'clear excluded_scopes_for_incompatible_shapes so we '
+                     'include everything for '
+                     'warm starting....')
+        vars_to_include = var_to_shape_map.keys()
+      else:
+        logging.info(
+            'The model checkpoint to warm start from has different '
+            'number of classes. If this is in training, we will '
+            'use excluded_scopes_for_incompatible_shapes=%s',
+            self.excluded_scopes_for_incompatible_shapes)
+        vars_to_include = [
+            v for v in var_to_shape_map.keys() if not v.startswith(
+                tuple(self.excluded_scopes_for_incompatible_shapes))
+        ]
       return tf.estimator.WarmStartSettings(
           ckpt_to_initialize_from=start_from_checkpoint,
           vars_to_warm_start='|'.join(vars_to_include))
@@ -262,7 +278,7 @@ class DeepVariantModel(object):
                      master='',
                      use_tpu=False,
                      start_from_checkpoint=None):
-    """Returns a new tf.estimator.Estimator object for prediction.
+    """Returns a new tf.estimator.Estimator object for training or prediction.
 
     The estimator needs to know batch_size. We use the same value for all
     of eval, train, and predict. The estimator will automatically save
@@ -286,7 +302,9 @@ class DeepVariantModel(object):
       master: a string necessary for TPU, pass FLAGS.master through.
       use_tpu: boolean.  set self.use_tpu if not None.
       start_from_checkpoint: string. If not None, initialize model from this
-      path.
+      path. According to the current implementation of Estimator, this will only
+      be used in training. The inference checkpoint is loaded in a different
+      place.
 
     Returns:
       an object implementing the tf.estimator.Estimator interface (will be a
@@ -516,7 +534,7 @@ class DeepVariantSlimModel(DeepVariantModel):
   """Baseclass for DeepVariant models based on Slim networks."""
 
   def __init__(self, name, pretrained_model_path, n_classes_model_variable,
-               excluded_scopes):
+               excluded_scopes_for_incompatible_shapes):
     """Creates an DeepVariant CNN network based on a tf.slim model.
 
     Args:
@@ -526,19 +544,23 @@ class DeepVariantSlimModel(DeepVariantModel):
         model that we can use to determine the shape of the output
         classification layer of the model. For example, in inception-v3 from
         slim this is 'InceptionV3/Logits/Conv2d_1c_1x1/weights'.
-      excluded_scopes: list of str. A list of scopes that will be excluded when
-        restoring from a checkpoint.
+      excluded_scopes_for_incompatible_shapes: list of str. A list of scopes
+        that will be excluded when restoring from a checkpoint to avoid loading
+        incompatible shapes.
 
     Raises:
       ValueError: If any of the arguments are invalid.
     """
     super(DeepVariantSlimModel, self).__init__(
         name=name, pretrained_model_path=pretrained_model_path)
-    if not excluded_scopes:
-      raise ValueError('Got an empty value for excluded_scopes',
-                       excluded_scopes)
+    if not excluded_scopes_for_incompatible_shapes:
+      raise ValueError(
+          'Got an empty value for '
+          'excluded_scopes_for_incompatible_shapes',
+          excluded_scopes_for_incompatible_shapes)
     self.n_classes_model_variable = n_classes_model_variable
-    self.excluded_scopes = excluded_scopes
+    self.excluded_scopes_for_incompatible_shapes = (
+        excluded_scopes_for_incompatible_shapes)
 
   def preprocess_images(self, images):
     """Applies preprocessing operations for Inception images.
@@ -733,7 +755,9 @@ class DeepVariantInceptionV3(DeepVariantSlimModel):
     super(DeepVariantInceptionV3, self).__init__(
         name='inception_v3',
         n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes=['InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'],
+        excluded_scopes_for_incompatible_shapes=[
+            'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
+        ],
         pretrained_model_path=('/namespace/vale-project/models/classification/'
                                'imagenet/inception_v3/model.ckpt-9591376'))
     self.supported_dimensions_message = (
@@ -755,7 +779,9 @@ class DeepVariantInceptionV2(DeepVariantSlimModel):
     super(DeepVariantInceptionV2, self).__init__(
         name='inception_v2',
         n_classes_model_variable='InceptionV2/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes=['InceptionV2/Logits', 'InceptionV2/Conv2d_1a_7x7'],
+        excluded_scopes_for_incompatible_shapes=[
+            'InceptionV2/Logits', 'InceptionV2/Conv2d_1a_7x7'
+        ],
         pretrained_model_path=('/namespace/vale-project/models/classification/'
                                'imagenet/inception_v2/model.ckpt-14284043'))
 
@@ -778,7 +804,9 @@ class DeepVariantMobileNetV1(DeepVariantSlimModel):
     super(DeepVariantMobileNetV1, self).__init__(
         name='mobilenet_v1',
         n_classes_model_variable='MobilenetV1/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes=['MobilenetV1/Logits', 'MobilenetV1/Conv2d_0'],
+        excluded_scopes_for_incompatible_shapes=[
+            'MobilenetV1/Logits', 'MobilenetV1/Conv2d_0'
+        ],
         pretrained_model_path=('/cns/ok-d/home/howarda/slim/'
                                'mobilenet_asynch_100_224_ds_s5_cr_2.5_50/train/'
                                'model.ckpt-19527265'))
