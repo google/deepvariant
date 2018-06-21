@@ -27,9 +27,11 @@ We used a command like this to allocate it:
 ```shell
 gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
 --scopes "compute-rw,storage-full,cloud-platform" \
---image-family "ubuntu-1604-lts" --image-project "ubuntu-os-cloud" \
+--image-family "ubuntu-1604-lts" \
+--image-project "ubuntu-os-cloud" \
 --machine-type "custom-64-131072" \
---boot-disk-size "300" --boot-disk-type "pd-ssd" \
+--boot-disk-size "300" \
+--boot-disk-type "pd-ssd" \
 --zone "us-west1-b"
 ```
 
