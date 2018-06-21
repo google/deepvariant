@@ -75,7 +75,8 @@ tf::Status WriteGffHeader(const GffHeader& header, TextWriter* text_writer) {
   return tf::Status::OK();
 }
 
-tf::Status FormatGffAttributes(const GffRecord& record, string* gff_attributes) {
+tf::Status FormatGffAttributes(const GffRecord& record,
+                               string* gff_attributes) {
   // Sort to ensure deterministic iteration order.
   std::map<string, string> sorted_attributes(record.attributes().begin(),
                                              record.attributes().end());
@@ -92,15 +93,14 @@ tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
       "\t");
   absl::StrAppend(
       &tmp, (record.type().empty() ? kGffMissingField : record.type()), "\t");
-
   // Convert range to 1-based coordinates for GFF text.
   int64 start1 = record.range().start() + 1;
   int64 end1 = record.range().end();
   absl::StrAppend(&tmp, start1, "\t", end1, "\t");
   // Score
-  string score_str = (record.score() == kGffMissingDouble
-                          ? kGffMissingField
-                          : absl::StrCat(record.score()));
+  string score_str =
+      (record.score() == kGffMissingDouble ? kGffMissingField
+                                           : absl::StrCat(record.score()));
   absl::StrAppend(&tmp, score_str, "\t");
   // Strand
   string strand_code;
@@ -118,7 +118,7 @@ tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
       return tf::errors::InvalidArgument("Illegal GffRecord strand encoding");
   }
   absl::StrAppend(&tmp, strand_code, "\t");
-
+  // Phase
   int phase = record.phase();
   if (phase >= 0 && phase <= 2) {
     absl::StrAppend(&tmp, phase, "\t");
@@ -127,7 +127,6 @@ tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
   } else {
     return tf::errors::InvalidArgument("Illegal GffRecord phase encoding");
   }
-
   // Attributes
   TF_RETURN_IF_ERROR(FormatGffAttributes(record, &attributes));
   absl::StrAppend(&tmp, attributes);
@@ -155,6 +154,8 @@ StatusOr<std::unique_ptr<GffWriter>> GffWriter::ToFile(
 }
 
 tf::Status GffWriter::Write(const GffRecord& record) {
+  if (!text_writer_)
+    return tf::errors::FailedPrecondition("Cannot write to closed GFF stream.");
   string line;
   TF_RETURN_IF_ERROR(FormatGffLine(record, &line));
   return text_writer_->Write(line);
