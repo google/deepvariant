@@ -259,6 +259,21 @@ def model_shapes(checkpoint_path, variables_to_get=None):
   return {key: tuple(var_to_shape_map[key]) for key in keys}
 
 
+def model_num_classes(checkpoint_path, n_classes_model_variable):
+  """Returns the number of classes in the checkpoint."""
+  if not checkpoint_path:
+    return None
+
+  # Figure out how many classes this inception model was trained to predict.
+  try:
+    shapes = model_shapes(checkpoint_path, [n_classes_model_variable])
+  except KeyError:
+    return None
+  if n_classes_model_variable not in shapes:
+    return None
+  return shapes[n_classes_model_variable][-1]
+
+
 def string_to_int_tensor(x):
   """Graph operations decode a string into a fixed-size tensor of ints."""
   decoded = tf.decode_raw(x, tf.uint8)

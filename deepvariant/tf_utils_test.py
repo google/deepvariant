@@ -90,6 +90,31 @@ class TFUtilsTest(parameterized.TestCase):
       with self.assertRaisesRegexp(KeyError, 'v3'):
         tf_utils.model_shapes(save_path, ['v3'])
 
+  def testModelNumClasses(self):
+    # Builds a graph.
+    class_variable_name = 'class_variable_name'
+    v0 = tf.Variable([[1, 2, 3]], dtype=tf.int32, name='class_variable_name')
+    v1 = tf.Variable(
+        [[[1], [2]], [[3], [4]], [[5], [6]]], dtype=tf.float32, name='v1')
+    init_all_op = tf.initialize_all_variables()
+    save = tf.train.Saver({class_variable_name: v0, 'v1': v1})
+    save_path = test_utils.test_tmpfile('ckpt_for_debug_classes')
+    with tf.Session() as sess:
+      sess.run(init_all_op)
+      # Saves a checkpoint.
+      save.save(sess, save_path)
+
+      # If you pass in the correct class_variable_name, you'll find the number
+      # of classes.
+      self.assertEqual(
+          3, tf_utils.model_num_classes(save_path, class_variable_name))
+      # If the class variable name doesn't existin the checkpoint, return None.
+      self.assertEqual(
+          None, tf_utils.model_num_classes(save_path, 'non-existent-var'))
+      # If the checkpoint doesn't exist, return none.
+      self.assertEqual(None,
+                       tf_utils.model_num_classes(None, class_variable_name))
+
   def testMakeExample(self):
     example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
                                     self.default_shape, self.default_format)
