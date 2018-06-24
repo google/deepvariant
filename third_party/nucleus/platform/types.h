@@ -33,6 +33,9 @@
 // This header brings standard integral types into scope, as well as setting up
 // the right string class.
 
+#ifndef THIRD_PARTY_NUCLEUS_PLATFORM_TYPES_H_
+#define THIRD_PARTY_NUCLEUS_PLATFORM_TYPES_H_
+
 #include <string>
 
 // N.B. Copybara will adjust this.
@@ -60,3 +63,5 @@ typedef unsigned int uint32;
 typedef unsigned long long uint64;
 
 }  // namespace nucleus
+
+#endif  // THIRD_PARTY_NUCLEUS_PLATFORM_TYPES_H_
