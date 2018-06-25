@@ -120,12 +120,18 @@ def _get_base_job_args(pipeline_args):
   if pipeline_args.preemptible:
     pvm_attempts = pipeline_args.max_preemptible_tries
 
-  return [
+  job_args = [
       'pipelines', '--project', pipeline_args.project, 'run', '--attempts',
       str(pipeline_args.max_non_preemptible_tries), '--pvm-attempts',
       str(pvm_attempts), '--boot-disk-size', _DEFAULT_BOOT_DISK_SIZE_GB,
       '--zones'
   ] + pipeline_args.zones
+  if pipeline_args.network:
+    job_args += ['--network', pipeline_args.network]
+  if pipeline_args.subnetwork:
+    job_args += ['--subnetwork', pipeline_args.subnetwork]
+
+  return job_args
 
 
 def _run_job(run_args):
@@ -485,6 +491,10 @@ def run(argv=None):
             'Note that if max_preemptible_tries is also specified, then '
             'the pipeline would first be run with preemptible VMs, and then '
             'with regular VMs following the value provided here.'))
+  parser.add_argument(
+      '--network', help=('Optional. The VPC network on GCP to use.'))
+  parser.add_argument(
+      '--subnetwork', help=('Optional. The VPC subnetwork on GCP to use.'))
 
   # Optional GPU args.
   parser.add_argument(
