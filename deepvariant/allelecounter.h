@@ -260,6 +260,14 @@ class AlleleCounter {
   // genomic coordinates implied by the offsets aren't all on the chromosome.
   string RefBases(int64 rel_start, int64 rel_end);
 
+  // Returns True if ref_offset (where 0 indicates the first position in the
+  // interval, which could be base 1234 in genomic coordinates, for example), is
+  // within our interval. This means that ref_offset >= 0 and ref_offset <
+  // IntervalLength().
+  bool IsValidRefOffset(int ref_offset) {
+    return ref_offset >= 0 && ref_offset < IntervalLength();
+  }
+
   // Gets the base before read_offset in read, or if that would be before the
   // start of the read (i.e., read_offset == 0) then return the previous base on
   // the reference genome (at interval_offset - 1).
@@ -298,6 +306,9 @@ class AlleleCounter {
 
   // Our AlleleCount objects, one for each base in our interval, in order.
   std::vector<AlleleCount> counts_;
+
+  // The reference bases covering our interval;
+  const string ref_bases_;
 };
 
 }  // namespace deepvariant

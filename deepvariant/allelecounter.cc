@@ -36,11 +36,11 @@
 #include <cstddef>
 
 #include "deepvariant/utils.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/str_cat.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace learning {
@@ -51,45 +51,26 @@ namespace deepvariant {
 // the string key constructed from a Read with ReadKey().
 static constexpr char kFragmentNameReadNumberSeparator[] = "/";
 
+using absl::string_view;
+
 using nucleus::GenomeReference;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
-using tensorflow::StringPiece;
-using tensorflow::strings::StrCat;
+using absl::StrCat;
 
-namespace {
-
-// Resolves UNSPECIFIED allele types to either REFERENCE or SUBSTITITON.
-//
-// We differentiate between REFERENCE supporting bases and substititions (those
-// that are different from the reference base). Rather than inline this logic at
-// the point where we create a base Allele from a read, we instead set the type
-// to UNSPECIFIED and use this function to determine if the base is REFERENCE
-// or a SUBSTITUTION.
-AlleleType ResolveAlleleType(const AlleleCount& allele_count,
-                             const string& bases, const AlleleType& type) {
-  if (type == AlleleType::UNSPECIFIED) {
-    DCHECK(bases.size() == 1) << "Expected single base event for UNSPECIFIED at"
-                              << allele_count.position().ShortDebugString();
-    return allele_count.ref_base() == bases ? AlleleType::REFERENCE
-                                            : AlleleType::SUBSTITUTION;
-  } else {
-    return type;
-  }
-}
-
-}  // namespace
 
 std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count) {
-  std::map<std::pair<StringPiece, AlleleType>, int> allele_sums;
+  std::map<std::pair<string_view, AlleleType>, int> allele_sums;
   for (const auto& entry : allele_count.read_alleles()) {
     ++allele_sums[{entry.second.bases(), entry.second.type()}];
   }
+
   std::vector<Allele> to_return;
+  to_return.reserve(allele_sums.size());
   for (const auto& entry : allele_sums) {
-    to_return.push_back(MakeAllele(entry.first.first.ToString(),
+    to_return.push_back(MakeAllele(string(entry.first.first),
                                    entry.first.second, entry.second));
   }
 
@@ -123,10 +104,10 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
 
   const int min_base_quality = options.read_requirements().min_base_quality();
   for (int i = 0; i < len; i++) {
-    if (!nucleus::IsCanonicalBase(read.aligned_sequence()[offset + i])) {
+    if (read.aligned_quality(offset + i) < min_base_quality) {
       return false;
     }
-    if (read.aligned_quality(offset + i) < min_base_quality) {
+    if (!nucleus::IsCanonicalBase(read.aligned_sequence()[offset + i])) {
       return false;
     }
   }
@@ -136,10 +117,12 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
 AlleleCounter::AlleleCounter(const GenomeReference* const ref,
                              const Range& range,
                              const AlleleCounterOptions& options)
-    : ref_(ref), interval_(range), options_(options) {
+    : ref_(ref),
+      interval_(range),
+      options_(options),
+      ref_bases_(ref_->GetBases(range).ValueOrDie()) {
   // Initialize our counts vector of AlleleCounts with proper position and
   // reference base information. Initially the alleles repeated field is empty.
-  const string bases = ref_->GetBases(range).ValueOrDie();
   const int64 len = IntervalLength();
   counts_.reserve(len);
   for (int i = 0; i < len; ++i) {
@@ -147,7 +130,7 @@ AlleleCounter::AlleleCounter(const GenomeReference* const ref,
     const int64 pos = range.start() + i;
     *(allele_count.mutable_position()) =
         nucleus::MakePosition(range.reference_name(), pos);
-    allele_count.set_ref_base(bases.substr(i, 1));
+    allele_count.set_ref_base(ref_bases_.substr(i, 1));
     counts_.push_back(allele_count);
   }
 }
@@ -254,8 +237,7 @@ void AlleleCounter::AddReadAlleles(const Read& read,
 
     // The read can span beyond and after the interval, so don't add counts
     // outside our interval boundaries.
-    if (to_add_i.skip() || to_add_i.position() < 0 ||
-        to_add_i.position() >= IntervalLength()) {
+    if (to_add_i.skip() || !IsValidRefOffset(to_add_i.position())) {
       continue;
     }
 
@@ -272,16 +254,14 @@ void AlleleCounter::AddReadAlleles(const Read& read,
     }
 
     AlleleCount& allele_count = counts_[to_add_i.position()];
-    const AlleleType type =
-        ResolveAlleleType(allele_count, to_add_i.bases(), to_add_i.type());
 
-    if (type == AlleleType::REFERENCE) {
+    if (to_add_i.type() == AlleleType::REFERENCE) {
       const int prev_count = allele_count.ref_supporting_read_count();
       allele_count.set_ref_supporting_read_count(prev_count + 1);
     } else {
       auto* read_alleles = allele_count.mutable_read_alleles();
       const string key = ReadKey(read);
-      const Allele allele = MakeAllele(to_add_i.bases(), type, 1);
+      const Allele allele = MakeAllele(to_add_i.bases(), to_add_i.type(), 1);
 
       // Naively, there should never be multiple counts for the same read key.
       // We detect such a situation here but only write out a warning. It would
@@ -314,6 +294,7 @@ void AlleleCounter::Add(const Read& read) {
   to_add.reserve(read.aligned_quality_size());
   int read_offset = 0;
   int interval_offset = aln.position().position() - Interval().start();
+  const string_view read_seq(read.aligned_sequence());
 
   for (const auto& cigar_elt : aln.cigar()) {
     const int op_len = cigar_elt.operation_length();
@@ -322,11 +303,16 @@ void AlleleCounter::Add(const Read& read) {
       case CigarUnit::SEQUENCE_MATCH:
       case CigarUnit::SEQUENCE_MISMATCH:
         for (int i = 0; i < op_len; ++i) {
+          const int ref_offset = interval_offset + i;
           const int base_offset = read_offset + i;
-          if (CanBasesBeUsed(read, base_offset, 1, options_)) {
-            const string bases = read.aligned_sequence().substr(base_offset, 1);
-            to_add.push_back(ReadAllele(interval_offset + i, bases,
-                                        AlleleType::UNSPECIFIED));
+          if (IsValidRefOffset(ref_offset) &&
+              CanBasesBeUsed(read, base_offset, 1, options_)) {
+            const AlleleType type =
+                ref_bases_[ref_offset] == read_seq[base_offset]
+                    ? AlleleType::REFERENCE
+                    : AlleleType::SUBSTITUTION;
+            to_add.emplace_back(ref_offset,
+                                string(read_seq.substr(base_offset, 1)), type);
           }
         }
         read_offset += op_len;
