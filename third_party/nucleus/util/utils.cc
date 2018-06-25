@@ -89,10 +89,7 @@ int PosInFasta(const std::map<string, int>& contig_name_to_pos_in_fasta,
 }  // namespace
 
 bool IsCanonicalBase(const char base, const CanonicalBases canon) {
-  for (const char canonical_base : GetCanonicalBases(canon)) {
-    if (base == canonical_base) return true;
-  }
-  return false;
+  return GetCanonicalBases(canon).find(base) != string_view::npos;
 }
 
 size_t FindNonCanonicalBase(string_view bases, const CanonicalBases canon) {
