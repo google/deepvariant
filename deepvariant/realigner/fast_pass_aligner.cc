@@ -447,7 +447,11 @@ void FastPassAligner::AddKmerToIndex(tensorflow::StringPiece kmer,
 }
 
 void FastPassAligner::AddReadToIndex(const string& read, ReadId read_id) {
-  CHECK(read.length() > kmer_size_);
+  // Ignoring reads that are too short for a kmer size. Those reads will still
+  // be realigned with SSW.
+  if (read.length() <= kmer_size_) {
+    return;
+  }
   auto last_pos = read.length() - kmer_size_;
   tensorflow::StringPiece bases_view(read);
   for (int i = 0; i <= last_pos; i++) {
