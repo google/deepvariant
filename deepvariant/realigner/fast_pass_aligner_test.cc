@@ -137,6 +137,21 @@ TEST_F(FastPassAlignerTest, ReadsIndexIntegrationTest) {
   EXPECT_EQ(aligner_.GetKmerIndex(), expected_index);
 }
 
+// Test checks that we can handle reads shorter than kmer. In this test
+// Kmer size is set to 4, and the first read has size 3.
+TEST_F(FastPassAlignerTest, ReadsIndexIgnoreReadsShorterThanKmerTest) {
+  aligner_.set_reads({"AAC", "TGAGCTG"});
+  aligner_.set_kmer_size(4);
+  KmerIndexType expected_index = {
+      {"TGAG", {KmerOccurrence(ReadId(1), KmerOffset(0))}},
+      {"GAGC", {KmerOccurrence(ReadId(1), KmerOffset(1))}},
+      {"AGCT", {KmerOccurrence(ReadId(1), KmerOffset(2))}},
+      {"GCTG", {KmerOccurrence(ReadId(1), KmerOffset(3))}}
+  };
+  aligner_.BuildIndex();
+  EXPECT_EQ(aligner_.GetKmerIndex(), expected_index);
+}
+
 // Test haplotype consists of read1 and read3. We check expected haplotype
 // score and all read alignments.
 TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypeTest) {
