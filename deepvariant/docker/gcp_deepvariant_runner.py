@@ -207,9 +207,11 @@ def _run_make_examples(pipeline_args):
     ]
     if pipeline_args.gvcf_outfile:
       outputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
+
+    job_name = pipeline_args.job_name_prefix + _MAKE_EXAMPLES_JOB_NAME
     run_args = _get_base_job_args(pipeline_args) + [
-        '--name', pipeline_args.job_name_prefix + _MAKE_EXAMPLES_JOB_NAME,
-        '--image', pipeline_args.docker_image, '--output',
+        '--name', job_name, '--vm-labels', 'dv-job-name=', job_name, '--image',
+        pipeline_args.docker_image, '--output',
         os.path.join(pipeline_args.logging, _MAKE_EXAMPLES_JOB_NAME,
                      str(i)), '--inputs', ','.join(inputs), '--outputs',
         ','.join(outputs), '--machine-type', machine_type, '--disk-size',
@@ -259,9 +261,10 @@ def _run_call_variants(pipeline_args):
         'CALLED_VARIANTS=' + _get_staging_called_variants_folder(pipeline_args)
         + '/*'
     ]
+
+    job_name = pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME
     run_args = _get_base_job_args(pipeline_args) + [
-        '--name', pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME,
-        '--output',
+        '--name', job_name, '--vm-labels', 'dv-job-name=', job_name, '--output',
         os.path.join(pipeline_args.logging, _CALL_VARIANTS_JOB_NAME,
                      str(i)), '--image',
         (pipeline_args.docker_image_gpu if pipeline_args.gpu else
@@ -318,9 +321,9 @@ def _run_postprocess_variants(pipeline_args):
     inputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
     outputs.extend(['GVCF_OUTFILE=' + pipeline_args.gvcf_outfile])
 
+  job_name = pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME
   run_args = _get_base_job_args(pipeline_args) + [
-      '--name', pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME,
-      '--output',
+      '--name', job_name, '--vm-labels', 'dv-job-name=', job_name, '--output',
       os.path.join(pipeline_args.logging,
                    _POSTPROCESS_VARIANTS_JOB_NAME), '--image',
       pipeline_args.docker_image, '--inputs', ','.join(inputs), '--outputs',
