@@ -35,6 +35,7 @@ import textwrap
 
 
 from absl.testing import absltest
+from absl.testing import parameterized
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
@@ -49,7 +50,7 @@ def setUpModule():
   testdata.init()
 
 
-class DeBruijnGraphWrapTest(absltest.TestCase):
+class DeBruijnGraphWrapTest(parameterized.TestCase):
   """Basic tests for the wrapped DeBruijnGraph class."""
 
   def dbg_options(self):
@@ -66,7 +67,7 @@ class DeBruijnGraphWrapTest(absltest.TestCase):
     """Get a DeBruijnGraphOptions allowing us to try a single kmer size."""
     test_options = self.dbg_options()
     test_options.min_k = k
-    test_options.max_k = k + 1
+    test_options.max_k = k
     test_options.step_k = 1
     return test_options
 
@@ -297,6 +298,33 @@ class DeBruijnGraphWrapTest(absltest.TestCase):
     self.assertIsNone(dbg)
     dbg = debruijn_graph.build(ref_str, [], self.single_k_dbg_options(8))
     self.assertIsNone(dbg)
+
+  @parameterized.parameters(
+      dict(ref='ACGTACGT', smallest_good_k=5),
+      dict(ref='ACGTAAACGT', smallest_good_k=5),
+      dict(ref='ACGTAAACGTAAA', smallest_good_k=8),
+      dict(ref='AAACGTAAACGT', smallest_good_k=7),
+      dict(ref='AAACGTAAACGTAAA', smallest_good_k=10),
+      # Actual example where the cycle detector failed because the cycle only
+      # occurs with the last kmer in the reference.
+      dict(
+          ref=
+          ('TGGTAAGTTTATAAGGTTATAAGCTGAGAGGTTTTGCTGATCTTGGCTGAGCTCAGCTGGGCAGGTC'
+           'TTCCGGTCTTGGCTGGGGTTCACTGACACACAAGCAGCTGACAGTTGGCTGATCTAGGATGGCCTCA'
+           'GCTGGG'),
+          smallest_good_k=11),
+  )
+  def test_ref_cycle_detector(self, ref, smallest_good_k):
+    min_k = max(smallest_good_k - 5, 1)
+    max_k = min(smallest_good_k + 5, len(ref))
+    for k in range(min_k, max_k):
+      # The build fails, returning None, with a k < smallest_good_k. If
+      # k >= smallest_good_k, then we expect a real non-None instance.
+      result = debruijn_graph.build(ref, [], self.single_k_dbg_options(k))
+      if k < smallest_good_k:
+        self.assertIsNone(result, 'Cycle not detected for k={}'.format(k))
+      else:
+        self.assertIsNotNone(result, 'False cycle detected for k={}'.format(k))
 
 
 if __name__ == '__main__':
