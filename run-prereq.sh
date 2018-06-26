@@ -83,6 +83,7 @@ sudo -H pip install 'requests>=2.18'
 sudo -H pip install 'scipy==1.0'
 sudo -H pip install 'oauth2client>=4.0.0'
 sudo -H pip install 'crcmod>=1.7'
+sudo -H pip install 'protobuf>=3.6'
 sudo -H pip install six
 sudo -H pip install psutil
 sudo -H pip install --upgrade google-api-python-client
