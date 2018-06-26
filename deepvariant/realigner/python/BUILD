@@ -46,6 +46,7 @@ py_test(
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:ranges",
         "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
 
