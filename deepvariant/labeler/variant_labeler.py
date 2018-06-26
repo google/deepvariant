@@ -51,11 +51,19 @@ class VariantLabel(object):
     is_confident: bool. True if we could confidently assign a label to this
       variant, False otherwise.
     variant: nucleus.protos.Variant proto that we assigned a label for.
-    genotype: tuple of ints. The labeled genotype (e.g., (0, 1) for a het) in
-      the standard nucleus.proto.VariantCall style.
+    genotype: tuple of ints. The labeled genotype (e.g., (0, 1) for a het)
+      in the standard nucleus.proto.VariantCall style. Genotype can be None
+      if the labeler doesn't have any genotype to assign. If Genotype is not
+      None, the genotype of variant will be set to genotype.
   """
 
-  def __init__(self, is_confident, variant, genotype):
+  def __init__(self, is_confident, variant, genotype=None):
+    if genotype is not None:
+      if not variant.calls:
+        variant.calls.add(genotype=genotype)
+      else:
+        variant.calls[0].genotype[:] = genotype
+
     self.is_confident = is_confident
     self.variant = variant
     self.genotype = genotype
