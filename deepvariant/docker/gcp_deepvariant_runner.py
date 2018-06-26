@@ -210,7 +210,7 @@ def _run_make_examples(pipeline_args):
 
     job_name = pipeline_args.job_name_prefix + _MAKE_EXAMPLES_JOB_NAME
     run_args = _get_base_job_args(pipeline_args) + [
-        '--name', job_name, '--vm-labels', 'dv-job-name=', job_name, '--image',
+        '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name, '--image',
         pipeline_args.docker_image, '--output',
         os.path.join(pipeline_args.logging, _MAKE_EXAMPLES_JOB_NAME,
                      str(i)), '--inputs', ','.join(inputs), '--outputs',
@@ -264,7 +264,8 @@ def _run_call_variants(pipeline_args):
 
     job_name = pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME
     run_args = _get_base_job_args(pipeline_args) + [
-        '--name', job_name, '--vm-labels', 'dv-job-name=', job_name, '--output',
+        '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name,
+        '--output',
         os.path.join(pipeline_args.logging, _CALL_VARIANTS_JOB_NAME,
                      str(i)), '--image',
         (pipeline_args.docker_image_gpu if pipeline_args.gpu else
@@ -323,7 +324,7 @@ def _run_postprocess_variants(pipeline_args):
 
   job_name = pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME
   run_args = _get_base_job_args(pipeline_args) + [
-      '--name', job_name, '--vm-labels', 'dv-job-name=', job_name, '--output',
+      '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name, '--output',
       os.path.join(pipeline_args.logging,
                    _POSTPROCESS_VARIANTS_JOB_NAME), '--image',
       pipeline_args.docker_image, '--inputs', ','.join(inputs), '--outputs',
