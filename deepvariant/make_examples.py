@@ -418,14 +418,6 @@ def extract_sample_name_from_sam_reader(sam_reader):
             ', '.join(sorted(samples))))
   return next(iter(samples))
 
-
-def _set_variant_genotype(variant, genotype):
-  if not variant.calls:
-    variant.calls.add(genotype=genotype)
-  else:
-    variant.calls[0].genotype[:] = genotype
-
-
 # ---------------------------------------------------------------------------
 # Utilities for working with labeling metrics
 #
@@ -936,10 +928,7 @@ class RegionProcessor(object):
                        example, label)
     alt_alleles_indices = tf_utils.example_alt_alleles_indices(example)
 
-    # Set the genotype of the candidate variant to the labeled value.
-    candidate = label.variant
-    _set_variant_genotype(candidate, label.genotype)
-    tf_utils.example_set_variant(example, candidate)
+    tf_utils.example_set_variant(example, label.variant)
 
     # Set the label of the example to the # alts given our alt_alleles_indices.
     tf_utils.example_set_label(example,
