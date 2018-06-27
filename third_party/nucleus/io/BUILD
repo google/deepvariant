@@ -200,10 +200,8 @@ py_library(
         ":genomics_reader",
         ":genomics_writer",
         "//third_party/nucleus/io/python:gff_reader",
+        "//third_party/nucleus/io/python:gff_writer",
         "//third_party/nucleus/protos:gff_py_pb2",
-        "//third_party/nucleus/protos:range_py_pb2",
-        "//third_party/nucleus/util:py_utils",
-        "//third_party/nucleus/util:ranges",
     ],
 )
 
@@ -779,5 +777,20 @@ cc_test(
         "//third_party/nucleus/vendor:statusor",
         "@com_google_googletest//:gtest_main",
         "@protobuf_archive//:protobuf",
+    ],
+)
+
+py_test(
+    name = "gff_test",
+    srcs = ["gff_test.py"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":gff",
+        "//third_party/nucleus/protos:gff_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/nucleus/util:io_utils",
+        "//third_party/nucleus/util:ranges",
+        "@com_google_absl_py//absl/testing:absltest",
+        "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
