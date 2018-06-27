@@ -37,20 +37,24 @@
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
+#include "absl/strings/string_view.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/hash/hash.h"
-#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
 using tensorflow::string;
-using tensorflow::StringPiece;
-using tensorflow::StringPieceHasher;
+
+// A hash function for absl::string_view objects.
+struct string_view_hasher {
+  size_t operator()(absl::string_view sp) const {
+    return static_cast<size_t>(::tensorflow::Hash64(sp.data(), sp.size()));
+  }
+};
 
 struct VertexInfo {
   string kmer;
@@ -95,10 +99,10 @@ class DeBruijnGraph {
   VertexIndexMap IndexMap() const;
 
   // Ensure a vertex with label kmer is present--adding if necessary.
-  Vertex EnsureVertex(StringPiece kmer);
+  Vertex EnsureVertex(absl::string_view kmer);
 
   // Look up the vertex with this kmer label.
-  Vertex VertexForKmer(StringPiece kmer) const;
+  Vertex VertexForKmer(absl::string_view kmer) const;
 
   // Is this graph cyclic?
   bool HasCycle() const;
@@ -114,10 +118,10 @@ class DeBruijnGraph {
   // Add edge, implicitly adding the vertices if needed.  If such an edge is
   // already present, we merely increment its weight to reflect its "multiedge"
   // degree.
-  Edge AddEdge(StringPiece from, StringPiece to, bool is_ref);
+  Edge AddEdge(absl::string_view from, absl::string_view to, bool is_ref);
 
   // Add all the edges implied by the given reference string.
-  void AddEdgesForReference(StringPiece ref);
+  void AddEdgesForReference(absl::string_view ref);
 
   // Add all the edges implied by the given read (and according to our edge
   // filtering criteria).
@@ -163,7 +167,7 @@ class DeBruijnGraph {
   Vertex sink_;
   // N.B.: kmer strings are owned by VertexInfo objects;
   // map keys are merely pointers.
-  std::unordered_map<StringPiece, Vertex, StringPieceHasher>
+  std::unordered_map<absl::string_view, Vertex, string_view_hasher>
       kmer_to_vertex_;
   RawVertexIndexMap vertex_index_map_;
 };
