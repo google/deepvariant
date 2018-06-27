@@ -35,24 +35,20 @@ from __future__ import print_function
 
 
 from absl.testing import absltest
-import tensorflow as tf
 
 from deepvariant import exclude_contigs
 
 
-class ExcludeContigsTests(tf.test.TestCase):
+class ExcludeContigsTests(absltest.TestCase):
 
-  def assertIncludeHumanChromosomes(self):
+  def test_excluded_contigs_doesnt_drop_standard_contigs(self):
     """Make sure we are keeping the common human contigs."""
-    for chrom in xrange(1, 22):
-      self.assertFalse(
-          chrom.to_string() in exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
-      self.assertFalse(
-          'chr' + chrom.to_string() in exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
-      self.assertFalse(
-          'Chr' + chrom.to_string() in exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
-    self.assertFalse('chrX' in exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
-    self.assertFalse('chrY' in exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
+    for chrom in range(1, 22):
+      for prefix in ['', 'chr', 'Chr']:
+        self.assertNotIn('{}{}'.format(prefix, chrom),
+                         exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
+    self.assertNotIn('chrX', exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
+    self.assertNotIn('chrY', exclude_contigs.EXCLUDED_HUMAN_CONTIGS)
 
 
 if __name__ == '__main__':
