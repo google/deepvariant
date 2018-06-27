@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
+#include "absl/strings/ascii.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/depth_first_search.hpp"
 #include "boost/graph/graph_traits.hpp"
@@ -46,8 +47,6 @@
 #include "boost/graph/reverse_graph.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
-#include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace learning {
@@ -62,7 +61,7 @@ using Path = DeBruijnGraph::Path;
 using Read = nucleus::genomics::v1::Read;
 
 using tensorflow::string;
-using tensorflow::StringPiece;
+using absl::string_view;
 
 namespace {
 
@@ -129,23 +128,22 @@ std::set<Vertex> VerticesReachableFrom(
 
 }  // namespace
 
-Vertex DeBruijnGraph::EnsureVertex(StringPiece kmer) {
+Vertex DeBruijnGraph::EnsureVertex(string_view kmer) {
   Vertex v;
   auto vertex_find = kmer_to_vertex_.find(kmer);
   if (vertex_find != kmer_to_vertex_.end()) {
     v = (*vertex_find).second;
   } else {
-    // N.B. TensorFlow StringPiece lacks explicit string conversion func.
-    string kmer_copy = string(kmer.data(), kmer.size());
+    string kmer_copy(kmer);
     v = boost::add_vertex(VertexInfo{kmer_copy}, g_);
     // N.B.: must use the long-lived string in the map key as the referent of
-    // the StringPiece key.
-    kmer_to_vertex_[StringPiece(g_[v].kmer)] = v;
+    // the string_view key.
+    kmer_to_vertex_[string_view(g_[v].kmer)] = v;
   }
   return v;
 }
 
-Vertex DeBruijnGraph::VertexForKmer(StringPiece kmer) const {
+Vertex DeBruijnGraph::VertexForKmer(string_view kmer) const {
   return kmer_to_vertex_.at(kmer);
 }
 
@@ -222,7 +220,7 @@ std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
   return nullptr;
 }
 
-Edge DeBruijnGraph::AddEdge(StringPiece from, StringPiece to, bool is_ref) {
+Edge DeBruijnGraph::AddEdge(string_view from, string_view to, bool is_ref) {
   Vertex from_vertex = EnsureVertex(from);
   Vertex to_vertex = EnsureVertex(to);
   bool was_present;
@@ -238,8 +236,8 @@ Edge DeBruijnGraph::AddEdge(StringPiece from, StringPiece to, bool is_ref) {
   return edge;
 }
 
-void DeBruijnGraph::AddEdgesForReference(StringPiece ref) {
-  StringPiece kmer_prev, kmer_cur;
+void DeBruijnGraph::AddEdgesForReference(string_view ref) {
+  string_view kmer_prev, kmer_cur;
   const signed int ref_length = ref.size();
   for (int i = 0; i < ref_length - k_ + 1; i++) {
     kmer_prev = kmer_cur;
@@ -251,8 +249,8 @@ void DeBruijnGraph::AddEdgesForReference(StringPiece ref) {
 }
 
 void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
-  string bases = tensorflow::str_util::Uppercase(read.aligned_sequence());
-  StringPiece bases_view(bases);
+  string bases = absl::AsciiStrToUpper(read.aligned_sequence());
+  string_view bases_view(bases);
   std::vector<int> qual(read.aligned_quality().begin(),
                         read.aligned_quality().end());
   CHECK(qual.size() == bases.size());
