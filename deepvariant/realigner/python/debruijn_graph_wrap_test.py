@@ -30,8 +30,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import textwrap
-
 
 
 from absl.testing import absltest
@@ -79,7 +77,10 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
         leading whitespace.
       dbg: the DeBruijn graph object.
     """
-    self.assertEqual(textwrap.dedent(graphviz_string), dbg.graphviz())
+    # Remove all whitespace before comparison to avoid failing over trivial
+    # indentation / newline differences.
+    self.assertEqual(''.join(graphviz_string.split()),
+                     ''.join(dbg.graphviz().split()))
 
   def test_basics(self):
     """Basic example."""
@@ -183,69 +184,100 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
         }
         """, dbg)
 
-  def test_filtering_by_base(self):
-    """Test that we filter out edges containing non-canonical bases."""
-    ref_str = 'GATTACA'
-    read_str = 'GATNTACA'
-    read = test_utils.make_read(
-        read_str,
-        chrom='chr20',
-        start=1,
-        cigar=[(len(read_str), 'M')],
-        quals=[30] * len(read_str),
-        name='read')
+  @parameterized.parameters(
+      # No bad positions => all edges get +1 to counts.
+      dict(bad_position=None, dropped_edges={}),
 
-    # Use two reads so read path doesn't get pruned.
-    dbg = debruijn_graph.build(ref_str, [read, read],
-                               self.single_k_dbg_options(2))
+      # Ref and read are   GATTACA
+      # Bad position: 0 => *
+      # Breaks kmers:      GA->AT
+      dict(bad_position=0, dropped_edges={'GA->AT'}),
 
-    self.assertGraphEqual("""\
-        digraph G {
-        0[label=GA];
-        1[label=AT];
-        2[label=TT];
-        3[label=TA];
-        4[label=AC];
-        5[label=CA];
-        0->1 [label=3 color=red];
-        1->2 [label=1 color=red];
-        2->3 [label=1 color=red];
-        3->4 [label=3 color=red];
-        4->5 [label=3 color=red];
-        }
-        """, dbg)
+      # Ref and read are   GATTACA
+      # Bad position: 1 =>  *
+      # Breaks kmers:      GA->AT, AT->TT
+      dict(bad_position=1, dropped_edges={'GA->AT', 'AT->TT'}),
 
-  def test_filtering_by_qual(self):
+      # Ref and read are   GATTACA
+      # Bad position: 2 =>   *
+      # Breaks kmers:      GA->AT, AT->TT, TT->TA
+      dict(bad_position=2, dropped_edges={'GA->AT', 'AT->TT', 'TT->TA'}),
+
+      # Ref and read are   GATTACA
+      # Bad position: 3 =>    *
+      # Breaks kmers:      AT->TT, TT->TA, TA->AC
+      dict(bad_position=3, dropped_edges={'AT->TT', 'TT->TA', 'TA->AC'}),
+
+      # Ref and read are   GATTACA
+      # Bad position: 4 =>     *
+      # Breaks kmers:      TT->TA, TA->AC, AC->CA
+      dict(bad_position=4, dropped_edges={'TT->TA', 'TA->AC', 'AC->CA'}),
+
+      # Ref and read are   GATTACA
+      # Bad position: 5 =>      *
+      # Breaks kmers:      TA->AC, AC->CA
+      dict(bad_position=5, dropped_edges={'TA->AC', 'AC->CA'}),
+
+      # Ref and read are   GATTACA
+      # Bad position: 6 =>       *
+      # Breaks kmers:      AC->CA
+      dict(bad_position=6, dropped_edges={'AC->CA'}),
+  )
+  def test_adding_edges_with_bad_positions(self, bad_position, dropped_edges):
     """Test that we filter out edges containing low-quality basecalls."""
     ref_str = 'GATTACA'
-    read_str = 'GATGTACA'
-    read = test_utils.make_read(
-        read_str,
-        chrom='chr20',
-        start=1,
-        cigar=[(len(read_str), 'M')],
-        quals=[30, 30, 30, 1, 30, 30, 30, 30],
-        name='read')
+    read_str = 'GATTACA'
 
-    # Use two reads so read path doesn't get pruned.
-    dbg = debruijn_graph.build(ref_str, [read, read],
-                               self.single_k_dbg_options(2))
+    kmer_indices = {
+        'GA': 0,
+        'AT': 1,
+        'TT': 2,
+        'TA': 3,
+        'AC': 4,
+        'CA': 5,
+    }
 
-    self.assertGraphEqual("""\
-        digraph G {
-        0[label=GA];
-        1[label=AT];
-        2[label=TT];
-        3[label=TA];
-        4[label=AC];
-        5[label=CA];
-        0->1 [label=3 color=red];
-        1->2 [label=1 color=red];
-        2->3 [label=1 color=red];
-        3->4 [label=3 color=red];
-        4->5 [label=3 color=red];
-        }
-        """, dbg)
+    def kmer_to_index_edge(kmer_edge):
+      k1, k2 = kmer_edge.split('->')
+      return '{}->{}'.format(kmer_indices[k1], kmer_indices[k2])
+
+    dropped_edges = {kmer_to_index_edge(edge) for edge in dropped_edges}
+
+    for bad_type in ['qual', 'base']:
+      bases = list(read_str)
+      quals = [30] * len(bases)
+      cigar = [(len(bases), 'M')]
+      if bad_position is not None:
+        if bad_type == 'qual':
+          quals[bad_position] = 1
+        elif bad_type == 'base':
+          bases[bad_position] = 'N'
+        else:
+          raise ValueError('Unexpected base type')
+
+      read = test_utils.make_read(''.join(bases), cigar=cigar, quals=quals)
+
+      # Use two reads so read path doesn't get pruned.
+      dbg = debruijn_graph.build(ref_str, [read, read],
+                                 self.single_k_dbg_options(2))
+
+      expected_edges = '\n'.join(
+          '{} [label={} color=red];'.format(edge, 1
+                                            if edge in dropped_edges else 3)
+          for edge in ['0->1', '1->2', '2->3', '3->4', '4->5'])
+
+      self.assertGraphEqual(
+          """\
+            digraph G {
+            0[label=GA];
+            1[label=AT];
+            2[label=TT];
+            3[label=TA];
+            4[label=AC];
+            5[label=CA];
+            %s
+            }
+            """ % expected_edges, dbg)
 
   def test_straightforward_region(self):
     ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
