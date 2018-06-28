@@ -32,15 +32,22 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_DEBRUIJN_GRAPH_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_DEBRUIJN_GRAPH_H_
 
+#define HAS_FLAT_HASH_MAP 0
+
 #include <map>
 #include <memory>
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
+// redacted
+#if HAS_FLAT_HASH_MAP
+#include "absl/container/flat_hash_map.h"
+#endif
 #include "absl/strings/string_view.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
+// redacted
 #include "tensorflow/core/lib/hash/hash.h"
 
 namespace learning {
@@ -49,6 +56,7 @@ namespace deepvariant {
 
 using tensorflow::string;
 
+// redacted
 // A hash function for absl::string_view objects.
 struct string_view_hasher {
   size_t operator()(absl::string_view sp) const {
@@ -165,11 +173,35 @@ class DeBruijnGraph {
   int k_;
   Vertex source_;
   Vertex sink_;
+
   // N.B.: kmer strings are owned by VertexInfo objects;
   // map keys are merely pointers.
+// redacted
+#if HAS_FLAT_HASH_MAP
+  absl::flat_hash_map<absl::string_view, Vertex> kmer_to_vertex_;
+#else
   std::unordered_map<absl::string_view, Vertex, string_view_hasher>
       kmer_to_vertex_;
+#endif
   RawVertexIndexMap vertex_index_map_;
+
+  // Cache for EnsureVertex to speed up sequential lookups of kmers. It's often
+  // the case that we make calls to EnsureVertex that look something like:
+  // string_view kmer1, kmer2, kmer3, kmer4:
+  //
+  // EnsureVertex(kmer1)
+  // EnsureVertex(kmer2)
+  // EnsureVertex(kmer2)
+  // EnsureVertex(kmer3)
+  // EnsureVertex(kmer3)
+  // EnsureVertex(kmer4)
+  // etc...
+  //
+  // These variables, which are set in EnsureVertex, allow sequential calls with
+  // the same kmer to return the last_vertex without having to do an expensive
+  // search for the kmer in the kmer_to_vertex_ map.
+  absl::string_view last_kmer_;
+  Vertex last_vertex_;
 };
 
 

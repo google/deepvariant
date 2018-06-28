@@ -129,6 +129,10 @@ std::set<Vertex> VerticesReachableFrom(
 }  // namespace
 
 Vertex DeBruijnGraph::EnsureVertex(string_view kmer) {
+  if (last_kmer_ == kmer) {
+    return last_vertex_;
+  }
+
   Vertex v;
   auto vertex_find = kmer_to_vertex_.find(kmer);
   if (vertex_find != kmer_to_vertex_.end()) {
@@ -140,6 +144,9 @@ Vertex DeBruijnGraph::EnsureVertex(string_view kmer) {
     // the string_view key.
     kmer_to_vertex_[string_view(g_[v].kmer)] = v;
   }
+  last_kmer_ = kmer;
+  last_vertex_ = v;
+
   return v;
 }
 
@@ -192,23 +199,53 @@ DeBruijnGraph::DeBruijnGraph(const string& ref,
   RebuildIndexMap();
 }
 
+
+// Indicates that we couldn't find a minimum k that can be used.
+constexpr int kBoundsNoWorkingK = -1;
+struct KBounds {
+  int min_k;  // Mininum k to consider (inclusive).
+  int max_k;  // Maximum k to consider (inclusive).
+};
+
+
+KBounds KMinMaxFromReference(const string_view ref,
+                             const DeBruijnGraph::Options& options) {
+  KBounds bounds;
+  bounds.min_k = kBoundsNoWorkingK;
+  bounds.max_k  = std::min(options.max_k(), static_cast<int>(ref.size()) - 1);
+
+  for (int k = options.min_k(); k <= bounds.max_k; k += options.step_k()) {
+    bool has_cycle = false;
+    std::set<string_view> kmers;
+
+    for (int i = 0; i < ref.size() - k + 1; i++) {
+      string_view kmer = ref.substr(i, k);
+      if (kmers.insert(kmer).second == false) {
+        // No insertion took place because the kmer already exists. This implies
+        // that there's a cycle in the graph.
+        has_cycle = true;
+        break;
+      }
+    }
+
+    if (!has_cycle) {
+      bounds.min_k = k;
+      break;
+    }
+  }
+
+  return bounds;
+}
+
 std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
     const string& ref, const std::vector<Read>& reads,
     const DeBruijnGraph::Options& options) {
 
-  std::unique_ptr<DeBruijnGraph> graph, trial_graph;
-  int max_k  = std::min(options.max_k(), static_cast<int>(ref.size()) - 1);
+  KBounds bounds = KMinMaxFromReference(ref, options);
+  if (bounds.min_k == kBoundsNoWorkingK) return nullptr;
 
-  for (int k = options.min_k(); k <= max_k; k += options.step_k()) {
-    // If we can't get an acyclic graph from just the reference, we should go on
-    // to the next k -- an optimization.
-    // N.B.: MakeUnique doesn't work with private constructors.
-    trial_graph = std::unique_ptr<DeBruijnGraph>(
-        new DeBruijnGraph(ref, {}, options, k));
-    if (trial_graph->HasCycle()) {
-      continue;
-    }
-    graph = std::unique_ptr<DeBruijnGraph>(
+  for (int k = bounds.min_k; k <= bounds.max_k; k += options.step_k()) {
+    std::unique_ptr<DeBruijnGraph> graph = std::unique_ptr<DeBruijnGraph>(
         new DeBruijnGraph(ref, reads, options, k));
     if (graph->HasCycle()) {
       continue;
@@ -251,20 +288,16 @@ void DeBruijnGraph::AddEdgesForReference(string_view ref) {
 void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
   string bases = absl::AsciiStrToUpper(read.aligned_sequence());
   string_view bases_view(bases);
-  std::vector<int> qual(read.aligned_quality().begin(),
-                        read.aligned_quality().end());
-  CHECK(qual.size() == bases.size());
-
-  const signed int read_length = bases.size();
 
   // This set maintains the QC-failing positions among [i..i+k].
   std::set<int> recent_qc_fail_positions;
 
-  for (int i = 0; i < read_length - k_; ++i) {
+  const signed int end = bases.size() - k_;
+  for (int i = 0; i < end; ++i) {
     // Update QC fail set: remove (i-1), add (i+k) if it fails QC.
     recent_qc_fail_positions.erase(i - 1);
     if (!IsCanonicalBase(bases[i + k_], nucleus::CanonicalBases::ACGT) ||
-        qual[i + k_] < options_.min_base_quality()) {
+        read.aligned_quality()[i + k_] < options_.min_base_quality()) {
       recent_qc_fail_positions.insert(i + k_);
     }
     if (recent_qc_fail_positions.empty()) {
