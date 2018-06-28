@@ -286,23 +286,59 @@ void DeBruijnGraph::AddEdgesForReference(string_view ref) {
 }
 
 void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
-  string bases = absl::AsciiStrToUpper(read.aligned_sequence());
-  string_view bases_view(bases);
+  const string bases = absl::AsciiStrToUpper(read.aligned_sequence());
 
-  // This set maintains the QC-failing positions among [i..i+k].
-  std::set<int> recent_qc_fail_positions;
-
-  const signed int end = bases.size() - k_;
-  for (int i = 0; i < end; ++i) {
-    // Update QC fail set: remove (i-1), add (i+k) if it fails QC.
-    recent_qc_fail_positions.erase(i - 1);
-    if (!IsCanonicalBase(bases[i + k_], nucleus::CanonicalBases::ACGT) ||
-        read.aligned_quality()[i + k_] < options_.min_base_quality()) {
-      recent_qc_fail_positions.insert(i + k_);
+  // Lambda function to find the next bad position in the read, if one exists,
+  // starting from offset `start` in the read. If all remains bases/quals are
+  // good, returns bases.size().
+  auto NextBadPosition = [&read, &bases, this](int start) -> int {
+    for (int i = start; i < bases.size(); ++i) {
+      if (!IsCanonicalBase(bases[i], nucleus::CanonicalBases::ACGT) ||
+          read.aligned_quality()[i] < options_.min_base_quality()) {
+        return i;
+      }
     }
-    if (recent_qc_fail_positions.empty()) {
+    return bases.size();
+  };
+
+  // This algorithm is simple and fast, but it isn't the most straightforward
+  // implementation so it merits a few comments.
+  //
+  // Suppose I have the following data:
+  //
+  // offset: 01234567
+  // bases:  ACGTAACC
+  // bad? :  00010000
+  // k_   :  2 <= using a kmer size of 2
+  //
+  // The algorithm below loops over positions (variable `i`), pulling kmers of
+  // length k from positions `i` and `i + 1` to add as edges. The key
+  // calculation is NextBadPosition that searches from the current `i` position
+  // for the next position that is bad. In the above example, this would be the
+  // 3 position. We then loop from i until `next_bad_position - k`, to create
+  // our edges, since we know that everything from i to next_bad_position is
+  // good but we cannot construct a valid kmer that overlaps next_bad_position
+  // so it invalidates all kmer starts from `next_bad_position - k`. Finally, we
+  // set i to `next_bad_position + 1`, which is the very next starting position
+  // after the last bad position, and the algorithm repeats.
+  //
+  // This algorithm has many important properties for performance:
+  //
+  //   * It doesn't allocate any data structures to support the calculation.
+  //   * It only examines whether a given position is good/bad once.
+  //   * The loop to add edges is streamlined, without any unnecessary checks.
+  //
+  const string_view bases_view(bases);
+  // Note that this SIGNED int type declaration is key to avoid
+  // bases.size() - k_ underflowing.
+  const int stop = bases.size() - k_;
+  int i = 0;
+  while (i < stop) {
+    int next_bad_position = NextBadPosition(i);
+    for (; i < next_bad_position - k_; ++i) {
       AddEdge(bases_view.substr(i, k_), bases_view.substr(i + 1, k_), false);
     }
+    i = next_bad_position + 1;
   }
 }
 
