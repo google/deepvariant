@@ -814,7 +814,10 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
         gts.get()[c * ploidy + a] = bcf_int32_vector_end;
       }
     }
-    bcf_update_genotypes(&h, v, gts.get(), nCalls * ploidy);
+    if (bcf_update_genotypes(&h, v, gts.get(), nCalls * ploidy) < 0) {
+      return tensorflow::errors::Unknown(
+          "Failure to write genotypes to VCF record");
+    }
 
     // Write remaining FORMAT fields
     bool has_ll = false;
