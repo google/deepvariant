@@ -126,7 +126,16 @@ class DeBruijnGraph {
   // Add edge, implicitly adding the vertices if needed.  If such an edge is
   // already present, we merely increment its weight to reflect its "multiedge"
   // degree.
-  Edge AddEdge(absl::string_view from, absl::string_view to, bool is_ref);
+  Edge AddEdge(Vertex from_vertex, Vertex to_vertex, bool is_ref);
+
+  // Adds kmers from bases starting at start and stopping at end. We add a kmer
+  // at each i from start to end (inclusive), and edges between all sequential
+  // kmers. Since the first kmer spans k bases starting at start, start + k must
+  // be <= bases.size(). Since the last kmer we add starts at end and is k bases
+  // long, end + k <= bases.size() as well. Note that this function tolerates
+  // end < 0, which causes the code to return immediately.
+  void AddKmersAndEdges(absl::string_view bases, int start, int end,
+                        bool is_ref);
 
   // Add all the edges implied by the given reference string.
   void AddEdgesForReference(absl::string_view ref);
@@ -184,24 +193,6 @@ class DeBruijnGraph {
       kmer_to_vertex_;
 #endif
   RawVertexIndexMap vertex_index_map_;
-
-  // Cache for EnsureVertex to speed up sequential lookups of kmers. It's often
-  // the case that we make calls to EnsureVertex that look something like:
-  // string_view kmer1, kmer2, kmer3, kmer4:
-  //
-  // EnsureVertex(kmer1)
-  // EnsureVertex(kmer2)
-  // EnsureVertex(kmer2)
-  // EnsureVertex(kmer3)
-  // EnsureVertex(kmer3)
-  // EnsureVertex(kmer4)
-  // etc...
-  //
-  // These variables, which are set in EnsureVertex, allow sequential calls with
-  // the same kmer to return the last_vertex without having to do an expensive
-  // search for the kmer in the kmer_to_vertex_ map.
-  absl::string_view last_kmer_;
-  Vertex last_vertex_;
 };
 
 
