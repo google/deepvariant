@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import time
 
 
@@ -119,6 +120,13 @@ flags.DEFINE_string(
     'must specify either this flag or --tpu_name.')
 
 flags.DEFINE_boolean('use_tpu', False, 'Use tpu if available.')
+
+flags.DEFINE_string(
+    'kmp_blocktime', '0',
+    'Value to set the KMP_BLOCKTIME environment variable to for efficient MKL '
+    'inference. See https://www.tensorflow.org/performance/performance_guide '
+    'for more information. The default value is 0, which provides the best '
+    'performance in our tests. Set this flag to "" to not set the variable.')
 
 
 class ExecutionHardwareError(Exception):
@@ -255,6 +263,10 @@ def call_variants(examples_filename,
                   use_tpu=False,
                   master=''):
   """Main driver of call_variants."""
+  if FLAGS.kmp_blocktime:
+    os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
+    logging.info('Set KMP_BLOCKTIME to %s', os.environ['KMP_BLOCKTIME'])
+
   # Read a single TFExample to make sure we're not loading an older version.
   example_format = tf_utils.get_format_from_examples_path(examples_filename)
   if example_format is None:
