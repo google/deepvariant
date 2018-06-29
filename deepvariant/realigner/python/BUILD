@@ -45,8 +45,8 @@ py_test(
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:ranges",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -64,7 +64,7 @@ py_test(
     srcs = ["ssw_wrap_test.py"],
     deps = [
         ":ssw",
-        "@com_google_absl_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:absltest",
     ],
 )
 
@@ -74,7 +74,7 @@ py_test(
     srcs = ["ssw_misc_test.py"],
     deps = [
         ":ssw",
-        "@com_google_absl_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:absltest",
     ],
 )
 

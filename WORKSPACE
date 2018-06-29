@@ -5,9 +5,8 @@ workspace(name = "com_google_deepvariant")
 
 # Abseil libraries
 git_repository(
-    name = "com_google_absl_py",
-    # redacted
-    commit = "5e343642d987268df199b4c851b7dd3d687ac316",
+    name = "io_abseil_py",
+    tag = "pypi-v0.2.2",
     remote = "https://github.com/abseil/abseil-py.git",
 )
 # Note: com_google_absl (the C++ abseil library) is provided by TensorFlow.

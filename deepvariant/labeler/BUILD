@@ -16,8 +16,8 @@ py_binary(
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -31,8 +31,8 @@ py_test(
         "//deepvariant:py_testdata",
         "//deepvariant/testing:flagsaver",
         "//third_party/nucleus/io:vcf",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -55,8 +55,8 @@ py_test(
         ":variant_labeler",
         "//deepvariant:py_testdata",
         "//third_party/nucleus/io:vcf",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -69,7 +69,7 @@ py_library(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -83,8 +83,8 @@ py_test(
         "//deepvariant:py_testdata",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/util:ranges",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -113,7 +113,7 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
