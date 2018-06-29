@@ -28,6 +28,6 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":math",
-        "@com_google_absl_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:absltest",
     ],
 )

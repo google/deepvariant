@@ -192,8 +192,8 @@ py_test(
         ":variant_caller",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -249,8 +249,8 @@ py_library(
         "//third_party/nucleus/util:proto_utils",
         "//third_party/nucleus/util:py_utils",
         "//third_party/nucleus/util:ranges",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -289,10 +289,10 @@ py_test(
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
         "//third_party/nucleus/util:vcf_constants",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -311,8 +311,8 @@ py_library(
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:proto_utils",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -324,7 +324,7 @@ py_binary(
     main = "call_variants.py",
     deps = [
         ":call_variants_lib",
-        "@com_google_absl_py//absl/flags",
+        "@io_abseil_py//absl/flags",
     ],
 )
 
@@ -346,10 +346,10 @@ py_test(
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -368,8 +368,8 @@ py_test(
         ":call_variants",
         ":modeling",
         ":py_testdata",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -401,8 +401,8 @@ py_test(
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:ranges",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -442,8 +442,8 @@ py_library(
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
         "//third_party/nucleus/util:vcf_constants",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -455,7 +455,7 @@ py_binary(
     main = "postprocess_variants.py",
     deps = [
         ":postprocess_variants_py_lib",
-        "@com_google_absl_py//absl/flags",
+        "@io_abseil_py//absl/flags",
     ],
 )
 
@@ -478,9 +478,9 @@ py_test(
         "//third_party/nucleus/util:genomics_math",
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:vcf_constants",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -520,8 +520,8 @@ py_library(
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -544,8 +544,8 @@ py_library(
     deps = [
         "//third_party/nucleus/util:genomics_math",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -558,9 +558,9 @@ py_test(
         ":haplotypes",
         ":py_testdata",
         "//deepvariant/testing:flagsaver",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -572,8 +572,8 @@ py_library(
         ":data_providers",
         ":tf_utils",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
         "@org_tensorflow_slim//:inception",
         "@org_tensorflow_slim//:mobilenet_v1",
         "@org_tensorflow_slim//:resnet_v2",
@@ -588,8 +588,8 @@ py_test(
     deps = [
         ":dv_constants",
         ":modeling",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -602,8 +602,8 @@ py_library(
         ":logging_level",
         ":modeling",
         "//third_party/nucleus/util:proto_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -613,8 +613,8 @@ py_binary(
     srcs_version = "PY2AND3",
     deps = [
         ":model_train_lib",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -633,9 +633,9 @@ py_test(
         ":py_testdata",
         "//deepvariant/testing:flagsaver",
         "//deepvariant/testing:tf_test_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -649,8 +649,8 @@ py_library(
         ":modeling",
         "//third_party/nucleus/util:proto_utils",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -660,8 +660,8 @@ py_binary(
     srcs_version = "PY2AND3",
     deps = [
         ":model_eval_lib",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/logging",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/logging",
     ],
 )
 
@@ -680,9 +680,9 @@ py_test(
         "//deepvariant/testing:tf_test_utils",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:variant_utils",
-        "@com_google_absl_py//absl/flags",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/flags",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -708,15 +708,15 @@ py_test(
         ":tf_utils",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:io_utils",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
 py_library(
     name = "logging_level",
     srcs = ["logging_level.py"],
-    deps = ["@com_google_absl_py//absl/flags"],
+    deps = ["@io_abseil_py//absl/flags"],
 )
 
 py_library(
@@ -731,7 +731,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":exclude_contigs",
-        "@com_google_absl_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:absltest",
     ],
 )
 
@@ -760,8 +760,8 @@ py_test(
     deps = [
         ":dv_vcf_constants",
         "//third_party/nucleus/protos:reference_py_pb2",
-        "@com_google_absl_py//absl/testing:absltest",
-        "@com_google_absl_py//absl/testing:parameterized",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 
@@ -778,6 +778,6 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":resources",
-        "@com_google_absl_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:absltest",
     ],
 )
