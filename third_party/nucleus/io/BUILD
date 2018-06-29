@@ -431,6 +431,7 @@ cc_library(
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
+        "@com_google_absl//absl/strings",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
     ],

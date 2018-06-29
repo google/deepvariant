@@ -243,7 +243,8 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
 VcfReader::VcfReader(const string& variants_path,
                      const nucleus::genomics::v1::VcfReaderOptions& options,
                      htsFile* fp, bcf_hdr_t* header, tbx_t* idx)
-    : options_(options), fp_(fp), header_(header), idx_(idx) {
+    : options_(options), fp_(fp), header_(header), idx_(idx),
+      bcf1_(bcf_init()) {
   if (header_->nhrec < 1) {
     LOG(WARNING) << "Empty header, not a valid VCF.";
     return;
@@ -306,6 +307,7 @@ VcfReader::VcfReader(const string& variants_path,
 }
 
 VcfReader::~VcfReader() {
+  bcf_destroy(bcf1_);
   if (fp_) {
     // We cannot return a value from the destructor, so the best we can do is
     // CHECK-fail if the Close() wasn't successful.
@@ -354,6 +356,21 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
   // variant records) => return an *empty* iterable by leaving iter empty.
   return StatusOr<std::shared_ptr<VariantIterable>>(
       MakeIterable<VcfQueryIterable>(this, fp_, header_, idx_, iter));
+}
+
+StatusOr<bool> VcfReader::FromString(
+    const absl::string_view& vcf_line, nucleus::genomics::v1::Variant* v) {
+  size_t len = vcf_line.length();
+  std::unique_ptr<char[]> cstr{new char[len + 1 ]};
+  std::strncpy(cstr.get(), vcf_line.data(), len);
+  *(cstr.get() + len) = '\0';
+  kstring_t str = {.l = len + 1, .m = len + 1, .s = cstr.get()};
+
+  if (vcf_parse1(&str, header_, bcf1_) < 0) {
+    return tf::errors::DataLoss("Failed to parse VCF record: ", cstr.get());
+  }
+  TF_RETURN_IF_ERROR(RecordConverter().ConvertToPb(header_, bcf1_, v));
+  return true;
 }
 
 tf::Status VcfReader::Close() {

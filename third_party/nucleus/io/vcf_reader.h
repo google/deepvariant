@@ -33,6 +33,7 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_VCF_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_VCF_READER_H_
 
+#include "absl/strings/string_view.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htslib/tbx.h"
@@ -123,6 +124,10 @@ class VcfReader : public Reader {
   StatusOr<std::shared_ptr<VariantIterable>> Query(
       const nucleus::genomics::v1::Range& region);
 
+  // Parses vcf_line and puts the result into v.
+  StatusOr<bool> FromString(const absl::string_view& vcf_line,
+                            nucleus::genomics::v1::Variant* v);
+
   // Returns True if this VcfReader loaded an index file.
   bool HasIndex() const { return idx_ != nullptr; }
 
@@ -171,6 +176,9 @@ class VcfReader : public Reader {
 
   // Object for converting VCF records to to Variant proto.
   VcfRecordConverter record_converter_;
+
+  // htslib's representation of a parsed vcf line.  Only used by FromString.
+  bcf1_t* bcf1_;
 };
 
 }  // namespace nucleus
