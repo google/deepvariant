@@ -129,10 +129,6 @@ std::set<Vertex> VerticesReachableFrom(
 }  // namespace
 
 Vertex DeBruijnGraph::EnsureVertex(string_view kmer) {
-  if (last_kmer_ == kmer) {
-    return last_vertex_;
-  }
-
   Vertex v;
   auto vertex_find = kmer_to_vertex_.find(kmer);
   if (vertex_find != kmer_to_vertex_.end()) {
@@ -144,8 +140,6 @@ Vertex DeBruijnGraph::EnsureVertex(string_view kmer) {
     // the string_view key.
     kmer_to_vertex_[string_view(g_[v].kmer)] = v;
   }
-  last_kmer_ = kmer;
-  last_vertex_ = v;
 
   return v;
 }
@@ -257,9 +251,7 @@ std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
   return nullptr;
 }
 
-Edge DeBruijnGraph::AddEdge(string_view from, string_view to, bool is_ref) {
-  Vertex from_vertex = EnsureVertex(from);
-  Vertex to_vertex = EnsureVertex(to);
+Edge DeBruijnGraph::AddEdge(Vertex from_vertex, Vertex to_vertex, bool is_ref) {
   bool was_present;
   Edge edge;
   std::tie(edge, was_present) = boost::edge(from_vertex, to_vertex, g_);
@@ -273,17 +265,27 @@ Edge DeBruijnGraph::AddEdge(string_view from, string_view to, bool is_ref) {
   return edge;
 }
 
-void DeBruijnGraph::AddEdgesForReference(string_view ref) {
-  string_view kmer_prev, kmer_cur;
-  const signed int ref_length = ref.size();
-  for (int i = 0; i < ref_length - k_ + 1; i++) {
-    kmer_prev = kmer_cur;
-    kmer_cur = ref.substr(i, k_);
-    if (i > 0) {
-      AddEdge(kmer_prev, kmer_cur, true);
+void DeBruijnGraph::AddKmersAndEdges(string_view bases, int start, int end,
+                                     bool is_ref) {
+  CHECK_GE(start, 0);
+  CHECK_LE(start + k_, bases.size());
+  CHECK_LE(end + k_, bases.size());
+
+  // End can be less than 0, in which case we return without doing any work.
+  if (end > 0) {
+    Vertex vertex_prev = EnsureVertex(bases.substr(start, k_));
+    for (int i = start + 1; i <= end; ++i) {
+      Vertex vertex_cur = EnsureVertex(bases.substr(i, k_));
+      AddEdge(vertex_prev, vertex_cur, is_ref);
+      vertex_prev = vertex_cur;
     }
   }
 }
+
+void DeBruijnGraph::AddEdgesForReference(string_view ref) {
+  AddKmersAndEdges(ref, 0, ref.size() - k_, true /* is_ref */);
+}
+
 
 void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
   const string bases = absl::AsciiStrToUpper(read.aligned_sequence());
@@ -335,9 +337,7 @@ void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
   int i = 0;
   while (i < stop) {
     int next_bad_position = NextBadPosition(i);
-    for (; i < next_bad_position - k_; ++i) {
-      AddEdge(bases_view.substr(i, k_), bases_view.substr(i + 1, k_), false);
-    }
+    AddKmersAndEdges(bases_view, i, next_bad_position - k_, false /* is_ref */);
     i = next_bad_position + 1;
   }
 }
