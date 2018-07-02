@@ -122,6 +122,7 @@ void FastPassAligner::set_score_schema(uint8_t match_score,
 std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
 FastPassAligner::AlignReads(
     const std::vector<nucleus::genomics::v1::Read>& reads_param) {
+
   // Copy reads
   for (const auto& read : reads_param) {
     reads_.push_back(tensorflow::str_util::Uppercase(read.aligned_sequence()));
@@ -233,24 +234,40 @@ void FastPassAligner::FastAlignReadsToHaplotype(
       size_t target_start_pos = std::max(
           static_cast<int64_t>(0),
           static_cast<int64_t>(i) - static_cast<int64_t>(it.read_pos.pos));
-      size_t readStartPos = 0;
       size_t cur_read_size = reads_[read_id_index].size();
       size_t span = cur_read_size;
       if (target_start_pos + cur_read_size > haplotype.length()) {
+        continue;
+      }
+      auto& read_alignment =
+          (*haplotype_read_alignment_scores)[read_id_index];
+
+      // This read is already aligned, skip it.
+      if (read_alignment.position != 0
+          && read_alignment.position == target_start_pos) {
         continue;
       }
       CHECK(target_start_pos + span <= bases_view.size());
       int num_of_mismatches = 0;
       int new_read_alignment_score = FastAlignStrings(
           bases_view.substr(target_start_pos, span),
-          reads_[read_id_index].substr(readStartPos, span),
+          reads_[read_id_index],
           max_num_of_mismatches_ + 1, &num_of_mismatches);
+
+      // For reads that cannot be aligned with fast alignment we want to avoid
+      // tying them over and over. In order to do that we set position for the
+      // read even if the read could not be aligned. This way we know that the
+      // read was already tried at this position and we can skip it. Doing so
+      // reduces a number of checks per read 10 times.
+      // If score is not zero we cannot change position without fist checking
+      // the score.
+      if (read_alignment.score == 0) {
+        read_alignment.position = target_start_pos;
+      }
 
       if (num_of_mismatches <= max_num_of_mismatches_) {
         CHECK(it.read_id.is_set &&
             read_id_index < haplotype_read_alignment_scores->size());
-        auto& read_alignment =
-            (*haplotype_read_alignment_scores)[read_id_index];
         int oldScore = read_alignment.score;
         if (oldScore < new_read_alignment_score) {
           read_alignment.score = new_read_alignment_score;
@@ -273,8 +290,10 @@ int FastPassAligner::FastAlignStrings(tensorflow::StringPiece s1,
   *num_of_mismatches = 0;
   CHECK(s1.size() == s2.size());
   for (int i = 0; i < s1.size(); i++) {
-    if (s1[i] != s2[i] && (s1[i] != 'N' && s2[i] != 'N')) {
-      if (s1[i] != s2[i]) {
+    const auto& c1 = s1[i];
+    const auto& c2 = s2[i];
+    if (c1 != c2 && (c1 != 'N' && c2 != 'N')) {
+      if (c1 != c2) {
         (*num_of_mismatches)++;
       }
       if (*num_of_mismatches == max_mismatches) {
