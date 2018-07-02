@@ -167,6 +167,12 @@ void AddExtra(const bcf_hrec_t* hrec, nucleus::genomics::v1::VcfExtra* extra) {
   extra->set_value(hrec->value);
 }
 
+
+bool FileTypeIsIndexable(htsFormat format) {
+  return format.format == vcf && format.compression == bgzf;
+}
+
+
 }  // namespace
 
 // Iterable class for traversing VCF records found in a query window.
@@ -227,13 +233,9 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
 
   // Try to load the Tabix index if requested.
   tbx_t* idx = nullptr;
-  if (options.index_mode() ==
-      nucleus::genomics::v1::IndexHandlingMode::INDEX_BASED_ON_FILENAME) {
-    // tbx_index_load() computes the expected index filename from the
-    // filename fn of the htsFile fp.
+  if (FileTypeIsIndexable(fp->format)) {
     idx = tbx_index_load(fp->fn);
-    if (idx == nullptr)
-      return tf::errors::NotFound("No index found for ", fp->fn);
+    // idx may be null; only an error if we try to Query later.
   }
 
   return std::unique_ptr<VcfReader>(

@@ -41,7 +41,6 @@
 #include "htslib/sam.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
-#include "third_party/nucleus/protos/index.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -75,6 +74,10 @@ constexpr char kSamReferenceSequenceTag[] = "@SQ";
 constexpr char kSamReadGroupTag[] = "@RG";
 constexpr char kSamProgramTag[] = "@PG";
 constexpr char kSamCommentTag[] = "@CO";
+
+bool FileTypeIsIndexable(htsFormat format) {
+  return format.format == bam;
+}
 
 void AddHeaderLineToHeader(const string& line, SamHeader& header) {
   static constexpr char kVersionTag[] = "VN:";
@@ -574,13 +577,10 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
     return tf::errors::Unknown("Couldn't parse header for ", fp->fn);
 
   hts_idx_t* idx = nullptr;
-  if (options.index_mode() ==
-      nucleus::genomics::v1::IndexHandlingMode::INDEX_BASED_ON_FILENAME) {
+  if (FileTypeIsIndexable(fp->format)) {
     // redacted
+    // This call may return null, which we will look for at Query time.
     idx = sam_index_load(fp, fp->fn);
-    if (idx == nullptr) {
-      return tf::errors::NotFound("No index found for ", fp->fn);
-    }
   }
 
   return std::unique_ptr<SamReader>(

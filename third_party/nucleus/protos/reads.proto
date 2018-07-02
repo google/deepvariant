@@ -31,7 +31,6 @@ syntax = "proto3";
 package nucleus.genomics.v1;
 
 import "third_party/nucleus/protos/cigar.proto";
-import "third_party/nucleus/protos/index.proto";
 import "third_party/nucleus/protos/position.proto";
 import "third_party/nucleus/protos/reference.proto";
 import "third_party/nucleus/protos/struct.proto";
@@ -371,7 +370,7 @@ message SamReaderOptions {
   // Read requirements that must be satisfied before our reader will return
   // a read to use.
   ReadRequirements read_requirements = 1;
-  IndexHandlingMode index_mode = 2;
+
   // How should we handle the aux fields in the SAM record?
   enum AuxFieldHandling {
     UNSPECIFIED = 0;

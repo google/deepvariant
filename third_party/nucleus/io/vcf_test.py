@@ -49,7 +49,7 @@ class VcfHeaderCacheTests(parameterized.TestCase):
 
   def setUp(self):
     self.vcf_reader = vcf.VcfReader(
-        test_utils.genomics_core_testdata('test_sites.vcf'), use_index=False)
+        test_utils.genomics_core_testdata('test_sites.vcf'))
     self.cache = self.vcf_reader.field_access_cache
 
   @parameterized.parameters(
@@ -114,11 +114,10 @@ class VcfReaderTests(absltest.TestCase):
 
   def setUp(self):
     self.sites_reader = vcf.VcfReader(
-        test_utils.genomics_core_testdata('test_sites.vcf'), use_index=False)
+        test_utils.genomics_core_testdata('test_sites.vcf'))
 
     self.samples_reader = vcf.VcfReader(
-        test_utils.genomics_core_testdata('test_samples.vcf.gz'),
-        use_index=True)
+        test_utils.genomics_core_testdata('test_samples.vcf.gz'))
 
   def test_vcf_iterate(self):
     self.assertEqual(test_utils.iterable_len(self.sites_reader.iterate()), 5)
@@ -338,7 +337,6 @@ class VcfRoundtripTests(parameterized.TestCase):
     expected = self.header + ''.join(expected_records)
     with vcf.VcfReader(
         test_utils.genomics_core_testdata('test_py_roundtrip.vcf'),
-        use_index=False,
         excluded_info_fields=reader_excluded_info,
         excluded_format_fields=reader_excluded_format) as reader:
 

@@ -35,7 +35,6 @@ from __future__ import print_function
 from absl.testing import absltest
 
 from third_party.nucleus.io.python import vcf_reader
-from third_party.nucleus.protos import index_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
@@ -151,15 +150,13 @@ expected_samples_filters = [
 class WrapVcfReaderTests(absltest.TestCase):
 
   def setUp(self):
-    self.unindexed_options = variants_pb2.VcfReaderOptions()
-    self.indexed_options = variants_pb2.VcfReaderOptions(
-        index_mode=index_pb2.INDEX_BASED_ON_FILENAME)
     self.sites_vcf = test_utils.genomics_core_testdata('test_sites.vcf')
     self.samples_vcf = test_utils.genomics_core_testdata('test_samples.vcf.gz')
+    self.options = variants_pb2.VcfReaderOptions()
     self.sites_reader = vcf_reader.VcfReader.from_file(self.sites_vcf,
-                                                       self.unindexed_options)
+                                                       self.options)
     self.samples_reader = vcf_reader.VcfReader.from_file(
-        self.samples_vcf, self.indexed_options)
+        self.samples_vcf, self.options)
 
   def test_vcf_iterate(self):
     iterable = self.sites_reader.iterate()
@@ -207,13 +204,7 @@ class WrapVcfReaderTests(absltest.TestCase):
   def test_from_file_raises_with_missing_source(self):
     with self.assertRaisesRegexp(ValueError,
                                  'Not found: Could not open missing.vcf'):
-      vcf_reader.VcfReader.from_file('missing.vcf', self.unindexed_options)
-
-  def test_from_file_raises_with_missing_index(self):
-    with self.assertRaisesRegexp(ValueError, 'Not found: No index found for'):
-      vcf_reader.VcfReader.from_file(
-          test_utils.genomics_core_testdata('test_sites.vcf'),
-          self.indexed_options)
+      vcf_reader.VcfReader.from_file('missing.vcf', self.options)
 
   def test_ops_on_closed_reader_raise(self):
     with self.samples_reader:
@@ -226,10 +217,11 @@ class WrapVcfReaderTests(absltest.TestCase):
           ranges.parse_literal('chr1:10,000,000-10,000,100'))
 
   def test_query_on_unindexed_reader_raises(self):
-    with vcf_reader.VcfReader.from_file(self.samples_vcf,
-                                        self.unindexed_options) as reader:
+    window = ranges.parse_literal('chr1:10,000,000-10,000,100')
+    unindexed_file = test_utils.genomics_core_testdata('test_samples.vcf')
+    with vcf_reader.VcfReader.from_file(unindexed_file, self.options) as reader:
       with self.assertRaisesRegexp(ValueError, 'Cannot query without an index'):
-        reader.query(ranges.parse_literal('chr1:10,000,000-10,000,100'))
+        reader.query(window)
 
   def test_query_raises_with_bad_range(self):
     with self.assertRaisesRegexp(ValueError, 'Unknown reference_name'):
@@ -242,8 +234,7 @@ class WrapVcfReaderTests(absltest.TestCase):
       self.samples_reader.query(ranges.parse_literal('chr1:10-5'))
 
   def test_context_manager(self):
-    with vcf_reader.VcfReader.from_file(self.sites_vcf,
-                                        self.unindexed_options) as f:
+    with vcf_reader.VcfReader.from_file(self.sites_vcf, self.options) as f:
       self.assertEqual(expected_sites_contigs, list(f.header.contigs))
 
   # Commented out because we in fact don't detect the malformed VCF yet. It is

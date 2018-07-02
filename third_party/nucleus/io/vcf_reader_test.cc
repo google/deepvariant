@@ -199,8 +199,6 @@ TEST(VcfFileOnlySites, IterationWorks) {
 class VcfWithSamplesReaderTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    options_.set_index_mode(
-        nucleus::genomics::v1::IndexHandlingMode::INDEX_BASED_ON_FILENAME);
     indexed_vcf_ = GetTestData(kVcfIndexSamplesFilename);
     golden_ =
         ReadProtosFromTFRecord<Variant>(GetTestData(kVcfSamplesGoldenFilename));

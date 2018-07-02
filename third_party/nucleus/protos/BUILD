@@ -131,7 +131,6 @@ proto_library(
     name = "variants_proto",
     srcs = ["variants.proto"],
     deps = [
-        ":index_proto",  # NO COPYBARA
         ":reference_proto",  # NO COPYBARA
         ":struct_proto",  # NO COPYBARA
     ],
@@ -143,7 +142,6 @@ cc_proto_library(
     default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
     deps = [
-        ":index_cc_pb2",
         ":reference_cc_pb2",
         ":struct_cc_pb2",
     ],
@@ -156,7 +154,6 @@ py_proto_library(
     protoc = "@protobuf_archive//:protoc",
     srcs_version = "PY2AND3",
     deps = [
-        ":index_py_pb2",
         ":reference_py_pb2",
         ":struct_py_pb2",
     ],
@@ -176,7 +173,6 @@ proto_library(
     srcs = ["reads.proto"],
     deps = [
         ":cigar_proto",  # NO COPYBARA
-        ":index_proto",  # NO COPYBARA
         ":position_proto",  # NO COPYBARA
         ":reference_proto",  # NO COPYBARA
         ":struct_proto",  # NO COPYBARA
@@ -190,7 +186,6 @@ cc_proto_library(
     protoc = "@protobuf_archive//:protoc",
     deps = [
         ":cigar_cc_pb2",
-        ":index_cc_pb2",
         ":position_cc_pb2",
         ":reference_cc_pb2",
         ":struct_cc_pb2",
@@ -205,7 +200,6 @@ py_proto_library(
     srcs_version = "PY2AND3",
     deps = [
         ":cigar_py_pb2",
-        ":index_py_pb2",
         ":position_py_pb2",
         ":reference_py_pb2",
         ":struct_py_pb2",
@@ -253,35 +247,6 @@ py_proto_library(
 pyclif_proto_library(
     name = "reference_pyclif",
     proto_lib = ":reference_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# Index
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "index_proto",
-    srcs = ["index.proto"],
-)
-
-cc_proto_library(
-    name = "index_cc_pb2",
-    srcs = ["index.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
-)
-
-py_proto_library(
-    name = "index_py_pb2",
-    srcs = ["index.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-)
-
-pyclif_proto_library(
-    name = "index_pyclif",
-    proto_lib = ":index_proto",  # NO COPYBARA
 )
 
 # ----------------------------------------------------------------------

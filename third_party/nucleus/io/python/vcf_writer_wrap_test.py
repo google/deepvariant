@@ -292,7 +292,7 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
     in_file = test_utils.genomics_core_testdata(test_datum_name)
     out_file = test_utils.test_tmpfile('output_' + test_datum_name)
 
-    v1_reader = vcf.VcfReader(in_file, use_index=False)
+    v1_reader = vcf.VcfReader(in_file)
     v1_records = list(v1_reader.iterate())
     self.assertTrue(v1_records, 'Reader failed to find records')
 
@@ -304,7 +304,7 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
       for record in v1_records:
         writer.write(record)
 
-    v2_reader = vcf.VcfReader(out_file, use_index=False)
+    v2_reader = vcf.VcfReader(out_file)
     v2_records = list(v2_reader.iterate())
 
     self.assertEqual(v1_records, v2_records,
