@@ -153,9 +153,12 @@ fi
 
 note_build_stage "Download and configure TensorFlow sources"
 
-(cd .. &&
- git clone https://github.com/tensorflow/tensorflow &&
- cd tensorflow &&
+if [[ ! -d ../tensorflow ]]; then
+  note_build_stage "Cloning TensorFlow from github as ../tensorflow doesn't exist"
+  (cd .. && git clone https://github.com/tensorflow/tensorflow)
+fi
+
+(cd ../tensorflow &&
  git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
  echo | ./configure)
 
