@@ -71,7 +71,6 @@ from __future__ import print_function
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import sam_reader
-from third_party.nucleus.protos import index_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
@@ -86,7 +85,6 @@ class NativeSamReader(genomics_reader.GenomicsReader):
   """
 
   def __init__(self, input_path,
-               use_index=True,
                read_requirements=None,
                parse_aux_fields=False,
                hts_block_size=None,
@@ -97,10 +95,6 @@ class NativeSamReader(genomics_reader.GenomicsReader):
     Args:
       input_path: str. A path to a resource containing SAM/BAM records.
         Currently supports SAM text format and BAM binary format.
-      use_index: optional bool, defaulting to True. If True, we will attempt to
-        load an index file for input_path to enable the query() API call. If
-        True an index file must exist. If False, we will not attempt to load an
-        index for input_path, disabling the query() call.
       read_requirements: optional ReadRequirement proto. If not None, this proto
         is used to control which reads are filtered out by the reader before
         they are passed to the client.
@@ -133,7 +127,6 @@ class NativeSamReader(genomics_reader.GenomicsReader):
         self._reader = tfbam_reader.make_sam_reader(
             input_path,
             read_requirements=read_requirements,
-            use_index=use_index,
             unused_block_size=hts_block_size,
             downsample_fraction=downsample_fraction,
             random_seed=random_seed)
@@ -141,10 +134,6 @@ class NativeSamReader(genomics_reader.GenomicsReader):
         raise ImportError(
             'tfbam_lib module not found, cannot read .tfbam files.')
     else:
-      index_mode = index_pb2.INDEX_BASED_ON_FILENAME
-      if not use_index:
-        index_mode = index_pb2.DONT_USE_INDEX
-
       aux_field_handling = reads_pb2.SamReaderOptions.SKIP_AUX_FIELDS
       if parse_aux_fields:
         aux_field_handling = reads_pb2.SamReaderOptions.PARSE_ALL_AUX_FIELDS
@@ -165,7 +154,6 @@ class NativeSamReader(genomics_reader.GenomicsReader):
           input_path.encode('utf8'),
           reads_pb2.SamReaderOptions(
               read_requirements=read_requirements,
-              index_mode=index_mode,
               aux_field_handling=aux_field_handling,
               hts_block_size=(hts_block_size or 0),
               downsample_fraction=downsample_fraction,

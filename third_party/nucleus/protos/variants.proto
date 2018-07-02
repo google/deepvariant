@@ -30,7 +30,6 @@ syntax = "proto3";
 
 package nucleus.genomics.v1;
 
-import "third_party/nucleus/protos/index.proto";
 import "third_party/nucleus/protos/reference.proto";
 import "third_party/nucleus/protos/struct.proto";
 
@@ -310,10 +309,7 @@ message VcfExtra {
 // reading and writing variants. They enables certain fields to be omitted from
 // parsing.
 message VcfReaderOptions {
-  reserved 2;
-
-  // How should we handle VCF file indices?
-  IndexHandlingMode index_mode = 1;
+  reserved 1, 2;
 
   // A list of all INFO field IDs that should be excluded from parsing.
   repeated string excluded_info_fields = 3;
@@ -323,10 +319,7 @@ message VcfReaderOptions {
 }
 
 message VcfWriterOptions {
-  reserved 2, 3, 4, 5;
-
-  // How should we handle VCF file indices?
-  IndexHandlingMode index_mode = 1;
+  reserved 1, 2, 3, 4, 5;
 
   // A list of all INFO field IDs that should be excluded from writing.
   repeated string excluded_info_fields = 7;

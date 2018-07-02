@@ -74,7 +74,7 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
 
     labeled_examples_to_vcf.main(0)
 
-    with vcf.VcfReader(FLAGS.output_vcf, use_index=False) as vcf_reader:
+    with vcf.VcfReader(FLAGS.output_vcf) as vcf_reader:
       self.assertEqual(
           list(vcf_reader.header.sample_names), [FLAGS.sample_name])
 

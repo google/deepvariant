@@ -70,7 +70,6 @@ from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import vcf_reader
 from third_party.nucleus.io.python import vcf_writer
-from third_party.nucleus.protos import index_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
@@ -152,15 +151,12 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
 
   def __init__(self,
                input_path,
-               use_index=True,
                excluded_info_fields=None,
                excluded_format_fields=None):
     """Initializer for NativeVcfReader.
 
     Args:
       input_path: str. The path to the VCF file to read.
-      use_index: bool. If True, the input is assumed to be bgzipped and tabix
-        indexed, and the `query` functionality is supported.
       excluded_info_fields: list(str). A list of INFO field IDs that should not
         be parsed into the Variants. If None, all INFO fields are included.
       excluded_format_fields: list(str). A list of FORMAT field IDs that should
@@ -169,14 +165,9 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
     """
     super(NativeVcfReader, self).__init__()
 
-    index_mode = index_pb2.INDEX_BASED_ON_FILENAME
-    if not use_index:
-      index_mode = index_pb2.DONT_USE_INDEX
-
     self._reader = vcf_reader.VcfReader.from_file(
         input_path.encode('utf8'),
         variants_pb2.VcfReaderOptions(
-            index_mode=index_mode,
             excluded_info_fields=excluded_info_fields,
             excluded_format_fields=excluded_format_fields))
 

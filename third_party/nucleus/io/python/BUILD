@@ -100,12 +100,12 @@ py_test(
     deps = [
         ":sam_reader",
         "//third_party/nucleus/io:clif_postproc",
-        "//third_party/nucleus/protos:index_py_pb2",
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
         "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 

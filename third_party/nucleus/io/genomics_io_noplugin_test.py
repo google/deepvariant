@@ -44,7 +44,7 @@ class PluginAbsenceTest(absltest.TestCase):
   def test_tfbam_plugin_does_not_load(self):
     with self.assertRaisesRegexp(
         ImportError, 'tfbam_lib module not found, cannot read .tfbam files.'):
-      _ = sam.SamReader('mouse@25.tfbam', use_index=True)
+      _ = sam.SamReader('mouse@25.tfbam')
 
 
 if __name__ == '__main__':

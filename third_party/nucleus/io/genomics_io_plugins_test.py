@@ -42,7 +42,7 @@ class PluginTest(absltest.TestCase):
   """Test that the plugin loads correctly."""
 
   def test_tfbam_plugin_loads(self):
-    reader = sam.SamReader('mouse@25.tfbam', use_index=True)
+    reader = sam.SamReader('mouse@25.tfbam')
     self.assertIsNotNone(reader)
 
 

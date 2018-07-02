@@ -51,21 +51,18 @@ class SamReaderTests(parameterized.TestCase):
   """Test the iteration functionality provided by io.SamReader."""
 
   def test_sam_iterate(self):
-    reader = sam.SamReader(
-        test_utils.genomics_core_testdata('test.sam'), use_index=False)
+    reader = sam.SamReader(test_utils.genomics_core_testdata('test.sam'))
     with reader:
       self.assertEqual(test_utils.iterable_len(reader.iterate()), 6)
 
   def test_bam_iterate(self):
-    reader = sam.SamReader(
-        test_utils.genomics_core_testdata('test.bam'), use_index=False)
+    reader = sam.SamReader(test_utils.genomics_core_testdata('test.bam'))
     with reader:
       self.assertEqual(test_utils.iterable_len(reader.iterate()), 106)
 
   def test_bam_iterate_partially(self):
     """Verify that iteration provides results incrementally, not all at once."""
-    reader = sam.SamReader(
-        test_utils.genomics_core_testdata('test.bam'), use_index=False)
+    reader = sam.SamReader(test_utils.genomics_core_testdata('test.bam'))
     with reader:
       iterable = reader.iterate()
       # We expect 106 records in total.
@@ -76,8 +73,7 @@ class SamReaderTests(parameterized.TestCase):
       self.assertEqual(len(results), 6)
 
   def test_sam_query(self):
-    reader = sam.SamReader(
-        test_utils.genomics_core_testdata('test.bam'))
+    reader = sam.SamReader(test_utils.genomics_core_testdata('test.bam'))
     expected = [(ranges.parse_literal('chr20:10,000,000-10,000,100'), 106),
                 (ranges.parse_literal('chr20:10,000,000-10,000,000'), 45)]
     with reader:
@@ -85,56 +81,51 @@ class SamReaderTests(parameterized.TestCase):
         with reader.query(interval) as iterable:
           self.assertEqual(test_utils.iterable_len(iterable), n_expected)
 
-  @parameterized.parameters(
-      ('\t'.join(x[0]
-                 for x in items),
-       {k: v
-        for t in items
-        for k, v in t[1].items()})
-      for r in [1, 2]
-      for items in itertools.permutations(
-          [
-              ('X1:i:0', {
-                  'X1': 0
-              }),
-              ('X2:i:127', {
-                  'X2': 127
-              }),
-              ('X3:i:255', {
-                  'X3': 255
-              }),
-              ('X4:A:a', {
-                  'X4': 'a'
-              }),
-              ('X5:f:1.234', {
-                  'X5': 1.234
-              }),
-              ('X6:Z:string', {
-                  'X6': 'string'
-              }),
-              ('X7:Z:with spaces', {
-                  'X7': 'with spaces'
-              }),
-              ('ZJ:Z:', {
-                  'ZJ': ''
-              }),  # Empty string.
-              # We skip H hex byte-array tags as they appear deprecated.
-              ('X8:H:1AE301', {}),
-              # We are skipping array structures right now, so we don't expect
-              # any outputs, but we want to ensure we don't die when they are
-              # present.
-              ('X9:B:i,1', {}),
-              ('XA:B:i,1,2', {}),
-              ('XB:B:i,1,2,3', {}),
-              ('XC:B:i,1,2,3,4,5,6,7,8,9,10', {}),
-              ('XD:B:I,1,2,3', {}),
-              ('XE:B:c,1,2,3', {}),
-              ('XF:B:C,1,2,3', {}),
-              ('XG:B:f,0.12,0.34', {}),
-              ('XH:B:s,1,2,3', {}),
-              ('XI:B:S,1,2,3', {}),
-          ],
-          r=r))
+  @parameterized.parameters(('\t'.join(x[0] for x in items), {
+      k: v for t in items for k, v in t[1].items()
+  }) for r in [1, 2] for items in itertools.permutations(
+      [
+          ('X1:i:0', {
+              'X1': 0
+          }),
+          ('X2:i:127', {
+              'X2': 127
+          }),
+          ('X3:i:255', {
+              'X3': 255
+          }),
+          ('X4:A:a', {
+              'X4': 'a'
+          }),
+          ('X5:f:1.234', {
+              'X5': 1.234
+          }),
+          ('X6:Z:string', {
+              'X6': 'string'
+          }),
+          ('X7:Z:with spaces', {
+              'X7': 'with spaces'
+          }),
+          ('ZJ:Z:', {
+              'ZJ': ''
+          }),  # Empty string.
+          # We skip H hex byte-array tags as they appear deprecated.
+          ('X8:H:1AE301', {}),
+          # We are skipping array structures right now, so we don't expect
+          # any outputs, but we want to ensure we don't die when they are
+          # present.
+          ('X9:B:i,1', {}),
+          ('XA:B:i,1,2', {}),
+          ('XB:B:i,1,2,3', {}),
+          ('XC:B:i,1,2,3,4,5,6,7,8,9,10', {}),
+          ('XD:B:I,1,2,3', {}),
+          ('XE:B:c,1,2,3', {}),
+          ('XF:B:C,1,2,3', {}),
+          ('XG:B:f,0.12,0.34', {}),
+          ('XH:B:s,1,2,3', {}),
+          ('XI:B:S,1,2,3', {}),
+      ],
+      r=r))
   def test_parsing_aux_tags(self, tag_string, expected_info):
     # Minimal header line to create a valid SAM file.
     reads = self._parse_read_with_aux_tags(tag_string)
@@ -142,9 +133,7 @@ class SamReaderTests(parameterized.TestCase):
     self.assertInfoMapEqual(reads[0].info, expected_info)
 
   @parameterized.parameters(
-      '\t'.join(tags)
-      for r in [1, 2, 3]
-      for tags in itertools.permutations(
+      '\t'.join(tags) for r in [1, 2, 3] for tags in itertools.permutations(
           [
               'X2:i:x',  # Integer with character value.
               'X3:f:string',  # A string instead of the expected float.
@@ -179,14 +168,14 @@ class SamReaderTests(parameterized.TestCase):
     with gfile.FastGFile(path, 'w') as fout:
       fout.write(header_lines)
       fout.write(read + '\n')
-    with sam.SamReader(
-        path, use_index=False, parse_aux_fields=True) as reader:
+    with sam.SamReader(path, parse_aux_fields=True) as reader:
       return list(reader.iterate())
 
   def assertInfoMapEqual(self, info_map, expected_info):
-    self.assertCountEqual(info_map.keys(), expected_info.keys(),
-                          'info has {} keys but we expected {}'.format(
-                              info_map.keys(), expected_info.keys()))
+    self.assertCountEqual(
+        info_map.keys(), expected_info.keys(),
+        'info has {} keys but we expected {}'.format(info_map.keys(),
+                                                     expected_info.keys()))
     for key, expected_values in expected_info.items():
       if not isinstance(expected_values, list):
         expected_values = [expected_values]

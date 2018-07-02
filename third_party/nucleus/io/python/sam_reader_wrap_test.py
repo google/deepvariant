@@ -33,23 +33,21 @@ from __future__ import division
 from __future__ import print_function
 
 from absl.testing import absltest
+from absl.testing import parameterized
 
 from third_party.nucleus.io import clif_postproc
 from third_party.nucleus.io.python import sam_reader
-from third_party.nucleus.protos import index_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 
 
-class SamReaderTest(absltest.TestCase):
+class SamReaderTest(parameterized.TestCase):
 
   def setUp(self):
     self.bam = test_utils.genomics_core_testdata('test.bam')
     self.options = reads_pb2.SamReaderOptions()
-    self.indexed_options = reads_pb2.SamReaderOptions(
-        index_mode=index_pb2.INDEX_BASED_ON_FILENAME)
 
   def test_bam_iterate(self):
     reader = sam_reader.SamReader.from_file(self.bam, self.options)
@@ -59,7 +57,7 @@ class SamReaderTest(absltest.TestCase):
       self.assertEqual(test_utils.iterable_len(iterable), 106)
 
   def test_bam_query(self):
-    reader = sam_reader.SamReader.from_file(self.bam, self.indexed_options)
+    reader = sam_reader.SamReader.from_file(self.bam, self.options)
     expected = [(ranges.parse_literal('chr20:10,000,000-10,000,100'), 106),
                 (ranges.parse_literal('chr20:10,000,000-10,000,000'), 45)]
     with reader:
@@ -131,7 +129,7 @@ class SamReaderTest(absltest.TestCase):
 
   def test_context_manager(self):
     """Test that we can use context manager to do two queries in sequence."""
-    reader = sam_reader.SamReader.from_file(self.bam, self.indexed_options)
+    reader = sam_reader.SamReader.from_file(self.bam, self.options)
     region = ranges.parse_literal('chr20:10,000,000-10,000,100')
     with reader:
       with reader.query(region) as query_iterable1:
@@ -146,14 +144,8 @@ class SamReaderTest(absltest.TestCase):
                                  'Not found: Could not open missing.bam'):
       sam_reader.SamReader.from_file('missing.bam', self.options)
 
-  def test_from_file_raises_with_missing_index(self):
-    with self.assertRaisesRegexp(ValueError, 'Not found: No index found for'):
-      sam_reader.SamReader.from_file(
-          test_utils.genomics_core_testdata('unindexed.bam'),
-          self.indexed_options)
-
   def test_ops_on_closed_reader_raise(self):
-    reader = sam_reader.SamReader.from_file(self.bam, self.indexed_options)
+    reader = sam_reader.SamReader.from_file(self.bam, self.options)
     with reader:
       pass
     # At this point the reader is closed.
@@ -162,14 +154,16 @@ class SamReaderTest(absltest.TestCase):
     with self.assertRaisesRegexp(ValueError, 'Cannot Query a closed'):
       reader.query(ranges.parse_literal('chr20:10,000,000-10,000,100'))
 
-  def test_query_on_unindexed_reader_raises(self):
-    with sam_reader.SamReader.from_file(self.bam, self.options) as reader:
+  @parameterized.parameters('test.sam', 'unindexed.bam')
+  def test_query_without_index_raises(self, unindexed_file_name):
+    path = test_utils.genomics_core_testdata(unindexed_file_name)
+    window = ranges.parse_literal('chr20:10,000,000-10,000,100')
+    with sam_reader.SamReader.from_file(path, self.options) as reader:
       with self.assertRaisesRegexp(ValueError, 'Cannot query without an index'):
-        reader.query(ranges.parse_literal('chr20:10,000,000-10,000,100'))
+        reader.query(window)
 
   def test_query_raises_with_bad_range(self):
-    with sam_reader.SamReader.from_file(self.bam,
-                                        self.indexed_options) as reader:
+    with sam_reader.SamReader.from_file(self.bam, self.options) as reader:
       with self.assertRaisesRegexp(ValueError, 'Unknown reference_name'):
         reader.query(ranges.parse_literal('XXX:1-10'))
       with self.assertRaisesRegexp(ValueError, 'unknown reference interval'):

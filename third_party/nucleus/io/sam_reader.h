@@ -79,8 +79,9 @@ class SamReader : public Reader {
   // reads_path must point to an existing SAM/BAM formatted file (text SAM or
   // compressed or uncompressed BAM file).
   //
-  // If options.index_mode indicates we should load an index, this constructor
-  // will attempt to load a BAI index from file reads_path + '.bai'.
+  // If the filetype is BAM, this constructor will attempt to load a BAI index
+  // from file reads_path + '.bai'; if the index is not found, attempts to Query
+  // will fail.
   //
   // Returns a StatusOr that is OK if the SamReader could be successfully
   // created or an error code indicating the error that occurred.
@@ -114,8 +115,8 @@ class SamReader : public Reader {
   // The specific parsing, filtering, etc behavior is determined by the options
   // provided during construction.
   //
-  // This function is only available if an index was loaded. If no index was
-  // loaded a non-OK status value will be returned.
+  // If no index was loaded by the constructor a non-OK status value will be
+  // returned.
   //
   // If range isn't a valid interval in this BAM file a non-OK status value will
   // be returned.
