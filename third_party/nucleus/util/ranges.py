@@ -35,6 +35,7 @@ from __future__ import print_function
 import collections
 import re
 
+from absl import logging
 import intervaltree
 import six
 
@@ -49,6 +50,11 @@ _REGION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)-([0-9,]+)$')
 # Regular expressions for matching literal chr:start strings.
 _POSITION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)$')
 
+# Logging frequency when building our rangeset objects, which can take some time
+# to complete. Rather than just pausing for a few minutes, we provide an update
+# logging message every _LOG_EVERY_N_RANGES_IN_RANGESET_INIT records added. See
+# b/110987941 for more information.
+_LOG_EVERY_N_RANGES_IN_RANGESET_INIT = 250000
 
 class RangeSet(object):
   """Fast overlap detection of a genomic position against a database of Ranges.
@@ -63,7 +69,7 @@ class RangeSet(object):
   ranges held by the class.
   """
 
-  def __init__(self, ranges=None, contigs=None):
+  def __init__(self, ranges=None, contigs=None, quiet=False):
     """Creates a RangeSet backed by ranges.
 
     Note that the Range objects in ranges are *not* stored directly here, so
@@ -78,6 +84,9 @@ class RangeSet(object):
         iteration order over contigs (i.e., by contig.pos_in_fasta).  If this
         list is not provided, the iteration order will be determined by the
         alphabetical order of the contig names.
+      quiet: bool; defaults to False: If False, we will emit a logging message
+        every _LOG_EVERY_N_RANGES_IN_RANGESET_INIT records processed while
+        building this intervaltree. Set to True to stop all of the logging.
 
     Raises:
       ValueError: if any range's reference_name does not correspond to any
@@ -100,11 +109,15 @@ class RangeSet(object):
 
     # Add each range to our contig-specific intervaltrees.
     self._by_chr = collections.defaultdict(intervaltree.IntervalTree)
-    for range_ in ranges:
+    for i, range_ in enumerate(ranges):
       if not self._is_valid_contig(range_.reference_name):
         raise ValueError(
             'Range {} is on an unrecognized contig.'.format(range_))
       self._by_chr[range_.reference_name].addi(range_.start, range_.end, None)
+      if not quiet and i > 0 and i % _LOG_EVERY_N_RANGES_IN_RANGESET_INIT == 0:
+        # We do our test directly here on i > 0 so we only see the log messages
+        # if we add at least _LOG_EVERY_N_RANGES_IN_RANGESET_INIT records.
+        logging.info('Adding interval %s to intervaltree', to_literal(range_))
 
     # Merge overlapping / adjacent intervals in each tree.
     for tree in six.itervalues(self._by_chr):
