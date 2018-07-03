@@ -129,11 +129,12 @@ class NativeFastqWriter(genomics_writer.GenomicsWriter):
   files or TFRecord files, based on the output filename's extension.
   """
 
-  def __init__(self, output_path):
+  def __init__(self, output_path, **kwargs):
     """Initializer for NativeFastqWriter.
 
     Args:
       output_path: str. The path to which to write the FASTQ file.
+      **kwargs: optional arguments; presently ignored.
     """
     super(NativeFastqWriter, self).__init__()
 
@@ -150,5 +151,5 @@ class NativeFastqWriter(genomics_writer.GenomicsWriter):
 class FastqWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing FastqRecord protos to FASTQ or TFRecord files."""
 
-  def _native_writer(self, output_path):
-    return NativeFastqWriter(output_path)
+  def _native_writer(self, output_path, **kwargs):
+    return NativeFastqWriter(output_path, **kwargs)
