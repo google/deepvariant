@@ -38,7 +38,7 @@ import os
 
 
 
-from tensorflow import flags
+from absl import flags
 from absl import logging
 import tensorflow as tf
 

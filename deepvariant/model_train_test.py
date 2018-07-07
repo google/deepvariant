@@ -37,7 +37,7 @@ import uuid
 
 
 
-from tensorflow import flags
+from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock

@@ -35,7 +35,7 @@ from __future__ import print_function
 
 import os
 
-from tensorflow import flags
+from absl import flags
 import tensorflow as tf
 from deepvariant import dv_constants
 from deepvariant import modeling

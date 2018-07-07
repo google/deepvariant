@@ -41,7 +41,7 @@ import csv
 import os
 import os.path
 
-from tensorflow import flags
+from absl import flags
 import tensorflow as tf
 
 from third_party.nucleus.io import sam

@@ -43,7 +43,7 @@ from __future__ import print_function
 import itertools
 
 from absl import app
-from tensorflow import flags
+from absl import flags
 from absl import logging
 
 from third_party.nucleus.io import fasta
