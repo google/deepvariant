@@ -42,7 +42,7 @@ from __future__ import print_function
 
 import logging
 
-from tensorflow import flags
+from absl import flags
 
 flags.DEFINE_string('logging_level', 'INFO',
                     'select general logging threshold.')

@@ -75,7 +75,7 @@ import functools
 import inspect
 
 
-from tensorflow import flags
+from absl import flags
 
 from tensorflow.python.platform import flags
 

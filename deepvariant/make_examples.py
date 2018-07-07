@@ -34,7 +34,7 @@ from __future__ import print_function
 
 
 
-from tensorflow import flags
+from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf

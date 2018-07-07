@@ -37,7 +37,7 @@ import time
 
 
 
-from tensorflow import flags
+from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf

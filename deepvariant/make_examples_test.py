@@ -39,7 +39,7 @@ import sys
 
 
 
-from tensorflow import flags
+from absl import flags
 from absl import logging
 from absl.testing import absltest
 from absl.testing import parameterized
