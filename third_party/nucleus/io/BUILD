@@ -790,3 +790,26 @@ py_test(
         "@io_abseil_py//absl/testing:parameterized",
     ],
 )
+
+py_binary(
+    name = "converter",
+    srcs = ["converter.py"],
+    deps = [
+        "//third_party/nucleus/io:io_py",
+        "@io_abseil_py//absl:app",
+        "@io_abseil_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "converter_test",
+    srcs = ["converter_test.py"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":converter",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@io_abseil_py//absl/logging",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
+    ],
+)
