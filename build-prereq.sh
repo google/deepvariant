@@ -87,30 +87,29 @@ fi
 
 note_build_stage "Install bazel"
 
-function update_bazel_linux {
-  BAZEL_VERSION=$1
+function ensure_wanted_bazel_version {
+  local wanted_bazel_version=$1
   rm -rf ~/bazel
   mkdir ~/bazel
 
-  pushd ~/bazel
-  curl -L -O https://github.com/bazelbuild/bazel/releases/download/"${BAZEL_VERSION}"/bazel-"${BAZEL_VERSION}"-installer-linux-x86_64.sh
-  chmod +x bazel-*.sh
-  ./bazel-"${BAZEL_VERSION}"-installer-linux-x86_64.sh --user
-  rm bazel-"${BAZEL_VERSION}"-installer-linux-x86_64.sh
-  popd
+  if
+    v=$(bazel --bazelrc=/dev/null --nomaster_bazelrc version) &&
+    echo "$v" | awk -v b="$wanted_bazel_version" '/Build label/ { exit ($3 != b)}'
+  then
+    echo "Bazel ${wanted_bazel_version} already installed on the machine, not reinstalling"
+  else
+    pushd ~/bazel
+    curl -L -O https://github.com/bazelbuild/bazel/releases/download/"${wanted_bazel_version}"/bazel-"${wanted_bazel_version}"-installer-linux-x86_64.sh
+    chmod +x bazel-*.sh
+    ./bazel-"${wanted_bazel_version}"-installer-linux-x86_64.sh --user
+    rm bazel-"${wanted_bazel_version}"-installer-linux-x86_64.sh
+    popd
 
-  PATH="$HOME/bin:$PATH"
+    PATH="$HOME/bin:$PATH"
+  fi
 }
 
-bazel_ver="0.11.0"
-if
-  v=$(bazel --bazelrc=/dev/null --nomaster_bazelrc version) &&
-  echo "$v" | awk -v b="$bazel_ver" '/Build label/ { exit ($3 != b)}'
-then
-  echo "Bazel $bazel_ver already installed on the machine, not reinstalling"
-else
-  update_bazel_linux "$bazel_ver"
-fi
+ensure_wanted_bazel_version "${DV_BAZEL_VERSION}"
 
 ################################################################################
 # CLIF

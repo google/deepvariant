@@ -54,6 +54,9 @@ export CUDA_TOOLKIT_PATH="/usr/local/cuda"
 export TF_CUDNN_VERSION="6"
 export CUDNN_INSTALL_PATH="/usr/lib/x86_64-linux-gnu"
 
+# The version of bazel we want to build DeepVariant.
+DV_BAZEL_VERSION="0.15.0"
+
 # Path to the public bucket containing DeepVariant-related artifacts.
 export DEEPVARIANT_BUCKET="gs://deepvariant"
 export DV_PACKAGE_BUCKET_PATH="${DEEPVARIANT_BUCKET}/packages"
