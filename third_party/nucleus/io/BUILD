@@ -220,6 +220,8 @@ cc_library(
         ":fasta_reader",
         ":fastq_reader",
         ":fastq_writer",
+        ":gff_reader",
+        ":gff_writer",
         ":hts_path",
         ":hts_verbose",
         ":reader_base",
