@@ -88,7 +88,7 @@ _MAX_SEPARATION_WITHIN_VARIANT_GROUP = 30
 
 # True we will generate enough information into our logs to help debug bad
 # regions.
-_DEBUG_PRINTING_IS_ENABLED = True
+_DEBUG_PRINTING_IS_ENABLED = False
 
 
 class HaplotypeLabeler(variant_labeler.VariantLabeler):
