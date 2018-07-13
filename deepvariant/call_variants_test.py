@@ -148,21 +148,15 @@ class CallVariantsEndToEndTests(
     self.assertCallVariantsEmitsNRecordsForInceptionV3(
         test_utils.test_tmpfile('zero_record_file'), 0)
 
-  @parameterized.parameters((model, shard_inputs, include_debug_info)
-                            for shard_inputs in [False, True]
-                            for model in modeling.production_models()
-                            for include_debug_info in [False, True])
-  @flagsaver.FlagSaver
-  def test_call_end2end(self, model, shard_inputs, include_debug_info):
-    FLAGS.include_debug_info = include_debug_info
-    examples = list(io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
+  def _call_end2end_helper(self, examples_path, model, shard_inputs):
+    examples = list(io_utils.read_tfrecords(examples_path))
 
     if shard_inputs:
       # Create a sharded version of our golden examples.
       source_path = test_utils.test_tmpfile('sharded@{}'.format(3))
       io_utils.write_tfrecords(examples, source_path)
     else:
-      source_path = testdata.GOLDEN_CALLING_EXAMPLES
+      source_path = examples_path
 
     # If we point the test at a headless server, it will often be 2x2,
     # which has 8 replicas.  Otherwise a smaller batch size is fine.
@@ -193,6 +187,50 @@ class CallVariantsEndToEndTests(
     call_variants_outputs = list(
         io_utils.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
 
+    return call_variants_outputs, examples, batch_size, max_batches
+
+  @parameterized.parameters(model for model in modeling.production_models())
+  @flagsaver.FlagSaver
+  def test_call_end2end_with_labels(self, model):
+    FLAGS.debugging_true_label_mode = True
+    (call_variants_outputs, examples,
+     batch_size, max_batches) = self._call_end2end_helper(
+         testdata.GOLDEN_TRAINING_EXAMPLES, model, False)
+    # Check that we have the right number of output protos.
+    self.assertEqual(
+        len(call_variants_outputs), batch_size * max_batches
+        if max_batches else len(examples))
+
+    # Checks that at least some of the `true_label`s are filled.
+    self.assertTrue(
+        any(cvo.debug_info.true_label > 0 for cvo in call_variants_outputs))
+
+  @parameterized.parameters(model for model in modeling.production_models())
+  @flagsaver.FlagSaver
+  def test_call_end2end_no_labels_fails(self, model):
+    FLAGS.debugging_true_label_mode = True
+    if not FLAGS.use_tpu:
+      # On TPUs, I got this error:
+      #
+      # OP_REQUIRES failed at example_parsing_ops.cc:240 :
+      # Invalid argument: Feature: label (data type: int64) is required but
+      # could not be found.
+      #
+      # which cannot be caught by assertRaises.
+      with self.assertRaises(tf.errors.OpError):
+        self._call_end2end_helper(testdata.GOLDEN_CALLING_EXAMPLES, model,
+                                  False)
+
+  @parameterized.parameters((model, shard_inputs, include_debug_info)
+                            for shard_inputs in [False, True]
+                            for model in modeling.production_models()
+                            for include_debug_info in [False, True])
+  @flagsaver.FlagSaver
+  def test_call_end2end(self, model, shard_inputs, include_debug_info):
+    FLAGS.include_debug_info = include_debug_info
+    (call_variants_outputs, examples,
+     batch_size, max_batches) = self._call_end2end_helper(
+         testdata.GOLDEN_CALLING_EXAMPLES, model, shard_inputs)
     # Check that we have the right number of output protos.
     self.assertEqual(
         len(call_variants_outputs), batch_size * max_batches

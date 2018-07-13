@@ -86,7 +86,8 @@ class DeepVariantInput(object):
       initial_shuffle_buffer_size=_DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS,
       prefetch_dataset_buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
       sloppy=True,
-      list_files_shuffle=True):
+      list_files_shuffle=True,
+      debugging_true_label_mode=False):
     """Create an DeepVariantInput object, usable as an `input_fn`.
 
     Args:
@@ -112,10 +113,11 @@ class DeepVariantInput(object):
         in bytes.  Default is 16 * 1000 * 1000.
       sloppy: boolean, allow parallel_interleave to be sloppy.  Default True.
       list_files_shuffle: boolean, allow list_files to shuffle.  Default True.
-
+      debugging_true_label_mode: boolean. If true, the input examples are
+                                 created with "training" mode. We'll parse the
+                                 'label' field even if the `mode` is PREDICT.
     Raises:
-      ValueError: if `num_examples` not provided, in a context requiring
-      it.
+      ValueError: if `num_examples` not provided, in a context requiring it.
     """
     self.mode = mode
     self.input_file_spec = input_file_spec
@@ -131,8 +133,10 @@ class DeepVariantInput(object):
     self.shuffle_buffer_size = shuffle_buffer_size
     self.initial_shuffle_buffer_size = initial_shuffle_buffer_size
     self.prefetch_dataset_buffer_size = prefetch_dataset_buffer_size
-
-    self.feature_extraction_spec = self.features_extraction_spec_for_mode(mode)
+    self.debugging_true_label_mode = debugging_true_label_mode
+    self.feature_extraction_spec = self.features_extraction_spec_for_mode(
+        mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL) or
+        debugging_true_label_mode)
 
     if num_examples is None and mode != tf.estimator.ModeKeys.PREDICT:
       raise ValueError('num_examples argument required for DeepVariantInput'
@@ -145,14 +149,14 @@ class DeepVariantInput(object):
     self.input_files = tf.gfile.Glob(
         io_utils.NormalizeToShardedFilePattern(self.input_file_spec))
 
-  def features_extraction_spec_for_mode(self, mode):
-    """Returns a dict describing features from a TF.example for given mode."""
+  def features_extraction_spec_for_mode(self, include_label_and_locus):
+    """Returns a dict describing features from a TF.example."""
     spec = {
         'image/encoded': tf.FixedLenFeature((), tf.string),
         'variant/encoded': tf.FixedLenFeature((), tf.string),
         'alt_allele_indices/encoded': tf.FixedLenFeature((), tf.string),
     }
-    if mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL):
+    if include_label_and_locus:
       # N.B. int32 fails here on TPU.
       spec['label'] = tf.FixedLenFeature((), tf.int64)
       spec['locus'] = tf.FixedLenFeature((), tf.string)
@@ -167,7 +171,7 @@ class DeepVariantInput(object):
     Args:
       tf_example: a serialized tf.Example for a DeepVariant "pileup".
     Returns:
-      If mode is EVAL or TRAIN,
+      If (mode is EVAL or TRAIN) or debugging_true_label_mode:
         (features, label) ...
       If mode is PREDICT,
         features ...
@@ -198,14 +202,18 @@ class DeepVariantInput(object):
           'alt_allele_indices': alt_allele_indices,
       }
 
-      if self.mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL):
+      if (self.mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL)
+          or self.debugging_true_label_mode):
         if self.use_tpu:
           features['locus'] = tf_utils.string_to_int_tensor(parsed['locus'])
         else:
           features['locus'] = parsed['locus']
 
-        label = parsed['label']
-        return features, label
+        if self.mode in (tf.estimator.ModeKeys.TRAIN,
+                         tf.estimator.ModeKeys.EVAL):
+          label = parsed['label']
+          return features, label
+        features['label'] = parsed['label']
 
       # For predict model, label is not present. So, returns features only.
       return features
@@ -341,7 +349,8 @@ def get_input_fn_from_filespec(input_file_spec,
                                name=None,
                                tensor_shape=None,
                                use_tpu=False,
-                               input_read_threads=_DEFAULT_INPUT_READ_THREADS):
+                               input_read_threads=_DEFAULT_INPUT_READ_THREADS,
+                               debugging_true_label_mode=False):
   """Create a DeepVariantInput function object from a file spec.
 
   Args:
@@ -352,6 +361,9 @@ def get_input_fn_from_filespec(input_file_spec,
     tensor_shape: None, or list of int [height, width, channel] for testing.
     use_tpu: use the tpu code path in the input_fn.
     input_read_threads: number of threads reading the input files.
+    debugging_true_label_mode: boolean. If true, the input examples are created
+                               with "training" mode. We'll parse the 'label'
+                               field even if the `mode` is PREDICT.
 
   Returns:
     A DeepVariantInput object usable as an input_fn.
@@ -365,7 +377,7 @@ def get_input_fn_from_filespec(input_file_spec,
       name=name,
       use_tpu=use_tpu,
       input_read_threads=input_read_threads,
-  )
+      debugging_true_label_mode=debugging_true_label_mode)
 
 
 # Return the stream of batched images from a dataset.

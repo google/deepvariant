@@ -293,6 +293,7 @@ message CallVariantsOutput {
     bool has_insertion = 2;
     bool has_deletion = 3;
     bool is_snp = 4;
+    int32 true_label = 5;
   }
   DebugInfo debug_info = 4;
 }
