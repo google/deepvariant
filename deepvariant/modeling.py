@@ -676,6 +676,10 @@ class DeepVariantSlimModel(DeepVariantModel):
         'variant': features['variant'],
         'alt_allele_indices': features['alt_allele_indices'],
     }
+    if 'label' in features:
+      predictions['label'] = features['label']
+    if 'locus' in features:
+      predictions['locus'] = features['locus']
     if self.use_tpu:
       return tpu_estimator.TPUEstimatorSpec(mode=mode, predictions=predictions)
     else:

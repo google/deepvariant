@@ -90,6 +90,13 @@ flags.DEFINE_string('model_name', 'inception_v3',
                     'The name of the model architecture of --checkpoint.')
 flags.DEFINE_boolean('include_debug_info', False,
                      'If true, include extra debug info in the output.')
+flags.DEFINE_boolean(
+    'debugging_true_label_mode', False,
+    'If true, read the true labels from examples and add to '
+    'output. Note that the program will crash if the input '
+    'examples do not have the label field. '
+    'When true, this will also fill everything when '
+    '--include_debug_info is set to true.')
 flags.DEFINE_string(
     'execution_hardware', 'auto',
     'When in cpu mode, call_variants will not place any ops on the GPU, even '
@@ -162,7 +169,9 @@ def prepare_inputs(source_path, use_tpu=False, num_readers=None):
       input_file_spec=source_path,
       mode=tf.estimator.ModeKeys.PREDICT,
       use_tpu=use_tpu,
-      input_read_threads=num_readers)
+      input_read_threads=num_readers,
+      debugging_true_label_mode=FLAGS.debugging_true_label_mode,
+  )
 
 
 def round_gls(gls, precision=None):
@@ -227,24 +236,30 @@ def write_variant_call(writer, prediction, use_tpu):
   rounded_gls = round_gls(prediction['probabilities'], precision=_GL_PRECISION)
 
   # Write it out.
+  true_labels = prediction['label'] if FLAGS.debugging_true_label_mode else None
   cvo = _create_cvo_proto(encoded_variant, rounded_gls,
-                          encoded_alt_allele_indices)
+                          encoded_alt_allele_indices, true_labels)
   return writer.write(cvo.SerializeToString())
 
 
-def _create_cvo_proto(encoded_variant, gls, encoded_alt_allele_indices):
+def _create_cvo_proto(encoded_variant,
+                      gls,
+                      encoded_alt_allele_indices,
+                      true_labels=None):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
   alt_allele_indices = (
       deepvariant_pb2.CallVariantsOutput.AltAlleleIndices.FromString(
           encoded_alt_allele_indices))
   debug_info = None
-  if FLAGS.include_debug_info:
+  if FLAGS.include_debug_info or FLAGS.debugging_true_label_mode:
     debug_info = deepvariant_pb2.CallVariantsOutput.DebugInfo(
         has_insertion=variant_utils.has_insertion(variant),
         has_deletion=variant_utils.has_deletion(variant),
         is_snp=variant_utils.is_snp(variant),
-        predicted_label=np.argmax(gls))
+        predicted_label=np.argmax(gls),
+        true_label=true_labels,
+    )
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
       alt_allele_indices=alt_allele_indices,
