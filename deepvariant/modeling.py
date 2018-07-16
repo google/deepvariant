@@ -103,6 +103,60 @@ class UnsupportedImageDimensions(Exception):
   """Exception indicating the image dimensions aren't supported by our model."""
 
 
+def binarize(labels, target_class):
+  """Binarize labels and predictions.
+
+  The labels that are not equal to target_class parameter are set to zero.
+
+  Args:
+    labels: the ground-truth labels for the examples.
+    target_class: index of the class that is left as non-zero.
+
+  Returns:
+    Tensor of the same shape as labels.
+  """
+  labels_binary = tf.where(
+      tf.equal(labels, tf.constant(target_class, dtype=tf.int64)),
+      tf.zeros_like(labels), labels)
+  return labels_binary
+
+
+def get_class_recall(labels, predicted_class, target_class):
+  """Compute recall from labels and predicted_class for target_class.
+
+  Examples with label target_class are positives. Other classes are negatives.
+
+  Args:
+    labels: the ground-truth labels for the examples.
+    predicted_class: the predicted labels for the examples.
+    target_class: index of the class that is left as non-zero.
+
+  Returns:
+    Tensor containing the recall value.
+  """
+  labels_binary = binarize(labels, target_class)
+  predicted_class_binary = binarize(predicted_class, target_class)
+  return tf.metrics.recall(labels_binary, predicted_class_binary)
+
+
+def get_class_precision(labels, predicted_class, target_class):
+  """Compute precision from labels and predicted_class for target_class.
+
+  Examples with label target_class are positives. Other classes are negatives.
+
+  Args:
+    labels: the ground-truth labels for the examples.
+    predicted_class: the predicted labels for the examples.
+    target_class: index of the class that is left as non-zero.
+
+  Returns:
+    Tensor containing the precision value.
+  """
+  labels_binary = binarize(labels, target_class)
+  predicted_class_binary = binarize(predicted_class, target_class)
+  return tf.metrics.precision(labels_binary, predicted_class_binary)
+
+
 # NB. This includes only a subset of our usual metrics.
 # We'll add the rest back in a subsequent change.
 def eval_metric_fn(labels, predictions, unused_encoded_variants):
@@ -117,27 +171,23 @@ def eval_metric_fn(labels, predictions, unused_encoded_variants):
     a dictionary of string name to metric.
   """
 
-  return {
-      'Accuracy/All':
-          tf.metrics.accuracy(labels, tf.argmax(input=predictions, axis=1)),
-      'Precision/All':
-          tf.metrics.precision(labels, tf.argmax(input=predictions, axis=1)),
-      'Recall/All':
-          tf.metrics.recall(labels, tf.argmax(input=predictions, axis=1)),
-      'FPs/All':
-          tf.metrics.false_positives(labels, tf.argmax(
-              input=predictions, axis=1)),
-      'FNs/All':
-          tf.metrics.false_negatives(labels, tf.argmax(
-              input=predictions, axis=1)),
-      'TPs/All':
-          tf.metrics.true_positives(labels, tf.argmax(
-              input=predictions, axis=1)),
-      'TNs/All':
-          tf.metrics.true_negatives(labels, tf.argmax(
-              input=predictions, axis=1)),
+  predicted_class = tf.argmax(input=predictions, axis=1)
+
+  metrics = {
+      'Accuracy/All': tf.metrics.accuracy(labels, predicted_class),
+      'Precision/All': tf.metrics.precision(labels, predicted_class),
+      'Recall/All': tf.metrics.recall(labels, predicted_class),
+      'FPs/All': tf.metrics.false_positives(labels, predicted_class),
+      'FNs/All': tf.metrics.false_negatives(labels, predicted_class),
+      'TPs/All': tf.metrics.true_positives(labels, predicted_class),
+      'TNs/All': tf.metrics.true_negatives(labels, predicted_class),
+      'Recall/Class1': get_class_recall(labels, predicted_class, 1),
+      'Recall/Class2': get_class_recall(labels, predicted_class, 2),
+      'Precision/Class1': get_class_precision(labels, predicted_class, 1),
+      'Precision/Class2': get_class_precision(labels, predicted_class, 2),
   }
 
+  return metrics
 
 # The following two classes support loading exponential moving averages into
 # their corresponding variables when a checkpoint is loaded. They're called
