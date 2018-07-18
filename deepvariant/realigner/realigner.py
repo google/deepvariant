@@ -55,7 +55,7 @@ from deepvariant.realigner.python import fast_pass_aligner
 from deepvariant.vendor import timer
 
 flags.DEFINE_integer(
-    'ws_min_num_supporting_reads', 3,
+    'ws_min_num_supporting_reads', 2,
     'Minimum number of supporting reads to call a reference position for local '
     'assembly.')
 flags.DEFINE_integer(
@@ -71,7 +71,7 @@ flags.DEFINE_integer(
     'Minimum base quality to consider in calling a reference position for '
     'local assembly.')
 flags.DEFINE_integer(
-    'ws_min_windows_distance', 70,
+    'ws_min_windows_distance', 80,
     'Minimum distance between candidate windows for local assembly.')
 flags.DEFINE_integer(
     'ws_max_window_size', 1000,
@@ -84,7 +84,7 @@ flags.DEFINE_integer(
     'for assembling an region even if they are not contained by the region.')
 flags.DEFINE_integer('dbg_min_k', 10, 'Initial k-mer size to build the graph.')
 flags.DEFINE_integer(
-    'dbg_max_k', 100,
+    'dbg_max_k', 101,
     'Maximum k-mer size. Larger k-mer size is used to resolve graph cycles.')
 flags.DEFINE_integer('dbg_step_k', 1,
                      'Increment size for k to try in resolving graph cycles.')
@@ -92,7 +92,7 @@ flags.DEFINE_integer(
     'dbg_min_mapq', 14,
     'Minimum read alignment quality to consider in building the graph.')
 flags.DEFINE_integer(
-    'dbg_min_base_quality', 17,
+    'dbg_min_base_quality', 15,
     'Minimum base quality in a k-mer sequence to consider in building the '
     'graph.')
 flags.DEFINE_integer('dbg_min_edge_weight', 2,
@@ -109,7 +109,7 @@ flags.DEFINE_integer(
     'aln_gap_open', 8, 'Gap open score (expected to be a non-negative score). '
     'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
 flags.DEFINE_integer(
-    'aln_gap_extend', 1,
+    'aln_gap_extend', 2,
     'Gap extend score (expected to be a non-negative score). '
     'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
 flags.DEFINE_integer('aln_k', 23, 'k-mer size used to index target sequence.')
@@ -132,7 +132,7 @@ flags.DEFINE_integer(
     'Num of maximum allowed mismatches for quick read to '
     'haplotype alignment.')
 flags.DEFINE_float(
-    'realignment_similarity_threshold', 0.0,
+    'realignment_similarity_threshold', 0.16934,
     'Similarity threshold used in realigner in Smith-Waterman'
     'alignment.')
 flags.DEFINE_integer('kmer_size', 32,

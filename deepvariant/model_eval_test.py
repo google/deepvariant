@@ -146,32 +146,35 @@ class ModelEvalTest(
     # Check that our metrics are what we expect them to be.
     # See b/62864044 for details on how to compute these counts:
     # Counts of labels in our golden dataset:
-    #  2 0
+    #  1 0
     # 12 1
     # 35 2
     expected_values_for_all_exact = {
         # We have 12 correct calls [there are 12 variants with a label of 1] and
-        # 2 label 0 + 35 with a label of 2, so we have an accuracy of 12 / 49,
-        # which is 0.24.
-        'Accuracy/All': 0.24,
+        # 1 label 0 + 35 with a label of 2, so we have an accuracy of 12 / 48,
+        # which is 0.25.
+        'Accuracy/All': 0.25,
         # We don't have any FNs because we call everything het.
         'FNs/All': 0,
         # Two of our labels are 0, which we call het, giving us 2 FP.
-        'FPs/All': 2.0,
+        'FPs/All': 1.0,
         # We call everything as het, so the recall has to be 1.
         'Recall/All': 1.0,
         # redacted
         # # We don't call anything but hets, so TNs has to be 0.
         # 'TNs/All': 0,
-        # We find 48 positives, so this has to be 48.
-        'TPs/All': 48,
+        # We find 47 positives, so this has to be 47.
+        'TPs/All': 47,
     }
+    for key, expected_value in expected_values_for_all_exact.iteritems():
+      print(str(key) + '=' + str(metrics[0][key]))
+
     for key, expected_value in expected_values_for_all_exact.iteritems():
       self.assertEqual(metrics[0][key], expected_value)
 
     expected_values_for_all_close = {
-        # We called 47 / 49 correctly ~ 0.96
-        'Precision/All': 0.96,
+        # We called 47 / 48 correctly ~ 0.979167
+        'Precision/All': 0.979167,
     }
     for key, expected_value in expected_values_for_all_close.iteritems():
       self.assertAlmostEqual(metrics[0][key], expected_value, places=6)
