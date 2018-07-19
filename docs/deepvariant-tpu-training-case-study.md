@@ -26,25 +26,11 @@ with no pipeline optimization) took 4 hours.
 
 ## Request a machine
 
-Here is an example where you can start a machine with 64 cores on Google Cloud
-Platform.
+Any sufficiently capable machine will do. For this case study, we used a 64-core
+non-preemptible instance with 128GiB and no GPU.
 
-```shell
-gcloud beta compute instances create "${USER}-training-casestudy"  \
---scopes "compute-rw,storage-full,cloud-platform" \
---image-family "ubuntu-1604-lts" \
---image-project "ubuntu-os-cloud" \
---machine-type "custom-64-131072" \
---boot-disk-size "300" \
---boot-disk-type "pd-ssd" \
---zone "us-west1-b"
-```
-
-Once the machine is ready, ssh into it:
-
-```
-gcloud compute ssh "${USER}-training-casestudy" --zone "us-west1-b"
-```
+If you need an example, see
+[this section](deepvariant-case-study#request-a-machine).
 
 Set the variables:
 
@@ -56,8 +42,7 @@ OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET}/customized_training"
 TRAINING_DIR="${OUTPUT_BUCKET}/training_dir"
 
 BASE="${HOME}/training-case-study"
-# redacted
-DATA_BUCKET=YOUR_DATA_BUCKET
+DATA_BUCKET=gs://deepvariant/training-case-study/BGISEQ-HG001
 
 INPUT_DIR="${BASE}/input"
 # redacted
@@ -82,18 +67,23 @@ MODEL_CL="191676894"
 # Note that we don't specify the CL number for the binary, only the bin version.
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wgs_standard"
 MODELS_DIR="${INPUT_DIR}/models"
-PRETRAINED_WGS_MODEL="${MODELS_DIR}/model.ckpt"
+GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
 ```
 
-Create directories:
+## Download binaries, models, and data
+
+### redacted
+
+### Create directories:
 
 ```
 mkdir -p "${OUTPUT_DIR}"
 mkdir -p "${DATA_DIR}"
 mkdir -p "${LOG_DIR}"
+mkdir -p "${MODELS_DIR}"
 ```
 
-Copy data
+### Copy data
 
 ```
 gsutil -m cp ${DATA_BUCKET}/BGISEQ_PE100_NA12878.sorted.bam* "${DATA_DIR}"
@@ -103,7 +93,15 @@ gsutil -m cp -r "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Io
 gunzip "${DATA_DIR}/ucsc_hg19.fa.gz"
 ```
 
-Download extra packages
+### Copy the model files to your local disk.
+
+```
+time gsutil -m cp -r "${MODEL_BUCKET}/*" "${MODELS_DIR}"
+```
+
+This step should be really fast. It took us about 5 seconds.
+
+### Download extra packages
 
 ```
 sudo apt-get -y update
@@ -148,7 +146,7 @@ Glossary](https://developers.google.com/machine-learning/crash-course/glossary).
 ) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
 ```
 
-This took 136m23.478s. We will want to shuffle this on Dataflow later, so I will
+This took 123m19.384s. We will want to shuffle this on Dataflow later, so I will
 copy it to GCS bucket first:
 
 ```
@@ -174,7 +172,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00064.gz \
 ) >"${LOG_DIR}/validation_set.with_label.make_examples.log" 2>&1
 ```
 
-This took: 8m35.116s
+This took: 8m50.122s
 
 Validation set is small here. We will just shuffle locally later, so no need to
 copy to out GCS bucket.
@@ -195,7 +193,7 @@ copy to out GCS bucket.
 ) >"${LOG_DIR}/test_set.no_label.make_examples.log" 2>&1
 ```
 
-This took: 2m28.439s
+This took: 2m30.125s
 
 We don't need to shuffle test set. It will eventually be used in the final
 evaluation evaluated with `hap.py` on the whole set.
@@ -243,7 +241,7 @@ To activate a virtual environment in Bash, run:
 Once this is activated, install Beam:
 
 ```
-pip install --user apache-beam
+pip install apache-beam
 ```
 
 Validation set is small, so we will just shuffle locally using DirectRunner:
@@ -267,7 +265,7 @@ Output is in
 
 Data config file is in `${OUTPUT_DIR}/validation_set.dataset_config.pbtxt`.
 
-This took 9m53.478s.
+This took 12m28.298s.
 
 For the training set, it is too large to be running with DirectRunner on this
 instance, so we use the DataflowRunner. Before that, please make sure you enable
@@ -277,7 +275,7 @@ http://console.cloud.google.com/flows/enableapi?apiid=dataflow.
 Then, install Dataflow:
 
 ```
-pip install --user google-cloud-dataflow
+pip install google-cloud-dataflow
 ```
 
 Shuffle using Dataflow.
@@ -311,7 +309,7 @@ In order to have the best performance, you might need extra resources such as
 machines or IPs within a region. That will not be in the scope of this case
 study here.
 
-My run took about 42min on Dataflow. The output path can be found in the
+My run took about 36min on Dataflow. The output path can be found in the
 dataset_config file by:
 
 ```
@@ -329,11 +327,11 @@ In the output, the `tfrecord_path` should be valid paths in gs://.
 
 name: "HG001"
 tfrecord_path: "YOUR_GCS_BUCKET/customized_training/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-num_examples: 3866114
+num_examples: 3864775
 ```
 
-In my run, it wrote to 373 shards:
-`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00373.tfrecord.gz`
+In my run, it wrote to 370 shards:
+`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00370.tfrecord.gz`
 
 ### Start a TPU
 
@@ -356,7 +354,7 @@ Then, I ran the following command to start a TPU:
 ```
 time gcloud beta compute tpus create ${USER}-demo-tpu \
   --range=10.240.2.0/29 \
-  --version=nightly \
+  --version=1.9 \
   --zone=us-central1-f
 ```
 
@@ -385,14 +383,15 @@ export TPU_IP="10.240.2.2"
 ### Start `model_train` and `model_eval`
 
 ```
-python ${BIN_DIR}/model_train.zip \
+( time python ${BIN_DIR}/model_train.zip \
   --use_tpu \
   --master="grpc://${TPU_IP}:8470" \
   --dataset_config_pbtxt="${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt" \
   --train_dir="${TRAINING_DIR}" \
   --model_name="inception_v3" \
   --number_of_steps=1000000 \
-  --start_from_checkpoint="${PRETRAINED_WGS_MODEL}" > "${LOG_DIR}/train.log" 2>&1 &
+  --start_from_checkpoint="${GCS_PRETRAINED_WGS_MODEL}" \
+) > "${LOG_DIR}/train.log" 2>&1 &
 ```
 
 Pointers for common issues or things you can tune:
@@ -412,6 +411,13 @@ Pointers for common issues or things you can tune:
     The tradeoff is the space needed on your GCS buckets to keep these
     checkpoints around.
 
+1.  If you have already run this command before, you might see this in your log:
+    "Skipping training since max_steps has already saved."
+
+    This is because the training checkpoints from previous runs are still in
+    `${TRAINING_DIR}`. If you're starting a new run, point that variable to a
+    new directory, or clean up previous training results.
+
 At the same time, start `model_eval` on CPUs:
 
 ```
@@ -429,7 +435,7 @@ accurate they are on the validation set.
 When I ran this case study, running `model_eval` on CPUs is fast enough because
 `model_train` didn't save checkpoints too frequently.
 
-In my run, `model_train` took < 10hr to finish 1M steps. Note that `model_eval`
+In my run, `model_train` took < 11hr to finish 1M steps. Note that `model_eval`
 will not stop on its own, so I had to kill the process after training is no
 longer producing more checkpoints.
 
@@ -507,7 +513,7 @@ python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
 The top line I got was this:
 
 ```
-27600   96798.0 0.998930746463
+308400  96761.0 0.998816494654
 ```
 
 This means the model checkpoint that performs the best on the validation set is
@@ -528,7 +534,7 @@ run on CPUs:
 ( time python ${BIN_DIR}/call_variants.zip \
     --outfile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
     --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
-    --checkpoint "${TRAINING_DIR}/model.ckpt-27600" \
+    --checkpoint "${TRAINING_DIR}/model.ckpt-308400" \
 ) >"${LOG_DIR}/test_set.call_variants.log" 2>&1 &
 ```
 
