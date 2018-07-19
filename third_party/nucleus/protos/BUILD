@@ -8,39 +8,111 @@ package(default_visibility = [
 
 licenses(["notice"])
 
+exports_files(["LICENSE"])
+
 # ----------------------------------------------------------------------
-# Vendor'ed ListValue from google/protobuf/struct.proto
+# proto_library's
 # ----------------------------------------------------------------------
+
+proto_library(
+    name = "bed_proto",
+    srcs = [
+        "bed.proto",
+    ],
+)
+
+proto_library(
+    name = "cigar_proto",
+    srcs = ["cigar.proto"],
+)
+
+proto_library(
+    name = "fasta_proto",
+    srcs = [
+        "fasta.proto",
+    ],
+    deps = [
+        ":range_proto",  # NO COPYBARA
+        ":reference_proto",  # NO COPYBARA
+    ],
+)
+
+proto_library(
+    name = "fastq_proto",
+    srcs = [
+        "fastq.proto",
+    ],
+)
+
+proto_library(
+    name = "gff_proto",
+    srcs = [
+        "gff.proto",
+    ],
+    deps = [":range_proto"],  # NO COPYBARA
+)
+
+proto_library(
+    name = "position_proto",
+    srcs = ["position.proto"],
+)
+
+proto_library(
+    name = "range_proto",
+    srcs = ["range.proto"],
+)
+
+proto_library(
+    name = "reads_proto",
+    srcs = [
+        "reads.proto",
+    ],
+    deps = [
+        ":cigar_proto",  # NO COPYBARA
+        ":position_proto",  # NO COPYBARA
+        ":reference_proto",  # NO COPYBARA
+        ":struct_proto",  # NO COPYBARA
+    ],
+)
+
+proto_library(
+    name = "reference_proto",
+    srcs = [
+        "reference.proto",
+    ],
+    deps = [
+        ":range_proto",  # NO COPYBARA
+    ],
+)
 
 proto_library(
     name = "struct_proto",
     srcs = ["struct.proto"],
 )
 
+proto_library(
+    name = "variants_proto",
+    srcs = [
+        "variants.proto",
+    ],
+    deps = [
+        ":reference_proto",  # NO COPYBARA
+        ":struct_proto",  # NO COPYBARA
+    ],
+)
+
+# ----------------------------------------------------------------------
+# cc_proto_library's
+# ----------------------------------------------------------------------
+
+# redacted
+# boilerplate in these cc_proto_library rules and in this file in general.
+
 cc_proto_library(
-    name = "struct_cc_pb2",
-    srcs = ["struct.proto"],
+    name = "bed_cc_pb2",
+    srcs = ["bed.proto"],
     default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
-)
-
-py_proto_library(
-    name = "struct_py_pb2",
-    srcs = ["struct.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-)
-
-# DO we need a pyclif rule?
-
-# ----------------------------------------------------------------------
-# Cigar
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "cigar_proto",
-    srcs = ["cigar.proto"],
 )
 
 cc_proto_library(
@@ -50,26 +122,30 @@ cc_proto_library(
     protoc = "@protobuf_archive//:protoc",
 )
 
-py_proto_library(
-    name = "cigar_py_pb2",
-    srcs = ["cigar.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
+cc_proto_library(
+    name = "fasta_cc_pb2",
+    srcs = ["fasta.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    deps = [
+        ":range_cc_pb2",
+        ":reference_cc_pb2",
+    ],
 )
 
-pyclif_proto_library(
-    name = "cigar_pyclif",
-    proto_lib = ":cigar_proto",  # NO COPYBARA
+cc_proto_library(
+    name = "fastq_cc_pb2",
+    srcs = ["fastq.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
 )
 
-# ----------------------------------------------------------------------
-# Position
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "position_proto",
-    srcs = ["position.proto"],
+cc_proto_library(
+    name = "gff_cc_pb2",
+    srcs = ["gff.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [":range_cc_pb2"],
 )
 
 cc_proto_library(
@@ -79,104 +155,11 @@ cc_proto_library(
     protoc = "@protobuf_archive//:protoc",
 )
 
-py_proto_library(
-    name = "position_py_pb2",
-    srcs = ["position.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-)
-
-pyclif_proto_library(
-    name = "position_pyclif",
-    proto_lib = ":position_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# Range
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "range_proto",
-    srcs = ["range.proto"],
-)
-
-# redacted
-# redacted
 cc_proto_library(
     name = "range_cc_pb2",
     srcs = ["range.proto"],
     default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
-)
-
-py_proto_library(
-    name = "range_py_pb2",
-    srcs = ["range.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-)
-
-pyclif_proto_library(
-    name = "range_pyclif",
-    proto_lib = ":range_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# Variants (VCF)
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "variants_proto",
-    srcs = ["variants.proto"],
-    deps = [
-        ":reference_proto",  # NO COPYBARA
-        ":struct_proto",  # NO COPYBARA
-    ],
-)
-
-cc_proto_library(
-    name = "variants_cc_pb2",
-    srcs = ["variants.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
-    deps = [
-        ":reference_cc_pb2",
-        ":struct_cc_pb2",
-    ],
-)
-
-py_proto_library(
-    name = "variants_py_pb2",
-    srcs = ["variants.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-    deps = [
-        ":reference_py_pb2",
-        ":struct_py_pb2",
-    ],
-)
-
-pyclif_proto_library(
-    name = "variants_pyclif",
-    proto_lib = ":variants_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# Reads (SAM/BAM)
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "reads_proto",
-    srcs = ["reads.proto"],
-    deps = [
-        ":cigar_proto",  # NO COPYBARA
-        ":position_proto",  # NO COPYBARA
-        ":reference_proto",  # NO COPYBARA
-        ":struct_proto",  # NO COPYBARA
-    ],
 )
 
 cc_proto_library(
@@ -190,6 +173,134 @@ cc_proto_library(
         ":reference_cc_pb2",
         ":struct_cc_pb2",
     ],
+)
+
+cc_proto_library(
+    name = "reference_cc_pb2",
+    srcs = ["reference.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [
+        ":range_cc_pb2",
+    ],
+)
+
+cc_proto_library(
+    name = "struct_cc_pb2",
+    srcs = ["struct.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+)
+
+cc_proto_library(
+    name = "variants_cc_pb2",
+    srcs = ["variants.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [
+        ":reference_cc_pb2",
+        ":struct_cc_pb2",
+    ],
+)
+
+# ----------------------------------------------------------------------
+# fast_proto
+# ----------------------------------------------------------------------
+
+cc_binary(
+    name = "load_descriptors.so",
+    srcs = ["load_descriptors.cc"],
+    linkshared = 1,
+    linkstatic = 0,
+    deps = [
+        ":bed_cc_pb2",
+        ":cigar_cc_pb2",
+        ":fasta_cc_pb2",
+        ":fastq_cc_pb2",
+        ":gff_cc_pb2",
+        ":position_cc_pb2",
+        ":range_cc_pb2",
+        ":reads_cc_pb2",
+        ":reference_cc_pb2",
+        ":struct_cc_pb2",
+        ":variants_cc_pb2",
+        "@local_config_python//:python_headers",
+    ],
+)
+
+# fast_protos is a single target py_libraries can depend on to make sure
+# they get the fastest Python protocol buffer implementation.
+py_library(
+    name = "fast_protos",
+    srcs = [],
+    data = [":load_descriptors.so"],
+)
+
+# ----------------------------------------------------------------------
+# py_proto_library's
+# ----------------------------------------------------------------------
+
+py_proto_library(
+    name = "bed_py_pb2",
+    srcs = ["bed.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [],
+)
+
+py_proto_library(
+    name = "cigar_py_pb2",
+    srcs = ["cigar.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+)
+
+py_proto_library(
+    name = "gff_py_pb2",
+    srcs = ["gff.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [":range_py_pb2"],
+)
+
+py_proto_library(
+    name = "fasta_py_pb2",
+    srcs = ["fasta.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":range_py_pb2",
+        ":reference_py_pb2",
+    ],
+)
+
+py_proto_library(
+    name = "fastq_py_pb2",
+    srcs = ["fastq.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [],
+)
+
+py_proto_library(
+    name = "position_py_pb2",
+    srcs = ["position.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+)
+
+py_proto_library(
+    name = "range_py_pb2",
+    srcs = ["range.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
 )
 
 py_proto_library(
@@ -206,33 +317,6 @@ py_proto_library(
     ],
 )
 
-pyclif_proto_library(
-    name = "reads_pyclif",
-    proto_lib = ":reads_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# Reference
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "reference_proto",
-    srcs = ["reference.proto"],
-    deps = [
-        ":range_proto",
-    ],
-)
-
-cc_proto_library(
-    name = "reference_cc_pb2",
-    srcs = ["reference.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
-    deps = [
-        ":range_cc_pb2",
-    ],
-)
-
 py_proto_library(
     name = "reference_py_pb2",
     srcs = ["reference.proto"],
@@ -244,45 +328,38 @@ py_proto_library(
     ],
 )
 
-pyclif_proto_library(
-    name = "reference_pyclif",
-    proto_lib = ":reference_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# FASTA records
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "fasta_proto",
-    srcs = ["fasta.proto"],
-    deps = [
-        ":range_proto",
-        ":reference_proto",
-    ],
-)
-
-cc_proto_library(
-    name = "fasta_cc_pb2",
-    srcs = ["fasta.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
+py_proto_library(
+    name = "struct_py_pb2",
+    srcs = ["struct.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    deps = [
-        ":range_cc_pb2",
-        ":reference_cc_pb2",
-    ],
+    srcs_version = "PY2AND3",
 )
 
 py_proto_library(
-    name = "fasta_py_pb2",
-    srcs = ["fasta.proto"],
+    name = "variants_py_pb2",
+    srcs = ["variants.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
     srcs_version = "PY2AND3",
     deps = [
-        ":range_py_pb2",
         ":reference_py_pb2",
+        ":struct_py_pb2",
     ],
+)
+
+# ----------------------------------------------------------------------
+# pyclif targets
+# ----------------------------------------------------------------------
+
+pyclif_proto_library(
+    name = "bed_pyclif",
+    proto_lib = ":bed_proto",  # NO COPYBARA
+)
+
+pyclif_proto_library(
+    name = "gff_pyclif",
+    proto_lib = ":gff_proto",  # NO COPYBARA
 )
 
 pyclif_proto_library(
@@ -290,98 +367,32 @@ pyclif_proto_library(
     proto_lib = ":fasta_proto",  # NO COPYBARA
 )
 
-# ----------------------------------------------------------------------
-# FASTQ records
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "fastq_proto",
-    srcs = ["fastq.proto"],
-    deps = [],
-)
-
-cc_proto_library(
-    name = "fastq_cc_pb2",
-    srcs = ["fastq.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
-    deps = [],
-)
-
-py_proto_library(
-    name = "fastq_py_pb2",
-    srcs = ["fastq.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-    deps = [],
-)
-
 pyclif_proto_library(
     name = "fastq_pyclif",
     proto_lib = ":fastq_proto",  # NO COPYBARA
 )
 
-# ----------------------------------------------------------------------
-# BED records
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "bed_proto",
-    srcs = ["bed.proto"],
-    deps = [],
-)
-
-cc_proto_library(
-    name = "bed_cc_pb2",
-    srcs = ["bed.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
-    deps = [],
-)
-
-py_proto_library(
-    name = "bed_py_pb2",
-    srcs = ["bed.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-    deps = [],
+pyclif_proto_library(
+    name = "position_pyclif",
+    proto_lib = ":position_proto",  # NO COPYBARA
 )
 
 pyclif_proto_library(
-    name = "bed_pyclif",
-    proto_lib = ":bed_proto",  # NO COPYBARA
-)
-
-# ----------------------------------------------------------------------
-# GFF records
-# ----------------------------------------------------------------------
-
-proto_library(
-    name = "gff_proto",
-    srcs = ["gff.proto"],
-    deps = [":range_proto"],
-)
-
-cc_proto_library(
-    name = "gff_cc_pb2",
-    srcs = ["gff.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
-    deps = [":range_cc_pb2"],
-)
-
-py_proto_library(
-    name = "gff_py_pb2",
-    srcs = ["gff.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
-    deps = [":range_py_pb2"],
+    name = "range_pyclif",
+    proto_lib = ":range_proto",  # NO COPYBARA
 )
 
 pyclif_proto_library(
-    name = "gff_pyclif",
-    proto_lib = ":gff_proto",  # NO COPYBARA
+    name = "reads_pyclif",
+    proto_lib = ":reads_proto",  # NO COPYBARA
+)
+
+pyclif_proto_library(
+    name = "reference_pyclif",
+    proto_lib = ":reference_proto",  # NO COPYBARA
+)
+
+pyclif_proto_library(
+    name = "variants_pyclif",
+    proto_lib = ":variants_proto",  # NO COPYBARA
 )

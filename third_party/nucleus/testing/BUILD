@@ -27,7 +27,9 @@ cc_library(
 py_library(
     name = "testing_py",
     testonly = True,
-    deps = [":py_test_utils"],
+    deps = [
+        ":py_test_utils",
+    ],
 )
 
 cc_library(
