@@ -35,6 +35,16 @@ gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
 --zone "us-west1-b"
 ```
 
+Once the machine is ready, ssh into it:
+
+```
+gcloud compute ssh "${USER}-deepvariant-casestudy" --zone "us-west1-b"
+```
+
+NOTE: Having an instance up and running could cost you. Remember to delete the
+instances you're not using. You can find the instances at:
+https://console.cloud.google.com/compute/instances?project=YOUR_PROJECT
+
 ## Preliminaries
 
 Set a number of shell variables, to make what follows easier to read.

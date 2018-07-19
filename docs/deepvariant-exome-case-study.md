@@ -15,6 +15,9 @@ created for Google Cloud Platform.
 Any sufficiently capable machine will do. For this case study, we used a 64-core
 non-preemptible instance with 128GiB and no GPU.
 
+If you need an example, see
+[this section](deepvariant-case-study#request-a-machine).
+
 ## Preliminaries
 
 Set a number of shell variables, to make what follows easier to read.
