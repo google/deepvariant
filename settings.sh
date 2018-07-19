@@ -90,7 +90,7 @@ export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="1.9.0"
 export DV_GPU_BUILD="${DV_GPU_BUILD:-0}"
 
 # If this variable is set to 1, DeepVariant will use a TensorFlow wheel file
-# compiled with MKL support for Sandy Bridge or better chipsets, which
+# compiled with MKL support for corei7 or better chipsets, which
 # significantly speeds up execution when running on modern CPUs. The default
 # TensorFlow wheel files don't contain these instructions (and thereby run on a
 # broader set of CPUs). Using this optimized wheel reduces the runtime of
@@ -109,7 +109,7 @@ export DV_INSTALL_GPU_DRIVERS="${DV_INSTALL_GPU_DRIVERS:-0}"
 
 export PYTHON_BIN_PATH=$(which python)
 export USE_DEFAULT_PYTHON_LIB_PATH=1
-export DV_COPT_FLAGS="--copt=-march=sandybridge --copt=-Wno-sign-compare --copt=-Wno-write-strings"
+export DV_COPT_FLAGS="--copt=-march=corei7 --copt=-Wno-sign-compare --copt=-Wno-write-strings"
 
 function note_build_stage {
   echo "========== [$(date)] Stage '${1}' starting"
