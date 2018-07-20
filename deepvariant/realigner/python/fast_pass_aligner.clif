@@ -37,16 +37,7 @@ from "deepvariant/realigner/fast_pass_aligner.h":
       def `set_reference` as set_reference(self, ref: bytes)
       def `set_ref_start` as set_ref_start(self, chr: bytes, pos: int)
       def `set_haplotypes` as set_haplotypes(self, hyplotypes:list<bytes>)
-      def `set_kmer_size` as set_kmer_size(self, kmerSize: int)
-      def `set_read_size` as set_read_size(self, readSize: int)
-      def `set_max_num_of_mismatches` as set_max_num_of_mismatches(self, numOfMismatches: int)
-      def `set_similarity_threshold` as set_similarity_threshold(self, threshold: float)
+      def `set_options` as set_options(self, options:RealignerOptions.AlignerOptions)
       def `set_is_debug` as set_is_debug(self, isDebug: bool)
       def `set_debug_read_id` as set_debug_read_id(self, readId: int)
-      def `set_score_schema` as set_score_schema(self,
-                                             match_score: int,
-                                             mismatch_penalty: int,
-                                             gap_opening_penalty: int,
-                                             gap_extending_penalty: int)
-
       def `AlignReads` as realign_reads(self, reads:list<Read>) -> list<Read>

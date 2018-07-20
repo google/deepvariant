@@ -160,6 +160,7 @@ cc_library(
     ],
     deps = [
         ":ssw",
+        "//deepvariant/protos:realigner_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
@@ -177,6 +178,7 @@ cc_test(
     data = ["//deepvariant:testdata"],
     deps = [
         "fast_pass_aligner",
+        "//deepvariant/protos:realigner_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",

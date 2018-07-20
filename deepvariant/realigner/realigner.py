@@ -183,7 +183,11 @@ def realigner_config(flags_obj):
       gap_open=flags_obj.aln_gap_open,
       gap_extend=flags_obj.aln_gap_extend,
       k=flags_obj.aln_k,
-      error_rate=flags_obj.aln_error_rate)
+      error_rate=flags_obj.aln_error_rate,
+      max_num_of_mismatches=flags_obj.max_num_mismatches,
+      realignment_similarity_threshold=flags_obj.
+      realignment_similarity_threshold,
+      kmer_size=flags_obj.kmer_size)
 
   diagnostics = realigner_pb2.RealignerOptions.Diagnostics(
       enabled=bool(flags_obj.realigner_diagnostics),
@@ -473,20 +477,13 @@ class Realigner(object):
     ref_seq = ref_prefix + ref + ref_suffix
 
     fast_pass_realigner = fast_pass_aligner.FastPassAligner()
-    fast_pass_realigner.set_score_schema(
-        self.config.aln_config.match, self.config.aln_config.mismatch,
-        self.config.aln_config.gap_open, self.config.aln_config.gap_extend)
-    fast_pass_realigner.set_reference(ref_seq)
-    fast_pass_realigner.set_ref_start(contig, ref_start)
-    fast_pass_realigner.set_kmer_size(flags.FLAGS.kmer_size)
     # Read sizes may vary. We need this for realigner initialization and sanity
     # checks.
-    fast_pass_realigner.set_read_size(
-        len(assembled_region.reads[0].aligned_sequence))
-    fast_pass_realigner.set_max_num_of_mismatches(
-        flags.FLAGS.max_num_mismatches)
-    fast_pass_realigner.set_similarity_threshold(
-        flags.FLAGS.realignment_similarity_threshold)
+    self.config.aln_config.read_size = len(
+        assembled_region.reads[0].aligned_sequence)
+    fast_pass_realigner.set_options(self.config.aln_config)
+    fast_pass_realigner.set_reference(ref_seq)
+    fast_pass_realigner.set_ref_start(contig, ref_start)
     fast_pass_realigner.set_haplotypes([
         ref_prefix + target + ref_suffix
         for target in assembled_region.haplotypes
