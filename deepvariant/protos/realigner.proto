@@ -125,10 +125,32 @@ message RealignerOptions {
     int32 gap_extend = 4;
 
     // k-mer size used to index target sequence.
+    // redacted
+    // longer use python realigner this parameter is obsolete.
     int32 k = 5;
 
     // Estimated sequencing error rate.
+    // redacted
+    // remove it.
     float error_rate = 6;
+
+    // Average read size. This parameter is used to calculate a
+    // ssw_alignment_score_threshold_ - the threshold to filter out reads
+    // aligned with SSW library. Not all the reads may be the same size.
+    // This parameter needs to be set to a value close enough to the average
+    // read size.
+    int32 read_size = 8;
+
+    // K-mer size in read index used in Fast Pass Aligner.
+    int32 kmer_size = 9;
+
+    // Num of maximum allowed mismatches for quick read to haplotype alignment.
+    int32 max_num_of_mismatches = 10;
+
+    // Similarity threshold used to filter out bad read alignments made with
+    // Smith-Waterman alignment. Alignment is discarded if read is aligned to
+    // a haplotype with too many mismatches.
+    double realignment_similarity_threshold = 11;
   }
 
   // Config parameters for "alignment (aln)" phase.

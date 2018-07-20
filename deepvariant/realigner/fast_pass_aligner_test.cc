@@ -32,16 +32,17 @@
 #include <fstream>
 #include <map>
 
+#include "deepvariant/protos/realigner.pb.h"
 #include "deepvariant/realigner/fast_pass_aligner.h"
 #include "google/protobuf/text_format.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "tensorflow/core/platform/test.h"
 #include "absl/strings/str_cat.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 
 namespace learning {
@@ -131,7 +132,9 @@ TEST_F(FastPassAlignerTest, ReadsIndexIntegrationTest) {
     {"GAA", {KmerOccurrence(ReadId(2), KmerOffset(6))}},
     {"AAG", {KmerOccurrence(ReadId(2), KmerOffset(7))}}};
 
-  aligner_.set_kmer_size(3);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(3);
+  aligner_.set_options(aligner_options);
   aligner_.BuildIndex();
 
   EXPECT_EQ(aligner_.GetKmerIndex(), expected_index);
@@ -141,7 +144,9 @@ TEST_F(FastPassAlignerTest, ReadsIndexIntegrationTest) {
 // Kmer size is set to 4, and the first read has size 3.
 TEST_F(FastPassAlignerTest, ReadsIndexIgnoreReadsShorterThanKmerTest) {
   aligner_.set_reads({"AAC", "TGAGCTG"});
-  aligner_.set_kmer_size(4);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(4);
+  aligner_.set_options(aligner_options);
   KmerIndexType expected_index = {
       {"TGAG", {KmerOccurrence(ReadId(1), KmerOffset(0))}},
       {"GAGC", {KmerOccurrence(ReadId(1), KmerOffset(1))}},
@@ -156,7 +161,9 @@ TEST_F(FastPassAlignerTest, ReadsIndexIgnoreReadsShorterThanKmerTest) {
 // score and all read alignments.
 TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypeTest) {
   aligner_.set_reads({"AAACCC", "CTCTCT", "TGAGCTGAAG"});
-  aligner_.set_kmer_size(3);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(3);
+  aligner_.set_options(aligner_options);
   aligner_.BuildIndex();
 
   // Haplotype made from read 3 + TT + read 1
@@ -187,7 +194,9 @@ TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypeTest) {
 // has to be skipped.
 TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypePartialReadOverlapTest) {
   aligner_.set_reads({"AAACCC", "CTCTCT", "TGAGCTGAAG"});
-  aligner_.set_kmer_size(3);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(3);
+  aligner_.set_options(aligner_options);
   aligner_.BuildIndex();
 
   // Haplotype made from read 3 + TT + read first 4 bases of read 1
@@ -217,7 +226,9 @@ TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypePartialReadOverlapTest) {
 TEST_F(FastPassAlignerTest,
        FastAlignReadsToHaplotypeReadAlignedWithMismatchesTest) {
   aligner_.set_reads({"AAACCC", "CTCTCT", "TGAGCTGAAG"});
-  aligner_.set_kmer_size(3);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(3);
+  aligner_.set_options(aligner_options);
   aligner_.BuildIndex();
 
   // Haplotype made from read 3 with one mismatch + TT + read 1
@@ -252,8 +263,10 @@ TEST_F(FastPassAlignerTest,
 TEST_F(FastPassAlignerTest,
        FastAlignReadsToHaplotypeReadAlignedWithMoreThanMismatchesTest) {
   aligner_.set_reads({"AAACCC", "CTCTCT", "TGAGCTGAAG"});
-  aligner_.set_kmer_size(3);
-  aligner_.set_max_num_of_mismatches(2);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(3);
+  aligner_options.set_max_num_of_mismatches(2);
+  aligner_.set_options(aligner_options);
   aligner_.BuildIndex();
 
   // Haplotype made from read 3 with 3 mismatches + TT + read 1
@@ -423,7 +436,9 @@ TEST_F(FastPassAlignerTest, SswAlignReadsToHaplotypes_Test) {
                          "ACAGGGTTTTTTGCAGGACAA",   // "6=2I13=", 67
                          "TGTTGGGTTCAGCAGTTTT"      // "2S7=2X4=4S", 32
                      });
-  aligner_.set_kmer_size(3);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(3);
+  aligner_.set_options(aligner_options);
   aligner_.set_haplotypes(haplotypes);
   aligner_.AlignHaplotypesToReference();
   aligner_.SswAlignReadsToHaplotypes(40);
@@ -874,12 +889,15 @@ TEST_F(FastPassAlignerTest, Integration_Test) {
   LoadReferenceFromFile("reference.pbtxt", &reference);
   std::vector<string> haplotypes;
   LoadHaplotypesFromFile("haplotypes.pbtxt", &haplotypes);
-  aligner_.set_read_size(148);
+
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_read_size(148);
+  aligner_options.set_kmer_size(32);
+  aligner_options.set_realignment_similarity_threshold(0.85);
+  aligner_options.set_max_num_of_mismatches(3);
+  aligner_.set_options(aligner_options);
   aligner_.set_reference(reference);
   aligner_.set_haplotypes(haplotypes);
-  aligner_.set_kmer_size(32);
-  aligner_.set_similarity_threshold(0.85);
-  aligner_.set_max_num_of_mismatches(3);
   aligner_.set_ref_start("20", 38091533);
   std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads =
       aligner_.AlignReads(reads);
@@ -891,8 +909,10 @@ TEST_F(FastPassAlignerTest, Integration_Test) {
 // threshold is less than 0.5.
 TEST_F(FastPassAlignerTest, CalculateSswAlignmentScoreThreshold_Test) {
   const int read_size = 10;
-  aligner_.set_read_size(read_size);
-  aligner_.set_similarity_threshold(0.1);
+  RealignerOptions::AlignerOptions aligner_options;
+  aligner_options.set_read_size(read_size);
+  aligner_options.set_realignment_similarity_threshold(0.1);
+  aligner_.set_options(aligner_options);
   aligner_.CalculateSswAlignmentScoreThreshold();
   EXPECT_GE(aligner_.get_ssw_alignment_score_threshold(), 0);
   EXPECT_LE(aligner_.get_ssw_alignment_score_threshold(),

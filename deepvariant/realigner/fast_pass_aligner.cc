@@ -69,28 +69,40 @@ void FastPassAligner::set_haplotypes(const std::vector<string>& haplotypes) {
   this->haplotypes_ = haplotypes;
 }
 
-void FastPassAligner::set_kmer_size(int kmer_size) {
-  // Having kmer size less than 32 allow to make a better index in the future.
-  // Otherwise there is no need for this restriction.
-  // Kmer size should be less than read size.
-  CHECK(kmer_size >= 3 && kmer_size <= 32);
-  kmer_size_ = kmer_size;
-}
+void FastPassAligner::set_options(
+    const RealignerOptions::AlignerOptions& options) {
+  // There is no is_set method in proto so we assume that value is set if it is
+  // not zero.
+  if (options.kmer_size() > 0) {
+    this->kmer_size_ = options.kmer_size();
+  }
+  if (options.read_size() > 0) {
+    this->read_size_ = options.read_size();
+  }
+  if (options.max_num_of_mismatches() > 0) {
+    this->max_num_of_mismatches_ = options.max_num_of_mismatches();
+  }
+  if (options.realignment_similarity_threshold() > 0.0) {
+    this->similarity_threshold_ = options.realignment_similarity_threshold();
+  }
+  if (options.match() > 0) {
+    this->match_score_ = options.match();
+  }
+  if (options.mismatch() > 0) {
+    this->mismatch_penalty_ = options.mismatch();
+  }
+  if (options.gap_open() > 0) {
+    this->gap_opening_penalty_ = options.gap_open();
+  }
+  if (options.gap_extend() > 0) {
+    this->gap_extending_penalty_ = options.gap_extend();
+  }
 
-void FastPassAligner::set_read_size(int read_size) {
-  CHECK_GT(read_size, 0);
-  read_size_ = read_size;
-}
-
-void FastPassAligner::set_max_num_of_mismatches(int max_num_of_mismatches) {
-  CHECK_GE(max_num_of_mismatches, 0);
-  this->max_num_of_mismatches_ = max_num_of_mismatches;
-}
-
-void FastPassAligner::set_similarity_threshold(double similarity_threshold) {
-  CHECK_GE(similarity_threshold, 0.0);
-  CHECK_LE(similarity_threshold, 1.0);
-  this->similarity_threshold_ = similarity_threshold;
+  CHECK(kmer_size_ >= 3 && kmer_size_ <= 32);
+  CHECK_GE(similarity_threshold_, 0.0);
+  CHECK_LE(similarity_threshold_, 1.0);
+  CHECK_GE(max_num_of_mismatches_, 0);
+  CHECK(kmer_size_ >= 3 && kmer_size_ <= 32);
 }
 
 void FastPassAligner::CalculateSswAlignmentScoreThreshold() {
@@ -103,16 +115,6 @@ void FastPassAligner::CalculateSswAlignmentScoreThreshold() {
   if (ssw_alignment_score_threshold_ < 0) {
     ssw_alignment_score_threshold_ = 1;
   }
-}
-
-void FastPassAligner::set_score_schema(uint8_t match_score,
-                                       uint8_t mismatch_penalty,
-                                       uint8_t gap_opening_penalty,
-                                       uint8_t gap_extending_penalty) {
-  this->match_score_ = match_score;
-  this->mismatch_penalty_ = mismatch_penalty;
-  this->gap_opening_penalty_ = gap_opening_penalty;
-  this->gap_extending_penalty_ = gap_extending_penalty;
 }
 
 // Fast align reads to haplotypes using reads index.

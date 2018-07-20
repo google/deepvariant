@@ -38,6 +38,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/protos/realigner.pb.h"
 #include "deepvariant/realigner/ssw.h"
 #include "absl/memory/memory.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -251,15 +252,9 @@ class FastPassAligner {
   std::vector<string> get_reads() const { return reads_; }
   void set_ref_start(const string& chromosome, uint64_t position);
   void set_haplotypes(const std::vector<string>& haplotypes);
-  void set_score_schema(uint8_t match_score, uint8_t mismatch_penalty,
-                        uint8_t gap_opening_penalty,
-                        uint8_t gap_extending_penalty);
   uint8_t get_match_score() const { return match_score_; }
   uint8_t get_mismatch_penalty() const { return mismatch_penalty_; }
-  void set_kmer_size(int kmer_size);
-  void set_read_size(int read_size);
-  void set_max_num_of_mismatches(int max_num_of_mismatches);
-  void set_similarity_threshold(double similarity_threshold);
+  void set_options(const RealignerOptions::AlignerOptions& options);
   void set_is_debug(bool is_debug) { debug_out_ = is_debug; }
   void set_debug_read_id(int read_id) { debug_read_id_ = read_id; }
   int16_t get_ssw_alignment_score_threshold() const {
@@ -359,7 +354,7 @@ class FastPassAligner {
   std::vector<string> reads_;
 
   // K-mer size that is used for indexing input reads
-  int kmer_size_;
+  int kmer_size_ = 32;
 
   // Expected read length. It is needed for sanity checking. Actual reads may
   // be different sizes. Although, actual read sizes should be close to
