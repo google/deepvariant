@@ -233,6 +233,7 @@ py_library(
         ":resources",
         ":tf_utils",
         ":variant_caller",
+        "//deepvariant/labeler:customized_classes_labeler",
         "//deepvariant/labeler:haplotype_labeler",
         "//deepvariant/labeler:positional_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
@@ -267,7 +268,7 @@ py_binary(
 
 py_test(
     name = "make_examples_test",
-    size = "medium",
+    size = "large",
     srcs = ["make_examples_test.py"],
     data = [":testdata"],
     shard_count = 2,

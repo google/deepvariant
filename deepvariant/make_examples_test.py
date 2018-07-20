@@ -137,25 +137,32 @@ def _from_literals(literals, contig_map=None):
   return ranges.RangeSet.from_regions(literals, contig_map)
 
 
-def _sharded(basename, num_shards):
+def _sharded(basename, num_shards=None):
   if num_shards:
     return basename + '@' + str(num_shards)
   else:
     return basename
 
 
-# Golden sets are created with learning/genomics/internal/create_golden.sh
-@parameterized.parameters(
-    # All tests are run with fast_pass_aligner enabled. There are no
-    # golden sets version for ssw realigner.
-    dict(mode='calling', num_shards=0),
-    dict(mode='calling', num_shards=3),
-    dict(mode='training', num_shards=0, labeler_algorithm='positional_labeler'),
-    dict(mode='training', num_shards=0, labeler_algorithm='haplotype_labeler'),
-    dict(mode='training', num_shards=3, labeler_algorithm='haplotype_labeler'),
-)
 class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
+  # Golden sets are created with learning/genomics/internal/create_golden.sh
+  @parameterized.parameters(
+      # All tests are run with fast_pass_aligner enabled. There are no
+      # golden sets version for ssw realigner.
+      dict(mode='calling', num_shards=0),
+      dict(mode='calling', num_shards=3),
+      dict(
+          mode='training', num_shards=0,
+          labeler_algorithm='positional_labeler'),
+      dict(
+          mode='training', num_shards=0, labeler_algorithm='haplotype_labeler'),
+      dict(
+          mode='training', num_shards=3, labeler_algorithm='haplotype_labeler'),
+      dict(
+          mode='training', num_shards=0,
+          labeler_algorithm='positional_labeler'),
+  )
   @flagsaver.FlagSaver
   def test_make_examples_end2end(self,
                                  mode,
@@ -250,6 +257,32 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           make_examples.read_make_examples_run_info(
               testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO).labeling_metrics,
           run_info.labeling_metrics)
+
+  # Golden sets are created with learning/genomics/internal/create_golden.sh
+  @flagsaver.FlagSaver
+  def test_make_examples_training_end2end_with_customized_classes_labeler(self):
+    FLAGS.labeler_algorithm = 'customized_classes_labeler'
+    FLAGS.customized_classes_labeler_classes_list = 'ref,class1,class2'
+    FLAGS.customized_classes_labeler_info_field_name = 'type'
+    region = ranges.parse_literal('20:10,000,000-10,010,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.NOCHR_FASTA
+    FLAGS.reads = testdata.NOCHR_BAM
+    FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
+    FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.partition_size = 1000
+    FLAGS.mode = 'training'
+    FLAGS.gvcf_gq_binsize = 5
+    FLAGS.truth_variants = testdata.CUSTOMIZED_CLASSES_VARIANTS
+    FLAGS.confident_regions = testdata.CUSTOMIZED_CLASSES_REGIONS
+    options = make_examples.default_options(add_flags=True)
+    make_examples.make_examples_runner(options)
+    golden_file = _sharded(testdata.CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES)
+    # Verify that the variants in the examples are all good.
+    examples = self.verify_examples(
+        FLAGS.examples, region, options, verify_labels=True)
+    self.assertDeepVariantExamplesEqual(
+        examples, list(io_utils.read_tfrecords(golden_file)))
 
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call all of the real variants (according to NIST's Genome
@@ -1165,7 +1198,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     self.processor.pic.create_pileup_images.assert_called_once_with(dv_call)
 
-    self.assertEquals(len(actual), 2)
+    self.assertEqual(len(actual), 2)
     for ex, (alt, img) in zip(actual, [(alt1, 'tensor1'), (alt2, 'tensor2')]):
       self.assertEqual(tf_utils.example_alt_alleles(ex), alt)
       self.assertEqual(tf_utils.example_variant(ex), dv_call.variant)
