@@ -213,7 +213,7 @@ tensorflow::Status EncodeFormatValues(
   auto c_values_up = absl::make_unique<const char*[]>(n_samples);
   const char** c_values = c_values_up.get();
   CHECK(c_values != nullptr);
-  for (int i = 0; i < n_samples; ++i) {
+  for (size_t i = 0; i < n_samples; ++i) {
     if (values[i].empty()) {
       c_values[i] = ".";
     } else {

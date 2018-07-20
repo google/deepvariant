@@ -70,7 +70,7 @@ InMemoryGenomeReference::Create(
           "Malformed region ", seq.region().ShortDebugString());
     }
 
-    const int64 region_len = seq.region().end() - seq.region().start();
+    const size_t region_len = seq.region().end() - seq.region().start();
     if (region_len != seq.bases().length()) {
       return tensorflow::errors::InvalidArgument(
           "Region size = ", region_len, " not equal to bases.length() ",
