@@ -153,14 +153,14 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(mode='calling', num_shards=0),
       dict(mode='calling', num_shards=3),
       dict(
-          mode='training', num_shards=0,
-          labeler_algorithm='positional_labeler'),
-      dict(
           mode='training', num_shards=0, labeler_algorithm='haplotype_labeler'),
       dict(
           mode='training', num_shards=3, labeler_algorithm='haplotype_labeler'),
       dict(
           mode='training', num_shards=0,
+          labeler_algorithm='positional_labeler'),
+      dict(
+          mode='training', num_shards=3,
           labeler_algorithm='positional_labeler'),
   )
   @flagsaver.FlagSaver
