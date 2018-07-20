@@ -58,7 +58,7 @@ class ConstProtoPtr {
   ConstProtoPtr(T* p) : p_(p) {}
   ConstProtoPtr() : p_(nullptr) {}
 
-  T* p_;
+  const T* p_;
 };
 
 }  // namespace nucleus
