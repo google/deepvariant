@@ -96,7 +96,7 @@ void AddTestContig(nucleus::genomics::v1::VcfHeader& header, const string& name,
   contig->set_description(description);
   contig->set_n_bases(n_bases);
   contig->set_pos_in_fasta(pos_in_fasta);
-  for (int i = 0; i < kvExtra.size(); i += 2) {
+  for (size_t i = 0; i < kvExtra.size(); i += 2) {
     (*contig->mutable_extra())[kvExtra[i]] = kvExtra[i + 1];
   }
 }
@@ -137,7 +137,7 @@ void AddTestStructuredExtra(nucleus::genomics::v1::VcfHeader& header,
   nucleus::genomics::v1::VcfStructuredExtra* extra =
       header.add_structured_extras();
   extra->set_key(key);
-  for (int i = 0; i < extra_pairs.size(); i += 2) {
+  for (size_t i = 0; i < extra_pairs.size(); i += 2) {
     nucleus::genomics::v1::VcfExtra& toAdd = *extra->mutable_fields()->Add();
     toAdd.set_key(extra_pairs[i]);
     toAdd.set_value(extra_pairs[i + 1]);
