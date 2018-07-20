@@ -41,6 +41,7 @@ py_library(
     srcs = ["variant_labeler.py"],
     srcs_version = "PY2AND3",
     deps = [
+        "//deepvariant:tf_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
     ],
@@ -99,6 +100,37 @@ py_library(
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
+    ],
+)
+
+py_library(
+    name = "customized_classes_labeler",
+    srcs = ["customized_classes_labeler.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":positional_labeler",
+        ":variant_labeler",
+        "//third_party/nucleus/util:struct_utils",
+    ],
+)
+
+py_test(
+    name = "customized_classes_labeler_test",
+    size = "small",
+    srcs = ["customized_classes_labeler_test.py"],
+    data = ["//deepvariant:testdata"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":customized_classes_labeler",
+        "//deepvariant:py_testdata",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:vcf_constants",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
     ],
 )
 

@@ -32,13 +32,23 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
-
 from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
-
+from deepvariant import exclude_contigs
+from deepvariant import logging_level
+from deepvariant import pileup_image
+from deepvariant import resources
+from deepvariant import tf_utils
+from deepvariant import variant_caller
+from deepvariant.labeler import customized_classes_labeler
+from deepvariant.labeler import haplotype_labeler
+from deepvariant.labeler import positional_labeler
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import allelecounter
+from deepvariant.realigner import realigner
+from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
@@ -50,18 +60,6 @@ from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
-from deepvariant import exclude_contigs
-from deepvariant import logging_level
-from deepvariant import pileup_image
-from deepvariant import resources
-from deepvariant import tf_utils
-from deepvariant import variant_caller
-from deepvariant.labeler import haplotype_labeler
-from deepvariant.labeler import positional_labeler
-from deepvariant.protos import deepvariant_pb2
-from deepvariant.python import allelecounter
-from deepvariant.realigner import realigner
-from deepvariant.vendor import timer
 
 
 FLAGS = flags.FLAGS
@@ -193,6 +191,16 @@ flags.DEFINE_string(
     'labeler_algorithm', 'haplotype_labeler',
     'Algorithm to use to label examples in training mode. Must be one of the '
     'LabelerAlgorithm enum values in the DeepVariantOptions proto.')
+flags.DEFINE_string(
+    'customized_classes_labeler_classes_list', '',
+    'A comma-separated list of strings that defines customized class labels '
+    'for variants. This is only set when labeler_algorithm is '
+    'customized_classes_labeler.')
+flags.DEFINE_string(
+    'customized_classes_labeler_info_field_name', '',
+    'The name from the INFO field of VCF where we should get the customized '
+    'class labels from. This is only set when labeler_algorithm is '
+    'customized_classes_labeler.')
 
 
 # ---------------------------------------------------------------------------
@@ -741,6 +749,7 @@ class RegionProcessor(object):
     self.initialized = True
 
   def _make_labeler_from_options(self):
+    """Creates the labeler from options."""
     truth_vcf_reader = vcf.VcfReader(
         self.options.truth_variants_filename,
         excluded_format_fields=['GL', 'GQ', 'PL'])
@@ -757,6 +766,19 @@ class RegionProcessor(object):
           truth_vcf_reader=truth_vcf_reader,
           ref_reader=self.ref_reader,
           confident_regions=confident_regions)
+    elif (self.options.labeler_algorithm ==
+          deepvariant_pb2.DeepVariantOptions.CUSTOMIZED_CLASSES_LABELER):
+      if (not FLAGS.customized_classes_labeler_classes_list or
+          not FLAGS.customized_classes_labeler_info_field_name):
+        raise ValueError('For -labeler_algorithm=customized_classes_labeler, '
+                         'you need to set '
+                         '-customized_classes_labeler_classes_list and '
+                         '-customized_classes_labeler_info_field_name.')
+      return customized_classes_labeler.CustomizedClassesVariantLabeler(
+          truth_vcf_reader=truth_vcf_reader,
+          confident_regions=confident_regions,
+          classes_list=FLAGS.customized_classes_labeler_classes_list,
+          info_field_name=FLAGS.customized_classes_labeler_info_field_name)
     else:
       raise ValueError('Unexpected labeler_algorithm',
                        self.options.labeler_algorithm)

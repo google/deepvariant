@@ -76,6 +76,13 @@ GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
 N_GOLDEN_TRAINING_EXAMPLES = 49
 N_GOLDEN_CALLING_EXAMPLES = 83
 
+# For CustomizedClassesVariantLabeler
+NOCHR_FASTA = None
+NOCHR_BAM = None
+CUSTOMIZED_CLASSES_REGIONS = None
+CUSTOMIZED_CLASSES_VARIANTS = None
+CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
+
 
 def init():
   """Initialize global variables from flag values."""
@@ -114,3 +121,18 @@ def init():
       'golden.postprocess_gvcf_output.g.vcf')
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
       'golden.training_examples.tfrecord.run_info.pbtxt')
+
+  # For CustomizedClassesVariantLabeler
+  global NOCHR_FASTA
+  global NOCHR_BAM
+  global CUSTOMIZED_CLASSES_REGIONS
+  global CUSTOMIZED_CLASSES_VARIANTS
+  global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
+  NOCHR_FASTA = deepvariant_testdata('customized_classes.chr20.fasta.gz')
+  NOCHR_BAM = deepvariant_testdata('customized_classes.chr20.10_10p1mb.bam')
+  CUSTOMIZED_CLASSES_REGIONS = deepvariant_testdata(
+      'ref_class1_class2.chr20_100kbp_at_10mb.bed')
+  CUSTOMIZED_CLASSES_VARIANTS = deepvariant_testdata(
+      'ref_class1_class2.chr20_100kbp_at_10mb.vcf.gz')
+  CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
+      'customized_classes.golden.training_examples.tfrecord')

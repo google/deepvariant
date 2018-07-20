@@ -539,6 +539,9 @@ message DeepVariantOptions {
     // those implied by the genotypes of our truth variants. Produces more
     // accurate labels than the POSITIONAL_LABELER labeling algorithm.
     HAPLOTYPE_LABELER = 2;
+    // The labeling algorithm which labels the variants into customized classes
+    // specified in the specified INFO field in the VCF file.
+    CUSTOMIZED_CLASSES_LABELER = 3;
   }
   // The labeling algorithm we are using in this DeepVariant run. Only needed
   // when in CALLING mode.
