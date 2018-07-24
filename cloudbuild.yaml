@@ -31,7 +31,7 @@
 # 3) A runner binary for running DeepVariant at scale using the
 #    Google Cloud Platform via the Genomics Pipelines API.
 # Run using:
-# $ gcloud container builds submit --config cloudbuild.yaml --timeout 3h .
+# $ gcloud builds submit --config cloudbuild.yaml --timeout 3h .
 steps:
   - name: 'ubuntu:16.04'
     args: ['bash', './deepvariant/docker/build_docker_bins.sh']
