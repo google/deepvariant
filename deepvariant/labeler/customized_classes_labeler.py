@@ -72,12 +72,11 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
 
     This function computes the TensorFlow label value (0, 1, 2, .. N-1) we train
     DeepVariant to predict. In this labeler, we only deal with biallelic
-    variants. So we don't actually create the label based on
-    `alt_alleles_indices`. Instead, we assume that `alt_alleles_indices` is
-    always [0] and len(alternate_bases) is always 1. If the variant is
-    multiallelic, this function will return class 0 (default for reference).
-    If the variant is biallelic, this function will return the corresponding
-    class label (int) based on the information in `self.truth_variant.info`.
+    variants. If the truth is multiallelic, this function will return class 0
+    (default for reference). This should be rare.
+    Note the `alt_alleles_indices` being passed in is from the candidates (not
+    truth), so they could still have multiple alts. If any of the alt alleles
+    matches the truth, we'll return the label of the truth.
 
     Args:
       alt_alleles_indices: list[int]. A list of the alt_allele_indices.
@@ -103,11 +102,13 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
     truth_alt = self.truth_variant.alternate_bases[0]
     # Default is label 0. Usually reference.
     label = 0
-    # At this point, because we skipped all multiallelic variants,
-    # `alt_alleles_indices` can only be [0].
-    if self.variant.alternate_bases[0] == truth_alt:
-      # allele in called variant is the same as truth_alt
-      label = self.classes_dict[true_class_status]
+    # Note that this logic below might not be the best when
+    # `alt_alleles_indices` is a composite one, like [0, 1]. For now we'll
+    # return the corresponding label if any of them matches truth_alt.
+    for ind in alt_alleles_indices:
+      if self.variant.alternate_bases[ind] == truth_alt:
+        # allele in called variant is the same as truth_alt
+        label = self.classes_dict[true_class_status]
 
     return label
 
