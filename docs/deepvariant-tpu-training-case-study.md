@@ -1,4 +1,4 @@
-# (BETA) Advanced Case Study: Train a customized SNP and small indel variant caller for BGISEQ-500 data.
+# Advanced Case Study: Train a customized SNP and small indel variant caller for BGISEQ-500 data.
 
 DeepVariant is an analysis pipeline that uses a deep neural network to call
 genetic variants from next-generation DNA sequencing (NGS) data. While
@@ -141,8 +141,7 @@ Glossary](https://developers.google.com/machine-learning/crash-course/glossary).
       --truth_variants "${TRUTH_VCF}" \
       --confident_regions "${TRUTH_BED}" \
       --task {} \
-      --exclude_regions "'chr20 chr21 chr22'" \
-      --use_fast_pass_aligner \
+      --exclude_regions "'chr20 chr21 chr22'"
 ) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
 ```
 
