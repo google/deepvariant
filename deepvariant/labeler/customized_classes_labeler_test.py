@@ -191,13 +191,43 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
           expected_label=0,
           expected_truth=test_utils.make_variant(
               start=filtered.start, gt=(0, 0))),
+      # These variant start at our SNP but has a different first alt allele 'G'.
+      # The second alt ('C') matches snp_class1, so we still got back the
+      # expected_label.
+      dict(
+          candidate=test_utils.make_variant(
+              start=snp_class1.start, alleles=['A', 'G', 'C']),
+          expected_confident=True,
+          expected_label=1,
+          expected_truth=snp_class1,
+          variant_alt_alleles_indices=[1]),
+      # And, even if the variant_alt_alleles_indices is a composite one ([0,1]),
+      # We still label it as long as one of them matches the truth_alt.
+      dict(
+          candidate=test_utils.make_variant(
+              start=snp_class1.start, alleles=['A', 'G', 'C']),
+          expected_confident=True,
+          expected_label=1,
+          expected_truth=snp_class1,
+          variant_alt_alleles_indices=[0, 1]),
+      # ... But we won't label it if the alt_allele_indices does not cover the
+      # truth alt.
+      dict(
+          candidate=test_utils.make_variant(
+              start=snp_class1.start, alleles=['A', 'G', 'C']),
+          expected_confident=True,
+          expected_label=0,
+          expected_truth=snp_class1,
+          variant_alt_alleles_indices=[0]),
   )
-
   def test_label_variants(self,
                           candidate,
                           expected_confident,
                           expected_truth,
-                          expected_label=None):
+                          expected_label=None,
+                          variant_alt_alleles_indices=None):
+    if variant_alt_alleles_indices is None:
+      variant_alt_alleles_indices = [0]
     labeler = self._make_labeler(
         self.variants,
         ranges.RangeSet(
@@ -222,8 +252,9 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
     self.assertEqual(len(labels), 1)
     self.assertEqual(candidate, labels[0].variant)
     self.assertEqual(expected_confident, labels[0].is_confident)
-    self.assertEqual(expected_label,
-                     labels[0].label_for_alt_alleles([0]))
+    self.assertEqual(
+        expected_label,
+        labels[0].label_for_alt_alleles(variant_alt_alleles_indices))
 
   def test_match_selects_variant_by_start(self):
     # Tests that match() selects the variant at the same start even if that
