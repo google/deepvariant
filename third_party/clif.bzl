@@ -255,7 +255,7 @@ def py_clif_cc(
         srcs = srcs,
         deps = extended_cc_deps + clif_deps_to_pyexts(clif_deps),
         clif_deps = clif_deps,
-        toolchain_deps = ["//tools/defaults:crosstool"],
+        toolchain_deps = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
         module_name = name,
         # Turns //foo/bar:baz_pyclif into foo.bar to create our fully-qualified
         # python package name.
