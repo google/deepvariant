@@ -10,6 +10,18 @@ configuration for your needs. For more scalable execution of DeepVariant see the
 [Docker-based exome pipeline](https://cloud.google.com/genomics/deepvariant)
 created for Google Cloud Platform.
 
+## Update since r0.7 : using docker instead of copying binaries.
+
+Starting from the 0.7 release, we use docker to run the binaries instead of
+copying binaries to local machines first. You can still read about the previous
+approach in
+[the Exome Case Study in r0.6](https://github.com/google/deepvariant/blob/r0.6/docs/deepvariant-exome-case-study.md).
+
+We recognize that there might be some overhead of using docker run. But using
+docker makes this case study easier to generalize to different versions of Linux
+systems. For example, we have verifed that you can use docker to run DeepVariant
+on other Linux systems such as CentOS 7.
+
 ## Request a machine
 
 Any sufficiently capable machine will do. For this case study, we used a 64-core
@@ -29,13 +41,10 @@ BIN_VERSION="0.6.1"
 MODEL_VERSION="0.6.0"
 MODEL_CL="191676894"
 
-# Note that we don't specify the CL number for the binary, only the bin version.
-BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wes_standard"
 DATA_BUCKET="${BUCKET}/exome-case-study-testdata"
 
 INPUT_DIR="${BASE}/input"
-BIN_DIR="${INPUT_DIR}/bin"
 MODELS_DIR="${INPUT_DIR}/models"
 MODEL="${MODELS_DIR}/model.ckpt"
 DATA_DIR="${INPUT_DIR}/data"
@@ -61,7 +70,6 @@ CAPTURE_BED="${DATA_DIR}/agilent_sureselect_human_all_exon_v5_b37_targets.bed"
 
 ```bash
 mkdir -p "${OUTPUT_DIR}"
-mkdir -p "${BIN_DIR}"
 mkdir -p "${DATA_DIR}"
 mkdir -p "${MODELS_DIR}"
 mkdir -p "${LOG_DIR}"
@@ -76,31 +84,13 @@ run `make_examples`. We are going to install `samtools` and `docker.io` to help
 do some analysis at the end.
 
 ```bash
+sudo apt-get -y update
 sudo apt-get -y install parallel
 sudo apt-get -y install samtools
 sudo apt-get -y install docker.io
 ```
 
 ## Download binaries, models, and test data
-
-### Binaries
-
-Copy our binaries from the cloud bucket.
-
-```bash
-time gsutil -m cp -r "${BIN_BUCKET}/*" "${BIN_DIR}"
-chmod a+x "${BIN_DIR}"/*
-```
-
-This step should be very fast - it took us about 6 seconds when we tested.
-
-Now, we need to install all prerequisites on the machine. Run this command:
-
-```bash
-cd "${BIN_DIR}"; time bash run-prereq.sh; cd -
-```
-
-In our test run it took about 1 min.
 
 ### Models
 
@@ -159,13 +149,22 @@ It took us a few minuntes to copy the files.
 
 ## Run `make_examples`
 
+First, to set up,
+
+```
+sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
+```
+
 In this step, we used the `--regions` flag to constrain the regions we processed
 to the capture region BED file:
 
 ```bash
 ( time seq 0 $((N_SHARDS-1)) | \
   parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
-    python "${BIN_DIR}"/make_examples.zip \
+    sudo docker run \
+      -v /home/${USER}:/home/${USER} \
+      gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+      /opt/deepvariant/bin/make_examples \
       --mode calling \
       --ref "${REF}" \
       --reads "${BAM}" \
@@ -185,7 +184,10 @@ There are different ways to run `call_variants`. In this case study, we ran just
 one `call_variants` job. Here's the command that we used:
 
 ```bash
-( time python "${BIN_DIR}"/call_variants.zip \
+( time sudo docker run \
+    -v /home/${USER}:/home/${USER} \
+    gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+    /opt/deepvariant/bin/call_variants \
     --outfile "${CALL_VARIANTS_OUTPUT}" \
     --examples "${EXAMPLES}" \
     --checkpoint "${MODEL}" \
@@ -199,7 +201,10 @@ study](deepvariant-case-study.md#run_call_variants).
 ## Run `postprocess_variants`
 
 ```bash
-( time python "${BIN_DIR}"/postprocess_variants.zip \
+( time sudo docker run \
+    -v /home/${USER}:/home/${USER} \
+    gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+    /opt/deepvariant/bin/postprocess_variants \
     --ref "${REF}" \
     --infile "${CALL_VARIANTS_OUTPUT}" \
     --outfile "${OUTPUT_VCF}" \
@@ -216,11 +221,11 @@ study](deepvariant-case-study.md#run_postprocess_variants).
 
 Step                               | wall time
 ---------------------------------- | ---------
-`make_examples`                    | 65m 45s
-`call_variants`                    | 6m 21s
-`postprocess_variants` (no gVCF)   | 0m 13s
-`postprocess_variants` (with gVCF) | 1m 24s
-total time (single machine)        | ~ 1h 13m
+`make_examples`                    | 72m 47s
+`call_variants`                    | 6m 20s
+`postprocess_variants` (no gVCF)   | 0m 16s
+`postprocess_variants` (with gVCF) | 1m 38s
+total time (single machine)        | ~ 1h 21m
 
 ## Variant call quality
 
