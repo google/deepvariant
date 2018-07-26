@@ -71,12 +71,13 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
     """Computes the label value for an example.
 
     This function computes the TensorFlow label value (0, 1, 2, .. N-1) we train
-    DeepVariant to predict. In this labeler, we only deal with biallelic
-    variants. If the truth is multiallelic, this function will return class 0
-    (default for reference). This should be rare.
-    Note the `alt_alleles_indices` being passed in is from the candidates (not
+    DeepVariant to predict.
+    The `alt_alleles_indices` being passed in is from the candidates (not
     truth), so they could still have multiple alts. If any of the alt alleles
     matches the truth, we'll return the label of the truth.
+    redacted
+    Note that this function currently doesn't handle multi-allelic cases
+    correctly. For example it assumes `truth_alt` is the first one.
 
     Args:
       alt_alleles_indices: list[int]. A list of the alt_allele_indices.
@@ -85,11 +86,6 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
       int >= 0. Label for the classes in `classes_dict`.
     """
     if not self.truth_variant:
-      return 0
-
-    # For this labeler, we only deal with biallelic variants.
-    # For anything multi-allelic, return label 0.
-    if len(self.truth_variant.alternate_bases) > 1:
       return 0
 
     if self.truth_variant.calls[0].genotype == [0, 0]:
