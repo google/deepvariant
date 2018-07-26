@@ -34,7 +34,7 @@
 
 #include "clif/python/types.h"
 #include "google/protobuf/message.h"
-#include "net/proto2/python/public/proto_api.h"
+#include "python/google/protobuf/proto_api.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "tensorflow/core/platform/logging.h"
 
