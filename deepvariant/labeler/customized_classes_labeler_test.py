@@ -133,7 +133,7 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
           candidate=multiallelic,
           expected_confident=True,
           expected_truth=multiallelic,
-          expected_label=0),
+          expected_label=2),
 
       # Test the behavior outside of our confident regions.
       # If we provide a variant outside the confident regions (non_confident) we
