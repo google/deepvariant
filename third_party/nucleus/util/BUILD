@@ -1,5 +1,6 @@
 # Utility routines for working with genomics data and genomics protobufs.
 # load("//devtools/python/blaze:python3.bzl", "py2and3_test")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 package(
     default_visibility = [
