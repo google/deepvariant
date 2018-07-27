@@ -1,6 +1,7 @@
 load("//:third_party/clif.bzl", "py_clif_cc", "pyclif_proto_library")
 load("@protobuf_archive//:protobuf.bzl", "py_proto_library")
 load("@protobuf_archive//:protobuf.bzl", "cc_proto_library")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 package(default_visibility = [
     "//visibility:public",

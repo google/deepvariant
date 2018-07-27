@@ -2,6 +2,7 @@
 #   Tools for building the Nucleus pip package.
 
 load("@org_tensorflow//tensorflow:tensorflow.bzl", "transitive_hdrs")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 licenses(["notice"])
 
