@@ -1,1 +1,6 @@
-exports_files(["zip_dir.bzl"])
+licenses(["notice"])
+
+exports_files([
+    "nucleus.bzl",
+    "zip_dir.bzl",
+])

@@ -31,7 +31,7 @@ build --verbose_failures
 build --define=use_fast_cpp_protos=true
 
 # Turn off meddlesome mostly false positive warnings. Unfortunately these only
-# affect the DeepVariant build itself, not our deps, which is where most of the
+# affect the Nucleus build itself, not our deps, which is where most of the
 # problems are coming from.
 #
 # These are largely errors due to protobuf.size(). We want to see them in our
