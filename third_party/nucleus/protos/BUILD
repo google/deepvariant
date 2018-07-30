@@ -1,7 +1,7 @@
 load("//:third_party/clif.bzl", "py_clif_cc", "pyclif_proto_library")
 load("@protobuf_archive//:protobuf.bzl", "py_proto_library")
 load("@protobuf_archive//:protobuf.bzl", "cc_proto_library")
-# KEEP THIS LINE to import nucleus.bzl externally
+load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
 
 package(default_visibility = [
     "//visibility:public",
@@ -231,7 +231,7 @@ cc_binary(
 
 # fast_protos is a single target py_libraries can depend on to make sure
 # they get the fastest Python protocol buffer implementation.
-py_library(
+nucleus_py_library(
     name = "fast_protos",
     srcs = ["load_descriptors.py"],
     data = [":load_descriptors.so"],
