@@ -1,4 +1,5 @@
 load("//:third_party/clif.bzl", "pyclif_proto_library")
+load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
 
 package(
     default_visibility = [
@@ -42,7 +43,7 @@ test_suite(
 )
 
 # Umbrella library for all the Python under DeepVariant.
-py_library(
+nucleus_py_library(
     name = "deepvariant_py",
     srcs = [],
     deps = [
@@ -168,7 +169,7 @@ cc_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "variant_caller",
     srcs = ["variant_caller.py"],
     srcs_version = "PY2AND3",
@@ -222,7 +223,7 @@ cc_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "make_examples_lib",
     srcs = ["make_examples.py"],
     srcs_version = "PY2AND3",
@@ -255,7 +256,7 @@ py_library(
     ],
 )
 
-py_binary(
+nucleus_py_binary(
     name = "make_examples",
     srcs = [
         "make_examples.py",
@@ -297,7 +298,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "call_variants_lib",
     srcs = ["call_variants.py"],
     srcs_version = "PY2AND3",
@@ -317,7 +318,7 @@ py_library(
     ],
 )
 
-py_binary(
+nucleus_py_binary(
     name = "call_variants",
     srcs = [
         "call_variants.py",
@@ -374,7 +375,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "pileup_image",
     srcs = ["pileup_image.py"],
     srcs_version = "PY2AND3",
@@ -421,7 +422,7 @@ cc_library(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "postprocess_variants_py_lib",
     srcs = ["postprocess_variants.py"],
     srcs_version = "PY2AND3",
@@ -448,7 +449,7 @@ py_library(
     ],
 )
 
-py_binary(
+nucleus_py_binary(
     name = "postprocess_variants",
     srcs = [
         "postprocess_variants.py",
@@ -485,7 +486,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "py_testdata",
     testonly = True,
     srcs = ["testdata.py"],
@@ -495,7 +496,7 @@ py_library(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "data_providers",
     srcs = ["data_providers.py"],
     srcs_version = "PY2AND3",
@@ -508,7 +509,7 @@ py_library(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "data_providers_test_lib",
     testonly = True,
     srcs = ["data_providers_test.py"],
@@ -538,7 +539,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "haplotypes",
     srcs = ["haplotypes.py"],
     srcs_version = "PY2AND3",
@@ -565,7 +566,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "modeling",
     srcs = ["modeling.py"],
     srcs_version = "PY2AND3",
@@ -594,7 +595,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "model_train_lib",
     srcs = ["model_train.py"],
     srcs_version = "PY2AND3",
@@ -608,7 +609,7 @@ py_library(
     ],
 )
 
-py_binary(
+nucleus_py_binary(
     name = "model_train",
     srcs = ["model_train.py"],
     srcs_version = "PY2AND3",
@@ -640,7 +641,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "model_eval_lib",
     srcs = ["model_eval.py"],
     srcs_version = "PY2AND3",
@@ -655,7 +656,7 @@ py_library(
     ],
 )
 
-py_binary(
+nucleus_py_binary(
     name = "model_eval",
     srcs = ["model_eval.py"],
     srcs_version = "PY2AND3",
@@ -687,7 +688,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "tf_utils",
     srcs = ["tf_utils.py"],
     srcs_version = "PY2AND3",
@@ -714,13 +715,13 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "logging_level",
     srcs = ["logging_level.py"],
     deps = ["@io_abseil_py//absl/flags"],
 )
 
-py_library(
+nucleus_py_library(
     name = "exclude_contigs",
     srcs = ["exclude_contigs.py"],
 )
@@ -736,14 +737,14 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "dv_constants",
     srcs = ["dv_constants.py"],
     srcs_version = "PY2AND3",
     deps = [],
 )
 
-py_library(
+nucleus_py_library(
     name = "dv_vcf_constants",
     srcs = ["dv_vcf_constants.py"],
     srcs_version = "PY2AND3",
@@ -766,7 +767,7 @@ py_test(
     ],
 )
 
-py_binary(
+nucleus_py_binary(
     name = "resources",
     srcs = ["resources.py"],
     srcs_version = "PY2AND3",

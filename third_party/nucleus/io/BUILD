@@ -1,6 +1,6 @@
 # Code for reading and writing genomics data.
 # load("//devtools/python/blaze:python3.bzl", "py2and3_test")
-# KEEP THIS LINE to import nucleus.bzl externally
+load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
 
 package(
     default_visibility = [
@@ -16,7 +16,7 @@ exports_files(["LICENSE"])
 # Python API
 #
 
-py_library(
+nucleus_py_library(
     name = "io_py",
     deps = [
         ":bed",
@@ -31,7 +31,7 @@ py_library(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "genomics_reader",
     srcs = ["genomics_reader.py"],
     deps = ["@io_abseil_py//absl/logging"],
@@ -46,13 +46,13 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "genomics_writer",
     srcs = ["genomics_writer.py"],
     deps = ["@io_abseil_py//absl/logging"],
 )
 
-py_library(
+nucleus_py_library(
     name = "vcf",
     srcs = ["vcf.py"],
     deps = [
@@ -84,7 +84,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "sam",
     srcs = ["sam.py"],
     deps = [
@@ -114,7 +114,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "bed",
     srcs = ["bed.py"],
     deps = [
@@ -140,7 +140,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "fasta",
     srcs = ["fasta.py"],
     deps = [
@@ -166,7 +166,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "fastq",
     srcs = ["fastq.py"],
     deps = [
@@ -192,7 +192,7 @@ py_test(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "gff",
     srcs = ["gff.py"],
     deps = [
@@ -204,7 +204,7 @@ py_library(
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "clif_postproc",
     srcs = ["clif_postproc.py"],
 )
@@ -794,7 +794,7 @@ py_test(
     ],
 )
 
-py_binary(
+nucleus_py_binary(
     name = "converter",
     srcs = ["converter.py"],
     deps = [

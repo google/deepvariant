@@ -1,10 +1,12 @@
+load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
+
 package(
     default_visibility = [
         "//visibility:public",
     ],
 )
 
-py_library(
+nucleus_py_library(
     name = "timer",
     srcs = ["timer.py"],
 )

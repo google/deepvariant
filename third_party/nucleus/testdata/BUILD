@@ -8,7 +8,7 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-# KEEP THIS LINE to import nucleus.bzl externally
+load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
 
 filegroup(
     name = "testdata",

@@ -1,4 +1,5 @@
 load("//:third_party/clif.bzl", "py_clif_cc")
+load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
 
 package(
     default_visibility = [
