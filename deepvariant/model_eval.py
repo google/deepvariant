@@ -109,6 +109,13 @@ flags.DEFINE_string('dataset_config_pbtxt', None,
 
 flags.DEFINE_boolean('use_tpu', False, 'use tpu if available')
 
+flags.DEFINE_string(
+    'kmp_blocktime', '0',
+    'Value to set the KMP_BLOCKTIME environment variable to for efficient MKL '
+    'evaluation. See https://www.tensorflow.org/performance/performance_guide '
+    'for more information. The default value is 0, which provides the best '
+    'performance in our tests. Set this flag to "" to not set the variable.')
+
 
 def main(_):
   proto_utils.uses_fast_cpp_protos_or_die()
@@ -116,6 +123,10 @@ def main(_):
   if not FLAGS.dataset_config_pbtxt:
     logging.error('Need to specify --dataset_config_pbtxt')
   logging_level.set_from_flag()
+
+  if FLAGS.kmp_blocktime:
+    os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
+    logging.info('Set KMP_BLOCKTIME to %s', os.environ['KMP_BLOCKTIME'])
 
   master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone,
                                    FLAGS.gcp_project)
