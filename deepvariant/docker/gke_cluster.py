@@ -44,6 +44,12 @@ _GCLOUD_RETRIES = 1
 # Delay (in seconds) between gcloud CLI retries.
 _GCLOUD_RETRY_DELAY_SEC = 1
 
+# Number of times a gcloud CLI should be retried before reporting failure.
+_KUBECTL_RETRIES = 1
+
+# Delay (in seconds) between gcloud CLI retries.
+_KUBECTL_RETRY_DELAY_SEC = 1
+
 
 @enum.unique
 class ClusterStatus(enum.Enum):
@@ -67,6 +73,25 @@ _CLUSTER_STATUS_MAP = {
     'STOPPING': ClusterStatus.STOPPING,
     'ERROR': ClusterStatus.ERROR,
     'DEGRADED': ClusterStatus.DEGRADED,
+}
+
+
+@enum.unique
+class PodStatus(enum.Enum):
+  """Enums for kubernetes pod status."""
+  UNKNOWN = 0
+  FAILED = 1
+  PENDING = 2
+  RUNNING = 3
+  SUCCEEDED = 4
+
+
+_POD_STATUS_MAP = {
+    # Pod status from https://goo.gl/WnSPbQ.
+    'Pending': PodStatus.PENDING,
+    'Running': PodStatus.RUNNING,
+    'Succeeded': PodStatus.SUCCEEDED,
+    'Failed': PodStatus.FAILED,
 }
 
 
@@ -243,5 +268,112 @@ class GkeCluster(object):
       args.extend(['--region', self._cluster_region])
     if self._cluster_zone:
       args.extend(['--zone', self._cluster_zone])
+    return process_util.run_command(
+        args, retry_delay_sec=retry_delay_sec, retries=retries)
+
+  def deploy_pod(self, filepath, pod_name, retries=0, wait=True):
+    """Deploy a pod into Kubernetes cluster.
+
+    Args:
+      filepath: (str) filename, directory, or URL to file to use to create the
+        pod.
+      pod_name: (str) Pod's name. Must be the same as the one used in the file.
+      retries: (int) retries this number of times if pod status is
+        PodStatus.Failure.
+      wait: (bool) Whether to wait on completion. If retries is positive, it
+        waits on completion regardless.
+
+    Raises:
+      RuntimeError: if pod fails after all retries.
+    """
+
+    def get_args(is_first_try=False):
+      """Returns kubectl CLI args.
+
+      Args:
+        is_first_try: (bool) whether it is the first try.
+      """
+      if is_first_try:
+        return ['kubectl', 'create', '-f', filepath]
+      else:
+        # With replace arg, the pod is first deleted and then re-deployed.
+        return ['kubectl', 'replace', '--force', '-f', filepath]
+
+    logging.info('Deploying pod %s to GKE cluster %s.', pod_name,
+                 self._cluster_name)
+    status = None
+    for i in range(retries + 1):
+      is_first_try = (i == 0)
+      self._kubectl_call(get_args(is_first_try))
+      if not wait and not retries:
+        return
+      status = self.get_pod_status(pod_name)
+      while status != PodStatus.SUCCEEDED and status != PodStatus.FAILED:
+        time.sleep(_KUBECTL_RETRY_DELAY_SEC)
+        status = self.get_pod_status(pod_name)
+      if status == PodStatus.SUCCEEDED:
+        self.delete_pod(pod_name, wait=True)
+        return
+      if i < retries:
+        logging.warning('Retrying deploying pod (attempt %d/%d): ', i + 1,
+                        retries)
+
+    self.delete_pod(pod_name, wait=True)
+    raise RuntimeError(
+        'Pod %s failed after %d attempts.' % (pod_name, retries + 1))
+
+  def get_pod_status(self, pod_name):
+    """Returns given pod's status.
+
+    Args:
+      pod_name: (str) name of pod.
+
+    Returns:
+    """
+    args = [
+        'kubectl', 'get', 'pods', pod_name, '-o', 'jsonpath={.status.phase}'
+    ]
+    status_str = self._kubectl_call(args).strip()
+    return _POD_STATUS_MAP.get(status_str, PodStatus.UNKNOWN)
+
+  def delete_pod(self, pod_name, wait=True):
+    """Deletes the given pod.
+
+    Args:
+      pod_name: (str) pod's name.
+      wait: (bool) whether to wait on completion.
+    """
+    if not self._pod_exists(pod_name):
+      return
+    args = ['kubectl', 'delete', 'pod', pod_name]
+    if wait:
+      args += ['--wait']
+      # Retry right away if pod fails and we have already waited for it.
+      self._kubectl_call(args, retry_delay_sec=0)
+    else:
+      self._kubectl_call(args)
+
+  def _pod_exists(self, pod_name):
+    """Returns true iff the pod exists (not deleted)."""
+    args = [
+        'kubectl', 'get', 'pods', '-o',
+        'jsonpath={.items[*].spec.containers[*].name}'
+    ]
+    return pod_name in self._kubectl_call(args).split()
+
+  def _kubectl_call(self,
+                    args,
+                    retry_delay_sec=_KUBECTL_RETRY_DELAY_SEC,
+                    retries=_KUBECTL_RETRIES):
+    """Make a kubectl CLI call.
+
+    Args:
+      args: (list)  A list of arguments (type string) to pass to Popen call.
+      retry_delay_sec: (int) delay in retries.
+      retries: (int) number of retries.
+
+    Returns:
+      stdout of process call.
+    """
     return process_util.run_command(
         args, retry_delay_sec=retry_delay_sec, retries=retries)
