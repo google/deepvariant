@@ -28,9 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "deepvariant/python/allelecounter.h" import *
+from "deepvariant/protos/realigner_pyclif.h" import *
 
 from "deepvariant/realigner/window_selector.h":
   namespace `learning::genomics::deepvariant`:
 
-    def `WindowSelectorCandidates` as candidates_from_allele_counter(counter: AlleleCounter)
+    def `VariantReadsWindowSelectorCandidates` as variant_reads_candidates_from_allele_counter(counter: AlleleCounter)
       -> list<int>
+    def `AlleleCountLinearWindowSelectorCandidates` as allele_count_linear_candidates_from_allele_counter(counter: AlleleCounter, config: WindowSelectorModel.AlleleCountLinearModel)
+      -> list<float>

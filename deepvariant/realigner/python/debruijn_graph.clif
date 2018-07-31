@@ -38,5 +38,5 @@ from "deepvariant/realigner/debruijn_graph.h":
       kmer_size: int = property(`KmerSize`)
     staticmethods from `DeBruijnGraph`:
       def `Build` as build(ref:str, reads:list<Read>,
-                           options:RealignerOptions.DeBruijnGraphOptions)
+                           options:DeBruijnGraphOptions)
         -> DeBruijnGraph

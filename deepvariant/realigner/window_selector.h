@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
+#include "deepvariant/protos/realigner.pb.h"
 
 namespace learning {
 namespace genomics {
@@ -58,7 +59,12 @@ namespace deepvariant {
 //   The i-th position in this vector corresponding to the i-th position in
 //   allele_count->Interval(). So result[0] is the count for
 //   allele_count->Interval().start().
-std::vector<int> WindowSelectorCandidates(const AlleleCounter& allele_counter);
+std::vector<int> VariantReadsWindowSelectorCandidates(
+    const AlleleCounter& allele_counter);
+
+std::vector<float> AlleleCountLinearWindowSelectorCandidates(
+    const AlleleCounter& allele_counter,
+    const WindowSelectorModel::AlleleCountLinearModel& config);
 
 }  // namespace deepvariant
 }  // namespace genomics

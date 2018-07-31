@@ -214,7 +214,7 @@ class PairwiseAlignerTest(parameterized.TestCase):
 class AlignerTest(parameterized.TestCase):
 
   def make_test_aligner(self, ref_seq=None, region=None):
-    config = realigner_pb2.RealignerOptions.AlignerOptions(
+    config = realigner_pb2.AlignerOptions(
         match=1, mismatch=1, gap_open=2, gap_extend=1, k=3, error_rate=.02)
     ref_seq = ref_seq or 'AAAAAAA'
     region = region or ranges.make_range('ref', 10, 10 + len(ref_seq))

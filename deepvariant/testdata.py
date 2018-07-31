@@ -72,6 +72,8 @@ GOLDEN_POSTPROCESS_OUTPUT = None
 GOLDEN_POSTPROCESS_GVCF_INPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT = None
 GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
+WS_ALLELE_COUNT_LINEAR_MODEL = None
+WS_VARIANT_READS_THRESHOLD_MODEL = None
 
 N_GOLDEN_TRAINING_EXAMPLES = 49
 N_GOLDEN_CALLING_EXAMPLES = 83
@@ -98,6 +100,8 @@ def init():
   global GOLDEN_POSTPROCESS_GVCF_INPUT
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT
   global GOLDEN_MAKE_EXAMPLES_RUN_INFO
+  global WS_ALLELE_COUNT_LINEAR_MODEL
+  global WS_VARIANT_READS_THRESHOLD_MODEL
 
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
@@ -121,6 +125,10 @@ def init():
       'golden.postprocess_gvcf_output.g.vcf')
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
       'golden.training_examples.tfrecord.run_info.pbtxt')
+  WS_ALLELE_COUNT_LINEAR_MODEL = deepvariant_testdata(
+      'window_selector_allele_count_linear.pbtxt')
+  WS_VARIANT_READS_THRESHOLD_MODEL = deepvariant_testdata(
+      'window_selector_variant_read_threshold.pbtxt')
 
   # For CustomizedClassesVariantLabeler
   global NOCHR_FASTA

@@ -40,7 +40,8 @@ namespace deepvariant {
 // If `end > counts->size()` then `end = counts->size()` will be used instead.
 // This simplifies the call site where the bounding of start/end can be
 // overloaded to this function instead of duplicating it at all call sites.
-void UpdateCounts(std::vector<int>* counts, int by, int start, int end) {
+template <class T>
+void UpdateCounts(T by, int start, int end, std::vector<T>* counts) {
   CHECK_LE(start, end) << "Start should be <= end";
 
   start = std::max(start, 0);
@@ -50,8 +51,9 @@ void UpdateCounts(std::vector<int>* counts, int by, int start, int end) {
   }
 }
 
-std::vector<int> WindowSelectorCandidates(const AlleleCounter& allele_counter) {
-  // We start with a vector of 0s, one for each position in allele_coutner.
+std::vector<int> VariantReadsWindowSelectorCandidates(
+    const AlleleCounter& allele_counter) {
+  // We start with a vector of 0s, one for each position in allele_counter.
   std::vector<int> window_counts(allele_counter.Counts().size(), 0);
 
   // Now loop over all of the counts, incrementing the window_counts for all
@@ -65,18 +67,18 @@ std::vector<int> WindowSelectorCandidates(const AlleleCounter& allele_counter) {
       switch (allele.type()) {
         case SUBSTITUTION:
           start = i; end = i + 1;
-          UpdateCounts(&window_counts, allele.count(), start, end);
+          UpdateCounts(allele.count(), start, end, &window_counts);
           break;
         case SOFT_CLIP:
         case INSERTION:
           start = i + 1 - (allele.bases().length() - 1);
           end = i + allele.bases().length();
-          UpdateCounts(&window_counts, allele.count(), start, end);
+          UpdateCounts(allele.count(), start, end, &window_counts);
           break;
         case DELETION:
           start = i + 1;
           end = i + allele.bases().length();
-          UpdateCounts(&window_counts, allele.count(), start, end);
+          UpdateCounts(allele.count(), start, end, &window_counts);
           break;
         case REFERENCE:
           // We don't update our counts for reference positions.
@@ -94,6 +96,65 @@ std::vector<int> WindowSelectorCandidates(const AlleleCounter& allele_counter) {
   return window_counts;
 }
 
+std::vector<float> AlleleCountLinearWindowSelectorCandidates(
+    const AlleleCounter& allele_counter,
+    const WindowSelectorModel::AlleleCountLinearModel& config) {
+  std::vector<float> window_scores(allele_counter.Counts().size(),
+                                   config.bias());
+
+  const std::vector<AlleleCount>& counts = allele_counter.Counts();
+  for (int i = 0; i < counts.size(); ++i) {
+    UpdateCounts(
+        counts[i].ref_supporting_read_count() * config.coeff_reference(), i,
+        i + 1, &window_scores);
+
+    for (const auto& entry : counts[i].read_alleles()) {
+      const Allele& allele = entry.second;
+
+      int start, end;
+      switch (allele.type()) {
+        case SUBSTITUTION:
+          start = i;
+          end = i + 1;
+          UpdateCounts(allele.count() * config.coeff_substitution(), start,
+                       end, &window_scores);
+          break;
+        case SOFT_CLIP:
+          start = i + 1 - (allele.bases().length() - 1);
+          end = i + allele.bases().length();
+          UpdateCounts(allele.count() * config.coeff_soft_clip(), start, end,
+                       &window_scores);
+          break;
+        case INSERTION:
+          start = i + 1 - (allele.bases().length() - 1);
+          end = i + allele.bases().length();
+          UpdateCounts(allele.count() * config.coeff_insertion(), start, end,
+                       &window_scores);
+          break;
+        case DELETION:
+          start = i + 1;
+          end = i + allele.bases().length();
+          UpdateCounts(allele.count() * config.coeff_deletion(), start, end,
+                       &window_scores);
+          break;
+        case REFERENCE:
+          start = i;
+          end = i + 1;
+          UpdateCounts(allele.count() * config.coeff_reference(), start, end,
+                       &window_scores);
+          break;
+        case UNSPECIFIED:
+        default:
+          LOG(FATAL) << "Saw an Allele " << allele.DebugString()
+                     << " with an unexpected type " << allele.type()
+                     << " in AlleleCount " << counts[i].DebugString()
+                     << " which should never happen.";
+      }
+    }
+  }
+
+  return window_scores;
+}
 
 }  // namespace deepvariant
 }  // namespace genomics

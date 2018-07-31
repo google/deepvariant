@@ -52,6 +52,7 @@ from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import realigner
 from deepvariant.realigner import utils
+from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
@@ -187,6 +188,31 @@ class RealignerTest(parameterized.TestCase):
     self.ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
     self.config = realigner.realigner_config(FLAGS)
     self.reads_realigner = realigner.Realigner(self.config, self.ref_reader)
+
+  @parameterized.parameters(
+      # Arguments passed by ws_{min,max}_supporting_reads.
+      dict(model=None, min_supporting=2, max_supporting=300),
+      # No flags passed for the window_selection.
+      dict(model=None, min_supporting=-1, max_supporting=-1),
+      # VariantReadsThresholdModel.
+      dict(
+          model=testdata.WS_VARIANT_READS_THRESHOLD_MODEL,
+          min_supporting=-1,
+          max_supporting=-1),
+      # AlleleCountLinearModel
+      dict(
+          model=testdata.WS_ALLELE_COUNT_LINEAR_MODEL,
+          min_supporting=-1,
+          max_supporting=-1))
+  @flagsaver.FlagSaver
+  def test_window_selector_model_flags(self, model, min_supporting,
+                                       max_supporting):
+    FLAGS.ws_max_num_supporting_reads = max_supporting
+    FLAGS.ws_min_num_supporting_reads = min_supporting
+    FLAGS.ws_window_selector_model = model
+    # We only make sure that reading the model does not crash or raise
+    # exceptions.
+    _ = realigner.realigner_config(FLAGS)
 
   @parameterized.parameters(
       dict(
