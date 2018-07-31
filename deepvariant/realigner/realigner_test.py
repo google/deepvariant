@@ -196,20 +196,23 @@ class RealignerTest(parameterized.TestCase):
       dict(model=None, min_supporting=-1, max_supporting=-1),
       # VariantReadsThresholdModel.
       dict(
-          model=testdata.WS_VARIANT_READS_THRESHOLD_MODEL,
-          min_supporting=-1,
+          model='VARIANT_READS_THRESHOLD', min_supporting=-1,
           max_supporting=-1),
       # AlleleCountLinearModel
-      dict(
-          model=testdata.WS_ALLELE_COUNT_LINEAR_MODEL,
-          min_supporting=-1,
-          max_supporting=-1))
+      dict(model='ALLELE_COUNT_LINEAR', min_supporting=-1, max_supporting=-1))
   @flagsaver.FlagSaver
   def test_window_selector_model_flags(self, model, min_supporting,
                                        max_supporting):
+    # This indirection is needed because the symbols in testdata are not set
+    # when the @parameterized decorator is called.
+    symbol_to_testdata = {
+        None: None,
+        'VARIANT_READS_THRESHOLD': testdata.WS_VARIANT_READS_THRESHOLD_MODEL,
+        'ALLELE_COUNT_LINEAR': testdata.WS_ALLELE_COUNT_LINEAR_MODEL
+    }
     FLAGS.ws_max_num_supporting_reads = max_supporting
     FLAGS.ws_min_num_supporting_reads = min_supporting
-    FLAGS.ws_window_selector_model = model
+    FLAGS.ws_window_selector_model = symbol_to_testdata[model]
     # We only make sure that reading the model does not crash or raise
     # exceptions.
     _ = realigner.realigner_config(FLAGS)
