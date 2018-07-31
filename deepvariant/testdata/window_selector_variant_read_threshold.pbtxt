@@ -1,4 +1,4 @@
-name: VARIANT_READS
+model_type: VARIANT_READS
 variant_reads_model {
   min_num_supporting_reads: 2
   max_num_supporting_reads: 300

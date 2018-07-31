@@ -185,11 +185,11 @@ def window_selector_config(flags_obj):
             min_num_supporting_reads=min_num_supporting_reads,
             max_num_supporting_reads=max_num_supporting_reads))
   else:
-    if flags_obj.ws_min_supporting_reads != _UNSET_WS_INT_FLAG:
-      raise ValueError('Cannot use both ws_min_supporting_reads and '
+    if flags_obj.ws_min_num_supporting_reads != _UNSET_WS_INT_FLAG:
+      raise ValueError('Cannot use both ws_min_num_supporting_reads and '
                        'ws_window_selector_model flags.')
-    if flags_obj.ws_max_supporting_reads != _UNSET_WS_INT_FLAG:
-      raise ValueError('Cannot use both ws_max_supporting_reads and '
+    if flags_obj.ws_max_num_supporting_reads != _UNSET_WS_INT_FLAG:
+      raise ValueError('Cannot use both ws_max_num_supporting_reads and '
                        'ws_window_selector_model flags.')
     with tf.gfile.GFile(flags_obj.ws_window_selector_model) as f:
       window_selector_model = text_format.Parse(
