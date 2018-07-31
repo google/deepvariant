@@ -81,11 +81,36 @@ def nucleus_py_extension(name, srcs = [], deps = [], **kwargs):
         deps = deps,
     )
 
-def nucleus_py_binary(name, deps = [], data = [], **kwargs):
+def _add_header_impl(ctx):
+    header_loc = ctx.outputs.out + "_header"
+    out = ctx.outputs.out
+    ctx.actions.write(
+        output = header_loc,
+        content = ctx.attr.header,
+        is_executable = True,
+    )
+
+    ctx.actions.run_shell(
+        inputs = [header_loc, ctx.attrs.src],
+        outputs = [out],
+        command = "cat $1 $2 > $3",
+        arguments = [header_loc, ctx.attrs.src, out],
+    )
+
+add_header = rule(
+    implementation = _add_header_impl,
+    attrs = {
+        "src": attr.label(allow_single_file = True),
+        "header": attr.string(),
+    },
+)
+
+def nucleus_py_binary(name, srcs = [], deps = [], data = [], **kwargs):
     """A py_binary whose C++ dependencies are put into a single .so file.
 
     Args:
       name: The name of the py_binary.
+      srcs: The list of Python source files for the binary.
       deps: The python and C++ dependencies of the py_binary.
       data: The data files used by the py_binary.
       **kwargs:  Any additional arguments to py_binary.
@@ -93,6 +118,7 @@ def nucleus_py_binary(name, deps = [], data = [], **kwargs):
     c_deps, py_deps, py_ext_deps = _classify_dependencies(deps)
     trans_deps = get_transitive_deps(c_deps + py_ext_deps)
     extended_data = data[:]
+    new_srcs = srcs[:]
     if len(trans_deps) > 0:
         # Create a .so containing all of the C++ dependencies.
         so_name = name + ".so"
@@ -103,11 +129,20 @@ def nucleus_py_binary(name, deps = [], data = [], **kwargs):
             linkshared = 1,
             deps = trans_deps,
         )
+        prelude = "import ctypes\nctypes.CDLL(\"" + so_name
+        prelude += "\", ctypes.RTLD_GLOBAL)"
+        if len(srcs) > 1:
+            fail("nucleus_py_binary currently only supports one src")
+        new_srcs[0] = "load_then_" + srcs[0]
+        add_header(
+            name = new_srcs[0],
+            src = srcs[0],
+            header = prelude,
+        )
 
-    # redacted
-    # load of so_name.
     native.py_binary(
         name = name,
+        srcs = new_srcs,
         data = extended_data,
         deps = py_deps,
         **kwargs
