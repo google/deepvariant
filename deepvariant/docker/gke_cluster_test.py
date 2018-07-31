@@ -183,6 +183,94 @@ class GkeClusterTest(unittest.TestCase):
         gke_cluster.GkeCluster(
             'foo-cluster', cluster_zone='foo-zone')._cluster_exists(), False)
 
+  @mock.patch('time.sleep')
+  @mock.patch('process_util.run_command')
+  @mock.patch(
+      'gke_cluster.GkeCluster.get_pod_status',
+      return_value=gke_cluster.PodStatus.SUCCEEDED)
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_deploy_pod(self, unused_mock_cluster_exists,
+                      unused_mock_get_pod_status, mock_call, unused_mock_sleep):
+    gke_cluster.GkeCluster(
+        'foo-cluster', cluster_zone='foo-zone').deploy_pod(
+            filepath='foo.yaml', pod_name='foo-pod')
+    mock_call.assert_any_call(
+        ['kubectl', 'create', '-f', 'foo.yaml'], retries=1, retry_delay_sec=1)
+
+  @mock.patch('time.sleep')
+  @mock.patch('process_util.run_command')
+  @mock.patch(
+      'gke_cluster.GkeCluster.get_pod_status',
+      return_value=gke_cluster.PodStatus.FAILED)
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_deploy_pod_fails(self, unused_mock_cluster_exists,
+                            unused_mock_get_pod_status, unused_mock_call,
+                            unused_mock_sleep):
+    with self.assertRaises(RuntimeError):
+      gke_cluster.GkeCluster(
+          'foo-cluster', cluster_zone='foo-zone').deploy_pod(
+              filepath='foo.yaml', pod_name='foo-pod')
+
+  @mock.patch('time.sleep')
+  @mock.patch('process_util.run_command')
+  @mock.patch('gke_cluster.GkeCluster.get_pod_status')
+  @mock.patch('gke_cluster.GkeCluster.delete_pod')
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_deploy_pod_retries(self, unused_mock_cluster_exists,
+                              unused_mock_delete_pod, mock_get_pod_status,
+                              mock_call, unused_mock_sleep):
+    mock_get_pod_status.side_effect = [
+        gke_cluster.PodStatus.FAILED, gke_cluster.PodStatus.SUCCEEDED
+    ]
+    gke_cluster.GkeCluster(
+        'foo-cluster', cluster_zone='foo-zone').deploy_pod(
+            filepath='foo.yaml', pod_name='foo-pod', retries=1)
+    mock_call.assert_any_call(
+        ['kubectl', 'create', '-f', 'foo.yaml'], retries=1, retry_delay_sec=1)
+    mock_call.assert_any_call(
+        ['kubectl', 'replace', '--force', '-f', 'foo.yaml'],
+        retries=1,
+        retry_delay_sec=1)
+
+  @mock.patch('process_util.run_command', return_value='Succeeded')
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_get_pod_status(self, unused_mock_cluster_exists, mock_call):
+    self.assertEqual(
+        gke_cluster.GkeCluster(
+            'foo-cluster',
+            cluster_zone='foo-zone').get_pod_status(pod_name='foo-pod'),
+        gke_cluster.PodStatus.SUCCEEDED)
+    mock_call.assert_any_call(
+        ['kubectl', 'get', 'pods', 'foo-pod', '-o', 'jsonpath={.status.phase}'],
+        retries=1,
+        retry_delay_sec=1)
+
+  @mock.patch('process_util.run_command', return_value='foo-status')
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_get_pod_status_unknown(self, unused_mock_cluster_exists, mock_call):
+    self.assertEqual(
+        gke_cluster.GkeCluster(
+            'foo-cluster',
+            cluster_zone='foo-zone').get_pod_status(pod_name='foo-pod'),
+        gke_cluster.PodStatus.UNKNOWN)
+    mock_call.assert_any_call(
+        ['kubectl', 'get', 'pods', 'foo-pod', '-o', 'jsonpath={.status.phase}'],
+        retries=1,
+        retry_delay_sec=1)
+
+  @mock.patch('process_util.run_command')
+  @mock.patch('gke_cluster.GkeCluster._pod_exists', return_value=True)
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_delete_pod(self, unused_mock_cluster_exists, unused_mock_pod_exists,
+                      mock_call):
+    gke_cluster.GkeCluster(
+        'foo-cluster', cluster_zone='foo-zone').delete_pod(
+            pod_name='foo-pod', wait=True)
+    mock_call.assert_any_call(
+        ['kubectl', 'delete', 'pod', 'foo-pod', '--wait'],
+        retries=1,
+        retry_delay_sec=0)
+
 
 if __name__ == '__main__':
   unittest.main()
