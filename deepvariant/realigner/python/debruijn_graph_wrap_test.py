@@ -52,7 +52,7 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
   """Basic tests for the wrapped DeBruijnGraph class."""
 
   def dbg_options(self):
-    return realigner_pb2.RealignerOptions.DeBruijnGraphOptions(
+    return realigner_pb2.DeBruijnGraphOptions(
         min_k=12,
         max_k=50,
         step_k=2,

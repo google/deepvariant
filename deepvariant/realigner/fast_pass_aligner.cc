@@ -69,8 +69,7 @@ void FastPassAligner::set_haplotypes(const std::vector<string>& haplotypes) {
   this->haplotypes_ = haplotypes;
 }
 
-void FastPassAligner::set_options(
-    const RealignerOptions::AlignerOptions& options) {
+void FastPassAligner::set_options(const AlignerOptions& options) {
   // There is no is_set method in proto so we assume that value is set if it is
   // not zero.
   if (options.kmer_size() > 0) {

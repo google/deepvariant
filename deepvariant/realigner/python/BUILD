@@ -88,6 +88,7 @@ py_clif_cc(
     py_deps = [],
     pyclif_deps = [
         "//deepvariant/protos:deepvariant_pyclif",
+        "//deepvariant/protos:realigner_pyclif",
     ],
     deps = ["//deepvariant/realigner:cpp_window_selector"],
 )

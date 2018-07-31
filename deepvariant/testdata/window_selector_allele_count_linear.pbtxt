@@ -1,0 +1,10 @@
+model_type: ALLELE_COUNT_LINEAR
+allele_count_linear_model {
+  bias: -0.683379
+  coeff_soft_clip: 2.997000
+  coeff_substitution: -0.086644
+  coeff_insertion: 2.493585
+  coeff_deletion: 1.795914
+  coeff_reference: -0.059787
+  decision_boundary: 3
+}

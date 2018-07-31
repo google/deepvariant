@@ -37,7 +37,7 @@ from "deepvariant/realigner/fast_pass_aligner.h":
       def `set_reference` as set_reference(self, ref: bytes)
       def `set_ref_start` as set_ref_start(self, chr: bytes, pos: int)
       def `set_haplotypes` as set_haplotypes(self, hyplotypes:list<bytes>)
-      def `set_options` as set_options(self, options:RealignerOptions.AlignerOptions)
+      def `set_options` as set_options(self, options:AlignerOptions)
       def `set_is_debug` as set_is_debug(self, isDebug: bool)
       def `set_debug_read_id` as set_debug_read_id(self, readId: int)
       def `AlignReads` as realign_reads(self, reads:list<Read>) -> list<Read>

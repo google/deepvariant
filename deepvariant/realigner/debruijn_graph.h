@@ -96,7 +96,7 @@ class DeBruijnGraph {
   using VertexIndexMap =
       boost::const_associative_property_map<RawVertexIndexMap>;
 
-  using Options = RealignerOptions::DeBruijnGraphOptions;
+  using Options = DeBruijnGraphOptions;
 
  private:
   // Convenience method for rebuilding a table usable as the vertex_index_t

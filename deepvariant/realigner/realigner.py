@@ -53,13 +53,19 @@ from deepvariant.realigner import window_selector
 from deepvariant.realigner.python import debruijn_graph
 from deepvariant.realigner.python import fast_pass_aligner
 from deepvariant.vendor import timer
+from google.protobuf import text_format
 
+_UNSET_WS_INT_FLAG = -1
+
+flags.DEFINE_string(
+    'ws_window_selector_model', None,
+    'Path to a text format proto of the window selector model to use.')
 flags.DEFINE_integer(
-    'ws_min_num_supporting_reads', 2,
+    'ws_min_num_supporting_reads', _UNSET_WS_INT_FLAG,
     'Minimum number of supporting reads to call a reference position for local '
     'assembly.')
 flags.DEFINE_integer(
-    'ws_max_num_supporting_reads', 300,
+    'ws_max_num_supporting_reads', _UNSET_WS_INT_FLAG,
     'Maximum number of supporting reads to call a reference position for local '
     'assembly.')
 flags.DEFINE_integer(
@@ -141,10 +147,70 @@ flags.DEFINE_integer('kmer_size', 32,
 
 # Margin added to the reference sequence for the aligner module.
 _REF_ALIGN_MARGIN = 20
+_DEFAULT_MIN_SUPPORTING_READS = 2
+_DEFAULT_MAX_SUPPORTING_READS = 300
 
 # ---------------------------------------------------------------------------
 # Set configuration settings.
 # ---------------------------------------------------------------------------
+
+
+def window_selector_config(flags_obj):
+  """Creates a WindowSelectorOptions proto based on input and default settings.
+
+  Args:
+    flags_obj: configuration FLAGS.
+
+  Returns:
+    realigner_pb2.WindowSelector protobuf.
+
+  Raises:
+    ValueError: if both ws_{min,max}_supporting_reads and
+    ws_window_selector_model are not None.
+    Or if ws_window_selector_model > ws_max_num_supporting_reads.
+  """
+  if flags_obj.ws_window_selector_model is None:
+    min_num_supporting_reads = (
+        _DEFAULT_MIN_SUPPORTING_READS
+        if flags_obj.ws_min_num_supporting_reads == _UNSET_WS_INT_FLAG else
+        flags_obj.ws_min_num_supporting_reads)
+    max_num_supporting_reads = (
+        _DEFAULT_MAX_SUPPORTING_READS
+        if flags_obj.ws_max_num_supporting_reads == _UNSET_WS_INT_FLAG else
+        flags_obj.ws_max_num_supporting_reads)
+    window_selector_model = realigner_pb2.WindowSelectorModel(
+        model_type=realigner_pb2.WindowSelectorModel.VARIANT_READS,
+        variant_reads_model=realigner_pb2.WindowSelectorModel.
+        VariantReadsThresholdModel(
+            min_num_supporting_reads=min_num_supporting_reads,
+            max_num_supporting_reads=max_num_supporting_reads))
+  else:
+    if flags_obj.ws_min_supporting_reads != _UNSET_WS_INT_FLAG:
+      raise ValueError('Cannot use both ws_min_supporting_reads and '
+                       'ws_window_selector_model flags.')
+    if flags_obj.ws_max_supporting_reads != _UNSET_WS_INT_FLAG:
+      raise ValueError('Cannot use both ws_max_supporting_reads and '
+                       'ws_window_selector_model flags.')
+    with tf.gfile.GFile(flags_obj.ws_window_selector_model) as f:
+      window_selector_model = text_format.Parse(
+          f.read(), realigner_pb2.WindowSelectorModel())
+
+  if (window_selector_model.model_type ==
+      realigner_pb2.WindowSelectorModel.VARIANT_READS):
+    model = window_selector_model.variant_reads_model
+    if model.max_num_supporting_reads < model.min_num_supporting_reads:
+      raise ValueError('ws_min_supporting_reads should be smaller than'
+                       'ws_max_supporting_reads.')
+
+  ws_config = realigner_pb2.WindowSelectorOptions(
+      min_mapq=flags_obj.ws_min_mapq,
+      min_base_quality=flags_obj.ws_min_base_quality,
+      min_windows_distance=flags_obj.ws_min_windows_distance,
+      max_window_size=flags_obj.ws_max_window_size,
+      region_expansion_in_bp=flags_obj.ws_region_expansion_in_bp,
+      window_selector_model=window_selector_model)
+
+  return ws_config
 
 
 def realigner_config(flags_obj):
@@ -159,16 +225,9 @@ def realigner_config(flags_obj):
   Raises:
     ValueError: If we observe invalid flag values.
   """
-  ws_config = realigner_pb2.RealignerOptions.WindowSelectorOptions(
-      min_num_supporting_reads=flags_obj.ws_min_num_supporting_reads,
-      max_num_supporting_reads=flags_obj.ws_max_num_supporting_reads,
-      min_mapq=flags_obj.ws_min_mapq,
-      min_base_quality=flags_obj.ws_min_base_quality,
-      min_windows_distance=flags_obj.ws_min_windows_distance,
-      max_window_size=flags_obj.ws_max_window_size,
-      region_expansion_in_bp=flags_obj.ws_region_expansion_in_bp)
+  ws_config = window_selector_config(flags_obj)
 
-  dbg_config = realigner_pb2.RealignerOptions.DeBruijnGraphOptions(
+  dbg_config = realigner_pb2.DeBruijnGraphOptions(
       min_k=flags_obj.dbg_min_k,
       max_k=flags_obj.dbg_max_k,
       step_k=flags_obj.dbg_step_k,
@@ -177,7 +236,7 @@ def realigner_config(flags_obj):
       min_edge_weight=flags_obj.dbg_min_edge_weight,
       max_num_paths=flags_obj.dbg_max_num_paths)
 
-  aln_config = realigner_pb2.RealignerOptions.AlignerOptions(
+  aln_config = realigner_pb2.AlignerOptions(
       match=flags_obj.aln_match,
       mismatch=flags_obj.aln_mismatch,
       gap_open=flags_obj.aln_gap_open,
@@ -189,7 +248,7 @@ def realigner_config(flags_obj):
       realignment_similarity_threshold,
       kmer_size=flags_obj.kmer_size)
 
-  diagnostics = realigner_pb2.RealignerOptions.Diagnostics(
+  diagnostics = realigner_pb2.Diagnostics(
       enabled=bool(flags_obj.realigner_diagnostics),
       output_root=flags_obj.realigner_diagnostics,
       emit_realigned_reads=flags_obj.emit_realigned_reads)

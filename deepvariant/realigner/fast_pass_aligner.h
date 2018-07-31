@@ -254,7 +254,7 @@ class FastPassAligner {
   void set_haplotypes(const std::vector<string>& haplotypes);
   uint8_t get_match_score() const { return match_score_; }
   uint8_t get_mismatch_penalty() const { return mismatch_penalty_; }
-  void set_options(const RealignerOptions::AlignerOptions& options);
+  void set_options(const AlignerOptions& options);
   void set_is_debug(bool is_debug) { debug_out_ = is_debug; }
   void set_debug_read_id(int read_id) { debug_read_id_ = read_id; }
   int16_t get_ssw_alignment_score_threshold() const {

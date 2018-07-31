@@ -34,6 +34,7 @@ py_test(
         ":utils",
         "//deepvariant:py_testdata",
         "//deepvariant/protos:realigner_py_pb2",
+        "//deepvariant/testing:flagsaver",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/protos:reads_py_pb2",
@@ -51,6 +52,7 @@ cc_library(
     hdrs = ["window_selector.h"],
     deps = [
         "//deepvariant:allelecounter",
+        "//deepvariant/protos:realigner_cc_pb2",
     ],
 )
 
@@ -58,7 +60,7 @@ nucleus_py_library(
     name = "window_selector",
     srcs = ["window_selector.py"],
     deps = [
-        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/python:allelecounter",
         "//deepvariant/realigner/python:window_selector",
         "//third_party/nucleus/protos:reads_py_pb2",
