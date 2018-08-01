@@ -679,6 +679,29 @@ class DeepVariantSlimModel(DeepVariantModel):
         label_smoothing=FLAGS.label_smoothing)
     total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
 
+    return self.make_ops_and_estimator(features, endpoints, labels, logits,
+                                       predictions, total_loss, mode, params)
+
+  def make_ops_and_estimator(self, features, endpoints, labels, logits,
+                             predictions, total_loss, mode, params):
+    """Make EstimatorSpec for the current model.
+
+    Args:
+      features: a single Tensor or dict of same (from input_fn).
+      endpoints:  a dictionary, containing string keys mapped to endpoint
+        tensors of this model. The dictionary must contain a key 'Predictions'
+        that contains the probability of having each of 'num_classes' classes.
+      labels: a single Tensor or dict of same (from input_fn).
+      logits: a single Tensor with logits
+      predictions: A dictionaty that must contain the following keys: 'Logits'
+        and 'Predictions'.
+      total_loss:  a single Tensor with a loss
+      mode: tf.estimator.ModeKeys.
+      params: dict.
+
+    Returns:
+      EstimatorSpec or TPUEstimatorSpec depending on self.use_tpu.
+    """
     # Note, below, one of train_op or eval_metrics will be None, and the other
     # will be populated, depending on mode.
 
@@ -1053,8 +1076,116 @@ class DeepVariantConstantModel(DeepVariantDummyModel):
       return spec.as_estimator_spec()
 
 
+class DeepVariantSmallModel(DeepVariantSlimModel):
+  """A smaller of version of the DeepVariant model.
+
+     Uses only the first layers of Inception net.
+  """
+
+  def __init__(self, representation_layer='Mixed_5d'):
+    """Creates an DeepVariant CNN network based on a tf.slim model.
+
+    Args:
+      representation_layer: string. The name of the layer from the Inception net
+      which will be used as an endpoint.
+
+    Raises:
+      ValueError: If any of the arguments are invalid.
+    """
+    super(DeepVariantSmallModel, self).__init__(
+        name='small_inception',
+        pretrained_model_path=('/namespace/vale-project/models/classification/'
+                               'imagenet/inception_v3/model.ckpt-9591376'),
+        n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
+        excluded_scopes_for_incompatible_shapes=[
+            'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
+        ])
+
+    self.representation_layer = representation_layer
+
+  def model_fn(self, features, labels, mode, params):
+    """A model_fn for slim (really inception_v3), satisfying the Estimator API.
+
+    Args:
+      features: a single Tensor or dict of same (from input_fn).
+      labels: a single Tensor or dict of same (from input_fn).
+      mode: tf.estimator.ModeKeys.
+      params: dict.
+
+    Returns:
+      EstimatorSpec or TPUEstimatorSpec depending on self.use_tpu.
+
+    Raises:
+      ValueError: If representation_layer was not found in the Inception
+      architecture
+    """
+    # NB. The basic structure of this started from
+    # //third_party/cloud_tpu/models/inception/inception_v3.py
+    # and //third_party/cloud_tpu/models/mobilenet/mobilenet.py
+
+    # redacted
+    num_classes = dv_constants.NUM_CLASSES
+
+    images = features['image']
+    images = self.preprocess_images(images)
+
+    endpoints = self.create(
+        images=images,
+        num_classes=num_classes,
+        is_training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    if self.representation_layer not in endpoints.keys():
+      raise ValueError('Layer {} is not found Inception endpoints.'
+                       'Available Inception net endpoints: {}'.format(
+                           self.representation_layer, endpoints.keys()))
+
+    mid_layer = endpoints[self.representation_layer]
+    # Perform 1x1 convolution similarly to the Inception architecture
+    # (see 'Predictions' end points in inception_v3 architecture)
+
+    tower = tf.contrib.layers.conv2d(
+        mid_layer, 1, [1, 1], stride=1, activation_fn=tf.nn.relu)
+
+    batch_size = tower.get_shape()[0].value
+    tower = tf.reshape(tower, [batch_size, -1])
+
+    with tf.variable_scope('denselayers'):
+      with slim.arg_scope([slim.fully_connected], activation_fn=tf.nn.relu):
+        logits = slim.fully_connected(tower, num_classes, scope='Dense')
+
+    predictions = endpoints
+    predictions.update({
+        'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
+        'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
+        'Logits': logits,
+        'Predictions': slim.softmax(logits)
+    })
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      return self._model_fn_predict(mode, features, logits)
+
+    # Compute loss.
+    one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)
+    tf.losses.softmax_cross_entropy(
+        onehot_labels=one_hot_labels,
+        logits=logits,
+        weights=1.0,
+        label_smoothing=FLAGS.label_smoothing)
+    total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
+
+    return self.make_ops_and_estimator(features, endpoints, labels, logits,
+                                       predictions, total_loss, mode, params)
+
+  def _create(self, images, num_classes, is_training):
+    """See baseclass."""
+    with slim.arg_scope(inception.inception_v3_arg_scope()):
+      _, endpoints = inception.inception_v3(
+          images, num_classes, create_aux_logits=False, is_training=is_training)
+      return endpoints
+
 # Our list of pre-defined models.
 _MODELS = [
+    DeepVariantSmallModel(),
     DeepVariantInceptionV3(),
     DeepVariantInceptionV2(),
     DeepVariantMobileNetV1(),
