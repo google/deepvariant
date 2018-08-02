@@ -18,11 +18,11 @@ the greatest achievable accuracy for BGISEQ-500 data.
 
 We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
-accuracy comparing to the WGS model as a baseline: Indel F1 redacted
-F1: redacted
+accuracy comparing to the WGS model as a baseline: Indel F1 95.52% --> 98.19% ;
+SNP F1: 99.88% --> 99.91%.
 
-The training on TPU took about 10 hours. All the other processing (done serially
-with no pipeline optimization) took 4 hours.
+Training for 50k steps took about 2 hours 11 minutes on Cloud TPU. All the other
+processing (done serially with no pipeline optimization) took 3-4 hours.
 
 ## Request a machine
 
@@ -38,6 +38,16 @@ Set the variables:
 YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
+BUCKET="gs://deepvariant"
+BIN_VERSION="0.7.0"
+
+BIN_VERSION="0.7.0"
+MODEL_VERSION="0.7.0"
+BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
+MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}.data-wgs_standard"
+
+GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
+
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET}/customized_training"
 TRAINING_DIR="${OUTPUT_BUCKET}/training_dir"
 
@@ -45,13 +55,11 @@ BASE="${HOME}/training-case-study"
 DATA_BUCKET=gs://deepvariant/training-case-study/BGISEQ-HG001
 
 INPUT_DIR="${BASE}/input"
-# redacted
-BIN_DIR=/home/pichuan/deepvariant/bazel-bin/deepvariant
+BIN_DIR="${INPUT_DIR}/bin"
 DATA_DIR="${INPUT_DIR}/data"
 OUTPUT_DIR="${BASE}/output"
 LOG_DIR="${OUTPUT_DIR}/logs"
-# redacted
-SHUFFLE_SCRIPT_DIR=/home/pichuan/deepvariant/tools/
+SHUFFLE_SCRIPT_DIR="${HOME}/deepvariant/tools"
 
 REF="${DATA_DIR}/ucsc_hg19.fa"
 BAM="${DATA_DIR}/BGISEQ_PE100_NA12878.sorted.bam"
@@ -59,28 +67,34 @@ TRUTH_VCF="${DATA_DIR}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOL
 TRUTH_BED="${DATA_DIR}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel_chr.bed"
 
 N_SHARDS="64"
-
-# redacted
-BUCKET="gs://deepvariant"
-MODEL_VERSION="0.6.0"
-MODEL_CL="191676894"
-# Note that we don't specify the CL number for the binary, only the bin version.
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wgs_standard"
-MODELS_DIR="${INPUT_DIR}/models"
-GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
 ```
 
 ## Download binaries, models, and data
-
-### redacted
 
 ### Create directories:
 
 ```
 mkdir -p "${OUTPUT_DIR}"
+mkdir -p "${BIN_DIR}"
 mkdir -p "${DATA_DIR}"
 mkdir -p "${LOG_DIR}"
-mkdir -p "${MODELS_DIR}"
+```
+
+### Binaries
+
+Copy our binaries from the cloud bucket.
+
+```
+time gsutil -m cp -r "${BIN_BUCKET}/*" "${BIN_DIR}"
+chmod a+x "${BIN_DIR}"/*
+```
+
+This step should be very fast - it took us about 6 seconds when we tested.
+
+Now, we need to install all prerequisites on the machine. Run this command:
+
+```
+cd "${BIN_DIR}"; time bash run-prereq.sh; cd -
 ```
 
 ### Copy data
@@ -93,20 +107,12 @@ gsutil -m cp -r "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Io
 gunzip "${DATA_DIR}/ucsc_hg19.fa.gz"
 ```
 
-### Copy the model files to your local disk.
-
-```
-time gsutil -m cp -r "${MODEL_BUCKET}/*" "${MODELS_DIR}"
-```
-
-This step should be really fast. It took us about 5 seconds.
-
 ### Download extra packages
 
 ```
-sudo apt-get -y update
-sudo apt-get -y install parallel
-sudo apt-get -y install docker.io
+sudo apt -y update
+sudo apt -y install parallel
+sudo apt -y install docker.io
 ```
 
 ## Run make_examples in “training” mode for training and validation sets, and in "calling" model for test set.
@@ -115,13 +121,14 @@ Create examples in "training" mode (which means these `tensorflow.Example`s will
 contain a `label` field).
 
 In this tutorial, we create examples on one replicate of HG001 sequenced by
-BGISEQ-500 provided on the Genome In a Bottle FTP site
+BGISEQ-500 provided on the
+[Genome In a Bottle FTP site](https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/BGISEQ500/standard_library/)
 [[readme](https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/BGISEQ500/standard_library/readme.txt)].
 
 We will create examples in 3 different sets: Training set (everything except for
 chr20, 21, and 22), validation set (chr21 and 22) - These 2 sets will be used in
-`model_train` and `model_eval`, so we'll create them in "training" model so they
-have the real labels. We'll create examples in "calling" model for the test set
+`model_train` and `model_eval`, so we'll create them in "training" mode so they
+have the real labels. We'll create examples in "calling" mode for the test set
 (chr20).
 
 For the definition of these 3 sets in commonly used machine learning
@@ -145,7 +152,7 @@ Glossary](https://developers.google.com/machine-learning/crash-course/glossary).
 ) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
 ```
 
-This took 123m19.384s. We will want to shuffle this on Dataflow later, so I will
+This took 132m41.911s. We will want to shuffle this on Dataflow later, so I will
 copy it to GCS bucket first:
 
 ```
@@ -167,11 +174,10 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00064.gz \
       --confident_regions "${TRUTH_BED}" \
       --task {} \
       --regions "'chr21 chr22'" \
-      --use_fast_pass_aligner \
 ) >"${LOG_DIR}/validation_set.with_label.make_examples.log" 2>&1
 ```
 
-This took: 8m50.122s
+This took: 8m50.984s.
 
 Validation set is small here. We will just shuffle locally later, so no need to
 copy to out GCS bucket.
@@ -188,11 +194,10 @@ copy to out GCS bucket.
       --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
       --task {} \
       --regions "chr20" \
-      --use_fast_pass_aligner \
 ) >"${LOG_DIR}/test_set.no_label.make_examples.log" 2>&1
 ```
 
-This took: 2m30.125s
+This took: 2m40.693s.
 
 We don't need to shuffle test set. It will eventually be used in the final
 evaluation evaluated with `hap.py` on the whole set.
@@ -202,6 +207,15 @@ evaluation evaluated with `hap.py` on the whole set.
 Shuffling the `tensorflow.Example`s is an important step for training a model.
 In our training logic, we decided to not shuffle our examples within TensorFlow,
 but rely a preprocessing step that shuffles the examples globally.
+
+First, if you have run this step before, and want to rerun it, you might want to
+consider cleaning up previous data first to avoid confusion:
+
+```
+# (Optoinal) Clean up existing files.
+gsutil -m rm -f "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
+gsutil rm -f "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
+```
 
 Here we provide an example of running on [Cloud Dataflow
 Runner](https://beam.apache.org/documentation/runners/dataflow/) as well locally
@@ -215,7 +229,7 @@ https://beam.apache.org/get-started/quickstart-py/
 Here is an example. You might or might not need to install everything below:
 
 ```
-sudo apt-get -y install python-dev python-pip
+sudo apt -y install python-dev python-pip
 pip install --upgrade pip
 pip install --user --upgrade virtualenv
 ```
@@ -243,6 +257,12 @@ Once this is activated, install Beam:
 pip install apache-beam
 ```
 
+Get the code that shuffles:
+
+```
+wget https://raw.githubusercontent.com/google/deepvariant/r0.7/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
+```
+
 Validation set is small, so we will just shuffle locally using DirectRunner:
 
 ```
@@ -264,7 +284,7 @@ Output is in
 
 Data config file is in `${OUTPUT_DIR}/validation_set.dataset_config.pbtxt`.
 
-This took 12m28.298s.
+This took 10m34.407s.
 
 For the training set, it is too large to be running with DirectRunner on this
 instance, so we use the DataflowRunner. Before that, please make sure you enable
@@ -280,10 +300,6 @@ pip install google-cloud-dataflow
 Shuffle using Dataflow.
 
 ```
-# First, clean up existing files.
-gsutil -m rm -f "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-gsutil rm -f "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
-
 time python ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py \
   --project="${YOUR_PROJECT}" \
   --input_pattern_list="${OUTPUT_BUCKET}"/training_set.with_label.tfrecord-?????-of-00064.gz \
@@ -308,8 +324,15 @@ In order to have the best performance, you might need extra resources such as
 machines or IPs within a region. That will not be in the scope of this case
 study here.
 
-My run took about 36min on Dataflow. The output path can be found in the
-dataset_config file by:
+My run took about 40m on Dataflow.
+
+After this is done, deactivate the virtualenv:
+
+```
+deactivate
+```
+
+The output path can be found in the dataset_config file by:
 
 ```
 gsutil cat "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
@@ -318,21 +341,23 @@ gsutil cat "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
 In the output, the `tfrecord_path` should be valid paths in gs://.
 
 ```
+name: "HG001"
+tfrecord_path: "YOUR_GCS_BUCKET/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
+num_examples: 3890596
 # Generated by shuffle_tfrecords_beam.py
 #
 # --input_pattern_list=YOUR_GCS_BUCKET/customized_training/training_set.with_label.tfrecord-?????-of-00064.gz
 # --output_pattern_prefix=YOUR_GCS_BUCKET/customized_training/training_set.with_label.shuffled
-#
-
-name: "HG001"
-tfrecord_path: "YOUR_GCS_BUCKET/customized_training/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-num_examples: 3864775
 ```
 
-In my run, it wrote to 370 shards:
-`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00370.tfrecord.gz`
+In my run, it wrote to 349 shards:
+`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00349.tfrecord.gz`
 
-### Start a TPU
+### Start a Cloud TPU
+
+Before you start, please read about
+[Cloud TPU pricing](https://cloud.google.com/tpu/docs/pricing) and consider the
+expenses for using TPUs.
 
 The page that has the official instructions is here:
 
@@ -357,9 +382,14 @@ time gcloud beta compute tpus create ${USER}-demo-tpu \
   --zone=us-central1-f
 ```
 
+(Note: There are also
+[Preemptible TPUs](https://cloud.google.com/tpu/docs/preemptible). But in this
+case study we only use the non-preemptible one. And, once you're done with the
+TPU, you should remember to delete it.
+
 This command took about 5min to finish.
 
-After the TPU is create, we can quary it by:
+After the TPU is created, we can query it by:
 
 ```
 gcloud beta compute tpus list --zone=us-central1-f
@@ -379,6 +409,11 @@ export TPU_NAME="${USER}-demo-tpu"
 export TPU_IP="10.240.2.2"
 ```
 
+(One more reminder about
+[Cloud TPU pricing](https://cloud.google.com/tpu/docs/pricing) - when you're
+done using the TPU, make sure to delete it otherwise you'll continue to be
+billed for the TPU.)
+
 ### Start `model_train` and `model_eval`
 
 ```
@@ -388,7 +423,10 @@ export TPU_IP="10.240.2.2"
   --dataset_config_pbtxt="${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt" \
   --train_dir="${TRAINING_DIR}" \
   --model_name="inception_v3" \
-  --number_of_steps=1000000 \
+  --number_of_steps=50000 \
+  --save_interval_secs=300 \
+  --batch_size=512 \
+  --learning_rate=0.008 \
   --start_from_checkpoint="${GCS_PRETRAINED_WGS_MODEL}" \
 ) > "${LOG_DIR}/train.log" 2>&1 &
 ```
@@ -403,12 +441,11 @@ Pointers for common issues or things you can tune:
 
     As you train, you'll notice that not every checkpoint gets saved. If you
     want model checkpoints to be saved more frequently, one flag you can
-    consider providing is `save_interval_secs`. With the current default (1000)
-    when I ran this case study, the checkpoints were saved at roughly every
-    28,000 steps. If this doesn't provide enough granularity, you can decrease
-    the number of seconds, then you'll have more saved checkpoints over time.
-    The tradeoff is the space needed on your GCS buckets to keep these
-    checkpoints around.
+    consider providing is `save_interval_secs`. With the current default (300)
+    when I ran this case study, the checkpoints were saved every 5 minutes. If
+    this doesn't provide enough granularity, you can decrease the number of
+    seconds, then you'll have more saved checkpoints over time. The tradeoff is
+    the space needed on your GCS buckets to keep these checkpoints around.
 
 1.  If you have already run this command before, you might see this in your log:
     "Skipping training since max_steps has already saved."
@@ -420,9 +457,10 @@ Pointers for common issues or things you can tune:
 At the same time, start `model_eval` on CPUs:
 
 ```
-KMP_BLOCKTIME=0 python ${BIN_DIR}/model_eval.zip \
+python ${BIN_DIR}/model_eval.zip \
 --dataset_config_pbtxt="${OUTPUT_DIR}/validation_set.dataset_config.pbtxt" \
---checkpoint_dir="${TRAINING_DIR}" > "${LOG_DIR}/eval.log" 2>&1 &
+--checkpoint_dir="${TRAINING_DIR}" \
+--batch_size=512 > "${LOG_DIR}/eval.log" 2>&1 &
 ```
 
 `model_eval` will watch the `${TRAINING_DIR}` and start evaluting when there are
@@ -434,9 +472,15 @@ accurate they are on the validation set.
 When I ran this case study, running `model_eval` on CPUs is fast enough because
 `model_train` didn't save checkpoints too frequently.
 
-In my run, `model_train` took < 11hr to finish 1M steps. Note that `model_eval`
-will not stop on its own, so I had to kill the process after training is no
-longer producing more checkpoints.
+In my run, `model_train` took about 2 hours 11 minutes to finish 50k steps (with
+batch_size 512). Note that `model_eval` will not stop on its own, so I had to
+kill the process after training is no longer producing more checkpoints. And,
+**remember to delete the TPU once you're done with training.** You can use this
+command to delete the TPU:
+
+```
+gcloud beta compute tpus delete ${TPU_NAME} --zone us-central1-f
+```
 
 ### Use TensorBoard to visualize progress
 
@@ -462,7 +506,7 @@ tensorboard --logdir ${TRAINING_DIR} --port=8080
 This gives some message like:
 
 ```
-TensorBoard 1.8.0 at http://cs-6000-devshell-vm-871d4de8-1699-458c-994b-810723c68c6d:8080 (Press CTRL+C to quit)
+TensorBoard 1.9.0 at http://cs-6000-devshell-vm-ddb3cd66-9d0b-4e19-afcc-d4a19ba2ee06:8080 (Press CTRL+C to quit)
 ```
 
 But that link is not usable directly. I clicked on the “Web Preview” on the top
@@ -499,12 +543,14 @@ Copy the `*.metrics` file to local:
 
 ```
 mkdir -p /tmp/metrics
-gsutil -m cp  $TRAINING_DIR/*metrics /tmp/metrics/
+gsutil -m cp  ${TRAINING_DIR}/*metrics /tmp/metrics/
 ```
 
 Run a simple script that outputs 3 fields per line: checkpoint, TPs+FNs, F1:
 
 ```
+wget https://raw.githubusercontent.com/google/deepvariant/r0.7/tools/print_f1.py -O ${SHUFFLE_SCRIPT_DIR}/print_f1.py
+
 python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
 --metrics_dir="/tmp/metrics/" | sort -k 3 -n -r | head -1
 ```
@@ -512,16 +558,17 @@ python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
 The top line I got was this:
 
 ```
-308400  96761.0 0.998816494654
+35700   96547.0 0.99898486622
 ```
 
 This means the model checkpoint that performs the best on the validation set is
-`${TRAINING_DIR}/model.ckpt-27600`. Based on this result, a few thoughts came
+`${TRAINING_DIR}/model.ckpt-35700`. Based on this result, a few thoughts came
 into mind:
 
 1.  Training more steps didn't seem to help much. Did the training overfit?
-1.  It might make sense to save checkpoints more frequently so we can observe
-    this curve with finer granularity.
+1.  Currently we save checkpoints every 5 minutes (set by `save_interval_secs`).
+    We could save checkpoints more frequently so we can observe this curve with
+    finer granularity.
 
 But for now, let's use this model to do the final evaluation on the test set and
 see how much we get.
@@ -533,7 +580,7 @@ run on CPUs:
 ( time python ${BIN_DIR}/call_variants.zip \
     --outfile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
     --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
-    --checkpoint "${TRAINING_DIR}/model.ckpt-308400" \
+    --checkpoint "${TRAINING_DIR}/model.ckpt-35700" \
 ) >"${LOG_DIR}/test_set.call_variants.log" 2>&1 &
 ```
 
@@ -573,30 +620,39 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 This takes about 3 minutes. The output of `hap.py` can be found in this
 [gist](https://gist.github.com/pichuan/7687efca41461566f24e013ee1de86ad).
 
-redacted
-
 To summarize, the accuracy is:
 
-Type  | # FN | # FP | Recall | Precision | F1\_Score
------ | ---- | ---- | ------ | --------- | ---------
-INDEL | redacted
-SNP   | redacted
+Type  | #TP   | # FN | # FP | Recall   | Precision | F1\_Score
+----- | ----- | ---- | ---- | -------- | --------- | ---------
+INDEL | 9799  | 224  | 143  | 0.977651 | 0.986162  | 0.981888
+SNP   | 66166 | 71   | 50   | 0.998928 | 0.999245  | 0.999087
 
-The baseline we're comparing to is to directly use the WGS model
-(`${PRETRAINED_WGS_MODEL}`) to make the calls.
+The baseline we're comparing to is to directly use the WGS model (`--checkpoint
+${GCS_PRETRAINED_WGS_MODEL}`) to make the calls.
 
 Baseline:
 
-Type  | # FN | # FP | Recall | Precision | F1\_Score
------ | ---- | ---- | ------ | --------- | ---------
-INDEL | redacted
-SNP   | redacted
+Type  | #TP   | # FN | # FP | Recall   | Precision | F1\_Score
+----- | ----- | ---- | ---- | -------- | --------- | ---------
+INDEL | 9702  | 321  | 613  | 0.967974 | 0.942764  | 0.955202
+SNP   | 66126 | 111  | 47   | 0.998324 | 0.999290  | 0.998807
 
-### Parameters to tune
+### Additional things to try
+
+#### Parameters to tune
 
 Starting from the default setting of this tutorial is a good starting point, but
 this training case study is by no means the best setting. Training is both a
 science and an art. There are many knobs that we could potentially tune. Users
 might be able to use different parameters to train a more accurate model even
-with the same data, such as `learning_rate`, `learning_rate_decay_factor` in
-modeling.py.
+with the same data, such as `batch_size`, `learning_rate`,
+`learning_rate_decay_factor` in modeling.py.
+
+#### Downsampling the BAM file to generate more training examples
+
+When generating the training set, we can make some adjustment to create more
+training data. For example, when we train the released WGS model for
+DeepVariant, for each BAM file, we created an extra set of training examples
+using `--downsample_fraction=0.5`, which downsamples the reads and creates
+training examples with lower coverage. We found that this makes the trained
+model more robust.
