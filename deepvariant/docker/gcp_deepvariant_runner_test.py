@@ -45,9 +45,9 @@ import multiprocessing
 import unittest
 
 import gcp_deepvariant_runner
+import gke_cluster
 
 import mock
-from mock import patch
 
 
 class _HasAllOf(object):
@@ -81,6 +81,13 @@ class _HasAllOf(object):
     return '<_HasAllOf({})>'.format(', '.join(repr(v) for v in self._values))
 
 
+class AnyStringWith(str):
+  """Helper class used in mocking to check string arguments."""
+
+  def __eq__(self, other):
+    return self in other
+
+
 class DeepvariantRunnerTest(unittest.TestCase):
 
   def setUp(self):
@@ -104,8 +111,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
         'gs://ref',
     ]
 
-  @patch('gcp_deepvariant_runner._run_job')
-  @patch.object(multiprocessing, 'Pool')
+  @mock.patch('gcp_deepvariant_runner._run_job')
+  @mock.patch.object(multiprocessing, 'Pool')
   def testRunPipeline(self, mock_pool, mock_run_job):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
@@ -132,8 +139,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
                   'CALLED_VARIANTS=gs://staging/called_variants/*',
                   'OUTFILE=gs://output.vcf'))
 
-  @patch('gcp_deepvariant_runner._run_job')
-  @patch.object(multiprocessing, 'Pool')
+  @mock.patch('gcp_deepvariant_runner._run_job')
+  @mock.patch.object(multiprocessing, 'Pool')
   def testRunPipeline_WithGVCFOutFile(self, mock_pool, mock_run_job):
 
     mock_apply_async = mock_pool.return_value.apply_async
@@ -164,7 +171,7 @@ class DeepvariantRunnerTest(unittest.TestCase):
                   'OUTFILE=gs://output.vcf', 'GVCF=gs://staging/gvcf/*',
                   'GVCF_OUTFILE=gs://gvcf_output.vcf'))
 
-  @patch.object(multiprocessing, 'Pool')
+  @mock.patch.object(multiprocessing, 'Pool')
   def testRunMakeExamples(self, mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
@@ -202,7 +209,7 @@ class DeepvariantRunnerTest(unittest.TestCase):
         any_order=True,
     )
 
-  @patch.object(multiprocessing, 'Pool')
+  @mock.patch.object(multiprocessing, 'Pool')
   def testRunCallVariants(self, mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
@@ -241,7 +248,7 @@ class DeepvariantRunnerTest(unittest.TestCase):
         any_order=True,
     )
 
-  @patch.object(multiprocessing, 'Pool')
+  @mock.patch.object(multiprocessing, 'Pool')
   def testRunCallVariants_GPU(self, mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
@@ -283,7 +290,33 @@ class DeepvariantRunnerTest(unittest.TestCase):
         any_order=True,
     )
 
-  @patch('gcp_deepvariant_runner._run_job')
+  @mock.patch.object(gke_cluster.GkeCluster, '__init__', return_value=None)
+  @mock.patch.object(gke_cluster.GkeCluster, 'deploy_pod')
+  def testRunCallVariants_TPU(self, mock_deploy_pod, mock_init):
+    self._argv.extend([
+        '--jobs_to_run',
+        'call_variants',
+        '--call_variants_workers',
+        '1',
+        '--shards',
+        '15',
+        '--tpu',
+        '--gke_cluster_name',
+        'foo-cluster',
+        '--gke_cluster_zone',
+        'us-central1-c',
+        '--docker_image',
+        'gcr.io/dockerimage',
+    ])
+    gcp_deepvariant_runner.run(self._argv)
+    mock_init.assert_called_once_with('foo-cluster', None, 'us-central1-c')
+    mock_deploy_pod.assert_called_once_with(
+        pod_config=mock.ANY,
+        pod_name=AnyStringWith('deepvariant-'),
+        retries=1,
+        wait=True)
+
+  @mock.patch('gcp_deepvariant_runner._run_job')
   def testRunPostProcessVariants(self, mock_run_job):
     self._argv.extend([
         '--jobs_to_run',

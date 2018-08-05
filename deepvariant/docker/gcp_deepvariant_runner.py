@@ -51,12 +51,14 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import datetime
 import logging
 import multiprocessing
 import os
 import subprocess
+import uuid
 
-from subprocess import PIPE
+import gke_cluster
 
 _MAKE_EXAMPLES_JOB_NAME = 'make_examples'
 _CALL_VARIANTS_JOB_NAME = 'call_variants'
@@ -89,6 +91,44 @@ _POSTPROCESS_VARIANTS_COMMAND = r"""
     --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord@"${{SHARDS}}".gz
     --outfile "${{OUTFILE}}"
     {EXTRA_ARGS}
+"""
+
+_NOW_STR = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+
+_GKE_CLUSTER_VERSION = '1.9.6-gke.1'
+_POD_CONFIG_TEMPLATE = r"""
+{{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {{
+        "name": "{POD_NAME}",
+        "annotations": {{
+            "tf-version.cloud-tpus.google.com": "1.9"
+        }}
+    }},
+    "spec": {{
+        "containers": [
+            {{
+                "name": "deepvaraint",
+                "image": "{DOCKER_IMAGE}",
+                "command": [
+                    "call_variants",
+                    "--use_tpu",
+                    "--master=$(KUBE_GOOGLE_CLOUD_TPU_ENDPOINTS)",
+                    "--outfile={OUTFILE}",
+                    "--examples={EXAMPLES}",
+                    "--checkpoint={MODEL_CHECKPOINT}"
+                ],
+                "resources": {{
+                    "limits": {{
+                        "cloud-tpus.google.com/v2": "8"
+                    }}
+                }}
+            }}
+        ],
+        "restartPolicy": "Never"
+    }}
+}}
 """
 
 
@@ -145,9 +185,9 @@ def _run_job(run_args):
 
   process = subprocess.Popen(
       run_args,
-      stdin=PIPE,
-      stdout=PIPE,
-      stderr=PIPE,
+      stdin=subprocess.PIPE,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
       env={'PATH': os.environ['PATH']})
 
   try:
@@ -240,9 +280,72 @@ def _wait_for_results(threads, results):
       result.get()
 
 
-def _run_call_variants(pipeline_args):
-  """Runs the call_variants job."""
+def _deploy_call_variants_pod(pod_name, cluster, pipeline_args):
+  """Deploys a pod into Kubernetes cluster, and waits on completion."""
+  # redacted
+  # redacted
+  sharded_suffix = '@' + str(pipeline_args.shards) + '.gz'
+  infile = os.path.join(
+      _get_staging_examples_folder(pipeline_args, 0),
+      'examples_output.tfrecord' + sharded_suffix)
+  outfile = os.path.join(
+      _get_staging_called_variants_folder(pipeline_args),
+      'call_variants_output.tfrecord' + sharded_suffix)
+  pod_config = _POD_CONFIG_TEMPLATE.format(
+      POD_NAME=pod_name,
+      DOCKER_IMAGE=pipeline_args.docker_image,
+      EXAMPLES=infile,
+      OUTFILE=outfile,
+      MODEL_CHECKPOINT=pipeline_args.model + '/model.ckpt')
+  cluster.deploy_pod(
+      pod_config=pod_config,
+      pod_name=pod_name,
+      retries=pipeline_args.max_non_preemptible_tries - 1,
+      wait=True)
 
+
+def _run_call_variants_with_kubernetes(pipeline_args):
+  """Runs call_variants step with kubernetes."""
+  # Setup Kubernetes cluster.
+  if pipeline_args.gke_cluster_name:
+    # Reuse provided GKE cluster.
+    new_cluster_created = False
+    cluster = gke_cluster.GkeCluster(pipeline_args.gke_cluster_name,
+                                     pipeline_args.gke_cluster_region,
+                                     pipeline_args.gke_cluster_zone)
+  else:
+    # Create a new GKE cluster.
+    job_name_label = pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME
+    extra_args = [
+        '--cluster-version=' + _GKE_CLUSTER_VERSION, '--num-nodes=1',
+        '--enable-kubernetes-alpha', '--enable-ip-alias',
+        '--create-subnetwork=', '--node-labels=job_name=' + job_name_label,
+        '--scopes=cloud-platform', '--enable-tpu', '--no-enable-autorepair',
+        '--project', pipeline_args.project, '--quiet'
+    ]
+    cluster_name = 'deepvariant-' + _NOW_STR + uuid.uuid4().hex[:5]
+    cluster = gke_cluster.GkeCluster(
+        cluster_name,
+        pipeline_args.gke_cluster_region,
+        pipeline_args.gke_cluster_zone,
+        alpha_cluster=True,
+        extra_args=extra_args)
+    new_cluster_created = True
+
+  # Deploy call_variants pod.
+  pod_name = 'deepvariant-' + _NOW_STR + '-' + uuid.uuid4().hex[:5]
+  try:
+    _deploy_call_variants_pod(pod_name, cluster, pipeline_args)
+  except KeyboardInterrupt:
+    cluster.delete_pod(pod_name)
+    raise RuntimeError('Job cancelled by user.')
+  finally:
+    if new_cluster_created:
+      cluster.delete_cluster(wait=False)
+
+
+def _run_call_variants_with_pipelines_api(pipeline_args):
+  """Runs call_variants step with pipelines API."""
   command = _CALL_VARIANTS_COMMAND.format()
 
   machine_type = 'custom-{0}-{1}'.format(
@@ -286,6 +389,14 @@ def _run_call_variants(pipeline_args):
     results.append(threads.apply_async(_run_job, [run_args]))
 
   _wait_for_results(threads, results)
+
+
+def _run_call_variants(pipeline_args):
+  """Runs the call_variants job."""
+  if pipeline_args.tpu:
+    _run_call_variants_with_kubernetes(pipeline_args)
+  else:
+    _run_call_variants_with_pipelines_api(pipeline_args)
 
 
 def _run_postprocess_variants(pipeline_args):
@@ -366,6 +477,17 @@ def _validate_and_complete_args(pipeline_args):
   if (pipeline_args.gvcf_gq_binsize is not None and
       pipeline_args.gvcf_gq_binsize < 1):
     raise ValueError('--gvcf_gq_binsize must be greater or equal to 1')
+  if pipeline_args.gpu and pipeline_args.tpu:
+    raise ValueError('Both --gpu and --tpu cannot be set.')
+  # redacted
+  # interest.
+  if pipeline_args.tpu and pipeline_args.call_variants_workers != 1:
+    raise ValueError(
+        '--call_variants_workers must be equal to one when --tpu is set.')
+  if pipeline_args.tpu and bool(pipeline_args.gke_cluster_region) == bool(
+      pipeline_args.gke_cluster_zone):
+    raise ValueError('Exactly one of --gke_cluster_region or '
+                     '--gke_cluster_zone must be specified if --tpu is set.')
 
   # Automatically generate default values for missing args (if any).
   if not pipeline_args.logging:
@@ -516,6 +638,25 @@ def run(argv=None):
             'https://cloud.google.com/compute/docs/gpus/ for supported GPU '
             'types.'))
 
+  # Optional TPU args.
+  parser.add_argument(
+      '--tpu',
+      default=False,
+      action='store_true',
+      help='Use TPU for the call_variants step.')
+  parser.add_argument(
+      '--gke_cluster_name',
+      help=('GKE cluster to run call_variants step with TPU. If empty, a GKE '
+            'cluster is created. This is relevant only if --tpu is set.'))
+  parser.add_argument(
+      '--gke_cluster_region',
+      help=('GKE cluster region used for searching an existing cluster or '
+            'creating a new one. This is relevant only if --tpu is set.'))
+  parser.add_argument(
+      '--gke_cluster_zone',
+      help=('GKE cluster zone used for searching an existing cluster or '
+            'creating a new one. This is relevant only if --tpu is set.'))
+
   # Optional preemptible args.
   parser.add_argument(
       '--preemptible',
@@ -630,6 +771,7 @@ def run(argv=None):
   pipeline_args = parser.parse_args(argv)
   _validate_and_complete_args(pipeline_args)
 
+  # redacted
   if _MAKE_EXAMPLES_JOB_NAME in pipeline_args.jobs_to_run:
     logging.info('Running make_examples...')
     _run_make_examples(pipeline_args)

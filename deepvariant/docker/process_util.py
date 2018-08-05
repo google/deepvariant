@@ -37,11 +37,12 @@ import subprocess
 import time
 
 
-def run_command(args, retry_delay_sec=1, retries=0):
+def run_command(args, std_input=None, retry_delay_sec=1, retries=0):
   """Runs a command with optional retry behaviour.
 
   Args:
     args: (list) A list of arguments (type string) to pass to Popen.
+    std_input: (str) will be passed as stdin to the command.
     retry_delay_sec: (int) delay in retries.
     retries: (int) number of retries.
 
@@ -57,9 +58,17 @@ def run_command(args, retry_delay_sec=1, retries=0):
 
   logging.debug('Calling command: %s', ' '.join(args))
   for i in range(retries + 1):
-    process = subprocess.Popen(
-        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
+    if std_input:
+      process = subprocess.Popen(
+          args,
+          stdin=subprocess.PIPE,
+          stdout=subprocess.PIPE,
+          stderr=subprocess.PIPE)
+      stdout, stderr = process.communicate(input=std_input)
+    else:
+      process = subprocess.Popen(
+          args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      stdout, stderr = process.communicate()
     if process.returncode == 0:
       if stderr:
         logging.info('%s succeeded with stderr: %s', ' '.join(args), stderr)

@@ -193,9 +193,12 @@ class GkeClusterTest(unittest.TestCase):
                       unused_mock_get_pod_status, mock_call, unused_mock_sleep):
     gke_cluster.GkeCluster(
         'foo-cluster', cluster_zone='foo-zone').deploy_pod(
-            filepath='foo.yaml', pod_name='foo-pod')
+            pod_config='foo-config', pod_name='foo-pod')
     mock_call.assert_any_call(
-        ['kubectl', 'create', '-f', 'foo.yaml'], retries=1, retry_delay_sec=1)
+        ['kubectl', 'create', '-f', '-'],
+        std_input='foo-config',
+        retries=1,
+        retry_delay_sec=1)
 
   @mock.patch('time.sleep')
   @mock.patch('process_util.run_command')
@@ -209,7 +212,7 @@ class GkeClusterTest(unittest.TestCase):
     with self.assertRaises(RuntimeError):
       gke_cluster.GkeCluster(
           'foo-cluster', cluster_zone='foo-zone').deploy_pod(
-              filepath='foo.yaml', pod_name='foo-pod')
+              pod_config='foo-config', pod_name='foo-pod')
 
   @mock.patch('time.sleep')
   @mock.patch('process_util.run_command')
@@ -224,11 +227,15 @@ class GkeClusterTest(unittest.TestCase):
     ]
     gke_cluster.GkeCluster(
         'foo-cluster', cluster_zone='foo-zone').deploy_pod(
-            filepath='foo.yaml', pod_name='foo-pod', retries=1)
+            pod_config='foo-config', pod_name='foo-pod', retries=1)
     mock_call.assert_any_call(
-        ['kubectl', 'create', '-f', 'foo.yaml'], retries=1, retry_delay_sec=1)
+        ['kubectl', 'create', '-f', '-'],
+        std_input='foo-config',
+        retries=1,
+        retry_delay_sec=1)
     mock_call.assert_any_call(
-        ['kubectl', 'replace', '--force', '-f', 'foo.yaml'],
+        ['kubectl', 'replace', '--force', '-f', '-'],
+        std_input='foo-config',
         retries=1,
         retry_delay_sec=1)
 
@@ -242,6 +249,7 @@ class GkeClusterTest(unittest.TestCase):
         gke_cluster.PodStatus.SUCCEEDED)
     mock_call.assert_any_call(
         ['kubectl', 'get', 'pods', 'foo-pod', '-o', 'jsonpath={.status.phase}'],
+        std_input=None,
         retries=1,
         retry_delay_sec=1)
 
@@ -255,6 +263,7 @@ class GkeClusterTest(unittest.TestCase):
         gke_cluster.PodStatus.UNKNOWN)
     mock_call.assert_any_call(
         ['kubectl', 'get', 'pods', 'foo-pod', '-o', 'jsonpath={.status.phase}'],
+        std_input=None,
         retries=1,
         retry_delay_sec=1)
 
@@ -268,6 +277,7 @@ class GkeClusterTest(unittest.TestCase):
             pod_name='foo-pod', wait=True)
     mock_call.assert_any_call(
         ['kubectl', 'delete', 'pod', 'foo-pod', '--wait'],
+        std_input=None,
         retries=1,
         retry_delay_sec=0)
 

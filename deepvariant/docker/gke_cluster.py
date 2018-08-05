@@ -203,7 +203,6 @@ class GkeCluster(object):
         '--format=value(status)'
     ]
     status_str = self._gcloud_call(args).strip()
-    logging.info('GKE cluster %s has status %s', self._cluster_name, status_str)
     if status_str in _CLUSTER_STATUS_MAP:
       return _CLUSTER_STATUS_MAP[status_str]
     return ClusterStatus.UNKNOWN
@@ -271,12 +270,11 @@ class GkeCluster(object):
     return process_util.run_command(
         args, retry_delay_sec=retry_delay_sec, retries=retries)
 
-  def deploy_pod(self, filepath, pod_name, retries=0, wait=True):
+  def deploy_pod(self, pod_config, pod_name, retries=0, wait=True):
     """Deploy a pod into Kubernetes cluster.
 
     Args:
-      filepath: (str) filename, directory, or URL to file to use to create the
-        pod.
+      pod_config: (str) pod config in json format.
       pod_name: (str) Pod's name. Must be the same as the one used in the file.
       retries: (int) retries this number of times if pod status is
         PodStatus.Failure.
@@ -286,7 +284,6 @@ class GkeCluster(object):
     Raises:
       RuntimeError: if pod fails after all retries.
     """
-
     def get_args(is_first_try=False):
       """Returns kubectl CLI args.
 
@@ -294,17 +291,17 @@ class GkeCluster(object):
         is_first_try: (bool) whether it is the first try.
       """
       if is_first_try:
-        return ['kubectl', 'create', '-f', filepath]
+        return ['kubectl', 'create', '-f', '-']
       else:
         # With replace arg, the pod is first deleted and then re-deployed.
-        return ['kubectl', 'replace', '--force', '-f', filepath]
+        return ['kubectl', 'replace', '--force', '-f', '-']
 
     logging.info('Deploying pod %s to GKE cluster %s.', pod_name,
                  self._cluster_name)
     status = None
     for i in range(retries + 1):
       is_first_try = (i == 0)
-      self._kubectl_call(get_args(is_first_try))
+      self._kubectl_call(get_args(is_first_try), std_input=pod_config)
       if not wait and not retries:
         return
       status = self.get_pod_status(pod_name)
@@ -363,12 +360,14 @@ class GkeCluster(object):
 
   def _kubectl_call(self,
                     args,
+                    std_input=None,
                     retry_delay_sec=_KUBECTL_RETRY_DELAY_SEC,
                     retries=_KUBECTL_RETRIES):
     """Make a kubectl CLI call.
 
     Args:
       args: (list)  A list of arguments (type string) to pass to Popen call.
+      std_input: (str) standard input to be passed.
       retry_delay_sec: (int) delay in retries.
       retries: (int) number of retries.
 
@@ -376,4 +375,7 @@ class GkeCluster(object):
       stdout of process call.
     """
     return process_util.run_command(
-        args, retry_delay_sec=retry_delay_sec, retries=retries)
+        args,
+        std_input=std_input,
+        retry_delay_sec=retry_delay_sec,
+        retries=retries)
