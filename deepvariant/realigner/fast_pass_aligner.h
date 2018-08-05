@@ -58,10 +58,7 @@ using nucleus::genomics::v1::Position;
 
 using tensorflow::StringPieceHasher;
 
-using re2::StringPiece;  // copybara
-
 // redacted
-
 
 struct Kmer {
   string sequence;

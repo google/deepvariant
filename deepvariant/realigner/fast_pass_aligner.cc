@@ -49,8 +49,6 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using re2::StringPiece;  // copybara
-
 void FastPassAligner::set_reference(const string& reference) {
   this->reference_ = reference;
 }
@@ -325,7 +323,7 @@ CigarUnit::Operation CigarOperationFromChar(char op) {
 
 std::list<CigarOp> CigarStringToVector(const string& cigar) {
   std::list<CigarOp> cigarOps;
-  absl::string_view input(cigar);
+  re2::StringPiece input(cigar);
   RE2 pattern("(\\d+)([XIDS=])");
   int opLen;
   string opType;
@@ -492,7 +490,7 @@ void SetPositionsMap(size_t haplotype_size,
       hyplotype_alignment->hap_to_ref_positions_map;
   positions_map.resize(haplotype_size);
   RE2 pattern("(\\d+)([XIDS=])");  // matches cigar operation
-  absl::string_view input(hyplotype_alignment->cigar);
+  re2::StringPiece input(hyplotype_alignment->cigar);
   int cur_shift = 0;
   int haplotype_pos = 0;
   int last_pos = 0;
