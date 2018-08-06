@@ -71,6 +71,7 @@ def nucleus_py_extension(name, srcs = [], deps = [], **kwargs):
         linkstatic = 0,
         linkshared = 1,
         srcs = srcs,
+        deps = ["//external:python_headers"],
         **kwargs
     )
 
