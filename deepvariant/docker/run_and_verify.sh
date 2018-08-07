@@ -140,7 +140,7 @@ function expect() {
   fi
   local file_1=$(localize "$1")
   local file_2=$(localize "$2")
-  if cmp --silent "$file_1" "$file_2"; then
+  if cmp -s "$file_1" "$file_2"; then
     info "Contents of $1 and $2 are the same as expected."
   else
     err "Contents of $1 and $2 are not the same."
