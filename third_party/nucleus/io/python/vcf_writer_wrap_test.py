@@ -47,7 +47,8 @@ from tensorflow.python.platform import gfile
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed VcfWriter'
 _WRITE_TO_CLOSED_ERROR = 'Cannot write to closed VCF stream'
-_WRONG_NUMBER_OF_SAMPLES = 'Variant call count must match number of samples'
+_WRONG_NUMBER_OF_SAMPLES = (
+    'Variant call count \d+ must match number of samples \d+')
 _DISCORDANT_SAMPLE_NAMES_ERROR = (
     'Out-of-order call set names, or unrecognized call set name, with respect '
     'to samples declared in VCF header.')

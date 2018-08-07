@@ -776,9 +776,11 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
 
   // Variant calls
   int nCalls = variant_message.calls().size();
-  if (nCalls != bcf_hdr_nsamples(&h))
+  int nSamples = bcf_hdr_nsamples(&h);
+  if (nCalls != nSamples)
     return tensorflow::errors::FailedPrecondition(
-        "Variant call count must match number of samples.");
+        "Variant call count ", nCalls, " must match number of samples ",
+        nSamples, ".");
 
   // We need to determine the effective ploidy (as the max number of GT calls
   // among samples at this variant); any genotypes shorter than this ploidy
