@@ -908,3 +908,19 @@ def get_info(variant, field_name, vcf_object=None):
   else:
     get_field_fn = vcf_object.field_access_cache.info_field_get_fn(field_name)
   return get_field_fn(variant.info, field_name)
+
+
+def calc_ac(variant):
+  """Returns a list of alt counts based on variant.calls."""
+  counts = [0] * len(variant.alternate_bases)
+  for call in variant.calls:
+    for gt in call.genotype:
+      if gt > 0:
+        counts[gt - 1] += 1
+  return counts
+
+
+def calc_an(variant):
+  """Returns the total number of alleles in called genotypes in variant."""
+  return sum(len(
+      [1 for gt in call.genotype if gt > -1]) for call in variant.calls)

@@ -725,6 +725,30 @@ class VariantUtilsTests(parameterized.TestCase):
     actual = variant_utils.get_info(variant, field_name, vcf_object=reader)
     self.assertEqual(actual, expected)
 
+  @parameterized.parameters(
+      dict(alt_bases=['A', 'T'], calls=[[0, 0], [0, 1], [1, 2]],
+           expected=[2, 1]),
+      dict(alt_bases=['C'], calls=[[0, 0], [0, 0]], expected=[0]),
+      dict(alt_bases=[], calls=[[0, 0], [0, 0], [0, 0]], expected=[]),
+  )
+  def test_calc_ac(self, alt_bases, calls, expected):
+    variant = variants_pb2.Variant()
+    variant.alternate_bases[:] = alt_bases
+    for gt in calls:
+      variant.calls.add().genotype[:] = gt
+    self.assertEqual(variant_utils.calc_ac(variant), expected)
+
+  @parameterized.parameters(
+      dict(calls=[[0, 0], [0, 1], [1, 2]], expected=6),
+      dict(calls=[[0, 0], [0, 0]], expected=4),
+      dict(calls=[[0, 0], [-1, -1], [0, -1]], expected=3),
+  )
+  def test_calc_an(self, calls, expected):
+    variant = variants_pb2.Variant()
+    for gt in calls:
+      variant.calls.add().genotype[:] = gt
+    self.assertEqual(variant_utils.calc_an(variant), expected)
+
 
 if __name__ == '__main__':
   absltest.main()
