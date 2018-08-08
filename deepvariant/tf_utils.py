@@ -201,7 +201,12 @@ def _simplify_variant(variant):
       calls=[_simplify_variant_call(call) for call in variant.calls])
 
 
-def make_example(variant, alt_alleles, encoded_image, shape, image_format):
+def make_example(variant,
+                 alt_alleles,
+                 encoded_image,
+                 shape,
+                 image_format,
+                 second_image=None):
   """Creates a new tf.Example suitable for use with DeepVariant.
 
   Args:
@@ -214,6 +219,9 @@ def make_example(variant, alt_alleles, encoded_image, shape, image_format):
       consistent with the image_format argument.
     shape: a list of (width, height, channel).
     image_format: string. The scheme used to encode our image.
+    second_image: a Tensor of type tf.string or None. Contains second
+      image that encodes read data from another DNA sample. Must satisfy
+      the same requirements as encoded_image.
 
   Returns:
     A tf.Example proto containing the standard DeepVariant features.
@@ -235,6 +243,12 @@ def make_example(variant, alt_alleles, encoded_image, shape, image_format):
   features.feature['image/encoded'].bytes_list.value.append(encoded_image)
   features.feature['image/format'].bytes_list.value.append(image_format)
   features.feature['image/shape'].int64_list.value.extend(shape)
+  if second_image is not None:
+    features.feature['second_image/encoded'].bytes_list.value.append(
+        second_image)
+    features.feature['second_image/format'].bytes_list.value.append(
+        image_format)
+    features.feature['second_image/shape'].int64_list.value.extend(shape)
   return example
 
 
