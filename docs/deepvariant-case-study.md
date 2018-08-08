@@ -209,8 +209,7 @@ one `call_variants` job. Here's the command that we used:
     /opt/deepvariant/bin/call_variants \
     --outfile "${CALL_VARIANTS_OUTPUT}" \
     --examples "${EXAMPLES}" \
-    --checkpoint "${MODEL}" \
-    --batch_size 32
+    --checkpoint "${MODEL}"
 ) >"${LOG_DIR}/call_variants.log" 2>&1
 ```
 
@@ -238,8 +237,7 @@ time sudo docker run \
   /opt/deepvariant/bin/call_variants \
   --outfile=${OUTPUT_DIR}/HG002.cvo.tfrecord-00000-of-00064.gz \
   --examples=${OUTPUT_DIR}/HG002.examples.tfrecord-00000-of-00064.gz \
-  --checkpoint="${MODEL}" \
-  --batch_size 32
+  --checkpoint="${MODEL}"
 ```
 
 And the rest will process 00001 to 00063. You can also use tools like
@@ -282,12 +280,12 @@ the postprocess\_variants step, so the full call would look instead like:
 ## Resources used by each step
 
 Step                               | wall time
----------------------------------- | ----------------
-`make_examples`                    | 5h 21m 13s
-`call_variants`                    | 12h 20m 51s
-`postprocess_variants` (no gVCF)   | 22m 54s
-`postprocess_variants` (with gVCF) | 59m 12s
-total time (single machine)        | 18h 5m - 18h 42m
+---------------------------------- | ---------------
+`make_examples`                    | 2h 23m 11s
+`call_variants`                    | 3h 25m 45s
+`postprocess_variants` (no gVCF)   | 22m 3s
+`postprocess_variants` (with gVCF) | 55m 57s
+total time (single machine)        | 6h 10m - 6h 44m
 
 ## Variant call quality
 
@@ -320,5 +318,5 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 1505 | 1133 | 0.996762 | 0.997660  | 0.997211
-SNP   | 1526 | 933  | 0.999499 | 0.999694  | 0.999597
+INDEL | 1345 | 906  | 0.997106 | 0.998127  | 0.997616
+SNP   | 1282 | 757  | 0.999579 | 0.999752  | 0.999666
