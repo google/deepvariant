@@ -213,8 +213,60 @@ class SamReaderTests(parameterized.TestCase):
       elif method == 'query':
         reads_iter = reader.query(ranges.parse_literal(maybe_range))
       else:
-        self.fail('Unexpected method', method)
+        self.fail('Unexpected method ' + str(method))
       self.assertEqual(test_utils.iterable_len(reads_iter), expected_n_reads)
+
+
+# Note that CRAM version 2.1 files work with Nucleus but they cannot be used in
+# our test here because CRAM 2.1 embeds an exact path to the reference file
+# which LEAKR flags as leaking internal google paths.
+@parameterized.parameters(
+    dict(
+        filename='test_cram.embed_ref_0_version_3.0.cram',
+        has_embedded_ref=False),
+    dict(
+        filename='test_cram.embed_ref_1_version_3.0.cram',
+        has_embedded_ref=True),
+)
+class CramReaderTests(parameterized.TestCase):
+  """Test io.SamReader on CRAM formatted files."""
+
+  def _make_reader(self, filename, has_embedded_ref):
+    if has_embedded_ref:
+      # If we have an embedded reference, force the reader to use it by not
+      # providing an argument for ref_path.
+      return sam.SamReader(test_utils.genomics_core_testdata(filename))
+    else:
+      # Otherwise we need to explicitly override the reference encoded in the UR
+      # of the CRAM file to use the path provided to our test.fasta.
+      return sam.SamReader(
+          test_utils.genomics_core_testdata(filename),
+          ref_path=test_utils.genomics_core_testdata('test.fasta'))
+
+  def test_header(self, filename, has_embedded_ref):
+    with self._make_reader(filename, has_embedded_ref) as reader:
+      self.assertEqual(reader.header.format_version, '1.3')
+      self.assertEqual([contig.name for contig in reader.header.contigs],
+                       ['chrM', 'chr1', 'chr2'])
+
+  def test_iterate(self, filename, has_embedded_ref):
+    with self._make_reader(filename, has_embedded_ref) as reader:
+      reads = list(reader.iterate())
+      self.assertEqual(len(reads), 3)
+      self.assertEqual([read.fragment_name for read in reads],
+                       ['cram1', 'cram2', 'cram3'])
+      self.assertEqual([read.aligned_sequence for read in reads], [
+          'CCCTAACCCTAACCCTAACCCTAACCCTANNNNNN',
+          ('TAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCAAAACGAATCAAAAAAGAAAAACGAA'
+           'AAAAAAA'),
+          'CACAGACGCTT'
+      ])
+
+  def test_query(self, filename, has_embedded_ref):
+    with self._make_reader(filename, has_embedded_ref) as reader:
+      for interval, n_expected in [('chr1:1-100', 3), ('chr2:1-121', 0)]:
+        with reader.query(ranges.parse_literal(interval)) as iterable:
+          self.assertEqual(test_utils.iterable_len(iterable), n_expected)
 
 
 class ReadWriterTests(parameterized.TestCase):

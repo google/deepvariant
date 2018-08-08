@@ -28,8 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Classes for reading and writing SAM and BAM files.
 
-The SAM/BAM format is described at
+The SAM/BAM/CRAM formats are described at
 https://samtools.github.io/hts-specs/SAMv1.pdf
+https://samtools.github.io/hts-specs/CRAMv3.pdf
 
 API for reading:
 
@@ -41,7 +42,11 @@ with sam.SamReader(input_path) as reader:
     print(read)
 ```
 
-where `read` is a `nucleus.genomics.v1.Read` protocol buffer.
+where `read` is a `nucleus.genomics.v1.Read` protocol buffer. input_path will
+dynamically decode the underlying records depending the file extension, with
+`.sam` for SAM files, `.bam` for BAM files, and `.cram` for CRAM files. It will
+also search for an appropriate index file to use to enable calls to the
+`query()` method.
 
 API for writing:
 
@@ -58,7 +63,7 @@ with sam.SamWriter(output_path) as writer:
 
 For both reading and writing, if the path provided to the constructor contains
 '.tfrecord' as an extension, a `TFRecord` file is assumed and attempted to be
-read or written. Otherwise, the filename is treated as a true SAM/BAM file.
+read or written. Otherwise, the filename is treated as a true SAM/BAM/CRAM file.
 
 For `TFRecord` files, ending in a '.gz' suffix causes the file to be treated as
 compressed with gzip.
@@ -77,14 +82,15 @@ from third_party.nucleus.util import utils
 
 
 class NativeSamReader(genomics_reader.GenomicsReader):
-  """Class for reading from native SAM/BAM files.
+  """Class for reading from native SAM/BAM/CRAM files.
 
   Most users will want to use SamReader instead, because it dynamically
-  dispatches between reading native SAM/BAM files and TFRecord files based
+  dispatches between reading native SAM/BAM/CRAM files and TFRecord files based
   on the filename's extensions.
   """
 
   def __init__(self, input_path,
+               ref_path=None,
                read_requirements=None,
                parse_aux_fields=False,
                hts_block_size=None,
@@ -93,13 +99,17 @@ class NativeSamReader(genomics_reader.GenomicsReader):
     """Initializes a NativeSamReader.
 
     Args:
-      input_path: str. A path to a resource containing SAM/BAM records.
-        Currently supports SAM text format and BAM binary format.
+      input_path: str. A path to a resource containing SAM/BAM/CRAM records.
+        Currently supports SAM text format, BAM binary format, and CRAM.
+      ref_path: optional str or None. Only used for CRAM decoding, and only
+        necessary if the UR encoded path in the CRAM itself needs to be
+        overridden. If provided, we will tell the CRAM decoder to use this FASTA
+        for the reference sequence.
       read_requirements: optional ReadRequirement proto. If not None, this proto
         is used to control which reads are filtered out by the reader before
         they are passed to the client.
       parse_aux_fields: optional bool, defaulting to False. If False, we do not
-        parse the auxiliary fields of the SAM/BAM records (see SAM spec for
+        parse the auxiliary fields of the SAM/BAM/CRAM records (see SAM spec for
         details). Parsing the aux fields is unnecessary for many applications,
         and adds a significant parsing cost to access. If you need these aux
         fields, set parse_aux_fields to True and these fields will be parsed and
@@ -152,6 +162,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 
       self._reader = sam_reader.SamReader.from_file(
           input_path.encode('utf8'),
+          ref_path.encode('utf8') if ref_path is not None else '',
           reads_pb2.SamReaderOptions(
               read_requirements=read_requirements,
               aux_field_handling=aux_field_handling,
@@ -176,7 +187,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 
 
 class SamReader(genomics_reader.DispatchingGenomicsReader):
-  """Class for reading Read protos from SAM or TFRecord files."""
+  """Class for reading Read protos from SAM/BAM/CRAM or TFRecord files."""
 
   def _native_reader(self, input_path, **kwargs):
     return NativeSamReader(input_path, **kwargs)
@@ -186,9 +197,9 @@ class SamReader(genomics_reader.DispatchingGenomicsReader):
 
 
 class NativeSamWriter(genomics_writer.GenomicsWriter):
-  """Class for writing to native SAM/BAM files.
+  """Class for writing to native SAM/BAM/CRAM files.
 
-  Most users will want SamWriter, which will write to either native SAM/BAM
+  Most users will want SamWriter, which will write to either native SAM/BAM/CRAM
   files or TFRecords files, based on the output filename's extensions.
   """
 
@@ -196,7 +207,7 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
     """Initializer for NativeSamWriter.
 
     Args:
-      output_path: str. A path where we'll write our SAM/BAM file.
+      output_path: str. A path where we'll write our SAM/BAM/CRAM file.
       header: A nucleus.SamHeader proto.  The header is used both for writing
         the header, and to control the sorting applied to the rest of the file.
     """
@@ -217,7 +228,7 @@ class SamWriter(genomics_writer.DispatchingGenomicsWriter):
 
 
 class InMemorySamReader(object):
-  """Python interface class for in-memory SAM/BAM reader.
+  """Python interface class for in-memory SAM/BAM/CRAM reader.
 
   Attributes:
     reads: list[nucleus.genomics.v1.Read]. The list of in-memory reads.

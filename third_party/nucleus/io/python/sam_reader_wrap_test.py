@@ -50,14 +50,16 @@ class SamReaderTest(parameterized.TestCase):
     self.options = reads_pb2.SamReaderOptions()
 
   def test_bam_iterate(self):
-    reader = sam_reader.SamReader.from_file(self.bam, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=self.bam, ref_path='', options=self.options)
     with reader:
       iterable = reader.iterate()
       self.assertIsInstance(iterable, clif_postproc.WrappedCppIterable)
       self.assertEqual(test_utils.iterable_len(iterable), 106)
 
   def test_bam_query(self):
-    reader = sam_reader.SamReader.from_file(self.bam, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=self.bam, ref_path='', options=self.options)
     expected = [(ranges.parse_literal('chr20:10,000,000-10,000,100'), 106),
                 (ranges.parse_literal('chr20:10,000,000-10,000,000'), 45)]
     with reader:
@@ -67,13 +69,15 @@ class SamReaderTest(parameterized.TestCase):
           self.assertEqual(test_utils.iterable_len(iterable), n_expected)
 
   def test_bam_samples(self):
-    reader = sam_reader.SamReader.from_file(self.bam, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=self.bam, ref_path='', options=self.options)
     with reader:
       self.assertLen(reader.header.read_groups, 1)
       self.assertEqual(reader.header.read_groups[0].sample_id, 'NA12878')
 
   def test_sam_contigs(self):
-    reader = sam_reader.SamReader.from_file(self.bam, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=self.bam, ref_path='', options=self.options)
     with reader:
       self.assertEqual([
           reference_pb2.ContigInfo(name='chrM', pos_in_fasta=0, n_bases=16571),
@@ -129,7 +133,8 @@ class SamReaderTest(parameterized.TestCase):
 
   def test_context_manager(self):
     """Test that we can use context manager to do two queries in sequence."""
-    reader = sam_reader.SamReader.from_file(self.bam, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=self.bam, ref_path='', options=self.options)
     region = ranges.parse_literal('chr20:10,000,000-10,000,100')
     with reader:
       with reader.query(region) as query_iterable1:
@@ -142,10 +147,12 @@ class SamReaderTest(parameterized.TestCase):
   def test_from_file_raises_with_missing_bam(self):
     with self.assertRaisesRegexp(ValueError,
                                  'Not found: Could not open missing.bam'):
-      sam_reader.SamReader.from_file('missing.bam', self.options)
+      sam_reader.SamReader.from_file(
+          reads_path='missing.bam', ref_path='', options=self.options)
 
   def test_ops_on_closed_reader_raise(self):
-    reader = sam_reader.SamReader.from_file(self.bam, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=self.bam, ref_path='', options=self.options)
     with reader:
       pass
     # At this point the reader is closed.
@@ -158,12 +165,14 @@ class SamReaderTest(parameterized.TestCase):
   def test_query_without_index_raises(self, unindexed_file_name):
     path = test_utils.genomics_core_testdata(unindexed_file_name)
     window = ranges.parse_literal('chr20:10,000,000-10,000,100')
-    with sam_reader.SamReader.from_file(path, self.options) as reader:
+    with sam_reader.SamReader.from_file(
+        reads_path=path, ref_path='', options=self.options) as reader:
       with self.assertRaisesRegexp(ValueError, 'Cannot query without an index'):
         reader.query(window)
 
   def test_query_raises_with_bad_range(self):
-    with sam_reader.SamReader.from_file(self.bam, self.options) as reader:
+    with sam_reader.SamReader.from_file(
+        reads_path=self.bam, ref_path='', options=self.options) as reader:
       with self.assertRaisesRegexp(ValueError, 'Unknown reference_name'):
         reader.query(ranges.parse_literal('XXX:1-10'))
       with self.assertRaisesRegexp(ValueError, 'unknown reference interval'):
@@ -171,7 +180,8 @@ class SamReaderTest(parameterized.TestCase):
 
   def test_sam_iterate_raises_on_malformed_record(self):
     malformed = test_utils.genomics_core_testdata('malformed.sam')
-    reader = sam_reader.SamReader.from_file(malformed, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=malformed, ref_path='', options=self.options)
     iterable = iter(reader.iterate())
     self.assertIsNotNone(next(iterable))
     with self.assertRaises(ValueError):
@@ -179,7 +189,8 @@ class SamReaderTest(parameterized.TestCase):
 
   def test_headless_sam_raises(self):
     headerless = test_utils.genomics_core_testdata('headerless.sam')
-    reader = sam_reader.SamReader.from_file(headerless, self.options)
+    reader = sam_reader.SamReader.from_file(
+        reads_path=headerless, ref_path='', options=self.options)
     iterable = iter(reader.iterate())
     with self.assertRaises(ValueError):
       next(iterable)
