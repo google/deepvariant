@@ -37,11 +37,10 @@ Set a number of shell variables, to make what follows easier to read.
 ```bash
 BASE="${HOME}/exome-case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.6.1"
-MODEL_VERSION="0.6.0"
-MODEL_CL="191676894"
+BIN_VERSION="0.7.0"
+MODEL_VERSION="0.7.0"
 
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wes_standard"
+MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+data-wes_standard"
 DATA_BUCKET="${BUCKET}/exome-case-study-testdata"
 
 INPUT_DIR="${BASE}/input"
@@ -191,7 +190,6 @@ one `call_variants` job. Here's the command that we used:
     --outfile "${CALL_VARIANTS_OUTPUT}" \
     --examples "${EXAMPLES}" \
     --checkpoint "${MODEL}" \
-    --batch_size 32
 ) >"${LOG_DIR}/call_variants.log" 2>&1
 ```
 
@@ -221,11 +219,11 @@ study](deepvariant-case-study.md#run_postprocess_variants).
 
 Step                               | wall time
 ---------------------------------- | ---------
-`make_examples`                    | 72m 47s
-`call_variants`                    | 6m 20s
-`postprocess_variants` (no gVCF)   | 0m 16s
-`postprocess_variants` (with gVCF) | 1m 38s
-total time (single machine)        | ~ 1h 21m
+`make_examples`                    | 21m 53s
+`call_variants`                    | 2m 26s
+`postprocess_variants` (no gVCF)   | 0m 14s
+`postprocess_variants` (with gVCF) | 1m 18s
+total time (single machine)        | ~24m 37s
 
 ## Variant call quality
 
@@ -266,10 +264,10 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 
 Here are the results:
 
-Type  | # FN | # FP | Recall   | Precision | F1\_Score
------ | ---- | ---- | -------- | --------- | ---------
-INDEL | 127  | 35   | 0.951154 | 0.986193  | 0.968357
-SNP   | 43   | 26   | 0.998725 | 0.999229  | 0.998977
+Type  | # TP  | # FN | # FP | Recall   | Precision | F1\_Score
+----- | ----- | ---- | ---- | -------- | --------- | ---------
+INDEL | 2489  | 111  | 51   | 0.957308 | 0.980101  | 0.968570
+SNP   | 33674 | 50   | 15   | 0.998517 | 0.999555  | 0.999036
 
 ## Separate models for calling whole genome and exome data
 
