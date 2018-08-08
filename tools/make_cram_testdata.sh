@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2018 Google Inc.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,38 +27,24 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+#
+# This script processes our test_cram.sam file into CRAM formatted and indexed
+# files used in our tests.
+#
+# usage: ./make_cram_testdata.sh from the nucleus root directory.
+#
+set -euo pipefail
 
-from "third_party/nucleus/protos/range_pyclif.h" import *
-from "third_party/nucleus/protos/reads_pyclif.h" import *
-from "third_party/nucleus/protos/reference_pyclif.h" import *
-from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
-
-from third_party.nucleus.io.clif_postproc import WrappedCppIterable
-
-
-from "third_party/nucleus/io/sam_reader.h":
-  namespace `nucleus`:
-
-    class SamIterable:
-      def Next(self) -> (not_done: StatusOr<bool>, read: Read)
-      def Release(self) -> Status
-      @__enter__
-      def PythonEnter(self) -> Status
-      @__exit__
-      def PythonExit(self) -> Status
-
-    class SamReader:
-      @classmethod
-      def `FromFile` as from_file(
-          cls, reads_path: str, ref_path: str, options: SamReaderOptions)
-        -> StatusOr<SamReader>
-
-      def `Iterate` as iterate(self) -> StatusOr<SamIterable>:
-        return WrappedCppIterable(...)
-      def `Query` as query(self, region: Range) -> StatusOr<SamIterable>:
-        return WrappedCppIterable(...)
-      header: SamHeader = property(`Header`)
-      @__enter__
-      def PythonEnter(self) -> Status
-      @__exit__
-      def Close(self) -> Status
+for version in 3.0; do
+for embed_ref in 0 1; do
+  filename="test_cram.embed_ref_${embed_ref}_version_${version}.cram"
+  samtools view -C \
+    --output-fmt cram \
+    --output-fmt-option version="${version}" \
+    --output-fmt-option embed_ref="${embed_ref}" \
+    third_party/nucleus/testdata/test_cram.sam \
+    -T third_party/nucleus/testdata/test.fasta \
+    -o "third_party/nucleus/testdata/${filename}"
+  samtools index "third_party/nucleus/testdata/${filename}"
+done
+done

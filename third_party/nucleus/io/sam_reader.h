@@ -49,11 +49,13 @@ namespace nucleus {
 // Alias for the abstract base class for SAM record iterables.
 using SamIterable = Iterable<nucleus::genomics::v1::Read>;
 
-// A SAM/BAM reader.
+// A SAM/BAM/CRAM reader.
 //
-// SAM/BAM files store information about next-generation DNA sequencing info:
+// SAM/BAM/CRAM files store information about next-generation DNA sequencing
+// info:
 //
 // https://samtools.github.io/hts-specs/SAMv1.pdf
+// https://samtools.github.io/hts-specs/CRAMv3.pdf
 //
 // These files are block-gzipped series of records. When aligned they are
 // frequently sorted and indexed:
@@ -63,31 +65,47 @@ using SamIterable = Iterable<nucleus::genomics::v1::Read>;
 // This class provides methods to iterate through a BAM file or, if indexed,
 // to also query() for only read overlapping a specific region on the genome.
 //
-// Uses the htslib C API for reading NGS reads (BAM, SAM, etc). For details of
-// the API, see:
+// Uses the htslib C API for reading NGS reads (BAM, SAM, CRAM etc). For details
+// of the API, see:
 //
 // https://github.com/samtools/htslib/tree/develop/htslib
 //
 // The objects returned by iterate() or query() are nucleus.genomics.v1.Read
-// objects parsed from the SAM/BAM records in the file. Currently all fields
-// except the extended key/value maps in each BAM fields are parsed.
+// objects parsed from the SAM/BAM/CRAM records in the file. Currently all
+// fields except the extended key/value maps in each BAM fields are parsed.
 //
 class SamReader : public Reader {
  public:
-  // Creates a new SamReader reading reads from the SAM/BAM file reads_path.
+  // Creates a new SamReader reading from the SAM/BAM/CRAM file reads_path.
   //
-  // reads_path must point to an existing SAM/BAM formatted file (text SAM or
-  // compressed or uncompressed BAM file).
+  // reads_path must point to an existing SAM/BAM/CRAM formatted file (text SAM,
+  // compressed or uncompressed BAM file, CRAM files in all sorts of flavors).
   //
-  // If the filetype is BAM, this constructor will attempt to load a BAI index
-  // from file reads_path + '.bai'; if the index is not found, attempts to Query
-  // will fail.
+  // ref_path can be "", in which case the argument is ignored, or must point
+  // to an existing FASTA file. If not "" and the reads_path points to a CRAM
+  // file, the CRAM_OPT_REFERNECE field will be set to this path so that the
+  // CRAM decoder uses ref_path to decode the reference-compressed read
+  // sequences in the CRAM file. Because many low-level IO routines (e.g. stat)
+  // are currently directly used in the CRAM implementation in htslib, ref_path
+  // must be on a local (e.g., POSIX accessible) mount point. File system access
+  // provided by htslib plugins (e.g., S3) won't work.
+  //
+  // If the filetype is BAM/CRAM, this constructor will attempt to load a BAI or
+  // CRAI index from file reads_path + '.bai'; if the index is not found,
+  // attempts to Query will fail.
   //
   // Returns a StatusOr that is OK if the SamReader could be successfully
   // created or an error code indicating the error that occurred.
   static StatusOr<std::unique_ptr<SamReader>> FromFile(
       const string& reads_path,
+      const string& ref_path,
       const nucleus::genomics::v1::SamReaderOptions& options);
+
+  static StatusOr<std::unique_ptr<SamReader>> FromFile(
+      const string& reads_path,
+      const nucleus::genomics::v1::SamReaderOptions& options) {
+    return FromFile(reads_path, "", options);
+  }
 
   ~SamReader();
 
@@ -98,7 +116,7 @@ class SamReader : public Reader {
   // Gets all of the reads in this file in order.
   //
   // This function allows one to iterate through all of the reads in this
-  // SAM/BAM file in order.
+  // SAM/BAM/CRAM file in order.
   //
   // The specific parsing, filtering, etc behavior is determined by the options
   // provided during construction. Returns an OK status if the iterable can be
@@ -108,9 +126,9 @@ class SamReader : public Reader {
   // Gets all of the reads that overlap any bases in range.
   //
   // This function allows one to iterate through all of the reads in this
-  // SAM/BAM file in order that overlap a specific interval on the genome. The
-  // query operation is efficient in that the cost is O(n) for n elements that
-  // overlap range, and not O(N) for N elements in the entire file.
+  // SAM/BAM/CRAM file in order that overlap a specific interval on the genome.
+  // The query operation is efficient in that the cost is O(n) for n elements
+  // that overlap range, and not O(N) for N elements in the entire file.
   //
   // The specific parsing, filtering, etc behavior is determined by the options
   // provided during construction.

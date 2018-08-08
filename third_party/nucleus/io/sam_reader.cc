@@ -36,6 +36,7 @@
 #include "google/protobuf/repeated_field.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "htslib/cram.h"
 #include "htslib/hts.h"
 #include "htslib/hts_endian.h"
 #include "htslib/sam.h"
@@ -76,7 +77,7 @@ constexpr char kSamProgramTag[] = "@PG";
 constexpr char kSamCommentTag[] = "@CO";
 
 bool FileTypeIsIndexable(htsFormat format) {
-  return format.format == bam;
+  return format.format == bam || format.format == cram;
 }
 
 void AddHeaderLineToHeader(const string& line, SamHeader& header) {
@@ -256,7 +257,7 @@ static inline bool StartsWith(const string& query, const char prefix[],
 
 // Parses out the aux tag attributes of a SAM record.
 //
-//  From https://samtools.github.io/hts-specs/SAMv1.pdf
+// From https://samtools.github.io/hts-specs/SAMv1.pdf
 // 1.5 The alignment section: optional fields
 //
 // All optional fields follow the TAG:TYPE:VALUE format where TAG is a
@@ -549,7 +550,9 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
 }
 
 StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
-    const string& reads_path, const SamReaderOptions& options) {
+    const string& reads_path,
+    const string& ref_path,
+    const SamReaderOptions& options) {
   // Validate that we support the requested read requirements.
   if (options.has_read_requirements() &&
       options.read_requirements().min_base_quality_mode() !=
@@ -581,6 +584,16 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
     // redacted
     // This call may return null, which we will look for at Query time.
     idx = sam_index_load(fp, fp->fn);
+  }
+
+  // If we are decoding a CRAM file and the user wants to override the path to
+  // the reference FASTA used to decode the CRAM, set the CRAM_OPT_REFERENCE
+  // in htslib.
+  if (fp->format.format == cram && !ref_path.empty()) {
+    LOG(INFO) << "Setting CRAM reference path to '" << ref_path << "'";
+    if (cram_set_option(fp->fp.cram, CRAM_OPT_REFERENCE, ref_path.c_str()))
+      return tf::errors::Unknown(
+          "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path);
   }
 
   return std::unique_ptr<SamReader>(
