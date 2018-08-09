@@ -346,6 +346,42 @@ different machine types. Moreover, the optimal configuration may change over
 time as DeepVariant, TensorFlow, and the CPU, GPU, and
 [TPU](https://cloud.google.com/tpu/) hardware evolves.
 
+## CRAM support
+
+As of v0.7, DeepVariant accepts CRAM files as input in addition to BAM files.
+CRAM files encoded without reference compression or those with embedded
+references just work with DeepVariant. However, CRAM files using an external
+reference version may not work out-of-the-box. If the path to the original
+reference (encoded in the file's "UR" tag) is accessible on the machine directly
+or is already in the local genome cache, then DeepVariant should just work.
+Otherwise those files cannot be used with DeepVariant at this time.
+Consequently, we don't recommend using CRAM files with external reference files,
+but instead suggest using read sequence compression with embedded reference
+data. (This has a minor impact of file size, but significantly improves file
+access simplicity and safety.)
+
+For more information about CRAM, see the
+[`samtools` documentation](http://www.htslib.org/doc/samtools.html) in general
+but particularly the sections on
+[Global Options](http://www.htslib.org/doc/samtools.html#GLOBAL_OPTIONS) and
+[reference sequences in CRAM](http://www.htslib.org/doc/samtools.html#REFERENCE_SEQUENCES).
+`htslib` also hosts a nice page
+[benchmarking CRAM](http://www.htslib.org/benchmarks/CRAM.html) with information
+on the effect of different CRAM options on file size and encoding/decoding
+performance.
+
+Here are some basic file size and runtime numbers for running a single
+`make_examples` job on the case-study data in BAM and CRAM format (with embedded
+references) on a BAM/CRAM file for all of chromosome 20 and running on
+20:10mb-11mb:
+
+Filetype | Size (Gb) | Runtime (min)
+-------- | --------- | -------------
+BAM      | 2.1G      | 7m53.589s
+CRAM     | 1.2G      | 10m37.904s
+-------- | --------- | -------------
+Ratio    | 57%       | 135%
+
 ## Reading from Google Cloud Storage (GCS) using gcsfuse
 
 [gcsfuse](https://github.com/GoogleCloudPlatform/gcsfuse) allows access to files
