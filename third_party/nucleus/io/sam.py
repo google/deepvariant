@@ -26,6 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+# pylint: disable=line-too-long
 """Classes for reading and writing SAM and BAM files.
 
 The SAM/BAM/CRAM formats are described at
@@ -67,7 +68,50 @@ read or written. Otherwise, the filename is treated as a true SAM/BAM/CRAM file.
 
 For `TFRecord` files, ending in a '.gz' suffix causes the file to be treated as
 compressed with gzip.
+
+Notes on using CRAM with SamReader
+--------------------------------
+
+Nucleus supports reading from CRAM files using the same API as for SAM/BAM:
+
+```python
+from third_party.nucleus.io import sam
+
+with sam.SamReader("/path/to/sample.cram") as reader:
+  for read in reader:
+    print(read)
+```
+
+There is one type of CRAM file, though, that has a slightly more complicated
+API. If the CRAM file uses read sequence compression with an external reference
+file, and this reference file is no longer accessible in the location specified
+by the CRAM file's "UR" tag and cannot be found in the local genome cache, its
+location must be passed to SamReader via the ref_path parameter:
+
+```python
+from third_party.nucleus.io import sam
+
+cram_path = "/path/to/sample.cram"
+ref_path = "/path/to/genome.fasta"
+with sam.SamReader(cram_path, ref_path=ref_path) as reader:
+  for read in reader:
+    print(read)
+```
+
+Unfortunately, htslib is unable to load the ref_path from anything other than a
+POSIX filesystem. (htslib plugin filesystems like S3 or GCS buckets won't work).
+For that reason, we don't recommend the use of CRAM files with external
+reference files, but instead suggest using read sequence compression with
+embedded reference data. (This has a minor impact on file size, but
+significantly improves file access simplicity and safety.)
+
+For more information about CRAM, see:
+* The `samtools` documentation at http://www.htslib.org/doc/samtools.html
+* The "Global Options" section of the samtools docs at http://www.htslib.org/doc/samtools.html#GLOBAL_OPTIONS
+* How reference sequences are encoded in CRAM at http://www.htslib.org/doc/samtools.html#REFERENCE_SEQUENCES
+* Finally, benchmarking of different CRAM options http://www.htslib.org/benchmarks/CRAM.html
 """
+# pylint: enable=line-too-long
 
 from __future__ import absolute_import
 from __future__ import division
