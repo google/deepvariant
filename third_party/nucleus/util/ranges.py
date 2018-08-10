@@ -56,6 +56,7 @@ _POSITION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)$')
 # b/110987941 for more information.
 _LOG_EVERY_N_RANGES_IN_RANGESET_INIT = 250000
 
+
 class RangeSet(object):
   """Fast overlap detection of a genomic position against a database of Ranges.
 
