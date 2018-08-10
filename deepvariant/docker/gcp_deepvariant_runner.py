@@ -112,7 +112,7 @@ _POD_CONFIG_TEMPLATE = r"""
                 "name": "deepvaraint",
                 "image": "{DOCKER_IMAGE}",
                 "command": [
-                    "call_variants",
+                    "/opt/deepvariant/bin/call_variants",
                     "--use_tpu",
                     "--master=$(KUBE_GOOGLE_CLOUD_TPU_ENDPOINTS)",
                     "--outfile={OUTFILE}",
