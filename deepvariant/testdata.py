@@ -73,6 +73,7 @@ GOLDEN_POSTPROCESS_GVCF_INPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT = None
 GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
 WS_ALLELE_COUNT_LINEAR_MODEL = None
+WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = None
 WS_VARIANT_READS_THRESHOLD_MODEL = None
 
 N_GOLDEN_TRAINING_EXAMPLES = 49
@@ -101,6 +102,7 @@ def init():
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT
   global GOLDEN_MAKE_EXAMPLES_RUN_INFO
   global WS_ALLELE_COUNT_LINEAR_MODEL
+  global WS_ALLELE_COUNT_LINEAR_MODEL_PCKL
   global WS_VARIANT_READS_THRESHOLD_MODEL
 
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
@@ -127,6 +129,8 @@ def init():
       'golden.training_examples.tfrecord.run_info.pbtxt')
   WS_ALLELE_COUNT_LINEAR_MODEL = deepvariant_testdata(
       'window_selector_allele_count_linear.pbtxt')
+  WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = deepvariant_testdata(
+      'window_selector_allele_count_linear.pckl')
   WS_VARIANT_READS_THRESHOLD_MODEL = deepvariant_testdata(
       'window_selector_variant_read_threshold.pbtxt')
 
