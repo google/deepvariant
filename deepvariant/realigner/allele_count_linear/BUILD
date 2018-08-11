@@ -32,3 +32,30 @@ py_test(
         "@io_abseil_py//absl/testing:parameterized",
     ],
 )
+
+nucleus_py_binary(
+    name = "model_evaluation",
+    srcs = ["model_evaluation.py"],
+    main = "model_evaluation.py",
+    deps = [
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/protos:realigner_py_pb2",
+        "//deepvariant/python:allelecounter",
+        "//third_party/nucleus/io:io_py",
+        "//third_party/nucleus/protos:cigar_py_pb2",
+        "//third_party/nucleus/protos:reads_py_pb2",
+        "//third_party/nucleus/util:util_py",
+    ],
+)
+
+py_test(
+    name = "model_evaluation_test",
+    srcs = ["model_evaluation_test.py"],
+    data = ["//deepvariant:testdata"],
+    deps = [
+        ":model_evaluation",
+        "//deepvariant:py_testdata",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
+    ],
+)

@@ -29,6 +29,7 @@ filegroup(
         "testdata/*.vcf*",
         "testdata/*.fasta*",
         "testdata/*.pbtxt*",
+        "testdata/*.pckl*",
     ]),
 )
 
