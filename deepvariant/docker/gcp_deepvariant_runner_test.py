@@ -100,15 +100,15 @@ class DeepvariantRunnerTest(unittest.TestCase):
         'zone-a',
         'zone-b',
         '--outfile',
-        'gs://output.vcf',
+        'gs://bucket/output.vcf',
         '--staging',
-        'gs://staging',
+        'gs://bucket/staging',
         '--model',
-        'gs://model',
+        'gs://bucket/model',
         '--bam',
-        'gs://bam',
+        'gs://bucket/bam',
         '--ref',
-        'gs://ref',
+        'gs://bucket/ref',
     ]
 
   @mock.patch('gcp_deepvariant_runner._run_job')
@@ -124,20 +124,23 @@ class DeepvariantRunnerTest(unittest.TestCase):
     mock_apply_async.assert_has_calls([
         mock.call(mock_run_job, [
             _HasAllOf('make_examples', 'gcr.io/dockerimage',
-                      'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
-                      'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
-                      'EXAMPLES=gs://staging/examples/0/*')
+                      'INPUT_BAM=gs://bucket/bam',
+                      'INPUT_BAI=gs://bucket/bam.bai',
+                      'INPUT_REF=gs://bucket/ref',
+                      'INPUT_REF_FAI=gs://bucket/ref.fai',
+                      'EXAMPLES=gs://bucket/staging/examples/0/*')
         ]),
         mock.call(mock_run_job, [
-            _HasAllOf('call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
-                      'EXAMPLES=gs://staging/examples/0/*',
-                      'CALLED_VARIANTS=gs://staging/called_variants/*')
+            _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                      'MODEL=gs://bucket/model',
+                      'EXAMPLES=gs://bucket/staging/examples/0/*',
+                      'CALLED_VARIANTS=gs://bucket/staging/called_variants/*')
         ]),
     ])
     mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
-                  'CALLED_VARIANTS=gs://staging/called_variants/*',
-                  'OUTFILE=gs://output.vcf'))
+                  'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
+                  'OUTFILE=gs://bucket/output.vcf'))
 
   @mock.patch('gcp_deepvariant_runner._run_job')
   @mock.patch.object(multiprocessing, 'Pool')
@@ -147,29 +150,34 @@ class DeepvariantRunnerTest(unittest.TestCase):
     mock_apply_async.return_value = None
     self._argv.extend([
         '--make_examples_workers', '1', '--call_variants_workers', '1',
-        '--gvcf_outfile', 'gs://gvcf_output.vcf', '--gvcf_gq_binsize', '5'
+        '--gvcf_outfile', 'gs://bucket/gvcf_output.vcf', '--gvcf_gq_binsize',
+        '5'
     ])
     gcp_deepvariant_runner.run(self._argv)
 
     mock_apply_async.assert_has_calls([
         mock.call(mock_run_job, [
             _HasAllOf('make_examples', 'gcr.io/dockerimage',
-                      'INPUT_BAM=gs://bam', 'INPUT_BAI=gs://bam.bai',
-                      'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
-                      'EXAMPLES=gs://staging/examples/0/*',
-                      'GVCF=gs://staging/gvcf/*')
+                      'INPUT_BAM=gs://bucket/bam',
+                      'INPUT_BAI=gs://bucket/bam.bai',
+                      'INPUT_REF=gs://bucket/ref',
+                      'INPUT_REF_FAI=gs://bucket/ref.fai',
+                      'EXAMPLES=gs://bucket/staging/examples/0/*',
+                      'GVCF=gs://bucket/staging/gvcf/*')
         ]),
         mock.call(mock_run_job, [
-            _HasAllOf('call_variants', 'gcr.io/dockerimage', 'MODEL=gs://model',
-                      'EXAMPLES=gs://staging/examples/0/*',
-                      'CALLED_VARIANTS=gs://staging/called_variants/*')
+            _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                      'MODEL=gs://bucket/model',
+                      'EXAMPLES=gs://bucket/staging/examples/0/*',
+                      'CALLED_VARIANTS=gs://bucket/staging/called_variants/*')
         ]),
     ],)
     mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
-                  'CALLED_VARIANTS=gs://staging/called_variants/*',
-                  'OUTFILE=gs://output.vcf', 'GVCF=gs://staging/gvcf/*',
-                  'GVCF_OUTFILE=gs://gvcf_output.vcf'))
+                  'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
+                  'OUTFILE=gs://bucket/output.vcf',
+                  'GVCF=gs://bucket/staging/gvcf/*',
+                  'GVCF_OUTFILE=gs://bucket/gvcf_output.vcf'))
 
   @mock.patch.object(multiprocessing, 'Pool')
   def testRunMakeExamples(self, mock_pool):
@@ -195,7 +203,7 @@ class DeepvariantRunnerTest(unittest.TestCase):
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
                           'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                          'EXAMPLES=gs://staging/examples/*')
+                          'EXAMPLES=gs://bucket/staging/examples/*')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
@@ -204,6 +212,47 @@ class DeepvariantRunnerTest(unittest.TestCase):
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
                           'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14')
+            ]),
+        ],
+        any_order=True,
+    )
+
+  @mock.patch.object(multiprocessing, 'Pool')
+  def testRunMakeExamples_WithGcsfuse(self, mock_pool):
+    mock_apply_async = mock_pool.return_value.apply_async
+    mock_apply_async.return_value = None
+    self._argv.extend([
+        '--jobs_to_run',
+        'make_examples',
+        '--make_examples_workers',
+        '3',
+        '--shards',
+        '15',
+        '--gpu',  # GPU should not have any effect.
+        '--docker_image_gpu',
+        'image_gpu',
+        '--job_name_prefix',
+        'prefix_',
+        '--gcsfuse',
+    ])
+    gcp_deepvariant_runner.run(self._argv)
+    mock_apply_async.assert_has_calls(
+        [
+            mock.call(mock.ANY, [
+                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
+                          'EXAMPLES=gs://bucket/staging/examples/*',
+                          'GCS_BUCKET=bucket', 'BAM=bam')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
+                          'GCS_BUCKET=bucket', 'BAM=bam')
+            ]),
+            mock.call(mock.ANY, [
+                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
+                          'GCS_BUCKET=bucket', 'BAM=bam')
             ]),
         ],
         any_order=True,
@@ -330,9 +379,10 @@ class DeepvariantRunnerTest(unittest.TestCase):
     gcp_deepvariant_runner.run(self._argv)
     mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
-                  'CALLED_VARIANTS=gs://staging/called_variants/*',
-                  'INPUT_REF=gs://ref', 'INPUT_REF_FAI=gs://ref.fai',
-                  'OUTFILE=gs://output.vcf'))
+                  'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
+                  'INPUT_REF=gs://bucket/ref',
+                  'INPUT_REF_FAI=gs://bucket/ref.fai',
+                  'OUTFILE=gs://bucket/output.vcf'))
 
 
 if __name__ == '__main__':
