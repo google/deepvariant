@@ -56,16 +56,18 @@ import logging
 import multiprocessing
 import os
 import subprocess
+import urlparse
 import uuid
 
 import gke_cluster
+
 
 _MAKE_EXAMPLES_JOB_NAME = 'make_examples'
 _CALL_VARIANTS_JOB_NAME = 'call_variants'
 _POSTPROCESS_VARIANTS_JOB_NAME = 'postprocess_variants'
 _DEFAULT_BOOT_DISK_SIZE_GB = '50'
 
-_MAKE_EXAMPLES_COMMAND = r"""
+_MAKE_EXAMPLES_COMMAND_NO_GCSFUSE = r"""
 seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
   /opt/deepvariant/bin/make_examples
     --mode calling
@@ -74,6 +76,19 @@ seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
     --ref "${{INPUT_REF}}"
     --task {{}}
     {EXTRA_ARGS}
+"""
+
+_MAKE_EXAMPLES_COMMAND_WITH_GCSFUSE = r"""
+seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
+  "mkdir -p ./input-gcsfused-{{}} &&
+   gcsfuse --implicit-dirs "${{GCS_BUCKET}}" /input-gcsfused-{{}} &&
+   /opt/deepvariant/bin/make_examples
+     --mode calling
+     --examples "${{EXAMPLES}}"/examples_output.tfrecord@"${{SHARDS}}".gz
+     --reads "/input-gcsfused-{{}}/${{BAM}}"
+     --ref "${{INPUT_REF}}"
+     --task {{}}
+     {EXTRA_ARGS}" # ENABLE_FUSE
 """
 
 _CALL_VARIANTS_COMMAND = r"""
@@ -201,6 +216,43 @@ def _run_job(run_args):
   raise RuntimeError('Job failed with error %s' % stderr)
 
 
+def _validate_gcs_path(path):
+  """Checks if path is a valid GCS path.
+
+  Args:
+    path: (str) a path to directory or an obj on GCS.
+
+  Raises:
+    ValueError: if path is not a valid GCS path.
+  """
+  if urlparse.urlparse(path).scheme != 'gs':
+    raise ValueError('Invalid GCS path is provided: %s' % path)
+
+
+def _get_gcs_bucket(gcs_path):
+  """Returns bucket name from gcs_path.
+
+    E.g.: gs://bucket/path0/path1/file' --> bucket
+
+  Args:
+    gcs_path: (str) a Google cloud storage path.
+  """
+  _validate_gcs_path(gcs_path)
+  return urlparse.urlparse(gcs_path).netloc
+
+
+def _get_gcs_relative_path(gcs_path):
+  """Returns anything after bucket name.
+
+    E.g.: gs://bucket/path0/path1/file --> path0/path1/file
+
+  Args:
+    gcs_path: (str) a valid Google cloud storage path.
+  """
+  _validate_gcs_path(gcs_path)
+  return urlparse.urlparse(gcs_path).path.strip('/')
+
+
 def _run_make_examples(pipeline_args):
   """Runs the make_examples job."""
 
@@ -222,7 +274,12 @@ def _run_make_examples(pipeline_args):
       extra_args.extend(['--hts_block_size', str(pipeline_args.hts_block_size)])
     return extra_args
 
-  command = _MAKE_EXAMPLES_COMMAND.format(EXTRA_ARGS=' '.join(get_extra_args()))
+  if pipeline_args.gcsfuse:
+    command = _MAKE_EXAMPLES_COMMAND_WITH_GCSFUSE.format(
+        EXTRA_ARGS=' '.join(get_extra_args()))
+  else:
+    command = _MAKE_EXAMPLES_COMMAND_NO_GCSFUSE.format(
+        EXTRA_ARGS=' '.join(get_extra_args()))
 
   machine_type = 'custom-{0}-{1}'.format(
       pipeline_args.make_examples_cores_per_worker,
@@ -233,36 +290,41 @@ def _run_make_examples(pipeline_args):
   threads = multiprocessing.Pool(num_workers)
   results = []
   for i in range(num_workers):
+    outputs = [
+        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i) + '/*'
+    ]
+    if pipeline_args.gvcf_outfile:
+      outputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
     inputs = [
-        'INPUT_BAM=' + pipeline_args.bam,
         'INPUT_BAI=' + pipeline_args.bai,
         'INPUT_REF=' + pipeline_args.ref,
         'INPUT_REF_FAI=' + pipeline_args.ref_fai,
     ]
     if pipeline_args.ref_gzi:
       inputs.extend([pipeline_args.ref_gzi])
-
-    outputs = [
-        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i) + '/*'
+    env_args = [
+        '--set', 'SHARDS=' + str(pipeline_args.shards), '--set',
+        'SHARD_START_INDEX=' + str(int(i * shards_per_worker)), '--set',
+        'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1))
     ]
-    if pipeline_args.gvcf_outfile:
-      outputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
+    if pipeline_args.gcsfuse:
+      env_args.extend([
+          '--set', 'GCS_BUCKET=' + _get_gcs_bucket(pipeline_args.bam), '--set',
+          'BAM=' + _get_gcs_relative_path(pipeline_args.bam)
+      ])
+    else:
+      inputs.extend(['INPUT_BAM=' + pipeline_args.bam])
 
     job_name = pipeline_args.job_name_prefix + _MAKE_EXAMPLES_JOB_NAME
-    run_args = _get_base_job_args(pipeline_args) + [
+    run_args = _get_base_job_args(pipeline_args) + env_args + [
         '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name, '--image',
         pipeline_args.docker_image, '--output',
         os.path.join(pipeline_args.logging, _MAKE_EXAMPLES_JOB_NAME,
                      str(i)), '--inputs', ','.join(inputs), '--outputs',
         ','.join(outputs), '--machine-type', machine_type, '--disk-size',
-        str(pipeline_args.make_examples_disk_per_worker_gb), '--set',
-        'SHARDS=' + str(pipeline_args.shards), '--set',
-        'SHARD_START_INDEX=' + str(int(i * shards_per_worker)), '--set',
-        'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
-        '--command', command
+        str(pipeline_args.make_examples_disk_per_worker_gb), '--command',
+        command
     ]
-    if pipeline_args.gcsfuse:
-      run_args.append('--fuse')
     results.append(threads.apply_async(_run_job, [run_args]))
 
   _wait_for_results(threads, results)
@@ -498,11 +560,6 @@ def _validate_and_complete_args(pipeline_args):
     pipeline_args.ref_gzi = pipeline_args.ref + '.gzi'
   if not pipeline_args.bai:
     pipeline_args.bai = pipeline_args.bam + '.bai'
-  if pipeline_args.gcsfuse and not pipeline_args.hts_block_size:
-    # Set hts_block_size to 128KB. Gcsfuse works better with shorter byte read.
-    # See https://github.com/GoogleCloudPlatform/gcsfuse/issues/262 for more
-    # info.
-    pipeline_args.hts_block_size = 128 * 1024
 
 
 def run(argv=None):
@@ -578,13 +635,7 @@ def run(argv=None):
       '--gcsfuse',
       action='store_true',
       help=('Only affects make_example step. If set, gcsfuse is used to '
-            'localize input files instead of copying them with gsutil. '
-            'Setting this flag will also set a value for hts_block_size '
-            'that works best for gcsfuse, unless hts_block_size flag is set '
-            'explicitly. It is necessary to have a gcsfuse docker image in '
-            'the Project`s container registry. See '
-            'https://github.com/googlegenomics/pipelines-tools for more '
-            'details.'))
+            'localize input bam file instead of copying it with gsutil. '))
 
   # Optional gVCF args.
   parser.add_argument(

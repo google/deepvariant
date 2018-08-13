@@ -6,6 +6,19 @@ ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 
 ADD README.txt LICENSE AUTHORS /
 
+# Install gcsfuse.
+RUN apt-get update && apt-get install -y lsb-release curl && \
+    export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s` && \
+    echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | \
+        tee /etc/apt/sources.list.d/gcsfuse.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+        apt-key add - && apt-get update && apt-get -y install gcsfuse
+
+# Add LICENSE manually due to issue
+# https://github.com/GoogleCloudPlatform/gcsfuse/issues/290.
+ADD https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/LICENSE \
+    /usr/share/doc/gcsfuse/copyright
+
 RUN mkdir -p /tmp/deepvariant_docker && mkdir -p /opt/deepvariant/bin
 ADD settings.sh run-prereq.sh /tmp/deepvariant_docker/
 RUN cd /tmp/deepvariant_docker && ./run-prereq.sh && \
