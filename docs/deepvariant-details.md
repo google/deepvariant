@@ -247,7 +247,8 @@ version | Replicates                             | #examples
 ------- | -------------------------------------- | -----------
 v0.4    | 9 HG001                                | 85,323,867
 v0.5    | 9 HG001<br>2 HG005<br>78 HG001 WES<br>1 HG005 WES<sup>[(1)](#myfootnote1)</sup> | 115,975,740
-v0.6    | 9 HG001<br>2 HG005<br>5 HG001 PCR+     | 156,571,227
+v0.6    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+     | 156,571,227
+v0.7    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+     | 158,571,078
 
 ### WES models
 
@@ -255,6 +256,7 @@ version | Replicates                  | #examples
 ------- | --------------------------- | ------------------------------
 v0.5    | 78 HG001 WES<br>1 HG005 WES | 15,714,062
 v0.6    | 78 HG001 WES<br>1 HG005 WES<sup>[(2)](#myfootnote2)</sup> | 15,705,449
+v0.7    | 78 HG001 WES<br>1 HG005 WES | 15,704,197
 
 
 <a name="myfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome sequencing data into training data. In v0.6, we took it out because it didn't improve the WGS accuracy.
