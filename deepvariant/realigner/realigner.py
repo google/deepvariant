@@ -57,6 +57,8 @@ from google.protobuf import text_format
 
 _UNSET_WS_INT_FLAG = -1
 
+flags.DEFINE_bool('ws_use_window_selector_model', False,
+                  'Activate the use of window selector models.')
 flags.DEFINE_string(
     'ws_window_selector_model', None,
     'Path to a text format proto of the window selector model to use.')
@@ -147,8 +149,20 @@ flags.DEFINE_integer('kmer_size', 32,
 
 # Margin added to the reference sequence for the aligner module.
 _REF_ALIGN_MARGIN = 20
+
 _DEFAULT_MIN_SUPPORTING_READS = 2
 _DEFAULT_MAX_SUPPORTING_READS = 300
+_ALLELE_COUNT_LINEAR_MODEL_DEFAULT = realigner_pb2.WindowSelectorModel(
+    model_type=realigner_pb2.WindowSelectorModel.ALLELE_COUNT_LINEAR,
+    allele_count_linear_model=realigner_pb2.WindowSelectorModel.
+    AlleleCountLinearModel(
+        bias=-0.683379,
+        coeff_soft_clip=2.997000,
+        coeff_substitution=-0.086644,
+        coeff_insertion=2.493585,
+        coeff_deletion=1.795914,
+        coeff_reference=-0.059787,
+        decision_boundary=3))
 
 # ---------------------------------------------------------------------------
 # Set configuration settings.
@@ -165,11 +179,17 @@ def window_selector_config(flags_obj):
     realigner_pb2.WindowSelector protobuf.
 
   Raises:
-    ValueError: if both ws_{min,max}_supporting_reads and
-    ws_window_selector_model are not None.
-    Or if ws_window_selector_model > ws_max_num_supporting_reads.
+    ValueError: If either ws_{min,max}_supporting_reads are set and
+      ws_use_window_selector_model is True.
+      Or if ws_window_selector_model > ws_max_num_supporting_reads.
+      Or if ws_use_window_selector_model is False and
+      ws_window_selector_model is not None.
   """
-  if flags_obj.ws_window_selector_model is None:
+  if not flags_obj.ws_use_window_selector_model:
+    if flags_obj.ws_window_selector_model is not None:
+      raise ValueError('Cannot specify a ws_window_selector_model '
+                       'if ws_use_window_selector_model is False.')
+
     min_num_supporting_reads = (
         _DEFAULT_MIN_SUPPORTING_READS
         if flags_obj.ws_min_num_supporting_reads == _UNSET_WS_INT_FLAG else
@@ -187,19 +207,23 @@ def window_selector_config(flags_obj):
   else:
     if flags_obj.ws_min_num_supporting_reads != _UNSET_WS_INT_FLAG:
       raise ValueError('Cannot use both ws_min_num_supporting_reads and '
-                       'ws_window_selector_model flags.')
+                       'ws_use_window_selector_model flags.')
     if flags_obj.ws_max_num_supporting_reads != _UNSET_WS_INT_FLAG:
       raise ValueError('Cannot use both ws_max_num_supporting_reads and '
-                       'ws_window_selector_model flags.')
-    with tf.gfile.GFile(flags_obj.ws_window_selector_model) as f:
-      window_selector_model = text_format.Parse(
-          f.read(), realigner_pb2.WindowSelectorModel())
+                       'ws_use_window_selector_model flags.')
+
+    if flags_obj.ws_window_selector_model is None:
+      window_selector_model = _ALLELE_COUNT_LINEAR_MODEL_DEFAULT
+    else:
+      with tf.gfile.GFile(flags_obj.ws_window_selector_model) as f:
+        window_selector_model = text_format.Parse(
+            f.read(), realigner_pb2.WindowSelectorModel())
 
   if (window_selector_model.model_type ==
       realigner_pb2.WindowSelectorModel.VARIANT_READS):
     model = window_selector_model.variant_reads_model
     if model.max_num_supporting_reads < model.min_num_supporting_reads:
-      raise ValueError('ws_min_supporting_reads should be smaller than'
+      raise ValueError('ws_min_supporting_reads should be smaller than '
                        'ws_max_supporting_reads.')
 
   ws_config = realigner_pb2.WindowSelectorOptions(
