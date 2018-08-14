@@ -110,7 +110,8 @@ _POSTPROCESS_VARIANTS_COMMAND = r"""
 
 _NOW_STR = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 
-_GKE_CLUSTER_VERSION = '1.9.6-gke.1'
+# Selects the latest 1.10 release.
+_DEFAULT_GKE_CLUSTER_VERSION = '1.10'
 _POD_CONFIG_TEMPLATE = r"""
 {{
     "kind": "Pod",
@@ -136,7 +137,7 @@ _POD_CONFIG_TEMPLATE = r"""
                 ],
                 "resources": {{
                     "limits": {{
-                        "cloud-tpus.google.com/v2": "8"
+                        "{TPU_RESOURCE}": "8"
                     }}
                 }}
             }}
@@ -345,7 +346,6 @@ def _wait_for_results(threads, results):
 def _deploy_call_variants_pod(pod_name, cluster, pipeline_args):
   """Deploys a pod into Kubernetes cluster, and waits on completion."""
   # redacted
-  # redacted
   sharded_suffix = '@' + str(pipeline_args.shards) + '.gz'
   infile = os.path.join(
       _get_staging_examples_folder(pipeline_args, 0),
@@ -358,7 +358,9 @@ def _deploy_call_variants_pod(pod_name, cluster, pipeline_args):
       DOCKER_IMAGE=pipeline_args.docker_image,
       EXAMPLES=infile,
       OUTFILE=outfile,
-      MODEL_CHECKPOINT=pipeline_args.model + '/model.ckpt')
+      MODEL_CHECKPOINT=pipeline_args.model + '/model.ckpt',
+      TPU_RESOURCE=('cloud-tpus.google.com/preemptible-v2' if
+                    pipeline_args.preemptible else 'cloud-tpus.google.com/v2'))
   cluster.deploy_pod(
       pod_config=pod_config,
       pod_name=pod_name,
@@ -379,8 +381,8 @@ def _run_call_variants_with_kubernetes(pipeline_args):
     # Create a new GKE cluster.
     job_name_label = pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME
     extra_args = [
-        '--cluster-version=' + _GKE_CLUSTER_VERSION, '--num-nodes=1',
-        '--enable-kubernetes-alpha', '--enable-ip-alias',
+        '--cluster-version=' + pipeline_args.gke_cluster_version,
+        '--num-nodes=1', '--enable-kubernetes-alpha', '--enable-ip-alias',
         '--create-subnetwork=', '--node-labels=job_name=' + job_name_label,
         '--scopes=cloud-platform', '--enable-tpu', '--no-enable-autorepair',
         '--project', pipeline_args.project, '--quiet'
@@ -699,6 +701,11 @@ def run(argv=None):
       '--gke_cluster_name',
       help=('GKE cluster to run call_variants step with TPU. If empty, a GKE '
             'cluster is created. This is relevant only if --tpu is set.'))
+  parser.add_argument(
+      '--gke_cluster_version',
+      default=_DEFAULT_GKE_CLUSTER_VERSION,
+      help=('GKE cluster version to run call_variants step with TPU. '
+            'This is relevant only if --tpu is set.'))
   parser.add_argument(
       '--gke_cluster_region',
       help=('GKE cluster region used for searching an existing cluster or '
