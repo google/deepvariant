@@ -191,18 +191,28 @@ class RealignerTest(parameterized.TestCase):
 
   @parameterized.parameters(
       # Arguments passed by ws_{min,max}_supporting_reads.
-      dict(model=None, min_supporting=2, max_supporting=300),
+      dict(
+          model=None, min_supporting=2, max_supporting=300, use_ws_model=False),
       # No flags passed for the window_selection.
-      dict(model=None, min_supporting=-1, max_supporting=-1),
+      dict(
+          model=None, min_supporting=-1, max_supporting=-1, use_ws_model=False),
       # VariantReadsThresholdModel.
       dict(
-          model='VARIANT_READS_THRESHOLD', min_supporting=-1,
-          max_supporting=-1),
-      # AlleleCountLinearModel
-      dict(model='ALLELE_COUNT_LINEAR', min_supporting=-1, max_supporting=-1))
+          model='VARIANT_READS_THRESHOLD',
+          min_supporting=-1,
+          max_supporting=-1,
+          use_ws_model=True),
+      # AlleleCountLinearModel.
+      dict(
+          model='ALLELE_COUNT_LINEAR',
+          min_supporting=-1,
+          max_supporting=-1,
+          use_ws_model=True),
+      # Use the default AlleleCountLinearModel.
+      dict(model=None, min_supporting=-1, max_supporting=-1, use_ws_model=True))
   @flagsaver.FlagSaver
   def test_window_selector_model_flags(self, model, min_supporting,
-                                       max_supporting):
+                                       max_supporting, use_ws_model):
     # This indirection is needed because the symbols in testdata are not set
     # when the @parameterized decorator is called.
     symbol_to_testdata = {
@@ -213,9 +223,48 @@ class RealignerTest(parameterized.TestCase):
     FLAGS.ws_max_num_supporting_reads = max_supporting
     FLAGS.ws_min_num_supporting_reads = min_supporting
     FLAGS.ws_window_selector_model = symbol_to_testdata[model]
+    FLAGS.ws_use_window_selector_model = use_ws_model
     # We only make sure that reading the model does not crash or raise
     # exceptions.
     _ = realigner.realigner_config(FLAGS)
+
+  @flagsaver.FlagSaver
+  def test_window_selector_model_flags_failures(self):
+    with self.assertRaisesRegexp(
+        ValueError, 'ws_min_supporting_reads should be smaller than ws_'
+        'max_supporting_reads.'):
+      FLAGS.ws_max_num_supporting_reads = 1
+      FLAGS.ws_min_num_supporting_reads = 2
+      FLAGS.ws_window_selector_model = None
+      FLAGS.ws_use_window_selector_model = False
+      _ = realigner.realigner_config(FLAGS)
+
+    with self.assertRaisesRegexp(
+        ValueError, 'Cannot specify a ws_window_selector_model '
+        'if ws_use_window_selector_model is False.'):
+      FLAGS.ws_max_num_supporting_reads = -1
+      FLAGS.ws_min_num_supporting_reads = -1
+      FLAGS.ws_window_selector_model = testdata.WS_ALLELE_COUNT_LINEAR_MODEL
+      FLAGS.ws_use_window_selector_model = False
+      _ = realigner.realigner_config(FLAGS)
+
+    with self.assertRaisesRegexp(
+        ValueError, 'Cannot use both ws_min_num_supporting_reads and '
+        'ws_use_window_selector_model flags.'):
+      FLAGS.ws_max_num_supporting_reads = -1
+      FLAGS.ws_min_num_supporting_reads = 1
+      FLAGS.ws_window_selector_model = None
+      FLAGS.ws_use_window_selector_model = True
+      _ = realigner.realigner_config(FLAGS)
+
+    with self.assertRaisesRegexp(
+        ValueError, 'Cannot use both ws_max_num_supporting_reads and '
+        'ws_use_window_selector_model flags.'):
+      FLAGS.ws_max_num_supporting_reads = 1
+      FLAGS.ws_min_num_supporting_reads = -1
+      FLAGS.ws_window_selector_model = None
+      FLAGS.ws_use_window_selector_model = True
+      _ = realigner.realigner_config(FLAGS)
 
   @parameterized.parameters(
       dict(
