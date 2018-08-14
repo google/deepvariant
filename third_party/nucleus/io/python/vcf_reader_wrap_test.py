@@ -201,6 +201,24 @@ class WrapVcfReaderTests(absltest.TestCase):
     iterable = self.samples_reader.query(range1)
     self.assertEqual(test_utils.iterable_len(iterable), 4)
 
+  def test_vcf_from_string(self):
+    v = self.samples_reader.from_string(
+        'chr3\t370537\trs142286746\tC\tCA,CAA\t350.73\tPASS\t'
+        'AC=1,1;AF=0.500,0.500;AN=2;DB;DP=16;ExcessHet=3.0103;'
+        'FS=0.000;MLEAC=1,1;MLEAF=0.500,0.500;MQ=60.00;QD=26.98;'
+        'SOR=1.179;VQSLOD=2.88;culprit=FS\tGT:AD:DP:GQ:PL\t'
+        '1/2:0,6,7:13:99:388,188,149,140,0,116')
+    self.assertEqual(v.reference_name, 'chr3')
+    self.assertEqual(v.start, 370536)
+    self.assertEqual(list(v.names), ['rs142286746'])
+    self.assertEqual(v.reference_bases, 'C')
+    self.assertEqual(list(v.alternate_bases), ['CA', 'CAA'])
+    self.assertEqual(len(v.calls), 1)
+
+  def test_vcf_from_string_raises_on_bad_input(self):
+    with self.assertRaises(ValueError):
+      self.samples_reader.from_string('BAD NOT A VCF RECORD')
+
   def test_from_file_raises_with_missing_source(self):
     with self.assertRaisesRegexp(ValueError,
                                  'Not found: Could not open missing.vcf'):
