@@ -360,7 +360,7 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
       MakeIterable<VcfQueryIterable>(this, fp_, header_, idx_, iter));
 }
 
-StatusOr<bool> VcfReader::FromString(
+tf::Status VcfReader::FromString(
     const absl::string_view& vcf_line, nucleus::genomics::v1::Variant* v) {
   size_t len = vcf_line.length();
   std::unique_ptr<char[]> cstr{new char[len + 1 ]};
@@ -368,10 +368,19 @@ StatusOr<bool> VcfReader::FromString(
   *(cstr.get() + len) = '\0';
   kstring_t str = {.l = len + 1, .m = len + 1, .s = cstr.get()};
 
-  if (vcf_parse1(&str, header_, bcf1_) < 0) {
+  if (vcf_parse1(&str, header_, bcf1_) < 0 || bcf1_->errcode != 0) {
     return tf::errors::DataLoss("Failed to parse VCF record: ", cstr.get());
   }
   TF_RETURN_IF_ERROR(RecordConverter().ConvertToPb(header_, bcf1_, v));
+  return tf::Status::OK();
+}
+
+StatusOr<bool> VcfReader::FromStringPython(
+    const absl::string_view& vcf_line, nucleus::genomics::v1::Variant* v) {
+  tf::Status s = FromString(vcf_line, v);
+  if (!s.ok()) {
+    return s;
+  }
   return true;
 }
 

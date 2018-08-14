@@ -410,20 +410,20 @@ TEST(VcfReaderFromStringTest, MatchesGolden) {
   vector<Variant> golden =
       ReadProtosFromTFRecord<Variant>(GetTestData(kVcfPhasesetGoldenFilename));
   vector<Variant> parsed(5);
-  reader->FromString(
-      "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT:GQ\t0/1:.\t0/1:42", &(parsed[0]));
-  reader->FromString(
+  TF_CHECK_OK(reader->FromString(
+      "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT:GQ\t0/1:.\t0/1:42", &(parsed[0])));
+  TF_CHECK_OK(reader->FromString(
       "Chr1\t22\tDogSNP2\tA\tT\t0\t.\t.\tGT:PL\t0/1:.\t0|1:50,40,60",
-      &(parsed[1]));
-  reader->FromString(
+      &(parsed[1])));
+  TF_CHECK_OK(reader->FromString(
       "Chr1\t23\tDogSNP3\tA\tT\t0\t.\t.\tGT:GL:PS\t"
-      "0/1:.:.\t0/1:-5.0,-4.0,-6.0:.", &(parsed[2]));
-  reader->FromString(
+      "0/1:.:.\t0/1:-5.0,-4.0,-6.0:.", &(parsed[2])));
+  TF_CHECK_OK(reader->FromString(
       "Chr1\t24\tDogSNP4\tA\tT\t0\t.\t.\tGT:PL:PS\t"
-      "0|1:50,40,60:24\t0|1:50,40,60:.", &(parsed[3]));
-  reader->FromString(
+      "0|1:50,40,60:24\t0|1:50,40,60:.", &(parsed[3])));
+  TF_CHECK_OK(reader->FromString(
       "Chr1\t25\tDogSNP5\tA\tT\t0\t.\t.\tGT:GQ:PS:PL\t"
-      "0|1:42:24:50,40,60\t1|1:42:.:50,40,60", &(parsed[4]));
+      "0|1:42:24:50,40,60\t1|1:42:.:50,40,60", &(parsed[4])));
   EXPECT_THAT(parsed, Pointwise(EqualsProto(), golden));
 }
 

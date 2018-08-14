@@ -125,8 +125,12 @@ class VcfReader : public Reader {
       const nucleus::genomics::v1::Range& region);
 
   // Parses vcf_line and puts the result into v.
-  StatusOr<bool> FromString(const absl::string_view& vcf_line,
-                            nucleus::genomics::v1::Variant* v);
+  tensorflow::Status FromString(const absl::string_view& vcf_line,
+                                nucleus::genomics::v1::Variant* v);
+  // Same as FromString, but we have CLIF converters to deal with
+  // StatusOr<...> objects, so return one of those instead of a Status.
+  StatusOr<bool> FromStringPython(const absl::string_view& vcf_line,
+                                  nucleus::genomics::v1::Variant* v);
 
   // Returns True if this VcfReader loaded an index file.
   bool HasIndex() const { return idx_ != nullptr; }
