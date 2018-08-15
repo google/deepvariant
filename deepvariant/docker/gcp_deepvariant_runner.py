@@ -346,13 +346,12 @@ def _wait_for_results(threads, results):
 def _deploy_call_variants_pod(pod_name, cluster, pipeline_args):
   """Deploys a pod into Kubernetes cluster, and waits on completion."""
   # redacted
-  sharded_suffix = '@' + str(pipeline_args.shards) + '.gz'
   infile = os.path.join(
       _get_staging_examples_folder(pipeline_args, 0),
-      'examples_output.tfrecord' + sharded_suffix)
+      'examples_output.tfrecord@{}.gz'.format(str(pipeline_args.shards)))
   outfile = os.path.join(
       _get_staging_called_variants_folder(pipeline_args),
-      'call_variants_output.tfrecord' + sharded_suffix)
+      'call_variants_output.tfrecord-00000-of-00001.gz')
   pod_config = _POD_CONFIG_TEMPLATE.format(
       POD_NAME=pod_name,
       DOCKER_IMAGE=pipeline_args.docker_image,
