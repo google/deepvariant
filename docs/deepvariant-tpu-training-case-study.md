@@ -42,7 +42,7 @@ BUCKET="gs://deepvariant"
 BIN_VERSION="0.7.0"
 
 MODEL_VERSION="0.7.0"
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}.data-wgs_standard"
+MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
 
 GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
 
@@ -117,6 +117,12 @@ terminology, please refer to [Machine Learning
 Glossary](https://developers.google.com/machine-learning/crash-course/glossary).
 
 ### Training set
+
+First, to set up,
+
+```
+sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
+```
 
 ```
 ( time seq 0 $((N_SHARDS-1)) | \
