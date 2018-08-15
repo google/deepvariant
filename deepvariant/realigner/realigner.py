@@ -57,7 +57,7 @@ from google.protobuf import text_format
 
 _UNSET_WS_INT_FLAG = -1
 
-flags.DEFINE_bool('ws_use_window_selector_model', False,
+flags.DEFINE_bool('ws_use_window_selector_model', True,
                   'Activate the use of window selector models.')
 flags.DEFINE_string(
     'ws_window_selector_model', None,
