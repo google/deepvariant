@@ -269,31 +269,29 @@ class RealignerTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           region_literal='chr20:10,095,379-10,095,500',
-          expected_window_literal='chr20:10,095,345-10,095,553',
+          expected_window_literal='chr20:10,095,353-10,095,553',
           expected_haplotypes={
-              'CTTATCCTAGTGATCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACC'
-              'ATGGTCACCTGACATAGACACAAGTGATGATGATGATGATGATGATGATGATGATGATGATATC'
-              'CATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCATTT'
-              'AATCATCT',
-              'CTTATCCTAGTGATCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACC'
-              'ATGGTCACCTGACATAGACACAAGTGATGATGATGATGATGATGATGATGATGATGATGATGAT'
-              'GATGATATCCATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATT'
-              'ACCTCATTTAATCATCT',
+              'AGTGATCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGGTCAC'
+              'CTGACATAGACACAAGTGATGATGATGATGATGATGATGATGATGATGATGATATCCATGTTCA'
+              'AGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCATTTAATCATC'
+              'T',
+              'AGTGATCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGGTCAC'
+              'CTGACATAGACACAAGTGATGATGATGATGATGATGATGATGATGATGATGATGATGATGATAT'
+              'CCATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCATT'
+              'TAATCATCT'
           },
           comment='There is a heterozygous 9 bp deletion of tandem TGA repeat.'
       ),
       dict(
           region_literal='chr20:10,046,080-10,046,307',
-          expected_window_literal='chr20:10,046,048-10,046,286',
+          expected_window_literal='chr20:10,046,096-10,046,267',
           expected_haplotypes={
-              'CTACTTGTATAGGTGTGGGCTCCCAAGAAAAAGTAGGGATTATTCTTCCCCAAAAAAAGAGTTA'
-              'GGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAAAAGGAAAGAAAAAAAA'
-              'GAAAGAAAGAAAGAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAGAGAAAGAGAAAGAGAA'
-              'GGAAAGAGAAAGAAAGAGAAGGAAAGAGAGAAAGAGAAAGAGAAAGA',
-              'CTACTTGTATAGGTGTGGGCTCCCAAGAAAAAGTAGGGATTATTCTTCCCCAAAAAAAGAGTTA'
-              'GGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAAAAGGAAAGAAAAAAAA'
-              'GAAAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAGAGAAAGAGAAAGAGAAGGAAAGAGAA'
-              'AGAAAGAGAAGGAAAGAGAGAAAGAGAAAGAGAAAGA',
+              'CCCAAAAAAAGAGTTAGGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAA'
+              'AAGGAAAGAAAAAAAAGAAAGAAAGAAAGAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAG'
+              'AGAAAGAGAAAGAGAAGGAAAGAGAAAGAAAGAGAAGGAAAGAG',
+              'CCCAAAAAAAGAGTTAGGGATGCTGGAAAGGCAGAAAGAAAAGGGAAGGGAAGAGGAAGGGGAA'
+              'AAGGAAAGAAAAAAAAGAAAGAAAGAAAGAGAAAGAGAAAGAAAGAGGAAAGAGAGAAAGAGAA'
+              'AGAGAAGGAAAGAGAAAGAAAGAGAAGGAAAGAG'
           },
           comment='There is a heterozygous 10 bp deletion.'),
   )
@@ -439,6 +437,7 @@ class RealignerIntegrationTest(absltest.TestCase):
     config = realigner.realigner_config(FLAGS)
     reads_realigner = realigner.Realigner(config, ref_reader)
     region_str = 'chr20:10,000,000-10,009,999'
+    windows_count = 0
 
     regions = ranges.RangeSet.from_regions([region_str])
     for region in regions.partition(1000):
@@ -454,14 +453,14 @@ class RealignerIntegrationTest(absltest.TestCase):
       self.assertCountEqual([r.fragment_name for r in in_reads],
                             [r.fragment_name for r in out_reads])
 
-      # Make sure we assembled at least one windows in the region.
-      self.assertNotEqual(0, len(windows))
-
       # Check each window to make sure it's reasonable.
       for window in windows:
         # We always expect the reference sequence to be one of our haplotypes.
         ref_seq = ref_reader.query(window.span)
         self.assertIn(ref_seq, set(window.haplotypes))
+      windows_count += len(windows)
+
+    self.assertGreater(windows_count, 0)
 
 
 if __name__ == '__main__':
