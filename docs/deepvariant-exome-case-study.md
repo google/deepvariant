@@ -19,8 +19,8 @@ approach in
 
 We recognize that there might be some overhead of using docker run. But using
 docker makes this case study easier to generalize to different versions of Linux
-systems. For example, we have verifed that you can use docker to run DeepVariant
-on other Linux systems such as CentOS 7.
+systems. For example, we have verified that you can use docker to run
+DeepVariant on other Linux systems such as CentOS 7.
 
 ## Request a machine
 
@@ -170,7 +170,7 @@ to the capture region BED file:
       --examples "${EXAMPLES}" \
       --regions "${CAPTURE_BED}" \
       --gvcf "${GVCF_TFRECORDS}" \
-      --task {}
+      --task {} \
 ) >"${LOG_DIR}/make_examples.log" 2>&1
 ```
 
@@ -219,11 +219,11 @@ study](deepvariant-case-study.md#run_postprocess_variants).
 
 Step                               | wall time
 ---------------------------------- | ---------
-`make_examples`                    | 21m 53s
-`call_variants`                    | 2m 26s
+`make_examples`                    | 13m 48s
+`call_variants`                    | 2m 7s
 `postprocess_variants` (no gVCF)   | 0m 14s
-`postprocess_variants` (with gVCF) | 1m 18s
-total time (single machine)        | ~24m 37s
+`postprocess_variants` (with gVCF) | 1m 19s
+total time (single machine)        | ~17m
 
 ## Variant call quality
 
@@ -264,10 +264,10 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 
 Here are the results:
 
-Type  | # TP  | # FN | # FP | Recall   | Precision | F1\_Score
------ | ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 2489  | 111  | 51   | 0.957308 | 0.980101  | 0.968570
-SNP   | 33674 | 50   | 15   | 0.998517 | 0.999555  | 0.999036
+Type  | # FN | # FP | Recall   | Precision | F1\_Score
+----- | ---- | ---- | -------- | --------- | ---------
+INDEL | 111  | 51   | 0.957308 | 0.980086  | 0.968563
+SNP   | 48   | 15   | 0.998577 | 0.999555  | 0.999066
 
 ## Separate models for calling whole genome and exome data
 
