@@ -39,9 +39,11 @@ Cloud Platform.
 *   [DeepVariant exome case study](docs/deepvariant-exome-case-study.md)
 *   [DeepVariant Genomic VCF (gVCF) support](docs/deepvariant-gvcf-support.md)
 *   [DeepVariant usage guide](docs/deepvariant-details.md)
-*   [DeepVariant model training](docs/deepvariant-model-training.md)
-*   [Datalab example: visualizing pileup
-    images/tensors](docs/visualizing_examples.ipynb)
+*   [Advanced Case Study: Train a customized SNP and small indel variant caller
+    for BGISEQ-500 data](docs/deepvariant-tpu-training-case-study.md)
+*   [DeepVariant model training (old)](docs/deepvariant-model-training.md)
+*   [DeepVariant training data](docs/deepvariant-details-training-data.md)
+*   [Datalab example: visualizing pileup images/tensors](docs/visualizing_examples.ipynb)
 *   [Getting Started with GCP](docs/deepvariant-gcp-info.md) (It is not required
     to run DeepVariant on GCP.)
 

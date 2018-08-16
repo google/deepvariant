@@ -241,6 +241,9 @@ images.
 For the models we've released over time, here are more details of the training
 data we used.
 
+For even more details, see
+[DeepVariant training data](deepvariant-details-training-data.md).
+
 ### WGS models
 
 version | Replicates                             | #examples
