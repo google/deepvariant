@@ -100,10 +100,19 @@ parallel --jobs "${{CONCURRENT_JOBS}}" --halt 2
   --checkpoint "${{MODEL}}"/model.ckpt
 """
 
-_POSTPROCESS_VARIANTS_COMMAND = r"""
+_POSTPROCESS_VARIANTS_COMMAND_NO_TPU = r"""
 /opt/deepvariant/bin/postprocess_variants
     --ref "${{INPUT_REF}}"
     --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord@"${{SHARDS}}".gz
+    --outfile "${{OUTFILE}}"
+    {EXTRA_ARGS}
+"""
+
+# When running on TPU, call_variants writes output into one shard.
+_POSTPROCESS_VARIANTS_COMMAND_TPU = r"""
+/opt/deepvariant/bin/postprocess_variants
+    --ref "${{INPUT_REF}}"
+    --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-00000-of-00001.gz
     --outfile "${{OUTFILE}}"
     {EXTRA_ARGS}
 """
@@ -497,6 +506,9 @@ def _run_postprocess_variants(pipeline_args):
     outputs.extend(['GVCF_OUTFILE=' + pipeline_args.gvcf_outfile])
 
   job_name = pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME
+  raw_command = (
+      _POSTPROCESS_VARIANTS_COMMAND_TPU
+      if pipeline_args.tpu else _POSTPROCESS_VARIANTS_COMMAND_NO_TPU)
   run_args = _get_base_job_args(pipeline_args) + [
       '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name, '--output',
       os.path.join(pipeline_args.logging,
@@ -505,8 +517,7 @@ def _run_postprocess_variants(pipeline_args):
       ','.join(outputs), '--machine-type', machine_type, '--disk-size',
       str(pipeline_args.postprocess_variants_disk_gb), '--set',
       'SHARDS=' + str(pipeline_args.shards), '--command',
-      _POSTPROCESS_VARIANTS_COMMAND.format(
-          EXTRA_ARGS=' '.join(get_extra_args()))
+      raw_command.format(EXTRA_ARGS=' '.join(get_extra_args()))
   ]
   _run_job(run_args)
 
