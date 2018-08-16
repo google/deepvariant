@@ -25,8 +25,8 @@ approach in
 
 We recognize that there might be some overhead of using docker run. But using
 docker makes this case study easier to generalize to different versions of Linux
-systems. For example, we have verifed that you can use docker to run DeepVariant
-on other Linux systems such as CentOS 7.
+systems. For example, we have verified that you can use docker to run
+DeepVariant on other Linux systems such as CentOS 7.
 
 ## Request a machine
 
@@ -64,11 +64,10 @@ Set a number of shell variables, to make what follows easier to read.
 ```bash
 BASE="${HOME}/case-study"
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.6.1"
-MODEL_VERSION="0.6.0"
-MODEL_CL="191676894"
+BIN_VERSION="0.7.0"
+MODEL_VERSION="0.7.0"
 
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wgs_standard"
+MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
 DATA_BUCKET="${BUCKET}/case-study-testdata"
 
 INPUT_DIR="${BASE}/input"
@@ -191,7 +190,7 @@ because this takes a long time to finish, we will redirect all the output
       --reads "${BAM}" \
       --examples "${EXAMPLES}" \
       --gvcf "${GVCF_TFRECORDS}" \
-      --task {}
+      --task {} \
 ) >"${LOG_DIR}/make_examples.log" 2>&1
 ```
 
@@ -281,11 +280,11 @@ the postprocess\_variants step, so the full call would look instead like:
 
 Step                               | wall time
 ---------------------------------- | ---------------
-`make_examples`                    | 2h 23m 11s
-`call_variants`                    | 3h 25m 45s
-`postprocess_variants` (no gVCF)   | 22m 3s
-`postprocess_variants` (with gVCF) | 55m 57s
-total time (single machine)        | 6h 10m - 6h 44m
+`make_examples`                    | 1h 45m 46s
+`call_variants`                    | 3h 25m 38s
+`postprocess_variants` (no gVCF)   | 21m 33s
+`postprocess_variants` (with gVCF) | 55m 47s
+total time (single machine)        | 5h 33m - 6h 07m
 
 ## Variant call quality
 
@@ -318,5 +317,5 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 1345 | 906  | 0.997106 | 0.998127  | 0.997616
-SNP   | 1282 | 757  | 0.999579 | 0.999752  | 0.999666
+INDEL | 1431 | 916  | 0.996921 | 0.998106  | 0.997513
+SNP   | 1329 | 746  | 0.999564 | 0.999755  | 0.999660

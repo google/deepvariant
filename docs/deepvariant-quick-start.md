@@ -7,26 +7,24 @@ This is an explanation of how to use DeepVariant.
 To get started, you'll need the DeepVariant programs (and some packages they
 depend on), some test data, and of course a place to run them.
 
-We've provided precompiled "binaries" and some test data in a bucket on Google
-Cloud Storage. The instructions below show how to download those using the
-`gsutil` command, which you can get by installing the [Cloud
-SDK](https://cloud.google.com/sdk/downloads).
+We've provided a docker image, and some test data in a bucket on Google Cloud
+Storage. The instructions below show how to download those using the `gsutil`
+command, which you can get by installing the
+[Cloud SDK](https://cloud.google.com/sdk/downloads).
 
 Warning: there is an Ubuntu package with the same name, but it is a different
 thing!
 
-We put "binaries" in quotes because they are really zip files containing a mix
-of Python and native code. Python knows how to execute these directly, so don't
-unizp them.
+### Update since r0.7 : using docker instead of copying binaries.
 
-For the runtime packages that DeepVariant depends upon, the installation
-procedure below will try to fetch them from public archives (for Debian packages
-and pip packages), or from our GCS bucket (for a sufficiently recent version of
-[Tensorflow](https://github.com/tensorflow), and for
-[CLIF](https://github.com/google/clif), a Swig-like tool that takes a long time
-to build from soure). Look at the `run-prereq.sh` and `settings.sh` files for
-all the details. That process uses `apt-get` and `pip`, so you'll need root
-access.
+Starting from the 0.7 release, we use docker to run the binaries instead of
+copying binaries to local machines first. You can still read about the previous
+approach in
+[the Quick Start in r0.6](https://github.com/google/deepvariant/blob/r0.6/docs/deepvariant-quick-start.md).
+We recognize that there might be some overhead of using docker run. But using
+docker makes this case study easier to generalize to different versions of Linux
+systems. For example, we have verified that you can use docker to run
+DeepVariant on other Linux systems such as CentOS 7.
 
 If you want to compile the DeepVariant binaries for yourself (from the source
 distribution on github) and run with your own data, that's fine too. Just
@@ -34,15 +32,15 @@ replace the steps in this document that fetch those things. The binaries we ship
 are not compiled with aggressive optimizations, so they can run on more
 platforms, so it may be worth tuning those flags for your hardware.
 
-A Cloud platform can provide a convenient place to run, with both CPU and GPU
-support, if you don't have an available Linux machine of your own. We find it
-handy to do these sort of exercises in that way, since DeepVariant requires a
+A Cloud platform can provide a convenient place to run, with both CPU, GPU, or
+TPU support, if you don't have an available Linux machine of your own. We find
+it handy to do these sort of exercises in that way, since DeepVariant requires a
 number of extra system packages to be installed.
 
 We made some notes about [Google Cloud Platform](deepvariant-gcp-info.md) which
 might be useful.
 
-## Download binaries, models, and test data
+## Get docker image, models, and test data
 
 Before you start running, you need to have the following input files:
 
@@ -59,52 +57,18 @@ Before you start running, you need to have the following input files:
 
 1.  A model checkpoint for DeepVariant. We'll refer to this as `${MODEL}` below.
 
-### Download the DeepVariant binaries and install prerequisites
-
-The DeepVariant binaries can be downloaded to your instance with the
-[`gsutil`](https://cloud.google.com/storage/docs/gsutil) command.
-
 ```bash
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.6.1"
-MODEL_VERSION="0.6.0"
-MODEL_CL="191676894"
+BIN_VERSION="0.7.0"
+MODEL_VERSION="0.7.0"
 
-# Note that we don't specify the CL number for the binary, only the bin version.
-BIN_BUCKET="${BUCKET}/binaries/DeepVariant/${BIN_VERSION}/DeepVariant-${BIN_VERSION}+cl-*"
-MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+cl-${MODEL_CL}.data-wgs_standard"
+MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"
 DATA_BUCKET="${BUCKET}/quickstart-testdata"
 
-mkdir -p bin
-# Download the DeepVariant binaries.
-gsutil -m cp "${BIN_BUCKET}/*" bin/
-chmod a+x bin/*
-```
-
-Which should copy files into the bin subdirectory:
-
-```bash
-ls -1 bin/
-```
-
-producing
-
-```
-call_variants.zip
-licenses.zip
-make_examples.zip
-model_eval.zip
-model_train.zip
-postprocess_variants.zip
-run-prereq.sh
-settings.sh
-```
-
-Install the prerequisites onto the machine:
-
-```bash
-cd bin; bash run-prereq.sh; cd -
+sudo apt -y update
+sudo apt-get -y install docker.io
+sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
 ```
 
 ### Download a model
@@ -117,13 +81,13 @@ In this bucket models are organized into subdirectories by program name and
 version, such as for the model to run on whole genome sequencing data:
 
 ```
-DeepVariant/0.6.0/DeepVariant-inception_v3-0.6.0+cl-191676894.data-wgs_standard/
+DeepVariant/0.7.0/DeepVariant-inception_v3-0.7.0+data-wgs_standard/
 ```
 
 and for the model to run on whole exome sequencing data.
 
 ```
-DeepVariant/0.6.0/DeepVariant-inception_v3-0.6.0+cl-191676894.data-wes_standard/
+DeepVariant/0.7.0/DeepVariant-inception_v3-0.7.0+data-wes_standard/
 ```
 
 The model files are tagged with the program name and version, model name and the
@@ -204,11 +168,11 @@ new directory on the instance and set up variables to refer to the test data we
 downloaded above:
 
 ```bash
-OUTPUT_DIR=quickstart-output
+OUTPUT_DIR=/home/${USER}/quickstart-output
 mkdir -p "${OUTPUT_DIR}"
-REF=quickstart-testdata/ucsc.hg19.chr20.unittest.fasta
-BAM=quickstart-testdata/NA12878_S1.chr20.10_10p1mb.bam
-MODEL="${MODEL_NAME}/model.ckpt"
+REF=/home/${USER}/quickstart-testdata/ucsc.hg19.chr20.unittest.fasta
+BAM=/home/${USER}/quickstart-testdata/NA12878_S1.chr20.10_10p1mb.bam
+MODEL="/home/${USER}/${MODEL_NAME}/model.ckpt"
 ```
 
 ### `make_examples`
@@ -222,7 +186,10 @@ Here is an example command that would be used in inference (variant "calling")
 mode:
 
 ```bash
-python bin/make_examples.zip \
+sudo docker run \
+  -v /home/${USER}:/home/${USER} \
+  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/make_examples \
   --mode calling   \
   --ref "${REF}"   \
   --reads "${BAM}" \
@@ -241,13 +208,16 @@ sudo apt-get -y install parallel
 ```
 
 ```bash
-LOGDIR=./logs
+LOGDIR=/home/${USER}/logs
 N_SHARDS=3
 
 mkdir -p "${LOGDIR}"
 time seq 0 $((N_SHARDS-1)) | \
   parallel --eta --halt 2 --joblog "${LOGDIR}/log" --res "${LOGDIR}" \
-  python bin/make_examples.zip \
+  sudo docker run \
+    -v /home/${USER}:/home/${USER} \
+    gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+    /opt/deepvariant/bin/make_examples \
     --mode calling \
     --ref "${REF}" \
     --reads "${BAM}" \
@@ -281,7 +251,10 @@ Example command:
 ```bash
 CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/call_variants_output.tfrecord.gz"
 
-python bin/call_variants.zip \
+sudo docker run \
+  -v /home/${USER}:/home/${USER} \
+  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/call_variants \
  --outfile "${CALL_VARIANTS_OUTPUT}" \
  --examples "${OUTPUT_DIR}/examples.tfrecord@${N_SHARDS}.gz" \
  --checkpoint "${MODEL}"
@@ -302,7 +275,10 @@ An example command is below. Note that the output file should end with either
 ```bash
 FINAL_OUTPUT_VCF="${OUTPUT_DIR}/output.vcf.gz"
 
-python bin/postprocess_variants.zip \
+sudo docker run \
+  -v /home/${USER}:/home/${USER} \
+  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/postprocess_variants \
   --ref "${REF}" \
   --infile "${CALL_VARIANTS_OUTPUT}" \
   --outfile "${FINAL_OUTPUT_VCF}"
@@ -316,15 +292,14 @@ program from Illumina to evaluate the resulting 10 kilobase vcf file. This
 serves as a quick check to ensure the three DeepVariant commands ran correctly.
 
 ```bash
-sudo apt-get -y install docker.io
-
 sudo docker pull pkrusche/hap.py
-sudo docker run -it -v `pwd`:/data pkrusche/hap.py /opt/hap.py/bin/hap.py \
-  /data/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
-  "/data/${FINAL_OUTPUT_VCF}" \
-  -f /data/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed \
-  -r "/data/${REF}" \
-  -o "/data/${OUTPUT_DIR}/happy.output" \
+sudo docker run -it -v /home/${USER}:/home/${USER} \
+  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  /home/${USER}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
+  "${FINAL_OUTPUT_VCF}" \
+  -f /home/${USER}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed \
+  -r "${REF}" \
+  -o "${OUTPUT_DIR}/happy.output" \
   --engine=vcfeval \
   -l chr20:10000000-10010000
 ```
