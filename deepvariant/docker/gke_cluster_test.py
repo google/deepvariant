@@ -31,7 +31,7 @@
 To run the tests, first activate virtualenv and install mock:
 $ virtualenv venv
 $ . venv/bin/activate
-$ pip install mock
+$ pip install mock enum34 retrying
 
 Then run:
 $ python gke_cluster_test.py
@@ -250,7 +250,7 @@ class GkeClusterTest(unittest.TestCase):
     mock_call.assert_any_call(
         ['kubectl', 'get', 'pods', 'foo-pod', '-o', 'jsonpath={.status.phase}'],
         std_input=None,
-        retries=1,
+        retries=0,
         retry_delay_sec=1)
 
   @mock.patch('process_util.run_command', return_value='foo-status')
@@ -264,7 +264,7 @@ class GkeClusterTest(unittest.TestCase):
     mock_call.assert_any_call(
         ['kubectl', 'get', 'pods', 'foo-pod', '-o', 'jsonpath={.status.phase}'],
         std_input=None,
-        retries=1,
+        retries=0,
         retry_delay_sec=1)
 
   @mock.patch('process_util.run_command')

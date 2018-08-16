@@ -35,8 +35,9 @@ from __future__ import print_function
 import logging
 import time
 import enum
-
 import process_util
+import retrying
+
 
 # Number of times a gcloud CLI should be retried before reporting failure.
 _GCLOUD_RETRIES = 1
@@ -93,6 +94,10 @@ _POD_STATUS_MAP = {
     'Succeeded': PodStatus.SUCCEEDED,
     'Failed': PodStatus.FAILED,
 }
+
+
+def _is_runtime_exception(exception):
+  return isinstance(exception, RuntimeError)
 
 
 class GkeCluster(object):
@@ -319,6 +324,12 @@ class GkeCluster(object):
     raise RuntimeError(
         'Pod %s failed after %d attempts.' % (pod_name, retries + 1))
 
+  # Retry with a delay between 1 to 10 seconds for at most 100 seconds.
+  @retrying.retry(
+      retry_on_exception=_is_runtime_exception,
+      wait_exponential_multiplier=1000,
+      wait_exponential_max=10000,
+      stop_max_delay=100000)
   def get_pod_status(self, pod_name):
     """Returns given pod's status.
 
@@ -330,7 +341,8 @@ class GkeCluster(object):
     args = [
         'kubectl', 'get', 'pods', pod_name, '-o', 'jsonpath={.status.phase}'
     ]
-    status_str = self._kubectl_call(args).strip()
+    # Retry is done by retry decorator.
+    status_str = self._kubectl_call(args, retries=0).strip()
     return _POD_STATUS_MAP.get(status_str, PodStatus.UNKNOWN)
 
   def delete_pod(self, pod_name, wait=True):
