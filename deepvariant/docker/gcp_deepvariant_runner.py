@@ -400,7 +400,7 @@ def _run_call_variants_with_kubernetes(pipeline_args):
         cluster_name,
         pipeline_args.gke_cluster_region,
         pipeline_args.gke_cluster_zone,
-        alpha_cluster=True,
+        alpha_cluster=False,
         extra_args=extra_args)
     new_cluster_created = True
 

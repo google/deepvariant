@@ -157,7 +157,7 @@ class GkeCluster(object):
     if self._alpha_cluster:
       args = ['gcloud', 'alpha']
     else:
-      args = ['gcloud']
+      args = ['gcloud', 'beta']
     args.extend(['container', 'clusters', 'create', self._cluster_name])
     if self._extra_create_args:
       args.extend(self._extra_create_args)
