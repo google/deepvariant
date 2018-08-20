@@ -56,7 +56,7 @@ CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
   // Add one call to fulfill the assumption of variant having one call.
   single_site_call.mutable_variant()->add_calls();
   single_site_call.mutable_variant()->set_reference_name(
-      reference_name.ToString());
+      string(reference_name));
   single_site_call.mutable_variant()->set_start(start);
   single_site_call.mutable_variant()->set_end(end);
   return single_site_call;

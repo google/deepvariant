@@ -168,7 +168,7 @@ Variant WithCounts(const Variant& base_variant, const std::vector<int>& ad,
 
 // Creates a non-variant site with the given reference base (defaults to "A").
 Variant NoVariant(tensorflow::StringPiece ref = "A") {
-  return MakeExpectedVariant(ref.ToString(), {});
+  return MakeExpectedVariant(string(ref), {});
 }
 
 class VariantCallingTest : public ::testing::Test {
