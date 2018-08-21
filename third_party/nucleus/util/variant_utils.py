@@ -194,11 +194,13 @@ def is_snp(variant):
     variant: nucleus.genomics.v1.Variant.
 
   Returns:
-    True if all alleles of variant are 1 bp in length.
+    True if all alleles of variant are 1 bp in length, excluding the GVCF
+    <*> allele.
   """
   return (not is_ref(variant) and len(variant.reference_bases) == 1 and
-          len(variant.alternate_bases) >= 1 and
-          all(len(x) == 1 for x in variant.alternate_bases))
+          len(variant.alternate_bases) >= 1 and all(
+              (len(x) == 1 or x == vcf_constants.GVCF_ALT_ALLELE)
+              for x in variant.alternate_bases))
 
 
 def is_indel(variant):
@@ -218,7 +220,8 @@ def is_indel(variant):
   # redacted
   return (not is_ref(variant) and
           (len(variant.reference_bases) > 1 or
-           any(len(alt) > 1 for alt in variant.alternate_bases)))
+           any((len(alt) > 1 and alt != vcf_constants.GVCF_ALT_ALLELE) for alt
+               in variant.alternate_bases)))
 
 
 def is_biallelic(variant):
