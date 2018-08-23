@@ -62,7 +62,7 @@ cc_library(
     hdrs = ["statusor_clif_converters.h"],
     deps = [
         ":statusor",
-        "@clif//:cpp_runtime",
+        "//third_party/clif/python:clif",
         "@local_config_python//:python_headers",
     ],
 )

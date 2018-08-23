@@ -32,8 +32,8 @@
 #ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_
 #define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_
 
-#include "clif/python/postconv.h"
-#include "clif/python/types.h"
+#include "third_party/clif/python/postconv.h"
+#include "third_party/clif/python/types.h"
 #include "third_party/nucleus/vendor/statusor.h"
 
 namespace clif {

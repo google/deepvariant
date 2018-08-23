@@ -29,12 +29,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#include "third_party/nucleus/util/proto_clif_converter.h"
-#include "clif/python/types.h"
 #include "google/protobuf/message.h"
 #include "python/google/protobuf/proto_api.h"
+#include "third_party/clif/python/types.h"
+#include "third_party/nucleus/util/proto_clif_converter.h"
 
-namespace clif {
+namespace nucleus {
 
 static const google::protobuf::python::PyProto_API* py_proto_api = nullptr;
 
@@ -46,4 +46,4 @@ const google::protobuf::python::PyProto_API* GetPyProtoApi(PyObject* py) {
   return py_proto_api;
 }
 
-}  // namespace clif
+}  // namespace nucleus
