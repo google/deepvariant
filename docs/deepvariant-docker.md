@@ -53,8 +53,8 @@ instructions
 to manage docker as a non-root user.
 
 ```bash
-# You may use the 'latest' label to get the latest version.
-IMAGE_VERSION=0.7.0
+# You can also use specific version labels such as '0.7.0'.
+IMAGE_VERSION=latest
 gcloud docker -- pull gcr.io/deepvariant-docker/deepvariant:$IMAGE_VERSION
 docker run -it -v $PWD/input:/dv2/input -v $PWD/models:/dv2/models \
     gcr.io/deepvariant-docker/deepvariant:$IMAGE_VERSION
