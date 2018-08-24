@@ -19,6 +19,9 @@ RUN apk add --update python python-dev py-pip build-base && \
     mkdir -p /opt/deepvariant_runner/bin && \
     mkdir -p /opt/deepvariant_runner/src
 
+# Kubernetes TPU is in beta.
+RUN gcloud components install beta -q
+
 # Install kubernetes.
 RUN curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/latest.txt)/bin/linux/amd64/kubectl && \
     chmod +x /usr/bin/kubectl
