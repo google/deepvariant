@@ -30,21 +30,28 @@
  */
 
 #include "third_party/nucleus/vendor/statusor_clif_converters.h"
+
 #include <string>
 
-namespace clif {
+namespace tensorflow {
+
+PyObject* Clif_PyObjFrom(const Status& c, const clif::py::PostConv&) {
+  if (!c.ok()) {
+    ::nucleus::internal::ErrorFromStatus(c);
+    return nullptr;
+  } else {
+    Py_RETURN_NONE;
+  }
+}
+
+}  // namespace tensorflow
+
+namespace nucleus {
+namespace internal {
 
 void ErrorFromStatus(const tensorflow::Status& status) {
-  const string message = status.ToString();
-  PyErr_SetString(PyExc_ValueError, message.c_str());
+  PyErr_SetString(PyExc_ValueError, status.ToString().c_str());
 }
 
-PyObject* Clif_PyObjFrom(const tensorflow::Status& c, py::PostConv unused) {
-  if (!c.ok()) {
-    ErrorFromStatus(c);
-    return nullptr;
-  }
-  Py_RETURN_NONE;
-}
-
-}  // namespace clif
+}  // namespace internal
+}  // namespace nucleus

@@ -36,35 +36,50 @@
 #include "third_party/clif/python/types.h"
 #include "third_party/nucleus/vendor/statusor.h"
 
-namespace clif {
-
 // Note: comment below is an instruction to CLIF.
-// CLIF use `nucleus::StatusOr` as StatusOr
+// CLIF use `::nucleus::StatusOr` as StatusOr
 // CLIF use `::tensorflow::Status` as Status
 
-void ErrorFromStatus(const tensorflow::Status& status);
+namespace tensorflow {
 
-PyObject* Clif_PyObjFrom(const tensorflow::Status& c, py::PostConv);
+// We do not own namespace tensorflow, but at this point, nobody else is going
+// to provide the necessary conversion function for ::tensorflow::Status. This
+// is less than ideal, but for now we provide the function here.
+
+PyObject* Clif_PyObjFrom(const Status& c, const ::clif::py::PostConv&);
+
+}  // namespace tensorflow
+
+namespace nucleus {
+namespace internal {
+
+void ErrorFromStatus(const ::tensorflow::Status& status);
+
+}  // namespace internal
 
 template <typename T>
-PyObject* Clif_PyObjFrom(const nucleus::StatusOr<T>& c, py::PostConv pc) {
+PyObject* Clif_PyObjFrom(const StatusOr<T>& c,
+                         const ::clif::py::PostConv& pc) {
   if (!c.ok()) {
-    ErrorFromStatus(c.status());
+    internal::ErrorFromStatus(c.status());
     return nullptr;
+  } else {
+    using ::clif::Clif_PyObjFrom;
+    return Clif_PyObjFrom(c.ValueOrDie(), pc.Get(0));
   }
-  return Clif_PyObjFrom(c.ValueOrDie(), pc.Get(0));
 }
 
 template <typename T>
-PyObject* Clif_PyObjFrom(nucleus::StatusOr<T>&& c,
-                         py::PostConv pc) {  // NOLINT:c++11
+PyObject* Clif_PyObjFrom(StatusOr<T>&& c, const ::clif::py::PostConv& pc) {
   if (!c.ok()) {
-    ErrorFromStatus(c.status());
+    internal::ErrorFromStatus(c.status());
     return nullptr;
+  } else {
+    using ::clif::Clif_PyObjFrom;
+    return Clif_PyObjFrom(c.ConsumeValueOrDie(), pc.Get(0));
   }
-  return Clif_PyObjFrom(c.ConsumeValueOrDie(), pc.Get(0));
 }
 
-}  // namespace clif
+}  // namespace nucleus
 
 #endif  // THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_
