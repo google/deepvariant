@@ -144,7 +144,7 @@ study.
 time gsutil -m cp -r "${DATA_BUCKET}/*" "${DATA_DIR}"
 ```
 
-It took us a few minuntes to copy the files.
+It took us a few minutes to copy the files.
 
 ## Run `make_examples`
 

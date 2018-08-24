@@ -43,7 +43,7 @@ Copy the model:
 
 ```bash
 mkdir -p models
-gsutil -m cp gs://deepvariant/models/DeepVariant/0.4.0/DeepVariant-inception_v3-0.4.0+cl-174375304.data-wgs_standard/* models/
+gsutil -m cp gs://deepvariant/models/DeepVariant/0.7.0/DeepVariant-inception_v3-0.7.0+data-wgs_standard/* models/
 ```
 
 Run the docker image mounting the `input` and `models` folders. You may need
@@ -54,7 +54,7 @@ to manage docker as a non-root user.
 
 ```bash
 # You may use the 'latest' label to get the latest version.
-IMAGE_VERSION=0.4.1
+IMAGE_VERSION=0.7.0
 gcloud docker -- pull gcr.io/deepvariant-docker/deepvariant:$IMAGE_VERSION
 docker run -it -v $PWD/input:/dv2/input -v $PWD/models:/dv2/models \
     gcr.io/deepvariant-docker/deepvariant:$IMAGE_VERSION

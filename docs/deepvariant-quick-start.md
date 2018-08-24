@@ -267,7 +267,7 @@ again, is serialized protocol buffer data.
 
 To convert the tfrecord output of `call_variants` into the
 [VCF](https://samtools.github.io/hts-specs/VCFv4.3.pdf) format that is familiar
-to bioinformaticists, we need to invoke the `postprocess_variants` tool.
+to bioinformaticians, we need to invoke the `postprocess_variants` tool.
 
 An example command is below. Note that the output file should end with either
 `.vcf` or `.vcf.gz`.

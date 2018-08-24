@@ -208,7 +208,7 @@ First, if you have run this step before, and want to rerun it, you might want to
 consider cleaning up previous data first to avoid confusion:
 
 ```
-# (Optoinal) Clean up existing files.
+# (Optional) Clean up existing files.
 gsutil -m rm -f "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
 gsutil rm -f "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
 ```
@@ -239,7 +239,7 @@ virtualenv ${HOME}/virtualenv_beam
 
 A virtual environment needs to be activated for each shell that is to use it.
 Activating it sets some environment variables that point to the virtual
-environment’s directories.
+environment's directories.
 
 To activate a virtual environment in Bash, run:
 
@@ -488,8 +488,8 @@ gcloud beta compute tpus delete ${TPU_NAME} --zone us-central1-f
 
 ### Use TensorBoard to visualize progress
 
-You’ll want to let model_train and model_eval run for a while before you start a
-TensorBoard. (You can start a TensorBoard immediately, but you just won’t see
+You'll want to let model_train and model_eval run for a while before you start a
+TensorBoard. (You can start a TensorBoard immediately, but you just won't see
 the metrics summary until later.)
 
 We can start a TensorBoard to visualize the progress of training better. I did
@@ -608,7 +608,7 @@ Then, run `postprocess_variants` to generate the final callsets in VCF format:
 
 This took < 30 seconds. Once this is done, we have the final callset in VCF
 format here: `${OUTPUT_DIR}/test_set.vcf.gz`. Next step is to run `hap.py` to
-complete the evaluaton on chromosome 20:
+complete the evaluation on chromosome 20:
 
 ```
 sudo apt -y install tabix
