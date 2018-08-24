@@ -34,8 +34,8 @@
 
 #include <memory>
 
-#include "clif/python/postconv.h"
 #include "deepvariant/pileup_image_native.h"
+#include "clif/python/postconv.h"
 
 namespace clif {
 

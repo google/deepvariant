@@ -37,10 +37,10 @@
 // This has to go before numpy
 #include <Python.h>
 
-#include "clif/python/postconv.h"
 #include "deepvariant/pileup_image_native.h"
 #include "numpy/arrayobject.h"
 #include "numpy/ndarrayobject.h"
+#include "clif/python/postconv.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 

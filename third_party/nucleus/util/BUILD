@@ -370,7 +370,7 @@ cc_library(
     hdrs = ["proto_clif_converter.h"],
     deps = [
         ":proto_ptr",
-        "//third_party/clif/python:clif",
+        "@clif//:cpp_runtime",
         "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:proto_api",
         "@protobuf_archive//:protobuf",

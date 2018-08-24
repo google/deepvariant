@@ -31,7 +31,7 @@
  */
 #include "google/protobuf/message.h"
 #include "python/google/protobuf/proto_api.h"
-#include "third_party/clif/python/types.h"
+#include "clif/python/types.h"
 #include "third_party/nucleus/util/proto_clif_converter.h"
 
 namespace nucleus {
