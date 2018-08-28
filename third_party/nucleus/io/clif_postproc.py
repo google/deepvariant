@@ -64,7 +64,17 @@ class WrappedCppIterable(six.Iterator):
     return self
 
   def __next__(self):
-    not_done, record = self._cc_iterable.Next()
+    try:
+      not_done, record = self._cc_iterable.Next()
+    except AttributeError:
+      if self._cc_iterable is None:
+        raise ValueError('No underlying iterable. This may occur if trying to '
+                         'create multiple concurrent iterators from the same '
+                         'reader. Try wrapping your call to the iterator in a '
+                         '`with` block or materializing the entire iterable '
+                         'explicitly.')
+      else:
+        raise
     if not_done:
       return record
     else:

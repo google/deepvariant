@@ -133,6 +133,16 @@ class VcfReaderTests(absltest.TestCase):
       n += 1
     self.assertEqual(n, 5)
 
+  def test_fail_multiple_concurrent_iterations(self):
+    range1 = ranges.parse_literal('chr3:100,000-500,000')
+    reads = self.samples_reader.query(range1)
+    for read in reads:
+      pass
+
+    r2 = self.samples_reader.query(range1)
+    with self.assertRaisesRegexp(ValueError, 'No underlying iterable. This '):
+      next(r2)
+
 
 def _format_expected_variant(ref, alts, format_spec, *samples):
   base = ['20', 1, '.', ref, alts, 0, '.', '.', format_spec]
