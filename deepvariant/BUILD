@@ -91,7 +91,7 @@ cc_test(
     deps = [
         ":allelecounter",
         ":utils",
-        "//third_party/nucleus/io:reference_fai",
+        "//third_party/nucleus/io:indexed_fasta_reader",
         "//third_party/nucleus/io:reference_test",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",

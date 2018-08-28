@@ -31,21 +31,20 @@
  */
 
 // Implementation of GenomeReference class using htslib FAI index format.
-#ifndef THIRD_PARTY_NUCLEUS_IO_REFERENCE_FAI_H_
-#define THIRD_PARTY_NUCLEUS_IO_REFERENCE_FAI_H_
+#ifndef THIRD_PARTY_NUCLEUS_IO_INDEXED_FASTA_READER_H_
+#define THIRD_PARTY_NUCLEUS_IO_INDEXED_FASTA_READER_H_
 
 #include <vector>
 
 #include "absl/types/optional.h"
 #include "htslib/faidx.h"
 #include "third_party/nucleus/io/reference.h"
-#include "third_party/nucleus/vendor/statusor.h"
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/vendor/statusor.h"
 
 namespace nucleus {
 
-constexpr int REFERENCE_FAI_DEFAULT_CACHE_SIZE = 64 * 1024;
-
+constexpr int INDEXED_FASTA_READER_DEFAULT_CACHE_SIZE = 64 * 1024;
 
 // A FASTA reader backed by a htslib FAI index.
 //
@@ -73,11 +72,11 @@ constexpr int REFERENCE_FAI_DEFAULT_CACHE_SIZE = 64 * 1024;
 //
 // The objects returned by iterate() or query() are strings containing the
 // bases, all upper-cased.
-class GenomeReferenceFai : public GenomeReference {
+class IndexedFastaReader : public GenomeReference {
  public:
   // Creates a new GenomeReference backed by the FASTA file fasta_path.
   //
-  // Returns this newly allocated GenomeReferenceFai object, passing ownership
+  // Returns this newly allocated IndexedFastaReader object, passing ownership
   // to the caller via a unique_ptr.
   //
   // htslib currently assumes that the FAI file is named fasta_path + '.fai',
@@ -88,15 +87,15 @@ class GenomeReferenceFai : public GenomeReference {
   // filesystems.  64K is the default block size for htslib faidx fetches, so
   // there is no penalty to rounding up all small access sizes to 64K.  The
   // cache can be disabled using `cache_size=0`.
-  static StatusOr<std::unique_ptr<GenomeReferenceFai>> FromFile(
+  static StatusOr<std::unique_ptr<IndexedFastaReader>> FromFile(
       const string& fasta_path, const string& fai_path,
-      int cache_size_bases = REFERENCE_FAI_DEFAULT_CACHE_SIZE);
+      int cache_size_bases = INDEXED_FASTA_READER_DEFAULT_CACHE_SIZE);
 
-  ~GenomeReferenceFai();
+  ~IndexedFastaReader();
 
   // Disable copy and assignment operations
-  GenomeReferenceFai(const GenomeReferenceFai& other) = delete;
-  GenomeReferenceFai& operator=(const GenomeReferenceFai&) = delete;
+  IndexedFastaReader(const IndexedFastaReader& other) = delete;
+  IndexedFastaReader& operator=(const IndexedFastaReader&) = delete;
 
   const std::vector<nucleus::genomics::v1::ContigInfo>& Contigs()
       const override {
@@ -114,11 +113,11 @@ class GenomeReferenceFai : public GenomeReference {
 
  private:
   // Allow iteration to access the underlying reader.
-  friend class GenomeReferenceFaiIterable;
+  friend class IndexedFastaReaderIterable;
 
   // Must use one of the static factory methods.
-  GenomeReferenceFai(
-      const string& fasta_path, faidx_t* faidx, int cache_size_bases);
+  IndexedFastaReader(const string& fasta_path, faidx_t* faidx,
+                     int cache_size_bases);
 
   // Path to the FASTA file containing our genomic bases.
   const string fasta_path_;
@@ -145,4 +144,4 @@ class GenomeReferenceFai : public GenomeReference {
 
 }  // namespace nucleus
 
-#endif  // THIRD_PARTY_NUCLEUS_IO_REFERENCE_FAI_H_
+#endif  // THIRD_PARTY_NUCLEUS_IO_INDEXED_FASTA_READER_H_

@@ -34,7 +34,7 @@
 #include <numeric>
 
 #include "deepvariant/utils.h"
-#include "third_party/nucleus/io/reference_fai.h"
+#include "third_party/nucleus/io/indexed_fasta_reader.h"
 #include "third_party/nucleus/io/reference_test.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -80,7 +80,7 @@ class AlleleCounterTest : public ::testing::Test {
 
   AlleleCounterTest() {
     const string& test_fasta_path = TestFastaPath();
-    ref_ = std::move(nucleus::GenomeReferenceFai::FromFile(
+    ref_ = std::move(nucleus::IndexedFastaReader::FromFile(
                          test_fasta_path, StrCat(test_fasta_path, ".fai"))
                          .ValueOrDie());
     read_ = MakeRead("chr1", 1, "TCCGTxx", {"5M"});

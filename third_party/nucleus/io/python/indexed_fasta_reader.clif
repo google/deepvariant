@@ -31,12 +31,12 @@ from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
 
 from third_party.nucleus.io.python.reference import GenomeReference
 
-from "third_party/nucleus/io/reference_fai.h":
+from "third_party/nucleus/io/indexed_fasta_reader.h":
   namespace `nucleus`:
-    class GenomeReferenceFai(GenomeReference):
+    class IndexedFastaReader(GenomeReference):
       @classmethod
       def `FromFile` as from_file(cls,
                                   fasta_path: str,
                                   fai_path: str,
                                   cache_size_bases: int = default)
-        -> StatusOr<GenomeReferenceFai>
+        -> StatusOr<IndexedFastaReader>

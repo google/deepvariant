@@ -35,7 +35,7 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from third_party.nucleus.io.python import reference_fai
+from third_party.nucleus.io.python import indexed_fasta_reader
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 
@@ -48,7 +48,7 @@ class WrapReferenceTest(parameterized.TestCase):
     chr_lengths = [100, 76, 121]
     fasta = test_utils.genomics_core_testdata(fasta_filename)
     fai = test_utils.genomics_core_testdata(fasta_filename + '.fai')
-    with reference_fai.GenomeReferenceFai.from_file(fasta, fai) as ref:
+    with indexed_fasta_reader.IndexedFastaReader.from_file(fasta, fai) as ref:
       self.assertEqual(ref.contig_names, chr_names)
       self.assertEqual(ref.bases(ranges.make_range('chrM', 1, 10)), 'ATCACAGGT')
 
@@ -79,7 +79,7 @@ class WrapReferenceTest(parameterized.TestCase):
     with self.assertRaisesRegexp(
         ValueError,
         'Not found: could not load fasta and/or fai for fasta ' + fasta):
-      reference_fai.GenomeReferenceFai.from_file(fasta, fai)
+      indexed_fasta_reader.IndexedFastaReader.from_file(fasta, fai)
 
 
 if __name__ == '__main__':

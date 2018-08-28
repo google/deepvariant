@@ -11,7 +11,7 @@ py_clif_cc(
     name = "fast_pass_aligner",
     srcs = ["fast_pass_aligner.clif"],
     clif_deps = [
-        "//third_party/nucleus/io/python:reference_fai",  # other py_clif_cc rules
+        "//third_party/nucleus/io/python:indexed_fasta_reader",  # other py_clif_cc rules
     ],
     py_deps = [],
     pyclif_deps = [

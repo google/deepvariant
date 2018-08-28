@@ -29,7 +29,7 @@
 
 from "deepvariant/protos/realigner_pyclif.h" import *
 from "third_party/nucleus/protos/reads_pyclif.h" import *
-from "third_party/nucleus/io/python/reference_fai.h" import *
+from "third_party/nucleus/io/python/indexed_fasta_reader.h" import *
 
 from "deepvariant/realigner/fast_pass_aligner.h":
   namespace `learning::genomics::deepvariant`:

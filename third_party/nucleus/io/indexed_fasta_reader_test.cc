@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/reference_fai.h"
+#include "third_party/nucleus/io/indexed_fasta_reader.h"
 
 #include <memory>
 #include <utility>
@@ -58,10 +58,11 @@ using testing::StartsWith;
 
 namespace nucleus {
 
-static std::unique_ptr<GenomeReference>
-JustLoadFai(const string& fasta, int cache_size = 64 * 1024) {
-  StatusOr<std::unique_ptr<GenomeReferenceFai>> fai_status =
-      GenomeReferenceFai::FromFile(fasta, StrCat(fasta, ".fai"), cache_size);
+static std::unique_ptr<GenomeReference> JustLoadFai(const string& fasta,
+                                                    int cache_size = 64 *
+                                                                     1024) {
+  StatusOr<std::unique_ptr<IndexedFastaReader>> fai_status =
+      IndexedFastaReader::FromFile(fasta, StrCat(fasta, ".fai"), cache_size);
   TF_CHECK_OK(fai_status.status());
   return std::move(fai_status.ValueOrDie());
 }
@@ -81,24 +82,24 @@ INSTANTIATE_TEST_CASE_P(GRT4, GenomeReferenceDeathTest,
                         ::testing::Values(make_pair(&JustLoadFai, 64 * 1024)));
 
 TEST(StatusOrLoadFromFile, ReturnsBadStatusIfFaiIsMissing) {
-  StatusOr<std::unique_ptr<GenomeReferenceFai>> result =
-      GenomeReferenceFai::FromFile(GetTestData("unindexed.fasta"),
+  StatusOr<std::unique_ptr<IndexedFastaReader>> result =
+      IndexedFastaReader::FromFile(GetTestData("unindexed.fasta"),
                                    GetTestData("unindexed.fasta.fai"));
   EXPECT_THAT(result, IsNotOKWithCodeAndMessage(
-      tensorflow::error::NOT_FOUND,
-      "could not load fasta and/or fai for fasta"));
+                          tensorflow::error::NOT_FOUND,
+                          "could not load fasta and/or fai for fasta"));
 }
 
-TEST(ReferenceFaiTest, WriteAfterCloseIsntOK) {
+TEST(IndexedFastaReaderTest, WriteAfterCloseIsntOK) {
   auto reader = JustLoadFai(TestFastaPath());
   ASSERT_THAT(reader->Close(), IsOK());
   EXPECT_THAT(reader->GetBases(MakeRange("chrM", 0, 100)),
               IsNotOKWithCodeAndMessage(
                   tensorflow::error::FAILED_PRECONDITION,
-                  "can't read from closed GenomeReferenceFai object"));
+                  "can't read from closed IndexedFastaReader object"));
 }
 
-TEST(ReferenceFaiTest, TestIterate) {
+TEST(IndexedFastaReaderTest, TestIterate) {
   auto reader = JustLoadFai(TestFastaPath());
   auto iterator = reader->Iterate().ValueOrDie();
   GenomeReferenceRecord r;

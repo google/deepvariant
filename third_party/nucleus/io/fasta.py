@@ -58,7 +58,7 @@ import six
 
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import fasta_reader
-from third_party.nucleus.io.python import reference_fai
+from third_party.nucleus.io.python import indexed_fasta_reader
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.util import ranges
 
@@ -84,10 +84,10 @@ class RefFastaReader(genomics_reader.GenomicsReader):
     fai_path = fasta_path + '.fai'
     if cache_size is None:
       # Use the C++-defined default cache size.
-      self._reader = reference_fai.GenomeReferenceFai.from_file(
+      self._reader = indexed_fasta_reader.IndexedFastaReader.from_file(
           fasta_path, fai_path)
     else:
-      self._reader = reference_fai.GenomeReferenceFai.from_file(
+      self._reader = indexed_fasta_reader.IndexedFastaReader.from_file(
           fasta_path, fai_path, cache_size)
 
     # redacted

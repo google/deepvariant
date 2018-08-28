@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/reference_fai.h"
+#include "third_party/nucleus/io/indexed_fasta_reader.h"
 
 #include <algorithm>
 
@@ -65,20 +65,20 @@ std::vector<nucleus::genomics::v1::ContigInfo> ExtractContigsFromFai(
 }  // namespace
 
 // Iterable class for traversing all Fasta records in the file.
-class GenomeReferenceFaiIterable : public GenomeReferenceRecordIterable {
+class IndexedFastaReaderIterable : public GenomeReferenceRecordIterable {
  public:
   // Advance to the next record.
   StatusOr<bool> Next(GenomeReferenceRecord* out) override;
 
-  // Constructor is invoked via GenomeReferenceFai::Iterate.
-  GenomeReferenceFaiIterable(const GenomeReferenceFai* reader);
-  ~GenomeReferenceFaiIterable() override;
+  // Constructor is invoked via IndexedFastaReader::Iterate.
+  IndexedFastaReaderIterable(const IndexedFastaReader* reader);
+  ~IndexedFastaReaderIterable() override;
 
  private:
   int pos_ = 0;
 };
 
-StatusOr<std::unique_ptr<GenomeReferenceFai>> GenomeReferenceFai::FromFile(
+StatusOr<std::unique_ptr<IndexedFastaReader>> IndexedFastaReader::FromFile(
     const string& fasta_path, const string& fai_path, int cache_size_bases) {
   const string gzi = fasta_path + ".gzi";
   faidx_t* faidx =
@@ -87,12 +87,12 @@ StatusOr<std::unique_ptr<GenomeReferenceFai>> GenomeReferenceFai::FromFile(
     return tensorflow::errors::NotFound(
         "could not load fasta and/or fai for fasta ", fasta_path);
   }
-  return std::unique_ptr<GenomeReferenceFai>(
-      new GenomeReferenceFai(fasta_path, faidx, cache_size_bases));
+  return std::unique_ptr<IndexedFastaReader>(
+      new IndexedFastaReader(fasta_path, faidx, cache_size_bases));
 }
 
-GenomeReferenceFai::GenomeReferenceFai(
-    const string& fasta_path, faidx_t* faidx, int cache_size_bases)
+IndexedFastaReader::IndexedFastaReader(const string& fasta_path, faidx_t* faidx,
+                                       int cache_size_bases)
     : fasta_path_(fasta_path),
       faidx_(faidx),
       contigs_(ExtractContigsFromFai(faidx)),
@@ -100,16 +100,16 @@ GenomeReferenceFai::GenomeReferenceFai(
       small_read_cache_(),
       cached_range_() {}
 
-GenomeReferenceFai::~GenomeReferenceFai() {
+IndexedFastaReader::~IndexedFastaReader() {
   if (faidx_) {
     TF_CHECK_OK(Close());
   }
 }
 
-StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
+StatusOr<string> IndexedFastaReader::GetBases(const Range& range) const {
   if (faidx_ == nullptr) {
     return tensorflow::errors::FailedPrecondition(
-        "can't read from closed GenomeReferenceFai object.");
+        "can't read from closed IndexedFastaReader object.");
   }
   if (!IsValidInterval(range))
     return tensorflow::errors::InvalidArgument("Invalid interval: ",
@@ -122,26 +122,25 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
   }
 
   bool use_cache = (cache_size_bases_ > 0) &&
-      (range.end() - range.start() <= cache_size_bases_);
+                   (range.end() - range.start() <= cache_size_bases_);
   Range range_to_fetch;
 
   if (use_cache) {
-      if (cached_range_ && RangeContains(*cached_range_, range)) {
-        // Get from cache!
-        string result = small_read_cache_.substr(
-            range.start() - cached_range_->start(),
-            range.end() - range.start());
-        return result;
-      } else {
-        // Prepare to fetch a sizeable chunk from the FASTA.
-        int64 contig_n_bases =
-            Contig(range.reference_name()).ValueOrDie()->n_bases();
-        range_to_fetch = MakeRange(
-            range.reference_name(), range.start(),
-            std::min(static_cast<int64>(range.start() + cache_size_bases_),
-                     contig_n_bases));
-        CHECK(IsValidInterval(range_to_fetch));
-      }
+    if (cached_range_ && RangeContains(*cached_range_, range)) {
+      // Get from cache!
+      string result = small_read_cache_.substr(
+          range.start() - cached_range_->start(), range.end() - range.start());
+      return result;
+    } else {
+      // Prepare to fetch a sizeable chunk from the FASTA.
+      int64 contig_n_bases =
+          Contig(range.reference_name()).ValueOrDie()->n_bases();
+      range_to_fetch = MakeRange(
+          range.reference_name(), range.start(),
+          std::min(static_cast<int64>(range.start() + cache_size_bases_),
+                   contig_n_bases));
+      CHECK(IsValidInterval(range_to_fetch));
+    }
   } else {
     range_to_fetch = range;
   }
@@ -153,9 +152,9 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
   // The returned pointer must be freed. We need to subtract one from our end
   // since end is exclusive in GenomeReference but faidx has an inclusive one.
   int len;
-  char* bases = faidx_fetch_seq(
-      faidx_, range_to_fetch.reference_name().c_str(),
-      range_to_fetch.start(), range_to_fetch.end() - 1, &len);
+  char* bases =
+      faidx_fetch_seq(faidx_, range_to_fetch.reference_name().c_str(),
+                      range_to_fetch.start(), range_to_fetch.end() - 1, &len);
   if (len <= 0)
     return tensorflow::errors::InvalidArgument("Couldn't fetch bases for ",
                                                range.ShortDebugString());
@@ -173,15 +172,15 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
 }
 
 StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>
-GenomeReferenceFai::Iterate() const {
+IndexedFastaReader::Iterate() const {
   return StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>(
-      MakeIterable<GenomeReferenceFaiIterable>(this));
+      MakeIterable<IndexedFastaReaderIterable>(this));
 }
 
-tensorflow::Status GenomeReferenceFai::Close() {
+tensorflow::Status IndexedFastaReader::Close() {
   if (faidx_ == nullptr) {
     return tensorflow::errors::FailedPrecondition(
-        "GenomeReferenceFai already closed");
+        "IndexedFastaReader already closed");
   } else {
     fai_destroy(faidx_);
     faidx_ = nullptr;
@@ -189,10 +188,10 @@ tensorflow::Status GenomeReferenceFai::Close() {
   return tensorflow::Status::OK();
 }
 
-StatusOr<bool> GenomeReferenceFaiIterable::Next(GenomeReferenceRecord* out) {
+StatusOr<bool> IndexedFastaReaderIterable::Next(GenomeReferenceRecord* out) {
   TF_RETURN_IF_ERROR(CheckIsAlive());
-  const GenomeReferenceFai* fasta_reader =
-      static_cast<const GenomeReferenceFai*>(reader_);
+  const IndexedFastaReader* fasta_reader =
+      static_cast<const IndexedFastaReader*>(reader_);
   if (pos_ >= fasta_reader->contigs_.size()) {
     return false;
   }
@@ -206,10 +205,10 @@ StatusOr<bool> GenomeReferenceFaiIterable::Next(GenomeReferenceRecord* out) {
   return true;
 }
 
-GenomeReferenceFaiIterable::~GenomeReferenceFaiIterable() {}
+IndexedFastaReaderIterable::~IndexedFastaReaderIterable() {}
 
-GenomeReferenceFaiIterable::GenomeReferenceFaiIterable(
-    const GenomeReferenceFai* reader)
+IndexedFastaReaderIterable::IndexedFastaReaderIterable(
+    const IndexedFastaReader* reader)
     : Iterable(reader) {}
 
 }  // namespace nucleus
