@@ -41,7 +41,6 @@
 
 namespace nucleus {
 
-
 // An FASTA reader backed by in-memory ReferenceSequence protos.
 //
 // FASTA files store information about DNA/RNA/Amino Acid sequences:
@@ -86,12 +85,17 @@ class InMemoryGenomeReference : public GenomeReference {
   StatusOr<string> GetBases(
       const nucleus::genomics::v1::Range& range) const override;
 
+  StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>> Iterate()
+      const override;
+
  private:
+  // Allow iteration to access the underlying reader.
+  friend class FastaFullFileIterable;
+
   // Must use one of the static factory methods.
-  explicit InMemoryGenomeReference(
+  InMemoryGenomeReference(
       const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
-      std::unordered_map<string, nucleus::genomics::v1::ReferenceSequence>
-          seqs)
+      std::unordered_map<string, nucleus::genomics::v1::ReferenceSequence> seqs)
       : contigs_(contigs), seqs_(seqs) {}
 
   const std::vector<nucleus::genomics::v1::ContigInfo> contigs_;

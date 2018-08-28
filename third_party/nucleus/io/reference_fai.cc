@@ -64,6 +64,20 @@ std::vector<nucleus::genomics::v1::ContigInfo> ExtractContigsFromFai(
 }
 }  // namespace
 
+// Iterable class for traversing all Fasta records in the file.
+class GenomeReferenceFaiIterable : public GenomeReferenceRecordIterable {
+ public:
+  // Advance to the next record.
+  StatusOr<bool> Next(GenomeReferenceRecord* out) override;
+
+  // Constructor is invoked via GenomeReferenceFai::Iterate.
+  GenomeReferenceFaiIterable(const GenomeReferenceFai* reader);
+  ~GenomeReferenceFaiIterable() override;
+
+ private:
+  int pos_ = 0;
+};
+
 StatusOr<std::unique_ptr<GenomeReferenceFai>> GenomeReferenceFai::FromFile(
     const string& fasta_path, const string& fai_path, int cache_size_bases) {
   const string gzi = fasta_path + ".gzi";
@@ -158,6 +172,12 @@ StatusOr<string> GenomeReferenceFai::GetBases(const Range& range) const {
   return result;
 }
 
+StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>
+GenomeReferenceFai::Iterate() const {
+  return StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>(
+      MakeIterable<GenomeReferenceFaiIterable>(this));
+}
+
 tensorflow::Status GenomeReferenceFai::Close() {
   if (faidx_ == nullptr) {
     return tensorflow::errors::FailedPrecondition(
@@ -168,5 +188,28 @@ tensorflow::Status GenomeReferenceFai::Close() {
   }
   return tensorflow::Status::OK();
 }
+
+StatusOr<bool> GenomeReferenceFaiIterable::Next(GenomeReferenceRecord* out) {
+  TF_RETURN_IF_ERROR(CheckIsAlive());
+  const GenomeReferenceFai* fasta_reader =
+      static_cast<const GenomeReferenceFai*>(reader_);
+  if (pos_ >= fasta_reader->contigs_.size()) {
+    return false;
+  }
+  const genomics::v1::ContigInfo& contig = fasta_reader->contigs_.at(pos_);
+  const string& reference_name = contig.name();
+  out->first = reference_name;
+  out->second =
+      fasta_reader->GetBases(MakeRange(reference_name, 0, contig.n_bases()))
+          .ValueOrDie();
+  pos_++;
+  return true;
+}
+
+GenomeReferenceFaiIterable::~GenomeReferenceFaiIterable() {}
+
+GenomeReferenceFaiIterable::GenomeReferenceFaiIterable(
+    const GenomeReferenceFai* reader)
+    : Iterable(reader) {}
 
 }  // namespace nucleus

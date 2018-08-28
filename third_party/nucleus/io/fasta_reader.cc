@@ -42,6 +42,20 @@ namespace nucleus {
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::ReferenceSequence;
 
+// Iterable class for traversing all Fasta records in the file.
+class FastaFullFileIterable : public GenomeReferenceRecordIterable {
+ public:
+  // Advance to the next record.
+  StatusOr<bool> Next(GenomeReferenceRecord* out) override;
+
+  // Constructor is invoked via InMemoryGenomeReference::Iterate.
+  FastaFullFileIterable(const InMemoryGenomeReference* reader);
+  ~FastaFullFileIterable() override;
+
+ private:
+  int pos_ = 0;
+};
+
 // Initializes an InMemoryGenomeReference from contigs and seqs.
 //
 // contigs is a vector describing the "contigs" of this GenomeReference. These
@@ -89,6 +103,12 @@ InMemoryGenomeReference::Create(
       new InMemoryGenomeReference(contigs, seqs_map));
 }
 
+StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>
+InMemoryGenomeReference::Iterate() const {
+  return StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>(
+      MakeIterable<FastaFullFileIterable>(this));
+}
+
 StatusOr<string> InMemoryGenomeReference::GetBases(const Range& range) const {
   if (!IsValidInterval(range))
     return tensorflow::errors::InvalidArgument("Invalid interval: ",
@@ -107,5 +127,30 @@ StatusOr<string> InMemoryGenomeReference::GetBases(const Range& range) const {
   const int64 len = range.end() - range.start();
   return seq.bases().substr(pos, len);
 }
+
+StatusOr<bool> FastaFullFileIterable::Next(GenomeReferenceRecord* out) {
+  TF_RETURN_IF_ERROR(CheckIsAlive());
+  const InMemoryGenomeReference* fasta_reader =
+      static_cast<const InMemoryGenomeReference*>(reader_);
+  if (pos_ >= fasta_reader->contigs_.size()) {
+    return false;
+  }
+  const string& reference_name = fasta_reader->contigs_.at(pos_).name();
+  auto seq_iter = fasta_reader->seqs_.find(reference_name);
+  if (seq_iter == fasta_reader->seqs_.end()) {
+    return false;
+  }
+  DCHECK_NE(nullptr, out) << "FASTA record cannot be null";
+  out->first = reference_name;
+  out->second = seq_iter->second.bases();
+  pos_++;
+  return true;
+}
+
+FastaFullFileIterable::~FastaFullFileIterable() {}
+
+FastaFullFileIterable::FastaFullFileIterable(
+    const InMemoryGenomeReference* reader)
+    : Iterable(reader) {}
 
 }  // namespace nucleus

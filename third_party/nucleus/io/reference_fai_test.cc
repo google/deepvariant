@@ -98,4 +98,35 @@ TEST(ReferenceFaiTest, WriteAfterCloseIsntOK) {
                   "can't read from closed GenomeReferenceFai object"));
 }
 
+TEST(ReferenceFaiTest, TestIterate) {
+  auto reader = JustLoadFai(TestFastaPath());
+  auto iterator = reader->Iterate().ValueOrDie();
+  GenomeReferenceRecord r;
+  StatusOr<bool> status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chrM", r.first);
+  EXPECT_EQ(
+      "GATCACAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCATTTGGTATTTTCGTCTGGGGGGT"
+      "GTGCACGCGATAGCATTGCGAGACGCTG",
+      r.second);
+  status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chr1", r.first);
+  EXPECT_EQ(
+      "ACCACCATCCTCCGTGAAATCAATATCCCGCACAAGAGTGCTACTCTCCTAAATCCCTTCTCGTCCCCATGG"
+      "ATGA",
+      r.second);
+  status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chr2", r.first);
+  EXPECT_EQ(
+      "CGCTNCGGGCCCATAACACTTGGGGGTAGCTAAAGTGAACTGTATCCGACATCTGGTTCCTACTTCAGGGCC"
+      "ATAAAGCCTAAATAGCCCACACGTTCCCCTTAAATAAGACATCACGATG",
+      r.second);
+
+  // Reading beyond the file fails.
+  status = iterator->Next(&r);
+  EXPECT_FALSE(status.ValueOrDie());
+}
+
 }  // namespace nucleus

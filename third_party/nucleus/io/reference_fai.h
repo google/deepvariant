@@ -106,10 +106,16 @@ class GenomeReferenceFai : public GenomeReference {
   StatusOr<string> GetBases(
       const nucleus::genomics::v1::Range& range) const override;
 
+  StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>> Iterate()
+      const override;
+
   // Close the underlying resource descriptors.
   tensorflow::Status Close() override;
 
  private:
+  // Allow iteration to access the underlying reader.
+  friend class GenomeReferenceFaiIterable;
+
   // Must use one of the static factory methods.
   GenomeReferenceFai(
       const string& fasta_path, faidx_t* faidx, int cache_size_bases);
