@@ -130,8 +130,20 @@ class InMemoryRefReaderTests(parameterized.TestCase):
     self.assertEqual(actual.pos_in_fasta, expected.pos_in_fasta)
 
   def test_iterate(self):
-    with self.assertRaises(NotImplementedError):
-      self.in_mem.iterate()
+    # Check the in-memory fasta file's iterable matches the info in the header.
+    expected_names = [
+        contig.name for contig in self.fasta_reader.header.contigs]
+    expected_lengths = [
+        contig.n_bases for contig in self.fasta_reader.header.contigs]
+    in_mem_records = list(self.in_mem.iterate())
+    self.assertLen(in_mem_records, len(self.fasta_reader.header.contigs))
+    self.assertEqual([r[0] for r in in_mem_records], expected_names)
+    self.assertEqual([len(r[1]) for r in in_mem_records], expected_lengths)
+
+    # Check the in-memory fasta file's iterable matches that of the indexed
+    # fasta file.
+    fasta_records = list(self.fasta_reader.iterate())
+    self.assertEqual(in_mem_records, fasta_records)
 
   @parameterized.parameters(
       dict(region=ranges.make_range('chr1', 0, 10), expected=True),

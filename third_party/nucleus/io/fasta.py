@@ -94,13 +94,8 @@ class RefFastaReader(genomics_reader.GenomicsReader):
     self.header = RefFastaHeader(contigs=self._reader.contigs)
 
   def iterate(self):
-    """Returns an iterator for going through all bases in the file.
-
-    NOTE: This function is not implemented for this data type. Retrieving all
-    base pairs in the genome can be performed by querying for the full range of
-    each contig defined in the header.
-    """
-    raise NotImplementedError('Can not iterate through a FASTA file')
+    """Returns an iterable of (name, bases) tuples contained in this file."""
+    return self._reader.iterate()
 
   def query(self, region):
     """Returns the base pairs (as a string) in the given region."""
@@ -176,13 +171,8 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
     self.header = RefFastaHeader(contigs=self._reader.contigs)
 
   def iterate(self):
-    """Returns an iterator for going through all bases in the file.
-
-    NOTE: This function is not implemented for this data type. Retrieving all
-    base pairs in the genome can be performed by querying for the full range of
-    each contig defined in the header.
-    """
-    raise NotImplementedError('Can not iterate through a FASTA file')
+    """Returns an iterable of (name, bases) tuples contained in this file."""
+    return self._reader.iterate()
 
   def query(self, region):
     """Returns the base pairs (as a string) in the given region."""
