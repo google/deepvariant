@@ -71,7 +71,7 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
   """Class for reading from FASTA files containing a reference genome."""
 
   def __init__(self, input_path, cache_size=None):
-    """Initializes a IndexedFastaReader.
+    """Initializes an IndexedFastaReader.
 
     Args:
       input_path: string. A path to a resource containing FASTA records.
@@ -119,7 +119,7 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
 
 
 class InMemoryRefReader(genomics_reader.GenomicsReader):
-  """A `IndexedFastaReader` getting its bases from an in-memory data structure.
+  """An `IndexedFastaReader` getting its bases from an in-memory data structure.
 
   An `InMemoryRefReader` provides the same API as `IndexedFastaReader` but
   doesn't fetch its data from an on-disk FASTA file but rather fetches the bases
