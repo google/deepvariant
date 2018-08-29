@@ -148,7 +148,7 @@ def peek_sample_name(variants_iter):
 def main(argv):
   del argv
 
-  contigs = fasta.RefFastaReader(FLAGS.ref).header.contigs
+  contigs = fasta.IndexedFastaReader(FLAGS.ref).header.contigs
   max_records = FLAGS.max_records if FLAGS.max_records >= 0 else None
   variants_iter = examples_to_variants(FLAGS.examples, max_records=max_records)
 

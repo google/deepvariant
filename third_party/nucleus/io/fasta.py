@@ -37,7 +37,7 @@ API for reading:
 from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import range_pb2
 
-with fasta.RefFastaReader(input_path) as reader:
+with fasta.IndexedFastaReader(input_path) as reader:
   region = range_pb2.Range(reference_name='chrM', start=1, end=6)
   basepair_string = reader.query(region)
   print(basepair_string)
@@ -67,18 +67,18 @@ RefFastaHeader = collections.namedtuple(
     'RefFastaHeader', ['contigs'])
 
 
-class RefFastaReader(genomics_reader.GenomicsReader):
+class IndexedFastaReader(genomics_reader.GenomicsReader):
   """Class for reading from FASTA files containing a reference genome."""
 
   def __init__(self, input_path, cache_size=None):
-    """Initializes a RefFastaReader.
+    """Initializes a IndexedFastaReader.
 
     Args:
       input_path: string. A path to a resource containing FASTA records.
       cache_size: integer. Number of bases to cache from previous queries.
         Defaults to 64K.  The cache can be disabled using cache_size=0.
     """
-    super(RefFastaReader, self).__init__()
+    super(IndexedFastaReader, self).__init__()
 
     fasta_path = input_path
     fai_path = fasta_path + '.fai'
@@ -119,11 +119,11 @@ class RefFastaReader(genomics_reader.GenomicsReader):
 
 
 class InMemoryRefReader(genomics_reader.GenomicsReader):
-  """A `RefFastaReader` getting its bases from an in-memory data structure.
+  """A `IndexedFastaReader` getting its bases from an in-memory data structure.
 
-  An `InMemoryRefReader` provides the same API as `RefFastaReader` but doesn't
-  fetch its data from an on-disk FASTA file but rather fetches the bases from an
-  in-memory cache containing (chromosome, start, bases) tuples.
+  An `InMemoryRefReader` provides the same API as `IndexedFastaReader` but
+  doesn't fetch its data from an on-disk FASTA file but rather fetches the bases
+  from an in-memory cache containing (chromosome, start, bases) tuples.
 
   In particular, the `query(Range(chrom, start, end))` operation fetches bases
   from the tuple where `chrom` == chromosome, and then from the bases where the

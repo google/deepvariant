@@ -120,7 +120,7 @@ def compute_effective_recall(model, true_indels, sam_reader, ref_reader,
     model: a scikit-learn model implementing the decision_function method.
     true_indels: a list of nucleus.Variants.
     sam_reader: a nucleus.io.SamReader.
-    ref_reader: a nucleus.io.RefFastaReader.
+    ref_reader: a nucleus.io.IndexedFastaReader.
     allele_counter_options: a deepvariant.AlleleCounterOptions.
     thresholds: a list of threshold to compute recall on.
 
@@ -178,7 +178,7 @@ def compute_precision(model, true_indels, sam_reader, ref_reader,
     model: a scikit-learn model implementing the decision_function method.
     true_indels: a list of nucleus.Variants expected to come from `eval_region`.
     sam_reader: a nucleus.io.SamReader.
-    ref_reader: a nucleus.io.RefFastaReader.
+    ref_reader: a nucleus.io.IndexedFastaReader.
     allele_counter_options: a deepvariant.AlleleCounterOptions.
     thresholds: a list of threshold to compute recall on.
     eval_region: a nucleus.v1.Range of the range to evaluate on.
@@ -261,7 +261,7 @@ def model_evaluation_runner(truth_variants, reads, ref, input_model_pckl,
     ValueError: if eval_region cannot be parsed.
   """
   sam_reader = sam.SamReader(reads)
-  ref_reader = fasta.RefFastaReader(ref)
+  ref_reader = fasta.IndexedFastaReader(ref)
 
   read_reqs = reads_pb2.ReadRequirements(
       min_base_quality=10,

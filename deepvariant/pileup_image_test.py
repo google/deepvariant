@@ -483,7 +483,7 @@ class PileupImageCreatorTest(parameterized.TestCase):
   def setUp(self):
     self.options = pileup_image.default_options()
     self.options.width = 5
-    self.mock_ref_reader = mock.MagicMock(spec=fasta.RefFastaReader)
+    self.mock_ref_reader = mock.MagicMock(spec=fasta.IndexedFastaReader)
     self.mock_ref_reader.query.return_value = 'ACGT'
     self.mock_ref_reader.is_valid.return_value = True
     self.mock_sam_reader = mock.MagicMock()

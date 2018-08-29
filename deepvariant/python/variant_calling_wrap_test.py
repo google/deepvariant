@@ -52,7 +52,7 @@ def setUpModule():
 class WrapVariantCallingTest(absltest.TestCase):
 
   def test_call_from_allele_counter(self):
-    ref = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    ref = fasta.IndexedFastaReader(testdata.CHR20_FASTA)
     sam_reader = sam.SamReader(testdata.CHR20_BAM)
     size = 1000
     region = ranges.make_range('chr20', 10000000, 10000000 + size)

@@ -45,22 +45,22 @@ from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 
 
-class RefFastaReaderTests(parameterized.TestCase):
+class IndexedFastaReaderTests(parameterized.TestCase):
 
   @parameterized.parameters('test.fasta', 'test.fasta.gz')
   def test_make_ref_reader_default(self, fasta_filename):
     fasta_path = test_utils.genomics_core_testdata(fasta_filename)
-    with fasta.RefFastaReader(fasta_path) as reader:
+    with fasta.IndexedFastaReader(fasta_path) as reader:
       self.assertEqual(reader.query(ranges.make_range('chrM', 1, 6)), 'ATCAC')
 
   @parameterized.parameters('test.fasta', 'test.fasta.gz')
   def test_make_ref_reader_cache_specified(self, fasta_filename):
     fasta_path = test_utils.genomics_core_testdata(fasta_filename)
-    with fasta.RefFastaReader(fasta_path, cache_size=10) as reader:
+    with fasta.IndexedFastaReader(fasta_path, cache_size=10) as reader:
       self.assertEqual(reader.query(ranges.make_range('chrM', 1, 5)), 'ATCA')
 
   def test_c_reader(self):
-    with fasta.RefFastaReader(
+    with fasta.IndexedFastaReader(
         test_utils.genomics_core_testdata('test.fasta')) as reader:
       self.assertIsInstance(reader.c_reader,
                             indexed_fasta_reader.IndexedFastaReader)
@@ -70,7 +70,7 @@ class InMemoryRefReaderTests(parameterized.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls.fasta_reader = fasta.RefFastaReader(
+    cls.fasta_reader = fasta.IndexedFastaReader(
         test_utils.genomics_core_testdata('test.fasta'))
 
     cls.in_mem = fasta.InMemoryRefReader(

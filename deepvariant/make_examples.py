@@ -728,7 +728,7 @@ class RegionProcessor(object):
     if self.initialized:
       raise ValueError('Cannot initialize this object twice')
 
-    self.ref_reader = fasta.RefFastaReader(self.options.reference_filename)
+    self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
     self.sam_reader = self._make_sam_reader()
     self.in_memory_sam_reader = sam.InMemorySamReader([])
 
@@ -977,7 +977,8 @@ def processing_regions_from_options(options):
     regions we should process. The second is a RangeSet containing the confident
     regions for labeling, or None if we are running in training mode.
   """
-  ref_contigs = fasta.RefFastaReader(options.reference_filename).header.contigs
+  ref_contigs = fasta.IndexedFastaReader(
+      options.reference_filename).header.contigs
   sam_contigs = sam.SamReader(options.reads_filename).header.contigs
 
   # Add in confident regions and vcf_contigs if in training mode.

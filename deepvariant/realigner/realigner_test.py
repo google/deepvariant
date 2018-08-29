@@ -185,7 +185,7 @@ class ReadAssignmentTests(parameterized.TestCase):
 class RealignerTest(parameterized.TestCase):
 
   def setUp(self):
-    self.ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    self.ref_reader = fasta.IndexedFastaReader(testdata.CHR20_FASTA)
     self.config = realigner.realigner_config(FLAGS)
     self.reads_realigner = realigner.Realigner(self.config, self.ref_reader)
 
@@ -433,7 +433,7 @@ class RealignerTest(parameterized.TestCase):
 class RealignerIntegrationTest(absltest.TestCase):
 
   def test_realigner_end2end(self):
-    ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    ref_reader = fasta.IndexedFastaReader(testdata.CHR20_FASTA)
     config = realigner.realigner_config(FLAGS)
     reads_realigner = realigner.Realigner(config, ref_reader)
     region_str = 'chr20:10,000,000-10,009,999'

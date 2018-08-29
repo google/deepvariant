@@ -280,7 +280,7 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
             """ % expected_edges, dbg)
 
   def test_straightforward_region(self):
-    ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    ref_reader = fasta.IndexedFastaReader(testdata.CHR20_FASTA)
     bam_reader = sam.SamReader(testdata.CHR20_BAM)
     region = ranges.parse_literal('chr20:10,000,000-10,000,100')
     ref_seq = ref_reader.query(region)
@@ -294,7 +294,7 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
   def test_complex_region(self):
     # There is a heterozygous 9 bp deletion of tandem TGA repeat.
     # "chr20:10,095,379-10,095,500"
-    ref_reader = fasta.RefFastaReader(testdata.CHR20_FASTA)
+    ref_reader = fasta.IndexedFastaReader(testdata.CHR20_FASTA)
     bam_reader = sam.SamReader(testdata.CHR20_BAM)
     region = ranges.parse_literal('chr20:10,095,379-10,095,500')
     ref_seq = ref_reader.query(region)

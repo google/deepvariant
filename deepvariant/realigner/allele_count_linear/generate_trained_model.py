@@ -145,7 +145,7 @@ def generate_positions(vcf_reader, ref_reader, baseline_contig):
 
   Args:
     vcf_reader: a nucleus.io.VcfReader.
-    ref_reader: a nucleus.io.RefFastaReader.
+    ref_reader: a nucleus.io.IndexedFastaReader.
     baseline_contig: contig from which to sample baseline positions.
 
   Returns:
@@ -194,7 +194,7 @@ def generate_data(vcf_reader, ref_reader, sam_reader, baseline_contig,
 
   Args:
     vcf_reader: a nucleus.io.VcfReader.
-    ref_reader: a nucleus.io.RefFastaReader.
+    ref_reader: a nucleus.io.IndexedFastaReader.
     sam_reader: a nucleus.io.SamReader.
     baseline_contig: string, contig from which to sample baseline positions.
     exclude_contig: string, contig to exclude for test purposes.
@@ -285,7 +285,7 @@ def generate_trained_model_runner(
       the training.
   """
   vcf_reader = vcf.VcfReader(truth_variants)
-  ref_reader = fasta.RefFastaReader(ref)
+  ref_reader = fasta.IndexedFastaReader(ref)
   sam_reader = sam.SamReader(reads)
 
   random.seed(random_seed)

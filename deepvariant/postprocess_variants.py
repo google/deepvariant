@@ -822,7 +822,8 @@ def main(argv=()):
 
     logging_level.set_from_flag()
 
-    fasta_reader = fasta.RefFastaReader(FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
+    fasta_reader = fasta.IndexedFastaReader(
+        FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
     contigs = fasta_reader.header.contigs
     paths = io_utils.maybe_generate_sharded_filenames(FLAGS.infile)
     # Read one CallVariantsOutput record and extract the sample name from it.
