@@ -57,7 +57,7 @@ import collections
 import six
 
 from third_party.nucleus.io import genomics_reader
-from third_party.nucleus.io.python import fasta_reader
+from third_party.nucleus.io.python import in_memory_fasta_reader
 from third_party.nucleus.io.python import indexed_fasta_reader
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.util import ranges
@@ -118,10 +118,10 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
 
-class InMemoryRefReader(genomics_reader.GenomicsReader):
+class InMemoryFastaReader(genomics_reader.GenomicsReader):
   """An `IndexedFastaReader` getting its bases from an in-memory data structure.
 
-  An `InMemoryRefReader` provides the same API as `IndexedFastaReader` but
+  An `InMemoryFastaReader` provides the same API as `IndexedFastaReader` but
   doesn't fetch its data from an on-disk FASTA file but rather fetches the bases
   from an in-memory cache containing (chromosome, start, bases) tuples.
 
@@ -137,7 +137,7 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
   """
 
   def __init__(self, chromosomes):
-    """Initializes an InMemoryRefReader using data from chromosomes.
+    """Initializes an InMemoryFastaReader using data from chromosomes.
 
     Args:
       chromosomes: list[tuple]. The chromosomes we are caching in memory as a
@@ -147,7 +147,7 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
     Raises:
       ValueError: If any of the chromosomes tuples are invalid.
     """
-    super(InMemoryRefReader, self).__init__()
+    super(InMemoryFastaReader, self).__init__()
 
     ref_seqs = []
     contigs = []
@@ -166,7 +166,7 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
           reference_pb2.ContigInfo(
               name=contig_name, n_bases=end, pos_in_fasta=i))
 
-    self._reader = fasta_reader.InMemoryGenomeReference.create(
+    self._reader = in_memory_fasta_reader.InMemoryFastaReader.create(
         contigs, ref_seqs)
     self.header = RefFastaHeader(contigs=self._reader.contigs)
 
@@ -205,6 +205,6 @@ class InMemoryRefReader(genomics_reader.GenomicsReader):
         _format_refseq(refseq)
         for refseq in six.itervalues(self._reader.reference_sequences)
     ]
-    return 'InMemoryRefReader(contigs={})'.format(''.join(contigs_strs))
+    return 'InMemoryFastaReader(contigs={})'.format(''.join(contigs_strs))
 
   __repr__ = __str__

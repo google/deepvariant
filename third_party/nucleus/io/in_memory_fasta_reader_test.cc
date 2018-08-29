@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/fasta_reader.h"
+#include "third_party/nucleus/io/in_memory_fasta_reader.h"
 
 #include <string>
 
@@ -62,7 +62,7 @@ void CreateTestSeq(std::vector<genomics::v1::ContigInfo>* contigs,
 
 }  // namespace
 
-TEST(FastaReaderTest, TestIterate) {
+TEST(InMemoryFastaReaderTest, TestIterate) {
   int kNum = 3;
   std::vector<genomics::v1::ContigInfo> contigs(kNum);
   std::vector<genomics::v1::ReferenceSequence> seqs(kNum);
@@ -70,8 +70,8 @@ TEST(FastaReaderTest, TestIterate) {
   CreateTestSeq(&contigs, &seqs, "Chr2", 1, 4, 6, "CG");
   CreateTestSeq(&contigs, &seqs, "Chr3", 2, 10, 15, "AATTC");
 
-  std::unique_ptr<InMemoryGenomeReference> reader =
-      std::move(InMemoryGenomeReference::Create(contigs, seqs).ValueOrDie());
+  std::unique_ptr<InMemoryFastaReader> reader =
+      std::move(InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
   auto iterator = reader->Iterate().ValueOrDie();
   GenomeReferenceRecord r;
   StatusOr<bool> status = iterator->Next(&r);

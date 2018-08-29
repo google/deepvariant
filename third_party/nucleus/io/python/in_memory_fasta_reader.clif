@@ -32,11 +32,11 @@ from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
 
 from third_party.nucleus.io.python.reference import GenomeReference
 
-from "third_party/nucleus/io/fasta_reader.h":
+from "third_party/nucleus/io/in_memory_fasta_reader.h":
   namespace `nucleus`:
-    class InMemoryGenomeReference(GenomeReference):
+    class InMemoryFastaReader(GenomeReference):
       @classmethod
       def `Create` as create(cls, contigs: list<ContigInfo>, seqs: list<ReferenceSequence>)
-        -> StatusOr<InMemoryGenomeReference>
+        -> StatusOr<InMemoryFastaReader>
 
       reference_sequences: dict<str, ReferenceSequence> = property(`ReferenceSequences`)

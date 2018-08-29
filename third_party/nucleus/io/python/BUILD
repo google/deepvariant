@@ -152,13 +152,13 @@ py_test(
 )
 
 py_clif_cc(
-    name = "fasta_reader",
-    srcs = ["fasta_reader.clif"],
+    name = "in_memory_fasta_reader",
+    srcs = ["in_memory_fasta_reader.clif"],
     pyclif_deps = [
         "//third_party/nucleus/protos:reference_pyclif",
     ],
     deps = [
-        "//third_party/nucleus/io:fasta_reader",
+        "//third_party/nucleus/io:in_memory_fasta_reader",
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )

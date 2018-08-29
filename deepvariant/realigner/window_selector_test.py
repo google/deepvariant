@@ -79,7 +79,7 @@ class AlleleCountLinearWindowSelectorTest(parameterized.TestCase):
     if ref is None:
       ref = 'A' * (ranges.length(region) + 512)
 
-    ref_reader = fasta.InMemoryRefReader([(chrom, 0, ref)])
+    ref_reader = fasta.InMemoryFastaReader([(chrom, 0, ref)])
     if isinstance(expected, type) and issubclass(expected, Exception):
       with self.assertRaises(expected):
         window_selector._candidates_from_reads(self.config, ref_reader, reads,
@@ -197,7 +197,7 @@ class WindowSelectorTest(parameterized.TestCase):
     if ref is None:
       ref = 'A' * (ranges.length(region) + 512)
 
-    ref_reader = fasta.InMemoryRefReader([(chrom, 0, ref)])
+    ref_reader = fasta.InMemoryFastaReader([(chrom, 0, ref)])
     if isinstance(expected, type) and issubclass(expected, Exception):
       with self.assertRaises(expected):
         window_selector._candidates_from_reads(self.config, ref_reader, reads,
@@ -487,7 +487,7 @@ class WindowSelectorTest(parameterized.TestCase):
         test_utils.make_read('AGA', start=99, cigar='3M', quals=[62] * 3),
     ]
     chrom = reads[0].alignment.position.reference_name
-    ref_reader = fasta.InMemoryRefReader([(chrom, 0, 'A' * 300)])
+    ref_reader = fasta.InMemoryFastaReader([(chrom, 0, 'A' * 300)])
     region = ranges.make_range(chrom, 0, 200)
 
     self.assertEqual(
@@ -498,8 +498,8 @@ class WindowSelectorTest(parameterized.TestCase):
     self.assertEqual([],
                      window_selector.select_windows(
                          self.config,
-                         ref_reader=fasta.InMemoryRefReader([('chr1', 0,
-                                                              'A' * 500)]),
+                         ref_reader=fasta.InMemoryFastaReader([('chr1', 0,
+                                                                'A' * 500)]),
                          reads=[],
                          region=ranges.make_range('chr1', 1, 100)))
 

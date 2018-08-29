@@ -38,7 +38,7 @@ from absl.testing import parameterized
 
 import six
 from third_party.nucleus.io import fasta
-from third_party.nucleus.io.python import fasta_reader
+from third_party.nucleus.io.python import in_memory_fasta_reader
 from third_party.nucleus.io.python import indexed_fasta_reader
 from third_party.nucleus.testing import test_utils
 
@@ -66,14 +66,14 @@ class IndexedFastaReaderTests(parameterized.TestCase):
                             indexed_fasta_reader.IndexedFastaReader)
 
 
-class InMemoryRefReaderTests(parameterized.TestCase):
+class InMemoryFastaReaderTests(parameterized.TestCase):
 
   @classmethod
   def setUpClass(cls):
     cls.fasta_reader = fasta.IndexedFastaReader(
         test_utils.genomics_core_testdata('test.fasta'))
 
-    cls.in_mem = fasta.InMemoryRefReader(
+    cls.in_mem = fasta.InMemoryFastaReader(
         [(contig.name, 0,
           cls.fasta_reader.query(
               ranges.make_range(contig.name, 0, contig.n_bases)))
@@ -82,7 +82,7 @@ class InMemoryRefReaderTests(parameterized.TestCase):
   def test_non_zero_start_query(self):
     bases = 'ACGTAACCGGTT'
     for start in range(len(bases)):
-      reader = fasta.InMemoryRefReader([('1', start, bases[start:])])
+      reader = fasta.InMemoryFastaReader([('1', start, bases[start:])])
       self.assertEqual(reader.header.contigs[0].name, '1')
       self.assertEqual(reader.header.contigs[0].n_bases, len(bases))
 
@@ -100,12 +100,12 @@ class InMemoryRefReaderTests(parameterized.TestCase):
       dict(start=12, end=15),
   )
   def test_bad_query_with_start(self, start, end):
-    reader = fasta.InMemoryRefReader([('1', 10, 'ACGT')])
+    reader = fasta.InMemoryFastaReader([('1', 10, 'ACGT')])
     with self.assertRaises(ValueError):
       reader.query(ranges.make_range('1', start, end))
 
   def test_query_edge_cases(self):
-    reader = fasta.InMemoryRefReader([('1', 0, 'ACGT')])
+    reader = fasta.InMemoryFastaReader([('1', 0, 'ACGT')])
     # Check that we can query the first base correctly.
     self.assertEqual(reader.query(ranges.make_range('1', 0, 1)), 'A')
     # Check that we can query the last base correctly.
@@ -190,14 +190,14 @@ class InMemoryRefReaderTests(parameterized.TestCase):
 
   def test_bad_create_args(self):
     with self.assertRaisesRegexp(ValueError, 'multiple ones were found on 1'):
-      fasta.InMemoryRefReader([
+      fasta.InMemoryFastaReader([
           ('1', 10, 'AC'),
           ('1', 20, 'AC'),
       ])
 
   def test_c_reader(self):
     self.assertIsInstance(self.in_mem.c_reader,
-                          fasta_reader.InMemoryGenomeReference)
+                          in_memory_fasta_reader.InMemoryFastaReader)
 
 
 if __name__ == '__main__':

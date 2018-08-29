@@ -282,13 +282,13 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     return ReferenceRegion(ref_bases, start=region.start)
 
 
-class ReferenceRegion(fasta.InMemoryRefReader):
+class ReferenceRegion(fasta.InMemoryFastaReader):
   """Allows us to get bases from a cached reference interval."""
 
   # We don't want to worry about the chromosome we are working on for code
-  # clarity, so we create a InMemoryRefReader that has a single chromosome named
-  # _DUMMY_CHROM_NAME which allows us to provide a bases(start, end) function
-  # for convenient reading of bases.
+  # clarity, so we create an InMemoryFastaReader that has a single chromosome
+  # named _DUMMY_CHROM_NAME which allows us to provide a bases(start, end)
+  # function for convenient reading of bases.
   _DUMMY_CHROM_NAME = '*'
 
   def __init__(self, bases, start):

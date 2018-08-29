@@ -145,7 +145,7 @@ nucleus_py_library(
     srcs = ["fasta.py"],
     deps = [
         ":genomics_reader",
-        "//third_party/nucleus/io/python:fasta_reader",
+        "//third_party/nucleus/io/python:in_memory_fasta_reader",
         "//third_party/nucleus/io/python:indexed_fasta_reader",
         "//third_party/nucleus/util:ranges",
     ],
@@ -218,13 +218,13 @@ cc_library(
     deps = [
         ":bed_reader",
         ":bed_writer",
-        ":fasta_reader",
         ":fastq_reader",
         ":fastq_writer",
         ":gff_reader",
         ":gff_writer",
         ":hts_path",
         ":hts_verbose",
+        ":in_memory_fasta_reader",
         ":indexed_fasta_reader",
         ":reader_base",
         ":reference",
@@ -559,9 +559,9 @@ cc_test(
 )
 
 cc_library(
-    name = "fasta_reader",
-    srcs = ["fasta_reader.cc"],
-    hdrs = ["fasta_reader.h"],
+    name = "in_memory_fasta_reader",
+    srcs = ["in_memory_fasta_reader.cc"],
+    hdrs = ["in_memory_fasta_reader.h"],
     deps = [
         ":reference",
         "//third_party/nucleus/platform:types",
@@ -574,11 +574,11 @@ cc_library(
 )
 
 cc_test(
-    name = "fasta_reader_test",
+    name = "in_memory_fasta_reader_test",
     size = "small",
-    srcs = ["fasta_reader_test.cc"],
+    srcs = ["in_memory_fasta_reader_test.cc"],
     deps = [
-        ":fasta_reader",
+        ":in_memory_fasta_reader",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",

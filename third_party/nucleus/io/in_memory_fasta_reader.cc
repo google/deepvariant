@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/nucleus/io/fasta_reader.h"
+#include "third_party/nucleus/io/in_memory_fasta_reader.h"
 
 #include <algorithm>
 
@@ -48,15 +48,15 @@ class FastaFullFileIterable : public GenomeReferenceRecordIterable {
   // Advance to the next record.
   StatusOr<bool> Next(GenomeReferenceRecord* out) override;
 
-  // Constructor is invoked via InMemoryGenomeReference::Iterate.
-  FastaFullFileIterable(const InMemoryGenomeReference* reader);
+  // Constructor is invoked via InMemoryFastaReader::Iterate.
+  FastaFullFileIterable(const InMemoryFastaReader* reader);
   ~FastaFullFileIterable() override;
 
  private:
   int pos_ = 0;
 };
 
-// Initializes an InMemoryGenomeReference from contigs and seqs.
+// Initializes an InMemoryFastaReader from contigs and seqs.
 //
 // contigs is a vector describing the "contigs" of this GenomeReference. These
 // should include only the contigs present in seqs. A ContigInfo object for a
@@ -71,10 +71,9 @@ class FastaFullFileIterable : public GenomeReferenceRecordIterable {
 //
 // There should be exactly one ContigInfo for each reference_name referred to
 // across all ReferenceSequences, and no extra ContigInfos.
-StatusOr<std::unique_ptr<InMemoryGenomeReference>>
-InMemoryGenomeReference::Create(
-      const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
-      const std::vector<nucleus::genomics::v1::ReferenceSequence>& seqs) {
+StatusOr<std::unique_ptr<InMemoryFastaReader>> InMemoryFastaReader::Create(
+    const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
+    const std::vector<nucleus::genomics::v1::ReferenceSequence>& seqs) {
   std::unordered_map<string, nucleus::genomics::v1::ReferenceSequence> seqs_map;
 
   for (const auto& seq : seqs) {
@@ -95,21 +94,22 @@ InMemoryGenomeReference::Create(
     if (!insert_result.second) {
       return tensorflow::errors::InvalidArgument(
           "Each ReferenceSequence must be on a different chromosome but "
-          "multiple ones were found on ", seq.region().reference_name());
+          "multiple ones were found on ",
+          seq.region().reference_name());
     }
   }
 
-  return std::unique_ptr<InMemoryGenomeReference>(
-      new InMemoryGenomeReference(contigs, seqs_map));
+  return std::unique_ptr<InMemoryFastaReader>(
+      new InMemoryFastaReader(contigs, seqs_map));
 }
 
 StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>
-InMemoryGenomeReference::Iterate() const {
+InMemoryFastaReader::Iterate() const {
   return StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>(
       MakeIterable<FastaFullFileIterable>(this));
 }
 
-StatusOr<string> InMemoryGenomeReference::GetBases(const Range& range) const {
+StatusOr<string> InMemoryFastaReader::GetBases(const Range& range) const {
   if (!IsValidInterval(range))
     return tensorflow::errors::InvalidArgument("Invalid interval: ",
                                                range.ShortDebugString());
@@ -130,8 +130,8 @@ StatusOr<string> InMemoryGenomeReference::GetBases(const Range& range) const {
 
 StatusOr<bool> FastaFullFileIterable::Next(GenomeReferenceRecord* out) {
   TF_RETURN_IF_ERROR(CheckIsAlive());
-  const InMemoryGenomeReference* fasta_reader =
-      static_cast<const InMemoryGenomeReference*>(reader_);
+  const InMemoryFastaReader* fasta_reader =
+      static_cast<const InMemoryFastaReader*>(reader_);
   if (pos_ >= fasta_reader->contigs_.size()) {
     return false;
   }
@@ -149,8 +149,7 @@ StatusOr<bool> FastaFullFileIterable::Next(GenomeReferenceRecord* out) {
 
 FastaFullFileIterable::~FastaFullFileIterable() {}
 
-FastaFullFileIterable::FastaFullFileIterable(
-    const InMemoryGenomeReference* reader)
+FastaFullFileIterable::FastaFullFileIterable(const InMemoryFastaReader* reader)
     : Iterable(reader) {}
 
 }  // namespace nucleus

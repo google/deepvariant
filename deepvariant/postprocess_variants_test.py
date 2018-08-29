@@ -72,7 +72,7 @@ _CONTIGS = [
 
 
 def dummy_reference_reader():
-  return fasta.InMemoryRefReader(chromosomes=[
+  return fasta.InMemoryFastaReader(chromosomes=[
       ('1', 0, 'AACCGGTTACGTTCGATTTTAAAACCCCGGGG'),
       ('2', 0, 'GCAGTGACGTAGCGATGACGTAGACGCTTACG'),
   ])
