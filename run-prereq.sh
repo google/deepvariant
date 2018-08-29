@@ -62,7 +62,15 @@ sudo -H apt-get -y install pkg-config zip zlib1g-dev unzip curl
 note_build_stage "Install python packaging infrastructure"
 
 sudo -H apt-get -y install python-dev python-pip python-wheel
+
+echo "$(python --version)"
+
+# This will make sure the pip command is bound to python2
+sudo -H python2 -m pip install --upgrade --force-reinstall pip
+
 sudo -H pip install --upgrade pip
+
+echo "$(pip --version)"
 
 ################################################################################
 # python packages
