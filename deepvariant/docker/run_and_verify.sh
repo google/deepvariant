@@ -38,9 +38,11 @@ function init() {
   local image_tag="$2"
   local model="$3"
   local platform="$4"
-  local gpu_flag=""
+  local extra_flags=""
   if [[ "${platform}" == "gpu" ]]; then
-    local gpu_flag="--gpu"
+    extra_flags="--gpu"
+  elif [[ "${platform}" == "tpu" ]]; then
+    local extra_flags="--tpu --gke_cluster_version 1.10 --gke_cluster_zone us-central1-c"
   fi
 
   readonly DATE=$(date '+%Y-%m-%d-%H-%M-%S')
@@ -70,11 +72,17 @@ function init() {
         --bam ${BAM} \
         --ref ${REF} \
         --regions chr20:10,000,000-10,010,000 \
-        ${gpu_flag}
+        --gcsfuse \
+        ${extra_flags}
   "
   # Expectations.
-  readonly EXPECTED_OUTFILE="${BUCKET}/golden-set/quickstart-testdata-output.vcf"
-  readonly EXPECTED_OUTFILE_GVCF="${BUCKET}/golden-set/quickstart-testdata-output.gvcf"
+  if [[ "${platform}" == "tpu" ]]; then
+    readonly EXPECTED_OUTFILE="${BUCKET}/golden-set/quickstart-testdata-tpu-output.vcf"
+    readonly EXPECTED_OUTFILE_GVCF="${BUCKET}/golden-set/quickstart-testdata-tpu-output.gvcf"
+  else
+    readonly EXPECTED_OUTFILE="${BUCKET}/golden-set/quickstart-testdata-output.vcf"
+    readonly EXPECTED_OUTFILE_GVCF="${BUCKET}/golden-set/quickstart-testdata-output.gvcf"
+  fi
 }
 
 err() {
@@ -167,7 +175,7 @@ function verify() {
 
 function main() {
   if [[ $# -ne 4 ]]; then
-    err "Usage: run_and_verify.sh <project_id> <image-tag> <model> <gpu|cpu>"
+    err "Usage: run_and_verify.sh <project_id> <image-tag> <model> <cpu|gpu|tpu>"
   fi
   local project_id="$1"
   local image_tag="$2"

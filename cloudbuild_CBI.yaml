@@ -104,8 +104,19 @@ steps:
       - 'gpu'
     id: 'run-and-verify-deepvariant-gpu'
 
+  # Run DeepVariant with TPU, and verify the result.
+  - name: 'gcr.io/${PROJECT_ID}/deepvariant_runner:${COMMIT_SHA}'
+    args:
+      - 'bash'
+      - '/opt/deepvariant_runner/bin/run_and_verify.sh'
+      - '${PROJECT_ID}'
+      - '${COMMIT_SHA}'
+      - '${_MODEL}'
+      - 'tpu'
+    id: 'run-and-verify-deepvariant-tpu'
+
 substitutions:
-    _MODEL: gs://deepvariant/models/DeepVariant/0.6.0/DeepVariant-inception_v3-0.6.0+cl-191676894.data-wgs_standard
+    _MODEL: gs://deepvariant/models/DeepVariant/0.7.0/DeepVariant-inception_v3-0.7.0+data-wgs_standard
 
 timeout: 3h
 images:
