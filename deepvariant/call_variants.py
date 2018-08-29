@@ -117,9 +117,12 @@ flags.DEFINE_string(
     'GCE zone where the Cloud TPU is located in. If not specified, we '
     'will attempt to automatically detect the GCE project from metadata.')
 flags.DEFINE_string(
-    'tpu_name', None,
+    'tpu_name',
+    None,
     'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
-    'this flag or --master.')
+    'this flag or --master. An empty value corresponds to no Cloud TPU. See '
+    'https://www.tensorflow.org/api_docs/python/tf/contrib/cluster_resolver/TPUClusterResolver'  # pylint: disable=line-too-long
+)
 
 flags.DEFINE_string(
     'master', None,

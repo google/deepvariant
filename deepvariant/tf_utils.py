@@ -335,9 +335,11 @@ def resolve_master(master, tpu_name, tpu_zone, gcp_project):
   if master is not None:
     return master
   elif tpu_name is not None:
-    tpu_cluster_resolver = (
-        tf.contrib.cluster_resolver.TPUClusterResolver(
-            tpu=[tpu_name], zone=tpu_zone, project=gcp_project))
-    return tpu_cluster_resolver.get_master()
+    return tf.contrib.cluster_resolver.TPUClusterResolver(
+        tpu=[tpu_name], zone=tpu_zone, project=gcp_project).get_master()
+  elif tpu_name is None:
+    # For k8s TPU we do not have/need tpu_name. See
+    # https://cloud.google.com/tpu/docs/kubernetes-engine-setup#tensorflow-code
+    return tf.contrib.cluster_resolver.TPUClusterResolver().get_master()
   else:
     return ''
