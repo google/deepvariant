@@ -139,7 +139,6 @@ _POD_CONFIG_TEMPLATE = r"""
                 "command": [
                     "/opt/deepvariant/bin/call_variants",
                     "--use_tpu",
-                    "--master=$(KUBE_GOOGLE_CLOUD_TPU_ENDPOINTS)",
                     "--outfile={OUTFILE}",
                     "--examples={EXAMPLES}",
                     "--checkpoint={MODEL_CHECKPOINT}"
