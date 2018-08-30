@@ -32,8 +32,12 @@
 
 #include "third_party/nucleus/io/in_memory_fasta_reader.h"
 
-#include <algorithm>
+#include <stddef.h>
+#include <utility>
 
+#include "third_party/nucleus/io/reader_base.h"
+#include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
 

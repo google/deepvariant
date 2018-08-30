@@ -31,8 +31,11 @@
 
 #include "third_party/nucleus/io/gff_writer.h"
 
+#include <limits>
 #include <map>
+#include <utility>
 
+#include "google/protobuf/map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -47,12 +50,12 @@
 
 namespace tf = tensorflow;
 
-using nucleus::genomics::v1::GffHeader;
-using nucleus::genomics::v1::GffRecord;
-using nucleus::genomics::v1::GffWriterOptions;
-using nucleus::genomics::v1::Range;
-
 namespace nucleus {
+
+using genomics::v1::GffHeader;
+using genomics::v1::GffRecord;
+using genomics::v1::GffWriterOptions;
+using genomics::v1::Range;
 
 // Constants
 // redacted

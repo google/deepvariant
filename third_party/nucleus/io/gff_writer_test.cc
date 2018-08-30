@@ -32,18 +32,21 @@
 
 #include "third_party/nucleus/io/gff_writer.h"
 
+#include <utility>
+
+#include "google/protobuf/text_format.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-
-#include "google/protobuf/text_format.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
 #include "third_party/nucleus/vendor/statusor.h"
+#include "tensorflow/core/lib/core/status.h"
+#include "tensorflow/core/platform/env.h"
 
 namespace nucleus {
 

@@ -32,11 +32,15 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_IN_MEMORY_FASTA_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_IN_MEMORY_FASTA_READER_H_
 
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
 
 namespace nucleus {

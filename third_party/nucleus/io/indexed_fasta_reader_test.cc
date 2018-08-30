@@ -34,22 +34,20 @@
 
 #include <memory>
 #include <utility>
-#include <vector>
-
-#include "absl/strings/str_cat.h"
-
-#include "third_party/nucleus/io/reference_test.h"
-#include "third_party/nucleus/testing/test_utils.h"
-#include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/vendor/status_matchers.h"
-
-#include "tensorflow/core/platform/logging.h"
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/strings/str_cat.h"
+#include "third_party/nucleus/io/reader_base.h"
+#include "third_party/nucleus/io/reference_test.h"
+#include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/status_matchers.h"
+#include "tensorflow/core/lib/core/status.h"
+#include "tensorflow/core/platform/logging.h"
 
 using absl::StrCat;
 using std::make_pair;

@@ -33,6 +33,9 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_TEXT_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_TEXT_READER_H_
 
+#include <memory>
+#include <string>
+
 #include "absl/memory/memory.h"
 #include "htslib/hts.h"
 #include "third_party/nucleus/platform/types.h"

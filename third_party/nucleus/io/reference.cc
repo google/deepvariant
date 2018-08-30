@@ -33,8 +33,8 @@
 #include "third_party/nucleus/io/reference.h"
 
 #include <algorithm>
-#include <numeric>
 
+#include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {

@@ -33,6 +33,9 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_VCF_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_VCF_READER_H_
 
+#include <memory>
+#include <string>
+
 #include "absl/strings/string_view.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
@@ -40,11 +43,12 @@
 #include "htslib/vcf.h"
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/io/vcf_conversion.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "third_party/nucleus/platform/types.h"
+#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 

@@ -32,10 +32,13 @@
 // Implementation of bed_reader.h
 #include "third_party/nucleus/io/bed_reader.h"
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/util/utils.h"

@@ -31,7 +31,10 @@
  */
 
 #include "third_party/nucleus/io/hts_path.h"
+
+#include <stddef.h>
 #include <string>
+
 #include "absl/strings/str_cat.h"
 #include "htslib/faidx.h"
 #include "htslib/hts.h"

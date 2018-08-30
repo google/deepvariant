@@ -57,6 +57,9 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_REFERENCE_H_
 #define THIRD_PARTY_NUCLEUS_IO_REFERENCE_H_
 
+#include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "third_party/nucleus/io/reader_base.h"
@@ -64,6 +67,7 @@
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
+#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 

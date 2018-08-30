@@ -33,14 +33,18 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_VCF_WRITER_H_
 #define THIRD_PARTY_NUCLEUS_IO_VCF_WRITER_H_
 
+#include <memory>
+#include <string>
+
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htslib/vcf.h"
 #include "third_party/nucleus/io/vcf_conversion.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "third_party/nucleus/platform/types.h"
+#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 

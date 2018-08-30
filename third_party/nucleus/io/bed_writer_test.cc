@@ -32,15 +32,19 @@
 
 #include "third_party/nucleus/io/bed_writer.h"
 
+#include <utility>
 #include <vector>
 
+#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock-more-matchers.h>
+
+#include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
-
 #include "tensorflow/core/lib/core/status.h"
-
-#include "tensorflow/core/platform/test.h"
+#include "tensorflow/core/platform/env.h"
 
 namespace nucleus {
 

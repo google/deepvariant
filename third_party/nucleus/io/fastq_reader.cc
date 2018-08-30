@@ -32,13 +32,16 @@
 // Implementation of fastq_reader.h
 #include "third_party/nucleus/io/fastq_reader.h"
 
+#include <stddef.h>
+#include <utility>
+
 #include "absl/strings/string_view.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
-#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 

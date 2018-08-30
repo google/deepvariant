@@ -33,11 +33,13 @@
 #define THIRD_PARTY_NUCLEUS_IO_GFF_WRITER_H_
 
 #include <memory>
+#include <string>
 
 #include "third_party/nucleus/io/text_writer.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
+#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 

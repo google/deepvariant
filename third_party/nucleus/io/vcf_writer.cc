@@ -33,24 +33,24 @@
 // Implementation of vcf_writer.h
 #include "third_party/nucleus/io/vcf_writer.h"
 
-#include <algorithm>
 #include <cmath>
-#include <cstring>
+#include <utility>
+#include <vector>
 
+#include "google/protobuf/map.h"
+#include "google/protobuf/repeated_field.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
-
 #include "htslib/hts.h"
 #include "htslib/sam.h"
-
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/io/vcf_conversion.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/utils.h"
-
 #include "tensorflow/core/lib/core/errors.h"
+#include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {

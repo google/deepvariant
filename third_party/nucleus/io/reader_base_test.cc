@@ -33,7 +33,8 @@
 #include "third_party/nucleus/io/reader_base.h"
 
 #include <algorithm>
-#include <iostream>
+#include <string>
+#include <vector>
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -44,6 +45,7 @@
 #include "third_party/nucleus/vendor/status_matchers.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/core/errors.h"
+#include "tensorflow/core/lib/core/status.h"
 
 namespace tf = tensorflow;
 

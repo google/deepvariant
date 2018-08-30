@@ -33,17 +33,19 @@
 #include "third_party/nucleus/io/gff_reader.h"
 
 #include <limits>
+#include <utility>
+#include <vector>
 
+#include "google/protobuf/map.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
-
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/range.pb.h"
-
+#include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 

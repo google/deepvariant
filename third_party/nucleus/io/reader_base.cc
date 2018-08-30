@@ -32,6 +32,9 @@
 
 #include "third_party/nucleus/io/reader_base.h"
 
+#include "tensorflow/core/lib/core/errors.h"
+#include "tensorflow/core/lib/core/status.h"
+
 namespace nucleus {
 
 // Reader class methods

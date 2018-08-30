@@ -34,11 +34,14 @@
 #define THIRD_PARTY_NUCLEUS_IO_READER_BASE_H_
 
 #include <algorithm>
+#include <iterator>
 #include <memory>
 
 #include "absl/synchronization/mutex.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "third_party/nucleus/vendor/statusor.h"
+#include "tensorflow/core/lib/core/errors.h"
+#include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 

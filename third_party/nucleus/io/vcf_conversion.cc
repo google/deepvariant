@@ -32,11 +32,19 @@
 
 #include "third_party/nucleus/io/vcf_conversion.h"
 
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <algorithm>
+#include <memory>
+
+#include "google/protobuf/map.h"
+#include "google/protobuf/repeated_field.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
-
 
 namespace nucleus {
 

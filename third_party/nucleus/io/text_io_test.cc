@@ -29,19 +29,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#include "third_party/nucleus/io/text_reader.h"
-#include "third_party/nucleus/io/text_writer.h"
-
 #include <fstream>
-
-#include <gmock/gmock-generated-matchers.h>
-#include <gmock/gmock-matchers.h>
-#include <gmock/gmock-more-matchers.h>
+#include <memory>
+#include <string>
+#include <utility>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/io/text_reader.h"
+#include "third_party/nucleus/io/text_writer.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/testing/test_utils.h"
-
+#include "third_party/nucleus/vendor/statusor.h"
+#include "tensorflow/core/lib/core/errors.h"
+#include "tensorflow/core/lib/core/status.h"
 
 namespace tf = tensorflow;
 

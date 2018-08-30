@@ -33,12 +33,14 @@
 
 #include "third_party/nucleus/io/gff_reader.h"
 
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"

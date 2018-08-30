@@ -32,15 +32,17 @@
 
 #include "third_party/nucleus/io/fastq_reader.h"
 
-#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
-#include "third_party/nucleus/testing/test_utils.h"
-#include "third_party/nucleus/util/utils.h"
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
+#include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace nucleus {
 

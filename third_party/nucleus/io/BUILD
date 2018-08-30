@@ -265,13 +265,10 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":bed_reader",
-        "//third_party/nucleus/protos:bed_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
-        "//third_party/nucleus/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -289,7 +286,6 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -322,7 +318,6 @@ cc_library(
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -333,11 +328,9 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":fastq_reader",
-        "//third_party/nucleus/protos:fastq_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
-        "//third_party/nucleus/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
     ],
@@ -410,6 +403,7 @@ cc_test(
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -432,6 +426,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -447,7 +442,9 @@ cc_test(
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
+        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -468,6 +465,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -479,6 +477,7 @@ cc_test(
     deps = [
         ":vcf_writer",
         "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
@@ -486,6 +485,7 @@ cc_test(
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
+        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -499,7 +499,6 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/vendor:statusor",
-        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -530,8 +529,11 @@ cc_library(
     hdrs = ["indexed_fasta_reader.h"],
     deps = [
         ":hts_path",
+        ":reader_base",
         ":reference",
         "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
@@ -547,6 +549,7 @@ cc_test(
     srcs = ["indexed_fasta_reader_test.cc"],
     deps = [
         ":indexed_fasta_reader",
+        ":reader_base",
         ":reference_test",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
@@ -563,6 +566,7 @@ cc_library(
     srcs = ["in_memory_fasta_reader.cc"],
     hdrs = ["in_memory_fasta_reader.h"],
     deps = [
+        ":reader_base",
         ":reference",
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:range_cc_pb2",
@@ -579,7 +583,9 @@ cc_test(
     srcs = ["in_memory_fasta_reader_test.cc"],
     deps = [
         ":in_memory_fasta_reader",
-        "//third_party/nucleus/testing:cpp_test_utils",
+        ":reader_base",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
@@ -618,6 +624,7 @@ cc_library(
     srcs = ["vcf_conversion.cc"],
     hdrs = ["vcf_conversion.h"],
     deps = [
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
@@ -626,6 +633,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@htslib",
         "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -665,6 +673,7 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":hts_path",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:port",
         "@com_google_absl//absl/strings",
@@ -711,7 +720,9 @@ cc_test(
         ":text_writer",
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/vendor:statusor",
         "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -744,6 +755,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -775,6 +787,7 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
+        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -789,6 +802,7 @@ cc_test(
         "//third_party/nucleus/vendor:status_matchers",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",
     ],
 )
