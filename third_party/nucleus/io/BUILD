@@ -565,6 +565,43 @@ cc_test(
 )
 
 cc_library(
+    name = "unindexed_fasta_reader",
+    srcs = ["unindexed_fasta_reader.cc"],
+    hdrs = ["unindexed_fasta_reader.h"],
+    deps = [
+        ":reader_base",
+        ":reference",
+        ":text_reader",
+        "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@htslib",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "unindexed_fasta_reader_test",
+    size = "small",
+    srcs = ["unindexed_fasta_reader_test.cc"],
+    deps = [
+        ":reference_test",
+        ":unindexed_fasta_reader",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status_matchers",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
     name = "in_memory_fasta_reader",
     srcs = ["in_memory_fasta_reader.cc"],
     hdrs = ["in_memory_fasta_reader.h"],
