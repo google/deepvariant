@@ -376,8 +376,11 @@ def main(argv=()):
 
     logging_level.set_from_flag()
 
-    master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
-                                     FLAGS.tpu_zone, FLAGS.gcp_project)
+    if FLAGS.use_tpu:
+      master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
+                                       FLAGS.tpu_zone, FLAGS.gcp_project)
+    else:
+      master = ''
 
     model = modeling.get_model(FLAGS.model_name)
     call_variants(
