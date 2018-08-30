@@ -81,7 +81,7 @@ class IndexedFastaReaderIterable : public GenomeReferenceRecordIterable {
   ~IndexedFastaReaderIterable() override;
 
  private:
-  int pos_ = 0;
+  size_t pos_ = 0;
 };
 
 StatusOr<std::unique_ptr<IndexedFastaReader>> IndexedFastaReader::FromFile(

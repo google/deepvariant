@@ -213,6 +213,8 @@ nucleus_py_library(
 # C++ API
 #
 
+NUCLEUS_COPTS = ["-Wsign-compare"]
+
 cc_library(
     name = "io_cpp",
     deps = [
@@ -527,6 +529,7 @@ cc_library(
     name = "indexed_fasta_reader",
     srcs = ["indexed_fasta_reader.cc"],
     hdrs = ["indexed_fasta_reader.h"],
+    copts = NUCLEUS_COPTS,
     deps = [
         ":hts_path",
         ":reader_base",
@@ -565,6 +568,7 @@ cc_library(
     name = "in_memory_fasta_reader",
     srcs = ["in_memory_fasta_reader.cc"],
     hdrs = ["in_memory_fasta_reader.h"],
+    copts = NUCLEUS_COPTS,
     deps = [
         ":reader_base",
         ":reference",
