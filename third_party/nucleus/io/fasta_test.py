@@ -41,7 +41,6 @@ from third_party.nucleus.io import fasta
 from third_party.nucleus.io.python import in_memory_fasta_reader
 from third_party.nucleus.io.python import indexed_fasta_reader
 from third_party.nucleus.testing import test_utils
-
 from third_party.nucleus.util import ranges
 
 
@@ -64,6 +63,27 @@ class IndexedFastaReaderTests(parameterized.TestCase):
         test_utils.genomics_core_testdata('test.fasta')) as reader:
       self.assertIsInstance(reader.c_reader,
                             indexed_fasta_reader.IndexedFastaReader)
+
+
+class UnindexedFastaReaderTests(parameterized.TestCase):
+
+  def test_query(self):
+    unindexed_fasta_reader = fasta.UnindexedFastaReader(
+        test_utils.genomics_core_testdata('unindexed.fasta'))
+    with self.assertRaises(NotImplementedError):
+      unindexed_fasta_reader.query(ranges.make_range('chrM', 1, 5))
+
+  @parameterized.parameters('test.fasta', 'test.fasta.gz')
+  def test_iterate(self, fasta_filename):
+    # Check the indexed fasta file's iterable matches that of the unindexed
+    # fasta file.
+    indexed_fasta_reader = fasta.IndexedFastaReader(
+        test_utils.genomics_core_testdata(fasta_filename))
+    unindexed_fasta_reader = fasta.UnindexedFastaReader(
+        test_utils.genomics_core_testdata(fasta_filename))
+    self.assertEqual(
+        list(indexed_fasta_reader.iterate()),
+        list(unindexed_fasta_reader.iterate()))
 
 
 class InMemoryFastaReaderTests(parameterized.TestCase):

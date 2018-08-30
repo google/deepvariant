@@ -147,6 +147,7 @@ nucleus_py_library(
         ":genomics_reader",
         "//third_party/nucleus/io/python:in_memory_fasta_reader",
         "//third_party/nucleus/io/python:indexed_fasta_reader",
+        "//third_party/nucleus/io/python:unindexed_fasta_reader",
         "//third_party/nucleus/util:ranges",
     ],
 )

@@ -136,6 +136,18 @@ py_clif_cc(
     ],
 )
 
+py_clif_cc(
+    name = "unindexed_fasta_reader",
+    srcs = ["unindexed_fasta_reader.clif"],
+    clif_deps = [
+        ":reference",
+    ],
+    deps = [
+        "//third_party/nucleus/io:unindexed_fasta_reader",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
 py_test(
     name = "reference_wrap_test",
     size = "small",

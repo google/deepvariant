@@ -59,6 +59,7 @@ import six
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import in_memory_fasta_reader
 from third_party.nucleus.io.python import indexed_fasta_reader
+from third_party.nucleus.io.python import unindexed_fasta_reader
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.util import ranges
 
@@ -108,6 +109,45 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
   def contig(self, contig_name):
     """Returns a ContigInfo proto for contig_name."""
     return self._reader.contig(contig_name)
+
+  @property
+  def c_reader(self):
+    """Returns the underlying C++ reader."""
+    return self._reader
+
+  def __exit__(self, exit_type, exit_value, exit_traceback):
+    self._reader.__exit__(exit_type, exit_value, exit_traceback)
+
+
+class UnindexedFastaReader(genomics_reader.GenomicsReader):
+  """Class for reading from unindexed FASTA files."""
+
+  def __init__(self, input_path):
+    """Initializes an UnindexedFastaReader.
+
+    Args:
+      input_path: string. A path to a resource containing FASTA records.
+    """
+    super(UnindexedFastaReader, self).__init__()
+
+    self._reader = unindexed_fasta_reader.UnindexedFastaReader.from_file(
+        input_path)
+
+  def iterate(self):
+    """Returns an iterable of (name, bases) tuples contained in this file."""
+    return self._reader.iterate()
+
+  def query(self, region):
+    """Returns the base pairs (as a string) in the given region."""
+    raise NotImplementedError('Can not query an unindexed FASTA file')
+
+  def is_valid(self, region):
+    """Returns whether the region is contained in this FASTA file."""
+    return self._reader.is_valid_interval(region)
+
+  def contig(self, contig_name):
+    """Returns a ContigInfo proto for contig_name."""
+    raise NotImplementedError('Contigs unknown for an unindexed FASTA file')
 
   @property
   def c_reader(self):
