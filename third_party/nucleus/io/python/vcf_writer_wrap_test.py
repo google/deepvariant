@@ -160,11 +160,6 @@ class WrapVcfWriterTest(parameterized.TestCase):
                 type='Float',
                 description='Variant allele fractions.'),
             variants_pb2.VcfFormatInfo(
-                id='GL',
-                number='G',
-                type='Float',
-                description='Genotype likelihoods, log10 encoded'),
-            variants_pb2.VcfFormatInfo(
                 id='PL',
                 number='G',
                 type='Integer',
@@ -211,8 +206,6 @@ class WrapVcfWriterTest(parameterized.TestCase):
         'passing filters reads for each allele.">\n',
         '##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele '
         'fractions.">\n',
-        '##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype '
-        'likelihoods, log10 encoded">\n',
         '##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Genotype '
         'likelihoods, Phred encoded">\n',
         '##contig=<ID=chr1,length=248956422>\n',

@@ -60,9 +60,8 @@ using std::vector;
 // redacted
 
 // Note that test_likelihoods_output.vcf is different from
-// test_likelihoods_input.vcf because our VCF writer writes genotype likelihoods
-// to the GL format field (whereas, input given to the reader could have used
-// the PL format field, instead).
+// test_likelihoods_input.vcf because our VCF writer doesn't
+// allow per-position control over the GL/PL formats.
 constexpr char kVcfLikelihoodsVcfOutput[] = "test_likelihoods_output.vcf";
 constexpr char kVcfLikelihoodsGoldenFilename[] = "test_likelihoods.vcf.golden.tfrecord";  // NOLINT
 
@@ -105,6 +104,7 @@ constexpr char kExpectedHeaderFmt[] =
 // This routine will populate headers but not any records.
 std::unique_ptr<VcfWriter> MakeDogVcfWriter(
     const string& fname, const bool round_qual,
+    const bool include_gl = true,
     const std::vector<string>& excluded_infos = {},
     const std::vector<string>& excluded_formats = {}) {
   nucleus::genomics::v1::VcfHeader header;
@@ -170,11 +170,13 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(
   format6.set_number("A");
   format6.set_type("Float");
   format6.set_description("Variant allele fractions.");
-  auto& format7 = *header.mutable_formats()->Add();
-  format7.set_id("GL");
-  format7.set_number("G");
-  format7.set_type("Float");
-  format7.set_description("Genotype likelihoods, log10 encoded");
+  if (include_gl) {
+    auto& format7 = *header.mutable_formats()->Add();
+    format7.set_id("GL");
+    format7.set_number("G");
+    format7.set_type("Float");
+    format7.set_description("Genotype likelihoods, log10 encoded");
+  }
   auto& format8 = *header.mutable_formats()->Add();
   format8.set_id("PL");
   format8.set_number("G");
@@ -390,7 +392,8 @@ TEST(VcfWriterTest, ExcludesFields) {
   // This test verifies that VcfWriter writes the expected VCF file with
   // INFO and FORMAT fields excluded.
   string output_filename = MakeTempFile("excluded_fields.vcf");
-  auto writer = MakeDogVcfWriter(output_filename, true, {"DB", "AF"}, {"GQ"});
+  auto writer = MakeDogVcfWriter(output_filename, true, true,
+                                 {"DB", "AF"}, {"GQ"});
 
   // A named variant with no qual, phase
   Variant v1 = MakeVariant({"DogSNP1"}, "Chr1", 20, 21, "A", {"T"});
@@ -433,7 +436,7 @@ TEST(VcfWriterTest, WritesVCFWithLikelihoods) {
   std::vector<Variant> variants = ReadProtosFromTFRecord<Variant>(
       GetTestData(kVcfLikelihoodsGoldenFilename));
   string out_fname = MakeTempFile("likelihoods_out.vcf");
-  auto writer = MakeDogVcfWriter(out_fname, false);
+  auto writer = MakeDogVcfWriter(out_fname, false, false);
   for (const auto& variant : variants) {
     ASSERT_THAT(writer->Write(variant), IsOK());
   }

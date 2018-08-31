@@ -11,7 +11,6 @@
 ##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum DP observed within the GVCF block.">
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth of all passing filters reads for each allele.">
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
-##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype likelihoods, log10 encoded">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Genotype likelihoods, Phred encoded">
 ##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
 ##PEDIGREE=<Name_1="Val_1",Name_2="Val_2">

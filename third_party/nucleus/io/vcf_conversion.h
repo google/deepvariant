@@ -301,7 +301,8 @@ class VcfRecordConverter {
   bool want_variant_end_;
   // Individual special-cased FORMAT fields.
   bool want_genotypes_;
-  bool want_genotype_likelihoods_;
+  bool want_gl_;
+  bool want_pl_;
 };
 
 }  // namespace nucleus

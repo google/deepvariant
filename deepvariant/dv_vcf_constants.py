@@ -93,7 +93,6 @@ def deepvariant_header(contigs, sample_names):
               number='A',
               type='Float',
               description='Variant allele fractions.'),
-          vcf_constants.reserved_format_field('GL'),
           vcf_constants.reserved_format_field('PL'),
       ],
       contigs=contigs,
