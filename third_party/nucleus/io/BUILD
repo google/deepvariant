@@ -148,6 +148,7 @@ nucleus_py_library(
         "//third_party/nucleus/io/python:in_memory_fasta_reader",
         "//third_party/nucleus/io/python:indexed_fasta_reader",
         "//third_party/nucleus/io/python:unindexed_fasta_reader",
+        "//third_party/nucleus/protos:fasta_py_pb2",
         "//third_party/nucleus/util:ranges",
     ],
 )

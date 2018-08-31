@@ -54,18 +54,34 @@ from __future__ import print_function
 
 import collections
 
+import os
 import six
 
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import in_memory_fasta_reader
 from third_party.nucleus.io.python import indexed_fasta_reader
 from third_party.nucleus.io.python import unindexed_fasta_reader
 from third_party.nucleus.protos import reference_pb2
+from third_party.nucleus.protos import fasta_pb2
 from third_party.nucleus.util import ranges
 
 # redacted
 RefFastaHeader = collections.namedtuple(
     'RefFastaHeader', ['contigs'])
+
+
+class FastaReader(genomics_reader.DispatchingGenomicsReader):
+  """Class for reading (name, bases) tuples from FASTA files."""
+
+  def _native_reader(self, input_path, **kwargs):
+    fai_path = input_path + '.fai'
+    if gfile.Exists(fai_path):
+      return IndexedFastaReader(input_path, **kwargs)
+    return UnindexedFastaReader(input_path, **kwargs)
+
+  def _record_proto(self):
+    return fasta_pb2.FastaRecord
 
 
 class IndexedFastaReader(genomics_reader.GenomicsReader):
