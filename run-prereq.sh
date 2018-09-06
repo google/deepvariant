@@ -86,7 +86,13 @@ sudo -H pip install enum34
 sudo -H pip install 'sortedcontainers==1.5.3'
 sudo -H pip install intervaltree
 sudo -H pip install 'mock>=2.0.0'
-sudo -H pip install 'numpy==1.14'  # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+
+# Note that TensorFlow on Ubuntu has a "double free" bug when running with GPUs.
+# According to:
+# https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279892449
+# The appropriate workaround is to use --no-binary=:all: during the install.
+sudo -H pip install --no-binary=:all: 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+
 sudo -H pip install 'requests>=2.18'
 sudo -H pip install 'scipy==1.0'
 sudo -H pip install 'oauth2client>=4.0.0'
