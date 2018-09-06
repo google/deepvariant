@@ -121,7 +121,7 @@ TEST(SamReaderTest, TestSamHeaderExtraction) {
   EXPECT_EQ(rg.platform_unit(), "abcde");
   EXPECT_THAT(rg.sample_id(), IsEmpty());
   EXPECT_THAT(header.comments(), SizeIs(1));
-  EXPECT_EQ(header.comments(0), "@CO\tA single line comment.");
+  EXPECT_EQ(header.comments(0), "A single line comment.");
 }
 
 TEST(SamReaderTest, TestBamSampleExtraction) {

@@ -539,7 +539,8 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
     } else if (header_tag == kSamProgramTag) {
       AddProgramToHeader(header_line, sam_header_.mutable_programs()->Add());
     } else if (header_tag == kSamCommentTag) {
-      sam_header_.add_comments(header_line);
+      // Start at pos 4 to exclude the tab character after the tag.
+      sam_header_.add_comments(header_line.substr(4));
     } else {
       LOG(WARNING) << "Unrecognized SAM header type, ignoring: " << header_line;
     }
