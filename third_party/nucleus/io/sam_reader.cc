@@ -230,7 +230,7 @@ const CigarUnit_Operation kHtslibCigarToProto[] = {
 // #define BAM_CHARD_CLIP  5
   CigarUnit::CLIP_HARD,
 // #define BAM_CPAD        6
-  CigarUnit::ALIGNMENT_MATCH,
+  CigarUnit::PAD,
 // #define BAM_CEQUAL      7
   CigarUnit::SEQUENCE_MATCH,
 // #define BAM_CDIFF       8
