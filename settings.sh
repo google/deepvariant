@@ -57,6 +57,12 @@ export CUDNN_INSTALL_PATH="/usr/lib/x86_64-linux-gnu"
 # The version of bazel we want to build DeepVariant.
 DV_BAZEL_VERSION="0.15.0"
 
+# We need to make sure that $HOME/bin is first in the binary search path so that
+# `bazel` will find the latest version of bazel installed in the user's home
+# directory. This is set in setting.sh as all DeepVariant scripts source
+# settings.sh and assume that `bazel` will find the right version.
+export PATH="$HOME/bin:$PATH"
+
 # Path to the public bucket containing DeepVariant-related artifacts.
 export DEEPVARIANT_BUCKET="gs://deepvariant"
 export DV_PACKAGE_BUCKET_PATH="${DEEPVARIANT_BUCKET}/packages"
