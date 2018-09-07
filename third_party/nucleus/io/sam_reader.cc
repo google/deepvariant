@@ -475,29 +475,44 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
   return tf::Status::OK();
 }
 
-// Iterable class for traversing all BAM records in the file.
-class SamFullFileIterable : public SamIterable {
+// Base class for SamFullFileIterable and SamQueryIterable.
+// This class implements common functionality.
+class SamIterableBase : public SamIterable {
+ protected:
+  virtual int next_sam_record() = 0;
+
  public:
   // Advance to the next record.
   StatusOr<bool> Next(nucleus::genomics::v1::Read* out) override;
 
-  // Constructor is invoked via SamReader::Iterate.
-  SamFullFileIterable(const SamReader* reader, htsFile* fp, bam_hdr_t* header);
-  ~SamFullFileIterable() override;
+  // Base class constructor. Intializes common attrubutes.
+  SamIterableBase(const SamReader* reader,
+                  htsFile* fp,
+                  bam_hdr_t* header);
+  ~SamIterableBase() override;
 
- private:
+ protected:
   htsFile* fp_;
   bam_hdr_t* header_;
   bam1_t* bam1_;
 };
 
+// Iterable class for traversing all BAM records in the file.
+class SamFullFileIterable : public SamIterableBase {
+ protected:
+  virtual int next_sam_record();
+
+ public:
+  // Constructor is invoked via SamReader::Iterate.
+  SamFullFileIterable(const SamReader* reader, htsFile* fp, bam_hdr_t* header);
+};
 
 // Iterable class for traversing BAM records returned in a query window.
-class SamQueryIterable : public SamIterable {
- public:
-  // Advance to the next record.
-  StatusOr<bool> Next(nucleus::genomics::v1::Read* out) override;
+class SamQueryIterable : public SamIterableBase {
+ protected:
+  virtual int next_sam_record();
 
+ public:
   // Constructor will be invoked via SamReader::Query.
   SamQueryIterable(const SamReader* reader,
                    htsFile* fp,
@@ -507,10 +522,7 @@ class SamQueryIterable : public SamIterable {
   ~SamQueryIterable() override;
 
  private:
-  htsFile* fp_;
-  bam_hdr_t* header_;
   hts_itr_t* iter_;
-  bam1_t* bam1_;
 };
 
 SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
@@ -660,8 +672,8 @@ StatusOr<std::shared_ptr<SamIterable>> SamReader::Query(
         "' specifies an unknown reference interval");
   }
 
-  return StatusOr<std::shared_ptr<SamIterable>>(
-      MakeIterable<SamQueryIterable>(this, fp_, header_, iter));
+    return StatusOr<std::shared_ptr<SamIterable>>(
+        MakeIterable<SamQueryIterable>(this, fp_, header_, iter));
 }
 
 
@@ -684,15 +696,12 @@ tf::Status SamReader::Close() {
 
 // Iterable class definitions.
 
-StatusOr<bool> SamFullFileIterable::Next(Read* out) {
+StatusOr<bool> SamIterableBase::Next(Read* out) {
   TF_RETURN_IF_ERROR(CheckIsAlive());
   // Keep reading until "reader_->KeepRead(.)"
   const SamReader* sam_reader = static_cast<const SamReader*>(reader_);
   do {
-    // sam_read1 docs say: >= 0 on successfully reading a new record,
-    // -1 on end of stream, < -1 on error.
-    // Get next from file; return false if no more records to be had.
-    int code = sam_read1(fp_, header_, bam1_);
+    int code = next_sam_record();
     if (code == -1) {
       return false;
     } else if (code < -1) {
@@ -704,41 +713,38 @@ StatusOr<bool> SamFullFileIterable::Next(Read* out) {
   return true;
 }
 
-SamFullFileIterable::~SamFullFileIterable() {
-  bam_destroy1(bam1_);
-}
-
-SamFullFileIterable::SamFullFileIterable(const SamReader* reader,
-                                         htsFile* fp,
-                                         bam_hdr_t* header)
+SamIterableBase::SamIterableBase(const SamReader* reader,
+                                 htsFile* fp,
+                                 bam_hdr_t* header)
     : Iterable(reader),
       fp_(fp),
       header_(header),
       bam1_(bam_init1())
 {}
 
-// redacted
-// class that only differs in sam_itr_next vs sam_read1 calls.
-StatusOr<bool> SamQueryIterable::Next(Read* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
-  // Keep reading until "reader_->KeepRead(.)"
-  const SamReader* sam_reader = static_cast<const SamReader*>(reader_);
-  do {
-    // Get next in query window; return false if no more records.
-    int code = sam_itr_next(fp_, iter_, bam1_);
-    if (code == -1) {
-      return false;
-    } else if (code < -1) {
-      return tf::errors::DataLoss("Failed to parse SAM record");
-    }
-    // Convert to proto.
-    TF_RETURN_IF_ERROR(ConvertToPb(header_, bam1_, sam_reader->options(), out));
-  } while (!sam_reader->KeepRead(*out));
-  return true;
+SamIterableBase::~SamIterableBase() {
+  bam_destroy1(bam1_);
+}
+
+int SamFullFileIterable::next_sam_record() {
+  // sam_read1 docs say: >= 0 on successfully reading a new record,
+  // -1 on end of stream, < -1 on error.
+  // Get next from file; return false if no more records to be had.
+  return sam_read1(fp_, header_, bam1_);
+}
+
+SamFullFileIterable::SamFullFileIterable(const SamReader* reader,
+                                         htsFile* fp,
+                                         bam_hdr_t* header)
+    : SamIterableBase(reader, fp, header)
+{}
+
+
+int SamQueryIterable::next_sam_record() {
+  return sam_itr_next(fp_, iter_, bam1_);
 }
 
 SamQueryIterable::~SamQueryIterable() {
-  bam_destroy1(bam1_);
   hts_itr_destroy(iter_);
 }
 
@@ -746,11 +752,7 @@ SamQueryIterable::SamQueryIterable(const SamReader* reader,
                                    htsFile* fp,
                                    bam_hdr_t* header,
                                    hts_itr_t* iter)
-    : Iterable(reader),
-      fp_(fp),
-      header_(header),
-      iter_(iter),
-      bam1_(bam_init1())
+    : SamIterableBase(reader, fp, header), iter_(iter)
 {}
 
 }  // namespace nucleus
