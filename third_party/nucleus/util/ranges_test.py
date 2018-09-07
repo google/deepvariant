@@ -174,6 +174,35 @@ class RangesTests(parameterized.TestCase):
         empty_set.variant_overlaps(variant, empty_set_return_value='foo'),
         'foo')
 
+  def test_envelops(self):
+    start_ix = 5
+    end_ix = 10
+    start_ix2 = end_ix + 1
+    end_ix2 = end_ix + 5
+    range_set = ranges.RangeSet([
+        ranges.make_range('chr1', start_ix, end_ix),
+        ranges.make_range('chr1', start_ix2, end_ix2)
+    ])
+
+    # No start position before the first start range is enveloped.
+    for i in range(start_ix):
+      self.assertFalse(range_set.envelops('chr1', i, start_ix + 1))
+
+    # All regions within a single record are enveloped.
+    for six in range(start_ix, end_ix):
+      for eix in range(six, end_ix + 1):
+        self.assertTrue(
+            range_set.envelops('chr1', six, eix),
+            'chr1 {} {} not enveloped'.format(six, eix))
+
+    # Bridging across two ranges is not enveloped.
+    for six in range(start_ix, end_ix):
+      for eix in range(start_ix2, end_ix2 + 1):
+        self.assertFalse(range_set.envelops('chr1', six, eix))
+
+    # Other chromosome is not spanned.
+    self.assertFalse(range_set.envelops('chr2', start_ix, start_ix + 1))
+
   @parameterized.parameters(
       (ranges.make_range('1', 10, 50), '1', 9, False),
       (ranges.make_range('1', 10, 50), '1', 10, True),

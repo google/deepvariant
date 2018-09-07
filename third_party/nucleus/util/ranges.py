@@ -334,6 +334,31 @@ class RangeSet(object):
       for pos in range(interval.start, interval.end, max_size):
         yield make_range(refname, pos, min(interval.end, pos + max_size))
 
+  def envelops(self, chrom, start, end):
+    """Returns True iff some range in this RangeSet envelops the range.
+
+    Args:
+      chrom: str. The chromosome of interest.
+      start: int. Zero-based inclusive index of the query range.
+      end: int: Zero-based exclusive index of the query range.
+
+    Returns:
+      True if and only if some range in `self` completely spans the query
+      range.
+    """
+    chr_ranges = self._by_chr.get(chrom, None)
+    if chr_ranges is None:
+      return False
+    # The intervaltree package does the inverse check, i.e. whether ranges
+    # contained in it overlap with the query region. So it returns nothing
+    # when start == end. We by convention want anything overlapping the start
+    # position to still indicate enveloping in this case.
+    if start == end:
+      return chr_ranges.overlaps(start)
+    else:
+      overlap_set = chr_ranges.search(begin=start, end=end)
+      return any(ov.begin <= start and ov.end >= end for ov in overlap_set)
+
 
 def make_position(chrom, position, reverse_strand=False):
   """Returns a nucleus.genomics.v1.Position.
