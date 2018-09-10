@@ -433,4 +433,17 @@ TEST(VcfReaderFromStringTest, MatchesGolden) {
   EXPECT_THAT(parsed, Pointwise(EqualsProto(), golden));
 }
 
+TEST(VcfReaderMultipleNamesTest, SplitsOnSemicolon) {
+  std::unique_ptr<VcfReader> reader =
+      std::move(VcfReader::FromFile(
+          GetTestData(kVcfPhasesetFilename),
+          nucleus::genomics::v1::VcfReaderOptions()).ValueOrDie());
+  Variant v;
+  TF_CHECK_OK(reader->FromString(
+      "Chr1\t21\tDogSNP1;CatSNP2\tA\tT\t0\t.\t.\tGT:GQ\t0/1:.\t0/1:42", &v));
+  ASSERT_EQ(2, v.names_size());
+  EXPECT_EQ("DogSNP1", v.names(0));
+  EXPECT_EQ("CatSNP2", v.names(1));
+}
+
 }  // namespace nucleus

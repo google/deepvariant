@@ -42,6 +42,7 @@
 #include "google/protobuf/repeated_field.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
@@ -619,9 +620,12 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
   variant_message->set_end(v->pos + v->rlen);
 
   // Parse the ID field of the Variant.
+  // Don't add the missing "." marker to the id field.
   if (v->d.id && strcmp(v->d.id, ".") != 0) {
-    // Don't add the missing "." marker to the id field.
-    variant_message->add_names(v->d.id);
+    std::vector<string> names = absl::StrSplit(v->d.id, ';');
+    for (string &n : names) {
+      variant_message->add_names(n);
+    }
   }
 
   // Parse out the ref and alt alleles.
