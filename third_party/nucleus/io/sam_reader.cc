@@ -48,6 +48,7 @@
 #include "htslib/hts_endian.h"
 #include "htslib/sam.h"
 #include "third_party/nucleus/io/hts_path.h"
+#include "third_party/nucleus/io/sam_utils.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -77,20 +78,11 @@ using tensorflow::WARNING;
 using google::protobuf::RepeatedField;
 
 namespace {
-constexpr char kSamHeaderTag[] = "@HD";
-constexpr char kSamReferenceSequenceTag[] = "@SQ";
-constexpr char kSamReadGroupTag[] = "@RG";
-constexpr char kSamProgramTag[] = "@PG";
-constexpr char kSamCommentTag[] = "@CO";
-
 bool FileTypeIsIndexable(htsFormat format) {
   return format.format == bam || format.format == cram;
 }
 
 void AddHeaderLineToHeader(const string& line, SamHeader& header) {
-  static constexpr char kVersionTag[] = "VN:";
-  static constexpr char kSortingOrderTag[] = "SO:";
-  static constexpr char kAlignmentGroupingTag[] = "GO:";
   int tagLen = 3;
 
   static const std::map<string, nucleus::genomics::v1::SamHeader_SortingOrder>
@@ -110,9 +102,9 @@ void AddHeaderLineToHeader(const string& line, SamHeader& header) {
     // redacted
     const string tag = string(token.substr(0, tagLen));
     const string value = string(token.substr(tagLen));
-    if (tag == kVersionTag) {
+    if (tag == kVNTag) {
       header.set_format_version(value);
-    } else if (tag == kSortingOrderTag) {
+    } else if (tag == kSOTag) {
       const auto& it = sorting_order_map.find(value);
       if (it == sorting_order_map.end()) {
         LOG(WARNING) << "Unknown sorting order, defaulting to unknown: "
@@ -121,7 +113,7 @@ void AddHeaderLineToHeader(const string& line, SamHeader& header) {
       } else {
         header.set_sorting_order(it->second);
       }
-    } else if (tag == kAlignmentGroupingTag) {
+    } else if (tag == kGOTag) {
       const auto& it = alignment_grouping_map.find(value);
       if (it == alignment_grouping_map.end()) {
         LOG(WARNING) << "Unknown alignment grouping, defaulting to none: "
@@ -147,33 +139,33 @@ void AddReadGroupToHeader(const string& line,
     // redacted
     const string tag = string(token.substr(0, tagLen));
     const string value = string(token.substr(tagLen));
-    if (tag == "ID:") {
+    if (tag == kIDTag) {
       readgroup->set_name(value);
-    } else if (tag == "CN:") {
+    } else if (tag == kCNTag) {
       readgroup->set_sequencing_center(value);
-    } else if (tag == "DS:") {
+    } else if (tag == kDSTag) {
       readgroup->set_description(value);
-    } else if (tag == "DT:") {
+    } else if (tag == kDTTag) {
       readgroup->set_date(value);
-    } else if (tag == "FO:") {
+    } else if (tag == kFOTag) {
       readgroup->set_flow_order(value);
-    } else if (tag == "KS:") {
+    } else if (tag == kKSTag) {
       readgroup->set_key_sequence(value);
-    } else if (tag == "LB:") {
+    } else if (tag == kLBTag) {
       readgroup->set_library_id(value);
-    } else if (tag == "PG:") {
+    } else if (tag == kPGTag) {
       readgroup->add_program_ids(value);
-    } else if (tag == "PI:") {
+    } else if (tag == kPITag) {
       int size;
       CHECK(absl::SimpleAtoi(value, &size));
       readgroup->set_predicted_insert_size(size);
-    } else if (tag == "PL:") {
+    } else if (tag == kPLTag) {
       readgroup->set_platform(value);
-    } else if (tag == "PM:") {
+    } else if (tag == kPMTag) {
       readgroup->set_platform_model(value);
-    } else if (tag == "PU:") {
+    } else if (tag == kPUTag) {
       readgroup->set_platform_unit(value);
-    } else if (tag == "SM:") {
+    } else if (tag == kSMTag) {
       readgroup->set_sample_id(value);
     } else {
       LOG(WARNING) << "Unknown tag " << tag
@@ -190,17 +182,17 @@ void AddProgramToHeader(const string& line,
     // redacted
     const string tag = string(token.substr(0, tagLen));
     const string value = string(token.substr(tagLen));
-    if (tag == "ID:") {
+    if (tag == kIDTag) {
       program->set_id(value);
-    } else if (tag == "PN:") {
+    } else if (tag == kPNTag) {
       program->set_name(value);
-    } else if (tag == "CL:") {
+    } else if (tag == kCLTag) {
       program->set_command_line(value);
-    } else if (tag == "PP:") {
+    } else if (tag == kPPTag) {
       program->set_prev_program_id(value);
-    } else if (tag == "DS:") {
+    } else if (tag == kDSTag) {
       program->set_description(value);
-    } else if (tag == "VN:") {
+    } else if (tag == kVNTag) {
       program->set_version(value);
     }
   }
@@ -213,31 +205,6 @@ void AddProgramToHeader(const string& line,
 // Reader for SAM/BAM/CRAM etc formats containing NGS reads supported by htslib.
 //
 // -----------------------------------------------------------------------------
-
-// Array mapping htslib BAM constants (in comment) to proto CigarUnit enum
-// values.
-const CigarUnit_Operation kHtslibCigarToProto[] = {
-// #define BAM_CMATCH      0
-  CigarUnit::ALIGNMENT_MATCH,
-// #define BAM_CINS        1
-  CigarUnit::INSERT,
-// #define BAM_CDEL        2
-  CigarUnit::DELETE,
-// #define BAM_CREF_SKIP   3
-  CigarUnit::SKIP,
-// #define BAM_CSOFT_CLIP  4
-  CigarUnit::CLIP_SOFT,
-// #define BAM_CHARD_CLIP  5
-  CigarUnit::CLIP_HARD,
-// #define BAM_CPAD        6
-  CigarUnit::PAD,
-// #define BAM_CEQUAL      7
-  CigarUnit::SEQUENCE_MATCH,
-// #define BAM_CDIFF       8
-  CigarUnit::SEQUENCE_MISMATCH,
-// #define BAM_CBACK       9
-  CigarUnit::OPERATION_UNSPECIFIED,
-};
 
 // Gets the size in bytes for a SAM/BAM aux tag based on their declared type.
 //

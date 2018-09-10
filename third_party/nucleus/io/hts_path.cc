@@ -61,6 +61,11 @@ htsFile *hts_open_x(const char *path, const char *mode) {
   return hts_open(new_path.c_str(), mode);
 }
 
+htsFile *hts_open_format_x(const char *fn, const char *mode, htsFormat *fmt) {
+  string new_path = fix_path(fn);
+  return hts_open_format(new_path.c_str(), mode, fmt);
+}
+
 faidx_t *fai_load3_x(const char *fa, const char *fai, const char *gzi,
                      int flags) {
   string nfa = fix_path(fa);

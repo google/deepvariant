@@ -30,24 +30,41 @@
  *
  */
 
-#ifndef THIRD_PARTY_NUCLEUS_IO_HTS_PATH_H_
-#define THIRD_PARTY_NUCLEUS_IO_HTS_PATH_H_
+#include "third_party/nucleus/io/sam_utils.h"
 
-#include "htslib/faidx.h"
-#include "htslib/hts.h"
+#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock-more-matchers.h>
 
-// This is a wrapper for hts_open that lets us select a default
-// protocol, like "file:" or just plain "".
+#include "tensorflow/core/platform/test.h"
+#include "htslib/sam.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
 
 namespace nucleus {
 
-htsFile *hts_open_x(const char *fn, const char *mode);
+using genomics::v1::CigarUnit;
+using genomics::v1::CigarUnit_Operation_Operation_MAX;
+using genomics::v1::CigarUnit_Operation_Operation_MIN;
 
-htsFile *hts_open_format_x(const char *fn, const char *mode, htsFormat *fmt);
+TEST(SamUtilsTest, Conversion) {
+  for (int i = CigarUnit_Operation_Operation_MIN;
+       i <= CigarUnit_Operation_Operation_MAX; ++i) {
+    CigarUnit::Operation op = static_cast<CigarUnit::Operation>(i);
+    EXPECT_EQ(op, kHtslibCigarToProto[kProtoToHtslibCigar[i]]);
+  }
+}
 
-faidx_t *fai_load3_x(const char *fa_path, const char *fai_path,
-                     const char *gzi_path, int flags);
+TEST(SamUtilsTest, ProtoConversion) {
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::ALIGNMENT_MATCH], BAM_CMATCH);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::INSERT], BAM_CINS);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::DELETE], BAM_CDEL);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::SKIP], BAM_CREF_SKIP);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::CLIP_SOFT], BAM_CSOFT_CLIP);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::CLIP_HARD], BAM_CHARD_CLIP);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::PAD], BAM_CPAD);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::SEQUENCE_MATCH], BAM_CEQUAL);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::SEQUENCE_MISMATCH], BAM_CDIFF);
+  EXPECT_EQ(kProtoToHtslibCigar[CigarUnit::OPERATION_UNSPECIFIED], BAM_CBACK);
+}
 
 }  // namespace nucleus
-
-#endif  // THIRD_PARTY_NUCLEUS_IO_HTS_PATH_H_
