@@ -52,9 +52,9 @@ namespace nucleus {
 // https://en.wikipedia.org/wiki/FASTA_format
 //
 //
-// An InMemoryRefReader provides the same API as GenomeReferenceFAI but doesn't
-// fetch its data from an on-disk FASTA file but rather fetches the bases from
-// an in-memory cache containing ReferenceSequence protos.
+// An InMemoryFastaReader provides the same API as GenomeReferenceFAI but
+// doesn't fetch its data from an on-disk FASTA file but rather fetches the
+// bases from an in-memory cache containing ReferenceSequence protos.
 //
 // In particular the GetBases(Range(chrom, start, end)) operation fetches bases
 // from the tuple where chrom == chromosome, and then from the bases where the

@@ -124,7 +124,7 @@ StatusOr<string> InMemoryFastaReader::GetBases(const Range& range) const {
       range.end() > seq.region().end()) {
     return tensorflow::errors::InvalidArgument(
         "Cannot query range=", range.ShortDebugString(),
-        " as this InMemoryRefReader only has bases in the interval=",
+        " as this InMemoryFastaReader only has bases in the interval=",
         seq.region().ShortDebugString());
   }
   const int64 pos = range.start() - seq.region().start();
