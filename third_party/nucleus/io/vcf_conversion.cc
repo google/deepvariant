@@ -74,9 +74,17 @@ std::vector<std::vector<ValueType>> ReadFormatValues(const bcf_hdr_t* h,
   int n_values, n_dst = 0;
   ValueType* dst = nullptr;
   n_values = VT::GetFormatValues(h, v, tag, &dst, &n_dst);
-  // redacted
-  CHECK_GE(n_values, 0);
-  CHECK(dst != nullptr);
+  if (dst == nullptr) {
+    LOG(WARNING) << "Error reading format values (dst == nullptr) for tag "
+                 << tag;
+    return std::vector<std::vector<ValueType>>();
+  }
+  if (n_values < 0) {
+    LOG(WARNING) << "Error reading format values (n_values < 0) for tag "
+                 << tag;
+    free(dst);
+    return std::vector<std::vector<ValueType>>();
+  }
 
   int n_values_per_sample = n_values / v->n_sample;
   std::vector<std::vector<ValueType>> values(v->n_sample);
@@ -257,9 +265,15 @@ std::vector<ValueType> ReadInfoValue(const bcf_hdr_t* h,
   int n_values, n_dst = 0;
   ValueType* dst = nullptr;
   n_values = VT::GetInfoValues(h, v, tag, &dst, &n_dst);
-  // redacted
-  CHECK_GE(n_values, 0);
-  CHECK(dst != nullptr);
+  if (dst == nullptr) {
+    LOG(WARNING) << "Error reading info (dst == nullptr) value " << tag;
+    return {};
+  }
+  if (n_values < 0) {
+    free(dst);
+    LOG(WARNING) << "Error reading info (n_values < 0) value " << tag;
+    return {};
+  }
 
   std::vector<ValueType> value(dst, dst + n_values);
 
@@ -605,7 +619,6 @@ VcfRecordConverter::VcfRecordConverter(
 tensorflow::Status VcfRecordConverter::ConvertToPb(
     const bcf_hdr_t* h, bcf1_t* v,
     nucleus::genomics::v1::Variant* variant_message) const {
-
   CHECK(h != nullptr) << "BCF header cannot be null";
   CHECK(v != nullptr) << "bcf1_t record cannot be null";
   CHECK(variant_message != nullptr) << "variant_message record cannot be null";
@@ -724,7 +737,6 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
 tensorflow::Status VcfRecordConverter::ConvertFromPb(
     const nucleus::genomics::v1::Variant& variant_message, const bcf_hdr_t& h,
     bcf1_t* v) const {
-
   CHECK(v != nullptr) << "bcf1_t record cannot be null";
 
   v->rid = bcf_hdr_name2id(&h, variant_message.reference_name().c_str());
