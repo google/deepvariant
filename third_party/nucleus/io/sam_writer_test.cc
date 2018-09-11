@@ -105,6 +105,8 @@ class SamWriterTest : public ::testing::Test {
 // Make sure writing @SQ, @RG, @PG, and @CO works.
 TEST_F(SamWriterTest, WriteHeaderLines) {
   const char* kExpectedSamHeaders[] = {
+      // @HD Header line.
+      "@HD\tVN:1.3\tSO:coordinate\tGO:query",
       // First @SQ line.
       "@SQ\tSN:chr1\tLN:248956422",
       // Second @SQ line.
@@ -198,14 +200,15 @@ TEST_F(SamWriterTest, WriteOneBodyLine) {
   TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
                                            actual_filename_, &contents));
   std::vector<absl::string_view> lines = absl::StrSplit(contents, '\n');
-  ASSERT_EQ(3u, lines.size());
-  EXPECT_EQ(kExpectedSamHeader, lines.at(0));
-  std::vector<absl::string_view> fields = absl::StrSplit(lines.at(1), '\t');
+  ASSERT_EQ(4u, lines.size());
+  EXPECT_EQ("@HD\tSO:unknown\tGO:none", lines.at(0));
+  EXPECT_EQ(kExpectedSamHeader, lines.at(1));
+  std::vector<absl::string_view> fields = absl::StrSplit(lines.at(2), '\t');
   EXPECT_EQ(kExpectedSamContent.size(), fields.size());
   for (size_t i = 0; i < fields.size(); ++i) {
     EXPECT_EQ(kExpectedSamContent[i], fields[i]);
   }
-  EXPECT_TRUE(lines.at(2).empty());
+  EXPECT_TRUE(lines.at(3).empty());
 }
 
 // Test both SAM and BAM formats.

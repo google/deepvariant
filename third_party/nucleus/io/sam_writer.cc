@@ -55,6 +55,7 @@
 namespace nucleus {
 
 namespace tf = tensorflow;
+using genomics::v1::SamHeader;
 
 namespace {
 
@@ -65,6 +66,44 @@ void AppendTag(const char* tag, absl::string_view value, string* text_stream) {
     return;
   }
   absl::StrAppend(text_stream, "\t", tag, value);
+}
+
+// Adds @HD lines to |text_stream| based on information in |sam_header|.
+void AppendHeaderLine(const SamHeader& sam_header, string* text_stream) {
+  absl::StrAppend(text_stream, kSamHeaderTag);
+  AppendTag(kVNTag, sam_header.format_version(), text_stream);
+  switch (sam_header.sorting_order()) {
+    case SamHeader::UNKNOWN:
+      AppendTag(kSOTag, "unknown", text_stream);
+      break;
+    case SamHeader::UNSORTED:
+      AppendTag(kSOTag, "unsorted", text_stream);
+      break;
+    case SamHeader::QUERYNAME:
+      AppendTag(kSOTag, "queryname", text_stream);
+      break;
+    case SamHeader::COORDINATE:
+      AppendTag(kSOTag, "coordinate", text_stream);
+      break;
+    default:
+      LOG(WARNING) << "unrecognized sorting order";
+      break;
+  }
+  switch (sam_header.alignment_grouping()) {
+    case SamHeader::NONE:
+      AppendTag(kGOTag, "none", text_stream);
+      break;
+    case SamHeader::QUERY:
+      AppendTag(kGOTag, "query", text_stream);
+      break;
+    case SamHeader::REFERENCE:
+      AppendTag(kGOTag, "reference", text_stream);
+      break;
+    default:
+      LOG(WARNING) << "unrecognized alignment group";
+      break;
+  }
+  absl::StrAppend(text_stream, "\n");
 }
 
 // Adds @RG lines to |text_stream| based on information in |sam_header|.
@@ -141,6 +180,7 @@ tf::Status PopulateNativeHeader(
 
   // Consider avoiding the intermediate copy.
   string text;
+  AppendHeaderLine(sam_header, &text);
   AppendReadGroups(sam_header, &text);
   AppendPrograms(sam_header, &text);
   AppendComments(sam_header, &text);
