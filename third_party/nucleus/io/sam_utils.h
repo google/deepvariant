@@ -57,25 +57,27 @@ extern const char kSamReferenceSequenceTag[];
 //
 // These constants are named after k(two-letter-code)Tag, where the
 // two-letter-code together with a colon is the contents of the tag strings.
-extern const char kIDTag[];
+extern const char kCLTag[];
 extern const char kCNTag[];
 extern const char kDSTag[];
 extern const char kDTTag[];
 extern const char kFOTag[];
+extern const char kGOTag[];
+extern const char kIDTag[];
 extern const char kKSTag[];
 extern const char kLBTag[];
+extern const char kLNTag[];
 extern const char kPGTag[];
 extern const char kPITag[];
 extern const char kPLTag[];
 extern const char kPMTag[];
+extern const char kPNTag[];
+extern const char kPPTag[];
 extern const char kPUTag[];
 extern const char kSMTag[];
-extern const char kPNTag[];
-extern const char kCLTag[];
-extern const char kPPTag[];
-extern const char kVNTag[];
+extern const char kSNTag[];
 extern const char kSOTag[];
-extern const char kGOTag[];
+extern const char kVNTag[];
 
 // Array mapping CigarUnit_Operation enum to htslib BAM constants.
 extern const int kProtoToHtslibCigar[];

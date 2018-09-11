@@ -211,33 +211,42 @@ TEST_F(SamWriterTest, WriteOneBodyLine) {
   EXPECT_TRUE(lines.at(3).empty());
 }
 
-// Test both SAM and BAM formats.
-// redacted
+// Test SAM, BAM, CRAM formats.
 class SamBamWriterTest : public SamWriterTest,
                          public ::testing::WithParamInterface<string> {};
 
 INSTANTIATE_TEST_CASE_P(/* no prefix */, SamBamWriterTest,
-                        ::testing::Values("test.sam", "test.bam"));
+                        ::testing::Values("test_cram.cram", "test.sam",
+                                          "test.bam"));
 
 TEST_P(SamBamWriterTest, WriteAndThenRead) {
   auto options = SamReaderOptions();
   options.set_aux_field_handling(SamReaderOptions::SKIP_AUX_FIELDS);
-  auto reader = std::move(
-      SamReader::FromFile(GetTestData(GetParam()), options).ValueOrDie());
+  string ref_path;
+  if (GetParam() == "test_cram.cram") {
+    ref_path = GetTestData("test.fasta");
+  }
+  // Read from the original file.
+  auto reader =
+      std::move(SamReader::FromFile(GetTestData(GetParam()), ref_path, options)
+                    .ValueOrDie());
   std::vector<Read> reads = as_vector(reader->Iterate());
   ASSERT_THAT(reader->Close(), IsOK());
 
   const string actual_filename = MakeTempFile(GetParam());
-  std::unique_ptr<SamWriter> writer = std::move(
-      SamWriter::ToFile(actual_filename, reader->Header()).ValueOrDie());
+  std::unique_ptr<SamWriter> writer =
+      std::move(SamWriter::ToFile(actual_filename, ref_path, reader->Header())
+                    .ValueOrDie());
   for (const nucleus::genomics::v1::Read& r : reads) {
     EXPECT_THAT(writer->Write(r), IsOK());
   }
   ASSERT_THAT(writer->Close(), IsOK());
 
-  // Now read from the written file. The reads should match that of |test.sam|.
+  // Now read from the written file. The reads should match that of the original
+  // file.
   auto reader2 = std::move(
-      SamReader::FromFile(actual_filename, SamReaderOptions()).ValueOrDie());
+      SamReader::FromFile(actual_filename, ref_path, SamReaderOptions())
+          .ValueOrDie());
   std::vector<Read> reads2 = as_vector(reader2->Iterate());
   ASSERT_THAT(reader2->Close(), IsOK());
 

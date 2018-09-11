@@ -42,6 +42,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "htslib/cram.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/io/sam_utils.h"
 #include "third_party/nucleus/platform/types.h"
@@ -106,6 +107,19 @@ void AppendHeaderLine(const SamHeader& sam_header, string* text_stream) {
   absl::StrAppend(text_stream, "\n");
 }
 
+// Adds @SQ lines to |text_stream| based on information in |sam_header|.
+// Note that this is only required to be present for CRAM.  htslib's SAM/BAM
+// header will write out @SQ lines automatically based on bam_hdr_t's
+// target_name and target_len.
+void AppendReferenceSequence(const SamHeader& sam_header, string* text_stream) {
+  for (const auto& contig : sam_header.contigs()) {
+    absl::StrAppend(text_stream, kSamReferenceSequenceTag);
+    AppendTag(kSNTag, contig.name(), text_stream);
+    AppendTag(kLNTag, std::to_string(contig.n_bases()), text_stream);
+    absl::StrAppend(text_stream, "\n");
+  }
+}
+
 // Adds @RG lines to |text_stream| based on information in |sam_header|.
 void AppendReadGroups(const nucleus::genomics::v1::SamHeader& sam_header,
                       string* text_stream) {
@@ -160,7 +174,8 @@ void AppendComments(const nucleus::genomics::v1::SamHeader& sam_header,
 
 // Populates the fields in |h| based on information in |sam_header| proto.
 tf::Status PopulateNativeHeader(
-    const nucleus::genomics::v1::SamHeader& sam_header, bam_hdr_t* h) {
+    const nucleus::genomics::v1::SamHeader& sam_header, bool is_cram,
+    bam_hdr_t* h) {
   DCHECK_NE(nullptr, h);
   const uint32_t contig_size = sam_header.contigs().size();
   h->n_targets = contig_size;
@@ -181,6 +196,9 @@ tf::Status PopulateNativeHeader(
   // Consider avoiding the intermediate copy.
   string text;
   AppendHeaderLine(sam_header, &text);
+  if (is_cram) {
+    AppendReferenceSequence(sam_header, &text);
+  }
   AppendReadGroups(sam_header, &text);
   AppendPrograms(sam_header, &text);
   AppendComments(sam_header, &text);
@@ -389,6 +407,12 @@ class SamWriter::NativeBody {
 StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
     const string& sam_path,
     const nucleus::genomics::v1::SamHeader& sam_header) {
+  return ToFile(sam_path, string(), sam_header);
+}
+
+StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
+    const string& sam_path, const string& ref_path,
+    const nucleus::genomics::v1::SamHeader& sam_header) {
   htsFormat fmt;
   fmt.specific = nullptr;
 
@@ -399,9 +423,18 @@ StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
   if (fp == nullptr) {
     return tf::errors::Unknown("Could not open file for writing: ", sam_path);
   }
+  // Set user provided reference FASTA to decode CRAM.
+  if (fp->format.format == cram && !ref_path.empty()) {
+    fp->fn_aux = (char*)malloc((ref_path.size() + 1) * sizeof(char));
+    memcpy(fp->fn_aux, ref_path.data(), ref_path.size());
+    fp->fn_aux[ref_path.size()] = '\0';
+    LOG(INFO) << "Setting CRAM reference path to '" << fp->fn_aux << "'";
+  }
+
   auto native_file = absl::make_unique<NativeFile>(fp);
   auto native_header = absl::make_unique<NativeHeader>(bam_hdr_init());
-  TF_RETURN_IF_ERROR(PopulateNativeHeader(sam_header, native_header->value()));
+  TF_RETURN_IF_ERROR(PopulateNativeHeader(sam_header, fp->format.format == cram,
+                                          native_header->value()));
 
   if (sam_hdr_write(fp, native_header->value()) < 0) {
     return tf::errors::Unknown("Writing header to file failed");

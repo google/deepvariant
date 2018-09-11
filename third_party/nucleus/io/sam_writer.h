@@ -44,18 +44,18 @@
 
 namespace nucleus {
 
-// A SAM/BAM writer, allowing us to write SAM files.
+// A SAM/BAM/CRAM writer.
 //
-// SAM/BAM files store information about a biological sequence and its
+// SAM/BAM/CRAM files store information about a biological sequence and its
 // corresponding quality scores.
 //
 // https://samtools.github.io/hts-specs/SAMv1.pdf
+// https://samtools.github.io/hts-specs/CRAMv3.pdf
 // This class converts nucleus.genomics.v1.SamHeader and
-// nucleus.genomics.v1.Read to a SAM/BAM file based on the file path passed in.
+// nucleus.genomics.v1.Read to a file based on the file path passed in.
 //
-// This uses the htslib C API for writing NGS reads (BAM, SAM). For details
+// This uses the htslib C API for writing NGS reads (BAM, SAM, SAM). For details
 // of the API, see:
-//
 // https://github.com/samtools/htslib/tree/develop/htslib
 //
 // redacted
@@ -68,13 +68,21 @@ class SamWriter {
       const string& sam_path,
       const nucleus::genomics::v1::SamHeader& sam_header);
 
+  // Creates a new SamWriter writing to the file at |sam_path|, which is
+  // opened and created if needed. Additionally uses the reference FASTA file
+  // at |ref_path| if |sam_path| has .cram extension. Returns either a
+  // unique_ptr to the SamWriter or a Status indicating why an error occurred.
+  static StatusOr<std::unique_ptr<SamWriter>> ToFile(
+      const string& sam_path, const string& ref_path,
+      const nucleus::genomics::v1::SamHeader& sam_header);
+
   ~SamWriter();
 
   // Disable copy and assignment operations.
   SamWriter(const SamWriter& other) = delete;
   SamWriter& operator=(const SamWriter&) = delete;
 
-  // Write a Read to the SAM file.
+  // Write a Read to the  file.
   // Returns Status::OK() if the write was successful; otherwise the status
   // provides information about what error occurred.
   tensorflow::Status Write(const nucleus::genomics::v1::Read& read);
@@ -96,10 +104,10 @@ class SamWriter {
   SamWriter(std::unique_ptr<NativeFile> file,
             std::unique_ptr<NativeHeader> header);
 
-  // A pointer to the htslib file used to access the SAM/BAM data.
+  // A pointer to the htslib file used to access the SAM/BAM/CRAM data.
   std::unique_ptr<NativeFile> native_file_;
 
-  // A htslib header data structure obtained by parsing the header of this BAM.
+  // A htslib header data structure obtained by parsing the header of this file.
   std::unique_ptr<NativeHeader> native_header_;
 };
 

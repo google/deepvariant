@@ -41,25 +41,27 @@ const char kSamCommentTag[] = "@CO";
 const char kSamHeaderTag[] = "@HD";
 const char kSamReferenceSequenceTag[] = "@SQ";
 
-const char kIDTag[] = "ID:";
+const char kCLTag[] = "CL:";
 const char kCNTag[] = "CN:";
 const char kDSTag[] = "DS:";
 const char kDTTag[] = "DT:";
 const char kFOTag[] = "FO:";
+const char kGOTag[] = "GO:";
+const char kIDTag[] = "ID:";
 const char kKSTag[] = "KS:";
 const char kLBTag[] = "LB:";
+const char kLNTag[] = "LN:";
 const char kPGTag[] = "PG:";
 const char kPITag[] = "PI:";
 const char kPLTag[] = "PL:";
 const char kPMTag[] = "PM:";
+const char kPNTag[] = "PN:";
+const char kPPTag[] = "PP:";
 const char kPUTag[] = "PU:";
 const char kSMTag[] = "SM:";
-const char kPNTag[] = "PN:";
-const char kCLTag[] = "CL:";
-const char kPPTag[] = "PP:";
-const char kVNTag[] = "VN:";
+const char kSNTag[] = "SN:";
 const char kSOTag[] = "SO:";
-const char kGOTag[] = "GO:";
+const char kVNTag[] = "VN:";
 
 const int kProtoToHtslibCigar[] = {
     // genomics::v1::CigarUnit::OPERATION_UNSPECIFIED,
