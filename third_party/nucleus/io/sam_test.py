@@ -311,9 +311,31 @@ class ReadWriterTests(parameterized.TestCase):
                          io_utils.read_tfrecords(outfile,
                                                  proto=reads_pb2.Read)))
 
-  def test_make_read_writer_bam_fails_with_not_implemented_error(self):
-    with self.assertRaises(NotImplementedError):
-      sam.SamWriter('test.bam', header=self.header)
+  @parameterized.parameters('test.bam', 'test.sam')
+  def test_roundtrip_writer(self, filename):
+    output_path = test_utils.test_tmpfile(filename)
+    original_reader = sam.SamReader(test_utils.genomics_core_testdata(filename))
+    original_records = list(original_reader.iterate())
+    with sam.SamWriter(output_path, header=original_reader.header) as writer:
+      for record in original_records:
+        writer.write(record)
+    with sam.SamReader(output_path) as new_reader:
+      self.assertEqual(original_records, list(new_reader.iterate()))
+
+  # redacted
+  def test_roundtrip_cram_writer(self):
+    filename = 'test_cram.cram'
+    output_path = test_utils.test_tmpfile(filename)
+    ref_path = test_utils.genomics_core_testdata('test.fasta')
+    original_reader = sam.SamReader(test_utils.genomics_core_testdata(filename))
+    original_records = list(original_reader.iterate())
+    with sam.SamWriter(
+        output_path, header=original_reader.header,
+        ref_path=ref_path) as writer:
+      for record in original_records:
+        writer.write(record)
+    with sam.SamReader(output_path) as new_reader:
+      self.assertEqual(original_records, list(new_reader.iterate()))
 
 
 if __name__ == '__main__':

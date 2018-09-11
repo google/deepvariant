@@ -112,6 +112,21 @@ py_test(
 )
 
 py_clif_cc(
+    name = "sam_writer",
+    srcs = ["sam_writer.clif"],
+    py_deps = [
+        "//third_party/nucleus/io:clif_postproc",
+    ],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:reads_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:sam_writer",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
+py_clif_cc(
     name = "reference",
     srcs = ["reference.clif"],
     pyclif_deps = [

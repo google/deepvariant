@@ -120,6 +120,7 @@ from __future__ import print_function
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import sam_reader
+from third_party.nucleus.io.python import sam_writer
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
@@ -247,7 +248,7 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
   files or TFRecords files, based on the output filename's extensions.
   """
 
-  def __init__(self, output_path, header):
+  def __init__(self, output_path, header, ref_path=None):
     """Initializer for NativeSamWriter.
 
     Args:
@@ -255,10 +256,13 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
       header: A nucleus.SamHeader proto.  The header is used both for writing
         the header, and to control the sorting applied to the rest of the file.
     """
-    raise NotImplementedError
+    super(NativeSamWriter, self).__init__()
+    self._writer = sam_writer.SamWriter.to_file(
+        output_path,
+        ref_path.encode('utf8') if ref_path is not None else '', header)
 
   def write(self, proto):
-    raise NotImplementedError
+    self._writer.write(proto)
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
@@ -267,8 +271,8 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
 class SamWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Variant protos to SAM or TFRecord files."""
 
-  def _native_writer(self, output_path, header):
-    return NativeSamWriter(output_path, header)
+  def _native_writer(self, output_path, **kwargs):
+    return NativeSamWriter(output_path, **kwargs)
 
 
 class InMemorySamReader(object):
