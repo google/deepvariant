@@ -58,7 +58,6 @@ namespace nucleus {
 // of the API, see:
 // https://github.com/samtools/htslib/tree/develop/htslib
 //
-// redacted
 class SamWriter {
  public:
   // Creates a new SamWriter writing to the file at |sam_path|, which is
@@ -69,11 +68,13 @@ class SamWriter {
       const nucleus::genomics::v1::SamHeader& sam_header);
 
   // Creates a new SamWriter writing to the file at |sam_path|, which is
-  // opened and created if needed. Additionally uses the reference FASTA file
-  // at |ref_path| if |sam_path| has .cram extension. Returns either a
-  // unique_ptr to the SamWriter or a Status indicating why an error occurred.
+  // opened and created if needed. |ref_path|, which points to an external
+  // reference FASTA file, cannot be empty for CRAM files. If |embed_ref|, the
+  // CRAM output file will embed the references in the output file. Returns
+  // either a unique_ptr to the SamWriter or a Status indicating why an error
+  // occurred.
   static StatusOr<std::unique_ptr<SamWriter>> ToFile(
-      const string& sam_path, const string& ref_path,
+      const string& sam_path, const string& ref_path, bool embed_ref,
       const nucleus::genomics::v1::SamHeader& sam_header);
 
   ~SamWriter();

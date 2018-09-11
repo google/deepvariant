@@ -49,7 +49,7 @@ dynamically decode the underlying records depending the file extension, with
 also search for an appropriate index file to use to enable calls to the
 `query()` method.
 
-API for writing:
+API for writing SAM/BAM:
 
 ```python
 from third_party.nucleus.io import sam
@@ -57,7 +57,18 @@ from third_party.nucleus.io import sam
 # reads is an iterable of nucleus.genomics.v1.Read protocol buffers.
 reads = ...
 
-with sam.SamWriter(output_path) as writer:
+with sam.SamWriter(output_path, header=header) as writer:
+  for read in reads:
+    writer.write(read)
+```
+
+API for writing CRAM:
+
+```python
+# ref_path is required for writing CRAM files. If embed_ref, the output CRAM
+# file will embed reference sequences.
+with sam.SamWriter(output_path, header=header, ref_path=ref_path,
+                   embed_ref=embed_ref) as writer:
   for read in reads:
     writer.write(read)
 ```
@@ -248,18 +259,22 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
   files or TFRecords files, based on the output filename's extensions.
   """
 
-  def __init__(self, output_path, header, ref_path=None):
+  def __init__(self, output_path, header, ref_path=None, embed_ref=False):
     """Initializer for NativeSamWriter.
 
     Args:
       output_path: str. A path where we'll write our SAM/BAM/CRAM file.
+      ref_path: str. Path to the reference file. Required for CRAM file.
+      embed_ref: bool. Whether to embed the reference sequences in CRAM file.
+        Default is False.
       header: A nucleus.SamHeader proto.  The header is used both for writing
         the header, and to control the sorting applied to the rest of the file.
     """
     super(NativeSamWriter, self).__init__()
     self._writer = sam_writer.SamWriter.to_file(
         output_path,
-        ref_path.encode('utf8') if ref_path is not None else '', header)
+        ref_path.encode('utf8') if ref_path is not None else '', embed_ref,
+        header)
 
   def write(self, proto):
     self._writer.write(proto)

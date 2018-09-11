@@ -216,26 +216,67 @@ class SamBamWriterTest : public SamWriterTest,
                          public ::testing::WithParamInterface<string> {};
 
 INSTANTIATE_TEST_CASE_P(/* no prefix */, SamBamWriterTest,
-                        ::testing::Values("test_cram.cram", "test.sam",
-                                          "test.bam"));
+                        ::testing::Values("test.sam", "test.bam"));
 
 TEST_P(SamBamWriterTest, WriteAndThenRead) {
   auto options = SamReaderOptions();
   options.set_aux_field_handling(SamReaderOptions::SKIP_AUX_FIELDS);
-  string ref_path;
-  if (GetParam() == "test_cram.cram") {
-    ref_path = GetTestData("test.fasta");
-  }
   // Read from the original file.
-  auto reader =
-      std::move(SamReader::FromFile(GetTestData(GetParam()), ref_path, options)
-                    .ValueOrDie());
+  auto reader = std::move(
+      SamReader::FromFile(GetTestData(GetParam()), options).ValueOrDie());
   std::vector<Read> reads = as_vector(reader->Iterate());
   ASSERT_THAT(reader->Close(), IsOK());
 
   const string actual_filename = MakeTempFile(GetParam());
+  std::unique_ptr<SamWriter> writer = std::move(
+      SamWriter::ToFile(actual_filename, reader->Header()).ValueOrDie());
+  for (const nucleus::genomics::v1::Read& r : reads) {
+    EXPECT_THAT(writer->Write(r), IsOK());
+  }
+  ASSERT_THAT(writer->Close(), IsOK());
+
+  // Now read from the written file. The reads should match that of the original
+  // file.
+  auto reader2 = std::move(
+      SamReader::FromFile(actual_filename, SamReaderOptions()).ValueOrDie());
+  std::vector<Read> reads2 = as_vector(reader2->Iterate());
+  ASSERT_THAT(reader2->Close(), IsOK());
+
+  ASSERT_EQ(reads.size(), reads2.size());
+  for (size_t i = 0; i < reads.size(); ++i) {
+    EXPECT_THAT(reads[i], EqualsProto(reads2[i]));
+  }
+  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(actual_filename));
+}
+
+// Test CRAM formats.
+class CramWriterTest : public SamWriterTest,
+                       public ::testing::WithParamInterface<bool> {};
+
+INSTANTIATE_TEST_CASE_P(/* no prefix */, CramWriterTest, ::testing::Bool());
+
+TEST_P(CramWriterTest, WriteAndThenRead) {
+  auto options = SamReaderOptions();
+  options.set_aux_field_handling(SamReaderOptions::SKIP_AUX_FIELDS);
+  // Whether to write out embedded references in the CRAM file.
+  const bool embed_ref = GetParam();
+  string writer_ref_path = GetTestData("test.fasta");
+  string reader_ref_path = embed_ref ? "" : writer_ref_path;
+  string filename = embed_ref ? "test_cram.embed_ref_1_version_3.0.cram"
+                              : "test_cram.embed_ref_0_version_3.0.cram";
+  // Read from the original file.
+  auto reader = std::move(
+      SamReader::FromFile(GetTestData(filename), reader_ref_path, options)
+          .ValueOrDie());
+  std::vector<Read> reads = as_vector(reader->Iterate());
+  ASSERT_THAT(reader->Close(), IsOK());
+
+  const string output_filename = MakeTempFile(filename);
+  // Writing requires |ref_path| regardless becauses Reads proto doesn't have
+  // embedded refs.
   std::unique_ptr<SamWriter> writer =
-      std::move(SamWriter::ToFile(actual_filename, ref_path, reader->Header())
+      std::move(SamWriter::ToFile(output_filename, writer_ref_path, embed_ref,
+                                  reader->Header())
                     .ValueOrDie());
   for (const nucleus::genomics::v1::Read& r : reads) {
     EXPECT_THAT(writer->Write(r), IsOK());
@@ -245,7 +286,7 @@ TEST_P(SamBamWriterTest, WriteAndThenRead) {
   // Now read from the written file. The reads should match that of the original
   // file.
   auto reader2 = std::move(
-      SamReader::FromFile(actual_filename, ref_path, SamReaderOptions())
+      SamReader::FromFile(output_filename, reader_ref_path, SamReaderOptions())
           .ValueOrDie());
   std::vector<Read> reads2 = as_vector(reader2->Iterate());
   ASSERT_THAT(reader2->Close(), IsOK());
@@ -254,7 +295,7 @@ TEST_P(SamBamWriterTest, WriteAndThenRead) {
   for (size_t i = 0; i < reads.size(); ++i) {
     EXPECT_THAT(reads[i], EqualsProto(reads2[i]));
   }
-  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(actual_filename));
+  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
 }
 
 }  // namespace nucleus

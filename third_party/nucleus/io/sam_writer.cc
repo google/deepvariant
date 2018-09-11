@@ -407,11 +407,11 @@ class SamWriter::NativeBody {
 StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
     const string& sam_path,
     const nucleus::genomics::v1::SamHeader& sam_header) {
-  return ToFile(sam_path, string(), sam_header);
+  return ToFile(sam_path, string(), false, sam_header);
 }
 
 StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
-    const string& sam_path, const string& ref_path,
+    const string& sam_path, const string& ref_path, bool embed_ref,
     const nucleus::genomics::v1::SamHeader& sam_header) {
   htsFormat fmt;
   fmt.specific = nullptr;
@@ -424,11 +424,18 @@ StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
     return tf::errors::Unknown("Could not open file for writing: ", sam_path);
   }
   // Set user provided reference FASTA to decode CRAM.
-  if (fp->format.format == cram && !ref_path.empty()) {
-    fp->fn_aux = (char*)malloc((ref_path.size() + 1) * sizeof(char));
-    memcpy(fp->fn_aux, ref_path.data(), ref_path.size());
-    fp->fn_aux[ref_path.size()] = '\0';
-    LOG(INFO) << "Setting CRAM reference path to '" << fp->fn_aux << "'";
+  if (fp->format.format == cram) {
+    if (ref_path.empty()) {
+      return tf::errors::FailedPrecondition(
+          "Writing CRAM format requires a reference file");
+    }
+    LOG(INFO) << "Setting CRAM reference path to '" << ref_path << "'";
+    if (cram_set_option(fp->fp.cram, CRAM_OPT_REFERENCE, ref_path.c_str()) <
+        0) {
+      return tf::errors::Unknown(
+          "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path);
+    }
+    cram_set_option(fp->fp.cram, CRAM_OPT_EMBED_REF, embed_ref ? 1 : 0);
   }
 
   auto native_file = absl::make_unique<NativeFile>(fp);

@@ -576,11 +576,18 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
   // If we are decoding a CRAM file and the user wants to override the path to
   // the reference FASTA used to decode the CRAM, set the CRAM_OPT_REFERENCE
   // in htslib.
-  if (fp->format.format == cram && !ref_path.empty()) {
-    LOG(INFO) << "Setting CRAM reference path to '" << ref_path << "'";
-    if (cram_set_option(fp->fp.cram, CRAM_OPT_REFERENCE, ref_path.c_str()))
-      return tf::errors::Unknown(
-          "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path);
+  if (fp->format.format == cram) {
+    if (!ref_path.empty()) {
+      LOG(INFO) << "Setting CRAM reference path to '" << ref_path << "'";
+      if (cram_set_option(fp->fp.cram, CRAM_OPT_REFERENCE, ref_path.c_str())) {
+        return tf::errors::Unknown(
+            "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path);
+      }
+    } else {
+      // If |ref_path| is empty, assumes that the reference sequence is embedded
+      // in the file.
+      cram_set_option(fp->fp.cram, CRAM_OPT_NO_REF, 1);
+    }
   }
 
   return std::unique_ptr<SamReader>(

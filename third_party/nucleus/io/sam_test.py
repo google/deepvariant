@@ -322,19 +322,30 @@ class ReadWriterTests(parameterized.TestCase):
     with sam.SamReader(output_path) as new_reader:
       self.assertEqual(original_records, list(new_reader.iterate()))
 
-  # redacted
-  def test_roundtrip_cram_writer(self):
-    filename = 'test_cram.cram'
+  @parameterized.parameters(
+      dict(
+          filename='test_cram.embed_ref_0_version_3.0.cram',
+          has_embedded_ref=False),
+      dict(
+          filename='test_cram.embed_ref_1_version_3.0.cram',
+          has_embedded_ref=True))
+  def test_roundtrip_cram_writer(self, filename, has_embedded_ref):
     output_path = test_utils.test_tmpfile(filename)
-    ref_path = test_utils.genomics_core_testdata('test.fasta')
-    original_reader = sam.SamReader(test_utils.genomics_core_testdata(filename))
+    writer_ref_path = test_utils.genomics_core_testdata('test.fasta')
+    reader_ref_path = ''
+    if not has_embedded_ref:
+      reader_ref_path = writer_ref_path
+    original_reader = sam.SamReader(
+        test_utils.genomics_core_testdata(filename), ref_path=reader_ref_path)
     original_records = list(original_reader.iterate())
     with sam.SamWriter(
-        output_path, header=original_reader.header,
-        ref_path=ref_path) as writer:
+        output_path,
+        header=original_reader.header,
+        ref_path=writer_ref_path,
+        embed_ref=has_embedded_ref) as writer:
       for record in original_records:
         writer.write(record)
-    with sam.SamReader(output_path) as new_reader:
+    with sam.SamReader(output_path, ref_path=reader_ref_path) as new_reader:
       self.assertEqual(original_records, list(new_reader.iterate()))
 
 
