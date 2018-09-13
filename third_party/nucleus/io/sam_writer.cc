@@ -43,12 +43,14 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "htslib/cram.h"
+#include "htslib/hts_endian.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/io/sam_utils.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/protos/struct.pb.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
@@ -56,9 +58,142 @@
 namespace nucleus {
 
 namespace tf = tensorflow;
+using genomics::v1::Read;
 using genomics::v1::SamHeader;
+using genomics::v1::Value;
 
 namespace {
+
+// Helper class to calculate byte representation (specified in SAM format) of
+// the auxiliary info field of a Read message.
+// Note that only string, int, and double fields are currently supported.
+class AuxBuilder {
+ public:
+  // Type tags:
+  // Null terminated string.
+  const char kZTag = 'Z';
+  // Signed int32.
+  const char kiTag = 'i';
+  // Null terminated string.
+  const char kfTag = 'f';
+
+  AuxBuilder(const Read& read) : read_(read) {}
+  // Disable assignment/copy operations
+  AuxBuilder(const AuxBuilder& other) = delete;
+  AuxBuilder& operator=(const AuxBuilder&) = delete;
+
+  // Returns the number of bytes needed to represent info fields in SAM format.
+  StatusOr<size_t> NumBytes() {
+    if (has_num_bytes_) {
+      return num_bytes_;
+    }
+    auto status = ComputeNumBytes(read_);
+    if (status.ok()) {
+      has_num_bytes_ = true;
+      num_bytes_ = status.ValueOrDie();
+    }
+    return status;
+  }
+
+  // Copies out the byte representation to |data|. This can only be called after
+  // NumBytes() is successful and |data| must point to at least NumBytes()
+  // bytes.
+  void CopyTo(uint8_t* data) {
+    // It's a programming error if CopyTo() is called not after a successful
+    // NumBytes().
+    CHECK(has_num_bytes_);
+    uint8_t* data_array_ptr = data;
+    for (const auto& entry : read_.info()) {
+      const Value& v = entry.second.values(0);
+      if (!(v.kind_case() == Value::kIntValue ||
+            v.kind_case() == Value::kStringValue ||
+            v.kind_case() == Value::kNumberValue)) {
+        LOG(WARNING) << "unrecognized kind case " << v.kind_case();
+        continue;
+      }
+      memcpy(data_array_ptr, entry.first.data(), 2);
+      data_array_ptr += 2;
+      switch (v.kind_case()) {
+        case Value::kIntValue: {
+          // Write as a 'i' (signed 32bit integer).
+          memcpy(data_array_ptr, &kiTag, 1);
+          i32_to_le(v.int_value(), data_array_ptr + 1);  // 4 bytes
+          data_array_ptr += 5;
+          break;
+        }
+        case Value::kStringValue: {
+          // Write as a 'Z' (null-terminated string).
+          memcpy(data_array_ptr, &kZTag, 1);
+          const size_t string_size = v.string_value().size();
+          memcpy(data_array_ptr + 1, v.string_value().data(), string_size);
+          memset(data_array_ptr + 1 + string_size, 0, 1);
+          // Leave one for null byte.
+          data_array_ptr += 1 + string_size + 1;
+          break;
+        }
+        case Value::kNumberValue: {
+          // Write as a 'f' (4-byte float).
+          memcpy(data_array_ptr, &kfTag, 1);
+          double_to_le(v.number_value(), data_array_ptr + 1);
+          data_array_ptr += 5;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    }
+    DCHECK_EQ(data_array_ptr - data, num_bytes_);
+  }
+
+ private:
+  static StatusOr<size_t> ComputeNumBytes(const Read& read) {
+    size_t num_bytes = 0;
+    for (const auto& entry : read.info()) {
+      if (entry.first.size() != 2) {
+        return tf::errors::Unknown("info key should be of two characters: ",
+                                   entry.first);
+      }
+      if (entry.second.values_size() != 1) {
+        // redacted
+        return tf::errors::Unknown(
+            "SamWriter currently doesn't support info field of size ",
+            entry.second.values_size());
+      }
+      const Value& v = entry.second.values(0);
+      if (!(v.kind_case() == Value::kIntValue ||
+            v.kind_case() == Value::kStringValue ||
+            v.kind_case() == Value::kNumberValue)) {
+        LOG(WARNING) << "unrecognized kind case " << v.kind_case();
+        continue;
+      }
+      num_bytes += 3;
+      // Two-character TAG and a one-character TYPE.
+      switch (v.kind_case()) {
+        case Value::kIntValue:
+          // All integer types that are <= 32 bits (cCsSIi) were converted to
+          // signed int32. b/115505837.
+          num_bytes += 4;
+          break;
+        case Value::kStringValue:
+          num_bytes += entry.second.values(0).string_value().size() + 1;
+          break;
+        case Value::kNumberValue:
+          // double to 4-byte float
+          num_bytes += 4;
+          break;
+        default:
+          break;
+      }
+    }
+    return num_bytes;
+  }
+  const Read& read_;
+  size_t num_bytes_ = 0;
+  // Whether |num_bytes_| has been successfully computed and |read_| has been
+  // validated through NumBytes().
+  bool has_num_bytes_ = false;
+};
 
 // Helper method to append "\t{tag}{value}" to |text_stream|. |tag| should end
 // with a colon.
@@ -121,7 +256,7 @@ void AppendReferenceSequence(const SamHeader& sam_header, string* text_stream) {
 }
 
 // Adds @RG lines to |text_stream| based on information in |sam_header|.
-void AppendReadGroups(const nucleus::genomics::v1::SamHeader& sam_header,
+void AppendReadGroups(const genomics::v1::SamHeader& sam_header,
                       string* text_stream) {
   for (const auto& read_group : sam_header.read_groups()) {
     absl::StrAppend(text_stream, kSamReadGroupTag);
@@ -149,7 +284,7 @@ void AppendReadGroups(const nucleus::genomics::v1::SamHeader& sam_header,
 }
 
 // Adds @PG lines to |text_stream| based on information in |sam_header|.
-void AppendPrograms(const nucleus::genomics::v1::SamHeader& sam_header,
+void AppendPrograms(const genomics::v1::SamHeader& sam_header,
                     string* text_stream) {
   for (const auto& program : sam_header.programs()) {
     absl::StrAppend(text_stream, kSamProgramTag);
@@ -164,7 +299,7 @@ void AppendPrograms(const nucleus::genomics::v1::SamHeader& sam_header,
 }
 
 // Appends @CO lines.
-void AppendComments(const nucleus::genomics::v1::SamHeader& sam_header,
+void AppendComments(const genomics::v1::SamHeader& sam_header,
                     string* text_stream) {
   for (const auto& comment : sam_header.comments()) {
     if (comment.empty()) continue;
@@ -173,9 +308,8 @@ void AppendComments(const nucleus::genomics::v1::SamHeader& sam_header,
 }
 
 // Populates the fields in |h| based on information in |sam_header| proto.
-tf::Status PopulateNativeHeader(
-    const nucleus::genomics::v1::SamHeader& sam_header, bool is_cram,
-    bam_hdr_t* h) {
+tf::Status PopulateNativeHeader(const genomics::v1::SamHeader& sam_header,
+                                bool is_cram, bam_hdr_t* h) {
   DCHECK_NE(nullptr, h);
   const uint32_t contig_size = sam_header.contigs().size();
   h->n_targets = contig_size;
@@ -212,7 +346,7 @@ tf::Status PopulateNativeHeader(
 }
 
 // Returns a bam1_core_t.flag based on the information contained in |read|.
-uint16_t GetReadFlag(const nucleus::genomics::v1::Read& read) {
+uint16_t GetReadFlag(const Read& read) {
   uint16_t flag = 0;
   if (read.proper_placement()) {
     flag |= BAM_FPROPER_PAIR;
@@ -252,8 +386,7 @@ uint16_t GetReadFlag(const nucleus::genomics::v1::Read& read) {
 }
 
 // Populates the fields in |b| based on information in |h| and |read| proto.
-void PopulateNativeBody(const nucleus::genomics::v1::Read& read,
-                        const bam_hdr_t* h, bam1_t* b) {
+tf::Status PopulateNativeBody(const Read& read, const bam_hdr_t* h, bam1_t* b) {
   DCHECK_NE(nullptr, b);
   bam1_core_t* c = &b->core;
   c->isize = read.fragment_length();
@@ -292,9 +425,16 @@ void PopulateNativeBody(const nucleus::genomics::v1::Read& read,
   const size_t encoded_base_bytes = (read.aligned_sequence().size() + 1) >> 1;
   // Each qual is 1 byte.
   const size_t aligned_quality_bytes = read.aligned_quality_size();
+  // Use a helper class to calculate the number of bytes of all auxiliary info.
+  AuxBuilder auxBuilder(read);
 
-  size_t data_array_bytes =
-      c->l_qname + cigar_bytes + encoded_base_bytes + aligned_quality_bytes;
+  StatusOr<size_t> aux_status = auxBuilder.NumBytes();
+  size_t aux_bytes = 0;
+  if (aux_status.ok()) {
+    aux_bytes = aux_status.ValueOrDie();
+  }
+  size_t data_array_bytes = c->l_qname + cigar_bytes + encoded_base_bytes +
+                            aligned_quality_bytes + aux_bytes;
   if (read.has_alignment()) {
     c->n_cigar = read.alignment().cigar_size();
   }
@@ -336,7 +476,10 @@ void PopulateNativeBody(const nucleus::genomics::v1::Read& read,
     data_array_ptr += 1;
   }
 
-  // redacted
+  if (aux_status.ok()) {
+    auxBuilder.CopyTo(data_array_ptr);
+  }
+  return tf::Status::OK();
 }
 
 // Helper method to get file extension of |file_path|.
@@ -405,14 +548,13 @@ class SamWriter::NativeBody {
 // -----------------------------------------------------------------------------
 
 StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
-    const string& sam_path,
-    const nucleus::genomics::v1::SamHeader& sam_header) {
+    const string& sam_path, const genomics::v1::SamHeader& sam_header) {
   return ToFile(sam_path, string(), false, sam_header);
 }
 
 StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
     const string& sam_path, const string& ref_path, bool embed_ref,
-    const nucleus::genomics::v1::SamHeader& sam_header) {
+    const genomics::v1::SamHeader& sam_header) {
   htsFormat fmt;
   fmt.specific = nullptr;
 
@@ -468,9 +610,13 @@ tf::Status SamWriter::Close() {
   return tf::Status::OK();
 }
 
-tf::Status SamWriter::Write(const nucleus::genomics::v1::Read& read) {
+tf::Status SamWriter::Write(const Read& read) {
   auto body = absl::make_unique<NativeBody>(bam_init1());
-  PopulateNativeBody(read, native_header_->value(), body->value());
+  tf::Status status =
+      PopulateNativeBody(read, native_header_->value(), body->value());
+  if (!status.ok()) {
+    return status;
+  }
   if (sam_write1(native_file_->value(), native_header_->value(),
                  body->value()) < 0) {
     return tf::errors::Unknown("Cannot add record");

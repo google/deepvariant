@@ -211,6 +211,50 @@ TEST_F(SamWriterTest, WriteOneBodyLine) {
   EXPECT_TRUE(lines.at(3).empty());
 }
 
+TEST_F(SamWriterTest, InvalidAuxField) {
+  auto options = SamReaderOptions();
+  options.set_aux_field_handling(SamReaderOptions::PARSE_ALL_AUX_FIELDS);
+  auto reader = std::move(
+      SamReader::FromFile(GetTestData("test.sam"), options).ValueOrDie());
+  std::unique_ptr<SamWriter> writer = std::move(
+      SamWriter::ToFile(actual_filename_, reader->Header()).ValueOrDie());
+  std::vector<Read> reads = as_vector(reader->Iterate());
+  ASSERT_LE(3u, reads.size());
+  Read copy(reads[0]);
+  EXPECT_FALSE(copy.info().empty());
+  std::vector<uint32_t> value = {1, 2};
+  SetInfoField("CG", value, &copy);
+  EXPECT_THAT(writer->Write(copy), IsOK());
+
+  Read copy2(reads[1]);
+  EXPECT_FALSE(copy2.info().empty());
+  std::vector<uint32_t> value2 = {};
+  SetInfoField("CG", value2, &copy2);
+  EXPECT_THAT(writer->Write(copy2), IsOK());
+
+  Read copy3(reads[2]);
+  EXPECT_FALSE(copy3.info().empty());
+  // Any tag that is not two-character long is malformed.
+  string malformedTag = "ABC";
+  SetInfoField(malformedTag, 1, &copy3);
+  EXPECT_THAT(writer->Write(copy3), IsOK());
+  ASSERT_THAT(writer->Close(), IsOK());
+
+  // Now read from the written file. The reads should match those of the
+  // original file except that their aux info fields will be empty.
+  auto reader2 =
+      std::move(SamReader::FromFile(actual_filename_, options).ValueOrDie());
+  std::vector<Read> reads2 = as_vector(reader2->Iterate());
+  ASSERT_THAT(reader2->Close(), IsOK());
+
+  ASSERT_EQ(3u, reads2.size());
+  for (size_t i = 0; i < reads2.size(); ++i) {
+    Read emptyAuxRead(reads[i]);
+    emptyAuxRead.clear_info();
+    EXPECT_THAT(reads2[i], EqualsProto(emptyAuxRead));
+  }
+}
+
 // Test SAM, BAM, CRAM formats.
 class SamBamWriterTest : public SamWriterTest,
                          public ::testing::WithParamInterface<string> {};
@@ -220,7 +264,7 @@ INSTANTIATE_TEST_CASE_P(/* no prefix */, SamBamWriterTest,
 
 TEST_P(SamBamWriterTest, WriteAndThenRead) {
   auto options = SamReaderOptions();
-  options.set_aux_field_handling(SamReaderOptions::SKIP_AUX_FIELDS);
+  options.set_aux_field_handling(SamReaderOptions::PARSE_ALL_AUX_FIELDS);
   // Read from the original file.
   auto reader = std::move(
       SamReader::FromFile(GetTestData(GetParam()), options).ValueOrDie());
@@ -237,14 +281,14 @@ TEST_P(SamBamWriterTest, WriteAndThenRead) {
 
   // Now read from the written file. The reads should match that of the original
   // file.
-  auto reader2 = std::move(
-      SamReader::FromFile(actual_filename, SamReaderOptions()).ValueOrDie());
+  auto reader2 =
+      std::move(SamReader::FromFile(actual_filename, options).ValueOrDie());
   std::vector<Read> reads2 = as_vector(reader2->Iterate());
   ASSERT_THAT(reader2->Close(), IsOK());
 
   ASSERT_EQ(reads.size(), reads2.size());
   for (size_t i = 0; i < reads.size(); ++i) {
-    EXPECT_THAT(reads[i], EqualsProto(reads2[i]));
+    EXPECT_THAT(reads2[i], EqualsProto(reads[i]));
   }
   TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(actual_filename));
 }
@@ -257,7 +301,7 @@ INSTANTIATE_TEST_CASE_P(/* no prefix */, CramWriterTest, ::testing::Bool());
 
 TEST_P(CramWriterTest, WriteAndThenRead) {
   auto options = SamReaderOptions();
-  options.set_aux_field_handling(SamReaderOptions::SKIP_AUX_FIELDS);
+  options.set_aux_field_handling(SamReaderOptions::PARSE_ALL_AUX_FIELDS);
   // Whether to write out embedded references in the CRAM file.
   const bool embed_ref = GetParam();
   string writer_ref_path = GetTestData("test.fasta");
@@ -285,15 +329,15 @@ TEST_P(CramWriterTest, WriteAndThenRead) {
 
   // Now read from the written file. The reads should match that of the original
   // file.
-  auto reader2 = std::move(
-      SamReader::FromFile(output_filename, reader_ref_path, SamReaderOptions())
-          .ValueOrDie());
+  auto reader2 =
+      std::move(SamReader::FromFile(output_filename, reader_ref_path, options)
+                    .ValueOrDie());
   std::vector<Read> reads2 = as_vector(reader2->Iterate());
   ASSERT_THAT(reader2->Close(), IsOK());
 
   ASSERT_EQ(reads.size(), reads2.size());
   for (size_t i = 0; i < reads.size(); ++i) {
-    EXPECT_THAT(reads[i], EqualsProto(reads2[i]));
+    EXPECT_THAT(reads2[i], EqualsProto(reads[i]));
   }
   TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
 }
