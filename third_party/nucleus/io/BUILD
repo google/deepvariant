@@ -313,6 +313,38 @@ cc_test(
 )
 
 cc_library(
+    name = "bedgraph_reader",
+    srcs = ["bedgraph_reader.cc"],
+    hdrs = ["bedgraph_reader.h"],
+    copts = NUCLEUS_COPTS,
+    deps = [
+        ":reader_base",
+        ":text_reader",
+        "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/protos:bedgraph_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:statusor",
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "bedgraph_reader_test",
+    size = "small",
+    srcs = ["bedgraph_reader_test.cc"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":bedgraph_reader",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
+        "//third_party/nucleus/util:cpp_utils",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
     name = "fastq_reader",
     srcs = ["fastq_reader.cc"],
     hdrs = ["fastq_reader.h"],

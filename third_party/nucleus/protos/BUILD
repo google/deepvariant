@@ -23,6 +23,13 @@ proto_library(
 )
 
 proto_library(
+    name = "bedgraph_proto",
+    srcs = [
+        "bedgraph.proto",
+    ],
+)
+
+proto_library(
     name = "cigar_proto",
     srcs = ["cigar.proto"],
 )
@@ -112,6 +119,13 @@ proto_library(
 cc_proto_library(
     name = "bed_cc_pb2",
     srcs = ["bed.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+)
+
+cc_proto_library(
+    name = "bedgraph_cc_pb2",
+    srcs = ["bedgraph.proto"],
     default_runtime = "@protobuf_archive//:protobuf",
     protoc = "@protobuf_archive//:protoc",
 )

@@ -1,0 +1,5 @@
+# Records with comments interspersed.
+chr1	10	20	100
+# the second
+# record is below.
+chr1	100	200	250
