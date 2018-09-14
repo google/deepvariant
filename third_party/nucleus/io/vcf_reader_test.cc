@@ -446,4 +446,27 @@ TEST(VcfReaderMultipleNamesTest, SplitsOnSemicolon) {
   EXPECT_EQ("CatSNP2", v.names(1));
 }
 
+TEST(VcfReaderDifferentPloidyTest, Simple) {
+  std::unique_ptr<VcfReader> reader =
+      std::move(VcfReader::FromFile(
+          GetTestData(kVcfPhasesetFilename),
+          nucleus::genomics::v1::VcfReaderOptions()).ValueOrDie());
+  Variant v;
+  TF_CHECK_OK(reader->FromString(
+      "Chr1\t21\t.\tC\t<SYMBOLIC>\t49\t.\t.\tGT:PS:GQ\t0|1:1:45\t.:.:.",
+      &v));
+  ASSERT_EQ(2, v.calls_size());
+  EXPECT_THAT(v.calls(0).genotype(), testing::ElementsAre(0, 1));
+  EXPECT_THAT(v.calls(1).genotype(), testing::ElementsAre(-1));
+
+  Variant v2;
+  TF_CHECK_OK(reader->FromString(
+      "Chr1\t21\t.\tC\t<SYMBOLIC>\t49\t.\t.\tGT:PS:GQ\t0|1:1:45\t0:24:42",
+      &v2));
+  ASSERT_EQ(2, v2.calls_size());
+  EXPECT_THAT(v2.calls(0).genotype(), testing::ElementsAre(0, 1));
+  EXPECT_THAT(v2.calls(1).genotype(), testing::ElementsAre(0));
+
+}
+
 }  // namespace nucleus

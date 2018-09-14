@@ -671,12 +671,12 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
   // Parse the calls of the variant.
   if (v->n_sample > 0) {
     int* gt_arr = nullptr;
-    int ploidy, n_gts = 0;
+    int n_gts = 0;
     if (bcf_get_genotypes(h, v, &gt_arr, &n_gts) < 0) {
       free(gt_arr);
       return tensorflow::errors::DataLoss("Couldn't parse genotypes");
     }
-    ploidy = n_gts / v->n_sample;
+    int max_ploidy = n_gts / v->n_sample;
 
     for (int i = 0; i < v->n_sample; i++) {
       nucleus::genomics::v1::VariantCall* call = variant_message->add_calls();
@@ -684,8 +684,11 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
       // Get the GT calls, if requested and available.
       if (want_genotypes_) {
         bool gt_is_phased = false;
-        for (int j = 0; j < ploidy; j++) {
-          int gt_idx = gt_arr[i * ploidy + j];
+        for (int j = 0; j < max_ploidy; j++) {
+          int gt_idx = gt_arr[i * max_ploidy + j];
+          // Check whether this sample has smaller ploidy.
+          if (gt_idx == bcf_int32_vector_end) break;
+
           int gt = bcf_gt_allele(gt_idx);
           gt_is_phased = gt_is_phased || bcf_gt_is_phased(gt_idx);
           call->add_genotype(gt);
