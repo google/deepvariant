@@ -409,14 +409,32 @@ class WindowSelectorTest(parameterized.TestCase):
               ranges.make_range('ref', 196, 204),
               ranges.make_range('ref', 296, 304),
           ]),
-      # redacted
-      # redacted
-      # Check a simple example where we have candidates from two regions:
+      # Check a simple example where we have two candidates from the same
+      # region:
       dict(
           candidates=[2, 8],
           expected_ranges=[
+              ranges.make_range('ref', -2, 12),
+          ]),
+      # Check a simple example where we have candidates from two regions:
+      dict(
+          candidates=[2, 14],
+          expected_ranges=[
               ranges.make_range('ref', -2, 6),
-              ranges.make_range('ref', 4, 12),
+              ranges.make_range('ref', 10, 18),
+          ]),
+      # Check boundary conditions for merging windows: should merge.
+      dict(
+          candidates=[2, 10],
+          expected_ranges=[
+              ranges.make_range('ref', -2, 14),
+          ]),
+      # Check boundary conditions for merging windows: should not merge.
+      dict(
+          candidates=[2, 11],
+          expected_ranges=[
+              ranges.make_range('ref', -2, 6),
+              ranges.make_range('ref', 7, 15),
           ]),
   )
   def test_candidates_to_windows(self, candidates, expected_ranges):
@@ -443,7 +461,7 @@ class WindowSelectorTest(parameterized.TestCase):
         # We have another candidate at outside of our distance with a 5 count,
         # so it should produce a candidate but not be joined with our our
         # candidate at 100.
-        100 - 2 * distance,
+        100 - 2 * distance - 1,
         # Finally, we have another variant that is exactly distance away from
         # 100. It should be joined with the candidate at 100 to produce a single
         # larger window.
@@ -451,7 +469,7 @@ class WindowSelectorTest(parameterized.TestCase):
     ]
     expected = [
         # Our first window is for the 100 - 2 * distance one.
-        ranges.make_range('ref', 100 - 3 * distance, 100 - distance),
+        ranges.make_range('ref', 100 - 3 * distance - 1, 100 - distance - 1),
         # Our second window starts at 100 (- distance for the window size) and
         # ends at 100 + distance + distance (again for window size).
         ranges.make_range('ref', 100 - distance, 100 + 2 * distance),
