@@ -53,7 +53,7 @@ namespace {
 // Parallels hts_getline; oddly, no function like this is exposed by
 // htslib.
 tensorflow::Status hts_write(htsFile* hts_file, const char *str) {
-  size_t str_len = strlen(str);
+  ssize_t str_len = strlen(str);
   ssize_t bytes_written;
 
   switch (hts_file->format.compression) {

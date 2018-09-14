@@ -169,8 +169,9 @@ tensorflow::Status EncodeFormatValues(
     return tensorflow::Status::OK();
   }
 
-  if (values.size() != bcf_hdr_nsamples(h))
+  if (static_cast<int>(values.size()) != bcf_hdr_nsamples(h)) {
     return tensorflow::errors::FailedPrecondition("Values.size() != nsamples");
+  }
   size_t n_samples = values.size();
 
   size_t values_per_sample = 0;
@@ -215,8 +216,9 @@ tensorflow::Status EncodeFormatValues(
     return tensorflow::Status::OK();
   }
 
-  if (values.size() != bcf_hdr_nsamples(h))
+  if (static_cast<int>(values.size()) != bcf_hdr_nsamples(h)) {
     return tensorflow::errors::FailedPrecondition("Values.size() != nsamples");
+  }
   size_t n_samples = values.size();
 
   size_t values_per_sample = 0;

@@ -742,6 +742,7 @@ cc_library(
     name = "vcf_conversion",
     srcs = ["vcf_conversion.cc"],
     hdrs = ["vcf_conversion.h"],
+    copts = NUCLEUS_COPTS,
     deps = [
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:variants_cc_pb2",
@@ -806,6 +807,7 @@ cc_library(
     name = "text_writer",
     srcs = ["text_writer.cc"],
     hdrs = ["text_writer.h"],
+    copts = NUCLEUS_COPTS,
     deps = [
         ":hts_path",
         "//third_party/nucleus/platform:types",
