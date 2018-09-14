@@ -38,6 +38,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
+#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
