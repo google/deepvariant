@@ -229,6 +229,7 @@ cc_binary(
     linkstatic = 0,
     deps = [
         ":bed_cc_pb2",
+        ":bedgraph_cc_pb2",
         ":cigar_cc_pb2",
         ":fasta_cc_pb2",
         ":fastq_cc_pb2",
@@ -258,6 +259,15 @@ nucleus_py_library(
 py_proto_library(
     name = "bed_py_pb2",
     srcs = ["bed.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    py_libs = [":fast_protos"],
+    srcs_version = "PY2AND3",
+)
+
+py_proto_library(
+    name = "bedgraph_py_pb2",
+    srcs = ["bedgraph.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
     py_libs = [":fast_protos"],
@@ -379,6 +389,11 @@ py_proto_library(
 pyclif_proto_library(
     name = "bed_pyclif",
     proto_lib = ":bed_proto",  # NO COPYBARA
+)
+
+pyclif_proto_library(
+    name = "bedgraph_pyclif",
+    proto_lib = ":bedgraph_proto",  # NO COPYBARA
 )
 
 pyclif_proto_library(

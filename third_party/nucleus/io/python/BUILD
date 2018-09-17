@@ -249,6 +249,33 @@ py_test(
 )
 
 py_clif_cc(
+    name = "bedgraph_reader",
+    srcs = ["bedgraph_reader.clif"],
+    py_deps = [
+        "//third_party/nucleus/io:clif_postproc",
+    ],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:bedgraph_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:bedgraph_reader",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
+py_clif_cc(
+    name = "bedgraph_writer",
+    srcs = ["bedgraph_writer.clif"],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:bedgraph_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:bedgraph_writer",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)
+
+py_clif_cc(
     name = "fastq_reader",
     srcs = ["fastq_reader.clif"],
     py_deps = [

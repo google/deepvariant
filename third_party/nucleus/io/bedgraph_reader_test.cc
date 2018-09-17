@@ -66,7 +66,9 @@ genomics::v1::BedGraphRecord GetTestRecord(const string& name, int64 start,
 
 TEST(BedGraphReaderTest, NormalIterationWorks) {
   std::vector<genomics::v1::BedGraphRecord> expected = {
-      GetTestRecord("chr1", 10, 20, 100), GetTestRecord("chr1", 100, 200, 250)};
+      GetTestRecord("chr1", 10, 20, 100), GetTestRecord("chr1", 100, 200, 250),
+      GetTestRecord("chr1", 300, 400, 150.1),
+      GetTestRecord("chr1", 500, 501, 20.13)};
 
   std::unique_ptr<BedGraphReader> reader = std::move(
       BedGraphReader::FromFile(GetTestData(kBedGraphFilename)).ValueOrDie());

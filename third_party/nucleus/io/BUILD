@@ -142,6 +142,32 @@ py_test(
 )
 
 nucleus_py_library(
+    name = "bedgraph",
+    srcs = ["bedgraph.py"],
+    deps = [
+        ":genomics_reader",
+        ":genomics_writer",
+        "//third_party/nucleus/io/python:bedgraph_reader",
+        "//third_party/nucleus/io/python:bedgraph_writer",
+        "//third_party/nucleus/protos:bedgraph_py_pb2",
+    ],
+)
+
+py_test(
+    name = "bedgraph_test",
+    size = "small",
+    srcs = ["bedgraph_test.py"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":bedgraph",
+        "//third_party/nucleus/protos:bedgraph_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@io_abseil_py//absl/testing:absltest",
+        "@io_abseil_py//absl/testing:parameterized",
+    ],
+)
+
+nucleus_py_library(
     name = "fasta",
     srcs = ["fasta.py"],
     deps = [
