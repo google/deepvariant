@@ -225,6 +225,8 @@ cc_library(
     deps = [
         ":bed_reader",
         ":bed_writer",
+        ":bedgraph_reader",
+        ":bedgraph_writer",
         ":fastq_reader",
         ":fastq_writer",
         ":gff_reader",
@@ -236,6 +238,7 @@ cc_library(
         ":reader_base",
         ":reference",
         ":sam_reader",
+        ":sam_writer",
         ":text_reader",
         ":text_writer",
         ":vcf_conversion",
@@ -340,6 +343,41 @@ cc_test(
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
+    name = "bedgraph_writer",
+    srcs = ["bedgraph_writer.cc"],
+    hdrs = ["bedgraph_writer.h"],
+    copts = NUCLEUS_COPTS,
+    deps = [
+        ":text_writer",
+        "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/protos:bedgraph_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:statusor",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "bedgraph_writer_test",
+    size = "small",
+    srcs = ["bedgraph_writer_test.cc"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":bedgraph_reader",
+        ":bedgraph_writer",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status_matchers",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
