@@ -359,22 +359,26 @@ class CallVariantsUnitTests(
     cls.model = modeling.get_model('random_guess')
 
   @parameterized.parameters(
-      ('not_sharded', False),
-      ('sharded@3', False),
-      ('sharded@3', True),
+      ('not_sharded', 'not_sharded'),
+      ('sharded@3', 'sharded@3'),
+      ('sharded@3', 'sharded-?????-of-00003'),
+      ('asterisks@2', 'asterisks-*-of-00002'),
+      ('comma@3',
+       'comma-00000-of-00003,comma-00001-of-00003,comma-00002-of-00003'),
   )
-  def test_prepare_inputs(self, filename, expand_to_file_pattern):
-    source_path = test_utils.test_tmpfile(filename)
+  def test_prepare_inputs(self, filename_to_write, file_string_input):
+    source_path = test_utils.test_tmpfile(filename_to_write)
     io_utils.write_tfrecords(self.examples, source_path)
-    if expand_to_file_pattern:
-      # Transform foo@3 to foo-?????-of-00003.
-      source_path = io_utils.NormalizeToShardedFilePattern(source_path)
+    # file_string_input could be a comma-separated list. Add the prefix to all
+    # of them, and join it back to a string.
+    file_string_input = ','.join(
+        [test_utils.test_tmpfile(f) for f in file_string_input.split(',')])
 
     with self.test_session() as sess:
       sess.run(tf.local_variables_initializer())
       sess.run(tf.global_variables_initializer())
 
-      ds = call_variants.prepare_inputs(source_path)
+      ds = call_variants.prepare_inputs(file_string_input)
       _, variants, _ = data_providers.get_infer_batches(
           ds, model=self.model, batch_size=1)
 

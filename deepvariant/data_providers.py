@@ -145,9 +145,8 @@ class DeepVariantInput(object):
       self.tensor_shape = tensor_shape
     else:
       self.tensor_shape = tf_utils.get_shape_from_examples_path(input_file_spec)
-
-    self.input_files = tf.gfile.Glob(
-        io_utils.NormalizeToShardedFilePattern(self.input_file_spec))
+    self.input_files = io_utils.GlobListShardedFilePatterns(
+        self.input_file_spec)
 
   def features_extraction_spec_for_mode(self, include_label_and_locus):
     """Returns a dict describing features from a TF.example."""
@@ -250,10 +249,12 @@ class DeepVariantInput(object):
     # NOTE: The order of the file names returned can be non-deterministic,
     # even if shuffle is false.  See b/73959787 and the note in cl/187434282.
     # We need the shuffle flag to be able to disable reordering in EVAL mode.
-    dataset = tf.data.Dataset.list_files(
-        io_utils.NormalizeToShardedFilePattern(self.input_file_spec),
-        shuffle=self.mode == tf.estimator.ModeKeys.TRAIN,
-    )
+    dataset = None
+    for pattern in self.input_file_spec.split(','):
+      one_dataset = tf.data.Dataset.list_files(
+          io_utils.NormalizeToShardedFilePattern(pattern),
+          shuffle=self.mode == tf.estimator.ModeKeys.TRAIN)
+      dataset = dataset.concatenate(one_dataset) if dataset else one_dataset
 
     # This shuffle applies to the set of files.
     if (self.mode == tf.estimator.ModeKeys.TRAIN and

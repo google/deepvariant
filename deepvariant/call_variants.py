@@ -68,7 +68,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string(
     'examples', None,
     'Required. tf.Example protos containing DeepVariant candidate variants in '
-    'TFRecord format, as emitted by make_examples.')
+    'TFRecord format, as emitted by make_examples. Can be a comma-separated '
+    'list of files, and the file names can contain wildcard characters.')
 flags.DEFINE_string(
     'outfile', None,
     'Required. Destination path where we will write output candidate variants '
