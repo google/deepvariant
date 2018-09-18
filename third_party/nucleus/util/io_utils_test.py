@@ -313,6 +313,29 @@ class ShardsTest(parameterized.TestCase):
   def testNormalizeToShardedFilePattern(self, spec, expected):
     self.assertEqual(expected, io.NormalizeToShardedFilePattern(spec))
 
+  @parameterized.named_parameters(
+      ('no_spec', 'no_spec', ['no_spec']),
+      ('sharded', 'sharded@3', ['sharded-00000-of-00003',
+                                'sharded-00001-of-00003',
+                                'sharded-00002-of-00003']),
+      ('wildcard1', '*.ext', ['cat.ext', 'dog.ext']),
+      ('wildcard2', 'fo?bar', ['foobar']),
+      ('comma_list', 'file1,file2,file3', ['file1', 'file2', 'file3']),
+      ('mixed_list', 'mixed.*txt,mixed@1,mixed_file',
+       ['mixed.1txt', 'mixed.2txt', 'mixed-00000-of-00001', 'mixed_file']),
+      ('with_dups', 'with_dups*',
+       ['with_dups.1txt', 'with_dups.2txt', 'with_dups-00000-of-00001',
+        'with_dups']),
+  )
+  def testGlobListShardedFilePatterns(self, specs, expected_files):
+    # First, create all expected_files so Glob will work later.
+    expected_full_files = [test_utils.test_tmpfile(f, '')
+                           for f in expected_files]
+    # Create the full spec names. This one doesn't create the files.
+    full_specs = ','.join(
+        [test_utils.test_tmpfile(spec) for spec in specs.split(',')])
+    self.assertEqual(sorted(set(expected_full_files)),
+                     io.GlobListShardedFilePatterns(full_specs))
 
 if __name__ == '__main__':
   absltest.main()

@@ -50,6 +50,7 @@ import six
 
 from tensorflow.core.example import example_pb2
 from tensorflow.python.lib.io import python_io
+from tensorflow.python.platform import gfile
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 
@@ -112,6 +113,23 @@ def GenerateShardedFilenames(spec):  # pylint:disable=invalid-name
     files.append(format_str.format(basename, i, num_shards, suffix))
 
   return files
+
+def GlobListShardedFilePatterns(comma_separated_patterns, sep=','):  # pylint:disable=invalid-name
+  """Generate list of filenames corresponding to `comma_separated_patterns`.
+
+  Args:
+    comma_separated_patterns: str. A pattern or a comma-separated list of
+      patterns that represent file names.
+    sep: char. Separator character.
+
+  Returns:
+    List of filenames, sorted and dedupped.
+  """
+  return sorted(set([
+      f
+      for pattern in comma_separated_patterns.split(sep)
+      for f in gfile.Glob(NormalizeToShardedFilePattern(pattern))
+  ]))
 
 
 def GenerateShardedFilePattern(basename, num_shards, suffix):  # pylint:disable=invalid-name
