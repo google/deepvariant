@@ -1,0 +1,8 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GL,Number=1,Type=Integer,Description="Redefined GL field">
+##contig=<ID=Chr1,length=50>
+##contig=<ID=chr2,length=81195210,URL=ftp://somewhere.org/assembly.fa,md5=fakemd5,species="Homo sapiens">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Fido	Spot
+Chr1	21	DogSNP1	A	T	10	.	.	GT:GL	0/1:.	0/1:42

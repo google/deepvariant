@@ -43,6 +43,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -87,6 +88,7 @@ constexpr char kVcfAlleleDepthFilename[] = "test_allele_depth.vcf";
 constexpr char kVcfAlleleDepthGoldenFilename[] = "test_allele_depth.vcf.golden.tfrecord";  // NOLINT
 constexpr char kVcfVariantAlleleFrequencyFilename[] = "test_vaf.vcf";
 constexpr char kVcfVariantAlleleFrequencyGoldenFilename[] = "test_vaf.vcf.golden.tfrecord";  // NOLINT
+constexpr char kRedefinedFormatFilename[] = "test_redefined_formats.vcf";
 
 constexpr int CHR1_SIZE = 248956422;
 constexpr int CHR2_SIZE = 242193529;
@@ -467,6 +469,40 @@ TEST(VcfReaderDifferentPloidyTest, Simple) {
   EXPECT_THAT(v2.calls(0).genotype(), testing::ElementsAre(0, 1));
   EXPECT_THAT(v2.calls(1).genotype(), testing::ElementsAre(0));
 
+}
+
+TEST(HandleRedefinedFormatFields, MatchesProto) {
+  nucleus::genomics::v1::VcfReaderOptions options;
+  options.set_store_gl_and_pl_in_info_map(true);
+  std::unique_ptr<VcfReader> reader = std::move(
+      VcfReader::FromFile(GetTestData(kRedefinedFormatFilename), options)
+          .ValueOrDie());
+  vector<Variant> actual = as_vector(reader->Iterate());
+  EXPECT_EQ(1, actual.size());
+  Variant expected;
+  expected.set_reference_name("Chr1");
+  expected.set_start(20);
+  expected.set_end(21);
+  expected.add_names("DogSNP1");
+  expected.set_reference_bases("A");
+  expected.add_alternate_bases("T");
+  expected.set_quality(10);
+
+  nucleus::genomics::v1::VariantCall* call1 = expected.add_calls();
+  call1->set_call_set_name("Fido");
+  call1->add_genotype(0);
+  call1->add_genotype(1);
+
+  nucleus::genomics::v1::VariantCall* call2 = expected.add_calls();
+  call2->set_call_set_name("Spot");
+  call2->add_genotype(0);
+  call2->add_genotype(1);
+  nucleus::genomics::v1::ListValue lv;
+  nucleus::genomics::v1::Value* val = lv.add_values();
+  val->set_int_value(42);
+  (*call2->mutable_info())["GL"] = lv;
+
+  EXPECT_THAT(actual[0], EqualsProto(expected));
 }
 
 }  // namespace nucleus

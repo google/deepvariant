@@ -331,7 +331,7 @@ TEST(VcfWriterTest, WritesVCF) {
   ASSERT_THAT(writer->Write(v8), IsOK());
 
   // Check that the written data is as expected.
-  // (close file to guarantee flushed to disk)
+  // (Close file to guarantee flushed to disk).
   writer.reset();
 
   string vcf_contents;
@@ -464,6 +464,79 @@ TEST(VcfWriterTest, WritesGzippedVCF) {
                                            output_filename, &vcf_contents));
   EXPECT_THAT(IsGzipped(vcf_contents),
               "VCF writer should be able to writed gzipped output");
+}
+
+TEST(VcfWriterTest, HandlesRedefinedPL) {
+  string output_filename = MakeTempFile("redefined_pl.vcf");
+  nucleus::genomics::v1::VcfHeader header;
+
+  // INFOs.
+  auto& infoEnd = *header.mutable_infos()->Add();
+  infoEnd.set_id("END");
+  infoEnd.set_number("1");
+  infoEnd.set_type("Integer");
+  infoEnd.set_description("Stop position of the interval");
+
+  // FORMATs.
+  auto& format1 = *header.mutable_formats()->Add();
+  format1.set_id("GT");
+  format1.set_number("1");
+  format1.set_type("String");
+  format1.set_description("Genotype");
+
+  auto& format2 = *header.mutable_formats()->Add();
+  format2.set_id("PL");
+  format2.set_number("1");
+  format2.set_type("Integer");
+  format2.set_description("Custom PL");
+
+  // Contigs.
+  auto& contig1 = *header.mutable_contigs()->Add();
+  contig1.set_name("Chr1");
+  contig1.set_description("Dog chromosome 1");
+  contig1.set_n_bases(50);
+  contig1.set_pos_in_fasta(0);
+
+  // Samples.
+  header.mutable_sample_names()->Add("Fido");
+
+  nucleus::genomics::v1::VcfWriterOptions writer_options;
+  writer_options.set_store_gl_and_pl_in_info_map(true);
+
+  std::unique_ptr<VcfWriter> writer = std::move(
+      VcfWriter::ToFile(output_filename, header, writer_options).ValueOrDie());
+
+  Variant v = MakeVariant({}, "Chr1", 10, 11, "C", {"G", "T"});
+  v.mutable_filter()->Add("PASS");
+  v.set_quality(10.5);
+  auto call = MakeVariantCall("Fido", {0, 1});
+  nucleus::genomics::v1::ListValue lv;
+  nucleus::genomics::v1::Value* val = lv.add_values();
+  val->set_int_value(42);
+  (*call.mutable_info())["PL"] = lv;
+  *v.add_calls() = call;
+  ASSERT_THAT(writer->Write(v), IsOK());
+
+  // Check that the written data is as expected.
+  // (Close file to guarantee flushed to disk).
+  writer.reset();
+
+  string vcf_contents;
+  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
+                                           output_filename, &vcf_contents));
+
+  const string kExpectedVcfContent =
+      "##fileformat=VCFv4.2\n"
+      "##FILTER=<ID=PASS,Description=\"All filters passed\">\n"
+      "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of "
+      "the interval\">\n"
+      "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+      "##FORMAT=<ID=PL,Number=1,Type=Integer,Description=\"Custom PL\">\n"
+      "##contig=<ID=Chr1,length=50,description=\"Dog chromosome 1\">\n"
+      "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\n"
+      "Chr1\t11\t.\tC\tG,T\t10.5\tPASS\t.\tGT:PL\t0/1:42\n";
+
+  EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
 
 }  // namespace nucleus

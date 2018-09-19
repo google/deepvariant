@@ -270,7 +270,8 @@ class VcfRecordConverter {
   // Primary constructor.
   VcfRecordConverter(const nucleus::genomics::v1::VcfHeader &vcf_header,
                      const std::vector<string> &infos_to_exclude,
-                     const std::vector<string> &formats_to_exclude);
+                     const std::vector<string> &formats_to_exclude,
+                     const bool store_gl_and_pl_in_info_map);
 
   // Not the constructor you want.
   VcfRecordConverter() = default;
@@ -303,6 +304,11 @@ class VcfRecordConverter {
   bool want_genotypes_;
   bool want_gl_;
   bool want_pl_;
+
+  // Set to true if the GL and PL fields should be stored with other FORMAT
+  // fields in the info map rather than being special-cased as first-class
+  // members of the proto.
+  bool store_gl_and_pl_in_info_map_;
 };
 
 }  // namespace nucleus

@@ -181,7 +181,8 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
           std::vector<string>(options_.excluded_info_fields().begin(),
                               options_.excluded_info_fields().end()),
           std::vector<string>(options_.excluded_format_fields().begin(),
-                              options_.excluded_format_fields().end())) {
+                              options_.excluded_format_fields().end()),
+          options_.store_gl_and_pl_in_info_map()) {
   CHECK(fp != nullptr);
 
   // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>

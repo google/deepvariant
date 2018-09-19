@@ -313,7 +313,8 @@ VcfReader::VcfReader(const string& variants_path,
   vector<string> formats_to_exclude(options.excluded_format_fields().begin(),
                                     options.excluded_format_fields().end());
   record_converter_ =
-      VcfRecordConverter(vcf_header_, infos_to_exclude, formats_to_exclude);
+      VcfRecordConverter(vcf_header_, infos_to_exclude, formats_to_exclude,
+                         options.store_gl_and_pl_in_info_map());
 }
 
 VcfReader::~VcfReader() {

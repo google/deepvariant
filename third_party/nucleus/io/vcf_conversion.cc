@@ -537,7 +537,8 @@ template <class T> tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
 VcfRecordConverter::VcfRecordConverter(
     const nucleus::genomics::v1::VcfHeader& vcf_header,
     const std::vector<string>& infos_to_exclude,
-    const std::vector<string>& formats_to_exclude) {
+    const std::vector<string>& formats_to_exclude,
+    const bool store_gl_and_pl_in_info_map) {
   // Install adapters for INFO fields.
   for (const auto& format_spec : vcf_header.infos()) {
     string tag = format_spec.id();
@@ -571,6 +572,7 @@ VcfRecordConverter::VcfRecordConverter(
   // Install adapters for FORMAT fields.
   want_pl_ = false;
   want_gl_ = false;
+  store_gl_and_pl_in_info_map_ = store_gl_and_pl_in_info_map;
   for (const auto& format_spec : vcf_header.formats()) {
     string tag = format_spec.id();
     string type = format_spec.type();
@@ -585,11 +587,11 @@ VcfRecordConverter::VcfRecordConverter(
 
     if (tag == "GL") {
       want_gl_ = true;
-      continue;
+      if (!store_gl_and_pl_in_info_map) continue;
     }
     if (tag == "PL") {
       want_pl_ = true;
-      continue;
+      if (!store_gl_and_pl_in_info_map) continue;
     }
 
     // redacted
@@ -616,7 +618,6 @@ VcfRecordConverter::VcfRecordConverter(
       std::find(formats_to_exclude.begin(), formats_to_exclude.end(), "GT") ==
       formats_to_exclude.end();
 }
-
 
 tensorflow::Status VcfRecordConverter::ConvertToPb(
     const bcf_hdr_t* h, bcf1_t* v,
@@ -706,30 +707,34 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     }
 
     // Handle FORMAT fields requiring special logic.
-    std::vector<std::vector<int>> pl_values = ReadFormatValues<int>(h, v, "PL");
-    std::vector<std::vector<float>> gl_values =
-        ReadFormatValues<float>(h, v, "GL");
+    if (!store_gl_and_pl_in_info_map_) {
+      std::vector<std::vector<int>> pl_values =
+          ReadFormatValues<int>(h, v, "PL");
+      std::vector<std::vector<float>> gl_values =
+          ReadFormatValues<float>(h, v, "GL");
 
-    for (int i = 0; i < v->n_sample; i++) {
-      // Each indicator here is true iff the format field is present for this
-      // variant, *and* is non-missing for this sample.
-      bool have_gl = !gl_values.empty() && !gl_values[i].empty();
-      bool have_pl = !pl_values.empty() && !pl_values[i].empty();
+      for (int i = 0; i < v->n_sample; i++) {
+        // Each indicator here is true iff the format field is present for this
+        // variant, *and* is non-missing for this sample.
+        bool have_gl = !gl_values.empty() && !gl_values[i].empty();
+        bool have_pl = !pl_values.empty() && !pl_values[i].empty();
 
-      nucleus::genomics::v1::VariantCall* call =
-          variant_message->mutable_calls(i);
+        nucleus::genomics::v1::VariantCall* call =
+            variant_message->mutable_calls(i);
 
-      if (want_gl_ || want_pl_) {
-        // If GL and PL are *both* present, we populate the genotype_likelihood
-        // fields with the GL values per the variants.proto spec, since PLs are
-        // a lower resolution version of the same information.
-        if (have_gl) {
-          for (int gl : gl_values[i]) {
-            call->add_genotype_likelihood(gl);
-          }
-        } else if (have_pl) {
-          for (int pl : pl_values[i]) {
-            call->add_genotype_likelihood(PhredToLog10PError(pl));
+        if (want_gl_ || want_pl_) {
+          // If GL and PL are *both* present, we populate the
+          // genotype_likelihood fields with the GL values per the
+          // variants.proto spec, since PLs are a lower resolution version of
+          // the same information.
+          if (have_gl) {
+            for (int gl : gl_values[i]) {
+              call->add_genotype_likelihood(gl);
+            }
+          } else if (have_pl) {
+            for (int pl : pl_values[i]) {
+              call->add_genotype_likelihood(PhredToLog10PError(pl));
+            }
           }
         }
       }
@@ -856,60 +861,68 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
           "Failure to write genotypes to VCF record");
     }
 
-    // Write remaining FORMAT fields
-    bool has_ll = false;
-    for (int c = 0; c < nCalls; c++) {
-      const nucleus::genomics::v1::VariantCall& vc = variant_message.calls(c);
-      if (vc.genotype_likelihood_size() > 0) {
-        has_ll = true;
-        break;
-      }
-    }
-
+    // Write remaining FORMAT fields.
+    // NOTE: This assumes that the Variant is well-formed with respect to GL and
+    // PL; i.e. that either the map contains those fields or the
+    // genotype_likelihood field is populated, but not both. This is guaranteed
+    // when reading Variants from a VCF file.
     for (const VcfFormatFieldAdapter& field : format_adapters_) {
       TF_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
     }
 
-    if (want_gl_ && has_ll) {
-      std::vector<std::vector<float>> gl_values;
+    if (!store_gl_and_pl_in_info_map_) {
+      bool has_ll = false;
       for (int c = 0; c < nCalls; c++) {
         const nucleus::genomics::v1::VariantCall& vc = variant_message.calls(c);
-        std::vector<float> gl_this_call;
-        for (double ll_val : vc.genotype_likelihood()) {
-          gl_this_call.push_back(ll_val);
+        if (vc.genotype_likelihood_size() > 0) {
+          has_ll = true;
+          break;
         }
-        // Do we need to zero-shift?
-        gl_values.push_back(gl_this_call);
       }
-      TF_RETURN_IF_ERROR(EncodeFormatValues(gl_values, "GL", &h, v));
-    }
 
-    if (want_pl_ && has_ll) {
-      std::vector<std::vector<int>> ll_values_phred;
-      for (int c = 0; c < nCalls; c++) {
-        const nucleus::genomics::v1::VariantCall& vc = variant_message.calls(c);
-        bool ll_not_missing = vc.genotype_likelihood_size() > 0;
-        if (ll_not_missing) {
-          std::vector<double> lls_this_call;
+      if (want_gl_ && has_ll) {
+        std::vector<std::vector<float>> gl_values;
+        for (int c = 0; c < nCalls; c++) {
+          const nucleus::genomics::v1::VariantCall& vc =
+              variant_message.calls(c);
+          std::vector<float> gl_this_call;
           for (double ll_val : vc.genotype_likelihood()) {
-            lls_this_call.push_back(ll_val);
+            gl_this_call.push_back(ll_val);
           }
-          // "Normalize" likelihoods...
-          std::vector<double> lls_this_call_normalized =
-              ZeroShiftLikelihoods(lls_this_call);
-
-          // Phred-transform them...
-          std::vector<int> phreds_this_call(lls_this_call.size());
-          std::transform(lls_this_call_normalized.cbegin(),
-                         lls_this_call_normalized.cend(),
-                         phreds_this_call.begin(), Log10PErrorToPhred);
-          ll_values_phred.push_back(phreds_this_call);
-        } else {
-          ll_values_phred.push_back({});
+          // Do we need to zero-shift?
+          gl_values.push_back(gl_this_call);
         }
+        TF_RETURN_IF_ERROR(EncodeFormatValues(gl_values, "GL", &h, v));
       }
 
-      TF_RETURN_IF_ERROR(EncodeFormatValues(ll_values_phred, "PL", &h, v));
+      if (want_pl_ && has_ll) {
+        std::vector<std::vector<int>> ll_values_phred;
+        for (int c = 0; c < nCalls; c++) {
+          const nucleus::genomics::v1::VariantCall& vc =
+              variant_message.calls(c);
+          bool ll_not_missing = vc.genotype_likelihood_size() > 0;
+          if (ll_not_missing) {
+            std::vector<double> lls_this_call;
+            for (double ll_val : vc.genotype_likelihood()) {
+              lls_this_call.push_back(ll_val);
+            }
+            // "Normalize" likelihoods...
+            std::vector<double> lls_this_call_normalized =
+                ZeroShiftLikelihoods(lls_this_call);
+
+            // Phred-transform them...
+            std::vector<int> phreds_this_call(lls_this_call.size());
+            std::transform(lls_this_call_normalized.cbegin(),
+                           lls_this_call_normalized.cend(),
+                           phreds_this_call.begin(), Log10PErrorToPhred);
+            ll_values_phred.push_back(phreds_this_call);
+          } else {
+            ll_values_phred.push_back({});
+          }
+        }
+
+        TF_RETURN_IF_ERROR(EncodeFormatValues(ll_values_phred, "PL", &h, v));
+      }
     }
   }
   return tensorflow::Status::OK();

@@ -316,6 +316,13 @@ message VcfReaderOptions {
 
   // A list of all FORMAT field IDs that should be excluded from parsing.
   repeated string excluded_format_fields = 4;
+
+  // If true, the GL and PL format tags are stored in the VariantCall.info map
+  // with the type and number as specified in the VCF header, similar to other
+  // FORMAT fields. Otherwise, the GL and PL tags are special-cased and
+  // available in the VariantCall.genotype_likelihood field, with the
+  // enforcement that each is of type=Float and Number=G.
+  bool store_gl_and_pl_in_info_map = 5;
 }
 
 message VcfWriterOptions {
@@ -329,4 +336,13 @@ message VcfWriterOptions {
 
   // Should QUAL field values be rounded to one point past the decimal?
   bool round_qual_values = 6;
+
+  // If true, the GL and PL format tags are written from the VariantCall.info
+  // map with the type and number as specified in the VCF header. In this case,
+  // any values set in the VariantCall.genotype_likelihood field are ignored.
+  // Otherwise, the GL and PL tags are retrieved from the
+  // VariantCall.genotype_likelihood field, with the enforcement that each is of
+  // type=Float and Number=G, and neither GL nor PL should be present in the
+  // VariantCall.info map.
+  bool store_gl_and_pl_in_info_map = 9;
 }
