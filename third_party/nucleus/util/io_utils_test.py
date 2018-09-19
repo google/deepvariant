@@ -49,27 +49,63 @@ class IOTest(parameterized.TestCase):
 
   @parameterized.parameters(
       # Unsharded outputs pass through as expected.
-      (0, ['foo.txt'], [None, 'foo.txt']),
-      (0, ['foo.txt', 'bar.txt'], [None, 'foo.txt', 'bar.txt']),
-      (0, ['bar.txt', 'foo.txt'], [None, 'bar.txt', 'foo.txt']),
+      dict(task_id=0, filespecs=['foo.txt'], expected=[0, 'foo.txt']),
+      dict(
+          task_id=0,
+          filespecs=['foo.txt', 'bar.txt'],
+          expected=[0, 'foo.txt', 'bar.txt']),
+      dict(
+          task_id=0,
+          filespecs=['bar.txt', 'foo.txt'],
+          expected=[0, 'bar.txt', 'foo.txt']),
       # It's ok to have False values for other bindings.
-      (0, ['foo.txt', None], [None, 'foo.txt', None]),
-      (0, ['foo.txt', ''], [None, 'foo.txt', '']),
-      (0, ['foo@10.txt', None], [10, 'foo-00000-of-00010.txt', None]),
-      (0, ['foo@10.txt', ''], [10, 'foo-00000-of-00010.txt', '']),
+      dict(
+          task_id=0, filespecs=['foo.txt', None], expected=[0, 'foo.txt',
+                                                            None]),
+      dict(task_id=0, filespecs=['foo.txt', ''], expected=[0, 'foo.txt', '']),
+      dict(
+          task_id=0,
+          filespecs=['foo@10.txt', None],
+          expected=[10, 'foo-00000-of-00010.txt', None]),
+      dict(
+          task_id=0,
+          filespecs=['foo@10.txt', ''],
+          expected=[10, 'foo-00000-of-00010.txt', '']),
       # Simple check that master behaves as expected.
-      (0, ['foo@10.txt', None], [10, 'foo-00000-of-00010.txt', None]),
-      (0, ['foo@10', None], [10, 'foo-00000-of-00010', None]),
-      (1, ['foo@10', None], [10, 'foo-00001-of-00010', None]),
-      (9, ['foo@10', None], [10, 'foo-00009-of-00010', None]),
-      # Make sure we handle sharding of multiple outputs.
-      (0, ['foo@10', 'bar@10', 'baz@10'],
-       [10, 'foo-00000-of-00010', 'bar-00000-of-00010', 'baz-00000-of-00010']),
-      (9, ['foo@10', 'bar@10', 'baz@10'],
-       [10, 'foo-00009-of-00010', 'bar-00009-of-00010', 'baz-00009-of-00010']),
+      dict(
+          task_id=0,
+          filespecs=['foo@10.txt', None],
+          expected=[10, 'foo-00000-of-00010.txt', None]),
+      dict(
+          task_id=0,
+          filespecs=['foo@10', None],
+          expected=[10, 'foo-00000-of-00010', None]),
+      dict(
+          task_id=1,
+          filespecs=['foo@10', None],
+          expected=[10, 'foo-00001-of-00010', None]),
+      dict(
+          task_id=9,
+          filespecs=['foo@10', None],
+          expected=[10, 'foo-00009-of-00010', None]),
+      # Make sure we handle sharding of multiple filespecs.
+      dict(
+          task_id=0,
+          filespecs=['foo@10', 'bar@10', 'baz@10'],
+          expected=[
+              10, 'foo-00000-of-00010', 'bar-00000-of-00010',
+              'baz-00000-of-00010'
+          ]),
+      dict(
+          task_id=9,
+          filespecs=['foo@10', 'bar@10', 'baz@10'],
+          expected=[
+              10, 'foo-00009-of-00010', 'bar-00009-of-00010',
+              'baz-00009-of-00010'
+          ]),
   )
-  def test_resolve_filespecs(self, task_id, outputs, expected):
-    self.assertEqual(io.resolve_filespecs(task_id, *outputs), expected)
+  def test_resolve_filespecs(self, task_id, filespecs, expected):
+    self.assertEqual(io.resolve_filespecs(task_id, *filespecs), expected)
 
   @parameterized.parameters(
       # shard >= num_shards.

@@ -67,9 +67,9 @@ def ParseShardedFileSpec(spec):  # pylint:disable=invalid-name
       'gs://some/file@200.txt'. Here, '@200' specifies the number of shards.
 
   Returns:
-    basename: The basename for the files.
-    num_shards: The number of shards.
-    suffix: The suffix if there is one, or '' if not.
+    basename: str. The basename for the files.
+    num_shards: int >= 0. The number of shards.
+    suffix: str. The suffix if there is one, or '' if not.
   Raises:
     ShardError: If the spec is not a valid sharded specification.
   """
@@ -203,8 +203,9 @@ def resolve_filespecs(shard, *filespecs):
       shard-specific file paths.
 
   Returns:
-    A list. The first element is the number of shards, followed by the
-    shard-specific paths for each filespec, in order.
+    A list. The first element is the number of shards, which is an int >= 1 when
+    filespecs contains sharded paths and 0 if none do. All subsequent
+    returned values follow the shard-specific paths for each filespec, in order.
 
   Raises:
     ValueError: if any filespecs are inconsistent.
@@ -215,7 +216,7 @@ def resolve_filespecs(shard, *filespecs):
   master = filespecs[0]
   master_is_sharded = IsShardedFileSpec(master)
 
-  master_num_shards = None
+  master_num_shards = 0
   if master_is_sharded:
     _, master_num_shards, _ = ParseShardedFileSpec(master)
     if shard >= master_num_shards or shard < 0:

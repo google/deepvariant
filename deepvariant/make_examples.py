@@ -354,15 +354,15 @@ def default_options(add_flags=True, flags_obj=None):
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
+    options.task_id = flags_obj.task
+    options.num_shards = num_shards
+
     if flags_obj.write_run_info:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
 
     options.calling_regions.extend(parse_regions_flag(flags_obj.regions))
     options.exclude_calling_regions.extend(
         parse_regions_flag(flags_obj.exclude_regions))
-
-    options.task_id = flags_obj.task
-    options.num_shards = 0 if num_shards is None else num_shards
 
     options.realigner_enabled = flags_obj.realign_reads
     if options.realigner_enabled:
