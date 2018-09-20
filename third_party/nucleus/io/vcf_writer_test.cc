@@ -501,7 +501,7 @@ TEST(VcfWriterTest, HandlesRedefinedPL) {
   header.mutable_sample_names()->Add("Fido");
 
   nucleus::genomics::v1::VcfWriterOptions writer_options;
-  writer_options.set_store_gl_and_pl_in_info_map(true);
+  writer_options.set_retrieve_gl_and_pl_from_info_map(true);
 
   std::unique_ptr<VcfWriter> writer = std::move(
       VcfWriter::ToFile(output_filename, header, writer_options).ValueOrDie());

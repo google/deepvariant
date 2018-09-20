@@ -344,5 +344,5 @@ message VcfWriterOptions {
   // VariantCall.genotype_likelihood field, with the enforcement that each is of
   // type=Float and Number=G, and neither GL nor PL should be present in the
   // VariantCall.info map.
-  bool store_gl_and_pl_in_info_map = 9;
+  bool retrieve_gl_and_pl_from_info_map = 9;
 }

@@ -273,15 +273,13 @@ class VcfRoundtripTests(parameterized.TestCase):
 
   def setUp(self):
     self.header = (
-        '##fileformat=VCFv4.2\n'
-        '##FILTER=<ID=PASS,Description="All filters passed">\n'
-        '##INFO=<ID=DB,Number=0,Type=Flag,Description="In dbSNP">\n'
-        '##INFO=<ID=MIN_DP,Number=1,Type=Integer,Description="Min DP">\n'
-        '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
-        '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths">\n'
-        '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">\n'
-        '##contig=<ID=chr1,length=248956422>\n'
-        '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\tS2\n')
+        '##fileformat=VCFv4.2\n##FILTER=<ID=PASS,Description="All filters '
+        'passed">\n##INFO=<ID=DB,Number=0,Type=Flag,Description="In '
+        'dbSNP">\n##INFO=<ID=MIN_DP,Number=1,Type=Integer,Description="Min '
+        'DP">\n##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic'
+        ' depths">\n##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read '
+        'depth">\n##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Genotype '
+        'likelihood,Phred-encoded">\n##contig=<ID=chr1,length=248956422>\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\tS2\n')
     self.record_format_strings = [
         'chr1\t13613\t.\tT\tA\t39.88\tPASS\t{info}\t{fmt}\t0/1{efmts1}\t1/1{efmts2}\n',
         'chr1\t13813\trs1\tT\tG\t90.28\tPASS\t{info}\t{fmt}\t1/1{efmts1}\t0|1{efmts2}\n',
@@ -291,15 +289,23 @@ class VcfRoundtripTests(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           expected_infos=['DB;MIN_DP=4', 'MIN_DP=15', 'DB;MIN_DP=10'],
-          expected_fmt='GT:AD:DP',
-          expected_fmt1=[':1,3:4', ':11,13:24', ':5,5:10'],
-          expected_fmt2=[':1,19:20', ':7,8:15', ':.:10'],
+          expected_fmt='GT:AD:DP:PL',
+          expected_fmt1=[
+              ':1,3:4:10,5,0', ':11,13:24:55,0,50', ':5,5:10:20,0,20'
+          ],
+          expected_fmt2=[
+              ':1,19:20:100,90,0', ':7,8:15:15,0,12', ':.:10:0,0,50'
+          ],
       ),
       dict(
           expected_infos=['DB', '.', 'DB'],
-          expected_fmt='GT:AD:DP',
-          expected_fmt1=[':1,3:4', ':11,13:24', ':5,5:10'],
-          expected_fmt2=[':1,19:20', ':7,8:15', ':.:10'],
+          expected_fmt='GT:AD:DP:PL',
+          expected_fmt1=[
+              ':1,3:4:10,5,0', ':11,13:24:55,0,50', ':5,5:10:20,0,20'
+          ],
+          expected_fmt2=[
+              ':1,19:20:100,90,0', ':7,8:15:15,0,12', ':.:10:0,0,50'
+          ],
           reader_excluded_info=['MIN_DP'],
       ),
       dict(
@@ -308,7 +314,7 @@ class VcfRoundtripTests(parameterized.TestCase):
           expected_fmt1=['', '', ''],
           expected_fmt2=['', '', ''],
           reader_excluded_info=['MIN_DP'],
-          reader_excluded_format=['AD', 'DP'],
+          reader_excluded_format=['AD', 'DP', 'PL'],
       ),
       dict(
           expected_infos=['DB', '.', 'DB'],
@@ -316,7 +322,7 @@ class VcfRoundtripTests(parameterized.TestCase):
           expected_fmt1=['', '', ''],
           expected_fmt2=['', '', ''],
           writer_excluded_info=['MIN_DP'],
-          writer_excluded_format=['AD', 'DP'],
+          writer_excluded_format=['AD', 'DP', 'PL'],
       ),
       dict(
           expected_infos=['DB', '.', 'DB'],
@@ -326,7 +332,7 @@ class VcfRoundtripTests(parameterized.TestCase):
           reader_excluded_info=['MIN_DP'],
           reader_excluded_format=['AD'],
           writer_excluded_info=['MIN_DP'],
-          writer_excluded_format=['DP'],
+          writer_excluded_format=['DP', 'PL'],
       ),
   )
   def test_roundtrip(self,
@@ -345,24 +351,27 @@ class VcfRoundtripTests(parameterized.TestCase):
                           expected_fmt1, expected_fmt2)
     ]
     expected = self.header + ''.join(expected_records)
-    with vcf.VcfReader(
-        test_utils.genomics_core_testdata('test_py_roundtrip.vcf'),
-        excluded_info_fields=reader_excluded_info,
-        excluded_format_fields=reader_excluded_format) as reader:
+    for info_map_pl in [False, True]:
+      with vcf.VcfReader(
+          test_utils.genomics_core_testdata('test_py_roundtrip.vcf'),
+          excluded_info_fields=reader_excluded_info,
+          excluded_format_fields=reader_excluded_format,
+          store_gl_and_pl_in_info_map=info_map_pl) as reader:
+        records = list(reader.iterate())
+        output_path = test_utils.test_tmpfile(
+            'test_roundtrip_tmpfile_{}.vcf'.format(info_map_pl))
+        with vcf.VcfWriter(
+            output_path,
+            header=reader.header,
+            excluded_info_fields=writer_excluded_info,
+            excluded_format_fields=writer_excluded_format,
+            retrieve_gl_and_pl_from_info_map=info_map_pl) as writer:
+          for record in records:
+            writer.write(record)
 
-      records = list(reader.iterate())
-      output_path = test_utils.test_tmpfile('test_roundtrip_tmpfile.vcf')
-      with vcf.VcfWriter(
-          output_path,
-          header=reader.header,
-          excluded_info_fields=writer_excluded_info,
-          excluded_format_fields=writer_excluded_format) as writer:
-        for record in records:
-          writer.write(record)
-
-    with open(output_path) as f:
-      actual = f.read()
-    self.assertEqual(actual, expected)
+      with open(output_path) as f:
+        actual = f.read()
+      self.assertEqual(actual, expected)
 
 
 class InMemoryVcfReaderTests(parameterized.TestCase):

@@ -152,7 +152,8 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
   def __init__(self,
                input_path,
                excluded_info_fields=None,
-               excluded_format_fields=None):
+               excluded_format_fields=None,
+               store_gl_and_pl_in_info_map=False):
     """Initializer for NativeVcfReader.
 
     Args:
@@ -162,6 +163,9 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
       excluded_format_fields: list(str). A list of FORMAT field IDs that should
         not be parsed into the Variants. If None, all FORMAT fields are
         included.
+      store_gl_and_pl_in_info_map: bool. If True, the "GL" and "PL" FORMAT
+        fields are stored in the VariantCall.info map rather than as top-level
+        values in the VariantCall.genotype_likelihood field.
     """
     super(NativeVcfReader, self).__init__()
 
@@ -169,7 +173,9 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
         input_path.encode('utf8'),
         variants_pb2.VcfReaderOptions(
             excluded_info_fields=excluded_info_fields,
-            excluded_format_fields=excluded_format_fields))
+            excluded_format_fields=excluded_format_fields,
+            store_gl_and_pl_in_info_map=store_gl_and_pl_in_info_map,
+        ))
 
     self.header = self._reader.header
     self.field_access_cache = VcfHeaderCache(self.header)
@@ -215,7 +221,8 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
                header=None,
                round_qualities=False,
                excluded_info_fields=None,
-               excluded_format_fields=None):
+               excluded_format_fields=None,
+               retrieve_gl_and_pl_from_info_map=False):
     """Initializer for NativeVcfWriter.
 
     Args:
@@ -230,6 +237,9 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
         be written to the output. If None, all INFO fields are included.
       excluded_format_fields: list(str). A list of FORMAT field IDs that should
         not be written to the output. If None, all FORMAT fields are included.
+      retrieve_gl_and_pl_from_info_map: bool. If True, the "GL" and "PL" FORMAT
+        fields are retrieved from the VariantCall.info map rather than from the
+        top-level value in the VariantCall.genotype_likelihood field.
     """
     super(NativeVcfWriter, self).__init__()
 
@@ -239,6 +249,7 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
         round_qual_values=round_qualities,
         excluded_info_fields=excluded_info_fields,
         excluded_format_fields=excluded_format_fields,
+        retrieve_gl_and_pl_from_info_map=retrieve_gl_and_pl_from_info_map,
     )
     self._writer = vcf_writer.VcfWriter.to_file(output_path, header,
                                                 writer_options)
@@ -259,13 +270,16 @@ class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
                      header,
                      round_qualities=False,
                      excluded_info_fields=None,
-                     excluded_format_fields=None):
+                     excluded_format_fields=None,
+                     retrieve_gl_and_pl_from_info_map=False):
     return NativeVcfWriter(
         output_path,
         header=header,
         round_qualities=round_qualities,
         excluded_info_fields=excluded_info_fields,
-        excluded_format_fields=excluded_format_fields)
+        excluded_format_fields=excluded_format_fields,
+        retrieve_gl_and_pl_from_info_map=retrieve_gl_and_pl_from_info_map,
+    )
 
   def _post_init_hook(self):
     # Initialize field_access_cache.  If we are dispatching to a
