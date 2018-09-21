@@ -150,8 +150,8 @@ def make_variant(chrom='chr1',
   """Creates a new Variant proto from args.
 
   Args:
-    chrom: str. The reference_name for this variant. Defaults to 'chr1'.
-    start: int. The starting position of this variant. Defaults to 10.
+    chrom: str. The reference_name for this variant.
+    start: int. The starting position of this variant.
     alleles: list of str with at least one element. alleles[0] is the reference
       bases and alleles[1:] will be set to alternate_bases of variant. If None,
       defaults to ['A', 'C'].
@@ -176,6 +176,57 @@ def make_variant(chrom='chr1',
   Returns:
     nucleus.genomics.v1.Variant proto.
   """
+  return make_variant_multiple_calls(
+      chrom=chrom,
+      start=start,
+      alleles=alleles,
+      end=end,
+      filters=filters,
+      qual=qual,
+      gts=None if gt is None else [gt],
+      gqs=None if gq is None else [gq],
+      sample_names=None if sample_name is None else [sample_name],
+      glss=None if gls is None else [gls])
+
+
+def make_variant_multiple_calls(chrom='chr1',
+                                start=10,
+                                alleles=None,
+                                end=None,
+                                filters=None,
+                                qual=None,
+                                gts=None,
+                                gqs=None,
+                                sample_names=None,
+                                glss=None):
+  """Creates a new Variant proto from args that contains multi-sample calls.
+
+  Args:
+    chrom: str. The reference_name for this variant.
+    start: int. The starting position of this variant.
+    alleles: list of str with at least one element. alleles[0] is the reference
+      bases and alleles[1:] will be set to alternate_bases of variant. If None,
+        defaults to ['A', 'C'].
+    end: int or None. If not None, the variant's end will be set to this value.
+      If None, will be set to the start + len(reference_bases).
+    filters: str, list of str, or None. Sets the filters field of the variant to
+      this value if not None. If filters is a string `value`, this is equivalent
+      to an argument [`value`]. If None, no value will be assigned to the
+      filters field.
+    qual: int or None. The quality score for this variant. If None, no quality
+      score will be written in the Variant.
+    gts: A list of lists of ints. For each list in this list, creates a
+      VariantCall in Variant with genotype field set to this value.
+    gqs: A list of ints or None. Must match the gts arg if specified. Sets the
+      GQ value of corresponding VariantCall.
+    sample_names: A list of strs or None. Must match the gts arg if specified.
+      Sets the call_set_name of the corresponding VariantCall.
+    glss: A list of array-lists of float, or None. Must match the gts arg if
+      specified. Sets the genotype_likelihoods of the corresponding VariantCall.
+
+  Returns:
+    nucleus.genomics.v1.Variant proto.
+  """
   if alleles is None:
     alleles = ['A', 'C']
 
@@ -196,17 +247,18 @@ def make_variant(chrom='chr1',
       filters = [filters]
     variant.filter[:] = filters
 
-  if gt:
-    call = variant.calls.add(genotype=gt)
+  if gts:
+    for i in range(len(gts)):
+      call = variant.calls.add(genotype=gts[i])
 
-    if sample_name:
-      call.call_set_name = sample_name
+      if sample_names and sample_names[i] is not None:
+        call.call_set_name = sample_names[i]
 
-    if gq:
-      set_list_values(call.info['GQ'], [gq])
+      if gqs and gqs[i] is not None:
+        set_list_values(call.info['GQ'], [gqs[i]])
 
-    if gls:
-      call.genotype_likelihood.extend(gls)
+      if glss and glss[i] is not None:
+        call.genotype_likelihood.extend(glss[i])
 
   return variant
 

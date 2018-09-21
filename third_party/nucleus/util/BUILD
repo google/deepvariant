@@ -221,6 +221,7 @@ nucleus_py_library(
     srcs = ["variant_utils.py"],
     deps = [
         ":ranges",
+        ":variantcall_utils",
         ":vcf_constants",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",

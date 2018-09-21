@@ -146,6 +146,12 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(gt=[0, 0]), False, True),
       (test_utils.make_variant(gt=[0, 1]), True, True),
       (test_utils.make_variant(gt=[1, 1]), True, True),
+      (test_utils.make_variant_multiple_calls(gts=[[0, 0], [0, 0]]), False,
+       True),
+      (test_utils.make_variant_multiple_calls(gts=[[0, 1], [0, 0]]), True,
+       True),
+      (test_utils.make_variant_multiple_calls(gts=[[-1, -1], [0, 0]]), False,
+       True),
   )
   def test_is_variant_call(self, variant, expected_req_non_ref,
                            expected_any_genotype):
@@ -174,6 +180,9 @@ class VariantUtilsTests(parameterized.TestCase):
     hom_ref = test_utils.make_variant(gt=[0, 0])
     het = test_utils.make_variant(gt=[0, 1])
     hom_var = test_utils.make_variant(gt=[1, 1])
+    mult1 = test_utils.make_variant_multiple_calls(gts=[[-1, -1], [0, 0]])
+    mult2 = test_utils.make_variant_multiple_calls(
+        gts=[[0, 0], [0, 1], [-1, -1]])
 
     check_is_variant(no_call, False, no_calls_are_variant=False)
     check_is_variant(no_call, True, no_calls_are_variant=True)
@@ -183,6 +192,12 @@ class VariantUtilsTests(parameterized.TestCase):
     check_is_variant(het, True, no_calls_are_variant=True)
     check_is_variant(hom_var, True, no_calls_are_variant=False)
     check_is_variant(hom_var, True, no_calls_are_variant=True)
+    check_is_variant(mult1, False, no_calls_are_variant=False)
+    check_is_variant(mult1, True, no_calls_are_variant=True)
+    check_is_variant(mult2, False, call_indices=[0])
+    check_is_variant(mult2, True, call_indices=[1])
+    check_is_variant(mult2, True, call_indices=[0, 1])
+    check_is_variant(mult2, False, call_indices=[2])
 
   @parameterized.parameters(
       (test_utils.make_variant(filters=None), False),

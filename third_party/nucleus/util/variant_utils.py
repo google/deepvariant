@@ -39,6 +39,7 @@ import six
 
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
 
 
@@ -471,7 +472,8 @@ def is_filtered(variant):
 
 def is_variant_call(variant,
                     require_non_ref_genotype=True,
-                    no_calls_are_variant=False):
+                    no_calls_are_variant=False,
+                    call_indices=None):
   """Is variant a non-reference call?
 
   A Variant proto doesn't always imply that there's a variant present in the
@@ -495,12 +497,12 @@ def is_variant_call(variant,
       a variant call?
     no_calls_are_variant: If a site has genotypes, should we consider no_call
       genotypes as being variant or not?
+    call_indices: A list of 0-based indices. If specified, only the calls
+      at the given indices will be considered. The function will return
+      True if any of those calls are variant.
 
   Returns:
     True if variant is really a mutation call.
-
-  Raises:
-    ValueError: If variant has more than one call (i.e., is multi-sample).
   """
   if not variant.alternate_bases:
     return False
@@ -510,14 +512,15 @@ def is_variant_call(variant,
     return True
   # All tests after this point should only look at genotype-based fields, as
   # we may have aborted out in the prev. line due to require_non_ref_genotype.
-  elif len(variant.calls) > 1:
-    raise ValueError('Unsupported: multiple genotypes found at', variant)
-  elif any(g > 0 for g in variant.calls[0].genotype):
-    return True
-  elif no_calls_are_variant:
-    return all(g == -1 for g in variant.calls[0].genotype)
   else:
-    return False
+    if call_indices is None:
+      call_indices = range(len(variant.calls))
+    return any(
+        any(g > 0
+            for g in variant.calls[i].genotype) or
+        (no_calls_are_variant and
+         not variantcall_utils.has_genotypes(variant.calls[i]))
+        for i in call_indices)
 
 
 def has_calls(variant):
