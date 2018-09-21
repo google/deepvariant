@@ -92,27 +92,16 @@ seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
 """
 
 _CALL_VARIANTS_COMMAND = r"""
-seq -f "%05g" "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" |
-parallel --jobs "${{CONCURRENT_JOBS}}" --halt 2
 /opt/deepvariant/bin/call_variants
-  --examples "${{EXAMPLES}}"/examples_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz
-  --outfile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-{{}}-of-"$(printf "%05d" "${{SHARDS}}")".gz
+  --examples "${{EXAMPLES}}"/examples_output.tfrecord@"${{SHARDS}}".gz
+  --outfile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-"$(printf "%05d" "${{CALL_VARIANTS_SHARD_INDEX}}")"-of-"$(printf "%05d" "${{CALL_VARIANTS_SHARDS}}")".gz
   --checkpoint "${{MODEL}}"/model.ckpt
 """
 
-_POSTPROCESS_VARIANTS_COMMAND_NO_TPU = r"""
+_POSTPROCESS_VARIANTS_COMMAND = r"""
 /opt/deepvariant/bin/postprocess_variants
     --ref "${{INPUT_REF}}"
-    --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord@"${{SHARDS}}".gz
-    --outfile "${{OUTFILE}}"
-    {EXTRA_ARGS}
-"""
-
-# When running on TPU, call_variants writes output into one shard.
-_POSTPROCESS_VARIANTS_COMMAND_TPU = r"""
-/opt/deepvariant/bin/postprocess_variants
-    --ref "${{INPUT_REF}}"
-    --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-00000-of-00001.gz
+    --infile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord@"${{CALL_VARIANTS_SHARDS}}".gz
     --outfile "${{OUTFILE}}"
     {EXTRA_ARGS}
 """
@@ -156,16 +145,22 @@ _POD_CONFIG_TEMPLATE = r"""
 """
 
 
-def _get_staging_examples_folder(pipeline_args, worker_index):
+def _get_staging_examples_folder_to_write(pipeline_args,
+                                          make_example_worker_index):
   """Returns the folder to store examples from make_examples job."""
-  path_parts = [pipeline_args.staging, 'examples']
-  # If the number of workers for both make_examples and call_variants is the
-  # same, then we can optimize localization between make_examples and
-  # call_variants by creating a sub-folder for each worker.
-  if (pipeline_args.make_examples_workers ==
-      pipeline_args.call_variants_workers):
-    path_parts.append(str(worker_index))
-  return os.path.join(*path_parts)
+  # call_variants_workers is less than or equal to make_examples_workers.
+  folder_index = int(
+      make_example_worker_index * pipeline_args.call_variants_workers /
+      pipeline_args.make_examples_workers)
+  return os.path.join(*[pipeline_args.staging, 'examples', str(folder_index)])
+
+
+def _get_staging_examples_folder_to_read(pipeline_args,
+                                         call_variants_worker_index):
+  """Returns the folder to read examples from make_examples job."""
+  return os.path.join(
+      *[pipeline_args.staging, 'examples',
+        str(call_variants_worker_index)])
 
 
 def _get_staging_gvcf_folder(pipeline_args):
@@ -300,7 +295,8 @@ def _run_make_examples(pipeline_args):
   results = []
   for i in range(num_workers):
     outputs = [
-        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i) + '/*'
+        'EXAMPLES=' + _get_staging_examples_folder_to_write(pipeline_args, i) +
+        '/*'
     ]
     if pipeline_args.gvcf_outfile:
       outputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
@@ -355,7 +351,7 @@ def _deploy_call_variants_pod(pod_name, cluster, pipeline_args):
   """Deploys a pod into Kubernetes cluster, and waits on completion."""
   # redacted
   infile = os.path.join(
-      _get_staging_examples_folder(pipeline_args, 0),
+      _get_staging_examples_folder_to_read(pipeline_args, 0),
       'examples_output.tfrecord@{}.gz'.format(str(pipeline_args.shards)))
   outfile = os.path.join(
       _get_staging_called_variants_folder(pipeline_args),
@@ -424,12 +420,12 @@ def _run_call_variants_with_pipelines_api(pipeline_args):
       pipeline_args.call_variants_ram_per_worker_gb * 1024)
 
   num_workers = min(pipeline_args.call_variants_workers, pipeline_args.shards)
-  shards_per_worker = pipeline_args.shards / num_workers
   threads = multiprocessing.Pool(processes=num_workers)
   results = []
   for i in range(num_workers):
     inputs = [
-        'EXAMPLES=' + _get_staging_examples_folder(pipeline_args, i) + '/*'
+        'EXAMPLES=' + _get_staging_examples_folder_to_read(pipeline_args, i) +
+        '/*'
     ]
     outputs = [
         'CALLED_VARIANTS=' + _get_staging_called_variants_folder(pipeline_args)
@@ -447,12 +443,8 @@ def _run_call_variants_with_pipelines_api(pipeline_args):
         ','.join(outputs), '--machine-type', machine_type, '--disk-size',
         str(pipeline_args.call_variants_disk_per_worker_gb), '--set', 'MODEL=' +
         pipeline_args.model, '--set', 'SHARDS=' + str(pipeline_args.shards),
-        '--set', 'SHARD_START_INDEX=' + str(int(i * shards_per_worker)),
-        '--set', 'SHARD_END_INDEX=' + str(int((i + 1) * shards_per_worker - 1)),
-        '--set', 'CONCURRENT_JOBS=' + ('1' if pipeline_args.gpu else (str(
-            int(pipeline_args.call_variants_cores_per_worker /
-                pipeline_args.call_variants_cores_per_shard)))), '--command',
-        command
+        '--set', 'CALL_VARIANTS_SHARD_INDEX=' + str(i), '--set',
+        'CALL_VARIANTS_SHARDS=' + str(num_workers), '--command', command
     ]
     if pipeline_args.gpu:
       run_args.extend(
@@ -504,10 +496,9 @@ def _run_postprocess_variants(pipeline_args):
     inputs.extend(['GVCF=' + _get_staging_gvcf_folder(pipeline_args) + '/*'])
     outputs.extend(['GVCF_OUTFILE=' + pipeline_args.gvcf_outfile])
 
+  call_variants_shards = 1 if pipeline_args.tpu else min(
+      pipeline_args.call_variants_workers, pipeline_args.shards)
   job_name = pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME
-  raw_command = (
-      _POSTPROCESS_VARIANTS_COMMAND_TPU
-      if pipeline_args.tpu else _POSTPROCESS_VARIANTS_COMMAND_NO_TPU)
   run_args = _get_base_job_args(pipeline_args) + [
       '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name, '--output',
       os.path.join(pipeline_args.logging,
@@ -515,8 +506,9 @@ def _run_postprocess_variants(pipeline_args):
       pipeline_args.docker_image, '--inputs', ','.join(inputs), '--outputs',
       ','.join(outputs), '--machine-type', machine_type, '--disk-size',
       str(pipeline_args.postprocess_variants_disk_gb), '--set',
-      'SHARDS=' + str(pipeline_args.shards), '--command',
-      raw_command.format(EXTRA_ARGS=' '.join(get_extra_args()))
+      'CALL_VARIANTS_SHARDS=' + str(call_variants_shards), '--command',
+      _POSTPROCESS_VARIANTS_COMMAND.format(
+          EXTRA_ARGS=' '.join(get_extra_args()))
   ]
   _run_job(run_args)
 
@@ -538,6 +530,13 @@ def _validate_and_complete_args(pipeline_args):
     raise ValueError('--shards must be divisible by --make_examples_workers')
   if pipeline_args.shards % pipeline_args.call_variants_workers != 0:
     raise ValueError('--shards must be divisible by --call_variants_workers')
+  if pipeline_args.call_variants_workers > pipeline_args.make_examples_workers:
+    logging.warning(
+        '--call_variants_workers cannot be greather than '
+        '--make_examples_workers. Setting call_variants_workers to  %d',
+        pipeline_args.make_examples_workers)
+    pipeline_args.call_variants_workers = pipeline_args.make_examples_workers
+
   if pipeline_args.gpu and not pipeline_args.docker_image_gpu:
     raise ValueError('--docker_image_gpu must be provided with --gpu')
   if (pipeline_args.call_variants_cores_per_worker <

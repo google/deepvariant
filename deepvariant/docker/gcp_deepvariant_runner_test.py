@@ -203,7 +203,7 @@ class DeepvariantRunnerTest(unittest.TestCase):
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
                           'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                          'EXAMPLES=gs://bucket/staging/examples/*')
+                          'EXAMPLES=gs://bucket/staging/examples/0/*')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
@@ -241,7 +241,7 @@ class DeepvariantRunnerTest(unittest.TestCase):
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
                           'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                          'EXAMPLES=gs://bucket/staging/examples/*',
+                          'EXAMPLES=gs://bucket/staging/examples/0/*',
                           'GCS_BUCKET=bucket', 'BAM=bam')
             ]),
             mock.call(mock.ANY, [
@@ -263,6 +263,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
     self._argv.extend([
+        '--make_examples_workers',
+        '3',
         '--jobs_to_run',
         'call_variants',
         '--call_variants_workers',
@@ -280,18 +282,15 @@ class DeepvariantRunnerTest(unittest.TestCase):
         [
             mock.call(mock.ANY, [
                 _HasAllOf('call_variants', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                          'CONCURRENT_JOBS=2')
+                          'CALL_VARIANTS_SHARD_INDEX=0')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('call_variants', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
-                          'CONCURRENT_JOBS=2')
+                          'CALL_VARIANTS_SHARD_INDEX=1')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('call_variants', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
-                          'CONCURRENT_JOBS=2')
+                          'CALL_VARIANTS_SHARD_INDEX=2')
             ]),
         ],
         any_order=True,
@@ -302,6 +301,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
     self._argv.extend([
+        '--make_examples_workers',
+        '3',
         '--jobs_to_run',
         'call_variants',
         '--call_variants_workers',
@@ -322,18 +323,15 @@ class DeepvariantRunnerTest(unittest.TestCase):
         [
             mock.call(mock.ANY, [
                 _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                          'nvidia-tesla-k80', 'SHARD_START_INDEX=0',
-                          'SHARD_END_INDEX=4', 'CONCURRENT_JOBS=1')
+                          'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=0')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                          'nvidia-tesla-k80', 'SHARD_START_INDEX=5',
-                          'SHARD_END_INDEX=9', 'CONCURRENT_JOBS=1')
+                          'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=1')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                          'nvidia-tesla-k80', 'SHARD_START_INDEX=10',
-                          'SHARD_END_INDEX=14', 'CONCURRENT_JOBS=1')
+                          'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=2')
             ]),
         ],
         any_order=True,
