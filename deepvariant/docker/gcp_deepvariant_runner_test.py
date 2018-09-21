@@ -371,6 +371,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
         '--shards',
         '15',
         '--gpu',  # GPU should not have any effect.
+        '--gvcf_outfile',
+        'gvcf-folder-path',
         '--docker_image_gpu',
         'gcr.io/dockerimage_gpu',
     ])
@@ -378,8 +380,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
     mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
                   'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
-                  'INPUT_REF=gs://bucket/ref',
-                  'INPUT_REF_FAI=gs://bucket/ref.fai',
+                  'INPUT_REF=gs://bucket/ref', 'SHARDS=15',
+                  'CALL_VARIANTS_SHARDS=1', 'INPUT_REF_FAI=gs://bucket/ref.fai',
                   'OUTFILE=gs://bucket/output.vcf'))
 
 

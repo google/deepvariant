@@ -506,6 +506,7 @@ def _run_postprocess_variants(pipeline_args):
       pipeline_args.docker_image, '--inputs', ','.join(inputs), '--outputs',
       ','.join(outputs), '--machine-type', machine_type, '--disk-size',
       str(pipeline_args.postprocess_variants_disk_gb), '--set',
+      'SHARDS=' + str(pipeline_args.shards), '--set',
       'CALL_VARIANTS_SHARDS=' + str(call_variants_shards), '--command',
       _POSTPROCESS_VARIANTS_COMMAND.format(
           EXTRA_ARGS=' '.join(get_extra_args()))
