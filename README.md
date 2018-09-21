@@ -13,10 +13,11 @@ genetic variants from next-generation DNA sequencing data.
     [PCR-positive](https://ai.googleblog.com/2018/04/deepvariant-accuracy-improvements-for.html)
     samples and
     [low quality sequencing runs](https://blog.dnanexus.com/2018-01-16-evaluating-the-performance-of-ngs-pipelines-on-noisy-wgs-data/).
-*   DeepVariant is **fast**. For example, using
+*   DeepVariant is **fast**. Using
     [Google Cloud Platform](https://cloud.google.com/genomics/deepvariant), a
-    whole human genome<sup>[(1)](#myfootnote1)</sup> analysis completes in ~70
-    minutes<sup>[(2)](#myfootnote2)</sup> and an exome in ~25 minutes.
+    whole human genome<sup>[(1)](#myfootnote1)</sup> analysis completes in as
+    little as ~70 minutes<sup>[(2)](#myfootnote2)</sup> and an exome in ~25
+    minutes.
 *   DeepVariant is **cost-efficient**: Using
     [Google Cloud Platform](https://cloud.google.com/genomics/deepvariant),
     calling a whole genome costs ~$2-3 and an exome $0.20.
@@ -25,6 +26,8 @@ genetic variants from next-generation DNA sequencing data.
     [different sequencing technologies](https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-tpu-training-case-study.md)
     and even for
     [non-human species](http://news.irri.org/2018/01/international-rice-informatics.html).
+*   DeepVariant is **easy to use**. No filtering is needed beyond setting your
+    preferred minimum quality threshold.
 *   DeepVariant builds and runs on-premises and in the cloud, as a stand-alone
     binary or a Docker image, and makes use of hardware accelerators like GPUs
     and TPUs.
