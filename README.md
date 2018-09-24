@@ -92,8 +92,8 @@ Cloud Platform.
 <a name="about"></a>
 ## About DeepVariant
 
-For technical details describing how DeepVariant works please see our
-[preprint](https://doi.org/10.1101/092890).
+For technical details describing how DeepVariant works please see our [Nature
+Biotechnology publication](https://rdcu.be/7Dhl).
 
 ![DeepVariant workflow](docs/DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
 
