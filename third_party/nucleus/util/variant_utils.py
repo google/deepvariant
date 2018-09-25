@@ -188,23 +188,28 @@ def format_position(variant):
   return '{}:{}'.format(variant.reference_name, variant.start + 1)
 
 
-def is_snp(variant):
+def is_snp(variant, exclude_alleles=None):
   """Is variant a SNP?
 
   Args:
     variant: nucleus.genomics.v1.Variant.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
 
   Returns:
     True if all alleles of variant are 1 bp in length, excluding the GVCF
     <*> allele.
   """
-  return (not is_ref(variant) and len(variant.reference_bases) == 1 and
-          len(variant.alternate_bases) >= 1 and all(
-              (len(x) == 1 or x == vcf_constants.GVCF_ALT_ALLELE)
+  alleles_to_ignore = [vcf_constants.GVCF_ALT_ALLELE] + (exclude_alleles or [])
+  # pyformat: disable
+  return (not is_ref(variant) and
+          len(variant.reference_bases) == 1 and
+          len(variant.alternate_bases) >= 1 and
+          all((len(x) == 1 or x in alleles_to_ignore)
               for x in variant.alternate_bases))
+  # pyformat: enable
 
 
-def is_indel(variant):
+def is_indel(variant, exclude_alleles=None):
   """Is variant an indel?
 
   An indel event is simply one where the size of at least one of the alleles
@@ -212,6 +217,7 @@ def is_indel(variant):
 
   Args:
     variant: nucleus.genomics.v1.Variant.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
 
   Returns:
     True if the alleles in variant indicate an insertion/deletion event
@@ -219,10 +225,13 @@ def is_indel(variant):
   """
   # redacted
   # redacted
+  alleles_to_ignore = [vcf_constants.GVCF_ALT_ALLELE] + (exclude_alleles or [])
+  # pyformat: disable
   return (not is_ref(variant) and
           (len(variant.reference_bases) > 1 or
-           any((len(alt) > 1 and alt != vcf_constants.GVCF_ALT_ALLELE) for alt
-               in variant.alternate_bases)))
+           any((len(alt) > 1 and alt not in alleles_to_ignore)
+               for alt in variant.alternate_bases)))
+  # pyformat: enable
 
 
 def is_biallelic(variant):

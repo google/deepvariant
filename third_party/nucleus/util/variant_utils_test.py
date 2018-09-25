@@ -256,6 +256,17 @@ class VariantUtilsTests(parameterized.TestCase):
     self.assertEqual(variant_utils.is_snp(variant), expected)
 
   @parameterized.parameters(
+      (test_utils.make_variant(alleles=['A', 'C', '<NON_REF>']), ['<NON_REF>'],
+       True),
+      (test_utils.make_variant(alleles=['A', 'AT', '<NON_REF>']), ['<NON_REF>'],
+       False),
+  )
+  def test_is_snp_symbolic_allele(self, variant, exclude_alleles, expected):
+    self.assertEqual(
+        variant_utils.is_snp(variant, exclude_alleles=exclude_alleles),
+        expected)
+
+  @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), False),
       (test_utils.make_variant(alleles=['A', 'C', 'T']), False),
       (test_utils.make_variant(alleles=['A', 'AT']), True),
@@ -269,6 +280,17 @@ class VariantUtilsTests(parameterized.TestCase):
   )
   def test_is_indel(self, variant, expected):
     self.assertEqual(variant_utils.is_indel(variant), expected)
+
+  @parameterized.parameters(
+      (test_utils.make_variant(alleles=['A', 'C', '<NON_REF>']), ['<NON_REF>'],
+       False),
+      (test_utils.make_variant(alleles=['A', 'AT', '<NON_REF>']), ['<NON_REF>'],
+       True),
+  )
+  def test_is_indel_symbolic_allele(self, variant, exclude_alleles, expected):
+    self.assertEqual(
+        variant_utils.is_indel(variant, exclude_alleles=exclude_alleles),
+        expected)
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), False),
