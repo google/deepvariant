@@ -486,7 +486,7 @@ class DeepVariantModel(object):
     """
     try:
       return self._create(images, num_classes, is_training)
-    except (ValueError, tf.errors.OpError), e:
+    except (ValueError, tf.errors.OpError) as e:
       if self._is_bad_image_dimension_exception(e):
         _, height, width, _ = images.get_shape().as_list()
         message = (
