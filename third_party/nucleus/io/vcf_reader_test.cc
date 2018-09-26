@@ -177,6 +177,7 @@ TEST(ValidVcfHeaderParsing, MatchesProto) {
                 "Read depth of all passing filters reads for each allele.");
   AddTestFormat(header_proto, "GL", "G", "Float",
                 "Genotype likelihoods, log10 encoded");
+  AddTestFormat(header_proto, "CH", "1", "Character", "Character FORMAT field");
   AddTestContig(header_proto, "Chr1", "", 50);
   AddTestContig(header_proto, "chr2", "", 81195210, 1,
                 {"URL", "ftp://somewhere.org/assembly.fa", "md5", "fakemd5",

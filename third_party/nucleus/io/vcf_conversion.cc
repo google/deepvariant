@@ -557,7 +557,7 @@ VcfRecordConverter::VcfRecordConverter(
       vcf_type = BCF_HT_INT;
     } else if (type == "Float") {
       vcf_type = BCF_HT_REAL;
-    } else if (type == "String") {
+    } else if (type == "String" || type == "Character") {
       vcf_type = BCF_HT_STR;
     } else if (type == "Flag") {
       vcf_type = BCF_HT_FLAG;
@@ -600,7 +600,7 @@ VcfRecordConverter::VcfRecordConverter(
       vcf_type = BCF_HT_INT;
     } else if (type == "Float") {
       vcf_type = BCF_HT_REAL;
-    } else if (type == "String") {
+    } else if (type == "String" || type == "Character") {
       vcf_type = BCF_HT_STR;
     } else {
       LOG(WARNING) << "Unhandled FORMAT field type: field " << tag
