@@ -37,16 +37,18 @@
 #include "deepvariant/pileup_image_native.h"
 #include "clif/python/postconv.h"
 
-namespace clif {
+namespace learning {
+namespace genomics {
+namespace deepvariant {
 
-// Note: comment below is an instruction to CLIF.
-// CLIF use `learning::genomics::deepvariant::ImageRow` as ImageRow
+// CLIF use `::learning::genomics::deepvariant::ImageRow` as ImageRow
 
 // Convert an ImageRow to a numpy 3D array (adds a leading dimension 1).
-PyObject* Clif_PyObjFrom(
-    std::unique_ptr<learning::genomics::deepvariant::ImageRow> img_row,
-    clif::py::PostConv pc);
+PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
+                         const ::clif::py::PostConv& pc);
 
-}  // namespace clif
+}  // namespace deepvariant
+}  // namespace genomics
+}  // namespace learning
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_PYTHON_CLIF_CONVERTERS_H_

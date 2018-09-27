@@ -44,10 +44,11 @@
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/types.h"
 
-namespace clif {
+namespace learning {
+namespace genomics {
+namespace deepvariant {
 
-using learning::genomics::deepvariant::ImageRow;
-using tensorflow::string;
+using ::tensorflow::string;
 
 // We need to initialize the numpy C ARRAY API via a call to import_array():
 // https://docs.scipy.org/doc/numpy-1.13.0/reference/c-api.array.html#importing-the-api
@@ -60,27 +61,29 @@ void call_import_array() {
   import_array();
 }
 
-PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> upr,
-                         clif::py::PostConv unused) {
+PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
+                         const clif::py::PostConv& pc) {
   // Initialize numpy C array API if needed.
   std::call_once(import_array_flag, call_import_array);
-  if (!upr) { Py_RETURN_NONE; }
+  if (!img_row) { Py_RETURN_NONE; }
 
-  npy_intp dims[] { 1, upr->Width(), 6 };
+  npy_intp dims[] { 1, img_row->Width(), 6 };
   PyArrayObject* res = reinterpret_cast<PyArrayObject*>(
       PyArray_SimpleNew(3, dims, PyArray_UBYTE));
   CHECK(res != nullptr);
   unsigned char* data = reinterpret_cast<unsigned char*> PyArray_DATA(res);
   unsigned char* cur = data;
-  for (int i = 0; i < upr->Width(); i++) {
-    *cur++ = upr->base[i];
-    *cur++ = upr->base_quality[i];
-    *cur++ = upr->mapping_quality[i];
-    *cur++ = upr->on_positive_strand[i];
-    *cur++ = upr->supports_alt[i];
-    *cur++ = upr->matches_ref[i];
+  for (int i = 0; i < img_row->Width(); i++) {
+    *cur++ = img_row->base[i];
+    *cur++ = img_row->base_quality[i];
+    *cur++ = img_row->mapping_quality[i];
+    *cur++ = img_row->on_positive_strand[i];
+    *cur++ = img_row->supports_alt[i];
+    *cur++ = img_row->matches_ref[i];
   }
   return PyArray_Return(res);
 }
 
-}  // namespace clif
+}  // namespace deepvariant
+}  // namespace genomics
+}  // namespace learning
