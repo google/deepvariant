@@ -199,12 +199,13 @@ def is_snp(variant, exclude_alleles=None):
     True if all alleles of variant are 1 bp in length, excluding the GVCF
     <*> allele.
   """
-  alleles_to_ignore = [vcf_constants.GVCF_ALT_ALLELE] + (exclude_alleles or [])
+  if exclude_alleles is None:
+    exclude_alleles = [vcf_constants.GVCF_ALT_ALLELE]
   # pyformat: disable
   return (not is_ref(variant) and
           len(variant.reference_bases) == 1 and
           len(variant.alternate_bases) >= 1 and
-          all((len(x) == 1 or x in alleles_to_ignore)
+          all((len(x) == 1 or x in exclude_alleles)
               for x in variant.alternate_bases))
   # pyformat: enable
 
@@ -225,11 +226,12 @@ def is_indel(variant, exclude_alleles=None):
   """
   # redacted
   # redacted
-  alleles_to_ignore = [vcf_constants.GVCF_ALT_ALLELE] + (exclude_alleles or [])
+  if exclude_alleles is None:
+    exclude_alleles = [vcf_constants.GVCF_ALT_ALLELE]
   # pyformat: disable
   return (not is_ref(variant) and
           (len(variant.reference_bases) > 1 or
-           any((len(alt) > 1 and alt not in alleles_to_ignore)
+           any((len(alt) > 1 and alt not in exclude_alleles)
                for alt in variant.alternate_bases)))
   # pyformat: enable
 
