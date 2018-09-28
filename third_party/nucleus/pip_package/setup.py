@@ -68,8 +68,8 @@ for path in so_lib_paths:
   )
 
 setup(
-    name='Nucleus',
-    version='0.1.0',
+    name='google-nucleus',
+    version='0.2.0',
     description='A library for reading and writing genomics data.',
     long_description=
 """
