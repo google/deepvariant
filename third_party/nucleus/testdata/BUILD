@@ -12,5 +12,8 @@ load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucl
 
 filegroup(
     name = "testdata",
-    srcs = glob(["*"]),
+    srcs = glob([
+        "*",
+        "*/*",
+    ]),
 )
