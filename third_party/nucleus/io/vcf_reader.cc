@@ -228,11 +228,11 @@ class VcfFullFileIterable : public VariantIterable {
 };
 
 StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
-    const string& variants_path,
+    const string& vcf_filepath,
     const nucleus::genomics::v1::VcfReaderOptions& options) {
-  htsFile* fp = hts_open_x(variants_path.c_str(), "r");
+  htsFile* fp = hts_open_x(vcf_filepath.c_str(), "r");
   if (fp == nullptr) {
-    return tf::errors::NotFound("Could not open ", variants_path);
+    return tf::errors::NotFound("Could not open ", vcf_filepath);
   }
 
   bcf_hdr_t* header = bcf_hdr_read(fp);
@@ -247,20 +247,17 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
   }
 
   return std::unique_ptr<VcfReader>(
-      new VcfReader(variants_path, options, fp, header, idx));
+      new VcfReader(vcf_filepath, options, fp, header, idx));
 }
 
-VcfReader::VcfReader(const string& variants_path,
-                     const nucleus::genomics::v1::VcfReaderOptions& options,
-                     htsFile* fp, bcf_hdr_t* header, tbx_t* idx)
-    : options_(options), fp_(fp), header_(header), idx_(idx),
-      bcf1_(bcf_init()) {
+void VcfReader::NativeHeaderUpdated() {
+  vcf_header_.Clear();
   if (header_->nhrec < 1) {
     LOG(WARNING) << "Empty header, not a valid VCF.";
     return;
   }
   if (string(header_->hrec[0]->key) != "fileformat") {
-    LOG(WARNING) << "Not a valid VCF, fileformat needed: " << variants_path;
+    LOG(WARNING) << "Not a valid VCF, fileformat needed: " << vcf_filepath_;
   }
   vcf_header_.set_fileformat(header_->hrec[0]->value);
 
@@ -270,7 +267,7 @@ VcfReader::VcfReader(const string& variants_path,
   // BCF_DT_CTG: offset for contig (CTG) information in BCF dictionary (DT).
   const int n_contigs = header_->n[BCF_DT_CTG];
   for (int i = 0; i < n_contigs; ++i) {
-    const bcf_idpair_t& idPair = header->id[BCF_DT_CTG][i];
+    const bcf_idpair_t& idPair = header_->id[BCF_DT_CTG][i];
     AddContigInfo(idPair, vcf_header_.add_contigs(), i);
   }
 
@@ -308,13 +305,25 @@ VcfReader::VcfReader(const string& variants_path,
   for (int i = 0; i < n_samples; i++) {
     vcf_header_.add_sample_names(header_->samples[i]);
   }
-  vector<string> infos_to_exclude(options.excluded_info_fields().begin(),
-                                  options.excluded_info_fields().end());
-  vector<string> formats_to_exclude(options.excluded_format_fields().begin(),
-                                    options.excluded_format_fields().end());
+  vector<string> infos_to_exclude(options_.excluded_info_fields().begin(),
+                                  options_.excluded_info_fields().end());
+  vector<string> formats_to_exclude(options_.excluded_format_fields().begin(),
+                                    options_.excluded_format_fields().end());
   record_converter_ =
       VcfRecordConverter(vcf_header_, infos_to_exclude, formats_to_exclude,
-                         options.store_gl_and_pl_in_info_map());
+                         options_.store_gl_and_pl_in_info_map());
+}
+
+VcfReader::VcfReader(const string& vcf_filepath,
+                     const nucleus::genomics::v1::VcfReaderOptions& options,
+                     htsFile* fp, bcf_hdr_t* header, tbx_t* idx)
+    : vcf_filepath_(vcf_filepath),
+      options_(options),
+      fp_(fp),
+      header_(header),
+      idx_(idx),
+      bcf1_(bcf_init()) {
+  NativeHeaderUpdated();
 }
 
 VcfReader::~VcfReader() {
@@ -377,9 +386,24 @@ tf::Status VcfReader::FromString(
   *(cstr.get() + len) = '\0';
   kstring_t str = {.l = len + 1, .m = len + 1, .s = cstr.get()};
 
-  if (vcf_parse1(&str, header_, bcf1_) < 0 || bcf1_->errcode != 0) {
+  // vcf_parse1 returns -1 on critical errors and 0 otherwise. BCF_ERR_CTG_UNDEF
+  // and BCF_ERR_TAG_UNDEF indicate missing header definitions, and are
+  // non-critical errors. Ignore these missing header definitions because they
+  // are common in the wild.
+  if (vcf_parse1(&str, header_, bcf1_) < 0) {
     return tf::errors::DataLoss("Failed to parse VCF record: ", cstr.get());
   }
+  if (bcf1_->errcode == BCF_ERR_CTG_UNDEF ||
+      bcf1_->errcode == BCF_ERR_TAG_UNDEF) {
+    bcf1_->errcode = 0;
+    NativeHeaderUpdated();
+  }
+
+  if (bcf1_->errcode != 0) {
+    return tf::errors::DataLoss("Failed to parse VCF record with errcode: ",
+                                bcf1_->errcode);
+  }
+
   TF_RETURN_IF_ERROR(RecordConverter().ConvertToPb(header_, bcf1_, v));
   return tf::Status::OK();
 }

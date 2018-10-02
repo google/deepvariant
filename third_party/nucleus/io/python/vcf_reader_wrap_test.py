@@ -217,7 +217,7 @@ class WrapVcfReaderTests(absltest.TestCase):
 
   def test_vcf_from_string_raises_on_bad_input(self):
     with self.assertRaises(ValueError):
-      self.samples_reader.from_string('BAD NOT A VCF RECORD')
+      self.samples_reader.from_string('BAD NOT A VCF RECORD\n;;')
 
   def test_from_file_raises_with_missing_source(self):
     with self.assertRaisesRegexp(ValueError,

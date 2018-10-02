@@ -165,6 +165,14 @@ class VcfReader : public Reader {
             const nucleus::genomics::v1::VcfReaderOptions& options, htsFile* fp,
             bcf_hdr_t* header, tbx_t* idx);
 
+  // Helper method to update other member variables when |header_| is changed.
+  // This can happen during initialization or when a new header field is
+  // encountered while reading.
+  void NativeHeaderUpdated();
+
+  // Path to the vcf file.
+  const string vcf_filepath_;
+
   // The options controlling the behavior of this VcfReader.
   const nucleus::genomics::v1::VcfReaderOptions options_;
 

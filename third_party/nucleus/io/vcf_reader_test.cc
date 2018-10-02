@@ -506,4 +506,33 @@ TEST(HandleRedefinedFormatFields, MatchesProto) {
   EXPECT_THAT(actual[0], EqualsProto(expected));
 }
 
+// Tests that parsing succeeds even when undefined header fields (info, contig,
+// filter and format) exist.
+TEST(VcfReaderTest, MissingHeaderDefinitions) {
+  std::unique_ptr<VcfReader> reader =
+      std::move(VcfReader::FromFile(GetTestData(kVcfPhasesetFilename),
+                                    nucleus::genomics::v1::VcfReaderOptions())
+                    .ValueOrDie());
+  Variant v1;
+  // AB is an undefined FORMAT tag.
+  TF_CHECK_OK(reader->FromString(
+      "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT:GQ:AB\t0/1:.:abc\t0/1:42:def",
+      &v1));
+  EXPECT_EQ("abc", v1.calls(0).info().at("AB").values(0).string_value());
+  EXPECT_EQ("def", v1.calls(1).info().at("AB").values(0).string_value());
+  Variant v2;
+  // q10 is an undefined FILTER tag.
+  TF_CHECK_OK(reader->FromString(
+      "Chr1\t22\tDogSNP2\tA\tT\t0\tq10\t.\tGT:PL\t0/1:.\t0|1:50,40,60", &v2));
+  EXPECT_EQ("q10", v2.filter(0));
+
+  Variant v3;
+  // Chr2 is an undefined contig.
+  TF_CHECK_OK(
+      reader->FromString("Chr2\t23\tDogSNP3\tA\tT\t0\t.\t.\tGT:GL:PS\t"
+                         "0/1:.:.\t0/1:-5.0,-4.0,-6.0:.",
+                         &v3));
+  EXPECT_EQ("Chr2", v3.reference_name());
+}
+
 }  // namespace nucleus
