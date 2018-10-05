@@ -84,11 +84,11 @@ export DV_TF_NIGHTLY_BUILD="${DV_TF_NIGHTLY_BUILD:-0}"
 if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
   export DV_CPP_TENSORFLOW_TAG="master"
 else
-  export DV_CPP_TENSORFLOW_TAG="r1.9"
+  export DV_CPP_TENSORFLOW_TAG="r1.11"
 fi
-export DV_GCP_OPTIMIZED_TF_WHL_VERSION="1.9.0"
-export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="1.9.0"
-export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="1.9.0"
+export DV_GCP_OPTIMIZED_TF_WHL_VERSION="1.11.0"
+export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="1.11.0"
+export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="1.11.0"
 
 # Set this to 1 to use DeepVariant with GPUs. Set it to an already existing
 # value in the environment (allowing command line control of the build),
