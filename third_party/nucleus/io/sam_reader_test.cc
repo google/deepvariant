@@ -41,6 +41,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/io/sam_writer.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
@@ -146,6 +147,38 @@ TEST(SamReaderTest, TestHeaderlessSamIsNotOkay) {
   Read r;
   StatusOr<bool> status =  iterator->Next(&r);
   ASSERT_EQ(status.ok(), false);
+}
+
+TEST(SamReaderTest, TestMatePosition) {
+  // Write a file with one record that has mapped mate reference in FLAG field,
+  // but has * as RNEXT (mate reference name).
+  string output_filename(MakeTempFile("sam_reader_test.sam"));
+  {
+    std::unique_ptr<SamReader> reader = std::move(
+        SamReader::FromFile(GetTestData(kBamTestFilename), SamReaderOptions())
+            .ValueOrDie());
+    std::vector<Read> reads = as_vector(reader->Iterate());
+    Read r = reads[0];
+    EXPECT_TRUE(r.has_next_mate_position());
+    r.mutable_next_mate_position()->set_position(-1);
+    r.mutable_next_mate_position()->set_reference_name("*");
+
+    std::unique_ptr<SamWriter> writer = std::move(
+        SamWriter::ToFile(output_filename, reader->Header()).ValueOrDie());
+    EXPECT_THAT(writer->Write(r), IsOK());
+  }
+
+  // Read the output file, and make sure the * in mate reference name is parsed
+  // as an unmapped next read.
+  {
+    std::unique_ptr<SamReader> reader = std::move(
+        SamReader::FromFile(output_filename, SamReaderOptions()).ValueOrDie());
+    std::vector<Read> reads = as_vector(reader->Iterate());
+    ASSERT_EQ(1u, reads.size());
+    auto read = reads[0];
+    EXPECT_FALSE(read.has_next_mate_position());
+  }
+  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
 }
 
 class SamReaderQueryTest : public ::testing::Test {

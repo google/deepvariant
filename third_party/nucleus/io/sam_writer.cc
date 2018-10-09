@@ -406,10 +406,14 @@ tf::Status PopulateNativeBody(const Read& read, const bam_hdr_t* h, bam1_t* b) {
   }
   if (read.has_next_mate_position()) {
     c->mpos = read.next_mate_position().position();
-    for (int i = 0; i < h->n_targets; ++i) {
-      if (h->target_name[i] == read.next_mate_position().reference_name()) {
-        c->mtid = i;
-        break;
+    if (read.next_mate_position().reference_name() == "*") {
+      c->mtid = -1;
+    } else {
+      for (int i = 1; i < h->n_targets; ++i) {
+        if (h->target_name[i] == read.next_mate_position().reference_name()) {
+          c->mtid = i;
+          break;
+        }
       }
     }
   }

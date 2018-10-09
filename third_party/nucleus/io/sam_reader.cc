@@ -417,12 +417,13 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
   }
 
   // Set the mates map position if the mate is not unmapped.
-  if (paired && !(c->flag & BAM_FMUNMAP)) {
+  // Note: According to https://samtools.github.io/hts-specs/SAMv1.pdf, RNEXT
+  // field is set as '*' when the information is unavailable. htslib will
+  // populate c->mtid with -1 if '*' is detected. Treat the mate as unmapped
+  // even though the c->flag says otherwise.
+  if (paired && !(c->flag & BAM_FMUNMAP) && c->mtid >= 0) {
     Position* mate_position = read_message->mutable_next_mate_position();
-    if (c->mtid < 0)
-      return tf::errors::DataLoss(
-          "Expected mtid >= 0 as mate is supposedly mapped: ",
-          read_message->ShortDebugString());
+
     mate_position->set_reference_name(h->target_name[c->mtid]);
     mate_position->set_position(c->mpos);
     mate_position->set_reverse_strand(bam_is_mrev(b));
