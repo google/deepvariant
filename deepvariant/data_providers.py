@@ -299,8 +299,7 @@ class DeepVariantInput(object):
     else:
       # N.B.: we drop the final partial batch in eval mode, to work around TPU
       # static shape limitations in the current TPUEstimator.
-      dataset = dataset.apply(
-          tf.contrib.data.batch_and_drop_remainder(batch_size))
+      dataset = dataset.batch(batch_size, drop_remainder=True)
 
     return dataset
 
