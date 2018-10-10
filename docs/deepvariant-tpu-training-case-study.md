@@ -30,7 +30,7 @@ Any sufficiently capable machine will do. For this case study, we used a 64-core
 non-preemptible instance with 128GiB and no GPU.
 
 If you need an example, see
-[this section](deepvariant-case-study#request-a-machine).
+[this section](deepvariant-case-study.md#optional-if-on-google-cloud-platform-request-a-machine-with-this-example-command).
 
 Set the variables:
 

@@ -8,12 +8,8 @@ To get started, you'll need the DeepVariant programs (and some packages they
 depend on), some test data, and of course a place to run them.
 
 We've provided a docker image, and some test data in a bucket on Google Cloud
-Storage. The instructions below show how to download those using the `gsutil`
-command, which you can get by installing the
-[Cloud SDK](https://cloud.google.com/sdk/downloads).
-
-Warning: there is an Ubuntu package with the same name, but it is a different
-thing!
+Storage. The instructions below show how to download the data through the
+corresponding public URLs from these data.
 
 ### Update since r0.7 : using docker instead of copying binaries.
 
@@ -58,13 +54,12 @@ Before you start running, you need to have the following input files:
 1.  A model checkpoint for DeepVariant. We'll refer to this as `${MODEL}` below.
 
 ```bash
-BUCKET="gs://deepvariant"
 BIN_VERSION="0.7.0"
 MODEL_VERSION="0.7.0"
 
 MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"
-DATA_BUCKET="${BUCKET}/quickstart-testdata"
+MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"
+DATA_HTTP_DIR="https://storage.googleapis.com/deepvariant/quickstart-testdata"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -98,14 +93,17 @@ IMPORTANT: Models are tied to specific software versions. For example, you can
 use model version 0.2.\* with any software version 0.2.\*. We recommend using
 the latest software and the latest model.
 
-Once you've selected an appropriate model directory, you can download it with
-the [`gsutil`](https://cloud.google.com/storage/docs/gsutil) command. The path
-to these model checkpoint files can then be provided to `call_variants`.
+Once you've selected an appropriate model directory, you can download the data
+through their corresponding public URL. The path to these model checkpoint files
+can then be provided to `call_variants`.
 
 For example, let's download from the repository:
 
 ```bash
-gsutil cp -R "${MODEL_BUCKET}" .
+mkdir -p ${MODEL_NAME}
+wget -P ${MODEL_NAME} ${MODEL_HTTP_DIR}/model.ckpt.data-00000-of-00001
+wget -P ${MODEL_NAME} ${MODEL_HTTP_DIR}/model.ckpt.index
+wget -P ${MODEL_NAME} ${MODEL_HTTP_DIR}/model.ckpt.meta
 ```
 
 This should create a subdirectory in the current directory containing three
@@ -129,13 +127,22 @@ format](https://www.tensorflow.org/programmers_guide/variables#checkpoint_files)
 ### Download test data
 
 We've prepared a small test data bundle for use in this quick start guide that
-can be downloaded to your instance with the
-[`gsutil`](https://cloud.google.com/storage/docs/gsutil) command.
+can be downloaded to your instance from the public URLs.
 
 Download the test bundle:
 
 ```bash
-gsutil cp -R "${DATA_BUCKET}" .
+mkdir -p quickstart-testdata
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam.bai
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.bed
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.fai
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.fai
+wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.gzi
 ```
 
 This should create a subdirectory in the current directory containing the actual
