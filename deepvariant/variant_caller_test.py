@@ -382,7 +382,9 @@ class VariantCallerTests(parameterized.TestCase):
           expecteds=[
               dict(start=1, end=2, ref='A', gq=53, min_dp=18),
               dict(start=2, end=3, ref='C', gq=56, min_dp=19),
-              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
               dict(start=6, end=7, ref='A', gq=72, min_dp=31),
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=9, ref='T', gq=59, min_dp=20),
@@ -394,7 +396,9 @@ class VariantCallerTests(parameterized.TestCase):
           expecteds=[
               dict(start=1, end=2, ref='A', gq=53, min_dp=18),
               dict(start=2, end=3, ref='C', gq=56, min_dp=19),
-              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
               dict(start=6, end=7, ref='A', gq=72, min_dp=31),
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=9, ref='T', gq=59, min_dp=20),
@@ -405,7 +409,9 @@ class VariantCallerTests(parameterized.TestCase):
           gq_resolution=4,
           expecteds=[
               dict(start=1, end=3, ref='A', gq=53, min_dp=18),
-              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
               dict(start=6, end=7, ref='A', gq=72, min_dp=31),
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=9, ref='T', gq=59, min_dp=20),
@@ -415,7 +421,9 @@ class VariantCallerTests(parameterized.TestCase):
           gq_resolution=10,
           expecteds=[
               dict(start=1, end=3, ref='A', gq=53, min_dp=18),
-              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
               dict(start=6, end=7, ref='A', gq=72, min_dp=31),
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=10, ref='T', gq=56, min_dp=19),
@@ -424,12 +432,16 @@ class VariantCallerTests(parameterized.TestCase):
           gq_resolution=45,
           expecteds=[
               dict(start=1, end=3, ref='A', gq=53, min_dp=18),
-              dict(start=3, end=6, ref='A', gq=0, min_dp=16),
+              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
               dict(start=6, end=10, ref='A', gq=56, min_dp=19),
           ]),
   )
   def test_quantize_gvcfs(self, gq_resolution, expecteds):
     # Each count tuple is n_alt, n_ref, ref_base.
+    # The third, fourth, and the fifth ones should never be merged, since
+    # either het or hom_alt has bigger GL than hom_ref.
     counts = [(0, 18, 'A'), (0, 19, 'C'), (35, 0, 'A'), (10, 10, 'T'),
               (4, 12, 'A'), (1, 30, 'A'), (1, 34, 'C'), (0, 20, 'T'), (0, 19,
                                                                        'G')]

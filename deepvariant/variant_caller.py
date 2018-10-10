@@ -58,9 +58,10 @@ CANONICAL_DNA_BASES = frozenset('ACGT')
 EXTENDED_IUPAC_CODES = frozenset('ACGTRYSWKMBDHVN')
 
 # Data collection class used in creation of gVCF records.
-_GVCF = collections.namedtuple(
-    '_GVCF',
-    ['summary_counts', 'quantized_gq', 'raw_gq', 'likelihoods', 'read_depth'])
+_GVCF = collections.namedtuple('_GVCF', [
+    'summary_counts', 'quantized_gq', 'raw_gq', 'likelihoods', 'read_depth',
+    'has_valid_gl'
+])
 
 
 def _rescale_read_counts_if_necessary(n_ref_reads, n_total_reads,
@@ -262,6 +263,7 @@ class VariantCaller(object):
           # Skip calculating gq and likelihoods, since this is an ambiguous
           # reference base.
           quantized_gq, raw_gq, likelihoods = None, None, None
+          has_valid_gl = True
           n_total = summary_counts.total_read_count
         else:
           raise ValueError('Invalid reference base={} found during gvcf '
@@ -271,12 +273,14 @@ class VariantCaller(object):
         n_total = summary_counts.total_read_count
         raw_gq, likelihoods = self.reference_confidence(n_ref, n_total)
         quantized_gq = _quantize_gq(raw_gq, self.options.gq_resolution)
+        has_valid_gl = (np.amax(likelihoods) == likelihoods[0])
       return _GVCF(
           summary_counts=summary_counts,
           quantized_gq=quantized_gq,
           raw_gq=raw_gq,
           likelihoods=likelihoods,
-          read_depth=n_total)
+          read_depth=n_total,
+          has_valid_gl=has_valid_gl)
 
     # Combines contiguous, compatible single-bp blocks into larger gVCF blocks,
     # respecting non-reference variants interspersed among them. Yields each
@@ -284,28 +288,46 @@ class VariantCaller(object):
     # blocks to be merged have the same non-None GQ value.
     for key, combinable in itertools.groupby(
         (with_gq_and_likelihoods(sc) for sc in allele_count_summaries),
-        key=operator.attrgetter('quantized_gq')):
-      if key is None:
+        key=operator.attrgetter('quantized_gq', 'has_valid_gl')):
+      quantized_gq_val, gl_is_valid = key
+      if quantized_gq_val is None:
         # A None key indicates that a non-DNA reference base was encountered, so
         # skip this group.
         continue
-      combinable = list(combinable)
-      min_gq = min(elt.raw_gq for elt in combinable)
-      min_dp = min(elt.read_depth for elt in combinable)
-      first_record, last_record = combinable[0], combinable[-1]
-      call = variants_pb2.VariantCall(
-          call_set_name=self.options.sample_name,
-          genotype=[0, 0],
-          genotype_likelihood=first_record.likelihoods)
-      variantcall_utils.set_gq(call, min_gq)
-      variantcall_utils.set_min_dp(call, min_dp)
-      yield variants_pb2.Variant(
-          reference_name=first_record.summary_counts.reference_name,
-          reference_bases=first_record.summary_counts.ref_base,
-          alternate_bases=[vcf_constants.GVCF_ALT_ALLELE],
-          start=first_record.summary_counts.position,
-          end=last_record.summary_counts.position + 1,
-          calls=[call])
+
+      if gl_is_valid:
+        combinable = list(combinable)
+        min_gq = min(elt.raw_gq for elt in combinable)
+        min_dp = min(elt.read_depth for elt in combinable)
+        first_record, last_record = combinable[0], combinable[-1]
+        call = variants_pb2.VariantCall(
+            call_set_name=self.options.sample_name,
+            genotype=[0, 0],
+            genotype_likelihood=first_record.likelihoods)
+        variantcall_utils.set_gq(call, min_gq)
+        variantcall_utils.set_min_dp(call, min_dp)
+        yield variants_pb2.Variant(
+            reference_name=first_record.summary_counts.reference_name,
+            reference_bases=first_record.summary_counts.ref_base,
+            alternate_bases=[vcf_constants.GVCF_ALT_ALLELE],
+            start=first_record.summary_counts.position,
+            end=last_record.summary_counts.position + 1,
+            calls=[call])
+      else:
+        for elt in combinable:
+          call = variants_pb2.VariantCall(
+              call_set_name=self.options.sample_name,
+              genotype=[0, 0],
+              genotype_likelihood=elt.likelihoods)
+          variantcall_utils.set_gq(call, elt.raw_gq)
+          variantcall_utils.set_min_dp(call, elt.read_depth)
+          yield variants_pb2.Variant(
+              reference_name=elt.summary_counts.reference_name,
+              reference_bases=elt.summary_counts.ref_base,
+              alternate_bases=[vcf_constants.GVCF_ALT_ALLELE],
+              start=elt.summary_counts.position,
+              end=elt.summary_counts.position + 1,
+              calls=[call])
 
   def calls_from_allele_counter(self, allele_counter, include_gvcfs):
     """Gets variant calls and gvcf records for all sites in allele_counter.
