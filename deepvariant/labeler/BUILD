@@ -18,8 +18,8 @@ nucleus_py_binary(
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
-        "@io_abseil_py//absl/flags",
-        "@io_abseil_py//absl/logging",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -33,8 +33,8 @@ py_test(
         "//deepvariant:py_testdata",
         "//deepvariant/testing:flagsaver",
         "//third_party/nucleus/io:vcf",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -58,8 +58,8 @@ py_test(
         ":variant_labeler",
         "//deepvariant:py_testdata",
         "//third_party/nucleus/io:vcf",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -72,7 +72,7 @@ nucleus_py_library(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
-        "@io_abseil_py//absl/logging",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -86,8 +86,8 @@ py_test(
         "//deepvariant:py_testdata",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -131,8 +131,8 @@ py_test(
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:vcf_constants",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -147,7 +147,7 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )

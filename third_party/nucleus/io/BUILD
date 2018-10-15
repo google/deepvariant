@@ -34,7 +34,7 @@ nucleus_py_library(
 nucleus_py_library(
     name = "genomics_reader",
     srcs = ["genomics_reader.py"],
-    deps = ["@io_abseil_py//absl/logging"],
+    deps = ["@absl_py//absl/logging"],
 )
 
 py_test(
@@ -42,14 +42,14 @@ py_test(
     srcs = ["genomics_reader_test.py"],
     deps = [
         ":genomics_reader",
-        "@io_abseil_py//absl/testing:absltest",
+        "@absl_py//absl/testing:absltest",
     ],
 )
 
 nucleus_py_library(
     name = "genomics_writer",
     srcs = ["genomics_writer.py"],
-    deps = ["@io_abseil_py//absl/logging"],
+    deps = ["@absl_py//absl/logging"],
 )
 
 nucleus_py_library(
@@ -79,8 +79,8 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -110,8 +110,8 @@ py_test(
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -136,8 +136,8 @@ py_test(
         ":bed",
         "//third_party/nucleus/protos:bed_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -162,8 +162,8 @@ py_test(
         ":bedgraph",
         "//third_party/nucleus/protos:bedgraph_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -190,8 +190,8 @@ py_test(
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -216,8 +216,8 @@ py_test(
         ":fastq",
         "//third_party/nucleus/protos:fastq_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -956,7 +956,7 @@ py_test(
     deps = [
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
+        "@absl_py//absl/testing:absltest",
     ],
 )
 
@@ -1036,8 +1036,8 @@ py_test(
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -1046,8 +1046,8 @@ nucleus_py_binary(
     srcs = ["converter.py"],
     deps = [
         "//third_party/nucleus/io:io_py",
-        "@io_abseil_py//absl:app",
-        "@io_abseil_py//absl/logging",
+        "@absl_py//absl:app",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -1058,8 +1058,8 @@ py_test(
     deps = [
         ":converter",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/logging",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/logging",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )

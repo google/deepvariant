@@ -30,6 +30,6 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":math",
-        "@io_abseil_py//absl/testing:absltest",
+        "@absl_py//absl/testing:absltest",
     ],
 )

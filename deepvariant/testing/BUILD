@@ -8,7 +8,7 @@ nucleus_py_library(
     name = "flagsaver",
     srcs = ["flagsaver.py"],
     srcs_version = "PY2AND3",
-    deps = ["@io_abseil_py//absl/flags"],
+    deps = ["@absl_py//absl/flags"],
 )
 
 nucleus_py_library(
@@ -18,6 +18,6 @@ nucleus_py_library(
     deps = [
         "//deepvariant:dv_constants",
         "//deepvariant:modeling",
-        "@io_abseil_py//absl/flags",
+        "@absl_py//absl/flags",
     ],
 )

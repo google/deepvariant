@@ -28,8 +28,8 @@ py_test(
     deps = [
         ":generate_trained_model",
         "//deepvariant:py_testdata",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -55,7 +55,7 @@ py_test(
     deps = [
         ":model_evaluation",
         "//deepvariant:py_testdata",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )

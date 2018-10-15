@@ -17,6 +17,6 @@ py_test(
     srcs = ["timer_test.py"],
     deps = [
         ":timer",
-        "@io_abseil_py//absl/testing:absltest",
+        "@absl_py//absl/testing:absltest",
     ],
 )

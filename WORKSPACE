@@ -3,13 +3,8 @@
 # if it is unique.
 workspace(name = "com_google_deepvariant")
 
-# Abseil libraries
-git_repository(
-    name = "io_abseil_py",
-    tag = "pypi-v0.5.0",
-    remote = "https://github.com/abseil/abseil-py.git",
-)
-# Note: com_google_absl (the C++ abseil library) is provided by TensorFlow.
+# Note: absl_py and com_google_absl (the Python and C++ abseil libraries) are
+# provided by TensorFlow.
 
 # CCTZ (Time-zone framework).
 # redacted

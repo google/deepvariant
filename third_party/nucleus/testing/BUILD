@@ -93,7 +93,7 @@ nucleus_py_library(
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:cigar",
-        "@io_abseil_py//absl/flags",
+        "@absl_py//absl/flags",
     ],
 )
 
@@ -105,7 +105,7 @@ py_test(
     deps = [
         ":py_test_utils",
         "//third_party/nucleus/protos:cigar_py_pb2",
-        "@io_abseil_py//absl/testing:absltest",
+        "@absl_py//absl/testing:absltest",
     ],
 )
 
@@ -115,7 +115,7 @@ py_test(
     srcs = ["protobuf_implementation_test.py"],
     deps = [
         "//third_party/nucleus/io:sam",
-        "@io_abseil_py//absl/testing:absltest",
+        "@absl_py//absl/testing:absltest",
         "@protobuf_archive//:protobuf_python",
     ],
 )

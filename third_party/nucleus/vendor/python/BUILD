@@ -28,6 +28,6 @@ py_test(
     srcs = ["statusor_examples_test.py"],
     deps = [
         ":statusor_examples",
-        "@io_abseil_py//absl/testing:absltest",
+        "@absl_py//absl/testing:absltest",
     ],
 )

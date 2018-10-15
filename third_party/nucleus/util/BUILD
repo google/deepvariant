@@ -102,8 +102,8 @@ py_test(
     deps = [
         ":cigar",
         "//third_party/nucleus/protos:cigar_py_pb2",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -116,8 +116,8 @@ py_test(
         ":py_utils",
         ":ranges",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -161,8 +161,8 @@ py_test(
     srcs = ["genomics_math_test.py"],
     deps = [
         ":genomics_math",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -173,7 +173,7 @@ nucleus_py_library(
         "//third_party/nucleus/io:bed",
         "//third_party/nucleus/protos:position_py_pb2",
         "//third_party/nucleus/protos:range_py_pb2",
-        "@io_abseil_py//absl/logging",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -188,8 +188,8 @@ py_test(
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -211,8 +211,8 @@ py_test(
         ":variantcall_utils",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -237,8 +237,8 @@ py_test(
         ":variant_utils",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -257,8 +257,8 @@ py_test(
         ":struct_utils",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -278,8 +278,8 @@ py_test(
         ":struct_utils",
         ":vcf_constants",
         "//third_party/nucleus/protos:variants_py_pb2",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -297,8 +297,8 @@ py_test(
         ":io_utils",
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -306,7 +306,7 @@ nucleus_py_library(
     name = "errors",
     srcs = ["errors.py"],
     deps = [
-        "@io_abseil_py//absl/logging",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -315,8 +315,8 @@ py_test(
     srcs = ["errors_test.py"],
     deps = [
         ":errors",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -351,8 +351,8 @@ py_test(
     srcs = ["sequence_utils_test.py"],
     deps = [
         ":sequence_utils",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 

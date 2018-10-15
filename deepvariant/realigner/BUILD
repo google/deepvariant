@@ -20,7 +20,7 @@ nucleus_py_library(
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:py_utils",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/flags",
+        "@absl_py//absl/flags",
     ],
 )
 
@@ -40,9 +40,9 @@ py_test(
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/flags",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -78,8 +78,8 @@ py_test(
         "//deepvariant/protos:realigner_py_pb2",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -104,7 +104,7 @@ nucleus_py_library(
         ":utils",
         "//deepvariant/realigner/python:ssw",
         "//third_party/nucleus/protos:cigar_py_pb2",
-        "@io_abseil_py//absl/logging",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -119,8 +119,8 @@ py_test(
         "//third_party/nucleus/protos:cigar_py_pb2",
         "//third_party/nucleus/util:cigar",
         "//third_party/nucleus/util:ranges",
-        "@io_abseil_py//absl/testing:absltest",
-        "@io_abseil_py//absl/testing:parameterized",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
