@@ -820,7 +820,7 @@ class RegionProcessor(object):
           for example in self.create_pileup_examples(candidate)
       ]
 
-    logging.info('Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
+    logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
                  len(examples), ranges.to_literal(region),
                  ranges.length(region), region_timer.Stop())
     return candidates, examples, gvcfs
@@ -1086,7 +1086,9 @@ def make_examples_runner(options):
     logging.info('Writing gvcf records to %s', options.gvcf_filename)
 
   n_regions, n_candidates, n_examples = 0, 0, 0
+  last_reported = 0
   with OutputsWriter(options) as writer:
+    running_timer = timer.TimerStart()
     for region in regions:
       candidates, examples, gvcfs = region_processor.process(region)
       n_candidates += len(candidates)
@@ -1102,6 +1104,14 @@ def make_examples_runner(options):
       if gvcfs:
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
+
+      # Output timing for every N candidates.
+      if int(n_candidates / 1000) > last_reported or n_regions == 1:
+        last_reported = int(n_candidates / 1000)
+        logging.info('Task %s: %s candidates (%s examples) [%0.2fs elapsed]',
+                     options.task_id, n_candidates, n_examples,
+                     running_timer.Stop())
+        running_timer = timer.TimerStart()
 
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:

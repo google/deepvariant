@@ -106,6 +106,9 @@ _GVCF_ALT_ALLELE_GL = -99
 # FASTA cache size. Span 300 Mb so that we query each chromosome at most once.
 _FASTA_CACHE_SIZE = 300000000
 
+# When this was set, it's about 20 seconds per log.
+_LOG_EVERY_N = 100000
+
 
 def _extract_single_sample_name(record):
   """Returns the name of the single sample within the CallVariantsOutput file.
@@ -592,7 +595,9 @@ def write_variants_to_vcf(variant_generator, output_vcf_path, header):
   logging.info('Writing output to VCF file: %s', output_vcf_path)
   with vcf.VcfWriter(
       output_vcf_path, header=header, round_qualities=True) as writer:
-    for variant in variant_generator:
+    for idx, variant in enumerate(variant_generator):
+      logging.log_every_n(logging.INFO, '%s variants written.', _LOG_EVERY_N,
+                          idx + 1)
       writer.write(variant)
 
 

@@ -850,9 +850,9 @@ void FastPassAligner::CalculateReadToRefAlignment(
       // In all other cases read realignment is discarded.
       // redacted
     } else {
-      LOG(WARNING) << "read " << static_cast<int>(read_index)
-                   << ", could not be aligned, alignedLength="
-                   << AlignedLength(*read_to_ref_cigar_ops);
+      VLOG(2) << "read " << static_cast<int>(read_index)
+          << ", could not be aligned, alignedLength="
+          << AlignedLength(*read_to_ref_cigar_ops);
       read_to_ref_cigar_ops->clear();
       return;
     }

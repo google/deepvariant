@@ -63,6 +63,11 @@ _ALLOW_EXECUTION_HARDWARE = [
 # rounded to, for numerical stability.
 _GL_PRECISION = 10
 
+# This number is estimated by the following logic:
+# CPU run is roughly 0.2 sec per 100.
+# 15000 examples will take about 30secs to print each line.
+_LOG_EVERY_N = 15000
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
@@ -360,7 +365,7 @@ def call_variants(examples_filename,
       logging.log_every_n(
           logging.INFO,
           ('Processed %s examples in %s batches [%.3f sec per 100]'),
-          batch_size, n_examples, n_batches, (100 * duration) / n_examples)
+          _LOG_EVERY_N, n_examples, n_batches, (100 * duration) / n_examples)
 
     logging.info('Done evaluating variants')
 

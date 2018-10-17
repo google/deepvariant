@@ -300,7 +300,7 @@ def _resolve_overlapping_variants(overlapping_variants):
   calculator = _VariantCompatibilityCalculator(overlapping_variants)
   nonref_counts = [_nonref_genotype_count(v) for v in overlapping_variants]
   if calculator.all_variants_compatible(nonref_counts):
-    logging.info('Overlapping variants are naturally compatible: %s',
+    logging.vlog(2, 'Overlapping variants are naturally compatible: %s',
                  overlapping_variants)
     for variant in overlapping_variants:
       yield variant
@@ -310,7 +310,8 @@ def _resolve_overlapping_variants(overlapping_variants):
   # of affected variants is "too large", avoid processing since this is an
   # exponential process.
   if len(overlapping_variants) > _MAX_OVERLAPPING_VARIANTS_TO_RESOLVE:
-    logging.warning(
+    logging.vlog(
+        2,
         'Overlapping variants are not naturally compatible, and there are too '
         'many to exhaustively search (%s). Returning variants without '
         'modification, beginning with %s.', len(overlapping_variants),
@@ -401,7 +402,8 @@ def _resolve_overlapping_variants(overlapping_variants):
   marginal_allele_indices_config = tuple(
       agg.most_likely_allele_indices() for agg in likelihood_aggregators)
   if marginal_allele_indices_config == most_likely_allele_indices_config:
-    logging.info(
+    logging.vlog(
+        2,
         'Overlapping variants are not naturally compatible, but the genotype '
         'configuration with the most likely joint likelihood is the same as '
         'that from the scaled marginal likelihoods: %s',
@@ -418,7 +420,8 @@ def _resolve_overlapping_variants(overlapping_variants):
       call.genotype_likelihood[:] = gls
       yield newvariant
   else:
-    logging.warning(
+    logging.vlog(
+        2,
         'Overlapping variants are not naturally compatible, and the genotype '
         'configuration with the most likely joint likelihood is different from '
         'that using the scaled marginal likelihoods: %s',
