@@ -129,7 +129,7 @@ def main(_):
     logging.info('Set KMP_BLOCKTIME to %s', os.environ['KMP_BLOCKTIME'])
 
   master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone,
-                                   FLAGS.gcp_project)
+                                   FLAGS.gcp_project) if FLAGS.use_tpu else ''
   eval_loop(
       master=master,
       dataset_config_pbtxt=FLAGS.dataset_config_pbtxt,

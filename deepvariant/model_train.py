@@ -213,7 +213,8 @@ def parse_and_run():
   if not tf_config:
     device_fn = tf.train.replica_device_setter(FLAGS.ps_tasks)
     master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
-                                     FLAGS.tpu_zone, FLAGS.gcp_project)
+                                     FLAGS.tpu_zone,
+                                     FLAGS.gcp_project) if FLAGS.use_tpu else ''
     return run(
         master, FLAGS.task == 0, device_fn=device_fn, use_tpu=FLAGS.use_tpu)
 

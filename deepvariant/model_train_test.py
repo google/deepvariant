@@ -157,12 +157,14 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
               use_tpu=FLAGS.use_tpu),
           warm_start_from='this/path/does/not/exist')
 
+  @parameterized.parameters((False), (True))
   @flagsaver.FlagSaver
   @mock.patch('deepvariant.model_train.'
               'tf.train.replica_device_setter')
   @mock.patch('deepvariant.model_train.run')
-  def test_main_internal(self, mock_run, mock_device_setter):
+  def test_main_internal(self, use_tpu, mock_run, mock_device_setter):
     FLAGS.master = 'some_master'
+    FLAGS.use_tpu = use_tpu
     FLAGS.ps_tasks = 10
     FLAGS.task = 5
 
@@ -170,7 +172,10 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
 
     mock_device_setter.assert_called_once_with(10)
     mock_run.assert_called_once_with(
-        'some_master', False, device_fn=mock.ANY, use_tpu=mock.ANY)
+        'some_master' if use_tpu else '',
+        False,
+        device_fn=mock.ANY,
+        use_tpu=mock.ANY)
 
   @mock.patch('deepvariant.model_train.os.environ')
   @mock.patch('deepvariant.model_train.'
