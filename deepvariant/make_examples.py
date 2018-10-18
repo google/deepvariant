@@ -201,6 +201,10 @@ flags.DEFINE_string(
     'The name from the INFO field of VCF where we should get the customized '
     'class labels from. This is only set when labeler_algorithm is '
     'customized_classes_labeler.')
+flags.DEFINE_integer(
+    'logging_every_n_candidates', 100,
+    'Print out the log every n candidates. The smaller the number, the more '
+    'frequent the logging information emits.')
 
 
 # ---------------------------------------------------------------------------
@@ -1106,8 +1110,10 @@ def make_examples_runner(options):
       writer.write_examples(*examples)
 
       # Output timing for every N candidates.
-      if int(n_candidates / 1000) > last_reported or n_regions == 1:
-        last_reported = int(n_candidates / 1000)
+      # redacted
+      if (int(n_candidates / FLAGS.logging_every_n_candidates) > last_reported
+          or n_regions == 1):
+        last_reported = int(n_candidates / FLAGS.logging_every_n_candidates)
         logging.info('Task %s: %s candidates (%s examples) [%0.2fs elapsed]',
                      options.task_id, n_candidates, n_examples,
                      running_timer.Stop())
