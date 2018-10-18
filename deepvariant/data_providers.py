@@ -247,7 +247,7 @@ class DeepVariantInput(object):
     compression_type = tf_utils.compression_type_of_files(self.input_files)
 
     # NOTE: The order of the file names returned can be non-deterministic,
-    # even if shuffle is false.  See b/73959787 and the note in cl/187434282.
+    # even if shuffle is false.  See b/73959787 and the note in redacted.
     # We need the shuffle flag to be able to disable reordering in EVAL mode.
     dataset = None
     for pattern in self.input_file_spec.split(','):
