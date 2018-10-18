@@ -31,7 +31,7 @@
 To run the tests, first activate virtualenv and install mock:
 $ virtualenv venv
 $ . venv/bin/activate
-$ pip install mock
+$ pip install mock enum34
 
 Then run:
 $ python gcp_deepvariant_runner_test.py
@@ -123,24 +123,26 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
     mock_apply_async.assert_has_calls([
         mock.call(mock_run_job, [
-            _HasAllOf('make_examples', 'gcr.io/dockerimage',
-                      'INPUT_BAM=gs://bucket/bam',
-                      'INPUT_BAI=gs://bucket/bam.bai',
-                      'INPUT_REF=gs://bucket/ref',
-                      'INPUT_REF_FAI=gs://bucket/ref.fai',
-                      'EXAMPLES=gs://bucket/staging/examples/0/*')
+            _HasAllOf(
+                'make_examples', 'gcr.io/dockerimage',
+                'INPUT_BAM=gs://bucket/bam', 'INPUT_BAI=gs://bucket/bam.bai',
+                'INPUT_REF=gs://bucket/ref',
+                'INPUT_REF_FAI=gs://bucket/ref.fai',
+                'EXAMPLES=gs://bucket/staging/examples/0/*', 'output-interval',
+                60)
         ]),
         mock.call(mock_run_job, [
             _HasAllOf('call_variants', 'gcr.io/dockerimage',
                       'MODEL=gs://bucket/model',
                       'EXAMPLES=gs://bucket/staging/examples/0/*',
-                      'CALLED_VARIANTS=gs://bucket/staging/called_variants/*')
+                      'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
+                      'output-interval', 60)
         ]),
     ])
     mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
                   'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
-                  'OUTFILE=gs://bucket/output.vcf'))
+                  'OUTFILE=gs://bucket/output.vcf', 'output-interval', 60))
 
   @mock.patch('gcp_deepvariant_runner._run_job')
   @mock.patch.object(multiprocessing, 'Pool')

@@ -183,7 +183,7 @@ def _get_base_job_args(pipeline_args):
       'pipelines', '--project', pipeline_args.project, 'run', '--attempts',
       str(pipeline_args.max_non_preemptible_tries), '--pvm-attempts',
       str(pvm_attempts), '--boot-disk-size', _DEFAULT_BOOT_DISK_SIZE_GB,
-      '--zones'
+      'output-interval', pipeline_args.logging_interval_sec, '--zones'
   ] + pipeline_args.zones
   if pipeline_args.network:
     job_args += ['--network', pipeline_args.network]
@@ -683,6 +683,13 @@ def run(argv=None):
       '--network', help=('Optional. The VPC network on GCP to use.'))
   parser.add_argument(
       '--subnetwork', help=('Optional. The VPC subnetwork on GCP to use.'))
+  parser.add_argument(
+      '--logging_interval_sec',
+      type=int,
+      default=60,
+      help=('Optional. If non-zero, specifies the time interval in seconds for '
+            'writing workers log. Otherwise, log is written when the job is '
+            'finished.'))
 
   # Optional GPU args.
   parser.add_argument(
