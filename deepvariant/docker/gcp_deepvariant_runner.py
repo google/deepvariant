@@ -183,7 +183,8 @@ def _get_base_job_args(pipeline_args):
       'pipelines', '--project', pipeline_args.project, 'run', '--attempts',
       str(pipeline_args.max_non_preemptible_tries), '--pvm-attempts',
       str(pvm_attempts), '--boot-disk-size', _DEFAULT_BOOT_DISK_SIZE_GB,
-      'output-interval', pipeline_args.logging_interval_sec, '--zones'
+      'output-interval',
+      str(pipeline_args.logging_interval_sec), '--zones'
   ] + pipeline_args.zones
   if pipeline_args.network:
     job_args += ['--network', pipeline_args.network]
