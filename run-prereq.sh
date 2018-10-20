@@ -66,10 +66,9 @@ sudo -H apt-get -y install python-dev python-pip python-wheel
 echo "$(python --version)"
 
 # This will make sure the pip command is bound to python2
-sudo -H python2 -m pip install --upgrade --force-reinstall pip
+python2 -m pip install --user --upgrade --force-reinstall pip
 
-sudo -H pip install --upgrade pip
-
+export PATH="$HOME/.local/bin:$PATH"
 echo "$(pip --version)"
 
 ################################################################################
@@ -78,30 +77,30 @@ echo "$(pip --version)"
 
 note_build_stage "Install python packages"
 
-sudo -H pip install contextlib2
-sudo -H pip install enum34
+pip install --user contextlib2
+pip install --user enum34
 # sortedcontainers>=2.0.0 breaks intervaltree=2.1.0
 # Remove this when https://github.com/chaimleib/intervaltree/pull/69
 # is resolved.  Tracked internally at b/80085543.
-sudo -H pip install 'sortedcontainers==1.5.3'
-sudo -H pip install intervaltree
-sudo -H pip install 'mock>=2.0.0'
+pip install --user 'sortedcontainers==1.5.3'
+pip install --user intervaltree
+pip install --user 'mock>=2.0.0'
 
 # Note that TensorFlow on Ubuntu has a "double free" bug when running with GPUs.
 # According to:
 # https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279892449
 # The appropriate workaround is to use --no-binary=:all: during the install.
-sudo -H pip install --no-binary=:all: 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+pip install --user --no-binary=:all: 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 
-sudo -H pip install 'requests>=2.18'
-sudo -H pip install 'scipy==1.0'
-sudo -H pip install 'oauth2client>=4.0.0'
-sudo -H pip install 'crcmod>=1.7'
-sudo -H pip install six
-sudo -H pip install sklearn
-sudo -H pip install pandas
-sudo -H pip install psutil
-sudo -H pip install --upgrade google-api-python-client
+pip install --user 'requests>=2.18'
+pip install --user 'scipy==1.0'
+pip install --user 'oauth2client>=4.0.0'
+pip install --user 'crcmod>=1.7'
+pip install --user six
+pip install --user sklearn
+pip install --user pandas
+pip install --user psutil
+pip install --user --upgrade google-api-python-client
 
 
 ################################################################################
@@ -121,30 +120,27 @@ else
   # necessary right now if we aren't pinning the TF source. We have observed
   # runtime failures if there's too much skew between the released TF package and
   # the source.
-  # First we uninstall any and all tensorflow's already present to ensure our
-  # subsequent installs work.
-  sudo -H pip uninstall -y tensorflow tf_nightly_gpu tf_nightly tensorflow-gpu
   if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow nightly wheel"
-      sudo -H pip install --upgrade tf_nightly_gpu
+      pip install --user --upgrade tf_nightly_gpu
     else
       echo "Installing CPU-only TensorFlow nightly wheel"
-      sudo -H pip install --upgrade tf_nightly
+      pip install --user --upgrade tf_nightly
     fi
   else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow wheel"
-      sudo -H pip install --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
+      pip install --user --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
       echo "Installing Google Cloud Platform optimized CPU-only TensorFlow wheel"
       curl "${GCP_OPTIMIZED_TF_WHL_CURL_PATH}/${GCP_OPTIMIZED_TF_WHL_FILENAME}" \
         > "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
-      sudo -H pip install --upgrade "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
+      pip install --user --upgrade "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
     else
       echo "Installing standard CPU-only TensorFlow wheel"
-      sudo -H pip install --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
+      pip install --user --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
     fi
   fi
 fi
