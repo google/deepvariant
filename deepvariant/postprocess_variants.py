@@ -58,6 +58,7 @@ from third_party.nucleus.util import vcf_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
+from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
 
@@ -835,9 +836,11 @@ def main(argv=()):
     # Note that this assumes that all CallVariantsOutput protos in the infile
     # contain a single VariantCall within their constituent Variant proto, and
     # that the call_set_name is identical in each of the records.
-    record = next(
-        io_utils.read_tfrecords(
-            paths[0], proto=deepvariant_pb2.CallVariantsOutput, max_records=1))
+    record = tf_utils.get_one_example_from_examples_path(
+        ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
+    if record is None:
+      raise ValueError('Cannot find any records in {}'.format(','.join(paths)))
+
     sample_name = _extract_single_sample_name(record)
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs, sample_names=[sample_name])

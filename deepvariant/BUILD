@@ -431,6 +431,7 @@ nucleus_py_library(
     deps = [
         ":dv_vcf_constants",
         ":logging_level",
+        ":tf_utils",
         "//deepvariant:haplotypes",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:postprocess_variants",

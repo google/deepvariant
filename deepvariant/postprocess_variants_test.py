@@ -246,6 +246,38 @@ class PostprocessVariantsTest(parameterized.TestCase):
         tf.gfile.FastGFile(FLAGS.gvcf_outfile).readlines(),
         tf.gfile.FastGFile(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
 
+  @flagsaver.FlagSaver
+  def test_reading_sharded_input_with_empty_shards_does_not_crash(self):
+    valid_variants = io_utils.read_tfrecords(
+        testdata.GOLDEN_POSTPROCESS_INPUT,
+        proto=deepvariant_pb2.CallVariantsOutput)
+    empty_shard_one = test_utils.test_tmpfile(
+        'reading_empty_shard.tfrecord-00000-of-00002')
+    none_empty_shard_two = test_utils.test_tmpfile(
+        'reading_empty_shard.tfrecord-00001-of-00002')
+    io_utils.write_tfrecords([], empty_shard_one)
+    io_utils.write_tfrecords(valid_variants, none_empty_shard_two)
+    FLAGS.infile = test_utils.test_tmpfile('reading_empty_shard.tfrecord@2')
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = test_utils.test_tmpfile('calls_reading_empty_shard.vcf')
+
+    postprocess_variants.main(['postprocess_variants.py'])
+
+  @flagsaver.FlagSaver
+  def test_reading_empty_input_should_raise_error(self):
+    empty_shard_one = test_utils.test_tmpfile(
+        'no_records.tfrecord-00000-of-00002')
+    empty_shard_two = test_utils.test_tmpfile(
+        'no_records.tfrecord-00001-of-00002')
+    io_utils.write_tfrecords([], empty_shard_one)
+    io_utils.write_tfrecords([], empty_shard_two)
+    FLAGS.infile = test_utils.test_tmpfile('no_records.tfrecord@2')
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = test_utils.test_tmpfile('no_records.vcf')
+
+    with self.assertRaisesRegexp(ValueError, 'Cannot find any records in'):
+      postprocess_variants.main(['postprocess_variants.py'])
+
   def test_extract_single_variant_name(self):
     record = _create_call_variants_output(
         indices=[0], probabilities=[0.19, 0.75, 0.06], ref='A', alts=['C', 'T'])

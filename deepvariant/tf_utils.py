@@ -138,35 +138,35 @@ def example_set_variant(example, variant):
   ]
 
 
-def _get_one_example_from_examples_path(source):
-  """Reads one record from source."""
-  # redacted
-  # io_utils.read_tfrecord can read wildcard file patterns.
-  # The source can be a comma-separated list.
-  source_paths = source.split(',')
-  for source_path in source_paths:
-    files = tf.gfile.Glob(io_utils.NormalizeToShardedFilePattern(source_path))
-    if not files:
-      if len(source_paths) > 1:
-        raise ValueError(
-            'Cannot find matching files with the pattern "{}" in "{}"'.format(
-                source_path, ','.join(source_paths)))
-      else:
-        raise ValueError('Cannot find matching files with the pattern "{}"'
-                         .format(source_path))
-    for f in files:
-      try:
-        return io_utils.read_tfrecords(f).next()
-      except StopIteration:
-        # Getting a StopIteration from one next() means source_path is empty.
-        # Move on to the next one to try to get one example.
-        pass
+def get_one_example_from_examples_path(source, proto=None):
+  """Get the first record from `source`.
+
+  Args:
+    source: str. A pattern or a comma-separated list of patterns that represent
+      file names.
+    proto: A proto class. proto.FromString() will be called on each serialized
+      record in path to parse it.
+
+  Returns:
+    The first record, or None.
+  """
+  files = io_utils.GlobListShardedFilePatterns(source)
+  if not files:
+    raise ValueError(
+        'Cannot find matching files with the pattern "{}"'.format(source))
+  for f in files:
+    try:
+      return io_utils.read_tfrecords(f, proto=proto).next()
+    except StopIteration:
+      # Getting a StopIteration from one next() means source_path is empty.
+      # Move on to the next one to try to get one example.
+      pass
   return None
 
 
 def get_shape_from_examples_path(source):
   """Reads one record from source to determine the tensor shape for all."""
-  one_example = _get_one_example_from_examples_path(source)
+  one_example = get_one_example_from_examples_path(source)
   if one_example:
     return example_image_shape(one_example)
   return None
@@ -174,7 +174,7 @@ def get_shape_from_examples_path(source):
 
 def get_format_from_examples_path(source):
   """Reads one record from source to determine the format for all."""
-  one_example = _get_one_example_from_examples_path(source)
+  one_example = get_one_example_from_examples_path(source)
   if one_example:
     return example_image_format(one_example)
   return None
