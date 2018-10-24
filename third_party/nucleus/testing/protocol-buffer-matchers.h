@@ -536,13 +536,13 @@ class ProtoMatcher : public ProtoMatcherBase {
 
   virtual void DeleteExpectedProto(const google::protobuf::Message* expected) const {}
 
-  const ::testing::internal::linked_ptr<const google::protobuf::Message>& expected()
+  const std::shared_ptr<const google::protobuf::Message>& expected()
       const {
     return expected_;
   }
 
  private:
-  const ::testing::internal::linked_ptr<const google::protobuf::Message> expected_;
+  const std::shared_ptr<const google::protobuf::Message> expected_;
 };
 
 // Implements EqualsProto, EquivToProto, EqualsInitializedProto, and
@@ -724,10 +724,10 @@ class WhenDeserializedMatcher
 
  private:
   // The expected protobuf specified in the inner matcher
-  // (proto_matcher_).  We only need a linked_ptr to it instead of
+  // (proto_matcher_).  We only need a std::shared_ptr to it instead of
   // making a copy, as the expected protobuf will never be changed
   // once created.
-  const ::testing::internal::linked_ptr<const google::protobuf::Message> expected_proto_;
+  const std::shared_ptr<const google::protobuf::Message> expected_proto_;
 };
 
 // Implements WhenDeserializedAs<Proto>(proto_matcher).
