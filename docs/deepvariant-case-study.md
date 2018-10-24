@@ -31,7 +31,7 @@ DeepVariant on other Linux systems such as CentOS 7.
 ## Update since v0.7.1: Run the case study with one script
 
 Script:
-https://github.com/google/deepvariant/blob/r0.7/tools/run_wgs_case_study.sh
+https://github.com/google/deepvariant/blob/r0.7/scripts/run_wgs_case_study.sh
 
 Get the script and run everything. This will install and download everything
 needed for this case study. And it will run DeepVariant to generate the output
@@ -41,7 +41,7 @@ Before you run the script, you can read through all sections to understand the
 details.
 
 ```bash
-wget https://raw.githubusercontent.com/google/deepvariant/r0.7/tools/run_wgs_case_study.sh -P ${HOME}
+wget https://raw.githubusercontent.com/google/deepvariant/r0.7/scripts/run_wgs_case_study.sh -P ${HOME}
 chmod +x ${HOME}/run_wgs_case_study.sh
 ${HOME}/run_wgs_case_study.sh
 ```
@@ -138,12 +138,12 @@ fewer cores for this step.
 ## Resources used by each step
 
 Step                               | wall time
----------------------------------- | ---------------
-`make_examples`                    | 1h 45m 46s
-`call_variants`                    | 3h 25m 38s
-`postprocess_variants` (no gVCF)   | 21m 33s
-`postprocess_variants` (with gVCF) | 55m 47s
-total time (single machine)        | 5h 33m - 6h 07m
+---------------------------------- | -------------------
+`make_examples`                    | 109m 25s
+`call_variants`                    | 188m 14s
+`postprocess_variants` (no gVCF)   | 18m 2s
+`postprocess_variants` (with gVCF) | 49m 34s
+total time (single machine)        | 315m 41s - 347m 13s
 
 ## Variant call quality
 
@@ -155,5 +155,5 @@ results.
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 1431 | 916  | 0.996921 | 0.998106  | 0.997513
-SNP   | 1329 | 746  | 0.999564 | 0.999755  | 0.999660
+INDEL | 1427 | 924  | 0.996930 | 0.998089  | 0.997509
+SNP   | 1327 | 750  | 0.999565 | 0.999754  | 0.999659

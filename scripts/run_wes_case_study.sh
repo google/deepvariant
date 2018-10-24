@@ -1,6 +1,8 @@
 #!/bin/bash
 # Copyright 2018 Google Inc.
 
+set -euo pipefail
+
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/exome-case-study"
@@ -71,9 +73,9 @@ sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
 ## Run `make_examples`
 # In this step, we used the `--regions` flag to constrain the regions we processed
 # to the capture region BED file:
-echo "Start running make_examples..."
+echo "Start running make_examples...Log will be in the terminal and also to ${LOG_DIR}/make_examples.log."
 ( time seq 0 $((N_SHARDS-1)) | \
-  parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
+  parallel -k --line-buffer \
     sudo docker run \
       -v "${BASE}":"${BASE}" \
       gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
@@ -85,12 +87,12 @@ echo "Start running make_examples..."
       --regions "${CAPTURE_BED}" \
       --gvcf "${GVCF_TFRECORDS}" \
       --task {} \
-) >"${LOG_DIR}/make_examples.log" 2>&1
+) 2>&1 | tee "${LOG_DIR}/make_examples.log"
 echo "Done."
 echo
 
 ## Run `call_variants`
-echo "Start running call_variants..."
+echo "Start running call_variants...Log will be in the terminal and also to ${LOG_DIR}/call_variants.log."
 ( time sudo docker run \
     -v "${BASE}":"${BASE}" \
     gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
@@ -98,12 +100,12 @@ echo "Start running call_variants..."
     --outfile "${CALL_VARIANTS_OUTPUT}" \
     --examples "${EXAMPLES}" \
     --checkpoint "${MODEL}" \
-) >"${LOG_DIR}/call_variants.log" 2>&1
+) 2>&1 | tee "${LOG_DIR}/call_variants.log"
 echo "Done."
 echo
 
 ## Run `postprocess_variants`, without gVCFs.
-echo "Start running postprocess_variants (without gVCFs)..."
+echo "Start running postprocess_variants (without gVCFs)...Log will be in the terminal and also to ${LOG_DIR}/postprocess_variants.log."
 ( time sudo docker run \
     -v "${BASE}":"${BASE}" \
     gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
@@ -111,12 +113,12 @@ echo "Start running postprocess_variants (without gVCFs)..."
     --ref "${REF}" \
     --infile "${CALL_VARIANTS_OUTPUT}" \
     --outfile "${OUTPUT_VCF}"
-) >"${LOG_DIR}/postprocess_variants.log" 2>&1
+) 2>&1 | tee "${LOG_DIR}/postprocess_variants.log"
 echo "Done."
 echo
 
 ## Run `postprocess_variants`, with gVCFs.
-echo "Start running postprocess_variants (with gVCFs)..."
+echo "Start running postprocess_variants (with gVCFs)...Log will be in the terminal and also to ${LOG_DIR}/postprocess_variants.withGVCF.log."
 ( time sudo docker run \
     -v "${BASE}":"${BASE}" \
     gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
@@ -126,7 +128,7 @@ echo "Start running postprocess_variants (with gVCFs)..."
     --outfile "${OUTPUT_VCF}" \
     --nonvariant_site_tfrecord_path "${GVCF_TFRECORDS}" \
     --gvcf_outfile "${OUTPUT_GVCF}"
-) >"${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
+) 2>&1 | tee "${LOG_DIR}/postprocess_variants.withGVCF.log"
 echo "Done."
 echo
 

@@ -25,7 +25,7 @@ DeepVariant on other Linux systems such as CentOS 7.
 ## Update since v0.7.1: Run the case study with one script
 
 Script:
-https://github.com/google/deepvariant/blob/r0.7/tools/run_wes_case_study.sh
+https://github.com/google/deepvariant/blob/r0.7/scripts/run_wes_case_study.sh
 
 Get the script and run everything. This will install and download everything
 needed for this case study. And it will run DeepVariant to generate the output
@@ -35,7 +35,7 @@ Before you run the script, you can read through all sections to understand the
 details.
 
 ```bash
-wget https://raw.githubusercontent.com/google/deepvariant/r0.7/tools/run_wes_case_study.sh -P ${HOME}
+wget https://raw.githubusercontent.com/google/deepvariant/r0.7/scripts/run_wes_case_study.sh -P ${HOME}
 chmod +x ${HOME}/run_wes_case_study.sh
 ${HOME}/run_wes_case_study.sh
 ```
@@ -92,9 +92,9 @@ More discussion can be found in the
 
 Step                               | wall time
 ---------------------------------- | ---------
-`make_examples`                    | 13m 48s
-`call_variants`                    | 2m 7s
-`postprocess_variants` (no gVCF)   | 0m 14s
+`make_examples`                    | 13m 56s
+`call_variants`                    | 2m 6s
+`postprocess_variants` (no gVCF)   | 0m 12s
 `postprocess_variants` (with gVCF) | 1m 19s
 total time (single machine)        | ~17m
 
@@ -110,8 +110,8 @@ We evaluate against the capture region:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 111  | 51   | 0.957308 | 0.980086  | 0.968563
-SNP   | 48   | 15   | 0.998577 | 0.999555  | 0.999066
+INDEL | 111  | 55   | 0.957308 | 0.978558  | 0.967816
+SNP   | 49   | 15   | 0.998547 | 0.999555  | 0.999051
 
 ## Separate models for calling whole genome and exome data
 
