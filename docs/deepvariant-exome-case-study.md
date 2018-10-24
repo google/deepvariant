@@ -25,7 +25,7 @@ DeepVariant on other Linux systems such as CentOS 7.
 ## Update since v0.7.1: Run the case study with one script
 
 Script:
-https://github.com/google/deepvariant/blob/r0.7/scripts/run_wes_case_study.sh
+https://github.com/google/deepvariant/blob/r0.7/scripts/run_wes_case_study_docker.sh
 
 Get the script and run everything. This will install and download everything
 needed for this case study. And it will run DeepVariant to generate the output
@@ -35,9 +35,9 @@ Before you run the script, you can read through all sections to understand the
 details.
 
 ```bash
-wget https://raw.githubusercontent.com/google/deepvariant/r0.7/scripts/run_wes_case_study.sh -P ${HOME}
-chmod +x ${HOME}/run_wes_case_study.sh
-${HOME}/run_wes_case_study.sh
+wget https://raw.githubusercontent.com/google/deepvariant/r0.7/scripts/run_wes_case_study_docker.sh -P ${HOME}
+chmod +x ${HOME}/run_wes_case_study_docker.sh
+${HOME}/run_wes_case_study_docker.sh
 ```
 
 ## (Optional) If on Google Cloud Platform, request a machine with this example command
