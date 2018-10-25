@@ -64,28 +64,31 @@ Cloud Platform.
 ## Documentation
 
 *   [DeepVariant release notes](https://github.com/google/deepvariant/releases)
-*   [Building and testing DeepVariant](docs/deepvariant-build-test.md)
+
+### Quick start and Case studies
+
 *   [DeepVariant quick start](docs/deepvariant-quick-start.md)
-*   [DeepVariant via Docker](docs/deepvariant-docker.md)
 *   [DeepVariant whole genome case study](docs/deepvariant-case-study.md)
 *   [DeepVariant exome case study](docs/deepvariant-exome-case-study.md)
-*   [DeepVariant Genomic VCF (gVCF) support](docs/deepvariant-gvcf-support.md)
-*   [DeepVariant usage guide](docs/deepvariant-details.md)
+
+### (Advanced) Training
+
 *   [Advanced Case Study: Train a customized SNP and small indel variant caller
     for BGISEQ-500 data](docs/deepvariant-tpu-training-case-study.md)
-*   [DeepVariant model training (old)](docs/deepvariant-model-training.md)
 *   [DeepVariant training data](docs/deepvariant-details-training-data.md)
-*   [Datalab example: visualizing pileup images/tensors](docs/visualizing_examples.ipynb)
+
+### More details
+
+*   [DeepVariant usage guide](docs/deepvariant-details.md)
+*   [Building and testing DeepVariant](docs/deepvariant-build-test.md)
+*   [DeepVariant Genomic VCF (gVCF) support](docs/deepvariant-gvcf-support.md)
 *   [Getting Started with GCP](docs/deepvariant-gcp-info.md) (It is not required
     to run DeepVariant on GCP.)
 
-## Other resources
+### Colab notebooks
 
-*   [Google Developer Codelab: Variant Calling on a Rice genome with
-    DeepVariant](https://codelabs.developers.google.com/codelabs/genomics-deepvariant)
-*   [Improve DeepVariant for BGISEQ germline variant
-    calling](http://bit.ly/train-deepvariant) |
-    [slides](https://github.com/SVAI/RecausalNucleotideNetworks/blob/master/ReCausalNucleotideNetwork.pdf)
+*   [Colab example: visualizing pileup images/tensors](docs/visualizing_examples.ipynb)
+*   [Google Developer Codelab: Variant Calling on a Rice genome with DeepVariant](https://codelabs.developers.google.com/codelabs/genomics-deepvariant)
 
 <!-- mdlint on -->
 
