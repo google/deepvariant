@@ -65,6 +65,11 @@ if ! java -version 2>&1 | fgrep "1.8"; then
   [[ $(lsb_release -d | grep 'Debian') ]] && \
     sudo -H apt-get install -y gnupg dirmngr && \
     sudo -H apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
+  # Ubuntu 18.04 needs authentication.
+  [[ $(lsb_release -d | grep 'Ubuntu 18.04') ]] && \
+    echo 'yes' && \
+    sudo -H apt-get install -y gnupg dirmngr && \
+    sudo -H apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C2518248EEA14886
   echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | sudo -H tee /etc/apt/sources.list.d/webupd8team-java.list
   echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | sudo -H tee -a /etc/apt/sources.list.d/webupd8team-java.list
   sudo -H apt-get -qq -y update
@@ -121,8 +126,9 @@ then
 else
   # Figure out which linux installation we are on to fetch an appropriate
   # version of the pre-built CLIF binary. Note that we only support now Ubuntu
-  # 14 and 16.
+  # 14, 16, and 18.
   case "$(lsb_release -d)" in
+    *Ubuntu*18.*.*) export DV_PLATFORM="ubuntu-18" ;;
     *Ubuntu*16.*.*) export DV_PLATFORM="ubuntu-16" ;;
     *Ubuntu*14.*.*) export DV_PLATFORM="ubuntu-14" ;;
     *Debian*9.*)    export DV_PLATFORM="debian" ;;

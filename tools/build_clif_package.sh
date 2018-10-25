@@ -51,8 +51,13 @@
 set -eux -o pipefail
 
 # Figure out which linux installation we are on to fetch an appropriate version
-# of CLIF binary. Note that we only support now Ubuntu (14 and 16), and Debian.
-if [[ $(python -mplatform) == *"Ubuntu-16"* ]]; then
+# of CLIF binary. Note that we only support now Ubuntu (14, 16, and 18), and
+# Debian.
+if [[ $(python -mplatform) == *"Ubuntu-18"* ]]; then
+  export DV_PLATFORM="ubuntu-18"
+  # For ubuntu 18 we install cmake
+  sudo -H apt-get -y install cmake
+elif [[ $(python -mplatform) == *"Ubuntu-16"* ]]; then
   export DV_PLATFORM="ubuntu-16"
   # For ubuntu 16 we install cmake
   sudo -H apt-get -y install cmake
@@ -76,14 +81,14 @@ CLIF_PACKAGE="oss_clif.${DV_PLATFORM}.latest.tgz"
 sudo -H apt-get -y install ninja-build subversion
 sudo -H apt-get -y install virtualenv python-pip pkg-config
 sudo -H pip install 'pyparsing>=2.2.0'
-sudo -H pip install 'protobuf>=3.4'
+sudo -H pip install 'protobuf>=3.6.1'
 
 echo === building protobufs
 
 sudo -H apt-get install -y autoconf automake libtool curl make g++ unzip
-wget https://github.com/google/protobuf/releases/download/v3.4.1/protobuf-cpp-3.4.1.tar.gz
-tar xvzf protobuf-cpp-3.4.1.tar.gz
-(cd protobuf-3.4.1 &&
+wget https://github.com/google/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz
+tar xvzf protobuf-cpp-3.6.1.tar.gz
+(cd protobuf-3.6.1 &&
   ./autogen.sh &&
   ./configure &&
   make -j 32 &&
