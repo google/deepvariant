@@ -20,6 +20,7 @@ nucleus_py_library(
     name = "io_py",
     deps = [
         ":bed",
+        ":bedgraph",
         ":clif_postproc",
         ":fasta",
         ":fastq",
