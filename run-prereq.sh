@@ -101,6 +101,7 @@ pip install --user sklearn
 pip install --user pandas
 pip install --user psutil
 pip install --user --upgrade google-api-python-client
+pip install --user 'tensor2tensor>=1.9.0'
 
 
 ################################################################################

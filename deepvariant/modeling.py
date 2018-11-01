@@ -52,6 +52,7 @@ from deepvariant import tf_utils
 from tensorflow.contrib.tpu.python.tpu import tpu_config
 from tensorflow.contrib.tpu.python.tpu import tpu_estimator
 from tensorflow.contrib.tpu.python.tpu import tpu_optimizer
+from tensorflow.python.framework import ops
 from nets import inception
 from nets import mobilenet_v1
 
@@ -157,6 +158,37 @@ def get_class_precision(labels, predicted_class, target_class):
   return tf.metrics.precision(labels_binary, predicted_class_binary)
 
 
+# redacted
+def get_f1_score(labels, predictions):
+  """Compute F1 score of predictions with respect to the labels.
+
+  Args:
+    labels: tensor whose dimensions must match predictions. The ground-truth
+      labels for the examples.
+    predictions: tensor of arbitrary dimension. The predicted labels for the
+      examples.
+
+  Returns:
+    f1_score: scalar float tensor whose dimensions match predictions. The
+    calculated f1 score.
+    update_op: operation that updates the f1 score streaming metric.
+  """
+  precision, precision_op = tf.metrics.precision(labels, predictions)
+  recall, recall_op = tf.metrics.recall(labels, predictions)
+
+  def compute_f1_score(name):
+    pr_product = tf.multiply(precision, recall)
+    return tf.div(
+        tf.multiply(2.0, pr_product), tf.add(tf.add(precision, recall), 1e-12),
+        name)
+
+  f1_score = compute_f1_score('value')
+  with ops.control_dependencies([precision_op, recall_op]):
+    update_op = compute_f1_score('update_op')
+
+  return f1_score, update_op
+
+
 # NB. This includes only a subset of our usual metrics.
 # We'll add the rest back in a subsequent change.
 def eval_metric_fn(labels, predictions, unused_encoded_variants):
@@ -185,6 +217,7 @@ def eval_metric_fn(labels, predictions, unused_encoded_variants):
       'Recall/Class2': get_class_recall(labels, predicted_class, 2),
       'Precision/Class1': get_class_precision(labels, predicted_class, 1),
       'Precision/Class2': get_class_precision(labels, predicted_class, 2),
+      'F1/All': get_f1_score(labels, predicted_class),
   }
 
   return metrics

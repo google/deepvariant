@@ -39,6 +39,7 @@ import os
 
 from absl import flags
 from absl import logging
+from tensor2tensor.utils import metrics_hook
 import tensorflow as tf
 
 from third_party.nucleus.util import proto_utils
@@ -95,6 +96,32 @@ flags.DEFINE_integer('task', 0, 'Task id of the replica running the training.')
 
 flags.DEFINE_integer('number_of_steps', 30000000,
                      'Maximum number of global steps to take when training.')
+
+flags.DEFINE_boolean('use_early_stopping', False, 'Use early stopping hook.')
+
+flags.DEFINE_string(
+    'early_stopping_directory', 'eval_on_train',
+    'Directory containing event files for early stopping hook to monitor.')
+
+flags.DEFINE_string(
+    'early_stopping_tag', 'F1/All',
+    'The metric to monitor for early stopping (eg. loss, accuracy, etc.)')
+
+flags.DEFINE_float(
+    'early_stopping_plateau_delta', 1e-15,
+    'The amount of change of a metric over num_plateau_steps that indicates '
+    'the metric has stopped improving.')
+
+flags.DEFINE_integer('early_stopping_num_plateau_steps', 100000,
+                     'Number of steps the metric needs to be plateaued for.')
+
+flags.DEFINE_enum(
+    'early_stopping_metric_direction', 'increase', ['increase', 'decrease'],
+    'Whether to check if the metric has increased by delta or decreased by '
+    'delta.')
+
+flags.DEFINE_integer('early_stopping_every_n_steps', 1000,
+                     'Run early stopping hook every n steps.')
 
 flags.DEFINE_integer(
     'num_retries', 0,
@@ -176,10 +203,31 @@ def run(target, unused_is_chief, device_fn, use_tpu):
           master=target,
           start_from_checkpoint=FLAGS.start_from_checkpoint,
       )
+
+      training_hooks = None
+      if FLAGS.use_early_stopping:
+        # Early stopping hook depends on existence of events directory.
+        eval_dir = os.path.join(FLAGS.train_dir, FLAGS.early_stopping_directory)
+        tf.gfile.MakeDirs(eval_dir)
+
+        plateau_decrease = True
+        if FLAGS.early_stopping_metric_direction == 'decreasing':
+          plateau_decrease = False
+
+        early_stopping_hook = metrics_hook.EarlyStoppingHook(
+            events_dir=eval_dir,
+            tag=FLAGS.early_stopping_tag,
+            num_plateau_steps=FLAGS.early_stopping_num_plateau_steps,
+            plateau_delta=FLAGS.early_stopping_plateau_delta,
+            plateau_decrease=plateau_decrease,
+            every_n_steps=FLAGS.early_stopping_every_n_steps)
+
+        training_hooks = [early_stopping_hook]
+
       estimator.train(
           input_fn=tf_dataset,
           max_steps=FLAGS.number_of_steps,
-      )
+          hooks=training_hooks)
 
 
 def parse_and_run():

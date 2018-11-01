@@ -175,6 +175,8 @@ class ModelEvalTest(
     expected_values_for_all_close = {
         # We called 47 / 48 correctly ~ 0.979167
         'Precision/All': 0.979167,
+        # We called (2 * 47 / 48) / (1 + 47 / 48) correctly ~ 0.989474
+        'F1/All': 0.989474,
     }
     for key, expected_value in expected_values_for_all_close.iteritems():
       self.assertAlmostEqual(metrics[0][key], expected_value, places=6)
