@@ -3,8 +3,11 @@
 
 set -euo pipefail
 
+# Build binaries.
+# If you're using the pre-built binaries, you can skip these and just run
+# ./run-prereq.sh instead. And update the script to point to your *zip binaries.
 ./build-prereq.sh
-./build_and_test.sh
+./build_release_binaries.sh
 
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
@@ -73,7 +76,7 @@ aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testda
 echo "Start running make_examples...Log will be in the terminal and also to ${LOG_DIR}/make_examples.log."
 ( time seq 0 $((N_SHARDS-1)) | \
   parallel -k --line-buffer \
-    ./bazel-bin/deepvariant/make_examples \
+    python ./bazel-bin/deepvariant/make_examples.zip \
       --mode calling \
       --ref "${REF}" \
       --reads "${BAM}" \
@@ -86,7 +89,7 @@ echo
 
 ## Run `call_variants`
 echo "Start running call_variants...Log will be in the terminal and also to ${LOG_DIR}/call_variants.log."
-( time ./bazel-bin/deepvariant/call_variants \
+( time python ./bazel-bin/deepvariant/call_variants.zip \
     --outfile "${CALL_VARIANTS_OUTPUT}" \
     --examples "${EXAMPLES}" \
     --checkpoint "${MODEL}"
@@ -96,7 +99,7 @@ echo
 
 ## Run `postprocess_variants`, without gVCFs.
 echo "Start running postprocess_variants (without gVCFs)...Log will be in the terminal and also to ${LOG_DIR}/postprocess_variants.log."
-( time ./bazel-bin/deepvariant/postprocess_variants \
+( time python ./bazel-bin/deepvariant/postprocess_variants.zip \
     --ref "${REF}" \
     --infile "${CALL_VARIANTS_OUTPUT}" \
     --outfile "${OUTPUT_VCF}"
@@ -106,7 +109,7 @@ echo
 
 ## Run `postprocess_variants`, with gVCFs.
 echo "Start running postprocess_variants (with gVCFs)...Log will be in the terminal and also to ${LOG_DIR}/postprocess_variants.withGVCF.log."
-( time ./bazel-bin/deepvariant/postprocess_variants \
+( time python ./bazel-bin/deepvariant/postprocess_variants.zip \
     --ref "${REF}" \
     --infile "${CALL_VARIANTS_OUTPUT}" \
     --outfile "${OUTPUT_VCF}" \
