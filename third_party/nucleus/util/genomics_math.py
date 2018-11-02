@@ -74,25 +74,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import numpy as np
-import scipy.misc
-import scipy.stats
 
 from third_party.nucleus.util.python import math as math_
-
-# Scipy dependency:
-#
-# Note that we depend on scipy here, which is a very heavy-weight dependency
-# if it needs to be built from source. scipy is liberally licensed:
-# https://github.com/scipy/scipy/blob/v0.19.0/LICENSE.txt
-# So we might consider vendoring in a few functions from that package to avoid
-# the dependency. Here are links to source for a few that we use:
-#
-# logsumexp [relatively simple]:
-# https://github.com/scipy/scipy/blob/v0.19.0/scipy/special/_logsumexp.py
-#
-# logpmf [much more complex]:
-# https://github.com/scipy/scipy/blob/v0.19.0/scipy/stats/_discrete_distns.py
 
 # C++ CLIF functions:
 #
@@ -186,7 +171,12 @@ def log10_binomial(k, n, p):
   Returns:
     log10 probability of seeing k successes in n trials with p.
   """
-  return scipy.stats.binom.logpmf(k, n, p) / LOG_E_OF_10
+  r = math.lgamma(n + 1) - (math.lgamma(k + 1) + math.lgamma(n - k + 1))
+  if k > 0:
+    r += k * math.log(p)
+  if n > k:
+    r += (n-k) * math.log1p(-p)
+  return r / LOG_E_OF_10
 
 
 def log10sumexp(log10_probs):
@@ -198,8 +188,8 @@ def log10sumexp(log10_probs):
   Returns:
     Float.
   """
-  return LOG_10_OF_E * scipy.special.logsumexp(
-      np.array(log10_probs) * LOG_E_OF_10)
+  m = max(log10_probs)
+  return m + math.log10(sum(pow(10.0, x - m) for x in log10_probs))
 
 
 def normalize_log10_probs(log10_probs):

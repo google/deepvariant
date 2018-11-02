@@ -3532,12 +3532,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "redacted"
   physical_core_count: 6
-  cpu_frequency_mhz: 1290.06583333
-  total_memory_mb: 32143
-  wall_time_seconds: 2.15146708488
-  cpu_user_time_seconds: 11.561717
-  cpu_system_time_seconds: 6.922144
-  memory_peak_rss_mb: 464
-  read_bytes: 886620160
+  cpu_frequency_mhz: 1238.94916667
+  total_memory_mb: 32151
+  wall_time_seconds: 1.15334606171
+  cpu_user_time_seconds: 13.650114
+  cpu_system_time_seconds: 8.437954
+  memory_peak_rss_mb: 456
+  read_bytes: 900550656
   write_bytes: 16384
 }
