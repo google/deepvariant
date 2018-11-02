@@ -96,6 +96,7 @@ _CALL_VARIANTS_COMMAND = r"""
   --examples "${{EXAMPLES}}"/examples_output.tfrecord@"${{SHARDS}}".gz
   --outfile "${{CALLED_VARIANTS}}"/call_variants_output.tfrecord-"$(printf "%05d" "${{CALL_VARIANTS_SHARD_INDEX}}")"-of-"$(printf "%05d" "${{CALL_VARIANTS_SHARDS}}")".gz
   --checkpoint "${{MODEL}}"/model.ckpt
+  {EXTRA_ARGS}
 """
 
 _POSTPROCESS_VARIANTS_COMMAND = r"""
@@ -130,7 +131,8 @@ _POD_CONFIG_TEMPLATE = r"""
                     "--use_tpu",
                     "--outfile={OUTFILE}",
                     "--examples={EXAMPLES}",
-                    "--checkpoint={MODEL_CHECKPOINT}"
+                    "--checkpoint={MODEL_CHECKPOINT}",
+                    "--batch_size={BATCH_SIZE}"
                 ],
                 "resources": {{
                     "limits": {{
@@ -364,7 +366,9 @@ def _deploy_call_variants_pod(pod_name, cluster, pipeline_args):
       OUTFILE=outfile,
       MODEL_CHECKPOINT=pipeline_args.model + '/model.ckpt',
       TPU_RESOURCE=('cloud-tpus.google.com/preemptible-v2' if
-                    pipeline_args.preemptible else 'cloud-tpus.google.com/v2'))
+                    pipeline_args.preemptible else 'cloud-tpus.google.com/v2'),
+      BATCH_SIZE=pipeline_args.call_variants_batch_size)
+
   cluster.deploy_pod(
       pod_config=pod_config,
       pod_name=pod_name,
@@ -414,7 +418,12 @@ def _run_call_variants_with_kubernetes(pipeline_args):
 
 def _run_call_variants_with_pipelines_api(pipeline_args):
   """Runs call_variants step with pipelines API."""
-  command = _CALL_VARIANTS_COMMAND.format()
+
+  def get_extra_args():
+    """Optional arguments that are specific to call_variants binary."""
+    return ['--batch_size', str(pipeline_args.call_variants_batch_size)]
+
+  command = _CALL_VARIANTS_COMMAND.format(EXTRA_ARGS=' '.join(get_extra_args()))
 
   machine_type = 'custom-{0}-{1}'.format(
       pipeline_args.call_variants_cores_per_worker,
@@ -648,6 +657,16 @@ def run(argv=None):
       action='store_true',
       help=('Only affects make_example step. If set, gcsfuse is used to '
             'localize input bam file instead of copying it with gsutil. '))
+
+  # Optional call_variants args.
+  # redacted
+  parser.add_argument(
+      '--call_variants_batch_size',
+      type=int,
+      default=512,
+      help=('Number of candidate variant tensors to batch together during '
+            'inference. Larger batches use more memory but are more '
+            'computational efficient.'))
 
   # Optional gVCF args.
   parser.add_argument(
