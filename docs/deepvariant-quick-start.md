@@ -54,7 +54,7 @@ Before you start running, you need to have the following input files:
 1.  A model checkpoint for DeepVariant. We'll refer to this as `${MODEL}` below.
 
 ```bash
-BIN_VERSION="0.7.0"
+BIN_VERSION="0.7.1"
 MODEL_VERSION="0.7.0"
 
 MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
