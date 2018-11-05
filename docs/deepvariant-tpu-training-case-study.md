@@ -39,7 +39,7 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.7.0"
+BIN_VERSION="0.7.1"
 
 MODEL_VERSION="0.7.0"
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
@@ -142,7 +142,7 @@ sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
 ) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
 ```
 
-This took 107m50.530s. We will want to shuffle this on Dataflow later, so I will
+This took 107m8.521s. We will want to shuffle this on Dataflow later, so I will
 copy it to GCS bucket first:
 
 ```
@@ -170,7 +170,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00064.gz \
 ) >"${LOG_DIR}/validation_set.with_label.make_examples.log" 2>&1
 ```
 
-This took: 8m10.566s.
+This took: 8m49.066s.
 
 Validation set is small here. We will just shuffle locally later, so no need to
 copy to out GCS bucket.
@@ -193,7 +193,7 @@ copy to out GCS bucket.
 ) >"${LOG_DIR}/test_set.no_label.make_examples.log" 2>&1
 ```
 
-This took: 2m17.151s.
+This took: 2m14.576s.
 
 We don't need to shuffle test set. It will eventually be used in the final
 evaluation evaluated with `hap.py` on the whole set.
@@ -226,36 +226,22 @@ Here is an example. You might or might not need to install everything below:
 
 ```
 sudo apt -y install python-dev python-pip
-pip install --upgrade pip
-pip install --user --upgrade virtualenv
+# This will make sure the pip command is bound to python2
+python2 -m pip install --user --upgrade --force-reinstall pip
+
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-A virtual environment is a directory tree containing its own Python
-distribution. To create a virtual environment, create a directory and run:
+Install Beam:
 
 ```
-virtualenv ${HOME}/virtualenv_beam
-```
-
-A virtual environment needs to be activated for each shell that is to use it.
-Activating it sets some environment variables that point to the virtual
-environment's directories.
-
-To activate a virtual environment in Bash, run:
-
-```
-. ${HOME}/virtualenv_beam/bin/activate
-```
-
-Once this is activated, install Beam:
-
-```
-pip install apache-beam
+pip install --user apache-beam
 ```
 
 Get the code that shuffles:
 
 ```
+mkdir -p ${SHUFFLE_SCRIPT_DIR}
 wget https://raw.githubusercontent.com/google/deepvariant/r0.7/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
 ```
 
@@ -280,7 +266,7 @@ Output is in
 
 Data config file is in `${OUTPUT_DIR}/validation_set.dataset_config.pbtxt`.
 
-This took 11m15.090s.
+This took 10m40.558s.
 
 For the training set, it is too large to be running with DirectRunner on this
 instance, so we use the DataflowRunner. Before that, please make sure you enable
@@ -290,7 +276,7 @@ http://console.cloud.google.com/flows/enableapi?apiid=dataflow.
 Then, install Dataflow:
 
 ```
-pip install google-cloud-dataflow
+pip install --user google-cloud-dataflow
 ```
 
 Shuffle using Dataflow.
@@ -320,13 +306,7 @@ In order to have the best performance, you might need extra resources such as
 machines or IPs within a region. That will not be in the scope of this case
 study here.
 
-My run took about 38m3.435s on Dataflow.
-
-After this is done, deactivate the virtualenv:
-
-```
-deactivate
-```
+My run took about 40m28.401s on Dataflow.
 
 The output path can be found in the dataset_config file by:
 
@@ -345,11 +325,12 @@ In the output, the `tfrecord_path` should be valid paths in gs://.
 
 name: "HG001"
 tfrecord_path: "YOUR_GCS_BUCKET/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-num_examples: 3890596
+num_examples: 3857898
+
 ```
 
 In my run, it wrote to 341 shards:
-`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00341.tfrecord.gz`
+`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00364.tfrecord.gz`
 
 ### Start a Cloud TPU
 
@@ -366,7 +347,7 @@ Here is what I did to start a TPU.
 First, check all existing TPUs by running this command:
 
 ```
-gcloud beta compute tpus list --zone=us-central1-f
+gcloud compute tpus list --zone=us-central1-f
 ```
 
 In my case, I don't see any existing TPUs.
@@ -374,9 +355,10 @@ In my case, I don't see any existing TPUs.
 Then, I ran the following command to start a TPU:
 
 ```
-time gcloud beta compute tpus create ${USER}-demo-tpu \
-  --range=10.240.2.0/29 \
-  --version=1.9 \
+time gcloud compute tpus create ${USER}-demo-tpu \
+  --network=default \
+  --range=10.240.1.0/29 \
+  --version=1.11 \
   --zone=us-central1-f
 ```
 
@@ -390,21 +372,21 @@ This command took about 5min to finish.
 After the TPU is created, we can query it by:
 
 ```
-gcloud beta compute tpus list --zone=us-central1-f
+gcloud compute tpus list --zone=us-central1-f
 ```
 
 In my case, I see:
 
 ```
-NAME                ZONE           ACCELERATOR_TYPE  NETWORK_ENDPOINTS  NETWORK  RANGE          STATUS
-pichuan-demo-tpu    us-central1-f  v2-8              10.240.2.2:8470    default  10.240.2.0/29  READY
+NAME              ZONE           ACCELERATOR_TYPE  NETWORK_ENDPOINTS  NETWORK  RANGE          STATUS
+pichuan-demo-tpu  us-central1-f  v2-8              10.240.1.2:8470    default  10.240.1.0/29  READY
 ```
 
 In this example, I set up these variables:
 
 ```
 export TPU_NAME="${USER}-demo-tpu"
-export TPU_IP="10.240.2.2"
+export TPU_IP="10.240.1.2"
 ```
 
 (One more reminder about
@@ -436,7 +418,7 @@ Pointers for common issues or things you can tune:
 
 1.  TPU might not have write access to GCS bucket:
 
-    https://cloud.google.com/tpu/docs/storage-buckets#giving_your_product_name_short_access_to_gcs_name_short
+    https://cloud.google.com/tpu/docs/storage-buckets#storage_access
 
 1.  Change `save_interval_secs` to save checkpoints more frequently:
 
@@ -467,9 +449,9 @@ sudo docker run \
   --batch_size=512 > "${LOG_DIR}/eval.log" 2>&1 &
 ```
 
-`model_eval` will watch the `${TRAINING_DIR}` and start evaluting when there are
-newly saved checkpoints. It evaluates the checkpoints on the data specified in
-`validation_set.dataset_config.pbtxt`, and saves `*metrics` file to the
+`model_eval` will watch the `${TRAINING_DIR}` and start evaluating when there
+are newly saved checkpoints. It evaluates the checkpoints on the data specified
+in `validation_set.dataset_config.pbtxt`, and saves `*metrics` file to the
 directory. These files are used later to pick the best model based on how
 accurate they are on the validation set.
 
@@ -483,7 +465,7 @@ kill the process after training is no longer producing more checkpoints. And,
 command to delete the TPU:
 
 ```
-gcloud beta compute tpus delete ${TPU_NAME} --zone us-central1-f
+gcloud compute tpus delete ${TPU_NAME} --zone us-central1-f
 ```
 
 ### Use TensorBoard to visualize progress
@@ -510,7 +492,7 @@ tensorboard --logdir ${TRAINING_DIR} --port=8080
 This gives some message like:
 
 ```
-TensorBoard 1.9.0 at http://cs-6000-devshell-vm-ddb3cd66-9d0b-4e19-afcc-d4a19ba2ee06:8080 (Press CTRL+C to quit)
+TensorBoard 1.11.0 at http://cs-6000-devshell-vm-ec39a769-4665-4f57-bdff-2c9192f44b7e:8080 (Press CTRL+C to quit)
 ```
 
 But that link is not usable directly. I clicked on the “Web Preview” on the top
@@ -538,7 +520,7 @@ things. In my run, I took these screenshots after the run completed:
 When you are done with training, make sure to clean up the TPU:
 
 ```
-gcloud beta compute tpus delete ${TPU_NAME} --zone us-central1-f
+gcloud compute tpus delete ${TPU_NAME} --zone us-central1-f
 ```
 
 ### Pick a model
@@ -562,11 +544,11 @@ python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
 The top line I got was this:
 
 ```
-43600   96769.0 0.998961331563
+44200   96772.0 0.998945823601
 ```
 
 This means the model checkpoint that performs the best on the validation set is
-`${TRAINING_DIR}/model.ckpt-43600`. Based on this result, a few thoughts came
+`${TRAINING_DIR}/model.ckpt-44200`. Based on this result, a few thoughts came
 into mind:
 
 1.  Training more steps didn't seem to help much. Did the training overfit?
@@ -587,7 +569,7 @@ run on CPUs:
     /opt/deepvariant/bin/call_variants \
     --outfile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
     --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
-    --checkpoint "${TRAINING_DIR}/model.ckpt-43600" \
+    --checkpoint "${TRAINING_DIR}/model.ckpt-44200" \
 ) >"${LOG_DIR}/test_set.call_variants.log" 2>&1 &
 ```
 
@@ -635,8 +617,8 @@ To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 225  | 136  | 0.977552 | 0.986827  | 0.982167
-SNP   | 66   | 49   | 0.999004 | 0.999260  | 0.999132
+INDEL | 229  | 141  | 0.977153 | 0.986343  | 0.981726
+SNP   | 71   | 58   | 0.998928 | 0.999125  | 0.999026
 
 The baseline we're comparing to is to directly use the WGS model (`--checkpoint
 ${GCS_PRETRAINED_WGS_MODEL}`) to make the calls.

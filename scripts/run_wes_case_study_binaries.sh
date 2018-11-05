@@ -12,7 +12,6 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/exome-case-study"
-BIN_VERSION="0.7.0"
 MODEL_VERSION="0.7.0"
 MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+data-wes_standard"
 MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"

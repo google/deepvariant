@@ -138,12 +138,12 @@ fewer cores for this step.
 ## Resources used by each step
 
 Step                               | wall time
----------------------------------- | ------------------
-`make_examples`                    | 113m 12s
-`call_variants`                    | 176m 30s
-`postprocess_variants` (no gVCF)   | 20m 11s
-`postprocess_variants` (with gVCF) | 51m 25s
-total time (single machine)        | 209m 53s - 341m 7s
+---------------------------------- | -------------------
+`make_examples`                    | 113m 19s
+`call_variants`                    | 181m 40s
+`postprocess_variants` (no gVCF)   | 20m 40s
+`postprocess_variants` (with gVCF) | 54m 49s
+total time (single machine)        | 315m 39s - 349m 48s
 
 ## Variant call quality
 
