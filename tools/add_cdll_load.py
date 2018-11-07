@@ -56,8 +56,14 @@ in_py = sys.argv[1]
 so_file = sys.argv[2]
 out_py = sys.argv[3]
 
-load_str = '\nimport ctypes\nctypes.CDLL(\"%s\", ctypes.RTLD_GLOBAL)\n' % (
-    so_file)
+load_str = """
+
+import ctypes
+import os
+ctypes.CDLL(os.path.dirname(os.path.realpath(__file__)) + \"/%s\",
+            ctypes.RTLD_GLOBAL)
+
+""" % so_file
 
 with open(in_py, 'r') as in_file:
   in_str = in_file.read()
