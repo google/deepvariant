@@ -54,7 +54,7 @@ def _clif_wrap_cc_impl(ctx):
         "--prepend",
         "clif/python/types.h",
     ]
-    include_args = ["-I" + i for i in include_dirs]
+    include_args = ["-I" + i for i in include_dirs.to_list()]
 
     # Add these includes to CLIF itself.
     args += include_args
@@ -69,7 +69,7 @@ def _clif_wrap_cc_impl(ctx):
     ctx.action(
         executable = ctx.executable._clif,
         arguments = args,
-        inputs = list(inputs),
+        inputs = inputs.to_list(),
         outputs = outputs,
         mnemonic = "CLIF",
         progress_message = "CLIF wrapping " + clif_spec_file.path,
