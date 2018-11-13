@@ -41,13 +41,16 @@ filegroup(
 )
 
 # This is a fake target, designed to populate build_pip_package.runfiles
-# with the right dependency files (including the __init__.py's).
+# with the right dependency files (including the __init__.py's).  It is testonly
+# so that it may depend on testonly targets in nucleus/testing.
 nucleus_py_binary(
     name = "setup",
+    testonly = 1,
     srcs = ["setup.py"],
     legacy_create_init = 1,
     deps = [
         "//third_party/nucleus/io:io_py",
+        "//third_party/nucleus/testing:testing_py",
         "//third_party/nucleus/util:util_py",
     ],
 )
@@ -61,6 +64,7 @@ PIP_DEPS = [
 
 sh_binary(
     name = "build_pip_package",
+    testonly = 1,
     srcs = ["build_pip_package.sh"],
     data = PIP_DEPS,
 )
