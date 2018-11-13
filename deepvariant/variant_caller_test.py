@@ -307,7 +307,10 @@ class VariantCallerTests(parameterized.TestCase):
           end=12,
           gq=0,
           min_dp=20,
-          gls=np.array([-14.0230482368, -8.32667268469e-15, -14.0230482368]))
+          gls=np.array([-14.0230482368, -8.32667268469e-15, -14.0230482368]),
+          # The genotype should NOT be called here ("./.") as the likelihood
+          # for het is greater than hom_ref.
+          gts=[-1, -1])
       self.assertGVCF(
           gvcfs[2], ref='G', start=12, end=14, gq=1, min_dp=0, gls=flat_gls)
     else:
@@ -322,7 +325,8 @@ class VariantCallerTests(parameterized.TestCase):
                  min_dp,
                  chrom='chr1',
                  gls=None,
-                 sample_name=None):
+                 sample_name=None,
+                 gts=None):
     if chrom:
       self.assertEqual(gvcf.reference_name, chrom)
     call = variant_utils.only_call(gvcf)
@@ -340,6 +344,8 @@ class VariantCallerTests(parameterized.TestCase):
       npt.assert_allclose(list(gvcf.calls[0].genotype_likelihood), gls)
     if sample_name:
       self.assertEqual(gvcf.calls[0].call_set_name, sample_name)
+    if gts is not None:
+      self.assertEqual(list(gvcf.calls[0].genotype), gts)
 
   @parameterized.parameters(
       # Check some basics.

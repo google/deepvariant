@@ -314,10 +314,16 @@ class VariantCaller(object):
             end=last_record.summary_counts.position + 1,
             calls=[call])
       else:
+        # After evaluating the effect of including sites with contradictory GL
+        # (where the value for hom_ref is not maximal), we concluded that
+        # un-calling these sites (by setting its genotype "./.") is better
+        # for cohort merging.
+        # See b/119042280 for detail.
         for elt in combinable:
+          uncalled_gt = [-1, -1]
           call = variants_pb2.VariantCall(
               call_set_name=self.options.sample_name,
-              genotype=[0, 0],
+              genotype=uncalled_gt,
               genotype_likelihood=elt.likelihoods)
           variantcall_utils.set_gq(call, elt.raw_gq)
           variantcall_utils.set_min_dp(call, elt.read_depth)

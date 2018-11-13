@@ -341,9 +341,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       self.assertEqual(call.call_set_name,
                        options.variant_caller_options.sample_name)
       if is_gvcf:
-        # GVCF records should have 0/0 genotypes as they are reference sites,
-        # have genotype likelihoods and a GQ value.
-        self.assertEqual(call.genotype, [0, 0])
+        # GVCF records should have 0/0 or ./. (un-called) genotypes as they are
+        # reference sites, have genotype likelihoods and a GQ value.
+        self.assertIn(list(call.genotype), [[0, 0], [-1, -1]])
         self.assertEqual(len(call.genotype_likelihood), 3)
         self.assertGreaterEqual(variantcall_utils.get_gq(call), 0)
 
