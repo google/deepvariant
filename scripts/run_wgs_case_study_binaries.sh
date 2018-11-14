@@ -128,7 +128,7 @@ zcat <"${REF}" >"${UNCOMPRESSED_REF}"
 samtools faidx "${UNCOMPRESSED_REF}"
 
 sudo docker pull pkrusche/hap.py
-sudo docker run -it \
+sudo docker run -i \
 -v "${DATA_DIR}:${DATA_DIR}" \
 -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
