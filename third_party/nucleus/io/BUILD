@@ -19,6 +19,14 @@ exports_files(["LICENSE"])
 nucleus_py_library(
     name = "io_py",
     deps = [
+        ":converter",
+        ":io_libs_py",
+    ],
+)
+
+nucleus_py_library(
+    name = "io_libs_py",
+    deps = [
         ":bed",
         ":bedgraph",
         ":clif_postproc",
@@ -29,6 +37,7 @@ nucleus_py_library(
         ":gff",
         ":sam",
         ":vcf",
+        "//third_party/nucleus/io/python:hts_verbose",
     ],
 )
 
@@ -1046,7 +1055,7 @@ nucleus_py_binary(
     name = "converter",
     srcs = ["converter.py"],
     deps = [
-        "//third_party/nucleus/io:io_py",
+        "//third_party/nucleus/io:io_libs_py",
         "@absl_py//absl:app",
         "@absl_py//absl/logging",
     ],

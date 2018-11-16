@@ -26,25 +26,3 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-"""Tests for genomics_io's plugin system."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from absl.testing import absltest
-
-from third_party.nucleus.io import sam
-
-
-class PluginTest(absltest.TestCase):
-  """Test that the plugin loads correctly."""
-
-  def test_tfbam_plugin_loads(self):
-    reader = sam.SamReader('mouse@25.tfbam')
-    self.assertIsNotNone(reader)
-
-
-if __name__ == '__main__':
-  absltest.main()
