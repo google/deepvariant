@@ -175,11 +175,11 @@ new directory on the instance and set up variables to refer to the test data we
 downloaded above:
 
 ```bash
-OUTPUT_DIR=/home/${USER}/quickstart-output
+OUTPUT_DIR=${HOME}/quickstart-output
 mkdir -p "${OUTPUT_DIR}"
-REF=/home/${USER}/quickstart-testdata/ucsc.hg19.chr20.unittest.fasta
-BAM=/home/${USER}/quickstart-testdata/NA12878_S1.chr20.10_10p1mb.bam
-MODEL="/home/${USER}/${MODEL_NAME}/model.ckpt"
+REF=${HOME}/quickstart-testdata/ucsc.hg19.chr20.unittest.fasta
+BAM=${HOME}/quickstart-testdata/NA12878_S1.chr20.10_10p1mb.bam
+MODEL="${HOME}/${MODEL_NAME}/model.ckpt"
 ```
 
 ### `make_examples`
@@ -194,7 +194,7 @@ mode:
 
 ```bash
 sudo docker run \
-  -v /home/${USER}:/home/${USER} \
+  -v ${HOME}:${HOME} \
   gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/make_examples \
   --mode calling   \
@@ -215,14 +215,14 @@ sudo apt-get -y install parallel
 ```
 
 ```bash
-LOGDIR=/home/${USER}/logs
+LOGDIR=${HOME}/logs
 N_SHARDS=3
 
 mkdir -p "${LOGDIR}"
 time seq 0 $((N_SHARDS-1)) | \
   parallel --eta --halt 2 --joblog "${LOGDIR}/log" --res "${LOGDIR}" \
   sudo docker run \
-    -v /home/${USER}:/home/${USER} \
+    -v ${HOME}:${HOME} \
     gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
     /opt/deepvariant/bin/make_examples \
     --mode calling \
@@ -259,7 +259,7 @@ Example command:
 CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/call_variants_output.tfrecord.gz"
 
 sudo docker run \
-  -v /home/${USER}:/home/${USER} \
+  -v ${HOME}:${HOME} \
   gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/call_variants \
  --outfile "${CALL_VARIANTS_OUTPUT}" \
@@ -283,7 +283,7 @@ An example command is below. Note that the output file should end with either
 FINAL_OUTPUT_VCF="${OUTPUT_DIR}/output.vcf.gz"
 
 sudo docker run \
-  -v /home/${USER}:/home/${USER} \
+  -v ${HOME}:${HOME} \
   gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/postprocess_variants \
   --ref "${REF}" \
@@ -300,11 +300,11 @@ serves as a quick check to ensure the three DeepVariant commands ran correctly.
 
 ```bash
 sudo docker pull pkrusche/hap.py
-sudo docker run -it -v /home/${USER}:/home/${USER} \
+sudo docker run -it -v ${HOME}:${HOME} \
   pkrusche/hap.py /opt/hap.py/bin/hap.py \
-  /home/${USER}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
+  ${HOME}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
   "${FINAL_OUTPUT_VCF}" \
-  -f /home/${USER}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed \
+  -f ${HOME}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed \
   -r "${REF}" \
   -o "${OUTPUT_DIR}/happy.output" \
   --engine=vcfeval \
