@@ -92,11 +92,11 @@ More discussion can be found in the
 
 Step                               | wall time
 ---------------------------------- | -----------------
-`make_examples`                    | 13m 39s
-`call_variants`                    | 2m 0s
-`postprocess_variants` (no gVCF)   | 0m 13s
-`postprocess_variants` (with gVCF) | 1m 18s
-total time (single machine)        | 15m 52s - 17m 10s
+`make_examples`                    | 13m 57s
+`call_variants`                    | 2m 1s
+`postprocess_variants` (no gVCF)   | 0m 12s
+`postprocess_variants` (with gVCF) | 1m 20s
+total time (single machine)        | 16m 10s - 17m 18s
 
 ## Variant call quality
 
@@ -110,8 +110,8 @@ We evaluate against the capture region:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 111  | 51   | 0.957308 | 0.980086  | 0.968563
-SNP   | 48   | 15   | 0.998577 | 0.999555  | 0.999066
+INDEL | 111  | 55   | 0.957308 | 0.978558  | 0.967816
+SNP   | 49   | 15   | 0.998547 | 0.999555  | 0.999051
 
 ## Separate models for calling whole genome and exome data
 

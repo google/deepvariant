@@ -188,7 +188,15 @@ def _candidates_to_windows(config, candidate_pos, ref_name):
     if start_pos is None:
       start_pos = pos
       end_pos = pos
-    elif pos > end_pos + config.min_windows_distance:
+    # We need to check if the previous end_pos is within 2*window_distance as we
+    # generate a window of radius window_distance around each position.
+    #
+    #   <-------end_pos------->
+    #                          <-------pos------->
+    # where window_distance = ------->
+    #
+    # If this is the case, we need to merge the two windows.
+    elif pos > end_pos + 2 * config.min_windows_distance:
       _add_window(start_pos, end_pos)
       start_pos = pos
       end_pos = pos
