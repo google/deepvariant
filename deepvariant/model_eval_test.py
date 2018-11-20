@@ -82,6 +82,7 @@ class ModelEvalTest(
     FLAGS.eval_name = self.eval_name
     FLAGS.max_evaluations = 1
     FLAGS.max_examples = 2
+    FLAGS.best_checkpoint_metric = 'F1/All'
     FLAGS.model_name = model_name
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
     FLAGS.master = ''
@@ -96,6 +97,9 @@ class ModelEvalTest(
         dataset_config_filename=FLAGS.dataset_config_pbtxt,
         mode=tf.estimator.ModeKeys.EVAL,
         use_tpu=FLAGS.use_tpu)
+    self.assertTrue(
+        tf_test_utils.check_file_exists(
+            'best_checkpoint.txt', eval_name=self.eval_name))
 
   # Using a constant model, check that running an eval returns the expected
   # metrics.

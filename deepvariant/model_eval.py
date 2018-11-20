@@ -52,6 +52,13 @@ from deepvariant import tf_utils
 slim = tf.contrib.slim
 FLAGS = flags.FLAGS
 
+increasing_metrics = [
+    'Accuracy/All', 'Precision/All', 'Recall/All', 'FPs/All', 'FNs/All',
+    'TPs/All', 'TNs/All', 'Recall/Class1', 'Recall/Class2', 'Precision/Class1',
+    'Precision/Class2', 'F1/All'
+]
+decreasing_metrics = ['loss']
+
 flags.DEFINE_integer('batch_size', 64, 'The number of samples in each batch.')
 
 # Cloud TPU Cluster Resolvers
@@ -116,6 +123,10 @@ flags.DEFINE_string(
     'for more information. The default value is 0, which provides the best '
     'performance in our tests. Set this flag to "" to not set the variable.')
 
+flags.DEFINE_enum('best_checkpoint_metric', 'F1/All',
+                  increasing_metrics + decreasing_metrics,
+                  'The metric for measuring the best checkpoint.')
+
 
 def main(_):
   proto_utils.uses_fast_cpp_protos_or_die()
@@ -170,6 +181,10 @@ def eval_loop(master,
       use_tpu=use_tpu,
   )
 
+  best_ckpt = None
+  ckpt_metric = FLAGS.best_checkpoint_metric
+  ckpt_metric_increasing = ckpt_metric in increasing_metrics
+
   model = modeling.get_model(model_name)
   logging.info('Running evaluations on %s with model %s', tf_dataset, model)
 
@@ -219,6 +234,16 @@ def eval_loop(master,
         name=eval_name)
     logging.info('Eval results: %s', eval_results)
 
+    # Track best checkpoint seen so far, measured by ckpt_metric.
+    if (not best_ckpt or
+        (ckpt_metric_increasing and
+         eval_results[ckpt_metric] > best_ckpt[0][ckpt_metric]) or
+        (not ckpt_metric_increasing and
+         eval_results[ckpt_metric] < best_ckpt[0][ckpt_metric])):
+      best_ckpt = (eval_results, ckpt)
+      logging.info('New best checkpoint: %s with values %s', ckpt, eval_results)
+      _write_best_checkpoint(ckpt, eval_name)
+
     _write_checkpoint_metrics(ckpt, eval_results, eval_name)
 
     # An alternative strategy might check step-number-of-ckpt >= train_steps.
@@ -230,17 +255,17 @@ def eval_loop(master,
   return
 
 
-def checkpoint_metrics_path(checkpoint_path, eval_name):
+def checkpoint_metrics_path(checkpoint_path, eval_name, file_name=None):
   """Gets a path to the JSON of eval metrics for checkpoint in eval_name."""
   checkpoint_dir = os.path.dirname(checkpoint_path)
   checkpoint_name = os.path.basename(checkpoint_path)
   if eval_name:
     # This bit of magic is defined by the estimator framework, and isn't easy
     # to change.  We only get to specify the suffix.
-    d = os.path.join(checkpoint_dir, 'eval_' + eval_name)
-  else:
-    d = checkpoint_dir
-  return os.path.join(d, checkpoint_name + '.metrics')
+    checkpoint_dir = os.path.join(checkpoint_dir, 'eval_' + eval_name)
+  if not file_name:
+    return os.path.join(checkpoint_dir, checkpoint_name + '.metrics')
+  return os.path.join(checkpoint_dir, file_name)
 
 
 def read_metrics(checkpoint_path, eval_name):
@@ -248,6 +273,26 @@ def read_metrics(checkpoint_path, eval_name):
   metrics_path = checkpoint_metrics_path(checkpoint_path, eval_name)
   with tf.gfile.GFile(metrics_path) as fin:
     return {k: float(v) for k, v in json.load(fin).iteritems()}
+
+
+def _write_best_checkpoint(checkpoint_path, eval_name):
+  """Writes the path to the best checkpoint in a file.
+
+  Args:
+    checkpoint_path: str; a path to the best checkpoint.
+    eval_name: str; the name of the eval run, which is used to derive the
+      subdirectory of checkpoint_path where the eval metrics will be written.
+  """
+  path = checkpoint_metrics_path(
+      checkpoint_path, eval_name, file_name='best_checkpoint.txt')
+  try:
+    with tf.gfile.GFile(path, 'w') as fout:
+      fout.write(checkpoint_path + '\n')
+  except:  # pylint: disable=bare-except
+    # Note we have a bare exception here as as there's no clear TF base
+    # exception to catch will cover all of the potential issues that might arise
+    # trying to write our metrics to our metrics file.
+    logging.warning('Failed to write best checkpoint to path %s', path)
 
 
 def _write_checkpoint_metrics(checkpoint_path, metrics_and_values, eval_name):

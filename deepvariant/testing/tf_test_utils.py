@@ -90,6 +90,16 @@ def test_tmpdir(name):
   return dirname
 
 
+def check_file_exists(name, eval_name=None):
+  """Returns true if file exists in directory."""
+  if not eval_name:
+    file_name = os.path.join(tf.test.get_temp_dir(), name)
+  else:
+    directory = os.path.join(tf.test.get_temp_dir(), 'eval_' + eval_name)
+    file_name = os.path.join(directory, name)
+  return tf.gfile.Exists(file_name)
+
+
 # redacted
 # taking a required_variables_regexps and have a function that looks like:
 # return all(any(re.match(var, pat) for var in var_to_shape_map.keys()
