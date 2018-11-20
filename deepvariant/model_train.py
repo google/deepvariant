@@ -211,7 +211,7 @@ def run(target, unused_is_chief, device_fn, use_tpu):
         tf.gfile.MakeDirs(eval_dir)
 
         plateau_decrease = True
-        if FLAGS.early_stopping_metric_direction == 'decreasing':
+        if FLAGS.early_stopping_metric_direction == 'increase':
           plateau_decrease = False
 
         early_stopping_hook = metrics_hook.EarlyStoppingHook(
