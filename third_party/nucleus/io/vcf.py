@@ -49,7 +49,7 @@ from third_party.nucleus.io import vcf
 # variants is an iterable of nucleus.genomics.v1.Variant protocol buffers.
 variants = ...
 
-with vcf.VcfWriter(output_path, header) as writer:
+with vcf.VcfWriter(output_path, header=header) as writer:
   for variant in variants:
     writer.write(variant)
 ```
