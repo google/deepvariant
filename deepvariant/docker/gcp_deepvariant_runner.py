@@ -223,17 +223,13 @@ def _run_job(run_args):
   raise RuntimeError('Job failed with error %s' % stderr)
 
 
-def _validate_gcs_path(path):
-  """Checks if path is a valid GCS path.
+def _is_valid_gcs_path(gcs_path):
+  """Returns true iff the given path is a valid GCS path.
 
   Args:
-    path: (str) a path to directory or an obj on GCS.
-
-  Raises:
-    ValueError: if path is not a valid GCS path.
+    gcs_path: (str) a path to directory or an obj on GCS.
   """
-  if urlparse.urlparse(path).scheme != 'gs':
-    raise ValueError('Invalid GCS path is provided: %s' % path)
+  return urlparse.urlparse(gcs_path).scheme == 'gs'
 
 
 def _get_gcs_bucket(gcs_path):
@@ -244,7 +240,8 @@ def _get_gcs_bucket(gcs_path):
   Args:
     gcs_path: (str) a Google cloud storage path.
   """
-  _validate_gcs_path(gcs_path)
+  if not _is_valid_gcs_path(gcs_path):
+    raise ValueError('Invalid GCS path provided: %s' % gcs_path)
   return urlparse.urlparse(gcs_path).netloc
 
 
@@ -256,12 +253,21 @@ def _get_gcs_relative_path(gcs_path):
   Args:
     gcs_path: (str) a valid Google cloud storage path.
   """
-  _validate_gcs_path(gcs_path)
+  if not _is_valid_gcs_path(gcs_path):
+    raise ValueError('Invalid GCS path provided: %s' % gcs_path)
   return urlparse.urlparse(gcs_path).path.strip('/')
 
 
 def _run_make_examples(pipeline_args):
   """Runs the make_examples job."""
+
+  def get_region_paths(regions):
+    return filter(_is_valid_gcs_path, regions or [])
+
+  def get_region_literals(regions):
+    return [
+        region for region in regions or [] if not _is_valid_gcs_path(region)
+    ]
 
   def get_extra_args():
     """Optional arguments that are specific to make_examples binary."""
@@ -274,7 +280,12 @@ def _run_make_examples(pipeline_args):
           ['--gvcf_gq_binsize',
            str(pipeline_args.gvcf_gq_binsize)])
     if pipeline_args.regions:
-      extra_args.extend(['--regions', ' '.join(pipeline_args.regions)])
+      num_localized_region_paths = len(get_region_paths(pipeline_args.regions))
+      localized_region_paths = map('"${{INPUT_REGIONS_{0}}}"'.format,
+                                   range(num_localized_region_paths))
+      region_literals = get_region_literals(pipeline_args.regions)
+      extra_args.extend(
+          ['--regions', ' '.join(region_literals + localized_region_paths)])
     if pipeline_args.sample_name:
       extra_args.extend(['--sample_name', pipeline_args.sample_name])
     if pipeline_args.hts_block_size:
@@ -307,6 +318,10 @@ def _run_make_examples(pipeline_args):
         'INPUT_BAI=' + pipeline_args.bai,
         'INPUT_REF=' + pipeline_args.ref,
         'INPUT_REF_FAI=' + pipeline_args.ref_fai,
+    ] + [
+        'INPUT_REGIONS_%s=%s' % (k, region_path)
+        for k, region_path in enumerate(
+            get_region_paths(pipeline_args.regions))
     ]
     if pipeline_args.ref_gzi:
       inputs.extend([pipeline_args.ref_gzi])

@@ -50,6 +50,7 @@ import gke_cluster
 import mock
 
 
+# redacted
 class _HasAllOf(object):
   """Helper class used in mock.call to check that all arguments are in a set."""
 
@@ -192,6 +193,10 @@ class DeepvariantRunnerTest(unittest.TestCase):
         '3',
         '--shards',
         '15',
+        '--regions',
+        'gs://bucket/region-1.bed',
+        'chr20:1,5',
+        'gs://bucket/region-2.bed',
         '--gpu',  # GPU should not have any effect.
         '--docker_image_gpu',
         'image_gpu',
@@ -205,15 +210,21 @@ class DeepvariantRunnerTest(unittest.TestCase):
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
                           'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                          'EXAMPLES=gs://bucket/staging/examples/0/*')
+                          'EXAMPLES=gs://bucket/staging/examples/0/*',
+                          'INPUT_REGIONS_0=gs://bucket/region-1.bed',
+                          'INPUT_REGIONS_1=gs://bucket/region-2.bed')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9')
+                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
+                          'INPUT_REGIONS_0=gs://bucket/region-1.bed',
+                          'INPUT_REGIONS_1=gs://bucket/region-2.bed')
             ]),
             mock.call(mock.ANY, [
                 _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14')
+                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
+                          'INPUT_REGIONS_0=gs://bucket/region-1.bed',
+                          'INPUT_REGIONS_1=gs://bucket/region-2.bed')
             ]),
         ],
         any_order=True,
