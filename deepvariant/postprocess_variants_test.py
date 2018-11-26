@@ -384,6 +384,16 @@ class PostprocessVariantsTest(parameterized.TestCase):
               probabilities=[0.99997, 0.00002, 0.00001],
               alts=['C', 'T']),
       ], [0.978, 0.00002, 0.00001, 0.007, 0.001, 0.001]),
+      # An extreme case where our logic could result in ZeroDivisionError if
+      # we don't handle this special case.
+      ([
+          _create_call_variants_output(
+              indices=[0], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[1], probabilities=[0.00, 1.0, 0.0], alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[0, 1], probabilities=[1.0, 0.0, 0.0], alts=['C', 'T'])
+      ], [1.0 / 6] * 6),
       # expected_unnormalized_probs is min of 0/0, 0/1, 1/1.
       ([
           _create_call_variants_output(

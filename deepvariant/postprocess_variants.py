@@ -577,6 +577,8 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
       min(flattened_probs_dict[(m, n)]) for _, _, m, n in
       variant_utils.genotype_ordering_in_likelihoods(canonical_variant)
   ]
+  if sum(predictions) == 0:
+    predictions = [1.0] * len(predictions)
   denominator = sum(predictions)
   # Note the simplify_alleles call *must* happen after the predictions
   # calculation above. flattened_probs_dict is indexed by alt allele, and
