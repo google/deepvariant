@@ -55,7 +55,7 @@ namespace nucleus {
 namespace internal {
 
 using absl::string_view;
-using re2::StringPiece;  // copybara
+using RegExpStringPiece = re2::StringPiece;  // copybara
 
 // Utilities.
 
@@ -186,8 +186,7 @@ class IgnoreFieldPathCriteria
 };
 
 namespace {
-// Note, re2:StringPiece does not have ssize().
-bool Consume(StringPiece* s, StringPiece x) {
+bool Consume(RegExpStringPiece* s, RegExpStringPiece x) {
   // We use the implementation of ABSL's StartsWith here until we can pick up a
   // dependency on Abseil.
   if (x.empty() ||
@@ -217,7 +216,7 @@ ParseFieldPathOrDie(const string& relative_field_path,
   const RE2 field_subscript_regex(R"(([^.()[\]]+)\[(\d+)\])");
   const RE2 extension_regex(R"(\(([^)]+)\))");
 
-  StringPiece input(relative_field_path);
+  RegExpStringPiece input(relative_field_path);
   while (!input.empty()) {
     // Consume a dot, except on the first iteration.
     if (input.size() < relative_field_path.size() && !Consume(&input, ".")) {
