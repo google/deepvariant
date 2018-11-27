@@ -204,7 +204,7 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
       images = tf.placeholder(tf.float32, (4, height, width, 3))
       expected_message = ('Unsupported image dimensions.* model '
                           'inception_v3.*w={} x h={}.*').format(width, height)
-      with self.assertRaisesRegexp(modeling.UnsupportedImageDimensions,
+      with self.assertRaisesRegexp(modeling.UnsupportedImageDimensionsError,
                                    expected_message):
         self.model.create(images, 3, is_training=True)
 

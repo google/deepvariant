@@ -100,7 +100,7 @@ FLAGS = flags.FLAGS
 slim = tf.contrib.slim
 
 
-class UnsupportedImageDimensions(Exception):
+class UnsupportedImageDimensionsError(Exception):
   """Exception indicating the image dimensions aren't supported by our model."""
 
 
@@ -529,7 +529,7 @@ class DeepVariantModel(object):
             'supported by the model. The supported dimensions for {} are {}'
         ).format(self.name, width, height, self.name,
                  self.supported_dimensions_message)
-        raise UnsupportedImageDimensions(message)
+        raise UnsupportedImageDimensionsError(message)
       else:
         raise
 
