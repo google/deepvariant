@@ -55,7 +55,7 @@ with 128GiB of memory and no GPU, on the Google Cloud Platform.
 We used a command like this to allocate it:
 
 ```shell
-gcloud beta compute instances create "${USER}-deepvariants-casestudy"  \
+gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
 --scopes "compute-rw,storage-full,cloud-platform" \
 --image-family "ubuntu-1604-lts" \
 --image-project "ubuntu-os-cloud" \
