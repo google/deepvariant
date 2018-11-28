@@ -150,7 +150,6 @@ class PileupImageCreator(object):
     self._encoder = pileup_image_native.PileupImageEncoderNative(self._options)
     self._ref_reader = ref_reader
     self._sam_reader = sam_reader
-    self._random = np.random.RandomState(self._options.random_seed)
 
   def __getattr__(self, attr):
     """Gets attributes from self._options as though they are our attributes."""
@@ -291,9 +290,10 @@ class PileupImageCreator(object):
     # We add a row for each read in order, down-sampling if the number of reads
     # is greater than self.max_reads. Sort the reads by their alignment
     # position.
+    random_for_image = np.random.RandomState(self._options.random_seed)
     sample = sorted(
         utils.reservoir_sample(
-            _row_generator(), self.max_reads, random=self._random),
+            _row_generator(), self.max_reads, random=random_for_image),
         key=lambda x: x[0])
 
     rows += [read_row for _, read_row in sample]

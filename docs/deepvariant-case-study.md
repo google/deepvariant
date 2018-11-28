@@ -139,11 +139,11 @@ fewer cores for this step.
 
 Step                               | wall time
 ---------------------------------- | -------------------
-`make_examples`                    | 114m 57s
-`call_variants`                    | 187m 4s
-`postprocess_variants` (no gVCF)   | 20m 50s
-`postprocess_variants` (with gVCF) | 57m 42s
-total time (single machine)        | 322m 51s - 359m 43s
+`make_examples`                    | 114m 44s
+`call_variants`                    | 177m 24s
+`postprocess_variants` (no gVCF)   | 20m 45s
+`postprocess_variants` (with gVCF) | 56m 8s
+total time (single machine)        | 312m 53s - 348m 16s
 
 ## Variant call quality
 
@@ -155,5 +155,5 @@ results.
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 1427 | 924  | 0.996930 | 0.998089  | 0.997509
-SNP   | 1327 | 750  | 0.999565 | 0.999754  | 0.999659
+INDEL | 1428 | 924  | 0.996927 | 0.998089  | 0.997508
+SNP   | 1328 | 749  | 0.999564 | 0.999754  | 0.999659

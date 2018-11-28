@@ -749,7 +749,6 @@ class RegionProcessor(object):
 
     self.variant_caller = variant_caller.VariantCaller(
         self.options.variant_caller_options)
-    self.random = np.random.RandomState(self.options.random_seed)
     self.initialized = True
 
   def _make_labeler_from_options(self):
@@ -844,8 +843,9 @@ class RegionProcessor(object):
     """
     reads = self.sam_reader.query(region)
     if self.options.max_reads_per_partition > 0:
+      random_for_region = np.random.RandomState(self.options.random_seed)
       reads = utils.reservoir_sample(
-          reads, self.options.max_reads_per_partition, self.random)
+          reads, self.options.max_reads_per_partition, random_for_region)
     reads = list(reads)
     if self.realigner:
       _, reads = self.realigner.realign_reads(reads, region)
