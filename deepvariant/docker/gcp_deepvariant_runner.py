@@ -118,7 +118,7 @@ _POD_CONFIG_TEMPLATE = r"""
     "metadata": {{
         "name": "{POD_NAME}",
         "annotations": {{
-            "tf-version.cloud-tpus.google.com": "1.11"
+            "tf-version.cloud-tpus.google.com": "1.12"
         }}
     }},
     "spec": {{

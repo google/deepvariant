@@ -358,7 +358,7 @@ Then, I ran the following command to start a TPU:
 time gcloud compute tpus create ${USER}-demo-tpu \
   --network=default \
   --range=10.240.1.0/29 \
-  --version=1.11 \
+  --version=1.12 \
   --zone=us-central1-f
 ```
 
