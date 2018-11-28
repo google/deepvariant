@@ -94,7 +94,7 @@ flags.DEFINE_integer(
 
 flags.DEFINE_integer('task', 0, 'Task id of the replica running the training.')
 
-flags.DEFINE_integer('number_of_steps', 30000000,
+flags.DEFINE_integer('number_of_steps', 8000000,
                      'Maximum number of global steps to take when training.')
 
 flags.DEFINE_boolean('use_early_stopping', False, 'Use early stopping hook.')

@@ -64,7 +64,7 @@ flags.DEFINE_float(
     'meaning that we expect a label error at a rate of 1 / 1,000,000')
 
 # Training parameters.
-flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
+flags.DEFINE_float('learning_rate', 0.016, 'Initial learning rate.')
 
 flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
 
