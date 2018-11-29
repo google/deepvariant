@@ -142,7 +142,7 @@ zcat <"${REF}" >"${UNCOMPRESSED_REF}"
 samtools faidx "${UNCOMPRESSED_REF}"
 
 sudo docker pull pkrusche/hap.py
-sudo docker run -i \
+( sudo docker run -i \
 -v "${DATA_DIR}:${DATA_DIR}" \
 -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
@@ -153,4 +153,5 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
   -r "${UNCOMPRESSED_REF}" \
   -o "${OUTPUT_DIR}/happy.output" \
   --engine=vcfeval
+) 2>&1 | tee "${LOG_DIR}/happy.log"
 echo "Done."
