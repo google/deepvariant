@@ -307,7 +307,7 @@ class VariantCallerTests(parameterized.TestCase):
           end=12,
           gq=0,
           min_dp=20,
-          gls=np.array([-14.0230482368, -8.32667268469e-15, -14.0230482368]),
+          gls=np.array([-14.0230482368, -7.993606e-15, -14.0230482368]),
           # The genotype should NOT be called here ("./.") as the likelihood
           # for het is greater than hom_ref.
           gts=[-1, -1])

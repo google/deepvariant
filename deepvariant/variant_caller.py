@@ -63,6 +63,8 @@ _GVCF = collections.namedtuple('_GVCF', [
     'has_valid_gl'
 ])
 
+LOG_10 = math.log(10.0)
+
 
 def _rescale_read_counts_if_necessary(n_ref_reads, n_total_reads,
                                       max_allowed_reads):
@@ -146,9 +148,9 @@ class VariantCaller(object):
     allele, the so-called <*> allele, which boils down to a model that looks
     like:
 
-     log10_p_ref = Log10PBinomial(non_ref_n, total_n, p_error_);
-     log10_p_het = Log10PBinomial(ref_n, total_n, 0.5);
-     log10_p_hom_alt = Log10PBinomial(ref_n, total_n, p_error_);
+     log10_p_ref = (1 - p_error)^(ref_n) (p_error)^(non_ref_n)
+     log10_p_het = (0.5)^(total_n)
+     log10_p_hom_alt = (p_e)^(ref_n) (1 - p_error)^(non_ref_n)
 
     ref_n is the number of reference supporting reads and non_ref_n is the sum
     of any reads supporting any alternate alleles. Non-informative reads are
@@ -202,12 +204,11 @@ class VariantCaller(object):
       log10_probs = genomics_math.normalize_log10_probs([-1.0, -1.0, -1.0])
     else:
       n_alts = n_total - n_ref
-      log10_p_ref = genomics_math.log10_binomial(n_alts, n_total,
-                                                 self.options.p_error)
-      log10_p_het = genomics_math.log10_binomial(n_ref, n_total,
-                                                 1.0 / self.options.ploidy)
-      log10_p_hom_alt = genomics_math.log10_binomial(n_ref, n_total,
-                                                     self.options.p_error)
+      logp = math.log(self.options.p_error) / LOG_10
+      log1p = math.log1p(-self.options.p_error) / LOG_10
+      log10_p_ref = n_ref * log1p + n_alts * logp
+      log10_p_het = -n_total * math.log(self.options.ploidy) / LOG_10
+      log10_p_hom_alt = n_ref * logp + n_alts * log1p
       log10_probs = genomics_math.normalize_log10_probs(
           [log10_p_ref, log10_p_het, log10_p_hom_alt])
 
