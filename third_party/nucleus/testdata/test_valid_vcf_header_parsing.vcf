@@ -7,10 +7,12 @@
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth of all passing filters reads for each allele.">
 ##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype likelihoods, log10 encoded">
 ##FORMAT=<ID=CH,Number=1,Type=Character,Description="Character FORMAT field">
+##FORMAT=<ID=FU,Number=.,Type=String,Description="Multiple Strings FORMAT field">
+##FORMAT=<ID=F2,Number=2,Type=Character,Description="2 Characters FORMAT field"
 ##META=<ID=Assay,Type=String,Number=.,Values="[WholeGenome, Exome]">
 ##PEDIGREE=<Name_0=G0-ID,Name_1=G1-ID,Name_3=GN-ID>
 ##pedigreeDB=http://url.to.pedigre.es/search
 ##contig=<ID=Chr1,length=50>
 ##contig=<ID=chr2,length=81195210,URL=ftp://somewhere.org/assembly.fa,md5=fakemd5,species="Homo sapiens">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Fido	Spot
-Chr1	21	DogSNP1	A	T	0	.	.	GT:GQ	0/1:.	0/1:42
+Chr1	21	DogSNP1	A	T	0	.	.	GT:GQ:FU:F2	0/1:.:a1,b1:a,b	0/1:42:c1,d1:c,d

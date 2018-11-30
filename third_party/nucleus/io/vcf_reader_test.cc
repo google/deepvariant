@@ -178,6 +178,10 @@ TEST(ValidVcfHeaderParsing, MatchesProto) {
   AddTestFormat(header_proto, "GL", "G", "Float",
                 "Genotype likelihoods, log10 encoded");
   AddTestFormat(header_proto, "CH", "1", "Character", "Character FORMAT field");
+  AddTestFormat(header_proto, "FU", ".", "String",
+                "Multiple Strings FORMAT field");
+  AddTestFormat(header_proto, "F2", "2", "Character",
+                "2 Characters FORMAT field");
   AddTestContig(header_proto, "Chr1", "", 50);
   AddTestContig(header_proto, "chr2", "", 81195210, 1,
                 {"URL", "ftp://somewhere.org/assembly.fa", "md5", "fakemd5",
@@ -192,6 +196,64 @@ TEST(ValidVcfHeaderParsing, MatchesProto) {
   header_proto.add_sample_names("Fido");
   header_proto.add_sample_names("Spot");
   EXPECT_THAT(reader->Header(), EqualsProto(header_proto));
+  vector<Variant> actual = as_vector(reader->Iterate());
+  ASSERT_EQ(1u, actual.size());
+  Variant expected;
+  expected.set_reference_name("Chr1");
+  expected.set_start(20);
+  expected.set_end(21);
+  expected.add_names("DogSNP1");
+  expected.set_reference_bases("A");
+  expected.add_alternate_bases("T");
+
+  nucleus::genomics::v1::Value* val;
+  {
+    nucleus::genomics::v1::VariantCall* call1 = expected.add_calls();
+    call1->set_call_set_name("Fido");
+    call1->add_genotype(0);
+    call1->add_genotype(1);
+
+    nucleus::genomics::v1::ListValue lv;
+    val = lv.add_values();
+    val->set_string_value("a1");
+    val = lv.add_values();
+    val->set_string_value("b1");
+    (*call1->mutable_info())["FU"] = lv;
+
+    nucleus::genomics::v1::ListValue lv2;
+    val = lv2.add_values();
+    val->set_string_value("a");
+    val = lv2.add_values();
+    val->set_string_value("b");
+    (*call1->mutable_info())["F2"] = lv2;
+  }
+  {
+    nucleus::genomics::v1::VariantCall* call2 = expected.add_calls();
+    call2->set_call_set_name("Spot");
+    call2->add_genotype(0);
+    call2->add_genotype(1);
+    nucleus::genomics::v1::ListValue lv;
+    val = lv.add_values();
+    val->set_int_value(42);
+    (*call2->mutable_info())["GQ"] = lv;
+
+    nucleus::genomics::v1::ListValue lv2;
+    val = lv2.add_values();
+    val->set_string_value("c1");
+    val = lv2.add_values();
+    val->set_string_value("d1");
+    (*call2->mutable_info())["FU"] = lv2;
+
+    nucleus::genomics::v1::ListValue lv3;
+    val = lv3.add_values();
+    val->set_string_value("c");
+    val = lv3.add_values();
+    val->set_string_value("d");
+    (*call2->mutable_info())["F2"] = lv3;
+  }
+  // Ignore record-level info fields (DP and DB).
+  actual[0].clear_info();
+  EXPECT_THAT(actual[0], EqualsProto(expected));
 }
 
 TEST(VcfFileOnlySites, IterationWorks) {

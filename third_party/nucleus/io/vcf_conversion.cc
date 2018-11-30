@@ -123,7 +123,13 @@ std::vector<std::vector<string>> ReadFormatValues(const bcf_hdr_t* h,
   std::vector<std::vector<string>> values(v->n_sample);
   if (bcf_get_format_string(h, const_cast<bcf1_t*>(v), tag, &dst, &n_dst) > 0) {
     for (int i = 0; i < bcf_hdr_nsamples(h); i++) {
-      values[i] = {dst[i]};
+      // redacted
+      // the header, and figure out what to do when declared length is smaller
+      // than the actual length of the list.
+
+      // According to https://samtools.github.io/hts-specs/VCFv4.3.pdf
+      // Section 6.3.3 strings in VCF cannot contain ',' (a field separator).
+      values[i] = absl::StrSplit(dst[i], ',');
     }
     // As noted in bcf_get_format_string declaration in vcf.h, the format
     // function we are using here allocates two arrays and both must be cleaned
