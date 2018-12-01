@@ -295,7 +295,10 @@ def _write_best_checkpoint(checkpoint_path, eval_name):
     logging.warning('Failed to write best checkpoint to path %s', path)
 
 
-def _write_checkpoint_metrics(checkpoint_path, metrics_and_values, eval_name):
+def _write_checkpoint_metrics(checkpoint_path,
+                              metrics_and_values,
+                              eval_name,
+                              current_metrics='experiment.metrics'):
   """Writes a JSON of metrics for checkpoint_path in eval_name.
 
   This function writes out metrics to a JSON for a checkpoint into
@@ -315,13 +318,19 @@ def _write_checkpoint_metrics(checkpoint_path, metrics_and_values, eval_name):
     eval_name: str; the name of the eval run, which is used to derive the
       the subdirectory of checkpoint_path where the eval metrics will be
       written.
+    current_metrics: str; a single file that contains most recent metrics
+      values, and gets updated at each checkpoint.
   """
   path = checkpoint_metrics_path(checkpoint_path, eval_name)
+  experiment_metrics_path = checkpoint_metrics_path(
+      checkpoint_path, eval_name, file_name=current_metrics)
   serializable = {k: str(v) for k, v in metrics_and_values.iteritems()}
   logging.info('Writing checkpoint metrics %s', path)
   try:
     with tf.gfile.GFile(path, 'w') as fout:
       json.dump(serializable, fout, sort_keys=True, indent=4)
+    with tf.gfile.GFile(experiment_metrics_path, 'w') as eout:
+      json.dump(serializable, eout, sort_keys=True, indent=4)
   except:  # pylint: disable=bare-except
     # Note we have a bare exception here as as there's no clear TF base
     # exception to catch will cover all of the potential issues that might arise
