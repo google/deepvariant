@@ -196,11 +196,12 @@ def _get_base_job_args(pipeline_args):
   return job_args
 
 
-def _run_job(run_args):
+def _run_job(run_args, log_path):
   """Runs a job using the pipelines CLI tool.
 
   Args:
     run_args: A list of arguments (type string) to pass to the pipelines tool.
+    log_path: Path to which pipelines API worker writes its log into.
   Raises:
     RuntimeError: if there was an error running the pipeline.
   """
@@ -213,13 +214,15 @@ def _run_job(run_args):
       env={'PATH': os.environ['PATH']})
 
   try:
-    _, stderr = process.communicate()
+    stdout, stderr = process.communicate()
     if process.returncode == 0:
       return
   except KeyboardInterrupt:
     raise RuntimeError('Job cancelled by user')
 
-  logging.error('Job failed with error %s. Job args: %s', stderr, run_args)
+  logging.error('Job failed with error %s \n %s. Job args: %s', stdout, stderr,
+                run_args)
+  logging.error('For more information, consult the worker log at %s', log_path)
   raise RuntimeError('Job failed with error %s' % stderr)
 
 
@@ -339,16 +342,17 @@ def _run_make_examples(pipeline_args):
       inputs.extend(['INPUT_BAM=' + pipeline_args.bam])
 
     job_name = pipeline_args.job_name_prefix + _MAKE_EXAMPLES_JOB_NAME
+    output_path = os.path.join(pipeline_args.logging, _MAKE_EXAMPLES_JOB_NAME,
+                               str(i))
     run_args = _get_base_job_args(pipeline_args) + env_args + [
         '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name, '--image',
-        pipeline_args.docker_image, '--output',
-        os.path.join(pipeline_args.logging, _MAKE_EXAMPLES_JOB_NAME,
-                     str(i)), '--inputs', ','.join(inputs), '--outputs',
-        ','.join(outputs), '--machine-type', machine_type, '--disk-size',
+        pipeline_args.docker_image, '--output', output_path, '--inputs',
+        ','.join(inputs), '--outputs', ','.join(outputs), '--machine-type',
+        machine_type, '--disk-size',
         str(pipeline_args.make_examples_disk_per_worker_gb), '--command',
         command
     ]
-    results.append(threads.apply_async(_run_job, [run_args]))
+    results.append(threads.apply_async(_run_job, [run_args], output_path))
 
   _wait_for_results(threads, results)
 
@@ -458,11 +462,11 @@ def _run_call_variants_with_pipelines_api(pipeline_args):
     ]
 
     job_name = pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME
+    output_path = os.path.join(pipeline_args.logging, _CALL_VARIANTS_JOB_NAME,
+                               str(i))
     run_args = _get_base_job_args(pipeline_args) + [
         '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name,
-        '--output',
-        os.path.join(pipeline_args.logging, _CALL_VARIANTS_JOB_NAME,
-                     str(i)), '--image',
+        '--output', output_path, '--image',
         (pipeline_args.docker_image_gpu if pipeline_args.gpu else
          pipeline_args.docker_image), '--inputs', ','.join(inputs), '--outputs',
         ','.join(outputs), '--machine-type', machine_type, '--disk-size',
@@ -474,7 +478,7 @@ def _run_call_variants_with_pipelines_api(pipeline_args):
     if pipeline_args.gpu:
       run_args.extend(
           ['--gpu-type', pipeline_args.accelerator_type, '--gpus', '1'])
-    results.append(threads.apply_async(_run_job, [run_args]))
+    results.append(threads.apply_async(_run_job, [run_args], output_path))
 
   _wait_for_results(threads, results)
 
@@ -524,19 +528,20 @@ def _run_postprocess_variants(pipeline_args):
   call_variants_shards = 1 if pipeline_args.tpu else min(
       pipeline_args.call_variants_workers, pipeline_args.shards)
   job_name = pipeline_args.job_name_prefix + _POSTPROCESS_VARIANTS_JOB_NAME
+  output_path = os.path.join(pipeline_args.logging,
+                             _POSTPROCESS_VARIANTS_JOB_NAME)
   run_args = _get_base_job_args(pipeline_args) + [
       '--name', job_name, '--vm-labels', 'dv-job-name=' + job_name, '--output',
-      os.path.join(pipeline_args.logging,
-                   _POSTPROCESS_VARIANTS_JOB_NAME), '--image',
-      pipeline_args.docker_image, '--inputs', ','.join(inputs), '--outputs',
-      ','.join(outputs), '--machine-type', machine_type, '--disk-size',
+      output_path, '--image', pipeline_args.docker_image, '--inputs',
+      ','.join(inputs), '--outputs', ','.join(outputs), '--machine-type',
+      machine_type, '--disk-size',
       str(pipeline_args.postprocess_variants_disk_gb), '--set',
       'SHARDS=' + str(pipeline_args.shards), '--set',
       'CALL_VARIANTS_SHARDS=' + str(call_variants_shards), '--command',
       _POSTPROCESS_VARIANTS_COMMAND.format(
           EXTRA_ARGS=' '.join(get_extra_args()))
   ]
-  _run_job(run_args)
+  _run_job(run_args, output_path)
 
 
 def _validate_and_complete_args(pipeline_args):
