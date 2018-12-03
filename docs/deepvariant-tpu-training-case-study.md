@@ -347,7 +347,7 @@ Here is what I did to start a TPU.
 First, check all existing TPUs by running this command:
 
 ```
-gcloud compute tpus list --zone=us-central1-f
+gcloud compute tpus list --zone=us-central1-c
 ```
 
 In my case, I don't see any existing TPUs.
@@ -359,7 +359,7 @@ time gcloud compute tpus create ${USER}-demo-tpu \
   --network=default \
   --range=10.240.1.0/29 \
   --version=1.12 \
-  --zone=us-central1-f
+  --zone=us-central1-c
 ```
 
 (Note: There are also
@@ -372,14 +372,14 @@ This command took about 5min to finish.
 After the TPU is created, we can query it by:
 
 ```
-gcloud compute tpus list --zone=us-central1-f
+gcloud compute tpus list --zone=us-central1-c
 ```
 
 In my case, I see:
 
 ```
 NAME              ZONE           ACCELERATOR_TYPE  NETWORK_ENDPOINTS  NETWORK  RANGE          STATUS
-pichuan-demo-tpu  us-central1-f  v2-8              10.240.1.2:8470    default  10.240.1.0/29  READY
+pichuan-demo-tpu  us-central1-c  v2-8              10.240.1.2:8470    default  10.240.1.0/29  READY
 ```
 
 In this example, I set up these variables:
@@ -465,7 +465,7 @@ kill the process after training is no longer producing more checkpoints. And,
 command to delete the TPU:
 
 ```
-gcloud compute tpus delete ${TPU_NAME} --zone us-central1-f
+gcloud compute tpus delete ${TPU_NAME} --zone us-central1-c
 ```
 
 ### Use TensorBoard to visualize progress
@@ -520,7 +520,7 @@ things. In my run, I took these screenshots after the run completed:
 When you are done with training, make sure to clean up the TPU:
 
 ```
-gcloud compute tpus delete ${TPU_NAME} --zone us-central1-f
+gcloud compute tpus delete ${TPU_NAME} --zone us-central1-c
 ```
 
 ### Pick a model
