@@ -16,3 +16,4 @@
 ##contig=<ID=chr2,length=81195210,URL=ftp://somewhere.org/assembly.fa,md5=fakemd5,species="Homo sapiens">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Fido	Spot
 Chr1	21	DogSNP1	A	T	0	.	.	GT:GQ:FU:F2	0/1:.:a1,b1:a,b	0/1:42:c1,d1:c,d
+Chr1	23	DogSNP2	G	T	0	.	.	GT:FU	0/1:MarkDePristoWorksAtGoogle	1/1:a

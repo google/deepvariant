@@ -197,7 +197,7 @@ TEST(ValidVcfHeaderParsing, MatchesProto) {
   header_proto.add_sample_names("Spot");
   EXPECT_THAT(reader->Header(), EqualsProto(header_proto));
   vector<Variant> actual = as_vector(reader->Iterate());
-  ASSERT_EQ(1u, actual.size());
+  ASSERT_EQ(2u, actual.size());
   Variant expected;
   expected.set_reference_name("Chr1");
   expected.set_start(20);
