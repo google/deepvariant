@@ -352,7 +352,7 @@ def _run_make_examples(pipeline_args):
         str(pipeline_args.make_examples_disk_per_worker_gb), '--command',
         command
     ]
-    results.append(threads.apply_async(_run_job, [run_args], output_path))
+    results.append(threads.apply_async(_run_job, [run_args, output_path]))
 
   _wait_for_results(threads, results)
 
@@ -478,7 +478,7 @@ def _run_call_variants_with_pipelines_api(pipeline_args):
     if pipeline_args.gpu:
       run_args.extend(
           ['--gpu-type', pipeline_args.accelerator_type, '--gpus', '1'])
-    results.append(threads.apply_async(_run_job, [run_args], output_path))
+    results.append(threads.apply_async(_run_job, [run_args, output_path]))
 
   _wait_for_results(threads, results)
 
