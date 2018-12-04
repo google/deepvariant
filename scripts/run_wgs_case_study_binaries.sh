@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018 Google Inc.
+# Copyright 2018 Google LLC.
 
 set -euo pipefail
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017 Google Inc.
+# Copyright 2017 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions

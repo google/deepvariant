@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2018 Google LLC.
  *
  *
  * Redistribution and use in source and binary forms, with or without
