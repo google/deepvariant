@@ -32,38 +32,24 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_DEBRUIJN_GRAPH_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_DEBRUIJN_GRAPH_H_
 
-#include <string>
-#define HAS_FLAT_HASH_MAP 0
-
 #include <map>
 #include <memory>
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
-// redacted
-#if HAS_FLAT_HASH_MAP
 #include "absl/container/flat_hash_map.h"
-#endif
 #include "absl/strings/string_view.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/reads.pb.h"
-// redacted
-#include "tensorflow/core/lib/hash/hash.h"
+#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
 using tensorflow::string;
-
-// redacted
-// A hash function for absl::string_view objects.
-struct string_view_hasher {
-  size_t operator()(absl::string_view sp) const {
-    return static_cast<size_t>(::tensorflow::Hash64(sp.data(), sp.size()));
-  }
-};
 
 struct VertexInfo {
   string kmer;
@@ -186,13 +172,7 @@ class DeBruijnGraph {
 
   // N.B.: kmer strings are owned by VertexInfo objects;
   // map keys are merely pointers.
-// redacted
-#if HAS_FLAT_HASH_MAP
   absl::flat_hash_map<absl::string_view, Vertex> kmer_to_vertex_;
-#else
-  std::unordered_map<absl::string_view, Vertex, string_view_hasher>
-      kmer_to_vertex_;
-#endif
   RawVertexIndexMap vertex_index_map_;
 };
 

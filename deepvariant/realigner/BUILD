@@ -89,8 +89,10 @@ cc_library(
     hdrs = ["debruijn_graph.h"],
     deps = [
         "//deepvariant/protos:realigner_cc_pb2",
+        "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",

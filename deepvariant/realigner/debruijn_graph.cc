@@ -60,7 +60,6 @@ using Path = DeBruijnGraph::Path;
 
 using Read = nucleus::genomics::v1::Read;
 
-using tensorflow::string;
 using absl::string_view;
 
 namespace {
