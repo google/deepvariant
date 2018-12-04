@@ -81,6 +81,10 @@ flags.DEFINE_float(
     'qual_filter', 1.0,
     'Any variant with QUAL < qual_filter will be filtered in the VCF file.')
 flags.DEFINE_float(
+    'cnn_homref_call_min_gq', 20.0,
+    'All CNN RefCalls whose GQ is less than this value will have ./. genotype '
+    'instead of 0/0.')
+flags.DEFINE_float(
     'multi_allelic_qual_filter', 1.0,
     'The qual value below which to filter multi-allelic variants.')
 flags.DEFINE_string(
@@ -238,6 +242,24 @@ def most_likely_genotype(predictions, ploidy=2, n_alleles=2):
   raise ValueError('No corresponding GenotypeType for predictions', predictions)
 
 
+def uncall_homref_gt_if_lowqual(variant, min_homref_gq):
+  """Converts genotype to "./." if variant is CNN RefCall and has low GQ.
+
+  If the variant has "RefCall" filter (which means an example was created for
+  this site but CNN didn't call this as variant) and if the GQ is less than
+  the given min_homref_gq threshold, set the genotype of the variant proto
+  to "./.". See http://b/119832727 for more info.
+
+  Args:
+    variant: third_party.nucleus.protos.Variant proto.
+    min_homref_gq: float.
+  """
+  vcall = variant_utils.only_call(variant)
+  if (variant.filter == [dv_vcf_constants.DEEP_VARIANT_REF_FILTER] and
+      variantcall_utils.get_gq(vcall) < min_homref_gq):
+    vcall.genotype[:] = [-1, -1]
+
+
 def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   """Fills in Variant record using the prediction probabilities.
 
@@ -272,6 +294,7 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   gls = [genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions]
   variantcall_utils.set_gl(call, gls)
   variant.filter[:] = compute_filter_fields(variant, qual_filter)
+  uncall_homref_gt_if_lowqual(variant, FLAGS.cnn_homref_call_min_gq)
   return variant
 
 

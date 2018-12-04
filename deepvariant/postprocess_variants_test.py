@@ -541,6 +541,31 @@ class PostprocessVariantsTest(parameterized.TestCase):
       postprocess_variants.merge_predictions(inputs)
 
   @parameterized.parameters(
+      (_create_variant('1', 1, 'A', ['C'], 20.0,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 15,
+                       [-2.0, -15.0003472607, -0.0043648054]), [1, 1]),
+      (_create_variant('GL000220.1', 10000210, 'C', ['T'], 20.0,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
+                       [-2.0, -15.0003472607, -0.0043648054]), [1, 1]),
+      (_create_variant('20', 10000210, 'C', ['CT'], 30.0,
+                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 1], 30,
+                       [-3.0, -0.00043451177, -15.0003472607]), [0, 1]),
+      (_create_variant('X', 10000210, 'CACA', ['C'], 0.04364805402,
+                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 19,
+                       [-0.0043648054, -2.30102999566, -2.30102999566]),
+       [-1, -1]),
+      (_create_variant('chrY', 10000210, 'C', ['T'], 0.00043431619,
+                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 20,
+                       [-0.00004343161, -4.0, -15.0003472607]), [0, 0]),
+      (_create_variant('X', 10000210, 'CACA', ['C', 'A'], 0.0217691925,
+                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 13,
+                       [-0.00217691925, -3, -3, -3, -3, -3]), [-1, -1]),
+  )
+  def test_uncall_homref_gt_if_lowqual(self, variant, expected_gt):
+    postprocess_variants.uncall_homref_gt_if_lowqual(variant, 20)
+    self.assertEqual(variant.calls[0].genotype, expected_gt)
+
+  @parameterized.parameters(
       ([0.01, 0.0, 0.99],
        _create_variant('GL000220.1', 1, 'A', ['.'], 20.0,
                        dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
