@@ -235,15 +235,18 @@ class LoadEMAHook(tf.train.SessionRunHook):
   This looks for the latest checkpoint in the model dir.
   """
 
-  def __init__(self, model_dir):
+  def __init__(self, model_dir, ignore_missing_vars=False):
     super(LoadEMAHook, self).__init__()
     self._model_dir = model_dir
+    self._ignore_missing_vars = ignore_missing_vars
 
   def begin(self):
     ema = tf.train.ExponentialMovingAverage(FLAGS.moving_average_decay)
     variables_to_restore = ema.variables_to_restore()
     self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
-        tf.train.latest_checkpoint(self._model_dir), variables_to_restore)
+        tf.train.latest_checkpoint(self._model_dir),
+        variables_to_restore,
+        ignore_missing_vars=self._ignore_missing_vars)
 
   def after_create_session(self, sess, coord):
     tf.logging.info('Reloading EMA...')
@@ -256,15 +259,18 @@ class PredictEMAHook(tf.train.SessionRunHook):
   This reads the specified checkpoint.
   """
 
-  def __init__(self, checkpoint_path):
+  def __init__(self, checkpoint_path, ignore_missing_vars=False):
     super(PredictEMAHook, self).__init__()
     self._checkpoint_path = checkpoint_path
+    self._ignore_missing_vars = ignore_missing_vars
 
   def begin(self):
     ema = tf.train.ExponentialMovingAverage(FLAGS.moving_average_decay)
     variables_to_restore = ema.variables_to_restore()
     self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
-        self._checkpoint_path, variables_to_restore)
+        self._checkpoint_path,
+        variables_to_restore,
+        ignore_missing_vars=self._ignore_missing_vars)
 
   def after_create_session(self, sess, coord):
     tf.logging.info('Reloading EMA...')
