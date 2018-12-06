@@ -217,6 +217,14 @@ AD0250-C. To train a DeepVariant mosquito-specific model, we initialized the
 training from the v0.7 WGS model and selected the checkpoint for which the
 tuning set loss was smallest.
 
+Separately, we also started from DeepVariant calls and applied training in a
+similar way to achieve an improved model. The ability to start from the calls of
+multiple methods raises an interesting promise: the ability to train DeepVariant
+with the information perspective of any of the diverse set of community analysis
+solutions. In the event an investigation reveals that a method has unique
+insight in a subset of the overall variant calling problem, we (or you) can
+produce examples to train DeepVariant to capture this insight.
+
 To summarize from a machine learning/training perspective, we are optimizing for
 two properties: **correctness of the label**, and **representativeness of the
 examples**. To generate examples, we look for positions that we can confidently
