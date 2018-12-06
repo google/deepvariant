@@ -5,8 +5,6 @@ date:   2018-12-05 17:00:00 -0800
 categories: jekyll update
 ---
 
-# Improved non-human variant calling using species-specific DeepVariant models
-
 Authors:
 [Taedong Yun](https://scholar.google.com/citations?user=KljLQpUAAAAJ&hl=en),
 [Cory McLean](https://ai.google/research/people/CoryMcLean),
