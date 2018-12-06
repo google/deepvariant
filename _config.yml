@@ -40,3 +40,8 @@ plugins:
 #   - vendor/cache/
 #   - vendor/gems/
 #   - vendor/ruby/
+
+collections:
+  posts:
+    output: true
+    permalink: /posts/:path/
