@@ -242,6 +242,10 @@ class DeepVariantInput(object):
     # See https://cloud.google.com/tpu/docs/tutorials/inception-v3-advanced
     # for some background on tuning this on TPU.
 
+    # TPU optimized implementation for prediction mode
+    if self.mode == tf.estimator.ModeKeys.PREDICT:
+      return self.prediction_input_fn(params)
+
     batch_size = params['batch_size']
 
     compression_type = tf_utils.compression_type_of_files(self.input_files)
@@ -294,13 +298,55 @@ class DeepVariantInput(object):
       if self.shuffle_buffer_size > 0:
         dataset = dataset.shuffle(self.shuffle_buffer_size)
 
-    if self.mode == tf.estimator.ModeKeys.PREDICT:
-      dataset = dataset.batch(batch_size)
-    else:
-      # N.B.: we drop the final partial batch in eval mode, to work around TPU
-      # static shape limitations in the current TPUEstimator.
-      dataset = dataset.batch(batch_size, drop_remainder=True)
+    # N.B.: we drop the final partial batch in eval mode, to work around TPU
+    # static shape limitations in the current TPUEstimator.
+    dataset = dataset.batch(batch_size, drop_remainder=True)
 
+    return dataset
+
+  def prediction_input_fn(self, params):
+    """Implementation of `input_fn` contract for prediction mode.
+
+    Args:
+      params: a dict containing an integer value for key 'batch_size'.
+
+    Returns:
+      the tuple (features, labels), where:
+        - features is a dict of Tensor-valued input features; keys populated
+          are:
+            'image'
+            'variant'
+            'alt_allele_indices'
+
+          Aside from 'image', these may be encoded specially for TPU.
+    """
+
+    def load_dataset(filename):
+      dataset = tf.data.TFRecordDataset(
+          filename,
+          buffer_size=self.prefetch_dataset_buffer_size,
+          compression_type=compression_type)
+      return dataset
+
+    batch_size = params['batch_size']
+    compression_type = tf_utils.compression_type_of_files(self.input_files)
+    files = tf.data.Dataset.list_files(
+        io_utils.NormalizeToShardedFilePattern(self.input_file_spec),
+        shuffle=False,
+    )
+    tf.logging.info('self.input_read_threads=%d', self.input_read_threads)
+    dataset = files.apply(
+        tf.contrib.data.parallel_interleave(
+            load_dataset,
+            cycle_length=self.input_read_threads,
+            sloppy=self.sloppy))
+    tf.logging.info('self.input_map_threads=%d', self.input_map_threads)
+    dataset = dataset.apply(
+        tf.contrib.data.map_and_batch(
+            self.parse_tfexample,
+            batch_size=batch_size,
+            num_parallel_batches=self.input_map_threads))
+    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
     return dataset
 
   def __str__(self):
