@@ -10,3 +10,8 @@
 bazel-*
 
 **/.ipynb_checkpoints
+
+# For gh-pages site
+_site
+.sass-cache
+.jekyll-metadata
