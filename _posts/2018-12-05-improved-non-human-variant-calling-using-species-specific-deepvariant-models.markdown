@@ -24,7 +24,7 @@ calling accuracy by tuning DeepVariant for the new genome context. Finally, we
 generate a model for accurate variant calling on low-coverage mosquito genomes
 and a corresponding variant callset.
 
-![figure1](/assets/images/MalariaGEN/figure1.png)
+![figure1](/deepvariant/assets/images/MalariaGEN/figure1.png)
 
 **Figure 1**: Summary: retraining DeepVariant improves accuracy of variant
 calling in mosquito genomes.
@@ -164,7 +164,7 @@ sites do not generate candidate variants to be evaluated by the CNN). The
 presence of HOM_REF calls with mostly non-reference reads remained even when
 filtering to calls with genotype quality >= 20.
 
-![figure2](/assets/images/MalariaGEN/figure2.png)
+![figure2](/deepvariant/assets/images/MalariaGEN/figure2.png)
 
 **Figure 2**: Allele depth fractions for each individual at the three common
 variant types.
@@ -173,7 +173,7 @@ To understand this phenomenon better, we examined individual sites that were
 confidently predicted as HOM_REF but composed of many non-reference reads. A
 representative example is shown in **Figure 3**.
 
-![figure3](/assets/images/MalariaGEN/figure3.png)
+![figure3](/deepvariant/assets/images/MalariaGEN/figure3.png)
 
 **Figure 3**: A representative Mendelian violation. Reads from AD0231-C
 (mother), AD0232-C (father), and AD0234-C (child) are shown from top to bottom.
@@ -271,7 +271,7 @@ DeepVariant is also able to provide a higher reliability in its most confident c
 Variants with the highest quality scores from DeepVariant have a very low Mendelian violation rate
 (reaching less than 0.1%), while a batch of GATK4's most confident calls never achieve less than a ~1% Mendelian violation rate.
 
-![figure4](/assets/images/MalariaGEN/figure4.png)
+![figure4](/deepvariant/assets/images/MalariaGEN/figure4.png)
 
 **Figure 4**: Number of variants and Mendelian violations curve for GATK4 and
 the DeepVariant mosquito-specific model.
