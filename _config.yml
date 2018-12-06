@@ -18,10 +18,10 @@ email:
 description: >- # this means to ignore newlines until "baseurl:"
   DeepVariant is an analysis pipeline that uses a deep neural network to
   call genetic variants from next-generation DNA sequencing data.
-baseurl: "" # the subpath of your site, e.g. /blog
+baseurl: /deepvariant # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username:
-github_username:  google/deepvariant
+github_username:
 
 # Build settings
 markdown: kramdown
