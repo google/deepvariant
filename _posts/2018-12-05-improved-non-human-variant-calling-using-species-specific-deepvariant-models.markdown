@@ -279,8 +279,9 @@ Variants with the highest quality scores from DeepVariant have a very low Mendel
 
 ![figure4]({{ site.baseurl }}/assets/images/MalariaGEN/figure4.png)
 
-**Figure 4**: Number of variants and Mendelian violations from GATK4 and
-the DeepVariant mosquito-specific model, per varying levels of minGQ.
+**Figure 4**: Number of variants and Mendelian violations in trio callsets
+from GATK4 and the DeepVariant mosquito-specific model,
+per varying levels of minGQ.
 A smaller number of variants corresponds to a higher minGQ threshold.
 
 ## Future work
