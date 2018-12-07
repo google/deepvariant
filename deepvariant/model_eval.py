@@ -43,6 +43,7 @@ from absl import logging
 import tensorflow as tf
 
 from third_party.nucleus.util import proto_utils
+from tensorflow.python.framework.errors_impl import NotFoundError
 from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
@@ -235,14 +236,22 @@ def eval_loop(master,
     logging.info('Eval results: %s', eval_results)
 
     # Track best checkpoint seen so far, measured by ckpt_metric.
-    if (not best_ckpt or
-        (ckpt_metric_increasing and
+    if not best_ckpt:
+      # If the training jobs died, pick up where we left off.
+      try:
+        best_metrics = read_metrics(ckpt, eval_name, 'best_checkpoint.metrics')
+        logging.info('Found existing best_checkpoint: %s', best_metrics)
+        best_ckpt = (best_metrics, ckpt)
+      except NotFoundError:
+        logging.info('best_checkpoint file does not exist.')
+        best_ckpt = (eval_results, ckpt)
+        _write_best_checkpoint(ckpt, eval_results, eval_name)
+    if ((ckpt_metric_increasing and
          eval_results[ckpt_metric] > best_ckpt[0][ckpt_metric]) or
         (not ckpt_metric_increasing and
          eval_results[ckpt_metric] < best_ckpt[0][ckpt_metric])):
       best_ckpt = (eval_results, ckpt)
-      logging.info('New best checkpoint: %s with values %s', ckpt, eval_results)
-      _write_best_checkpoint(ckpt, eval_name)
+      _write_best_checkpoint(ckpt, eval_results, eval_name)
 
     _write_checkpoint_metrics(ckpt, eval_results, eval_name)
 
@@ -268,31 +277,42 @@ def checkpoint_metrics_path(checkpoint_path, eval_name, file_name=None):
   return os.path.join(checkpoint_dir, file_name)
 
 
-def read_metrics(checkpoint_path, eval_name):
+def read_metrics(checkpoint_path, eval_name, file_name=None):
   """Reads the JSON of metrics for checkpoint_path in eval_dir."""
-  metrics_path = checkpoint_metrics_path(checkpoint_path, eval_name)
+  metrics_path = checkpoint_metrics_path(checkpoint_path, eval_name, file_name)
   with tf.gfile.GFile(metrics_path) as fin:
     return {k: float(v) for k, v in json.load(fin).iteritems()}
 
 
-def _write_best_checkpoint(checkpoint_path, eval_name):
-  """Writes the path to the best checkpoint in a file.
+def _write_best_checkpoint(checkpoint_path, metrics_and_values, eval_name):
+  """Writes files containing best checkpoint path and best checkpoint metrics.
 
   Args:
     checkpoint_path: str; a path to the best checkpoint.
+    metrics_and_values: dict[string,object]; a dictionary of key/value pairs
+      containing metrics for the best checkpoint we have seen. These will be
+      converted to a JSON of key/string pairs and written out to disk.
     eval_name: str; the name of the eval run, which is used to derive the
       subdirectory of checkpoint_path where the eval metrics will be written.
   """
-  path = checkpoint_metrics_path(
+  best_checkpoint_path = checkpoint_metrics_path(
       checkpoint_path, eval_name, file_name='best_checkpoint.txt')
+  best_checkpoint_metrics_path = checkpoint_metrics_path(
+      checkpoint_path, eval_name, file_name='best_checkpoint.metrics')
+  serializable = {k: str(v) for k, v in metrics_and_values.iteritems()}
+  logging.info('Writing new best checkpoint %s with values %s',
+               best_checkpoint_path, metrics_and_values)
   try:
-    with tf.gfile.GFile(path, 'w') as fout:
+    with tf.gfile.GFile(best_checkpoint_path, 'w') as fout:
       fout.write(checkpoint_path + '\n')
+    with tf.gfile.GFile(best_checkpoint_metrics_path, 'w') as fout:
+      json.dump(serializable, fout, sort_keys=True, indent=4)
   except:  # pylint: disable=bare-except
     # Note we have a bare exception here as as there's no clear TF base
     # exception to catch will cover all of the potential issues that might arise
     # trying to write our metrics to our metrics file.
-    logging.warning('Failed to write best checkpoint to path %s', path)
+    logging.warning('Failed to write best checkpoint to path %s',
+                    best_checkpoint_path)
 
 
 def _write_checkpoint_metrics(checkpoint_path,

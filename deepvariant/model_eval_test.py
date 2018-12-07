@@ -100,6 +100,9 @@ class ModelEvalTest(
     self.assertTrue(
         tf_test_utils.check_file_exists(
             'best_checkpoint.txt', eval_name=self.eval_name))
+    self.assertTrue(
+        tf_test_utils.check_file_exists(
+            'best_checkpoint.metrics', eval_name=self.eval_name))
 
   # Using a constant model, check that running an eval returns the expected
   # metrics.
