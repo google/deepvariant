@@ -318,7 +318,7 @@ def _write_best_checkpoint(checkpoint_path, metrics_and_values, eval_name):
 def _write_checkpoint_metrics(checkpoint_path,
                               metrics_and_values,
                               eval_name,
-                              current_metrics='experiment.metrics'):
+                              current_metrics='current.metrics'):
   """Writes a JSON of metrics for checkpoint_path in eval_name.
 
   This function writes out metrics to a JSON for a checkpoint into
