@@ -159,7 +159,7 @@ def get_class_precision(labels, predicted_class, target_class):
 
 
 # redacted
-def get_f1_score(labels, predictions):
+def get_f1_score(labels, predictions, target_class=None):
   """Compute F1 score of predictions with respect to the labels.
 
   Args:
@@ -167,12 +167,17 @@ def get_f1_score(labels, predictions):
       labels for the examples.
     predictions: tensor of arbitrary dimension. The predicted labels for the
       examples.
+    target_class: int. Index of the class that is left as non-zero.
 
   Returns:
     f1_score: scalar float tensor whose dimensions match predictions. The
     calculated f1 score.
     update_op: operation that updates the f1 score streaming metric.
   """
+  if target_class:
+    labels = binarize(labels, target_class)
+    predictions = binarize(predictions, target_class)
+
   precision, precision_op = tf.metrics.precision(labels, predictions)
   recall, recall_op = tf.metrics.recall(labels, predictions)
 
@@ -218,6 +223,8 @@ def eval_metric_fn(labels, predictions, unused_encoded_variants):
       'Precision/Class1': get_class_precision(labels, predicted_class, 1),
       'Precision/Class2': get_class_precision(labels, predicted_class, 2),
       'F1/All': get_f1_score(labels, predicted_class),
+      'F1/Class1': get_f1_score(labels, predicted_class, 1),
+      'F1/Class2': get_f1_score(labels, predicted_class, 2),
   }
 
   return metrics
