@@ -39,9 +39,9 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.7.1"
+BIN_VERSION="0.7.2"
 
-MODEL_VERSION="0.7.0"
+MODEL_VERSION="0.7.2"
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
 
 GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
@@ -492,7 +492,7 @@ tensorboard --logdir ${TRAINING_DIR} --port=8080
 This gives some message like:
 
 ```
-TensorBoard 1.11.0 at http://cs-6000-devshell-vm-ec39a769-4665-4f57-bdff-2c9192f44b7e:8080 (Press CTRL+C to quit)
+TensorBoard 1.12.0 at http://cs-6000-devshell-vm-827805cb-f6eb-4576-aa34-07f70a216bda:8080 (Press CTRL+C to quit)
 ```
 
 But that link is not usable directly. I clicked on the “Web Preview” on the top
@@ -544,7 +544,7 @@ python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
 The top line I got was this:
 
 ```
-44200   96772.0 0.998945823601
+40500   96408.0 0.999014533044
 ```
 
 This means the model checkpoint that performs the best on the validation set is
@@ -611,14 +611,14 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
 ```
 
 This takes about 3 minutes. The output of `hap.py` can be found in this
-[gist](https://gist.github.com/pichuan/7687efca41461566f24e013ee1de86ad).
+[gist](https://gist.github.com/akolesnikov/77cd2aa5dad1dd4fbf37fc391b1698de).
 
 To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 229  | 141  | 0.977153 | 0.986343  | 0.981726
-SNP   | 71   | 58   | 0.998928 | 0.999125  | 0.999026
+INDEL | 225  | 135  | 0.977552 | 0.986924  | 0.982215
+SNP   | 63   | 53   | 0.999049 | 0.999200  | 0.999125
 
 The baseline we're comparing to is to directly use the WGS model (`--checkpoint
 ${GCS_PRETRAINED_WGS_MODEL}`) to make the calls.
