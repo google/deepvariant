@@ -462,6 +462,19 @@ class MakeExamplesUnitTest(parameterized.TestCase):
           deepvariant_pb2.DeepVariantOptions.Mode, 'foo')
 
   @flagsaver.FlagSaver
+  def test_keep_duplicates(self):
+    FLAGS.keep_duplicates = True
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = ''
+    options = make_examples.default_options(add_flags=True)
+    self.assertEqual(options.pic_options.read_requirements.keep_duplicates,
+                     True)
+
+  @flagsaver.FlagSaver
   def test_default_options_with_training_random_emit_ref_sites(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM

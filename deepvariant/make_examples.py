@@ -205,6 +205,7 @@ flags.DEFINE_integer(
     'logging_every_n_candidates', 100,
     'Print out the log every n candidates. The smaller the number, the more '
     'frequent the logging information emits.')
+flags.DEFINE_bool('keep_duplicates', False, 'If True, keep duplicate reads.')
 
 
 # ---------------------------------------------------------------------------
@@ -272,6 +273,7 @@ def default_options(add_flags=True, flags_obj=None):
     flags_obj = FLAGS
 
   read_reqs = reads_pb2.ReadRequirements(
+      keep_duplicates=FLAGS.keep_duplicates,
       min_base_quality=10,
       min_mapping_quality=10,
       min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
