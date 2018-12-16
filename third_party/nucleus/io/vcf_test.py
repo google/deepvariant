@@ -173,7 +173,7 @@ class VcfWriterTests(parameterized.TestCase):
         return line
 
     expected_lines = [cleanup_line(line) for line in expected_lines]
-    with gfile.FastGFile(path, 'r') as fin:
+    with gfile.GFile(path, 'r') as fin:
       self.assertEqual([
           line.strip() for line in fin.readlines() if not line.startswith('#')
       ], expected_lines)

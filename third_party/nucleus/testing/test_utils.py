@@ -114,7 +114,7 @@ def test_tmpfile(name, contents=None):
   """
   path = os.path.join(absltest.get_default_test_tmpdir(), name)
   if contents is not None:
-    with gfile.FastGFile(path, 'wb') as fout:
+    with gfile.GFile(path, 'wb') as fout:
       fout.write(contents)
   return path
 

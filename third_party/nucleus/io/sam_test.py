@@ -165,7 +165,7 @@ class SamReaderTests(parameterized.TestCase):
     # A single stock read we'll add our AUX fields to.
     read = 'read_name\t0\tchr1\t1\t0\t3M\t*\t0\t0\tCCC\tAAA\t' + tag_string
     path = test_utils.test_tmpfile('aux_tags.bam')
-    with gfile.FastGFile(path, 'w') as fout:
+    with gfile.GFile(path, 'w') as fout:
       fout.write(header_lines)
       fout.write(read + '\n')
     with sam.SamReader(path, parse_aux_fields=True) as reader:
