@@ -1,23 +1,9 @@
 # Description:
 #   Tools for building the Nucleus pip package.
 
-load("@org_tensorflow//tensorflow:tensorflow.bzl", "transitive_hdrs")
 load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
 
 licenses(["notice"])
-
-transitive_hdrs(
-    name = "included_headers",
-    deps = [
-        "//third_party/nucleus/io:io_cpp",
-        # redacted
-        # dependencies:
-        # "//third_party/nucleus/testing:testing_cpp",
-        # "//third_party/nucleus/testing:testing_py",
-        "//third_party/nucleus/util:util_cpp",
-        "//third_party/nucleus/vendor:vendor_cpp",
-    ],
-)
 
 filegroup(
     name = "licenses",
@@ -60,7 +46,6 @@ nucleus_py_binary(
 PIP_DEPS = [
     ":setup",
     ":licenses",
-    ":included_headers",
     "setup.py",
 ]
 
