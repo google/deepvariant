@@ -129,8 +129,6 @@ static struct PyModuleDef _module = {
 
 extern "C" {
   PyMODINIT_FUNC INITFUNC(void) {
-    fprintf(stderr, "In message_module init\n");
-
     PyObject* m;
 #if PY_MAJOR_VERSION >= 3
     m = PyModule_Create(&_module);
@@ -142,14 +140,10 @@ extern "C" {
       return INITFUNC_ERRORVAL;
     }
 
-    fprintf(stderr, "In message_module: module created\n");
-
     if (!google::protobuf::python::InitProto2MessageModule(m)) {
       Py_DECREF(m);
       return INITFUNC_ERRORVAL;
     }
-
-    fprintf(stderr, "In message_module: after InitProto2MessageModule\n");
 
     // Adds the C++ API
     if (PyObject* api =
@@ -159,8 +153,6 @@ extern "C" {
     } else {
       return INITFUNC_ERRORVAL;
     }
-
-    fprintf(stderr, "In message_module: after PyCapsule_New\n");
 
     nucleus::genomics::v1::BedGraphRecord().descriptor();
     nucleus::genomics::v1::BedRecord().descriptor();
@@ -202,8 +194,6 @@ extern "C" {
     nucleus::genomics::v1::VcfExtra().descriptor();
     nucleus::genomics::v1::VcfReaderOptions().descriptor();
     nucleus::genomics::v1::VcfWriterOptions().descriptor();
-
-    fprintf(stderr, "In message_module: after descriptor() calls\n");
 
 #if PY_MAJOR_VERSION >= 3
     return m;
