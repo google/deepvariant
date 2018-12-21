@@ -43,6 +43,7 @@
 #include "boost/graph/graph_traits.hpp"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
@@ -105,10 +106,11 @@ class DeBruijnGraph {
   // Private constructor.  Public interface via factory only allows access to
   // acyclic DeBruijn graphs.  Argument `k` is used to construct the graph;
   // filtering settings are taken from options.
-  DeBruijnGraph(const string& ref,
-                const std::vector<nucleus::genomics::v1::Read>& reads,
-                const Options& options,
-                int k);
+  DeBruijnGraph(
+      const string& ref,
+      const std::vector<
+          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads,
+      const Options& options, int k);
 
   // Add edge, implicitly adding the vertices if needed.  If such an edge is
   // already present, we merely increment its weight to reflect its "multiedge"
@@ -149,7 +151,8 @@ class DeBruijnGraph {
   // otherwise we return nullptr.
   static std::unique_ptr<DeBruijnGraph> Build(
       const string& ref,
-      const std::vector<nucleus::genomics::v1::Read>& reads,
+      const std::vector<
+          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads,
       const Options& options);
 
   // Gets all the candidate haplotypes defined by paths through the graph.  If

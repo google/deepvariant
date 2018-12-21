@@ -30,7 +30,10 @@ py_clif_cc(
         "//deepvariant/protos:realigner_pyclif",
         "//third_party/nucleus/protos:reads_pyclif",
     ],
-    deps = ["//deepvariant/realigner:debruijn_graph"],
+    deps = [
+        "//deepvariant/realigner:debruijn_graph",
+        "//third_party/nucleus/util:proto_clif_converter",
+    ],
 )
 
 py_test(

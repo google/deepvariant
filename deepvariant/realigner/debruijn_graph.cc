@@ -173,18 +173,18 @@ bool DeBruijnGraph::HasCycle() const {
   return has_cycle;
 }
 
-DeBruijnGraph::DeBruijnGraph(const string& ref,
-                             const std::vector<Read>& reads,
-                             const Options& options,
-                             int k)
-    : options_(options), k_(k)
-{
+DeBruijnGraph::DeBruijnGraph(
+    const string& ref,
+    const std::vector<nucleus::ConstProtoPtr<const Read>>& reads,
+    const Options& options, int k)
+    : options_(options), k_(k) {
   CHECK_GT(k, 0);  // k should always be a positive integer.
   CHECK(static_cast<uint32_t>(k) < ref.size());
   AddEdgesForReference(ref);
   source_ = VertexForKmer(ref.substr(0, k_));
   sink_ = VertexForKmer(ref.substr(ref.size() - k_, k_));
-  for (const Read& read : reads) {
+  for (const nucleus::ConstProtoPtr<const Read>& read_ptr : reads) {
+    const Read& read = *read_ptr.p_;
     if (read.alignment().mapping_quality() >= options.min_mapq()) {
       AddEdgesForRead(read);
     }
@@ -231,9 +231,9 @@ KBounds KMinMaxFromReference(const string_view ref,
 }
 
 std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
-    const string& ref, const std::vector<Read>& reads,
+    const string& ref,
+    const std::vector<nucleus::ConstProtoPtr<const Read>>& reads,
     const DeBruijnGraph::Options& options) {
-
   KBounds bounds = KMinMaxFromReference(ref, options);
   if (bounds.min_k == kBoundsNoWorkingK) return nullptr;
 

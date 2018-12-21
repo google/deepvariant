@@ -29,6 +29,7 @@
 
 from "deepvariant/protos/realigner_pyclif.h" import *
 from "third_party/nucleus/protos/reads_pyclif.h" import *
+from "third_party/nucleus/util/proto_clif_converter.h" import *
 
 from "deepvariant/realigner/debruijn_graph.h":
   namespace `learning::genomics::deepvariant`:
@@ -36,7 +37,9 @@ from "deepvariant/realigner/debruijn_graph.h":
       def `GraphViz` as graphviz(self) -> str
       def `CandidateHaplotypes` as candidate_haplotypes(self) -> list<str>
       kmer_size: int = property(`KmerSize`)
+
     staticmethods from `DeBruijnGraph`:
-      def `Build` as build(ref:str, reads:list<Read>,
-                           options:DeBruijnGraphOptions)
+      def `Build` as build(ref: str,
+                           reads: list<ConstProtoPtr<Read>>,
+                           options: DeBruijnGraphOptions)
         -> DeBruijnGraph
