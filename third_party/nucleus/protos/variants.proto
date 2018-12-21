@@ -33,8 +33,6 @@ package nucleus.genomics.v1;
 import "third_party/nucleus/protos/reference.proto";
 import "third_party/nucleus/protos/struct.proto";
 
-option cc_enable_arenas = true;
-
 // A variant represents a change in DNA sequence relative to a reference
 // sequence. For example, a variant could represent a SNP or an insertion.
 //

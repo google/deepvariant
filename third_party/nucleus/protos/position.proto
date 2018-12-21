@@ -31,8 +31,6 @@ syntax = "proto3";
 
 package nucleus.genomics.v1;
 
-option cc_enable_arenas = true;
-
 // An abstraction for referring to a genomic position, in relation to some
 // already known reference. For now, represents a genomic position as a
 // reference name, a base number on that reference (0-based), and a

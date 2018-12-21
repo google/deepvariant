@@ -32,8 +32,6 @@ import "third_party/nucleus/protos/range.proto";
 
 package nucleus.genomics.v1;
 
-option cc_enable_arenas = true;
-
 // This file contains information about a reference genome assembly. It
 // currently only defines a message to represent a single contig, but can be
 // extended to capture information about an entire assembly as well (e.g.

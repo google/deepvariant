@@ -31,9 +31,6 @@ syntax = "proto3";
 
 package nucleus.genomics.v1;
 
-option cc_enable_arenas = true;
-
-
 // `Struct` represents a structured data value, consisting of fields
 // which map to dynamically typed values. In some languages, `Struct`
 // might be supported by a native representation. For example, in

@@ -69,6 +69,14 @@ fi
 mkdir "${TMPDIR}/third_party"
 cp -R "${RUNFILES}"/third_party/* "${TMPDIR}/third_party"
 
+# In addition, we need to include our version of protobuf.  The
+# directory is
+# "${RUNFILES}"/external/protobuf_archive/python/google/protobuf and we
+# need to import it as google.protobuf.  See also the top level __init__.py
+# that sets the sys.path to make this version of protobuf have precedence over
+# any other installed versions while running Nucleus code.
+cp -R "${RUNFILES}/external/protobuf_archive/python/google" "${TMPDIR}/google"
+
 cp LICENSE "${TMPDIR}"
 cp README.md "${TMPDIR}"
 cp nucleus/pip_package/MANIFEST.in "${TMPDIR}"

@@ -222,11 +222,8 @@ cc_proto_library(
 # fast_proto
 # ----------------------------------------------------------------------
 
-cc_binary(
-    name = "load_descriptors.so",
-    srcs = ["load_descriptors.cc"],
-    linkshared = 1,
-    linkstatic = 0,
+cc_library(
+    name = "all_nucleus_protos_cc",
     deps = [
         ":bed_cc_pb2",
         ":bedgraph_cc_pb2",
@@ -240,6 +237,16 @@ cc_binary(
         ":reference_cc_pb2",
         ":struct_cc_pb2",
         ":variants_cc_pb2",
+    ],
+)
+
+cc_binary(
+    name = "load_descriptors.so",
+    srcs = ["load_descriptors.cc"],
+    linkshared = 1,
+    linkstatic = 0,
+    deps = [
+        ":all_nucleus_protos_cc",
         "@local_config_python//:python_headers",
     ],
 )

@@ -30,8 +30,6 @@ syntax = "proto3";
 
 package nucleus.genomics.v1;
 
-option cc_enable_arenas = true;
-
 // A 0-based half-open genomic coordinate range for search requests.
 message Range {
   // The reference sequence name, for example `chr1`,
