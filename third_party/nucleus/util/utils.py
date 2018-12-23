@@ -34,8 +34,29 @@ from __future__ import print_function
 
 import numpy as np
 
+from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.util import cigar
-from third_party.nucleus.util import ranges
+from third_party.nucleus.util.python import utils as utils_cpp
+
+
+def read_overlaps_region(read, region):
+  """Returns True if read overlaps read.
+
+  This function is equivalent to calling:
+
+    `ranges.ranges_overlap(region, read_range(read))`
+
+  But is optimized for speed and memory performance in C++.
+
+  Args:
+    read: nucleus.genomics.v1.Read.
+    region: nucleus.genomics.v1.Range.
+
+  Returns:
+    True if read and region overlap (i.e, have the same reference_name and their
+    start/ends overlap at least one basepair).
+  """
+  return utils_cpp.read_overlaps_region(read, region)
 
 
 def read_range(read):
@@ -49,7 +70,19 @@ def read_range(read):
   """
   start = read.alignment.position.position
   end = start + cigar.alignment_length(read.alignment.cigar)
-  return ranges.make_range(read.alignment.position.reference_name, start, end)
+  return range_pb2.Range(
+      reference_name=read.alignment.position.reference_name,
+      start=start, end=end)
+# redacted
+# EmptyProtoPtr is fixed.
+#  range_pb = range_pb2.Range()
+#  utils_cpp.read_range(read, range_pb)
+#  return range_pb
+
+
+#def read_end(read):
+#  """Returns the read start + alignment length for Read read."""
+#  return utils_cpp.read_range(read)
 
 
 def reservoir_sample(iterable, k, random=None):

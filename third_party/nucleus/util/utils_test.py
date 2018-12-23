@@ -108,6 +108,38 @@ class UtilsTest(parameterized.TestCase):
       observed_frequency = c / float(n_replicates)
       npt.assert_allclose(observed_frequency, expected_frequency, atol=0.01)
 
+  @parameterized.parameters(
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=4, e2=10, expected=False),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=3, e2=10, expected=False),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=2, e2=10, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=1, e2=10, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=0, e2=10, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=0, e2=1, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=0, e2=2, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=0, e2=3, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=1, e2=2, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=1, e2=3, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=2, e2=3, expected=True),
+      # dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=3, e2=3, expected=False),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=0, e2=4, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr1', s2=1, e2=4, expected=True),
+      dict(ref1='chr1', s1=0, e1=3, ref2='chr2', s2=1, e2=4, expected=False),
+  )
+  def test_read_overlaps_region(self, ref1, s1, e1, ref2, s2, e2, expected):
+
+    def check_overlaps(chr1, start1, end1, chr2, start2, end2, expected):
+      nbp = end1 - start1
+      read = test_utils.make_read(
+          'A' * nbp, chrom=chr1, start=start1, cigar='{}M'.format(nbp))
+      region = ranges.make_range(chr2, start2, end2)
+      self.assertEqual(utils.read_overlaps_region(read, region), expected)
+      # This check ensures we get the same result calling ranges.ranges_overlap.
+      self.assertEqual(
+          ranges.ranges_overlap(region, utils.read_range(read)), expected)
+
+    check_overlaps(ref1, s1, e1, ref2, s2, e2, expected)
+    check_overlaps(ref2, s2, e2, ref1, s1, e1, expected)
+
 
 if __name__ == '__main__':
   absltest.main()

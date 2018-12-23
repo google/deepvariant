@@ -324,5 +324,5 @@ class InMemorySamReader(object):
       An iterator over nucleus.genomics.v1.Read protos.
     """
     # redacted
-    return (read for read in self.reads
-            if ranges.ranges_overlap(region, utils.read_range(read)))
+    return (
+        read for read in self.reads if utils.read_overlaps_region(read, region))

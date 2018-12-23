@@ -33,3 +33,18 @@ py_test(
         "@absl_py//absl/testing:absltest",
     ],
 )
+
+py_clif_cc(
+    name = "utils",
+    srcs = ["utils.clif"],
+    clif_deps = [],
+    py_deps = [],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:range_pyclif",
+        "//third_party/nucleus/protos:reads_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/util:proto_clif_converter",
+    ],
+)
