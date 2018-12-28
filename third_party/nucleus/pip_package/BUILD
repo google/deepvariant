@@ -1,7 +1,7 @@
 # Description:
 #   Tools for building the Nucleus pip package.
 
-load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 licenses(["notice"])
 
@@ -29,7 +29,7 @@ filegroup(
 # This is a fake target, designed to populate build_pip_package.runfiles
 # with the right dependency files (including the __init__.py's).  It is testonly
 # so that it may depend on testonly targets in nucleus/testing.
-nucleus_py_binary(
+py_binary(
     name = "setup",
     testonly = 1,
     srcs = ["setup.py"],

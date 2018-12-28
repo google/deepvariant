@@ -1,7 +1,6 @@
 load("//:third_party/clif.bzl", "py_clif_cc", "pyclif_proto_library")
 load("@protobuf_archive//:protobuf.bzl", "py_proto_library")
 load("@protobuf_archive//:protobuf.bzl", "cc_proto_library")
-load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
 
 package(default_visibility = [
     "//visibility:public",
@@ -218,10 +217,6 @@ cc_proto_library(
     ],
 )
 
-# ----------------------------------------------------------------------
-# fast_proto
-# ----------------------------------------------------------------------
-
 cc_library(
     name = "all_nucleus_protos_cc",
     deps = [
@@ -240,25 +235,6 @@ cc_library(
     ],
 )
 
-cc_binary(
-    name = "load_descriptors.so",
-    srcs = ["load_descriptors.cc"],
-    linkshared = 1,
-    linkstatic = 0,
-    deps = [
-        ":all_nucleus_protos_cc",
-        "@local_config_python//:python_headers",
-    ],
-)
-
-# fast_protos is a single target py_libraries can depend on to make sure
-# they get the fastest Python protocol buffer implementation.
-nucleus_py_library(
-    name = "fast_protos",
-    srcs = ["load_descriptors.py"],
-    data = [":load_descriptors.so"],
-)
-
 # ----------------------------------------------------------------------
 # py_proto_library's
 # ----------------------------------------------------------------------
@@ -268,7 +244,6 @@ py_proto_library(
     srcs = ["bed.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
 )
 
@@ -277,7 +252,6 @@ py_proto_library(
     srcs = ["bedgraph.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
 )
 
@@ -286,7 +260,6 @@ py_proto_library(
     srcs = ["cigar.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
 )
 
@@ -295,7 +268,6 @@ py_proto_library(
     srcs = ["gff.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
     deps = [":range_py_pb2"],
 )
@@ -305,7 +277,6 @@ py_proto_library(
     srcs = ["fasta.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
     deps = [
         ":range_py_pb2",
@@ -318,7 +289,6 @@ py_proto_library(
     srcs = ["fastq.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
 )
 
@@ -327,7 +297,6 @@ py_proto_library(
     srcs = ["position.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
 )
 
@@ -336,7 +305,6 @@ py_proto_library(
     srcs = ["range.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
 )
 
@@ -345,7 +313,6 @@ py_proto_library(
     srcs = ["reads.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
     deps = [
         ":cigar_py_pb2",
@@ -360,7 +327,6 @@ py_proto_library(
     srcs = ["reference.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
     deps = [
         ":range_py_pb2",
@@ -372,7 +338,6 @@ py_proto_library(
     srcs = ["struct.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
 )
 
@@ -381,7 +346,6 @@ py_proto_library(
     srcs = ["variants.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    py_libs = [":fast_protos"],
     srcs_version = "PY2AND3",
     deps = [
         ":reference_py_pb2",

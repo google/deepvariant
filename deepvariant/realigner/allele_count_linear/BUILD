@@ -1,4 +1,4 @@
-load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 package(
     default_visibility = [
@@ -6,7 +6,7 @@ package(
     ],
 )
 
-nucleus_py_binary(
+py_binary(
     name = "generate_trained_model",
     srcs = ["generate_trained_model.py"],
     main = "generate_trained_model.py",
@@ -33,7 +33,7 @@ py_test(
     ],
 )
 
-nucleus_py_binary(
+py_binary(
     name = "model_evaluation",
     srcs = ["model_evaluation.py"],
     main = "model_evaluation.py",

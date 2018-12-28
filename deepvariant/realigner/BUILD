@@ -1,5 +1,5 @@
 load("//:third_party/clif.bzl", "pyclif_proto_library")
-load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 package(
     default_visibility = [
@@ -7,7 +7,7 @@ package(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "realigner",
     srcs = ["realigner.py"],
     deps = [
@@ -56,7 +56,7 @@ cc_library(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "window_selector",
     srcs = ["window_selector.py"],
     deps = [
@@ -100,7 +100,7 @@ cc_library(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "aligner",
     srcs = ["aligner.py"],
     deps = [
@@ -127,7 +127,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "utils",
     srcs = ["utils.py"],
     deps = [

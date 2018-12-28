@@ -1,6 +1,6 @@
 # Code for reading and writing genomics data.
 # load("//devtools/python/blaze:python3.bzl", "py2and3_test")
-load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 package(
     default_visibility = [
@@ -16,7 +16,7 @@ exports_files(["LICENSE"])
 # Python API
 #
 
-nucleus_py_library(
+py_library(
     name = "io_py",
     deps = [
         ":converter",
@@ -24,7 +24,7 @@ nucleus_py_library(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "io_libs_py",
     deps = [
         ":bed",
@@ -41,7 +41,7 @@ nucleus_py_library(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "genomics_reader",
     srcs = ["genomics_reader.py"],
     deps = ["@absl_py//absl/logging"],
@@ -56,13 +56,13 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "genomics_writer",
     srcs = ["genomics_writer.py"],
     deps = ["@absl_py//absl/logging"],
 )
 
-nucleus_py_library(
+py_library(
     name = "vcf",
     srcs = ["vcf.py"],
     deps = [
@@ -94,7 +94,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "sam",
     srcs = ["sam.py"],
     deps = [
@@ -125,7 +125,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "bed",
     srcs = ["bed.py"],
     deps = [
@@ -151,7 +151,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "bedgraph",
     srcs = ["bedgraph.py"],
     deps = [
@@ -177,7 +177,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "fasta",
     srcs = ["fasta.py"],
     deps = [
@@ -205,7 +205,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "fastq",
     srcs = ["fastq.py"],
     deps = [
@@ -231,7 +231,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "gff",
     srcs = ["gff.py"],
     deps = [
@@ -243,7 +243,7 @@ nucleus_py_library(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "clif_postproc",
     srcs = ["clif_postproc.py"],
 )
@@ -1051,7 +1051,7 @@ py_test(
     ],
 )
 
-nucleus_py_binary(
+py_binary(
     name = "converter",
     srcs = ["converter.py"],
     deps = [

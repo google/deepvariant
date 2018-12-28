@@ -1,4 +1,4 @@
-load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 package(
     default_visibility = [
@@ -6,7 +6,7 @@ package(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "timer",
     srcs = ["timer.py"],
 )

@@ -1,4 +1,4 @@
-load("//:tools/nucleus.bzl", "nucleus_py_library", "nucleus_py_extension", "nucleus_py_binary")
+# KEEP THIS LINE to import nucleus.bzl externally
 
 package(
     default_visibility = [
@@ -6,7 +6,7 @@ package(
     ],
 )
 
-nucleus_py_binary(
+py_binary(
     name = "labeled_examples_to_vcf",
     srcs = ["labeled_examples_to_vcf.py"],
     srcs_version = "PY2AND3",
@@ -38,7 +38,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "variant_labeler",
     srcs = ["variant_labeler.py"],
     srcs_version = "PY2AND3",
@@ -63,7 +63,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "positional_labeler",
     srcs = ["positional_labeler.py"],
     srcs_version = "PY2AND3",
@@ -91,7 +91,7 @@ py_test(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "haplotype_labeler",
     srcs = ["haplotype_labeler.py"],
     srcs_version = "PY2AND3",
@@ -105,7 +105,7 @@ nucleus_py_library(
     ],
 )
 
-nucleus_py_library(
+py_library(
     name = "customized_classes_labeler",
     srcs = ["customized_classes_labeler.py"],
     srcs_version = "PY2AND3",
