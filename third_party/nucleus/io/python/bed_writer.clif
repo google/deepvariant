@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "third_party/nucleus/protos/bed_pyclif.h" import *
+from "third_party/nucleus/util/proto_clif_converter.h" import *
 from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
 
 from "third_party/nucleus/io/bed_writer.h":
@@ -38,7 +39,7 @@ from "third_party/nucleus/io/bed_writer.h":
                               header: BedHeader,
                               options: BedWriterOptions)
         -> StatusOr<BedWriter>
-      def `Write` as write(self, bedMessage: BedRecord) -> Status
+      def `WritePython` as write(self, bedMessage: ConstProtoPtr<BedRecord>) -> Status
       @__enter__
       def PythonEnter(self)
       @__exit__

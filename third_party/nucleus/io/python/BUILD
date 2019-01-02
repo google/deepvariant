@@ -53,6 +53,7 @@ py_clif_cc(
     ],
     deps = [
         "//third_party/nucleus/io:vcf_writer",
+        "//third_party/nucleus/util:proto_clif_converter",
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
@@ -121,6 +122,7 @@ py_clif_cc(
     ],
     deps = [
         "//third_party/nucleus/io:sam_writer",
+        "//third_party/nucleus/util:proto_clif_converter",
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
@@ -227,6 +229,7 @@ py_clif_cc(
     ],
     deps = [
         "//third_party/nucleus/io:bed_writer",
+        "//third_party/nucleus/util:proto_clif_converter",
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
@@ -270,6 +273,7 @@ py_clif_cc(
     ],
     deps = [
         "//third_party/nucleus/io:bedgraph_writer",
+        "//third_party/nucleus/util:proto_clif_converter",
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
@@ -312,6 +316,7 @@ py_clif_cc(
     ],
     deps = [
         "//third_party/nucleus/io:fastq_writer",
+        "//third_party/nucleus/util:proto_clif_converter",
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
@@ -393,6 +398,7 @@ py_clif_cc(
     ],
     deps = [
         "//third_party/nucleus/io:gff_writer",
+        "//third_party/nucleus/util:proto_clif_converter",
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )

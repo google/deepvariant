@@ -43,6 +43,7 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/core/status.h"
 
@@ -71,6 +72,10 @@ class VcfWriter {
   // otherwise the status provides information about what error occurred.
   tensorflow::Status Write(
       const nucleus::genomics::v1::Variant& variant_message);
+  tensorflow::Status WritePython(
+      const ConstProtoPtr<const nucleus::genomics::v1::Variant>& wrapped) {
+    return Write(*(wrapped.p_));
+  }
 
   // Close the underlying resource descriptors. Returns Status::OK() if the
   // close was successful; otherwise the status provides information about what
