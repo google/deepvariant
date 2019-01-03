@@ -263,6 +263,13 @@ class VcfInfoFieldAdapter {
   int vcf_type_;
 };
 
+// Helper class for converting between VcfHeader proto messages and bcf_hdr_t
+// structs.
+class VcfHeaderConverter {
+ public:
+  static void ConvertToPb(const bcf_hdr_t *h,
+                          nucleus::genomics::v1::VcfHeader *vcf_header);
+};
 
 // Helper class for converting between Variant proto messages and VCF records.
 class VcfRecordConverter {
