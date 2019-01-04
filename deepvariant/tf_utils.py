@@ -41,12 +41,12 @@ import numpy as np
 
 import tensorflow as tf
 
+from deepvariant.protos import deepvariant_pb2
+from third_party.nucleus.io import sharded_file_utils
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
-
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import ranges
 from tensorflow.core.example import example_pb2
-from deepvariant.protos import deepvariant_pb2
 
 # Convert strings up to this length, then clip.  We picked a number that
 # was less than 1K, with a bit of extra space for the length element,
@@ -150,13 +150,13 @@ def get_one_example_from_examples_path(source, proto=None):
   Returns:
     The first record, or None.
   """
-  files = io_utils.GlobListShardedFilePatterns(source)
+  files = sharded_file_utils.GlobListShardedFilePatterns(source)
   if not files:
     raise ValueError(
         'Cannot find matching files with the pattern "{}"'.format(source))
   for f in files:
     try:
-      return io_utils.read_tfrecords(f, proto=proto).next()
+      return tfrecord.read_tfrecords(f, proto=proto).next()
     except StopIteration:
       # Getting a StopIteration from one next() means source_path is empty.
       # Move on to the next one to try to get one example.
@@ -310,7 +310,7 @@ def int_tensor_to_string(x):
 
 def compression_type_of_files(files):
   """Return GZIP or None for the compression type of the files."""
-  reader_options = io_utils.make_tfrecord_options(files)
+  reader_options = tfrecord.make_tfrecord_options(files)
   if reader_options.compression_type == (
       tf.python_io.TFRecordCompressionType.GZIP):
     return 'GZIP'

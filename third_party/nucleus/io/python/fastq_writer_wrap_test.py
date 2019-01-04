@@ -36,10 +36,10 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from third_party.nucleus.io import fastq
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io.python import fastq_writer
 from third_party.nucleus.protos import fastq_pb2
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import io_utils
 from tensorflow.python.platform import gfile
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed FastqWriter'
@@ -81,7 +81,7 @@ class WrapFastqWriterTest(parameterized.TestCase):
 
     writer_options = fastq_pb2.FastqWriterOptions()
     fastq_records = list(
-        io_utils.read_tfrecords(tfrecord_file, proto=fastq_pb2.FastqRecord))
+        tfrecord.read_tfrecords(tfrecord_file, proto=fastq_pb2.FastqRecord))
     out_fname = test_utils.test_tmpfile('output.fastq')
     with fastq_writer.FastqWriter.to_file(out_fname, writer_options) as writer:
       for record in fastq_records:

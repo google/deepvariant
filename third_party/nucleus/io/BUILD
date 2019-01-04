@@ -36,6 +36,8 @@ py_library(
         ":genomics_writer",
         ":gff",
         ":sam",
+        ":sharded_file_utils",
+        ":tfrecord",
         ":vcf",
         "//third_party/nucleus/io/python:hts_verbose",
     ],
@@ -115,10 +117,10 @@ py_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":sam",
+        ":tfrecord",
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
@@ -246,6 +248,45 @@ py_library(
 py_library(
     name = "clif_postproc",
     srcs = ["clif_postproc.py"],
+)
+
+py_library(
+    name = "sharded_file_utils",
+    srcs = ["sharded_file_utils.py"],
+)
+
+py_test(
+    name = "sharded_file_utils_test",
+    size = "small",
+    srcs = ["sharded_file_utils_test.py"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":sharded_file_utils",
+        "//third_party/nucleus/protos:reference_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "tfrecord",
+    srcs = ["tfrecord.py"],
+    deps = [":sharded_file_utils"],
+)
+
+py_test(
+    name = "tfrecord_test",
+    size = "small",
+    srcs = ["tfrecord_test.py"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":tfrecord",
+        "//third_party/nucleus/protos:reference_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
 )
 
 #
@@ -1048,9 +1089,9 @@ py_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":gff",
+        ":tfrecord",
         "//third_party/nucleus/protos:gff_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
-        "//third_party/nucleus/util:io_utils",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",

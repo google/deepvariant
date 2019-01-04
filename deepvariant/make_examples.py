@@ -52,11 +52,12 @@ from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
+from third_party.nucleus.io import sharded_file_utils
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import hts_verbose
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import errors
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
@@ -354,9 +355,10 @@ def default_options(add_flags=True, flags_obj=None):
     if flags_obj.pileup_image_width:
       options.pic_options.width = flags_obj.pileup_image_width
 
-    num_shards, examples, candidates, gvcf = io_utils.resolve_filespecs(
-        flags_obj.task, flags_obj.examples or '', flags_obj.candidates or '',
-        flags_obj.gvcf or '')
+    num_shards, examples, candidates, gvcf = (
+        sharded_file_utils.resolve_filespecs(
+            flags_obj.task, flags_obj.examples or '', flags_obj.candidates or
+            '', flags_obj.gvcf or ''))
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
@@ -1022,22 +1024,22 @@ class OutputsWriter(object):
     self._writers = {k: None for k in ['candidates', 'examples', 'gvcfs']}
 
     if options.candidates_filename:
-      self._add_writer('candidates',
-                       io_utils.RawProtoWriterAdaptor(
-                           io_utils.make_tfrecord_writer(
-                               options.candidates_filename)))
+      self._add_writer(
+          'candidates',
+          tfrecord.RawProtoWriterAdaptor(
+              tfrecord.make_tfrecord_writer(options.candidates_filename)))
 
     if options.examples_filename:
-      self._add_writer('examples',
-                       io_utils.RawProtoWriterAdaptor(
-                           io_utils.make_tfrecord_writer(
-                               options.examples_filename)))
+      self._add_writer(
+          'examples',
+          tfrecord.RawProtoWriterAdaptor(
+              tfrecord.make_tfrecord_writer(options.examples_filename)))
 
     if options.gvcf_filename:
-      self._add_writer('gvcfs',
-                       io_utils.RawProtoWriterAdaptor(
-                           io_utils.make_tfrecord_writer(
-                               options.gvcf_filename)))
+      self._add_writer(
+          'gvcfs',
+          tfrecord.RawProtoWriterAdaptor(
+              tfrecord.make_tfrecord_writer(options.gvcf_filename)))
 
   def write_examples(self, *examples):
     self._write('examples', *examples)

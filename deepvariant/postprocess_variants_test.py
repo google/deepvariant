@@ -46,12 +46,12 @@ import numpy as np
 import tensorflow as tf
 
 from third_party.nucleus.io import fasta
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import vcf_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
@@ -178,8 +178,8 @@ def make_golden_dataset(compressed_inputs=False):
   if compressed_inputs:
     source_path = test_utils.test_tmpfile(
         'golden.postprocess_single_site_input.tfrecord.gz')
-    io_utils.write_tfrecords(
-        io_utils.read_tfrecords(
+    tfrecord.write_tfrecords(
+        tfrecord.read_tfrecords(
             testdata.GOLDEN_POSTPROCESS_INPUT,
             proto=deepvariant_pb2.CallVariantsOutput), source_path)
   else:
@@ -248,15 +248,15 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_reading_sharded_input_with_empty_shards_does_not_crash(self):
-    valid_variants = io_utils.read_tfrecords(
+    valid_variants = tfrecord.read_tfrecords(
         testdata.GOLDEN_POSTPROCESS_INPUT,
         proto=deepvariant_pb2.CallVariantsOutput)
     empty_shard_one = test_utils.test_tmpfile(
         'reading_empty_shard.tfrecord-00000-of-00002')
     none_empty_shard_two = test_utils.test_tmpfile(
         'reading_empty_shard.tfrecord-00001-of-00002')
-    io_utils.write_tfrecords([], empty_shard_one)
-    io_utils.write_tfrecords(valid_variants, none_empty_shard_two)
+    tfrecord.write_tfrecords([], empty_shard_one)
+    tfrecord.write_tfrecords(valid_variants, none_empty_shard_two)
     FLAGS.infile = test_utils.test_tmpfile('reading_empty_shard.tfrecord@2')
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('calls_reading_empty_shard.vcf')
@@ -269,8 +269,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
         'no_records.tfrecord-00000-of-00002')
     empty_shard_two = test_utils.test_tmpfile(
         'no_records.tfrecord-00001-of-00002')
-    io_utils.write_tfrecords([], empty_shard_one)
-    io_utils.write_tfrecords([], empty_shard_two)
+    tfrecord.write_tfrecords([], empty_shard_one)
+    tfrecord.write_tfrecords([], empty_shard_two)
     FLAGS.infile = test_utils.test_tmpfile('no_records.tfrecord@2')
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('no_records.vcf')

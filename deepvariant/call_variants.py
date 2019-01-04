@@ -42,9 +42,9 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
 from deepvariant import data_providers
@@ -296,7 +296,7 @@ def call_variants(examples_filename,
   if example_format is None:
     logging.warning('Unable to read any records from %s. Output will contain '
                     'zero records.', examples_filename)
-    io_utils.write_tfrecords([], output_file)
+    tfrecord.write_tfrecords([], output_file)
     return
   elif example_format != 'raw':
     raise ValueError('The TF examples in {} has image/format \'{}\' '
@@ -348,7 +348,7 @@ def call_variants(examples_filename,
 
   # Consume predictions one at a time and write them to output_file.
   logging.info('Writing calls to %s', output_file)
-  writer, _ = io_utils.make_proto_writer(output_file)
+  writer, _ = tfrecord.make_proto_writer(output_file)
   with writer:
     start_time = time.time()
     n_examples, n_batches = 0, 0

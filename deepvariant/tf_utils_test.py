@@ -39,9 +39,9 @@ from absl.testing import parameterized
 import mock
 import tensorflow as tf
 
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import io_utils
 
 from tensorflow.core.example import example_pb2
 from deepvariant import tf_utils
@@ -196,7 +196,7 @@ class TFUtilsTest(parameterized.TestCase):
     valid_shape = [1, 2, 3]
     example.features.feature['image/shape'].int64_list.value.extend(valid_shape)
     output_file = test_utils.test_tmpfile(file_name_to_write)
-    io_utils.write_tfrecords([example], output_file)
+    tfrecord.write_tfrecords([example], output_file)
     tf_utils.get_shape_from_examples_path(
         test_utils.test_tmpfile(tfrecord_path_to_match))
 
@@ -211,7 +211,7 @@ class TFUtilsTest(parameterized.TestCase):
   def testGetNoneShapeFromEmptyExamplesPath(self, file_name_to_write,
                                             tfrecord_path_to_match):
     output_file = test_utils.test_tmpfile(file_name_to_write)
-    io_utils.write_tfrecords([], output_file)
+    tfrecord.write_tfrecords([], output_file)
     self.assertIsNone(
         tf_utils.get_shape_from_examples_path(
             test_utils.test_tmpfile(tfrecord_path_to_match)))

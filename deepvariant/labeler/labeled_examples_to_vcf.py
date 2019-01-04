@@ -47,8 +47,8 @@ from absl import flags
 from absl import logging
 
 from third_party.nucleus.io import fasta
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 
@@ -108,7 +108,7 @@ def examples_to_variants(examples_path, max_records=None):
   Raises:
     ValueError: if we find a Variant in any example that doesn't have genotypes.
   """
-  examples = io_utils.read_tfrecords(examples_path, max_records=max_records)
+  examples = tfrecord.read_tfrecords(examples_path, max_records=max_records)
   variants = sorted(
       (tf_utils.example_variant(example) for example in examples),
       key=variant_utils.variant_range_tuple)

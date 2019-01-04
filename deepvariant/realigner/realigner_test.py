@@ -44,9 +44,9 @@ import tensorflow as tf
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import ranges
 from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
@@ -424,7 +424,7 @@ class RealignerTest(parameterized.TestCase):
           self.reads_realigner.diagnostic_logger.realigned_reads_filename)
       if emit_reads:
         self.assertTrue(tf.gfile.Exists(reads_file))
-        reads_from_dx = io_utils.read_tfrecords(reads_file, reads_pb2.Read)
+        reads_from_dx = tfrecord.read_tfrecords(reads_file, reads_pb2.Read)
         self.assertCountEqual(reads_from_dx, realigned_reads)
       else:
         self.assertFalse(tf.gfile.Exists(reads_file))

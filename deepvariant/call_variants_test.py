@@ -47,8 +47,8 @@ import numpy as np
 import six
 import tensorflow as tf
 
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import variant_utils
 from deepvariant import call_variants
 from deepvariant import data_providers
@@ -96,7 +96,7 @@ class CallVariantsEndToEndTests(
         batch_size=4,
         max_batches=None)
     call_variants_outputs = list(
-        io_utils.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
+        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
     # Check that we have the right number of output protos.
     self.assertEqual(len(call_variants_outputs), num_examples)
 
@@ -115,46 +115,46 @@ class CallVariantsEndToEndTests(
         master='',
         use_tpu=FLAGS.use_tpu)
     call_variants_outputs = list(
-        io_utils.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
+        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
     # Check that we have the right number of output protos.
     self.assertEqual(len(call_variants_outputs), num_examples)
 
   def test_call_end2end_with_empty_shards(self):
     # Get only up to 10 examples.
     examples = list(
-        io_utils.read_tfrecords(
+        tfrecord.read_tfrecords(
             testdata.GOLDEN_CALLING_EXAMPLES, max_records=10))
     # Write to 15 shards, which means there will be multiple empty shards.
     source_path = test_utils.test_tmpfile('sharded@{}'.format(15))
-    io_utils.write_tfrecords(examples, source_path)
+    tfrecord.write_tfrecords(examples, source_path)
     self.assertCallVariantsEmitsNRecordsForRandomGuess(source_path,
                                                        len(examples))
 
   def test_call_end2end_empty_first_shard(self):
     # Get only up to 10 examples.
     examples = list(
-        io_utils.read_tfrecords(
+        tfrecord.read_tfrecords(
             testdata.GOLDEN_CALLING_EXAMPLES, max_records=10))
     empty_first_file = test_utils.test_tmpfile('empty_1st_shard-00000-of-00002')
-    io_utils.write_tfrecords([], empty_first_file)
+    tfrecord.write_tfrecords([], empty_first_file)
     second_file = test_utils.test_tmpfile('empty_1st_shard-00001-of-00002')
-    io_utils.write_tfrecords(examples, second_file)
+    tfrecord.write_tfrecords(examples, second_file)
     self.assertCallVariantsEmitsNRecordsForRandomGuess(
         test_utils.test_tmpfile('empty_1st_shard@2'), len(examples))
 
   def test_call_end2end_zero_record_file_for_inception_v3(self):
     zero_record_file = test_utils.test_tmpfile('zero_record_file')
-    io_utils.write_tfrecords([], zero_record_file)
+    tfrecord.write_tfrecords([], zero_record_file)
     self.assertCallVariantsEmitsNRecordsForInceptionV3(
         test_utils.test_tmpfile('zero_record_file'), 0)
 
   def _call_end2end_helper(self, examples_path, model, shard_inputs):
-    examples = list(io_utils.read_tfrecords(examples_path))
+    examples = list(tfrecord.read_tfrecords(examples_path))
 
     if shard_inputs:
       # Create a sharded version of our golden examples.
       source_path = test_utils.test_tmpfile('sharded@{}'.format(3))
-      io_utils.write_tfrecords(examples, source_path)
+      tfrecord.write_tfrecords(examples, source_path)
     else:
       source_path = examples_path
 
@@ -185,7 +185,7 @@ class CallVariantsEndToEndTests(
     )
 
     call_variants_outputs = list(
-        io_utils.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
+        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
 
     return call_variants_outputs, examples, batch_size, max_batches
 
@@ -282,12 +282,12 @@ class CallVariantsEndToEndTests(
                             for bad_format in ['', 'png'])
   def test_call_variants_with_invalid_format(self, model, bad_format):
     # Read one good record from a valid file.
-    example = next(io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
+    example = next(tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
     # Overwrite the image/format field to be an invalid value
     # (anything but 'raw').
     example.features.feature['image/format'].bytes_list.value[0] = bad_format
     source_path = test_utils.test_tmpfile('make_examples_output.tfrecord')
-    io_utils.write_tfrecords([example], source_path)
+    tfrecord.write_tfrecords([example], source_path)
     outfile = test_utils.test_tmpfile('call_variants_invalid_format.tfrecord')
 
     with self.assertRaises(ValueError):
@@ -303,11 +303,11 @@ class CallVariantsEndToEndTests(
   @parameterized.parameters(model for model in modeling.production_models())
   def test_call_variants_with_no_shape(self, model):
     # Read one good record from a valid file.
-    example = next(io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
+    example = next(tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
     # Remove image/shape.
     del example.features.feature['image/shape']
     source_path = test_utils.test_tmpfile('make_examples_out_noshape.tfrecord')
-    io_utils.write_tfrecords([example], source_path)
+    tfrecord.write_tfrecords([example], source_path)
     with self.assertRaisesRegexp(
         ValueError, 'Invalid image/shape: we expect to find an image/shape '
         'field with length 3.'):
@@ -316,7 +316,7 @@ class CallVariantsEndToEndTests(
 
   def test_call_variants_with_empty_input(self):
     source_path = test_utils.test_tmpfile('empty.tfrecord')
-    io_utils.write_tfrecords([], source_path)
+    tfrecord.write_tfrecords([], source_path)
     # Make sure that prepare_inputs don't crash on empty input.
     ds = call_variants.prepare_inputs(source_path)
     m = modeling.get_model('random_guess')
@@ -338,7 +338,7 @@ class CallVariantsUnitTests(
   @classmethod
   def setUpClass(cls):
     cls.examples = list(
-        io_utils.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
+        tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
     cls.variants = [tf_utils.example_variant(ex) for ex in cls.examples]
     cls.model = modeling.get_model('random_guess')
 
@@ -350,7 +350,7 @@ class CallVariantsUnitTests(
   )
   def test_prepare_inputs(self, filename_to_write, file_string_input):
     source_path = test_utils.test_tmpfile(filename_to_write)
-    io_utils.write_tfrecords(self.examples, source_path)
+    tfrecord.write_tfrecords(self.examples, source_path)
     # file_string_input could be a comma-separated list. Add the prefix to all
     # of them, and join it back to a string.
     file_string_input = ','.join(

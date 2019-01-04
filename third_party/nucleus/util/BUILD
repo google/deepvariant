@@ -18,7 +18,6 @@ py_library(
         ":cigar",
         ":errors",
         ":genomics_math",
-        ":io_utils",
         ":proto_utils",
         ":py_utils",
         ":ranges",
@@ -279,25 +278,6 @@ py_test(
         ":struct_utils",
         ":vcf_constants",
         "//third_party/nucleus/protos:variants_py_pb2",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
-    name = "io_utils",
-    srcs = ["io_utils.py"],
-)
-
-py_test(
-    name = "io_utils_test",
-    size = "small",
-    srcs = ["io_utils_test.py"],
-    data = ["//third_party/nucleus/testdata"],
-    deps = [
-        ":io_utils",
-        "//third_party/nucleus/protos:reference_py_pb2",
-        "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],

@@ -35,10 +35,10 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io.python import bed_writer
 from third_party.nucleus.protos import bed_pb2
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import io_utils
 from tensorflow.python.platform import gfile
 
 
@@ -69,7 +69,7 @@ class WrapBedWriterTest(parameterized.TestCase):
     header = bed_pb2.BedHeader(num_fields=12)
     writer_options = bed_pb2.BedWriterOptions()
     bed_records = list(
-        io_utils.read_tfrecords(tfrecord_file, proto=bed_pb2.BedRecord))
+        tfrecord.read_tfrecords(tfrecord_file, proto=bed_pb2.BedRecord))
     out_fname = test_utils.test_tmpfile('output.bed')
     with bed_writer.BedWriter.to_file(out_fname, header,
                                       writer_options) as writer:

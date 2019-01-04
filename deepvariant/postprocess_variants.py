@@ -44,12 +44,13 @@ import numpy as np
 import tensorflow as tf
 
 from third_party.nucleus.io import fasta
+from third_party.nucleus.io import sharded_file_utils
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import genomics_math
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
@@ -654,7 +655,7 @@ def _transform_call_variants_output_to_variants(
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
   for _, group in itertools.groupby(
-      io_utils.read_tfrecords(
+      tfrecord.read_tfrecords(
           input_sorted_tfrecord_path, proto=deepvariant_pb2.CallVariantsOutput),
       lambda x: variant_utils.variant_range(x.variant)):
     outputs = _sort_grouped_variants(group)
@@ -856,7 +857,7 @@ def main(argv=()):
     fasta_reader = fasta.IndexedFastaReader(
         FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
     contigs = fasta_reader.header.contigs
-    paths = io_utils.maybe_generate_sharded_filenames(FLAGS.infile)
+    paths = sharded_file_utils.maybe_generate_sharded_filenames(FLAGS.infile)
     # Read one CallVariantsOutput record and extract the sample name from it.
     # Note that this assumes that all CallVariantsOutput protos in the infile
     # contain a single VariantCall within their constituent Variant proto, and
@@ -886,7 +887,7 @@ def main(argv=()):
 
     # Also write out the gVCF file if it was provided.
     if FLAGS.nonvariant_site_tfrecord_path:
-      nonvariant_generator = io_utils.read_shard_sorted_tfrecords(
+      nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
           FLAGS.nonvariant_site_tfrecord_path,
           key=_get_contig_based_variant_sort_keyfn(contigs),
           proto=variants_pb2.Variant)

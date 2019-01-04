@@ -42,8 +42,8 @@ import numpy as np
 import six
 import tensorflow as tf
 
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import variant_utils
 from tensorflow.core.example import example_pb2
 from deepvariant import data_providers
@@ -64,8 +64,8 @@ def make_golden_dataset(compressed_inputs=False,
                         use_tpu=False):
   if compressed_inputs:
     source_path = test_utils.test_tmpfile('make_golden_dataset.tfrecord.gz')
-    io_utils.write_tfrecords(
-        io_utils.read_tfrecords(testdata.GOLDEN_TRAINING_EXAMPLES), source_path)
+    tfrecord.write_tfrecords(
+        tfrecord.read_tfrecords(testdata.GOLDEN_TRAINING_EXAMPLES), source_path)
   else:
     source_path = testdata.GOLDEN_TRAINING_EXAMPLES
   return data_providers.get_input_fn_from_filespec(
@@ -185,7 +185,7 @@ class DataProviderTest(parameterized.TestCase):
 
     expected_loci = [
         example.features.feature['locus'].bytes_list.value[0]
-        for example in io_utils.read_tfrecords(expected_dataset.input_file_spec)
+        for example in tfrecord.read_tfrecords(expected_dataset.input_file_spec)
     ]
     self.assertEqual(len(expected_loci), expected_dataset.num_examples)
     if seen != expected_loci:
@@ -224,8 +224,8 @@ class DataProviderTest(parameterized.TestCase):
     golden_dataset = make_golden_dataset(compressed_inputs, use_tpu=use_tpu)
     n_shards = 3
     sharded_path = test_utils.test_tmpfile('sharded@{}'.format(n_shards))
-    io_utils.write_tfrecords(
-        io_utils.read_tfrecords(golden_dataset.input_file_spec), sharded_path)
+    tfrecord.write_tfrecords(
+        tfrecord.read_tfrecords(golden_dataset.input_file_spec), sharded_path)
 
     config_file = _test_dataset_config(
         'test_sharded.pbtxt',
@@ -296,7 +296,7 @@ class DataProviderTest(parameterized.TestCase):
     valid_shape = [1, 2, 3]
     example.features.feature['image/shape'].int64_list.value.extend(valid_shape)
     output_file = test_utils.test_tmpfile(file_name_to_write)
-    io_utils.write_tfrecords([example], output_file)
+    tfrecord.write_tfrecords([example], output_file)
     ds = data_providers.DeepVariantInput(
         mode=tf.estimator.ModeKeys.PREDICT,
         name='test_shape',
@@ -394,7 +394,7 @@ class InputTest(
 
     # Read and parse the canonical data.
     expected_decoded_records = list(
-        io_utils.read_tfrecords(
+        tfrecord.read_tfrecords(
             testdata.GOLDEN_CALLING_EXAMPLES, proto=example_pb2.Example))
 
     # Read and parse the data using tf.  This is the function under test,

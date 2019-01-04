@@ -45,12 +45,12 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import io_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
@@ -209,7 +209,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # Test that our candidates are reasonable, calling specific helper functions
     # to check lots of properties of the output.
     candidates = sorted(
-        io_utils.read_tfrecords(
+        tfrecord.read_tfrecords(
             FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall),
         key=lambda c: variant_utils.variant_range_tuple(c.variant))
     self.verify_deepvariant_calls(candidates, options)
@@ -231,7 +231,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     else:
       golden_file = _sharded(testdata.GOLDEN_TRAINING_EXAMPLES, num_shards)
     self.assertDeepVariantExamplesEqual(
-        examples, list(io_utils.read_tfrecords(golden_file)))
+        examples, list(tfrecord.read_tfrecords(golden_file)))
 
     if mode == 'calling':
       nist_reader = vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF)
@@ -240,13 +240,13 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
       # Check the quality of our generated gvcf file.
       gvcfs = variant_utils.sorted_variants(
-          io_utils.read_tfrecords(FLAGS.gvcf, proto=variants_pb2.Variant))
+          tfrecord.read_tfrecords(FLAGS.gvcf, proto=variants_pb2.Variant))
       self.verify_variants(gvcfs, region, options, is_gvcf=True)
       self.verify_contiguity(gvcfs, region)
       gvcf_golden_file = _sharded(testdata.GOLDEN_POSTPROCESS_GVCF_INPUT,
                                   num_shards)
       expected_gvcfs = list(
-          io_utils.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant))
+          tfrecord.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant))
       self.assertItemsEqual(gvcfs, expected_gvcfs)
 
     if (mode == 'training' and num_shards == 0 and
@@ -282,7 +282,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     examples = self.verify_examples(
         FLAGS.examples, region, options, verify_labels=True)
     self.assertDeepVariantExamplesEqual(
-        examples, list(io_utils.read_tfrecords(golden_file)))
+        examples, list(tfrecord.read_tfrecords(golden_file)))
 
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call all of the real variants (according to NIST's Genome
@@ -398,7 +398,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     if verify_labels:
       expected_features += ['label']
 
-    examples = list(io_utils.read_tfrecords(examples_filename))
+    examples = list(tfrecord.read_tfrecords(examples_filename))
     for example in examples:
       for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)
