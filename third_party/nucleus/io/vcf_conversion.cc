@@ -32,6 +32,7 @@
 
 #include "third_party/nucleus/io/vcf_conversion.h"
 
+#include <ctype.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -794,6 +795,17 @@ void VcfHeaderConverter::ConvertToPb(const bcf_hdr_t* hdr,
   }
 }
 
+// Convert a C string to uppercase, in place, unless it starts with "<".
+char *uppercase_allele(char *s) {
+  char *r = s;
+  if (*s == '<') return r;
+  while (*s) {
+    *s = toupper((unsigned char) *s);
+    s++;
+  }
+  return r;
+}
+
 tensorflow::Status VcfRecordConverter::ConvertToPb(
     const bcf_hdr_t* h, bcf1_t* v,
     nucleus::genomics::v1::Variant* variant_message) const {
@@ -821,9 +833,9 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
 
   // Parse out the ref and alt alleles.
   if (v->n_allele > 0) {
-    variant_message->set_reference_bases(v->d.allele[0]);
+    variant_message->set_reference_bases(uppercase_allele(v->d.allele[0]));
     for (int i = 1; i < v->n_allele; ++i) {
-      variant_message->add_alternate_bases(v->d.allele[i]);
+      variant_message->add_alternate_bases(uppercase_allele(v->d.allele[i]));
     }
   }
 

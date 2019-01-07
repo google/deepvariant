@@ -493,7 +493,7 @@ TEST(VcfReaderFromStringTest, MatchesGolden) {
       "Chr1\t24\tDogSNP4\tA\tT\t0\t.\t.\tGT:PL:PS\t"
       "0|1:50,40,60:24\t0|1:50,40,60:.", &(parsed[3])));
   TF_CHECK_OK(reader->FromString(
-      "Chr1\t25\tDogSNP5\tA\tT\t0\t.\t.\tGT:GQ:PS:PL\t"
+      "Chr1\t25\tDogSNP5\ta\tt\t0\t.\t.\tGT:GQ:PS:PL\t"
       "0|1:42:24:50,40,60\t1|1:42:.:50,40,60", &(parsed[4])));
   EXPECT_THAT(parsed, Pointwise(EqualsProto(), golden));
 }
