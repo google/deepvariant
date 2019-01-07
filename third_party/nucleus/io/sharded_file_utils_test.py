@@ -141,13 +141,14 @@ class ShardsTest(parameterized.TestCase):
   def testParseShardedFileSpec(self, spec, expected_basename,
                                expected_num_shards, expected_suffix):
 
-    basename, num_shards, suffix = io.ParseShardedFileSpec(spec)
+    basename, num_shards, suffix = io.parse_sharded_file_spec(spec)
     self.assertEqual(basename, expected_basename)
     self.assertEqual(num_shards, expected_num_shards)
     self.assertEqual(suffix, expected_suffix)
 
   def testParseShardedFileSpecInvalid(self):
-    self.assertRaises(io.ShardError, io.ParseShardedFileSpec, '/dir/foo/bar@0')
+    self.assertRaises(io.ShardError,
+                      io.parse_sharded_file_spec, '/dir/foo/bar@0')
 
   @parameterized.named_parameters(
       ('no_suffix', '/dir/foo/bar@3', [
@@ -160,11 +161,11 @@ class ShardsTest(parameterized.TestCase):
       ]),
   )
   def testGenerateShardedFilenames(self, spec, expected):
-    names = io.GenerateShardedFilenames(spec)
+    names = io.generate_sharded_filenames(spec)
     self.assertEqual(names, expected)
 
   def testGenerateShardedFilenamesManyShards(self):
-    names = io.GenerateShardedFilenames('/dir/foo/bar@100000')
+    names = io.generate_sharded_filenames('/dir/foo/bar@100000')
     self.assertEqual(len(names), 100000)
     self.assertEqual(names[99999], '/dir/foo/bar-099999-of-100000')
 
@@ -173,7 +174,7 @@ class ShardsTest(parameterized.TestCase):
       ('zero_shards', '/dir/foo/bar@0'),
   )
   def testGenerateShardedFilenamesError(self, spec):
-    self.assertRaises(io.ShardError, io.GenerateShardedFilenames, spec)
+    self.assertRaises(io.ShardError, io.generate_sharded_filenames, spec)
 
   @parameterized.named_parameters(
       ('basic', '/dir/foo/bar@3', True),
@@ -183,7 +184,7 @@ class ShardsTest(parameterized.TestCase):
       ('not_spec', '/dir/foo/bar', False),
   )
   def testIsShardedFileSpec(self, spec, expected):
-    actual = io.IsShardedFileSpec(spec)
+    actual = io.is_sharded_file_spec(spec)
     self.assertEqual(actual, expected,
                       'io.IshShardedFileSpec({0}) is {1} expected {2}'.format(
                           spec, actual, expected))
@@ -197,8 +198,8 @@ class ShardsTest(parameterized.TestCase):
   def testGenerateShardedFilePattern(self, basename, num_shards, suffix,
                                      expected):
 
-    self.assertEqual(
-        io.GenerateShardedFilePattern(basename, num_shards, suffix), expected)
+    self.assertEqual(io.generate_sharded_file_pattern(
+        basename, num_shards, suffix), expected)
 
   @parameterized.named_parameters(
       ('no_spec', '/dir/foo/bar', '/dir/foo/bar'),
@@ -208,7 +209,7 @@ class ShardsTest(parameterized.TestCase):
       ('many', '/dir/foo/bar@12345678', '/dir/foo/bar-????????-of-12345678'),
   )
   def testNormalizeToShardedFilePattern(self, spec, expected):
-    self.assertEqual(expected, io.NormalizeToShardedFilePattern(spec))
+    self.assertEqual(expected, io.normalize_to_sharded_file_pattern(spec))
 
   @parameterized.named_parameters(
       ('no_spec', 'no_spec', ['no_spec']),
@@ -232,7 +233,7 @@ class ShardsTest(parameterized.TestCase):
     full_specs = ','.join(
         [test_utils.test_tmpfile(spec) for spec in specs.split(',')])
     self.assertEqual(sorted(set(expected_full_files)),
-                     io.GlobListShardedFilePatterns(full_specs))
+                     io.glob_list_sharded_file_patterns(full_specs))
 
 if __name__ == '__main__':
   absltest.main()

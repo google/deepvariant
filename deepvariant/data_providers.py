@@ -145,7 +145,7 @@ class DeepVariantInput(object):
       self.tensor_shape = tensor_shape
     else:
       self.tensor_shape = tf_utils.get_shape_from_examples_path(input_file_spec)
-    self.input_files = sharded_file_utils.GlobListShardedFilePatterns(
+    self.input_files = sharded_file_utils.glob_list_sharded_file_patterns(
         self.input_file_spec)
 
   def features_extraction_spec_for_mode(self, include_label_and_locus):
@@ -256,7 +256,7 @@ class DeepVariantInput(object):
     dataset = None
     for pattern in self.input_file_spec.split(','):
       one_dataset = tf.data.Dataset.list_files(
-          sharded_file_utils.NormalizeToShardedFilePattern(pattern),
+          sharded_file_utils.normalize_to_sharded_file_pattern(pattern),
           shuffle=self.mode == tf.estimator.ModeKeys.TRAIN)
       dataset = dataset.concatenate(one_dataset) if dataset else one_dataset
 
@@ -331,7 +331,8 @@ class DeepVariantInput(object):
     batch_size = params['batch_size']
     compression_type = tf_utils.compression_type_of_files(self.input_files)
     files = tf.data.Dataset.list_files(
-        sharded_file_utils.NormalizeToShardedFilePattern(self.input_file_spec),
+        sharded_file_utils.normalize_to_sharded_file_pattern(
+            self.input_file_spec),
         shuffle=False,
     )
     tf.logging.info('self.input_read_threads=%d', self.input_read_threads)

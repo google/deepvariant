@@ -58,7 +58,7 @@ class ShardError(Exception):
   """An I/O error."""
 
 
-def ParseShardedFileSpec(spec):  # pylint:disable=invalid-name
+def parse_sharded_file_spec(spec):
   """Parse a sharded file specification.
 
   Args:
@@ -86,12 +86,12 @@ def ParseShardedFileSpec(spec):  # pylint:disable=invalid-name
   return m.group(2), int(m.group(3)), suffix
 
 
-def _ShardWidth(num_shards):  # pylint:disable=invalid-name
+def _shard_width(num_shards):
   """Return the width of the shard matcher based on the number of shards."""
   return max(5, int(math.floor(math.log10(num_shards)) + 1))
 
 
-def GenerateShardedFilenames(spec):  # pylint:disable=invalid-name
+def generate_sharded_filenames(spec):
   """Generate the list of filenames corresponding to the sharding path.
 
   Args:
@@ -104,16 +104,16 @@ def GenerateShardedFilenames(spec):  # pylint:disable=invalid-name
   Raises:
     ShardError: If spec is not a valid sharded file specification.
   """
-  basename, num_shards, suffix = ParseShardedFileSpec(spec)
+  basename, num_shards, suffix = parse_sharded_file_spec(spec)
   files = []
-  width = _ShardWidth(num_shards)
+  width = _shard_width(num_shards)
   format_str = '{{0}}-{{1:0{0}}}-of-{{2:0{0}}}{{3}}'.format(width)
   for i in range(num_shards):
     files.append(format_str.format(basename, i, num_shards, suffix))
 
   return files
 
-def GlobListShardedFilePatterns(comma_separated_patterns, sep=','):  # pylint:disable=invalid-name
+def glob_list_sharded_file_patterns(comma_separated_patterns, sep=','):
   """Generate list of filenames corresponding to `comma_separated_patterns`.
 
   Args:
@@ -127,11 +127,11 @@ def GlobListShardedFilePatterns(comma_separated_patterns, sep=','):  # pylint:di
   return sorted(set([
       f
       for pattern in comma_separated_patterns.split(sep)
-      for f in gfile.Glob(NormalizeToShardedFilePattern(pattern))
+      for f in gfile.Glob(normalize_to_sharded_file_pattern(pattern))
   ]))
 
 
-def GenerateShardedFilePattern(basename, num_shards, suffix):  # pylint:disable=invalid-name
+def generate_sharded_file_pattern(basename, num_shards, suffix):
   """Generate a sharded file pattern.
 
   Args:
@@ -141,13 +141,13 @@ def GenerateShardedFilePattern(basename, num_shards, suffix):  # pylint:disable=
   Returns:
     pattern:
   """
-  width = _ShardWidth(num_shards)
+  width = _shard_width(num_shards)
   specifier = '?' * width
   format_str = '{{0}}-{{1}}-of-{{2:0{0}}}{{3}}'.format(width)
   return format_str.format(basename, specifier, num_shards, suffix)
 
 
-def NormalizeToShardedFilePattern(spec_or_pattern):  # pylint:disable=invalid-name
+def normalize_to_sharded_file_pattern(spec_or_pattern):
   """Take a sharding spec or sharding file pattern and return a sharded pattern.
 
   The input can be a sharding spec(e.g '/some/file@10') or a sharded file
@@ -160,13 +160,13 @@ def NormalizeToShardedFilePattern(spec_or_pattern):  # pylint:disable=invalid-na
     A sharded file pattern.
   """
   try:
-    basename, num_shards, suffix = ParseShardedFileSpec(spec_or_pattern)
+    basename, num_shards, suffix = parse_sharded_file_spec(spec_or_pattern)
   except ShardError:
     return spec_or_pattern
-  return GenerateShardedFilePattern(basename, num_shards, suffix)
+  return generate_sharded_file_pattern(basename, num_shards, suffix)
 
 
-def IsShardedFileSpec(spec):  # pylint:disable=invalid-name
+def is_sharded_file_spec(spec):
   """Returns True if spec is a sharded file specification."""
   m = SHARD_SPEC_PATTERN.match(spec)
   return m is not None
@@ -175,7 +175,7 @@ def IsShardedFileSpec(spec):  # pylint:disable=invalid-name
 # redacted
 def sharded_filename(spec, i):
   """Gets a path appropriate for writing the ith file of a sharded spec."""
-  return GenerateShardedFilenames(spec)[i]
+  return generate_sharded_filenames(spec)[i]
 
 
 # redacted
@@ -213,11 +213,11 @@ def resolve_filespecs(shard, *filespecs):
     raise ValueError('filespecs must have at least one element.')
 
   master = filespecs[0]
-  master_is_sharded = IsShardedFileSpec(master)
+  master_is_sharded = is_sharded_file_spec(master)
 
   master_num_shards = 0
   if master_is_sharded:
-    _, master_num_shards, _ = ParseShardedFileSpec(master)
+    _, master_num_shards, _ = parse_sharded_file_spec(master)
     if shard >= master_num_shards or shard < 0:
       raise ValueError('Invalid shard={} value with master={} sharding'.format(
           shard, master))
@@ -229,7 +229,7 @@ def resolve_filespecs(shard, *filespecs):
     if not filespec:
       return filespec
 
-    is_sharded = IsShardedFileSpec(filespec)
+    is_sharded = is_sharded_file_spec(filespec)
     if master_is_sharded != is_sharded:
       raise ValueError('Master={} and {} have inconsistent sharding'.format(
           master, filespec))
@@ -237,7 +237,7 @@ def resolve_filespecs(shard, *filespecs):
     if not is_sharded:  # Not sharded => filespec is the actual filename.
       return filespec
 
-    _, filespec_num_shards, _ = ParseShardedFileSpec(filespec)
+    _, filespec_num_shards, _ = parse_sharded_file_spec(filespec)
     if filespec_num_shards != master_num_shards:
       raise ValueError('Master={} and {} have inconsistent sharding'.format(
           master, filespec))
@@ -266,7 +266,7 @@ def maybe_generate_sharded_filenames(filespec):
   """
   if not isinstance(filespec, six.string_types):
     raise TypeError('Invalid filespec: %s' % filespec)
-  if IsShardedFileSpec(filespec):
-    return GenerateShardedFilenames(filespec)
+  if is_sharded_file_spec(filespec):
+    return generate_sharded_filenames(filespec)
   else:
     return [filespec]

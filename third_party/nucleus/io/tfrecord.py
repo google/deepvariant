@@ -74,8 +74,8 @@ def read_tfrecords(path, proto=None, max_records=None, options=None):
   if not options:
     options = make_tfrecord_options(path)
 
-  if sharded_file_utils.IsShardedFileSpec(path):
-    paths = sharded_file_utils.GenerateShardedFilenames(path)
+  if sharded_file_utils.is_sharded_file_spec(path):
+    paths = sharded_file_utils.generate_sharded_filenames(path)
   else:
     paths = [path]
 
@@ -120,8 +120,8 @@ def read_shard_sorted_tfrecords(path,
   if options is None:
     options = make_tfrecord_options(path)
 
-  if sharded_file_utils.IsShardedFileSpec(path):
-    paths = sharded_file_utils.GenerateShardedFilenames(path)
+  if sharded_file_utils.is_sharded_file_spec(path):
+    paths = sharded_file_utils.generate_sharded_filenames(path)
   else:
     paths = [path]
 
@@ -156,9 +156,9 @@ def write_tfrecords(protos, output_path, options=None):
   if not options:
     options = make_tfrecord_options(output_path)
 
-  if sharded_file_utils.IsShardedFileSpec(output_path):
+  if sharded_file_utils.is_sharded_file_spec(output_path):
     with contextlib2.ExitStack() as stack:
-      _, n_shards, _ = sharded_file_utils.ParseShardedFileSpec(output_path)
+      _, n_shards, _ = sharded_file_utils.parse_sharded_file_spec(output_path)
       writers = [
           stack.enter_context(
               make_tfrecord_writer(sharded_file_utils.sharded_filename(

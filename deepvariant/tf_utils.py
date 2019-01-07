@@ -150,7 +150,7 @@ def get_one_example_from_examples_path(source, proto=None):
   Returns:
     The first record, or None.
   """
-  files = sharded_file_utils.GlobListShardedFilePatterns(source)
+  files = sharded_file_utils.glob_list_sharded_file_patterns(source)
   if not files:
     raise ValueError(
         'Cannot find matching files with the pattern "{}"'.format(source))
