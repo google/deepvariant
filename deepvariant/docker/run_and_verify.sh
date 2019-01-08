@@ -35,9 +35,10 @@ set -euo pipefail
 
 function init() {
   local project_id="$1"
-  local image_tag="$2"
-  local model="$3"
-  local platform="$4"
+  local golden_set_bucket="$2"
+  local image_tag="$3"
+  local model="$4"
+  local platform="$5"
   local extra_flags=""
   if [[ "${platform}" == "gpu" ]]; then
     extra_flags="--gpu"
@@ -47,9 +48,10 @@ function init() {
 
   readonly DATE=$(date '+%Y-%m-%d-%H-%M-%S')
   readonly PROJECT_ID="${project_id}"
-  readonly BUCKET="gs://${PROJECT_ID}"
+  readonly WORKING_BUCKET="gs://${PROJECT_ID}"
+  readonly GOLDEN_SET_BUCKET="gs://${golden_set_bucket}"
   readonly ZONES="us-west1-b,us-east1-c"
-  readonly OUTDIR="${BUCKET}/deepvariant-cbi-${DATE}"
+  readonly OUTDIR="${WORKING_BUCKET}/deepvariant-cbi-${DATE}"
   readonly OUTFILE="${OUTDIR}/output.vcf"
   readonly OUTFILE_GVCF="${OUTDIR}/output.gvcf"
   readonly MODEL="${model}"
@@ -77,11 +79,11 @@ function init() {
   "
   # Expectations.
   if [[ "${platform}" == "tpu" ]]; then
-    readonly EXPECTED_OUTFILE="${BUCKET}/golden-set/quickstart-testdata-tpu-output.vcf"
-    readonly EXPECTED_OUTFILE_GVCF="${BUCKET}/golden-set/quickstart-testdata-tpu-output.gvcf"
+    readonly EXPECTED_OUTFILE="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-tpu-output.vcf"
+    readonly EXPECTED_OUTFILE_GVCF="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-tpu-output.gvcf"
   else
-    readonly EXPECTED_OUTFILE="${BUCKET}/golden-set/quickstart-testdata-output.vcf"
-    readonly EXPECTED_OUTFILE_GVCF="${BUCKET}/golden-set/quickstart-testdata-output.gvcf"
+    readonly EXPECTED_OUTFILE="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-output.vcf"
+    readonly EXPECTED_OUTFILE_GVCF="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-output.gvcf"
   fi
 }
 
@@ -174,15 +176,16 @@ function verify() {
 }
 
 function main() {
-  if [[ $# -ne 4 ]]; then
-    err "Usage: run_and_verify.sh <project_id> <image-tag> <model> <cpu|gpu|tpu>"
+  if [[ $# -ne 5 ]]; then
+    err "Usage: run_and_verify.sh <project_id> <golden_set_bucket> <image-tag> <model> <cpu|gpu|tpu>"
   fi
   local project_id="$1"
-  local image_tag="$2"
-  local model="$3"
-  local platform="$4"
+  local golden_set_bucket="$2"
+  local image_tag="$3"
+  local model="$4"
+  local platform="$5"
 
-  init "${project_id}" "${image_tag}" "${model}" "${platform}"
+  init "${project_id}" "${golden_set_bucket}" "${image_tag}" "${model}" "${platform}"
   print_useful_info
   run_deepvariant
   verify

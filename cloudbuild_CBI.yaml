@@ -88,6 +88,7 @@ steps:
       - 'bash'
       - '/opt/deepvariant_runner/bin/run_and_verify.sh'
       - '${PROJECT_ID}'
+      - '${_GOLDEN_SET_BUCKET}'
       - '${COMMIT_SHA}'
       - '${_MODEL}'
       - 'cpu'
@@ -99,6 +100,7 @@ steps:
       - 'bash'
       - '/opt/deepvariant_runner/bin/run_and_verify.sh'
       - '${PROJECT_ID}'
+      - '${_GOLDEN_SET_BUCKET}'
       - '${COMMIT_SHA}'
       - '${_MODEL}'
       - 'gpu'
@@ -110,6 +112,7 @@ steps:
       - 'bash'
       - '/opt/deepvariant_runner/bin/run_and_verify.sh'
       - '${PROJECT_ID}'
+      - '${_GOLDEN_SET_BUCKET}'
       - '${COMMIT_SHA}'
       - '${_MODEL}'
       - 'tpu'
@@ -117,6 +120,7 @@ steps:
 
 substitutions:
     _MODEL: gs://deepvariant/models/DeepVariant/0.7.2/DeepVariant-inception_v3-0.7.2+data-wgs_standard
+    _GOLDEN_SET_BUCKET: deepvariant-docker-test_golden-set
 
 timeout: 3h
 images:
