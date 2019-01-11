@@ -344,7 +344,7 @@ class DiagnosticLogger(object):
     if self.enabled:
       if graph:
         dest_file = self._file_for_region(region, self.graph_filename)
-        with tf.gfile.FastGFile(dest_file, 'w') as f:
+        with tf.gfile.GFile(dest_file, 'w') as f:
           f.write(graph.graphviz())
       self._write_csv_line(
           ranges.to_literal(region), graph.kmer_size if graph else 'NA',

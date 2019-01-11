@@ -240,11 +240,11 @@ class PostprocessVariantsTest(parameterized.TestCase):
     postprocess_variants.main(['postprocess_variants.py'])
 
     self.assertEqual(
-        tf.gfile.FastGFile(FLAGS.outfile).readlines(),
-        tf.gfile.FastGFile(testdata.GOLDEN_POSTPROCESS_OUTPUT).readlines())
+        tf.gfile.GFile(FLAGS.outfile).readlines(),
+        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_OUTPUT).readlines())
     self.assertEqual(
-        tf.gfile.FastGFile(FLAGS.gvcf_outfile).readlines(),
-        tf.gfile.FastGFile(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
+        tf.gfile.GFile(FLAGS.gvcf_outfile).readlines(),
+        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
 
   @flagsaver.FlagSaver
   def test_reading_sharded_input_with_empty_shards_does_not_crash(self):

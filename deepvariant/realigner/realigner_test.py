@@ -397,7 +397,7 @@ class RealignerTest(parameterized.TestCase):
       metrics_file = os.path.join(
           dx_dir, self.reads_realigner.diagnostic_logger.metrics_filename)
       self.assertTrue(tf.gfile.Exists(metrics_file))
-      with tf.gfile.FastGFile(metrics_file) as fin:
+      with tf.gfile.GFile(metrics_file) as fin:
         rows = list(csv.DictReader(fin))
         self.assertEqual(len(rows), 1)
         self.assertEqual(
