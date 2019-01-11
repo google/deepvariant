@@ -343,6 +343,10 @@ class GkeCluster(object):
     ]
     # Retry is done by retry decorator.
     status_str = self._kubectl_call(args, retries=0).strip()
+    # When pod fails due to a failure in pulling docker image, we get misleading
+    # pending status. See https://github.com/kubernetes/kubernetes/issues/66828
+    if status_str == 'Pending' and self._pulling_images_failed(pod_name):
+      return PodStatus.FAILED
     return _POD_STATUS_MAP.get(status_str, PodStatus.UNKNOWN)
 
   def delete_pod(self, pod_name, wait=True):
@@ -361,6 +365,21 @@ class GkeCluster(object):
       self._kubectl_call(args, retry_delay_sec=0)
     else:
       self._kubectl_call(args)
+
+  def _pulling_images_failed(self, pod_name):
+    """Returns true if there was a failure in pulling docker images.
+
+    Args:
+      pod_name: (str) name of pod.
+    """
+    args = [
+        'kubectl', 'get', 'pods', pod_name, '-o',
+        'go-template="{{range .status.containerStatuses}}{{if not '
+        '.ready}}{{.state.waiting.reason}}{{end}}{{end}}"'
+    ]
+    containers_status = self._kubectl_call(args, retries=0)
+    pull_images_err = ['ImagePullBackOff', 'ErrImagePull']
+    return any(err in containers_status for err in pull_images_err)
 
   def _pod_exists(self, pod_name):
     """Returns true iff the pod exists (not deleted)."""

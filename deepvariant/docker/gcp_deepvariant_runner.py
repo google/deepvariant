@@ -388,10 +388,15 @@ def _deploy_call_variants_pod(pod_name, cluster, pipeline_args):
                     pipeline_args.preemptible else 'cloud-tpus.google.com/v2'),
       BATCH_SIZE=pipeline_args.call_variants_batch_size)
 
+  if pipeline_args.preemptible:
+    num_tries = pipeline_args.max_preemptible_tries
+  else:
+    num_tries = pipeline_args.max_non_preemptible_tries
+
   cluster.deploy_pod(
       pod_config=pod_config,
       pod_name=pod_name,
-      retries=pipeline_args.max_non_preemptible_tries - 1,
+      retries=num_tries - 1,
       wait=True)
 
 

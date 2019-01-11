@@ -253,6 +253,33 @@ class GkeClusterTest(unittest.TestCase):
         retries=0,
         retry_delay_sec=1)
 
+  # First two side effects are for creating cluster and getting its status, and
+  # needed but irrelevant to this test.
+  @mock.patch(
+      'process_util.run_command',
+      side_effect=('foo-cluster', 'RUNNING', 'Pending', 'ImagePullBackOff'))
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_get_pod_status_pulling_image_failed(self, unused_mock_cluster_exists,
+                                               mock_call):
+    self.assertEqual(
+        gke_cluster.GkeCluster(
+            'foo-cluster',
+            cluster_zone='foo-zone').get_pod_status(pod_name='foo-pod'),
+        gke_cluster.PodStatus.FAILED)
+    mock_call.assert_any_call(
+        ['kubectl', 'get', 'pods', 'foo-pod', '-o', 'jsonpath={.status.phase}'],
+        std_input=None,
+        retries=0,
+        retry_delay_sec=1)
+    mock_call.assert_any_call([
+        'kubectl', 'get', 'pods', 'foo-pod', '-o',
+        'go-template="{{range .status.containerStatuses}}{{if not .ready}}'
+        '{{.state.waiting.reason}}{{end}}{{end}}"'
+    ],
+                              std_input=None,
+                              retries=0,
+                              retry_delay_sec=1)
+
   @mock.patch('process_util.run_command', return_value='foo-status')
   @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
   def test_get_pod_status_unknown(self, unused_mock_cluster_exists, mock_call):
