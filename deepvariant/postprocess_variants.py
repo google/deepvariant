@@ -36,6 +36,7 @@ import collections
 import copy
 import itertools
 import tempfile
+import time
 
 
 from absl import flags
@@ -871,8 +872,14 @@ def main(argv=()):
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs, sample_names=[sample_name])
     with tempfile.NamedTemporaryFile() as temp:
+      start_time = time.time()
       postprocess_variants_lib.process_single_sites_tfrecords(
           contigs, paths, temp.name)
+      logging.info('CVO sorting took %s minutes',
+                   (time.time() - start_time) / 60)
+
+      logging.info('Transforming call_variants_output to variants.')
+      start_time = time.time()
       independent_variants = _transform_call_variants_output_to_variants(
           input_sorted_tfrecord_path=temp.name,
           qual_filter=FLAGS.qual_filter,
@@ -880,13 +887,18 @@ def main(argv=()):
           sample_name=sample_name)
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
+      logging.info('Writing variants to VCF.')
       write_variants_to_vcf(
           variant_generator=variant_generator,
           output_vcf_path=FLAGS.outfile,
           header=header)
+      logging.info('VCF creation took %s minutes',
+                   (time.time() - start_time) / 60)
 
     # Also write out the gVCF file if it was provided.
     if FLAGS.nonvariant_site_tfrecord_path:
+      logging.info('Creating gVCF output.')
+      start_time = time.time()
       nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
           FLAGS.nonvariant_site_tfrecord_path,
           key=_get_contig_based_variant_sort_keyfn(contigs),
@@ -902,6 +914,8 @@ def main(argv=()):
             variant_generator=merged_variants,
             output_vcf_path=FLAGS.gvcf_outfile,
             header=header)
+      logging.info('gVCF creation took %s minutes',
+                   (time.time() - start_time) / 60)
 
 
 if __name__ == '__main__':
