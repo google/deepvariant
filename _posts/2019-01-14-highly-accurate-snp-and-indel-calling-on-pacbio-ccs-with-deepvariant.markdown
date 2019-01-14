@@ -7,7 +7,7 @@ date:   2019-01-14
 Authors:
 Alexey Kolesnikov,
 [Pi-Chuan Chang](https://ai.google/research/people/author39216),
-Jason Chin,
+[Jason Chin](https://scholar.google.com/citations?user=v5cVDn8AAAAJ&hl=en),
 [Andrew Carroll](https://www.researchgate.net/profile/Andrew_Carroll6)
 
 ## Abstract
