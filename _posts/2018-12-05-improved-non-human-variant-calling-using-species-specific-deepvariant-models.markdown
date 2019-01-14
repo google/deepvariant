@@ -1,8 +1,7 @@
 ---
 layout: post
 title:  "Improved non-human variant calling using species-specific DeepVariant models"
-date:   2018-12-05 17:00:00 -0800
-categories: jekyll update
+date:   2018-12-05
 ---
 
 Authors:
@@ -17,7 +16,7 @@ In this work, we investigate variant calling across a pedigree of mosquito
 (*Anopheles gambiae*) genomes. Using rates of Mendelian violation, we assess
 pipelines developed to call variation in humans when applied to mosquito
 samples. We demonstrate the ability to rapidly retrain DeepVariant without
-the need for a gold standard setby using sites that are consistent versus inconsistent with Mendelian inheritance. We show that this substantially improves
+the need for a gold standard set by using sites that are consistent versus inconsistent with Mendelian inheritance. We show that this substantially improves
 calling accuracy by tuning DeepVariant for the new genome context. Finally, we
 generate a model for accurate variant calling on low-coverage mosquito genomes
 and a corresponding variant callset.
