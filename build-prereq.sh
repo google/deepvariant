@@ -51,42 +51,6 @@ note_build_stage "Install development packages"
 sudo -H apt-get -y install pkg-config zip g++ zlib1g-dev unzip curl git
 
 ################################################################################
-# Java
-################################################################################
-
-note_build_stage "Install Java and friends"
-
-# Java is available on Kokoro, so we add this cutout.
-if ! java -version 2>&1 | fgrep "1.8"; then
-  echo "No Java 8, will install."
-  sudo -H apt-get install -y software-properties-common debconf-utils
-  # Debian needs authentication.
-  # (http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html)
-  [[ $(lsb_release -d | grep 'Debian') ]] && \
-    sudo -H apt-get install -y gnupg dirmngr && \
-    sudo -H apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
-  # Ubuntu 18.04 needs authentication.
-  [[ $(lsb_release -d | grep 'Ubuntu 18.04') ]] && \
-    echo 'yes' && \
-    sudo -H apt-get install -y gnupg dirmngr && \
-    sudo -H apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C2518248EEA14886
-  echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | sudo -H tee /etc/apt/sources.list.d/webupd8team-java.list
-  echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | sudo -H tee -a /etc/apt/sources.list.d/webupd8team-java.list
-  sudo -H apt-get -qq -y update
-  echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | sudo debconf-set-selections
-  # Installing with "--allow-unauthenticated" because otherwise we get:
-  #  WARNING: The following packages cannot be authenticated!
-  #  oracle-java8-installer oracle-java8-set-default
-  #  E: There were unauthenticated packages and -y was used without --allow-unauthenticated
-  # This is not ideal. Should fix later.
-  sudo -H apt-get install -y oracle-java8-installer --allow-unauthenticated
-  sudo -H apt-get -y install ca-certificates-java
-  sudo update-ca-certificates -f
-else
-  echo "Java 8 found, will not reinstall."
-fi
-
-################################################################################
 # bazel
 ################################################################################
 
