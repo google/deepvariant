@@ -40,9 +40,9 @@ import collections
 import csv
 from absl import app
 from absl import flags
+import joblib
 import pandas as pd
 import six.moves
-from sklearn.externals import joblib
 import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2

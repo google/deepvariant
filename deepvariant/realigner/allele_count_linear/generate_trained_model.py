@@ -36,8 +36,8 @@ import collections
 import random
 from absl import app
 from absl import flags
+import joblib
 import pandas as pd
-from sklearn.externals import joblib
 import sklearn.linear_model
 import sklearn.metrics
 from sklearn.utils import shuffle

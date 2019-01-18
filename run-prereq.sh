@@ -97,7 +97,8 @@ pip install --user 'scipy==1.0'
 pip install --user 'oauth2client>=4.0.0'
 pip install --user 'crcmod>=1.7'
 pip install --user six
-pip install --user sklearn
+pip install --user 'scikit-learn==0.20.2'  # Compatible with Python 2.7
+pip install --user joblib
 pip install --user pandas
 pip install --user psutil
 pip install --user --upgrade google-api-python-client
