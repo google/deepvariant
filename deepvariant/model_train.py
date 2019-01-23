@@ -100,7 +100,7 @@ flags.DEFINE_integer('number_of_steps', 8000000,
 flags.DEFINE_boolean('use_early_stopping', False, 'Use early stopping hook.')
 
 flags.DEFINE_string(
-    'early_stopping_directory', 'eval_on_train',
+    'early_stopping_directory', 'eval_on_tune',
     'Directory containing event files for early stopping hook to monitor.')
 
 flags.DEFINE_string(
@@ -108,11 +108,11 @@ flags.DEFINE_string(
     'The metric to monitor for early stopping (eg. loss, accuracy, etc.)')
 
 flags.DEFINE_float(
-    'early_stopping_plateau_delta', 1e-15,
+    'early_stopping_plateau_delta', 1e-7,
     'The amount of change of a metric over num_plateau_steps that indicates '
     'the metric has stopped improving.')
 
-flags.DEFINE_integer('early_stopping_num_plateau_steps', 100000,
+flags.DEFINE_integer('early_stopping_num_plateau_steps', 1000000,
                      'Number of steps the metric needs to be plateaued for.')
 
 flags.DEFINE_enum(
@@ -120,7 +120,7 @@ flags.DEFINE_enum(
     'Whether to check if the metric has increased by delta or decreased by '
     'delta.')
 
-flags.DEFINE_integer('early_stopping_every_n_steps', 1000,
+flags.DEFINE_integer('early_stopping_every_n_steps', 10,
                      'Run early stopping hook every n steps.')
 
 flags.DEFINE_integer(
