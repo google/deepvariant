@@ -48,6 +48,7 @@ import gcp_deepvariant_runner
 import gke_cluster
 
 import mock
+from google.cloud import storage
 
 
 # redacted
@@ -92,6 +93,7 @@ class AnyStringWith(str):
 class DeepvariantRunnerTest(unittest.TestCase):
 
   def setUp(self):
+    super(DeepvariantRunnerTest, self).setUp()
     self._argv = [
         '--project',
         'project',
@@ -114,10 +116,14 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
   @mock.patch('gcp_deepvariant_runner._run_job')
   @mock.patch.object(multiprocessing, 'Pool')
-  def testRunPipeline(self, mock_pool, mock_run_job):
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunPipeline(self, mock_can_write_to_bucket, mock_obj_exist, mock_pool,
+                      mock_run_job):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
-
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend(
         ['--make_examples_workers', '1', '--call_variants_workers', '1'])
     gcp_deepvariant_runner.run(self._argv)
@@ -150,10 +156,14 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
   @mock.patch('gcp_deepvariant_runner._run_job')
   @mock.patch.object(multiprocessing, 'Pool')
-  def testRunPipeline_WithGVCFOutFile(self, mock_pool, mock_run_job):
-
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunPipeline_WithGVCFOutFile(self, mock_can_write_to_bucket,
+                                      mock_obj_exist, mock_pool, mock_run_job):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend([
         '--make_examples_workers',
         '1',
@@ -194,9 +204,14 @@ class DeepvariantRunnerTest(unittest.TestCase):
         'gs://bucket/staging/logs/postprocess_variants')
 
   @mock.patch.object(multiprocessing, 'Pool')
-  def testRunMakeExamples(self, mock_pool):
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunMakeExamples(self, mock_can_write_to_bucket, mock_obj_exist,
+                          mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend([
         '--jobs_to_run',
         'make_examples',
@@ -245,9 +260,14 @@ class DeepvariantRunnerTest(unittest.TestCase):
     )
 
   @mock.patch.object(multiprocessing, 'Pool')
-  def testRunMakeExamples_WithGcsfuse(self, mock_pool):
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunMakeExamples_WithGcsfuse(self, mock_can_write_to_bucket,
+                                      mock_obj_exist, mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend([
         '--jobs_to_run',
         'make_examples',
@@ -289,9 +309,14 @@ class DeepvariantRunnerTest(unittest.TestCase):
     )
 
   @mock.patch.object(multiprocessing, 'Pool')
-  def testRunCallVariants(self, mock_pool):
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunCallVariants(self, mock_can_write_to_bucket, mock_obj_exist,
+                          mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend([
         '--make_examples_workers',
         '3',
@@ -330,9 +355,14 @@ class DeepvariantRunnerTest(unittest.TestCase):
     )
 
   @mock.patch.object(multiprocessing, 'Pool')
-  def testRunCallVariants_GPU(self, mock_pool):
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunCallVariants_GPU(self, mock_can_write_to_bucket, mock_obj_exist,
+                              mock_pool):
     mock_apply_async = mock_pool.return_value.apply_async
     mock_apply_async.return_value = None
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend([
         '--make_examples_workers',
         '3',
@@ -375,7 +405,12 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
   @mock.patch.object(gke_cluster.GkeCluster, '__init__', return_value=None)
   @mock.patch.object(gke_cluster.GkeCluster, 'deploy_pod')
-  def testRunCallVariants_TPU(self, mock_deploy_pod, mock_init):
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunCallVariants_TPU(self, mock_can_write_to_bucket, mock_obj_exist,
+                              mock_deploy_pod, mock_init):
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend([
         '--jobs_to_run',
         'call_variants',
@@ -400,7 +435,12 @@ class DeepvariantRunnerTest(unittest.TestCase):
         wait=True)
 
   @mock.patch('gcp_deepvariant_runner._run_job')
-  def testRunPostProcessVariants(self, mock_run_job):
+  @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
+  @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
+  def testRunPostProcessVariants(self, mock_can_write_to_bucket, mock_obj_exist,
+                                 mock_run_job):
+    mock_obj_exist.return_value = True
+    mock_can_write_to_bucket.return_value = True
     self._argv.extend([
         '--jobs_to_run',
         'postprocess_variants',
@@ -420,6 +460,41 @@ class DeepvariantRunnerTest(unittest.TestCase):
                   'CALL_VARIANTS_SHARDS=1', 'INPUT_REF_FAI=gs://bucket/ref.fai',
                   'OUTFILE=gs://bucket/output.vcf'),
         'gs://bucket/staging/logs/postprocess_variants')
+
+  @mock.patch.object(storage.bucket.Bucket, 'test_iam_permissions')
+  def testRunFailsMissingInput(self, mock_bucket_iam):
+    mock_bucket_iam.return_value = (
+        gcp_deepvariant_runner._ROLE_STORAGE_OBJ_CREATOR)
+    self._argv.extend([
+        '--jobs_to_run',
+        'postprocess_variants',
+        '--shards',
+        '15',
+        '--gpu',  # GPU should not have any effect.
+        '--gvcf_outfile',
+        'gvcf-folder-path',
+        '--docker_image_gpu',
+        'gcr.io/dockerimage_gpu',
+    ])
+    with self.assertRaises(ValueError):
+      gcp_deepvariant_runner.run(self._argv)
+
+  @mock.patch.object(storage.blob.Blob, 'exists')
+  def testRunFailsCannotWriteOutputBucket(self, mock_blob_exists):
+    mock_blob_exists.return_value = True
+    self._argv.extend([
+        '--jobs_to_run',
+        'postprocess_variants',
+        '--shards',
+        '15',
+        '--gpu',  # GPU should not have any effect.
+        '--gvcf_outfile',
+        'gvcf-folder-path',
+        '--docker_image_gpu',
+        'gcr.io/dockerimage_gpu',
+    ])
+    with self.assertRaises(ValueError):
+      gcp_deepvariant_runner.run(self._argv)
 
 
 if __name__ == '__main__':

@@ -101,6 +101,7 @@ pip install --user 'scikit-learn==0.20.2'  # Compatible with Python 2.7
 pip install --user joblib
 pip install --user pandas
 pip install --user psutil
+pip install --user --upgrade google-cloud-storage
 pip install --user --upgrade google-api-python-client
 pip install --user 'tensor2tensor>=1.9.0'
 

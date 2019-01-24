@@ -60,12 +60,15 @@ import urlparse
 import uuid
 
 import gke_cluster
+from google.api_core import exceptions as google_exceptions
+from google.cloud import storage
 
 
 _MAKE_EXAMPLES_JOB_NAME = 'make_examples'
 _CALL_VARIANTS_JOB_NAME = 'call_variants'
 _POSTPROCESS_VARIANTS_JOB_NAME = 'postprocess_variants'
 _DEFAULT_BOOT_DISK_SIZE_GB = '50'
+_ROLE_STORAGE_OBJ_CREATOR = ['storage.objects.create']
 
 _MAKE_EXAMPLES_COMMAND_NO_GCSFUSE = r"""
 seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
@@ -227,12 +230,48 @@ def _run_job(run_args, log_path):
 
 
 def _is_valid_gcs_path(gcs_path):
-  """Returns true iff the given path is a valid GCS path.
+  """Returns true if the given path is a valid GCS path.
 
   Args:
     gcs_path: (str) a path to directory or an obj on GCS.
   """
   return urlparse.urlparse(gcs_path).scheme == 'gs'
+
+
+def _gcs_object_exist(gcs_obj_path):
+  """Returns true if the given path is a valid object on GCS.
+
+  Args:
+    gcs_obj_path: (str) a path to an obj on GCS.
+  """
+  try:
+    storage_client = storage.Client()
+    bucket_name = _get_gcs_bucket(gcs_obj_path)
+    obj_name = _get_gcs_relative_path(gcs_obj_path)
+    bucket = storage_client.bucket(bucket_name)
+    obj = bucket.blob(obj_name)
+    return obj.exists()
+  except google_exceptions.Forbidden as e:
+    logging.error('Missing GCS object: %s', str(e))
+    return False
+
+
+def _can_write_to_bucket(bucket_name):
+  """Returns True if caller is authorized to write into the bucket.
+
+  Args:
+    bucket_name: (str) name of the bucket
+  """
+  if not bucket_name:
+    return False
+  try:
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    return (bucket.test_iam_permissions(_ROLE_STORAGE_OBJ_CREATOR) ==
+            _ROLE_STORAGE_OBJ_CREATOR)
+  except google_exceptions.Forbidden as e:
+    logging.error('Write access denied: %s', str(e))
+    return False
 
 
 def _get_gcs_bucket(gcs_path):
@@ -606,6 +645,23 @@ def _validate_and_complete_args(pipeline_args):
     pipeline_args.ref_gzi = pipeline_args.ref + '.gzi'
   if not pipeline_args.bai:
     pipeline_args.bai = pipeline_args.bam + '.bai'
+
+  # Ensuring all input files exist...
+  if not _gcs_object_exist(pipeline_args.ref):
+    raise ValueError('Given reference file via --ref does not exist')
+  if not _gcs_object_exist(pipeline_args.ref_fai):
+    raise ValueError('Given FAI index file via --ref_fai does not exist')
+  if (pipeline_args.ref_gzi and not _gcs_object_exist(pipeline_args.ref_gzi)):
+    raise ValueError('Given GZI index file via --ref_gzi does not exist')
+  if not _gcs_object_exist(pipeline_args.bam):
+    raise ValueError('Given BAM file via --bam does not exist')
+  if not _gcs_object_exist(pipeline_args.bai):
+    raise ValueError('Given BAM index file via --bai does not exist')
+  # ...and we can write to output buckets.
+  if not _can_write_to_bucket(_get_gcs_bucket(pipeline_args.staging)):
+    raise ValueError('Cannot write to staging bucket, change --staging value')
+  if not _can_write_to_bucket(_get_gcs_bucket(pipeline_args.outfile)):
+    raise ValueError('Cannot write to output bucket, change --outfile value')
 
 
 def run(argv=None):
