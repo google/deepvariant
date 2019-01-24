@@ -405,12 +405,14 @@ class DeepvariantRunnerTest(unittest.TestCase):
 
   @mock.patch.object(gke_cluster.GkeCluster, '__init__', return_value=None)
   @mock.patch.object(gke_cluster.GkeCluster, 'deploy_pod')
+  @mock.patch.object(gke_cluster.GkeCluster, '_cluster_exists')
   @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
   @mock.patch('gcp_deepvariant_runner._can_write_to_bucket')
   def testRunCallVariants_TPU(self, mock_can_write_to_bucket, mock_obj_exist,
-                              mock_deploy_pod, mock_init):
+                              mock_cluster_exists, mock_deploy_pod, mock_init):
     mock_obj_exist.return_value = True
     mock_can_write_to_bucket.return_value = True
+    mock_cluster_exists.return_value = True
     self._argv.extend([
         '--jobs_to_run',
         'call_variants',
@@ -427,12 +429,35 @@ class DeepvariantRunnerTest(unittest.TestCase):
         'gcr.io/dockerimage',
     ])
     gcp_deepvariant_runner.run(self._argv)
-    mock_init.assert_called_once_with('foo-cluster', None, 'us-central1-c')
+    mock_init.assert_has_calls([
+        mock.call(
+            'foo-cluster', None, 'us-central1-c', create_if_not_exist=False),
+        mock.call('foo-cluster', None, 'us-central1-c')
+    ])
     mock_deploy_pod.assert_called_once_with(
         pod_config=mock.ANY,
         pod_name=AnyStringWith('deepvariant-'),
         retries=1,
         wait=True)
+
+  def testRunFailCallVariants_TPU(self):
+    self._argv.extend([
+        '--jobs_to_run',
+        'call_variants',
+        '--call_variants_workers',
+        '1',
+        '--shards',
+        '15',
+        '--tpu',
+        '--gke_cluster_name',
+        'foo-cluster',
+        '--gke_cluster_zone',
+        'us-central1-c',
+        '--docker_image',
+        'gcr.io/dockerimage',
+    ])
+    with self.assertRaises(ValueError):
+      gcp_deepvariant_runner.run(self._argv)
 
   @mock.patch('gcp_deepvariant_runner._run_job')
   @mock.patch('gcp_deepvariant_runner._gcs_object_exist')

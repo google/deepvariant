@@ -111,6 +111,7 @@ class GkeCluster(object):
                cluster_region=None,
                cluster_zone=None,
                alpha_cluster=False,
+               create_if_not_exist=True,
                extra_create_args=None):
     """Helper for provisioning GKE cluster.
 
@@ -122,12 +123,14 @@ class GkeCluster(object):
       cluster_region: (str) GCP region.
       cluster_zone: (str) GCP zone.
       alpha_cluster: (bool) whether the cluster is an alpha cluster.
+      create_if_not_exist: (bool) whether to create the cluster if not exists.
       extra_create_args: (list) list of additional args (type str) to be used
           when creating a new cluster. E.g. --num-nodes=1, --enable-tpu, etc.
 
     Raises:
       ValueError: if both or neither of cluster region and zone is provided.
           Also if zone or region is specified in extra_creare_args.
+          Also if cluster_name does not exist and create_if_not_exist is False.
     """
     if not bool(cluster_region) ^ bool(cluster_zone):
       raise ValueError('Either zone or region must be specified for a cluster.')
@@ -145,8 +148,12 @@ class GkeCluster(object):
 
     if self._cluster_exists():
       self._reuse_cluster()
-    else:
+    elif create_if_not_exist:
       self._create_cluster()
+    else:
+      raise ValueError(
+          'Cannot create GkeCluster object. GKE cluster %s does not exist, '
+          'cannot create GkeCluster object.' % self._cluster_name)
 
   def _create_cluster(self):
     """Creates a kubernetes cluster.

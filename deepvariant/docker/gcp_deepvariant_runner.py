@@ -636,6 +636,18 @@ def _validate_and_complete_args(pipeline_args):
     raise ValueError('Exactly one of --gke_cluster_region or '
                      '--gke_cluster_zone must be specified if --tpu is set.')
 
+  # Verify the existing gke cluster is up and running.
+  if pipeline_args.gke_cluster_name:
+    try:
+      _ = gke_cluster.GkeCluster(
+          pipeline_args.gke_cluster_name,
+          pipeline_args.gke_cluster_region,
+          pipeline_args.gke_cluster_zone,
+          create_if_not_exist=False)
+    except ValueError:
+      raise ValueError('Given --gke_cluster_name does not exist: %s' %
+                       pipeline_args.gke_cluster_name)
+
   # Automatically generate default values for missing args (if any).
   if not pipeline_args.logging:
     pipeline_args.logging = os.path.join(pipeline_args.staging, 'logs')
