@@ -51,6 +51,9 @@ _KUBECTL_RETRIES = 1
 # Delay (in seconds) between gcloud CLI retries.
 _KUBECTL_RETRY_DELAY_SEC = 1
 
+# Time we allow a pod stays in initial pending (scheduling) state.
+_PENDING_STATE_TIMEOUT_SEC = 20 * 60
+
 
 @enum.unique
 class ClusterStatus(enum.Enum):
@@ -287,7 +290,7 @@ class GkeCluster(object):
         waits on completion regardless.
 
     Raises:
-      RuntimeError: if pod fails after all retries.
+      RuntimeError: if pod fails or we cannot get its status.
     """
     def get_args(is_first_try=False):
       """Returns kubectl CLI args.
@@ -303,26 +306,50 @@ class GkeCluster(object):
 
     logging.info('Deploying pod %s to GKE cluster %s.', pod_name,
                  self._cluster_name)
-    status = None
     for i in range(retries + 1):
       is_first_try = (i == 0)
       self._kubectl_call(get_args(is_first_try), std_input=pod_config)
       if not wait and not retries:
         return
-      status = self.get_pod_status(pod_name)
-      while status != PodStatus.SUCCEEDED and status != PodStatus.FAILED:
-        time.sleep(_KUBECTL_RETRY_DELAY_SEC)
-        status = self.get_pod_status(pod_name)
-      if status == PodStatus.SUCCEEDED:
+      curr_pod_status = self._wait_on_state(pod_name, PodStatus.PENDING,
+                                            _PENDING_STATE_TIMEOUT_SEC)
+      if curr_pod_status == PodStatus.RUNNING:
+        curr_pod_status = self._wait_on_state(pod_name, PodStatus.RUNNING)
+      if curr_pod_status == PodStatus.SUCCEEDED:
         self.delete_pod(pod_name, wait=True)
         return
-      if i < retries:
-        logging.warning('Retrying deploying pod (attempt %d/%d): ', i + 1,
-                        retries)
+      elif i < retries:
+        logging.warning(
+            'Pod did not suceed. Pod status is %s. Retrying '
+            'deploying pod (attempt %d/%d)', curr_pod_status, i + 1, retries)
 
     self.delete_pod(pod_name, wait=True)
     raise RuntimeError(
         'Pod %s failed after %d attempts.' % (pod_name, retries + 1))
+
+  def _wait_on_state(self, pod_name, state_to_wait_on, timeout=None):
+    """Waits as long as the pod is in the given state or timeout reaches.
+
+    Args:
+      pod_name: (str) name of the pod.
+      state_to_wait_on: (PodStatus) pod's state to wait on.
+      timeout: (int) wait at most this many seconds. Both None and 0 mean wait
+        forever.
+
+    Returns:
+      Latest pod's status.
+
+    Raises:
+      RuntimeError if the pod becomes unreachable.
+    """
+    start_time = time.time()
+    state = self.get_pod_status(pod_name)
+    while state == state_to_wait_on:
+      time.sleep(_KUBECTL_RETRY_DELAY_SEC)
+      state = self.get_pod_status(pod_name)
+      if timeout and (time.time() - start_time) > timeout:
+        break
+    return state
 
   # Retry with a delay between 1 to 10 seconds for at most 100 seconds.
   @retrying.retry(
@@ -335,8 +362,6 @@ class GkeCluster(object):
 
     Args:
       pod_name: (str) name of pod.
-
-    Returns:
     """
     args = [
         'kubectl', 'get', 'pods', pod_name, '-o', 'jsonpath={.status.phase}'
@@ -404,6 +429,9 @@ class GkeCluster(object):
 
     Returns:
       stdout of process call.
+
+    Raises:
+      RuntimeError if process call fails after all retries.
     """
     return process_util.run_command(
         args,

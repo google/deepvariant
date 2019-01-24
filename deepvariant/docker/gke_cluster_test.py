@@ -215,6 +215,22 @@ class GkeClusterTest(unittest.TestCase):
               pod_config='foo-config', pod_name='foo-pod')
 
   @mock.patch('time.sleep')
+  @mock.patch(
+      'time.time', side_effect=(0, gke_cluster._PENDING_STATE_TIMEOUT_SEC + 1))
+  @mock.patch('process_util.run_command')
+  @mock.patch(
+      'gke_cluster.GkeCluster.get_pod_status',
+      return_value=gke_cluster.PodStatus.PENDING)
+  @mock.patch('gke_cluster.GkeCluster._cluster_exists', return_value=True)
+  def test_deploy_pod_timeout_in_pending_state(
+      self, unused_mock_cluster_exists, unused_mock_get_pod_status,
+      unused_mock_call, unused_mock_time, unused_mock_sleep):
+    with self.assertRaises(RuntimeError):
+      gke_cluster.GkeCluster(
+          'foo-cluster', cluster_zone='foo-zone').deploy_pod(
+              pod_config='foo-config', pod_name='foo-pod')
+
+  @mock.patch('time.sleep')
   @mock.patch('process_util.run_command')
   @mock.patch('gke_cluster.GkeCluster.get_pod_status')
   @mock.patch('gke_cluster.GkeCluster.delete_pod')
