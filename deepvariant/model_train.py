@@ -260,6 +260,7 @@ def parse_and_run():
   # on various flags.
   if not tf_config:
     device_fn = tf.train.replica_device_setter(FLAGS.ps_tasks)
+    # pylint: disable=g-long-ternary
     master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
                                      FLAGS.tpu_zone,
                                      FLAGS.gcp_project) if FLAGS.use_tpu else ''
