@@ -15,7 +15,7 @@ COPY --from=0 /go/ $GOPATH
 ENV PATH $PATH:$GOPATH/bin
 
 RUN apk add --update python python-dev py-pip build-base && \
-    pip install enum34 retrying google-api-core && \
+    pip install enum34 retrying google-api-core google-cloud-storage && \
     mkdir -p /opt/deepvariant_runner/bin && \
     mkdir -p /opt/deepvariant_runner/src
 
