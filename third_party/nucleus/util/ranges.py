@@ -122,7 +122,7 @@ class RangeSet(object):
 
     # Merge overlapping / adjacent intervals in each tree.
     for tree in six.itervalues(self._by_chr):
-      tree.merge_overlaps()
+      tree.merge_overlaps(strict=False)
 
   def __iter__(self):
     """Iterate over the ranges in this RangeSet.
@@ -222,7 +222,7 @@ class RangeSet(object):
       return (make_range(refname, max(interval1.begin, overlapping.begin),
                          min(interval1.end, overlapping.end))
               for interval1 in tree1
-              for overlapping in tree2[interval1])
+              for overlapping in tree2.overlap(interval1))
 
     # Iteratively intersect each of our *other RangeSets with this RangeSet.
     # Sort by size so we do the smallest number of element merge first.
@@ -356,7 +356,7 @@ class RangeSet(object):
     if start == end:
       return chr_ranges.overlaps(start)
     else:
-      overlap_set = chr_ranges.search(begin=start, end=end)
+      overlap_set = chr_ranges.overlap(begin=start, end=end)
       return any(ov.begin <= start and ov.end >= end for ov in overlap_set)
 
 

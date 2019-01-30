@@ -79,11 +79,10 @@ note_build_stage "Install python packages"
 
 pip install --user contextlib2
 pip install --user enum34
-# sortedcontainers>=2.0.0 breaks intervaltree=2.1.0
-# Remove this when https://github.com/chaimleib/intervaltree/pull/69
-# is resolved.  Tracked internally at b/80085543.
+# redacted
+# work with intervaltree>=3.0.2.
 pip install --user 'sortedcontainers==1.5.3'
-pip install --user 'intervaltree==2.1.0'
+pip install --user 'intervaltree==3.0.2'
 pip install --user 'mock>=2.0.0'
 
 # Note that TensorFlow on Ubuntu has a "double free" bug when running with GPUs.
