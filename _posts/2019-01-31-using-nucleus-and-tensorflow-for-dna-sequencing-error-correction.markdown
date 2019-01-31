@@ -64,7 +64,7 @@ input. Neural networks have been successfully applied to various problems
 including
 [image classification](https://ai.googleblog.com/2016/03/train-your-own-image-classifier-with.html)
 and
-[natural language translation](https://ai.googleblog.com/2016/09/a-neural-network-for-mach ine.html).
+[natural language translation](https://ai.googleblog.com/2016/09/a-neural-network-for-machine.html).
 More recently, they have also been used for problems in genomics, such as
 [protein structure prediction](https://deepmind.com/blog/alphafold/) and
 [variant calling](https://ai.googleblog.com/2017/12/deepvariant-highly-accurate-genomes.html).
