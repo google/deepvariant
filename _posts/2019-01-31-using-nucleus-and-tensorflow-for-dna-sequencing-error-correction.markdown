@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Using Nucleus and TensorFlow for DNA Sequencing Error Correction"
-date:   2019-01-15
+date:   2019-01-31
 ---
 
 Authors: [Gunjan Baid](https://twitter.com/gunjan_baid),
