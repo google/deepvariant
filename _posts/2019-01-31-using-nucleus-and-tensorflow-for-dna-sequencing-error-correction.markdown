@@ -86,7 +86,7 @@ objects. Nucleus allows us to:
 *   Query a FASTA file for the reference sequence starting at a given position
 
 We also use Nucleus to write data out to
-[TFRecords](https://www.tensorflow.org/tutorials/load_data/tf-records), a binary
+[TFRecords](https://www.tensorflow.org/tutorials/load_data/tf_records), a binary
 file format that consists of protocol buffer messages and can be easily read by
 TensorFlow. After reading in the TFRecords, we use the
 [Estimator API](https://www.tensorflow.org/guide/estimators) to train and
