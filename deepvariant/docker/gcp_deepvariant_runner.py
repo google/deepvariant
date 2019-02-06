@@ -118,6 +118,10 @@ _POSTPROCESS_VARIANTS_COMMAND = r"""
 
 _NOW_STR = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 
+# This is used by the cancel script and must not be changed unless it is updated
+# there as well.
+_DEEPVARIANT_LABEL_KEY = 'deepvariant-operation-label'
+
 # Selects the latest 1.10 release.
 _DEFAULT_GKE_CLUSTER_VERSION = '1.10'
 _POD_CONFIG_TEMPLATE = r"""
@@ -201,6 +205,10 @@ def _get_base_job_args(pipeline_args):
     job_args += ['--network', pipeline_args.network]
   if pipeline_args.subnetwork:
     job_args += ['--subnetwork', pipeline_args.subnetwork]
+  if pipeline_args.operation_label:
+    job_args += [
+        '--labels', _DEEPVARIANT_LABEL_KEY + '=' + pipeline_args.operation_label
+    ]
 
   return job_args
 
@@ -951,6 +959,12 @@ def run(argv=None):
       default='',
       help=('Prefix to add to the name of the jobs. Useful for distinguishing '
             'particular pipeline runs from others (e.g. in billing reports).'))
+  parser.add_argument(
+      '--operation_label',
+      default='',
+      help=(
+          'Optional label to add to Pipelines API operations. Useful for '
+          'finding all operations associated to a particular DeepVariant run.'))
   parser.add_argument(
       '--jobs_to_run',
       nargs='+',
