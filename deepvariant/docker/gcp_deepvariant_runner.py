@@ -64,6 +64,12 @@ from google.api_core import exceptions as google_exceptions
 from google.cloud import storage
 
 
+_CRAM_FILE_SUFFIX = '.cram'
+_GZ_FILE_SUFFIX = '.gz'
+_BAI_FILE_SUFFIX = '.bai'
+_FAI_FILE_SUFFIX = '.fai'
+_GZI_FILE_SUFFIX = '.gzi'
+
 _MAKE_EXAMPLES_JOB_NAME = 'make_examples'
 _CALL_VARIANTS_JOB_NAME = 'call_variants'
 _POSTPROCESS_VARIANTS_JOB_NAME = 'postprocess_variants'
@@ -332,6 +338,8 @@ def _run_make_examples(pipeline_args):
       extra_args.extend(['--sample_name', pipeline_args.sample_name])
     if pipeline_args.hts_block_size:
       extra_args.extend(['--hts_block_size', str(pipeline_args.hts_block_size)])
+    if pipeline_args.bam.endswith(_CRAM_FILE_SUFFIX):
+      extra_args.extend(['--use_ref_for_cram'])
     return extra_args
 
   if pipeline_args.gcsfuse:
@@ -652,11 +660,11 @@ def _validate_and_complete_args(pipeline_args):
   if not pipeline_args.logging:
     pipeline_args.logging = os.path.join(pipeline_args.staging, 'logs')
   if not pipeline_args.ref_fai:
-    pipeline_args.ref_fai = pipeline_args.ref + '.fai'
-  if not pipeline_args.ref_gzi and pipeline_args.ref.endswith('.gz'):
-    pipeline_args.ref_gzi = pipeline_args.ref + '.gzi'
+    pipeline_args.ref_fai = pipeline_args.ref + _FAI_FILE_SUFFIX
+  if not pipeline_args.ref_gzi and pipeline_args.ref.endswith(_GZ_FILE_SUFFIX):
+    pipeline_args.ref_gzi = pipeline_args.ref + _GZI_FILE_SUFFIX
   if not pipeline_args.bai:
-    pipeline_args.bai = pipeline_args.bam + '.bai'
+    pipeline_args.bai = pipeline_args.bam + _BAI_FILE_SUFFIX
 
   # Ensuring all input files exist...
   if not _gcs_object_exist(pipeline_args.ref):
@@ -722,13 +730,17 @@ def run(argv=None):
   # Reasonable defaults would be chosen if unspecified (the generated paths
   # must map to valid files).
   parser.add_argument(
-      '--bai', help='BAM index file. Defaults to --bam + ".bai" suffix.')
+      '--bai',
+      help=('BAM index file. Defaults to --bam + "%s" suffix.' %
+            _BAI_FILE_SUFFIX))
   parser.add_argument(
-      '--ref_fai', help='FAI index file. Defaults to --ref + ".fai" suffix.')
+      '--ref_fai',
+      help=('FAI index file. Defaults to --ref + "%s" suffix.' %
+            _FAI_FILE_SUFFIX))
   parser.add_argument(
       '--ref_gzi',
       help=('GZI index file. Required if --ref is gz. Defaults to '
-            '--ref + ".gzi" suffix.'))
+            '--ref + "%s" suffix.' % _GZI_FILE_SUFFIX))
   parser.add_argument(
       '--logging',
       help=('A folder in Google Cloud Storage to use for storing logs. '
