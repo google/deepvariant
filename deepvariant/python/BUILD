@@ -56,7 +56,7 @@ py_clif_cc(
     srcs = ["variant_calling.clif"],
     clif_deps = [
         ":allelecounter",
-        "//third_party/nucleus/io/python:indexed_fasta_reader",  # other py_clif_cc rules
+        "//third_party/nucleus/io/python:reference",  # other py_clif_cc rules
     ],
     pyclif_deps = [
         "//deepvariant/protos:deepvariant_pyclif",

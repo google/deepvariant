@@ -60,3 +60,24 @@ from "third_party/nucleus/io/reference.h":
       def PythonEnter(self) -> Status
       @__exit__
       def Close(self) -> Status
+
+    class IndexedFastaReader(GenomeReference):
+      @classmethod
+      def `FromFile` as from_file(cls,
+                                  fasta_path: str,
+                                  fai_path: str,
+                                  cache_size_bases: int = default)
+        -> StatusOr<IndexedFastaReader>
+
+    class UnindexedFastaReader(GenomeReference):
+      @classmethod
+      def `FromFile` as from_file(cls,
+                                  fasta_path: str)
+        -> StatusOr<UnindexedFastaReader>
+
+    class InMemoryFastaReader(GenomeReference):
+      @classmethod
+      def `Create` as create(cls, contigs: list<ContigInfo>, seqs: list<ReferenceSequence>)
+        -> StatusOr<InMemoryFastaReader>
+
+      reference_sequences: dict<str, ReferenceSequence> = property(`ReferenceSequences`)

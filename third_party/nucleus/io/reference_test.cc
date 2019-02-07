@@ -32,23 +32,53 @@
 
 #include "third_party/nucleus/io/reference.h"
 
-#include <vector>
+#include <memory>
+#include <string>
+#include <utility>
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "third_party/nucleus/io/reference_test.h"
+#include "absl/strings/str_cat.h"
+#include "third_party/nucleus/io/reader_base.h"
+#include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
+#include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
+
+using absl::StrCat;
+using std::make_pair;
 
 namespace nucleus {
 
 using ::testing::IsEmpty;
 using ::testing::Not;
 using ::testing::UnorderedElementsAre;
+
+string TestFastaPath() { return GetTestData("test.fasta"); }
+
+typedef std::unique_ptr<GenomeReference> CreateGenomeReferenceFunc(
+    const string& fasta_path, int cache_size);
+
+// Tests are parameterized by: reader factory, cache size.
+class GenomeReferenceTest : public ::testing::TestWithParam<
+    std::pair<CreateGenomeReferenceFunc*, int>> {
+ protected:
+  void SetUp() override {
+    ref_ = (*GetParam().first)(TestFastaPath(), GetParam().second);
+  }
+  const GenomeReference& Ref() const { return *ref_; }
+
+  std::unique_ptr<const GenomeReference> ref_;
+};
+
+typedef GenomeReferenceTest GenomeReferenceDeathTest;
 
 TEST_P(GenomeReferenceTest, TestBasic) {
   EXPECT_THAT(Ref().ContigNames(),
@@ -180,6 +210,209 @@ TEST_P(GenomeReferenceTest, TestGetBasesParts) {
   // 0-bp interval requests should return the empty string.
   CheckGetBases(Ref(), "chrM", 0, 0, "");
   CheckGetBases(Ref(), "chrM", 10, 10, "");
+}
+
+
+static std::unique_ptr<GenomeReference> JustLoadFai(const string& fasta,
+                                                    int cache_size = 64 *
+                                                                     1024) {
+  StatusOr<std::unique_ptr<IndexedFastaReader>> fai_status =
+      IndexedFastaReader::FromFile(fasta, StrCat(fasta, ".fai"), cache_size);
+  TF_CHECK_OK(fai_status.status());
+  return std::move(fai_status.ValueOrDie());
+}
+
+// Test with cache disabled.
+INSTANTIATE_TEST_CASE_P(GRT1, GenomeReferenceTest,
+                        ::testing::Values(make_pair(&JustLoadFai, 0)));
+
+INSTANTIATE_TEST_CASE_P(GRT2, GenomeReferenceDeathTest,
+                        ::testing::Values(make_pair(&JustLoadFai, 0)));
+
+// Test with a large cache.
+INSTANTIATE_TEST_CASE_P(GRT3, GenomeReferenceTest,
+                        ::testing::Values(make_pair(&JustLoadFai, 64 * 1024)));
+
+INSTANTIATE_TEST_CASE_P(GRT4, GenomeReferenceDeathTest,
+                        ::testing::Values(make_pair(&JustLoadFai, 64 * 1024)));
+
+TEST(StatusOrLoadFromFile, ReturnsBadStatusIfFaiIsMissing) {
+  StatusOr<std::unique_ptr<IndexedFastaReader>> result =
+      IndexedFastaReader::FromFile(GetTestData("unindexed.fasta"),
+                                   GetTestData("unindexed.fasta.fai"));
+  EXPECT_THAT(result, IsNotOKWithCodeAndMessage(
+                          tensorflow::error::NOT_FOUND,
+                          "could not load fasta and/or fai for fasta"));
+}
+
+TEST(IndexedFastaReaderTest, WriteAfterCloseIsntOK) {
+  auto reader = JustLoadFai(TestFastaPath());
+  ASSERT_THAT(reader->Close(), IsOK());
+  EXPECT_THAT(reader->GetBases(MakeRange("chrM", 0, 100)),
+              IsNotOKWithCodeAndMessage(
+                  tensorflow::error::FAILED_PRECONDITION,
+                  "can't read from closed IndexedFastaReader object"));
+}
+
+TEST(IndexedFastaReaderTest, TestIterate) {
+  auto reader = JustLoadFai(TestFastaPath());
+  auto iterator = reader->Iterate().ValueOrDie();
+  GenomeReferenceRecord r;
+  StatusOr<bool> status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chrM", r.first);
+  EXPECT_EQ(
+      "GATCACAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCATTTGGTATTTTCGTCTGGGGGGT"
+      "GTGCACGCGATAGCATTGCGAGACGCTG",
+      r.second);
+  status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chr1", r.first);
+  EXPECT_EQ(
+      "ACCACCATCCTCCGTGAAATCAATATCCCGCACAAGAGTGCTACTCTCCTAAATCCCTTCTCGTCCCCATGG"
+      "ATGA",
+      r.second);
+  status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chr2", r.first);
+  EXPECT_EQ(
+      "CGCTNCGGGCCCATAACACTTGGGGGTAGCTAAAGTGAACTGTATCCGACATCTGGTTCCTACTTCAGGGCC"
+      "ATAAAGCCTAAATAGCCCACACGTTCCCCTTAAATAAGACATCACGATG",
+      r.second);
+
+  // Reading beyond the file fails.
+  status = iterator->Next(&r);
+  EXPECT_FALSE(status.ValueOrDie());
+}
+
+TEST(UnindexedFastaReaderTest, ReturnsBadStatusIfFileIsMissing) {
+  StatusOr<std::unique_ptr<UnindexedFastaReader>> result =
+      UnindexedFastaReader::FromFile(GetTestData("nonexistent.fasta"));
+  EXPECT_THAT(result, IsNotOKWithCodeAndMessage(tensorflow::error::NOT_FOUND,
+                                                "Could not open"));
+}
+
+TEST(UnindexedFastaReaderTest, IterateAfterCloseIsntOK) {
+  StatusOr<std::unique_ptr<UnindexedFastaReader>> result =
+      UnindexedFastaReader::FromFile(GetTestData("unindexed.fasta"));
+  auto reader = std::move(result.ValueOrDie());
+  auto iterator = reader->Iterate().ValueOrDie();
+  ASSERT_THAT(reader->Close(), IsOK());
+  GenomeReferenceRecord r;
+  StatusOr<bool> status = iterator->Next(&r);
+  EXPECT_THAT(iterator->Next(&r),
+              IsNotOKWithCodeAndMessage(
+                  tensorflow::error::FAILED_PRECONDITION,
+                  "Cannot iterate a closed UnindexedFastaReader"));
+}
+
+TEST(UnindexedFastaReaderTest, TestMalformed) {
+  StatusOr<std::unique_ptr<UnindexedFastaReader>> result =
+      UnindexedFastaReader::FromFile(GetTestData("malformed.fasta"));
+  auto reader = std::move(result.ValueOrDie());
+  auto iterator = reader->Iterate().ValueOrDie();
+  GenomeReferenceRecord r;
+  EXPECT_THAT(iterator->Next(&r),
+              IsNotOKWithCodeAndMessage(tensorflow::error::DATA_LOSS,
+                                        "Name not found in FASTA"));
+}
+
+class UnindexedFastaReaderFileTest : public ::testing::TestWithParam<string> {};
+
+// Test a couple of files that are formatted differently but should have the
+// same contents.
+INSTANTIATE_TEST_CASE_P(/* prefix */, UnindexedFastaReaderFileTest,
+                        ::testing::Values("unindexed.fasta", "test.fasta.gz",
+                                          "unindexed_emptylines.fasta"));
+
+TEST_P(UnindexedFastaReaderFileTest, TestIterate) {
+  LOG(INFO) << "testing file " << GetParam();
+  StatusOr<std::unique_ptr<UnindexedFastaReader>> result =
+      UnindexedFastaReader::FromFile(GetTestData(GetParam()));
+  auto reader = std::move(result.ValueOrDie());
+  auto iterator = reader->Iterate().ValueOrDie();
+  GenomeReferenceRecord r1;
+  StatusOr<bool> status = iterator->Next(&r1);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chrM", r1.first);
+  EXPECT_EQ(
+      "GATCACAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCATTTGGTATTTTCGTCTGGGGGGT"
+      "GTGCACGCGATAGCATTGCGAGACGCTG",
+      r1.second);
+
+  GenomeReferenceRecord r2;
+  status = iterator->Next(&r2);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chr1", r2.first);
+  EXPECT_EQ(
+      "ACCACCATCCTCCGTGAAATCAATATCCCGCACAAGAGTGCTACTCTCCTAAATCCCTTCTCGTCCCCATGG"
+      "ATGA",
+      r2.second);
+  GenomeReferenceRecord r3;
+  status = iterator->Next(&r3);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chr2", r3.first);
+  EXPECT_EQ(
+      "CGCTNCGGGCCCATAACACTTGGGGGTAGCTAAAGTGAACTGTATCCGACATCTGGTTCCTACTTCAGGGCC"
+      "ATAAAGCCTAAATAGCCCACACGTTCCCCTTAAATAAGACATCACGATG",
+      r3.second);
+
+  // Reading beyond the file fails.
+  GenomeReferenceRecord r4;
+  status = iterator->Next(&r4);
+  EXPECT_FALSE(status.ValueOrDie());
+}
+
+namespace {
+
+// Helper method to create a test sequence.
+void CreateTestSeq(std::vector<genomics::v1::ContigInfo>* contigs,
+                   std::vector<genomics::v1::ReferenceSequence>* seqs,
+                   const string& name, const int pos_in_fasta,
+                   const int range_start, const int range_end,
+                   const string& bases) {
+  DCHECK(pos_in_fasta >= 0 && pos_in_fasta < contigs->size());
+  genomics::v1::ContigInfo* contig = &contigs->at(pos_in_fasta);
+  contig->set_name(name);
+  contig->set_pos_in_fasta(pos_in_fasta);
+  contig->set_n_bases(range_end - range_start);
+  genomics::v1::ReferenceSequence* seq = &seqs->at(pos_in_fasta);
+  seq->mutable_region()->set_reference_name(name);
+  seq->mutable_region()->set_start(range_start);
+  seq->mutable_region()->set_end(range_end);
+  seq->set_bases(bases);
+}
+
+}  // namespace
+
+TEST(InMemoryFastaReaderTest, TestIterate) {
+  int kNum = 3;
+  std::vector<genomics::v1::ContigInfo> contigs(kNum);
+  std::vector<genomics::v1::ReferenceSequence> seqs(kNum);
+  CreateTestSeq(&contigs, &seqs, "Chr1", 0, 0, 1, "A");
+  CreateTestSeq(&contigs, &seqs, "Chr2", 1, 4, 6, "CG");
+  CreateTestSeq(&contigs, &seqs, "Chr3", 2, 10, 15, "AATTC");
+
+  std::unique_ptr<InMemoryFastaReader> reader =
+      std::move(InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+  auto iterator = reader->Iterate().ValueOrDie();
+  GenomeReferenceRecord r;
+  StatusOr<bool> status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("Chr1", r.first);
+  EXPECT_EQ("A", r.second);
+  status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("Chr2", r.first);
+  EXPECT_EQ("CG", r.second);
+  status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("Chr3", r.first);
+  EXPECT_EQ("AATTC", r.second);
+
+  // Reading beyond the file fails.
+  status = iterator->Next(&r);
+  EXPECT_FALSE(status.ValueOrDie());
 }
 
 }  // namespace nucleus

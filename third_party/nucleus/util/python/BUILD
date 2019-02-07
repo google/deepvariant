@@ -15,7 +15,6 @@ exports_files(["LICENSE"])
 py_clif_cc(
     name = "math",
     srcs = ["math.clif"],
-    clif_deps = [],
     py_deps = [],
     pyclif_deps = [],
     deps = ["//third_party/nucleus/util:cpp_math"],
@@ -36,7 +35,6 @@ py_test(
 py_clif_cc(
     name = "utils",
     srcs = ["utils.clif"],
-    clif_deps = [],
     py_deps = [],
     pyclif_deps = [
         "//third_party/nucleus/protos:range_pyclif",

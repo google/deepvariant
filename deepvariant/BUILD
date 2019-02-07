@@ -89,11 +89,11 @@ cc_test(
     name = "allelecounter_test",
     size = "small",
     srcs = ["allelecounter_test.cc"],
+    data = ["//third_party/nucleus/testdata"],
     deps = [
         ":allelecounter",
         ":utils",
-        "//third_party/nucleus/io:indexed_fasta_reader",
-        "//third_party/nucleus/io:reference_test",
+        "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",

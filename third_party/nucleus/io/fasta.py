@@ -59,9 +59,7 @@ import six
 
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import genomics_reader
-from third_party.nucleus.io.python import in_memory_fasta_reader
-from third_party.nucleus.io.python import indexed_fasta_reader
-from third_party.nucleus.io.python import unindexed_fasta_reader
+from third_party.nucleus.io.python import reference
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import fasta_pb2
 from third_party.nucleus.util import ranges
@@ -101,10 +99,10 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
     fai_path = fasta_path + '.fai'
     if cache_size is None:
       # Use the C++-defined default cache size.
-      self._reader = indexed_fasta_reader.IndexedFastaReader.from_file(
+      self._reader = reference.IndexedFastaReader.from_file(
           fasta_path, fai_path)
     else:
-      self._reader = indexed_fasta_reader.IndexedFastaReader.from_file(
+      self._reader = reference.IndexedFastaReader.from_file(
           fasta_path, fai_path, cache_size)
 
     # redacted
@@ -146,8 +144,7 @@ class UnindexedFastaReader(genomics_reader.GenomicsReader):
     """
     super(UnindexedFastaReader, self).__init__()
 
-    self._reader = unindexed_fasta_reader.UnindexedFastaReader.from_file(
-        input_path)
+    self._reader = reference.UnindexedFastaReader.from_file(input_path)
 
   def iterate(self):
     """Returns an iterable of (name, bases) tuples contained in this file."""
@@ -222,8 +219,7 @@ class InMemoryFastaReader(genomics_reader.GenomicsReader):
           reference_pb2.ContigInfo(
               name=contig_name, n_bases=end, pos_in_fasta=i))
 
-    self._reader = in_memory_fasta_reader.InMemoryFastaReader.create(
-        contigs, ref_seqs)
+    self._reader = reference.InMemoryFastaReader.create(contigs, ref_seqs)
     self.header = RefFastaHeader(contigs=self._reader.contigs)
 
   def iterate(self):

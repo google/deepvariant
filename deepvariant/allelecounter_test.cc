@@ -34,8 +34,7 @@
 #include <numeric>
 
 #include "deepvariant/utils.h"
-#include "third_party/nucleus/io/indexed_fasta_reader.h"
-#include "third_party/nucleus/io/reference_test.h"
+#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
@@ -57,7 +56,6 @@ using nucleus::EqualsProto;
 using nucleus::GenomeReference;
 using nucleus::MakePosition;
 using nucleus::MakeRange;
-using nucleus::TestFastaPath;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
@@ -79,7 +77,7 @@ class AlleleCounterTest : public ::testing::Test {
   std::unique_ptr<const GenomeReference> ref_;
 
   AlleleCounterTest() {
-    const string& test_fasta_path = TestFastaPath();
+    const string& test_fasta_path = nucleus::GetTestData("test.fasta");
     ref_ = std::move(nucleus::IndexedFastaReader::FromFile(
                          test_fasta_path, StrCat(test_fasta_path, ".fai"))
                          .ValueOrDie());
