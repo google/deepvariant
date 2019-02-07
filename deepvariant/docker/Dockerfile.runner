@@ -31,6 +31,7 @@ ADD gcp_deepvariant_runner.py /opt/deepvariant_runner/src/
 ADD gke_cluster.py /opt/deepvariant_runner/src/
 ADD process_util.py /opt/deepvariant_runner/src/
 ADD run_and_verify.sh /opt/deepvariant_runner/bin/
+ADD cancel /opt/deepvariant_runner/bin/
 
 # Create shell wrappers for python files for easier use.
 RUN \

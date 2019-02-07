@@ -1,0 +1,157 @@
+#!/bin/bash
+set -euo pipefail
+
+# Copyright 2019 Google LLC.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from this
+#    software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# This script is used for cancelling DeepVariant pipelines API operations.
+# It  gets the operation ID of the DeepVariant runner, finds all child
+# operations, and cancel all together.
+#
+# Usage:
+#   cancel <deepvariant_runner_operation_id>
+#
+
+
+# Label key used by DeepVariant for grouping operations in the same run.
+readonly DEEPVARIANT_LABEL_KEY="deepvariant-operation-label"
+
+# If a command fails, we retries it this number of times.
+readonly CMD_RETRIES=2
+
+err() {
+  RED="\e[0;31m"
+  NC='\e[0m'  # No Color
+  echo -e "${RED}ERROR:${NC} $*" >&2
+}
+
+info() {
+  echo "INFO: $*" >&2
+}
+
+########################################
+# Finds label set by DeepVariant for the given operation.
+# Arguments:
+#   Pipelines API operation ID.
+# Returns:
+#   DeepVariant label value.
+########################################
+function get_deepvariant_label() {
+  local operation_id="$1"
+  echo "$(gcloud alpha genomics operations describe \
+          --format="value(metadata.labels.${DEEPVARIANT_LABEL_KEY})" \
+          "${operation_id}")"
+}
+
+########################################
+# Returns running pipelines API operations with the given label.
+# Arguments:
+#   label value.
+########################################
+function get_running_operations_with_label() {
+  local label_value="$1"
+  echo "$(gcloud alpha genomics operations list \
+          --filter="metadata.labels.$DEEPVARIANT_LABEL_KEY=$label_value AND done=false" \
+          --format="value(name)" | awk -F "/" '{print $4}' | sort -u)"
+}
+
+########################################
+# Cancels given pipelines API operations.
+# Arguments:
+#    Pipeline API operation ID.
+########################################
+function cancel_operations() {
+  local operation_ids="$1"
+
+  for op in ${operation_ids}; do
+    is_operation_canceled "${op}" && \
+      info "Operation ${op} is already canceled" && \
+      continue
+
+    cancel_operation "${op}" "${CMD_RETRIES}" && \
+      info "Canceled operation ${op}" || \
+      err "Failed to cancel operation ${op}\n"
+  done
+}
+
+########################################
+# Cancels given pipelines API operation.
+# Arguments:
+#   Pipeline API operation ID.
+#   Number of retries in case of failure.
+# Returns:
+#  0 if the operation has been cancelled, and 1 otherwise.
+########################################
+function cancel_operation() {
+  local operation_id="$1"
+  local num_tries="$2"
+
+  for i in $(seq 1 "$((num_tries+1))");do
+    err_msg="$(gcloud alpha genomics operations cancel "${operation_id}" \
+               --quiet 2>&1)"
+    if [[ $? == 0 ]]; then
+      return 0
+    fi
+  done
+  err "$err_msg"
+  return 1
+}
+
+########################################
+# Returns true (0) iff pipelines API operation is in canceled.
+# Arguments:
+#   Pipeline API operation ID.
+########################################
+function is_operation_canceled() {
+  local operation_id="$1"
+  local error_code="$(gcloud alpha genomics operations describe \
+                      --format="value(error.code)" ${operation_id})"
+  # Canceled operations have error code equal to 1.
+  if [[ "${error_code}" == 1 ]]; then
+    return 0
+  fi
+  return 1
+}
+
+function main() {
+  if [[ $# -ne 1 ]]; then
+    err "Usage: $0 <deepvariant_runner_operation_id>"
+  fi
+  local deepvariant_runner_operation_id="$1"
+
+  local label_value="$(get_deepvariant_label "${deepvariant_runner_operation_id}")"
+  if [[ -z "${label_value}" ]]; then
+    err "Missing required label for operation ${deepvariant_runner_operation_id}"
+    exit
+  fi
+  local running_operations="$(get_running_operations_with_label ${label_value})"
+  cancel_operations "${running_operations}"
+}
+
+main "$@"
