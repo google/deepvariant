@@ -35,10 +35,9 @@ set -euo pipefail
 
 function init() {
   local project_id="$1"
-  local golden_set_bucket="$2"
-  local image_tag="$3"
-  local model="$4"
-  local platform="$5"
+  local image_tag="$2"
+  local model="$3"
+  local platform="$4"
   local extra_flags=""
   if [[ "${platform}" == "gpu" ]]; then
     extra_flags="--gpu"
@@ -49,7 +48,6 @@ function init() {
   readonly DATE=$(date '+%Y-%m-%d-%H-%M-%S')
   readonly PROJECT_ID="${project_id}"
   readonly WORKING_BUCKET="gs://${PROJECT_ID}"
-  readonly GOLDEN_SET_BUCKET="gs://${golden_set_bucket}"
   readonly ZONES="us-west1-b,us-east1-c"
   readonly OUTDIR="${WORKING_BUCKET}/deepvariant-cbi-${DATE}"
   readonly OUTFILE="${OUTDIR}/output.vcf"
@@ -77,14 +75,6 @@ function init() {
         --gcsfuse \
         ${extra_flags}
   "
-  # Expectations.
-  if [[ "${platform}" == "tpu" ]]; then
-    readonly EXPECTED_OUTFILE="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-tpu-output.vcf"
-    readonly EXPECTED_OUTFILE_GVCF="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-tpu-output.gvcf"
-  else
-    readonly EXPECTED_OUTFILE="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-output.vcf"
-    readonly EXPECTED_OUTFILE_GVCF="${GOLDEN_SET_BUCKET}/golden-set/quickstart-testdata-output.gvcf"
-  fi
 }
 
 err() {
@@ -99,9 +89,7 @@ info() {
 function print_useful_info() {
   info "Logs and staging files can be found in ${OUTDIR}."
   info "Output VCF file will be generated in ${OUTFILE}."
-  info "Output VCF file is expected to be the same as ${EXPECTED_OUTFILE}."
   info "Output gVCF file will be generated in ${OUTFILE_GVCF}."
-  info "Output gVCF file is expected to be the same as ${EXPECTED_OUTFILE_GVCF}"
 }
 
 ########################################
@@ -114,7 +102,7 @@ function print_useful_info() {
 # Arguments:
 #   None
 # Returns:
-#   exit status of pipelines tool.
+#   None
 ########################################
 function run_deepvariant() {
   info "Running DeepVariant ..."
@@ -130,30 +118,20 @@ function run_deepvariant() {
     --command "${COMMAND}"
 }
 
-function localize() {
-  local file=$(mktemp)
-  gsutil -q cp "$1" "${file}" || err "$1 does not exist on GCS."
-  echo "${file}"
-}
-
 ########################################
-# Compares contents of two given GCS files.
+# Checks if the given GCS file exists and is non-empty.
 # Arguments:
-#   First file to compare, a GCS path.
-#   Second file to compare, a GCS path.
+#   GCS file path.
 # Returns:
-#   0 if the two files are the same, non-zero otherwise (as well as on error).
+#   None
 ########################################
-function expect() {
-  if [[ $# != 2 ]]; then
-    err "expect() requires two arguments."
-  fi
-  local file_1=$(localize "$1")
-  local file_2=$(localize "$2")
-  if cmp -s "$file_1" "$file_2"; then
-    info "Contents of $1 and $2 are the same as expected."
-  else
-    err "Contents of $1 and $2 are not the same."
+function check_file() {
+  local file_path="$1"
+  local file_size="$(gsutil stat "${file_path}" | awk '$1 == "Content-Length:" {print $2}')"
+  if [[ -z "${file_size}" ]]; then
+    err "${file_path} does not exist."
+  elif [[ "${file_size}" == 0 ]]; then
+    err "${file_path} is empty. Expected a non-empty file."
   fi
 }
 
@@ -167,25 +145,24 @@ function expect() {
 # Arguments:
 #   None
 # Returns:
-#   0 if all expected files are generated, non-zero otherwise.
+#   None
 ########################################
 function verify() {
   info "Verifying outputs ..."
-  expect "${OUTFILE}" "${EXPECTED_OUTFILE}"
-  expect "${OUTFILE_GVCF}" "${EXPECTED_OUTFILE_GVCF}"
+  check_file "${OUTFILE}"
+  check_file "${OUTFILE_GVCF}"
 }
 
 function main() {
-  if [[ $# -ne 5 ]]; then
-    err "Usage: run_and_verify.sh <project_id> <golden_set_bucket> <image-tag> <model> <cpu|gpu|tpu>"
+  if [[ $# -ne 4 ]]; then
+    err "Usage: $0 <project_id> <image-tag> <model> <cpu|gpu|tpu>"
   fi
   local project_id="$1"
-  local golden_set_bucket="$2"
-  local image_tag="$3"
-  local model="$4"
-  local platform="$5"
+  local image_tag="$2"
+  local model="$3"
+  local platform="$4"
 
-  init "${project_id}" "${golden_set_bucket}" "${image_tag}" "${model}" "${platform}"
+  init "${project_id}" "${image_tag}" "${model}" "${platform}"
   print_useful_info
   run_deepvariant
   verify
