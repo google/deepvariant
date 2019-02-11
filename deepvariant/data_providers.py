@@ -408,6 +408,7 @@ def get_input_fn_from_filespec(input_file_spec,
     tensor_shape: None, or list of int [height, width, channel] for testing.
     use_tpu: use the tpu code path in the input_fn.
     input_read_threads: number of threads reading the input files.
+    input_map_threads: number of threads mapping the input files.
     debugging_true_label_mode: boolean. If true, the input examples are created
                                with "training" mode. We'll parse the 'label'
                                field even if the `mode` is PREDICT.

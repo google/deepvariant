@@ -161,6 +161,8 @@ def prepare_inputs(source_path, use_tpu=False, num_readers=None, num_mappers=Non
     use_tpu: boolean.  Use the tpu code path.
     num_readers: int > 0 or None. Number of parallel readers to use to read
       examples from source_path. If None, uses FLAGS.num_readers instead.
+    num_mappers: int > 0 or None. Number of parallel mappers to use to transform
+      examples from source_path. If None, uses FLAGS.num_mappers instead.
 
   Returns:
     A tf input_fn yielding batches of image, encoded_variant,
@@ -234,7 +236,7 @@ def write_variant_call(writer, prediction, use_tpu):
     prediction: A [3] tensor of floats. These are the predicted
       genotype likelihoods (p00, p0x, pxx) for some alt allele x, in the same
       order as encoded_variants.
-      use_tpu: bool.  Decode the tpu specific encoding of prediction.
+    use_tpu: bool. Decode the tpu specific encoding of prediction.
 
   Returns:
     The return status from writer.
