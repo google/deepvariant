@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import multiprocessing
 import os
 import time
 
@@ -354,7 +355,15 @@ def call_variants(examples_filename,
   # Consume predictions one at a time and write them to output_file.
   logging.info('Writing calls to %s', output_file)
   writer, _ = io_utils.make_proto_writer(output_file)
+
+  def _write_variant_call_from_queue(queue, writer, use_tpu):
+    for prediction in iter(queue.get, 'STOP'):
+      write_variant_call(writer, prediction, use_tpu)
+
   with writer:
+    write_queue = multiprocessing.Queue()
+    write_process = multiprocessing.Process(target=_write_variant_call_from_queue, args=(write_queue, writer, use_tpu))
+    write_process.start()
     start_time = time.time()
     n_examples, n_batches = 0, 0
     while max_batches is None or n_batches <= max_batches:
@@ -362,7 +371,7 @@ def call_variants(examples_filename,
         prediction = next(predictions)
       except (StopIteration, tf.errors.OutOfRangeError):
         break
-      write_variant_call(writer, prediction, use_tpu)
+      write_queue.put_nowait(prediction)
       n_examples += 1
       n_batches = n_examples // batch_size + 1
       duration = time.time() - start_time
@@ -372,6 +381,8 @@ def call_variants(examples_filename,
           ('Processed %s examples in %s batches [%.3f sec per 100]'),
           _LOG_EVERY_N, n_examples, n_batches, (100 * duration) / n_examples)
 
+    write_queue.put('STOP')
+    write_process.join()
     logging.info('Done evaluating variants')
 
 
