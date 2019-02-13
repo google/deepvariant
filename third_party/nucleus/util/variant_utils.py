@@ -939,5 +939,5 @@ def calc_ac(variant):
 
 def calc_an(variant):
   """Returns the total number of alleles in called genotypes in variant."""
-  return sum(len(
-      [1 for gt in call.genotype if gt > -1]) for call in variant.calls)
+  return sum(
+      [gt > -1 for gt in call.genotype].count(True) for call in variant.calls)

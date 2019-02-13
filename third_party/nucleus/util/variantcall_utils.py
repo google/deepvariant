@@ -206,6 +206,18 @@ def has_genotypes(variant_call):
   return any(gt >= 0 for gt in variant_call.genotype)
 
 
+def has_full_genotypes(variant_call):
+  """Returns True iff the VariantCall has only known genotypes.
+
+  Args:
+    variant_call: VariantCall proto. The VariantCall to evaluate.
+
+  Returns:
+    True if all `genotype` fields are known genotypes.
+  """
+  return all(gt >= 0 for gt in variant_call.genotype)
+
+
 def ploidy(variant_call):
   """Returns the ploidy of the VariantCall.
 
