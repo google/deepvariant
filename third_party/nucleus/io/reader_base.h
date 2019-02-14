@@ -75,15 +75,17 @@ class Reader {
   // is another extant Iterable, return nullptr.  This method should
   // be used by subclasses to provide their own methods exposing
   // Iterables.
-  template<class Iterable, typename... Args>
-  std::shared_ptr<Iterable> MakeIterable(Args&&... args) const {
+  template<class Iterable, class Reader, typename... Args>
+  std::shared_ptr<Iterable> MakeIterable(Reader* reader, Args&&... args) const {
     absl::MutexLock lock(&mutex_);
     if (live_iterable_ != nullptr) {
       LOG(WARNING) << "Returning null from MakeIterable because there's "
                    " already an active iterator";
+      // Wraps |args| so the dtor of Iterable can perform necessary cleanup.
+      std::make_shared<Iterable>(nullptr, std::forward<Args>(args)...);
       return nullptr;
     }
-    Iterable* it =  new Iterable(std::forward<Args>(args)...);
+    Iterable* it =  new Iterable(reader, std::forward<Args>(args)...);
     live_iterable_ = it;
     return std::shared_ptr<Iterable>(it);
   }
