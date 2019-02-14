@@ -3,6 +3,8 @@
 # if it is unique.
 workspace(name = "com_google_deepvariant")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+
 # Note: absl_py and com_google_absl (the Python and C++ abseil libraries) are
 # provided by TensorFlow.
 
@@ -16,9 +18,9 @@ http_archive(
     strip_prefix = "cctz-master",
 )
 
-new_http_archive(
+http_archive(
     name = "htslib",
-    build_file = "third_party/htslib.BUILD",
+    build_file = "//:third_party/htslib.BUILD",
     sha256 = "c4d3ae84014f8a80f5011521f391e917bc3b4f6ebd78e97f238472e95849ec14",
     strip_prefix = "htslib-1.9",
     urls = [
@@ -26,9 +28,9 @@ new_http_archive(
     ],
 )
 
-new_http_archive(
+http_archive(
     name = "libssw",
-    build_file = "third_party/libssw.BUILD",
+    build_file = "//:third_party/libssw.BUILD",
     sha256 = "10b9305e5a580ee5319f736d3581916f6c873ef4475bd0c0e564c2934334732c",
     strip_prefix = "Complete-Striped-Smith-Waterman-Library-1.0",
     urls = [
@@ -61,9 +63,9 @@ http_archive(
 # https://github.com/google/protobuf/pull/4698 with bug fixes at
 # 4725, 4835, and 4836.
 # We also need our own BUILD file to support ProtoPtr optimizations.
-new_http_archive(
+http_archive(
     name = "protobuf_archive",
-    build_file = "third_party/protobuf.BUILD",
+    build_file = "//:third_party/protobuf.BUILD",
     sha256 = "ab811441e16acd6e6d19abb9fd266b0acbd7c14be331de9da7f0bdb3683ae39f",
     strip_prefix = "protobuf-79700b56b99fa5c8c22ddef78e6c9557ff711379",
     urls = [
