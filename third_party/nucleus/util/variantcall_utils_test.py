@@ -197,6 +197,22 @@ class VariantcallUtilsTests(parameterized.TestCase):
     actual = variantcall_utils.ploidy(call)
     self.assertEqual(actual, expected)
 
+  @parameterized.parameters(
+      dict(genotype=[], expected=False),
+      dict(genotype=[-1], expected=False),
+      dict(genotype=[-1, -1], expected=False),
+      dict(genotype=[-1, -1073741825], expected=False),
+      dict(genotype=[-1, 0], expected=False),
+      dict(genotype=[0, 0], expected=False),
+      dict(genotype=[0, 1], expected=True),
+      dict(genotype=[0, 1, -1], expected=True),
+      dict(genotype=[-1, 0, -1073741825], expected=False),
+  )
+  def test_has_variation(self, genotype, expected):
+    call = variants_pb2.VariantCall(genotype=genotype)
+    actual = variantcall_utils.has_variation(call)
+    self.assertEqual(actual, expected)
+
 
 if __name__ == '__main__':
   absltest.main()

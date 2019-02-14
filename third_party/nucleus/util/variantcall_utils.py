@@ -231,3 +231,15 @@ def ploidy(variant_call):
   # a VCF is parsed that contains multiple ploidies in different samples,
   # a separate padding value of -2**30 - 1 is inserted into the calls.
   return sum(gt >= -1 for gt in variant_call.genotype)
+
+
+def has_variation(variant_call):
+  """Returns True if and only if the call has a non-reference genotype.
+
+  Args:
+    variant_call: VariantCall proto. The VariantCall to evaluate.
+
+  Returns:
+    True if and only if the call has a non-reference genotype.
+  """
+  return any(gt > 0 for gt in variant_call.genotype)

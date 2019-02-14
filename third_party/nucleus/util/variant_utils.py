@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
 import itertools
 
 import enum
@@ -940,4 +941,22 @@ def calc_ac(variant):
 def calc_an(variant):
   """Returns the total number of alleles in called genotypes in variant."""
   return sum(
-      [gt > -1 for gt in call.genotype].count(True) for call in variant.calls)
+      len([1 for gt in call.genotype if gt > -1]) for call in variant.calls)
+
+
+def is_singleton(variant):
+  """Returns True iff the variant has exactly one non-ref VariantCall."""
+  return sum(variantcall_utils.has_variation(c) for c in variant.calls) == 1
+
+
+def major_allele_frequency(variant):
+  """Returns the frequency of the most common allele in the variant."""
+  counts = collections.Counter()
+  for call in variant.calls:
+    counts.update(call.genotype)
+  denom = sum(cnt for geno, cnt in counts.items() if geno >= 0)
+  if denom > 0:
+    numer = max(cnt for geno, cnt in counts.items() if geno >= 0)
+    return float(numer) / denom
+  else:
+    return 0

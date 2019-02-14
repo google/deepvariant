@@ -790,6 +790,46 @@ class VariantUtilsTests(parameterized.TestCase):
       variant.calls.add().genotype[:] = gt
     self.assertEqual(variant_utils.calc_an(variant), expected)
 
+  @parameterized.parameters(
+      dict(calls=[], expected=False),
+      dict(calls=[[0, 0]], expected=False),
+      dict(calls=[[0, 1]], expected=True),
+      dict(calls=[[1, 1]], expected=True),
+      dict(calls=[[1, 2]], expected=True),
+      dict(calls=[[0, 0], [0, 1]], expected=True),
+      dict(calls=[[0, 0], [1, 1]], expected=True),
+      dict(calls=[[0, 1], [0, 1]], expected=False),
+      dict(calls=[[0, 2], [0, -1]], expected=True),
+      dict(calls=[[0, 0], [0, 1], [-1, -1]], expected=True),
+      dict(calls=[[0, 0], [0, 1], [0, 0]], expected=True),
+  )
+  def test_is_singleton(self, calls, expected):
+    variant = variants_pb2.Variant()
+    for gt in calls:
+      variant.calls.add().genotype[:] = gt
+    actual = variant_utils.is_singleton(variant)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      dict(calls=[], expected=0.),
+      dict(calls=[[0, 0]], expected=1.),
+      dict(calls=[[0, 1]], expected=0.5),
+      dict(calls=[[1, 1]], expected=1.),
+      dict(calls=[[1, 2]], expected=0.5),
+      dict(calls=[[0, 0], [0, 1]], expected=0.75),
+      dict(calls=[[0, 0], [1, 1]], expected=0.5),
+      dict(calls=[[0, 1], [0, 1]], expected=0.5),
+      dict(calls=[[0, 2], [0, -1]], expected=2. / 3),
+      dict(calls=[[0, 0], [0, 1], [-1, -1]], expected=0.75),
+      dict(calls=[[0, 0], [0, 1], [0, 0]], expected=5. / 6),
+  )
+  def test_major_allele_frequency(self, calls, expected):
+    variant = variants_pb2.Variant()
+    for gt in calls:
+      variant.calls.add().genotype[:] = gt
+    actual = variant_utils.major_allele_frequency(variant)
+    self.assertAlmostEqual(actual, expected)
+
 
 if __name__ == '__main__':
   absltest.main()
