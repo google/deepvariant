@@ -64,6 +64,7 @@ using ::testing::SizeIs;
 
 // Constants for all filenames used in this test file.
 constexpr char kSamTestFilename[] = "test.sam";
+constexpr char kSamOqTestFilename[] = "test_oq.sam";
 constexpr char kBamTestFilename[] = "test.bam";
 constexpr char kSamGoldStandardFilename[] = "test.sam.golden.tfrecord";
 
@@ -86,6 +87,70 @@ TEST(SamReaderTest, TestIteration) {
       SamReader::FromFile(GetTestData(kSamTestFilename), SamReaderOptions())
           .ValueOrDie());
   EXPECT_THAT(as_vector(reader->Iterate()), SizeIs(6));
+}
+
+// test_oq.sam is used for this test where original scores all set to 'C'
+// The test checks that if use_original_base_quality_scores is set alignment
+// quality scores are taken from OQ tag and all the scores properly calculated.
+TEST(SamReaderTest, TestAlignedQualityOQ) {
+  SamReaderOptions samReaderOptions;
+  samReaderOptions.set_use_original_base_quality_scores(true);
+  samReaderOptions.set_aux_field_handling(
+      SamReaderOptions::PARSE_ALL_AUX_FIELDS);
+  std::unique_ptr<SamReader> reader = std::move(
+      SamReader::FromFile(GetTestData(kSamOqTestFilename), samReaderOptions)
+          .ValueOrDie());
+
+  // Test compares aligned_quality field that is read from test_oq.sam with
+  // golden set.
+  auto reads = as_vector(reader->Iterate());
+  std::vector<Read> golden;
+  for (const auto& record : reads) {
+    Read golden_read;
+    auto aq = golden_read.mutable_aligned_quality();
+    // Golden set is created by copying aligned_quality from test_oq.sam
+    // And then overwriting all scores with 'C'-33
+    aq->CopyFrom(record.aligned_quality());
+
+    for (auto& base_quality : *aq) {
+      // Score encoding described here
+      // https://samtools.github.io/hts-specs/SAMv1.pdf
+      base_quality = 'C' - 33;
+    }
+    golden.push_back(golden_read);
+  }
+
+  EXPECT_THAT(reads, Pointwise(Partially(EqualsProto()), golden));
+}
+
+// Trying to read quality scores from OQ when OQ tag is not present.
+TEST(SamReaderTest, TestAlignedQualityOQWhenTagIsNotPresent) {
+  SamReaderOptions samReaderOptions;
+  samReaderOptions.set_use_original_base_quality_scores(true);
+  samReaderOptions.set_aux_field_handling(
+      SamReaderOptions::PARSE_ALL_AUX_FIELDS);
+  std::unique_ptr<SamReader> reader = std::move(
+      SamReader::FromFile(GetTestData(kSamTestFilename), samReaderOptions)
+          .ValueOrDie());
+
+  // Test compares aligned_quality field that is read from test_oq.sam with
+  // golden set.
+  auto reads = as_vector(reader->Iterate());
+  std::vector<Read> golden;
+  for (const auto& record : reads) {
+    EXPECT_EQ(record.aligned_quality().size(), 0);
+  }
+}
+
+// Test that assert is raised if aux_field_handling is not set together with
+// use_original_base_quality_scores.
+TEST(SamReaderTest, TestFailIfParseAuxFieldsIsNotSetWithUseOriginalOqualities) {
+  SamReaderOptions samReaderOptions;
+  samReaderOptions.set_use_original_base_quality_scores(true);
+  ASSERT_DEATH(
+      SamReader::FromFile(GetTestData(kSamTestFilename), samReaderOptions),
+      "aux_field_handling must be true if use_original_quality_scores is set "
+      "to true");
 }
 
 TEST(SamReaderTest, TestIterationRespectsReadRequirements) {

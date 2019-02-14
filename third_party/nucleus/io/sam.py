@@ -145,13 +145,15 @@ class NativeSamReader(genomics_reader.GenomicsReader):
   on the filename's extensions.
   """
 
-  def __init__(self, input_path,
+  def __init__(self,
+               input_path,
                ref_path=None,
                read_requirements=None,
                parse_aux_fields=False,
                hts_block_size=None,
                downsample_fraction=None,
-               random_seed=None):
+               random_seed=None,
+               use_original_base_quality_scores=False):
     """Initializes a NativeSamReader.
 
     Args:
@@ -180,6 +182,8 @@ class NativeSamReader(genomics_reader.GenomicsReader):
         are kept.
       random_seed: None or int. The random seed to use with this sam reader, if
         needed. If None, a fixed random value will be assigned.
+      use_original_base_quality_scores: optional bool, defaulting to False. If
+        True, quality scores are read from OQ tag.
 
     Raises:
       ValueError: If downsample_fraction is not None and not in the interval
@@ -224,7 +228,9 @@ class NativeSamReader(genomics_reader.GenomicsReader):
               aux_field_handling=aux_field_handling,
               hts_block_size=(hts_block_size or 0),
               downsample_fraction=downsample_fraction,
-              random_seed=random_seed))
+              random_seed=random_seed,
+              use_original_base_quality_scores=use_original_base_quality_scores)
+      )
 
       self.header = self._reader.header
 

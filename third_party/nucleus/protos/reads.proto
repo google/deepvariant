@@ -211,7 +211,8 @@ message Read {
   string aligned_sequence = 14;
 
   // The quality of the read sequence contained in this alignment record
-  // (equivalent to QUAL in SAM).
+  // (equivalent to QUAL in SAM). Optionally can be read from OQ tag. See
+  // `SamReaderOptions` proto for more details.
   // `alignedSequence` and `alignedQuality` may be shorter than the full read
   // sequence and quality. This will occur if the alignment is part of a
   // chimeric alignment, or if the read was trimmed. When this occurs, the CIGAR
@@ -397,6 +398,10 @@ message SamReaderOptions {
 
   // Random seed to use with downsampling fraction.
   int64 random_seed = 6;
+
+  // By default aligned_quality field is read from QUAL in SAM. If flag is set,
+  // aligned_quality field is read from OQ tag in SAM.
+  bool use_original_base_quality_scores = 10;
 }
 
 // Describes requirements for a read for it to be returned by a SamReader.

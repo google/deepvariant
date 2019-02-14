@@ -343,6 +343,44 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
   return tf::Status::OK();
 }
 
+// Assign aligned_quality. Depending on the use_original_base_quality_scores
+// aligned_quality is read either from "QUAL" field or from "OQ" tag in SAM/BAM.
+tf::Status AssignAlignedQuality(const bam1_t* b,
+                                const SamReaderOptions& options,
+                                Read* read_message) {
+  const bam1_core_t* c = &b->core;
+  // Use optional "OQ" tag.
+  if (options.use_original_base_quality_scores()) {
+    const auto& info = read_message->info();
+    auto info_it = info.find("OQ");
+    if (info_it != read_message->info().end() &&
+        !info_it->second.values().empty()) {
+      RepeatedField<int32>* quality = read_message->mutable_aligned_quality();
+      quality->Reserve(c->l_qseq);
+      const auto& oq_tag_value = *(info_it->second.values().begin());
+      for (char c : oq_tag_value.string_value()) {
+        quality->Add(reinterpret_cast<int>(c - 33));
+      }
+      return tf::Status::OK();
+    }
+  } else { // Use "QUAL" field.
+    if (c->l_qseq) {
+      uint8_t* quals = bam_get_qual(b);
+      if (quals[0] != 0xff) {  // Not missing
+        // redacted
+        RepeatedField<int32>* quality = read_message->mutable_aligned_quality();
+        quality->Reserve(c->l_qseq);
+        for (int i = 0; i < c->l_qseq; ++i) {
+          quality->Add(quals[i]);
+        }
+        return tf::Status::OK();
+      }
+    }
+  }
+  return tf::Status(tensorflow::error::Code::NOT_FOUND,
+                    "Could not read base quality scores");
+}
+
 tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
                        const SamReaderOptions& options, Read* read_message) {
   CHECK(h != nullptr) << "BAM header cannot be null";
@@ -371,7 +409,7 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
   read_message->set_number_reads(paired ? 2 : 1);
 
   if (c->l_qseq) {
-    // Convert the seq and qual fields if they are present.
+    // Convert the seq if it is present.
     string* read_seq = read_message->mutable_aligned_sequence();
     read_seq->reserve(c->l_qseq);
     uint8_t* seq = bam_get_seq(b);  // seq is stored as 8-bit offsets.
@@ -379,17 +417,6 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
       // Convert the offsets to upper case characters by their offset in
       // the constant seq_nt16_str from htslib.
       read_seq->push_back(seq_nt16_str[bam_seqi(seq, i)]);
-    }
-
-    // Convert the qual field.
-    uint8_t* quals = bam_get_qual(b);
-    if (quals[0] != 0xff) {  // Not missing
-      // redacted
-      RepeatedField<int32>* quality = read_message->mutable_aligned_quality();
-      quality->Reserve(c->l_qseq);
-      for (int i = 0; i < c->l_qseq; ++i) {
-        quality->Add(quals[i]);
-      }
     }
   }
 
@@ -438,6 +465,14 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
       LOG(WARNING) << "Aux field parsing failure in read "
                    << bam_get_qname(b) << ": " << status;
     }
+  }
+
+  // aligned_quality may be read from aux field "OQ", therefore
+  // AssignAlignedQuality function should be called after ParseAuxFields.
+  status = AssignAlignedQuality(b, options, read_message);
+  if (!status.ok()) {
+    LOG(WARNING) << "Could not read base quality scores " << bam_get_qname(b)
+                 << ": " << status;
   }
 
   return tf::Status::OK();
@@ -502,6 +537,10 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
       sampler_(options.downsample_fraction(), options.random_seed()) {
   CHECK(fp != nullptr) << "pointer to SAM/BAM cannot be null";
   CHECK(header_ != nullptr) << "pointer to header cannot be null";
+  CHECK(options.aux_field_handling()
+        || !options.use_original_base_quality_scores())
+      << "aux_field_handling must be true if use_original_quality_scores is "
+         "set to true";
 
   const std::vector<string> header_lines_split =
       absl::StrSplit(header_->text, '\n');
