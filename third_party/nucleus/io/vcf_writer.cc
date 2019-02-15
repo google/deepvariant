@@ -152,6 +152,26 @@ void AddContigToHeader(const nucleus::genomics::v1::ContigInfo& contig,
   bcf_hdr_append(header, contigStr.c_str());
 }
 
+// RAII wrapper on top of bcf1_t* to always perform cleanup.
+class BCFRecord {
+ public:
+  BCFRecord() : bcf1_(bcf_init()) {}
+  ~BCFRecord() {
+    if (bcf1_) {
+      bcf_destroy(bcf1_);
+    }
+  }
+
+  // Disable copy or assignment
+  BCFRecord(const BCFRecord& other) = delete;
+  BCFRecord& operator=(const BCFRecord&) = delete;
+
+  bcf1_t* get_bcf1() { return bcf1_; }
+
+ private:
+  bcf1_t* bcf1_;
+};
+
 }  // namespace
 
 StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
@@ -237,19 +257,21 @@ VcfWriter::~VcfWriter() {
 tf::Status VcfWriter::Write(const Variant& variant_message) {
   if (fp_ == nullptr)
     return tf::errors::FailedPrecondition("Cannot write to closed VCF stream.");
-  bcf1_t* v = bcf_init();
-  if (v == nullptr)
+  BCFRecord v;
+  if (v.get_bcf1() == nullptr) {
     return tf::errors::Unknown("bcf_init call failed");
+  }
   TF_RETURN_IF_ERROR(
-      RecordConverter().ConvertFromPb(variant_message, *header_, v));
-  if (options_.round_qual_values() && !bcf_float_is_missing(v->qual)) {
+      RecordConverter().ConvertFromPb(variant_message, *header_, v.get_bcf1()));
+  if (options_.round_qual_values() &&
+      !bcf_float_is_missing(v.get_bcf1()->qual)) {
     // Round quality value printed out to one digit past the decimal point.
     double rounded_quality = floor(variant_message.quality() * 10 + 0.5) / 10;
-    v->qual = rounded_quality;
+    v.get_bcf1()->qual = rounded_quality;
   }
-  if (bcf_write(fp_, header_, v) != 0)
+  if (bcf_write(fp_, header_, v.get_bcf1()) != 0) {
     return tf::errors::Unknown("bcf_write call failed");
-  bcf_destroy(v);
+  }
   return tf::Status::OK();
 }
 
