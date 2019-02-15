@@ -81,6 +81,16 @@ class SamReaderTests(parameterized.TestCase):
         with reader.query(interval) as iterable:
           self.assertEqual(test_utils.iterable_len(iterable), n_expected)
 
+  def test_sam_query_alternate_index_name(self):
+    reader = sam.SamReader(
+        test_utils.genomics_core_testdata('test_alternate_index.bam'))
+    expected = [(ranges.parse_literal('chr20:10,000,000-10,000,100'), 106),
+                (ranges.parse_literal('chr20:10,000,000-10,000,000'), 45)]
+    with reader:
+      for interval, n_expected in expected:
+        with reader.query(interval) as iterable:
+          self.assertEqual(test_utils.iterable_len(iterable), n_expected)
+
   @parameterized.parameters(('\t'.join(x[0] for x in items), {
       k: v for t in items for k, v in t[1].items()
   }) for r in [1, 2] for items in itertools.permutations(

@@ -95,8 +95,9 @@ class SamReader : public Reader {
   // provided by htslib plugins (e.g., S3) won't work.
   //
   // If the filetype is BAM/CRAM, this constructor will attempt to load a BAI or
-  // CRAI index from file reads_path + '.bai'; if the index is not found,
-  // attempts to Query will fail.
+  // CRAI index from file reads_path + '.bai' or reads_path (without the .bam
+  // extension) + '.bai'; if the index is not found, attempts to Query will
+  // fail.
   //
   // Returns a StatusOr that is OK if the SamReader could be successfully
   // created or an error code indicating the error that occurred.
