@@ -1,4 +1,4 @@
-load("//tools:zip_dir.bzl", "zip_dir")
+load("//third_party/nucleus/tools:zip_dir.bzl", "zip_dir")
 
 package(
     default_visibility = [

@@ -1,4 +1,3 @@
-# This file is renamed to .bazelrc in the workspace root for an OSS build.
 # For more information about the format and semantics of this file, see:
 # https://docs.bazel.build/versions/master/bazel-user-manual.html#bazelrc
 #
