@@ -212,6 +212,11 @@ flags.DEFINE_integer(
     'Print out the log every n candidates. The smaller the number, the more '
     'frequent the logging information emits.')
 flags.DEFINE_bool('keep_duplicates', False, 'If True, keep duplicate reads.')
+flags.DEFINE_bool(
+    'parse_sam_aux_fields', False,
+    'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed.')
+flags.DEFINE_bool('use_original_quality_scores', False,
+                  'If True, base quality scores are read from OQ tag.')
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +374,11 @@ def default_options(add_flags=True, flags_obj=None):
     options.gvcf_filename = gvcf
     options.task_id = flags_obj.task
     options.num_shards = num_shards
+    if flags_obj.use_original_quality_scores and not flags_obj.parse_sam_aux_fields:
+      errors.log_and_raise(
+          'If use_original_quality_scores is set then parse_sam_aux_fields '
+          'must be set too.', errors.CommandLineError)
+    options.use_original_quality_scores = flags_obj.use_original_quality_scores
 
     if flags_obj.write_run_info:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
@@ -733,9 +743,12 @@ class RegionProcessor(object):
         self.options.reads_filename,
         ref_path=FLAGS.ref if FLAGS.use_ref_for_cram else None,
         read_requirements=self.options.read_requirements,
+        parse_aux_fields=FLAGS.parse_sam_aux_fields,
         hts_block_size=FLAGS.hts_block_size,
         downsample_fraction=self.options.downsample_fraction,
-        random_seed=self.options.random_seed)
+        random_seed=self.options.random_seed,
+        use_original_base_quality_scores=self.options
+        .use_original_quality_scores)
 
   def _initialize(self):
     """Initialize the resources needed for this work in the current env."""

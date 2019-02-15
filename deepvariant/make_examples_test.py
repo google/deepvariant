@@ -1278,6 +1278,19 @@ class RegionProcessorTest(parameterized.TestCase):
     return tf_utils.make_example(variant, list(variant.alternate_bases), 'foo',
                                  self.default_shape, self.default_format)
 
+  def test_use_original_quality_scores_without_parse_sam_aux_fields(self):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = 'examples.tfrecord'
+    FLAGS.use_original_quality_scores = True
+
+    with self.assertRaisesRegexp(
+        Exception,
+        'If use_original_quality_scores is set then parse_sam_aux_fields must be set too.'
+    ):
+      make_examples.default_options(add_flags=True)
+
 
 if __name__ == '__main__':
   absltest.main()

@@ -29,14 +29,13 @@
 
 syntax = "proto3";
 
+package learning.genomics.deepvariant;
+
+import "deepvariant/protos/realigner.proto";
+import "deepvariant/protos/resources.proto";
 import "third_party/nucleus/protos/position.proto";
 import "third_party/nucleus/protos/reads.proto";
 import "third_party/nucleus/protos/variants.proto";
-import "deepvariant/protos/realigner.proto";
-import "deepvariant/protos/resources.proto";
-
-
-package learning.genomics.deepvariant;
 
 // The type of an Allele.
 //
@@ -69,7 +68,6 @@ enum AlleleType {
   SOFT_CLIP = 5;
 }
 
-
 // An Allele observed in some type of NGS read data.
 //
 // Conceptually, an Allele is a sequence of bases that represent a type
@@ -91,7 +89,6 @@ message Allele {
   // for some allele in the data and never saw any evidence for it).
   int32 count = 3;
 }
-
 
 // An AlleleCount summarizes the NGS data observed at a position in the genome.
 //
@@ -411,7 +408,7 @@ message PileupImageOptions {
     ADD_HET_ALT_IMAGES = 1;
     NO_HET_ALT_IMAGES = 2;
   }
-  MultiAllelicMode multi_allelic_mode  = 19;
+  MultiAllelicMode multi_allelic_mode = 19;
 
   // The maximum mapping quality we'll allow in PIC. Mapping qualities above
   // this value are treated as being mapping_quality_cap.
@@ -424,10 +421,9 @@ message PileupImageOptions {
   int32 num_channels = 22;
 }
 
-
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 29.
+// Next ID: 30.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -547,6 +543,10 @@ message DeepVariantOptions {
   // when in CALLING mode.
   LabelerAlgorithm labeler_algorithm = 27;
   string run_info_filename = 28;
+
+  // By default aligned_quality field is read from QUAL in SAM. If flag is set,
+  // aligned_quality field is read from OQ tag in SAM.
+  bool use_original_quality_scores = 29;
 }
 
 // Config describe information needed for a dataset that can be used for
