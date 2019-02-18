@@ -66,7 +66,7 @@ def _clif_wrap_cc_impl(ctx):
     args += [clif_spec_file.path]
 
     outputs = [ctx.outputs.cc_out, ctx.outputs.h_out, ctx.outputs.ccinit_out]
-    ctx.action(
+    ctx.actions.run(
         executable = ctx.executable._clif,
         arguments = args,
         inputs = inputs.to_list(),
@@ -315,7 +315,7 @@ def _clif_proto_parser_rule_impl(ctx):
     for d in ctx.attr.deps:
         if "proto" in dir(d):
             inputs += list(d.proto.transitive_sources)
-    ctx.action(
+    ctx.actions.run(
         mnemonic = "ClifProtoLibraryGeneration",
         arguments = args,
         executable = ctx.executable.parser,
