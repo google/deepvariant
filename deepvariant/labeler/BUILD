@@ -144,6 +144,7 @@ py_test(
         ":haplotype_labeler",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",

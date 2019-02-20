@@ -39,6 +39,7 @@ from absl.testing import parameterized
 import mock
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import vcf
+from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
@@ -343,6 +344,8 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
 
     labeler = _make_labeler()
     labeler._ref_reader.query.return_value = expected_bases
+    labeler._ref_reader.contig.return_value = reference_pb2.ContigInfo(
+        name='20', n_bases=50)
 
     labeler_ref = labeler.make_labeler_ref(candidates, truths, bufsize=bufsize)
 
