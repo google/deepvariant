@@ -219,10 +219,14 @@ class RangeSet(object):
       # found in tree2. Since each tree has only non-adjacent, non-overlapping,
       # intervals this calculation is straightforward and safe and produces only
       # non-adjacent, non-overlapping intervals.
+      if len(tree1) > len(tree2):
+        (bigtree, smalltree) = (tree1, tree2)
+      else:
+        (bigtree, smalltree) = (tree2, tree1)
       return (make_range(refname, max(interval1.begin, overlapping.begin),
                          min(interval1.end, overlapping.end))
-              for interval1 in tree1
-              for overlapping in tree2.overlap(interval1))
+              for interval1 in bigtree
+              for overlapping in smalltree.overlap(interval1))
 
     # Iteratively intersect each of our *other RangeSets with this RangeSet.
     # Sort by size so we do the smallest number of element merge first.

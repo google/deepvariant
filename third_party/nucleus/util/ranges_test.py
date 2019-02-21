@@ -341,6 +341,12 @@ class RangesTests(parameterized.TestCase):
         ranges.RangeSet.from_regions(expected),
         regions_list[0].intersection(*regions_list[1:]))
 
+    # Check that the intersection is as expected even if we do it in a different
+    # direction.
+    self.assertCountEqual(
+        ranges.RangeSet.from_regions(expected),
+        regions_list[-1].intersection(*regions_list[:-1]))
+
     # Check that no one was modified.
     for pre, post in zip(copies, regions_list):
       self.assertCountEqual(pre, post)
