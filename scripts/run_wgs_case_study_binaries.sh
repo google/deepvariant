@@ -59,9 +59,9 @@ function setup_test() {
 
   ## Download models, and test data
   # Copy the model files to your local disk.
-  HTTP_ADDRESS="$http:\/\/.*"
-  GS_ADDRESS="$gs:\/\/.*"
-  if [[ $model_http_dir =~ $HTTP_ADDRESS ]];
+  HTTPS_ADDRESS="^https:\/\/.*"
+  GS_ADDRESS="^gs:\/\/.*"
+  if [[ $model_http_dir =~ $HTTPS_ADDRESS ]];
   then
     aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.ckpt.data-00000-of-00001
     aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.ckpt.index
@@ -169,10 +169,10 @@ function main() {
 
   build_binaries
   setup_test
-  time run_make_examples 2>&1 | tee "${LOG_DIR}/make_examples.log"
-  time run_call_variants 2>&1 | tee "${LOG_DIR}/call_variants.log"
-  time run_postprocess_variants 2>&1 | tee "${LOG_DIR}/postprocess_variants.log"
-  time run_postprocess_variants_gVCF 2>&1 | tee "${LOG_DIR}/postprocess_variants.withGVCF.log"
+  (time run_make_examples) 2>&1 | tee "${LOG_DIR}/make_examples.log"
+  (time run_call_variants) 2>&1 | tee "${LOG_DIR}/call_variants.log"
+  (time run_postprocess_variants) 2>&1 | tee "${LOG_DIR}/postprocess_variants.log"
+  (time run_postprocess_variants_gVCF) 2>&1 | tee "${LOG_DIR}/postprocess_variants.withGVCF.log"
   run_happy 2>&1 | tee "${LOG_DIR}/happy.log"
 }
 
