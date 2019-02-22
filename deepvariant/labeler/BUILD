@@ -10,6 +10,13 @@ py_binary(
     name = "labeled_examples_to_vcf",
     srcs = ["labeled_examples_to_vcf.py"],
     srcs_version = "PY2AND3",
+    deps = [":labeled_examples_to_vcf_main_lib"],
+)
+
+py_library(
+    name = "labeled_examples_to_vcf_main_lib",
+    srcs = ["labeled_examples_to_vcf.py"],
+    srcs_version = "PY2AND3",
     deps = [
         "//deepvariant:dv_vcf_constants",
         "//deepvariant:tf_utils",
@@ -29,7 +36,7 @@ py_test(
     data = ["//deepvariant:testdata"],
     srcs_version = "PY2AND3",
     deps = [
-        ":labeled_examples_to_vcf",
+        ":labeled_examples_to_vcf_main_lib",
         "//deepvariant:py_testdata",
         "//deepvariant/testing:flagsaver",
         "//third_party/nucleus/io:vcf",

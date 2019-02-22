@@ -9,7 +9,12 @@ package(
 py_binary(
     name = "generate_trained_model",
     srcs = ["generate_trained_model.py"],
-    main = "generate_trained_model.py",
+    deps = [":generate_trained_model_main_lib"],
+)
+
+py_library(
+    name = "generate_trained_model_main_lib",
+    srcs = ["generate_trained_model.py"],
     deps = [
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
@@ -26,7 +31,7 @@ py_test(
     srcs = ["generate_trained_model_test.py"],
     data = ["//deepvariant:testdata"],
     deps = [
-        ":generate_trained_model",
+        ":generate_trained_model_main_lib",
         "//deepvariant:py_testdata",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
@@ -36,7 +41,12 @@ py_test(
 py_binary(
     name = "model_evaluation",
     srcs = ["model_evaluation.py"],
-    main = "model_evaluation.py",
+    deps = [":model_evaluation_main_lib"],
+)
+
+py_library(
+    name = "model_evaluation_main_lib",
+    srcs = ["model_evaluation.py"],
     deps = [
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
@@ -53,7 +63,7 @@ py_test(
     srcs = ["model_evaluation_test.py"],
     data = ["//deepvariant:testdata"],
     deps = [
-        ":model_evaluation",
+        ":model_evaluation_main_lib",
         "//deepvariant:py_testdata",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
