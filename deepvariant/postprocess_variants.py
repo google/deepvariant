@@ -612,21 +612,42 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
   return canonical_variant, [i / denominator for i in predictions]
 
 
-def write_variants_to_vcf(variant_generator, output_vcf_path, header):
+def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
   """Writes Variant protos to a VCF file.
 
   Args:
-    variant_generator: generator. A generator that yields sorted Variant protos.
+    variant_iterable: iterable. An iterable of sorted Variant protos.
     output_vcf_path: str. Output file in VCF format.
     header: VcfHeader proto. The VCF header to use for writing the variants.
   """
   logging.info('Writing output to VCF file: %s', output_vcf_path)
   with vcf.VcfWriter(
       output_vcf_path, header=header, round_qualities=True) as writer:
-    for idx, variant in enumerate(variant_generator):
+    for idx, variant in enumerate(variant_iterable):
       logging.log_every_n(logging.INFO, '%s variants written.', _LOG_EVERY_N,
                           idx + 1)
       writer.write(variant)
+
+
+def _zero_scale_gl(variant):
+  """Zero-scales GL to mimic write-then-read.
+
+  When writing variants using VcfWriter, GLs are converted to PLs, which is an
+  integer format scaled so the most likely genotype has value 0. This function
+  modifies the input variant to mimic this transformation of GL -> PL -> GL.
+
+  Args:
+    variant: Variant proto. The variant to scale.
+
+  Returns:
+    variant: Variant proto. The input variant with its GLs modified.
+  """
+  call = variant_utils.only_call(variant)
+  max_gl = max(call.genotype_likelihood)
+  call.genotype_likelihood[:] = [
+      (gl - max_gl) for gl in call.genotype_likelihood
+  ]
+  return variant
 
 
 def _sort_grouped_variants(group):
@@ -775,9 +796,10 @@ def _transform_to_gvcf_record(variant):
   return variant
 
 
-def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
-                                   lessthan, fasta_reader):
-  """Yields records consisting of the merging of variant and non-variant sites.
+def merge_and_write_variants_and_nonvariants(
+    variant_iterable, nonvariant_iterable, lessthan, fasta_reader, vcf_writer,
+    gvcf_writer):
+  """Writes records consisting of the merging of variant and non-variant sites.
 
   The merging strategy used for single-sample records is to emit variants
   without modification. Any non-variant sites that overlap a variant are
@@ -791,14 +813,12 @@ def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
     nonvariant_iterable: Iterable of Variant protos. A sorted iterable of the
       non-variant sites to merge.
     lessthan: Callable. A function that takes two Variant protos as input and
-      returns True iff the first argument is located "before" the second and
-      the variants do not overlap.
+      returns True iff the first argument is located "before" the second and the
+      variants do not overlap.
     fasta_reader: GenomeReferenceFai object. The reference genome reader used to
       ensure gVCF records have the correct reference base.
-
-  Yields:
-    Variant protos representing both variant and non-variant sites in the sorted
-    order provided by the input.
+    vcf_writer: VcfWriter. Writes variants to VCF.
+    gvcf_writer: VcfWriter. Writes merged variants and nonvariants to gVCF.
   """
 
   def next_or_none(iterable):
@@ -812,11 +832,13 @@ def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
 
   while variant is not None or nonvariant is not None:
     if lessthan(variant, nonvariant):
-      yield variant
+      vcf_writer.write(variant)
+      gvcf_variant = _transform_to_gvcf_record(_zero_scale_gl(variant))
+      gvcf_writer.write(gvcf_variant)
       variant = next_or_none(variant_iterable)
       continue
     elif lessthan(nonvariant, variant):
-      yield nonvariant
+      gvcf_writer.write(nonvariant)
       nonvariant = next_or_none(nonvariant_iterable)
       continue
     else:
@@ -824,9 +846,10 @@ def merge_variants_and_nonvariants(variant_iterable, nonvariant_iterable,
       assert max(variant.start, nonvariant.start) < min(
           variant.end, nonvariant.end), '{} and {}'.format(variant, nonvariant)
       if nonvariant.start < variant.start:
-        # Emit a non-variant region up to the start of the variant.
-        yield _create_record_from_template(nonvariant, nonvariant.start,
-                                           variant.start, fasta_reader)
+        # Write a non-variant region up to the start of the variant.
+        v = _create_record_from_template(nonvariant, nonvariant.start,
+                                         variant.start, fasta_reader)
+        gvcf_writer.write(v)
       if nonvariant.end > variant.end:
         # There is an overhang of the non-variant site after the variant is
         # finished, so update the non-variant to point to that.
@@ -887,35 +910,32 @@ def main(argv=()):
           sample_name=sample_name)
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
-      logging.info('Writing variants to VCF.')
-      write_variants_to_vcf(
-          variant_generator=variant_generator,
-          output_vcf_path=FLAGS.outfile,
-          header=header)
-      logging.info('VCF creation took %s minutes',
-                   (time.time() - start_time) / 60)
 
-    # Also write out the gVCF file if it was provided.
-    if FLAGS.nonvariant_site_tfrecord_path:
-      logging.info('Creating gVCF output.')
       start_time = time.time()
-      nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
-          FLAGS.nonvariant_site_tfrecord_path,
-          key=_get_contig_based_variant_sort_keyfn(contigs),
-          proto=variants_pb2.Variant)
-      with vcf.VcfReader(FLAGS.outfile) as variant_reader:
-        lessthanfn = _get_contig_based_lessthan(contigs)
-        gvcf_variants = (
-            _transform_to_gvcf_record(variant)
-            for variant in variant_reader.iterate())
-        merged_variants = merge_variants_and_nonvariants(
-            gvcf_variants, nonvariant_generator, lessthanfn, fasta_reader)
+      vcf_writer = vcf.VcfWriter(
+          FLAGS.outfile, header=header, round_qualities=True)
+      if not FLAGS.nonvariant_site_tfrecord_path:
+        logging.info('Writing variants to VCF.')
         write_variants_to_vcf(
-            variant_generator=merged_variants,
-            output_vcf_path=FLAGS.gvcf_outfile,
+            variant_iterable=variant_generator,
+            output_vcf_path=FLAGS.outfile,
             header=header)
-      logging.info('gVCF creation took %s minutes',
-                   (time.time() - start_time) / 60)
+        logging.info('VCF creation took %s minutes',
+                     (time.time() - start_time) / 60)
+      else:
+        logging.info('Merging and writing variants to VCF and gVCF.')
+        lessthanfn = _get_contig_based_lessthan(contigs)
+        gvcf_writer = vcf.VcfWriter(
+            FLAGS.gvcf_outfile, header=header, round_qualities=True)
+        nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
+            FLAGS.nonvariant_site_tfrecord_path,
+            key=_get_contig_based_variant_sort_keyfn(contigs),
+            proto=variants_pb2.Variant)
+        merge_and_write_variants_and_nonvariants(
+            variant_generator, nonvariant_generator, lessthanfn, fasta_reader,
+            vcf_writer, gvcf_writer)
+        logging.info('Finished writing VCF and gVCF in %s minutes.',
+                     (time.time() - start_time) / 60)
 
 
 if __name__ == '__main__':

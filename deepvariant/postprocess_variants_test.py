@@ -62,6 +62,7 @@ from deepvariant.testing import flagsaver
 FLAGS = flags.FLAGS
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
+zero_scale_gl = postprocess_variants._zero_scale_gl
 
 # Test contigs for gVCF merging code.
 _CONTIGS = [
@@ -80,6 +81,16 @@ def dummy_reference_reader():
 
 def setUpModule():
   testdata.init()
+
+
+class MockVcfWriter(object):
+  """A mock VcfWriter that records the variants written in a list."""
+
+  def __init__(self):
+    self.variants_written = []
+
+  def write(self, proto):
+    self.variants_written.append(proto)
 
 
 def _create_variant(ref_name, start, ref_base, alt_bases, qual, filter_field,
@@ -152,7 +163,12 @@ def _simple_variant(ref_name, start, ref_base):
       chrom=ref_name,
       start=start,
       end=start + len(ref_base),
-      alleles=[ref_base, 'A' if ref_base != 'A' else 'C'])
+      alleles=[
+          ref_base, 'A' if ref_base != 'A' else 'C',
+          vcf_constants.GVCF_ALT_ALLELE
+      ],
+      gt=[0, 1],
+      gls=[-3, -.01, -1])
 
 
 def _create_nonvariant(ref_name, start, end, ref_base):
@@ -171,7 +187,9 @@ def _create_nonvariant(ref_name, start, end, ref_base):
       chrom=ref_name,
       start=start,
       end=end,
-      alleles=[ref_base, vcf_constants.GVCF_ALT_ALLELE])
+      alleles=[ref_base, vcf_constants.GVCF_ALT_ALLELE],
+      gt=[0, 0],
+      gls=[-.001, -5, -10])
 
 
 def make_golden_dataset(compressed_inputs=False):
@@ -1112,44 +1130,45 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
       # Empty.
       ([], [], []),
       # Non-overlapping records.
-      ([('1', 1, 'A')], [], [_simple_variant('1', 1, 'A')]),
+      ([('1', 1, 'A')], [], [zero_scale_gl(_simple_variant('1', 1, 'A'))]),
       ([('1', 3, 'C'), ('1', 7, 'T'),
         ('2', 6, 'A')], [('2', 3, 6, 'G'), ('2', 7, 9, 'C')], [
-            _simple_variant('1', 3, 'C'),
-            _simple_variant('1', 7, 'T'),
+            zero_scale_gl(_simple_variant('1', 3, 'C')),
+            zero_scale_gl(_simple_variant('1', 7, 'T')),
             _create_nonvariant('2', 3, 6, 'G'),
-            _simple_variant('2', 6, 'A'),
+            zero_scale_gl(_simple_variant('2', 6, 'A')),
             _create_nonvariant('2', 7, 9, 'C')
         ]),
       # Non-variant record overlaps a variant from the left.
-      ([('1', 5, 'GTTACG')], [('1', 2, 8, 'C')],
-       [_create_nonvariant('1', 2, 5, 'C'),
-        _simple_variant('1', 5, 'GTTACG')]),
+      ([('1', 5, 'GTTACG')], [('1', 2, 8, 'C')], [
+          _create_nonvariant('1', 2, 5, 'C'),
+          zero_scale_gl(_simple_variant('1', 5, 'GTTACG'))
+      ]),
       # Non-variant record overlaps a variant from the right.
       ([('1', 5, 'GTTACG')], [('1', 8, 15, 'A')], [
-          _simple_variant('1', 5, 'GTTACG'),
+          zero_scale_gl(_simple_variant('1', 5, 'GTTACG')),
           _create_nonvariant('1', 11, 15, 'T')
       ]),
       # Non-variant record is subsumed by a variant.
       ([('1', 5, 'GTTACG')], [('1', 5, 11, 'G')],
-       [_simple_variant('1', 5, 'GTTACG')]),
+       [zero_scale_gl(_simple_variant('1', 5, 'GTTACG'))]),
       # Non-variant record subsumes a variant.
       ([('1', 5, 'GTTACG')], [('1', 4, 12, 'G')], [
           _create_nonvariant('1', 4, 5, 'G'),
-          _simple_variant('1', 5, 'GTTACG'),
+          zero_scale_gl(_simple_variant('1', 5, 'GTTACG')),
           _create_nonvariant('1', 11, 12, 'T')
       ]),
       # Non-variant record subsumes multiple overlapping variants.
       ([('1', 3, 'CGGTTAC'), ('1', 5, 'G')], [('1', 1, 15, 'A')], [
           _create_nonvariant('1', 1, 3, 'A'),
-          _simple_variant('1', 3, 'CGGTTAC'),
-          _simple_variant('1', 5, 'G'),
+          zero_scale_gl(_simple_variant('1', 3, 'CGGTTAC')),
+          zero_scale_gl(_simple_variant('1', 5, 'G')),
           _create_nonvariant('1', 10, 15, 'G')
       ]),
       ([('1', 3, 'CGGTTAC'), ('1', 5, 'GTTACGT')], [('1', 1, 15, 'A')], [
           _create_nonvariant('1', 1, 3, 'A'),
-          _simple_variant('1', 3, 'CGGTTAC'),
-          _simple_variant('1', 5, 'GTTACGT'),
+          zero_scale_gl(_simple_variant('1', 3, 'CGGTTAC')),
+          zero_scale_gl(_simple_variant('1', 5, 'GTTACGT')),
           _create_nonvariant('1', 12, 15, 'T')
       ]),
   )
@@ -1159,9 +1178,17 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     nonviter = (_create_nonvariant(*nv) for nv in nonvariants)
     lessthan = postprocess_variants._get_contig_based_lessthan(_CONTIGS)
     reader = dummy_reference_reader()
-    actual = postprocess_variants.merge_variants_and_nonvariants(
-        viter, nonviter, lessthan, reader)
-    self.assertEqual(list(actual), expected)
+
+    mock_vcf_writer = MockVcfWriter()
+    mock_gvcf_writer = MockVcfWriter()
+
+    postprocess_variants.merge_and_write_variants_and_nonvariants(
+        viter, nonviter, lessthan, reader, mock_vcf_writer, mock_gvcf_writer)
+
+    vcf_expected = [zero_scale_gl(_simple_variant(*v)) for v in variants]
+
+    self.assertEqual(mock_vcf_writer.variants_written, vcf_expected)
+    self.assertEqual(mock_gvcf_writer.variants_written, expected)
 
   # redacted
   def test_sort_grouped_variants(self):
