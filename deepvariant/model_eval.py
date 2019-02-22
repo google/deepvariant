@@ -60,7 +60,7 @@ increasing_metrics = [
 ]
 decreasing_metrics = ['loss']
 
-flags.DEFINE_integer('batch_size', 64, 'The number of samples in each batch.')
+flags.DEFINE_integer('batch_size', 512, 'The number of samples in each batch.')
 
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
