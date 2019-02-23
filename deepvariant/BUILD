@@ -234,7 +234,7 @@ py_library(
         ":exclude_contigs",
         ":logging_level",
         ":pileup_image",
-        ":resources",
+        ":resources_main_lib",
         ":tf_utils",
         ":variant_caller",
         "//deepvariant/labeler:customized_classes_labeler",
@@ -279,7 +279,7 @@ py_test(
     shard_count = 2,
     srcs_version = "PY2AND3",
     deps = [
-        ":make_examples",
+        ":make_examples_lib",
         ":py_testdata",
         ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
@@ -324,10 +324,15 @@ py_library(
 
 py_binary(
     name = "call_variants",
+    srcs = ["call_variants.py"],
+    deps = [":call_variants_main_lib"],
+)
+
+py_library(
+    name = "call_variants_main_lib",
     srcs = [
         "call_variants.py",
     ],
-    main = "call_variants.py",
     deps = [
         ":call_variants_lib",
         "@absl_py//absl/flags",
@@ -342,7 +347,7 @@ py_test(
     data = [":testdata"],
     srcs_version = "PY2AND3",
     deps = [
-        ":call_variants",
+        ":call_variants_main_lib",
         ":modeling",
         ":py_testdata",
         ":tf_utils",
@@ -371,7 +376,7 @@ py_test(
         "notap",
     ],
     deps = [
-        ":call_variants",
+        ":call_variants_main_lib",
         ":modeling",
         ":py_testdata",
         "@absl_py//absl/testing:absltest",
@@ -619,6 +624,13 @@ py_binary(
     name = "model_train",
     srcs = ["model_train.py"],
     srcs_version = "PY2AND3",
+    deps = [":model_train_main_lib"],
+)
+
+py_library(
+    name = "model_train_main_lib",
+    srcs = ["model_train.py"],
+    srcs_version = "PY2AND3",
     deps = [
         ":model_train_lib",
         "@absl_py//absl/flags",
@@ -636,7 +648,7 @@ py_test(
     tags = ["nozapfhahn"],  # timeout
     deps = [
         ":data_providers_test_lib",
-        ":model_train",
+        ":model_train_main_lib",
         ":modeling",
         ":py_testdata",
         "//deepvariant/testing:flagsaver",
@@ -666,6 +678,13 @@ py_binary(
     name = "model_eval",
     srcs = ["model_eval.py"],
     srcs_version = "PY2AND3",
+    deps = [":model_eval_main_lib"],
+)
+
+py_library(
+    name = "model_eval_main_lib",
+    srcs = ["model_eval.py"],
+    srcs_version = "PY2AND3",
     deps = [
         ":model_eval_lib",
         "@absl_py//absl/flags",
@@ -682,7 +701,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":data_providers_test_lib",
-        ":model_eval",
+        ":model_eval_main_lib",
         ":py_testdata",
         "//deepvariant/testing:flagsaver",
         "//deepvariant/testing:tf_test_utils",
@@ -778,6 +797,13 @@ py_binary(
     name = "resources",
     srcs = ["resources.py"],
     srcs_version = "PY2AND3",
+    deps = [":resources_main_lib"],
+)
+
+py_library(
+    name = "resources_main_lib",
+    srcs = ["resources.py"],
+    srcs_version = "PY2AND3",
     deps = ["//deepvariant/protos:resources_py_pb2"],
 )
 
@@ -786,7 +812,7 @@ py_test(
     srcs = ["resources_test.py"],
     srcs_version = "PY2AND3",
     deps = [
-        ":resources",
+        ":resources_main_lib",
         "@absl_py//absl/testing:absltest",
     ],
 )
