@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 import errno
 import itertools
 import sys
@@ -62,7 +63,6 @@ from deepvariant.testing import flagsaver
 FLAGS = flags.FLAGS
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
-zero_scale_gl = postprocess_variants._zero_scale_gl
 
 # Test contigs for gVCF merging code.
 _CONTIGS = [
@@ -90,7 +90,7 @@ class MockVcfWriter(object):
     self.variants_written = []
 
   def write(self, proto):
-    self.variants_written.append(proto)
+    self.variants_written.append(copy.deepcopy(proto))
 
 
 def _create_variant(ref_name, start, ref_base, alt_bases, qual, filter_field,
@@ -163,12 +163,37 @@ def _simple_variant(ref_name, start, ref_base):
       chrom=ref_name,
       start=start,
       end=start + len(ref_base),
+      alleles=[ref_base, 'A' if ref_base != 'A' else 'C'],
+      gt=[0, 1],
+      gls=[-3, -.01, -1])
+
+
+def _simple_gv(ref_name, start, ref_base):
+  """Creates a gVCF variant record for testing variant and non-variant merge.
+
+  The genotypes of a _simple_gv variant are identical to those of a
+  _simple_variant variant. The alleles include the <*> allele, since it is a
+  gVCF record, and the genotype likelihoods are zero-scaled and have the <*>
+  allele likelihood set to postprocess_variants._GVCF_ALT_ALLELE_GL.
+
+  Args:
+    ref_name: str. Reference name for this variant.
+    start: int. start position on the contig [0-based, half open).
+    ref_base: str. reference base(s).
+
+  Returns:
+    A gVCF Variant record created with the specified arguments.
+  """
+  return test_utils.make_variant(
+      chrom=ref_name,
+      start=start,
+      end=start + len(ref_base),
       alleles=[
           ref_base, 'A' if ref_base != 'A' else 'C',
           vcf_constants.GVCF_ALT_ALLELE
       ],
       gt=[0, 1],
-      gls=[-3, -.01, -1])
+      gls=[-2.99, 0, -0.99] + [postprocess_variants._GVCF_ALT_ALLELE_GL] * 3)
 
 
 def _create_nonvariant(ref_name, start, end, ref_base):
@@ -1130,45 +1155,43 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
       # Empty.
       ([], [], []),
       # Non-overlapping records.
-      ([('1', 1, 'A')], [], [zero_scale_gl(_simple_variant('1', 1, 'A'))]),
+      ([('1', 1, 'A')], [], [_simple_gv('1', 1, 'A')]),
       ([('1', 3, 'C'), ('1', 7, 'T'),
         ('2', 6, 'A')], [('2', 3, 6, 'G'), ('2', 7, 9, 'C')], [
-            zero_scale_gl(_simple_variant('1', 3, 'C')),
-            zero_scale_gl(_simple_variant('1', 7, 'T')),
+            _simple_gv('1', 3, 'C'),
+            _simple_gv('1', 7, 'T'),
             _create_nonvariant('2', 3, 6, 'G'),
-            zero_scale_gl(_simple_variant('2', 6, 'A')),
+            _simple_gv('2', 6, 'A'),
             _create_nonvariant('2', 7, 9, 'C')
         ]),
       # Non-variant record overlaps a variant from the left.
-      ([('1', 5, 'GTTACG')], [('1', 2, 8, 'C')], [
-          _create_nonvariant('1', 2, 5, 'C'),
-          zero_scale_gl(_simple_variant('1', 5, 'GTTACG'))
-      ]),
+      ([('1', 5, 'GTTACG')], [('1', 2, 8, 'C')],
+       [_create_nonvariant('1', 2, 5, 'C'),
+        _simple_gv('1', 5, 'GTTACG')]),
       # Non-variant record overlaps a variant from the right.
-      ([('1', 5, 'GTTACG')], [('1', 8, 15, 'A')], [
-          zero_scale_gl(_simple_variant('1', 5, 'GTTACG')),
-          _create_nonvariant('1', 11, 15, 'T')
-      ]),
+      ([('1', 5, 'GTTACG')], [('1', 8, 15, 'A')],
+       [_simple_gv('1', 5, 'GTTACG'),
+        _create_nonvariant('1', 11, 15, 'T')]),
       # Non-variant record is subsumed by a variant.
       ([('1', 5, 'GTTACG')], [('1', 5, 11, 'G')],
-       [zero_scale_gl(_simple_variant('1', 5, 'GTTACG'))]),
+       [_simple_gv('1', 5, 'GTTACG')]),
       # Non-variant record subsumes a variant.
       ([('1', 5, 'GTTACG')], [('1', 4, 12, 'G')], [
           _create_nonvariant('1', 4, 5, 'G'),
-          zero_scale_gl(_simple_variant('1', 5, 'GTTACG')),
+          _simple_gv('1', 5, 'GTTACG'),
           _create_nonvariant('1', 11, 12, 'T')
       ]),
       # Non-variant record subsumes multiple overlapping variants.
       ([('1', 3, 'CGGTTAC'), ('1', 5, 'G')], [('1', 1, 15, 'A')], [
           _create_nonvariant('1', 1, 3, 'A'),
-          zero_scale_gl(_simple_variant('1', 3, 'CGGTTAC')),
-          zero_scale_gl(_simple_variant('1', 5, 'G')),
+          _simple_gv('1', 3, 'CGGTTAC'),
+          _simple_gv('1', 5, 'G'),
           _create_nonvariant('1', 10, 15, 'G')
       ]),
       ([('1', 3, 'CGGTTAC'), ('1', 5, 'GTTACGT')], [('1', 1, 15, 'A')], [
           _create_nonvariant('1', 1, 3, 'A'),
-          zero_scale_gl(_simple_variant('1', 3, 'CGGTTAC')),
-          zero_scale_gl(_simple_variant('1', 5, 'GTTACGT')),
+          _simple_gv('1', 3, 'CGGTTAC'),
+          _simple_gv('1', 5, 'GTTACGT'),
           _create_nonvariant('1', 12, 15, 'T')
       ]),
   )
@@ -1185,7 +1208,7 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     postprocess_variants.merge_and_write_variants_and_nonvariants(
         viter, nonviter, lessthan, reader, mock_vcf_writer, mock_gvcf_writer)
 
-    vcf_expected = [zero_scale_gl(_simple_variant(*v)) for v in variants]
+    vcf_expected = [_simple_variant(*v) for v in variants]
 
     self.assertEqual(mock_vcf_writer.variants_written, vcf_expected)
     self.assertEqual(mock_gvcf_writer.variants_written, expected)
