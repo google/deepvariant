@@ -912,8 +912,6 @@ def main(argv=()):
           independent_variants)
 
       start_time = time.time()
-      vcf_writer = vcf.VcfWriter(
-          FLAGS.outfile, header=header, round_qualities=True)
       if not FLAGS.nonvariant_site_tfrecord_path:
         logging.info('Writing variants to VCF.')
         write_variants_to_vcf(
@@ -925,6 +923,8 @@ def main(argv=()):
       else:
         logging.info('Merging and writing variants to VCF and gVCF.')
         lessthanfn = _get_contig_based_lessthan(contigs)
+        vcf_writer = vcf.VcfWriter(
+            FLAGS.outfile, header=header, round_qualities=True)
         gvcf_writer = vcf.VcfWriter(
             FLAGS.gvcf_outfile, header=header, round_qualities=True)
         nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
