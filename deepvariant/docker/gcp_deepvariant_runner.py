@@ -122,8 +122,6 @@ _NOW_STR = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 # there as well.
 _DEEPVARIANT_LABEL_KEY = 'deepvariant-operation-label'
 
-# Selects the latest 1.10 release.
-_DEFAULT_GKE_CLUSTER_VERSION = '1.10'
 _POD_CONFIG_TEMPLATE = r"""
 {{
     "kind": "Pod",
@@ -470,7 +468,6 @@ def _run_call_variants_with_kubernetes(pipeline_args):
     # Create a new GKE cluster.
     job_name_label = pipeline_args.job_name_prefix + _CALL_VARIANTS_JOB_NAME
     extra_args = [
-        '--cluster-version=' + pipeline_args.gke_cluster_version,
         '--num-nodes=1', '--enable-kubernetes-alpha', '--enable-ip-alias',
         '--create-subnetwork=', '--node-labels=job_name=' + job_name_label,
         '--scopes=cloud-platform', '--enable-tpu', '--no-enable-autorepair',
@@ -852,11 +849,6 @@ def run(argv=None):
       '--gke_cluster_name',
       help=('GKE cluster to run call_variants step with TPU. If empty, a GKE '
             'cluster is created. This is relevant only if --tpu is set.'))
-  parser.add_argument(
-      '--gke_cluster_version',
-      default=_DEFAULT_GKE_CLUSTER_VERSION,
-      help=('GKE cluster version to run call_variants step with TPU. '
-            'This is relevant only if --tpu is set.'))
   parser.add_argument(
       '--gke_cluster_region',
       help=('GKE cluster region used for searching an existing cluster or '

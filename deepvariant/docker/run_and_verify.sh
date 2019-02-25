@@ -42,7 +42,7 @@ function init() {
   if [[ "${platform}" == "gpu" ]]; then
     extra_flags="--gpu"
   elif [[ "${platform}" == "tpu" ]]; then
-    local extra_flags="--tpu --gke_cluster_version 1.10 --gke_cluster_zone us-central1-c"
+    local extra_flags="--tpu --gke_cluster_zone us-central1-c"
   fi
 
   readonly DATE=$(date '+%Y-%m-%d-%H-%M-%S')
