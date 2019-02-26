@@ -171,6 +171,19 @@ flags.DEFINE_integer(
     'Sets the htslib block size. Zero or negative uses default htslib setting; '
     'larger values (e.g. 1M) may be beneficial for using remote files. '
     'Currently only applies to SAM/BAM reading.')
+flags.DEFINE_integer(
+    'min_base_quality', 10,
+    'Minimum base quality. This field indicates that we are enforcing a '
+    'minimum base quality score for alternate alleles. Alternate alleles will '
+    'only be considered if all bases in the allele have a quality greater than '
+    'min_base_quality.')
+flags.DEFINE_integer(
+    'min_mapping_quality', 10,
+    'By default, reads with any mapping quality are kept. Setting this field '
+    'to a positive integer i will only keep reads that have a MAPQ >= i. Note '
+    'this only applies to aligned reads. If keep_unaligned is set, unaligned '
+    'reads, which by definition do not have a mapping quality, will still be '
+    'kept.')
 flags.DEFINE_integer('vsc_min_count_snps', 2,
                      'SNP alleles occurring at least this many times in our '
                      'AlleleCount will be advanced as candidates.')
@@ -285,8 +298,8 @@ def default_options(add_flags=True, flags_obj=None):
 
   read_reqs = reads_pb2.ReadRequirements(
       keep_duplicates=FLAGS.keep_duplicates,
-      min_base_quality=10,
-      min_mapping_quality=10,
+      min_base_quality=flags_obj.min_base_quality,
+      min_mapping_quality=flags_obj.min_mapping_quality,
       min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
 
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
