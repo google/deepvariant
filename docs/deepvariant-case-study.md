@@ -86,6 +86,15 @@ The original source of data used in this case study:
     [PrecisionFDA's BWA-MEM
     app](https://precision.fda.gov/apps/app-BpF9YGQ0bxjbjk6Fx1F0KJF0) with
     default setting, and then got the HG002_NIST_150bp_50x.bam file as output.
+
+    Since 2019-02-26, the file was further processed using SAMtools 1.9 and
+    HTSlib 1.9 to address formatting problems caused by an older version of
+    HTSlib:
+
+    ```
+    samtools view -bh HG002_NIST_150bp_50x.bam -o HG002_NIST_150bp_50x.bam
+    ```
+
     The FASTQ files are originally from the [Genome in a Bottle
     Consortium](http://jimb.stanford.edu/giab-resources/). For more information,
     see this [Scientific Data
