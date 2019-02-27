@@ -113,6 +113,16 @@ flags.DEFINE_string(
     'default, op placement is entirely left up to TensorFlow.  In tpu mode, '
     'use and require TPU.')
 
+# Configurable GPU setting
+flags.DEFINE_boolean('enable_configurable_gpu', False,
+                     'Enable to config the percentage of GPU memory allocation '
+                     'for Spark distributed computing framework. ')
+
+flags.DEFINE_integer('per_process_gpu_memory_fraction', 100,
+                     'Percentage of GPU memory allocated per process for Spark '
+                     'distributed computing framework. (take effect when '
+                     'enable_configurable_gpu is True')
+
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
     'gcp_project', None,
@@ -312,7 +322,11 @@ def call_variants(examples_filename,
   init_op = tf.group(tf.global_variables_initializer(),
                      tf.local_variables_initializer())
   device_count = {'GPU': 0, 'TPU': 0} if execution_hardware == 'cpu' else {}
-  config = tf.ConfigProto(device_count=device_count)
+  config = tf.ConfigProto(device_count={'GPU': 1}, allow_soft_placement=True,
+                   intra_op_parallelism_threads=1, inter_op_parallelism_threads=1,
+                   gpu_options=tf.GPUOptions(
+                       per_process_gpu_memory_fraction=float(FLAGS.per_process_gpu_memory_fraction / 100))) \
+      if FLAGS.enable_configurable_gpu else tf.ConfigProto(device_count=device_count)
   with tf.Session(config=config) as sess:
     sess.run(init_op)
     if execution_hardware == 'accelerator':
