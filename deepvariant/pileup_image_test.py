@@ -32,6 +32,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import itertools
+
 
 
 from absl.testing import absltest
@@ -41,6 +43,7 @@ import numpy as np
 import numpy.testing as npt
 
 from third_party.nucleus.io import fasta
+from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
@@ -62,14 +65,12 @@ def _make_dv_call(ref_bases='A', alt_bases='C'):
           end=11,
           reference_bases=ref_bases,
           alternate_bases=[alt_bases]),
-      allele_support={
-          'C': _supporting_reads('read1/1', 'read2/1')
-      })
+      allele_support={'C': _supporting_reads('read1/1', 'read2/1')})
 
 
-def _make_encoder(**kwargs):
+def _make_encoder(read_requirements=None, **kwargs):
   """Make a PileupImageEncoderNative with overrideable default options."""
-  options = pileup_image.default_options()
+  options = pileup_image.default_options(read_requirements)
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image_native.PileupImageEncoderNative(options)
 
@@ -190,8 +191,9 @@ class PileupImageEncoderTest(parameterized.TestCase):
         (50, 50, 254, 50, 50)
     ]).astype(np.uint8)
 
-    self.assertImageRowEquals(_make_encoder().encode_read(
-        dv_call, 'ACAGT', read, start, alt_allele), full_expected)
+    self.assertImageRowEquals(
+        _make_encoder().encode_read(dv_call, 'ACAGT', read, start, alt_allele),
+        full_expected)
 
   @parameterized.parameters((bases_start, bases_end)
                             for bases_start in range(0, 5)
@@ -221,8 +223,8 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Matches ref or not.
         (50, 50, 254, 50, 50)
     ]).astype(np.uint8)
-    expected = np.zeros(
-        (1, ref_size, self.options.num_channels), dtype=np.uint8)
+    expected = np.zeros((1, ref_size, self.options.num_channels),
+                        dtype=np.uint8)
     for i in range(read_start, read_start + len(read_bases)):
       if ref_start <= i < ref_start + ref_size:
         expected[0, i - ref_start] = full_expected[0, i - ref_start]
@@ -235,8 +237,9 @@ class PileupImageEncoderTest(parameterized.TestCase):
         name='read1')
     dv_call = _make_dv_call()
     alt_allele = dv_call.variant.alternate_bases[0]
-    self.assertImageRowEquals(_make_encoder().encode_read(
-        dv_call, 'ACAGT', read, ref_start, alt_allele), expected)
+    self.assertImageRowEquals(
+        _make_encoder().encode_read(dv_call, 'ACAGT', read, ref_start,
+                                    alt_allele), expected)
 
   def test_encode_read_deletion(self):
     # ref:  AACAG
@@ -260,8 +263,9 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Matches ref or not.
         (50, 254, 0, 0, 50)
     ]).astype(np.uint8)
-    self.assertImageRowEquals(_make_encoder().encode_read(
-        dv_call, 'AACAG', read, start, alt_allele), full_expected)
+    self.assertImageRowEquals(
+        _make_encoder().encode_read(dv_call, 'AACAG', read, start, alt_allele),
+        full_expected)
 
   def test_encode_read_insertion(self):
     # ref:  AA-CAG
@@ -289,10 +293,35 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Matches ref or not.
         (50, 254, 50, 50, 50)
     ]).astype(np.uint8)
-    self.assertImageRowEquals(_make_encoder().encode_read(
-        dv_call, 'AACAG', read, start, alt_allele), full_expected)
+    self.assertImageRowEquals(
+        _make_encoder().encode_read(dv_call, 'AACAG', read, start, alt_allele),
+        full_expected)
 
-  def test_ignores_reads_with_low_quality_bases(self):
+  @parameterized.parameters(
+      (min_base_qual, min_mapping_qual)
+      for min_base_qual, min_mapping_qual in itertools.product(
+          range(0, 5), range(0, 5)))
+  def test_ignores_reads_with_low_quality_bases(self, min_base_qual,
+                                                min_mapping_qual):
+    """Check that we discard reads with low quality bases at variant start site.
+
+    We have the following scenario:
+
+    position    0    1    2    3    4    5
+    reference        A    A    C    A    G
+    read             A    A    A
+    variant               C
+
+    We set the base quality of the middle base in the read to different values
+    of `base_qual`. Since the middle position of the read is where the variant
+    starts, the read should only be kept if `base_qual` >= `min_base_qual`.
+
+    Args:
+      min_base_qual: Reads are discarded if the base at a variant start position
+        does not meet this base quality requirement.
+      min_mapping_qual: Reads are discarded if they do not meet this mapping
+        quality requirement.
+    """
     dv_call = deepvariant_pb2.DeepVariantCall(
         variant=variants_pb2.Variant(
             reference_name='chr1',
@@ -300,16 +329,116 @@ class PileupImageEncoderTest(parameterized.TestCase):
             end=3,
             reference_bases='A',
             alternate_bases=['C']))
-    pie = _make_encoder()
 
-    # Get the threshold the encoder uses.
-    min_qual = self.options.read_requirements.min_base_quality
+    read_requirements = reads_pb2.ReadRequirements(
+        min_base_quality=min_base_qual,
+        min_mapping_quality=min_mapping_qual,
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+    pie = _make_encoder(read_requirements=read_requirements)
 
-    for qual in range(0, min_qual + 5):
-      quals = [min_qual - 1, qual, min_qual + 1]
-      read = test_utils.make_read('AAA', start=1, cigar='3M', quals=quals)
+    for base_qual in range(min_base_qual + 5):
+      quals = [min_base_qual, base_qual, min_base_qual]
+      read = test_utils.make_read(
+          'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual)
       actual = pie.encode_read(dv_call, 'AACAG', read, 1, 'C')
-      if qual < min_qual:
+      if base_qual < min_base_qual:
+        self.assertIsNone(actual)
+      else:
+        self.assertIsNotNone(actual)
+
+  @parameterized.parameters(
+      (min_base_qual, min_mapping_qual)
+      for min_base_qual, min_mapping_qual in itertools.product(
+          range(0, 5), range(0, 5)))
+  def test_keeps_reads_with_low_quality_bases(self, min_base_qual,
+                                              min_mapping_qual):
+    """Check that we keep reads with adequate quality at variant start position.
+
+    We have the following scenario:
+
+    position    0    1    2    3    4    5
+    reference        A    A    C    A    G
+    read             A    A    A
+    variant               C
+
+    We set the base quality of the first and third bases in the read to
+    different functions of `base_qual`. The middle position of the read is
+    where the variant starts, and this position always has base quality greater
+    than `min_base_qual`. Thus, the read should always be kept.
+
+    Args:
+      min_base_qual: Reads are discarded if the base at a variant start position
+        does not meet this base quality requirement.
+      min_mapping_qual: Reads are discarded if they do not meet this mapping
+        quality requirement.
+    """
+    dv_call = deepvariant_pb2.DeepVariantCall(
+        variant=variants_pb2.Variant(
+            reference_name='chr1',
+            start=2,
+            end=3,
+            reference_bases='A',
+            alternate_bases=['C']))
+
+    read_requirements = reads_pb2.ReadRequirements(
+        min_base_quality=min_base_qual,
+        min_mapping_quality=min_mapping_qual,
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+    pie = _make_encoder(read_requirements=read_requirements)
+
+    for base_qual in range(min_base_qual + 5):
+      quals = [base_qual - 1, min_base_qual, base_qual + 1]
+      read = test_utils.make_read(
+          'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual)
+      actual = pie.encode_read(dv_call, 'AACAG', read, 1, 'C')
+      self.assertIsNotNone(actual)
+
+  @parameterized.parameters(
+      (min_base_qual, min_mapping_qual)
+      for min_base_qual, min_mapping_qual in itertools.product(
+          range(0, 5), range(0, 5)))
+  def test_ignores_reads_with_low_mapping_quality(self, min_base_qual,
+                                                  min_mapping_qual):
+    """Check that we discard reads with low mapping quality.
+
+    We have the following scenario:
+
+    position    0    1    2    3    4    5
+    reference        A    A    C    A    G
+    read             A    A    A
+    variant               C
+
+    We set the mapping quality of the read to different values of
+    `mapping_qual`. All bases in the read have base quality greater than
+    `min_base_qual`. The read should only be kept if
+    `mapping_qual` > `min_mapping_qual`.
+
+    Args:
+      min_base_qual: Reads are discarded if the base at a variant start position
+        does not meet this base quality requirement.
+      min_mapping_qual: Reads are discarded if they do not meet this mapping
+        quality requirement.
+    """
+    dv_call = deepvariant_pb2.DeepVariantCall(
+        variant=variants_pb2.Variant(
+            reference_name='chr1',
+            start=2,
+            end=3,
+            reference_bases='A',
+            alternate_bases=['C']))
+
+    read_requirements = reads_pb2.ReadRequirements(
+        min_base_quality=min_base_qual,
+        min_mapping_quality=min_mapping_qual,
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+    pie = _make_encoder(read_requirements=read_requirements)
+
+    for mapping_qual in range(min_mapping_qual + 5):
+      quals = [min_base_qual, min_base_qual, min_base_qual]
+      read = test_utils.make_read(
+          'AAA', start=1, cigar='3M', quals=quals, mapq=mapping_qual)
+      actual = pie.encode_read(dv_call, 'AACAG', read, 1, 'C')
+      if mapping_qual < min_mapping_qual:
         self.assertIsNone(actual)
       else:
         self.assertIsNotNone(actual)

@@ -185,6 +185,13 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
   const uint8 mapping_color = MappingQualityColor(mapping_quality);
   const uint8 strand_color = StrandColor(is_forward_strand);
   const int min_base_quality = options_.read_requirements().min_base_quality();
+  const int min_mapping_quality =
+      options_.read_requirements().min_mapping_quality();
+
+  // Bail early if this read's mapping quality is too low.
+  if (mapping_quality < min_mapping_quality) {
+    return nullptr;
+  }
 
   // Handler for each component of the CIGAR string, as subdivided
   // according the rules below.
@@ -212,8 +219,8 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
     size_t col = ref_i - image_start_pos;
     if (read_base && 0 <= col && col < ref_bases.size()) {
       int base_quality = read.aligned_quality(read_i);
-      int qual = std::min(base_quality, mapping_quality);
-      if (ref_i == dv_call.variant().start() && qual < min_base_quality) {
+      if (ref_i == dv_call.variant().start() &&
+          base_quality < min_base_quality) {
         return false;
       }
       bool matches_ref = (read_base == ref_bases[col]);
