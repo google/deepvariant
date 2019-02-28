@@ -181,9 +181,7 @@ flags.DEFINE_integer(
     'min_mapping_quality', 10,
     'By default, reads with any mapping quality are kept. Setting this field '
     'to a positive integer i will only keep reads that have a MAPQ >= i. Note '
-    'this only applies to aligned reads. If keep_unaligned is set, unaligned '
-    'reads, which by definition do not have a mapping quality, will still be '
-    'kept.')
+    'this only applies to aligned reads.')
 flags.DEFINE_integer('vsc_min_count_snps', 2,
                      'SNP alleles occurring at least this many times in our '
                      'AlleleCount will be advanced as candidates.')
