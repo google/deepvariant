@@ -107,8 +107,8 @@ def _make_contigs(specs):
   """Makes ContigInfo protos from specs.
 
   Args:
-    specs: A list of 2- or 3-tuples. All tuples should be of the same length.
-      If 2-element, these should be the name and length in basepairs of each
+    specs: A list of 2- or 3-tuples. All tuples should be of the same length. If
+      2-element, these should be the name and length in basepairs of each
       contig, and their pos_in_fasta will be set to their index in the list. If
       the 3-element, the tuple should contain name, length, and pos_in_fasta.
 
@@ -213,8 +213,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
             FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall),
         key=lambda c: variant_utils.variant_range_tuple(c.variant))
     self.verify_deepvariant_calls(candidates, options)
-    self.verify_variants(
-        [call.variant for call in candidates], region, options, is_gvcf=False)
+    self.verify_variants([call.variant for call in candidates],
+                         region,
+                         options,
+                         is_gvcf=False)
 
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
@@ -475,6 +477,31 @@ class MakeExamplesUnitTest(parameterized.TestCase):
                      True)
 
   @flagsaver.FlagSaver
+  def test_min_base_quality(self):
+    FLAGS.min_base_quality = 5
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = ''
+    options = make_examples.default_options(add_flags=True)
+    self.assertEqual(options.pic_options.read_requirements.min_base_quality, 5)
+
+  @flagsaver.FlagSaver
+  def test_min_mapping_quality(self):
+    FLAGS.min_mapping_quality = 15
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = ''
+    options = make_examples.default_options(add_flags=True)
+    self.assertEqual(options.pic_options.read_requirements.min_mapping_quality,
+                     15)
+
+  @flagsaver.FlagSaver
   def test_default_options_with_training_random_emit_ref_sites(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
@@ -528,8 +555,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       # We have more than one sample in the reads.
       dict(
           samples=['sample1', 'sample2'],
-          expected_error_message=
-          r'Multiple samples \(sample1, sample2\) were found in the input '
+          expected_error_message=r'Multiple samples \(sample1, sample2\) were found in the input '
           'reads. DeepVariant can only call variants from a BAM file '
           'containing a single sample.'),
   )
@@ -652,20 +678,17 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
     # Dropping either contig brings up below our 0.9 threshold.
     with self.assertRaisesRegexp(ValueError, 'span 200'):
-      make_examples.validate_reference_contig_coverage(ref_contigs,
-                                                       _make_contigs(
-                                                           [('1', 100)]), 0.9)
+      make_examples.validate_reference_contig_coverage(
+          ref_contigs, _make_contigs([('1', 100)]), 0.9)
 
     with self.assertRaisesRegexp(ValueError, 'span 200'):
-      make_examples.validate_reference_contig_coverage(ref_contigs,
-                                                       _make_contigs(
-                                                           [('2', 100)]), 0.9)
+      make_examples.validate_reference_contig_coverage(
+          ref_contigs, _make_contigs([('2', 100)]), 0.9)
 
     # Our actual overlap is 50%, so check that we raise when appropriate.
     with self.assertRaisesRegexp(ValueError, 'span 200'):
-      make_examples.validate_reference_contig_coverage(ref_contigs,
-                                                       _make_contigs(
-                                                           [('2', 100)]), 0.6)
+      make_examples.validate_reference_contig_coverage(
+          ref_contigs, _make_contigs([('2', 100)]), 0.6)
     self.assertIsNone(
         make_examples.validate_reference_contig_coverage(
             ref_contigs, _make_contigs([('2', 100)]), 0.4))
