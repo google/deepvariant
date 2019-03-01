@@ -54,12 +54,22 @@ with vcf.VcfWriter(output_path, header=header) as writer:
     writer.write(variant)
 ```
 
-For both reading and writing, if the path provided to the constructor contains
-'.tfrecord' as an extension, a `TFRecord` file is assumed and attempted to be
-read or written. Otherwise, the filename is treated as a true VCF file.
+The class attempts to infer the file format (`TFRecord` vs VCF) from the file
+path provided to the constructor.
 
-Files that end in a '.gz' suffix cause the file to be treated as compressed
-(with BGZF if it is a true VCF file, and with gzip if it is a TFRecord file).
+1. For files that end with '.tfrecord' and '.tfrecord.gz' (a gzipped version),
+  a `TFRecord` file is assumed and is attempted to be read or written.
+
+2. For all other files, the VCF format will be used.
+
+  VCF format used in writing is inferred from file paths:
+    - ending in '.bcf.gz': BGZF compressed BCF format will be written;
+    - ending in '.bcf': uncompressed BCF format will be written;
+    - ending in '.gz' and not in '.bcf.gz': BGZP compressed VCF format will be
+        written;
+    - all other suffixes: uncompressed VCF format will be written.
+
+  VCF format used in reading is inferred from the contents of the file.
 """
 
 from __future__ import absolute_import

@@ -259,6 +259,15 @@ VariantCall MakeVariantCall(const string& callSetName, vector<int> genotypes) {
   return vc;
 }
 
+// Tests that VcfWriter infers the file open mode from file path correctly.
+TEST(VcfWriterTest, OpenMode) {
+  EXPECT_EQ("w", string(VcfWriter::GetOpenMode("HG002.vcf")));
+  EXPECT_EQ("w", string(VcfWriter::GetOpenMode("HG002")));
+  EXPECT_EQ("wz", string(VcfWriter::GetOpenMode("HG002.vcf.gz")));
+  EXPECT_EQ("wb", string(VcfWriter::GetOpenMode("HG002.bcf.gz")));
+  EXPECT_EQ("wbu", string(VcfWriter::GetOpenMode("HG002.bcf")));
+}
+
 TEST(VcfWriterTest, WritesVCF) {
   // This test verifies that VcfWriter writes the expected VCF file
   string output_filename = MakeTempFile("writes_vcf.vcf");

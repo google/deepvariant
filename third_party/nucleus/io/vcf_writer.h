@@ -91,6 +91,15 @@ class VcfWriter {
     return record_converter_;
   }
 
+  // Infers htsFile open mode from the given file path.
+  // Returns one of the following.
+  //  "wb"  for compressed BCF if path ends with .bcf.gz;
+  //  "wbu" for uncompressed BCF if  path ends with .bcf;
+  //  "wz"  for compressed VCF if file path ends with .gz and not .bcf.gz;
+  //  "w"   for all other cases default to uncompressed VCF.
+  // This method is public for testing.
+  static const char* GetOpenMode(const string& file_path);
+
  private:
   VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
             const nucleus::genomics::v1::VcfWriterOptions& options,

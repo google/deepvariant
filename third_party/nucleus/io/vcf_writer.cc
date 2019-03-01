@@ -62,6 +62,9 @@ using nucleus::genomics::v1::Variant;
 
 namespace {
 
+// Modes used to write a htsFile. See hts_open in hts.h for more info.
+constexpr char kBCFOpenModeCompressed[] = "wb";
+constexpr char kBCFOpenModeUncompressed[] = "wbu";
 constexpr char kOpenModeCompressed[] = "wz";
 constexpr char kOpenModeUncompressed[] = "w";
 
@@ -177,13 +180,12 @@ class BCFRecord {
 StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
     const string& variants_path, const nucleus::genomics::v1::VcfHeader& header,
     const nucleus::genomics::v1::VcfWriterOptions& options) {
-  const char* const openMode = EndsWith(variants_path, ".gz")
-                                   ? kOpenModeCompressed
-                                   : kOpenModeUncompressed;
-  htsFile* fp = hts_open_x(variants_path.c_str(), openMode);
-  if (fp == nullptr)
+  const char* const open_mode = GetOpenMode(variants_path);
+  htsFile* fp = hts_open_x(variants_path.c_str(), open_mode);
+  if (fp == nullptr) {
     return tf::errors::Unknown(
         StrCat("Could not open variants_path ", variants_path));
+  }
 
   auto writer = absl::WrapUnique(new VcfWriter(header, options, fp));
   TF_RETURN_IF_ERROR(writer->WriteHeader());
@@ -285,6 +287,18 @@ tf::Status VcfWriter::Close() {
   bcf_hdr_destroy(header_);
   header_ = nullptr;
   return tf::Status::OK();
+}
+
+// static
+const char* VcfWriter::GetOpenMode(const string& file_path) {
+  if (EndsWith(file_path, ".bcf")) {
+    return kBCFOpenModeUncompressed;
+  } else if (EndsWith(file_path, ".bcf.gz")) {
+    return kBCFOpenModeCompressed;
+  } else if (EndsWith(file_path, ".gz")) {
+    return kOpenModeCompressed;
+  }
+  return kOpenModeUncompressed;
 }
 
 }  // namespace nucleus
