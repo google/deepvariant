@@ -88,10 +88,19 @@ seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
 """
 
 _MAKE_EXAMPLES_COMMAND_WITH_GCSFUSE = r"""
+timeout=10;
+elapsed=0;
 seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
   "mkdir -p ./input-gcsfused-{{}} &&
-   gcsfuse --implicit-dirs "${{GCS_BUCKET}}" /input-gcsfused-{{}} &&
-   /opt/deepvariant/bin/make_examples
+   gcsfuse --implicit-dirs "${{GCS_BUCKET}}" /input-gcsfused-{{}}" &&
+seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
+   "until mountpoint -q /input-gcsfused-{{}}; do
+     test "${{elapsed}}" -lt "${{timeout}}" || fail "Time out waiting for gcsfuse mount points";
+     sleep 1;
+     elapsed=$((elapsed+1));
+   done" &&
+seq "${{SHARD_START_INDEX}}" "${{SHARD_END_INDEX}}" | parallel --halt 2
+  "/opt/deepvariant/bin/make_examples
      --mode calling
      --examples "${{EXAMPLES}}"/examples_output.tfrecord@"${{SHARDS}}".gz
      --reads "/input-gcsfused-{{}}/${{BAM}}"
