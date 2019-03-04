@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google LLC.
+ * Copyright 2019 Google LLC.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,55 +30,48 @@
  *
  */
 
-#include "third_party/nucleus/io/hts_path.h"
+#include "third_party/nucleus/io/tabix_indexer.h"
 
-#include <stddef.h>
-#include <string>
+#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock-more-matchers.h>
 
-#include "absl/strings/str_cat.h"
-#include "htslib/faidx.h"
-#include "htslib/hts.h"
-#include "htslib/tbx.h"
-#include "third_party/nucleus/platform/types.h"
-
-using absl::StrCat;
+#include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/io/vcf_reader.h"
+#include "third_party/nucleus/io/vcf_writer.h"
+#include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/status_matchers.h"
+#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
-const char dflt[] = "";
+using ::testing::Test;
 
-// Use the default file scheme, unless one is provided.
-string fix_path(const char *path) {
-  string s(path);
-  size_t i = s.find(':');
-  if (i > 0 && i < 20) {
-    return s;
+constexpr char kVcfIndexSamplesFilename[] = "test_samples.vcf.gz";
+
+TEST(TabixIndexerTest, IndexBuildsCorrectly) {
+  string output_filename = MakeTempFile("test_samples.vcf.gz");
+  string output_tabix_index = output_filename + ".tbi";
+
+  std::unique_ptr<nucleus::VcfReader> reader = std::move(
+      nucleus::VcfReader::FromFile(GetTestData(kVcfIndexSamplesFilename),
+                                   nucleus::genomics::v1::VcfReaderOptions())
+          .ValueOrDie());
+
+  nucleus::genomics::v1::VcfWriterOptions writer_options;
+  std::unique_ptr<VcfWriter> writer =
+      std::move(nucleus::VcfWriter::ToFile(output_filename, reader->Header(),
+                                           writer_options)
+                    .ValueOrDie());
+
+  auto variants = nucleus::as_vector(reader->Iterate());
+  for (const auto& v : variants) {
+    TF_CHECK_OK(writer->Write(v));
   }
-  return StrCat(dflt, s);
-}
 
-htsFile *hts_open_x(const char *path, const char *mode) {
-  string new_path = fix_path(path);
-  return hts_open(new_path.c_str(), mode);
-}
-
-htsFile *hts_open_format_x(const char *fn, const char *mode, htsFormat *fmt) {
-  string new_path = fix_path(fn);
-  return hts_open_format(new_path.c_str(), mode, fmt);
-}
-
-faidx_t *fai_load3_x(const char *fa, const char *fai, const char *gzi,
-                     int flags) {
-  string nfa = fix_path(fa);
-  string nfai = fix_path(fai);
-  string ngzi = fix_path(gzi);
-  return fai_load3(fa ? nfa.c_str() : nullptr, fai ? nfai.c_str() : nullptr,
-                   gzi ? ngzi.c_str() : nullptr, flags);
-}
-
-int tbx_index_build_x(const char *fn, int min_shift, const tbx_conf_t *conf) {
-  string new_path = fix_path(fn);
-  return tbx_index_build(new_path.c_str(), min_shift, conf);
+  EXPECT_THAT(TbxIndexBuild(output_filename), IsOK());
+  EXPECT_THAT(reader->Query(MakeRange("chr3", 14318, 14319)), IsOK());
 }
 
 }  // namespace nucleus

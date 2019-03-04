@@ -444,6 +444,7 @@ py_library(
         "//deepvariant/python:postprocess_variants",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:sharded_file_utils",
+        "//third_party/nucleus/io:tabix",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/protos:struct_py_pb2",

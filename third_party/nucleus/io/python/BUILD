@@ -383,3 +383,12 @@ py_test(
         "@absl_py//absl/testing:parameterized",
     ],
 )
+
+py_clif_cc(
+    name = "tabix_indexer",
+    srcs = ["tabix_indexer.clif"],
+    deps = [
+        "//third_party/nucleus/io:tabix_indexer",
+        "//third_party/nucleus/vendor:statusor_clif_converters",
+    ],
+)

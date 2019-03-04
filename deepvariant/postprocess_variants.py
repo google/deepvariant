@@ -46,6 +46,7 @@ import tensorflow as tf
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sharded_file_utils
+from third_party.nucleus.io import tabix
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import struct_pb2
@@ -918,22 +919,29 @@ def main(argv=()):
             variant_iterable=variant_generator,
             output_vcf_path=FLAGS.outfile,
             header=header)
+        if FLAGS.outfile.endswith('.gz'):
+          tabix.build_index(FLAGS.outfile)
         logging.info('VCF creation took %s minutes',
                      (time.time() - start_time) / 60)
       else:
         logging.info('Merging and writing variants to VCF and gVCF.')
         lessthanfn = _get_contig_based_lessthan(contigs)
-        vcf_writer = vcf.VcfWriter(
-            FLAGS.outfile, header=header, round_qualities=True)
-        gvcf_writer = vcf.VcfWriter(
-            FLAGS.gvcf_outfile, header=header, round_qualities=True)
-        nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
-            FLAGS.nonvariant_site_tfrecord_path,
-            key=_get_contig_based_variant_sort_keyfn(contigs),
-            proto=variants_pb2.Variant)
-        merge_and_write_variants_and_nonvariants(
-            variant_generator, nonvariant_generator, lessthanfn, fasta_reader,
-            vcf_writer, gvcf_writer)
+        with vcf.VcfWriter(
+            FLAGS.outfile, header=header, round_qualities=True) as vcf_writer, \
+            vcf.VcfWriter(
+                FLAGS.gvcf_outfile, header=header, round_qualities=True) \
+            as gvcf_writer:
+          nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
+              FLAGS.nonvariant_site_tfrecord_path,
+              key=_get_contig_based_variant_sort_keyfn(contigs),
+              proto=variants_pb2.Variant)
+          merge_and_write_variants_and_nonvariants(
+              variant_generator, nonvariant_generator, lessthanfn, fasta_reader,
+              vcf_writer, gvcf_writer)
+        if FLAGS.outfile.endswith('.gz'):
+          tabix.build_index(FLAGS.outfile)
+        if FLAGS.gvcf_outfile.endswith('.gz'):
+          tabix.build_index(FLAGS.gvcf_outfile)
         logging.info('Finished writing VCF and gVCF in %s minutes.',
                      (time.time() - start_time) / 60)
 

@@ -230,6 +230,12 @@ def make_golden_dataset(compressed_inputs=False):
   return source_path
 
 
+def create_outfile(file_name, compressed_outputs=False):
+  if compressed_outputs:
+    file_name += '.gz'
+  return test_utils.test_tmpfile(file_name)
+
+
 class AlleleRemapperTest(parameterized.TestCase):
 
   @parameterized.parameters(
@@ -272,22 +278,30 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
   @parameterized.parameters(False, True)
   @flagsaver.FlagSaver
-  def test_call_end2end(self, compressed_inputs):
-    FLAGS.infile = make_golden_dataset(compressed_inputs)
+  def test_call_end2end(self, compressed_inputs_and_outputs):
+    FLAGS.infile = make_golden_dataset(compressed_inputs_and_outputs)
     FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.outfile = test_utils.test_tmpfile('calls.vcf')
+    FLAGS.outfile = create_outfile('calls.vcf', compressed_inputs_and_outputs)
     FLAGS.nonvariant_site_tfrecord_path = (
         testdata.GOLDEN_POSTPROCESS_GVCF_INPUT)
-    FLAGS.gvcf_outfile = test_utils.test_tmpfile('gvcf_calls.vcf')
+    FLAGS.gvcf_outfile = create_outfile('gvcf_calls.vcf',
+                                        compressed_inputs_and_outputs)
 
     postprocess_variants.main(['postprocess_variants.py'])
 
     self.assertEqual(
         tf.gfile.GFile(FLAGS.outfile).readlines(),
-        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_OUTPUT).readlines())
+        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED
+                       if compressed_inputs_and_outputs else testdata
+                       .GOLDEN_POSTPROCESS_OUTPUT).readlines())
     self.assertEqual(
         tf.gfile.GFile(FLAGS.gvcf_outfile).readlines(),
-        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
+        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED
+                       if compressed_inputs_and_outputs else testdata
+                       .GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
+    if compressed_inputs_and_outputs:
+      self.assertTrue(tf.gfile.Exists(FLAGS.outfile + '.tbi'))
+      self.assertTrue(tf.gfile.Exists(FLAGS.gvcf_outfile + '.tbi'))
 
   @flagsaver.FlagSaver
   def test_reading_sharded_input_with_empty_shards_does_not_crash(self):

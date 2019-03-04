@@ -69,8 +69,10 @@ CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
 GOLDEN_POSTPROCESS_INPUT = None
 GOLDEN_POSTPROCESS_OUTPUT = None
+GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = None
 GOLDEN_POSTPROCESS_GVCF_INPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT = None
+GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED = None
 GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
 WS_ALLELE_COUNT_LINEAR_MODEL = None
 WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = None
@@ -98,8 +100,10 @@ def init():
   global TRUTH_VARIANTS_VCF
   global GOLDEN_POSTPROCESS_INPUT
   global GOLDEN_POSTPROCESS_OUTPUT
+  global GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED
   global GOLDEN_POSTPROCESS_GVCF_INPUT
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT
+  global GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED
   global GOLDEN_MAKE_EXAMPLES_RUN_INFO
   global WS_ALLELE_COUNT_LINEAR_MODEL
   global WS_ALLELE_COUNT_LINEAR_MODEL_PCKL
@@ -121,10 +125,14 @@ def init():
       'golden.postprocess_single_site_input.tfrecord')
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.postprocess_single_site_output.vcf')
+  GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = deepvariant_testdata(
+      'golden.postprocess_single_site_output.vcf.gz')
   GOLDEN_POSTPROCESS_GVCF_INPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_input.tfrecord')
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_output.g.vcf')
+  GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED = deepvariant_testdata(
+      'golden.postprocess_gvcf_output.g.vcf.gz')
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
       'golden.training_examples.tfrecord.run_info.pbtxt')
   WS_ALLELE_COUNT_LINEAR_MODEL = deepvariant_testdata(
