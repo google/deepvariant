@@ -38,16 +38,9 @@
 
 #include <string>
 
-// N.B. Copybara will adjust this.
-#define NUCLEUS_PLATFORM_GOOGLE 0
-
 namespace nucleus {
 
-#if NUCLEUS_PLATFORM_GOOGLE
-using ::string;
-#else
 using std::string;
-#endif
 
 // Adapted from tensorflow/core/platform/default/integral_types.h
 // redacted
