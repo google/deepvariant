@@ -28,10 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for gke_cluster.py.
 
-To run the tests, first activate virtualenv and install mock:
+To run the tests, first activate virtualenv and install required packages:
 $ virtualenv venv
 $ . venv/bin/activate
-$ pip install mock enum34 retrying
+$ pip install -r requirements.txt
+$ pip install mock
+
 
 Then run:
 $ python gke_cluster_test.py

@@ -28,10 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for gcp_deepvariant_runner.
 
-To run the tests, first activate virtualenv and install mock:
+To run the tests, first activate virtualenv and install required packages:
 $ virtualenv venv
 $ . venv/bin/activate
-$ pip install mock enum34
+$ pip install -r requirements.txt
+$ pip install mock
 
 Then run:
 $ python gcp_deepvariant_runner_test.py
