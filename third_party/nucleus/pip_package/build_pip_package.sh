@@ -34,11 +34,11 @@
 #
 # Important:  You must run
 #   source install.sh
-# before running this script.
+# before running this script.  In addition, if you make any changes to the
+# source code, you should rebuild:
+#   bazel build -c opt $COPT_FLAGS nucleus/pip_package:build_pip_package
 
 set -e
-
-bazel build -c opt $COPT_FLAGS nucleus/pip_package:build_pip_package
 
 function cp_external() {
   local src_dir=$1
