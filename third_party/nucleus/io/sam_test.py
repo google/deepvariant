@@ -38,13 +38,14 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import six
+
+from third_party.nucleus.io import gfile
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-from tensorflow.python.platform import gfile
 
 
 class SamReaderTests(parameterized.TestCase):
@@ -175,7 +176,7 @@ class SamReaderTests(parameterized.TestCase):
     # A single stock read we'll add our AUX fields to.
     read = 'read_name\t0\tchr1\t1\t0\t3M\t*\t0\t0\tCCC\tAAA\t' + tag_string
     path = test_utils.test_tmpfile('aux_tags.bam')
-    with gfile.GFile(path, 'w') as fout:
+    with gfile.Open(path, 'w') as fout:
       fout.write(header_lines)
       fout.write(read + '\n')
     with sam.SamReader(path, parse_aux_fields=True) as reader:

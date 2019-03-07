@@ -54,14 +54,13 @@ from __future__ import print_function
 
 import collections
 
-import os
 import six
 
-from tensorflow.python.platform import gfile
+from third_party.nucleus.io import gfile
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import reference
-from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import fasta_pb2
+from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.util import ranges
 
 # redacted

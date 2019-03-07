@@ -35,13 +35,13 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from third_party.nucleus.io import gfile
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-from tensorflow.python.platform import gfile
 
 
 class VcfHeaderCacheTests(parameterized.TestCase):
@@ -173,7 +173,7 @@ class VcfWriterTests(parameterized.TestCase):
         return line
 
     expected_lines = [cleanup_line(line) for line in expected_lines]
-    with gfile.GFile(path, 'r') as fin:
+    with gfile.Open(path, 'r') as fin:
       self.assertEqual([
           line.strip() for line in fin.readlines() if not line.startswith('#')
       ], expected_lines)

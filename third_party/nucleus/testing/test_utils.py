@@ -39,12 +39,12 @@ from absl import flags
 from absl.testing import absltest
 import six
 
+from third_party.nucleus.io import gfile
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import cigar as _cigar
-from tensorflow.python.platform import gfile
 
 FLAGS = flags.FLAGS
 
@@ -114,7 +114,7 @@ def test_tmpfile(name, contents=None):
   """
   path = os.path.join(absltest.get_default_test_tmpdir(), name)
   if contents is not None:
-    with gfile.GFile(path, 'wb') as fout:
+    with gfile.Open(path, 'wb') as fout:
       fout.write(contents)
   return path
 

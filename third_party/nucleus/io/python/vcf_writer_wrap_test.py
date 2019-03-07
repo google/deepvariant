@@ -37,13 +37,13 @@ import copy
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from third_party.nucleus.io import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import vcf_writer
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
-from tensorflow.python.platform import gfile
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed VcfWriter'
 _WRITE_TO_CLOSED_ERROR = 'Cannot write to closed VCF stream'
@@ -221,7 +221,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
     ]
     # pylint: enable=line-too-long
 
-    with gfile.GFile(out_fname, 'r') as f:
+    with gfile.Open(out_fname, 'r') as f:
       self.assertEqual(f.readlines(), expected_vcf_content)
 
   def test_write_variant_is_ok(self):

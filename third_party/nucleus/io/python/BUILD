@@ -66,6 +66,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":vcf_writer",
+        "//third_party/nucleus/io:gfile",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -206,6 +207,7 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":bed_writer",
+        "//third_party/nucleus/io:gfile",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:bed_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
@@ -294,6 +296,7 @@ py_test(
     deps = [
         ":fastq_writer",
         "//third_party/nucleus/io:fastq",
+        "//third_party/nucleus/io:gfile",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:fastq_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",

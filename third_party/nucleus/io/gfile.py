@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC.
+# Copyright 2018 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,57 +26,23 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for third_party.nucleus.io.tabix."""
+"""A Python interface for files."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import glob
 import os
-import shutil
-
-from absl.testing import absltest
-
-from third_party.nucleus.io import gfile
-from third_party.nucleus.io import tabix
-from third_party.nucleus.io import vcf
-from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import ranges
 
 
-class TabixTest(absltest.TestCase):
-  """Test the functionality of tabix.build_index."""
-
-  def setUp(self):
-    super(TabixTest, self).setUp()
-    self.input_file = test_utils.genomics_core_testdata('test_samples.vcf.gz')
-    self.output_file = test_utils.test_tmpfile('test_samples.vcf.gz')
-    shutil.copyfile(self.input_file, self.output_file)
-    self.tbx_index_file = self.output_file + '.tbi'
-
-  def tearDown(self):
-    super(TabixTest, self).tearDown()
-    os.remove(self.output_file)
-    try:
-      os.remove(self.tbx_index_file)
-    except OSError:
-      pass
-
-  def test_build_index(self):
-    self.assertFalse(gfile.Exists(self.tbx_index_file))
-    tabix.build_index(self.output_file)
-    self.assertTrue(gfile.Exists(self.tbx_index_file))
-
-  def test_vcf_query(self):
-    tabix.build_index(self.output_file)
-    self.input_reader = vcf.VcfReader(self.input_file)
-    self.output_reader = vcf.VcfReader(self.output_file)
-
-    range1 = ranges.parse_literal('chr3:100,000-500,000')
-    self.assertEqual(
-        list(self.input_reader.query(range1)),
-        list(self.output_reader.query(range1)))
+def Exists(filename):
+  return os.path.exists(filename)
 
 
-if __name__ == '__main__':
-  absltest.main()
+def Glob(pattern):
+  return glob.glob(pattern)
+
+
+def Open(filename, mode="r"):
+  return open(filename, mode)

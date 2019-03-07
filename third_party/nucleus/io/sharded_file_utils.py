@@ -49,7 +49,7 @@ import math
 import re
 import six
 
-from tensorflow.python.platform import gfile
+from third_party.nucleus.io import gfile
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 
@@ -112,6 +112,7 @@ def generate_sharded_filenames(spec):
     files.append(format_str.format(basename, i, num_shards, suffix))
 
   return files
+
 
 def glob_list_sharded_file_patterns(comma_separated_patterns, sep=','):
   """Generate list of filenames corresponding to `comma_separated_patterns`.

@@ -88,6 +88,7 @@ py_library(
     testonly = True,
     srcs = ["test_utils.py"],
     deps = [
+        "//third_party/nucleus/io:gfile",
         "//third_party/nucleus/protos:position_py_pb2",
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/protos:struct_py_pb2",

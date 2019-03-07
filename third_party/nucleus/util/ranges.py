@@ -39,10 +39,10 @@ from absl import logging
 import intervaltree
 import six
 
+from third_party.nucleus.io import gfile
 from third_party.nucleus.io import bed
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
-from tensorflow.python.platform import gfile
 
 # Regular expressions for matching literal chr:start-stop strings.
 _REGION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)-([0-9,]+)$')
@@ -436,7 +436,7 @@ def bedpe_parser(filename):
   Yields:
     nucleus.genomics.v1.Range protobuf objects.
   """
-  for line in gfile.GFile(filename):
+  for line in gfile.Open(filename):
     parts = line.split('\t')
     if parts[0] == parts[3]:
       # only keep events on the same chromosome
