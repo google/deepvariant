@@ -290,7 +290,7 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
 
 
 class SamWriter(genomics_writer.DispatchingGenomicsWriter):
-  """Class for writing Variant protos to SAM or TFRecord files."""
+  """Class for writing Read protos to SAM or TFRecord files."""
 
   def _native_writer(self, output_path, **kwargs):
     return NativeSamWriter(output_path, **kwargs)
