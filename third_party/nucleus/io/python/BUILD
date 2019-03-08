@@ -395,3 +395,19 @@ py_clif_cc(
         "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
+
+py_clif_cc(
+    name = "tfrecord_reader",
+    srcs = ["tfrecord_reader.clif"],
+    deps = [
+        "//third_party/nucleus/io:tfrecord_reader",
+    ],
+)
+
+py_clif_cc(
+    name = "tfrecord_writer",
+    srcs = ["tfrecord_writer.clif"],
+    deps = [
+        "//third_party/nucleus/io:tfrecord_writer",
+    ],
+)

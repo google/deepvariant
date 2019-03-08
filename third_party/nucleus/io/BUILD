@@ -971,6 +971,25 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "tfrecord_reader",
+    srcs = ["tfrecord_reader.cc"],
+    hdrs = ["tfrecord_reader.h"],
+    deps = [
+        "//third_party/nucleus/platform:types",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_library(
+    name = "tfrecord_writer",
+    srcs = ["tfrecord_writer.cc"],
+    hdrs = ["tfrecord_writer.h"],
+    deps = [
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
 #
 # Misc
 #
