@@ -76,4 +76,3 @@ message ResourceMetrics {
   // The number of bytes written (cumulative).
   int64 write_bytes = 10;
 }
-

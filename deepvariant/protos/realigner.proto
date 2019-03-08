@@ -29,9 +29,9 @@
 
 syntax = "proto3";
 
-import "third_party/nucleus/protos/range.proto";
-
 package learning.genomics.deepvariant;
+
+import "third_party/nucleus/protos/range.proto";
 
 // Encapsulates a list of candidate haplotype sequences for a genomic region.
 message CandidateHaplotypes {
@@ -156,7 +156,7 @@ message DeBruijnGraphOptions {
   // Maximum number of paths within a graph to consider for realignment.
   // Set max_num_paths to 0 to have unlimited number of paths.
   int32 max_num_paths = 7;
-};
+}
 
 // Config parameters for "alignment (aln)" phase.
 message AlignerOptions {
