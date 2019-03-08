@@ -14,10 +14,10 @@ ENV GOPATH /go
 COPY --from=0 /go/ $GOPATH
 ENV PATH $PATH:$GOPATH/bin
 
+COPY requirements.txt /opt/deepvariant_runner/src/
+
 RUN apk add --update python python-dev py-pip build-base && \
-    pip install -r requirements.txt && \
-    mkdir -p /opt/deepvariant_runner/bin && \
-    mkdir -p /opt/deepvariant_runner/src
+    pip install -r /opt/deepvariant_runner/src/requirements.txt
 
 # Kubernetes TPU is in beta.
 RUN gcloud components install beta -q
