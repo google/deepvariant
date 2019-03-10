@@ -135,10 +135,8 @@ else
       echo "Installing GPU-enabled TensorFlow wheel"
       pip install --user --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
-      echo "Installing Google Cloud Platform optimized CPU-only TensorFlow wheel"
-      curl "${GCP_OPTIMIZED_TF_WHL_CURL_PATH}/${GCP_OPTIMIZED_TF_WHL_FILENAME}" \
-        > "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
-      pip install --user --upgrade "/tmp/${GCP_OPTIMIZED_TF_WHL_FILENAME}"
+      echo "Installing Intel's CPU-only MKL TensorFlow wheel"
+      pip install --user --upgrade "intel-tensorflow==1.12.0"
     else
       echo "Installing standard CPU-only TensorFlow wheel"
       pip install --user --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
