@@ -243,3 +243,15 @@ def has_variation(variant_call):
     True if and only if the call has a non-reference genotype.
   """
   return any(gt > 0 for gt in variant_call.genotype)
+
+
+def is_heterozygous(variant_call):
+  """Returns True if and only if the call is heterozygous.
+
+  Args:
+    variant_call: VariantCall proto. The VariantCall to evaluate.
+
+  Returns:
+    True if and only if the call is heterozygous.
+  """
+  return len({gt for gt in variant_call.genotype if gt >= 0}) >= 2
