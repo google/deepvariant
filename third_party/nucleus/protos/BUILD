@@ -108,6 +108,19 @@ proto_library(
     ],
 )
 
+proto_library(
+    name = "feature_proto",
+    srcs = ["feature.proto"],
+)
+
+proto_library(
+    name = "example_proto",
+    srcs = ["feature.proto"],
+    deps = [
+        ":feature_proto",  # NO COPYBARA
+    ],
+)
+
 # ----------------------------------------------------------------------
 # cc_proto_library's
 # ----------------------------------------------------------------------
@@ -217,14 +230,33 @@ cc_proto_library(
     ],
 )
 
+cc_proto_library(
+    name = "feature_cc_pb2",
+    srcs = ["feature.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+)
+
+cc_proto_library(
+    name = "example_cc_pb2",
+    srcs = ["example.proto"],
+    default_runtime = "@protobuf_archive//:protobuf",
+    protoc = "@protobuf_archive//:protoc",
+    deps = [
+        ":feature_cc_pb2",
+    ],
+)
+
 cc_library(
     name = "all_nucleus_protos_cc",
     deps = [
         ":bed_cc_pb2",
         ":bedgraph_cc_pb2",
         ":cigar_cc_pb2",
+        ":example_cc_pb2",
         ":fasta_cc_pb2",
         ":fastq_cc_pb2",
+        ":feature_cc_pb2",
         ":gff_cc_pb2",
         ":position_cc_pb2",
         ":range_cc_pb2",
@@ -350,6 +382,25 @@ py_proto_library(
     deps = [
         ":reference_py_pb2",
         ":struct_py_pb2",
+    ],
+)
+
+py_proto_library(
+    name = "feature_py_pb2",
+    srcs = ["feature.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+)
+
+py_proto_library(
+    name = "example_py_pb2",
+    srcs = ["example.proto"],
+    default_runtime = "@protobuf_archive//:protobuf_python",
+    protoc = "@protobuf_archive//:protoc",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":feature_py_pb2",
     ],
 )
 
