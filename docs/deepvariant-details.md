@@ -261,11 +261,14 @@ version | Replicates                  | #examples
 v0.5    | 78 HG001 WES<br>1 HG005 WES | 15,714,062
 v0.6    | 78 HG001 WES<br>1 HG005 WES<sup>[(2)](#myfootnote2)</sup> | 15,705,449
 v0.7    | 78 HG001 WES<br>1 HG005 WES | 15,704,197
+v0.8    | 78 HG001 WES<br>1 HG005 WES<sup>[(3)](#myfootnote3)</sup> | 18,683,247
 
 
 <a name="myfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome sequencing data into training data. In v0.6, we took it out because it didn't improve the WGS accuracy.
 
 <a name="myfootnote2">(2)</a>: The training data are from the same replicates as v0.5. The number of examples changed because of the update in [haplotype_labeler](https://github.com/google/deepvariant/tree/r0.6/deepvariant/labeler/haplotype_labeler.py).
+
+<a name="myfootnote3">(3)</a>: In v0.8, we used the [Platinum Genomes Truthset](https://github.com/Illumina/PlatinumGenomes) to create more training examples outside the GIAB confident regions.
 
 ## Optimizing DeepVariant
 
