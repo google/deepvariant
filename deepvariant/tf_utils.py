@@ -310,11 +310,7 @@ def int_tensor_to_string(x):
 
 def compression_type_of_files(files):
   """Return GZIP or None for the compression type of the files."""
-  reader_options = tfrecord.make_tfrecord_options(files)
-  if reader_options.compression_type == (
-      tf.python_io.TFRecordCompressionType.GZIP):
-    return 'GZIP'
-  return None
+  return 'GZIP' if all(f.endswith('.gz') for f in files) else None
 
 
 def tpu_available(sess=None):

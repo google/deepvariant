@@ -1,4 +1,4 @@
-# Copyright 2018 Google LLC.
+# Copyright 2019 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -37,13 +37,11 @@ import types
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import mock
 
 from third_party.nucleus.io import tfrecord
 
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
-from tensorflow.python.lib.io import python_io
 
 
 class IOTest(parameterized.TestCase):
@@ -70,28 +68,6 @@ class IOTest(parameterized.TestCase):
       self.assertCountEqual(protos, reader)
     else:
       self.assertEqual(protos, list(reader))
-
-  @parameterized.parameters(
-      ('foo.tfrecord', ''),
-      ('foo.tfrecord.gz', 'GZIP'),
-      (['foo.tfrecord', 'bar.tfrecord'], ''),
-      (['foo.tfrecord.gz', 'bar.tfrecord.gz'], 'GZIP'),
-  )
-  def test_make_tfrecord_options(self, filenames, expected_compression_type):
-    compression_type = python_io.TFRecordOptions.get_compression_type_string(
-        tfrecord.make_tfrecord_options(filenames))
-    self.assertEqual(compression_type, expected_compression_type)
-
-  @parameterized.parameters(
-      (['foo.tfrecord', 'bar.tfrecord.gz'],),
-      (['foo.tfrecord', 'bar.tfrecord', 'baz.tfrecord.gz'],),
-  )
-  def test_make_tfrecord_options_with_bad_inputs(self, filenames):
-    with self.assertRaisesRegexp(
-        ValueError,
-        'Incorrect value: {}. Filenames need to be all of the same type: '
-        'either all with .gz or all without .gz'.format(','.join(filenames))):
-      tfrecord.make_tfrecord_options(filenames)
 
   @parameterized.parameters((filename, max_records)
                             for max_records in [None, 0, 1, 3, 100]
@@ -142,45 +118,6 @@ class IOTest(parameterized.TestCase):
         proto=reference_pb2.ContigInfo,
         max_records=max_records)
     self.assertLen(list(actual), expected_n)
-
-
-class RawProtoWriterAdaptorTests(parameterized.TestCase):
-
-  def setUp(self):
-    self.proto1 = reference_pb2.ContigInfo(
-        name='p1', n_bases=10, pos_in_fasta=0)
-    self.proto2 = reference_pb2.ContigInfo(
-        name='p2', n_bases=20, pos_in_fasta=1)
-    self.protos = [self.proto1, self.proto2]
-
-  @parameterized.parameters(
-      dict(take_ownership=True),
-      dict(take_ownership=False),
-  )
-  def test_adaptor_with_ownership(self, take_ownership):
-    mock_writer = mock.MagicMock()
-    adaptor = tfrecord.RawProtoWriterAdaptor(
-        mock_writer, take_ownership=take_ownership)
-
-    # Write out protos to our adaptor.
-    with adaptor as enter_return_value:
-      # Make sure that __enter__ returns the adaptor itself.
-      self.assertIs(adaptor, enter_return_value)
-      adaptor.write(self.proto1)
-      adaptor.write(self.proto2)
-
-    if take_ownership:
-      # If we took ownership, mock_writer __enter__ and __exit__ should have
-      # been called.
-      mock_writer.__enter__.assert_called_once_with()
-      test_utils.assert_called_once_workaround(mock_writer.__exit__)
-    else:
-      # If not, they shouldn't have been called.
-      test_utils.assert_not_called_workaround(mock_writer.__enter__)
-      test_utils.assert_not_called_workaround(mock_writer.__exit__)
-
-    self.assertEqual(mock_writer.write.call_args_list,
-                     [mock.call(r.SerializeToString()) for r in self.protos])
 
 
 if __name__ == '__main__':

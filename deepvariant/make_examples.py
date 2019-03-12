@@ -1054,22 +1054,14 @@ class OutputsWriter(object):
     self._writers = {k: None for k in ['candidates', 'examples', 'gvcfs']}
 
     if options.candidates_filename:
-      self._add_writer(
-          'candidates',
-          tfrecord.RawProtoWriterAdaptor(
-              tfrecord.make_tfrecord_writer(options.candidates_filename)))
+      self._add_writer('candidates',
+                       tfrecord.Writer(options.candidates_filename))
 
     if options.examples_filename:
-      self._add_writer(
-          'examples',
-          tfrecord.RawProtoWriterAdaptor(
-              tfrecord.make_tfrecord_writer(options.examples_filename)))
+      self._add_writer('examples', tfrecord.Writer(options.examples_filename))
 
     if options.gvcf_filename:
-      self._add_writer(
-          'gvcfs',
-          tfrecord.RawProtoWriterAdaptor(
-              tfrecord.make_tfrecord_writer(options.gvcf_filename)))
+      self._add_writer('gvcfs', tfrecord.Writer(options.gvcf_filename))
 
   def write_examples(self, *examples):
     self._write('examples', *examples)

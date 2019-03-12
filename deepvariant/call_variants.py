@@ -248,7 +248,7 @@ def write_variant_call(writer, prediction, use_tpu):
   true_labels = prediction['label'] if FLAGS.debugging_true_label_mode else None
   cvo = _create_cvo_proto(encoded_variant, rounded_gls,
                           encoded_alt_allele_indices, true_labels)
-  return writer.write(cvo.SerializeToString())
+  return writer.write(cvo)
 
 
 def _create_cvo_proto(encoded_variant,
@@ -348,7 +348,7 @@ def call_variants(examples_filename,
 
   # Consume predictions one at a time and write them to output_file.
   logging.info('Writing calls to %s', output_file)
-  writer, _ = tfrecord.make_proto_writer(output_file)
+  writer = tfrecord.Writer(output_file)
   with writer:
     start_time = time.time()
     n_examples, n_batches = 0, 0
