@@ -64,10 +64,11 @@ from __future__ import division
 from __future__ import print_function
 
 import abc
+import errno
 
 from absl import logging
 
-from tensorflow.python.lib.io import python_io
+from third_party.nucleus.io.python import tfrecord_writer
 
 
 class GenomicsWriter(object):
@@ -116,22 +117,25 @@ class TFRecordWriter(GenomicsWriter):
         useful for file types that have logical headers where some operations
         depend on that header information (e.g. VCF using its headers to
         determine type information of annotation fields).
+
+    Raises:
+      IOError:  if there was any problem opening output_path for writing.
     """
     super(TFRecordWriter, self).__init__()
-
-    compressed = output_path.endswith('.gz')
-    options = python_io.TFRecordOptions(
-        python_io.TFRecordCompressionType.GZIP if compressed else
-        python_io.TFRecordCompressionType.NONE)
-    self._writer = python_io.TFRecordWriter(output_path, options=options)
     self.header = header
+
+    compression_type = 'GZIP' if output_path.endswith('.gz') else ''
+    self._writer = tfrecord_writer.TFRecordWriter.from_file(
+        output_path, compression_type)
+    if self._writer is None:
+      raise IOError(errno.EIO, 'Error opening %s for writing' % output_path)
 
   def write(self, proto):
     """Writes the proto to the TFRecord file."""
     self._writer.write(proto.SerializeToString())
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
-    self._writer.__exit__(exit_type, exit_value, exit_traceback)
+    self._writer.close()
 
 
 class DispatchingGenomicsWriter(GenomicsWriter):

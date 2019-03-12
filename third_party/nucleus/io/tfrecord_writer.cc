@@ -32,6 +32,7 @@
 
 #include "third_party/nucleus/io/tfrecord_writer.h"
 #include "tensorflow/core/lib/io/record_writer.h"
+#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
@@ -44,6 +45,7 @@ TFRecordWriter* TFRecordWriter::New(const std::string& filename,
   tensorflow::Status s =
       tensorflow::Env::Default()->NewWritableFile(filename, &file);
   if (!s.ok()) {
+    LOG(ERROR) << s.error_message();
     return nullptr;
   }
   TFRecordWriter* writer = new TFRecordWriter;

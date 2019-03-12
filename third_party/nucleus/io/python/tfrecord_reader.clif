@@ -36,6 +36,6 @@ from "third_party/nucleus/io/tfrecord_reader.h":
 
       def `GetNext` as get_next(self) -> bool
 
-      def `record` as get_record(self) -> str
+      def `record` as get_record(self) -> bytes
 
       def `Close` as close(self)

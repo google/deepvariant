@@ -75,11 +75,12 @@ from __future__ import division
 from __future__ import print_function
 
 import abc
+import errno
 
 from absl import logging
 import six
 
-from tensorflow.python.lib.io import python_io
+from third_party.nucleus.io.python import tfrecord_reader
 
 
 class GenomicsReader(six.Iterator):
@@ -143,16 +144,19 @@ class TFRecordReader(GenomicsReader):
   to be wrapped in a "with" block.
   """
 
-  def __init__(self, input_path, proto, tf_options=None):
+  def __init__(self, input_path, proto, compression_type=None):
     """Initializes the TFRecordReader.
 
     Args:
       input_path:  The filename of the file to read.
       proto:  The protocol buffer type the TFRecord file is expected to
         contain.  For example, variants_pb2.Variant or reads_pb2.Read.
-      tf_options:  A python_io.TFRecordOptions object.  If not set,
-        __init__ will create one with the compression type based on
-        whether input_path ends in '.gz' or not.
+      compression_type:  Either 'ZLIB', 'GZIP', '' (uncompressed), or
+        None.  If None, __init__ will guess the compression type based on
+        the input_path's suffix.
+
+    Raises:
+      IOError: if there was any problem opening input_path for reading.
     """
     super(TFRecordReader, self).__init__()
 
@@ -160,18 +164,19 @@ class TFRecordReader(GenomicsReader):
     self.proto = proto
     self.header = None
 
-    if not tf_options:
-      compressed = input_path.endswith('.gz')
-      tf_options = python_io.TFRecordOptions(
-          python_io.TFRecordCompressionType.GZIP if compressed else
-          python_io.TFRecordCompressionType.NONE)
-    self.tf_options = tf_options
+    if compression_type is None:
+      compression_type = 'GZIP' if input_path.endswith('.gz') else ''
+
+    self.reader = tfrecord_reader.TFRecordReader.from_file(
+        input_path, compression_type)
+    if self.reader is None:
+      raise IOError(errno.EIO,
+                    'Error trying to open %s for reading' % input_path)
 
   def iterate(self):
     """Returns an iterator for going through all the file's records."""
-    # redacted
-    for buf in python_io.tf_record_iterator(self.input_path, self.tf_options):
-      yield self.proto.FromString(buf)
+    while self.reader.get_next():
+      yield self.proto.FromString(self.reader.get_record())
 
   def query(self, region):
     """Returns an iterator for going through the records in the region.
@@ -183,8 +188,7 @@ class TFRecordReader(GenomicsReader):
     raise NotImplementedError('Can not query TFRecord file')
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
-    # tf_record_iterator closes the file when out of records.
-    pass
+    self.reader.close()
 
 
 class DispatchingGenomicsReader(GenomicsReader):
@@ -202,12 +206,13 @@ class DispatchingGenomicsReader(GenomicsReader):
     super(DispatchingGenomicsReader, self).__init__()
 
     if '.tfrecord' in input_path:
-      self._reader = TFRecordReader(input_path, proto=self._record_proto(),
-                                    tf_options=kwargs.get('tf_options', None))
+      self._reader = TFRecordReader(
+          input_path, proto=self._record_proto(),
+          compression_type=kwargs.get('compression_type', None))
     else:
-      # Remove tf_options, if present, from the arguments we pass to the
+      # Remove compression_type, if present, from the arguments we pass to the
       # native reader.
-      kwargs.pop('tf_options', None)
+      kwargs.pop('compression_type', None)
       self._reader = self._native_reader(input_path, **kwargs)
     logging.info('Reading %s with %s',
                  input_path, self._reader.__class__.__name__)

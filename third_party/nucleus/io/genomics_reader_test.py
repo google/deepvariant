@@ -36,7 +36,8 @@ from absl.testing import absltest
 import six
 
 from third_party.nucleus.io import genomics_reader
-from tensorflow.python.lib.io import python_io
+from third_party.nucleus.protos import gff_pb2
+from third_party.nucleus.testing import test_utils
 
 
 class DummyReader(genomics_reader.GenomicsReader):
@@ -72,29 +73,46 @@ class GenomicsReaderTests(absltest.TestCase):
       self.assertEqual(i, six.next(iter2))
 
 
-class DummyProto(object):
-  """A pretend protocol buffer class that only provides FromString."""
-
-  def FromString(self, buf):
-    return buf
-
-
 class TFRecordReaderTests(absltest.TestCase):
   """Tests for TFRecordReader."""
 
-  def setUp(self):
-    python_io.tf_record_iterator = lambda x, y: x.split(',')
+  def testUncompressed(self):
+    reader = genomics_reader.TFRecordReader(
+        test_utils.genomics_core_testdata('test_features.gff.tfrecord'),
+        gff_pb2.GffRecord(),
+    )
+    records = list(reader.iterate())
+    self.assertEqual('GenBank', records[0].source)
+    self.assertEqual('ctg123', records[1].range.reference_name)
 
-  def testMock(self):
-    reader = genomics_reader.TFRecordReader('a,b,c,d,e', DummyProto())
-    self.assertEqual(['a', 'b', 'c', 'd', 'e'], list(reader))
+  def testUncompressedExplicit(self):
+    reader = genomics_reader.TFRecordReader(
+        test_utils.genomics_core_testdata('test_features.gff.tfrecord'),
+        gff_pb2.GffRecord(),
+        compression_type=''
+    )
+    records = list(reader.iterate())
+    self.assertEqual('GenBank', records[0].source)
+    self.assertEqual('ctg123', records[1].range.reference_name)
 
-  def testTwoIteratorsAtTheSameTime(self):
-    dreader = genomics_reader.TFRecordReader('0,1,2,3,4,5', DummyProto())
-    iter2 = iter(dreader)
-    for i in range(6):
-      self.assertEqual(str(i), six.next(dreader))
-      self.assertEqual(str(i), six.next(iter2))
+  def testCompressed(self):
+    reader = genomics_reader.TFRecordReader(
+        test_utils.genomics_core_testdata('test_features.gff.tfrecord.gz'),
+        gff_pb2.GffRecord(),
+    )
+    records = list(reader.iterate())
+    self.assertEqual('GenBank', records[0].source)
+    self.assertEqual('ctg123', records[1].range.reference_name)
+
+  def testCompressedExplicit(self):
+    reader = genomics_reader.TFRecordReader(
+        test_utils.genomics_core_testdata('test_features.gff.tfrecord.gz'),
+        gff_pb2.GffRecord(),
+        compression_type='GZIP'
+    )
+    records = list(reader.iterate())
+    self.assertEqual('GenBank', records[0].source)
+    self.assertEqual('ctg123', records[1].range.reference_name)
 
 
 if __name__ == '__main__':
