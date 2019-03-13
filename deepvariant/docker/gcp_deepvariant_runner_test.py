@@ -149,6 +149,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
             'gs://bucket/staging/logs/call_variants/0'
         ]),
     ])
+    self.assertEqual(mock_apply_async.call_count, 2)
+
     mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
                   'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
@@ -195,7 +197,9 @@ class DeepvariantRunnerTest(unittest.TestCase):
                       'CALLED_VARIANTS=gs://bucket/staging/called_variants/*'),
             'gs://bucket/staging/logs/call_variants/0'
         ]),
-    ],)
+    ])
+    self.assertEqual(mock_apply_async.call_count, 2)
+
     mock_run_job.assert_called_once_with(
         _HasAllOf('postprocess_variants', 'gcr.io/dockerimage',
                   'CALLED_VARIANTS=gs://bucket/staging/called_variants/*',
@@ -232,33 +236,31 @@ class DeepvariantRunnerTest(unittest.TestCase):
     ])
     gcp_deepvariant_runner.run(self._argv)
 
-    mock_apply_async.assert_has_calls(
-        [
-            mock.call(mock.ANY, [
-                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                          'EXAMPLES=gs://bucket/staging/examples/0/*',
-                          'INPUT_REGIONS_0=gs://bucket/region-1.bed',
-                          'INPUT_REGIONS_1=gs://bucket/region-2.bed'),
-                'gs://bucket/staging/logs/make_examples/0'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
-                          'INPUT_REGIONS_0=gs://bucket/region-1.bed',
-                          'INPUT_REGIONS_1=gs://bucket/region-2.bed'),
-                'gs://bucket/staging/logs/make_examples/1'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
-                          'INPUT_REGIONS_0=gs://bucket/region-1.bed',
-                          'INPUT_REGIONS_1=gs://bucket/region-2.bed'),
-                'gs://bucket/staging/logs/make_examples/2'
-            ]),
-        ],
-        any_order=True,
-    )
+    mock_apply_async.assert_has_calls([
+        mock.call(mock.ANY, [
+            _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                      'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
+                      'EXAMPLES=gs://bucket/staging/examples/0/*',
+                      'INPUT_REGIONS_0=gs://bucket/region-1.bed',
+                      'INPUT_REGIONS_1=gs://bucket/region-2.bed'),
+            'gs://bucket/staging/logs/make_examples/0'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                      'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
+                      'INPUT_REGIONS_0=gs://bucket/region-1.bed',
+                      'INPUT_REGIONS_1=gs://bucket/region-2.bed'),
+            'gs://bucket/staging/logs/make_examples/1'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                      'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
+                      'INPUT_REGIONS_0=gs://bucket/region-1.bed',
+                      'INPUT_REGIONS_1=gs://bucket/region-2.bed'),
+            'gs://bucket/staging/logs/make_examples/2'
+        ]),
+    ])
+    self.assertEqual(mock_apply_async.call_count, 3)
 
   @mock.patch.object(multiprocessing, 'Pool')
   @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
@@ -284,30 +286,28 @@ class DeepvariantRunnerTest(unittest.TestCase):
         '--gcsfuse',
     ])
     gcp_deepvariant_runner.run(self._argv)
-    mock_apply_async.assert_has_calls(
-        [
-            mock.call(mock.ANY, [
-                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
-                          'EXAMPLES=gs://bucket/staging/examples/0/*',
-                          'GCS_BUCKET=bucket', 'BAM=bam'),
-                'gs://bucket/staging/logs/make_examples/0'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
-                          'GCS_BUCKET=bucket', 'BAM=bam'),
-                'gs://bucket/staging/logs/make_examples/1'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
-                          'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
-                          'GCS_BUCKET=bucket', 'BAM=bam'),
-                'gs://bucket/staging/logs/make_examples/2'
-            ]),
-        ],
-        any_order=True,
-    )
+    mock_apply_async.assert_has_calls([
+        mock.call(mock.ANY, [
+            _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                      'SHARD_START_INDEX=0', 'SHARD_END_INDEX=4',
+                      'EXAMPLES=gs://bucket/staging/examples/0/*',
+                      'GCS_BUCKET=bucket', 'BAM=bam'),
+            'gs://bucket/staging/logs/make_examples/0'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                      'SHARD_START_INDEX=5', 'SHARD_END_INDEX=9',
+                      'GCS_BUCKET=bucket', 'BAM=bam'),
+            'gs://bucket/staging/logs/make_examples/1'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('prefix_make_examples', 'gcr.io/dockerimage',
+                      'SHARD_START_INDEX=10', 'SHARD_END_INDEX=14',
+                      'GCS_BUCKET=bucket', 'BAM=bam'),
+            'gs://bucket/staging/logs/make_examples/2'
+        ]),
+    ])
+    self.assertEqual(mock_apply_async.call_count, 3)
 
   @mock.patch.object(multiprocessing, 'Pool')
   @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
@@ -334,26 +334,24 @@ class DeepvariantRunnerTest(unittest.TestCase):
     ])
     gcp_deepvariant_runner.run(self._argv)
 
-    mock_apply_async.assert_has_calls(
-        [
-            mock.call(mock.ANY, [
-                _HasAllOf('call_variants', 'gcr.io/dockerimage',
-                          'CALL_VARIANTS_SHARD_INDEX=0'),
-                'gs://bucket/staging/logs/call_variants/0'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('call_variants', 'gcr.io/dockerimage',
-                          'CALL_VARIANTS_SHARD_INDEX=1'),
-                'gs://bucket/staging/logs/call_variants/1'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('call_variants', 'gcr.io/dockerimage',
-                          'CALL_VARIANTS_SHARD_INDEX=2'),
-                'gs://bucket/staging/logs/call_variants/2'
-            ]),
-        ],
-        any_order=True,
-    )
+    mock_apply_async.assert_has_calls([
+        mock.call(mock.ANY, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                      'CALL_VARIANTS_SHARD_INDEX=0'),
+            'gs://bucket/staging/logs/call_variants/0'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                      'CALL_VARIANTS_SHARD_INDEX=1'),
+            'gs://bucket/staging/logs/call_variants/1'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage',
+                      'CALL_VARIANTS_SHARD_INDEX=2'),
+            'gs://bucket/staging/logs/call_variants/2'
+        ]),
+    ])
+    self.assertEqual(mock_apply_async.call_count, 3)
 
   @mock.patch.object(multiprocessing, 'Pool')
   @mock.patch('gcp_deepvariant_runner._gcs_object_exist')
@@ -383,26 +381,24 @@ class DeepvariantRunnerTest(unittest.TestCase):
     ])
     gcp_deepvariant_runner.run(self._argv)
 
-    mock_apply_async.assert_has_calls(
-        [
-            mock.call(mock.ANY, [
-                _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                          'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=0'),
-                'gs://bucket/staging/logs/call_variants/0'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                          'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=1'),
-                'gs://bucket/staging/logs/call_variants/1'
-            ]),
-            mock.call(mock.ANY, [
-                _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
-                          'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=2'),
-                'gs://bucket/staging/logs/call_variants/2'
-            ]),
-        ],
-        any_order=True,
-    )
+    mock_apply_async.assert_has_calls([
+        mock.call(mock.ANY, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                      'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=0'),
+            'gs://bucket/staging/logs/call_variants/0'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                      'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=1'),
+            'gs://bucket/staging/logs/call_variants/1'
+        ]),
+        mock.call(mock.ANY, [
+            _HasAllOf('call_variants', 'gcr.io/dockerimage_gpu',
+                      'nvidia-tesla-k80', 'CALL_VARIANTS_SHARD_INDEX=2'),
+            'gs://bucket/staging/logs/call_variants/2'
+        ]),
+    ])
+    self.assertEqual(mock_apply_async.call_count, 3)
 
   @mock.patch.object(gke_cluster.GkeCluster, '__init__', return_value=None)
   @mock.patch.object(gke_cluster.GkeCluster, 'deploy_pod')
@@ -435,6 +431,8 @@ class DeepvariantRunnerTest(unittest.TestCase):
             'foo-cluster', None, 'us-central1-c', create_if_not_exist=False),
         mock.call('foo-cluster', None, 'us-central1-c')
     ])
+    self.assertEqual(mock_init.call_count, 2)
+
     mock_deploy_pod.assert_called_once_with(
         pod_config=mock.ANY,
         pod_name=AnyStringWith('deepvariant-'),
