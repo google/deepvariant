@@ -48,8 +48,6 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "third_party/nucleus/protos/feature.pb.h"
-#include "third_party/nucleus/protos/example.pb.h"
 
 namespace {
 
@@ -196,15 +194,6 @@ extern "C" {
     nucleus::genomics::v1::VcfExtra().descriptor();
     nucleus::genomics::v1::VcfReaderOptions().descriptor();
     nucleus::genomics::v1::VcfWriterOptions().descriptor();
-    tensorflow::Example().descriptor();
-    tensorflow::SequenceExample().descriptor();
-    tensorflow::BytesList().descriptor();
-    tensorflow::FloatList().descriptor();
-    tensorflow::Int64List().descriptor();
-    tensorflow::Feature().descriptor();
-    tensorflow::Features().descriptor();
-    tensorflow::FeatureList().descriptor();
-    tensorflow::FeatureLists().descriptor();
 
 #if PY_MAJOR_VERSION >= 3
     return m;

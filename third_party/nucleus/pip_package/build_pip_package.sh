@@ -39,6 +39,7 @@
 #   bazel build -c opt $COPT_FLAGS nucleus/pip_package:build_pip_package
 
 set -e
+set -x
 
 function cp_external() {
   local src_dir=$1
@@ -59,8 +60,9 @@ RUNFILES=bazel-bin/nucleus/pip_package/build_pip_package.runfiles/nucleus
 cp -R "${RUNFILES}/nucleus" "${TMPDIR}"
 
 # Subdirectory #2: Copy /_solib_k8 (or whatever the binary files directory
-# is called) to top level.
-so_lib_dir=$(ls "$RUNFILES" | grep solib)
+# is called) to top level.  The "cat -" is there to turn grep's exit code
+# of 1 into a pipeline exit code of 0 if grep doesn't find anything.
+so_lib_dir=$(ls "$RUNFILES" | grep solib | cat -)
 if [ -n "${so_lib_dir}" ]; then
   cp -R "${RUNFILES}/${so_lib_dir}" "${TMPDIR}"
 fi
@@ -77,6 +79,7 @@ cp -R "${RUNFILES}"/third_party/* "${TMPDIR}/third_party"
 # any other installed versions while running Nucleus code.
 cp -R "${RUNFILES}/external/protobuf_archive/python/google" "${TMPDIR}/google"
 
+cp __init__.py "${TMPDIR}"
 cp LICENSE "${TMPDIR}"
 cp README.md "${TMPDIR}"
 cp nucleus/pip_package/MANIFEST.in "${TMPDIR}"

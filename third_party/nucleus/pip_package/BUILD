@@ -47,6 +47,7 @@ PIP_DEPS = [
     ":setup",
     ":licenses",
     "setup.py",
+    "//:all_extensions",
 ]
 
 sh_binary(
