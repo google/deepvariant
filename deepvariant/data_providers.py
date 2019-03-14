@@ -397,6 +397,7 @@ def get_input_fn_from_filespec(input_file_spec,
                                tensor_shape=None,
                                use_tpu=False,
                                input_read_threads=_DEFAULT_INPUT_READ_THREADS,
+                               input_map_threads=_DEFAULT_INPUT_MAP_THREADS,
                                debugging_true_label_mode=False):
   """Create a DeepVariantInput function object from a file spec.
 
@@ -408,6 +409,7 @@ def get_input_fn_from_filespec(input_file_spec,
     tensor_shape: None, or list of int [height, width, channel] for testing.
     use_tpu: use the tpu code path in the input_fn.
     input_read_threads: number of threads reading the input files.
+    input_map_threads: number of threads mapping the input files.
     debugging_true_label_mode: boolean. If true, the input examples are created
                                with "training" mode. We'll parse the 'label'
                                field even if the `mode` is PREDICT.
@@ -424,6 +426,7 @@ def get_input_fn_from_filespec(input_file_spec,
       name=name,
       use_tpu=use_tpu,
       input_read_threads=input_read_threads,
+      input_map_threads=input_map_threads,
       debugging_true_label_mode=debugging_true_label_mode)
 
 
