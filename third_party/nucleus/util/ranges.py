@@ -39,7 +39,7 @@ from absl import logging
 import intervaltree
 import six
 
-from third_party.nucleus.io import gfile
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import bed
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2

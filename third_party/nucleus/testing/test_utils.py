@@ -39,7 +39,7 @@ from absl import flags
 from absl.testing import absltest
 import six
 
-from third_party.nucleus.io import gfile
+from tensorflow.python.platform import gfile
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import struct_pb2

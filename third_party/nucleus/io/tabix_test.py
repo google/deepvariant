@@ -37,7 +37,7 @@ import shutil
 
 from absl.testing import absltest
 
-from third_party.nucleus.io import gfile
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tabix
 from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils

@@ -56,7 +56,7 @@ import collections
 
 import six
 
-from third_party.nucleus.io import gfile
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import reference
 from third_party.nucleus.protos import fasta_pb2

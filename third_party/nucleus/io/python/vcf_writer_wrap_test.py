@@ -37,7 +37,7 @@ import copy
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from third_party.nucleus.io import gfile
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import vcf_writer

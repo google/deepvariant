@@ -39,7 +39,7 @@ from absl.testing import parameterized
 
 import six
 
-from third_party.nucleus.io import gfile
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import reads_pb2

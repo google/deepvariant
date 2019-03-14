@@ -171,7 +171,6 @@ py_library(
     srcs = ["ranges.py"],
     deps = [
         "//third_party/nucleus/io:bed",
-        "//third_party/nucleus/io:gfile",
         "//third_party/nucleus/protos:position_py_pb2",
         "//third_party/nucleus/protos:range_py_pb2",
         "@absl_py//absl/logging",

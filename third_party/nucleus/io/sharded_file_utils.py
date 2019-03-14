@@ -49,7 +49,7 @@ import math
 import re
 import six
 
-from third_party.nucleus.io import gfile
+from tensorflow.python.platform import gfile
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 
