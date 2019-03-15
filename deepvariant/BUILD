@@ -16,7 +16,6 @@ filegroup(
         "model_eval",
         "model_train",
         "postprocess_variants",
-        "//deepvariant/realigner/allele_count_linear:generate_trained_model",
     ],
 )
 
