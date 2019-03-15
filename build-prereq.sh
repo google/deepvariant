@@ -98,7 +98,7 @@ else
     *Debian*9.*)    export DV_PLATFORM="debian" ;;
     *Debian*rodete) export DV_PLATFORM="debian" ;;
     *) echo "CLIF is not installed on this machine and a prebuilt binary is not
-unavailable for this platform. Please install CLIF at
+available for this platform. Please install CLIF at
 https://github.com/google/clif before continuing."
     exit 1
   esac
