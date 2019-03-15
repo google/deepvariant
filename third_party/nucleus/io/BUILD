@@ -990,6 +990,18 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "tfrecord_reader_test",
+    srcs = ["tfrecord_reader_test.cc"],
+    data = ["//third_party/nucleus/testdata"],
+    deps = [
+        ":tfrecord_reader",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "tfrecord_writer",
     srcs = ["tfrecord_writer.cc"],
