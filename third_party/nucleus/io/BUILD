@@ -986,6 +986,7 @@ cc_library(
     deps = [
         "//third_party/nucleus/platform:types",
         "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core/platform/cloud:gcs_file_system",
     ],
 )
 
@@ -995,6 +996,7 @@ cc_library(
     hdrs = ["tfrecord_writer.h"],
     deps = [
         "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core/platform/cloud:gcs_file_system",
     ],
 )
 
