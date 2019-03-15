@@ -10,7 +10,10 @@ py_binary(
     name = "labeled_examples_to_vcf",
     srcs = ["labeled_examples_to_vcf.py"],
     srcs_version = "PY2AND3",
-    deps = [":labeled_examples_to_vcf_main_lib"],
+    deps = [
+        ":labeled_examples_to_vcf_main_lib",
+        "@absl_py//absl:app",
+    ],
 )
 
 py_library(
