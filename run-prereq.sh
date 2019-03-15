@@ -92,13 +92,10 @@ pip install --user 'mock>=2.0.0'
 pip install --user --no-binary=:all: 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 
 pip install --user 'requests>=2.18'
-pip install --user 'scipy==1.0'
 pip install --user 'oauth2client>=4.0.0'
 pip install --user 'crcmod>=1.7'
 pip install --user six
-pip install --user 'scikit-learn==0.20.2'  # Compatible with Python 2.7
 pip install --user joblib
-pip install --user pandas
 pip install --user psutil
 pip install --user --upgrade google-api-python-client
 pip install --user 'tensor2tensor>=1.9.0'
