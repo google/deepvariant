@@ -32,7 +32,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import multiprocessing
 import os
 import time
 
@@ -147,6 +146,8 @@ flags.DEFINE_string(
     'for more information. The default value is 0, which provides the best '
     'performance in our tests. Set this flag to "" to not set the variable.')
 
+flags.DEFINE_boolean('use_async_result_writer', False,
+                     'If true, use another process to write result to file.')
 
 class ExecutionHardwareError(Exception):
   pass
@@ -293,7 +294,8 @@ def call_variants(examples_filename,
                   batch_size=16,
                   max_batches=None,
                   use_tpu=False,
-                  master=''):
+                  master='',
+                  use_async_result_writer=False):
   """Main driver of call_variants."""
   if FLAGS.kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
@@ -363,9 +365,17 @@ def call_variants(examples_filename,
       write_variant_call(writer, prediction, use_tpu)
 
   with writer:
-    write_queue = multiprocessing.Queue()
-    write_process = multiprocessing.Process(target=_write_variant_call_from_queue, args=(write_queue, writer, use_tpu))
-    write_process.start()
+    if use_async_result_writer:
+
+      import multiprocessing
+
+      write_queue = multiprocessing.Queue()
+      write_process = multiprocessing.Process(target=_write_variant_call_from_queue, args=(write_queue, writer, use_tpu))
+      write_process.start()
+      write_variant_call_impl = lambda p: write_queue.put_nowait(p)
+    else:
+      write_variant_call_impl = lambda p: write_variant_call(writer, p, use_tpu)
+
     start_time = time.time()
     n_examples, n_batches = 0, 0
     while max_batches is None or n_batches <= max_batches:
@@ -373,7 +383,7 @@ def call_variants(examples_filename,
         prediction = next(predictions)
       except (StopIteration, tf.errors.OutOfRangeError):
         break
-      write_queue.put_nowait(prediction)
+      write_variant_call_impl(prediction)
       n_examples += 1
       n_batches = n_examples // batch_size + 1
       duration = time.time() - start_time
@@ -383,8 +393,9 @@ def call_variants(examples_filename,
           ('Processed %s examples in %s batches [%.3f sec per 100]'),
           _LOG_EVERY_N, n_examples, n_batches, (100 * duration) / n_examples)
 
-    write_queue.put('STOP')
-    write_process.join()
+    if use_async_result_writer:
+      write_queue.put('STOP')
+      write_process.join()
     logging.info('Done evaluating variants')
 
 
@@ -417,6 +428,7 @@ def main(argv=()):
         batch_size=FLAGS.batch_size,
         master=master,
         use_tpu=FLAGS.use_tpu,
+        use_async_result_writer=FLAGS.use_async_result_writer
     )
 
 
