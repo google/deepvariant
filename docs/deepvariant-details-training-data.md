@@ -1,10 +1,10 @@
 # DeepVariant training data
 
-## WGS training data v0.7
+## WGS training data v0.8
 
-We used: 10 HG001 PCR-free, 2 HG005 PCR-free, 4 HG001 PCR+ for training.
+We used: 12 HG001 PCR-free, 2 HG005 PCR-free, 4 HG001 PCR+ for training.
 
-Among these 16 BAM files, 6 of them are from public sources:
+Among these 18 BAM files, 6 of them are from public sources:
 
 BAM file (`--reads`)                                                                                                                                     | PCR-free? | FASTA file (`--ref`)                                                                                                         | Truth VCF (`--truth_variants`)                                                                          | BED file (`--confident_regions`)
 -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------
