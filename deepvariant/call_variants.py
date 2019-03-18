@@ -52,6 +52,7 @@ from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
+from google.protobuf import text_format
 
 _ALLOW_EXECUTION_HARDWARE = [
     'auto',  # Default, no validation.
@@ -114,6 +115,12 @@ flags.DEFINE_string(
     'accelerator environment is correctly configured. In auto mode, the '
     'default, op placement is entirely left up to TensorFlow.  In tpu mode, '
     'use and require TPU.')
+flags.DEFINE_string(
+    'config_string', None,
+    'String representation of a tf.ConfigProto message, with comma-separated '
+    'key: value pairs, such as "allow_soft_placement: True". The value can '
+    'itself be another message, such as '
+    '"gpu_options: {per_process_gpu_memory_fraction: 0.5}".')
 
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
@@ -235,9 +242,9 @@ def write_variant_call(writer, prediction, use_tpu):
   Args:
     writer: A object with a write() function that will be called for each
       encoded_variant and genotype likelihoods.
-    prediction: A [3] tensor of floats. These are the predicted
-      genotype likelihoods (p00, p0x, pxx) for some alt allele x, in the same
-      order as encoded_variants.
+    prediction: A [3] tensor of floats. These are the predicted genotype
+      likelihoods (p00, p0x, pxx) for some alt allele x, in the same order as
+      encoded_variants.
       use_tpu: bool.  Decode the tpu specific encoding of prediction.
 
   Returns:
@@ -304,8 +311,9 @@ def call_variants(examples_filename,
   # Read a single TFExample to make sure we're not loading an older version.
   example_format = tf_utils.get_format_from_examples_path(examples_filename)
   if example_format is None:
-    logging.warning('Unable to read any records from %s. Output will contain '
-                    'zero records.', examples_filename)
+    logging.warning(
+        'Unable to read any records from %s. Output will contain '
+        'zero records.', examples_filename)
     tfrecord.write_tfrecords([], output_file)
     return
   elif example_format != 'raw':
@@ -321,8 +329,16 @@ def call_variants(examples_filename,
             execution_hardware, ','.join(_ALLOW_EXECUTION_HARDWARE)))
   init_op = tf.group(tf.global_variables_initializer(),
                      tf.local_variables_initializer())
-  device_count = {'GPU': 0, 'TPU': 0} if execution_hardware == 'cpu' else {}
-  config = tf.ConfigProto(device_count=device_count)
+
+  config = tf.ConfigProto()
+  if FLAGS.config_string is not None:
+    text_format.Parse(FLAGS.config_string, config)
+  if execution_hardware == 'cpu':
+    # Don't overwrite entire dictionary.
+    config.device_count['GPU'] = 0
+    config.device_count['TPU'] = 0
+
+  # Perform sanity check.
   with tf.Session(config=config) as sess:
     sess.run(init_op)
     if execution_hardware == 'accelerator':
@@ -341,6 +357,7 @@ def call_variants(examples_filename,
       batch_size=batch_size,
       master=master,
       use_tpu=use_tpu,
+      session_config=config,
   )
 
   # Instantiate the prediction "stream", and select the EMA values from
