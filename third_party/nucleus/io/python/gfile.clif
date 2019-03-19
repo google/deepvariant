@@ -1,4 +1,4 @@
-# Copyright 2018 Google LLC.
+# Copyright 2019 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,62 +26,39 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""A Python interface for files."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from "third_party/nucleus/io/gfile.h":
+  namespace `nucleus`:
 
-import six
+    def `Exists` as Exists(filename: str) -> bool
 
-from third_party.nucleus.io.python import gfile
+    def `Glob` as Glob(pattern: str) -> list<str>
 
+    class ReadableFile:
+      @classmethod
+      def `New` as New(cls, filename: str) -> ReadableFile
 
-def Exists(filename):
-  return gfile.Exists(filename)
+      def `Readline` as Readline(self) -> (ok: bool, s: str)
 
+      def `Close` as close(self)
 
-def Glob(pattern):
-  return gfile.Glob(pattern)
+      @__enter__
+      def PythonEnter(self)
 
-
-class ReadableFile(six.Iterator):
-  """Wraps gfile.ReadableFile to add iteration, enter/exit and readlines."""
-
-  def __init__(self, filename):
-    self._file = gfile.ReadableFile.New(filename)
-
-  def __enter__(self):
-    return self
-
-  def __exit__(self, type_, value, traceback):
-    self._file.__exit__()
-
-  def __iter__(self):
-    return self
-
-  def __next__(self):
-    ok, line = self._file.Readline()
-    if ok:
-      return line
-    else:
-      raise StopIteration
-
-  def readlines(self):
-    lines = []
-    while True:
-      ok, line = self._file.Readline()
-      if ok:
-        lines.append(line)
-      else:
-        break
-    return lines
+      @__exit__
+      def Close(self)
 
 
-def Open(filename, mode="r"):
-  if mode == "r":
-    return ReadableFile(filename)
-  elif mode == "w":
-    return gfile.WritableFile.New(filename)
-  else:
-    raise ValueError("Unsupported mode '{}' for Open".format(mode))
+    class WritableFile:
+      @classmethod
+      def `New` as New(cls, filename: str) -> WritableFile
+
+      def `Write` as write(self, s: str) -> bool
+
+      def `Close` as close(self)
+
+      @__enter__
+      def PythonEnter(self)
+
+      @__exit__
+      def Close(self)
