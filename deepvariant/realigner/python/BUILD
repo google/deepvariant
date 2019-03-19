@@ -10,9 +10,6 @@ package(
 py_clif_cc(
     name = "fast_pass_aligner",
     srcs = ["fast_pass_aligner.clif"],
-    clif_deps = [
-        "//third_party/nucleus/io/python:reference",  # other py_clif_cc rules
-    ],
     py_deps = [],
     pyclif_deps = [
         "//third_party/nucleus/protos:reads_pyclif",
@@ -24,7 +21,6 @@ py_clif_cc(
 py_clif_cc(
     name = "debruijn_graph",
     srcs = ["debruijn_graph.clif"],
-    clif_deps = [],
     py_deps = [],
     pyclif_deps = [
         "//deepvariant/protos:realigner_pyclif",
