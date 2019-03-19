@@ -1,0 +1,72 @@
+# Copyright 2019 Google LLC.
+# This is used to build the DeepVariant release docker image.
+# It can also be used to build local images, especially if you've made changes
+# to the code.
+# Example command:
+# $ git clone https://github.com/google/deepvariant.git
+# $ cd deepvariant
+# $ sudo docker build -t latest .
+
+FROM ubuntu:16.04 as builder
+LABEL maintainer="https://github.com/google/deepvariant/issues"
+
+# Copying DeepVariant source code
+COPY . /opt/deepvariant
+
+WORKDIR /opt/deepvariant
+
+RUN ./build-prereq.sh \
+  && PATH="$HOME/bin:$PATH" ./build_release_binaries.sh \  # PATH for bazel
+
+FROM ubuntu:16.04
+ENV VERSION 0.7.2
+
+WORKDIR /opt/deepvariant/bin/
+COPY --from=builder /opt/deepvariant/run-prereq.sh .
+COPY --from=builder /opt/deepvariant/settings.sh .
+COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/make_examples.zip  .
+COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/call_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/postprocess_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_train.zip .
+COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_eval.zip  .
+RUN ./run-prereq.sh
+
+# Create shell wrappers for python zip files for easier use.
+RUN \
+  BASH_HEADER='#!/bin/bash' && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python /opt/deepvariant/bin/make_examples.zip "$@"' > \
+    /opt/deepvariant/bin/make_examples && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python /opt/deepvariant/bin/call_variants.zip "$@"' > \
+    /opt/deepvariant/bin/call_variants && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
+    /opt/deepvariant/bin/postprocess_variants && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python /opt/deepvariant/bin/model_train.zip "$@"' > \
+    /opt/deepvariant/bin/model_train && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python /opt/deepvariant/bin/model_eval.zip "$@"' > \
+    /opt/deepvariant/bin/model_eval && \
+  chmod +x /opt/deepvariant/bin/make_examples \
+    /opt/deepvariant/bin/call_variants \
+    /opt/deepvariant/bin/postprocess_variants \
+    /opt/deepvariant/bin/model_train \
+    /opt/deepvariant/bin/model_eval
+
+# Copy models
+WORKDIR /opt/models/wgs
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.meta .
+
+WORKDIR /opt/models/wes
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
