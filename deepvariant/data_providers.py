@@ -77,6 +77,7 @@ class DeepVariantInput(object):
       input_file_spec,
       num_examples=None,
       num_classes=dv_constants.NUM_CLASSES,
+      max_examples=None,
       tensor_shape=None,
       name=None,
       use_tpu=False,
@@ -98,6 +99,10 @@ class DeepVariantInput(object):
         Required for setting learning rate schedule in train/eval only.
       num_classes: The number of classes in the labels of
         this dataset. Currently defaults to DEFAULT_NUM_CLASSES.
+      max_examples: The maximum number of examples to use. If None, all examples
+        will be used. If not None, the first n = min(max_examples, num_examples)
+        will be used. This works with training, and the n examples will repeat
+        over and over.
       tensor_shape: None (which means we get the shape from the first example in
         source), or list of int [height, width, channel] for testing.
       name: string, name of the dataset.
@@ -124,6 +129,7 @@ class DeepVariantInput(object):
     self.name = name
     self.num_examples = num_examples
     self.num_classes = num_classes
+    self.max_examples = max_examples
 
     self.use_tpu = use_tpu
     self.sloppy = sloppy
@@ -141,6 +147,16 @@ class DeepVariantInput(object):
     if num_examples is None and mode != tf.estimator.ModeKeys.PREDICT:
       raise ValueError('num_examples argument required for DeepVariantInput'
                        'in TRAIN/EVAL modes.')
+
+    if max_examples is not None:
+      if max_examples <= 0:
+        raise ValueError(
+            'max_examples must be > 0 if not None. Got {}'.format(max_examples))
+      # We update our num_examples in the situation where num_examples is set
+      # (i.e., is not None) to the smaller of max_examples and num_examples.
+      if self.num_examples is not None:
+        self.num_examples = min(max_examples, self.num_examples)
+
     if tensor_shape:
       self.tensor_shape = tensor_shape
     else:
@@ -285,6 +301,9 @@ class DeepVariantInput(object):
               cycle_length=self.input_read_threads,
               sloppy=self.sloppy))
 
+    if self.max_examples is not None:
+      dataset = dataset.take(self.max_examples)
+
     if self.mode == tf.estimator.ModeKeys.TRAIN:
       dataset = dataset.repeat()
 
@@ -351,24 +370,20 @@ class DeepVariantInput(object):
     return dataset
 
   def __str__(self):
-    return (
-        'DeepVariantInput(name={}, input_file_spec={}, num_examples={}, mode={}'
-    ).format(self.name, self.input_file_spec, self.num_examples, self.mode)
+    return ('DeepVariantInput(name={}, input_file_spec={}, num_examples={}, '
+            'mode={})').format(self.name, self.input_file_spec,
+                               self.num_examples, self.mode)
 
 
 # This is the entry point to get a DeepVariantInput when you start with
 # a dataset configuration file name.
-def get_input_fn_from_dataset(dataset_config_filename,
-                              mode,
-                              tensor_shape=None,
-                              use_tpu=False):
+def get_input_fn_from_dataset(dataset_config_filename, mode, **kwargs):
   """Creates an input_fn from the dataset config file.
 
   Args:
     dataset_config_filename: str. Path to the dataset config pbtxt file.
     mode: one of tf.estimator.ModeKeys.{TRAIN,EVAL,PREDICT}
-    tensor_shape: None, or list of int [height, width, channel] for testing.
-    use_tpu: use the tpu code path in the input_fn.
+    **kwargs: Additional keyword arguments for DeepVariantInput.
 
   Returns:
     An input_fn from the specified split in the dataset_config file.
@@ -381,53 +396,26 @@ def get_input_fn_from_dataset(dataset_config_filename,
   # Return a reader for the data.
   return get_input_fn_from_filespec(
       input_file_spec=dataset_config.tfrecord_path,
+      mode=mode,
       num_examples=dataset_config.num_examples,
       name=dataset_config.name,
-      mode=mode,
-      tensor_shape=tensor_shape,
-      use_tpu=use_tpu)
+      **kwargs)
 
 
 # This is the entry point to get a DeepVariantInput when you start with
 # a tf.example file specification, and associated metadata.
-def get_input_fn_from_filespec(input_file_spec,
-                               mode,
-                               num_examples=None,
-                               name=None,
-                               tensor_shape=None,
-                               use_tpu=False,
-                               input_read_threads=_DEFAULT_INPUT_READ_THREADS,
-                               input_map_threads=_DEFAULT_INPUT_MAP_THREADS,
-                               debugging_true_label_mode=False):
+def get_input_fn_from_filespec(input_file_spec, mode, **kwargs):
   """Create a DeepVariantInput function object from a file spec.
 
   Args:
     input_file_spec: the tf.example input file specification, possibly sharded.
     mode: tf.estimator.ModeKeys.
-    num_examples: the number of examples in the files (or None).
-    name: the name for this data set (or None).
-    tensor_shape: None, or list of int [height, width, channel] for testing.
-    use_tpu: use the tpu code path in the input_fn.
-    input_read_threads: number of threads reading the input files.
-    input_map_threads: number of threads mapping the input files.
-    debugging_true_label_mode: boolean. If true, the input examples are created
-                               with "training" mode. We'll parse the 'label'
-                               field even if the `mode` is PREDICT.
+    **kwargs: Additional keyword arguments for DeepVariantInput.
 
   Returns:
     A DeepVariantInput object usable as an input_fn.
   """
-
-  return DeepVariantInput(
-      mode=mode,
-      input_file_spec=input_file_spec,
-      num_examples=num_examples,
-      tensor_shape=tensor_shape,
-      name=name,
-      use_tpu=use_tpu,
-      input_read_threads=input_read_threads,
-      input_map_threads=input_map_threads,
-      debugging_true_label_mode=debugging_true_label_mode)
+  return DeepVariantInput(mode=mode, input_file_spec=input_file_spec, **kwargs)
 
 
 # Return the stream of batched images from a dataset.

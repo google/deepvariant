@@ -312,6 +312,62 @@ class DataProviderTest(parameterized.TestCase):
           input_file_spec='/this/path/does/not/exist',
           num_examples=1)
 
+  # pylint: disable=g-complex-comprehension
+  @parameterized.parameters(
+      dict(max_examples=max_examples, batch_size=batch_size)
+      for max_examples in [2, 4, 8]
+      for batch_size in [4, 8, 16])
+  def test_max_examples(self, max_examples, batch_size):
+    input_fn = data_providers.get_input_fn_from_filespec(
+        input_file_spec=testdata.GOLDEN_TRAINING_EXAMPLES,
+        num_examples=testdata.N_GOLDEN_TRAINING_EXAMPLES,
+        name='labeled_golden',
+        max_examples=max_examples,
+        mode=tf.estimator.ModeKeys.TRAIN)
+
+    n_batches_to_read = 100
+    with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+
+      iterator = input_fn(dict(batch_size=batch_size)).make_one_shot_iterator()
+
+      def read_loci_in_batches():
+        features, _ = sess.run(iterator.get_next())
+        return features['locus']
+
+      batches = [read_loci_in_batches() for _ in range(n_batches_to_read)]
+      unique_loci = {locus for batch in batches for locus in batch}
+      # assertLen not available OSS.
+      # pylint: disable=g-generic-assert
+      self.assertEqual(len(unique_loci), max_examples)
+      # pylint: enable=g-generic-assert
+
+  # pylint: enable=g-complex-comprehension
+
+  @parameterized.parameters(
+      # When max_examples is None, dataset.num_examples will equal num_examples
+      # arg.
+      dict(num_examples=10, max_examples=None, expected=10),
+      # When max_examples is larger than num_examples, dataset.num_examples will
+      # equal the smaller value.
+      dict(num_examples=10, max_examples=100, expected=10),
+      # When max_examples is smaller than num_examples, dataset.num_examples
+      # will equal the smaller max_examples value.
+      dict(num_examples=10, max_examples=5, expected=5),
+      # When num_examples isn't provided (None), but max_examples is, we don't
+      # update num_examples so it remains None.
+      dict(num_examples=None, max_examples=5, expected=None),
+  )
+  def test_max_examples_overrides_num_examples(self, num_examples, max_examples,
+                                               expected):
+    dataset = data_providers.DeepVariantInput(
+        # Use predict mode so we can have num_examples == None.
+        mode=tf.estimator.ModeKeys.PREDICT,
+        input_file_spec=testdata.GOLDEN_TRAINING_EXAMPLES,
+        num_examples=num_examples,
+        max_examples=max_examples)
+    self.assertEqual(expected, dataset.num_examples)
+
 
 class InputTest(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
