@@ -79,9 +79,9 @@ class ReadableFile(six.Iterator):
 
 
 def Open(filename, mode="r"):
-  if mode == "r":
+  if mode.startswith("r"):
     return ReadableFile(filename)
-  elif mode == "w":
+  elif mode.startswith("w"):
     return gfile.WritableFile.New(filename)
   else:
     raise ValueError("Unsupported mode '{}' for Open".format(mode))
