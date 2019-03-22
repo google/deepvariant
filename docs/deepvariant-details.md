@@ -459,7 +459,6 @@ two workarounds for this:
 
 [dsub]: https://cloud.google.com/genomics/v1alpha2/dsub
 [Pipelines API]: https://cloud.google.com/genomics/v1alpha2/pipelines
-[DeepVariant with docker]: deepvariant-docker.md
 [exome case study]: deepvariant-exome-case-study.md
 [whole genome case study]: deepvariant-case-study.md
 [quick start]: deepvariant-quick-start.md

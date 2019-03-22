@@ -1,5 +1,0 @@
-# Common requirements for running tests.
-enum34
-google-api-core
-google-cloud-storage
-retrying
