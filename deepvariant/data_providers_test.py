@@ -330,9 +330,10 @@ class DataProviderTest(parameterized.TestCase):
       sess.run(tf.global_variables_initializer())
 
       iterator = input_fn(dict(batch_size=batch_size)).make_one_shot_iterator()
+      next_element = iterator.get_next()
 
       def read_loci_in_batches():
-        features, _ = sess.run(iterator.get_next())
+        features, _ = sess.run(next_element)
         return features['locus']
 
       batches = [read_loci_in_batches() for _ in range(n_batches_to_read)]
