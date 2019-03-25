@@ -112,7 +112,7 @@ When using a GPU, `call_variants` is both faster, more efficient, and needs
 fewer CPUs. Based on a small number of experiments, currently the most efficient
 configuration for `call_variants` on a GPU instance is 4-8 CPUs and 1 GPU.
 Compared to our setting in the [whole genome case study], we noticed a 2.5x
-speedup on the call_variants step using a single K80 GPU and 8 CPUs. Note that
+speedup on the call_variants step using a single P100 GPU and 8 CPUs. Note that
 currently `call_variants` can only use one GPU at most. So it doesn't improve
 the speed if you get a multiple-GPU machine.
 
