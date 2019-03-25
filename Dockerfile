@@ -29,6 +29,7 @@ COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/call_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/postprocess_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_train.zip .
 COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_eval.zip  .
+COPY --from=builder /opt/deepvariant/scripts/docker_entrypoint.py .
 RUN ./run-prereq.sh
 
 # Create shell wrappers for python zip files for easier use.
@@ -70,3 +71,14 @@ WORKDIR /opt/models/wes
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.data-00000-of-00001 .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
+
+# Install pip so we can install absl. I had to pin the version of pip for
+# docker_entrypoint.py to work.
+RUN apt-get -y update && \
+  apt-get install -y python-pip && \
+  python -m pip uninstall -y pip  && \
+  python -m pip install pip==9.0.3 && \
+  pip install absl-py
+
+WORKDIR /opt/deepvariant/bin/
+ENTRYPOINT ["python", "-u", "docker_entrypoint.py"]
