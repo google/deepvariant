@@ -5,10 +5,21 @@
 # Example command:
 # $ git clone https://github.com/google/deepvariant.git
 # $ cd deepvariant
-# $ sudo docker build -t latest .
+# $ sudo docker build -t deepvariant_cpu .
+#
+# To build for GPU, use a command like:
+# $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
 
-FROM ubuntu:16.04 as builder
+
+ARG FROM_IMAGE=ubuntu:16.04
+ARG DV_GPU_BUILD=0
+ARG VERSION=0.7.2
+
+FROM ${FROM_IMAGE} as builder
 LABEL maintainer="https://github.com/google/deepvariant/issues"
+
+ARG DV_GPU_BUILD
+ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 
 # Copying DeepVariant source code
 COPY . /opt/deepvariant
@@ -16,10 +27,13 @@ COPY . /opt/deepvariant
 WORKDIR /opt/deepvariant
 
 RUN ./build-prereq.sh \
-  && PATH="$HOME/bin:$PATH" ./build_release_binaries.sh \  # PATH for bazel
+  && PATH="${HOME}/bin:${PATH}" ./build_release_binaries.sh \  # PATH for bazel
 
-FROM ubuntu:16.04
-ENV VERSION 0.7.2
+FROM ${FROM_IMAGE}
+ARG DV_GPU_BUILD
+ARG VERSION
+ENV DV_GPU_BUILD=${DV_GPU_BUILD}
+ENV VERSION ${VERSION}
 
 WORKDIR /opt/deepvariant/bin/
 COPY --from=builder /opt/deepvariant/run-prereq.sh .
