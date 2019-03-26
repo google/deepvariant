@@ -8,7 +8,7 @@
 # the local configuration.  (Our WORKSPACE file assumes tensorflow is
 # installed in a specific location, and there doesn't seem to be a
 # way to refer to it symbolically, like BUILD files can.)
-import %workspace%/../tensorflow/tools/bazel.rc
+import %workspace%/../tensorflow/.bazelrc
 import %workspace%/../tensorflow/.tf_configure.bazelrc
 
 # Use 128 jobs to build. Unfortunately there doesn't seem to be any way to set
