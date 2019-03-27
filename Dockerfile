@@ -27,7 +27,7 @@ COPY . /opt/deepvariant
 WORKDIR /opt/deepvariant
 
 RUN ./build-prereq.sh \
-  && PATH="${HOME}/bin:${PATH}" ./build_release_binaries.sh \  # PATH for bazel
+  && PATH="${HOME}/bin:${PATH}" ./build_release_binaries.sh  # PATH for bazel
 
 FROM ${FROM_IMAGE}
 ARG DV_GPU_BUILD

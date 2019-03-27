@@ -48,7 +48,7 @@ sudo -H apt-get -qq -y update
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release
+sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release > /dev/null
 
 ################################################################################
 # bazel
@@ -70,7 +70,7 @@ function ensure_wanted_bazel_version {
     pushd ~/bazel
     curl -L -O https://github.com/bazelbuild/bazel/releases/download/"${wanted_bazel_version}"/bazel-"${wanted_bazel_version}"-installer-linux-x86_64.sh
     chmod +x bazel-*.sh
-    ./bazel-"${wanted_bazel_version}"-installer-linux-x86_64.sh --user
+    ./bazel-"${wanted_bazel_version}"-installer-linux-x86_64.sh --user > /dev/null
     rm bazel-"${wanted_bazel_version}"-installer-linux-x86_64.sh
     popd
   fi

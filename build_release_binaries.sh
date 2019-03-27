@@ -36,8 +36,18 @@
 # NOLINT
 source settings.sh
 
-bazel --batch build -c opt \
+bazel build -c opt \
+  --output_filter=DONT_MATCH_ANYTHING \
+  --noshow_loading_progress \
+  --show_result=0 \
+  --noshow_progress \
   ${DV_COPT_FLAGS} \
-  --build_python_zip :binaries
+  --build_python_zip \
+  :binaries
 
-bazel --batch build :licenses_zip
+bazel build  -c opt \
+  --output_filter=DONT_MATCH_ANYTHING \
+  --noshow_loading_progress \
+  --show_result=0 \
+  --noshow_progress \
+  :licenses_zip

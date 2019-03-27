@@ -47,26 +47,26 @@ note_build_stage "Misc setup"
 
 if [[ "$EUID" = "0" ]]; then
   # Ensure sudo exists, even if we don't need it.
-  apt-get update
-  apt-get -y install sudo
+  apt-get -qq -y update > /dev/null
+  apt-get -qq -y install sudo > /dev/null
 fi
 
 note_build_stage "Update package list"
 
-sudo -H apt-get -qq -y update
+sudo -H apt-get -qq -y update > /dev/null
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get -y install pkg-config zip zlib1g-dev unzip curl
+sudo -H apt-get -qq -y install pkg-config zip zlib1g-dev unzip curl lsb-release > /dev/null
 
 note_build_stage "Install python packaging infrastructure"
 
-sudo -H apt-get -y install python-dev python-pip python-wheel
+sudo -H apt-get -qq -y install python-dev python-pip python-wheel > /dev/null
 
 echo "$(python --version)"
 
 # This will make sure the pip command is bound to python2
-python2 -m pip install --user --upgrade --force-reinstall pip
+python2 -m pip install -qq --user --upgrade --force-reinstall pip
 
 export PATH="$HOME/.local/bin:$PATH"
 echo "$(pip --version)"
@@ -77,28 +77,32 @@ echo "$(pip --version)"
 
 note_build_stage "Install python packages"
 
-pip install --user contextlib2
-pip install --user enum34
+pip install -qq --user contextlib2
+pip install -qq --user enum34
 # redacted
 # work with intervaltree>=3.0.2.
-pip install --user 'sortedcontainers==1.5.3'
-pip install --user 'intervaltree==3.0.2'
-pip install --user 'mock>=2.0.0'
+pip install -qq --user 'sortedcontainers==1.5.3'
+pip install -qq --user 'intervaltree==3.0.2'
+pip install -qq --user 'mock>=2.0.0'
 
-# Note that TensorFlow on Ubuntu has a "double free" bug when running with GPUs.
-# According to:
-# https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279892449
-# The appropriate workaround is to use --no-binary=:all: during the install.
-pip install --user --no-binary=:all: 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+# Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
+# source. But we know that on 16.04 we don't need to compile from source
+# See https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279061085
+if [[ "$(lsb_release -d)" == *Ubuntu*16.04.* ]]; then
+  pip install -qq --user 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+else
+  echo "Installing numpy with -no-binary=:all:. This will take a bit longer."
+  pip install -qq --user --no-binary=:all: 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+fi
 
-pip install --user 'requests>=2.18'
-pip install --user 'oauth2client>=4.0.0'
-pip install --user 'crcmod>=1.7'
-pip install --user six
-pip install --user joblib
-pip install --user psutil
-pip install --user --upgrade google-api-python-client
-pip install --user 'tensor2tensor>=1.9.0'
+pip install -qq --user 'requests>=2.18'
+pip install -qq --user 'oauth2client>=4.0.0'
+pip install -qq --user 'crcmod>=1.7'
+pip install -qq --user six
+pip install -qq --user joblib
+pip install -qq --user psutil
+pip install -qq --user --upgrade google-api-python-client
+pip install -qq --user 'tensor2tensor>=1.9.0'
 
 
 ################################################################################
@@ -121,22 +125,22 @@ else
   if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow nightly wheel"
-      pip install --user --upgrade tf_nightly_gpu
+      pip install -qq --user --upgrade tf_nightly_gpu
     else
       echo "Installing CPU-only TensorFlow nightly wheel"
-      pip install --user --upgrade tf_nightly
+      pip install -qq --user --upgrade tf_nightly
     fi
   else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow wheel"
-      pip install --user --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
+      pip install -qq --user --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
       echo "Installing Intel's CPU-only MKL TensorFlow wheel"
-      pip install --user --upgrade "intel-tensorflow==1.12.0"
+      pip install -qq --user --upgrade "intel-tensorflow==1.12.0"
     else
       echo "Installing standard CPU-only TensorFlow wheel"
-      pip install --user --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
+      pip install -qq --user --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
     fi
   fi
 fi
@@ -161,8 +165,8 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
       sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
       sudo -H dpkg -i ./cuda-repo-ubuntu1604_9.0.176-1_amd64.deb
-      sudo -H apt-get update
-      sudo -H apt-get -y install cuda-9-0
+      sudo -H apt-get -qq -y update > /dev/null
+      sudo -H apt-get -qq -y install cuda-9-0 > /dev/null
     fi
 
     echo "Checking for CUDNN..."
@@ -178,7 +182,7 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
     fi
 
     # Tensorflow says to do this.
-    sudo -H apt-get -y install libcupti-dev
+    sudo -H apt-get -qq -y install libcupti-dev > /dev/null
   fi
 
   # If we are doing a gpu-build, nvidia-smi should be install. Run it so we
@@ -194,9 +198,9 @@ fi
 note_build_stage "Install other packages"
 
 # for htslib
-sudo -H apt-get -y install libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev
+sudo -H apt-get -qq -y install libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev > /dev/null
 
 # for the debruijn graph
-sudo -H apt-get -y install libboost-graph-dev
+sudo -H apt-get -qq -y install libboost-graph-dev > /dev/null
 
 note_build_stage "run-prereq.sh complete"
