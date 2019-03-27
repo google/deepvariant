@@ -363,12 +363,11 @@ def call_variants(examples_filename,
   def _write_variant_call_from_queue(queue, writer, use_tpu):
     for prediction in iter(queue.get, 'STOP'):
       write_variant_call(writer, prediction, use_tpu)
+    writer.close()
 
   with writer:
     if use_async_result_writer:
-
       import multiprocessing
-
       write_queue = multiprocessing.Queue()
       write_process = multiprocessing.Process(target=_write_variant_call_from_queue, args=(write_queue, writer, use_tpu))
       write_process.start()
