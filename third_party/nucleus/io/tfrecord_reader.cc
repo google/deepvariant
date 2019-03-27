@@ -31,6 +31,7 @@
  */
 
 #include "third_party/nucleus/io/tfrecord_reader.h"
+#include "absl/memory/memory.h"
 #include "tensorflow/core/lib/io/record_reader.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -38,9 +39,8 @@ namespace nucleus {
 
 TFRecordReader::TFRecordReader() {}
 
-TFRecordReader* TFRecordReader::New(const std::string& filename,
-                                    const std::string& compression_type)
-{
+std::unique_ptr<TFRecordReader> TFRecordReader::New(
+    const std::string& filename, const std::string& compression_type) {
   std::unique_ptr<tensorflow::RandomAccessFile> file;
   tensorflow::Status s =
       tensorflow::Env::Default()->NewRandomAccessFile(filename, &file);
@@ -49,22 +49,21 @@ TFRecordReader* TFRecordReader::New(const std::string& filename,
     return nullptr;
   }
 
-  TFRecordReader* reader = new TFRecordReader;
+  auto reader = absl::WrapUnique<TFRecordReader>(new TFRecordReader);
   reader->offset_ = 0;
-  reader->file_ = file.release();
+  reader->file_ = std::move(file);
 
   tensorflow::io::RecordReaderOptions options =
       tensorflow::io::RecordReaderOptions::CreateRecordReaderOptions(
           compression_type);
   options.buffer_size = 16 * 1024 * 1024;
-  reader->reader_ = new tensorflow::io::RecordReader(reader->file_, options);
+  reader->reader_ = absl::make_unique<tensorflow::io::RecordReader>(
+      reader->file_.get(), options);
 
   return reader;
 }
 
 TFRecordReader::~TFRecordReader() {
-  delete reader_;
-  delete file_;
 }
 
 bool TFRecordReader::GetNext() {
@@ -78,10 +77,8 @@ bool TFRecordReader::GetNext() {
 }
 
 void TFRecordReader::Close() {
-  delete reader_;
-  delete file_;
-  file_ = nullptr;
   reader_ = nullptr;
+  file_ = nullptr;
 }
 
 }  // namespace nucleus

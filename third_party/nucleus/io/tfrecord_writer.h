@@ -54,8 +54,8 @@ class TFRecordWriter {
   // Create a TFRecordWriter.
   // Valid compression_types are "ZLIB", "GZIP", or "" (for none).
   // Returns nullptr on failure.
-  static TFRecordWriter* New(const std::string& filename,
-                             const std::string& compression_type);
+  static std::unique_ptr<TFRecordWriter> New(
+      const std::string& filename, const std::string& compression_type);
 
   ~TFRecordWriter();
 
@@ -75,8 +75,9 @@ class TFRecordWriter {
  private:
   TFRecordWriter();
 
-  std::unique_ptr<tensorflow::io::RecordWriter> writer_;
+  // |writer_| has a non-owning pointer on |file_|, so destruct it first.
   std::unique_ptr<tensorflow::WritableFile> file_;
+  std::unique_ptr<tensorflow::io::RecordWriter> writer_;
 };
 
 }  // namespace nucleus

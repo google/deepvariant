@@ -30,6 +30,7 @@
  *
  */
 
+#include <memory>
 #include <string>
 
 #include "third_party/nucleus/io/tfrecord_reader.h"
@@ -40,7 +41,7 @@
 namespace nucleus {
 
 TEST(TFRecordReaderTest, Simple) {
-  TFRecordReader* reader = TFRecordReader::New(
+  std::unique_ptr<TFRecordReader> reader = TFRecordReader::New(
       GetTestData("test_likelihoods.vcf.golden.tfrecord"), "");
   ASSERT_NE(reader, nullptr);
 
@@ -54,13 +55,12 @@ TEST(TFRecordReaderTest, Simple) {
   ASSERT_EQ("Chr1", v.reference_name());
 
   reader->Close();
-  delete reader;
 }
 
 
 TEST(TFRecordReaderTest, NotFound) {
-  TFRecordReader* reader = TFRecordReader::New(
-      GetTestData("not_found.tfrecord"), "");
+  std::unique_ptr<TFRecordReader> reader =
+      TFRecordReader::New(GetTestData("not_found.tfrecord"), "");
   ASSERT_EQ(reader, nullptr);
 }
 
