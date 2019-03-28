@@ -262,8 +262,17 @@ class DeepVariantInput(object):
     if self.mode == tf.estimator.ModeKeys.PREDICT:
       return self.prediction_input_fn(params)
 
-    batch_size = params['batch_size']
+    # Optimized following:
+    #   https://www.tensorflow.org/guide/performance/datasets
+    # using the information available from xprof.
+    def load_dataset(filename):
+      dataset = tf.data.TFRecordDataset(
+          filename,
+          buffer_size=self.prefetch_dataset_buffer_size,
+          compression_type=compression_type)
+      return dataset
 
+    batch_size = params['batch_size']
     compression_type = tf_utils.compression_type_of_files(self.input_files)
 
     # NOTE: The order of the file names returned can be non-deterministic,
@@ -277,16 +286,10 @@ class DeepVariantInput(object):
       dataset = dataset.concatenate(one_dataset) if dataset else one_dataset
 
     # This shuffle applies to the set of files.
+    # redacted
     if (self.mode == tf.estimator.ModeKeys.TRAIN and
         self.initial_shuffle_buffer_size > 0):
       dataset = dataset.shuffle(self.initial_shuffle_buffer_size)
-
-    def load_dataset(filename):
-      dataset = tf.data.TFRecordDataset(
-          filename,
-          buffer_size=self.prefetch_dataset_buffer_size,
-          compression_type=compression_type)
-      return dataset
 
     if self.mode == tf.estimator.ModeKeys.EVAL:
       # When EVAL, avoid parallel reads for the sake of reproducibility.
@@ -307,19 +310,19 @@ class DeepVariantInput(object):
     if self.mode == tf.estimator.ModeKeys.TRAIN:
       dataset = dataset.repeat()
 
-    dataset = dataset.map(
-        self.parse_tfexample, num_parallel_calls=self.input_map_threads)
-
-    dataset = dataset.prefetch(_PREFETCH_BATCHES * batch_size)
-
     # This shuffle applies to the set of records.
     if self.mode == tf.estimator.ModeKeys.TRAIN:
       if self.shuffle_buffer_size > 0:
         dataset = dataset.shuffle(self.shuffle_buffer_size)
 
-    # N.B.: we drop the final partial batch in eval mode, to work around TPU
-    # static shape limitations in the current TPUEstimator.
-    dataset = dataset.batch(batch_size, drop_remainder=True)
+    dataset = dataset.apply(
+        tf.data.experimental.map_and_batch(
+            map_func=self.parse_tfexample,
+            batch_size=batch_size,
+            num_parallel_batches=_PREFETCH_BATCHES,
+            drop_remainder=True))
+
+    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
 
     return dataset
 
