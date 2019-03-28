@@ -75,7 +75,7 @@ constexpr char kFormatHeaderFmt[] =
     "##FORMAT=<ID=$0,Number=$1,Type=$2,Description=\"$3\">";
 constexpr char kContigHeaderFmt[] = "##contig=<ID=$0$1>";
 constexpr char kStructuredExtraHeaderFmt[] = "##$0=<$1>";
-constexpr char kExtraHeaderFmt[] = "##$0=\"$1\"";
+constexpr char kExtraHeaderFmt[] = "##$0=$1";
 
 // Adds a FILTER field to the bcf_hdr_t header based on the VcfFilterInfo
 // object.

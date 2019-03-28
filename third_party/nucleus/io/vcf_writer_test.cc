@@ -95,7 +95,7 @@ constexpr char kExpectedHeaderFmt[] =
     "likelihoods, Phred encoded\">\n"  // NOLINT
     "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set\">\n"
     "##PEDIGREE=<Name_1=\"Val_1\",Name_2=\"Val_2\">\n"
-    "##pedigreeDb=\"http://my.pedigre.es\"\n"
+    "##pedigreeDb=http://my.pedigre.es\n"
     "##contig=<ID=Chr1,length=50,description=\"Dog chromosome 1\">\n"
     "##contig=<ID=Chr2,length=25>\n"
     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\tSpot\n";

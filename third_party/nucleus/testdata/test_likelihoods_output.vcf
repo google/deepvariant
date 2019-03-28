@@ -14,7 +14,7 @@
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Genotype likelihoods, Phred encoded">
 ##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
 ##PEDIGREE=<Name_1="Val_1",Name_2="Val_2">
-##pedigreeDb="http://my.pedigre.es"
+##pedigreeDb=http://my.pedigre.es
 ##contig=<ID=Chr1,length=50,description="Dog chromosome 1">
 ##contig=<ID=Chr2,length=25>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Fido	Spot
