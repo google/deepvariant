@@ -163,7 +163,8 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
                input_path,
                excluded_info_fields=None,
                excluded_format_fields=None,
-               store_gl_and_pl_in_info_map=False):
+               store_gl_and_pl_in_info_map=False,
+               header=None):
     """Initializer for NativeVcfReader.
 
     Args:
@@ -176,16 +177,21 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
       store_gl_and_pl_in_info_map: bool. If True, the "GL" and "PL" FORMAT
         fields are stored in the VariantCall.info map rather than as top-level
         values in the VariantCall.genotype_likelihood field.
+      header: If not None, specifies the variants_pb2.VcfHeader. The file at
+        input_path must not contain any header information.
     """
     super(NativeVcfReader, self).__init__()
 
-    self._reader = vcf_reader.VcfReader.from_file(
-        input_path.encode('utf8'),
-        variants_pb2.VcfReaderOptions(
-            excluded_info_fields=excluded_info_fields,
-            excluded_format_fields=excluded_format_fields,
-            store_gl_and_pl_in_info_map=store_gl_and_pl_in_info_map,
-        ))
+    options = variants_pb2.VcfReaderOptions(
+        excluded_info_fields=excluded_info_fields,
+        excluded_format_fields=excluded_format_fields,
+        store_gl_and_pl_in_info_map=store_gl_and_pl_in_info_map)
+    if header is not None:
+      self._reader = vcf_reader.VcfReader.from_file_with_header(
+          input_path.encode('utf8'), options, header)
+    else:
+      self._reader = vcf_reader.VcfReader.from_file(
+          input_path.encode('utf8'), options)
 
     self.header = self._reader.header
     self.field_access_cache = VcfHeaderCache(self.header)

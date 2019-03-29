@@ -41,6 +41,7 @@
 
 #include "google/protobuf/map.h"
 #include "google/protobuf/repeated_field.h"
+#include "absl/memory/memory.h"
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
 #include "third_party/nucleus/io/hts_path.h"
@@ -119,14 +120,45 @@ class VcfFullFileIterable : public VariantIterable {
 StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
     const string& vcf_filepath,
     const nucleus::genomics::v1::VcfReaderOptions& options) {
+  return FromFileHelper(vcf_filepath, options, nullptr);
+}
+
+StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileWithHeader(
+    const string& vcf_filepath,
+    const nucleus::genomics::v1::VcfReaderOptions& options,
+    const nucleus::genomics::v1::VcfHeader& header) {
+  bcf_hdr_t* h = nullptr;
+  VcfHeaderConverter::ConvertFromPb(header, &h);
+  return FromFileHelper(vcf_filepath, options, h);
+}
+
+StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileHelper(
+    const string& vcf_filepath,
+    const nucleus::genomics::v1::VcfReaderOptions& options, bcf_hdr_t* h) {
   htsFile* fp = hts_open_x(vcf_filepath.c_str(), "r");
   if (fp == nullptr) {
     return tf::errors::NotFound("Could not open ", vcf_filepath);
   }
 
-  bcf_hdr_t* header = bcf_hdr_read(fp);
-  if (header == nullptr)
-    return tf::errors::Unknown("Couldn't parse header for ", fp->fn);
+  if (h == nullptr) {
+    h = bcf_hdr_read(fp);
+    if (h == nullptr) {
+      return tf::errors::Unknown("Couldn't parse header for ", fp->fn);
+    }
+  } else {
+    // Call bcf_hdr_read to verify that this is a headerless VCF file.
+    bcf_hdr_t* null_h = bcf_hdr_read(fp);
+    if (null_h != nullptr) {
+      // redacted
+      hts_close(fp);
+      bcf_hdr_destroy(null_h);
+      bcf_hdr_destroy(h);
+      return tf::errors::Unknown("Unexpected header in", vcf_filepath);
+    }
+    // Without the header, htslib fails to parse the format. Default to vcf.
+    // redacted
+    fp->format.format = htsExactFormat::vcf;
+  }
 
   // Try to load the Tabix index if requested.
   tbx_t* idx = nullptr;
@@ -135,8 +167,8 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFile(
     // idx may be null; only an error if we try to Query later.
   }
 
-  return std::unique_ptr<VcfReader>(
-      new VcfReader(vcf_filepath, options, fp, header, idx));
+  return absl::WrapUnique<VcfReader>(
+      new VcfReader(vcf_filepath, options, fp, h, idx));
 }
 
 void VcfReader::NativeHeaderUpdated() {

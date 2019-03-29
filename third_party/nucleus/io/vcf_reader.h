@@ -90,8 +90,16 @@ class VcfReader : public Reader {
   // Returns a StatusOr that is OK if the VcfReader could be successfully
   // created or an error code indicating the error that occurred.
   static StatusOr<std::unique_ptr<VcfReader>> FromFile(
-      const string& variants_path,
+      const string& vcf_filepath,
       const nucleus::genomics::v1::VcfReaderOptions& options);
+
+  // Same as above, except uses |header| as the header for file at
+  // |vcf_filepath|. The file at |vcf_filepath| must not contain any header
+  // information.
+  static StatusOr<std::unique_ptr<VcfReader>> FromFileWithHeader(
+      const string& vcf_filepath,
+      const nucleus::genomics::v1::VcfReaderOptions& options,
+      const nucleus::genomics::v1::VcfHeader& header);
 
   ~VcfReader();
 
@@ -164,6 +172,12 @@ class VcfReader : public Reader {
   VcfReader(const string& variants_path,
             const nucleus::genomics::v1::VcfReaderOptions& options, htsFile* fp,
             bcf_hdr_t* header, tbx_t* idx);
+
+  // Shared by FromFile methods. If |h| is non-null, use it as the header for
+  // the vcf file at |vcf_filepath|.
+  static StatusOr<std::unique_ptr<VcfReader>> FromFileHelper(
+      const string& vcf_filepath,
+      const nucleus::genomics::v1::VcfReaderOptions& options, bcf_hdr_t* h);
 
   // Helper method to update other member variables when |header_| is changed.
   // This can happen during initialization or when a new header field is

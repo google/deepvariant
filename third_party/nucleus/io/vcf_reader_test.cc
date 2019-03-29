@@ -48,6 +48,7 @@
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/status_matchers.h"
 #include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
@@ -78,6 +79,7 @@ blaze run -c opt internal:vcf_to_tfrecord -- \
 */
 
 constexpr char kValidVcfHeaderFilename[] = "test_valid_vcf_header_parsing.vcf";
+constexpr char kVcfNoHeaderFilename[] = "vcf_no_header.vcf";
 constexpr char kInvalidVcfHeaderFilename[] =
     "test_invalid_vcf_header_parsing.vcf";
 constexpr char kVcfLikelihoodsFilename[] = "test_likelihoods_input.vcf";
@@ -157,6 +159,37 @@ void AddTestExtra(nucleus::genomics::v1::VcfHeader& header, const string& key,
   nucleus::genomics::v1::VcfExtra* extra = header.add_extras();
   extra->set_key(key);
   extra->set_value(value);
+}
+
+TEST(VcfReaderTest, FromFileWithHeader) {
+  std::unique_ptr<VcfReader> reader_with_header =
+      std::move(VcfReader::FromFile(GetTestData(kVcfSitesFilename),
+                                    nucleus::genomics::v1::VcfReaderOptions())
+                    .ValueOrDie());
+
+  std::unique_ptr<VcfReader> reader = std::move(
+      VcfReader::FromFileWithHeader(GetTestData(kVcfNoHeaderFilename),
+                                    nucleus::genomics::v1::VcfReaderOptions(),
+                                    reader_with_header->Header())
+          .ValueOrDie());
+  EXPECT_THAT(reader->Header(), EqualsProto(reader_with_header->Header()));
+  vector<Variant> expected = as_vector(reader_with_header->Iterate());
+
+  EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), expected));
+}
+
+// Fails when a VcfHeader is specified and the vcf file already has a header.
+TEST(VcfReaderTest, FromFileWithHeaderFailure) {
+  std::unique_ptr<VcfReader> header_reader =
+      std::move(VcfReader::FromFile(GetTestData(kVcfSitesFilename),
+                                    nucleus::genomics::v1::VcfReaderOptions())
+                    .ValueOrDie());
+
+  StatusOr<std::unique_ptr<VcfReader>> status_or =
+      VcfReader::FromFileWithHeader(GetTestData(kVcfSitesFilename),
+                                    nucleus::genomics::v1::VcfReaderOptions(),
+                                    header_reader->Header());
+  EXPECT_THAT(status_or, IsNotOKWithMessage("Unexpected header in"));
 }
 
 TEST(ValidVcfHeaderParsing, MatchesProto) {
