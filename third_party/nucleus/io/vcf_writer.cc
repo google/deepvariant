@@ -66,95 +66,6 @@ constexpr char kBCFOpenModeUncompressed[] = "wbu";
 constexpr char kOpenModeCompressed[] = "wz";
 constexpr char kOpenModeUncompressed[] = "w";
 
-constexpr char kFilterHeaderFmt[] = "##FILTER=<ID=$0,Description=\"$1\">";
-constexpr char kInfoHeaderFmt[] =
-    "##INFO=<ID=$0,Number=$1,Type=$2,Description=\"$3\"$4>";
-constexpr char kFormatHeaderFmt[] =
-    "##FORMAT=<ID=$0,Number=$1,Type=$2,Description=\"$3\">";
-constexpr char kContigHeaderFmt[] = "##contig=<ID=$0$1>";
-constexpr char kStructuredExtraHeaderFmt[] = "##$0=<$1>";
-constexpr char kExtraHeaderFmt[] = "##$0=$1";
-
-// Adds a FILTER field to the bcf_hdr_t header based on the VcfFilterInfo
-// object.
-void AddFilterToHeader(const nucleus::genomics::v1::VcfFilterInfo& filter,
-                       bcf_hdr_t* header) {
-  string filterStr = absl::Substitute(
-      kFilterHeaderFmt, filter.id().c_str(), filter.description().c_str());
-  bcf_hdr_append(header, filterStr.c_str());
-}
-
-// Adds an INFO field to the bcf_hdr_t header based on the VcfInfo object.
-void AddInfoToHeader(const nucleus::genomics::v1::VcfInfo& info,
-                     bcf_hdr_t* header) {
-  string extra;
-  if (!info.source().empty()) {
-    absl::StrAppend(&extra, ",Source=\"", info.source(), "\"");
-  }
-  if (!info.version().empty()) {
-    absl::StrAppend(&extra, ",Version=\"", info.version(), "\"");
-  }
-  string infoStr = absl::Substitute(
-      kInfoHeaderFmt, info.id().c_str(), info.number().c_str(),
-      info.type().c_str(), info.description().c_str(), extra.c_str());
-  bcf_hdr_append(header, infoStr.c_str());
-}
-
-// Adds a FORMAT field to the bcf_hdr_t header based on the VcfFormatInfo
-// object.
-void AddFormatToHeader(const nucleus::genomics::v1::VcfFormatInfo& format,
-                       bcf_hdr_t* header) {
-  string formatStr = absl::Substitute(
-      kFormatHeaderFmt, format.id().c_str(), format.number().c_str(),
-      format.type().c_str(), format.description().c_str());
-  bcf_hdr_append(header, formatStr.c_str());
-}
-
-// Adds a structured extra field to the bcf_hdr_t header based on the
-// VcfStructuredExtra object.
-void AddStructuredExtraToHeader(
-    const nucleus::genomics::v1::VcfStructuredExtra& sExtra,
-    bcf_hdr_t* header) {
-  string fieldStr;
-  for (auto const& kv : sExtra.fields()) {
-    absl::StrAppend(&fieldStr, kv.key(), "=\"", kv.value(), "\",");
-  }
-  if (!fieldStr.empty()) {
-    // Cut off the dangling comma.
-    fieldStr.pop_back();
-  }
-  string result = absl::Substitute(
-      kStructuredExtraHeaderFmt, sExtra.key().c_str(), fieldStr.c_str());
-  bcf_hdr_append(header, result.c_str());
-}
-
-// Adds an unstructured extra field to the bcf_hdr_t header based on the
-// VcfExtra object.
-void AddExtraToHeader(const nucleus::genomics::v1::VcfExtra& extra,
-                      bcf_hdr_t* header) {
-  string result = absl::Substitute(
-      kExtraHeaderFmt, extra.key().c_str(), extra.value().c_str());
-  bcf_hdr_append(header, result.c_str());
-}
-
-// Adds a contig field to the bcf_hdr_t header based on the ContigInfo object.
-void AddContigToHeader(const nucleus::genomics::v1::ContigInfo& contig,
-                       bcf_hdr_t* header) {
-  string extra;
-  if (contig.n_bases()) {
-    absl::StrAppend(&extra, ",length=", contig.n_bases());
-  }
-  if (!contig.description().empty()) {
-    absl::StrAppend(&extra, ",description=\"", contig.description(), "\"");
-  }
-  for (auto const& kv : contig.extra()) {
-    absl::StrAppend(&extra, ",", kv.first, "=\"", kv.second, "\"");
-  }
-  string contigStr = absl::Substitute(
-      kContigHeaderFmt, contig.name().c_str(), extra.c_str());
-  bcf_hdr_append(header, contigStr.c_str());
-}
-
 // RAII wrapper on top of bcf1_t* to always perform cleanup.
 class BCFRecord {
  public:
@@ -206,45 +117,14 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
           options_.retrieve_gl_and_pl_from_info_map()) {
   CHECK(fp != nullptr);
 
-  // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>
-  // filter automatically.
-  header_ = bcf_hdr_init("w");
-  for (const nucleus::genomics::v1::VcfFilterInfo& filter :
-       vcf_header_.filters()) {
-    if (filter.id() != "PASS") {
-      AddFilterToHeader(filter, header_);
-    }
-  }
-  for (const nucleus::genomics::v1::VcfInfo& info : vcf_header_.infos()) {
-    AddInfoToHeader(info, header_);
-  }
-  for (const nucleus::genomics::v1::VcfFormatInfo& format :
-       vcf_header_.formats()) {
-    AddFormatToHeader(format, header_);
-  }
-  for (const nucleus::genomics::v1::VcfStructuredExtra& sExtra :
-       vcf_header_.structured_extras()) {
-    AddStructuredExtraToHeader(sExtra, header_);
-  }
-  for (const nucleus::genomics::v1::VcfExtra& extra : vcf_header_.extras()) {
-    AddExtraToHeader(extra, header_);
-  }
-  for (const nucleus::genomics::v1::ContigInfo& contig :
-       vcf_header_.contigs()) {
-    AddContigToHeader(contig, header_);
-  }
-
-  for (const string& sampleName : vcf_header_.sample_names()) {
-    bcf_hdr_add_sample(header_, sampleName.c_str());
-  }
-  bcf_hdr_add_sample(header_, nullptr);
+  VcfHeaderConverter::ConvertFromPb(vcf_header_, &header_);
 }
 
 tf::Status VcfWriter::WriteHeader() {
-  if (bcf_hdr_write(fp_, header_) < 0)
+  if (bcf_hdr_write(fp_, header_) < 0) {
     return tf::errors::Unknown("Failed to write header");
-  else
-    return tf::Status::OK();
+  }
+  return tf::Status::OK();
 }
 
 VcfWriter::~VcfWriter() {

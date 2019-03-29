@@ -269,6 +269,11 @@ class VcfHeaderConverter {
  public:
   static void ConvertToPb(const bcf_hdr_t *h,
                           nucleus::genomics::v1::VcfHeader *vcf_header);
+
+  // Converts a proto VcfHeader to a bcf_hdr_t. Caller needs to take ownership
+  // of |h|.
+  static void ConvertFromPb(const nucleus::genomics::v1::VcfHeader &vcf_header,
+                            bcf_hdr_t **h);
 };
 
 // Helper class for converting between Variant proto messages and VCF records.
