@@ -121,6 +121,9 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
 }
 
 tf::Status VcfWriter::WriteHeader() {
+  if (options_.exclude_header()) {
+    return tf::Status::OK();
+  }
   if (bcf_hdr_write(fp_, header_) < 0) {
     return tf::errors::Unknown("Failed to write header");
   }

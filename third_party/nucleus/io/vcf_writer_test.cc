@@ -103,10 +103,10 @@ constexpr char kExpectedHeaderFmt[] =
 // Build the skeleton of a VCF file for some pretend variants.
 // This routine will populate headers but not any records.
 std::unique_ptr<VcfWriter> MakeDogVcfWriter(
-    const string& fname, const bool round_qual,
-    const bool include_gl = true,
+    const string& fname, const bool round_qual, const bool include_gl = true,
     const std::vector<string>& excluded_infos = {},
-    const std::vector<string>& excluded_formats = {}) {
+    const std::vector<string>& excluded_formats = {},
+    bool exclude_header = false) {
   nucleus::genomics::v1::VcfHeader header;
   // FILTERs. Note that the PASS filter automatically gets added even though it
   // is not present here.
@@ -228,6 +228,8 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(
   for (const string& fmt : excluded_formats) {
     writer_options.add_excluded_format_fields(fmt);
   }
+
+  writer_options.set_exclude_header(exclude_header);
 
   return std::move(
       VcfWriter::ToFile(fname, header, writer_options).ValueOrDie());
@@ -358,6 +360,26 @@ TEST(VcfWriterTest, WritesVCF) {
       "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n"
       "Chr2\t24\tDogSNP7\tA\tT,G\t0\t.\tDB;AC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n"
       "Chr2\t25\tDogSNP8\tA\tT,G\t0\t.\tAC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n";
+  EXPECT_EQ(kExpectedVcfContent, vcf_contents);
+}
+
+TEST(VcfWriterTest, WritesVCFWithoutHeader) {
+  string output_filename = MakeTempFile("writes_vcf.vcf");
+  auto writer = MakeDogVcfWriter(output_filename, false, true, {}, {},
+                                 /*exclude_header=*/true);
+
+  Variant v1 = MakeVariant({"DogSNP1"}, "Chr1", 20, 21, "A", {"T"});
+  *v1.add_calls() = MakeVariantCall("Fido", {0, 1});
+  *v1.add_calls() = MakeVariantCall("Spot", {0, 0});
+  ASSERT_THAT(writer->Write(v1), IsOK());
+
+  writer = nullptr;
+  string vcf_contents;
+  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
+                                           output_filename, &vcf_contents));
+
+  const string kExpectedVcfContent =
+      "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT\t0/1\t0/0\n";
   EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
 

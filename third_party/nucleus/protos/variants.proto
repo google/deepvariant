@@ -343,4 +343,7 @@ message VcfWriterOptions {
   // type=Float and Number=G, and neither GL nor PL should be present in the
   // VariantCall.info map.
   bool retrieve_gl_and_pl_from_info_map = 9;
+
+  // If true, the writer will skip writing the VcfHeader.
+  bool exclude_header = 10;
 }

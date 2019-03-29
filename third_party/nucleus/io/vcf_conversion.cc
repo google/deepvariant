@@ -918,6 +918,7 @@ void VcfHeaderConverter::ConvertFromPb(
     bcf_hdr_add_sample(*h, sampleName.c_str());
   }
   bcf_hdr_add_sample(*h, nullptr);
+  bcf_hdr_sync(*h);
 }
 
 // Convert a C string to uppercase, in place, unless it starts with "<".
