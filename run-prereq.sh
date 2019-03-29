@@ -79,9 +79,7 @@ note_build_stage "Install python packages"
 
 pip install -qq --user contextlib2
 pip install -qq --user enum34
-# redacted
-# work with intervaltree>=3.0.2.
-pip install -qq --user 'sortedcontainers==1.5.3'
+pip install -qq --user 'sortedcontainers==2.1.0'
 pip install -qq --user 'intervaltree==3.0.2'
 pip install -qq --user 'mock>=2.0.0'
 
