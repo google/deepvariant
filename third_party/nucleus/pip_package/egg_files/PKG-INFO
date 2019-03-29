@@ -1,0 +1,29 @@
+Metadata-Version: 1.1
+Name: google-nucleus
+Version: 0.2.3
+Summary: A library for reading and writing genomics data.
+Home-page: https://github.com/google/nucleus
+Author: The Genomics team in Google Brain
+Author-email: nucleus-public@google.com
+License: Apache 2.0
+Project-URL: Source, https://github.com/google/nucleus
+Project-URL: Bug Reports, https://github.com/google/nucleus/issues
+Description: 
+        Nucleus is a library of Python and C++ code designed to make it easy to
+        read, write and analyze data in common genomics file formats like SAM and VCF.
+        In addition, Nucleus enables painless integration with the TensorFlow machine
+        learning framework, as anywhere a genomics file is consumed or produced, a
+        TensorFlow tfrecords file may be substituted.
+        
+Keywords: genomics tensorflow bioinformatics
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Healthcare Industry
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+

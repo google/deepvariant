@@ -26,102 +26,102 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Setup module for turning Nucleus into a pip package.
+"""Fake setup.py module for installing Nucleus.
 
-Based on
-https://github.com/pypa/sampleproject/blob/master/setup.py
+Usually, setup.py is invoked twice:  first, to build the pip package
+and second to install it.
 
-This should be invoked through build_pip_package.sh, rather than run
-directly.
+This setup.py is only used for installation; build_pip_package.sh is
+used to create the package.  We do it this way because we need our
+package to include symbolic links, which normal setup.py doesn't
+support.
+
+For the same reason, this setup.py is not implemented using setuptools.
+Instead, we directly implement the four commands run by pip install
+(https://pip.pypa.io/en/stable/reference/pip_install/#id46):
+  * setup.py egg_info [--egg-base XXX]
+  * setup.py install --record XXX [--single-version-externally-managed]
+          [--root XXX] [--compile|--no-compile] [--install-headers XXX]
+  * setup.py bdist_wheel -d XXX
+  * setup.py clean
 """
 
-import fnmatch
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from distutils import dist
+import distutils.command.install as dist_install
+import glob
 import os
-
-from setuptools import find_packages
-from setuptools import setup
-
-def find_files(pattern, root):
-  """Return all the files matching pattern below root dir."""
-  for dirpath, _, files in os.walk(root):
-    for filename in fnmatch.filter(files, pattern):
-      yield os.path.join(dirpath, filename)
+import shutil
+import sys
 
 
-def is_python_file(fn):
-  return fn.endswith('.py') or fn.endswith('.pyc')
+def touch(fname):
+  open(fname, 'w+').close()
 
 
-headers = list(find_files('*.h', 'nucleus'))
+def find_destination(is_user):
+  """Returns the directory we are supposed to install into."""
+  install_cmd = dist_install.install(dist.Distribution())
+  install_cmd.finalize_options()
+  if is_user:
+    return install_cmd.install_usersite
+  else:
+    return install_cmd.install_platlib
 
-matches = ['../' + x for x in find_files('*', 'external')
-           if not is_python_file(x)]
 
-so_lib_paths = [
-    i for i in os.listdir('.')
-    if os.path.isdir(i) and fnmatch.fnmatch(i, '_solib_*')
-]
+def main():
+  if len(sys.argv) < 2:
+    print('Missing command')
+    sys.exit(1)
 
-for path in so_lib_paths:
-  matches.extend(
-      ['../' + x for x in find_files('*', path) if '.py' not in x]
-  )
+  cmd = sys.argv[1]
+  args = sys.argv[2:]
 
-setup(
-    name='google-nucleus',
-    version='0.2.3',
-    description='A library for reading and writing genomics data.',
-    long_description=
-"""
-Nucleus is a library of Python and C++ code designed to make it easy to
-read, write and analyze data in common genomics file formats like SAM and VCF.
-In addition, Nucleus enables painless integration with the TensorFlow machine
-learning framework, as anywhere a genomics file is consumed or produced, a
-TensorFlow tfrecords file may be substituted.
-""",
-    url='https://github.com/google/nucleus',
-    author='The Genomics team in Google Brain',
-    author_email='nucleus-public@google.com',
-    license='Apache 2.0',
+  if cmd == 'egg_info':
+    egg_srcs = glob.glob('google_nucleus-*-py*.egg-info')
+    if not egg_srcs:
+      print('Could not find source .egg-info directory')
+      sys.exit(1)
+    egg_src = egg_srcs[0]
 
-    # Taken from list of valid classifiers at
-    # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Healthcare Industry',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python',
-        'Topic :: Scientific/Engineering :: Bio-Informatics',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-    ],
+    egg_dir = 'google_nucleus.egg-info'
+    if len(args) > 1 and args[0] == '--egg-base':
+      egg_dir = os.path.join(args[1], egg_dir)
 
-    keywords='genomics tensorflow bioinformatics',
+    print('Copying egg-info from ', egg_src, ' to ', egg_dir)
+    shutil.copytree(egg_src, egg_dir)
+    sys.exit(0)
 
-    packages=find_packages(exclude=['g3doc', 'testdata']),
+  if cmd == 'install':
+    destination = find_destination('--user' in args)
 
-    # redacted
-    # these install_requires.
-    install_requires=['contextlib2', 'intervaltree', 'absl-py',
-                      'mock', 'numpy', 'six'],
+    record_file = 'install-record.txt'
+    if '--record' in args:
+      i = args.index('--record')
+      record_file = args[i+1]
 
-    headers=headers,
+    print('Installing Nucleus to ' + destination
+          + ' with record file at ' + record_file)
+    os.system('cp -R -v google nucleus ' + destination
+              + " | awk '{print substr($3,2,length($3)-2)}' > " + record_file)
 
-    include_package_data=True,
-    package_data={'nucleus': matches},
+    sys.exit(0)
 
-    data_files=[],
+  if cmd == 'bdist_wheel':
+    print('This package does not support wheel creation.')
+    sys.exit(1)
 
-    entry_points={},
+  if cmd == 'clean':
+    # Nothing to do
+    sys.exit(0)
 
-    project_urls={
-        'Source': 'https://github.com/google/nucleus',
-        'Bug Reports': 'https://github.com/google/nucleus/issues',
-    },
+  print('Unknown command: ', cmd)
+  sys.exit(1)
 
-    zip_safe=False,
-)
 
+if __name__ == '__main__':
+  main()
 

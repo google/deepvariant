@@ -41,15 +41,18 @@
 set -e
 set -x
 
-function cp_external() {
-  local src_dir=$1
-  local dest_dir=$2
-  for f in `find "$src_dir" -maxdepth 1 -mindepth 1 ! -name '*nucleus*'`; do
-    cp -R "$f" "$dest_dir"
-  done
-}
+# When changing NUCLEUS_VERSION, be sure to also change it in
+# egg_files/PKG-INFO.
+NUCLEUS_VERSION="0.2.3"
+PACKAGE_NAME="google_nucleus-${NUCLEUS_VERSION}"
+PYTHON_VERSION="2.7"
+PLATFORM="linux-x86_64"
 
 TMPDIR=$(mktemp -d -t tmp.XXXXXXXXXXX)
+TOPDIR="${TMPDIR}/${PACKAGE_NAME}"
+mkdir -p "${TOPDIR}"
+
+echo $(date) : "=== Copying files to ${TOPDIR}"
 
 RUNFILES=bazel-bin/nucleus/pip_package/build_pip_package.runfiles/nucleus
 
@@ -57,46 +60,60 @@ RUNFILES=bazel-bin/nucleus/pip_package/build_pip_package.runfiles/nucleus
 # differently.
 
 # Subdirectory #1:  Copy /nucleus to top level.
-cp -R "${RUNFILES}/nucleus" "${TMPDIR}"
+cp -L -R "${RUNFILES}/nucleus" "${TOPDIR}"
 
-# Subdirectory #2: Copy /_solib_k8 (or whatever the binary files directory
-# is called) to top level.  The "cat -" is there to turn grep's exit code
-# of 1 into a pipeline exit code of 0 if grep doesn't find anything.
-so_lib_dir=$(ls "$RUNFILES" | grep solib | cat -)
-if [ -n "${so_lib_dir}" ]; then
-  cp -R "${RUNFILES}/${so_lib_dir}" "${TMPDIR}"
-fi
+# Subdirectory #2:  Copy /third_party to /nucleus/third_party.
+mkdir -p "${TOPDIR}/nucleus/third_party"
+cp -L -R "${RUNFILES}"/third_party/* "${TOPDIR}/nucleus/third_party"
 
-# Subdirectory #3: Copy /third_party to /third_party.
-mkdir "${TMPDIR}/third_party"
-cp -R "${RUNFILES}"/third_party/* "${TMPDIR}/third_party"
+# Subdirectory #3:  /external.  The only thing we need from it is our
+# version of protobuf, which we need to import as google.protobuf.
+# See also the top level __init__.py that sets the sys.path to make this
+# version of protobuf have precedence over any other installed versions while
+# running Nucleus code.
+cp -L -R "${RUNFILES}/external/protobuf_archive/python/google" "${TOPDIR}/google"
 
-# In addition, we need to include our version of protobuf.  The
-# directory is
-# "${RUNFILES}"/external/protobuf_archive/python/google/protobuf and we
-# need to import it as google.protobuf.  See also the top level __init__.py
-# that sets the sys.path to make this version of protobuf have precedence over
-# any other installed versions while running Nucleus code.
-cp -R "${RUNFILES}/external/protobuf_archive/python/google" "${TMPDIR}/google"
+# Copy top level files to /nucleus.
+cp LICENSE "${TOPDIR}/nucleus"
 
-cp __init__.py "${TMPDIR}"
-cp LICENSE "${TMPDIR}"
-cp README.md "${TMPDIR}"
-cp nucleus/pip_package/MANIFEST.in "${TMPDIR}"
-cp nucleus/pip_package/setup.py "${TMPDIR}"
+# Copy setup.py to top level.
+cp "${RUNFILES}/nucleus/pip_package/setup.py" "${TOPDIR}"
+cp "${RUNFILES}/nucleus/pip_package/setup.cfg" "${TOPDIR}"
 
-pushd "${TMPDIR}"
-rm -f MANIFEST
-echo $(date) : "=== Building wheel in ${TMPDIR}"
-python setup.py bdist_wheel
+# Create egg-info directory.
+EGG_DIR="${TOPDIR}/${PACKAGE_NAME}-py${PYTHON_VERSION}.egg-info"
+mkdir -p "${EGG_DIR}"
+cp "${RUNFILES}/nucleus/pip_package/egg_files"/* "${EGG_DIR}"
+pushd "${TOPDIR}"
+find . -type f -print > "${EGG_DIR}/SOURCES.txt"
 popd
+
+# Fix symbolic links -- any .so file in Nucleus should point to
+# google/protobuf/pyext/_message.so with a relative link.
+pushd "${TOPDIR}"
+find "nucleus" -name '*.so' -exec ln -f -s -r "google/protobuf/pyext/_message.so" {} \;
+popd
+
+# Create tar file
+TAR_NAME="${PACKAGE_NAME}.${PLATFORM}.tar.gz"
+pushd "${TMPDIR}"
+echo $(date) : "=== Building tar file ${TAR_NAME}"
+tar cvzf "${TAR_NAME}" "${PACKAGE_NAME}"
+
+# ls the tarfile to see how large it is.
+# redacted
+# allowed to be over 100M, and it's usually a sign of other trouble when
+# it is over that size.
+ls -lh "${TAR_NAME}"
 
 if [ $# -gt 0 ]; then
   DEST=$1
   mkdir -p "${DEST}"
-  cp "${TMPDIR}/dist"/* "${DEST}"
+  cp "${TAR_NAME}" "${DEST}"
 else
-  DEST="${TMPDIR}/dist"
+  DEST="${TAR_NAME}"
 fi
 
-echo "Output wheel is in ${DEST}"
+popd
+
+echo "Output tar file is in ${DEST}"
