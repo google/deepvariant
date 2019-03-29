@@ -951,12 +951,13 @@ def is_singleton(variant):
 
 def major_allele_frequency(variant):
   """Returns the frequency of the most common allele in the variant."""
-  counts = collections.Counter()
+  count_dict = collections.defaultdict(int)
   for call in variant.calls:
-    counts.update(call.genotype)
-  denom = sum(cnt for geno, cnt in counts.items() if geno >= 0)
+    for geno in call.genotype:
+      count_dict[geno] += 1
+  denom = sum(cnt for geno, cnt in count_dict.items() if geno >= 0)
   if denom > 0:
-    numer = max(cnt for geno, cnt in counts.items() if geno >= 0)
+    numer = max(cnt for geno, cnt in count_dict.items() if geno >= 0)
     return float(numer) / denom
   else:
     return 0
