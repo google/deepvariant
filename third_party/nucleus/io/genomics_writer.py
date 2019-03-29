@@ -108,7 +108,7 @@ class TFRecordWriter(GenomicsWriter):
   Note that TFRecord files do not need to be wrapped in a "with" block.
   """
 
-  def __init__(self, output_path, header=None):
+  def __init__(self, output_path, header=None, compression_type=None):
     """Initializer.
 
     Args:
@@ -117,6 +117,9 @@ class TFRecordWriter(GenomicsWriter):
         useful for file types that have logical headers where some operations
         depend on that header information (e.g. VCF using its headers to
         determine type information of annotation fields).
+      compression_type:  Either 'ZLIB', 'GZIP', '' (uncompressed), or
+        None.  If None, __init__ will guess the compression type based on
+        the input_path's suffix.
 
     Raises:
       IOError:  if there was any problem opening output_path for writing.
@@ -124,7 +127,9 @@ class TFRecordWriter(GenomicsWriter):
     super(TFRecordWriter, self).__init__()
     self.header = header
 
-    compression_type = 'GZIP' if output_path.endswith('.gz') else ''
+    if compression_type is None:
+      compression_type = 'GZIP' if output_path.endswith('.gz') else ''
+
     self._writer = tfrecord_writer.TFRecordWriter.from_file(
         output_path, compression_type)
     if self._writer is None:

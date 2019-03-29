@@ -56,12 +56,14 @@ def Reader(path, proto=None, compression_type=None):
   if not proto:
     proto = example_pb2.Example
 
-  return genomics_reader.TFRecordReader(path, proto, compression_type)
+  return genomics_reader.TFRecordReader(
+      path, proto, compression_type=compression_type)
 
 
 def Writer(path, compression_type=None):
   """A convenience wrapper around genomics_writer.TFRecordWriter."""
-  return genomics_writer.TFRecordWriter(path, compression_type)
+  return genomics_writer.TFRecordWriter(
+      path, compression_type=compression_type)
 # pylint: enable=invalid-name
 
 
@@ -92,7 +94,7 @@ def read_tfrecords(path, proto=None, max_records=None, compression_type=None):
 
   i = 0
   for path in paths:
-    for record in Reader(path, proto, compression_type):
+    for record in Reader(path, proto, compression_type=compression_type):
       i += 1
       if max_records is not None and i > max_records:
         return
@@ -133,7 +135,7 @@ def read_shard_sorted_tfrecords(path,
 
   keyed_iterables = []
   for path in paths:
-    protos = Reader(path, proto, compression_type).iterate()
+    protos = Reader(path, proto, compression_type=compression_type).iterate()
     keyed_iterables.append(((key(elem), elem) for elem in protos))
 
   for i, (_, value) in enumerate(heapq.merge(*keyed_iterables)):
@@ -164,7 +166,7 @@ def write_tfrecords(protos, output_path, compression_type=None):
       writers = [
           stack.enter_context(
               Writer(sharded_file_utils.sharded_filename(
-                  output_path, i), compression_type))
+                  output_path, i), compression_type=compression_type))
           for i in range(n_shards)
       ]
       for i, proto in enumerate(protos):
