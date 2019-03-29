@@ -40,7 +40,6 @@
 #include "google/protobuf/map.h"
 #include "google/protobuf/repeated_field.h"
 #include "absl/memory/memory.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
@@ -57,7 +56,6 @@ namespace nucleus {
 
 namespace tf = tensorflow;
 
-using absl::StrCat;
 using nucleus::genomics::v1::Variant;
 
 namespace {
@@ -89,12 +87,12 @@ void AddFilterToHeader(const nucleus::genomics::v1::VcfFilterInfo& filter,
 // Adds an INFO field to the bcf_hdr_t header based on the VcfInfo object.
 void AddInfoToHeader(const nucleus::genomics::v1::VcfInfo& info,
                      bcf_hdr_t* header) {
-  string extra = string("");
+  string extra;
   if (!info.source().empty()) {
-    extra = StrCat(",Source=\"", info.source(), "\"");
+    absl::StrAppend(&extra, ",Source=\"", info.source(), "\"");
   }
   if (!info.version().empty()) {
-    extra = StrCat(extra, ",Version=\"", info.version(), "\"");
+    absl::StrAppend(&extra, ",Version=\"", info.version(), "\"");
   }
   string infoStr = absl::Substitute(
       kInfoHeaderFmt, info.id().c_str(), info.number().c_str(),
@@ -117,9 +115,9 @@ void AddFormatToHeader(const nucleus::genomics::v1::VcfFormatInfo& format,
 void AddStructuredExtraToHeader(
     const nucleus::genomics::v1::VcfStructuredExtra& sExtra,
     bcf_hdr_t* header) {
-  string fieldStr = string("");
+  string fieldStr;
   for (auto const& kv : sExtra.fields()) {
-    fieldStr = StrCat(fieldStr, kv.key(), "=\"", kv.value(), "\",");
+    absl::StrAppend(&fieldStr, kv.key(), "=\"", kv.value(), "\",");
   }
   if (!fieldStr.empty()) {
     // Cut off the dangling comma.
@@ -142,13 +140,15 @@ void AddExtraToHeader(const nucleus::genomics::v1::VcfExtra& extra,
 // Adds a contig field to the bcf_hdr_t header based on the ContigInfo object.
 void AddContigToHeader(const nucleus::genomics::v1::ContigInfo& contig,
                        bcf_hdr_t* header) {
-  string extra =
-      contig.n_bases() ? StrCat(",length=", contig.n_bases()) : string("");
+  string extra;
+  if (contig.n_bases()) {
+    absl::StrAppend(&extra, ",length=", contig.n_bases());
+  }
   if (!contig.description().empty()) {
-    extra = StrCat(extra, ",description=\"", contig.description(), "\"");
+    absl::StrAppend(&extra, ",description=\"", contig.description(), "\"");
   }
   for (auto const& kv : contig.extra()) {
-    extra = StrCat(extra, ",", kv.first, "=\"", kv.second, "\"");
+    absl::StrAppend(&extra, ",", kv.first, "=\"", kv.second, "\"");
   }
   string contigStr = absl::Substitute(
       kContigHeaderFmt, contig.name().c_str(), extra.c_str());
@@ -183,8 +183,7 @@ StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
   const char* const open_mode = GetOpenMode(variants_path);
   htsFile* fp = hts_open_x(variants_path.c_str(), open_mode);
   if (fp == nullptr) {
-    return tf::errors::Unknown(
-        StrCat("Could not open variants_path ", variants_path));
+    return tf::errors::Unknown("Could not open variants_path", variants_path);
   }
 
   auto writer = absl::WrapUnique(new VcfWriter(header, options, fp));
