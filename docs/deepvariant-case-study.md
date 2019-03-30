@@ -61,7 +61,6 @@ gcloud beta compute instances create "${USER}-deepvariant-casestudy"  \
 --image-project "ubuntu-os-cloud" \
 --machine-type "custom-64-131072" \
 --boot-disk-size "300" \
---boot-disk-type "pd-ssd" \
 --zone "us-west1-b" \
 --min-cpu-platform "Intel Skylake"
 ```
