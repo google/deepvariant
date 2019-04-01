@@ -7,124 +7,46 @@ This is an explanation of how to use DeepVariant.
 To get started, you'll need the DeepVariant programs (and some packages they
 depend on), some test data, and of course a place to run them.
 
-We've provided a docker image, and some test data in a bucket on Google Cloud
+We've provided a Docker image, and some test data in a bucket on Google Cloud
 Storage. The instructions below show how to download the data through the
 corresponding public URLs from these data.
 
-### Update since r0.7 : using docker instead of copying binaries.
+### Update in r0.8 : Use Docker to run DeepVariant in one command.
 
-Starting from the 0.7 release, we use docker to run the binaries instead of
-copying binaries to local machines first. You can still read about the previous
-approach in
-[the Quick Start in r0.6](https://github.com/google/deepvariant/blob/r0.6/docs/deepvariant-quick-start.md).
-We recognize that there might be some overhead of using docker run. But using
-docker makes this case study easier to generalize to different versions of Linux
-systems. For example, we have verified that you can use docker to run
-DeepVariant on other Linux systems such as CentOS 7.
+In the 0.8 release, we are introducing one convenient command that will run
+through all 3 steps that are required to go from a BAM file to the VCF/gVCF
+output files. You can still read about the r0.7 approach in
+[Quick Start in r0.7].
 
-If you want to compile the DeepVariant binaries for yourself (from the source
-distribution on github) and run with your own data, that's fine too. Just
-replace the steps in this document that fetch those things. The binaries we ship
-are not compiled with aggressive optimizations, so they can run on more
-platforms, so it may be worth tuning those flags for your hardware.
+If you want to compile the DeepVariant binaries for yourself, we also have a
+[Dockerfile] that you can use to build your own Docker image. You can read the
+[docker build] documentation on how to build.
 
-A Cloud platform can provide a convenient place to run, with both CPU, GPU, or
-TPU support, if you don't have an available Linux machine of your own. We find
-it handy to do these sort of exercises in that way, since DeepVariant requires a
-number of extra system packages to be installed.
+For production use cases on larger scale of dataset, we recommend looking into
+the [External Solutions] section.
 
-We made some notes about [Google Cloud Platform](deepvariant-gcp-info.md) which
-might be useful.
+## Get Docker image, models, and test data
 
-## Get docker image, models, and test data
-
-Before you start running, you need to have the following input files:
-
-1.  A reference genome in [FASTA](https://en.wikipedia.org/wiki/FASTA_format)
-    format and its corresponding index file (.fai). We'll refer to this as
-    `${REF}` below.
-
-1.  An aligned reads file in [BAM](http://genome.sph.umich.edu/wiki/BAM) format
-    and its corresponding index file (.bai). We'll refer to this as `${BAM}`
-    below. You get this by aligning the reads from a sequencing instrument,
-    using an aligner like
-    [BWA](https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with)
-    for example.
-
-1.  A model checkpoint for DeepVariant. We'll refer to this as `${MODEL}` below.
+### Get Docker image
 
 ```bash
-BIN_VERSION="0.7.2"
-MODEL_VERSION="0.7.2"
-
-MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
-MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"
-DATA_HTTP_DIR="https://storage.googleapis.com/deepvariant/quickstart-testdata"
+BIN_VERSION="0.8.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
 sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
 ```
 
-### Download a model
-
-Models file are stored in a shared Cloud Storage bucket:
-
-`gs://deepvariant/models`
-
-In this bucket models are organized into subdirectories by program name and
-version, such as for the model to run on whole genome sequencing data:
-
-```
-DeepVariant/0.7.0/DeepVariant-inception_v3-0.7.0+data-wgs_standard/
-```
-
-and for the model to run on whole exome sequencing data.
-
-```
-DeepVariant/0.7.0/DeepVariant-inception_v3-0.7.0+data-wes_standard/
-```
-
-The model files are tagged with the program name and version, model name and the
-data used to train the model. The CL number (google's code commit identifier)
-may be safely ignored.
-
-IMPORTANT: Models are tied to specific software versions. For example, you can
-use model version 0.2.\* with any software version 0.2.\*. We recommend using
-the latest software and the latest model.
-
-Once you've selected an appropriate model directory, you can download the data
-through their corresponding public URL. The path to these model checkpoint files
-can then be provided to `call_variants`.
-
-For example, let's download from the repository:
-
-```bash
-mkdir -p ${MODEL_NAME}
-wget -P ${MODEL_NAME} ${MODEL_HTTP_DIR}/model.ckpt.data-00000-of-00001
-wget -P ${MODEL_NAME} ${MODEL_HTTP_DIR}/model.ckpt.index
-wget -P ${MODEL_NAME} ${MODEL_HTTP_DIR}/model.ckpt.meta
-```
-
-This should create a subdirectory in the current directory containing three
-files:
-
-```bash
-ls -1 "${MODEL_NAME}/"
-```
-
-producing:
-
-```
-model.ckpt.data-00000-of-00001
-model.ckpt.index
-model.ckpt.meta
-```
-
-These files are in the standard [TensorFlow checkpoint
-format](https://www.tensorflow.org/programmers_guide/variables#checkpoint_files).
-
 ### Download test data
+
+Before you start running, you need to have the following input files:
+
+1.  A reference genome in [FASTA] format and its corresponding index file
+    (.fai).
+
+1.  An aligned reads file in [BAM] format and its corresponding index file
+    (.bai). You get this by aligning the reads from a sequencing instrument,
+    using an aligner like [BWA] for example.
 
 We've prepared a small test data bundle for use in this quick start guide that
 can be downloaded to your instance from the public URLs.
@@ -132,24 +54,27 @@ can be downloaded to your instance from the public URLs.
 Download the test bundle:
 
 ```bash
-mkdir -p quickstart-testdata
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam.bai
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.bed
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.fai
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.fai
-wget -P quickstart-testdata "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.gzi
+INPUT_DIR="${PWD}/quickstart-testdata"
+DATA_HTTP_DIR="https://storage.googleapis.com/deepvariant/quickstart-testdata"
+
+mkdir -p ${INPUT_DIR}
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam.bai
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.bed
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.fai
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.fai
+wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.gzi
 ```
 
 This should create a subdirectory in the current directory containing the actual
 data files:
 
 ```bash
-ls -1 quickstart-testdata/
+ls -1 ${INPUT_DIR}
 ```
 
 outputting:
@@ -167,128 +92,56 @@ ucsc.hg19.chr20.unittest.fasta.gz.fai
 ucsc.hg19.chr20.unittest.fasta.gz.gzi
 ```
 
-## Run the pipeline
+### Model location (optional)
+
+Starting from r0.8, we put the model files inside the released Docker images.
+So there is no need to download model files anymore. If you want to find the
+model files of all releases, you can find them in our bucket on the Google Cloud
+Storage. You can view them in the browser:
+https://console.cloud.google.com/storage/browser/deepvariant/models/DeepVariant
+
+## Run DeepVariant with one command
 
 DeepVariant consists of 3 main binaries: `make_examples`, `call_variants`, and
-`postprocess_variants`. For this quick start guide we'll store the output in a
-new directory on the instance and set up variables to refer to the test data we
-downloaded above:
+`postprocess_variants`. To make it easier to run, we create one entrypoint that
+can be directly run as a docker command. If you want to see the details, you can
+read through [docker_entrypoint.py].
 
 ```bash
-OUTPUT_DIR=${HOME}/quickstart-output
+OUTPUT_DIR="${PWD}/quickstart-output"
 mkdir -p "${OUTPUT_DIR}"
-REF=${HOME}/quickstart-testdata/ucsc.hg19.chr20.unittest.fasta
-BAM=${HOME}/quickstart-testdata/NA12878_S1.chr20.10_10p1mb.bam
-MODEL="${HOME}/${MODEL_NAME}/model.ckpt"
 ```
 
-### `make_examples`
-
-`make_examples` is the command used to extract pileup images from your BAM
-files, encoding each as `tf.Example` (a kind of protocol buffer that TensorFlow
-knows about) in "tfrecord" files. This tool is used as the first step of both
-training and inference pipelines.
-
-Here is an example command that would be used in inference (variant "calling")
-mode:
+Using the Docker entrypoint ([docker_entrypoint.py]), you can run everything
+with the following command:
 
 ```bash
 sudo docker run \
-  -v ${HOME}:${HOME} \
+  -v "${INPUT_DIR}":"/input" \
+  -v "${OUTPUT_DIR}:/output" \
   gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
-  /opt/deepvariant/bin/make_examples \
-  --mode calling   \
-  --ref "${REF}"   \
-  --reads "${BAM}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WGS \
+  --ref=/input/ucsc.hg19.chr20.unittest.fasta \
+  --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
   --regions "chr20:10,000,000-10,010,000" \
-  --examples "${OUTPUT_DIR}/examples.tfrecord.gz"
+  --output_vcf=/output/output.vcf.gz \
+  --output_gvcf=/output/output.g.vcf.gz
 ```
 
-If your machine has multiple cores, you can utilize them by running multiple
-`make_examples` using the `--task` flag, which helps you split the input and
-generates *sharded output*. Here is an example:
-
-First install the GNU `parallel` tool to allow running multiple processes.
+This will generate 4 files in `${OUTPUT_DIR}`:
 
 ```bash
-sudo apt-get -y install parallel
+ls -1 ${OUTPUT_DIR}
 ```
 
-```bash
-LOGDIR=${HOME}/logs
-N_SHARDS=3
-
-mkdir -p "${LOGDIR}"
-time seq 0 $((N_SHARDS-1)) | \
-  parallel --eta --halt 2 --joblog "${LOGDIR}/log" --res "${LOGDIR}" \
-  sudo docker run \
-    -v ${HOME}:${HOME} \
-    gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
-    /opt/deepvariant/bin/make_examples \
-    --mode calling \
-    --ref "${REF}" \
-    --reads "${BAM}" \
-    --examples "${OUTPUT_DIR}/examples.tfrecord@${N_SHARDS}.gz" \
-    --regions '"chr20:10,000,000-10,010,000"' \
-    --task {}
-```
-
-To explain what *sharded output* is, for example, if `N_SHARDS` is 3, you'll get
-three output files from the above command:
+outputting:
 
 ```
-${OUTPUT_DIR}/examples.tfrecord-00000-of-00003.gz
-${OUTPUT_DIR}/examples.tfrecord-00001-of-00003.gz
-${OUTPUT_DIR}/examples.tfrecord-00002-of-00003.gz
-```
-
-In this example command above, we also used the `--regions
-'"chr20:10,000,000-10,010,000"'` flag, which means we'll only process 10
-kilobases of chromosome 20.
-
-### `call_variants`
-
-Once we have constructed the pileup images as "examples", we can then invoke the
-variant calling tool to perform inference---identifying and labeling genomic
-variants. We need to tell the `call_variants` command where to find the trained
-machine learning model, using the `--checkpoint` argument.
-
-Example command:
-
-```bash
-CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/call_variants_output.tfrecord.gz"
-
-sudo docker run \
-  -v ${HOME}:${HOME} \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
-  /opt/deepvariant/bin/call_variants \
- --outfile "${CALL_VARIANTS_OUTPUT}" \
- --examples "${OUTPUT_DIR}/examples.tfrecord@${N_SHARDS}.gz" \
- --checkpoint "${MODEL}"
-```
-
-Notice that the output of this command is another "tfrecord.gz" file---this,
-again, is serialized protocol buffer data.
-
-### `postprocess_variants`
-
-To convert the tfrecord output of `call_variants` into the
-[VCF](https://samtools.github.io/hts-specs/VCFv4.3.pdf) format that is familiar
-to bioinformaticians, we need to invoke the `postprocess_variants` tool.
-
-An example command is below. Note that the output file should end with either
-`.vcf` or `.vcf.gz`.
-
-```bash
-FINAL_OUTPUT_VCF="${OUTPUT_DIR}/output.vcf.gz"
-
-sudo docker run \
-  -v ${HOME}:${HOME} \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
-  /opt/deepvariant/bin/postprocess_variants \
-  --ref "${REF}" \
-  --infile "${CALL_VARIANTS_OUTPUT}" \
-  --outfile "${FINAL_OUTPUT_VCF}"
+output.g.vcf.gz
+output.g.vcf.gz.tbi
+output.vcf.gz
+output.vcf.gz.tbi
 ```
 
 ## Evaluating the results
@@ -300,13 +153,15 @@ serves as a quick check to ensure the three DeepVariant commands ran correctly.
 
 ```bash
 sudo docker pull pkrusche/hap.py
-sudo docker run -it -v ${HOME}:${HOME} \
+sudo docker run -it \
+  -v "${INPUT_DIR}":"/input" \
+  -v "${OUTPUT_DIR}:/output" \
   pkrusche/hap.py /opt/hap.py/bin/hap.py \
-  ${HOME}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
-  "${FINAL_OUTPUT_VCF}" \
-  -f ${HOME}/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed \
-  -r "${REF}" \
-  -o "${OUTPUT_DIR}/happy.output" \
+  /input/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
+  /output/output.vcf.gz \
+  -f "/input/test_nist.b37_chr20_100kbp_at_10mb.bed" \
+  -r "/input/ucsc.hg19.chr20.unittest.fasta" \
+  -o "/output/happy.output" \
   --engine=vcfeval \
   -l chr20:10000000-10010000
 ```
@@ -321,3 +176,13 @@ Benchmarking Summary:
    SNP    ALL           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.363636
    SNP   PASS           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.363636
 ```
+
+[BAM]: http://genome.sph.umich.edu/wiki/BAM
+[BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
+[docker build]: https://docs.docker.com/engine/reference/commandline/build/
+[docker_entrypoint.py]: https://github.com/google/deepvariant/blob/r0.8/scripts/docker_entrypoint.py
+[Dockerfile]: https://github.com/google/deepvariant/blob/r0.8/Dockerfile
+[External Solutions]: https://github.com/google/deepvariant#external-solutions
+[FASTA]: https://en.wikipedia.org/wiki/FASTA_format
+[Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
+[VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf

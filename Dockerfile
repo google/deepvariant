@@ -5,7 +5,7 @@
 # Example command:
 # $ git clone https://github.com/google/deepvariant.git
 # $ cd deepvariant
-# $ sudo docker build -t deepvariant_cpu .
+# $ sudo docker build -t deepvariant .
 #
 # To build for GPU, use a command like:
 # $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
@@ -94,7 +94,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 # Install pip so we can install absl. I had to pin the version of pip for
 # docker_entrypoint.py to work.
 RUN apt-get -y update && \
-  apt-get install -y python-pip && \
+  apt-get install -y python-pip parallel && \
   python -m pip uninstall -y pip  && \
   python -m pip install pip==9.0.3 && \
   pip install absl-py

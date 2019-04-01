@@ -28,7 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Runs all 3 steps to go from input DNA reads to output VCF/gVCF files.
 
-Note that this currently does not use GPU parallel for make_examples.
 For more details, see:
 https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md
 """
@@ -64,6 +63,13 @@ flags.DEFINE_string('output_vcf', None,
                     'Required. Path where we should write VCF file.')
 flags.DEFINE_string('output_gvcf', None,
                     'Optional. Path where we should write gVCF file.')
+flags.DEFINE_string(
+    'intermediate_results_dir', '/opt/tmp_output',
+    'Optional. If specified, this should be an existing '
+    'directory that is visible insider docker, and will be '
+    'used to to store intermediate outputs.')
+flags.DEFINE_integer('num_shards', 1,
+                     'Optional. Number of shards for make_examples step.')
 
 flags.mark_flag_as_required('model_type')
 flags.mark_flag_as_required('ref')
@@ -74,8 +80,6 @@ MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
     'WES': '/opt/models/wes/model.ckpt',
 }
-
-DATA_DIR = '/opt'
 
 
 def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
@@ -91,7 +95,10 @@ def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
   Returns:
     (string) A command to run.
   """
-  command = ['/opt/deepvariant/bin/make_examples']
+  command = [
+      'seq 0 {} |'.format(FLAGS.num_shards - 1), 'parallel -k --line-buffer',
+      '/opt/deepvariant/bin/make_examples'
+  ]
   command.extend(['--mode', 'calling'])
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads', '"{}"'.format(reads)])
@@ -100,6 +107,7 @@ def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
     command.extend(['--regions', '"{}"'.format(regions)])
   if gvcf is not None:
     command.extend(['--gvcf', '"{}"'.format(gvcf)])
+  command.extend(['--task {}'])
   return ' '.join(command)
 
 
@@ -133,12 +141,24 @@ def postprocess_variants_command(ref,
   return ' '.join(command)
 
 
+def check_or_create_intermediate_results_dir(intermediate_results_dir):
+  """Checks or creates the path to the directory for intermediate results."""
+  if not os.path.isdir(intermediate_results_dir):
+    os.makedirs(intermediate_results_dir)
+
+
 def main(_):
+  check_or_create_intermediate_results_dir(FLAGS.intermediate_results_dir)
+
   nonvariant_site_tfrecord_path = None
   if FLAGS.output_gvcf is not None:
-    nonvariant_site_tfrecord_path = os.path.join(DATA_DIR, 'gvcf.tfrecord.gz')
+    nonvariant_site_tfrecord_path = os.path.join(
+        FLAGS.intermediate_results_dir,
+        'gvcf.tfrecord@{}.gz'.format(FLAGS.num_shards))
 
-  examples = os.path.join(DATA_DIR, 'make_examples.tfrecord.gz')
+  examples = os.path.join(
+      FLAGS.intermediate_results_dir,
+      'make_examples.tfrecord@{}.gz'.format(FLAGS.num_shards))
   command = make_examples_command(
       FLAGS.ref,
       FLAGS.reads,
@@ -148,7 +168,7 @@ def main(_):
   print('\n***** Running the command:*****\n{}\n'.format(command))
   subprocess.check_call(command, shell=True)
 
-  call_variants_output = os.path.join(DATA_DIR,
+  call_variants_output = os.path.join(FLAGS.intermediate_results_dir,
                                       'call_variants_output.tfrecord.gz')
   command = call_variants_command(call_variants_output, examples,
                                   FLAGS.model_type)
