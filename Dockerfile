@@ -43,7 +43,7 @@ COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/call_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/postprocess_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_train.zip .
 COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_eval.zip  .
-COPY --from=builder /opt/deepvariant/scripts/docker_entrypoint.py .
+COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
 RUN ./run-prereq.sh
 
 # Create shell wrappers for python zip files for easier use.
@@ -69,11 +69,16 @@ RUN \
     "${BASH_HEADER}" \
     'python /opt/deepvariant/bin/model_eval.zip "$@"' > \
     /opt/deepvariant/bin/model_eval && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
+    /opt/deepvariant/bin/run_deepvariant && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
     /opt/deepvariant/bin/postprocess_variants \
     /opt/deepvariant/bin/model_train \
-    /opt/deepvariant/bin/model_eval
+    /opt/deepvariant/bin/model_eval \
+    /opt/deepvariant/bin/run_deepvariant
 
 # Copy models
 WORKDIR /opt/models/wgs
@@ -94,5 +99,4 @@ RUN apt-get -y update && \
   python -m pip install pip==9.0.3 && \
   pip install absl-py
 
-WORKDIR /opt/deepvariant/bin/
-ENTRYPOINT ["python", "-u", "docker_entrypoint.py"]
+CMD ["echo", "See https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md."]
