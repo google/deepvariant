@@ -37,6 +37,7 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
@@ -69,6 +70,21 @@ class PileupImageEncoderNative {
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,
       const string& ref_bases, const nucleus::genomics::v1::Read& read,
       int image_start_pos, const std::vector<string>& alt_alleles);
+
+  // Simple wrapper around EncodeRead that allows us to efficiently pass large
+  // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and
+  // calls EncodeRead().
+  std::unique_ptr<ImageRow> EncodeReadPython(
+      const nucleus::ConstProtoPtr<
+          const learning::genomics::deepvariant::DeepVariantCall>&
+          wrapped_dv_call,
+      const string& ref_bases,
+      const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
+          wrapped_read,
+      int image_start_pos, const std::vector<string>& alt_alleles) {
+    return EncodeRead(*(wrapped_dv_call.p_), ref_bases, *(wrapped_read.p_),
+                      image_start_pos, alt_alleles);
+  }
 
   // Encode the reference bases into a single row of pixels.
   std::unique_ptr<ImageRow> EncodeReference(const string& ref_bases);
