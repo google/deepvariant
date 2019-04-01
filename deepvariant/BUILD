@@ -79,7 +79,6 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
-        "//third_party/nucleus/util:proto_ptr",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
@@ -427,7 +426,6 @@ cc_library(
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/util:proto_ptr",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

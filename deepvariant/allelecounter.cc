@@ -357,6 +357,11 @@ string AlleleCounter::ReadKey(const Read& read) {
                 read.read_number());
 }
 
+void AlleleCounter::Add(const std::vector<Read>& reads) {
+  for_each(reads.cbegin(), reads.cend(),
+           [this](const Read& read) { this->Add(read); });
+}
+
 std::vector<AlleleCountSummary> AlleleCounter::SummaryCounts() const {
   std::vector<AlleleCountSummary> summaries;
   summaries.reserve(counts_.size());

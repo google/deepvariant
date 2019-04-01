@@ -31,7 +31,6 @@ from "deepvariant/protos/deepvariant_pyclif.h" import *
 from "third_party/nucleus/io/python/reference.h" import *
 from "third_party/nucleus/protos/range_pyclif.h" import *
 from "third_party/nucleus/protos/reads_pyclif.h" import *
-from "third_party/nucleus/util/proto_clif_converter.h" import *
 
 from "deepvariant/allelecounter.h":
   namespace `learning::genomics::deepvariant`:
@@ -40,6 +39,6 @@ from "deepvariant/allelecounter.h":
                    ref: GenomeReference,
                    interval: Range,
                    options: AlleleCounterOptions)
-      def `AddPython` as add(self, read: ConstProtoPtr<Read>)
+      def `Add` as add(self, read: Read)
       def `Counts` as counts(self) -> list<AlleleCount>
       def `SummaryCounts` as summary_counts(self) -> list<AlleleCountSummary>

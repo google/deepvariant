@@ -115,11 +115,12 @@ class AlleleCounterTest : public ::testing::Test {
                         AlleleCounter* allele_counter) {
     ASSERT_THAT(expected.size(), Eq(allele_counter->IntervalLength()));
 
-    // Add our reads to allele_counter and get a vector of our read names for
-    // further testing.
+    // Add our reads to allele_counter.
+    allele_counter->Add(reads);
+
+    // Get a vector of our read names for further testing.
     std::vector<string> read_names;
     for (const auto& read : reads) {
-      allele_counter->Add(read);
       read_names.push_back(allele_counter->ReadKey(read));
     }
 
