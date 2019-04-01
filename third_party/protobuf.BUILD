@@ -721,7 +721,6 @@ cc_binary(
     ],
     linkshared = 1,
     linkstatic = 1,
-    visibility = ["//visibility:public"],
     deps = [
         ":protobuf",
         ":proto_api",
@@ -736,10 +735,7 @@ cc_binary(
         # before returning.  That is true on Linux, Solaris, BSD, and OS/X,
         # but not guaranteed by POSIX.  See
         # https://stackoverflow.com/questions/40115688/are-static-c-objects-in-dynamically-loaded-libraries-initialized-before-dlopen
-        "@//third_party/nucleus/protos:all_nucleus_protos_cc",
-        # Include all C++ extensions here, so that there is only one
-        # C++ extension and we avoid ODR violations.
-        "@//:all_extensions",
+        "@com_google_deepvariant//third_party/nucleus/protos:all_nucleus_protos_cc",
     ] + select({
         "//conditions:default": [],
         ":use_fast_cpp_protos": ["//external:python_headers"],

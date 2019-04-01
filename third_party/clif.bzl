@@ -11,13 +11,9 @@ CLIF_CPP_RUNTIME = "@clif//:cpp_runtime"
 
 # The CLIF generated code only compiles with C++11.
 EXTRA_CC_FLAGS = ["-std=c++11"]
-
 _PROTO_LIBRARY_SUFFIX = "_pyclif"
-
 PYCLIF_PYEXT_SUFFIX = ".so"
-
 PYCLIF_CC_LIB_SUFFIX = "_cclib"
-
 PYCLIF_WRAP_SUFFIX = "_clif_wrap"
 
 def _clif_wrap_cc_impl(ctx):
@@ -179,32 +175,13 @@ def pyclifs_to_ccproto_libs(labels):
     """Gets the cc protobuf label for each of pyclif label as a list."""
     return [_clif_to_lib(name, "_cc_pb2") for name in labels]
 
+def clif_deps_to_pyexts(labels):
+    """Gets the py_extension name for each of label as a list."""
+    return [_clif_to_lib(name, PYCLIF_PYEXT_SUFFIX) for name in labels]
+
 def clif_deps_to_cclibs(labels):
     """Gets the cc_library name for each of label as a list."""
     return [_clif_to_lib(name, PYCLIF_CC_LIB_SUFFIX) for name in labels]
-
-def _symlink_impl(ctx):
-    """Creates a symbolic link between src and out."""
-    out = ctx.outputs.out
-    src = ctx.attr.src.files.to_list()[0]
-    cmd = "ln -f -r -s %s %s" % (src.path, out.path)
-    ctx.actions.run_shell(
-        inputs = [src],
-        outputs = [out],
-        command = cmd,
-    )
-
-symlink = rule(
-    implementation = _symlink_impl,
-    attrs = {
-        "src": attr.label(
-            mandatory = True,
-            allow_files = True,
-            single_file = True,
-        ),
-        "out": attr.output(mandatory = True),
-    },
-)
 
 def py_clif_cc(
         name,
@@ -229,6 +206,7 @@ def py_clif_cc(
     py_clif_cc(
         name = "pyclif_dep",
         srcs = ["pyclif_dep.clif"],
+        clif_deps = ["//oss_clif/python:proto_cpp"],
         deps = ["//oss_clif:pyclif_dep_lib"],
     )
 
@@ -237,9 +215,11 @@ def py_clif_cc(
         libraries to access the C++ code.
       srcs: A list that must contain a single file named <name>.clif containing
         our CLIF specification.
-      clif_deps: A list of other CLIF rules included by this one.
+      clif_deps: A potentially empty list of other CLIF rules we use in our
+        name.clif specification.
       pyclif_deps: A potentially empty list of pyclif_proto_library rules
-      deps: A list of C++ dependencies.
+        declaring protobufs used in our CLIF specification.
+      deps: The C++ libraries we want to make accessible to python.
       copts: List of copts to provide to our native.cc_library when building our
         python extension module.
       py_deps: List of dependencies to provide to our the native.py_library
@@ -273,8 +253,8 @@ def py_clif_cc(
     _clif_wrap_cc(
         name = name + PYCLIF_WRAP_SUFFIX,
         srcs = srcs,
-        deps = extended_cc_deps + clif_deps_to_cclibs(clif_deps),
-        clif_deps = clif_deps_to_cclibs(clif_deps),
+        deps = extended_cc_deps + clif_deps_to_pyexts(clif_deps),
+        clif_deps = clif_deps,
         toolchain_deps = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
         module_name = name,
         # Turns //foo/bar:baz_pyclif into foo.bar to create our fully-qualified
@@ -295,13 +275,12 @@ def py_clif_cc(
         deps = extended_cc_deps + clif_deps_to_cclibs(clif_deps),
     )
 
-    # To prevent ODR violations, all of the extensions must live in one
-    # extension module.  And to be compatible with existing protobuf
-    # generated code, that module must be _message.so.
-    symlink(
-        name = name + "_symlink",
-        out = pyext_so,
-        src = "@protobuf_archive//:python/google/protobuf/pyext/_message.so",
+    native.cc_binary(
+        name = pyext_so,
+        copts = copts + EXTRA_CC_FLAGS,
+        linkstatic = 0,
+        linkshared = 1,
+        deps = [cc_library_name] + extended_cc_deps + clif_deps_to_cclibs(clif_deps),
     )
 
     # We create our python module which is just a thin wrapper around our real
