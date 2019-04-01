@@ -20,8 +20,8 @@ The output of DeepVariant is a list of all variant calls in
 [VCF](https://samtools.github.io/hts-specs/VCFv4.3.pdf) format.
 
 DeepVariant is composed of three programs: `make_examples`, `call_variants`, and
-`postprocess_variants`. Each program's function and example usage is described
-in detail in the [quick start].
+`postprocess_variants`. More details about each program are described in detail
+in the [Inputs and outputs](#inputs-and-outputs) section.
 
 ## Inputs and outputs
 
@@ -185,42 +185,9 @@ images.
 
 ## Training data over time
 
-For the models we've released over time, here are more details of the training
-data we used.
-
-For even more details, see
+For the models we've released over time, you can find more details about the
+training data in
 [DeepVariant training data](deepvariant-details-training-data.md).
-
-### WGS models
-
-version | Replicates                             | #examples
-------- | -------------------------------------- | -----------
-v0.4    | 9 HG001                                | 85,323,867
-v0.5    | 9 HG001<br>2 HG005<br>78 HG001 WES<br>1 HG005 WES<sup>[(1)](#myfootnote1)</sup> | 115,975,740
-v0.6    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+     | 156,571,227
-v0.7    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+     | 158,571,078
-v0.8    | 12 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+<br>(and, more `dowsample_fraction` during training)     | 346,505,686
-
-### WES models
-
-version | Replicates                  | #examples
-------- | --------------------------- | ------------------------------
-v0.5    | 78 HG001 WES<br>1 HG005 WES | 15,714,062
-v0.6    | 78 HG001 WES<br>1 HG005 WES<sup>[(2)](#myfootnote2)</sup> | 15,705,449
-v0.7    | 78 HG001 WES<br>1 HG005 WES | 15,704,197
-v0.8    | 78 HG001 WES<br>1 HG005 WES<sup>[(3)](#myfootnote3)</sup> | 18,683,247
-
-<a name="myfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
-sequencing data into training data. In v0.6, we took it out because it didn't
-improve the WGS accuracy.
-
-<a name="myfootnote2">(2)</a>: The training data are from the same replicates as
-v0.5. The number of examples changed because of the update in
-[haplotype_labeler](https://github.com/google/deepvariant/tree/r0.6/deepvariant/labeler/haplotype_labeler.py).
-
-<a name="myfootnote3">(3)</a>: In v0.8, we used the
-[Platinum Genomes Truthset](https://github.com/Illumina/PlatinumGenomes) to
-create more training examples outside the GIAB confident regions.
 
 ## CRAM support
 
