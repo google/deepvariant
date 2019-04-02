@@ -48,11 +48,9 @@ function setup_test() {
   ## Download extra packages
   # There are some extra programs we will need.
   # We are going to use [GNU Parallel](https://www.gnu.org/software/parallel/) to
-  # run `make_examples`. We are going to install `samtools` and `docker.io` to help
-  # do some analysis at the end.
+  # run `make_examples`.
   sudo apt-get -y update
   sudo apt-get -y install parallel
-  sudo apt-get -y install samtools
   sudo apt-get -y install docker.io
   sudo apt-get -y install aria2
 
@@ -85,6 +83,7 @@ function setup_test() {
   aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.fai -d "${DATA_DIR}"
   aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.gzi -d "${DATA_DIR}"
   aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gzi -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.fai -d "${DATA_DIR}"
 }
 
 ## Run `make_examples`
@@ -140,13 +139,12 @@ function run_postprocess_variants_gVCF() {
 
 ## Evaluation: run hap.py
 echo "Start evaluation with hap.py..."
-UNCOMPRESSED_REF="${OUTPUT_DIR}/hs37d5.fa"
+UNCOMPRESSED_REF="${DATA_DIR}/hs37d5.fa"
 
 # hap.py cannot read the compressed fa, so uncompress
-# into a writable directory and index it.
+# into a writable directory. Index file was downloaded earlier.
 function run_happy() {
   zcat <"${REF}" >"${UNCOMPRESSED_REF}"
-  samtools faidx "${UNCOMPRESSED_REF}"
 
   sudo docker pull pkrusche/hap.py
   sudo docker run -i \
