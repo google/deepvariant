@@ -94,7 +94,7 @@ StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
   const char* const open_mode = GetOpenMode(variants_path);
   htsFile* fp = hts_open_x(variants_path.c_str(), open_mode);
   if (fp == nullptr) {
-    return tf::errors::Unknown("Could not open variants_path", variants_path);
+    return tf::errors::Unknown("Could not open variants_path: ", variants_path);
   }
 
   auto writer = absl::WrapUnique(new VcfWriter(header, options, fp));
