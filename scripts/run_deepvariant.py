@@ -96,8 +96,8 @@ def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
     (string) A command to run.
   """
   command = [
-      'seq 0 {} |'.format(FLAGS.num_shards - 1), 'parallel -k --line-buffer',
-      '/opt/deepvariant/bin/make_examples'
+      'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
+      'parallel -k --line-buffer', '/opt/deepvariant/bin/make_examples'
   ]
   command.extend(['--mode', 'calling'])
   command.extend(['--ref', '"{}"'.format(ref)])
@@ -114,7 +114,7 @@ def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
 def call_variants_command(outfile, examples, model_type):
   """Returns a call_variants command for subprocess.check_call."""
   checkpoint = MODEL_TYPE_MAP[model_type]
-  command = ['/opt/deepvariant/bin/call_variants']
+  command = ['time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(checkpoint)])
@@ -127,7 +127,7 @@ def postprocess_variants_command(ref,
                                  nonvariant_site_tfrecord_path=None,
                                  gvcf_outfile=None):
   """Returns a postprocess_variants command for subprocess.check_call."""
-  command = ['/opt/deepvariant/bin/postprocess_variants']
+  command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
@@ -166,14 +166,14 @@ def main(_):
       gvcf=nonvariant_site_tfrecord_path,
       regions=FLAGS.regions)
   print('\n***** Running the command:*****\n{}\n'.format(command))
-  subprocess.check_call(command, shell=True)
+  subprocess.check_call(command, shell=True, executable='/bin/bash')
 
   call_variants_output = os.path.join(FLAGS.intermediate_results_dir,
                                       'call_variants_output.tfrecord.gz')
   command = call_variants_command(call_variants_output, examples,
                                   FLAGS.model_type)
   print('\n***** Running the command:*****\n{}\n'.format(command))
-  subprocess.check_call(command, shell=True)
+  subprocess.check_call(command, shell=True, executable='/bin/bash')
 
   command = postprocess_variants_command(
       FLAGS.ref,
@@ -182,7 +182,7 @@ def main(_):
       nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
       gvcf_outfile=FLAGS.output_gvcf)
   print('\n***** Running the command:*****\n{}\n'.format(command))
-  subprocess.check_call(command, shell=True)
+  subprocess.check_call(command, shell=True, executable='/bin/bash')
 
 
 if __name__ == '__main__':
