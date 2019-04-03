@@ -91,6 +91,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
           dataset_config_filename=FLAGS.dataset_config_pbtxt,
           mode=tf.estimator.ModeKeys.TRAIN,
           use_tpu=mock.ANY,
+          max_examples=None,
       )
       self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
 

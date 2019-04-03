@@ -127,6 +127,12 @@ flags.DEFINE_integer(
     'num_retries', 0,
     'The number of times to retry on InternalError or UnavailableError.')
 
+flags.DEFINE_integer(
+    'max_examples', None,
+    'The maximum number of examples to use in training. If None, all examples '
+    'will be used. If not None, the first max_examples examples from the '
+    'dataset will be used, with those same examples repeating over and over.')
+
 # Pre-trained model parameters
 flags.DEFINE_string(
     'start_from_checkpoint', 'model_default',
@@ -187,6 +193,7 @@ def run(target, unused_is_chief, device_fn, use_tpu):
       tf_dataset = data_providers.get_input_fn_from_dataset(
           dataset_config_filename=FLAGS.dataset_config_pbtxt,
           mode=tf.estimator.ModeKeys.TRAIN,
+          max_examples=FLAGS.max_examples,
           use_tpu=use_tpu)
       model = modeling.get_model(FLAGS.model_name)
       logging.info('Running training on %s with model %s and tpu %s',
