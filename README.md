@@ -1,200 +1,125 @@
 # DeepVariant
 
 DeepVariant is an analysis pipeline that uses a deep neural network to call
-genetic variants from next-generation DNA sequencing data.
-
-## Why DeepVariant
-
-*   DeepVariant is **highly accurate**. In 2016 DeepVariant won
-    [PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/results)
-    in the best SNP Performance category.
-*   DeepVariant is **robust**. DeepVariant maintains high accuracy even for
-    error-prone sequencing conditions, including
-    [PCR-positive](https://ai.googleblog.com/2018/04/deepvariant-accuracy-improvements-for.html)
-    samples and
-    [low quality sequencing runs](https://blog.dnanexus.com/2018-01-16-evaluating-the-performance-of-ngs-pipelines-on-noisy-wgs-data/).
-*   DeepVariant is **fast**. Using
-    [Google Cloud Platform](https://cloud.google.com/genomics/deepvariant), a
-    whole human genome<sup>[(1)](#myfootnote1)</sup> analysis completes in as
-    little as ~70 minutes<sup>[(2)](#myfootnote2)</sup> and an exome in ~25
-    minutes.
-*   DeepVariant is **cost-efficient**. Using
-    [Google Cloud Platform](https://cloud.google.com/genomics/deepvariant),
-    calling a whole genome costs ~$2-3 and an exome $0.20.
-*   DeepVariant is **flexible**. DeepVariant can be easily adjusted or used out
-    of the box for
-    [different sequencing technologies](https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-tpu-training-case-study.md)
-    and even for
-    [non-human species](http://news.irri.org/2018/01/international-rice-informatics.html).
-*   DeepVariant is **easy to use**. No filtering is needed beyond setting your
-    preferred minimum quality threshold.
-*   DeepVariant is **where you need it**. It builds and runs on-premises and in
-    the cloud, as a stand-alone binary or a Docker image, and makes use of
-    hardware accelerators like GPUs and TPUs.
-
-<a name="myfootnote1">(1)</a>: Examples assume 30x coverage.
-<a name="myfootnote2">(2)</a>: Time estimates do not include mapping.
-
-## Availability
-
-<!-- mdlint off(URL_BAD_G3DOC_PATH) -->
-
-DeepVariant is a suite of Python/C++ programs that run on any Unix-like
-operating system. For convenience the documentation refers to building and
-running DeepVariant on [Google Cloud Platform](https://cloud.google.com/), but
-the tools themselves can be built and run on any standard Linux computer,
-including on-premise machines. Note that DeepVariant currently requires
-Python 2.7 and does not yet work with Python 3.
-
-Pre-built binaries are available at
-[gs://deepvariant/](https://console.cloud.google.com/storage/browser/deepvariant).
-These are compiled to use SSE4 and AVX instructions, so you'll need a CPU (such
-as Intel Sandy Bridge) that supports them. (The file /proc/cpuinfo lists these
-features under "flags".)
-
-Alternatively, see [Building and testing
-DeepVariant](docs/deepvariant-build-test.md) for more information on building
-DeepVariant from sources for your platform.
-
-For managed pipeline execution of DeepVariant see the [cost- and
-speed-optimized, Docker-based
-pipelines](https://cloud.google.com/genomics/deepvariant) created for Google
-Cloud Platform.
-
-## Documentation
-
-*   [DeepVariant release notes](https://github.com/google/deepvariant/releases)
-
-### Quick start and Case studies
-
-*   [DeepVariant quick start](docs/deepvariant-quick-start.md)
-*   [DeepVariant whole genome case study](docs/deepvariant-case-study.md)
-*   [DeepVariant exome case study](docs/deepvariant-exome-case-study.md)
-
-### (Advanced) Training
-
-*   [Advanced Case Study: Train a customized SNP and small indel variant caller
-    for BGISEQ-500 data](docs/deepvariant-tpu-training-case-study.md)
-*   [DeepVariant training data](docs/deepvariant-details-training-data.md)
-
-### More details
-
-*   [DeepVariant usage guide](docs/deepvariant-details.md)
-*   [Building and testing DeepVariant](docs/deepvariant-build-test.md)
-*   [DeepVariant Genomic VCF (gVCF) support](docs/deepvariant-gvcf-support.md)
-*   [Getting Started with GCP](docs/deepvariant-gcp-info.md) (It is not required
-    to run DeepVariant on GCP.)
-
-### Colab notebooks
-
-*   [Colab example: visualizing pileup images/tensors](docs/visualizing_examples.ipynb)
-*   [Google Developer Codelab: Variant Calling on a Rice genome with DeepVariant](https://codelabs.developers.google.com/codelabs/genomics-deepvariant)
-
-<!-- mdlint on -->
-
-<a name="about"></a>
-## About DeepVariant
-
-For technical details describing how DeepVariant works please see our [Nature
-Biotechnology publication](https://rdcu.be/7Dhl).
-
-![DeepVariant workflow](docs/DeepVariant-workflow-figure.png?raw=true "DeepVariant workflow")
-
-Briefly, we started with some of the reference genomes from [Genome in a
-Bottle](http://jimb.stanford.edu/giab/), for which there is high-quality ground
-truth available (or the closest approximation currently possible). Using
-multiple replicates of these genomes, we produced approximately one hundred
-million training examples in the form of multi-channel tensors encoding the
-sequencing instrument data, and then trained a TensorFlow-based image
-classification model ([inception-v3](https://arxiv.org/abs/1512.00567)) to
-assign genotype likelihoods from the experimental data produced by the
-instrument. Read additional information on the [Google Research
-blog](https://research.googleblog.com/2017/12/deepvariant-highly-accurate-genomes.html).
-
-Under the hood, DeepVariant relies on
+genetic variants from next-generation DNA sequencing data. DeepVariant relies on
 [Nucleus](https://github.com/google/nucleus), a library of Python and C++ code
 for reading and writing data in common genomics file formats (like SAM and VCF)
 designed for painless integration with the
 [TensorFlow](https://www.tensorflow.org/) machine learning framework.
 
-## Evaluating DeepVariant
+## Why Use DeepVariant?
 
-We are delighted to see several external evaluations of the DeepVariant method.
+*   **High accuracy** - In 2016 DeepVariant won
+    [PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/results)
+    for best SNP Performance. DeepVariant maintains high accuracy across data
+    from different sequencing technologies, prep methods, and species.
+*   **Flexibility** - Out-of-the-box use for
+    [PCR-positive](https://ai.googleblog.com/2018/04/deepvariant-accuracy-improvements-for.html)
+    samples and
+    [low quality sequencing runs](https://blog.dnanexus.com/2018-01-16-evaluating-the-performance-of-ngs-pipelines-on-noisy-wgs-data/),
+    and easy adjustments for
+    [different sequencing technologies](https://google.github.io/deepvariant/posts/2019-01-14-highly-accurate-snp-and-indel-calling-on-pacbio-ccs-with-deepvariant/)
+    and
+    [non-human species](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/).
+*   **Ease of use** - No filtering is needed beyond setting your preferred
+    minimum quality threshold.
+*   **Cost effectiveness** - With an optimized setup on
+    [Google Cloud](https://cloud.google.com/genomics/deepvariant), it costs
+    ~$2-3 to call a whole genome and $0.20 to call an exome with preemptible
+    instances.
+*   **Speed** - On a 64-core CPU-only machine, DeepVariant completes a 50x WGS
+    in 5 hours and an exome in 16 minutes [(1)](#myfootnote1)</sup>. Multiple
+    options for acceleration exist, taking the WGS pipeline to as fast as 40
+    minutes (see [external solutions](#external-solutions)).
+*   **Usage options** - DeepVariant can be run via Docker or binaries, using
+    both on-premise hardware or in the cloud, with support for hardware
+    accelerators like GPUs and TPUs.
 
-The 2016 PrecisionFDA Truth Challenge, administered by the FDA, assessed several
-community-submitted variant callsets on the (at the time) blinded evaluation
-sample, HG002. DeepVariant won the [Highest SNP
-Performance](https://precision.fda.gov/challenges/truth/results) award in the
-challenge.
+<a name="myfootnote1">(1)</a>: Time estimates do not include mapping.
 
-DNAnexus [posted an extensive
-evaluation](https://blog.dnanexus.com/2017-12-05-evaluating-deepvariant-googles-machine-learning-variant-caller/)
-of several variant calling methods, including DeepVariant, using a variety of
-read sets from HG001, HG002, and HG005. They have also evaluated DeepVariant
-under a variety of [noisy sequencing
-conditions](https://blog.dnanexus.com/2018-01-16-evaluating-the-performance-of-ngs-pipelines-on-noisy-wgs-data/).
+## DeepVariant Setup
 
-Independent evaluations of DeepVariant v0.6 from both
-[DNAnexus](https://blog.dnanexus.com/2018-04-18-deepvariant-amplified/) and
-[bcbio](https://github.com/bcbio/bcbio_validations/tree/master/deepvariant#deepvariant-v06-release-strelka2-stratification-and-initial-gatk-cnn)
-are also available. Their analyses support our findings of improved indel
-accuracy, and also include comparisons to other variant calling tools.
+### Prerequisites
 
-## Support
+*   Unix-like operating system (cannot run on Windows)
+*   Python 2.7
 
-The [Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/)
-actively supports DeepVariant and are always interested in improving the quality
-of DeepVariant. If you run into an issue, please report the problem on our [Issue
-tracker](https://github.com/google/deepvariant/issues). Make sure to add enough
-detail to your report that we can reproduce the problem and fix it. We encourage
-including links to snippets of BAM/VCF/etc. files that provoke the bug, if
-possible. Depending on the severity of the issue we may patch DeepVariant
-immediately with the fix or roll it into the next release.
+### Official Solutions
 
-If you have questions about next-generation sequencing, bioinformatics, or other
-general topics not specific to DeepVariant we recommend you post your question
-to a community discussion forum such as [BioStars](https://www.biostars.org/).
+Below are the official solutions provided by the
+[Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/).
 
-## Contributing
+Name                                                                                                | Description
+:-------------------------------------------------------------------------------------------------: | -----------
+[Docker](https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md)           | This is the recommended method.
+[Build from source](https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-build-test.md) | DeepVariant comes with scripts to build it on Ubuntu 14 and 16, with Ubuntu 16 recommended. To build and run on other Unix-based systems, you will need to modify these scripts.
+Prebuilt Binaries                                                                                   | Available at [`gs://deepvariant/`](https://console.cloud.google.com/storage/browser/deepvariant). These are compiled to use SSE4 and AVX instructions, so you will need a CPU (such as Intel Sandy Bridge) that supports them. You can check the `/proc/cpuinfo` file on your computer, which lists these features under "flags".
 
-Interested in contributing? See [CONTRIBUTING](CONTRIBUTING.md).
+### External Solutions
+
+The following pipelines are not created or maintained by the
+[Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/).
+Please contact the relevant teams if you have any questions or concerns.
+
+Name                                                                                                                                                                                                                                                                                                                                                                                                                     | Description
+:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | -----------
+[Running DeepVariant on Google Cloud Platform](https://cloud.google.com/genomics/docs/tutorials/deepvariant)                                                                                                                                                                                                                                                                                                             | Docker-based pipelines optimized for cost and speed. Code can be found [here](https://github.com/googlegenomics/gcp-deepvariant-runner).
+[DeepVariant-on-spark from ATGENOMIX](https://github.com/atgenomix/deepvariant-on-spark)                                                                                                                                                                                                                                                                                                                                 | A germline short variant calling pipeline that runs DeepVariant on Apache Spark at scale with support for multi-GPU clusters (e.g. NVIDIA DGX-1).
+[Parabricks](https://docs.parabricks.com/standalone-tools/deepvariant)                                                                                                                                                                                                                                                                                                                                                   | An accelerated DeepVariant pipeline with multi-GPU support that runs our WGS pipeline in just 40 minutes, at a cost of $2-$3 per sample. This provides a 7.5x speedup over a 64-core CPU-only machine at lower cost.
+[DNAnexus DeepVariant App](https://platform.dnanexus.com/app/deepvariant_germline)                                                                                                                                                                                                                                                                                                                                       | Offers parallelized execution with a GUI interface (requires platform account).
+[Nextflow Pipeline](https://github.com/nf-core/deepvariant)                                                                                                                                                                                                                                                                                                                                                              | Offers parallel processing of multiple BAMs and Docker support.
+[DNAstack Pipeline](https://app.dnastack.com/auth/realms/DNAstack/protocol/openid-connect/auth?client_id=dnastack-client&redirect_uri=https%3A%2F%2Fapp.dnastack.com%2F%3Fredirect_fragment%3D%252Forg%252F473079%252Fproj%252F473096%252Fapp%252Fworkflow%252F425685%252Frun&state=42231553-9fbc-4d71-a10e-d6ce42415c01&nonce=daf2568d-4fe7-48e2-ab60-858937244a87&response_mode=query&response_type=code&scope=openid) | Cost-optimized DeepVariant pipeline (requires platform account).
+
+## Run DeepVariant
+
+*   [DeepVariant Quickstart](https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md) -
+    run DeepVariant on Docker
+*   [Full documentation](https://github.com/google/deepvariant/tree/r0.8/docs)
+
+## Additional References
+
+*   [DeepVariant Blog](https://google.github.io/deepvariant)
+*   [DeepVariant release notes](https://github.com/google/deepvariant/releases)
+*   [Nature Biotechnology publication](https://rdcu.be/7Dhl)
+
+## Contribution Guidelines
+
+Please [open a pull request](https://github.com/google/deepvariant/compare) if
+you wish to contribute to DeepVariant. Note, we have not set up the
+infrastructure to merge pull requests externally. If you agree, we will test and
+submit the changes internally and mention your contributions in our
+[release notes](https://github.com/google/deepvariant/releases). We apologize
+for any inconvenience.
+
+If you have any difficulty using DeepVariant, feel free to
+[open an issue](https://github.com/google/deepvariant/issues/new). If you have
+general questions not specific to DeepVariant, we recommend that you post on a
+community discussion forum such as [BioStars](https://www.biostars.org/).
 
 ## License
 
-DeepVariant is licensed under the terms of the [BSD-3-Clause license](LICENSE).
+[BSD-3-Clause license](LICENSE)
 
 ## Acknowledgements
 
-DeepVariant happily makes use of many open source packages.  We'd like to
+DeepVariant happily makes use of many open source packages. We would like to
 specifically call out a few key ones:
 
-*   [Boost Graph
-    Library](http://www.boost.org/doc/libs/1_65_1/libs/graph/doc/index.html)
-
+*   [Boost Graph Library](http://www.boost.org/doc/libs/1_65_1/libs/graph/doc/index.html)
 *   [abseil-cpp](https://github.com/abseil/abseil-cpp) and
     [abseil-py](https://github.com/abseil/abseil-py)
-
 *   [CLIF](https://github.com/google/clif)
-
 *   [GNU Parallel](https://www.gnu.org/software/parallel/)
-
 *   [htslib & samtools](http://www.htslib.org/)
-
 *   [Nucleus](https://github.com/google/nucleus)
-
 *   [numpy](http://www.numpy.org/)
-
 *   [scipy](https://www.scipy.org/)
-
-*   [SSW
-    Library](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library)
-
+*   [SSW Library](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library)
 *   [TensorFlow and Slim](https://www.tensorflow.org/)
 
 We thank all of the developers and contributors to these packages for their
 work.
 
-
 ## Disclaimer
 
-*   This is not an official Google product.
+This is not an official Google product.
