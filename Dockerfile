@@ -91,12 +91,14 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
 
-# Install pip so we can install absl. I had to pin the version of pip for
-# docker_entrypoint.py to work.
+# Install pip so we can install absl. Currently, pip 10 does not work with the
+# latest version of absl-py. We pin to a specific version of pip and absl-py to
+# make sure this installation works. In the future we should continue to update
+# to the next latest working versions.
 RUN apt-get -y update && \
   apt-get install -y python-pip parallel && \
   python -m pip uninstall -y pip  && \
   python -m pip install pip==9.0.3 && \
-  pip install absl-py
+  pip install absl-py==0.7.1
 
 CMD ["echo", "See https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md."]

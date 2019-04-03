@@ -225,6 +225,50 @@ CRAM     | 1.2G      | 10m37.904s
 -------- | --------- | -------------
 Ratio    | 57%       | 135%
 
+## Commands for requesting machines used in case studies
+
+We report runtime in our case studies documentation. In order to make sure the
+results we report are reproducible without too much variation, we provide the
+commands we used here to show you what kind of machines we ran the case studies
+on. This is NOT the fastest or cheapest configuration. For more scalable
+execution of DeepVariant see the [External Solutions] section.
+
+### Command for a CPU-only machine on Google Cloud Platform.
+
+We used a 64-core (vCPU) machine with 128GiB of memory and no GPU, on the Google
+Cloud Platform. Specifying the CPU platform also allows us to report the runtime
+more consistently.
+
+```shell
+gcloud beta compute instances create "${USER}-cpu"  \
+  --scopes "compute-rw,storage-full,cloud-platform" \
+  --image-family "ubuntu-1604-lts" \
+  --image-project "ubuntu-os-cloud" \
+  --machine-type "custom-64-131072" \
+  --boot-disk-size "300" \
+  --zone "us-west1-b" \
+  --min-cpu-platform "Intel Skylake"
+```
+
+### Command for a GPU machine on Google Cloud Platform
+
+```shell
+gcloud beta compute instances create "${USER}-gpu" \
+  --scopes "compute-rw,storage-full,cloud-platform" \
+  --maintenance-policy "TERMINATE" \
+  --accelerator=type=nvidia-tesla-p100,count=1 \
+  --image-family "ubuntu-1604-lts" \
+  --image-project "ubuntu-os-cloud" \
+  --machine-type "n1-standard-16" \
+  --boot-disk-size "300" \
+  --zone "us-west1-b" \
+  --min-cpu-platform "Intel Skylake"
+```
+
+NOTE: Having an instance up and running could cost you. Remember to delete the
+instances you're not using. You can find the instances at:
+https://console.cloud.google.com/compute/instances?project=YOUR_PROJECT
+
 [exome case study]: deepvariant-exome-case-study.md
 [whole genome case study]: deepvariant-case-study.md
 [quick start]: deepvariant-quick-start.md
