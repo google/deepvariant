@@ -135,7 +135,7 @@ else
       pip install -qq --user --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
       echo "Installing Intel's CPU-only MKL TensorFlow wheel"
-      pip install -qq --user --upgrade "intel-tensorflow==1.12.0"
+      pip install -qq --user --upgrade "intel-tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
     else
       echo "Installing standard CPU-only TensorFlow wheel"
       pip install -qq --user --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
