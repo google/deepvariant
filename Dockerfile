@@ -91,10 +91,11 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
 
-# Install pip so we can install absl. Currently, pip 10 does not work with the
-# latest version of absl-py. We pin to a specific version of pip and absl-py to
-# make sure this installation works. In the future we should continue to update
-# to the next latest working versions.
+WORKDIR /opt/models/pacbio
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pabcio_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pabcio_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pabcio_standard/model.ckpt.meta .
+
 RUN apt-get -y update && \
   apt-get install -y python-pip parallel && \
   python -m pip uninstall -y pip  && \

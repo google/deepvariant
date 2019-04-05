@@ -44,7 +44,7 @@ from absl import flags
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_enum('model_type', None, ['WGS', 'WES', 'PacBio'],
+flags.DEFINE_enum('model_type', None, ['WGS', 'WES', 'PACBIO'],
                   'Required. Type of model to use for variant calling.')
 flags.DEFINE_string(
     'ref', None,
@@ -79,10 +79,16 @@ flags.mark_flag_as_required('output_vcf')
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
     'WES': '/opt/models/wes/model.ckpt',
+    'PACBIO': '/opt/models/pacbio/model.ckpt',
 }
 
 
-def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
+def make_examples_command(ref,
+                          reads,
+                          examples,
+                          gvcf=None,
+                          regions=None,
+                          realign_reads=None):
   """Returns a make_examples command for subprocess.check_call.
 
   Args:
@@ -91,6 +97,8 @@ def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
     examples: Output tfrecord file containing tensorflow.Example files.
     gvcf: (Optional) Output tfrecord file containing tensorflow.Example files.
     regions: (Optional) Input BED file or chromosome ranges.
+    realign_reads: (Optional) If not None, add --realign_reads or
+      --norealign_reads depending on the truth value.
 
   Returns:
     (string) A command to run.
@@ -108,6 +116,11 @@ def make_examples_command(ref, reads, examples, gvcf=None, regions=None):
   if gvcf is not None:
     command.extend(['--gvcf', '"{}"'.format(gvcf)])
   command.extend(['--task {}'])
+  if realign_reads is not None:
+    if realign_reads:
+      command.extend(['--realign_reads'])
+    else:
+      command.extend(['--norealign_reads'])
   return ' '.join(command)
 
 
@@ -164,7 +177,8 @@ def main(_):
       FLAGS.reads,
       examples,
       gvcf=nonvariant_site_tfrecord_path,
-      regions=FLAGS.regions)
+      regions=FLAGS.regions,
+      realign_reads=False if FLAGS.model_type == 'PACBIO' else None)
   print('\n***** Running the command:*****\n{}\n'.format(command))
   subprocess.check_call(command, shell=True, executable='/bin/bash')
 
