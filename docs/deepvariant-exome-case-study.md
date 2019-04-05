@@ -1,52 +1,99 @@
-# DeepVariant exome case study
+# DeepVariant whole exome sequencing (WES) case study
 
-Similar to the [case study on whole genome sequencing
-data](deepvariant-case-study.md), in this study we describe applying DeepVariant
-to a real exome sample using a single machine.
+Similar to the [case study on whole genome sequencing data], in this
+study we describe applying DeepVariant to a real exome sample using a single
+machine.
 
 NOTE: This case study demonstrates an example of how to run DeepVariant
-end-to-end on one machine. This might not be the fastest or cheapest
-configuration for your needs. For more scalable execution of DeepVariant see the
-[Docker-based exome pipeline](https://cloud.google.com/genomics/deepvariant)
-created for Google Cloud Platform.
+end-to-end on one machine. We report the runtime with [specific machine type]
+for the sake of consistency in reporting run time. This is NOT the fastest or
+cheapest configuration. For more scalable execution of DeepVariant see the
+[External Solutions] section.
 
-## Update since r0.7 : using docker instead of copying binaries.
+## Running DeepVariant with one command
 
-Starting from the 0.7 release, we use docker to run the binaries instead of
-copying binaries to local machines first. You can still read about the previous
-approach in
-[the Exome Case Study in r0.6](https://github.com/google/deepvariant/blob/r0.6/docs/deepvariant-exome-case-study.md).
+DeepVariant pipeline consists of 3 steps: `make_examples`, `call_variants`, and
+`postprocess_variants`. You can now run DeepVariant with one command using the
+`run_deepvariant` script.
 
-We recognize that there might be some overhead of using docker run. But using
-docker makes this case study easier to generalize to different versions of Linux
-systems. For example, we have verified that you can use docker to run
-DeepVariant on other Linux systems such as CentOS 7.
+### Running on a CPU-only machine
 
-## Update since v0.7.1: Run the case study with one script
-
-Script:
-https://github.com/google/deepvariant/blob/r0.7/scripts/run_wes_case_study_docker.sh
-
-Get the script and run everything. This will install and download everything
-needed for this case study. And it will run DeepVariant to generate the output
-VCFs, and also run the evaluation as well.
-
-Before you run the script, you can read through all sections to understand the
-details.
+Here is an example command:
 
 ```bash
-wget https://raw.githubusercontent.com/google/deepvariant/r0.7/scripts/run_wes_case_study_docker.sh -P ${HOME}
-chmod +x ${HOME}/run_wes_case_study_docker.sh
-${HOME}/run_wes_case_study_docker.sh
+sudo docker run \
+  -v "${DATA_DIR}":"/input" \
+  -v "${OUTPUT_DIR}:/output" \
+  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WES \
+  --ref="/input/${REF}" \
+  --reads="/input/${BAM}" \
+  --regions="/input/${CAPTURE_BED}" \
+  --output_vcf=/output/HG002.output.vcf.gz \
+  --output_gvcf=/output/HG002.output.g.vcf.gz \
+  --num_shards=${N_SHARDS}
 ```
 
-## (Optional) If on Google Cloud Platform, request a machine with this example command
 
-Any sufficiently capable machine will do. For this case study, we used a 64-core
-non-preemptible instance with 128GiB and no GPU.
+By specifying `--model_type=WES`, you'll be using a model that is best suited
+for Illumina Whole Exome Sequencing data.
 
-If you need an example, see
-[this section](deepvariant-case-study.md#optional-if-on-google-cloud-platform-request-a-machine-with-this-example-command).
+The script [run_wes_case_study_docker.sh] shows a full example of which data to
+download, and run DeepVariant with the data.
+
+Before you run the script, you can read through all sections to understand the
+details. Here is a quick way to get the script and run it:
+
+```bash
+curl https://raw.githubusercontent.com/google/deepvariant/r0.8/scripts/run_wes_case_study_docker.sh | bash
+```
+
+### Running on a machine with GPU
+
+Here is an example command:
+
+```bash
+sudo nvidia-docker run \
+  -v "${DATA_DIR}":"/input" \
+  -v "${OUTPUT_DIR}:/output" \
+  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WES \
+  --ref="/input/${REF}" \
+  --reads="/input/${BAM}" \
+  --regions="/input/${CAPTURE_BED}" \
+  --output_vcf=/output/HG002.output.vcf.gz \
+  --output_gvcf=/output/HG002.output.g.vcf.gz \
+  --num_shards=${N_SHARDS}
+```
+
+Note that instead of using `docker`, we're using `nvidia-docker` to make use of
+the GPU. `call_variants` is the only step that uses the GPU.
+`make_examples` and `postprocess_variants` do not run on GPU.
+
+The script [run_wes_case_study_docker_gpu.sh] shows a full example, including
+calling a script [install_nvidia_docker.sh] that helps you install
+`nvidia-docker`.
+
+### Runtime
+
+See
+[this page](deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies)
+for the commands used to obtain different machine types on Google Cloud.
+
+Step                               | Hardware            | Wall time
+---------------------------------- | ------------------- | ---------
+`make_examples`                    | 64 CPUs             | ~ 11m
+`make_examples`                    | 16 CPUs             | ~ 27m
+`call_variants`                    | 64 CPUs             | ~  2m
+`call_variants`                    | 1 P100 GPU, 16 CPUs | ~  1m
+`postprocess_variants` (with gVCF) | 1 CPU               | ~  1m
+
+In this example, `call_variants` does not take much time on 64 CPUs. Running
+with GPU might be unnecessary. To save cost, you can consider running with fewer
+CPUs and no GPUs. Here we are providing this as an example in contrast with the
+[case study on whole genome sequencing data].
 
 ## Description for data
 
@@ -59,14 +106,15 @@ Downloaded from
 
 ### FASTA
 
-Same as described in the [case study for whole genome
-data](deepvariant-case-study.md#test_data)
+Same as described in the
+[case study for whole genome data](deepvariant-case-study.md#test_data)
 
 ### Truth VCF and BED
 
 `HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_*`
-are from NIST, as part of the [Genomes in a Bottle
-project](http://jimb.stanford.edu/giab/). They are downloaded from
+are from NIST, as part of the
+[Genomes in a Bottle project](http://jimb.stanford.edu/giab/). They are
+downloaded from
 [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/)
 
 ### Capture target BED file
@@ -77,26 +125,6 @@ materials](https://www.nature.com/articles/sdata201625)", the HG002 exome was
 generated with Agilent SureSelect. In this case study we'll use the SureSelect
 v5 BED (`agilent_sureselect_human_all_exon_v5_b37_targets.bed`) and intersect it
 with the GIAB confident regions for evaluation.
-
-## Notes for `call_variants`
-
-More discussion can be found in the
-[call_variants section in the case study](deepvariant-case-study.md#notes-for-call-variants).
-
-## Notes for `postprocess_variants`
-
-More discussion can be found in the
-[postprocess_variants section in the case study](deepvariant-case-study.md#notes-for-postprocess-variants).
-
-## Resources used by each step
-
-Step                               | wall time
----------------------------------- | -----------------
-`make_examples`                    | 13m 59s
-`call_variants`                    | 2m 1s
-`postprocess_variants` (no gVCF)   | 0m 15s
-`postprocess_variants` (with gVCF) | 1m 23s
-total time (single machine)        | 16m 15s - 17m 23s
 
 ## Variant call quality
 
@@ -113,9 +141,9 @@ Type  | # FN | # FP | Recall   | Precision | F1\_Score
 INDEL | 106  | 49   | 0.959231 | 0.980897  | 0.969943
 SNP   | 48   | 16   | 0.998577 | 0.999525  | 0.999051
 
-## Separate models for calling whole genome and exome data
-
-Starting from DeepVariant 0.5.\* and later releases, we recommend a separate
-model for calling exome sequencing data. Here is how the exome model is trained:
-we used a WGS model as the starting checkpoint (instead of an ImageNet one), and
-trained only on examples created from exome data.
+[specific machine type]: deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies
+[install_nvidia_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/install_nvidia_docker.sh
+[run_wes_case_study_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wes_case_study_docker.sh
+[run_wes_case_study_docker_gpu.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wes_case_study_docker_gpu.sh
+[External Solutions]: https://github.com/google/deepvariant#external-solutions
+[case study on whole genome sequencing data]: deepvariant-case-study.md

@@ -14,7 +14,9 @@ cheapest configuration. For more scalable execution of DeepVariant see the
 
 ## Running DeepVariant with one command
 
-You can now run DeepVariant with one command.
+DeepVariant pipeline consists of 3 steps: `make_examples`, `call_variants`, and
+`postprocess_variants`. You can now run DeepVariant with one command using the
+`run_deepvariant` script.
 
 ### Running on a CPU-only machine
 

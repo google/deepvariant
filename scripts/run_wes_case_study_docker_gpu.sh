@@ -14,7 +14,7 @@ BAM="151002_7001448_0359_AC7F6GANXX_Sample_HG002-EEogPU_v02-KIT-Av5_AGATGTAC_L00
 TRUTH_VCF="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"
 TRUTH_BED="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"
 
-N_SHARDS="64"
+N_SHARDS="16"
 
 OUTPUT_DIR="${BASE}/output"
 EXAMPLES="${OUTPUT_DIR}/HG002.examples.tfrecord@${N_SHARDS}.gz"
@@ -36,23 +36,9 @@ mkdir -p "${LOG_DIR}"
 sudo apt-get -qq -y update
 sudo apt-get -qq -y install aria2
 
-if ! hash docker 2>/dev/null; then
-  echo "'docker' was not found in PATH. Installing docker..."
-  # Install docker using instructions on:
-  # https://docs.docker.com/install/linux/docker-ce/ubuntu/
-  sudo apt-get -qq -y install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  sudo add-apt-repository \
-    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) \
-    stable"
-  sudo apt-get -qq -y update
-  sudo apt-get -qq -y install docker-ce
+if ! hash nvidia-docker 2>/dev/null; then
+  echo "'nvidia-docker' was not found in PATH. Installing nvidia-docker..."
+  ./scripts/install_nvidia_docker.sh
 fi
 
 # Copy the data
@@ -69,13 +55,13 @@ aria2c -c -x10 -s10 -d "${INPUT_DIR}" https://storage.googleapis.com/deepvariant
 aria2c -c -x10 -s10 -d "${INPUT_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.fai
 
 ## Pull the docker image.
-sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
+sudo docker pull gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}"
 
 echo "Run DeepVariant..."
 sudo docker run \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WES \
   --ref="/input/${REF}" \
