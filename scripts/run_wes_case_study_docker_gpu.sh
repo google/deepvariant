@@ -55,10 +55,10 @@ aria2c -c -x10 -s10 -d "${INPUT_DIR}" https://storage.googleapis.com/deepvariant
 aria2c -c -x10 -s10 -d "${INPUT_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.fai
 
 ## Pull the docker image.
-sudo docker pull gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}"
+sudo nvidia-docker pull gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}"
 
 echo "Run DeepVariant..."
-sudo docker run \
+sudo nvidia-docker run \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
   gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}" \
@@ -81,8 +81,8 @@ UNCOMPRESSED_REF="${INPUT_DIR}/hs37d5.fa"
 # into a writable directory. Index file was downloaded earlier.
 zcat <"${INPUT_DIR}/${REF}" >"${UNCOMPRESSED_REF}"
 
-sudo docker pull pkrusche/hap.py
-( sudo docker run -i \
+sudo nvidia-docker pull pkrusche/hap.py
+( sudo nvidia-docker run -i \
 -v "${INPUT_DIR}:${INPUT_DIR}" \
 -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
 pkrusche/hap.py /opt/hap.py/bin/hap.py \
