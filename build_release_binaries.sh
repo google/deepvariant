@@ -36,6 +36,65 @@
 # NOLINT
 source settings.sh
 
+set -e
+
+# Bazel's --build_python_zip replaces our carefully engineered symbolic links
+# with copies.  This function puts the symbolic links back.
+function fix_zip_file {
+  orig_zip_file=$1
+
+  # Step 1:  Copy the zip file to a temporary place.
+  TMPDIR=$(mktemp -d -t tmp.XXXXXXXXXXX)
+  # The .zip version of the binary doesn't have the header that makes it
+  # self-executable.  We use that version because otherwise unzip would
+  # complain and raise an error code.
+  cp "${orig_zip_file}.zip" "${TMPDIR}"
+
+  # Step 2: Unzip it.
+  pushd "${TMPDIR}" > /dev/null
+  BN=$(basename "${orig_zip_file}")
+  unzip -qq "${BN}.zip"
+
+  # Step 3: Restore the symbolic links.
+  find "runfiles/com_google_deepvariant" -name '*.so' -exec ln --force -s --relative "runfiles/protobuf_archive/python/google/protobuf/pyext/_message.so" {} \;
+
+  # Step 4: Fix the __main__.py's use of zipfile, which can't handle
+  # symbolic links.  Replace it with an invocation of unzip, which can.
+  # The lines we replace are
+  #   zf = zipfile.ZipFile(GetWindowsPathWithUNCPrefix(os.path.dirname(__file__)))
+  #   zf.extractall(GetWindowsPathWithUNCPrefix(temp_dir))
+  sed -i 's/  zf = zipfile\.ZipFile.*/  os.system("unzip -qq " + os.path.dirname(__file__) + " -d " + temp_dir)/' __main__.py
+  sed -i 's/  zf\.extractall.*//' __main__.py
+
+  # Step 5: Zip it back up, with zip --symbolic
+  rm -f "${BN}.zip"
+  ZIP_OUT="/tmp/${BN}.zip"
+  rm -f "${ZIP_OUT}"
+  zip -q --symlinks -r "${ZIP_OUT}" *
+
+  # Step 6: Make the zip file self-executable
+  SELF_ZIP="/tmp/${BN}"
+  # If the Python interpreter discovers it is being run from part of a zip
+  # file, it will uncompress and run the __main__.py.  This is the trick that
+  # bazel uses to make a self-executable zip, see for example
+  # https://github.com/bazelbuild/bazel/blob/558b717e906156477b1c6bd29d049a0fb8e18b27/src/main/java/com/google/devtools/build/lib/bazel/rules/python/BazelPythonSemantics.java#L193
+  echo '#!/usr/bin/env python' | cat - "${ZIP_OUT}" > "${SELF_ZIP}"
+
+  # Step 7: Copy it back and make it executable.
+  popd > /dev/null
+  rm -f "${orig_zip_file}"
+  mv "${SELF_ZIP}" "${orig_zip_file}"
+  chmod +x "${orig_zip_file}"
+
+  # Step 8: DeepVariant also uses "${orig_zip_file}.zip" in many of its
+  # instructions, so make sure that we also copy that.
+  rm -f "${orig_zip_file}.zip"
+  mv "${ZIP_OUT}" "${orig_zip_file}.zip"
+  # No executable bit because the .zip version is not self-executing and
+  # must be invoked as
+  #   python ${orig_zip_file}.zip
+}
+
 bazel build -c opt \
   --output_filter=DONT_MATCH_ANYTHING \
   --noshow_loading_progress \
@@ -51,3 +110,13 @@ bazel build  -c opt \
   --show_result=0 \
   --noshow_progress \
   :licenses_zip
+
+# Bazel understandably doesn't like it when its output files are edited, so
+# make sure all the builds are done before we fix things.
+
+# redacted
+fix_zip_file "bazel-bin/deepvariant/call_variants"
+fix_zip_file "bazel-bin/deepvariant/make_examples"
+fix_zip_file "bazel-bin/deepvariant/model_eval"
+fix_zip_file "bazel-bin/deepvariant/model_train"
+fix_zip_file "bazel-bin/deepvariant/postprocess_variants"

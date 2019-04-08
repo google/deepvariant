@@ -31,6 +31,10 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import sys
+if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
+  del sys.modules['google']
+
 
 import collections
 import copy
