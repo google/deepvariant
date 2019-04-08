@@ -197,7 +197,6 @@ references just work with DeepVariant. However, CRAM files using an external
 reference version may not work out-of-the-box. If the path to the original
 reference (encoded in the file's "UR" tag) is accessible on the machine directly
 or is already in the local genome cache, then DeepVariant should just work.
-Otherwise those files cannot be used with DeepVariant at this time.
 Consequently, we don't recommend using CRAM files with external reference files,
 but instead suggest using read sequence compression with embedded reference
 data. (This has a minor impact of file size, but significantly improves file
@@ -224,6 +223,29 @@ BAM      | 2.1G      | 7m53.589s
 CRAM     | 1.2G      | 10m37.904s
 -------- | --------- | -------------
 Ratio    | 57%       | 135%
+
+### Update in v0.8.0
+
+If you know which reference file your CRAM file was created with, and want to
+specify it directly on your local disk, you can specify
+`--use_ref_for_cram=true` in your `make_examples` run. Then, the reader will
+attempt to use the reference file specified in the `--ref` flag.
+
+An modified example command looks like:
+
+```bash
+sudo docker run \
+  -v "${INPUT_DIR}:/input" \
+  -v "${OUTPUT_DIR}:/output" \
+  gcr.io/deepvariant-docker/deepvariant:0.8.0 \
+  /opt/deepvariant/bin/make_examples \
+  --mode calling \
+  --ref "/input/${REF}" \
+  --reads "/input/${CRAM}" \
+  --examples "/output/${EXAMPLES}" \
+  --gvcf "/output/${GVCF_TFRECORDS}" \
+  --use_ref_for_cram=true
+```
 
 ## Commands for requesting machines used in case studies
 
