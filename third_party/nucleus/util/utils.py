@@ -35,7 +35,6 @@ from __future__ import print_function
 import numpy as np
 
 from third_party.nucleus.protos import range_pb2
-from third_party.nucleus.util import cigar
 from third_party.nucleus.util.python import utils as utils_cpp
 
 
@@ -68,21 +67,14 @@ def read_range(read):
   Returns:
     A nucleus.genomics.v1.Range for read.
   """
-  start = read.alignment.position.position
-  end = start + cigar.alignment_length(read.alignment.cigar)
-  return range_pb2.Range(
-      reference_name=read.alignment.position.reference_name,
-      start=start, end=end)
-# redacted
-# EmptyProtoPtr is fixed.
-#  range_pb = range_pb2.Range()
-#  utils_cpp.read_range(read, range_pb)
-#  return range_pb
+  range_pb = range_pb2.Range()
+  utils_cpp.read_range(read, range_pb)
+  return range_pb
 
 
-#def read_end(read):
-#  """Returns the read start + alignment length for Read read."""
-#  return utils_cpp.read_range(read)
+def read_end(read):
+  """Returns the read start + alignment length for Read read."""
+  return read_range(read).end
 
 
 def reservoir_sample(iterable, k, random=None):

@@ -83,10 +83,7 @@ cc_test(
 py_library(
     name = "py_utils",
     srcs = ["utils.py"],
-    deps = [
-        "//third_party/nucleus/util:cigar",
-        "//third_party/nucleus/util/python:utils",
-    ],
+    deps = ["//third_party/nucleus/util/python:utils"],
 )
 
 py_library(

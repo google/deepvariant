@@ -74,6 +74,29 @@ class UtilsTest(parameterized.TestCase):
         ranges.make_range('chrX', start, start + 5 + 16),
         utils.read_range(read))
 
+  def test_read_end(self):
+    """Tests reads have their ends calculated correctly."""
+    start = 10000001
+    read = test_utils.make_read(
+        'AAACAG',
+        chrom='chrX',
+        start=start,
+        cigar='2M1I3M',
+        quals=range(10, 16),
+        name='read1')
+    self.assertEqual(
+        start + 5, utils.read_end(read))
+    read = test_utils.make_read(
+        'AAACAG',
+        chrom='chrX',
+        start=start,
+        cigar='2M16D3M',
+        quals=range(10, 16),
+        name='read1')
+    self.assertEqual(
+        start + 5 + 16,
+        utils.read_end(read))
+
   def test_reservoir_sample_length(self):
     """Tests samples have expected length."""
     first_ten_ints = range(10)

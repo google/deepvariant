@@ -34,7 +34,7 @@ from "third_party/nucleus/util/proto_clif_converter.h" import *
 from "third_party/nucleus/util/utils.h":
   namespace `nucleus`:
     def `ReadEndPython` as read_end(read: ConstProtoPtr<Read>) -> int
-#    def `ReadRangePython` as read_range(
-#        read: ConstProtoPtr<Read>, range_pb: EmptyProtoPtr<Range>)
+    def `ReadRangePython` as read_range(
+        read: ConstProtoPtr<Read>, range_pb: EmptyProtoPtr<Range>)
     def `ReadOverlapsRegionPython` as read_overlaps_region(
         read: ConstProtoPtr<Read>, range_pb: ConstProtoPtr<Range>) -> bool

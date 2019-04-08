@@ -147,6 +147,13 @@ inline int64 ReadEndPython(
 
 // Fills into the range information (reference_name, start, end) of
 // range_wrapped with the alignment reference_name, start, and ReadEnd of read.
+void ReadRangePython(
+    const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
+        read_wrapped,
+    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped);
+
+// Fills into the range information (reference_name, start, end) of
+// range_wrapped with the alignment reference_name, start, and ReadEnd of read.
 // void ReadRangePython(
 //    const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
 //        read_wrapped,

@@ -140,16 +140,16 @@ Range MakeRange(const Read& read) {
   return MakeRange(AlignedContig(read), ReadStart(read), ReadEnd(read));
 }
 
-// void ReadRangePython(
-//    const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
-//        read_wrapped,
-//    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped) {
-//  const Read& read = *read_wrapped.p_;
-//  Range* range = range_wrapped.p_;
-//  range->set_reference_name(read.alignment().position().reference_name());
-//  range->set_start(ReadStart(read));
-//  range->set_end(ReadEnd(read));
-// }
+void ReadRangePython(
+    const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
+        read_wrapped,
+    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped) {
+  const Read& read = *read_wrapped.p_;
+  Range* range = range_wrapped.p_;
+  range->set_reference_name(read.alignment().position().reference_name());
+  range->set_start(ReadStart(read));
+  range->set_end(ReadEnd(read));
+}
 
 bool RangeContains(const Range& haystack, const Range& needle) {
   return (needle.reference_name() == haystack.reference_name() &&
