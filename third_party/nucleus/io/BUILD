@@ -256,6 +256,14 @@ py_library(
 py_library(
     name = "clif_postproc",
     srcs = ["clif_postproc.py"],
+    deps = [
+        "//third_party/nucleus/protos:bed_py_pb2",
+        "//third_party/nucleus/protos:bedgraph_py_pb2",
+        "//third_party/nucleus/protos:fastq_py_pb2",
+        "//third_party/nucleus/protos:gff_py_pb2",
+        "//third_party/nucleus/protos:reads_py_pb2",
+        "//third_party/nucleus/protos:variants_py_pb2",
+    ],
 )
 
 py_library(

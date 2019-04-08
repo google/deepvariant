@@ -32,7 +32,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import abc
 import six
+
+from third_party.nucleus.protos import bed_pb2
+from third_party.nucleus.protos import bedgraph_pb2
+from third_party.nucleus.protos import fastq_pb2
+from third_party.nucleus.protos import gff_pb2
+from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.protos import variants_pb2
 
 
 def ValueErrorOnFalse(ok, *args):
@@ -50,6 +58,8 @@ def ValueErrorOnFalse(ok, *args):
 class WrappedCppIterable(six.Iterator):
   """This class gives Python iteration semantics on top of a C++ 'Iterable'."""
 
+  __metaclass__ = abc.ABCMeta
+
   def __init__(self, cc_iterable):
     self._cc_iterable = cc_iterable
 
@@ -63,9 +73,13 @@ class WrappedCppIterable(six.Iterator):
   def __iter__(self):
     return self
 
+  @abc.abstractmethod
+  def _raw_next(self):
+    """Sub-classes should implement __next__ in this method."""
+
   def __next__(self):
     try:
-      not_done, record = self._cc_iterable.Next()
+      record, not_done = self._raw_next()
     except AttributeError:
       if self._cc_iterable is None:
         raise ValueError('No underlying iterable. This may occur if trying to '
@@ -79,3 +93,58 @@ class WrappedCppIterable(six.Iterator):
       return record
     else:
       raise StopIteration
+
+
+class WrappedBedIterable(WrappedCppIterable):
+
+  def _raw_next(self):
+    record = bed_pb2.BedRecord()
+    not_done = self._cc_iterable.PythonNext(record)
+    return record, not_done
+
+
+class WrappedBedGraphIterable(WrappedCppIterable):
+
+  def _raw_next(self):
+    record = bedgraph_pb2.BedGraphRecord()
+    not_done = self._cc_iterable.PythonNext(record)
+    return record, not_done
+
+
+class WrappedFastqIterable(WrappedCppIterable):
+
+  def _raw_next(self):
+    record = fastq_pb2.FastqRecord()
+    not_done = self._cc_iterable.PythonNext(record)
+    return record, not_done
+
+
+class WrappedGffIterable(WrappedCppIterable):
+
+  def _raw_next(self):
+    record = gff_pb2.GffRecord()
+    not_done = self._cc_iterable.PythonNext(record)
+    return record, not_done
+
+
+class WrappedReferenceIterable(WrappedCppIterable):
+
+  def _raw_next(self):
+    not_done, record = self._cc_iterable.Next()
+    return record, not_done
+
+
+class WrappedSamIterable(WrappedCppIterable):
+
+  def _raw_next(self):
+    record = reads_pb2.Read()
+    not_done = self._cc_iterable.PythonNext(record)
+    return record, not_done
+
+
+class WrappedVariantIterable(WrappedCppIterable):
+
+  def _raw_next(self):
+    record = variants_pb2.Variant()
+    not_done = self._cc_iterable.PythonNext(record)
+    return record, not_done

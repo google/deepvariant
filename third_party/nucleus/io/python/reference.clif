@@ -31,7 +31,7 @@ from "third_party/nucleus/protos/range_pyclif.h" import *
 from "third_party/nucleus/protos/reference_pyclif.h" import *
 from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
 
-from third_party.nucleus.io.clif_postproc import WrappedCppIterable
+from third_party.nucleus.io.clif_postproc import WrappedReferenceIterable
 
 from "third_party/nucleus/io/reference.h":
   namespace `nucleus`:
@@ -48,7 +48,7 @@ from "third_party/nucleus/io/reference.h":
       def `Contig` as contig(self, chrom: str) -> StatusOr<ContigInfo>
       def `GetBases` as bases(self, region: Range) -> StatusOr<str>
       def `Iterate` as iterate(self) -> StatusOr<GenomeReferenceRecordIterable>:
-        return WrappedCppIterable(...)
+        return WrappedReferenceIterable(...)
       def `HasContig` as has_contig(self, contig_name: str) -> bool
       def `IsValidInterval` as is_valid_interval(self, region: Range) -> bool
 

@@ -28,16 +28,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "third_party/nucleus/protos/bed_pyclif.h" import *
+from "third_party/nucleus/util/proto_clif_converter.h" import *
 from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
 
-from third_party.nucleus.io.clif_postproc import WrappedCppIterable
+from third_party.nucleus.io.clif_postproc import WrappedBedIterable
 
 
 from "third_party/nucleus/io/bed_reader.h":
   namespace `nucleus`:
 
     class BedIterable:
-      def Next(self) -> (not_done: StatusOr<bool>, bed: BedRecord)
+      def PythonNext(self, bed: EmptyProtoPtr<BedRecord>) -> StatusOr<bool>
       def Release(self) -> Status
       @__enter__
       def PythonEnter(self) -> Status
@@ -50,7 +51,7 @@ from "third_party/nucleus/io/bed_reader.h":
         -> StatusOr<BedReader>
 
       def `Iterate` as iterate(self) -> StatusOr<BedIterable>:
-        return WrappedCppIterable(...)
+        return WrappedBedIterable(...)
 
       @__enter__
       def PythonEnter(self)

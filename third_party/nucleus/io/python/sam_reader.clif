@@ -30,16 +30,17 @@
 from "third_party/nucleus/protos/range_pyclif.h" import *
 from "third_party/nucleus/protos/reads_pyclif.h" import *
 from "third_party/nucleus/protos/reference_pyclif.h" import *
+from "third_party/nucleus/util/proto_clif_converter.h" import *
 from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
 
-from third_party.nucleus.io.clif_postproc import WrappedCppIterable
+from third_party.nucleus.io.clif_postproc import WrappedSamIterable
 
 
 from "third_party/nucleus/io/sam_reader.h":
   namespace `nucleus`:
 
     class SamIterable:
-      def Next(self) -> (not_done: StatusOr<bool>, read: Read)
+      def PythonNext(self, read: EmptyProtoPtr<Read>) -> StatusOr<bool>
       def Release(self) -> Status
       @__enter__
       def PythonEnter(self) -> Status
@@ -53,9 +54,9 @@ from "third_party/nucleus/io/sam_reader.h":
         -> StatusOr<SamReader>
 
       def `Iterate` as iterate(self) -> StatusOr<SamIterable>:
-        return WrappedCppIterable(...)
+        return WrappedSamIterable(...)
       def `Query` as query(self, region: Range) -> StatusOr<SamIterable>:
-        return WrappedCppIterable(...)
+        return WrappedSamIterable(...)
       header: SamHeader = property(`Header`)
       @__enter__
       def PythonEnter(self) -> Status
