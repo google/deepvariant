@@ -45,6 +45,7 @@
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace learning {
@@ -214,8 +215,14 @@ class AlleleCounter {
   // Adds the alleles from read to our AlleleCounts.
   void Add(const ::nucleus::genomics::v1::Read& read);
 
-  // Adds the alleles from each read in reads to our AlleleCounts.
-  void Add(const std::vector<::nucleus::genomics::v1::Read>& reads);
+  // Simple wrapper around Add() that allows us to efficiently pass large
+  // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and
+  // calls Add(read).
+  void AddPython(
+      const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
+          wrapped) {
+    Add(*(wrapped.p_));
+  }
 
   // Gets the options in use by this AlleleCounter
   const AlleleCounterOptions& Options() const { return options_; }

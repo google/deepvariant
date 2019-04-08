@@ -18,7 +18,10 @@ py_clif_cc(
         "//third_party/nucleus/protos:range_pyclif",
         "//deepvariant/protos:deepvariant_pyclif",
     ],
-    deps = ["//deepvariant:allelecounter"],
+    deps = [
+        "//deepvariant:allelecounter",
+        "//third_party/nucleus/util:proto_clif_converter",
+    ],
 )
 
 py_test(
@@ -90,6 +93,7 @@ py_clif_cc(
         "//deepvariant/protos:deepvariant_pyclif",
         "//deepvariant/python:clif_converters",
         "//third_party/nucleus/protos:reads_pyclif",
+        "//third_party/nucleus/util:proto_clif_converter",
     ],
 )
 
