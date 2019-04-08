@@ -64,7 +64,7 @@ flags.DEFINE_string('output_vcf', None,
 flags.DEFINE_string('output_gvcf', None,
                     'Optional. Path where we should write gVCF file.')
 flags.DEFINE_string(
-    'intermediate_results_dir', '/opt/tmp_output',
+    'intermediate_results_dir', '/tmp/deepvariant_tmp_output',
     'Optional. If specified, this should be an existing '
     'directory that is visible insider docker, and will be '
     'used to to store intermediate outputs.')
