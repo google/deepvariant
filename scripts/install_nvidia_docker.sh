@@ -18,12 +18,15 @@ sudo apt-get -qq -y install \
   software-properties-common
 
 echo "Installing CUDA..."
-CUDA_DEB="cuda-repo-ubuntu1604_9.0.176-1_amd64.deb"
-curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
-sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
-sudo -H dpkg -i "./${CUDA_DEB}"
-sudo -H apt-get -qq -y update
-sudo -H apt-get -qq -y install cuda-9-0
+if ! dpkg-query -W cuda-10-0; then
+  echo "Installing CUDA..."
+  CUDA_DEB="cuda-repo-ubuntu1604_10.0.130-1_amd64.deb"
+  curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
+  sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
+  sudo -H dpkg -i "./${CUDA_DEB}"
+  sudo -H apt-get -qq -y update > /dev/null
+  sudo -H apt-get -qq -y install cuda-10-0 > /dev/null
+fi
 
 # (2) Install Docker CE:
 # https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce

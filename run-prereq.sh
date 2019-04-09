@@ -93,10 +93,10 @@ pip install "${PIP_ARGS[@]}" 'mock>=2.0.0'
 # source. But we know that on 16.04 we don't need to compile from source
 # See https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279061085
 if [[ "$(lsb_release -d)" == *Ubuntu*16.04.* ]]; then
-  pip install "${PIP_ARGS[@]}" 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+  pip install "${PIP_ARGS[@]}" 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 else
   echo "Installing numpy with -no-binary=:all:. This will take a bit longer."
-  pip install "${PIP_ARGS[@]}" --no-binary=:all: 'numpy==1.14' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+  pip install "${PIP_ARGS[@]}" --no-binary=:all: 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 fi
 
 pip install "${PIP_ARGS[@]}" 'requests>=2.18'
@@ -163,25 +163,24 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
 
     # from https://cloud.google.com/compute/docs/gpus/add-gpus
     echo "Checking for CUDA..."
-    if ! dpkg-query -W cuda-9-0; then
+    if ! dpkg-query -W cuda-10-0; then
       echo "Installing CUDA..."
-      CUDA_DEB="cuda-repo-ubuntu1604_9.0.176-1_amd64.deb"
+      CUDA_DEB="cuda-repo-ubuntu1604_10.0.130-1_amd64.deb"
       curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
       sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
-      sudo -H dpkg -i ./cuda-repo-ubuntu1604_9.0.176-1_amd64.deb
+      sudo -H dpkg -i "./${CUDA_DEB}"
       sudo -H apt-get -qq -y update > /dev/null
-      sudo -H apt-get -qq -y install cuda-9-0 > /dev/null
+      sudo -H apt-get -qq -y install cuda-10-0 > /dev/null
     fi
-
     echo "Checking for CUDNN..."
-    if [[ ! -e /usr/local/cuda-9.0/include/cudnn.h ]]; then
+    if [[ ! -e /usr/local/cuda-10.0/include/cudnn.h ]]; then
       echo "Installing CUDNN..."
-      CUDNN_TAR_FILE="cudnn-9.2-linux-x64-v7.2.1.38.tgz"
-      wget http://developer.download.nvidia.com/compute/redist/cudnn/v7.2.1/${CUDNN_TAR_FILE}
+      CUDNN_TAR_FILE="cudnn-10.0-linux-x64-v7.4.2.24.tgz"
+      wget https://developer.download.nvidia.com/compute/redist/cudnn/v7.4.2/${CUDNN_TAR_FILE}
       tar -xzvf ${CUDNN_TAR_FILE}
-      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-9.0/include
-      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-9.0/lib64/
-      sudo chmod a+r /usr/local/cuda-9.0/lib64/libcudnn*
+      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-10.0/include
+      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.0/lib64/
+      sudo chmod a+r /usr/local/cuda-10.0/lib64/libcudnn*
       sudo ldconfig
     fi
 

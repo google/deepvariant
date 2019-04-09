@@ -55,7 +55,7 @@ export TF_CUDNN_VERSION="6"
 export CUDNN_INSTALL_PATH="/usr/lib/x86_64-linux-gnu"
 
 # The version of bazel we want to build DeepVariant.
-DV_BAZEL_VERSION="0.15.0"
+DV_BAZEL_VERSION="0.21.0"
 
 # We need to make sure that $HOME/bin is first in the binary search path so that
 # `bazel` will find the latest version of bazel installed in the user's home
@@ -84,11 +84,11 @@ export DV_TF_NIGHTLY_BUILD="${DV_TF_NIGHTLY_BUILD:-0}"
 if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
   export DV_CPP_TENSORFLOW_TAG="master"
 else
-  export DV_CPP_TENSORFLOW_TAG="r1.12"
+  export DV_CPP_TENSORFLOW_TAG="r1.13"
 fi
-export DV_GCP_OPTIMIZED_TF_WHL_VERSION="1.12.0"
-export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="1.12.0"
-export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="1.12.0"
+export DV_GCP_OPTIMIZED_TF_WHL_VERSION="1.13.1"
+export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="1.13.1"
+export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="1.13.1"
 
 # Set this to 1 to use DeepVariant with GPUs. Set it to an already existing
 # value in the environment (allowing command line control of the build),
