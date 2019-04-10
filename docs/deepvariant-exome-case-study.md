@@ -67,7 +67,7 @@ with GPU might be unnecessary. You can read
 to use GPU on the exome data in this case study, you can see
 [run_wes_case_study_docker_gpu.sh] shows a full example.
 
-## Description for data
+## Data description
 
 ### BAM file:
 

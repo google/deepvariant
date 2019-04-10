@@ -104,7 +104,7 @@ Since `make_examples` doesn't utilize GPUs, bringing up one GPU machine for all
 steps might not be the most cost-effective solution. For more scalable execution
 of DeepVariant see the [External Solutions] section.
 
-## Description for data
+## Data description
 
 The original source of data used in this case study:
 
