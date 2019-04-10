@@ -34,24 +34,8 @@
 # will skip the installation of TensorFlow.
 export DV_USE_PREINSTALLED_TF="${DV_USE_PREINSTALLED_TF:-0}"
 
-export TF_CUDA_CLANG=0
-export TF_ENABLE_XLA=0
-export TF_NEED_CUDA=0
 export TF_NEED_GCP=1
-export TF_NEED_GDR=0
-export TF_NEED_HDFS=0
-export TF_NEED_JEMALLOC=0
-export TF_NEED_MKL=0
-export TF_NEED_MPI=0
-export TF_NEED_OPENCL=0
-export TF_NEED_OPENCL_SYCL=0
-export TF_NEED_S3=0
-export TF_NEED_VERBS=0
 
-# Used if TF_NEED_CUDA=1
-export TF_CUDA_VERSION="8.0"
-export CUDA_TOOLKIT_PATH="/usr/local/cuda"
-export TF_CUDNN_VERSION="6"
 export CUDNN_INSTALL_PATH="/usr/lib/x86_64-linux-gnu"
 
 # The version of bazel we want to build DeepVariant.
