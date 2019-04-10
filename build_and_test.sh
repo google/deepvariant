@@ -44,6 +44,11 @@ fi
 # Note: If running with GPU, tests must be executed serially due to a GPU
 # contention issue.
 if [[ "${DV_GPU_BUILD:-0}" = "1" ]]; then
+  # redacted
+  export TF_NEED_CUDA=1
+  export TF_CUDA_VERSION=10
+  export TF_CUDNN_VERSION=7
+  export LD_LIBRARY_PATH="/usr/local/cuda:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64"
   bazel test -c opt --local_test_jobs=1 ${DV_COPT_FLAGS} "$@" \
     deepvariant/...
   # Also run the GPU-specific tests.
