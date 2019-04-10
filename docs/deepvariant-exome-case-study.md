@@ -49,33 +49,6 @@ details. Here is a quick way to get the script and run it:
 curl https://raw.githubusercontent.com/google/deepvariant/r0.8/scripts/run_wes_case_study_docker.sh | bash
 ```
 
-### Running on a machine with GPU
-
-Here is an example command:
-
-```bash
-sudo nvidia-docker run \
-  -v "${DATA_DIR}":"/input" \
-  -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
-  /opt/deepvariant/bin/run_deepvariant \
-  --model_type=WES \
-  --ref="/input/${REF}" \
-  --reads="/input/${BAM}" \
-  --regions="/input/${CAPTURE_BED}" \
-  --output_vcf=/output/HG002.output.vcf.gz \
-  --output_gvcf=/output/HG002.output.g.vcf.gz \
-  --num_shards=${N_SHARDS}
-```
-
-Note that instead of using `docker`, we're using `nvidia-docker` to make use of
-the GPU. `call_variants` is the only step that uses the GPU.
-`make_examples` and `postprocess_variants` do not run on GPU.
-
-The script [run_wes_case_study_docker_gpu.sh] shows a full example, including
-calling a script [install_nvidia_docker.sh] that helps you install
-`nvidia-docker`.
-
 ### Runtime
 
 See
@@ -84,16 +57,15 @@ for the commands used to obtain different machine types on Google Cloud.
 
 Step                               | Hardware            | Wall time
 ---------------------------------- | ------------------- | ---------
-`make_examples`                    | 64 CPUs             | ~ 11m
-`make_examples`                    | 16 CPUs             | ~ 27m
+`make_examples`                    | 64 CPUs             | ~  8m
 `call_variants`                    | 64 CPUs             | ~  2m
-`call_variants`                    | 1 P100 GPU, 16 CPUs | ~  1m
 `postprocess_variants` (with gVCF) | 1 CPU               | ~  1m
 
 In this example, `call_variants` does not take much time on 64 CPUs. Running
-with GPU might be unnecessary. To save cost, you can consider running with fewer
-CPUs and no GPUs. Here we are providing this as an example in contrast with the
-[case study on whole genome sequencing data].
+with GPU might be unnecessary. You can read
+[case study on whole genome sequencing data] about the use of GPU. If you want
+to use GPU on the exome data in this case study, you can see
+[run_wes_case_study_docker_gpu.sh] shows a full example.
 
 ## Description for data
 

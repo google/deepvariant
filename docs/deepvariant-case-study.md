@@ -84,13 +84,25 @@ for the commands used to obtain different machine types on Google Cloud.
 Currently, the `call_variants` step cannot use more than 1 GPU on the same
 machine, and the `postprocess_variants` step is single-process, single-thread.
 
+With the example in [run_wgs_case_study_docker.sh] on a [CPU machine],
+
 Step                               | Hardware            | Wall time
 ---------------------------------- | ------------------- | ---------
-`make_examples`                    | 64 CPUs             | ~ 1h 30m
-`make_examples`                    | 16 CPUs             | ~ 4h 45m
+`make_examples`                    | 64 CPUs             | ~ 1h 10m
 `call_variants`                    | 64 CPUs             | ~ 2h 45m
+`postprocess_variants` (with gVCF) | 1 CPU               | ~    30m
+
+With the example in [run_wgs_case_study_docker_gpu.sh] on a [GPU machine],
+
+Step                               | Hardware            | Wall time
+---------------------------------- | ------------------- | ---------
+`make_examples`                    | 16 CPUs             | ~ 3h 45m
 `call_variants`                    | 1 P100 GPU, 16 CPUs | ~    50m
 `postprocess_variants` (with gVCF) | 1 CPU               | ~    30m
+
+Since `make_examples` doesn't utilize GPUs, bringing up one GPU machine for all
+steps might not be the most cost-effective solution. For more scalable execution
+of DeepVariant see the [External Solutions] section.
 
 ## Description for data
 
@@ -149,3 +161,5 @@ SNP   | 1328 | 749  | 0.999564 | 0.999754  | 0.999659
 [run_wgs_case_study_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wgs_case_study_docker.sh
 [run_wgs_case_study_docker_gpu.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wgs_case_study_docker_gpu.sh
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
+[CPU machine]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
+[GPU machine]: deepvariant-details.md#command-for-a-gpu-machine-on-google-cloud-platform
