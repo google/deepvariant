@@ -32,6 +32,7 @@
 
 #include "third_party/nucleus/io/gfile.h"
 
+#include "absl/memory/memory.h"
 #include "tensorflow/core/lib/io/buffered_inputstream.h"
 #include "tensorflow/core/lib/io/random_inputstream.h"
 #include "tensorflow/core/platform/env.h"
@@ -53,7 +54,7 @@ std::vector<std::string> Glob(const std::string& pattern) {
 
 ReadableFile::ReadableFile() {}
 
-ReadableFile* ReadableFile::New(const std::string& filename) {
+std::unique_ptr<ReadableFile> ReadableFile::New(const std::string& filename) {
   std::unique_ptr<tensorflow::RandomAccessFile> file;
   tensorflow::Status status =
       tensorflow::Env::Default()->NewRandomAccessFile(filename, &file);
@@ -70,14 +71,13 @@ ReadableFile* ReadableFile::New(const std::string& filename) {
       new tensorflow::io::BufferedInputStream(
           input_stream.release(), buffer_size, true /* owns_input_stream */));
 
-  ReadableFile* f = new ReadableFile;
-  f->stream_ = buffered_input_stream.release();
+  auto f = absl::WrapUnique<ReadableFile>(new ReadableFile);
+  f->stream_ = std::move(buffered_input_stream);
 
   return f;
 }
 
 ReadableFile::~ReadableFile() {
-  delete stream_;
 }
 
 bool ReadableFile::Readline(std::string* s) {
@@ -86,13 +86,12 @@ bool ReadableFile::Readline(std::string* s) {
 }
 
 void ReadableFile::Close() {
-  delete stream_;
   stream_ = nullptr;
 }
 
 WritableFile::WritableFile() {}
 
-WritableFile* WritableFile::New(const std::string& filename) {
+std::unique_ptr<WritableFile> WritableFile::New(const std::string& filename) {
   std::unique_ptr<tensorflow::WritableFile> file;
 
   tensorflow::Status s = tensorflow::Env::Default()->NewWritableFile(
@@ -102,8 +101,8 @@ WritableFile* WritableFile::New(const std::string& filename) {
     return nullptr;
   }
 
-  WritableFile* f = new WritableFile;
-  f->file_ = file.release();
+  auto f = absl::WrapUnique<WritableFile>(new WritableFile);
+  f->file_ = std::move(file);
 
   return f;
 }
@@ -114,12 +113,10 @@ bool WritableFile::Write(const std::string& s) {
 }
 
 void WritableFile::Close() {
-  delete file_;
   file_ = nullptr;
 }
 
 WritableFile::~WritableFile() {
-  delete file_;
 }
 
 }  // namespace nucleus

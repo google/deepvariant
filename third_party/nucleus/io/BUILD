@@ -1030,6 +1030,7 @@ cc_library(
     srcs = ["gfile.cc"],
     hdrs = ["gfile.h"],
     deps = [
+        "@com_google_absl//absl/memory",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
