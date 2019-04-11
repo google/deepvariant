@@ -18,19 +18,20 @@ the greatest achievable accuracy for BGISEQ-500 data.
 
 We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
-accuracy comparing to the WGS model as a baseline: Indel F1 95.52% --> 98.19% ;
-SNP F1: 99.88% --> 99.91%.
+accuracy comparing to the WGS model as a baseline: Indel F1 95.29% --> 98.15%;
+SNP F1: 99.87% --> 99.91%.
 
-Training for 50k steps took about 2 hours 11 minutes on Cloud TPU. All the other
-processing (done serially with no pipeline optimization) took 3-4 hours.
+Training for 50k steps took about 1.5 hours on Cloud TPU.
+
+This tutorial is meant as an example for training; all the other processing in
+this tutorial were done serially with no pipeline optimization.
 
 ## Request a machine
 
 Any sufficiently capable machine will do. For this case study, we used a 64-core
 non-preemptible instance with 128GiB and no GPU.
 
-If you need an example, see
-[this section](deepvariant-case-study.md#optional-if-on-google-cloud-platform-request-a-machine-with-this-example-command).
+Here is an example on how to get a [CPU machine].
 
 Set the variables:
 
@@ -39,11 +40,9 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.7.2"
+BIN_VERSION="0.8.0"
 
-MODEL_VERSION="0.7.2"
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${MODEL_VERSION}/DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
-
+MODEL_BUCKET="${BUCKET}/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}+data-wgs_standard"
 GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
 
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET}/customized_training"
@@ -103,8 +102,7 @@ contain a `label` field).
 
 In this tutorial, we create examples on one replicate of HG001 sequenced by
 BGISEQ-500 provided on the
-[Genome In a Bottle FTP site](https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/BGISEQ500/standard_library/)
-[[readme](https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/BGISEQ500/standard_library/readme.txt)].
+[Genome In a Bottle FTP site](https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/BGISEQ500/standard_library/readme.txt).
 
 We will create examples in 3 different sets: Training set (everything except for
 chr20, 21, and 22), validation set (chr21 and 22) - These 2 sets will be used in
@@ -113,8 +111,8 @@ have the real labels. We'll create examples in "calling" mode for the test set
 (chr20).
 
 For the definition of these 3 sets in commonly used machine learning
-terminology, please refer to [Machine Learning
-Glossary](https://developers.google.com/machine-learning/crash-course/glossary).
+terminology, please refer to
+[Machine Learning Glossary](https://developers.google.com/machine-learning/glossary/).
 
 ### Training set
 
@@ -142,8 +140,8 @@ sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
 ) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
 ```
 
-This took 107m8.521s. We will want to shuffle this on Dataflow later, so I will
-copy it to GCS bucket first:
+This took ~80min. We will want to shuffle this on Dataflow later, so we copy the
+data to GCS bucket first:
 
 ```
 gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00064.gz \
@@ -170,7 +168,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00064.gz \
 ) >"${LOG_DIR}/validation_set.with_label.make_examples.log" 2>&1
 ```
 
-This took: 8m49.066s.
+This took: ~9min.
 
 Validation set is small here. We will just shuffle locally later, so no need to
 copy to out GCS bucket.
@@ -193,7 +191,7 @@ copy to out GCS bucket.
 ) >"${LOG_DIR}/test_set.no_label.make_examples.log" 2>&1
 ```
 
-This took: 2m14.576s.
+This took: 2.5min.
 
 We don't need to shuffle test set. It will eventually be used in the final
 evaluation evaluated with `hap.py` on the whole set.
@@ -242,7 +240,7 @@ Get the code that shuffles:
 
 ```
 mkdir -p ${SHUFFLE_SCRIPT_DIR}
-wget https://raw.githubusercontent.com/google/deepvariant/r0.7/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
+wget https://raw.githubusercontent.com/google/deepvariant/r0.8/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
 ```
 
 Validation set is small, so we will just shuffle locally using DirectRunner:
@@ -266,7 +264,7 @@ Output is in
 
 Data config file is in `${OUTPUT_DIR}/validation_set.dataset_config.pbtxt`.
 
-This took 10m40.558s.
+This took ~10min.
 
 For the training set, it is too large to be running with DirectRunner on this
 instance, so we use the DataflowRunner. Before that, please make sure you enable
@@ -306,7 +304,7 @@ In order to have the best performance, you might need extra resources such as
 machines or IPs within a region. That will not be in the scope of this case
 study here.
 
-My run took about 40m28.401s on Dataflow.
+In one test run, this took about 47min on Dataflow.
 
 The output path can be found in the dataset_config file by:
 
@@ -325,12 +323,11 @@ In the output, the `tfrecord_path` should be valid paths in gs://.
 
 name: "HG001"
 tfrecord_path: "YOUR_GCS_BUCKET/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-num_examples: 3857898
-
+num_examples: 3850838
 ```
 
-In my run, it wrote to 341 shards:
-`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00364.tfrecord.gz`
+In one test run, it wrote to 365 shards:
+`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00365.tfrecord.gz`
 
 ### Start a Cloud TPU
 
@@ -338,11 +335,9 @@ Before you start, please read about
 [Cloud TPU pricing](https://cloud.google.com/tpu/docs/pricing) and consider the
 expenses for using TPUs.
 
-The page that has the official instructions is here:
-
-https://cloud.google.com/tpu/docs/custom-setup
-
-Here is what I did to start a TPU.
+In this tutorial, we provide one way to start and use a TPU. This might not be
+the easiest way to use TPU. Please refer to the [Cloud TPU documentation] for
+more information on Cloud TPUs.
 
 First, check all existing TPUs by running this command:
 
@@ -350,24 +345,20 @@ First, check all existing TPUs by running this command:
 gcloud compute tpus list --zone=us-central1-c
 ```
 
-In my case, I don't see any existing TPUs.
-
-Then, I ran the following command to start a TPU:
+In the test run, we didn't have any other existing TPUs.
+Then, run the following command to start a TPU:
 
 ```
 time gcloud compute tpus create ${USER}-demo-tpu \
   --network=default \
   --range=10.240.1.0/29 \
-  --version=1.12 \
+  --version=1.13 \
   --zone=us-central1-c
 ```
 
-(Note: There are also
-[Preemptible TPUs](https://cloud.google.com/tpu/docs/preemptible). But in this
-case study we only use the non-preemptible one. And, once you're done with the
-TPU, you should remember to delete it.
+Once you're done with the TPU, you should remember to delete it.
 
-This command took about 5min to finish.
+This command took about 3.5min to finish.
 
 After the TPU is created, we can query it by:
 
@@ -375,14 +366,14 @@ After the TPU is created, we can query it by:
 gcloud compute tpus list --zone=us-central1-c
 ```
 
-In my case, I see:
+It might look like:
 
 ```
 NAME              ZONE           ACCELERATOR_TYPE  NETWORK_ENDPOINTS  NETWORK  RANGE          STATUS
-pichuan-demo-tpu  us-central1-c  v2-8              10.240.1.2:8470    default  10.240.1.0/29  READY
+USER-demo-tpu  us-central1-c  v2-8              10.240.1.2:8470    default  10.240.1.0/29  READY
 ```
 
-In this example, I set up these variables:
+In this example, set up these variables:
 
 ```
 export TPU_NAME="${USER}-demo-tpu"
@@ -395,6 +386,9 @@ done using the TPU, make sure to delete it otherwise you'll continue to be
 billed for the TPU.)
 
 ### Start `model_train` and `model_eval`
+
+NOTE: all parameters below are used as an example. They were not optimized for
+this dataset, and we do not recommend these as the best default either.
 
 ```
 ( time sudo docker run \
@@ -458,7 +452,7 @@ accurate they are on the validation set.
 When I ran this case study, running `model_eval` on CPUs is fast enough because
 `model_train` didn't save checkpoints too frequently.
 
-In my run, `model_train` took about 2 hours 15 minutes to finish 50k steps (with
+In my run, `model_train` took about 1.5hr to finish 50k steps (with
 batch_size 512). Note that `model_eval` will not stop on its own, so I had to
 kill the process after training is no longer producing more checkpoints. And,
 **remember to delete the TPU once you're done with training.** You can use this
@@ -474,13 +468,13 @@ You'll want to let model_train and model_eval run for a while before you start a
 TensorBoard. (You can start a TensorBoard immediately, but you just won't see
 the metrics summary until later.)
 
-We can start a TensorBoard to visualize the progress of training better. I did
+We can start a TensorBoard to visualize the progress of training better. We did
 this through a Google Cloud Shell from https://console.cloud.google.com , on the
 top right:
 
 ![Shell](images/ActivateShell.png?raw=true "Activate Google Cloud Shell")
 
-This opens up a terminal at the bottom of the browser page, then I ran:
+This opens up a terminal at the bottom of the browser page, then run:
 
 ```
 # Change to your OUTPUT_BUCKET from earlier.
@@ -492,7 +486,7 @@ tensorboard --logdir ${TRAINING_DIR} --port=8080
 This gives some message like:
 
 ```
-TensorBoard 1.12.0 at http://cs-6000-devshell-vm-827805cb-f6eb-4576-aa34-07f70a216bda:8080 (Press CTRL+C to quit)
+TensorBoard 1.13.1 at http://cs-6000-devshell-vm-247549b5-8f13-496e-b413-f89e256ca2bd:8080 (Press CTRL+C to quit)
 ```
 
 But that link is not usable directly. I clicked on the “Web Preview” on the top
@@ -500,20 +494,13 @@ right of the mini terminal:
 
 ![WebPreview](images/WebPreview.png?raw=true "Web Preview")
 
-And clicked on “Preview on port 8080”:
+And clicked on "Preview on port 8080":
 
 ![PreviewOnPort](images/PreviewOnPort.png?raw=true "Preview on Port 8080")
 
-Once it starts, you can see many metrics, including accuracy, speed, and other
-things. In my run, I took these screenshots after the run completed:
-
-*   Accuracy:
-
-    ![TensorBoardAccuracy](images/TensorBoardAccuracy.png?raw=true "TensorBoard Accuracy")
-
-*   Examples and steps per second:
-
-    ![TensorBoardSpeed](images/TensorBoardSpeed.png?raw=true "TensorBoard Speed")
+Once it starts, you can see many metrics, including accuracy, speed, etc. You
+will need to wait for both `model_train` and `model_eval` to run for a while
+before the plots will make more sense.
 
 ### Clean up the TPU once you're done training
 
@@ -529,13 +516,13 @@ Copy the `*.metrics` file to local:
 
 ```
 mkdir -p /tmp/metrics
-gsutil -m cp  ${TRAINING_DIR}/*metrics /tmp/metrics/
+gsutil -m cp  ${TRAINING_DIR}/model.ckpt-*.metrics /tmp/metrics/
 ```
 
 Run a simple script that outputs 3 fields per line: checkpoint, TPs+FNs, F1:
 
 ```
-wget https://raw.githubusercontent.com/google/deepvariant/r0.7/tools/print_f1.py -O ${SHUFFLE_SCRIPT_DIR}/print_f1.py
+wget https://raw.githubusercontent.com/google/deepvariant/r0.8/tools/print_f1.py -O ${SHUFFLE_SCRIPT_DIR}/print_f1.py
 
 python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
 --metrics_dir="/tmp/metrics/" | sort -k 3 -g -r | head -1
@@ -544,11 +531,11 @@ python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
 The top line I got was this:
 
 ```
-40500   96408.0 0.999014533044
+48700   96418.0 0.998921385605
 ```
 
 This means the model checkpoint that performs the best on the validation set is
-`${TRAINING_DIR}/model.ckpt-44200`. Based on this result, a few thoughts came
+`${TRAINING_DIR}/model.ckpt-48700`. Based on this result, a few thoughts came
 into mind:
 
 1.  Training more steps didn't seem to help much. Did the training overfit?
@@ -560,7 +547,7 @@ But for now, let's use this model to do the final evaluation on the test set and
 see how much we get.
 
 Running on CPUs is reasonably fast for this size of data. So we just directly
-run on CPUs:
+run on CPUs.
 
 ```
 ( time sudo docker run \
@@ -569,7 +556,7 @@ run on CPUs:
     /opt/deepvariant/bin/call_variants \
     --outfile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
     --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
-    --checkpoint "${TRAINING_DIR}/model.ckpt-44200" \
+    --checkpoint "${TRAINING_DIR}/model.ckpt-48700" \
 ) >"${LOG_DIR}/test_set.call_variants.log" 2>&1 &
 ```
 
@@ -593,8 +580,6 @@ format here: `${OUTPUT_DIR}/test_set.vcf.gz`. Next step is to run `hap.py` to
 complete the evaluation on chromosome 20:
 
 ```
-sudo apt -y install tabix
-tabix -p vcf "${OUTPUT_DIR}/test_set.vcf.gz"
 sudo docker pull pkrusche/hap.py
 
 time sudo docker run -it \
@@ -610,25 +595,51 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
   --engine=vcfeval
 ```
 
-This takes about 3 minutes. The output of `hap.py` can be found in this
-[gist](https://gist.github.com/akolesnikov/77cd2aa5dad1dd4fbf37fc391b1698de).
+This takes about 3 minutes. The output of `hap.py` is here:
+
+```
+[I] Total VCF records:         3775119
+[I] Non-reference VCF records: 3775119
+[I] Total VCF records:         126929
+[I] Non-reference VCF records: 96030
+Benchmarking Summary:
+  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+ INDEL    ALL        10023      9793       230        19137       144       8810    107       0.977053          0.986056        0.460365         0.981534                     NaN                     NaN                   1.547658                   2.047144
+ INDEL   PASS        10023      9793       230        19137       144       8810    107       0.977053          0.986056        0.460365         0.981534                     NaN                     NaN                   1.547658                   2.047144
+   SNP    ALL        66237     66167        70        77899        51      11642      8       0.998943          0.999230        0.149450         0.999087                2.284397                2.201784                   1.700387                   1.785479
+   SNP   PASS        66237     66167        70        77899        51      11642      8       0.998943          0.999230        0.149450         0.999087                2.284397                2.201784                   1.700387                   1.785479
+```
 
 To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 225  | 135  | 0.977552 | 0.986924  | 0.982215
-SNP   | 63   | 53   | 0.999049 | 0.999200  | 0.999125
+INDEL | 230  | 144  | 0.977053 | 0.986056  | 0.981534
+SNP   | 70   | 51   | 0.998943 | 0.999230  | 0.999087
 
-The baseline we're comparing to is to directly use the WGS model (`--checkpoint
-${GCS_PRETRAINED_WGS_MODEL}`) to make the calls.
+The baseline we're comparing to is to directly use the WGS model to make the
+calls, using this command:
+
+```bash
+#  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+sudo docker run \
+  -v "${DATA_DIR}:${DATA_DIR}" \
+  -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
+  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WGS \
+  --ref="${REF}" \
+  --reads="${BAM}" \
+  --output_vcf="${OUTPUT_DIR}/baseline.vcf.gz" \
+  --num_shards=${N_SHARDS}
+```
 
 Baseline:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 321  | 611  | 0.967974 | 0.942940  | 0.955293
-SNP   | 118  | 48   | 0.998219 | 0.999275  | 0.998746
+INDEL | 343  | 640  | 0.965779 | 0.940265  | 0.952851
+SNP   | 117  | 59   | 0.998234 | 0.999109  | 0.998671
 
 ### Additional things to try
 
@@ -649,3 +660,6 @@ DeepVariant, for each BAM file, we created an extra set of training examples
 using `--downsample_fraction=0.5`, which downsamples the reads and creates
 training examples with lower coverage. We found that this makes the trained
 model more robust.
+
+[CPU machine]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
+[Cloud TPU documentation]: https://cloud.google.com/tpu/docs/
