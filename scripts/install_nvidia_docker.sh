@@ -37,7 +37,7 @@ sudo add-apt-repository \
  $(lsb_release -cs) \
  stable"
 sudo apt-get -qq -y update
-sudo apt-get -qq -y install docker-ce
+sudo apt-get -qq -y install 'docker-ce=5:18.09.4~3-0~ubuntu-xenial'
 
 # (3) Install nvidia-docker:
 # https://github.com/NVIDIA/nvidia-docker#ubuntu-140416041804-debian-jessiestretch
