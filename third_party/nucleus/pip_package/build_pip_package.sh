@@ -46,7 +46,6 @@ set -x
 NUCLEUS_VERSION="0.3.0"
 PACKAGE_NAME="google_nucleus-${NUCLEUS_VERSION}"
 PYTHON_VERSION="2.7"
-PLATFORM="linux-x86_64"
 
 TMPDIR=$(mktemp -d -t tmp.XXXXXXXXXXX)
 TOPDIR="${TMPDIR}/${PACKAGE_NAME}"
@@ -95,7 +94,7 @@ find "nucleus" -name '*.so' -exec ln -f -s -r "google/protobuf/pyext/_message.so
 popd
 
 # Create tar file
-TAR_NAME="${PACKAGE_NAME}.${PLATFORM}.tar.gz"
+TAR_NAME="${PACKAGE_NAME}.tar.gz"
 pushd "${TMPDIR}"
 echo $(date) : "=== Building tar file ${TAR_NAME}"
 tar cvzf "${TAR_NAME}" "${PACKAGE_NAME}"
