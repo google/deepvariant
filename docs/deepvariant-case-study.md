@@ -86,17 +86,17 @@ machine, and the `postprocess_variants` step is single-process, single-thread.
 
 With the example in [run_wgs_case_study_docker.sh] on a [CPU machine],
 
-Step                               | Hardware            | Wall time
----------------------------------- | ------------------- | ---------
-`make_examples`                    | 64 CPUs             | ~ 1h 10m
-`call_variants`                    | 64 CPUs             | ~ 2h 45m
-`postprocess_variants` (with gVCF) | 1 CPU               | ~    30m
+Step                               | Hardware | Wall time
+---------------------------------- | -------- | ---------
+`make_examples`                    | 64 CPUs  | ~ 1h 10m
+`call_variants`                    | 64 CPUs  | ~ 2h 45m
+`postprocess_variants` (with gVCF) | 1 CPU    | ~ 35m
 
 With the example in [run_wgs_case_study_docker_gpu.sh] on a [GPU machine],
 
 Step                               | Hardware            | Wall time
 ---------------------------------- | ------------------- | ---------
-`make_examples`                    | 16 CPUs             | ~ 3h 45m
+`make_examples`                    | 16 CPUs             | ~ 3h 25m
 `call_variants`                    | 1 P100 GPU, 16 CPUs | ~    50m
 `postprocess_variants` (with gVCF) | 1 CPU               | ~    30m
 
@@ -154,8 +154,8 @@ results.
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 1428 | 924  | 0.996927 | 0.998089  | 0.997508
-SNP   | 1328 | 749  | 0.999564 | 0.999754  | 0.999659
+INDEL | 1488 | 944  | 0.996798 | 0.998048  | 0.997423
+SNP   | 1576 | 725  | 0.999483 | 0.999762  | 0.999623
 
 [install_nvidia_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/install_nvidia_docker.sh
 [run_wgs_case_study_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wgs_case_study_docker.sh

@@ -110,8 +110,8 @@ We evaluate against the capture region:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 106  | 49   | 0.959231 | 0.980897  | 0.969943
-SNP   | 48   | 16   | 0.998577 | 0.999525  | 0.999051
+INDEL | 117  | 55   | 0.955000 | 0.978507  | 0.966611
+SNP   | 37   | 23   | 0.998903 | 0.999318  | 0.999110
 
 [specific machine type]: deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies
 [install_nvidia_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/install_nvidia_docker.sh
