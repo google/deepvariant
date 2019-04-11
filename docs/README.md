@@ -7,6 +7,7 @@
 *   [DeepVariant quick start](deepvariant-quick-start.md)
 *   [DeepVariant whole genome case study](deepvariant-case-study.md)
 *   [DeepVariant exome case study](deepvariant-exome-case-study.md)
+*   [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md)
 
 ## (Advanced) Training
 
