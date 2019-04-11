@@ -28,6 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Runs all 3 steps to go from input DNA reads to output VCF/gVCF files.
 
+This script currently provides the most common use cases and standard models.
+If you want to access more flags that are available in `make_examples`,
+`call_variants`, and `postprocess_variants`, you can also call them separately
+using the binaries in the Docker image.
+
 For more details, see:
 https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md
 """
@@ -41,11 +46,16 @@ import subprocess
 
 from absl import app
 from absl import flags
+from absl import logging
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_enum('model_type', None, ['WGS', 'WES', 'PACBIO'],
-                  'Required. Type of model to use for variant calling.')
+# Required flags.
+flags.DEFINE_enum(
+    'model_type', None, ['WGS', 'WES', 'PACBIO'],
+    'Required. Type of model to use for variant calling. Each '
+    'model_type has an associated default model, which can be '
+    'overridden by the --customized_model flag.')
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
@@ -55,12 +65,17 @@ flags.DEFINE_string(
     'reads', None,
     'Required. Aligned, sorted, indexed BAM file containing the reads we want '
     'to call. Should be aligned to a reference genome compatible with --ref.')
+flags.DEFINE_string('output_vcf', None,
+                    'Required. Path where we should write VCF file.')
+# Optional flags.
+flags.DEFINE_string(
+    'customized_model', None,
+    'Optional. A path to a model checkpoint to load for the `call_variants` '
+    'step. If not set, the default for each --model_type will be used')
 flags.DEFINE_string(
     'regions', None,
     'Optional. Space-separated list of regions we want to process. Elements '
     'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
-flags.DEFINE_string('output_vcf', None,
-                    'Required. Path where we should write VCF file.')
 flags.DEFINE_string('output_gvcf', None,
                     'Optional. Path where we should write gVCF file.')
 flags.DEFINE_string(
@@ -124,13 +139,12 @@ def make_examples_command(ref,
   return ' '.join(command)
 
 
-def call_variants_command(outfile, examples, model_type):
+def call_variants_command(outfile, examples, model_ckpt):
   """Returns a call_variants command for subprocess.check_call."""
-  checkpoint = MODEL_TYPE_MAP[model_type]
   command = ['time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
-  command.extend(['--checkpoint', '"{}"'.format(checkpoint)])
+  command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
   return ' '.join(command)
 
 
@@ -160,8 +174,26 @@ def check_or_create_intermediate_results_dir(intermediate_results_dir):
     os.makedirs(intermediate_results_dir)
 
 
+def check_flags():
+  """Additional logic to make sure flags are set appropriately."""
+  if FLAGS.customized_model is not None:
+    logging.info(
+        'You set --customized_model. Instead of using the default '
+        'model for %s, `call_variants` step will load %s '
+        'instead.', FLAGS.model_type, FLAGS.customized_model)
+
+
+def get_model_ckpt(model_type, customized_model):
+  """Return the path to the model checkpoint based on the input args."""
+  if customized_model is not None:
+    return customized_model
+  else:
+    return MODEL_TYPE_MAP[model_type]
+
+
 def main(_):
   check_or_create_intermediate_results_dir(FLAGS.intermediate_results_dir)
+  check_flags()
 
   nonvariant_site_tfrecord_path = None
   if FLAGS.output_gvcf is not None:
@@ -184,8 +216,8 @@ def main(_):
 
   call_variants_output = os.path.join(FLAGS.intermediate_results_dir,
                                       'call_variants_output.tfrecord.gz')
-  command = call_variants_command(call_variants_output, examples,
-                                  FLAGS.model_type)
+  model_ckpt = get_model_ckpt(FLAGS.model_type, FLAGS.customized_model)
+  command = call_variants_command(call_variants_output, examples, model_ckpt)
   print('\n***** Running the command:*****\n{}\n'.format(command))
   subprocess.check_call(command, shell=True, executable='/bin/bash')
 
