@@ -57,7 +57,7 @@ Here is an example command:
 sudo nvidia-docker run \
   -v "${DATA_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \
   --ref="/input/${REF}" \
