@@ -2,8 +2,6 @@
 # be separately open source.
 # load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
-# KEEP THIS LINE to import nucleus.bzl externally
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])

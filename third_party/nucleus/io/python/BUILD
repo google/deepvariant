@@ -1,6 +1,5 @@
 load("//:third_party/clif.bzl", "py_clif_cc")
 # load("//devtools/python/blaze:python3.bzl", "py2and3_test")
-# KEEP THIS LINE to import nucleus.bzl externally
 
 package(
     default_visibility = [
