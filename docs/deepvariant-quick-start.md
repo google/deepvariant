@@ -112,8 +112,7 @@ OUTPUT_DIR="${PWD}/quickstart-output"
 mkdir -p "${OUTPUT_DIR}"
 ```
 
-Using the Docker entrypoint ([docker_entrypoint.py]), you can run everything
-with the following command:
+You can run everything with the following command:
 
 ```bash
 sudo docker run \
@@ -121,12 +120,13 @@ sudo docker run \
   -v "${OUTPUT_DIR}:/output" \
   gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
-  --model_type=WGS \
+  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
   --ref=/input/ucsc.hg19.chr20.unittest.fasta \
   --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
   --regions "chr20:10,000,000-10,010,000" \
   --output_vcf=/output/output.vcf.gz \
-  --output_gvcf=/output/output.g.vcf.gz
+  --output_gvcf=/output/output.g.vcf.gz \
+  --num_shards=1 **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
 ```
 
 This will generate 4 files in `${OUTPUT_DIR}`:
@@ -180,7 +180,6 @@ Benchmarking Summary:
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[docker_entrypoint.py]: https://github.com/google/deepvariant/blob/r0.8/scripts/docker_entrypoint.py
 [Dockerfile]: https://github.com/google/deepvariant/blob/r0.8/Dockerfile
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
