@@ -4,3 +4,4 @@ absl-py
 mock
 numpy
 six
+protobuf
