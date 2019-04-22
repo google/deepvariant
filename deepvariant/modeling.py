@@ -86,7 +86,8 @@ flags.DEFINE_integer(
     'showing summaries.')
 
 flags.DEFINE_integer(
-    'save_interval_secs', 1000, 'Interval (in seconds) at which the model data '
+    'save_interval_secs', 60 * 10,
+    'Interval (in seconds) at which the model data '
     'should be checkpointed. Set to 0 to disable, -1 to ignore. '
     'Exclusive with save_interval_steps.')
 
@@ -218,13 +219,16 @@ def eval_metric_fn(labels, predictions, unused_encoded_variants):
       'FNs/All': tf.metrics.false_negatives(labels, predicted_class),
       'TPs/All': tf.metrics.true_positives(labels, predicted_class),
       'TNs/All': tf.metrics.true_negatives(labels, predicted_class),
-      'Recall/Class1': get_class_recall(labels, predicted_class, 1),
-      'Recall/Class2': get_class_recall(labels, predicted_class, 2),
-      'Precision/Class1': get_class_precision(labels, predicted_class, 1),
-      'Precision/Class2': get_class_precision(labels, predicted_class, 2),
+      'Recall/HomRef': get_class_recall(labels, predicted_class, 0),
+      'Recall/Het': get_class_recall(labels, predicted_class, 1),
+      'Recall/HomVar': get_class_recall(labels, predicted_class, 2),
+      'Precision/HomRef': get_class_precision(labels, predicted_class, 0),
+      'Precision/Het': get_class_precision(labels, predicted_class, 1),
+      'Precision/HomVar': get_class_precision(labels, predicted_class, 2),
       'F1/All': get_f1_score(labels, predicted_class),
-      'F1/Class1': get_f1_score(labels, predicted_class, 1),
-      'F1/Class2': get_f1_score(labels, predicted_class, 2),
+      'F1/HomRef': get_f1_score(labels, predicted_class, 0),
+      'F1/Het': get_f1_score(labels, predicted_class, 1),
+      'F1/HomVar': get_f1_score(labels, predicted_class, 2),
   }
 
   return metrics
@@ -303,6 +307,11 @@ class DeepVariantModel(object):
     supported_dimensions_message: str. A human-readable string containing info
       about what image dimensions are supported by this model. E.g., "only
       widths between 42 and 189".
+    use_tpu: bool or None. If True, we are executing the model on a TPU, False
+      if we are using some other hardware. If None, the execution hardware is
+      not yet known.
+    model_dir: str or None. The path to the location where model checkpoint are
+      being stored. If None, the path hasn't been set yet or is unknown.
   """
 
   def __init__(self, name, pretrained_model_path):
@@ -323,6 +332,70 @@ class DeepVariantModel(object):
     self.pretrained_model_path = pretrained_model_path
     self.supported_dimensions_message = 'unknown'
     self.use_tpu = None
+
+    # Set the model_dir to None by default. We capture its actual value during
+    # a call to make_estimator below.
+    self.model_dir = None
+
+  def construct_scalar_host_call(self,
+                                 metric_dict,
+                                 model_dir,
+                                 prefix='',
+                                 record_frequency_in_steps=100):
+    """Construct a host call to log scalars when training on TPU.
+
+    Args:
+      metric_dict: A dict of the tensors to be logged.
+      model_dir: The location to write the summary.
+      prefix: The prefix (if any) to prepend to the metric names.
+      record_frequency_in_steps: int; How often should we log our metrics in
+        step units.
+
+    Returns:
+      A tuple of (function, args_to_be_passed_to_said_function)
+    """
+    # type: (dict, str) -> (function, list)
+    metric_names = list(metric_dict.keys())
+
+    def host_call_fn(global_step, *args):
+      """Training host call.
+
+      Creates scalar summaries for training metrics.
+
+      This function is executed on the CPU and should not directly reference
+      any Tensors in the rest of the `model_fn`. To pass Tensors from the
+      model to the `metric_fn`, provide as part of the `host_call`. See
+      https://www.tensorflow.org/api_docs/python/tf/contrib/tpu/TPUEstimatorSpec
+      for more information.
+      Arguments should match the list of `Tensor` objects passed as the second
+      element in the tuple passed to `host_call`.
+      Args:
+        global_step: Tensor with shape `[batch]` for the global_step
+        *args: Remaining tensors to log.
+
+      Returns:
+        List of summary ops to run on the CPU host.
+      """
+      step = global_step[0]
+      with tf.contrib.summary.create_file_writer(
+          logdir=model_dir, filename_suffix='.host_call').as_default():
+        with tf.contrib.summary.record_summaries_every_n_global_steps(
+            record_frequency_in_steps, step):
+          for i, name in enumerate(metric_names):
+            tf.contrib.summary.scalar(prefix + name, args[i][0], step=step)
+
+          return tf.contrib.summary.all_summary_ops()
+
+    # To log the current learning rate, and gradient norm for Tensorboard, the
+    # summary op needs to be run on the host CPU via host_call. host_call
+    # expects [batch_size, ...] Tensors, thus reshape to introduce a batch
+    # dimension. These Tensors are implicitly concatenated to
+    # [params['batch_size']].
+    global_step_tensor = tf.reshape(
+        tf.compat.v1.train.get_or_create_global_step(), [1])
+    other_tensors = [tf.reshape(metric_dict[key], [1]) for key in metric_names]
+
+    return host_call_fn, [global_step_tensor] + other_tensors
 
   def _create_warm_start_settings(self, start_from_checkpoint):
     """Create a proper WarmStartSettings based on start_from_checkpoint."""
@@ -410,6 +483,11 @@ class DeepVariantModel(object):
     """
     if use_tpu is not None:
       self.use_tpu = use_tpu
+
+    # Set the model dir of this class to the model_dir passed in here. It's not
+    # so clean but it appears to be necessary due to the way estimators are
+    # constructed (i.e., model_dir is set late).
+    self.model_dir = model_dir
 
     # These flags are exclusive if not None, and 0 means disable.
     save_checkpoints_secs = None
@@ -756,10 +834,13 @@ class DeepVariantSlimModel(DeepVariantModel):
 
     # There are a lot of arguments here; that's to avoid referencing flags in
     # leaf functions.
-    train_op = self._model_fn_train(
+    train_op, host_call = self._model_fn_train(
         mode=mode,
         total_loss=total_loss,
-        batches_per_epoch=params['batches_per_epoch'],
+        # get() here to be robust when we are in eval mode and batches_per_epoch
+        # hasn't been provided. In eval mode, model_fn_train will return without
+        # doing anything.
+        batches_per_epoch=params.get('batches_per_epoch', None),
         num_epochs_per_decay=FLAGS.num_epochs_per_decay,
         initial_learning_rate=FLAGS.learning_rate,
         learning_rate_decay_factor=FLAGS.learning_rate_decay_factor,
@@ -780,6 +861,7 @@ class DeepVariantSlimModel(DeepVariantModel):
         mode=mode,
         loss=total_loss,
         train_op=train_op,
+        host_call=host_call,
         eval_metrics=eval_metrics,
         predictions=predictions)
     if self.use_tpu:
@@ -831,19 +913,27 @@ class DeepVariantSlimModel(DeepVariantModel):
                       rmsprop_momentum, rmsprop_epsilon, moving_average_decay):
     """This is the TRAIN part of model_fn."""
     if mode != tf.estimator.ModeKeys.TRAIN:
-      return None
+      return None, None
+
     # Configure the learning rate using an exponetial decay.
     global_step = tf.train.get_or_create_global_step()
+    current_epoch = tf.cast(global_step, tf.float32) / batches_per_epoch
     decay_steps = int(1.0 * batches_per_epoch * num_epochs_per_decay)
+
     learning_rate = tf.train.exponential_decay(
         learning_rate=initial_learning_rate,
         global_step=global_step,
         decay_steps=decay_steps,
         decay_rate=learning_rate_decay_factor,
         staircase=True)
-    # Set a minimum boundary for the learning rate.
-    learning_rate = tf.maximum(
-        learning_rate, 0.0001 * initial_learning_rate, name='learning_rate')
+
+    # Set a minimum boundary for the learning rate to be a fixed value of 1e-9.
+    # It's common to see these tf.max(...) operations when training inception,
+    # with a max of 1e-4 * initial_learning_rate but this makes it hard to
+    # explore learning rate schedules that decay quickly or by a lot of each
+    # step. Here we just use a very small constant 1e-9 as the minimum value.
+    learning_rate = tf.maximum(learning_rate, 1e-9, name='learning_rate')
+
     optimizer = tf.train.RMSPropOptimizer(
         learning_rate,
         rmsprop_decay,
@@ -864,7 +954,17 @@ class DeepVariantSlimModel(DeepVariantModel):
     with tf.control_dependencies([train_op]), tf.name_scope('moving_average'):
       train_op = variable_averages.apply(variables_to_average)
     tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, train_op)
-    return train_op
+
+    # Compute the current epoch and associated learning rate from global_step.
+    metric_dict = {
+        'current_epoch': current_epoch,
+        'total_loss': total_loss,
+        'learning_rate': learning_rate,
+    }
+    host_call = self.construct_scalar_host_call(
+        metric_dict=metric_dict, model_dir=self.model_dir, prefix='training/')
+
+    return train_op, host_call
 
   def session_eval_hooks(self):
     return [LoadEMAHook]

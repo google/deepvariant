@@ -59,8 +59,8 @@ FLAGS = flags.FLAGS
 
 increasing_metrics = [
     'Accuracy/All', 'Precision/All', 'Recall/All', 'FPs/All', 'FNs/All',
-    'TPs/All', 'TNs/All', 'Recall/Class1', 'Recall/Class2', 'Precision/Class1',
-    'Precision/Class2', 'F1/All'
+    'TPs/All', 'TNs/All', 'Recall/Het', 'Recall/HomVar', 'Precision/Het',
+    'Precision/HomVar', 'F1/All'
 ]
 decreasing_metrics = ['loss']
 
@@ -194,13 +194,16 @@ def eval_loop(master,
   logging.info('Running evaluations on %s with model %s', tf_dataset, model)
 
   # Compute when to stop reading, in terms of batches.
-  num_batches = min(max_examples, tf_dataset.num_examples) // batch_size
+  num_examples = tf_dataset.num_examples
+  if max_examples is not None:
+    num_examples = min(max_examples, num_examples)
+  num_batches = num_examples // batch_size
   num_samples = batch_size * num_batches
   logging.info(
-      'Dataset has %d samples, doing eval over %d; '
-      'max_examples is %d, num_batches is %d', tf_dataset.num_examples,
-      num_samples, max_examples, num_batches)
-  batches_per_epoch = tf_dataset.num_examples / batch_size
+      'Dataset has %s samples, doing eval over %s; '
+      'max_examples is %s, num examples to be used %s; num_batches is %s',
+      tf_dataset.num_examples, num_samples, max_examples, num_examples,
+      num_batches)
 
   # This loads EMA variables.
   eval_hooks = [h(checkpoint_dir) for h in model.session_eval_hooks()]
@@ -208,10 +211,8 @@ def eval_loop(master,
   classifier = model.make_estimator(
       batch_size=batch_size,
       model_dir=checkpoint_dir,
-      params={'batches_per_epoch': batches_per_epoch},
       use_tpu=use_tpu,
-      master=master,
-  )
+      master=master)
 
   def terminate_eval():
     logging.info('Terminating eval after %d seconds of no checkpoints',
