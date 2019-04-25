@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
+#include "absl/container/node_hash_set.h"
 #include "absl/strings/ascii.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/depth_first_search.hpp"
@@ -422,7 +423,7 @@ void DeBruijnGraph::Prune() {
   // Remove vertices not reachable forward from src or backward from sink.
   VertexIterator vbegin, vend;
   std::tie(vbegin, vend) = boost::vertices(g_);
-  std::unordered_set<Vertex> all_vertices(vbegin, vend);
+  absl::node_hash_set<Vertex> all_vertices(vbegin, vend);
 
   std::set<Vertex> fwd_reachable_vertices, rev_reachable_vertices;
   fwd_reachable_vertices = VerticesReachableFrom(
@@ -430,7 +431,7 @@ void DeBruijnGraph::Prune() {
   rev_reachable_vertices = VerticesReachableFrom(
       sink_, boost::make_reverse_graph(g_), IndexMap());
 
-  std::unordered_set<Vertex> reachable_vertices;
+  absl::node_hash_set<Vertex> reachable_vertices;
   std::set_intersection(
       fwd_reachable_vertices.begin(), fwd_reachable_vertices.end(),
       rev_reachable_vertices.begin(), rev_reachable_vertices.end(),
