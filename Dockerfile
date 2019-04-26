@@ -35,6 +35,9 @@ ARG VERSION
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ENV VERSION ${VERSION}
 
+WORKDIR /opt/
+COPY --from=builder /opt/deepvariant/bazel-genfiles/licenses.zip .
+
 WORKDIR /opt/deepvariant/bin/
 COPY --from=builder /opt/deepvariant/run-prereq.sh .
 COPY --from=builder /opt/deepvariant/settings.sh .
@@ -104,5 +107,3 @@ RUN apt-get -y update && \
   python -m pip uninstall -y pip  && \
   python -m pip install pip==9.0.3 && \
   pip install absl-py==0.7.1
-
-CMD ["echo", "See https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md."]
