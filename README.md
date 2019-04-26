@@ -113,7 +113,6 @@ specifically call out a few key ones:
 *   [htslib & samtools](http://www.htslib.org/)
 *   [Nucleus](https://github.com/google/nucleus)
 *   [numpy](http://www.numpy.org/)
-*   [scipy](https://www.scipy.org/)
 *   [SSW Library](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library)
 *   [TensorFlow and Slim](https://www.tensorflow.org/)
 
