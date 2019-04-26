@@ -22,9 +22,9 @@ TRUTH_BED="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOL
 N_SHARDS="64"
 
 OUTPUT_DIR="${BASE}/output"
-EXAMPLES="${OUTPUT_DIR}/HG002.examples.tfrecord@${N_SHARDS}.gz"
-GVCF_TFRECORDS="${OUTPUT_DIR}/HG002.gvcf.tfrecord@${N_SHARDS}.gz"
-CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/HG002.cvo.tfrecord.gz"
+EXAMPLES="${OUTPUT_DIR}/make_examples.tfrecord@${N_SHARDS}.gz"
+GVCF_TFRECORDS="${OUTPUT_DIR}/gvcf.tfrecord@${N_SHARDS}.gz"
+CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/call_variants_output.tfrecord.gz"
 OUTPUT_VCF="${OUTPUT_DIR}/HG002.output.vcf.gz"
 OUTPUT_GVCF="${OUTPUT_DIR}/HG002.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
