@@ -63,7 +63,7 @@ flags.DEFINE_string('dataset_config_pbtxt', None,
 flags.DEFINE_string('model_name', 'inception_v3',
                     'The name of the model to use for predictions.')
 
-flags.DEFINE_integer('batch_size', 1024, 'The number of samples in each batch.')
+flags.DEFINE_integer('batch_size', 4096, 'The number of samples in each batch.')
 
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
