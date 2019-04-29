@@ -423,7 +423,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 30.
+// Next ID: 31.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -547,6 +547,11 @@ message DeepVariantOptions {
   // By default aligned_quality field is read from QUAL in SAM. If flag is set,
   // aligned_quality field is read from OQ tag in SAM.
   bool use_original_quality_scores = 29;
+
+  // A list of variant types that we want to restrict our examples to. E.g.,
+  // select_variant_types = ['snps'] would indicate that we only want to
+  // generate SNP candidate variants.
+  repeated string select_variant_types = 30;
 }
 
 // Config describe information needed for a dataset that can be used for

@@ -27,6 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant.make_examples."""
+# assertLen isn't part of unittest externally, so disable warnings that we are
+# using assertEqual(len(...), ...) instead of assertLen(..., ...).
+# pylint: disable=g-generic-assert
 
 from __future__ import absolute_import
 from __future__ import division
@@ -289,6 +292,34 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, region, options, verify_labels=True)
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
+
+  @parameterized.parameters(
+      dict(select_types=None, expected_count=76),
+      dict(select_types='all', expected_count=76),
+      dict(select_types='snps', expected_count=64),
+      dict(select_types='indels', expected_count=9),
+      dict(select_types='snps indels', expected_count=73),
+      dict(select_types='multi-allelics', expected_count=3),
+  )
+  @flagsaver.FlagSaver
+  def test_make_examples_with_variant_selection(self, select_types,
+                                                expected_count):
+    if select_types is not None:
+      FLAGS.select_variant_types = select_types
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
+    FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.partition_size = 1000
+    FLAGS.mode = 'calling'
+
+    options = make_examples.default_options(add_flags=True)
+    make_examples.make_examples_runner(options)
+
+    candidates = list(tfrecord.read_tfrecords(FLAGS.candidates))
+    self.assertEqual(len(candidates), expected_count)
 
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call all of the real variants (according to NIST's Genome

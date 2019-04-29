@@ -36,6 +36,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+
 from absl import flags
 from absl import logging
 import numpy as np
@@ -65,6 +66,7 @@ from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
+from third_party.nucleus.util import variant_utils
 
 
 FLAGS = flags.FLAGS
@@ -232,11 +234,31 @@ flags.DEFINE_bool(
     'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed.')
 flags.DEFINE_bool('use_original_quality_scores', False,
                   'If True, base quality scores are read from OQ tag.')
+flags.DEFINE_string(
+    'select_variant_types', None,
+    'If provided, should be a whitespace-separated string of variant types to '
+    'keep when generating exampled. Permitted values are "snps", "indels", '
+    '"multi-allelics", and "all", which select bi-allelic snps, bi-allelic '
+    'indels, multi-allelic variants of any type, and all variants, '
+    'respectively. Multiple selectors can be specified, so that '
+    '--select_variant_types="snps indels" would keep all bi-allelic SNPs and '
+    'indels')
 
 
 # ---------------------------------------------------------------------------
 # Option handling
 # ---------------------------------------------------------------------------
+
+_VARIANT_TYPE_SELECTORS = {
+    'snps':
+        lambda v: variant_utils.is_snp(v) and variant_utils.is_biallelic(v),
+    'indels':
+        lambda v: variant_utils.is_indel(v) and variant_utils.is_biallelic(v),
+    'multi-allelics':
+        variant_utils.is_multiallelic,
+    'all':
+        lambda v: True,
+}
 
 
 def parse_proto_enum_flag(proto_enum_pb2,
@@ -379,6 +401,15 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.height = flags_obj.pileup_image_height
     if flags_obj.pileup_image_width:
       options.pic_options.width = flags_obj.pileup_image_width
+
+    if flags_obj.select_variant_types:
+      options.select_variant_types[:] = flags_obj.select_variant_types.split()
+      for svt in options.select_variant_types:
+        if svt not in _VARIANT_TYPE_SELECTORS:
+          errors.log_and_raise(
+              'Select variant type {} not recognized. Allowed values are {}'
+              .format(svt, ', '.join(_VARIANT_TYPE_SELECTORS)),
+              errors.CommandLineError)
 
     num_shards, examples, candidates, gvcf = (
         sharded_file_utils.resolve_filespecs(
@@ -708,6 +739,42 @@ def read_confident_regions(options):
   return ranges.RangeSet.from_bed(options.confident_regions_filename)
 
 
+def filter_candidates(candidates, select_variant_types):
+  """Yields the candidate variants whose type is one of select_variant_types.
+
+  This function iterates through candidates and yield each candidate in order
+  if it satisfies any of the type constraints implied by select_variant_types.
+  For example, if select_variant_types = ['snps'] this function will yield
+  candidates that are bi-allelic SNPs only. Multiple select types are treated
+  as OR'd together, so ['snps', 'indels'] yields candidates that are bi-allelic
+  SNPs or indels.
+
+  Args:
+    candidates: Iterable of Variant protos. The candidates we want to select
+      from.
+    select_variant_types: List of str. The names of the variant type selectors
+      we want to use to keep/remove variants. Each string must be part of
+      _VARIANT_TYPE_SELECTORS or an error will be raised.
+
+  Raises:
+    ValueError: if any str in select_variant_types isn't present in
+      _VARIANT_TYPE_SELECTORS.
+
+  Yields:
+    Candidates in order.
+  """
+  if not all(s in _VARIANT_TYPE_SELECTORS for s in select_variant_types):
+    raise ValueError('Unexpected select variant type', select_variant_types)
+
+  for candidate in candidates:
+    v = candidate.variant
+    for select_type in select_variant_types:
+      selector = _VARIANT_TYPE_SELECTORS[select_type]
+      if selector(v):
+        yield candidate
+        break
+
+
 class RegionProcessor(object):
   """Creates DeepVariant example protos for a single region on the genome.
 
@@ -848,6 +915,10 @@ class RegionProcessor(object):
 
     self.in_memory_sam_reader.replace_reads(self.region_reads(region))
     candidates, gvcfs = self.candidates_in_region(region)
+
+    if self.options.select_variant_types:
+      candidates = list(
+          filter_candidates(candidates, self.options.select_variant_types))
 
     if in_training_mode(self.options):
       examples = [
