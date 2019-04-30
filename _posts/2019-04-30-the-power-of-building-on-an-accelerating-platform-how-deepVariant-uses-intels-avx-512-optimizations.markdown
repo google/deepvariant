@@ -5,7 +5,7 @@ date:   2019-04-30
 ---
 
 Authors: [Andrew Carroll](https://www.researchgate.net/profile/Andrew_Carroll6),
-Lizzie Dorfman
+[Lizzie Dorfman](https://scholar.google.com/citations?user=74ZgDsUAAAAJ&hl=en)
 
 Editorial Note: This post is published with identical content on the
 [TensorFlow Blog](https://medium.com/@tensorflow/c8f0acb62344).
