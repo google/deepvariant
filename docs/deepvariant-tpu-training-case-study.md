@@ -119,7 +119,7 @@ terminology, please refer to
 First, to set up,
 
 ```
-sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
+sudo docker pull google/deepvariant:"${BIN_VERSION}"
 ```
 
 ```
@@ -127,7 +127,7 @@ sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
   parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
     sudo docker run \
       -v /home/${USER}:/home/${USER} \
-      gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+      google/deepvariant:"${BIN_VERSION}" \
       /opt/deepvariant/bin/make_examples \
       --mode training \
       --ref "${REF}" \
@@ -155,7 +155,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00064.gz \
   parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
     sudo docker run \
       -v /home/${USER}:/home/${USER} \
-      gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+      google/deepvariant:"${BIN_VERSION}" \
       /opt/deepvariant/bin/make_examples \
       --mode training \
       --ref "${REF}" \
@@ -180,7 +180,7 @@ copy to out GCS bucket.
   parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
     sudo docker run \
       -v /home/${USER}:/home/${USER} \
-      gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+      google/deepvariant:"${BIN_VERSION}" \
       /opt/deepvariant/bin/make_examples \
       --mode calling \
       --ref "${REF}" \
@@ -393,7 +393,7 @@ this dataset, and we do not recommend these as the best default either.
 ```
 ( time sudo docker run \
   -v /home/${USER}:/home/${USER} \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/model_train \
   --use_tpu \
   --master="grpc://${TPU_IP}:8470" \
@@ -436,7 +436,7 @@ At the same time, start `model_eval` on CPUs:
 ```
 sudo docker run \
   -v /home/${USER}:/home/${USER} \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/model_eval \
   --dataset_config_pbtxt="${OUTPUT_DIR}/validation_set.dataset_config.pbtxt" \
   --checkpoint_dir="${TRAINING_DIR}" \
@@ -552,7 +552,7 @@ run on CPUs.
 ```
 ( time sudo docker run \
     -v /home/${USER}:/home/${USER} \
-    gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+    google/deepvariant:"${BIN_VERSION}" \
     /opt/deepvariant/bin/call_variants \
     --outfile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
     --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
@@ -567,7 +567,7 @@ Then, run `postprocess_variants` to generate the final callsets in VCF format:
 ```
 ( time sudo docker run \
     -v /home/${USER}:/home/${USER} \
-    gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+    google/deepvariant:"${BIN_VERSION}" \
     /opt/deepvariant/bin/postprocess_variants \
     --ref "${REF}" \
     --infile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
@@ -621,11 +621,10 @@ The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
 
 ```bash
-#  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
 sudo docker run \
   -v "${DATA_DIR}:${DATA_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \
   --ref="${REF}" \

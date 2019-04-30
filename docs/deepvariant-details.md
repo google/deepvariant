@@ -237,7 +237,7 @@ An modified example command looks like:
 sudo docker run \
   -v "${INPUT_DIR}:/input" \
   -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant:0.8.0 \
+  google/deepvariant:0.8.0 \
   /opt/deepvariant/bin/make_examples \
   --mode calling \
   --ref "/input/${REF}" \

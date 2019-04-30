@@ -24,7 +24,7 @@ Here is an example command:
 sudo docker run \
   -v "${DATA_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WES \
   --ref="/input/${REF}" \

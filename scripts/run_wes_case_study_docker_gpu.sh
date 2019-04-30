@@ -55,13 +55,13 @@ aria2c -c -x10 -s10 -d "${INPUT_DIR}" https://storage.googleapis.com/deepvariant
 aria2c -c -x10 -s10 -d "${INPUT_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.fai
 
 ## Pull the docker image.
-sudo nvidia-docker pull gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}"
+sudo nvidia-docker pull google/deepvariant:"${BIN_VERSION}-gpu"
 
 echo "Run DeepVariant..."
 sudo nvidia-docker run \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant_gpu:"${BIN_VERSION}" \
+  google/deepvariant:"${BIN_VERSION}-gpu" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WES \
   --ref="/input/${REF}" \

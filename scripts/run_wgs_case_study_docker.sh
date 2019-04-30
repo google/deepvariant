@@ -65,13 +65,13 @@ aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testda
 aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.fai -d "${INPUT_DIR}"
 
 ## Pull the docker image.
-sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
+sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
 echo "Run DeepVariant..."
 sudo docker run \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \
   --ref="/input/${REF}" \

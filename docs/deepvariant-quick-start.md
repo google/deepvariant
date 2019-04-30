@@ -34,7 +34,7 @@ BIN_VERSION="0.8.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
-sudo docker pull gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}"
+sudo docker pull google/deepvariant:"${BIN_VERSION}"
 ```
 
 ### Download test data
@@ -118,7 +118,7 @@ You can run everything with the following command:
 sudo docker run \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  gcr.io/deepvariant-docker/deepvariant:"${BIN_VERSION}" \
+  google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
   --ref=/input/ucsc.hg19.chr20.unittest.fasta \
