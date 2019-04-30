@@ -190,6 +190,7 @@ py_test(
     name = "variant_caller_test",
     size = "small",
     srcs = ["variant_caller_test.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
@@ -265,6 +266,7 @@ py_binary(
     srcs = [
         "make_examples.py",
     ],
+    default_python_version = "PY2",
     main = "make_examples.py",
     deps = [
         ":make_examples_lib",
@@ -276,6 +278,7 @@ py_test(
     size = "large",
     srcs = ["make_examples_test.py"],
     data = [":testdata"],
+    default_python_version = "PY2",
     shard_count = 2,
     srcs_version = "PY2AND3",
     deps = [
@@ -325,6 +328,7 @@ py_library(
 py_binary(
     name = "call_variants",
     srcs = ["call_variants.py"],
+    default_python_version = "PY2",
     deps = [":call_variants_main_lib"],
 )
 
@@ -345,6 +349,7 @@ py_test(
     srcs = ["call_variants_test.py"],
     args = ["--use_tpu=false"],
     data = [":testdata"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":call_variants_main_lib",
@@ -369,6 +374,7 @@ py_test(
     size = "large",
     srcs = ["call_variants_accelerator_test.py"],
     data = [":testdata"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     tags = [
         "gpu_test",
@@ -403,6 +409,7 @@ py_test(
     size = "small",
     srcs = ["pileup_image_test.py"],
     data = [":testdata"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":pileup_image",
@@ -467,6 +474,7 @@ py_binary(
     srcs = [
         "postprocess_variants.py",
     ],
+    default_python_version = "PY2",
     main = "postprocess_variants.py",
     deps = [
         ":postprocess_variants_py_lib",
@@ -479,6 +487,7 @@ py_test(
     size = "small",
     srcs = ["postprocess_variants_test.py"],
     data = [":testdata"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":postprocess_variants_py_lib",
@@ -545,6 +554,7 @@ py_test(
     size = "medium",
     srcs = ["data_providers_test.py"],
     data = [":testdata"],
+    default_python_version = "PY2",
     main = "data_providers_test.py",
     srcs_version = "PY2AND3",
     deps = [
@@ -568,6 +578,7 @@ py_test(
     name = "haplotypes_test",
     size = "small",
     srcs = ["haplotypes_test.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":haplotypes",
@@ -599,6 +610,7 @@ py_test(
     name = "modeling_test",
     size = "medium",
     srcs = ["modeling_test.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":dv_constants",
@@ -625,6 +637,7 @@ py_library(
 py_binary(
     name = "model_train",
     srcs = ["model_train.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [":model_train_main_lib"],
 )
@@ -645,6 +658,7 @@ py_test(
     size = "medium",
     srcs = ["model_train_test.py"],
     data = [":testdata"],
+    default_python_version = "PY2",
     shard_count = 10,
     srcs_version = "PY2AND3",
     tags = ["nozapfhahn"],  # timeout
@@ -679,6 +693,7 @@ py_library(
 py_binary(
     name = "model_eval",
     srcs = ["model_eval.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [":model_eval_main_lib"],
 )
@@ -699,6 +714,7 @@ py_test(
     size = "large",
     srcs = ["model_eval_test.py"],
     data = [":testdata"],
+    default_python_version = "PY2",
     shard_count = 10,
     srcs_version = "PY2AND3",
     deps = [
@@ -732,6 +748,7 @@ py_test(
     name = "tf_utils_test",
     size = "small",
     srcs = ["tf_utils_test.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
@@ -758,6 +775,7 @@ py_test(
     name = "exclude_contigs_test",
     size = "small",
     srcs = ["exclude_contigs_test.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":exclude_contigs",
@@ -786,6 +804,7 @@ py_test(
     name = "dv_vcf_constants_test",
     size = "small",
     srcs = ["dv_vcf_constants_test.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":dv_vcf_constants",
@@ -798,6 +817,7 @@ py_test(
 py_binary(
     name = "resources",
     srcs = ["resources.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [":resources_main_lib"],
 )
@@ -812,6 +832,7 @@ py_library(
 py_test(
     name = "resources_test",
     srcs = ["resources_test.py"],
+    default_python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":resources_main_lib",
