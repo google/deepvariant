@@ -510,7 +510,7 @@ def read_make_examples_run_info(path):
 def write_make_examples_run_info(run_info_proto, path):
   """Writes a MakeExamplesRunInfo proto in text_format to path."""
   with tf.gfile.GFile(path, mode='w') as writer:
-    writer.write(text_format.MessageToString(run_info_proto))
+    writer.write(text_format.MessageToString(run_info_proto, float_format=''))
 
 
 # ---------------------------------------------------------------------------
