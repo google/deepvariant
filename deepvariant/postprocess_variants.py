@@ -333,7 +333,7 @@ def compute_quals(predictions, prediction_index):
   # Taking the min to avoid minor numerical issues than can push sum > 1.0.
   # redacted
   #   genomics_math.perror_to_phred(max(predictions[0], min_ref_confidence))
-  # where min_ref_confidence is something like 1e-15 (producing a qual of 150).
+  # where min_ref_confidence is roughly 1.25e-10 (producing a qual of 99).
   qual = genomics_math.ptrue_to_bounded_phred(min(sum(predictions[1:]), 1.0))
   rounded_qual = round(qual, _QUAL_PRECISION)
   return gq, rounded_qual

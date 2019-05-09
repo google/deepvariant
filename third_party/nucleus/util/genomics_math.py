@@ -96,7 +96,8 @@ log10_perror_to_perror = math_.log10_perror_to_perror
 zero_shift_log10_probs = math_.zero_shift_log10_probs
 
 # Maximum confidence in a variant call. Used to prevent overflow with log10.
-_MAX_CONFIDENCE = 1.0 - 1e-15
+# Note: -10 * log_10(1.25e-10) ~= 99.
+_MAX_CONFIDENCE = 1.0 - 1.25e-10
 
 LOG_10_OF_E = np.log10(np.e)
 LOG_E_OF_10 = np.log(10.0)
