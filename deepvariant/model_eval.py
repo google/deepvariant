@@ -110,8 +110,11 @@ flags.DEFINE_integer(
 flags.DEFINE_integer('max_evaluations', None,
                      'Max number of batches to evaluate')
 
-flags.DEFINE_integer('max_examples', 1000000,
-                     'Maximum number of examples to evaluate.')
+flags.DEFINE_integer(
+    'max_examples', None,
+    'Maximum number of examples to evaluate. Set to None (default) to evaluate '
+    'all examples. If not None, must be a positive integer and at most '
+    '`n_examples // max_example batches` will be evaluated.')
 
 flags.DEFINE_string('model_name', 'inception_v3',
                     'The name of the model to use for predictions.')
