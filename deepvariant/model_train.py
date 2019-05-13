@@ -157,6 +157,15 @@ flags.DEFINE_string(
     'performance in our tests. Set this flag to "" to not set the variable.')
 
 
+flags.DEFINE_integer(
+    'random_seed', 400620758,
+    'Random seed value to use for TensorFlow. Providing a value != 0 will '
+    'result in a call to tf.set_random_seed(FLAGS.random_seed), making '
+    'training more deterministic. If set to 0, the TensorFlow random seed '
+    'will not be set at all, and TensorFlow will assign it a pseudo-random '
+    'value each time model_train is run.')
+
+
 def loss(logits, one_hot_labels, label_smoothing):
   """Creates a loss function for training logits against one_hot_labels.
 
@@ -316,6 +325,12 @@ def main(_):
   proto_utils.uses_fast_cpp_protos_or_die()
 
   logging_level.set_from_flag()
+
+  if FLAGS.random_seed:
+    logging.info('Setting tf.random_seed to %d', FLAGS.random_seed)
+    tf.set_random_seed(FLAGS.random_seed)
+  else:
+    logging.info('Not setting tf.random_seed, will be assigned a random value')
 
   if FLAGS.kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
