@@ -246,19 +246,38 @@ flags.DEFINE_string(
 
 
 # ---------------------------------------------------------------------------
-# Option handling
+# Selecting variants of specific types (e.g., SNPs)
 # ---------------------------------------------------------------------------
 
+
+def _select_biallelic_snps(v):
+  return variant_utils.is_snp(v) and variant_utils.is_biallelic(v)
+
+
+def _select_biallelic_indels(v):
+  return variant_utils.is_indel(v) and variant_utils.is_biallelic(v)
+
+
+def _select_biallelic_insertions(v):
+  return variant_utils.has_insertion(v) and variant_utils.is_biallelic(v)
+
+
+def _select_biallelic_deletions(v):
+  return variant_utils.has_deletion(v) and variant_utils.is_biallelic(v)
+
+
 _VARIANT_TYPE_SELECTORS = {
-    'snps':
-        lambda v: variant_utils.is_snp(v) and variant_utils.is_biallelic(v),
-    'indels':
-        lambda v: variant_utils.is_indel(v) and variant_utils.is_biallelic(v),
-    'multi-allelics':
-        variant_utils.is_multiallelic,
-    'all':
-        lambda v: True,
+    'snps': _select_biallelic_snps,
+    'indels': _select_biallelic_indels,
+    'insertions': _select_biallelic_insertions,
+    'deletions': _select_biallelic_deletions,
+    'multi-allelics': variant_utils.is_multiallelic,
+    'all': lambda v: True,
 }
+
+# ---------------------------------------------------------------------------
+# Option handling
+# ---------------------------------------------------------------------------
 
 
 def parse_proto_enum_flag(proto_enum_pb2,
