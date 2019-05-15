@@ -125,14 +125,10 @@ def init():
       'golden.postprocess_single_site_input.tfrecord')
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.postprocess_single_site_output.vcf')
-  GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = deepvariant_testdata(
-      'golden.postprocess_single_site_output.vcf.gz')
   GOLDEN_POSTPROCESS_GVCF_INPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_input.tfrecord')
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_output.g.vcf')
-  GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED = deepvariant_testdata(
-      'golden.postprocess_gvcf_output.g.vcf.gz')
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
       'golden.training_examples.tfrecord.run_info.pbtxt')
   WS_ALLELE_COUNT_LINEAR_MODEL = deepvariant_testdata(

@@ -38,6 +38,8 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 import copy
 import errno
+import gzip
+import io
 import itertools
 import sys
 
@@ -293,16 +295,20 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
     postprocess_variants.main(['postprocess_variants.py'])
 
+    def _read_contents(path, decompress=False):
+      with tf.gfile.GFile(path, 'rb') as fin:
+        contents = fin.read()
+        if decompress:
+          contents = gzip.GzipFile(path, fileobj=io.BytesIO(contents)).read()
+        return contents
+
     self.assertEqual(
-        tf.gfile.GFile(FLAGS.outfile).readlines(),
-        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED
-                       if compressed_inputs_and_outputs else testdata
-                       .GOLDEN_POSTPROCESS_OUTPUT).readlines())
+        _read_contents(FLAGS.outfile, compressed_inputs_and_outputs),
+        _read_contents(testdata.GOLDEN_POSTPROCESS_OUTPUT))
     self.assertEqual(
-        tf.gfile.GFile(FLAGS.gvcf_outfile).readlines(),
-        tf.gfile.GFile(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED
-                       if compressed_inputs_and_outputs else testdata
-                       .GOLDEN_POSTPROCESS_GVCF_OUTPUT).readlines())
+        _read_contents(FLAGS.gvcf_outfile, compressed_inputs_and_outputs),
+        _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT))
+
     if compressed_inputs_and_outputs:
       self.assertTrue(tf.gfile.Exists(FLAGS.outfile + '.tbi'))
       self.assertTrue(tf.gfile.Exists(FLAGS.gvcf_outfile + '.tbi'))
