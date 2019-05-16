@@ -46,6 +46,7 @@ import tensorflow as tf
 
 from deepvariant import dv_constants
 from deepvariant import modeling
+from deepvariant import tf_utils
 
 slim = tf.contrib.slim
 
@@ -73,6 +74,41 @@ class ModelingTest(
     self.assertEqual(['n_classes'], model.n_classes_model_variable)
     self.assertEqual(['logits'], model.excluded_scopes_for_incompatible_shapes)
     self.assertEqual('path', model.pretrained_model_path)
+
+  def test_is_encoded_variant_type(self):
+    types = [
+        tf_utils.EncodedVariantType.SNP.value,
+        tf_utils.EncodedVariantType.INDEL.value
+    ]
+    tensor = tf.constant(types * 4, dtype=tf.int64)
+
+    def _run(tensor_to_run):
+      with self.test_session() as sess:
+        return list(sess.run(tensor_to_run))
+
+    self.assertEqual(
+        _run(
+            modeling.is_encoded_variant_type(tensor,
+                                             tf_utils.EncodedVariantType.SNP)),
+        [True, False] * 4)
+    self.assertEqual(
+        _run(
+            modeling.is_encoded_variant_type(
+                tensor, tf_utils.EncodedVariantType.INDEL)), [False, True] * 4)
+
+  @parameterized.parameters([True, False])
+  def test_eval_metric_fn(self, include_variant_types):
+    labels = tf.constant([1, 0], dtype=tf.int64)
+    predictions = tf.constant([[1, 0], [0, 1]], dtype=tf.int64)
+    if include_variant_types:
+      variant_types = tf.constant([0, 1], dtype=tf.int64)
+    else:
+      variant_types = None
+
+    expected = modeling.eval_function_metrics(
+        has_variant_types=include_variant_types)
+    actual = modeling.eval_metric_fn(labels, predictions, variant_types)
+    self.assertEqual(set(expected.keys()), set(actual.keys()))
 
   def test_variables_to_restore_from_model(self):
     model = modeling.DeepVariantModel('test', 'path')

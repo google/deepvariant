@@ -37,6 +37,7 @@ from __future__ import division
 from __future__ import print_function
 
 
+import enum
 import numpy as np
 
 import tensorflow as tf
@@ -46,6 +47,7 @@ from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import variant_utils
 from tensorflow.core.example import example_pb2
 
 # Convert strings up to this length, then clip.  We picked a number that
@@ -54,6 +56,49 @@ from tensorflow.core.example import example_pb2
 STRING_TO_INT_MAX_CONTENTS_LEN = 1020
 # This is the length of the resulting buffer (including the length entry).
 STRING_TO_INT_BUFFER_LENGTH = STRING_TO_INT_MAX_CONTENTS_LEN + 1
+
+
+class EncodedVariantType(enum.Enum):
+  """Enum capturing the int64 values we encode for different variant types.
+
+  TPUs really like fixed length features, which makes it very difficult to use
+  extract the type of a variant for an example using an encoded Variant
+  protobufs or even a string value like "snp". The current best option appears
+  to be to encode the type of a variant directly in an example as an int64. This
+  enum provides a mapping between those raw int64 values in the example and a
+  human-meaningful name for that type.
+  """
+  UNKNOWN = 0  # A variant of unknown type.
+  SNP = 1  # The variant is a SNP.
+  INDEL = 2  # The variant is an indel.
+
+
+def encoded_variant_type(variant):
+  """Gets the EncodedVariantType for variant.
+
+  This function examines variant and returns the EncodedVariantType that best
+  describes the variation type of variant. For example, if variant has
+  `reference_bases = "A"` and `alternative_bases = ["C"]` this function would
+  return EncodedVariantType.SNP.
+
+  Args:
+    variant: nucleus.Variant proto. The variant whose EncodedVariantType we want
+      to get.
+
+  Returns:
+    EncodedVariantType enum value.
+  """
+  if variant_utils.is_snp(variant):
+    return EncodedVariantType.SNP
+  elif variant_utils.is_indel(variant):
+    return EncodedVariantType.INDEL
+  else:
+    return EncodedVariantType.UNKNOWN
+
+
+def example_variant_type(example):
+  """Gets the locus field from example as a string."""
+  return example.features.feature['variant_type'].int64_list.value[0]
 
 
 def example_locus(example):
@@ -233,6 +278,8 @@ def make_example(variant,
           ranges.make_range(variant.reference_name, variant.start,
                             variant.end)))
   example_set_variant(example, variant)
+  variant_type = encoded_variant_type(variant).value
+  features.feature['variant_type'].int64_list.value.append(variant_type)
   all_alts = list(variant.alternate_bases)
   alt_indices = sorted(all_alts.index(alt) for alt in alt_alleles)
 

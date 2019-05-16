@@ -688,7 +688,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     self.assertEqual(variant.reference_name, expected.reference_name)
     self.assertEqual(variant.start, expected.start)
     self.assertEqual(variant.end, expected.end)
-    self.assertAlmostEquals(variant.quality, expected.quality, places=6)
+    self.assertAlmostEqual(variant.quality, expected.quality, places=6)
     self.assertEqual(variant.filter, expected.filter)
     self.assertEqual(len(variant.calls), 1)
     self.assertEqual(len(expected.calls), 1)
@@ -696,7 +696,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     self.assertEqual(variant.calls[0].info['GQ'], expected.calls[0].info['GQ'])
     for gl, expected_gl in zip(variant.calls[0].genotype_likelihood,
                                expected.calls[0].genotype_likelihood):
-      self.assertAlmostEquals(gl, expected_gl, places=6)
+      self.assertAlmostEqual(gl, expected_gl, places=6)
 
   @parameterized.parameters(
       (
@@ -769,8 +769,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
   )
   def test_compute_quals(self, probs, call, expected_gq, expected_qual):
     gq, qual = postprocess_variants.compute_quals(probs, call)
-    self.assertEquals(gq, expected_gq)
-    self.assertAlmostEquals(qual, expected_qual, places=6)
+    self.assertEqual(gq, expected_gq)
+    self.assertAlmostEqual(qual, expected_qual, places=6)
 
   @parameterized.parameters(
       # Make sure code is robust to minor numerical issues where the sum of
@@ -787,8 +787,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
         genomics_math.ptrue_to_bounded_phred(1.0),
         postprocess_variants._QUAL_PRECISION)
     gq, qual = postprocess_variants.compute_quals(probs, call)
-    self.assertEquals(expected_gq, gq)
-    self.assertEquals(max_qual, qual)
+    self.assertEqual(expected_gq, gq)
+    self.assertEqual(max_qual, qual)
 
   @parameterized.parameters(
       # Standard diploid case with 1 alt allele.

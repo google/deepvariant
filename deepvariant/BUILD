@@ -615,6 +615,7 @@ py_test(
     deps = [
         ":dv_constants",
         ":modeling",
+        ":tf_utils",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -741,6 +742,7 @@ py_library(
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:variant_utils",
     ],
 )
 

@@ -57,12 +57,19 @@ from deepvariant import tf_utils
 slim = tf.contrib.slim
 FLAGS = flags.FLAGS
 
-increasing_metrics = [
-    'Accuracy/All', 'Precision/All', 'Recall/All', 'FPs/All', 'FNs/All',
-    'TPs/All', 'TNs/All', 'Recall/Het', 'Recall/HomVar', 'Precision/Het',
-    'Precision/HomVar', 'F1/All'
-]
-decreasing_metrics = ['loss']
+
+def _get_metric_names(required_ordering):
+  metrics = modeling.eval_function_metrics(has_variant_types=True)
+  return [
+      name for name, ordering in metrics.items()
+      if ordering == required_ordering
+  ]
+
+
+increasing_metrics = _get_metric_names(
+    required_ordering=modeling.EvalMetricOrdering.BIGGER_IS_BETTER)
+decreasing_metrics = ['loss'] + _get_metric_names(
+    required_ordering=modeling.EvalMetricOrdering.SMALLER_IS_BETTER)
 
 flags.DEFINE_integer('batch_size', 1024, 'The number of samples in each batch.')
 

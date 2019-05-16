@@ -39,12 +39,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import itertools
 import math
 
 
 
 from absl import flags
 from absl import logging
+import enum
 
 import tensorflow as tf
 
@@ -195,41 +197,157 @@ def get_f1_score(labels, predictions, target_class=None):
   return f1_score, update_op
 
 
+def is_encoded_variant_type(variant_types_tensor, type_to_select):
+  """Returns a bool tensor indicating which variant_types match type_to_select.
+
+  Args:
+    variant_types_tensor: Tensor of shape (batch_size, 1) containing
+      EncodedVariantType.value int64 values. Each element of this tensor should
+      be a EncodedVariantType.value int64 value indicating the type of the
+      variant.
+    type_to_select: EncodedVariantType. The type of variant we want to select.
+
+  Returns:
+    Tensor of shape (batch_size, 1) of type tf.bool. A True value indicates that
+    the variant_type at that position matched type_to_select. Has a False
+    otherwise.
+  """
+  return tf.equal(variant_types_tensor,
+                  tf.constant(type_to_select.value, dtype=tf.int64))
+
+
+# This dictionary contains a mapping from the human readable name of a metric
+# function (e.g., Accuracy) and its associated TensorFlow metric function. All
+# of the entries here will be stratified by variant_type in eval_metric_fn.
+_METRICS_FUNCS_BY_VARIANT_TYPE = {
+    'Accuracy': tf.metrics.accuracy,
+    'Precision': tf.metrics.precision,
+    'Recall': tf.metrics.recall,
+    'FPs': tf.metrics.false_positives,
+    'FNs': tf.metrics.false_negatives,
+    'TPs': tf.metrics.true_positives,
+    'TNs': tf.metrics.true_negatives,
+}
+
+# A set containing the names of the variant types we split our metrics by type
+# by. This data structure isn't a dictionary like it's neighbors because
+# eval_metric_fn requires special logic to compute the values here associated
+# with each of these names.
+_METRICS_BY_VARIANT_TYPE = {'All', 'SNPs', 'Indels'}
+
+# This dictionary contains a mapping from the human readable name of a genotype
+# class (e.g., Het) and its associated class label (e.g., 1). All of the entries
+# here will be stratified by genotype_class in eval_metric_fn.
+_METRICS_GENOTYPE_CLASSES = {
+    'HomRef': 0,
+    'Het': 1,
+    'HomVar': 2,
+}
+
+# This dictionary contains a mapping from the human readable name of a metric
+# function (e.g., Accuracy) and its associated metric function. All
+# of the entries here will be stratified by genotype class (e.g., Het) in
+# eval_metric_fn.
+_METRICS_FUNCS_BY_GENOTYPE_CLASS = {
+    'Precision': get_class_precision,
+    'Recall': get_class_recall,
+    'F1': get_f1_score,
+}
+
+
+def _eval_name(metric_name, stratification_name):
+  return metric_name + '/' + stratification_name
+
+
+class EvalMetricOrdering(enum.Enum):
+  """Enum capturing whether a better metric should be larger or smaller."""
+  BIGGER_IS_BETTER = 1
+  SMALLER_IS_BETTER = 2
+
+
+def eval_function_metrics(has_variant_types=True):
+  """Gets the set of eval_metrics names and their directionality.
+
+  Args:
+    has_variant_types: bool. Will we be providing variant_type information
+      during eval so that we'll have metrics stratified by variant_type?
+
+  Returns:
+    dict mapping from a metric name string (e.g., "F1/All") and a
+    EvalMetricOrdering enum indicating whether larger metric values are better
+    or worse.
+  """
+  names = {_eval_name('F1', 'All'): EvalMetricOrdering.BIGGER_IS_BETTER}
+
+  if has_variant_types:
+    variant_type_names = _METRICS_BY_VARIANT_TYPE
+  else:
+    variant_type_names = {'All'}
+  for m, s in itertools.product(_METRICS_FUNCS_BY_VARIANT_TYPE,
+                                variant_type_names):
+    names[_eval_name(m, s)] = EvalMetricOrdering.BIGGER_IS_BETTER
+
+  for m, s in itertools.product(_METRICS_FUNCS_BY_GENOTYPE_CLASS,
+                                _METRICS_GENOTYPE_CLASSES):
+    names[_eval_name(m, s)] = EvalMetricOrdering.BIGGER_IS_BETTER
+
+  return names
+
+
 # NB. This includes only a subset of our usual metrics.
 # We'll add the rest back in a subsequent change.
-def eval_metric_fn(labels, predictions, unused_encoded_variants):
+def eval_metric_fn(labels, predictions, variant_types):
   """Calculate eval metrics from Tensors, on CPU host.
 
   Args:
     labels: the ground-truth labels for the examples.
     predictions: the predicted labels for the examples.
-    unused_encoded_variants: the encoded variants.
+    variant_types: variant types (int64 of EncodedVariantType.value) as a tensor
+      of (batch_size,) or None. The types of these variants. If None, no type
+      specific evals will be performed.
 
   Returns:
-    a dictionary of string name to metric.
+    A dictionary of string name to metric.
   """
+  predicted_classes = tf.argmax(input=predictions, axis=1)
 
-  predicted_class = tf.argmax(input=predictions, axis=1)
+  metrics = {}
 
-  metrics = {
-      'Accuracy/All': tf.metrics.accuracy(labels, predicted_class),
-      'Precision/All': tf.metrics.precision(labels, predicted_class),
-      'Recall/All': tf.metrics.recall(labels, predicted_class),
-      'FPs/All': tf.metrics.false_positives(labels, predicted_class),
-      'FNs/All': tf.metrics.false_negatives(labels, predicted_class),
-      'TPs/All': tf.metrics.true_positives(labels, predicted_class),
-      'TNs/All': tf.metrics.true_negatives(labels, predicted_class),
-      'Recall/HomRef': get_class_recall(labels, predicted_class, 0),
-      'Recall/Het': get_class_recall(labels, predicted_class, 1),
-      'Recall/HomVar': get_class_recall(labels, predicted_class, 2),
-      'Precision/HomRef': get_class_precision(labels, predicted_class, 0),
-      'Precision/Het': get_class_precision(labels, predicted_class, 1),
-      'Precision/HomVar': get_class_precision(labels, predicted_class, 2),
-      'F1/All': get_f1_score(labels, predicted_class),
-      'F1/HomRef': get_f1_score(labels, predicted_class, 0),
-      'F1/Het': get_f1_score(labels, predicted_class, 1),
-      'F1/HomVar': get_f1_score(labels, predicted_class, 2),
-  }
+  # Add the metrics stratified by variant_type
+  weights_by_type = {'All': None}
+  if variant_types is not None:
+    weights_by_type['SNPs'] = is_encoded_variant_type(
+        variant_types, tf_utils.EncodedVariantType.SNP)
+    weights_by_type['Indels'] = is_encoded_variant_type(
+        variant_types, tf_utils.EncodedVariantType.INDEL)
+
+  for metric_name, metric_func in _METRICS_FUNCS_BY_VARIANT_TYPE.items():
+    for weight_name, weights in weights_by_type.items():
+      metrics[_eval_name(metric_name, weight_name)] = metric_func(
+          labels, predicted_classes, weights=weights)
+
+  # Add the metrics stratified by predicted class.
+  for metric_name, metric_func in _METRICS_FUNCS_BY_GENOTYPE_CLASS.items():
+    for class_name, class_value in _METRICS_GENOTYPE_CLASSES.items():
+      metrics[_eval_name(metric_name,
+                         class_name)] = metric_func(labels, predicted_classes,
+                                                    class_value)
+
+  # Special case F1/All to avoid a clash between the two different ways that we
+  # can compute Precision and Recall (e.g., get_class_precision vs.
+  # tf.metrics.precision.
+  metrics[_eval_name('F1', 'All')] = get_f1_score(labels, predicted_classes)
+
+  logging.info('Metrics are %s', metrics.keys())
+
+  # Make sure our metrics are consistent with the expected names from
+  # eval_function_metrics.
+  expected_metrics = eval_function_metrics(
+      has_variant_types=variant_types is not None)
+  if set(expected_metrics) != set(metrics):
+    raise AssertionError(
+        'Bug: actual metrics={} not equal to expected={}'.format(
+            ','.join(metrics), ','.join(expected_metrics)))
 
   return metrics
 
@@ -898,9 +1016,8 @@ class DeepVariantSlimModel(DeepVariantModel):
       eval_predictions = logits
     else:
       eval_predictions = endpoints['Predictions']
-    encoded_variants = features['variant']
-    eval_metrics = (eval_metric_fn,
-                    [labels, eval_predictions, encoded_variants])
+    variant_type = features['variant_type']
+    eval_metrics = (eval_metric_fn, [labels, eval_predictions, variant_type])
     if not self.use_tpu:
       for name, value in eval_metrics[0](*eval_metrics[1]).iteritems():
         tf.contrib.slim.summaries.add_scalar_summary(
@@ -1125,8 +1242,9 @@ class DeepVariantRandomGuessModel(DeepVariantDummyModel):
       }
 
     if mode == tf.estimator.ModeKeys.EVAL:
-      eval_metrics = (eval_metric_fn,
-                      [labels, endpoints['Predictions'], encoded_variants])
+      eval_metrics = (eval_metric_fn, [
+          labels, endpoints['Predictions'], endpoints['variant_type']
+      ])
     else:
       eval_metrics = None
 
@@ -1195,6 +1313,12 @@ class DeepVariantConstantModel(DeepVariantDummyModel):
     pred_const = tf.constant(self.predictions)
     endpoints = self._predictions(pred_const, batch_size)
     encoded_variants = features['variant']
+    # For the constant model, which is for testing only, we just set the
+    # variant_types to 0s. This is needed because it doesn't work to fetch
+    # 'variant_type' from either features or endpoints here. Annoying.
+    # variant_types = features['variant_type']     # Fails.
+    # variant_types = endpoints['variant_type']    # Fails.
+    variant_types = tf.zeros(shape=(batch_size,), dtype=tf.int64)
 
     if mode == tf.estimator.ModeKeys.PREDICT:
       predictions = {
@@ -1206,7 +1330,7 @@ class DeepVariantConstantModel(DeepVariantDummyModel):
 
     if mode == tf.estimator.ModeKeys.EVAL:
       eval_metrics = (eval_metric_fn,
-                      [labels, endpoints['Predictions'], encoded_variants])
+                      [labels, endpoints['Predictions'], variant_types])
     else:
       eval_metrics = None
 

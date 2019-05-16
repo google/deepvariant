@@ -131,6 +131,8 @@ class TFUtilsTest(parameterized.TestCase):
     self.assertEqual('1:11-11', tf_utils.example_locus(example))
     self.assertEqual([0], tf_utils.example_alt_alleles_indices(example))
     self.assertEqual('1:11:C->A', tf_utils.example_key(example))
+    self.assertEqual(tf_utils.EncodedVariantType.SNP.value,
+                     tf_utils.example_variant_type(example))
 
   def testMakeExampleMultiAllelic(self):
     alts = ['AA', 'CC', 'GG']
@@ -141,6 +143,8 @@ class TFUtilsTest(parameterized.TestCase):
     self.assertEqual([0, 2], tf_utils.example_alt_alleles_indices(example))
     self.assertEqual(['AA', 'GG'], tf_utils.example_alt_alleles(example))
     self.assertEqual('1:11:C->AA/GG', tf_utils.example_key(example))
+    self.assertEqual(tf_utils.EncodedVariantType.INDEL.value,
+                     tf_utils.example_variant_type(example))
 
   def testAltAllelesWithVariant(self):
     alts = list(self.variant.alternate_bases)

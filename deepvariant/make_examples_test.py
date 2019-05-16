@@ -78,6 +78,7 @@ _EXAMPLE_DECODERS = {
     'alt_allele_indices/encoded': tf_utils.example_alt_alleles_indices,
     'image/encoded': tf_utils.example_encoded_image,
     'variant/encoded': tf_utils.example_variant,
+    'variant_type': tf_utils.example_variant_type,
     'label': tf_utils.example_label,
     'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
@@ -404,7 +405,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         continue
       # We expect to immediately follow the end of a gvcf record but to occur
       # at the base immediately after a variant, since the variant's end can
-      # span over a larger interval when its a deletion and we still produce
+      # span over a larger interval when it's a deletion and we still produce
       # gvcf records under the deletion.
       expected_start = v1.end if v1.alternate_bases == ['<*>'] else v1.start + 1
       self.assertEqual(v2.start, expected_start)

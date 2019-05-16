@@ -373,6 +373,24 @@ class DataProviderTest(parameterized.TestCase):
         max_examples=max_examples)
     self.assertEqual(expected, dataset.num_examples)
 
+  def test_features_extraction_spec_for_mode(self):
+    dataset = make_golden_dataset()
+
+    shared_feature_names = {
+        'image/encoded', 'variant/encoded', 'alt_allele_indices/encoded',
+        'variant_type'
+    }
+    self.assertEqual(
+        shared_feature_names,
+        set(
+            dataset.features_extraction_spec_for_mode(
+                include_label_and_locus=False).keys()))
+    self.assertEqual(
+        shared_feature_names.union({'label', 'locus'}),
+        set(
+            dataset.features_extraction_spec_for_mode(
+                include_label_and_locus=True).keys()))
+
 
 class InputTest(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):

@@ -170,6 +170,7 @@ class DeepVariantInput(object):
         'image/encoded': tf.FixedLenFeature((), tf.string),
         'variant/encoded': tf.FixedLenFeature((), tf.string),
         'alt_allele_indices/encoded': tf.FixedLenFeature((), tf.string),
+        'variant_type': tf.FixedLenFeature((), tf.int64),
     }
     if include_label_and_locus:
       # N.B. int32 fails here on TPU.
@@ -223,6 +224,9 @@ class DeepVariantInput(object):
           features['locus'] = tf_utils.string_to_int_tensor(parsed['locus'])
         else:
           features['locus'] = parsed['locus']
+
+        # Add variant_type to our features if are in TRAIN or EVAL mode.
+        features['variant_type'] = parsed['variant_type']
 
         if self.mode in (tf.estimator.ModeKeys.TRAIN,
                          tf.estimator.ModeKeys.EVAL):
