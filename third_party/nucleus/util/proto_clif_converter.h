@@ -70,6 +70,9 @@ bool Clif_PyObjAs(PyObject* py, EmptyProtoPtr<T>* c) {
   } else {
     c->p_ = dynamic_cast<T*>(cpb);
     if (c->p_ == nullptr) {
+      // DO NOT DELETE THIS WARNING!  Without it, the above dynamic_cast
+      // will fail when running from a Python 3 pip package.
+      LOG(WARNING) << "Failed to cast type " << typeid(*cpb).name();
       PyErr_SetString(PyExc_RuntimeError, "Dynamic cast failed");
       return false;
     }
@@ -101,6 +104,9 @@ bool Clif_PyObjAs(PyObject* py, ConstProtoPtr<T>* c) {
   } else {
     c->p_ = dynamic_cast<const T*>(cpb);
     if (c->p_ == nullptr) {
+      // DO NOT DELETE THIS WARNING!  Without it, the above dynamic_cast
+      // will fail when running from a Python 3 pip package.
+      LOG(WARNING) << "Failed to cast type " << typeid(*cpb).name();
       PyErr_SetString(PyExc_RuntimeError, "Dynamic cast failed");
       return false;
     }

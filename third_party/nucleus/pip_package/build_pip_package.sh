@@ -45,7 +45,7 @@ set -x
 # egg_files/PKG-INFO.
 NUCLEUS_VERSION="0.3.0"
 PACKAGE_NAME="google_nucleus-${NUCLEUS_VERSION}"
-PYTHON_VERSION="2.7"
+PYTHON_VERSION="3.4"
 
 TMPDIR=$(mktemp -d -t tmp.XXXXXXXXXXX)
 TOPDIR="${TMPDIR}/${PACKAGE_NAME}"
@@ -91,6 +91,13 @@ popd
 # google/protobuf/pyext/_message.so with a relative link.
 pushd "${TOPDIR}"
 find "nucleus" -name '*.so' -exec ln -f -s -r "google/protobuf/pyext/_message.so" {} \;
+popd
+
+# Recent versions of protobuf have a _message.so file named
+# _message.cpython-35m-x86_64-linux-gnu.so
+# so we create a symbolic link at that filename so that we overwrite it.
+pushd "${TOPDIR}/google/protobuf/pyext"
+ln -f -s "_message.so" "_message.cpython-35m-x86_64-linux-gnu.so"
 popd
 
 # Create tar file

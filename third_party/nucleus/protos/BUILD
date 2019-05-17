@@ -274,7 +274,7 @@ py_proto_library(
     srcs = ["bed.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -282,7 +282,7 @@ py_proto_library(
     srcs = ["bedgraph.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -290,7 +290,7 @@ py_proto_library(
     srcs = ["cigar.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -298,7 +298,7 @@ py_proto_library(
     srcs = ["gff.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = [":range_py_pb2"],
 )
 
@@ -307,7 +307,7 @@ py_proto_library(
     srcs = ["fasta.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = [
         ":range_py_pb2",
         ":reference_py_pb2",
@@ -319,7 +319,7 @@ py_proto_library(
     srcs = ["fastq.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -327,7 +327,7 @@ py_proto_library(
     srcs = ["position.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -335,7 +335,7 @@ py_proto_library(
     srcs = ["range.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -343,7 +343,7 @@ py_proto_library(
     srcs = ["reads.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = [
         ":cigar_py_pb2",
         ":position_py_pb2",
@@ -357,7 +357,7 @@ py_proto_library(
     srcs = ["reference.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = [
         ":range_py_pb2",
     ],
@@ -368,7 +368,7 @@ py_proto_library(
     srcs = ["struct.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -376,7 +376,7 @@ py_proto_library(
     srcs = ["variants.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = [
         ":reference_py_pb2",
         ":struct_py_pb2",
@@ -388,7 +388,7 @@ py_proto_library(
     srcs = ["feature.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 py_proto_library(
@@ -396,7 +396,7 @@ py_proto_library(
     srcs = ["example.proto"],
     default_runtime = "@protobuf_archive//:protobuf_python",
     protoc = "@protobuf_archive//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = [
         ":feature_py_pb2",
     ],
