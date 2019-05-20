@@ -154,7 +154,6 @@ extern "C" {
       return INITFUNC_ERRORVAL;
     }
 
-    fprintf(stderr, "Loading Nucleus protobuf descriptors\n");
     nucleus::genomics::v1::BedGraphRecord().descriptor();
     nucleus::genomics::v1::BedRecord().descriptor();
     nucleus::genomics::v1::BedHeader().descriptor();
