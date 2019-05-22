@@ -39,6 +39,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 import collections
 import copy
 import itertools
+import os
 import tempfile
 import time
 
@@ -66,6 +67,7 @@ from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant import tf_utils
+from deepvariant import vcf_stats
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
 
@@ -102,6 +104,12 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'gvcf_outfile', None,
     'Optional. Destination path where we will write the Genomic VCF output.')
+flags.DEFINE_boolean(
+    'create_vcf_stats', False, 'Optional. In addition to VCF file, write json '
+    'summary to same output directory.')
+flags.DEFINE_string(
+    'vcf_stats_outfile', None, 'Optional. Destination path where we will '
+    'write the Genomic VCF output.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -347,9 +355,11 @@ def expected_alt_allele_indices(num_alternate_bases):
       for x in itertools.combinations(range(num_alleles), 2)
   ]
   # alt_allele_indices starts from 0, where 0 refers to the first alt allele.
+  # pylint: disable=g-complex-comprehension
   return sorted([[i - 1
                   for i in alt_allele_indices]
                  for alt_allele_indices in alt_allele_indices_list])
+  # pylint: enable=g-complex-comprehension
 
 
 def _check_alt_allele_indices(call_variants_outputs):
@@ -865,6 +875,30 @@ def merge_and_write_variants_and_nonvariants(
         nonvariant = next_or_none(nonvariant_iterable)
 
 
+def _get_json_outfile_path(input_vcf, output_json):
+  """Returns a path to the VCF stats json file.
+
+  Args:
+    input_vcf: string. Path to VCF for which to compute stats.
+    output_json: string. Path to json file that will contain VCF stats.
+
+  Returns:
+    The path to the json file, which is vcf_stats_outfile or derived from the
+    VCF name if the flag is unspecified.
+  """
+  json_path = output_json
+  if not output_json:
+    dirname, basename = os.path.split(input_vcf)
+    if basename.endswith('.vcf'):
+      newname = basename[:-4] + '.json'
+    elif basename.endswith('.vcf.gz'):
+      newname = basename[:-7] + '.json'
+    else:
+      newname = basename + '.json'
+    json_path = os.path.join(dirname, newname)
+  return json_path
+
+
 def main(argv=()):
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
@@ -948,6 +982,12 @@ def main(argv=()):
           tabix.build_index(FLAGS.gvcf_outfile)
         logging.info('Finished writing VCF and gVCF in %s minutes.',
                      (time.time() - start_time) / 60)
+      if FLAGS.create_vcf_stats:
+        json_file = _get_json_outfile_path(FLAGS.outfile,
+                                           FLAGS.vcf_stats_outfile)
+        with vcf.VcfReader(FLAGS.outfile) as reader:
+          stats_json = vcf_stats.variants_to_stats_json(reader.iterate())
+          vcf_stats.write_json(stats_json, json_file)
 
 
 if __name__ == '__main__':

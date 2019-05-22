@@ -1106,6 +1106,16 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     self.assertEqual(actual, expected)
 
   @parameterized.parameters(
+      ('/tmp/test.vcf', '', '/tmp/test.json'),
+      ('/tmp/test.vcf.gz', '', '/tmp/test.json'),
+      ('/tmp/test.vcf', 'output.json', 'output.json'),
+      ('test', '', 'test.json'),
+  )
+  def test_get_json_outfile_path(self, input_vcf, output_json, expected):
+    actual = postprocess_variants._get_json_outfile_path(input_vcf, output_json)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
       # One alt, with het GLs.
       (['C'], [-2.0457574905606752, -0.004364805402450088, -3.0], [0.75]),
       # Multi alts.

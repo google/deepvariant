@@ -447,6 +447,7 @@ py_library(
         ":dv_vcf_constants",
         ":logging_level",
         ":tf_utils",
+        ":vcf_stats",
         "//deepvariant:haplotypes",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:postprocess_variants",
@@ -838,6 +839,43 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":resources_main_lib",
+        "@absl_py//absl/testing:absltest",
+    ],
+)
+
+py_binary(
+    name = "run_vcf_stats",
+    srcs = ["run_vcf_stats.py"],
+    default_python_version = "PY2",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":vcf_stats",
+        "//third_party/nucleus/io:vcf",
+    ],
+)
+
+py_library(
+    name = "vcf_stats",
+    srcs = ["vcf_stats.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
+        "@absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "vcf_stats_test",
+    srcs = ["vcf_stats_test.py"],
+    data = [":testdata"],
+    default_python_version = "PY2",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":py_testdata",
+        ":resources_main_lib",
+        ":vcf_stats",
+        "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
     ],
 )
