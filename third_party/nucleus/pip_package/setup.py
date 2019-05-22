@@ -103,6 +103,9 @@ def main():
       i = args.index('--record')
       record_file = args[i+1]
 
+    print('Removing old _message.cpython-*.so files')
+    os.system('rm -f ' + destination + '/google/protobuf/pyext/_message.cpython-*.so')
+
     print('Installing Nucleus to ' + destination
           + ' with record file at ' + record_file)
     os.system('cp -R -v google nucleus ' + destination

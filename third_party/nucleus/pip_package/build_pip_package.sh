@@ -93,10 +93,11 @@ pushd "${TOPDIR}"
 find "nucleus" -name '*.so' -exec ln -f -s -r "google/protobuf/pyext/_message.so" {} \;
 popd
 
-# Recent versions of protobuf have a _message.so file named
-# _message.cpython-35m-x86_64-linux-gnu.so
-# so we create a symbolic link at that filename so that we overwrite it.
+# Some versions of protobuf have _message.so files named
+# _message.cpython-34m.so or _message.cpython-35m-x86_64-linux-gnu.so
+# so we create a symbolic link at those filenames so that we overwrite them.
 pushd "${TOPDIR}/google/protobuf/pyext"
+ln -f -s "_message.so" "_message.cpython-34m.so"
 ln -f -s "_message.so" "_message.cpython-35m-x86_64-linux-gnu.so"
 popd
 
