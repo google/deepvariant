@@ -146,7 +146,9 @@ UNCOMPRESSED_REF="${DATA_DIR}/hs37d5.fa"
 function run_happy() {
   zcat <"${REF}" >"${UNCOMPRESSED_REF}"
 
-  sudo docker pull pkrusche/hap.py
+  # Pulling twice in case the first one times out.
+  sudo docker pull pkrusche/hap.py || \
+    (sleep 5 ; sudo docker pull pkrusche/hap.py)
   sudo docker run -i \
   -v "${DATA_DIR}:${DATA_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
