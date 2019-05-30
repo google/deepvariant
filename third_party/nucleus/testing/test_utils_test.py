@@ -73,8 +73,9 @@ class TestUtilsTests(absltest.TestCase):
     self.assertEqual(read.fragment_name, name)
 
   def test_make_read_produces_unique_read_names(self):
-    read1 = test_utils.make_read('A')
-    read2 = test_utils.make_read('A')
+    start = 0
+    read1 = test_utils.make_read('A', start=start)
+    read2 = test_utils.make_read('A', start=start)
     self.assertGreater(len(read1.fragment_name), 0)
     self.assertGreater(len(read2.fragment_name), 0)
     self.assertNotEqual(read1.fragment_name, read2.fragment_name)

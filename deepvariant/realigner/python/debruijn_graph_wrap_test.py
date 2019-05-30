@@ -259,7 +259,8 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
         else:
           raise ValueError('Unexpected base type')
 
-      read = test_utils.make_read(''.join(bases), cigar=cigar, quals=quals)
+      read = test_utils.make_read(
+          ''.join(bases), start=0, cigar=cigar, quals=quals)
 
       # Use two reads so read path doesn't get pruned.
       dbg = debruijn_graph.build(ref_str, [read, read],

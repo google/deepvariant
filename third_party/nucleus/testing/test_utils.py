@@ -264,11 +264,11 @@ def make_variant_multiple_calls(chrom='chr1',
 
 
 def make_read(bases,
+              start,
               quals=None,
               cigar=None,
               mapq=50,
               chrom='chr1',
-              start=1,
               name=None):
   """Makes a nucleus.genomics.v1.Read for testing."""
   if quals and len(bases) != len(quals):
