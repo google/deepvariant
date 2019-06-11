@@ -105,11 +105,8 @@ flags.DEFINE_string(
     'gvcf_outfile', None,
     'Optional. Destination path where we will write the Genomic VCF output.')
 flags.DEFINE_boolean(
-    'create_vcf_stats', False, 'Optional. In addition to VCF file, write json '
-    'summary to same output directory.')
-flags.DEFINE_string(
-    'vcf_stats_outfile', None, 'Optional. Destination path where we will '
-    'write the Genomic VCF output.')
+    'create_vcf_stats', False, 'Optional. In addition to VCF file, write per '
+    'record and summary stats to JSON files in the same output directory.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -875,28 +872,23 @@ def merge_and_write_variants_and_nonvariants(
         nonvariant = next_or_none(nonvariant_iterable)
 
 
-def _get_json_outfile_path(input_vcf, output_json):
+def _get_stats_paths(input_vcf):
   """Returns a path to the VCF stats json file.
 
   Args:
     input_vcf: string. Path to VCF for which to compute stats.
-    output_json: string. Path to json file that will contain VCF stats.
 
   Returns:
-    The path to the json file, which is vcf_stats_outfile or derived from the
-    VCF name if the flag is unspecified.
+    A tuple of paths to the per record stats and summary stats.
   """
-  json_path = output_json
-  if not output_json:
-    dirname, basename = os.path.split(input_vcf)
-    if basename.endswith('.vcf'):
-      newname = basename[:-4] + '.json'
-    elif basename.endswith('.vcf.gz'):
-      newname = basename[:-7] + '.json'
-    else:
-      newname = basename + '.json'
-    json_path = os.path.join(dirname, newname)
-  return json_path
+  dirname, basename = os.path.split(input_vcf)
+  if basename.endswith('.vcf'):
+    template = os.path.join(dirname, basename[:-4] + '.{}.json')
+  elif basename.endswith('.vcf.gz'):
+    template = os.path.join(dirname, basename[:-7] + '.{}.json')
+  else:
+    template = os.path.join(dirname, basename + '.{}.json')
+  return template.format('per_record'), template.format('summary')
 
 
 def main(argv=()):
@@ -983,11 +975,12 @@ def main(argv=()):
         logging.info('Finished writing VCF and gVCF in %s minutes.',
                      (time.time() - start_time) / 60)
       if FLAGS.create_vcf_stats:
-        json_file = _get_json_outfile_path(FLAGS.outfile,
-                                           FLAGS.vcf_stats_outfile)
+        regular_stats, summary_stats = _get_stats_paths(FLAGS.outfile)
         with vcf.VcfReader(FLAGS.outfile) as reader:
-          stats_json = vcf_stats.variants_to_stats_json(reader.iterate())
-          vcf_stats.write_json(stats_json, json_file)
+          stats_json, summary_json = vcf_stats.variants_to_stats_json(
+              reader.iterate())
+          vcf_stats.write(stats_json, regular_stats)
+          vcf_stats.write(summary_json, summary_stats)
 
 
 if __name__ == '__main__':

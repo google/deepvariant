@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-r"""Creates a JSON summary of variants from a VCF file."""
+r"""Library to produce variant statistics from a VCF file."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import collections
 import json
+import numpy as np
 
 import tensorflow as tf
 
@@ -42,10 +43,24 @@ from third_party.nucleus.util import variantcall_utils
 
 _VARIANT_STATS_COLUMNS = [
     'reference_name', 'position', 'reference_bases', 'alternate_bases',
-    'variant_type', 'is_transition', 'is_transversion', 'genotype_quality'
+    'variant_type', 'is_variant', 'is_transition', 'is_transversion', 'depth',
+    'genotype_quality'
 ]
 
 VariantStats = collections.namedtuple('VariantStats', _VARIANT_STATS_COLUMNS)
+
+_VARIANT_SUMMARY_STATS_COLUMNS = [
+    'record_count', 'variant_count', 'snv_count', 'indel_count', 'depth_mean',
+    'depth_stdev', 'gq_mean', 'gq_stdev'
+]
+
+
+class VCFSummaryStats(
+    collections.namedtuple('VCFSummaryStats', _VARIANT_SUMMARY_STATS_COLUMNS)):
+  __slots__ = ()
+
+  def asdict(self):
+    return {k: getattr(self, k) for k in _VARIANT_SUMMARY_STATS_COLUMNS}
 
 
 def _get_variant_type(variant):
@@ -88,8 +103,41 @@ def get_variant_stats(variant):
       variant_type=vtype,
       is_transition=is_transition,
       is_transversion=is_transversion,
+      is_variant=variant_utils.is_variant_call(variant),
+      depth=variantcall_utils.get_format(
+          variant_utils.only_call(variant), 'DP'),
       genotype_quality=variantcall_utils.get_gq(
           variant_utils.only_call(variant)))
+
+
+def single_variant_stats(variants):
+  return [get_variant_stats(v) for v in variants]
+
+
+def summary_stats(single_stats):
+  """Computes summary statistics for a set of variants.
+
+  Args:
+    single_stats: list of VariantStats objects.
+
+  Returns:
+    A VCFSummaryStats object.
+  """
+  transposed_records = zip(*single_stats)
+  transposed_dict = dict(zip(_VARIANT_STATS_COLUMNS, transposed_records))
+
+  return VCFSummaryStats(
+      record_count=len(single_stats),
+      variant_count=sum(transposed_dict['is_variant']),
+      snv_count=sum([t == 'SNP' for t in transposed_dict['variant_type']]),
+      indel_count=sum([
+          t == 'Insertion' or t == 'Deletion'
+          for t in transposed_dict['variant_type']
+      ]),
+      depth_mean=np.mean(transposed_dict['depth']),
+      depth_stdev=np.std(transposed_dict['depth']),
+      gq_mean=np.mean(transposed_dict['genotype_quality']),
+      gq_stdev=np.std(transposed_dict['genotype_quality']))
 
 
 def variants_to_stats_json(variants):
@@ -99,18 +147,24 @@ def variants_to_stats_json(variants):
     variants: iterable(Variant).
 
   Returns:
-    A JSON representation of statistics for all variants.
+    A tuple of (stats_json, summary_json), where state_json is a JSON of single
+    variant statistics, and summary_json is a JSON of single sample statistics.
   """
-  records = [get_variant_stats(v) for v in variants]
-  transposed_records = zip(*records)
+  single_var_stats = single_variant_stats(variants)
+  transposed_records = zip(*single_var_stats)
   transposed_dict = dict(zip(_VARIANT_STATS_COLUMNS, transposed_records))
   stats_json = json.dumps(
       transposed_dict, indent=4, sort_keys=True, separators=(',', ': '))
-  return stats_json
+
+  summ_stats = summary_stats(single_var_stats)
+  summary_json = json.dumps(
+      summ_stats.asdict(), indent=4, sort_keys=True, separators=(',', ': '))
+
+  return stats_json, summary_json
 
 
-def write_json(json_of_variant_stats, outfile):
-  """Writes the JSON representation of variant stats to the output file."""
+def write(stats, outfile):
+  """Writes stats to the output file."""
 
   with tf.io.gfile.GFile(outfile, 'w') as writer:
-    writer.write(json_of_variant_stats)
+    writer.write(stats)

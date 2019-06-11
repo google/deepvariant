@@ -875,6 +875,7 @@ py_test(
         ":py_testdata",
         ":resources_main_lib",
         ":vcf_stats",
+        "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
     ],
