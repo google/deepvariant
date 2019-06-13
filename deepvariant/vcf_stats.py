@@ -50,9 +50,20 @@ _VARIANT_STATS_COLUMNS = [
 VariantStats = collections.namedtuple('VariantStats', _VARIANT_STATS_COLUMNS)
 
 _VARIANT_SUMMARY_STATS_COLUMNS = [
-    'record_count', 'variant_count', 'snv_count', 'indel_count', 'depth_mean',
-    'depth_stdev', 'gq_mean', 'gq_stdev'
+    'record_count', 'variant_count', 'snv_count', 'insertion_count',
+    'deletion_count', 'mnp_count', 'complex_count', 'depth_mean', 'depth_stdev',
+    'gq_mean', 'gq_stdev'
 ]
+
+BIALLELIC_SNP = 'Biallelic_SNP'
+BIALLELIC_INSERTION = 'Biallelic_Insertion'
+BIALLELIC_DELETION = 'Biallelic_Deletion'
+BIALLELIC_MNP = 'Biallelic_MNP'
+MULTIALLELIC_SNP = 'Multiallelic_SNP'
+MULTIALLELIC_INSERTION = 'Multiallelic_Insertion'
+MULTIALLELIC_DELETION = 'Multiallelic_Deletion'
+MULTIALLELIC_COMPLEX = 'Multiallelic_Complex'
+REFCALL = 'RefCall'
 
 
 class VCFSummaryStats(
@@ -65,22 +76,41 @@ class VCFSummaryStats(
 
 def _get_variant_type(variant):
   """Returns the type of variant as a string."""
-  if variant_utils.is_biallelic(variant):
-    if variant_utils.is_snp(variant):
-      return 'SNP'
-    elif variant_utils.is_insertion(variant.reference_bases,
-                                    variant.alternate_bases[0]):
-      return 'Insertion'
-    elif variant_utils.is_deletion(variant.reference_bases,
-                                   variant.alternate_bases[0]):
-      return 'Deletion'
+  if variant_utils.is_variant_call(variant):
+    biallelic = variant_utils.is_biallelic(variant)
+    snp = variant_utils.is_snp(variant)
+    insertion = all(
+        variant_utils.is_insertion(variant.reference_bases, alt)
+        for alt in variant.alternate_bases)
+    deletion = all(
+        variant_utils.is_deletion(variant.reference_bases, alt)
+        for alt in variant.alternate_bases)
 
-  return 'Other'
+    if biallelic:
+      if snp:
+        return BIALLELIC_SNP
+      elif insertion:
+        return BIALLELIC_INSERTION
+      elif deletion:
+        return BIALLELIC_DELETION
+      else:
+        return BIALLELIC_MNP
+    else:
+      if snp:
+        return MULTIALLELIC_SNP
+      elif insertion:
+        return MULTIALLELIC_INSERTION
+      elif deletion:
+        return MULTIALLELIC_DELETION
+      else:
+        return MULTIALLELIC_COMPLEX
+  else:
+    return REFCALL
 
 
 def _tstv(variant, vtype):
   """Returns a pair of bools indicating Transition, Transversion status."""
-  if vtype == 'SNP':
+  if vtype == BIALLELIC_SNP:
     is_transition = variant_utils.is_transition(variant.reference_bases,
                                                 variant.alternate_bases[0])
     is_transversion = not is_transition
@@ -129,11 +159,22 @@ def summary_stats(single_stats):
   return VCFSummaryStats(
       record_count=len(single_stats),
       variant_count=sum(transposed_dict['is_variant']),
-      snv_count=sum([t == 'SNP' for t in transposed_dict['variant_type']]),
-      indel_count=sum([
-          t == 'Insertion' or t == 'Deletion'
+      snv_count=sum([
+          t == BIALLELIC_SNP or t == MULTIALLELIC_SNP
           for t in transposed_dict['variant_type']
       ]),
+      insertion_count=sum([
+          t == BIALLELIC_INSERTION or t == MULTIALLELIC_INSERTION
+          for t in transposed_dict['variant_type']
+      ]),
+      deletion_count=sum([
+          t == BIALLELIC_DELETION or t == MULTIALLELIC_DELETION
+          for t in transposed_dict['variant_type']
+      ]),
+      mnp_count=sum(
+          [t == BIALLELIC_MNP for t in transposed_dict['variant_type']]),
+      complex_count=sum(
+          [t == MULTIALLELIC_COMPLEX for t in transposed_dict['variant_type']]),
       depth_mean=np.mean(transposed_dict['depth']),
       depth_stdev=np.std(transposed_dict['depth']),
       gq_mean=np.mean(transposed_dict['genotype_quality']),

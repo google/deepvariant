@@ -39,6 +39,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 import json
 
 from absl.testing import absltest
+from absl.testing import parameterized
 
 from deepvariant import testdata
 from deepvariant import vcf_stats
@@ -52,7 +53,7 @@ def setUpModule():
   testdata.init()
 
 
-class VcfStatsTest(absltest.TestCase):
+class VcfStatsTest(parameterized.TestCase):
 
   def setUp(self):
     super(VcfStatsTest, self).setUp()
@@ -61,29 +62,109 @@ class VcfStatsTest(absltest.TestCase):
     variantcall_utils.set_format(
         variant_utils.only_call(self.variant), 'DP', 20)
 
-  def test_get_variant_stats(self):
-    variant_stats = vcf_stats.get_variant_stats(self.variant)
+  @parameterized.parameters(
+      dict(
+          alleles=['A', 'G'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.BIALLELIC_SNP,
+          expected_transition=True,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['A', 'AG'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.BIALLELIC_INSERTION,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['AT', 'A'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.BIALLELIC_DELETION,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['AT', 'GC'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.BIALLELIC_MNP,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['A', 'G', 'T'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.MULTIALLELIC_SNP,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['A', 'AG', 'AT'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.MULTIALLELIC_INSERTION,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['AT', 'A', 'T'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.MULTIALLELIC_DELETION,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['A', 'GT', 'G'],
+          gt=[0, 1],
+          expected_variant_type=vcf_stats.MULTIALLELIC_COMPLEX,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=True),
+      dict(
+          alleles=['A', 'G'],
+          gt=[0, 0],
+          expected_variant_type=vcf_stats.REFCALL,
+          expected_transition=False,
+          expection_transversion=False,
+          expected_is_variant=False),
+  )
+  def test_get_variant_stats(self, alleles, gt, expected_variant_type,
+                             expected_transition, expection_transversion,
+                             expected_is_variant):
+    variant = test_utils.make_variant(
+        chrom='chr1', start=10, alleles=alleles, gt=gt, gq=59)
+    variant_stats = vcf_stats.get_variant_stats(variant)
     self.assertEqual(
         variant_stats,
         vcf_stats.VariantStats(
             reference_name='chr1',
             position=11,
-            reference_bases='A',
-            alternate_bases=['G'],
-            variant_type='SNP',
-            is_transition=True,
-            is_transversion=False,
-            is_variant=True,
-            depth=20,
+            reference_bases=alleles[0],
+            alternate_bases=alleles[1:],
+            variant_type=expected_variant_type,
+            is_transition=expected_transition,
+            is_transversion=expection_transversion,
+            is_variant=expected_is_variant,
+            depth=[],
             genotype_quality=59))
 
   def test_summary_stats(self):
     with vcf.VcfReader(testdata.GOLDEN_POSTPROCESS_OUTPUT) as reader:
       single_stats = vcf_stats.single_variant_stats(reader.iterate())
       summary_stats = vcf_stats.summary_stats(single_stats)
+      sum_variant_count = sum([
+          summary_stats.snv_count,
+          summary_stats.insertion_count,
+          summary_stats.deletion_count,
+          summary_stats.complex_count,
+          summary_stats.mnp_count,
+      ])
       self.assertEqual(summary_stats.variant_count, 71)
-      self.assertEqual(summary_stats.snv_count, 64)
-      self.assertEqual(summary_stats.indel_count, 10)
+      self.assertEqual(summary_stats.variant_count, sum_variant_count)
+      self.assertEqual(summary_stats.snv_count, 59)
+      self.assertEqual(summary_stats.insertion_count, 7)
+      self.assertEqual(summary_stats.deletion_count, 5)
+      self.assertEqual(summary_stats.complex_count, 0)
+      self.assertEqual(summary_stats.mnp_count, 0)
       self.assertEqual(summary_stats.record_count, 76)
       self.assertAlmostEqual(summary_stats.depth_mean, 47.289473684210527)
       self.assertAlmostEqual(summary_stats.depth_stdev, 8.8953207531791154)
@@ -94,13 +175,14 @@ class VcfStatsTest(absltest.TestCase):
     truth_stats_json = """
       {"alternate_bases":[["G"]],"depth":[20],"genotype_quality":[59],
       "is_transition":[true],"is_transversion":[false],"position":[11],
-      "reference_bases":["A"],"reference_name":["chr1"],"variant_type":["SNP"],
-      "is_variant":[true]}
+      "reference_bases":["A"],"reference_name":["chr1"],"is_variant":[true],
+      "variant_type":["Biallelic_SNP"]}
       """
 
     truth_summary_json = """
       {"depth_mean": 20,"depth_stdev": 0,"gq_mean": 59,"gq_stdev": 0,
-      "indel_count": 0,"record_count": 1,"snv_count": 1,"variant_count": 1}
+      "record_count": 1,"snv_count": 1,"insertion_count": 0,"deletion_count": 0,
+      "complex_count": 0, "mnp_count": 0, "variant_count": 1}
       """
     stats_json, summary_json = vcf_stats.variants_to_stats_json([self.variant])
     self.assertEqual(json.loads(stats_json), json.loads(truth_stats_json))
