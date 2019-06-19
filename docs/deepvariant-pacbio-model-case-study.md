@@ -91,7 +91,7 @@ Next following steps are executed:
 *   make_examples. This step creates small variant candidates and stores them in
     TensorFlow format.
 
-*   call_variants. This step applys DeepVariant DNN to call samll variants.
+*   call_variants. This step applys DeepVariant DNN to call small variants.
 
 *   postprocess_variants. This step converts data from TensorFlow format to VCF.
 
