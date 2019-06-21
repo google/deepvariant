@@ -155,8 +155,11 @@ def _get_cpu_frequency():
     float > 0 if the call to get the cpu_frequency succeeded. This information
     may not be available on all systems, in which case we return 0.0.
   """
-  freq = psutil.cpu_freq()
-  return freq.current if freq is not None else 0.0
+  try:
+    freq = psutil.cpu_freq()
+    return freq.current if freq is not None else 0.0
+  except NotImplementedError:
+    return 0.0
 
 
 def _get_total_memory():

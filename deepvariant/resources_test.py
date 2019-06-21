@@ -135,12 +135,21 @@ class ResourcesTest(absltest.TestCase):
       with resources.ResourceMonitor() as monitor:
         self.assertEqual(monitor.metrics().cpu_frequency_mhz, 0)
 
+  def test_metrics_is_ok_when_cpu_freq_throws(self):
+    # psutil.cpu_freq() can throw NotImplementedError in certain environments;
+    # make sure we don't crash when that occurs.
+    with mock.patch.object(
+        resources.psutil, 'cpu_freq', side_effect=NotImplementedError):
+      with resources.ResourceMonitor() as monitor:
+        self.assertEqual(monitor.metrics().cpu_frequency_mhz, 0)
+
   def test_metrics_is_ok_when_cpu_count_returns_none(self):
     # Some psutil functions, such as cpu_freq(), can return None depending on
     # the environment; make sure we don't crash when that occurs.
     with mock.patch.object(resources.psutil, 'cpu_count', return_value=None):
       with resources.ResourceMonitor() as monitor:
         self.assertEqual(monitor.metrics().physical_core_count, 0)
+
 
 if __name__ == '__main__':
   absltest.main()
