@@ -315,28 +315,26 @@ TEST_F(FastPassAlignerTest, AlignHaplotypesToReference_Test) {
 
   HaplotypeReadsAlignment ha1(0, -1, std::vector<ReadAlignment>());
   ha1.cigar = "26=";
-  ha1.cigar_ops = std::list<CigarOp>({CigarOp(
-      nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 26)});
+  ha1.cigar_ops = std::list<CigarOp>(
+      {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 26)});
   ha1.ref_pos = 5;
   ha1.is_reference = true;
 
   HaplotypeReadsAlignment ha2(1, -1, std::vector<ReadAlignment>());
   ha2.cigar = "12=1D13=";
   ha2.cigar_ops = std::list<CigarOp>(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 12),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 1),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH,
-               13)});
+      {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 12),
+       CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+       CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 13)});
   ha2.ref_pos = 5;
   ha2.is_reference = false;
 
   HaplotypeReadsAlignment ha3(2, -1, std::vector<ReadAlignment>());
   ha3.cigar = "6=1X19=";
   ha3.cigar_ops = std::list<CigarOp>(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 6),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 1),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH,
-               19)});
+      {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 6),
+       CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1),
+       CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 19)});
   ha3.ref_pos = 5;
   ha3.is_reference = false;
 
@@ -488,7 +486,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MatchMismatch_Test) {
                                        &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 19)};
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 19)};
 
   EXPECT_THAT(read_to_ref_cigar_ops,
               testing::ElementsAreArray(expected_read_to_ref_cigar_ops));
@@ -522,8 +520,8 @@ TEST_F(FastPassAlignerTest,
                                        &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT, 5),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 13)};
+      CigarOp(nucleus::genomics::v1::CigarUnit::CLIP_SOFT, 5),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 13)};
 
   EXPECT_THAT(read_to_ref_cigar_ops,
               testing::ElementsAreArray(expected_read_to_ref_cigar_ops));
@@ -560,11 +558,11 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_Dels_Test) {
       haplotype_alignments[0].cigar_ops, &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 7),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 1),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 1),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 6)};
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 6)};
 
   EXPECT_THAT(read_to_ref_cigar_ops,
               testing::ElementsAreArray(expected_read_to_ref_cigar_ops));
@@ -604,9 +602,9 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MergedDels_Test) {
       haplotype_alignments[0].cigar_ops, &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 7),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 2),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 9)};
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 2),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)};
 }
 
 // Haplotype alignment to ref has one INS.
@@ -642,11 +640,11 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_Ins_Test) {
       haplotype_alignments[0].cigar_ops, &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 11),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 2),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 2),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 4),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 11),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 4),
   };
 
   EXPECT_THAT(read_to_ref_cigar_ops,
@@ -686,9 +684,9 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MergedIns_Test) {
       haplotype_alignments[0].cigar_ops, &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 11),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 4),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 7)};
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 11),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 4),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7)};
 
   EXPECT_THAT(read_to_ref_cigar_ops,
               testing::ElementsAreArray(expected_read_to_ref_cigar_ops));
@@ -727,11 +725,11 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_DelIns_Test) {
       haplotype_alignments[0].cigar_ops, &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 7),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 1),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 6),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 2),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 4),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 6),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 4),
   };
   EXPECT_THAT(read_to_ref_cigar_ops,
               testing::ElementsAreArray(expected_read_to_ref_cigar_ops));
@@ -769,11 +767,11 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_InsDel_Test) {
       haplotype_alignments[0].cigar_ops, &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 7),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 2),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 7),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 1),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
   };
   EXPECT_THAT(read_to_ref_cigar_ops,
               testing::ElementsAreArray(expected_read_to_ref_cigar_ops));
@@ -781,89 +779,80 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_InsDel_Test) {
 
 TEST_F(FastPassAlignerTest, MergeCigarOp_emtyCigar_Test) {
   std::list<CigarOp> cigar;
-  MergeCigarOp(
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-      10, &cigar);
-  EXPECT_THAT(cigar, testing::ElementsAreArray(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3)
-      }));
+  MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+               10, &cigar);
+  EXPECT_THAT(cigar,
+              testing::ElementsAreArray({CigarOp(
+                  nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3)}));
 }
 
 TEST_F(FastPassAlignerTest, MergeCigarOp_mergeDifferentOp_Test) {
   std::list<CigarOp> cigar = {
-    CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-    CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 5)
-  };
-  MergeCigarOp(
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 2),
-      10, &cigar);
-  EXPECT_THAT(cigar, testing::ElementsAreArray(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 5),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 2)
-      }));
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 5)};
+  MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 2),
+               10, &cigar);
+  EXPECT_THAT(
+      cigar,
+      testing::ElementsAreArray(
+          {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+           CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 5),
+           CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 2)}));
 }
 
 TEST_F(FastPassAlignerTest, MergeCigarOp_mergeSameOp_Test) {
   std::list<CigarOp> cigar = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 5)
-  };
-  MergeCigarOp(
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 2),
-      10, &cigar);
-  EXPECT_THAT(cigar, testing::ElementsAreArray(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 7)
-      }));
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 5)};
+  MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2), 10,
+               &cigar);
+  EXPECT_THAT(
+      cigar, testing::ElementsAreArray(
+                 {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+                  CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 7)}));
 }
 
 TEST_F(FastPassAlignerTest, MergeCigarOp_alignedLengthOverflow_Test) {
   std::list<CigarOp> cigar = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 5)
-  };
-  MergeCigarOp(
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 20),
-      10, &cigar);
-  EXPECT_THAT(cigar, testing::ElementsAreArray(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 7)
-      }));
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 5)};
+  MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 20), 10,
+               &cigar);
+  EXPECT_THAT(
+      cigar, testing::ElementsAreArray(
+                 {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+                  CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 7)}));
 }
 
 // DEL does not count towards aligned length. This test verifies that DEL can
 // be merged doesn't matter what it's length is.
 TEST_F(FastPassAlignerTest, MergeCigarOp_alignedLengthOverflowDel_Test) {
   std::list<CigarOp> cigar = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 5)
-  };
-  MergeCigarOp(
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 20),
-      10, &cigar);
-  EXPECT_THAT(cigar, testing::ElementsAreArray(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 25)
-      }));
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 5)};
+  MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 20), 10,
+               &cigar);
+  EXPECT_THAT(
+      cigar, testing::ElementsAreArray(
+                 {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+                  CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 25)}));
 }
 
 // Try to merge an operation when alined read is already equals read length.
 // The operation should not merge in this case.
 TEST_F(FastPassAlignerTest, MergeCigarOp_alignedLengthOverflow2_Test) {
   std::list<CigarOp> cigar = {
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 5),
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 5)
-  };
-  MergeCigarOp(
-      CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT, 20),
-      8, &cigar);
-  EXPECT_THAT(cigar, testing::ElementsAreArray(
-      {CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 3),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE, 5),
-       CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH, 5)
-      }));
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+      CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 5),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 5)};
+  MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 20), 8,
+               &cigar);
+  EXPECT_THAT(
+      cigar,
+      testing::ElementsAreArray(
+          {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+           CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 5),
+           CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 5)}));
 }
 
 // This test runs on a real data. Expected realinments are vrified manually.

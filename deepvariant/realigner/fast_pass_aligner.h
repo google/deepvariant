@@ -135,8 +135,7 @@ struct ReadAlignment {
 // Cigar operation is defined by operation type and it's length.
 struct CigarOp {
   CigarOp()
-      : operation(
-      nucleus::genomics::v1::CigarUnit_Operation_OPERATION_UNSPECIFIED),
+      : operation(nucleus::genomics::v1::CigarUnit::OPERATION_UNSPECIFIED),
         length(0) {}
   CigarOp(CigarUnit::Operation op, int len) : operation(op), length(len) {}
 

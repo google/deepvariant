@@ -309,15 +309,15 @@ CigarUnit::Operation CigarOperationFromChar(char op) {
   switch (op) {
     case '=':
     case 'X':
-      return nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH;
+      return nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH;
     case 'S':
-      return nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT;
+      return nucleus::genomics::v1::CigarUnit::CLIP_SOFT;
     case 'D':
-      return nucleus::genomics::v1::CigarUnit_Operation_DELETE;
+      return nucleus::genomics::v1::CigarUnit::DELETE;
     case 'I':
-      return nucleus::genomics::v1::CigarUnit_Operation_INSERT;
+      return nucleus::genomics::v1::CigarUnit::INSERT;
     default:
-      return nucleus::genomics::v1::CigarUnit_Operation_OPERATION_UNSPECIFIED;
+      return nucleus::genomics::v1::CigarUnit::OPERATION_UNSPECIFIED;
   }
 }
 
@@ -569,7 +569,7 @@ bool FastPassAligner::GetBestReadAlignment(
 int AlignedLength(const std::list<CigarOp>& cigar) {
   int len = 0;
   for (auto& op : cigar) {
-    if (op.operation != nucleus::genomics::v1::CigarUnit_Operation_DELETE) {
+    if (op.operation != nucleus::genomics::v1::CigarUnit::DELETE) {
       len += op.length;
     }
   }
@@ -584,12 +584,12 @@ int AlignedLength(const std::list<CigarOp>& cigar) {
 // does not go over the read length. This can happen for example when we merge
 // a large INS (larger than a read itself)
 void MergeCigarOp(const CigarOp& op, int read_len, std::list<CigarOp>* cigar) {
-  const auto& last_cigar_op = cigar->empty() ?
-            nucleus::genomics::v1::CigarUnit_Operation_OPERATION_UNSPECIFIED :
-            cigar->back().operation;
+  const auto& last_cigar_op =
+      cigar->empty() ? nucleus::genomics::v1::CigarUnit::OPERATION_UNSPECIFIED
+                     : cigar->back().operation;
   int aligned_length_before_merge = AlignedLength(*cigar);
   int new_op_length = 0;
-  if (op.operation != nucleus::genomics::v1::CigarUnit_Operation_DELETE) {
+  if (op.operation != nucleus::genomics::v1::CigarUnit::DELETE) {
     new_op_length = std::min(op.length, read_len - aligned_length_before_merge);
   } else {
     new_op_length = op.length;
@@ -626,13 +626,10 @@ std::list<CigarOp> LeftTrimHaplotypeToRefAlignment(
     CigarOp cur_hap_op = haplotype_to_ref_cigar_ops.front();
     haplotype_to_ref_cigar_ops.pop_front();
     if (cur_hap_op.operation ==
-            nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH ||
-        cur_hap_op.operation ==
-            nucleus::genomics::v1::CigarUnit_Operation_CLIP_HARD ||
-        cur_hap_op.operation ==
-            nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT ||
-        cur_hap_op.operation ==
-            nucleus::genomics::v1::CigarUnit_Operation_INSERT) {
+            nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
+        cur_hap_op.operation == nucleus::genomics::v1::CigarUnit::CLIP_HARD ||
+        cur_hap_op.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT ||
+        cur_hap_op.operation == nucleus::genomics::v1::CigarUnit::INSERT) {
       if (cur_hap_op.length + cur_pos > read_to_haplotype_pos) {
         haplotype_to_ref_cigar_ops.push_front(
             CigarOp(cur_hap_op.operation,
@@ -645,7 +642,7 @@ std::list<CigarOp> LeftTrimHaplotypeToRefAlignment(
   // If after trimming the first operation is DEL we need to remove it,
   // because read alignment cannot start with DEL.
   if (haplotype_to_ref_cigar_ops.front().operation ==
-      nucleus::genomics::v1::CigarUnit_Operation_DELETE) {
+      nucleus::genomics::v1::CigarUnit::DELETE) {
     haplotype_to_ref_cigar_ops.pop_front();
   }
 
@@ -653,46 +650,37 @@ std::list<CigarOp> LeftTrimHaplotypeToRefAlignment(
 }
 
 inline bool BothOpsAreMatch(const CigarOp& op1, const CigarOp& op2) {
-  return (op1.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH ||
-          op1.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT) &&
-         (op2.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH ||
-          op2.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT);
+  return (op1.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
+          op1.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT) &&
+         (op2.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
+          op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT);
 }
 
 inline bool OneOfOpsIsSoftClip(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation ==
-             nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT ||
-         op2.operation == nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT;
+  return op1.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT ||
+         op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT;
 }
 
 inline bool DelAndMatch(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation == nucleus::genomics::v1::CigarUnit_Operation_DELETE &&
-         (op2.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH ||
-          op2.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT);
+  return op1.operation == nucleus::genomics::v1::CigarUnit::DELETE &&
+         (op2.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
+          op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT);
 }
 
 inline bool BothOpsAreDel(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation == nucleus::genomics::v1::CigarUnit_Operation_DELETE &&
-         op2.operation == nucleus::genomics::v1::CigarUnit_Operation_DELETE;
+  return op1.operation == nucleus::genomics::v1::CigarUnit::DELETE &&
+         op2.operation == nucleus::genomics::v1::CigarUnit::DELETE;
 }
 
 inline bool InsAndMatch(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation == nucleus::genomics::v1::CigarUnit_Operation_INSERT &&
-         (op2.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH ||
-          op2.operation ==
-              nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT);
+  return op1.operation == nucleus::genomics::v1::CigarUnit::INSERT &&
+         (op2.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
+          op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT);
 }
 
 inline bool BothOpsAreIns(const CigarOp& op1, const CigarOp& op2) {
-  return (op1.operation == nucleus::genomics::v1::CigarUnit_Operation_INSERT &&
-          op2.operation == nucleus::genomics::v1::CigarUnit_Operation_INSERT);
+  return (op1.operation == nucleus::genomics::v1::CigarUnit::INSERT &&
+          op2.operation == nucleus::genomics::v1::CigarUnit::INSERT);
 }
 
 inline void PushFrontIfNotEmpty(const CigarOp& op, std::list<CigarOp>* cigar) {
@@ -730,8 +718,8 @@ void FastPassAligner::CalculateReadToRefAlignment(
   // Skip heading soft clips.
   if (!read_to_haplotype_cigar_ops.empty() &&
       read_to_haplotype_cigar_ops.front().operation ==
-          nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT) {
-    MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT,
+          nucleus::genomics::v1::CigarUnit::CLIP_SOFT) {
+    MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::CLIP_SOFT,
                          read_to_haplotype_cigar_ops.front().length),
                  read_len, read_to_ref_cigar_ops);
     read_to_haplotype_cigar_ops.pop_front();
@@ -780,14 +768,12 @@ void FastPassAligner::CalculateReadToRefAlignment(
           std::min(cur_read_to_hap_op.length, cur_hap_to_ref_op.length);
       if (OneOfOpsIsSoftClip(cur_read_to_hap_op, cur_hap_to_ref_op)) {
         MergeCigarOp(
-            CigarOp(nucleus::genomics::v1::CigarUnit_Operation_CLIP_SOFT,
-                    new_op_len),
+            CigarOp(nucleus::genomics::v1::CigarUnit::CLIP_SOFT, new_op_len),
             read_len, read_to_ref_cigar_ops);
       } else {
-        MergeCigarOp(
-            CigarOp(nucleus::genomics::v1::CigarUnit_Operation_ALIGNMENT_MATCH,
-                    new_op_len),
-            read_len, read_to_ref_cigar_ops);
+        MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH,
+                             new_op_len),
+                     read_len, read_to_ref_cigar_ops);
       }
       cur_read_to_hap_op.length -= new_op_len;
       PushFrontIfNotEmpty(cur_read_to_hap_op, &read_to_haplotype_cigar_ops);
@@ -796,7 +782,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
 
     // cur_read_to_hap_op, cur_hap_to_ref_op = D, M
     } else if (DelAndMatch(cur_read_to_hap_op, cur_hap_to_ref_op)) {
-      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE,
+      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::DELETE,
                            cur_read_to_hap_op.length),
                    read_len, read_to_ref_cigar_ops);
       cur_hap_to_ref_op.length -= cur_read_to_hap_op.length;
@@ -804,7 +790,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
 
     // cur_read_to_hap_op, cur_hap_to_ref_op = M, D
     } else if (DelAndMatch(cur_hap_to_ref_op, cur_read_to_hap_op)) {
-      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE,
+      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::DELETE,
                            cur_hap_to_ref_op.length),
                    read_len, read_to_ref_cigar_ops);
       PushFrontIfNotEmpty(cur_read_to_hap_op, &read_to_haplotype_cigar_ops);
@@ -812,16 +798,16 @@ void FastPassAligner::CalculateReadToRefAlignment(
     // cur_read_to_hap_op, cur_hap_to_ref_op = D, D
     } else if (BothOpsAreDel(cur_read_to_hap_op, cur_hap_to_ref_op)) {
       MergeCigarOp(
-          CigarOp(nucleus::genomics::v1::CigarUnit_Operation_DELETE,
+          CigarOp(nucleus::genomics::v1::CigarUnit::DELETE,
                   cur_hap_to_ref_op.length + cur_read_to_hap_op.length),
           read_len, read_to_ref_cigar_ops);
 
-    // cur_read_to_hap_op, cur_hap_to_ref_op = I, M
+      // cur_read_to_hap_op, cur_hap_to_ref_op = I, M
     } else if (InsAndMatch(cur_read_to_hap_op, cur_hap_to_ref_op)) {
       cur_read_to_hap_op.length =
           std::min(read_len - AlignedLength(*read_to_ref_cigar_ops),
                    cur_read_to_hap_op.length);
-      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT,
+      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::INSERT,
                            cur_read_to_hap_op.length),
                    read_len, read_to_ref_cigar_ops);
       PushFrontIfNotEmpty(cur_hap_to_ref_op, &haplotype_to_ref_cigar_ops);
@@ -831,7 +817,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
       cur_hap_to_ref_op.length =
           std::min(read_len - AlignedLength(*read_to_ref_cigar_ops),
                    cur_hap_to_ref_op.length);
-      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT,
+      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::INSERT,
                            cur_hap_to_ref_op.length),
                    read_len, read_to_ref_cigar_ops);
       // We need to decrease the length of cur_read_to_hap_op by INS length
@@ -843,7 +829,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
     } else if (BothOpsAreIns(cur_hap_to_ref_op, cur_read_to_hap_op)) {
       cur_hap_to_ref_op.length =
           cur_hap_to_ref_op.length + cur_read_to_hap_op.length;
-      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit_Operation_INSERT,
+      MergeCigarOp(CigarOp(nucleus::genomics::v1::CigarUnit::INSERT,
                            cur_hap_to_ref_op.length),
                    read_len, read_to_ref_cigar_ops);
 
