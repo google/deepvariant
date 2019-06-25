@@ -237,7 +237,7 @@ flags.DEFINE_bool('use_original_quality_scores', False,
 flags.DEFINE_string(
     'select_variant_types', None,
     'If provided, should be a whitespace-separated string of variant types to '
-    'keep when generating exampled. Permitted values are "snps", "indels", '
+    'keep when generating examples. Permitted values are "snps", "indels", '
     '"multi-allelics", and "all", which select bi-allelic snps, bi-allelic '
     'indels, multi-allelic variants of any type, and all variants, '
     'respectively. Multiple selectors can be specified, so that '
