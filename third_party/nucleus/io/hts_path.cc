@@ -33,12 +33,8 @@
 #include "third_party/nucleus/io/hts_path.h"
 
 #include <stddef.h>
-#include <string>
 
 #include "absl/strings/str_cat.h"
-#include "htslib/faidx.h"
-#include "htslib/hts.h"
-#include "htslib/tbx.h"
 #include "third_party/nucleus/platform/types.h"
 
 using absl::StrCat;
@@ -48,35 +44,35 @@ namespace nucleus {
 const char dflt[] = "";
 
 // Use the default file scheme, unless one is provided.
-string fix_path(const char *path) {
-  string s(path);
-  size_t i = s.find(':');
+string fix_path(const std::string &path) {
+  size_t i = path.find(':');
   if (i > 0 && i < 20) {
-    return s;
+    return path;
   }
-  return StrCat(dflt, s);
+  return StrCat(dflt, path);
 }
 
-htsFile *hts_open_x(const char *path, const char *mode) {
-  string new_path = fix_path(path);
+htsFile *hts_open_x(const std::string &fn, const char *mode) {
+  string new_path = fix_path(fn);
   return hts_open(new_path.c_str(), mode);
 }
 
-htsFile *hts_open_format_x(const char *fn, const char *mode, htsFormat *fmt) {
+htsFile *hts_open_format_x(const std::string &fn, const char *mode,
+                           htsFormat *fmt) {
   string new_path = fix_path(fn);
   return hts_open_format(new_path.c_str(), mode, fmt);
 }
 
-faidx_t *fai_load3_x(const char *fa, const char *fai, const char *gzi,
-                     int flags) {
+faidx_t *fai_load3_x(const std::string &fa, const std::string &fai,
+                     const std::string &gzi, int flags) {
   string nfa = fix_path(fa);
   string nfai = fix_path(fai);
   string ngzi = fix_path(gzi);
-  return fai_load3(fa ? nfa.c_str() : nullptr, fai ? nfai.c_str() : nullptr,
-                   gzi ? ngzi.c_str() : nullptr, flags);
+  return fai_load3(nfa.c_str(), nfai.c_str(), ngzi.c_str(), flags);
 }
 
-int tbx_index_build_x(const char *fn, int min_shift, const tbx_conf_t *conf) {
+int tbx_index_build_x(const std::string &fn, int min_shift,
+                      const tbx_conf_t *conf) {
   string new_path = fix_path(fn);
   return tbx_index_build(new_path.c_str(), min_shift, conf);
 }

@@ -593,7 +593,7 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
         options.ShortDebugString());
   }
 
-  htsFile* fp = hts_open_x(reads_path.c_str(), "r");
+  htsFile* fp = hts_open_x(reads_path, "r");
   if (!fp) {
     return tf::errors::NotFound("Could not open ", reads_path);
   }

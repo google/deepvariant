@@ -84,7 +84,7 @@ namespace nucleus {
 StatusOr<std::unique_ptr<TextWriter>> TextWriter::ToFile(
     const string& path, CompressionPolicy compression) {
   const char* mode = compression == COMPRESS ? "wb" : "w";
-  htsFile* fp = hts_open_x(path.c_str(), mode);
+  htsFile* fp = hts_open_x(path, mode);
 
   if (fp == nullptr) {
     return tf::errors::Unknown(

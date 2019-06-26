@@ -41,7 +41,7 @@ namespace nucleus {
 namespace tf = tensorflow;
 
 tf::Status TbxIndexBuild(const string& path) {
-  int val = tbx_index_build_x(path.c_str(), 0, &tbx_conf_vcf);
+  int val = tbx_index_build_x(path, 0, &tbx_conf_vcf);
   if (val < 0) {
     LOG(WARNING) << "Return code: " << val << "\nFile path: " << path;
     return tf::errors::Internal("Failure to write tabix index.");

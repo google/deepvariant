@@ -565,7 +565,7 @@ StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
   if (hts_parse_format(&fmt, GetFileExtension(sam_path).c_str()) < 0) {
     return tf::errors::Unknown("Parsing file format fails: ", sam_path);
   }
-  samFile* fp = hts_open_format_x(sam_path.c_str(), "w", &fmt);
+  samFile* fp = hts_open_format_x(sam_path, "w", &fmt);
   if (fp == nullptr) {
     return tf::errors::Unknown("Could not open file for writing: ", sam_path);
   }

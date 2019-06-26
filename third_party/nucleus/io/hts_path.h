@@ -33,23 +33,26 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_HTS_PATH_H_
 #define THIRD_PARTY_NUCLEUS_IO_HTS_PATH_H_
 
+#include <string>
+
 #include "htslib/faidx.h"
 #include "htslib/hts.h"
 #include "htslib/tbx.h"
 
-// This is a wrapper for hts_open that lets us select a default
-// protocol, like "file:" or just plain "".
-
 namespace nucleus {
 
-htsFile *hts_open_x(const char *fn, const char *mode);
+// This is a wrapper for hts_open that lets us select a default
+// protocol, like "file:" or just plain "".
+htsFile *hts_open_x(const std::string &fn, const char *mode);
 
-htsFile *hts_open_format_x(const char *fn, const char *mode, htsFormat *fmt);
+htsFile *hts_open_format_x(const std::string &fn, const char *mode,
+                           htsFormat *fmt);
 
-faidx_t *fai_load3_x(const char *fa_path, const char *fai_path,
-                     const char *gzi_path, int flags);
+faidx_t *fai_load3_x(const std::string &fa_path, const std::string &fai_path,
+                     const std::string &gzi_path, int flags);
 
-int tbx_index_build_x(const char *fn, int min_shift, const tbx_conf_t *conf);
+int tbx_index_build_x(const std::string &fn, int min_shift,
+                      const tbx_conf_t *conf);
 
 }  // namespace nucleus
 

@@ -92,7 +92,7 @@ StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
     const string& variants_path, const nucleus::genomics::v1::VcfHeader& header,
     const nucleus::genomics::v1::VcfWriterOptions& options) {
   const char* const open_mode = GetOpenMode(variants_path);
-  htsFile* fp = hts_open_x(variants_path.c_str(), open_mode);
+  htsFile* fp = hts_open_x(variants_path, open_mode);
   if (fp == nullptr) {
     return tf::errors::Unknown("Could not open variants_path: ", variants_path);
   }

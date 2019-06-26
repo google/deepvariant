@@ -144,8 +144,7 @@ class IndexedFastaReaderIterable : public GenomeReferenceRecordIterable {
 StatusOr<std::unique_ptr<IndexedFastaReader>> IndexedFastaReader::FromFile(
     const string& fasta_path, const string& fai_path, int cache_size_bases) {
   const string gzi = fasta_path + ".gzi";
-  faidx_t* faidx =
-      fai_load3_x(fasta_path.c_str(), fai_path.c_str(), gzi.c_str(), 0);
+  faidx_t* faidx = fai_load3_x(fasta_path, fai_path, gzi, 0);
   if (faidx == nullptr) {
     return tensorflow::errors::NotFound(
         "could not load fasta and/or fai for fasta ", fasta_path);

@@ -44,7 +44,7 @@ namespace tf = tensorflow;
 namespace nucleus {
 
 StatusOr<std::unique_ptr<TextReader>> TextReader::FromFile(const string& path) {
-  htsFile* fp = hts_open_x(path.c_str(), "r");
+  htsFile* fp = hts_open_x(path, "r");
 
   if (fp == nullptr) {
     return tf::errors::NotFound("Could not open ", path);

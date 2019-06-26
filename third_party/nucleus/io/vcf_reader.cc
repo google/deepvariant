@@ -135,7 +135,7 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileWithHeader(
 StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileHelper(
     const string& vcf_filepath,
     const nucleus::genomics::v1::VcfReaderOptions& options, bcf_hdr_t* h) {
-  htsFile* fp = hts_open_x(vcf_filepath.c_str(), "r");
+  htsFile* fp = hts_open_x(vcf_filepath, "r");
   if (fp == nullptr) {
     return tf::errors::NotFound("Could not open ", vcf_filepath);
   }
