@@ -52,7 +52,7 @@ VariantStats = collections.namedtuple('VariantStats', _VARIANT_STATS_COLUMNS)
 _VARIANT_SUMMARY_STATS_COLUMNS = [
     'record_count', 'variant_count', 'snv_count', 'insertion_count',
     'deletion_count', 'mnp_count', 'complex_count', 'depth_mean', 'depth_stdev',
-    'gq_mean', 'gq_stdev'
+    'gq_mean', 'gq_stdev', 'transition_count', 'transversion_count'
 ]
 
 BIALLELIC_SNP = 'Biallelic_SNP'
@@ -178,7 +178,10 @@ def summary_stats(single_stats):
       depth_mean=np.mean(transposed_dict['depth']),
       depth_stdev=np.std(transposed_dict['depth']),
       gq_mean=np.mean(transposed_dict['genotype_quality']),
-      gq_stdev=np.std(transposed_dict['genotype_quality']))
+      gq_stdev=np.std(transposed_dict['genotype_quality']),
+      transition_count=sum(transposed_dict['is_transition']),
+      transversion_count=sum(transposed_dict['is_transversion']),
+  )
 
 
 def variants_to_stats_json(variants):
@@ -195,11 +198,11 @@ def variants_to_stats_json(variants):
   transposed_records = zip(*single_var_stats)
   transposed_dict = dict(zip(_VARIANT_STATS_COLUMNS, transposed_records))
   stats_json = json.dumps(
-      transposed_dict, indent=4, sort_keys=True, separators=(',', ': '))
+      transposed_dict, sort_keys=True, separators=(',', ':'))
 
   summ_stats = summary_stats(single_var_stats)
   summary_json = json.dumps(
-      summ_stats.asdict(), indent=4, sort_keys=True, separators=(',', ': '))
+      summ_stats.asdict(), sort_keys=True, separators=(',', ':'))
 
   return stats_json, summary_json
 

@@ -182,7 +182,8 @@ class VcfStatsTest(parameterized.TestCase):
     truth_summary_json = """
       {"depth_mean": 20,"depth_stdev": 0,"gq_mean": 59,"gq_stdev": 0,
       "record_count": 1,"snv_count": 1,"insertion_count": 0,"deletion_count": 0,
-      "complex_count": 0, "mnp_count": 0, "variant_count": 1}
+      "complex_count": 0, "mnp_count": 0, "variant_count": 1,
+      "transition_count": 1, "transversion_count": 0}
       """
     stats_json, summary_json = vcf_stats.variants_to_stats_json([self.variant])
     self.assertEqual(json.loads(stats_json), json.loads(truth_stats_json))

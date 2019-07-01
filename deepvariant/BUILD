@@ -843,17 +843,6 @@ py_test(
     ],
 )
 
-py_binary(
-    name = "run_vcf_stats",
-    srcs = ["run_vcf_stats.py"],
-    default_python_version = "PY2",
-    srcs_version = "PY2AND3",
-    deps = [
-        ":vcf_stats",
-        "//third_party/nucleus/io:vcf",
-    ],
-)
-
 py_library(
     name = "vcf_stats",
     srcs = ["vcf_stats.py"],
