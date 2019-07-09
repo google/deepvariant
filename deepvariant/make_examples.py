@@ -156,7 +156,7 @@ flags.DEFINE_string(
 flags.DEFINE_bool('realign_reads', True,
                   'If True, locally realign reads before calling variants.')
 flags.DEFINE_bool(
-    'write_run_info', True,
+    'write_run_info', False,
     'If True, write out a MakeExamplesRunInfo proto besides our examples in '
     'text_format.')
 flags.DEFINE_float(

@@ -179,6 +179,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                                  use_fast_pass_aligner=True):
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+    FLAGS.write_run_info = True
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(
