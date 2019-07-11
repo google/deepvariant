@@ -145,7 +145,7 @@ message VariantCall {
   // the 'PS' field in the call.info map and the `is_phased` boolean attribute.
   string phaseset = 5;  // DEPRECATED.
 
-  // The genotype likelihoods for this variant call. Each array entry
+  // The genotype log10-likelihoods for this variant call. Each array entry
   // represents how likely a specific genotype is for this call. The value
   // ordering is defined by the GL tag in the VCF spec.
   // If Phred-scaled genotype likelihood scores (PL) are available and
