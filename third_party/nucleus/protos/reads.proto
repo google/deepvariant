@@ -440,7 +440,7 @@ message ReadRequirements {
   // How should we enforce the min_base_quality requirement?
   enum MinBaseQualityMode {
     // If UNSPECIFIED, there are no guarantees on whether and how
-    // min_base_quality would be enforced. By default we recomment
+    // min_base_quality would be enforced. By default we recommend
     // implementations ignore min_base_quality if this is set to UNSPECIFIED.
     UNSPECIFIED = 0;
     // The min_base_quality requirement is being enforced not by the reader but
