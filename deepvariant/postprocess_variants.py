@@ -977,7 +977,7 @@ def main(argv=()):
       if FLAGS.create_vcf_stats:
         regular_stats, summary_stats = _get_stats_paths(FLAGS.outfile)
         with vcf.VcfReader(FLAGS.outfile) as reader:
-          stats_json, summary_json = vcf_stats.variants_to_stats_json(
+          stats_json, summary_json, _ = vcf_stats.variants_to_stats_json(
               reader.iterate())
           vcf_stats.write(stats_json, regular_stats)
           vcf_stats.write(summary_json, summary_stats)

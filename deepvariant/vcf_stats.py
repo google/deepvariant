@@ -33,6 +33,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import itertools
 import json
 import numpy as np
 
@@ -44,7 +45,7 @@ from third_party.nucleus.util import variantcall_utils
 _VARIANT_STATS_COLUMNS = [
     'reference_name', 'position', 'reference_bases', 'alternate_bases',
     'variant_type', 'is_variant', 'is_transition', 'is_transversion', 'depth',
-    'genotype_quality'
+    'genotype_quality', 'genotype', 'vaf'
 ]
 
 VariantStats = collections.namedtuple('VariantStats', _VARIANT_STATS_COLUMNS)
@@ -120,10 +121,21 @@ def _tstv(variant, vtype):
   return is_transition, is_transversion
 
 
-def get_variant_stats(variant):
+def _get_vaf(variant, vcf_reader):
+  """Gets the VAF (variant allele frequency)."""
+  vafs = variantcall_utils.get_format(
+      variant_utils.only_call(variant), 'VAF', vcf_reader)
+  # Simple sum of alleles for multi-allelic variants
+  return sum(vafs)
+
+
+def get_variant_stats(variant, vcf_reader=None):
   """Returns a VariantStats object corresponding to the input variant."""
   vtype = _get_variant_type(variant)
   is_transition, is_transversion = _tstv(variant, vtype)
+  vaf = None
+  if vcf_reader is not None:
+    vaf = _get_vaf(variant, vcf_reader)
 
   return VariantStats(
       reference_name=variant.reference_name,
@@ -137,11 +149,49 @@ def get_variant_stats(variant):
       depth=variantcall_utils.get_format(
           variant_utils.only_call(variant), 'DP'),
       genotype_quality=variantcall_utils.get_gq(
-          variant_utils.only_call(variant)))
+          variant_utils.only_call(variant)),
+      genotype=str(
+          sorted(variantcall_utils.get_gt(variant_utils.only_call(variant)))),
+      vaf=vaf)
 
 
-def single_variant_stats(variants):
-  return [get_variant_stats(v) for v in variants]
+def single_variant_stats(variants, vcf_reader=None):
+  return [get_variant_stats(v, vcf_reader=vcf_reader) for v in variants]
+
+
+def vaf_histograms_by_genotype(single_stats, number_of_bins=10):
+  """Computes histograms of allele frequency for each genotype.
+
+  Args:
+    single_stats: list of VariantStats objects.
+    number_of_bins: integer, number of bins in allele frequency histogram.
+
+  Returns:
+    A dictionary keyed by genotype where each value is a list of bins.
+  """
+
+  # Group by genotype
+  sorted_by_genotype = sorted(single_stats, key=lambda x: x.genotype)
+  grouped_by_genotype = itertools.groupby(sorted_by_genotype,
+                                          lambda x: x.genotype)
+  stats_by_genotype = {}
+  for genotype, group in grouped_by_genotype:
+    # Get VAF for each variant where it is defined
+    vafs = [x.vaf for x in group if x.vaf is not None]
+    counts, bins = np.histogram(vafs, bins=number_of_bins, range=(0, 1))
+    # Avoid floats becoming 0.6000000000000001 to save space in output json file
+    bins = [round(x, 10) for x in bins]
+    # pylint: disable=g-complex-comprehension
+    vega_formatted_hist = [{
+        'bin_start': bins[idx],
+        'bin_end': bins[idx + 1],
+        'count': count
+    } for idx, count in enumerate(counts)]
+    # pylint: enable=g-complex-comprehension
+
+    stats_by_genotype[genotype] = vega_formatted_hist
+
+  return stats_by_genotype
 
 
 def summary_stats(single_stats):
@@ -180,21 +230,22 @@ def summary_stats(single_stats):
       gq_mean=np.mean(transposed_dict['genotype_quality']),
       gq_stdev=np.std(transposed_dict['genotype_quality']),
       transition_count=sum(transposed_dict['is_transition']),
-      transversion_count=sum(transposed_dict['is_transversion']),
-  )
+      transversion_count=sum(transposed_dict['is_transversion']))
 
 
-def variants_to_stats_json(variants):
+def variants_to_stats_json(variants, vcf_reader=None, histogram_bins=10):
   """Computes variant statistics of each variant.
 
   Args:
-    variants: iterable(Variant).
+    variants: iterable(Variant)
+    vcf_reader: VcfReader
+    histogram_bins: integer, number of bins for histogram
 
   Returns:
     A tuple of (stats_json, summary_json), where state_json is a JSON of single
     variant statistics, and summary_json is a JSON of single sample statistics.
   """
-  single_var_stats = single_variant_stats(variants)
+  single_var_stats = single_variant_stats(variants, vcf_reader=vcf_reader)
   transposed_records = zip(*single_var_stats)
   transposed_dict = dict(zip(_VARIANT_STATS_COLUMNS, transposed_records))
   stats_json = json.dumps(
@@ -204,7 +255,11 @@ def variants_to_stats_json(variants):
   summary_json = json.dumps(
       summ_stats.asdict(), sort_keys=True, separators=(',', ':'))
 
-  return stats_json, summary_json
+  histograms = vaf_histograms_by_genotype(
+      single_var_stats, number_of_bins=histogram_bins)
+  histograms_json = json.dumps(histograms, separators=(',', ':'))
+
+  return stats_json, summary_json, histograms_json
 
 
 def write(stats, outfile):

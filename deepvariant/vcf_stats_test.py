@@ -36,6 +36,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+import collections
 import json
 
 from absl.testing import absltest
@@ -47,6 +48,9 @@ from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
+
+VariantStatsLite = collections.namedtuple('VariantStatsLite',
+                                          ['genotype', 'vaf'])
 
 
 def setUpModule():
@@ -145,7 +149,9 @@ class VcfStatsTest(parameterized.TestCase):
             is_transversion=expection_transversion,
             is_variant=expected_is_variant,
             depth=[],
-            genotype_quality=59))
+            genotype_quality=59,
+            genotype=str(gt),
+            vaf=None))
 
   def test_summary_stats(self):
     with vcf.VcfReader(testdata.GOLDEN_POSTPROCESS_OUTPUT) as reader:
@@ -176,7 +182,7 @@ class VcfStatsTest(parameterized.TestCase):
       {"alternate_bases":[["G"]],"depth":[20],"genotype_quality":[59],
       "is_transition":[true],"is_transversion":[false],"position":[11],
       "reference_bases":["A"],"reference_name":["chr1"],"is_variant":[true],
-      "variant_type":["Biallelic_SNP"]}
+      "variant_type":["Biallelic_SNP"],"genotype":["[0, 1]"],"vaf":[null]}
       """
 
     truth_summary_json = """
@@ -185,9 +191,167 @@ class VcfStatsTest(parameterized.TestCase):
       "complex_count": 0, "mnp_count": 0, "variant_count": 1,
       "transition_count": 1, "transversion_count": 0}
       """
-    stats_json, summary_json = vcf_stats.variants_to_stats_json([self.variant])
+
+    # Without a VcfReader containing VAF, the histogram is empty
+    truth_histograms = """
+      {"[0, 1]": [
+        {"bin_end":0.1,"count":0,"bin_start": 0.0},
+        {"bin_end":0.2,"count":0,"bin_start": 0.1},
+        {"bin_end":0.3,"count":0,"bin_start": 0.2},
+        {"bin_end":0.4,"count":0,"bin_start": 0.3},
+        {"bin_end":0.5,"count":0,"bin_start": 0.4},
+        {"bin_end":0.6,"count":0,"bin_start": 0.5},
+        {"bin_end":0.7,"count":0,"bin_start": 0.6},
+        {"bin_end":0.8,"count":0,"bin_start": 0.7},
+        {"bin_end":0.9,"count":0,"bin_start": 0.8},
+        {"bin_end":1.0,"count":0,"bin_start": 0.9}
+      ]}
+    """
+
+    stats_json, summary_json, histograms = vcf_stats.variants_to_stats_json(
+        [self.variant])
     self.assertEqual(json.loads(stats_json), json.loads(truth_stats_json))
     self.assertEqual(json.loads(summary_json), json.loads(truth_summary_json))
+    self.assertEqual(json.loads(histograms), json.loads(truth_histograms))
+
+  def test_vaf_histograms_by_genotype(self):
+    variants = [
+        VariantStatsLite(genotype='[0, 0]', vaf=0),
+        VariantStatsLite(genotype='[1, 1]', vaf=1),
+        VariantStatsLite(genotype='[0, 1]', vaf=0.5),
+        VariantStatsLite(genotype='[0, 1]', vaf=0.5),
+        VariantStatsLite(genotype='[0, 0]', vaf=0.08),
+        VariantStatsLite(genotype='[0, 0]', vaf=0.19),
+        VariantStatsLite(genotype='[0, 1]', vaf=0.45),
+        VariantStatsLite(genotype='[0, 1]', vaf=0.65)
+    ]
+    truth_histograms = {
+        '[0, 0]': [{
+            'bin_end': 0.1,
+            'count': 2,
+            'bin_start': 0.0
+        }, {
+            'bin_end': 0.2,
+            'count': 1,
+            'bin_start': 0.1
+        }, {
+            'bin_end': 0.3,
+            'count': 0,
+            'bin_start': 0.2
+        }, {
+            'bin_end': 0.4,
+            'count': 0,
+            'bin_start': 0.3
+        }, {
+            'bin_end': 0.5,
+            'count': 0,
+            'bin_start': 0.4
+        }, {
+            'bin_end': 0.6,
+            'count': 0,
+            'bin_start': 0.5
+        }, {
+            'bin_end': 0.7,
+            'count': 0,
+            'bin_start': 0.6
+        }, {
+            'bin_end': 0.8,
+            'count': 0,
+            'bin_start': 0.7
+        }, {
+            'bin_end': 0.9,
+            'count': 0,
+            'bin_start': 0.8
+        }, {
+            'bin_end': 1.0,
+            'count': 0,
+            'bin_start': 0.9
+        }],
+        '[0, 1]': [{
+            'bin_end': 0.1,
+            'count': 0,
+            'bin_start': 0.0
+        }, {
+            'bin_end': 0.2,
+            'count': 0,
+            'bin_start': 0.1
+        }, {
+            'bin_end': 0.3,
+            'count': 0,
+            'bin_start': 0.2
+        }, {
+            'bin_end': 0.4,
+            'count': 0,
+            'bin_start': 0.3
+        }, {
+            'bin_end': 0.5,
+            'count': 1,
+            'bin_start': 0.4
+        }, {
+            'bin_end': 0.6,
+            'count': 2,
+            'bin_start': 0.5
+        }, {
+            'bin_end': 0.7,
+            'count': 1,
+            'bin_start': 0.6
+        }, {
+            'bin_end': 0.8,
+            'count': 0,
+            'bin_start': 0.7
+        }, {
+            'bin_end': 0.9,
+            'count': 0,
+            'bin_start': 0.8
+        }, {
+            'bin_end': 1.0,
+            'count': 0,
+            'bin_start': 0.9
+        }],
+        '[1, 1]': [{
+            'bin_end': 0.1,
+            'count': 0,
+            'bin_start': 0.0
+        }, {
+            'bin_end': 0.2,
+            'count': 0,
+            'bin_start': 0.1
+        }, {
+            'bin_end': 0.3,
+            'count': 0,
+            'bin_start': 0.2
+        }, {
+            'bin_end': 0.4,
+            'count': 0,
+            'bin_start': 0.3
+        }, {
+            'bin_end': 0.5,
+            'count': 0,
+            'bin_start': 0.4
+        }, {
+            'bin_end': 0.6,
+            'count': 0,
+            'bin_start': 0.5
+        }, {
+            'bin_end': 0.7,
+            'count': 0,
+            'bin_start': 0.6
+        }, {
+            'bin_end': 0.8,
+            'count': 0,
+            'bin_start': 0.7
+        }, {
+            'bin_end': 0.9,
+            'count': 0,
+            'bin_start': 0.8
+        }, {
+            'bin_end': 1.0,
+            'count': 1,
+            'bin_start': 0.9
+        }]
+    }
+    self.assertEqual(
+        vcf_stats.vaf_histograms_by_genotype(variants), truth_histograms)
 
 
 if __name__ == '__main__':
