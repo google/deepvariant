@@ -87,6 +87,7 @@ NOCHR_BAM = None
 CUSTOMIZED_CLASSES_REGIONS = None
 CUSTOMIZED_CLASSES_VARIANTS = None
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
+CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = None
 
 
 def init():
@@ -144,6 +145,7 @@ def init():
   global CUSTOMIZED_CLASSES_REGIONS
   global CUSTOMIZED_CLASSES_VARIANTS
   global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
+  global CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES
   NOCHR_FASTA = deepvariant_testdata('customized_classes.chr20.fasta.gz')
   NOCHR_BAM = deepvariant_testdata('customized_classes.chr20.10_10p1mb.bam')
   CUSTOMIZED_CLASSES_REGIONS = deepvariant_testdata(
@@ -152,3 +154,5 @@ def init():
       'ref_class1_class2.chr20_100kbp_at_10mb.vcf.gz')
   CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'customized_classes.golden.training_examples.tfrecord')
+  CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
+      'custom_pileup_image.golden.training_examples.tfrecord')

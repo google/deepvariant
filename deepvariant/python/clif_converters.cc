@@ -67,7 +67,7 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
   std::call_once(import_array_flag, call_import_array);
   if (!img_row) { Py_RETURN_NONE; }
 
-  npy_intp dims[] { 1, img_row->Width(), 6 };
+  npy_intp dims[] { 1, img_row->Width(), img_row->num_channels };
   PyArrayObject* res = reinterpret_cast<PyArrayObject*>(
       PyArray_SimpleNew(3, dims, PyArray_UBYTE));
   CHECK(res != nullptr);
@@ -80,6 +80,11 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
     *cur++ = img_row->on_positive_strand[i];
     *cur++ = img_row->supports_alt[i];
     *cur++ = img_row->matches_ref[i];
+    // Current default num_channels is 6. If num_channels is 7, we add the
+    // the 7th channel, which encodes oplens for indels.
+    if (img_row->num_channels == 7) {
+      *cur++ = img_row->op_length[i];
+    }
   }
   return PyArray_Return(res);
 }

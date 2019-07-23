@@ -301,6 +301,70 @@ class PileupImageEncoderTest(parameterized.TestCase):
         _make_encoder().encode_read(dv_call, 'AACAG', read, start, alt_allele),
         full_expected)
 
+  def test_encode_read_custom_pileup_read_deletion(self):
+    pie = _make_encoder(
+        num_channels=7, insert_base_char='I', delete_base_char='D')
+    # ref:  AACAG
+    # read: AA--G
+    start = 2
+    read = test_utils.make_read(
+        'AAG', start=start, cigar='2M2D1M', quals=range(10, 13), name='read1')
+    dv_call = _make_dv_call()
+    alt_allele = dv_call.variant.alternate_bases[0]
+    full_expected = np.dstack([
+        # Base. Fills in the whole deletion with 130, starting at the anchor.
+        (250, 130, 130, 130, 180),
+        # Base quality.
+        (63, 69, 0, 0, 76),
+        # Mapping quality.
+        (211, 211, 0, 0, 211),
+        # Strand channel (forward or reverse)
+        (70, 70, 0, 0, 70),
+        # Supports alt or not.
+        (254, 254, 0, 0, 254),
+        # Matches ref or not.
+        (50, 254, 0, 0, 50),
+        # Operation length.
+        (0, 2, 2, 2, 0)
+    ]).astype(np.uint8)
+    self.assertImageRowEquals(
+        pie.encode_read(dv_call, 'AACAG', read, start, alt_allele),
+        full_expected)
+
+  def test_encode_read_custom_pileup_read_insertion(self):
+    pie = _make_encoder(
+        num_channels=7, insert_base_char='I', delete_base_char='D')
+    # ref:  AA-CAG
+    # read: AAACAG
+    start = 2
+    read = test_utils.make_read(
+        'AAACAG',
+        start=start,
+        cigar='2M1I3M',
+        quals=range(10, 16),
+        name='read1')
+    dv_call = _make_dv_call()
+    alt_allele = dv_call.variant.alternate_bases[0]
+    full_expected = np.dstack([
+        # Base.
+        (250, 150, 30, 250, 180),
+        # Base quality.
+        (63, 76, 82, 88, 95),
+        # Mapping quality.
+        (211, 211, 211, 211, 211),
+        # Strand channel (forward or reverse)
+        (70, 70, 70, 70, 70),
+        # Supports alt or not.
+        (254, 254, 254, 254, 254),
+        # Matches ref or not.
+        (50, 254, 50, 50, 50),
+        # Operation length.
+        (0, 1, 0, 0, 0),
+    ]).astype(np.uint8)
+    self.assertImageRowEquals(
+        pie.encode_read(dv_call, 'AACAG', read, start, alt_allele),
+        full_expected)
+
   @parameterized.parameters(
       (min_base_qual, min_mapping_qual)
       for min_base_qual, min_mapping_qual in itertools.product(
