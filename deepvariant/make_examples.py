@@ -243,6 +243,11 @@ flags.DEFINE_string(
     'respectively. Multiple selectors can be specified, so that '
     '--select_variant_types="snps indels" would keep all bi-allelic SNPs and '
     'indels')
+flags.DEFINE_bool(
+    'custom_pileup_image', False,
+    'Experimental - please do not set this flag. If True, an '
+    'additional channel will be added to encode CIGAR op length '
+    'for indels.')
 
 
 # ---------------------------------------------------------------------------
