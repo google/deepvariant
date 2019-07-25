@@ -248,7 +248,12 @@ flags.DEFINE_bool(
     'Experimental - please do not set this flag. If True, an '
     'additional channel will be added to encode CIGAR op length '
     'for indels.')
-
+flags.DEFINE_string(
+    'sequencing_type', None,
+    'A string representing input bam file sequencing_type. Permitted values are '
+    '"WGS" and "WES", which represent whole genome sequencing and whole exome '
+    'sequencing, respectively. This flag is experimental and is not currently '
+    'being used.')
 
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
@@ -408,6 +413,10 @@ def default_options(add_flags=True, flags_obj=None):
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
+    if flags_obj.sequencing_type:
+      options.sequencing_type = parse_proto_enum_flag(
+          deepvariant_pb2.DeepVariantOptions.SequencingType,
+          flags_obj.sequencing_type)
 
     if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
       options.downsample_fraction = flags_obj.downsample_fraction
@@ -1046,7 +1055,8 @@ class RegionProcessor(object):
               alt_alleles,
               encoded_tensor,
               shape=shape,
-              image_format=tensor_format))
+              image_format=tensor_format,
+              sequencing_type=self.options.sequencing_type))
     return examples
 
   def label_candidates(self, candidates, region):

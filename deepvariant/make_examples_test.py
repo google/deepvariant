@@ -82,6 +82,7 @@ _EXAMPLE_DECODERS = {
     'label': tf_utils.example_label,
     'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
+    'sequencing_type': tf_utils.example_sequencing_type,
 }
 
 
@@ -593,6 +594,29 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     # As an approximation, we directly check that the value should be exactly 0.
     self.assertEqual(
         options.variant_caller_options.fraction_reference_sites_to_emit, 0.0)
+
+  @flagsaver.FlagSaver
+  def test_sequencing_type_tag(self):
+    FLAGS.mode = 'training'
+
+    # Default
+    options = make_examples.default_options(add_flags=True)
+    self.assertEqual(options.sequencing_type, 0)
+
+    # WGS
+    FLAGS.sequencing_type = 'WGS'
+    options = make_examples.default_options(add_flags=True)
+    self.assertEqual(options.sequencing_type, 1)
+
+    # WES
+    FLAGS.sequencing_type = 'WES'
+    options = make_examples.default_options(add_flags=True)
+    self.assertEqual(options.sequencing_type, 2)
+
+    # Invalid - test exception
+    FLAGS.sequencing_type = 'wGs'
+    with self.assertRaises(ValueError):
+      options = make_examples.default_options(add_flags=True)
 
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()

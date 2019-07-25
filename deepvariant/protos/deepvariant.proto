@@ -429,7 +429,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 31.
+// Next ID: 32.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -558,6 +558,14 @@ message DeepVariantOptions {
   // select_variant_types = ['snps'] would indicate that we only want to
   // generate SNP candidate variants.
   repeated string select_variant_types = 30;
+
+  // Sequencing type of input bam file.
+  enum SequencingType {
+    UNSPECIFIED_SEQ_TYPE = 0;
+    WGS = 1;
+    WES = 2;
+  }
+  SequencingType sequencing_type = 31;
 }
 
 // Config describe information needed for a dataset that can be used for
@@ -578,7 +586,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 10.
+  // Next ID: 11.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -604,6 +612,10 @@ message DeepVariantInputDatasets {
 
     // Optional. If set, use this sample_name for make_examples.
     string sample_name = 9;
+
+    // Optional. Can be set to the sequencing type of the input BAM file: 'WGS'
+    // or 'WES'.
+    string sequencing_type = 10;
   }
   repeated Dataset datasets = 1;
   string group_name = 2;

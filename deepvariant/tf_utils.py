@@ -183,6 +183,10 @@ def example_set_variant(example, variant):
   ]
 
 
+def example_sequencing_type(example):
+  return example.features.feature['sequencing_type'].int64_list.value[0]
+
+
 def get_one_example_from_examples_path(source, proto=None):
   """Get the first record from `source`.
 
@@ -251,7 +255,8 @@ def make_example(variant,
                  encoded_image,
                  shape,
                  image_format,
-                 second_image=None):
+                 second_image=None,
+                 sequencing_type=0):
   """Creates a new tf.Example suitable for use with DeepVariant.
 
   Args:
@@ -267,6 +272,7 @@ def make_example(variant,
     second_image: a Tensor of type tf.string or None. Contains second
       image that encodes read data from another DNA sample. Must satisfy
       the same requirements as encoded_image.
+    sequencing_type: int. The sequencing type of the input image.
 
   Returns:
     A tf.Example proto containing the standard DeepVariant features.
@@ -296,6 +302,7 @@ def make_example(variant,
     features.feature['second_image/format'].bytes_list.value.append(
         image_format)
     features.feature['second_image/shape'].int64_list.value.extend(shape)
+  features.feature['sequencing_type'].int64_list.value.append(sequencing_type)
   return example
 
 
