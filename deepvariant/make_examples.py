@@ -229,6 +229,10 @@ flags.DEFINE_integer(
     'Print out the log every n candidates. The smaller the number, the more '
     'frequent the logging information emits.')
 flags.DEFINE_bool('keep_duplicates', False, 'If True, keep duplicate reads.')
+flags.DEFINE_bool('keep_supplementary_alignments', False,
+                  'If True, keep reads marked as supplemantary alignments.')
+flags.DEFINE_bool('keep_secondary_alignments', False,
+                  'If True, keep reads marked as secondary alignments.')
 flags.DEFINE_bool(
     'parse_sam_aux_fields', False,
     'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed.')
@@ -350,7 +354,9 @@ def default_options(add_flags=True, flags_obj=None):
     flags_obj = FLAGS
 
   read_reqs = reads_pb2.ReadRequirements(
-      keep_duplicates=FLAGS.keep_duplicates,
+      keep_duplicates=flags_obj.keep_duplicates,
+      keep_supplementary_alignments=flags_obj.keep_supplementary_alignments,
+      keep_secondary_alignments=flags_obj.keep_secondary_alignments,
       min_base_quality=flags_obj.min_base_quality,
       min_mapping_quality=flags_obj.min_mapping_quality,
       min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
