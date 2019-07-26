@@ -230,7 +230,7 @@ flags.DEFINE_integer(
     'frequent the logging information emits.')
 flags.DEFINE_bool('keep_duplicates', False, 'If True, keep duplicate reads.')
 flags.DEFINE_bool('keep_supplementary_alignments', False,
-                  'If True, keep reads marked as supplemantary alignments.')
+                  'If True, keep reads marked as supplementary alignments.')
 flags.DEFINE_bool('keep_secondary_alignments', False,
                   'If True, keep reads marked as secondary alignments.')
 flags.DEFINE_bool(
