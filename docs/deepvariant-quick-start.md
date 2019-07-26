@@ -105,7 +105,7 @@ https://console.cloud.google.com/storage/browser/deepvariant/models/DeepVariant
 DeepVariant consists of 3 main binaries: `make_examples`, `call_variants`, and
 `postprocess_variants`. To make it easier to run, we create one entrypoint that
 can be directly run as a docker command. If you want to see the details, you can
-read through [docker_entrypoint.py].
+read through [run_deepvariant.py].
 
 ```bash
 OUTPUT_DIR="${PWD}/quickstart-output"
@@ -185,3 +185,4 @@ Benchmarking Summary:
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
+[run_deepvariant.py]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_deepvariant.py
