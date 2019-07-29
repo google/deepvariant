@@ -69,22 +69,30 @@ flags.DEFINE_string('output_vcf', None,
                     'Required. Path where we should write VCF file.')
 # Optional flags.
 flags.DEFINE_string(
-    'customized_model', None,
-    'Optional. A path to a model checkpoint to load for the `call_variants` '
-    'step. If not set, the default for each --model_type will be used')
-flags.DEFINE_string(
-    'regions', None,
-    'Optional. Space-separated list of regions we want to process. Elements '
-    'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
-flags.DEFINE_string('output_gvcf', None,
-                    'Optional. Path where we should write gVCF file.')
-flags.DEFINE_string(
     'intermediate_results_dir', '/tmp/deepvariant_tmp_output',
     'Optional. If specified, this should be an existing '
     'directory that is visible insider docker, and will be '
     'used to to store intermediate outputs.')
+# Optional flags for call_variants.
+flags.DEFINE_string(
+    'customized_model', None,
+    'Optional. A path to a model checkpoint to load for the `call_variants` '
+    'step. If not set, the default for each --model_type will be used')
+# Optional flags for make_examples.
+flags.DEFINE_bool('keep_secondary_alignments', None,
+                  'If True, keep reads marked as secondary alignments.')
+flags.DEFINE_bool('keep_supplementary_alignments', None,
+                  'If True, keep reads marked as supplementary alignments.')
 flags.DEFINE_integer('num_shards', 1,
                      'Optional. Number of shards for make_examples step.')
+flags.DEFINE_string(
+    'regions', None,
+    'Optional. Space-separated list of regions we want to process. Elements '
+    'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
+
+# Optional flags for postprocess_variants.
+flags.DEFINE_string('output_gvcf', None,
+                    'Optional. Path where we should write gVCF file.')
 
 flags.mark_flag_as_required('model_type')
 flags.mark_flag_as_required('ref')
@@ -98,22 +106,14 @@ MODEL_TYPE_MAP = {
 }
 
 
-def make_examples_command(ref,
-                          reads,
-                          examples,
-                          gvcf=None,
-                          regions=None,
-                          realign_reads=None):
+def make_examples_command(ref, reads, examples, **kwargs):
   """Returns a make_examples command for subprocess.check_call.
 
   Args:
     ref: Input FASTA file.
     reads: Input BAM file.
     examples: Output tfrecord file containing tensorflow.Example files.
-    gvcf: (Optional) Output tfrecord file containing tensorflow.Example files.
-    regions: (Optional) Input BED file or chromosome ranges.
-    realign_reads: (Optional) If not None, add --realign_reads or
-      --norealign_reads depending on the truth value.
+    **kwargs: Additional arguments to pass in for make_examples.
 
   Returns:
     (string) A command to run.
@@ -126,16 +126,17 @@ def make_examples_command(ref,
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
-  if regions is not None:
-    command.extend(['--regions', '"{}"'.format(regions)])
-  if gvcf is not None:
-    command.extend(['--gvcf', '"{}"'.format(gvcf)])
-  command.extend(['--task {}'])
-  if realign_reads is not None:
-    if realign_reads:
-      command.extend(['--realign_reads'])
+  # Extend the command with all items in kwargs.
+  for key, value in kwargs.items():
+    if value is None:
+      continue
+    if isinstance(value, bool):
+      added_arg = '' if value else 'no'
+      added_arg += key
+      command.extend(['--' + added_arg])
     else:
-      command.extend(['--norealign_reads'])
+      command.extend(['--' + key, '"{}"'.format(value)])
+  command.extend(['--task {}'])
   return ' '.join(command)
 
 
@@ -210,7 +211,10 @@ def main(_):
       examples,
       gvcf=nonvariant_site_tfrecord_path,
       regions=FLAGS.regions,
-      realign_reads=False if FLAGS.model_type == 'PACBIO' else None)
+      realign_reads=False if FLAGS.model_type == 'PACBIO' else None,
+      keep_secondary_alignments=FLAGS.keep_secondary_alignments,
+      keep_supplementary_alignments=FLAGS.keep_supplementary_alignments)
+
   print('\n***** Running the command:*****\n{}\n'.format(command))
   subprocess.check_call(command, shell=True, executable='/bin/bash')
 

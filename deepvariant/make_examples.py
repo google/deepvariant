@@ -361,6 +361,8 @@ def default_options(add_flags=True, flags_obj=None):
       min_mapping_quality=flags_obj.min_mapping_quality,
       min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
 
+  logging.info('ReadRequirements are: %s', read_reqs)
+
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
