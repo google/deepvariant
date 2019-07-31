@@ -190,6 +190,11 @@ class TFRecordReader(GenomicsReader):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self.reader.close()
 
+  @property
+  def c_reader(self):
+    """Returns the underlying C++ reader."""
+    return self.reader
+
 
 class DispatchingGenomicsReader(GenomicsReader):
   """A GenomicsReader that dispatches based on the file extension.

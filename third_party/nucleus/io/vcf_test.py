@@ -147,6 +147,14 @@ class VcfReaderTests(absltest.TestCase):
     with self.assertRaisesRegexp(ValueError, 'No underlying iterable. This '):
       next(r2)
 
+  def test_c_reader(self):
+    self.assertNotEqual(self.sites_reader.c_reader, 0)
+    self.assertNotEqual(self.samples_reader.c_reader, 0)
+
+    tfrecord_reader = vcf.VcfReader(
+        test_utils.genomics_core_testdata('test_samples.vcf.golden.tfrecord'))
+    self.assertNotEqual(tfrecord_reader.c_reader, 0)
+
 
 def _format_expected_variant(ref, alts, format_spec, *samples):
   base = ['20', 1, '.', ref, alts, 0, '.', '.', format_spec]

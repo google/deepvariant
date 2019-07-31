@@ -207,6 +207,11 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
+  @property
+  def c_reader(self):
+    """Returns the underlying C++ reader."""
+    return self._reader
+
 
 class VcfReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Variant protos from VCF or TFRecord files."""
@@ -223,6 +228,15 @@ class VcfReader(genomics_reader.DispatchingGenomicsReader):
     # create a new one.
     self.field_access_cache = getattr(
         self._reader, 'field_access_cache', VcfHeaderCache(self.header))
+
+  @property
+  def c_reader(self):
+    """Returns the underlying C++ reader.
+
+    Note that the C++ reader might be a VcfReader or it might be a
+    TFRecordReader, depending on the input_path's extension.
+    """
+    return self._reader.c_reader
 
 
 class NativeVcfWriter(genomics_writer.GenomicsWriter):

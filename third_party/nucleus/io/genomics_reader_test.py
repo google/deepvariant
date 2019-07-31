@@ -88,6 +88,7 @@ class TFRecordReaderTests(absltest.TestCase):
     records = list(reader.iterate())
     self.assertEqual('GenBank', records[0].source)
     self.assertEqual('ctg123', records[1].range.reference_name)
+    self.assertNotEqual(reader.c_reader, 0)
 
   def testUncompressedExplicit(self):
     reader = genomics_reader.TFRecordReader(
