@@ -630,4 +630,15 @@ TEST(VcfReaderTest, MissingHeaderDefinitions) {
   EXPECT_EQ("Chr2", v3.reference_name());
 }
 
+TEST(VcfReaderTest, HeaderAccessor) {
+  std::unique_ptr<VcfReader> reader =
+      std::move(VcfReader::FromFile(GetTestData(kVcfSamplesFilename),
+                                    nucleus::genomics::v1::VcfReaderOptions())
+                    .ValueOrDie());
+  // A test to make sure header's fields can be iterated in a loop.
+  for (const auto& name : reader->Header().sample_names()) {
+    EXPECT_FALSE(name.empty());
+  }
+}
+
 }  // namespace nucleus

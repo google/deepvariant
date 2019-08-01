@@ -148,7 +148,7 @@ class VcfReader : public Reader {
   bool HasIndex() const { return idx_ != nullptr; }
 
   // Returns the VCF header associated with this reader.
-  const nucleus::genomics::v1::VcfHeader Header() const { return vcf_header_; }
+  const nucleus::genomics::v1::VcfHeader& Header() const { return vcf_header_; }
 
   // Get the options controlling the behavior of this VcfReader.
   const nucleus::genomics::v1::VcfReaderOptions& Options() const {
