@@ -891,6 +891,37 @@ def _get_stats_paths(input_vcf):
   return template.format('per_record'), template.format('summary')
 
 
+def _decide_to_use_csi(contigs):
+  """Return True if CSI index is to be used over tabix index format.
+
+  If the length of any reference chromosomes exceeds 512M
+  (here we use 5e8 to keep a safety margin), we will choose csi
+  as the index format. Otherwise we use tbi as default.
+
+  Args:
+    contigs: list of contigs.
+
+  Returns:
+    A boolean variable indicating if the csi format is to be used or not.
+  """
+  max_chrom_length = max([c.n_bases for c in contigs])
+  return max_chrom_length > 5e8
+
+
+def build_index(vcf_file, csi=False):
+  """A helper function for indexing VCF files.
+
+  Args:
+    vcf_file: string. Path to the VCF file to be indexed.
+    csi: bool. If true, index using the CSI format.
+  """
+
+  if csi:
+    tabix.build_csi_index(vcf_file, min_shift=14)
+  else:
+    tabix.build_index(vcf_file)
+
+
 def main(argv=()):
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
@@ -925,6 +956,7 @@ def main(argv=()):
     sample_name = _extract_single_sample_name(record)
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs, sample_names=[sample_name])
+    use_csi = _decide_to_use_csi(contigs)
     with tempfile.NamedTemporaryFile() as temp:
       start_time = time.time()
       postprocess_variants_lib.process_single_sites_tfrecords(
@@ -950,7 +982,7 @@ def main(argv=()):
             output_vcf_path=FLAGS.outfile,
             header=header)
         if FLAGS.outfile.endswith('.gz'):
-          tabix.build_index(FLAGS.outfile)
+          build_index(FLAGS.outfile, use_csi)
         logging.info('VCF creation took %s minutes',
                      (time.time() - start_time) / 60)
       else:
@@ -969,9 +1001,9 @@ def main(argv=()):
               variant_generator, nonvariant_generator, lessthanfn, fasta_reader,
               vcf_writer, gvcf_writer)
         if FLAGS.outfile.endswith('.gz'):
-          tabix.build_index(FLAGS.outfile)
+          build_index(FLAGS.outfile, use_csi)
         if FLAGS.gvcf_outfile.endswith('.gz'):
-          tabix.build_index(FLAGS.gvcf_outfile)
+          build_index(FLAGS.gvcf_outfile, use_csi)
         logging.info('Finished writing VCF and gVCF in %s minutes.',
                      (time.time() - start_time) / 60)
       if FLAGS.create_vcf_stats:

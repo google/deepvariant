@@ -74,4 +74,28 @@ TEST(TabixIndexerTest, IndexBuildsCorrectly) {
   EXPECT_THAT(reader->Query(MakeRange("chr3", 14318, 14319)), IsOK());
 }
 
+TEST(CSIIndexerTest, IndexBuildsCorrectly) {
+  string output_filename = MakeTempFile("test_samples.vcf.gz");
+  string output_csi_index = output_filename + ".csi";
+
+  std::unique_ptr<nucleus::VcfReader> reader = std::move(
+      nucleus::VcfReader::FromFile(GetTestData(kVcfIndexSamplesFilename),
+                                   nucleus::genomics::v1::VcfReaderOptions())
+          .ValueOrDie());
+
+  nucleus::genomics::v1::VcfWriterOptions writer_options;
+  std::unique_ptr<VcfWriter> writer =
+      std::move(nucleus::VcfWriter::ToFile(output_filename, reader->Header(),
+                                           writer_options)
+                    .ValueOrDie());
+
+  auto variants = nucleus::as_vector(reader->Iterate());
+  for (const auto& v : variants) {
+    TF_CHECK_OK(writer->Write(v));
+  }
+
+  EXPECT_THAT(CSIIndexBuild(output_filename, 14), IsOK());
+  EXPECT_THAT(tensorflow::Env::Default()->FileExists(output_csi_index), IsOK());
+  EXPECT_THAT(reader->Query(MakeRange("chr3", 14318, 14319)), IsOK());
+}
 }  // namespace nucleus

@@ -57,6 +57,7 @@ class TabixTest(absltest.TestCase):
     self.output_file = test_utils.test_tmpfile('test_samples.vcf.gz')
     shutil.copyfile(self.input_file, self.output_file)
     self.tbx_index_file = self.output_file + '.tbi'
+    self.csi_index_file = self.output_file + '.csi'
 
   def tearDown(self):
     super(TabixTest, self).tearDown()
@@ -65,13 +66,23 @@ class TabixTest(absltest.TestCase):
       os.remove(self.tbx_index_file)
     except OSError:
       pass
+    try:
+      os.remove(self.csi_index_file)
+    except OSError:
+      pass
 
-  def test_build_index(self):
+  def test_build_index_tbx(self):
     self.assertFalse(gfile.Exists(self.tbx_index_file))
     tabix.build_index(self.output_file)
     self.assertTrue(gfile.Exists(self.tbx_index_file))
 
-  def test_vcf_query(self):
+  def test_build_index_csi(self):
+    min_shift = 14
+    self.assertFalse(gfile.Exists(self.csi_index_file))
+    tabix.build_csi_index(self.output_file, min_shift)
+    self.assertTrue(gfile.Exists(self.csi_index_file))
+
+  def test_vcf_query_tbx(self):
     tabix.build_index(self.output_file)
     self.input_reader = vcf.VcfReader(self.input_file)
     self.output_reader = vcf.VcfReader(self.output_file)
@@ -81,6 +92,16 @@ class TabixTest(absltest.TestCase):
         list(self.input_reader.query(range1)),
         list(self.output_reader.query(range1)))
 
+  def test_vcf_query_csi(self):
+    min_shift = 14
+    tabix.build_csi_index(self.output_file, min_shift)
+    self.input_reader = vcf.VcfReader(self.input_file)
+    self.output_reader = vcf.VcfReader(self.output_file)
+
+    range1 = ranges.parse_literal('chr3:100,000-500,000')
+    self.assertEqual(
+        list(self.input_reader.query(range1)),
+        list(self.output_reader.query(range1)))
 
 if __name__ == '__main__':
   absltest.main()

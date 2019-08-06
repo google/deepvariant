@@ -38,3 +38,8 @@ from third_party.nucleus.io.python import tabix_indexer
 def build_index(path):
   """Builds a tabix index for VCF at the specified path."""
   tabix_indexer.tbx_index_build(path)
+
+
+def build_csi_index(path, min_shift):
+  """Builds a csi index for VCF at the specified path."""
+  tabix_indexer.csi_index_build(path, min_shift)

@@ -40,7 +40,7 @@ namespace nucleus {
 
 // Builds a tabix index for bgzipped VCF at the specified path.
 tensorflow::Status TbxIndexBuild(const string& path);
-
+tensorflow::Status CSIIndexBuild(string path, int min_shift);
 }  // namespace nucleus
 
 #endif  // THIRD_PARTY_NUCLEUS_IO_TABIX_INDEXER_H_
