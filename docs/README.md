@@ -15,6 +15,11 @@
     for BGISEQ-500 data](deepvariant-tpu-training-case-study.md)
 *   [DeepVariant training data](deepvariant-details-training-data.md)
 
+## (Advanced) Trio merging
+
+*   [Advanced Case study: Merge DeepVariant Whole Exome Sequencing (WES) trio
+    call sets](trio-merge-case-study.md)
+
 ## More details
 
 *   [DeepVariant usage guide](deepvariant-details.md)
