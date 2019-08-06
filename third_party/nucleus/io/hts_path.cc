@@ -43,13 +43,6 @@ namespace nucleus {
 
 const char dflt[] = "";
 
-#ifndef ENABLE_GOOGLE_HTSLIB_EXTENSIONS
-// Error out if dflt is not "" (i.e. contains a file scheme).
-static_assert(
-    sizeof(dflt) == 1u,
-    "File handler is requested when ENABLE_GOOGLE_HTSLIB_EXTENSIONS is 0");
-#endif
-
 // Use the default file scheme, unless one is provided.
 string fix_path(const std::string &path) {
   size_t i = path.find(':');
