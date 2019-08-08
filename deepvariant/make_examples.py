@@ -439,7 +439,8 @@ def default_options(add_flags=True, flags_obj=None):
       options.downsample_fraction = flags_obj.downsample_fraction
 
     if flags_obj.custom_pileup_image:
-      options.pic_options.num_channels = 7
+      options.pic_options.custom_pileup_image = flags_obj.custom_pileup_image
+      options.pic_options.num_channels += 1
       options.pic_options.insert_base_char = 'I'
       options.pic_options.delete_base_char = 'D'
 

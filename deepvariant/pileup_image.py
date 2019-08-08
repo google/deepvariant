@@ -77,7 +77,8 @@ def default_options(read_requirements=None):
       read_requirements=read_requirements,
       multi_allelic_mode=deepvariant_pb2.PileupImageOptions.ADD_HET_ALT_IMAGES,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
-      random_seed=2101079370)
+      random_seed=2101079370,
+      custom_pileup_image=False)
 
 
 def _compute_half_width(width):

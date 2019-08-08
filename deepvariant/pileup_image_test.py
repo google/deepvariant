@@ -303,7 +303,10 @@ class PileupImageEncoderTest(parameterized.TestCase):
 
   def test_encode_read_custom_pileup_read_deletion(self):
     pie = _make_encoder(
-        num_channels=7, insert_base_char='I', delete_base_char='D')
+        custom_pileup_image=True,
+        num_channels=7,
+        insert_base_char='I',
+        delete_base_char='D')
     # ref:  AACAG
     # read: AA--G
     start = 2
@@ -333,7 +336,10 @@ class PileupImageEncoderTest(parameterized.TestCase):
 
   def test_encode_read_custom_pileup_read_insertion(self):
     pie = _make_encoder(
-        num_channels=7, insert_base_char='I', delete_base_char='D')
+        custom_pileup_image=True,
+        num_channels=7,
+        insert_base_char='I',
+        delete_base_char='D')
     # ref:  AA-CAG
     # read: AAACAG
     start = 2

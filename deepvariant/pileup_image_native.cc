@@ -88,7 +88,9 @@ inline bool ReadSupportsAlt(const DeepVariantCall& dv_call,
 const float kMaxPixelValueAsFloat = 254.0;
 
 
-ImageRow::ImageRow(int width, int num_channels)
+ImageRow::ImageRow(int width,
+                   int num_channels,
+                   bool custom_pileup_image)
     : base(width, 0),
       base_quality(width, 0),
       mapping_quality(width, 0),
@@ -96,7 +98,8 @@ ImageRow::ImageRow(int width, int num_channels)
       supports_alt(width, 0),
       matches_ref(width, 0),
       op_length(width, 0),
-      num_channels(num_channels)
+      num_channels(num_channels),
+      custom_pileup_image(custom_pileup_image)
 {}
 
 int ImageRow::Width() const {
@@ -114,6 +117,14 @@ PileupImageEncoderNative::PileupImageEncoderNative(
     : options_(options) {
     CHECK((options_.width() % 2 == 1) && options_.width() >= 3)
         << "Width must be odd; found " << options_.width();
+    int optional_channels(0);
+    if (options_.custom_pileup_image()) {
+      optional_channels++;
+    }
+    int num_channels = NUM_CHANNELS + optional_channels;
+    CHECK(options_.num_channels() == num_channels)
+        << "Expected options.num_channels to be " << num_channels
+        << " but saw " << options_.num_channels() << " instead";
 }
 
 // Gets the pixel color (int) for a base.
@@ -179,7 +190,9 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
                                      const Read& read,
                                      int image_start_pos,
                                      const vector<string>& alt_alleles) {
-  ImageRow img_row(ref_bases.size(), options_.num_channels());
+  ImageRow img_row(ref_bases.size(),
+                   options_.num_channels(),
+                   options_.custom_pileup_image());
   const bool supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
   const int mapping_quality = read.alignment().mapping_quality();
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
@@ -210,13 +223,13 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
     if (cigar_op == CigarUnit::INSERT) {
       // redacted
       read_base = options_.indel_anchoring_base_char()[0];
-      if (options_.num_channels() == 7) {
+      if (options_.custom_pileup_image()) {
         read_base = options_.insert_base_char()[0];
       }
     } else if (cigar_op == CigarUnit::DELETE) {
       ref_i -= 1;  // Adjust anchor base on reference
       read_base = options_.indel_anchoring_base_char()[0];
-      if (options_.num_channels() == 7) {
+      if (options_.custom_pileup_image()) {
         read_base = options_.delete_base_char()[0];
       }
     } else if (cigar_op == CigarUnit::ALIGNMENT_MATCH ||
@@ -241,7 +254,7 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
       img_row.on_positive_strand[col] = strand_color;
       img_row.supports_alt[col]       = alt_color;
       img_row.matches_ref[col]        = MatchesRefColor(matches_ref);
-      if (options_.num_channels() == 7) {
+      if (options_.custom_pileup_image()) {
         img_row.op_length[col] = op_len;
         // Fill in deletion pixels
         if (cigar_op == CigarUnit::DELETE) {
@@ -356,7 +369,9 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
   uint8 alt_color = SupportsAltColor(false);
   uint8 ref_color = MatchesRefColor(true);
 
-  ImageRow img_row(ref_bases.size(), options_.num_channels());
+  ImageRow img_row(ref_bases.size(),
+                   options_.num_channels(),
+                   options_.custom_pileup_image());
   for (size_t i = 0; i < ref_bases.size(); ++i) {
     img_row.base[i]               = BaseColor(ref_bases[i]);
     img_row.base_quality[i]       = base_quality_color;
@@ -364,7 +379,7 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
     img_row.on_positive_strand[i] = strand_color;
     img_row.supports_alt[i]       = alt_color;
     img_row.matches_ref[i]        = ref_color;
-    if (options_.num_channels() == 7) {
+    if (options_.custom_pileup_image()) {
       img_row.op_length[i] = 1;
     }
   }

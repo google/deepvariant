@@ -344,7 +344,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 25.
+// Next ID: 26.
 message PileupImageOptions {
   // The height, in pixels, of the pileup image we'll construct.
   int32 height = 1;
@@ -386,12 +386,6 @@ message PileupImageOptions {
   // The character we'll use when encoding insertion/deletion anchor bases.
   string indel_anchoring_base_char = 13;
 
-  // The character we'll use when encoding insertion anchor bases.
-  string insert_base_char = 23;
-
-  // The character we'll use when encoding deletion anchor bases.
-  string delete_base_char = 24;
-
   // The color value to use for reads on the positive strand.
   int32 positive_strand_color = 14;
   // The color value to use for reads on the negative strand.
@@ -425,6 +419,15 @@ message PileupImageOptions {
 
   // The number of data channels in our pileup images.
   int32 num_channels = 22;
+
+  // The character we'll use when encoding insertion anchor bases.
+  string insert_base_char = 23;
+
+  // The character we'll use when encoding deletion anchor bases.
+  string delete_base_char = 24;
+
+  // Include custom pileup image feature.
+  bool custom_pileup_image = 25;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

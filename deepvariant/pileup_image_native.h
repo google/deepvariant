@@ -46,6 +46,8 @@ namespace deepvariant {
 
 using tensorflow::string;
 
+constexpr int NUM_CHANNELS = 6;
+
 struct ImageRow {
   std::vector<unsigned char> base;
   std::vector<unsigned char> base_quality;
@@ -55,9 +57,12 @@ struct ImageRow {
   std::vector<unsigned char> matches_ref;
   std::vector<unsigned char> op_length;
   int num_channels;
+  bool custom_pileup_image;
 
   int Width() const;
-  explicit ImageRow(int width, int num_channels);
+  explicit ImageRow(int width,
+                    int num_channels,
+                    bool custom_pileup_image);
 };
 
 class PileupImageEncoderNative {
