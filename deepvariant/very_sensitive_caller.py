@@ -1,4 +1,4 @@
-# Copyright 2017 Google LLC.
+# Copyright 2019 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,16 +26,30 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""A VerySensitiveCaller producing DeepVariantCall and gVCF records.
 
-from "deepvariant/protos/deepvariant_pyclif.h" import *
-from "deepvariant/python/allelecounter.h" import *
-from "third_party/nucleus/io/python/vcf_reader.h" import *
+This module provides the primary interface for calling candidate variants using
+for the AlleleCounts in an AlleleCounter by wrapping the low-level C++ code and
+adding a nicer API and functions to compute gVCF records as well.
+"""
 
-from "deepvariant/variant_calling.h":
-  namespace `learning::genomics::deepvariant`:
-    class VariantCaller:
-      def __init__(self, options: VariantCallerOptions)
-      def `CallsFromAlleleCounter` as calls_from_allele_counter(
-          self, allele_counter: AlleleCounter) -> list<DeepVariantCall>
-      def `CallsFromVcf` as calls_from_vcf(
-          self, allele_counter: AlleleCounter, vcf_reader: VcfReader) -> list<DeepVariantCall>
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+
+
+from deepvariant import variant_caller
+
+
+class VerySensitiveCaller(variant_caller.VariantCaller):
+  """Call variants and gvcf records from an AlleleCounter."""
+
+  def __init__(self, options, use_cache_table=True, max_cache_coverage=100):
+    super(VerySensitiveCaller, self).__init__(
+        options=options,
+        use_cache_table=use_cache_table,
+        max_cache_coverage=max_cache_coverage)
+
+  def get_candidates(self, allele_counter):
+    return self.cpp_variant_caller.calls_from_allele_counter(allele_counter)

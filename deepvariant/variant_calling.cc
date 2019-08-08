@@ -33,9 +33,12 @@
 
 #include <algorithm>
 #include <numeric>
+#include <optional>
+#include <vector>
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
@@ -294,7 +297,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
   }
 }
 
-// Returns true if the current site should be emited, even if its a reference
+// Returns true if the current site should be emited, even if it's a reference
 // site. This function is used to return reference site samples if the
 // member variable fraction_reference_sites_to_emit >= 0.0 by pulling draws
 // from a random number and returning true if the number <= the threshold.
@@ -320,6 +323,59 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
   return variants;
 }
 
+std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
+    const AlleleCounter& allele_counter,
+    nucleus::VcfReader* vcf_reader_ptr) const {
+  std::vector<AlleleCount> allele_counts = allele_counter.Counts();
+  nucleus::genomics::v1::Range range = allele_counter.Interval();
+  std::vector<nucleus::genomics::v1::Variant> variants_in_region;
+  // An error here is fatal and whole program will fail if unable to query vcf.
+  std::shared_ptr<nucleus::VariantIterable> variants =
+      vcf_reader_ptr->Query(range).ValueOrDie();
+  for (const auto& v : variants) {
+    variants_in_region.push_back(*v.ValueOrDie());
+  }
+  return CallsFromVariantsInRegion(allele_counts, variants_in_region);
+}
+
+std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
+    const std::vector<AlleleCount>& allele_counts,
+    const std::vector<nucleus::genomics::v1::Variant>& variants_in_region)
+    const {
+  std::vector<DeepVariantCall> calls;
+  // For each variant in the region, loop through AlleleCounts to find a match
+  // to the variant position. At each match, add the supporting reads.
+  for (const auto& v : variants_in_region) {
+    optional<DeepVariantCall> call = ComputeVariant(v, allele_counts);
+    if (call) {
+      calls.push_back(*call);
+    }
+  }
+  return calls;
+}
+
+optional<DeepVariantCall> VariantCaller::ComputeVariant(
+    const nucleus::genomics::v1::Variant& variant,
+    const std::vector<AlleleCount>& allele_counts) const {
+  DeepVariantCall call;
+  *call.mutable_variant() = variant;
+  AlleleCount allele_count_match;
+
+  for (const AlleleCount& allele_count : allele_counts) {
+    if (allele_count.position().position() == variant.start()) {
+      if (!nucleus::AreCanonicalBases(allele_count.ref_base())) {
+        // We don't emit calls at any site in the genome that isn't one of the
+        // canonical DNA bases (one of A, C, G, or T).
+        break;
+      }
+      allele_count_match = allele_count;
+      break;
+    }
+  }
+  AddSupportingReads(allele_count_match, &call);
+  return make_optional(call);
+}
+
 optional<DeepVariantCall> VariantCaller::CallVariant(
     const AlleleCount& allele_count) const {
   if (!nucleus::AreCanonicalBases(allele_count.ref_base())) {
@@ -328,7 +384,7 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
     return nullopt;
   }
 
-  const std::vector<Allele>& alt_alleles = SelectAltAlleles(allele_count);
+  std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count);
   if (alt_alleles.empty() && !KeepReferenceSite()) {
     return nullopt;
   }
@@ -362,6 +418,15 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
             StringPtrLessThan());
 
   AddReadDepths(allele_count, allele_map, variant);
+  AddSupportingReads(allele_count, &call);
+  return make_optional(call);
+}
+
+void VariantCaller::AddSupportingReads(const AlleleCount& allele_count,
+                                       DeepVariantCall* call) const {
+  std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count);
+  const string refbases = CalcRefBases(allele_count.ref_base(), alt_alleles);
+  AlleleMap allele_map = BuildAlleleMap(allele_count, alt_alleles, refbases);
 
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.
@@ -376,12 +441,11 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
       auto it = allele_map.find(allele);
       const string& supported_allele =
           it == allele_map.end() ? unknown_allele : it->second;
-      auto& supports = (*call.mutable_allele_support())[supported_allele];
+      DeepVariantCall_SupportingReads& supports =
+          (*call->mutable_allele_support())[supported_allele];
       supports.add_read_names(read_name);
     }
   }
-
-  return make_optional(call);
 }
 
 }  // namespace deepvariant

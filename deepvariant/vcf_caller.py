@@ -1,4 +1,4 @@
-# Copyright 2017 Google LLC.
+# Copyright 2019 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,16 +26,37 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""A VcfCaller producing DeepVariantCall and gVCF records.
 
-from "deepvariant/protos/deepvariant_pyclif.h" import *
-from "deepvariant/python/allelecounter.h" import *
-from "third_party/nucleus/io/python/vcf_reader.h" import *
+This module provides a way to call variants with a proposed VCF that contains
+candidates to consider.
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from "deepvariant/variant_calling.h":
-  namespace `learning::genomics::deepvariant`:
-    class VariantCaller:
-      def __init__(self, options: VariantCallerOptions)
-      def `CallsFromAlleleCounter` as calls_from_allele_counter(
-          self, allele_counter: AlleleCounter) -> list<DeepVariantCall>
-      def `CallsFromVcf` as calls_from_vcf(
-          self, allele_counter: AlleleCounter, vcf_reader: VcfReader) -> list<DeepVariantCall>
+from absl import flags
+
+from third_party.nucleus.io import vcf
+from deepvariant import variant_caller
+
+FLAGS = flags.FLAGS
+
+
+class VcfCaller(variant_caller.VariantCaller):
+  """Call variants and gvcf records from a VCF."""
+
+  def __init__(self,
+               options,
+               candidates_vcf,
+               use_cache_table=True,
+               max_cache_coverage=100):
+    super(VcfCaller, self).__init__(
+        options=options,
+        use_cache_table=use_cache_table,
+        max_cache_coverage=max_cache_coverage)
+    self.vcf_reader = vcf.NativeVcfReader(candidates_vcf).c_reader
+
+  def get_candidates(self, allele_counter):
+    return self.cpp_variant_caller.calls_from_vcf(allele_counter,
+                                                  self.vcf_reader)

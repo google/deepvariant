@@ -144,6 +144,8 @@ cc_library(
     deps = [
         ":allelecounter",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/io:vcf_reader",
+        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
@@ -202,6 +204,56 @@ py_test(
     ],
 )
 
+py_library(
+    name = "very_sensitive_caller",
+    srcs = ["very_sensitive_caller.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":variant_caller",
+    ],
+)
+
+py_test(
+    name = "very_sensitive_caller_test",
+    size = "small",
+    srcs = ["very_sensitive_caller_test.py"],
+    default_python_version = "PY2",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":py_testdata",
+        ":very_sensitive_caller",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "vcf_caller",
+    srcs = ["vcf_caller.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":variant_caller",
+        "//third_party/nucleus/io:vcf",
+    ],
+)
+
+py_test(
+    name = "vcf_caller_test",
+    size = "small",
+    srcs = ["vcf_caller_test.py"],
+    data = [":testdata"],
+    default_python_version = "PY2",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":py_testdata",
+        ":vcf_caller",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
 cc_library(
     name = "utils",
     srcs = ["utils.cc"],
@@ -237,7 +289,8 @@ py_library(
         ":pileup_image",
         ":resources_main_lib",
         ":tf_utils",
-        ":variant_caller",
+        ":vcf_caller",
+        ":very_sensitive_caller",
         "//deepvariant/labeler:customized_classes_labeler",
         "//deepvariant/labeler:haplotype_labeler",
         "//deepvariant/labeler:positional_labeler",

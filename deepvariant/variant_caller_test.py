@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for deepvariant .variant_labeler."""
+"""Tests for deepvariant .variant_caller."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -44,7 +44,6 @@ import mock
 import numpy as np
 import numpy.testing as npt
 
-from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from deepvariant import testdata
@@ -65,14 +64,33 @@ def _reference_model_options(p_error, max_gq, gq_resolution=1):
       ploidy=2)
 
 
-class VariantCallerTests(parameterized.TestCase):
+class DummyVariantCaller(variant_caller.VariantCaller):
+  """A dummy VariantCaller.
 
-  def make_test_caller(self, p_error, max_gq, gq_resolution=1):
-    options = _reference_model_options(p_error, max_gq, gq_resolution)
-    return variant_caller.VariantCaller(options, use_cache_table=False)
+  This class provides a get_candidates implementation and so allows
+  the base class to be instantiated and its methods tested.
+  """
+
+  def __init__(self,
+               p_error,
+               max_gq,
+               gq_resolution=1,
+               use_cache_table=False,
+               max_cache_coverage=100):
+    super(DummyVariantCaller, self).__init__(
+        options=_reference_model_options(p_error, max_gq, gq_resolution),
+        use_cache_table=use_cache_table,
+        max_cache_coverage=max_cache_coverage)
+
+  def get_candidates(self, allele_counter):
+    return None
+
+
+class VariantCallerTests(parameterized.TestCase):
 
   def fake_allele_counter(self, start_pos, counts):
     allele_counter = mock.Mock()
+    # pylint: disable=g-complex-comprehension
     allele_counter.summary_counts.return_value = [
         deepvariant_pb2.AlleleCountSummary(
             ref_supporting_read_count=n_ref,
@@ -82,6 +100,7 @@ class VariantCallerTests(parameterized.TestCase):
             position=start_pos + i)
         for i, (n_alt, n_ref, ref) in enumerate(counts)
     ]
+    # pylint: enable=g-complex-comprehension
     return allele_counter
 
   # R code to produce the testdata expectation table.
@@ -171,7 +190,7 @@ class VariantCallerTests(parameterized.TestCase):
   )
   def test_ref_calc(self, total_n, alt_n, p_error, max_gq, expected_likelihoods,
                     expected_gq):
-    caller = self.make_test_caller(p_error, max_gq)
+    caller = DummyVariantCaller(p_error, max_gq)
     gq, likelihoods = caller.reference_confidence(total_n - alt_n, total_n)
     npt.assert_allclose(expected_likelihoods, likelihoods, atol=1e-6)
     self.assertEqual(expected_gq, gq)
@@ -210,12 +229,14 @@ class VariantCallerTests(parameterized.TestCase):
         n_ref, n_total, max_allowed_reads)
     self.assertEqual(actual, expected)
 
+  # pylint: disable=g-complex-comprehension
   @parameterized.parameters((n_ref, n_alt_fraction)
                             for n_ref in [1000, 10000, 100000, 1000000]
                             for n_alt_fraction in [0.0, 0.01, 0.02])
+  # pylint: enable=g-complex-comprehension
   def test_handles_large_reference_counts(self, n_ref, n_alt_fraction):
     """Tests that we don't blow up when the coverage gets really high."""
-    caller = self.make_test_caller(0.01, 100)
+    caller = DummyVariantCaller(0.01, 100)
     n_alt = int(n_alt_fraction * n_ref)
     gq, likelihoods = caller._calc_reference_confidence(n_ref, n_ref + n_alt)
     self.assertTrue(
@@ -226,7 +247,7 @@ class VariantCallerTests(parameterized.TestCase):
   @parameterized.parameters(*variant_caller.CANONICAL_DNA_BASES)
   def test_gvcf_basic(self, ref):
     options = _reference_model_options(0.01, 100)
-    caller = variant_caller.VariantCaller(options, use_cache_table=False)
+    caller = DummyVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
     gvcfs = list(caller.make_gvcfs(allele_counter.summary_counts()))
     self.assertLen(gvcfs, 1)
@@ -243,82 +264,17 @@ class VariantCallerTests(parameterized.TestCase):
 
   @parameterized.parameters('N', 'R', 'W', 'B')
   def test_gvcf_basic_skips_iupac_ref_base(self, ref):
-    options = _reference_model_options(0.01, 100)
-    caller = variant_caller.VariantCaller(options, use_cache_table=False)
+    caller = DummyVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
     self.assertEmpty(list(caller.make_gvcfs(allele_counter.summary_counts())))
 
   @parameterized.parameters('X', '>', '!')
   def test_gvcf_basic_raises_with_bad_ref_base(self, ref):
-    options = _reference_model_options(0.01, 100)
-    caller = variant_caller.VariantCaller(options, use_cache_table=False)
+    caller = DummyVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
     with self.assertRaisesRegexp(ValueError,
                                  'Invalid reference base={}'.format(ref)):
       list(caller.make_gvcfs(allele_counter.summary_counts()))
-
-  @parameterized.parameters(True, False)
-  def test_calls_from_allele_counts(self, include_gvcfs):
-    # Our test AlleleCounts are 5 positions:
-    #
-    # 10: A ref [no reads]
-    # 11: G/C variant
-    # 12: G ref [no reads]
-    # 13: G ref [no reads]
-    # 14: T/C variant
-    #
-    # The ref sites have no reads for ref or any alt simply because it
-    # simplifies comparing them with the expected variant genotype likelihoods.
-    # We aren't testing the correctness of the gvcf calculation here (that's
-    # elsewhere) but rather focusing here on the separation of variants from
-    # gvcf records, and the automatic merging of the gvcf blocks.
-    allele_counter = self.fake_allele_counter(10, [
-        (0, 0, 'A'),
-        (10, 10, 'G'),
-        (0, 0, 'G'),
-        (0, 0, 'G'),
-        (10, 10, 'T'),
-    ])
-    fake_candidates = [
-        deepvariant_pb2.DeepVariantCall(
-            variant=test_utils.make_variant(alleles=['G', 'C'], start=11)),
-        deepvariant_pb2.DeepVariantCall(
-            variant=test_utils.make_variant(alleles=['T', 'C'], start=14)),
-    ]
-
-    caller = self.make_test_caller(0.01, 100)
-    with mock.patch.object(caller, 'cpp_variant_caller') as mock_cpp:
-      mock_cpp.calls_from_allele_counter.return_value = fake_candidates
-      candidates, gvcfs = caller.calls_from_allele_counter(
-          allele_counter, include_gvcfs)
-
-    mock_cpp.calls_from_allele_counter.assert_called_once_with(allele_counter)
-    self.assertEqual(candidates, fake_candidates)
-
-    # We expect our gvcfs to occur at the 10 position and that 12 and 13 have
-    # been merged into a 2 bp block, if enabled. Otherwise should be empty.
-    if include_gvcfs:
-      self.assertLen(gvcfs, 4)
-      # Expected diploid genotype likelihoods when there's no coverage. The
-      # chance of having each genotype is 1/3, in log10 space.
-      flat_gls = np.log10([1.0 / 3] * 3)
-      self.assertGVCF(
-          gvcfs[0], ref='A', start=10, end=11, gq=1, min_dp=0, gls=flat_gls)
-      self.assertGVCF(
-          gvcfs[1],
-          ref='G',
-          start=11,
-          end=12,
-          gq=0,
-          min_dp=20,
-          gls=np.array([-14.0230482368, -7.993606e-15, -14.0230482368]),
-          # The genotype should NOT be called here ("./.") as the likelihood
-          # for het is greater than hom_ref.
-          gts=[-1, -1])
-      self.assertGVCF(
-          gvcfs[2], ref='G', start=12, end=14, gq=1, min_dp=0, gls=flat_gls)
-    else:
-      self.assertEmpty(gvcfs)
 
   def assertGVCF(self,
                  gvcf,
@@ -379,7 +335,7 @@ class VariantCallerTests(parameterized.TestCase):
   )
   def test_make_gvcfs(self, counts, expecteds):
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
-    caller = self.make_test_caller(0.01, 100)
+    caller = DummyVariantCaller(0.01, 100)
     gvcfs = list(caller.make_gvcfs(allele_counts))
 
     self.assertLen(gvcfs, len(expecteds))
@@ -456,11 +412,46 @@ class VariantCallerTests(parameterized.TestCase):
               (4, 12, 'A'), (1, 30, 'A'), (1, 34, 'C'), (0, 20, 'T'), (0, 19,
                                                                        'G')]
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
-    caller = self.make_test_caller(0.01, 100, gq_resolution)
+    caller = DummyVariantCaller(0.01, 100, gq_resolution)
     gvcfs = list(caller.make_gvcfs(allele_counts))
     self.assertLen(gvcfs, len(expecteds))
     for actual, expected in zip(gvcfs, expecteds):
       self.assertGVCF(actual, **expected)
+
+  @parameterized.parameters(True, False)
+  def test_gvcfs_counts(self, include_gvcfs):
+    # Only tests the 'gvcfs' creation part of calls_and_gvcfs. The `calls`
+    # portion of this method needs to be tested in subclasses, which have
+    # implemented the get_candidates method.
+    counts = [(0, 0, 'A'), (10, 10, 'G'), (0, 0, 'G'), (0, 0, 'G'),
+              (10, 10, 'T')]
+    caller = DummyVariantCaller(0.01, 100)
+    allele_counter = self.fake_allele_counter(10, counts)
+    _, gvcfs = caller.calls_and_gvcfs(allele_counter, include_gvcfs)
+    # We expect our gvcfs to occur at the 10 position and that 12 and 13 have
+    # been merged into a 2 bp block, if enabled. Otherwise should be empty.
+    if include_gvcfs:
+      self.assertLen(gvcfs, 4)
+      # Expected diploid genotype likelihoods when there's no coverage. The
+      # chance of having each genotype is 1/3, in log10 space.
+      flat_gls = np.log10([1.0 / 3] * 3)
+      self.assertGVCF(
+          gvcfs[0], ref='A', start=10, end=11, gq=1, min_dp=0, gls=flat_gls)
+      self.assertGVCF(
+          gvcfs[1],
+          ref='G',
+          start=11,
+          end=12,
+          gq=0,
+          min_dp=20,
+          gls=np.array([-14.0230482368, -7.993606e-15, -14.0230482368]),
+          # The genotype should NOT be called here ("./.") as the likelihood
+          # for het is greater than hom_ref.
+          gts=[-1, -1])
+      self.assertGVCF(
+          gvcfs[2], ref='G', start=12, end=14, gq=1, min_dp=0, gls=flat_gls)
+    else:
+      self.assertEmpty(gvcfs)
 
 
 _CACHE_COVERAGE = 20  # Outside class so we can refer to it in @Parameters.
@@ -470,15 +461,16 @@ class VariantCallerCacheTests(parameterized.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    options = _reference_model_options(0.1, 50)
-    cls.raw_caller = variant_caller.VariantCaller(
-        options, use_cache_table=False)
-    cls.cache_caller = variant_caller.VariantCaller(
-        options, use_cache_table=True, max_cache_coverage=_CACHE_COVERAGE)
+    super(VariantCallerCacheTests, cls).setUpClass()
+    cls.raw_caller = DummyVariantCaller(0.1, 50, use_cache_table=False)
+    cls.cache_caller = DummyVariantCaller(
+        0.1, 50, use_cache_table=True, max_cache_coverage=_CACHE_COVERAGE)
 
+  # pylint: disable=g-complex-comprehension
   @parameterized.parameters((n_alt, n_total)
                             for n_total in range(_CACHE_COVERAGE + 1)
                             for n_alt in range(n_total + 1))
+  # pylint: enable=g-complex-comprehension
   def test_caching(self, n_alt, n_total):
     # Note that we only expect the gq and gls to be close if we are not
     # rescaling the counts, so we are only looping over values that should be

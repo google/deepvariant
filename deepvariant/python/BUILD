@@ -61,6 +61,7 @@ py_clif_cc(
     clif_deps = [
         ":allelecounter",
         "//third_party/nucleus/io/python:reference",  # other py_clif_cc rules
+        "//third_party/nucleus/io/python:vcf_reader",
     ],
     pyclif_deps = [
         "//deepvariant/protos:deepvariant_pyclif",

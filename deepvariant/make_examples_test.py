@@ -1301,7 +1301,7 @@ class RegionProcessorTest(parameterized.TestCase):
     # Setup our make_variant_caller and downstream mocks.
     mock_vc = mock.Mock()
     expected_calls = (['variant'], ['gvcf'] if include_gvcfs else [])
-    mock_vc.calls_from_allele_counter.return_value = expected_calls
+    mock_vc.calls_and_gvcfs.return_value = expected_calls
     self.processor.variant_caller = mock_vc
 
     actual = self.processor.candidates_in_region(self.region)
@@ -1317,8 +1317,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # Make sure we call CallVariant for each of the counts returned by the
     # allele counter.
-    mock_vc.calls_from_allele_counter.assert_called_once_with(
-        mock_ac, include_gvcfs)
+    mock_vc.calls_and_gvcfs.assert_called_once_with(mock_ac, include_gvcfs)
 
     # Finally, our actual result should be the single 'variant' and potentially
     # the gvcf records.

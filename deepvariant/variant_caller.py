@@ -26,17 +26,13 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""A VariantCaller producing DeepVariantCall and gVCF records.
-
-This module provides the primary interface for calling candidate variants using
-for the AlleleCounts in an AlleleCounter by wrapping the low-level C++ code and
-adding a nicer API and functions to compute gVCF records as well.
-"""
+"""A VariantCaller producing DeepVariantCall and gVCF records."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import abc
 import collections
 import itertools
 import math
@@ -111,13 +107,16 @@ def _quantize_gq(raw_gq, binsize):
 
 
 class VariantCaller(object):
-  """Call variants and gvcf records from an AlleleCounter."""
+  """BaseClass for variant callers."""
 
-  def __init__(self, options, use_cache_table=True, max_cache_coverage=100):
+  __metaclass__ = abc.ABCMeta
+
+  def __init__(self, options, use_cache_table, max_cache_coverage):
     self.options = options
     self.cpp_variant_caller = variant_calling.VariantCaller(self.options)
 
     self.max_cache_coverage = max_cache_coverage
+    # pylint: disable=g-complex-comprehension
     if use_cache_table:
       self.table = [[
           self._calc_reference_confidence(n_ref, n_total)
@@ -126,6 +125,7 @@ class VariantCaller(object):
                     for n_total in range(self.max_cache_coverage + 1)]
     else:
       self.table = None
+    # pylint: enable=g-complex-comprehension
 
   def reference_confidence(self, n_ref, n_total):
     """Computes the confidence that a site in the genome has no variation.
@@ -336,7 +336,7 @@ class VariantCaller(object):
               end=elt.summary_counts.position + 1,
               calls=[call])
 
-  def calls_from_allele_counter(self, allele_counter, include_gvcfs):
+  def calls_and_gvcfs(self, allele_counter, include_gvcfs):
     """Gets variant calls and gvcf records for all sites in allele_counter.
 
     Args:
@@ -350,10 +350,12 @@ class VariantCaller(object):
       candidate variants. The second is a list of gVCF blocks in Variant proto
       format, if include_gvcfs is True. If False, an empty list is returned.
     """
-    candidates = self.cpp_variant_caller.calls_from_allele_counter(
-        allele_counter)
-
+    candidates = self.get_candidates(allele_counter)
     gvcfs = []
     if include_gvcfs:
       gvcfs = list(self.make_gvcfs(allele_counter.summary_counts()))
     return candidates, gvcfs
+
+  @abc.abstractmethod
+  def get_candidates(self, allele_counter):
+    raise NotImplementedError

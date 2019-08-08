@@ -429,7 +429,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 32.
+// Next ID: 33.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -566,6 +566,15 @@ message DeepVariantOptions {
     WES = 2;
   }
   SequencingType sequencing_type = 31;
+
+  enum VariantCaller {
+    UNSPECIFIED_CALLER = 0;
+    // The default very sensitive caller.
+    VERY_SENSITIVE_CALLER = 1;
+    // An advanced caller that uses an input VCF to call variants.
+    VCF_CALLER = 2;
+  }
+  VariantCaller variant_caller = 32;
 }
 
 // Config describe information needed for a dataset that can be used for

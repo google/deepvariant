@@ -46,7 +46,8 @@ from deepvariant import logging_level
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
-from deepvariant import variant_caller
+from deepvariant import vcf_caller
+from deepvariant import very_sensitive_caller
 from deepvariant.labeler import customized_classes_labeler
 from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import positional_labeler
@@ -124,6 +125,10 @@ flags.DEFINE_string(
     'to BED/BEDPE files. Region exclusion happens after processing the '
     '--regions argument, so --region 20 --exclude_regions 20:100 does '
     'everything on chromosome 20 excluding base 100')
+flags.DEFINE_string(
+    'variant_caller', 'very_sensitive_caller',
+    'The caller to use to make examples. Must be one of the VariantCaller enum '
+    'values in the DeepVariantOptions proto.')
 flags.DEFINE_string(
     'gvcf', '',
     'Optional. Path where we should write gVCF records in TFRecord of Variant '
@@ -412,6 +417,10 @@ def default_options(add_flags=True, flags_obj=None):
     options.labeler_algorithm = parse_proto_enum_flag(
         deepvariant_pb2.DeepVariantOptions.LabelerAlgorithm,
         flags_obj.labeler_algorithm.upper())
+
+    options.variant_caller = parse_proto_enum_flag(
+        deepvariant_pb2.DeepVariantOptions.VariantCaller,
+        flags_obj.variant_caller.upper())
 
     if flags_obj.ref:
       options.reference_filename = flags_obj.ref
@@ -898,8 +907,7 @@ class RegionProcessor(object):
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
 
-    self.variant_caller = variant_caller.VariantCaller(
-        self.options.variant_caller_options)
+    self.variant_caller = self._make_variant_caller_from_options()
     self.initialized = True
 
   def _make_labeler_from_options(self):
@@ -909,6 +917,12 @@ class RegionProcessor(object):
         excluded_format_fields=['GL', 'GQ', 'PL'])
     confident_regions = read_confident_regions(self.options)
 
+    # If using vcf_caller, override labeler choice and use positional labeler.
+    if (self.options.variant_caller ==
+        deepvariant_pb2.DeepVariantOptions.VCF_CALLER):
+      return positional_labeler.PositionalVariantLabeler(
+          truth_vcf_reader=truth_vcf_reader,
+          confident_regions=confident_regions)
     if (self.options.labeler_algorithm ==
         deepvariant_pb2.DeepVariantOptions.POSITIONAL_LABELER):
       return positional_labeler.PositionalVariantLabeler(
@@ -936,6 +950,19 @@ class RegionProcessor(object):
     else:
       raise ValueError('Unexpected labeler_algorithm',
                        self.options.labeler_algorithm)
+
+  def _make_variant_caller_from_options(self):
+    """Creates the variant_caller from options."""
+    if (self.options.variant_caller ==
+        deepvariant_pb2.DeepVariantOptions.VCF_CALLER):
+      return vcf_caller.VcfCaller(self.options.variant_caller_options,
+                                  self.options.truth_variants_filename)
+    elif (self.options.variant_caller ==
+          deepvariant_pb2.DeepVariantOptions.VERY_SENSITIVE_CALLER):
+      return very_sensitive_caller.VerySensitiveCaller(
+          self.options.variant_caller_options)
+    else:
+      raise ValueError('Unexpected variant_caller', self.options.variant_caller)
 
   def process(self, region):
     """Finds candidates and creates corresponding examples in a region.
@@ -966,6 +993,7 @@ class RegionProcessor(object):
       candidates = list(
           filter_candidates(candidates, self.options.select_variant_types))
 
+    # pylint: disable=g-complex-comprehension
     if in_training_mode(self.options):
       examples = [
           self.add_label_to_example(example, label)
@@ -977,7 +1005,7 @@ class RegionProcessor(object):
           example for candidate in candidates
           for example in self.create_pileup_examples(candidate)
       ]
-
+    # pylint: enable=g-complex-comprehension
     logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
                  len(examples), ranges.to_literal(region),
                  ranges.length(region), region_timer.Stop())
@@ -1029,7 +1057,7 @@ class RegionProcessor(object):
     for read in reads:
       allele_counter.add(read)
 
-    candidates, gvcfs = self.variant_caller.calls_from_allele_counter(
+    candidates, gvcfs = self.variant_caller.calls_and_gvcfs(
         allele_counter, gvcf_output_enabled(self.options))
     return candidates, gvcfs
 
@@ -1266,7 +1294,6 @@ def make_examples_runner(options):
                      options.task_id, n_candidates, n_examples,
                      running_timer.Stop())
         running_timer = timer.TimerStart()
-
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
     run_info = deepvariant_pb2.MakeExamplesRunInfo(

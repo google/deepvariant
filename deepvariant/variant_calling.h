@@ -42,6 +42,9 @@
 #include "third_party/nucleus/util/samplers.h"
 #include "tensorflow/core/lib/gtl/optional.h"
 
+namespace nucleus {
+class VcfReader;
+}
 namespace learning {
 namespace genomics {
 namespace deepvariant {
@@ -130,6 +133,21 @@ class VariantCaller {
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
     const std::vector<AlleleCount>& allele_counts) const;
 
+  // High-level API for calling variants in a region given an input VCF.
+  //
+  // These functions invoke the ComputeVariant method for the set of variants
+  // found within the specified region. The VcfReader queries the same region
+  // that is spanned by the AlleleCounter. For each variant in the
+  // region, the corresponding AlleleCount object is found and used to calculate
+  // the supporting alleles.
+  std::vector<DeepVariantCall> CallsFromVcf(
+      const AlleleCounter& allele_counter,
+      nucleus::VcfReader* vcf_reader_ptr) const;
+  std::vector<DeepVariantCall> CallsFromVariantsInRegion(
+      const std::vector<AlleleCount>& allele_counts,
+      const std::vector<nucleus::genomics::v1::Variant>& variants_in_region)
+      const;
+
   // Primary interface function for calling variants.
   //
   // Looks at the alleles in the provided AlleleCount proto and returns
@@ -142,6 +160,19 @@ class VariantCaller {
   // (diploid no-call).
   tensorflow::gtl::optional<DeepVariantCall> CallVariant(
       const AlleleCount& allele_count) const;
+
+  // This function computes the full DeepVariantCall by finding the
+  // AlleleCount for a given variant.
+  //
+  // The logic is exact same as CallVariant except in this case the variant
+  // of DeepVariantCall is already known from the vcf.
+  tensorflow::gtl::optional<DeepVariantCall> ComputeVariant(
+      const nucleus::genomics::v1::Variant& variant,
+      const std::vector<AlleleCount>& allele_counts) const;
+
+  // Adds supporting reads to the DeepVariantCall.
+  void AddSupportingReads(const AlleleCount& allele_count,
+                          DeepVariantCall* call) const;
 
  private:
   int min_count(const Allele& allele) const {
