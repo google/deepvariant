@@ -1122,24 +1122,13 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     self.assertEqual(actual, expected)
 
   @parameterized.parameters(
-      dict(
-          input_vcf='/tmp/test.vcf',
-          expected_per_record='/tmp/test.per_record.json',
-          expected_summary='/tmp/test.summary.json'),
-      dict(
-          input_vcf='/tmp/test.vcf.gz',
-          expected_per_record='/tmp/test.per_record.json',
-          expected_summary='/tmp/test.summary.json'),
-      dict(
-          input_vcf='test',
-          expected_per_record='test.per_record.json',
-          expected_summary='test.summary.json'),
+      dict(input_vcf='/tmp/test.vcf', expected_base_path='/tmp/test'),
+      dict(input_vcf='/tmp/test.vcf.gz', expected_base_path='/tmp/test'),
+      dict(input_vcf='test', expected_base_path='test'),
   )
-  def test_get_stats_paths(self, input_vcf, expected_per_record,
-                           expected_summary):
-    per_record, summary = postprocess_variants._get_stats_paths(input_vcf)
-    self.assertEqual(per_record, expected_per_record)
-    self.assertEqual(summary, expected_summary)
+  def test_get_base_path(self, input_vcf, expected_base_path):
+    path = postprocess_variants._get_base_path(input_vcf)
+    self.assertEqual(path, expected_base_path)
 
   @parameterized.parameters(
       # One alt, with het GLs.

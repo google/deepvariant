@@ -901,6 +901,7 @@ py_library(
     srcs = ["vcf_stats.py"],
     srcs_version = "PY2AND3",
     deps = [
+        ":vcf_stats_vis",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
         "@absl_py//absl/logging",
@@ -915,11 +916,28 @@ py_test(
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
-        ":resources_main_lib",
         ":vcf_stats",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "vcf_stats_vis",
+    srcs = ["vcf_stats_vis.py"],
+    srcs_version = "PY2AND3",
+)
+
+py_test(
+    name = "vcf_stats_vis_test",
+    srcs = ["vcf_stats_vis_test.py"],
+    default_python_version = "PY2",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":vcf_stats_vis",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@absl_py//absl/testing:absltest",
     ],
 )

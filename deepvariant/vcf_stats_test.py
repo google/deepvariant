@@ -38,9 +38,12 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 import collections
 import json
+import os
+import tempfile
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import tensorflow as tf
 
 from deepvariant import testdata
 from deepvariant import vcf_stats
@@ -136,7 +139,7 @@ class VcfStatsTest(parameterized.TestCase):
                              expected_is_variant):
     variant = test_utils.make_variant(
         chrom='chr1', start=10, alleles=alleles, gt=gt, gq=59)
-    variant_stats = vcf_stats.get_variant_stats(variant)
+    variant_stats = vcf_stats._get_variant_stats(variant)
     self.assertEqual(
         variant_stats,
         vcf_stats.VariantStats(
@@ -151,38 +154,41 @@ class VcfStatsTest(parameterized.TestCase):
             depth=[],
             genotype_quality=59,
             genotype=str(gt),
-            vaf=None))
+            vaf=None,
+            qual=0.0))
 
-  def test_summary_stats(self):
+  def test_compute_summary_stats(self):
     with vcf.VcfReader(testdata.GOLDEN_POSTPROCESS_OUTPUT) as reader:
-      single_stats = vcf_stats.single_variant_stats(reader.iterate())
-      summary_stats = vcf_stats.summary_stats(single_stats)
+      single_stats = vcf_stats._single_variant_stats(reader.iterate())
+      compute_summary_stats = vcf_stats._compute_summary_stats(single_stats)
       sum_variant_count = sum([
-          summary_stats.snv_count,
-          summary_stats.insertion_count,
-          summary_stats.deletion_count,
-          summary_stats.complex_count,
-          summary_stats.mnp_count,
+          compute_summary_stats.snv_count,
+          compute_summary_stats.insertion_count,
+          compute_summary_stats.deletion_count,
+          compute_summary_stats.complex_count,
+          compute_summary_stats.mnp_count,
       ])
-      self.assertEqual(summary_stats.variant_count, 71)
-      self.assertEqual(summary_stats.variant_count, sum_variant_count)
-      self.assertEqual(summary_stats.snv_count, 59)
-      self.assertEqual(summary_stats.insertion_count, 7)
-      self.assertEqual(summary_stats.deletion_count, 5)
-      self.assertEqual(summary_stats.complex_count, 0)
-      self.assertEqual(summary_stats.mnp_count, 0)
-      self.assertEqual(summary_stats.record_count, 76)
-      self.assertAlmostEqual(summary_stats.depth_mean, 47.289473684210527)
-      self.assertAlmostEqual(summary_stats.depth_stdev, 8.8953207531791154)
-      self.assertAlmostEqual(summary_stats.gq_mean, 40.236842105263158)
-      self.assertAlmostEqual(summary_stats.gq_stdev, 14.59710535567045)
+      self.assertEqual(compute_summary_stats.variant_count, 71)
+      self.assertEqual(compute_summary_stats.variant_count, sum_variant_count)
+      self.assertEqual(compute_summary_stats.snv_count, 59)
+      self.assertEqual(compute_summary_stats.insertion_count, 7)
+      self.assertEqual(compute_summary_stats.deletion_count, 5)
+      self.assertEqual(compute_summary_stats.complex_count, 0)
+      self.assertEqual(compute_summary_stats.mnp_count, 0)
+      self.assertEqual(compute_summary_stats.record_count, 76)
+      self.assertAlmostEqual(compute_summary_stats.depth_mean,
+                             47.289473684210527)
+      self.assertAlmostEqual(compute_summary_stats.depth_stdev,
+                             8.8953207531791154)
+      self.assertAlmostEqual(compute_summary_stats.gq_mean, 40.236842105263158)
+      self.assertAlmostEqual(compute_summary_stats.gq_stdev, 14.59710535567045)
 
   def test_variants_to_stats_json(self):
     truth_stats_json = """
       {"alternate_bases":[["G"]],"depth":[20],"genotype_quality":[59],
       "is_transition":[true],"is_transversion":[false],"position":[11],
       "reference_bases":["A"],"reference_name":["chr1"],"is_variant":[true],
-      "variant_type":["Biallelic_SNP"],"genotype":["[0, 1]"],"vaf":[null]}
+      "variant_type":["Biallelic_SNP"],"genotype":["[0, 1]"],"vaf":[null],"qual":[0.0]}
       """
 
     truth_summary_json = """
@@ -208,11 +214,12 @@ class VcfStatsTest(parameterized.TestCase):
       ]}
     """
 
-    stats_json, summary_json, histograms = vcf_stats.variants_to_stats_json(
+    stats_json, summary_json, vis_data_json = vcf_stats._variants_to_stats_json(
         [self.variant])
-    self.assertEqual(json.loads(stats_json), json.loads(truth_stats_json))
-    self.assertEqual(json.loads(summary_json), json.loads(truth_summary_json))
-    self.assertEqual(json.loads(histograms), json.loads(truth_histograms))
+    self.assertEqual(stats_json, json.loads(truth_stats_json))
+    self.assertEqual(summary_json, json.loads(truth_summary_json))
+    self.assertEqual(vis_data_json['vaf_histograms_by_genotype'],
+                     json.loads(truth_histograms))
 
   def test_vaf_histograms_by_genotype(self):
     variants = [
@@ -351,7 +358,22 @@ class VcfStatsTest(parameterized.TestCase):
         }]
     }
     self.assertEqual(
-        vcf_stats.vaf_histograms_by_genotype(variants), truth_histograms)
+        vcf_stats._vaf_histograms_by_genotype(variants), truth_histograms)
+
+  def test_create_vcf_report(self):
+    base_dir = tempfile.mkdtemp()
+    outfile_base = os.path.join(base_dir, 'stats_test')
+    sample_name = 'test_sample_name'
+    with vcf.VcfReader(testdata.GOLDEN_POSTPROCESS_OUTPUT) as reader:
+      vcf_stats.create_vcf_report(
+          variants=reader.iterate(),
+          output_basename=outfile_base,
+          sample_name=sample_name,
+          vcf_reader=reader)
+    self.assertTrue(tf.io.gfile.exists(outfile_base + '.per_record.json'))
+    self.assertTrue(tf.io.gfile.exists(outfile_base + '.summary.json'))
+    self.assertTrue(tf.io.gfile.exists(outfile_base + '.vis_data.json'))
+    self.assertTrue(tf.io.gfile.exists(outfile_base + '.visual_report.html'))
 
 
 if __name__ == '__main__':

@@ -39,7 +39,6 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 import collections
 import copy
 import itertools
-import os
 import tempfile
 import time
 
@@ -872,23 +871,21 @@ def merge_and_write_variants_and_nonvariants(
         nonvariant = next_or_none(nonvariant_iterable)
 
 
-def _get_stats_paths(input_vcf):
-  """Returns a path to the VCF stats json file.
+def _get_base_path(input_vcf):
+  """Returns the base path for the output files.
 
   Args:
     input_vcf: string. Path to VCF for which to compute stats.
 
   Returns:
-    A tuple of paths to the per record stats and summary stats.
+    A string with the base path.
   """
-  dirname, basename = os.path.split(input_vcf)
-  if basename.endswith('.vcf'):
-    template = os.path.join(dirname, basename[:-4] + '.{}.json')
-  elif basename.endswith('.vcf.gz'):
-    template = os.path.join(dirname, basename[:-7] + '.{}.json')
+  if input_vcf.endswith('.vcf'):
+    return input_vcf[:-4]
+  elif input_vcf.endswith('.vcf.gz'):
+    return input_vcf[:-7]
   else:
-    template = os.path.join(dirname, basename + '.{}.json')
-  return template.format('per_record'), template.format('summary')
+    return input_vcf
 
 
 def _decide_to_use_csi(contigs):
@@ -1007,12 +1004,13 @@ def main(argv=()):
         logging.info('Finished writing VCF and gVCF in %s minutes.',
                      (time.time() - start_time) / 60)
       if FLAGS.create_vcf_stats:
-        regular_stats, summary_stats = _get_stats_paths(FLAGS.outfile)
+        outfile_base = _get_base_path(FLAGS.outfile)
         with vcf.VcfReader(FLAGS.outfile) as reader:
-          stats_json, summary_json, _ = vcf_stats.variants_to_stats_json(
-              reader.iterate())
-          vcf_stats.write(stats_json, regular_stats)
-          vcf_stats.write(summary_json, summary_stats)
+          vcf_stats.create_vcf_report(
+              variants=reader.iterate(),
+              output_basename=outfile_base,
+              sample_name=sample_name,
+              vcf_reader=reader)
 
 
 if __name__ == '__main__':

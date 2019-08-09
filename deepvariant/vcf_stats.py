@@ -41,11 +41,12 @@ import tensorflow as tf
 
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
+from deepvariant import vcf_stats_vis
 
 _VARIANT_STATS_COLUMNS = [
     'reference_name', 'position', 'reference_bases', 'alternate_bases',
     'variant_type', 'is_variant', 'is_transition', 'is_transversion', 'depth',
-    'genotype_quality', 'genotype', 'vaf'
+    'genotype_quality', 'genotype', 'vaf', 'qual'
 ]
 
 VariantStats = collections.namedtuple('VariantStats', _VARIANT_STATS_COLUMNS)
@@ -129,7 +130,7 @@ def _get_vaf(variant, vcf_reader):
   return sum(vafs)
 
 
-def get_variant_stats(variant, vcf_reader=None):
+def _get_variant_stats(variant, vcf_reader=None):
   """Returns a VariantStats object corresponding to the input variant."""
   vtype = _get_variant_type(variant)
   is_transition, is_transversion = _tstv(variant, vtype)
@@ -152,14 +153,38 @@ def get_variant_stats(variant, vcf_reader=None):
           variant_utils.only_call(variant)),
       genotype=str(
           sorted(variantcall_utils.get_gt(variant_utils.only_call(variant)))),
-      vaf=vaf)
+      vaf=vaf,
+      qual=variant.quality)
 
 
-def single_variant_stats(variants, vcf_reader=None):
-  return [get_variant_stats(v, vcf_reader=vcf_reader) for v in variants]
+def _single_variant_stats(variants, vcf_reader=None):
+  return [_get_variant_stats(v, vcf_reader=vcf_reader) for v in variants]
 
 
-def vaf_histograms_by_genotype(single_stats, number_of_bins=10):
+def _format_histogram_for_vega(counts, bins):
+  """Format histogram counts and bins for vega.
+
+  Args:
+    counts: list of bin counts from np.histogram
+    bins: list of bins from np.histogram
+
+  Returns:
+    A list of objects with bin_start, bin_end, and count for each bin in the
+    histogram.
+  """
+  # Avoid floats becoming 0.6000000000000001 to save space in output json file
+  rounded_bins = [round(x, 10) for x in bins]
+  # pylint: disable=g-complex-comprehension
+  vega_formatted_hist = [{
+      'bin_start': rounded_bins[idx],
+      'bin_end': rounded_bins[idx + 1],
+      'count': count
+  } for idx, count in enumerate(counts)]
+  # pylint: enable=g-complex-comprehension
+  return vega_formatted_hist
+
+
+def _vaf_histograms_by_genotype(single_stats, number_of_bins=10):
   """Computes histograms of allele frequency for each genotype.
 
   Args:
@@ -179,22 +204,83 @@ def vaf_histograms_by_genotype(single_stats, number_of_bins=10):
     # Get VAF for each variant where it is defined
     vafs = [x.vaf for x in group if x.vaf is not None]
     counts, bins = np.histogram(vafs, bins=number_of_bins, range=(0, 1))
-    # Avoid floats becoming 0.6000000000000001 to save space in output json file
-    bins = [round(x, 10) for x in bins]
-    # pylint: disable=g-complex-comprehension
-    vega_formatted_hist = [{
-        'bin_start': bins[idx],
-        'bin_end': bins[idx + 1],
-        'count': count
-    } for idx, count in enumerate(counts)]
-    # pylint: enable=g-complex-comprehension
-
-    stats_by_genotype[genotype] = vega_formatted_hist
+    stats_by_genotype[genotype] = _format_histogram_for_vega(counts, bins)
 
   return stats_by_genotype
 
 
-def summary_stats(single_stats):
+def _count_base_changes_and_indel_sizes(single_stats):
+  """Count each base change, such as A->G or C->T, and count the number of indels of each size.
+
+  Args:
+    single_stats: list of VariantStats objects.
+
+  Returns:
+    base_changes: {(ref, alt): count, ...}
+    indel_sizes: {size: count, ...}
+  """
+
+  base_changes = collections.defaultdict(int)
+  indel_sizes = collections.defaultdict(int)
+  for v in single_stats:
+    ref = v.reference_bases
+    alts = v.alternate_bases
+    # RefCalls are ignored
+    if v.is_variant:
+      # Multiallelic variants ignored here because they have different indel
+      # sizes and/or base changes
+      if v.variant_type == BIALLELIC_SNP:
+        # SNV: get base change
+        base_changes[(ref, alts[0])] += 1
+      elif v.variant_type in [BIALLELIC_INSERTION, BIALLELIC_DELETION]:
+        # indel: get size
+        # + = insertion
+        # - = deletion
+        size = len(alts[0]) - len(ref)
+        indel_sizes[size] += 1
+
+  base_changes_for_json = []
+  for key in base_changes:
+    ref, alt = key
+    base_changes_for_json.append([ref, alt, base_changes[key]])
+
+  indel_sizes_for_json = []
+  for key in indel_sizes:
+    indel_sizes_for_json.append([int(key), indel_sizes[key]])
+
+  return base_changes_for_json, indel_sizes_for_json
+
+
+def _compute_qual_histogram(single_var_stats):
+  """Compute a histogram over variant quality (QUAL column in VCF).
+
+  Args:
+    single_var_stats: list of VariantStats objects.
+
+  Returns:
+    histogram of variant quality scores.
+  """
+  quals = [round(v.qual, 4) for v in single_var_stats]
+
+  counts, bins = np.histogram(quals, bins=100)
+  return _format_histogram_for_vega(counts, bins)
+
+
+def _compute_gq_histogram(single_var_stats):
+  """Compute a histogram over genotype quality (GQ sub-column under FORMAT in VCF).
+
+  Args:
+    single_var_stats: list of VariantStats objects.
+
+  Returns:
+    histogram of genotype quality scores.
+  """
+  quals = [v.genotype_quality for v in single_var_stats]
+  counts, bins = np.histogram(quals, bins=100)
+  return _format_histogram_for_vega(counts, bins)
+
+
+def _compute_summary_stats(single_stats):
   """Computes summary statistics for a set of variants.
 
   Args:
@@ -233,7 +319,7 @@ def summary_stats(single_stats):
       transversion_count=sum(transposed_dict['is_transversion']))
 
 
-def variants_to_stats_json(variants, vcf_reader=None, histogram_bins=10):
+def _variants_to_stats_json(variants, vcf_reader=None, histogram_bins=10):
   """Computes variant statistics of each variant.
 
   Args:
@@ -245,25 +331,55 @@ def variants_to_stats_json(variants, vcf_reader=None, histogram_bins=10):
     A tuple of (stats_json, summary_json), where state_json is a JSON of single
     variant statistics, and summary_json is a JSON of single sample statistics.
   """
-  single_var_stats = single_variant_stats(variants, vcf_reader=vcf_reader)
+
+  single_var_stats = _single_variant_stats(variants, vcf_reader=vcf_reader)
   transposed_records = zip(*single_var_stats)
-  transposed_dict = dict(zip(_VARIANT_STATS_COLUMNS, transposed_records))
-  stats_json = json.dumps(
-      transposed_dict, sort_keys=True, separators=(',', ':'))
+  stats = dict(
+      zip(_VARIANT_STATS_COLUMNS, [list(x) for x in transposed_records]))
 
-  summ_stats = summary_stats(single_var_stats)
-  summary_json = json.dumps(
-      summ_stats.asdict(), sort_keys=True, separators=(',', ':'))
+  summ_stats = _compute_summary_stats(single_var_stats).asdict()
 
-  histograms = vaf_histograms_by_genotype(
+  base_changes, indel_sizes = _count_base_changes_and_indel_sizes(
+      single_var_stats)
+
+  histograms = _vaf_histograms_by_genotype(
       single_var_stats, number_of_bins=histogram_bins)
-  histograms_json = json.dumps(histograms, separators=(',', ':'))
 
-  return stats_json, summary_json, histograms_json
+  qual_histogram = _compute_qual_histogram(single_var_stats)
+  gq_hist = _compute_gq_histogram(single_var_stats)
+
+  vis_data = {
+      'vaf_histograms_by_genotype': histograms,
+      'indel_sizes': indel_sizes,
+      'base_changes': base_changes,
+      'qual_histogram': qual_histogram,
+      'gq_histogram': gq_hist
+  }
+
+  return stats, summ_stats, vis_data
 
 
-def write(stats, outfile):
+def _write_json(stats, outfile):
   """Writes stats to the output file."""
+  stats_json_string = json.dumps(stats, sort_keys=True, separators=(',', ':'))
 
   with tf.io.gfile.GFile(outfile, 'w') as writer:
-    writer.write(stats)
+    writer.write(stats_json_string)
+
+
+def create_vcf_report(variants,
+                      output_basename,
+                      sample_name,
+                      vcf_reader=None,
+                      histogram_bins=10,
+                      include_individual_variant_stats=True):
+  """Calculate VCF stats, save JSON files, and create a visual report."""
+  stats, summary_stats, vis_data = _variants_to_stats_json(
+      variants, vcf_reader=vcf_reader, histogram_bins=histogram_bins)
+
+  if include_individual_variant_stats:
+    _write_json(stats, output_basename + '.per_record.json')
+  _write_json(summary_stats, output_basename + '.summary.json')
+  _write_json(vis_data, output_basename + '.vis_data.json')
+  vcf_stats_vis.create_visual_report(output_basename, summary_stats, vis_data,
+                                     sample_name)
