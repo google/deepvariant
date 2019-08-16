@@ -104,8 +104,9 @@ flags.DEFINE_string(
     'gvcf_outfile', None,
     'Optional. Destination path where we will write the Genomic VCF output.')
 flags.DEFINE_boolean(
-    'create_vcf_stats', False, 'Optional. In addition to VCF file, write per '
-    'record and summary stats to JSON files in the same output directory.')
+    'vcf_stats_report', False, 'Optional. Output a visual report (HTML) of '
+    'statistics about the output VCF, along with statistics JSON files, '
+    'all at the same base path given by --outfile.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -1003,7 +1004,7 @@ def main(argv=()):
           build_index(FLAGS.gvcf_outfile, use_csi)
         logging.info('Finished writing VCF and gVCF in %s minutes.',
                      (time.time() - start_time) / 60)
-      if FLAGS.create_vcf_stats:
+      if FLAGS.vcf_stats_report:
         outfile_base = _get_base_path(FLAGS.outfile)
         with vcf.VcfReader(FLAGS.outfile) as reader:
           vcf_stats.create_vcf_report(

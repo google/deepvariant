@@ -378,8 +378,8 @@ def create_vcf_report(variants,
       variants, vcf_reader=vcf_reader, histogram_bins=histogram_bins)
 
   if include_individual_variant_stats:
-    _write_json(stats, output_basename + '.per_record.json')
-  _write_json(summary_stats, output_basename + '.summary.json')
-  _write_json(vis_data, output_basename + '.vis_data.json')
+    _write_json(stats, output_basename + '.vcf_per_record_stats.json')
+  _write_json(summary_stats, output_basename + '.vcf_summary_stats.json')
+  _write_json(vis_data, output_basename + '.vcf_vis_stats.json')
   vcf_stats_vis.create_visual_report(output_basename, summary_stats, vis_data,
                                      sample_name)

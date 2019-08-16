@@ -27,6 +27,7 @@ GVCF_TFRECORDS="${OUTPUT_DIR}/gvcf.tfrecord@${N_SHARDS}.gz"
 CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/call_variants_output.tfrecord.gz"
 OUTPUT_VCF="${OUTPUT_DIR}/HG002.output.vcf.gz"
 OUTPUT_GVCF="${OUTPUT_DIR}/HG002.output.g.vcf.gz"
+OUTPUT_STATS="${OUTPUT_DIR}/HG002.output.vcf_stats"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
 CAPTURE_BED="${DATA_DIR}/agilent_sureselect_human_all_exon_v5_b37_targets.bed"
@@ -141,6 +142,17 @@ function run_postprocess_variants_gVCF() {
   echo
 }
 
+## Run `vcf_stats_report`
+function run_vcf_stats_report() {
+  echo "Start running vcf_stats_report...Log will be in the terminal and also to ${LOG_DIR}/vcf_stats_report.log."
+  python ./bazel-bin/deepvariant/vcf_stats_report.zip \
+      --input_vcf "${OUTPUT_VCF}" \
+      --outfile_base "${OUTPUT_STATS}" \
+      --individual_variant_stats
+  echo "Done."
+  echo
+}
+
 ## Evaluation: run hap.py
 function run_happy() {
   echo "Start evaluation with hap.py..."
@@ -176,6 +188,7 @@ function main() {
   (time run_call_variants) 2>&1 | tee "${LOG_DIR}/call_variants.log"
   (time run_postprocess_variants) 2>&1 | tee "${LOG_DIR}/postprocess_variants.log"
   (time run_postprocess_variants_gVCF) 2>&1 | tee "${LOG_DIR}/postprocess_variants.withGVCF.log"
+  (time run_vcf_stats_report) 2>&1 | tee "${LOG_DIR}/vcf_stats_report.log"
   run_happy 2>&1 | tee "${LOG_DIR}/happy.log"
 }
 

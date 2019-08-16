@@ -126,10 +126,12 @@ sudo docker run \
   --regions "chr20:10,000,000-10,010,000" \
   --output_vcf=/output/output.vcf.gz \
   --output_gvcf=/output/output.g.vcf.gz \
-  --num_shards=1 **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
+  --num_shards=1 \ **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
+  --vcf_stats_report **Optional flag to create a visual report of statistics about the output VCF.**
 ```
 
-This will generate 4 files in `${OUTPUT_DIR}`:
+This will generate 4 files (plus another 4 if you add the --vcf_stats_report
+flag) in `${OUTPUT_DIR}`:
 
 ```bash
 ls -1 ${OUTPUT_DIR}
@@ -142,6 +144,11 @@ output.g.vcf.gz
 output.g.vcf.gz.tbi
 output.vcf.gz
 output.vcf.gz.tbi
+# with --vcf_stats_report:
+output.visual_report.html
+output.vcf_vis_stats.json
+output.vcf_summary_stats.json
+output.vcf_per_record_stats.json
 ```
 
 ## Evaluating the results

@@ -370,9 +370,11 @@ class VcfStatsTest(parameterized.TestCase):
           output_basename=outfile_base,
           sample_name=sample_name,
           vcf_reader=reader)
-    self.assertTrue(tf.io.gfile.exists(outfile_base + '.per_record.json'))
-    self.assertTrue(tf.io.gfile.exists(outfile_base + '.summary.json'))
-    self.assertTrue(tf.io.gfile.exists(outfile_base + '.vis_data.json'))
+    self.assertTrue(
+        tf.io.gfile.exists(outfile_base + '.vcf_per_record_stats.json'))
+    self.assertTrue(
+        tf.io.gfile.exists(outfile_base + '.vcf_summary_stats.json'))
+    self.assertTrue(tf.io.gfile.exists(outfile_base + '.vcf_vis_stats.json'))
     self.assertTrue(tf.io.gfile.exists(outfile_base + '.visual_report.html'))
 
 

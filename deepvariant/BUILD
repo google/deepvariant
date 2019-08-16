@@ -16,6 +16,7 @@ filegroup(
         "model_eval",
         "model_train",
         "postprocess_variants",
+        "vcf_stats_report",
     ],
 )
 
@@ -893,6 +894,20 @@ py_test(
     deps = [
         ":resources_main_lib",
         "@absl_py//absl/testing:absltest",
+    ],
+)
+
+py_binary(
+    name = "vcf_stats_report",
+    srcs = ["vcf_stats_report.py"],
+    default_python_version = "PY2",
+    main = "vcf_stats_report.py",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":vcf_stats",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/util:errors",
+        "@absl_py//absl/flags",
     ],
 )
 

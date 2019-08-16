@@ -95,6 +95,7 @@ function fix_zip_file {
   #   python ${orig_zip_file}.zip
 }
 
+# shellcheck disable=SC2086
 bazel build -c opt \
   --output_filter=DONT_MATCH_ANYTHING \
   --noshow_loading_progress \
@@ -120,3 +121,4 @@ fix_zip_file "bazel-bin/deepvariant/make_examples"
 fix_zip_file "bazel-bin/deepvariant/model_eval"
 fix_zip_file "bazel-bin/deepvariant/model_train"
 fix_zip_file "bazel-bin/deepvariant/postprocess_variants"
+fix_zip_file "bazel-bin/deepvariant/vcf_stats_report"
