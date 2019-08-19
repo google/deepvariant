@@ -113,23 +113,23 @@ def init():
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
   GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
-      'golden.training_examples.tfrecord')
+      'golden.training_examples.tfrecord.gz')
   GOLDEN_CALLING_CANDIDATES = deepvariant_testdata(
-      'golden.calling_examples.tfrecord')
+      'golden.calling_examples.tfrecord.gz')
   GOLDEN_CALLING_EXAMPLES = deepvariant_testdata(
-      'golden.calling_examples.tfrecord')
+      'golden.calling_examples.tfrecord.gz')
   CONFIDENT_REGIONS_BED = deepvariant_testdata(
       'test_nist.b37_chr20_100kbp_at_10mb.bed')
   TRUTH_VARIANTS_VCF = deepvariant_testdata(
       'test_nist.b37_chr20_100kbp_at_10mb.vcf.gz')
   GOLDEN_POSTPROCESS_INPUT = deepvariant_testdata(
-      'golden.postprocess_single_site_input.tfrecord')
+      'golden.postprocess_single_site_input.tfrecord.gz')
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.postprocess_single_site_output.vcf')
   GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = deepvariant_testdata(
       'golden.postprocess_single_site_output.vcf.gz')
   GOLDEN_POSTPROCESS_GVCF_INPUT = deepvariant_testdata(
-      'golden.postprocess_gvcf_input.tfrecord')
+      'golden.postprocess_gvcf_input.tfrecord.gz')
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_output.g.vcf')
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
@@ -155,6 +155,6 @@ def init():
   CUSTOMIZED_CLASSES_VARIANTS = deepvariant_testdata(
       'ref_class1_class2.chr20_100kbp_at_10mb.vcf.gz')
   CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
-      'customized_classes.golden.training_examples.tfrecord')
+      'customized_classes.golden.training_examples.tfrecord.gz')
   CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
-      'custom_pileup_image.golden.training_examples.tfrecord')
+      'custom_pileup_image.golden.training_examples.tfrecord.gz')
