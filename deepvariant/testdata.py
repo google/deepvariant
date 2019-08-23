@@ -67,6 +67,7 @@ GOLDEN_CALLING_CANDIDATES = None
 GOLDEN_CALLING_EXAMPLES = None
 CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
+TRUTH_VARIANTS_VCF_WITH_TYPES = None
 GOLDEN_POSTPROCESS_INPUT = None
 GOLDEN_POSTPROCESS_OUTPUT = None
 GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = None
@@ -82,10 +83,6 @@ N_GOLDEN_TRAINING_EXAMPLES = 49
 N_GOLDEN_CALLING_EXAMPLES = 82
 
 # For CustomizedClassesVariantLabeler
-NOCHR_FASTA = None
-NOCHR_BAM = None
-CUSTOMIZED_CLASSES_REGIONS = None
-CUSTOMIZED_CLASSES_VARIANTS = None
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
 CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = None
 
@@ -99,6 +96,7 @@ def init():
   global GOLDEN_CALLING_EXAMPLES
   global CONFIDENT_REGIONS_BED
   global TRUTH_VARIANTS_VCF
+  global TRUTH_VARIANTS_VCF_WITH_TYPES
   global GOLDEN_POSTPROCESS_INPUT
   global GOLDEN_POSTPROCESS_OUTPUT
   global GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED
@@ -122,6 +120,8 @@ def init():
       'test_nist.b37_chr20_100kbp_at_10mb.bed')
   TRUTH_VARIANTS_VCF = deepvariant_testdata(
       'test_nist.b37_chr20_100kbp_at_10mb.vcf.gz')
+  TRUTH_VARIANTS_VCF_WITH_TYPES = deepvariant_testdata(
+      'with_types.test_nist.b37_chr20_4kbp_at_10mb.vcf.gz')
   GOLDEN_POSTPROCESS_INPUT = deepvariant_testdata(
       'golden.postprocess_single_site_input.tfrecord.gz')
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
@@ -141,20 +141,12 @@ def init():
   WS_VARIANT_READS_THRESHOLD_MODEL = deepvariant_testdata(
       'window_selector_variant_read_threshold.pbtxt')
 
-  # For CustomizedClassesVariantLabeler
-  global NOCHR_FASTA
-  global NOCHR_BAM
-  global CUSTOMIZED_CLASSES_REGIONS
-  global CUSTOMIZED_CLASSES_VARIANTS
+  # For CustomizedClassesVariantLabeler.
   global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
-  global CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES
-  NOCHR_FASTA = deepvariant_testdata('customized_classes.chr20.fasta.gz')
-  NOCHR_BAM = deepvariant_testdata('customized_classes.chr20.10_10p1mb.bam')
-  CUSTOMIZED_CLASSES_REGIONS = deepvariant_testdata(
-      'ref_class1_class2.chr20_100kbp_at_10mb.bed')
-  CUSTOMIZED_CLASSES_VARIANTS = deepvariant_testdata(
-      'ref_class1_class2.chr20_100kbp_at_10mb.vcf.gz')
   CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'customized_classes.golden.training_examples.tfrecord.gz')
+
+  # For adding an extra channel.
+  global CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES
   CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'custom_pileup_image.golden.training_examples.tfrecord.gz')

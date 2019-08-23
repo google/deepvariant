@@ -302,17 +302,17 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.labeler_algorithm = 'customized_classes_labeler'
     FLAGS.customized_classes_labeler_classes_list = 'ref,class1,class2'
     FLAGS.customized_classes_labeler_info_field_name = 'type'
-    region = ranges.parse_literal('20:10,000,000-10,010,000')
+    region = ranges.parse_literal('chr20:10,000,000-10,004,000')
     FLAGS.regions = [ranges.to_literal(region)]
-    FLAGS.ref = testdata.NOCHR_FASTA
-    FLAGS.reads = testdata.NOCHR_BAM
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
-    FLAGS.truth_variants = testdata.CUSTOMIZED_CLASSES_VARIANTS
-    FLAGS.confident_regions = testdata.CUSTOMIZED_CLASSES_REGIONS
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF_WITH_TYPES
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     options = make_examples.default_options(add_flags=True)
     make_examples.make_examples_runner(options)
     golden_file = _sharded(testdata.CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES)
