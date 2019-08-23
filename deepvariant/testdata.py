@@ -133,7 +133,7 @@ def init():
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_output.g.vcf')
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
-      'golden.training_examples.tfrecord.run_info.pbtxt')
+      'golden.training_examples.tfrecord.gz.run_info.pbtxt')
   WS_ALLELE_COUNT_LINEAR_MODEL = deepvariant_testdata(
       'window_selector_allele_count_linear.pbtxt')
   WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = deepvariant_testdata(
