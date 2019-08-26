@@ -42,9 +42,12 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 
+from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils
+from third_party.nucleus.util import variant_utils
 from deepvariant import testdata
 from deepvariant import vcf_caller
+from deepvariant.labeler import labeled_examples_to_vcf
 from deepvariant.protos import deepvariant_pb2
 
 
@@ -119,6 +122,27 @@ class VcfCallerTests(parameterized.TestCase):
     mock_cpp.calls_from_vcf.assert_called_once_with(allele_counter,
                                                     caller.vcf_reader)
     self.assertEqual(candidates, fake_candidates)
+
+  # Golden sets are created with learning/genomics/internal/create_golden.sh.
+  def test_vcf_caller_end2end_outputs(self):
+    # Confirming that the proposed VCF (input) has the same variants
+    # as the VCF output converted from the output of make_examples.
+    variants = list(
+        labeled_examples_to_vcf.examples_to_variants(
+            testdata.GOLDEN_VCF_CALLER_TRAINING_EXAMPLES))
+    with vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF) as proposed_vcf_reader:
+      # This checks the keys (like chr20:10099832:A->G) are the same.
+      self.assertEqual([variant_utils.variant_key(v1) for v1 in variants], [
+          variant_utils.variant_key(v2) for v2 in proposed_vcf_reader.iterate()
+      ])
+
+    with vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF) as proposed_vcf_reader:
+      # redacted
+      self.assertEqual(
+          [sorted(variant_utils.genotype_as_alleles(v1)) for v1 in variants], [
+              sorted(variant_utils.genotype_as_alleles(v2))
+              for v2 in proposed_vcf_reader.iterate()
+          ])
 
 
 if __name__ == '__main__':

@@ -86,6 +86,9 @@ N_GOLDEN_CALLING_EXAMPLES = 82
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
 CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = None
 
+# For VcfCaller
+GOLDEN_VCF_CALLER_TRAINING_EXAMPLES = None
+
 
 def init():
   """Initialize global variables from flag values."""
@@ -150,3 +153,8 @@ def init():
   global CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES
   CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'custom_pileup_image.golden.training_examples.tfrecord.gz')
+
+  # For VcfCaller
+  global GOLDEN_VCF_CALLER_TRAINING_EXAMPLES
+  GOLDEN_VCF_CALLER_TRAINING_EXAMPLES = deepvariant_testdata(
+      'golden.vcf_caller.training_examples.tfrecord.gz')

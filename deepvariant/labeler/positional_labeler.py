@@ -53,14 +53,15 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
   the candidate variants and the truth variants.
   """
 
-  def __init__(self, truth_vcf_reader, confident_regions):
+  def __init__(self, truth_vcf_reader, confident_regions=None):
     """Creates a new VariantLabeler.
 
     Args:
       truth_vcf_reader: a VcfReader object that points to our truth variant set.
       confident_regions: A RangeSet containing all of the confidently called
         regions. A variant that falls outside of one of these regions will be
-        receive a special not-confident marker.
+        receive a special not-confident marker. If None, the confident regions
+        constraint won't be enforced, and all variants will be included.
 
     Raises:
       ValueError: if vcf_reader is None.
@@ -112,11 +113,13 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
       variant but with a hom-ref genotype.
     """
     matched_variant = self._find_matching_variant_in_reader(variant)
-    confident = self._confident_regions.variant_overlaps(
-        variant, empty_set_return_value=False)
-    if matched_variant is None and confident:
+    confident_or_no_constraint = (
+        self._confident_regions is None or
+        self._confident_regions.variant_overlaps(
+            variant, empty_set_return_value=False))
+    if matched_variant is None and confident_or_no_constraint:
       matched_variant = self._make_synthetic_hom_ref(variant)
-    return confident, matched_variant
+    return confident_or_no_constraint, matched_variant
 
   def _make_synthetic_hom_ref(self, variant):
     """Creates a version of variant with a hom-ref genotype.

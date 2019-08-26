@@ -35,7 +35,7 @@ from __future__ import print_function
 import abc
 
 
-
+from absl import logging
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from deepvariant import tf_utils
@@ -135,11 +135,13 @@ class VariantLabeler(object):
 
   __metaclass__ = abc.ABCMeta
 
-  def __init__(self, truth_vcf_reader, confident_regions):
+  def __init__(self, truth_vcf_reader, confident_regions=None):
     if truth_vcf_reader is None:
       raise ValueError('truth_vcf_reader cannot be None')
     if confident_regions is None:
-      raise ValueError('confident_regions cannot be None')
+      logging.warning('Note: confident_regions for VariantLabeler is None. '
+                      'It is possible that this is not allowed for some '
+                      'subtype of VariantLabelers.')
     self._truth_vcf_reader = truth_vcf_reader
     self._confident_regions = confident_regions
 
@@ -197,8 +199,9 @@ class VariantLabeler(object):
     """
     for variant in self._truth_vcf_reader.query(region):
       if (not variant_utils.is_filtered(variant) and
-          self._confident_regions.variant_overlaps(
-              variant, empty_set_return_value=False)):
+          (self._confident_regions is None or
+           self._confident_regions.variant_overlaps(
+               variant, empty_set_return_value=False))):
         yield variant
 
 

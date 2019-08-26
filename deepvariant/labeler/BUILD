@@ -58,6 +58,7 @@ py_library(
         "//deepvariant:tf_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
+        "@absl_py//absl/logging",
     ],
 )
 

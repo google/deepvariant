@@ -119,6 +119,8 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     """
     super(HaplotypeLabeler, self).__init__(
         truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions)
+    if confident_regions is None:
+      raise ValueError('confident_regions cannot be None for HaplotypeLabeler.')
     self._ref_reader = ref_reader
     self.max_group_size = max_group_size
     self.max_separation = max_separation

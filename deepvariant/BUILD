@@ -249,7 +249,9 @@ py_test(
     deps = [
         ":py_testdata",
         ":vcf_caller",
+        "//deepvariant/labeler:labeled_examples_to_vcf_main_lib",
         "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],

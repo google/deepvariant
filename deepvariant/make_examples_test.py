@@ -322,6 +322,29 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
 
+  # Golden sets are created with learning/genomics/internal/create_golden.sh
+  @flagsaver.FlagSaver
+  def test_make_examples_training_end2end_vcf_caller(self):
+    FLAGS.variant_caller = 'vcf_caller'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.candidates = test_utils.test_tmpfile(_sharded('vcf_caller.tfrecord'))
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('vcf_caller.examples.tfrecord'))
+    FLAGS.mode = 'training'
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    # Set this the same in TRUTH_VARIANTS_VCF file so the matching will pass.
+    FLAGS.sample_name = 'INTEGRATION'
+    options = make_examples.default_options(add_flags=True)
+    make_examples.make_examples_runner(options)
+    golden_file = _sharded(testdata.GOLDEN_VCF_CALLER_TRAINING_EXAMPLES)
+    # Verify that the variants in the examples are all good.
+    examples = self.verify_examples(
+        FLAGS.examples, None, options, verify_labels=True)
+    self.assertDeepVariantExamplesEqual(
+        examples, list(tfrecord.read_tfrecords(golden_file)))
+    self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 6])
+
   @parameterized.parameters(
       dict(select_types=None, expected_count=76),
       dict(select_types='all', expected_count=76),
@@ -396,11 +419,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # is_gvcf determines how we check the VariantCall field of each variant,
     # enforcing expectations for gVCF records if true or variant calls if false.
     for variant in variants:
-      self.assertEqual(variant.reference_name, region.reference_name)
+      if region:
+        self.assertEqual(variant.reference_name, region.reference_name)
+        self.assertGreaterEqual(variant.start, region.start)
+        self.assertLessEqual(variant.start, region.end)
       self.assertNotEqual(variant.reference_bases, '')
       self.assertGreater(len(variant.alternate_bases), 0)
-      self.assertGreaterEqual(variant.start, region.start)
-      self.assertLessEqual(variant.start, region.end)
       self.assertEqual(len(variant.calls), 1)
 
       call = variant_utils.only_call(variant)

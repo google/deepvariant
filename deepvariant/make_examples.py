@@ -792,7 +792,10 @@ def regions_to_process(contigs,
 
 
 def read_confident_regions(options):
-  return ranges.RangeSet.from_bed(options.confident_regions_filename)
+  if options.confident_regions_filename:
+    return ranges.RangeSet.from_bed(options.confident_regions_filename)
+  else:
+    return None
 
 
 def filter_candidates(candidates, select_variant_types):
@@ -1352,9 +1355,13 @@ def main(argv=()):
             'truth_variants is required when in training mode.',
             errors.CommandLineError)
       if not options.confident_regions_filename:
-        errors.log_and_raise(
-            'confident_regions is required when in training mode.',
-            errors.CommandLineError)
+        if options.variant_caller != \
+            deepvariant_pb2.DeepVariantOptions.VCF_CALLER:
+          # One exception for requiring confident_regions is when the user
+          # opts to use vcf_caller.
+          errors.log_and_raise(
+              'confident_regions is required when in training mode.',
+              errors.CommandLineError)
       if options.gvcf_filename:
         errors.log_and_raise('gvcf is not allowed in training mode.',
                              errors.CommandLineError)
