@@ -24,7 +24,7 @@ BAM="${DATA_DIR}/HG002_NIST_150bp_50x.bam"
 TRUTH_VCF="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"
 TRUTH_BED="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"
 
-N_SHARDS="64"
+N_SHARDS=$(nproc)
 
 OUTPUT_DIR="${BASE}/output"
 EXAMPLES="${OUTPUT_DIR}/make_examples.tfrecord@${N_SHARDS}.gz"
@@ -143,9 +143,9 @@ function run_postprocess_variants_gVCF() {
 }
 
 function run_deepvariant() {
-  (time run_make_examples) 2>&1 | tee "${LOG_DIR}/make_examples.log"
-  (time run_call_variants) 2>&1 | tee "${LOG_DIR}/call_variants.log"
-  (time run_postprocess_variants) 2>&1 | tee "${LOG_DIR}/postprocess_variants.log"
+  (time run_make_examples) > "${LOG_DIR}/make_examples.log" 2>&1
+  (time run_call_variants) > "${LOG_DIR}/call_variants.log" 2>&1
+  (time run_postprocess_variants) > "${LOG_DIR}/postprocess_variants.log" 2>&1
 }
 
 function main() {
