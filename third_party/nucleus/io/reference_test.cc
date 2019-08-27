@@ -44,6 +44,7 @@
 #include "absl/strings/str_cat.h"
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/protos/fasta.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -213,13 +214,24 @@ TEST_P(GenomeReferenceTest, TestGetBasesParts) {
 }
 
 
+static std::unique_ptr<GenomeReference> LoadWithCaseOption(
+    const string& fasta, bool keep_true_case,
+    int cache_size = 64 * 1024) {
+  nucleus::genomics::v1::FastaReaderOptions options =
+      nucleus::genomics::v1::FastaReaderOptions();
+  options.set_keep_true_case(keep_true_case);
+  StatusOr<std::unique_ptr<IndexedFastaReader>> fai_status =
+      IndexedFastaReader::FromFile(fasta, StrCat(fasta, ".fai"),
+                                   options,
+                                   cache_size);
+  TF_CHECK_OK(fai_status.status());
+  return std::move(fai_status.ValueOrDie());
+}
+
 static std::unique_ptr<GenomeReference> JustLoadFai(const string& fasta,
                                                     int cache_size = 64 *
                                                                      1024) {
-  StatusOr<std::unique_ptr<IndexedFastaReader>> fai_status =
-      IndexedFastaReader::FromFile(fasta, StrCat(fasta, ".fai"), cache_size);
-  TF_CHECK_OK(fai_status.status());
-  return std::move(fai_status.ValueOrDie());
+  return LoadWithCaseOption(fasta, false, cache_size);
 }
 
 // Test with cache disabled.
@@ -239,7 +251,8 @@ INSTANTIATE_TEST_CASE_P(GRT4, GenomeReferenceDeathTest,
 TEST(StatusOrLoadFromFile, ReturnsBadStatusIfFaiIsMissing) {
   StatusOr<std::unique_ptr<IndexedFastaReader>> result =
       IndexedFastaReader::FromFile(GetTestData("unindexed.fasta"),
-                                   GetTestData("unindexed.fasta.fai"));
+                                   GetTestData("unindexed.fasta.fai"),
+                                   nucleus::genomics::v1::FastaReaderOptions());
   EXPECT_THAT(result, IsNotOKWithCodeAndMessage(
                           tensorflow::error::NOT_FOUND,
                           "could not load fasta and/or fai for fasta"));
@@ -252,6 +265,19 @@ TEST(IndexedFastaReaderTest, WriteAfterCloseIsntOK) {
               IsNotOKWithCodeAndMessage(
                   tensorflow::error::FAILED_PRECONDITION,
                   "can't read from closed IndexedFastaReader object"));
+}
+
+TEST(IndexedFastaReaderTest, TestTrueCase) {
+  auto reader = LoadWithCaseOption(TestFastaPath(), true);
+  auto iterator = reader->Iterate().ValueOrDie();
+  GenomeReferenceRecord r;
+  StatusOr<bool> status = iterator->Next(&r);
+  EXPECT_TRUE(status.ValueOrDie());
+  EXPECT_EQ("chrM", r.first);
+  EXPECT_EQ(
+      "GATCACAGGTCTATCACCCTATTaaCCACTCACGGGAGCTCTCCATGCATTTGGTATTTTCGTCTGGGGGGT"
+      "GTGCACGCGATAGCATTGCGAGACGCTG",
+      r.second);
 }
 
 TEST(IndexedFastaReaderTest, TestIterate) {

@@ -71,6 +71,12 @@ class IndexedFastaReaderTests(parameterized.TestCase):
       self.assertEqual(reader.query(ranges.make_range('chrM', 1, 6)), 'ATCAC')
 
   @parameterized.parameters('test.fasta', 'test.fasta.gz')
+  def test_make_ref_reader_with_true_case(self, fasta_filename):
+    fasta_path = test_utils.genomics_core_testdata(fasta_filename)
+    with fasta.IndexedFastaReader(fasta_path, keep_true_case=True) as reader:
+      self.assertEqual(reader.query(ranges.make_range('chrM', 22, 27)), 'TaaCC')
+
+  @parameterized.parameters('test.fasta', 'test.fasta.gz')
   def test_make_ref_reader_cache_specified(self, fasta_filename):
     fasta_path = test_utils.genomics_core_testdata(fasta_filename)
     with fasta.IndexedFastaReader(fasta_path, cache_size=10) as reader:

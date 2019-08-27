@@ -132,6 +132,7 @@ py_clif_cc(
     name = "reference",
     srcs = ["reference.clif"],
     pyclif_deps = [
+        "//third_party/nucleus/protos:fasta_pyclif",
         "//third_party/nucleus/protos:range_pyclif",
         "//third_party/nucleus/protos:reference_pyclif",
     ],

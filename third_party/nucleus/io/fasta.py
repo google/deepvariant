@@ -84,25 +84,29 @@ class FastaReader(genomics_reader.DispatchingGenomicsReader):
 class IndexedFastaReader(genomics_reader.GenomicsReader):
   """Class for reading from FASTA files containing a reference genome."""
 
-  def __init__(self, input_path, cache_size=None):
+  def __init__(self, input_path, keep_true_case=False, cache_size=None):
     """Initializes an IndexedFastaReader.
 
     Args:
       input_path: string. A path to a resource containing FASTA records.
+      keep_true_case: bool. If False, casts all bases to uppercase before
+        returning them.
       cache_size: integer. Number of bases to cache from previous queries.
         Defaults to 64K.  The cache can be disabled using cache_size=0.
     """
     super(IndexedFastaReader, self).__init__()
+
+    options = fasta_pb2.FastaReaderOptions(keep_true_case=keep_true_case)
 
     fasta_path = input_path
     fai_path = fasta_path + '.fai'
     if cache_size is None:
       # Use the C++-defined default cache size.
       self._reader = reference.IndexedFastaReader.from_file(
-          fasta_path, fai_path)
+          fasta_path, fai_path, options)
     else:
       self._reader = reference.IndexedFastaReader.from_file(
-          fasta_path, fai_path, cache_size)
+          fasta_path, fai_path, options, cache_size)
 
     # redacted
     self.header = RefFastaHeader(contigs=self._reader.contigs)

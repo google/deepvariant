@@ -58,14 +58,14 @@ message FastaRecord {
   Range region = 3;
 
   // The raw sequence letters. Depending on the
-  // `FastaReaderOptions.uppercase_sequence` field, these may be uppercased or
-  // not.
+  // `FastaReaderOptions.keep_true_case` field, these may be uppercased or
+  // keeping the original true case.
   string sequence = 4;
 }
 
 message FastaReaderOptions {
-  // If true, casts all bases to uppercase before returning them.
-  bool uppercase_sequence = 1;
+  // If false, casts all bases to uppercase before returning them.
+  bool keep_true_case = 1;
 
   // If set, all sequences are verified to contain only characters present in
   // the input alphabet defined here.

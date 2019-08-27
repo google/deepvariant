@@ -68,6 +68,7 @@
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/io/text_reader.h"
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/protos/fasta.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
@@ -189,6 +190,10 @@ class IndexedFastaReader : public GenomeReference {
   // cache can be disabled using `cache_size=0`.
   static StatusOr<std::unique_ptr<IndexedFastaReader>> FromFile(
       const string& fasta_path, const string& fai_path,
+      const nucleus::genomics::v1::FastaReaderOptions& options,
+      int cache_size_bases = INDEXED_FASTA_READER_DEFAULT_CACHE_SIZE);
+  static StatusOr<std::unique_ptr<IndexedFastaReader>> FromFile(
+      const string& fasta_path, const string& fai_path,
       int cache_size_bases = INDEXED_FASTA_READER_DEFAULT_CACHE_SIZE);
 
   ~IndexedFastaReader();
@@ -205,6 +210,11 @@ class IndexedFastaReader : public GenomeReference {
   StatusOr<string> GetBases(
       const nucleus::genomics::v1::Range& range) const override;
 
+  // Get the options controlling the behavior of this FastaReader.
+  const nucleus::genomics::v1::FastaReaderOptions& Options() const {
+    return options_;
+  }
+
   StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>> Iterate()
       const override;
 
@@ -217,6 +227,7 @@ class IndexedFastaReader : public GenomeReference {
 
   // Must use one of the static factory methods.
   IndexedFastaReader(const string& fasta_path, faidx_t* faidx,
+                     const nucleus::genomics::v1::FastaReaderOptions& options,
                      int cache_size_bases);
 
   // Path to the FASTA file containing our genomic bases.
@@ -226,6 +237,9 @@ class IndexedFastaReader : public GenomeReference {
   // the life of this object, but htslib API doesn't allow us to mark this as
   // const.
   faidx_t* faidx_;
+
+  // The options controlling the behavior of this FastaReader.
+  const nucleus::genomics::v1::FastaReaderOptions options_;
 
   // A list of ContigInfo, each of which contains the information about the
   // contigs used by this BAM file.

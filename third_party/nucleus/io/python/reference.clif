@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from "third_party/nucleus/protos/fasta_pyclif.h" import *
 from "third_party/nucleus/protos/range_pyclif.h" import *
 from "third_party/nucleus/protos/reference_pyclif.h" import *
 from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
@@ -66,6 +67,7 @@ from "third_party/nucleus/io/reference.h":
       def `FromFile` as from_file(cls,
                                   fasta_path: str,
                                   fai_path: str,
+                                  options: FastaReaderOptions,
                                   cache_size_bases: int = default)
         -> StatusOr<IndexedFastaReader>
 
