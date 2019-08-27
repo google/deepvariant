@@ -104,6 +104,10 @@ flags.DEFINE_string(
     'gvcf_outfile', None,
     'Optional. Destination path where we will write the Genomic VCF output.')
 flags.DEFINE_boolean(
+    'group_variants', True, 'If using vcf_caller and multi-allelic sites are '
+    'split across multiple lines in VCF, set to False so that variants are not '
+    'grouped when transforming CallVariantsOutput to Variants.')
+flags.DEFINE_boolean(
     'vcf_stats_report', False, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF, along with statistics JSON files, '
     'all at the same base path given by --outfile.')
@@ -666,9 +670,10 @@ def _sort_grouped_variants(group):
   return sorted(group, key=lambda x: sorted(x.alt_allele_indices.indices))
 
 
-def _transform_call_variants_output_to_variants(
-    input_sorted_tfrecord_path, qual_filter, multi_allelic_qual_filter,
-    sample_name):
+def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
+                                                qual_filter,
+                                                multi_allelic_qual_filter,
+                                                sample_name, group_variants):
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
   Variants present in the input TFRecord are converted to Variant protos, with
@@ -684,14 +689,19 @@ def _transform_call_variants_output_to_variants(
     multi_allelic_qual_filter: double. The qual value below which to filter
       multi-allelic variants.
     sample_name: str. Sample name to write to VCF file.
+    group_variants: bool. If true, group variants that have same start and end
+      position.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
+  group_fn = None
+  if group_variants:
+    group_fn = lambda x: variant_utils.variant_range(x.variant)
   for _, group in itertools.groupby(
       tfrecord.read_tfrecords(
           input_sorted_tfrecord_path, proto=deepvariant_pb2.CallVariantsOutput),
-      lambda x: variant_utils.variant_range(x.variant)):
+      group_fn):
     outputs = _sort_grouped_variants(group)
     canonical_variant, predictions = merge_predictions(
         outputs, multi_allelic_qual_filter)
@@ -968,7 +978,8 @@ def main(argv=()):
           input_sorted_tfrecord_path=temp.name,
           qual_filter=FLAGS.qual_filter,
           multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
-          sample_name=sample_name)
+          sample_name=sample_name,
+          group_variants=FLAGS.group_variants)
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
 

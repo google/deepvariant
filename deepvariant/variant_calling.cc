@@ -49,14 +49,14 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
+using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
+using tensorflow::string;
+using tensorflow::gtl::make_optional;
 using tensorflow::gtl::nullopt;
 using tensorflow::gtl::optional;
-using tensorflow::gtl::make_optional;
 using tensorflow::strings::StrCat;
-using tensorflow::string;
-
 
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
@@ -327,21 +327,26 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
     const AlleleCounter& allele_counter,
     nucleus::VcfReader* vcf_reader_ptr) const {
   std::vector<AlleleCount> allele_counts = allele_counter.Counts();
-  nucleus::genomics::v1::Range range = allele_counter.Interval();
-  std::vector<nucleus::genomics::v1::Variant> variants_in_region;
+  Range range = allele_counter.Interval();
+  std::vector<Variant> variants_in_region;
   // An error here is fatal and whole program will fail if unable to query vcf.
   std::shared_ptr<nucleus::VariantIterable> variants =
       vcf_reader_ptr->Query(range).ValueOrDie();
   for (const auto& v : variants) {
-    variants_in_region.push_back(*v.ValueOrDie());
+    const Variant* variant = v.ValueOrDie();
+    // This ensures we only keep variants that start in this region. By default,
+    // vcf_reader->Query() returns all variants that overlap a region, which
+    // can incorrectly cause the same variant to be processed multiple times.
+    if (variant->start() >= range.start()) {
+      variants_in_region.push_back(*variant);
+    }
   }
   return CallsFromVariantsInRegion(allele_counts, variants_in_region);
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
     const std::vector<AlleleCount>& allele_counts,
-    const std::vector<nucleus::genomics::v1::Variant>& variants_in_region)
-    const {
+    const std::vector<Variant>& variants_in_region) const {
   std::vector<DeepVariantCall> calls;
   // For each variant in the region, loop through AlleleCounts to find a match
   // to the variant position. At each match, add the supporting reads.
@@ -355,7 +360,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
 }
 
 optional<DeepVariantCall> VariantCaller::ComputeVariant(
-    const nucleus::genomics::v1::Variant& variant,
+    const Variant& variant,
     const std::vector<AlleleCount>& allele_counts) const {
   DeepVariantCall call;
   *call.mutable_variant() = variant;
