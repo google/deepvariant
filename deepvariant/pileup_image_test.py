@@ -42,6 +42,7 @@ import itertools
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import enum
 import mock
 import numpy as np
 import numpy.testing as npt
@@ -55,6 +56,13 @@ from third_party.nucleus.util import ranges
 from deepvariant import pileup_image
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
+
+
+class SequencingTypeColor(enum.Enum):
+  """Enum capturing the int64 values we encode sequencing type colors."""
+  UNSPECIFIED_SEQ_TYPE = 0
+  WGS = 127
+  WES = 254
 
 
 def _supporting_reads(*names):
@@ -152,6 +160,21 @@ class PileupImageEncoderTest(parameterized.TestCase):
     pie = _make_encoder(
         reference_matching_read_alpha=0.3, reference_mismatching_read_alpha=0.4)
     self.assertAlmostEqual(pie.matches_ref_color(matches_ref), expected_color)
+
+  @parameterized.parameters(
+      (deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE,
+       SequencingTypeColor.UNSPECIFIED_SEQ_TYPE.value),
+      (deepvariant_pb2.PileupImageOptions.WGS, SequencingTypeColor.WGS.value),
+      (deepvariant_pb2.PileupImageOptions.WES, SequencingTypeColor.WES.value),
+  )
+  def test_sequencing_type_color(self, sequencing_type, expected_color):
+    # Default
+    pileup_image_encoder = _make_encoder(
+        sequencing_type_image=True,
+        sequencing_type=sequencing_type,
+        num_channels=7)
+    self.assertAlmostEqual(pileup_image_encoder.sequencing_type_color(),
+                           expected_color)
 
   def test_reference_encoding(self):
     self.assertImageRowEquals(
@@ -370,6 +393,42 @@ class PileupImageEncoderTest(parameterized.TestCase):
     self.assertImageRowEquals(
         pie.encode_read(dv_call, 'AACAG', read, start, alt_allele),
         full_expected)
+
+  @parameterized.parameters(
+      (deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE,
+       SequencingTypeColor.UNSPECIFIED_SEQ_TYPE.value),
+      (deepvariant_pb2.PileupImageOptions.WGS, SequencingTypeColor.WGS.value),
+      (deepvariant_pb2.PileupImageOptions.WES, SequencingTypeColor.WES.value),
+  )
+  def test_sequencing_type_image(self, sequencing_type, color):
+    pileup_image_encoder = _make_encoder(
+        sequencing_type_image=True,
+        sequencing_type=sequencing_type,
+        num_channels=7)
+    start = 10
+    dv_call = _make_dv_call()
+    alt_allele = dv_call.variant.alternate_bases[0]
+    read = test_utils.make_read(
+        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
+    full_expected = np.dstack([
+        # Base.
+        (250, 30, 30, 180, 100),
+        # Base quality.
+        (63, 69, 76, 82, 88),
+        # Mapping quality.
+        (211, 211, 211, 211, 211),
+        # Strand channel (forward or reverse)
+        (70, 70, 70, 70, 70),
+        # Supports alt or not.
+        (254, 254, 254, 254, 254),
+        # Matches ref or not.
+        (50, 50, 254, 50, 50),
+        # sequencing type
+        (color, color, color, color, color)
+    ]).astype(np.uint8)
+    self.assertImageRowEquals(
+        pileup_image_encoder.encode_read(dv_call, 'ACAGT', read, start,
+                                         alt_allele), full_expected)
 
   @parameterized.parameters(
       (min_base_qual, min_mapping_qual)

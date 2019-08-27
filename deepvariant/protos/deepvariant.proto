@@ -344,7 +344,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 26.
+// Next ID: 28.
 message PileupImageOptions {
   // The height, in pixels, of the pileup image we'll construct.
   int32 height = 1;
@@ -428,11 +428,22 @@ message PileupImageOptions {
 
   // Include custom pileup image feature.
   bool custom_pileup_image = 25;
+
+  // Include sequencing type image feature.
+  bool sequencing_type_image = 26;
+
+  // Sequencing type of input bam file.
+  enum SequencingType {
+    UNSPECIFIED_SEQ_TYPE = 0;
+    WGS = 1;
+    WES = 2;
+  }
+  SequencingType sequencing_type = 27;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 33.
+// Next ID: 32.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -562,14 +573,6 @@ message DeepVariantOptions {
   // generate SNP candidate variants.
   repeated string select_variant_types = 30;
 
-  // Sequencing type of input bam file.
-  enum SequencingType {
-    UNSPECIFIED_SEQ_TYPE = 0;
-    WGS = 1;
-    WES = 2;
-  }
-  SequencingType sequencing_type = 31;
-
   enum VariantCaller {
     UNSPECIFIED_CALLER = 0;
     // The default very sensitive caller.
@@ -577,7 +580,7 @@ message DeepVariantOptions {
     // An advanced caller that uses an input VCF to call variants.
     VCF_CALLER = 2;
   }
-  VariantCaller variant_caller = 32;
+  VariantCaller variant_caller = 31;
 }
 
 // Config describe information needed for a dataset that can be used for

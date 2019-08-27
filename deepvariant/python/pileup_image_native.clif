@@ -65,3 +65,5 @@ from "deepvariant/pileup_image_native.h":
 
       def `MappingQualityColor` as mapping_quality_color(
           self, mapping_qual: int) -> int
+
+      def `SequencingTypeColor` as sequencing_type_color(self) -> int

@@ -35,7 +35,6 @@ from __future__ import print_function
 import itertools
 
 
-
 import numpy as np
 
 from third_party.nucleus.protos import reads_pb2
@@ -78,7 +77,9 @@ def default_options(read_requirements=None):
       multi_allelic_mode=deepvariant_pb2.PileupImageOptions.ADD_HET_ALT_IMAGES,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=2101079370,
-      custom_pileup_image=False)
+      custom_pileup_image=False,
+      sequencing_type_image=False,
+      sequencing_type=deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE)
 
 
 def _compute_half_width(width):

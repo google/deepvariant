@@ -47,6 +47,7 @@ namespace deepvariant {
 using tensorflow::string;
 
 constexpr int NUM_CHANNELS = 6;
+constexpr int NUM_SEQ_TYPE = PileupImageOptions::SequencingType_ARRAYSIZE;
 
 struct ImageRow {
   std::vector<unsigned char> base;
@@ -56,13 +57,16 @@ struct ImageRow {
   std::vector<unsigned char> supports_alt;
   std::vector<unsigned char> matches_ref;
   std::vector<unsigned char> op_length;
+  std::vector<unsigned char> sequencing_type;
   int num_channels;
   bool custom_pileup_image;
+  bool sequencing_type_image;
 
   int Width() const;
   explicit ImageRow(int width,
                     int num_channels,
-                    bool custom_pileup_image);
+                    bool custom_pileup_image,
+                    bool sequencing_type_image);
 };
 
 class PileupImageEncoderNative {
@@ -109,6 +113,8 @@ class PileupImageEncoderNative {
   int BaseQualityColor(int base_qual) const;
   // Get the pixel color (int) for a base mapping quality.
   int MappingQualityColor(int mapping_qual) const;
+  // Get the encoded input sequencing_type.
+  int SequencingTypeColor() const;
 
  private:
   const PileupImageOptions options_;

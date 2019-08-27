@@ -80,8 +80,11 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
     *cur++ = img_row->on_positive_strand[i];
     *cur++ = img_row->supports_alt[i];
     *cur++ = img_row->matches_ref[i];
-    // Current default num_channels is 6. If num_channels is 7, we add the
-    // the 7th channel, which encodes oplens for indels.
+    if (img_row->sequencing_type_image) {
+      *cur++ = img_row->sequencing_type[i];
+    }
+    // Current default num_channels is 6. If custom_pileup_image is set to true,
+    // we add an additional channel, which encodes oplens for indels.
     if (img_row->custom_pileup_image) {
       *cur++ = img_row->op_length[i];
     }
