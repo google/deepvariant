@@ -57,7 +57,7 @@ void SortSingleSiteCalls(
   //   Create the mapping from from contig to pos_in_fasta.
   std::map<string, int> contig_name_to_pos_in_fasta =
       nucleus::MapContigNameToPosInFasta(contigs);
-  std::sort(calls->begin(), calls->end(),
+  std::stable_sort(calls->begin(), calls->end(),
             [&contig_name_to_pos_in_fasta](const CallVariantsOutput& a,
                                            const CallVariantsOutput& b) {
               return nucleus::CompareVariants(a.variant(), b.variant(),

@@ -62,6 +62,14 @@ CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
   return single_site_call;
 }
 
+CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
+                                         int end, double quality) {
+  CallVariantsOutput single_site_call = CreateSingleSiteCalls(reference_name,
+                                                              start, end);
+  single_site_call.mutable_variant()->set_quality(quality);
+  return single_site_call;
+}
+
 }  // namespace
 
 TEST(ProcessSingleSiteCallTfRecords, BasicCase) {
@@ -71,7 +79,8 @@ TEST(ProcessSingleSiteCallTfRecords, BasicCase) {
   single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2001));
   single_site_calls.push_back(CreateSingleSiteCalls("chr10", 1000, 1001));
   single_site_calls.push_back(CreateSingleSiteCalls("chr1", 1, 2));
-  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2002));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2002, 0.9));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2002, 0.7));
   const string& input_tfrecord_path = nucleus::MakeTempFile(
       "ProessSingleSiteCallTfRecordsBasicCase.in.tfrecord");
   const string& output_tfrecord_path = nucleus::MakeTempFile(
@@ -83,19 +92,25 @@ TEST(ProcessSingleSiteCallTfRecords, BasicCase) {
   std::vector<CallVariantsOutput> output =
       nucleus::ReadProtosFromTFRecord<CallVariantsOutput>(output_tfrecord_path);
 
-  EXPECT_EQ(output.size(), 4);
+  EXPECT_EQ(output.size(), 5);
   EXPECT_EQ(output[0].variant().reference_name(), "chr1");
   EXPECT_EQ(output[1].variant().reference_name(), "chr10");
   EXPECT_EQ(output[2].variant().reference_name(), "chr10");
   EXPECT_EQ(output[3].variant().reference_name(), "chr10");
+  EXPECT_EQ(output[4].variant().reference_name(), "chr10");
   EXPECT_EQ(output[0].variant().start(), 1);
   EXPECT_EQ(output[1].variant().start(), 1000);
   EXPECT_EQ(output[2].variant().start(), 2000);
   EXPECT_EQ(output[3].variant().start(), 2000);
+  EXPECT_EQ(output[4].variant().start(), 2000);
   EXPECT_EQ(output[0].variant().end(), 2);
   EXPECT_EQ(output[1].variant().end(), 1001);
   EXPECT_EQ(output[2].variant().end(), 2001);
   EXPECT_EQ(output[3].variant().end(), 2002);
+  EXPECT_EQ(output[4].variant().end(), 2002);
+  // Order of calls with the same reference, start, end should be preserved.
+  EXPECT_EQ(output[3].variant().quality(), 0.9);
+  EXPECT_EQ(output[4].variant().quality(), 0.7);
 }
 
 }  // namespace deepvariant
