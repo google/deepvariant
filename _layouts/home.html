@@ -10,7 +10,8 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 -%}
-    <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2>
+    <!-- <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2> -->
+    <br>
     <ul class="post-list">
       {%- for post in site.posts -%}
       <li>
@@ -18,12 +19,20 @@ layout: default
         <span class="post-meta">{{ post.date | date: date_format }}</span>
         <h3>
           <a class="post-link" href="{{ post.url | relative_url }}">
-            {{ post.title | escape }}
+            {{ post.title | escape }}            
           </a>
         </h3>
+
+        <p>
+          <img src="{{ post.img }}" height=200 style="float: left">
+          {{ post.description }}
+          <br><br><br>
+        </p>
+
         {%- if site.show_excerpts -%}
           {{ post.excerpt }}
         {%- endif -%}
+
       </li>
       {%- endfor -%}
     </ul>

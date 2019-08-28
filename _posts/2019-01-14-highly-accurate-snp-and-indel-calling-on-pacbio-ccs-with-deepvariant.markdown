@@ -2,6 +2,13 @@
 layout: post
 title: "Highly Accurate SNP and Indel Calling on PacBio CCS with DeepVariant"
 date:   2019-01-14
+description: "In this blog we discuss the newly published use of PacBio Circular Consensus
+Sequencing (CCS) at human genome scale. We demonstrate that DeepVariant trained
+for this data type achieves similar accuracy to available Illumina genomes, and
+is the only method to achieve competitive accuracy in Indel calling. Early
+access to this model is available now by request, and we expect general
+availability in our next DeepVariant release (v0.8)."
+img: "assets/images/PacBio-2019-01/figure2b.png"
 ---
 
 Authors:

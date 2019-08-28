@@ -2,6 +2,12 @@
 layout: post
 title:  "Using Nucleus and TensorFlow for DNA Sequencing Error Correction"
 date:   2019-01-31
+description: "In this post, we formulate DNA sequencing error correction as a multiclass
+classification problem and propose two deep learning solutions. Our first
+approach corrects errors in a single read, whereas the second approach, shown in
+Figure 1, builds a consensus from several reads to predict the correct DNA
+sequence."
+img: "assets/images/PacBio-2019-01/figure2a.png"
 ---
 
 Authors: [Gunjan Baid](https://twitter.com/gunjan_baid),
