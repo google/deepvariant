@@ -126,7 +126,7 @@ sudo docker pull google/deepvariant:"${BIN_VERSION}"
 ( time seq 0 $((N_SHARDS-1)) | \
   parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
     sudo docker run \
-      -v /home/${USER}:/home/${USER} \
+      -v ${HOME}:${HOME} \
       google/deepvariant:"${BIN_VERSION}" \
       /opt/deepvariant/bin/make_examples \
       --mode training \
