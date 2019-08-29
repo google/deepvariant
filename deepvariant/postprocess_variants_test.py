@@ -204,6 +204,14 @@ def _simple_gv(ref_name, start, ref_base):
       gls=[-2.99, 0, -0.99] + [postprocess_variants._GVCF_ALT_ALLELE_GL] * 3)
 
 
+def _read_contents(path, decompress=False):
+  with tf.gfile.GFile(path, 'rb') as fin:
+    contents = fin.read()
+    if decompress:
+      contents = gzip.GzipFile(path, fileobj=io.BytesIO(contents)).read()
+    return contents
+
+
 def _create_nonvariant(ref_name, start, end, ref_base):
   """Creates a non-variant Variant record for testing.
 
@@ -297,13 +305,6 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
     postprocess_variants.main(['postprocess_variants.py'])
 
-    def _read_contents(path, decompress=False):
-      with tf.gfile.GFile(path, 'rb') as fin:
-        contents = fin.read()
-        if decompress:
-          contents = gzip.GzipFile(path, fileobj=io.BytesIO(contents)).read()
-        return contents
-
     self.assertEqual(
         _read_contents(FLAGS.outfile, compressed_inputs_and_outputs),
         _read_contents(testdata.GOLDEN_POSTPROCESS_OUTPUT))
@@ -314,6 +315,23 @@ class PostprocessVariantsTest(parameterized.TestCase):
     if compressed_inputs_and_outputs:
       self.assertTrue(tf.gfile.Exists(FLAGS.outfile + '.tbi'))
       self.assertTrue(tf.gfile.Exists(FLAGS.gvcf_outfile + '.tbi'))
+
+  @flagsaver.FlagSaver
+  def test_group_variants(self):
+    FLAGS.infile = testdata.GOLDEN_VCF_CALLER_POSTPROCESS_INPUT
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = create_outfile('calls.vcf')
+
+    FLAGS.group_variants = True
+    with self.assertRaisesRegexp(
+        ValueError, '`call_variants_outputs` did not pass sanity check.'):
+      postprocess_variants.main(['postprocess_variants.py'])
+
+    FLAGS.group_variants = False
+    postprocess_variants.main(['postprocess_variants.py'])
+    self.assertEqual(
+        _read_contents(FLAGS.outfile),
+        _read_contents(testdata.GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT))
 
   @parameterized.parameters(False, True)
   def test_build_index(self, use_csi):
