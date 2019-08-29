@@ -318,9 +318,17 @@ chmod +x glnexus_cli
 
 ### Run GLnexus to merge 3 gVCFs
 
+First, get the yaml file with our recommended GLnexus params for WES.
+
+```
+curl https://raw.githubusercontent.com/google/deepvariant/r0.9/deepvariant/cohort_best_practice/DeepVariantWES_v0.yml > DeepVariantWES_v0.yml
+```
+
+And then run GLnexus with this config:
+
 ```
 time ./glnexus_cli \
- --config DeepVariant \
+ --config DeepVariantWES_v0.yml \
  --bed ${DIR}/${CAPTURE_BED} \
  ${DIR}/HG004.g.vcf.gz ${DIR}/HG003.g.vcf.gz ${DIR}/HG002.g.vcf.gz \
  | bcftools view - | bgzip -c > ${DIR}/deepvariant.cohort.vcf.gz
@@ -329,7 +337,9 @@ time ./glnexus_cli \
 When we ran on this WES trio, it took only about 13 seconds. However, with WGS
 data or larger cohort, you might want to consider using jemalloc to improve
 performance. See https://github.com/dnanexus-rnd/GLnexus/wiki/Performance for
-more detail.
+more detail. And, if you are merging a WGS cohort, please use the
+[WGS params](https://raw.githubusercontent.com/google/deepvariant/r0.9/deepvariant/cohort_best_practice/DeepVariantWGS_v0.yml)
+instead.
 
 NOTE: If you need to re-run this, you often need to clean up the GLnexus.DB
 directory it generates before you can successfully re-run.
@@ -379,15 +389,15 @@ The output is:
 ```
 Checking: /data/deepvariant.cohort.vcf.gz
 Family: [Sample_Diag-excap51-HG003-EEogPU + Sample_Diag-excap51-HG004-EEogPU] -> [Sample_Diag-excap51-HG002-EEogPU]
-4 non-pass records were skipped
-Concordance Sample_Diag-excap51-HG002-EEogPU: F:60687/61400 (98.84%)  M:61157/61380 (99.64%)  F+M:60174/61156 (98.39%)
+1 non-pass records were skipped
+Concordance Sample_Diag-excap51-HG002-EEogPU: F:60140/60775 (98.96%)  M:60557/60753 (99.68%)  F+M:59756/60607 (98.60%)
 Sample Sample_Diag-excap51-HG002-EEogPU has less than 99.0 concordance with the father (Sample_Diag-excap51-HG003-EEogPU). Check for incorrect pedigree or sample mislabelling.
-883/62027 (1.42%) records did not conform to expected call ploidy
-61652/62027 (99.40%) records were variant in at least 1 family member and checked for Mendelian constraints
-436/61652 (0.71%) records had indeterminate consistency status due to incomplete calls
-1033/61652 (1.68%) records contained a violation of Mendelian constraints
+871/61161 (1.42%) records did not conform to expected call ploidy
+60928/61161 (99.62%) records were variant in at least 1 family member and checked for Mendelian constraints
+285/60928 (0.47%) records had indeterminate consistency status due to incomplete calls
+881/60928 (1.45%) records contained a violation of Mendelian constraints
 ```
 
-From this report, we know that there is a 1.68% Mendelian violation rate, and
-0.71% of the records had incomplete calls (with `.`) so RTG couldn't determine
+From this report, we know that there is a 1.45% Mendelian violation rate, and
+0.47% of the records had incomplete calls (with `.`) so RTG couldn't determine
 whether there is violation or not.
