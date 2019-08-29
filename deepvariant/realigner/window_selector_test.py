@@ -352,10 +352,13 @@ class WindowSelectorTest(parameterized.TestCase):
 
   # Our region is 5-8 and we are testing that the read's mismatch is only
   # included when it's within the region and not when it's outside.
+  # Expected region boundaries are extended according to region_expansion_in_bp
+  # flag. region_expansion_in_bp is set to 20 by default,
+  # so 5 to 8  becomes 5 - 20 to 8 + 20 <=> 0 to 28
   @parameterized.parameters(
       dict(
           read=test_utils.make_read('G', start=start, cigar='1M', quals=[64]),
-          expected=[start] if 5 <= start < 8 else [],
+          expected=[start] if 0 <= start < 28 else [],
       ) for start in range(10))
   def test_candidates_from_reads_respects_region(self, read, expected):
     self.assertCandidatesFromReadsEquals(
@@ -364,11 +367,16 @@ class WindowSelectorTest(parameterized.TestCase):
   # Our region is 5-8 and we have a 4 basepair deletion in our read. We expect
   # a mismatch count of one for each position in the deletion that overlaps the
   # interval.
+  # Expected region boundaries are extended according to region_expansion_in_bp
+  # flag. region_expansion_in_bp is set to 20 by default,
+  # so 5 to 8  becomes 5 - 20 to 8 + 20 <=> 0 to 28
   @parameterized.parameters(
       dict(
           read=test_utils.make_read(
               'AA', start=start, cigar='1M4D1M', quals=[64, 64]),
-          expected=[pos for pos in range(start + 1, start + 5) if 5 <= pos < 8],
+          expected=[
+              pos for pos in range(start + 1, start + 5) if 0 <= pos < 28
+          ],
       ) for start in range(10))
   def test_candidates_from_reads_respects_region_deletion(self, read, expected):
     self.assertCandidatesFromReadsEquals(

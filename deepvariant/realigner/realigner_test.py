@@ -380,7 +380,7 @@ class RealignerTest(parameterized.TestCase):
     dx_dir = test_utils.test_tmpfile('dx')
     region_str = 'chr20:10046178-10046188'
     region = ranges.parse_literal(region_str)
-    assembled_region_str = 'chr20:10046099-10046267'
+    assembled_region_str = 'chr20:10046096-10046267'
     reads = _get_reads(region)
     self.config = realigner.realigner_config(FLAGS)
     self.config.diagnostics.enabled = enabled
