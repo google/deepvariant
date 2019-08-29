@@ -340,7 +340,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (['ATTT', 'ATT', 'ATTTT'], ['AT', 'A', 'ATT']),
       # One pair can simplify, but not the other, so nothing can reduce.
       (['CAG', 'GAG', 'TCA'], ['CAG', 'GAG', 'TCA']),
-      # Example from b/64022627.
+      # Example from internal.
       (['CGGCGG', 'CGG', 'CAACGG'], ['CGGC', 'C', 'CAAC']),
   )
   def test_simplify_alleles(self, alleles, expected):

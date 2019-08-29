@@ -311,7 +311,7 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
     self.assertIn(ref_seq, dbg.candidate_haplotypes())
 
   def test_k_exceeds_read_length(self):
-    """This is a regression test for b/64564513."""
+    """This is a regression test for internal."""
     # If k > read length, no edges will go into the graph from this read.
     # This crashed prior to the bugfix.
     ref_str = 'GATTACATG'
@@ -328,7 +328,7 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
     self.assertIsNotNone(dbg)
 
   def test_k_exceeds_ref_length(self):
-    """This is a regression test for b/64564513."""
+    """This is a regression test for internal."""
     # We don't allow a k >= ref length.  This crashed prior to the bugfix.
     ref_str = 'GATTACA'
     dbg = debruijn_graph.build(ref_str, [], self.single_k_dbg_options(7))

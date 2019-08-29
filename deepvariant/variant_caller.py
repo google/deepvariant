@@ -319,7 +319,7 @@ class VariantCaller(object):
         # (where the value for hom_ref is not maximal), we concluded that
         # un-calling these sites (by setting its genotype "./.") is better
         # for cohort merging.
-        # See b/119042280 for detail.
+        # See internal for detail.
         for elt in combinable:
           uncalled_gt = [-1, -1]
           call = variants_pb2.VariantCall(

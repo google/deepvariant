@@ -95,7 +95,7 @@ tf_workspace(tf_repo_name = "org_tensorflow")
 # repository.
 # The prefix is "models-<commit>/slim"
 # where commit is the full commit.
-# Pin to the lastest version that builds for now. See b/68431494#comment4.
+# Pin to the lastest version that builds for now. See internal#comment4.
 http_archive(
     name = "org_tensorflow_slim",
     strip_prefix = "models-6d140f139cf02ceb87afa76024c4b502a556a3e5/slim",

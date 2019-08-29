@@ -260,7 +260,7 @@ def uncall_homref_gt_if_lowqual(variant, min_homref_gq):
   If the variant has "RefCall" filter (which means an example was created for
   this site but CNN didn't call this as variant) and if the GQ is less than
   the given min_homref_gq threshold, set the genotype of the variant proto
-  to "./.". See http://b/119832727 for more info.
+  to "./.". See http://internal for more info.
 
   Args:
     variant: third_party.nucleus.protos.Variant proto.

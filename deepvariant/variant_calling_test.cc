@@ -652,7 +652,7 @@ TEST_F(VariantCallingTest, TestSNPDeletion) {
 TEST_F(VariantCallingTest, TestDeletionWithNonRefAnchor) {
   // In this case we have a deletion with a non-reference anchor base, which
   // produces a complex variant. Check that the conversion works correctly.
-  // See http://b/28098107 for more information about this issue.
+  // See http://internal for more information about this issue.
   const int count = 10;
   const Allele alt = MakeAllele("AA", AlleleType::DELETION, count);
   const Variant variant = MakeExpectedVariant("TA", {"A"});
@@ -671,7 +671,7 @@ TEST_F(VariantCallingTest, TestInsertionWithNonRefAnchor) {
 TEST_F(VariantCallingTest, TestDeletionWithNonRefAnchor2) {
   // In this case we have two deletions, one with a non-reference anchor base,
   // which produces a complex variant. Check that the conversion works
-  // correctly. See http://b/28098107 for more information about this issue.
+  // correctly. See http://internal for more information about this issue.
   const int count = 10;
   const Allele alt1 = MakeAllele("AA", AlleleType::DELETION, count);
   const Allele alt2 = MakeAllele("TA", AlleleType::DELETION, count + 1);

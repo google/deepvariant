@@ -155,7 +155,7 @@ class ModelEvalTest(
     ]
 
     # Check that our metrics are what we expect them to be.
-    # See b/62864044 for details on how to compute these counts:
+    # See internal for details on how to compute these counts:
     # Counts of labels in our golden dataset:
     #  1 0
     # 12 1

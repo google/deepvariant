@@ -480,7 +480,7 @@ class AlignerTest(parameterized.TestCase):
                      'Read should have its original alignment.')
 
   def test_no_bad_soft_clipping(self):
-    self.skipTest('Enable when b/63143285 global alignment is fixed')
+    self.skipTest('Enable when internal global alignment is fixed')
     common = 'CTA'
     read_seq = common + 'GA'
     ref_seq = 'N' + common + 'CA' + 'N'

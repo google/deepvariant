@@ -86,7 +86,7 @@ _UNKNOWN_SAMPLE = 'UNKNOWN'
 # protobuf.
 _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 
-# Use a default hts_block_size value of 128 MB (see b/69330994 for details) to
+# Use a default hts_block_size value of 128 MB (see internal for details) to
 # improve SAM/BAM reading throughput, particularly on remote filesystems. Do not
 # modify this default parameter without a systematic evaluation of the impact
 # across a variety of distributed filesystems!

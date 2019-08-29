@@ -53,7 +53,7 @@ _POSITION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)$')
 # Logging frequency when building our rangeset objects, which can take some time
 # to complete. Rather than just pausing for a few minutes, we provide an update
 # logging message every _LOG_EVERY_N_RANGES_IN_RANGESET_INIT records added. See
-# b/110987941 for more information.
+# internal for more information.
 _LOG_EVERY_N_RANGES_IN_RANGESET_INIT = 250000
 
 

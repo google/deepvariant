@@ -35,7 +35,7 @@ from "third_party/nucleus/vendor/statusor_examples.h":
     def MakeIntFail() -> StatusOr<int>
     def MakeStrOK() -> StatusOr<str>
     # Note: this "stripped" type doesn't work for strings. The test will fail if
-    # enabled. See b/74530262 for more information.
+    # enabled. See internal for more information.
     # def MakeStrOKStrippedType() -> str
     def MakeStrFail() -> StatusOr<str>
     def MakeIntUniquePtrOK() -> StatusOr<int>

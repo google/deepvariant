@@ -1072,7 +1072,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
 
   // vcf_format on its own is not properly outputting the END
   // descriptor for GVCF records.  This is arguably a bug in htslib.
-  // See b/62297987 for discussion.  For now we use this workaround.
+  // See internal for discussion.  For now we use this workaround.
 
   // Workaround: if our ALT is just a single symbolic allele, this is
   // a gVCF record and we need to populate END, because htslib won't.

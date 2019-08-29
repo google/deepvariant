@@ -172,7 +172,7 @@ class AuxBuilder {
       switch (v.kind_case()) {
         case Value::kIntValue:
           // All integer types that are <= 32 bits (cCsSIi) were converted to
-          // signed int32. b/115505837.
+          // signed int32. internal.
           num_bytes += 4;
           break;
         case Value::kStringValue:

@@ -214,7 +214,7 @@ class DataProviderTest(parameterized.TestCase):
         use_tpu=use_tpu)
 
   # It looks like tf.data.Dataset.list_files is potentially nondeterministic.
-  # There's no guaranteed way to get around that (yet, b/73959787).
+  # There's no guaranteed way to get around that (yet, internal).
   # A list_files() flag I want is only available in tf 1.7,
   # so for the short term, work around the problem by asking
   # self.assertTfDataSetExamplesMatchExpected to sort the

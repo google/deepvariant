@@ -41,7 +41,7 @@ namespace deepvariant {
 
 using tensorflow::string;
 
-// This exercises a bug in gcc 5.4.  b/68725977
+// This exercises a bug in gcc 5.4.  internal
 // Building libssw with -fno-inline should work around it.
 int Gcc54Bug() {
   Aligner a(4, 2, 4, 2);

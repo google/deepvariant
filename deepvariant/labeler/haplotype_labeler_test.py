@@ -361,7 +361,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         labeler_ref.bases(expected_start, expected_end), expected_bases)
 
   # Check that we don't issue a query with a bad start if the variant is at
-  # position 0 on the genome. See b/79493732.
+  # position 0 on the genome. See internal.
   def test_make_labeler_ref_handles_variant_at_pos_zero(self):
     labeler = _make_labeler(
         ref_reader=fasta.InMemoryFastaReader([('20', 0, 'ACGT')]))
@@ -377,7 +377,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     self.assertEqual(labeler_ref.bases(expected_start, expected_end), 'ACG')
 
   # Check that we don't issue a query with a bad end if the variant is at
-  # the last position on the genome. See b/79493732.
+  # the last position on the genome. See internal.
   def test_make_labeler_ref_handles_variant_at_end_of_chrom(self):
     labeler = _make_labeler(
         ref_reader=fasta.InMemoryFastaReader([('20', 0, 'ACGT')]))
@@ -1748,7 +1748,7 @@ class LabelExamplesTest(parameterized.TestCase):
   def test_variants_at_edge_of_contig_work_end_to_end(self):
     # This test checks that we can label end-to-end variants at occur at the
     # start and at the end of a chromosome. This is unlikely in humans but can
-    # occur in bacterial genomes. See b/79493732 for a motivating example.
+    # occur in bacterial genomes. See internal for a motivating example.
     self.assertGetsCorrectLabels(
         candidates=[
             # At chrom start.
