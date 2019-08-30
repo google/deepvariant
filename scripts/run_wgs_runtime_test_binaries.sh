@@ -145,7 +145,7 @@ function run_postprocess_variants_gVCF() {
 function run_deepvariant() {
   (time run_make_examples) > "${LOG_DIR}/make_examples.log" 2>&1
   (time run_call_variants) > "${LOG_DIR}/call_variants.log" 2>&1
-  (time run_postprocess_variants) > "${LOG_DIR}/postprocess_variants.log" 2>&1
+  (time run_postprocess_variants_gVCF) > "${LOG_DIR}/postprocess_variants.log" 2>&1
 }
 
 function main() {
