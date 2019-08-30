@@ -71,7 +71,8 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
 
   def label_variants(self, variants, region=None):
     for variant in variants:
-      is_confident, truth_variant = self._match(variant)
+      is_confident, truth_variant = self._match(
+          variant_utils.unphase_all_genotypes(variant))
 
       genotype = None
       if truth_variant is not None:
@@ -224,6 +225,6 @@ def _genotype_from_matched_truth(candidate_variant, truth_variant):
     return (0, 0)
   else:
     return tuple(
-        sorted(
-            _match_one_allele(true_allele) for true_allele in
-            variant_utils.genotype_as_alleles(truth_variant)))
+        _match_one_allele(true_allele)
+        for true_allele in variant_utils.genotype_as_alleles(
+            variant_utils.unphase_all_genotypes(truth_variant)))

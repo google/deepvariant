@@ -507,6 +507,24 @@ class VariantUtilsTests(parameterized.TestCase):
       variant_utils.genotype_type(None)
 
   @parameterized.parameters(
+      (test_utils.make_variant(alleles=['A', 'C'], gt=[0, 1], is_phased=False),
+       test_utils.make_variant(alleles=['A', 'C'], gt=[0, 1], is_phased=False)),
+      (test_utils.make_variant(alleles=['A', 'C'], gt=[1, 0], is_phased=True),
+       test_utils.make_variant(alleles=['A', 'C'], gt=[0, 1], is_phased=False)),
+      (test_utils.make_variant(alleles=['A', 'C'], gt=[1, 1], is_phased=True),
+       test_utils.make_variant(alleles=['A', 'C'], gt=[1, 1], is_phased=False)),
+      (test_utils.make_variant(
+          alleles=['A', 'C', 'T'], gt=[2, 1], is_phased=True),
+       test_utils.make_variant(
+           alleles=['A', 'C', 'T'], gt=[1, 2], is_phased=False)),
+      (test_utils.make_variant(alleles=['A', 'C'], gt=[-1, -1], is_phased=True),
+       test_utils.make_variant(
+           alleles=['A', 'C'], gt=[-1, -1], is_phased=False)),
+  )
+  def test_unphase_all_genotypes(self, variant, expected):
+    self.assertEqual(variant_utils.unphase_all_genotypes(variant), expected)
+
+  @parameterized.parameters(
       # Ref without an alt isn't gVCF.
       (test_utils.make_variant(alleles=['A']), False),
       # SNPs and indels aren't gVCF records.

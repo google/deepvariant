@@ -146,7 +146,8 @@ def make_variant(chrom='chr1',
                  gt=None,
                  gq=None,
                  sample_name=None,
-                 gls=None):
+                 gls=None,
+                 is_phased=None):
   """Creates a new Variant proto from args.
 
   Args:
@@ -172,6 +173,7 @@ def make_variant(chrom='chr1',
       call_set_name of our VariantCall to this value.
     gls: array-list of float, or None. If not None and gt is not None, sets the
       genotype_likelihoods of our VariantCall to this value.
+    is_phased: bool. Indicates whether a VariantCall should be phased.
 
   Returns:
     nucleus.genomics.v1.Variant proto.
@@ -186,7 +188,8 @@ def make_variant(chrom='chr1',
       gts=None if gt is None else [gt],
       gqs=None if gq is None else [gq],
       sample_names=None if sample_name is None else [sample_name],
-      glss=None if gls is None else [gls])
+      glss=None if gls is None else [gls],
+      is_phased=None if is_phased is None else [is_phased])
 
 
 def make_variant_multiple_calls(chrom='chr1',
@@ -198,7 +201,8 @@ def make_variant_multiple_calls(chrom='chr1',
                                 gts=None,
                                 gqs=None,
                                 sample_names=None,
-                                glss=None):
+                                glss=None,
+                                is_phased=None):
   """Creates a new Variant proto from args that contains multi-sample calls.
 
   Args:
@@ -223,6 +227,8 @@ def make_variant_multiple_calls(chrom='chr1',
       Sets the call_set_name of the corresponding VariantCall.
     glss: A list of array-lists of float, or None. Must match the gts arg if
       specified. Sets the genotype_likelihoods of the corresponding VariantCall.
+    is_phased: list of bools. Must match the gts arg if specified. Indicates
+      whether the corresponding VariantCall should be phased.
 
   Returns:
     nucleus.genomics.v1.Variant proto.
@@ -259,6 +265,9 @@ def make_variant_multiple_calls(chrom='chr1',
 
       if glss and glss[i] is not None:
         call.genotype_likelihood.extend(glss[i])
+
+      if is_phased and is_phased[i] is not None:
+        call.is_phased = is_phased[i]
 
   return variant
 

@@ -616,6 +616,23 @@ def genotype_as_alleles(variant, call_ix=0):
     return [alleles[i + 1] for i in variant.calls[call_ix].genotype]
 
 
+def unphase_all_genotypes(variant):
+  """Sorts genotype and removes phasing bit of all calls in variant.
+
+  This mutation is done in place rather than returning a different copy.
+
+  Args:
+    variant: nucleus.genomics.v1.Variant.
+
+  Returns:
+    The variant with unphased calls.
+  """
+  for c in variant.calls:
+    c.is_phased = False
+    c.genotype.sort()
+  return variant
+
+
 def is_gvcf(variant):
   """Returns true if variant encodes a standard gVCF reference block.
 

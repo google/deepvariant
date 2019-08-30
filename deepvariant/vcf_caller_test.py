@@ -137,10 +137,10 @@ class VcfCallerTests(parameterized.TestCase):
       ])
 
     with vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF) as proposed_vcf_reader:
-      # redacted
       self.assertEqual(
-          [sorted(variant_utils.genotype_as_alleles(v1)) for v1 in variants], [
-              sorted(variant_utils.genotype_as_alleles(v2))
+          [variant_utils.genotype_as_alleles(v1) for v1 in variants], [
+              variant_utils.genotype_as_alleles(
+                  variant_utils.unphase_all_genotypes(v2))
               for v2 in proposed_vcf_reader.iterate()
           ])
 
