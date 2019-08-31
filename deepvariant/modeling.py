@@ -98,6 +98,11 @@ flags.DEFINE_integer(
     'should be checkpointed. Set to 0 to disable, -1 to ignore. '
     'Exclusive with save_interval_secs.')
 
+flags.DEFINE_integer(
+    'seq_type_embedding_size', 200,
+    'Set the embedding size for the sequencing type embeddings. Default is 200. '
+    'This flag is only useful when model_name is `inception_v3_embedding`.')
+
 FLAGS = flags.FLAGS
 
 slim = tf.contrib.slim
@@ -818,7 +823,6 @@ class DeepVariantModel(object):
       A list of tf.Variable objects.
     """
     vars_to_include = slim.get_model_variables()
-
     # We aren't excluding any variables, so just return vars_to_include.
     if not exclude_scopes:
       return vars_to_include
@@ -927,7 +931,6 @@ class DeepVariantSlimModel(DeepVariantModel):
         weights=1.0,
         label_smoothing=FLAGS.label_smoothing)
     total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
-
     return self.make_ops_and_estimator(features, endpoints, labels, logits,
                                        predictions, total_loss, mode, params)
 
@@ -1116,6 +1119,150 @@ class DeepVariantInceptionV3(DeepVariantSlimModel):
       _, endpoints = inception.inception_v3(
           images, num_classes, create_aux_logits=False, is_training=is_training)
       return endpoints
+
+
+class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
+  """DeepVariant inception_v3_embedding network."""
+
+  def __init__(self):
+    """Creates an inception_v3_embedding network for DeepVariant."""
+    super(DeepVariantInceptionV3Embedding, self).__init__()
+    self.name = 'inception_v3_embedding'
+    # vocab_size should be a number larger than the number of sequencing types
+    self.vocab_size = 5
+    self.embedding_size = 200
+    self.dropout_keep_prob = 0.8
+
+  def _create(self, inputs, num_classes, is_training):
+    """Creates a new inception_v3_embedding model.
+
+    Args:
+      inputs: A tuple of two elements (images, sequencing_types). images is a
+        4-D tensor of (batch_size, height, width, channels) of pileup images.
+        sequencing_types is a 1-D tensor of (batch_size) of example sequencing
+        types.
+      num_classes: integer. How many prediction classes are we expecting in
+        model?
+      is_training: boolean. Should we setup model for training (True) or for
+        inference (False).
+
+    Returns:
+      A dictionary, containing string keys mapped to endpoint tensors of this
+      model.
+    """
+    images, sequencing_type = inputs
+    endpoints = super(DeepVariantInceptionV3Embedding,
+                      self)._create(images, num_classes, is_training)
+
+    with tf.variable_scope('Embeddings'):
+      # Take the graph all the way till PreLogits
+      net = endpoints['PreLogits']
+      net = slim.flatten(net)
+      embeddings = self._create_embeddings(sequencing_type)
+      net = tf.concat([net, embeddings], 1)
+
+      endpoints['Embeddings'] = net
+
+    with tf.variable_scope('Logits'):
+      hidden_size = net.shape[1].value // 2
+
+      net = slim.fully_connected(net, hidden_size, activation_fn=None)
+      # redacted
+      net = slim.layer_norm(net, scale=False, activation_fn=tf.nn.relu)
+      net = slim.dropout(net, self.dropout_keep_prob, is_training=is_training)
+      net = slim.fully_connected(net, num_classes, activation_fn=None)
+
+      endpoints.update({'Logits': net, 'Predictions': tf.nn.softmax(net)})
+
+    return endpoints
+
+  def _create_embeddings(self, indices):
+    """Create word embeddings."""
+    embeddings = self._embedding_lookup(indices)
+    embeddings = slim.fully_connected(
+        embeddings, self.embedding_size, activation_fn=None)
+    return embeddings
+
+  def _embedding_lookup(self, input_ids, word_embedding_name='seq_type_emb'):
+    """Looks up words embeddings for id tensor.
+
+    Args:
+      input_ids: int64 Tensor of shape [batch_size, ] containing word ids.
+      word_embedding_name: string. Name of the embedding table.
+
+    Returns:
+      float Tensor of shape [batch_size, embedding_size].
+    """
+    embedding_table = tf.get_variable(
+        name=word_embedding_name,
+        shape=[self.vocab_size, self.embedding_size],
+        initializer=tf.contrib.layers.xavier_initializer(),
+        collections=[
+            tf.GraphKeys.TRAINABLE_VARIABLES, tf.GraphKeys.MODEL_VARIABLES,
+            tf.GraphKeys.GLOBAL_VARIABLES
+        ])
+
+    return tf.nn.embedding_lookup(embedding_table, input_ids)
+
+  def model_fn(self, features, labels, mode, params):
+    """A model_fn for slim, satisfying the Estimator API.
+
+    Args:
+      features: a single Tensor or dict of same (from input_fn).
+      labels: a single Tensor or dict of same (from input_fn).
+      mode: tf.estimator.ModeKeys.
+      params: dict.
+
+    Returns:
+      EstimatorSpec or TPUEstimatorSpec depending on self.use_tpu.
+
+    Raises:
+      ValueError: if FLAGS.seq_type_embedding_size is not positive.
+    """
+    # NB. The basic structure of this started from
+    # //third_party/cloud_tpu/models/inception/inception_v3.py
+    # and //third_party/cloud_tpu/models/mobilenet/mobilenet.py
+
+    # redacted
+    num_classes = dv_constants.NUM_CLASSES
+
+    if FLAGS.seq_type_embedding_size <= 0:
+      raise ValueError(
+          'Expected seq_type_embedding_size to be a positive number but saw %i '
+          'instead.' % FLAGS.seq_type_embedding_size)
+    self.embedding_size = FLAGS.seq_type_embedding_size
+
+    images = features['image']
+    images = self.preprocess_images(images)
+    sequencing_type = features['sequencing_type']
+
+    endpoints = self.create(
+        images=(images, sequencing_type),
+        num_classes=num_classes,
+        is_training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    logits = endpoints['Logits']
+
+    predictions = endpoints
+    predictions.update({
+        'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
+        'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+    })
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      return self._model_fn_predict(mode, features, logits)
+
+    # Compute loss.
+    one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)
+    tf.losses.softmax_cross_entropy(
+        onehot_labels=one_hot_labels,
+        logits=logits,
+        weights=1.0,
+        label_smoothing=FLAGS.label_smoothing)
+    total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
+
+    return self.make_ops_and_estimator(features, endpoints, labels, logits,
+                                       predictions, total_loss, mode, params)
 
 
 class DeepVariantInceptionV2(DeepVariantSlimModel):
@@ -1468,6 +1615,7 @@ _MODELS = [
     DeepVariantMobileNetV1(),
     DeepVariantRandomGuessModel(),
     DeepVariantConstantModel(),
+    DeepVariantInceptionV3Embedding(),
 ]
 
 
@@ -1478,7 +1626,11 @@ def all_models():
 
 def production_models():
   """Gets a list of the models that we test extensively."""
-  return [get_model('inception_v3'), get_model('mobilenet_v1')]
+  return [
+      get_model('inception_v3'),
+      get_model('mobilenet_v1'),
+      get_model('inception_v3_embedding')
+  ]
 
 
 def get_model(model_name):

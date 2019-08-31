@@ -171,6 +171,7 @@ class DeepVariantInput(object):
         'variant/encoded': tf.FixedLenFeature((), tf.string),
         'alt_allele_indices/encoded': tf.FixedLenFeature((), tf.string),
         'variant_type': tf.FixedLenFeature((), tf.int64),
+        'sequencing_type': tf.FixedLenFeature([], tf.int64),
     }
     if include_label_and_locus:
       # N.B. int32 fails here on TPU.
@@ -192,6 +193,7 @@ class DeepVariantInput(object):
       If mode is PREDICT,
         features ...
     """
+    # redacted
     with tf.name_scope('input'):
       parsed = tf.parse_single_example(tf_example, self.feature_extraction_spec)
       image = parsed['image/encoded']
@@ -216,6 +218,7 @@ class DeepVariantInput(object):
           'image': image,
           'variant': variant,
           'alt_allele_indices': alt_allele_indices,
+          'sequencing_type': parsed['sequencing_type'],
       }
 
       if (self.mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL)

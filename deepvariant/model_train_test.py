@@ -162,6 +162,19 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
               use_tpu=FLAGS.use_tpu),
           warm_start_from='this/path/does/not/exist')
 
+  @flagsaver.FlagSaver
+  def test_end2end_inception_v3_embedding_invalid_embedding_size(self):
+    """End-to-end test of model_train script with an invalid embedding size."""
+    with self.assertRaisesRegexp(
+        ValueError, 'Expected seq_type_embedding_size '
+        'to be a positive number but saw -100 '
+        'instead.'):
+      FLAGS.seq_type_embedding_size = -100
+      self._run_tiny_training(
+          model_name='inception_v3_embedding',
+          dataset=data_providers_test.make_golden_dataset(
+              use_tpu=FLAGS.use_tpu))
+
   @parameterized.parameters((False), (True))
   @flagsaver.FlagSaver
   @mock.patch('deepvariant.model_train.'

@@ -140,7 +140,7 @@ flags.DEFINE_integer(
 # Pre-trained model parameters
 flags.DEFINE_string(
     'start_from_checkpoint', 'model_default',
-    'A path to a checkpoint of model weights to initalize our model at the '
+    'A path to a checkpoint of model weights to initialize our model at the '
     'start of training. If None or "", the model will start from random weights'
     '. The special value "model_default" will use the default pretrained '
     'path for the selected model.')
@@ -155,7 +155,6 @@ flags.DEFINE_string(
     'training. See https://www.tensorflow.org/performance/performance_guide '
     'for more information. The default value is 0, which provides the best '
     'performance in our tests. Set this flag to "" to not set the variable.')
-
 
 flags.DEFINE_integer(
     'random_seed', 400620758,

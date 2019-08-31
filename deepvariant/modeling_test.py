@@ -249,6 +249,51 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
         self.model.create(images, 3, is_training=True)
 
 
+class InceptionV3EmbeddingModelTest(
+    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+
+  @classmethod
+  def setUpClass(cls):
+    super(InceptionV3EmbeddingModelTest, cls).setUpClass()
+    cls.model = modeling.get_model('inception_v3_embedding')
+
+  @parameterized.parameters(
+      dict(is_training=True),
+      dict(is_training=False),
+  )
+  def test_create(self, is_training):
+    self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
+    images = tf.placeholder(
+        tf.float32,
+        (4, dv_constants.PILEUP_DEFAULT_HEIGHT,
+         dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS))
+    seq_type = tf.placeholder(tf.int64, (4,))
+    endpoints = self.model._create((images, seq_type),
+                                   dv_constants.NUM_CLASSES,
+                                   is_training=is_training)
+    if is_training:
+      self.assertNotEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
+    else:
+      self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
+    self.assertIn('Predictions', endpoints)
+    self.assertIn('Logits', endpoints)
+    self.assertEqual(endpoints['Predictions'].shape,
+                     (4, dv_constants.NUM_CLASSES))
+    self.assertIn('Embeddings', endpoints)
+    self.assertEqual(endpoints['Embeddings'].shape,
+                     (4, 2048 + self.model.embedding_size))
+
+  def test_create_embeddings(self):
+    indices = tf.placeholder(tf.int64, (4,))
+    embeddings = self.model._create_embeddings(indices)
+    self.assertEqual(embeddings.shape, (4, self.model.embedding_size))
+
+  def test_embedding_lookup(self):
+    indices = tf.placeholder(tf.int64, (4,))
+    embeddings = self.model._embedding_lookup(indices)
+    self.assertEqual(embeddings.shape, (4, self.model.embedding_size))
+
+
 class InceptionV2ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
 
   @classmethod

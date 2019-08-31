@@ -378,7 +378,7 @@ class DataProviderTest(parameterized.TestCase):
 
     shared_feature_names = {
         'image/encoded', 'variant/encoded', 'alt_allele_indices/encoded',
-        'variant_type'
+        'variant_type', 'sequencing_type'
     }
     self.assertEqual(
         shared_feature_names,
@@ -498,6 +498,8 @@ class InputTest(
             'alt_allele_indices/encoded'].bytes_list.value[0]
         expected_variant_encoded = example.features.feature[
             'variant/encoded'].bytes_list.value[0]
+        expected_sequencing_type = example.features.feature[
+            'sequencing_type'].int64_list.value[0]
 
         # Compare against the parsed batch feed.
 
@@ -529,6 +531,8 @@ class InputTest(
           self.assertIsInstance(a, six.string_types)
           actual_variant_encoded = a
         self.assertEqual(expected_variant_encoded, actual_variant_encoded)
+
+        self.assertEqual(features['sequencing_type'], expected_sequencing_type)
 
         n += 1
 
