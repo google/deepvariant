@@ -19,7 +19,11 @@ img {
   margin:auto;
 }
 
-
+.post {
+  display: block;
+  clear: both;
+  padding-bottom: 30px;
+}
 
 .post-title {
   @include relative-font-size(2);
@@ -29,6 +33,18 @@ img {
   @include media-query($on-laptop) {
     @include relative-font-size(2);
   }
+}
+
+.post-image {
+  display: inline-block;
+  width: 49%;
+  vertical-align: top;
+}
+
+.post-description {
+  display: inline-block;
+  width: 49%;
+  padding-left: 10px;
 }
 
 .post-content {

@@ -7,7 +7,7 @@ classification problem and propose two deep learning solutions. Our first
 approach corrects errors in a single read, whereas the second approach, shown in
 Figure 1, builds a consensus from several reads to predict the correct DNA
 sequence."
-img: "assets/images/PacBio-2019-01/figure2a.png"
+img: "https://github.com/google/nucleus/raw/master/nucleus/examples/images/consensus-approach-overview.jpg"
 ---
 
 Authors: [Gunjan Baid](https://twitter.com/gunjan_baid),

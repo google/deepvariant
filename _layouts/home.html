@@ -14,20 +14,19 @@ layout: default
     <br>
     <ul class="post-list">
       {%- for post in site.posts -%}
-      <li>
+      <li class="post">
         {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
         <span class="post-meta">{{ post.date | date: date_format }}</span>
         <h3>
           <a class="post-link" href="{{ post.url | relative_url }}">
-            {{ post.title | escape }}            
+            {{ post.title | escape }}
           </a>
         </h3>
 
-        <p>
-          <img src="{{ post.img }}" height=200 style="float: left">
-          {{ post.description }}
-          <br><br><br>
-        </p>
+        <div class="column-container">
+          <img src="{{ post.img }}" class="post-image" />
+          <div class="post-description">{{ post.description }}</div>
+        </div>
 
         {%- if site.show_excerpts -%}
           {{ post.excerpt }}
@@ -37,7 +36,11 @@ layout: default
       {%- endfor -%}
     </ul>
 
-    <p class="rss-subscribe">subscribe <a href="{{ "/feed.xml" | relative_url }}">via RSS</a></p>
+    <div style="clear:both">
+      <p class="rss-subscribe">subscribe
+        <a href="{{ "/feed.xml" | relative_url }}">via RSS</a>
+      </p>
+    </div>
   {%- endif -%}
 
 </div>

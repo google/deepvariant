@@ -6,7 +6,7 @@ description: "In this work, we investigate variant calling across a pedigree of 
 (*Anopheles gambiae*) genomes. Using rates of Mendelian violation, we assess
 pipelines developed to call variation in humans when applied to mosquito
 samples."
-img: "assets/images/PacBio-2019-01/figure2a.png"
+img: "assets/images/MalariaGEN/figure3.png"
 ---
 
 Authors:
