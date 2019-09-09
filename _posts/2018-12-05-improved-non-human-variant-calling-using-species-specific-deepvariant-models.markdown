@@ -2,10 +2,9 @@
 layout: post
 title:  "Improved non-human variant calling using species-specific DeepVariant models"
 date:   2018-12-05
-description: "In this work, we investigate variant calling across a pedigree of mosquito
-(*Anopheles gambiae*) genomes. Using rates of Mendelian violation, we assess
-pipelines developed to call variation in humans when applied to mosquito
-samples."
+description: "We investigate variant calling across a pedigree of mosquito genomes.
+Using rates of Mendelian violation, we assess pipelines developed to call variation
+in humans when applied to mosquito samples."
 img: "assets/images/MalariaGEN/figure3.png"
 ---
 

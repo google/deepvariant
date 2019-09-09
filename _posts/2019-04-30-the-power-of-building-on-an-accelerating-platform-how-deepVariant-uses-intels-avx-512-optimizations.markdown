@@ -2,11 +2,10 @@
 layout: post
 title:  "The Power of Building on an Accelerating Platform: How DeepVariant Uses Intel’s AVX-512 Optimizations"
 date:   2019-04-30
-description: "The prior release (v0.7) of DeepVariant featured a three-fold improvement in
-end-to-end speed and a corresponding decrease in cost relative to the previous
-version (v0.6). Much of this speed improvement comes by enabling DeepVariant to
-take advantage of new
-Intel® Advanced Vector eXtensions (AVX-512) instruction set"
+description: "The v0.7 release of DeepVariant featured a three-fold improvement in end-to-end
+speed and a corresponding decrease in cost relative to the previous version (v0.6). Much of
+this speed improvement comes by enabling DeepVariant to take advantage of new
+<a href=”https://www.intel.com/content/www/us/en/architecture-and-technology/avx-512-overview.html”>Intel® Advanced Vector eXtensions (AVX-512) instruction set.</a>"
 img: "assets/images/TF-MKL/schematic.jpg"
 ---
 
