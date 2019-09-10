@@ -2,6 +2,11 @@
 layout: post
 title:  "Using Nucleus and TensorFlow for DNA Sequencing Error Correction"
 date:   2019-01-31
+description: "An example of how Nucleus, a library for reading, writing, and processing
+genomics data, can be used alongside TensorFlow for machine learning. We discuss two
+approaches for the problem of DNA sequencing error correction and implement the second
+approach in this <a href='https://colab.research.google.com/github/google/nucleus/blob/master/nucleus/examples/dna_sequencing_error_correction.ipynb'>Colab tutorial.</a>"
+img: "https://github.com/google/nucleus/raw/master/nucleus/examples/images/consensus-approach-overview.jpg"
 ---
 
 Authors: [Gunjan Baid](https://twitter.com/gunjan_baid),

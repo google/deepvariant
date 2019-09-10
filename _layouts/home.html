@@ -10,10 +10,11 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 -%}
-    <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2>
+    <!-- <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2> -->
+    <br>
     <ul class="post-list">
       {%- for post in site.posts -%}
-      <li>
+      <li class="post">
         {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
         <span class="post-meta">{{ post.date | date: date_format }}</span>
         <h3>
@@ -21,14 +22,25 @@ layout: default
             {{ post.title | escape }}
           </a>
         </h3>
+
+        <div class="column-container">
+          <img src="{{ post.img }}" class="post-image" />
+          <div class="post-description">{{ post.description }}</div>
+        </div>
+
         {%- if site.show_excerpts -%}
           {{ post.excerpt }}
         {%- endif -%}
+
       </li>
       {%- endfor -%}
     </ul>
 
-    <p class="rss-subscribe">subscribe <a href="{{ "/feed.xml" | relative_url }}">via RSS</a></p>
+    <div style="clear:both">
+      <p class="rss-subscribe">subscribe
+        <a href="{{ "/feed.xml" | relative_url }}">via RSS</a>
+      </p>
+    </div>
   {%- endif -%}
 
 </div>

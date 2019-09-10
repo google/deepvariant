@@ -2,6 +2,12 @@
 layout: post
 title: "Highly Accurate SNP and Indel Calling on PacBio CCS with DeepVariant"
 date:   2019-01-14
+description: "We discuss the newly published use of PacBio Circular Consensus Sequencing (CCS)
+at human genome scale. DeepVariant trained for this data type achieves similar accuracy to
+available Illumina genomes, and is the only method to achieve competitive accuracy in Indel
+calling. Early access to this model is available now by request, and we expect general
+availability in our next DeepVariant release (v0.8)."
+img: "assets/images/PacBio-2019-01/figure2b.png"
 ---
 
 Authors:
@@ -118,7 +124,7 @@ SNP accuracy is quite robust to downsampling, down to a coverage of around 15x.
 DeepVariant’s SNP F1 at 13.7x coverage is 0.9957, exceeding GATK4’s F1 at 28x
 (0.9951).
 
-![figure4a]({{ site.baseurl }}/assets/images/PacBio-2019-01/figure4b.png)
+![figure4a]({{ site.baseurl }}/assets/images/PacBio-2019-01/figure4a.png)
 
 Indel accuracy declines with a gradual, but noticeable slope as coverage drops
 from 28x. It crosses the threshold of 0.9 F1 at about 15x.
