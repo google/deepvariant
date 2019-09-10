@@ -10,7 +10,7 @@ Authors:
 [Andrew Carroll](https://www.researchgate.net/profile/Andrew_Carroll6)
 
 Editorial suggestions and review:
-Maria Nattestad,
+[Maria Nattestad](https://scholar.google.com/citations?user=zuw2scAAAAAJ&hl=en&oi=ao),
 [Gunjan Baid](https://ai.google/research/people/GunjanBaid),
 [Taedong Yun](https://scholar.google.com/citations?user=KljLQpUAAAAJ&hl=en),
 
