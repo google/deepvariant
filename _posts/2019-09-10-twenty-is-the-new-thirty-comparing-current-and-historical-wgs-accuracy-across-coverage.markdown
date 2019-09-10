@@ -1,9 +1,14 @@
 ---
 layout: post
 title: "Twenty is the new Thirty - Comparing Current and Historical WGS Accuracy Across Coverage"
-date:   2019-09-10
+date: 2019-09-10
+description: "In this blog, we discuss how sequencing coverage involves trade-offs between
+cost and accuracy. We explore how computational methods that improve accuracy
+can also be understood as reducing cost. We compare current methods to
+historical accuracies. Finally, we explore the types of errors present at low
+and high coverages."
+img: "assets/images/2019-09-10/figure1.png"
 ---
-
 
 Authors:
 [Pi-Chuan Chang](https://ai.google/research/people/author39216),
