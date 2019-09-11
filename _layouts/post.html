@@ -1,6 +1,7 @@
 ---
 layout: default
 ---
+
 <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">
@@ -10,8 +11,25 @@ layout: default
         {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
         {{ page.date | date: date_format }}
       </time>
-      {%- if page.author -%}
-        • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author }}</span></span>
+      {%- if page.authors -%}
+        <p>Authors:</p>
+        {% for author_id in page.authors %}
+          {% assign author = site.data.authors[author_id] %}
+          {%- if author -%}
+            <div class="post-author-tile">
+              {%- if author.img -%}
+                <img class="post-author-img" src="{{ author.img }}" />
+              {%- endif -%}
+              {%- if author.link -%}
+                <a href={{ author.link }} target="_blank">{{ author.name }}</a>
+              {%- else -%}
+                <span>{{ author.name }}</span>
+              {%- endif -%}
+            </div>
+          {%- else -%}
+            <div style="color:red">Author ID "{{ author_id }}" not found in _data/authors.yml</div>
+          {%- endif -%}
+        {% endfor %}
       {%- endif -%}</p>
   </header>
 

@@ -80,6 +80,17 @@ img {
   @include relative-font-size(1.25);
 }
 
+.post-author-tile {
+  display: inline-block;
+  padding: 10px;
+  text-align: center;
+}
+
+.post-author-img {
+  height: 100px;
+  clip-path: circle(50px at center);
+}
+
 .site-title {
   @include relative-font-size(1.625);
   font-weight: 300;
@@ -88,10 +99,9 @@ img {
   margin-bottom: 0;
   float: left;
 
-  
   &:visited {
   	color:black;
-  } 
+  }
   &:hover {
   	color:$brand-color;
   }

@@ -1,0 +1,49 @@
+pichuan:
+        name: Pi-Chuan Chang
+        link: https://ai.google/research/people/author39216
+        img: /deepvariant/assets/images/authors/pichuan.jpg
+
+awcarroll:
+        name: Andrew Carroll
+        link: https://www.researchgate.net/profile/Andrew_Carroll6
+        img: /deepvariant/assets/images/authors/awcarroll.jpg
+
+gunjanbaid:
+        name: Gunjan Baid
+        link: https://twitter.com/gunjan_baid
+        img: /deepvariant/assets/images/authors/gunjanbaid.jpg
+
+lizzie:
+        name: Lizzie Dorfman
+        link: https://scholar.google.com/citations?user=74ZgDsUAAAAJ&hl=en)
+        img: /deepvariant/assets/images/authors/lizzie.jpg
+
+xunjieli:
+        name: Helen Li
+        link: https://twitter.com/xunjieli
+        img: /deepvariant/assets/images/authors/xunjieli.jpg
+
+koles:
+        name: Alexey Kolesnikov
+        img: /deepvariant/assets/images/authors/koles.jpg
+
+jason_chin:
+        name: Jason Chin
+        link: https://scholar.google.com/citations?user=v5cVDn8AAAAJ&hl=en
+        img: /deepvariant/assets/images/authors/jason_chin.png
+
+tedyun:
+        name: Taedong Yun
+        link: https://scholar.google.com/citations?user=KljLQpUAAAAJ&hl=en
+        img: /deepvariant/assets/images/authors/tedyun.jpg
+
+cym:
+        name: Cory McLean
+        link: https://ai.google/research/people/CoryMcLean
+        img: /deepvariant/assets/images/authors/cym.png
+
+marianattestad:
+        name: Maria Nattestad
+        link: https://twitter.com/marianattestad
+        img: /deepvariant/assets/images/authors/marianattestad.jpg
+
