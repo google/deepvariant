@@ -121,7 +121,7 @@ variants misclassified as homozygous and vice versa) for SNPs and Indels.
 
 ![figure4]({{ site.baseurl }}/assets/images/2019-09-10/figure4.png)
 
-We also plot the relative proportion of each error class for DeepVariantv0.8 and
+We also plot the relative proportion of each error class for DeepVariant v0.8 and
 GATK4-HC.
 
 ![figure5]({{ site.baseurl }}/assets/images/2019-09-10/figure5.png)
@@ -140,7 +140,7 @@ decrease its false positive rate and instead reduces its false negatives.
 ## Genomic regions contributing to differences in accuracy
 
 To understand the differences across coverages, we looked into stratifications
-of accuracy across genomic regions from the extended evaluation of hap.py. There
+of accuracy across genomic regions from the extended evaluation of [hap.py](https://github.com/Illumina/hap.py). There
 are a very large number of potential comparisons, so we will highlight only a
 few regions.
 
