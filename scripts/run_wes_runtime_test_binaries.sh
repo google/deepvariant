@@ -13,7 +13,7 @@ set -euo pipefail
 BASE="${HOME}/exome-case-study"
 MODEL_VERSION="0.8.0"
 MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+data-wes_standard"
-DEFAULT_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"
+DEFAULT_MODEL_HTTP_DIR="http://storage.googleapis.com/deepvariant/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"
 
 INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
@@ -62,9 +62,9 @@ function setup_test() {
 
   ## Download models, and test data
   # Copy the model files to your local disk.
-  HTTPS_ADDRESS="^https:\/\/.*"
+  HTTP_ADDRESS="^http:\/\/.*"
   GS_ADDRESS="^gs:\/\/.*"
-  if [[ $model_http_dir =~ $HTTPS_ADDRESS ]];
+  if [[ $model_http_dir =~ $HTTP_ADDRESS ]];
   then
     aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.ckpt.data-00000-of-00001
     aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.ckpt.index
@@ -79,17 +79,17 @@ function setup_test() {
   fi
 
   # Copy the data
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/151002_7001448_0359_AC7F6GANXX_Sample_HG002-EEogPU_v02-KIT-Av5_AGATGTAC_L008.posiSrt.markDup.bai
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/151002_7001448_0359_AC7F6GANXX_Sample_HG002-EEogPU_v02-KIT-Av5_AGATGTAC_L008.posiSrt.markDup.bam
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/agilent_sureselect_human_all_exon_v5_b37_targets.bed
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gz
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gz.fai
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gz.gzi
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gzi
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.fai
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/151002_7001448_0359_AC7F6GANXX_Sample_HG002-EEogPU_v02-KIT-Av5_AGATGTAC_L008.posiSrt.markDup.bai
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/151002_7001448_0359_AC7F6GANXX_Sample_HG002-EEogPU_v02-KIT-Av5_AGATGTAC_L008.posiSrt.markDup.bam
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/agilent_sureselect_human_all_exon_v5_b37_targets.bed
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gz
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gz.fai
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gz.gzi
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.gzi
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/exome-case-study-testdata/hs37d5.fa.fai
 }
 
 ## Run `make_examples`
