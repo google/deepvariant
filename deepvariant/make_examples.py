@@ -932,8 +932,7 @@ class RegionProcessor(object):
     if (self.options.variant_caller ==
         deepvariant_pb2.DeepVariantOptions.VCF_CALLER):
       return positional_labeler.PositionalVariantLabeler(
-          truth_vcf_reader=truth_vcf_reader,
-          confident_regions=confident_regions)
+          truth_vcf_reader=truth_vcf_reader)
     if (self.options.labeler_algorithm ==
         deepvariant_pb2.DeepVariantOptions.POSITIONAL_LABELER):
       return positional_labeler.PositionalVariantLabeler(
@@ -1355,7 +1354,16 @@ def main(argv=()):
           'Currently only supports n_cores == 1 but got {}.'.format(
               options.n_cores), errors.CommandLineError)
 
-    # Check for argument issues specific to train mode.
+    # Check for argument issues specific to different modes.
+    if options.variant_caller == deepvariant_pb2.DeepVariantOptions.VCF_CALLER:
+      if not options.truth_variants_filename:
+        errors.log_and_raise(
+            'truth_variants is always required with vcf_caller.',
+            errors.CommandLineError)
+      if options.confident_regions_filename:
+        errors.log_and_raise('confident_regions is not used with vcf_caller.',
+                             errors.CommandLineError)
+
     if in_training_mode(options):
       if not options.truth_variants_filename:
         errors.log_and_raise(
