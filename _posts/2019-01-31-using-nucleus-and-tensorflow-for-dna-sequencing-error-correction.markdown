@@ -7,11 +7,8 @@ genomics data, can be used alongside TensorFlow for machine learning. We discuss
 approaches for the problem of DNA sequencing error correction and implement the second
 approach in this <a href='https://colab.research.google.com/github/google/nucleus/blob/master/nucleus/examples/dna_sequencing_error_correction.ipynb'>Colab tutorial.</a>"
 img: "https://github.com/google/nucleus/raw/master/nucleus/examples/images/consensus-approach-overview.jpg"
+authors: ["gunjanbaid","xunjieli","pichuan"]
 ---
-
-Authors: [Gunjan Baid](https://twitter.com/gunjan_baid),
-[Helen Li](https://twitter.com/xunjieli), and
-[Pi-Chuan Chang](https://ai.google/research/people/author39216)
 
 Editorial Note: This post is published with identical content on the
 [TensorFlow Blog](https://medium.com/tensorflow/using-nucleus-and-tensorflow-for-dna-sequencing-error-correction-47f3f7fc1a50).

@@ -7,10 +7,8 @@ speed and a corresponding decrease in cost relative to the previous version (v0.
 this speed improvement comes by enabling DeepVariant to take advantage of new
 <a href='https://www.intel.com/content/www/us/en/architecture-and-technology/avx-512-overview.html'>Intel® Advanced Vector eXtensions (AVX-512) instruction set.</a>"
 img: "assets/images/TF-MKL/schematic.jpg"
+authors: ["awcarroll","lizzie"]
 ---
-
-Authors: [Andrew Carroll](https://www.researchgate.net/profile/Andrew_Carroll6),
-[Lizzie Dorfman](https://scholar.google.com/citations?user=74ZgDsUAAAAJ&hl=en)
 
 Editorial Note: This post is published with identical content on the
 [TensorFlow Blog](https://medium.com/@tensorflow/c8f0acb62344).

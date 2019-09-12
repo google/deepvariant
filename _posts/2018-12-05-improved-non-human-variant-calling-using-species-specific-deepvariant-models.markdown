@@ -6,13 +6,8 @@ description: "We investigate variant calling across a pedigree of mosquito genom
 Using rates of Mendelian violation, we assess pipelines developed to call variation
 in humans when applied to mosquito samples."
 img: "assets/images/MalariaGEN/figure3.png"
+authors: ["tedyun","cym","pichuan","awcarroll"]
 ---
-
-Authors:
-[Taedong Yun](https://scholar.google.com/citations?user=KljLQpUAAAAJ&hl=en),
-[Cory McLean](https://ai.google/research/people/CoryMcLean),
-[Pi-Chuan Chang](https://ai.google/research/people/author39216),
-[Andrew Carroll](https://www.researchgate.net/profile/Andrew_Carroll6)
 
 ## Abstract
 

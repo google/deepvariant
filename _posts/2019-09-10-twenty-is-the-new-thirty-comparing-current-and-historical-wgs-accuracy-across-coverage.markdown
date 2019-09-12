@@ -8,16 +8,13 @@ can also be understood as reducing cost. We compare current methods to
 historical accuracies. Finally, we explore the types of errors present at low
 and high coverages."
 img: "assets/images/2019-09-10/figure1.png"
+authors: ["pichuan", "awcarroll"]
 ---
 
-Authors:
-[Pi-Chuan Chang](https://ai.google/research/people/author39216),
-[Andrew Carroll](https://www.researchgate.net/profile/Andrew_Carroll6)
-
 Editorial suggestions and review:
-[Maria Nattestad](https://scholar.google.com/citations?user=zuw2scAAAAAJ&hl=en&oi=ao),
+[Maria Nattestad](https://twitter.com/marianattestad),
 [Gunjan Baid](https://ai.google/research/people/GunjanBaid),
-[Taedong Yun](https://scholar.google.com/citations?user=KljLQpUAAAAJ&hl=en),
+[Taedong Yun](https://scholar.google.com/citations?user=KljLQpUAAAAJ&hl=en)
 
 **In this blog, we discuss how sequencing coverage involves trade-offs between
 cost and accuracy. We explore how computational methods that improve accuracy

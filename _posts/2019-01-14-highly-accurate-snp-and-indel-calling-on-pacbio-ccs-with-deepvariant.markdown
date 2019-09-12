@@ -8,13 +8,8 @@ available Illumina genomes, and is the only method to achieve competitive accura
 calling. Early access to this model is available now by request, and we expect general
 availability in our next DeepVariant release (v0.8)."
 img: "assets/images/PacBio-2019-01/figure2b.png"
+authors: ["koles","pichuan","jason_chin","awcarroll"]
 ---
-
-Authors:
-Alexey Kolesnikov,
-[Pi-Chuan Chang](https://ai.google/research/people/author39216),
-[Jason Chin](https://scholar.google.com/citations?user=v5cVDn8AAAAJ&hl=en),
-[Andrew Carroll](https://www.researchgate.net/profile/Andrew_Carroll6)
 
 ## Abstract
 
