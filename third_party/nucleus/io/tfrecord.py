@@ -94,11 +94,12 @@ def read_tfrecords(path, proto=None, max_records=None, compression_type=None):
 
   i = 0
   for path in paths:
-    for record in Reader(path, proto, compression_type=compression_type):
-      i += 1
-      if max_records is not None and i > max_records:
-        return
-      yield record
+    with Reader(path, proto, compression_type=compression_type) as reader:
+      for record in reader.iterate():
+        i += 1
+        if max_records is not None and i > max_records:
+          return
+        yield record
 
 
 def read_shard_sorted_tfrecords(path,
