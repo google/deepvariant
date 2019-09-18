@@ -54,7 +54,7 @@ namespace nucleus {
 
 constexpr char kBioTFCoreTestDataDir[] = "third_party/nucleus/testdata";
 
-// N.B. this will be set to "" in OSS.
+// N.B. kDefaultWorkspace will be set to "" in OSS.
 constexpr char kDefaultWorkspace[] = "";
 
 

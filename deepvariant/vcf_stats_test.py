@@ -184,13 +184,6 @@ class VcfStatsTest(parameterized.TestCase):
       self.assertAlmostEqual(compute_summary_stats.gq_stdev, 14.59710535567045)
 
   def test_variants_to_stats_json(self):
-    truth_stats_json = """
-      {"alternate_bases":[["G"]],"depth":[20],"genotype_quality":[59],
-      "is_transition":[true],"is_transversion":[false],"position":[11],
-      "reference_bases":["A"],"reference_name":["chr1"],"is_variant":[true],
-      "variant_type":["Biallelic_SNP"],"genotype":["[0, 1]"],"vaf":[null],"qual":[0.0]}
-      """
-
     truth_summary_json = """
       {"depth_mean": 20,"depth_stdev": 0,"gq_mean": 59,"gq_stdev": 0,
       "record_count": 1,"snv_count": 1,"insertion_count": 0,"deletion_count": 0,
@@ -200,23 +193,17 @@ class VcfStatsTest(parameterized.TestCase):
 
     # Without a VcfReader containing VAF, the histogram is empty
     truth_histograms = """
-      {"[0, 1]": [
-        {"bin_end":0.1,"count":0,"bin_start": 0.0},
-        {"bin_end":0.2,"count":0,"bin_start": 0.1},
-        {"bin_end":0.3,"count":0,"bin_start": 0.2},
-        {"bin_end":0.4,"count":0,"bin_start": 0.3},
-        {"bin_end":0.5,"count":0,"bin_start": 0.4},
-        {"bin_end":0.6,"count":0,"bin_start": 0.5},
-        {"bin_end":0.7,"count":0,"bin_start": 0.6},
-        {"bin_end":0.8,"count":0,"bin_start": 0.7},
-        {"bin_end":0.9,"count":0,"bin_start": 0.8},
-        {"bin_end":1.0,"count":0,"bin_start": 0.9}
-      ]}
+      {
+        "[0, 1]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
+        "[-1, -1]": [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
+        "[0, 0]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
+        "[1, 1]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
+        "[1, 2]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}]
+      }
     """
 
-    stats_json, summary_json, vis_data_json = vcf_stats._variants_to_stats_json(
+    summary_json, vis_data_json = vcf_stats._variants_to_stats_json(
         [self.variant])
-    self.assertEqual(stats_json, json.loads(truth_stats_json))
     self.assertEqual(summary_json, json.loads(truth_summary_json))
     self.assertEqual(vis_data_json['vaf_histograms_by_genotype'],
                      json.loads(truth_histograms))
@@ -355,6 +342,88 @@ class VcfStatsTest(parameterized.TestCase):
             'bin_end': 1.0,
             'count': 1,
             'bin_start': 0.9
+        }],
+        '[-1, -1]': [{
+            'bin_start': 0.0,
+            'count': 0,
+            'bin_end': 0.1
+        }, {
+            'bin_start': 0.1,
+            'count': 0,
+            'bin_end': 0.2
+        }, {
+            'bin_start': 0.2,
+            'count': 0,
+            'bin_end': 0.3
+        }, {
+            'bin_start': 0.3,
+            'count': 0,
+            'bin_end': 0.4
+        }, {
+            'bin_start': 0.4,
+            'count': 0,
+            'bin_end': 0.5
+        }, {
+            'bin_start': 0.5,
+            'count': 0,
+            'bin_end': 0.6
+        }, {
+            'bin_start': 0.6,
+            'count': 0,
+            'bin_end': 0.7
+        }, {
+            'bin_start': 0.7,
+            'count': 0,
+            'bin_end': 0.8
+        }, {
+            'bin_start': 0.8,
+            'count': 0,
+            'bin_end': 0.9
+        }, {
+            'bin_start': 0.9,
+            'count': 0,
+            'bin_end': 1.0
+        }],
+        '[1, 2]': [{
+            'bin_start': 0.0,
+            'count': 0,
+            'bin_end': 0.1
+        }, {
+            'bin_start': 0.1,
+            'count': 0,
+            'bin_end': 0.2
+        }, {
+            'bin_start': 0.2,
+            'count': 0,
+            'bin_end': 0.3
+        }, {
+            'bin_start': 0.3,
+            'count': 0,
+            'bin_end': 0.4
+        }, {
+            'bin_start': 0.4,
+            'count': 0,
+            'bin_end': 0.5
+        }, {
+            'bin_start': 0.5,
+            'count': 0,
+            'bin_end': 0.6
+        }, {
+            'bin_start': 0.6,
+            'count': 0,
+            'bin_end': 0.7
+        }, {
+            'bin_start': 0.7,
+            'count': 0,
+            'bin_end': 0.8
+        }, {
+            'bin_start': 0.8,
+            'count': 0,
+            'bin_end': 0.9
+        }, {
+            'bin_start': 0.9,
+            'count': 0,
+            'bin_end': 1.0
         }]
     }
     self.assertEqual(
@@ -370,11 +439,6 @@ class VcfStatsTest(parameterized.TestCase):
           output_basename=outfile_base,
           sample_name=sample_name,
           vcf_reader=reader)
-    self.assertTrue(
-        tf.io.gfile.exists(outfile_base + '.vcf_per_record_stats.json'))
-    self.assertTrue(
-        tf.io.gfile.exists(outfile_base + '.vcf_summary_stats.json'))
-    self.assertTrue(tf.io.gfile.exists(outfile_base + '.vcf_vis_stats.json'))
     self.assertTrue(tf.io.gfile.exists(outfile_base + '.visual_report.html'))
 
 

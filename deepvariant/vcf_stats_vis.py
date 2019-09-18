@@ -33,11 +33,17 @@ from __future__ import division
 from __future__ import print_function
 
 import json
+import os
 
 import altair as alt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+
+# Altair uses a lot of method chaining, such as
+# chart.mark_bar().encode(...).properties(...), so allowing backslash
+# continuation to break this into separate lines makes the code more readable.
+# pylint: disable=g-backslash-continuation
 
 # "pretty" genotype strings:
 REF = 'Ref (0/0)'
@@ -52,9 +58,25 @@ BASES = ['A', 'G', 'T', 'C']
 BAR_COLOR1 = '#9c9ede'
 BAR_COLOR2 = '#6b6ecf'
 
+BIALLELIC_SNP = 'Biallelic_SNP'
+BIALLELIC_INSERTION = 'Biallelic_Insertion'
+BIALLELIC_DELETION = 'Biallelic_Deletion'
+BIALLELIC_MNP = 'Biallelic_MNP'
+MULTIALLELIC_SNP = 'Multiallelic_SNP'
+MULTIALLELIC_INSERTION = 'Multiallelic_Insertion'
+MULTIALLELIC_DELETION = 'Multiallelic_Deletion'
+MULTIALLELIC_COMPLEX = 'Multiallelic_Complex'
+REFCALL = 'RefCall'
+
+ordered_variant_type_labels = [
+    BIALLELIC_SNP, BIALLELIC_INSERTION, BIALLELIC_DELETION, BIALLELIC_MNP,
+    MULTIALLELIC_SNP, MULTIALLELIC_INSERTION, MULTIALLELIC_DELETION,
+    MULTIALLELIC_COMPLEX, REFCALL
+]
+
 
 def _dict_to_dataframe(dictionary):
-  """Turn a dict object into a list of objects."""
+  """Turn a dict object into a dataframe of with label and value columns."""
   df = pd.DataFrame({'label': dictionary.keys(), 'value': dictionary.values()})
   return df
 
@@ -82,21 +104,26 @@ def _prettify_genotype(genotype):
   return pretty, group
 
 
-def _build_type_chart(stats):
+def _build_type_chart(variant_type_counts):
   """Create a chart of the counts of each variant type."""
-  type_labels = ['Insertion', 'Deletion', 'SNV', 'Complex']
-  type_data = stats[stats['label'].isin(type_labels)]
-  type_chart = alt.Chart(type_data).mark_bar().encode(
+
+  bars = alt.Chart(variant_type_counts).mark_bar().encode(
       x=alt.X(
-          'label', title=None, sort=type_labels, axis=alt.Axis(labelAngle=0)),
+          'label',
+          title=None,
+          sort=ordered_variant_type_labels,
+          axis=alt.Axis(labelAngle=-45)),
       y=alt.Y('value', axis=alt.Axis(title='Count', format='s')),
       tooltip=alt.Tooltip('value', format='.4s'),
       color=alt.Color(
           'label',
           legend=None,
-          sort=type_labels,
-          scale=alt.Scale(scheme='set1'))).properties(
-              width=200, height=200, title='Variant types')
+          sort=ordered_variant_type_labels,
+          scale=alt.Scale(scheme='set1')))
+  labels = alt.Chart(variant_type_counts).mark_text(dy=-5).encode(
+      x='label', y='value', text=alt.Text('value', format='.4s'))
+  type_chart = (bars + labels).properties(
+      width=400, height=200, title='Variant types')
   return type_chart
 
 
@@ -111,7 +138,7 @@ def _build_tt_chart(stats, tt_ratio):
       color=alt.Color(
           'label', legend=None, sort=tt_labels,
           scale=alt.Scale(scheme='teals'))).properties(
-              title='Ti/Tv ratio: %f' % tt_ratio, width=150, height=200)
+              title='Ti/Tv ratio: %s' % tt_ratio, width=150, height=200)
   return tt_chart
 
 
@@ -157,6 +184,7 @@ def _build_vaf_histograms(vis_data):
   main_hist_data = hist_data[hist_data['Group'] == 'main']
   other_hist_data = hist_data[hist_data['Group'] == 'others']
 
+  # Main genotypes (ref, het, hom-alt)
   # Histogram bars themselves
   bars = alt.Chart(main_hist_data).mark_bar().encode(
       x=alt.X('bin_start', title='VAF'),
@@ -165,19 +193,22 @@ def _build_vaf_histograms(vis_data):
   # Vertical lines
   guides = alt.Chart(main_hist_data).mark_rule().encode(x='guide')
   # Facet into 3 plots by genotype
-  genotype_order = [REF, HET, HOM]
-  vaf_histograms = (bars + guides).properties(
-      width=200, height=200).facet(
-          column=alt.Column(
-              'Genotype', title='Main genotypes',
-              sort=genotype_order)).resolve_scale(y='independent')
+  vaf_histograms = (bars + guides) \
+    .properties(width=200, height=200) \
+    .facet(column=alt.Column('Genotype',
+                             title='Main genotypes',
+                             sort=[REF, HET, HOM])) \
+    .resolve_scale(y='independent')
 
-  other_vaf_histograms = alt.Chart(other_hist_data).mark_bar().encode(
-      x=alt.X('bin_start', title='VAF'),
-      x2='bin_end',
-      y=alt.Y('count', stack=True, axis=alt.Axis(format='s')),
-      column=alt.Column('Genotype', title='Other genotypes')).properties(
-          width=150, height=150).resolve_scale(y='independent')
+  # Other genotypes (uncalled, het with two alt alleles)
+  other_vaf_histograms = alt.Chart(other_hist_data) \
+    .mark_bar().encode(
+        x=alt.X('bin_start', title='VAF'),
+        x2='bin_end',
+        y=alt.Y('count', stack=True, axis=alt.Axis(format='s')),
+        column=alt.Column('Genotype', title='Other genotypes')) \
+    .properties(width=150, height=150) \
+    .resolve_scale(y='independent')
   return vaf_histograms, other_vaf_histograms
 
 
@@ -197,7 +228,7 @@ def _build_base_change_chart(vis_data):
   base_change_chart = (bars + text).properties(
       width=100, height=200).facet(
           column=alt.Column(
-              'ref', title='Base changes from reference', sort=BASES))
+              'ref', title='Biallelic base changes from reference', sort=BASES))
   return base_change_chart
 
 
@@ -216,8 +247,10 @@ def _build_indel_size_chart(vis_data):
       x=alt.X('bin_start', title='size'),
       x2='bin_end',
       y=alt.Y('count', axis=alt.Axis(format='s')),
-      color=alt.Color('type', scale=alt.Scale(scheme='set1'))).properties(
-          width=400, height=100, title='Indel sizes').interactive(bind_y=False)
+      color=alt.Color('type', scale=alt.Scale(scheme='set1'))) \
+    .properties(width=400, height=100,
+                title='Biallelic indel size distribution') \
+    .interactive(bind_y=False)
 
   indel_log = alt.Chart(indel_size_data).mark_bar().encode(
       x=alt.X('bin_start', title='size'),
@@ -226,55 +259,67 @@ def _build_indel_size_chart(vis_data):
           'count',
           axis=alt.Axis(format='s'),
           scale=alt.Scale(type='log', base=10)),
-      color=alt.Color('type', scale=alt.Scale(scheme='set1'))).properties(
-          width=400, height=100).interactive(bind_y=False)
+      color=alt.Color('type', scale=alt.Scale(scheme='set1'))) \
+    .properties(width=400, height=100) \
+    .interactive(bind_y=False)
 
-  indel_size_chart = alt.vconcat(indels_linear, indel_log)
+  indel_size_chart = alt.vconcat(indels_linear, indel_log) \
+      .resolve_scale(color='shared')
   return indel_size_chart
 
 
 def _build_all_charts(stats_data, vis_data, sample_name=''):
   """Build all charts and combine into a single interface."""
   stats = _dict_to_dataframe(stats_data)
-  # Transform labels, e.g.: insertion_count -> Insertion, snv_count -> SNV
-  stats['label'] = stats['label'].str.replace('_count',
-                                              '').str.capitalize().replace(
-                                                  'Snv', 'SNV')
-  tt_ratio = float(
-      stats_data['transition_count']) / stats_data['transversion_count']
+  # Transform labels, e.g.: transition_count -> Transition
+  stats['label'] = stats['label'].str.replace('_count', '').str.capitalize()
+
+  # Get TiTv ratio but avoid division by 0
+  if stats_data['transversion_count'] > 0:
+    tt_ratio = '%.2f' % (
+        float(stats_data['transition_count']) /
+        stats_data['transversion_count'])
+  else:
+    tt_ratio = '%d / 0' % (stats_data['transition_count'])
+
+  variant_type_counts = _dict_to_dataframe(vis_data['variant_type_counts'])
 
   # Row 1
-  type_chart = _build_type_chart(stats)
+  type_chart = _build_type_chart(variant_type_counts)
   tt_chart = _build_tt_chart(stats, tt_ratio)
-  gq_histogram = _build_gq_histogram(vis_data)
   qual_histogram = _build_qual_histogram(vis_data)
+  gq_histogram = _build_gq_histogram(vis_data)
+  row1 = alt.hconcat(type_chart, tt_chart, qual_histogram, gq_histogram) \
+      .resolve_scale(color='independent')
 
   # Row 2
   vaf_histograms, other_vaf_histograms = _build_vaf_histograms(vis_data)
+  row2 = alt.hconcat(vaf_histograms, other_vaf_histograms)
 
   # Row 3
   base_change_chart = _build_base_change_chart(vis_data)
   indel_size_chart = _build_indel_size_chart(vis_data)
+  row3 = alt.hconcat(base_change_chart, indel_size_chart) \
+      .resolve_scale(color='independent')
 
   # Putting it all together
-  all_charts = alt.vconcat(
-      alt.hconcat(type_chart, tt_chart, gq_histogram,
-                  qual_histogram).resolve_scale(color='independent'),
-      alt.hconcat(vaf_histograms, other_vaf_histograms),
-      alt.hconcat(base_change_chart,
-                  indel_size_chart).resolve_scale(color='independent'))
+  all_charts = alt.vconcat(row1, row2, row3)
 
-  all_charts = all_charts.properties(title=sample_name)
-  all_charts = all_charts.configure_header(
-      labelFontSize=16, titleFontSize=20).configure_title(fontSize=20)
+  all_charts = all_charts.properties(title=sample_name, spacing=70) \
+      .configure_header(labelFontSize=16, titleFontSize=20) \
+      .configure_title(fontSize=20)
   return all_charts
 
 
 def _save_html(basename, all_charts):
   """Save Altair chart as an HTML file."""
   output_path = basename + '.visual_report.html'
+  image_download_filename = os.path.basename(basename) + '.visual_report'
   with tf.io.gfile.GFile(output_path, 'w') as writer:
-    all_charts.save(writer, format='html')
+    all_charts.save(
+        writer,
+        format='html',
+        embed_options={'downloadFileName': image_download_filename})
 
 
 def create_visual_report(basename, stats_data, vis_data, sample_name=''):

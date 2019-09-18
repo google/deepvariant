@@ -27,6 +27,7 @@
 *   [DeepVariant Genomic VCF (gVCF) support](deepvariant-gvcf-support.md)
 *   [Getting Started with GCP](deepvariant-gcp-info.md) (It is not required to
     run DeepVariant on GCP.)
+*   [VCF stats report](deepvariant-vcf-stats-report.md)
 
 ## Colab notebooks
 

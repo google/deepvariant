@@ -151,6 +151,11 @@ VIS_DATA = {
             "bin_start": 0.5,
             "count": 10
         }]
+    },
+    "variant_type_counts": {
+        "Biallelic_SNP": 10,
+        "RefCall": 3,
+        "Multiallelic_Insertion": 1
     }
 }
 
@@ -185,7 +190,8 @@ class VcfStatsVisTest(absltest.TestCase):
     stats = pd.DataFrame([["Deletion", 10], ["Insertion", 20]],
                          columns=["label", "value"])
     chart = vcf_stats_vis._build_type_chart(stats)
-    self.assertEqual(str(type(chart)), ALTAIR_CHART)
+    self.assertEqual(
+        str(type(chart)), "<class 'altair.vegalite.v3.api.LayerChart'>")
 
   def test_build_tt_chart(self):
     stats = pd.DataFrame([["Transition", 10], ["Transversion", 20]],

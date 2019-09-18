@@ -32,9 +32,9 @@ sudo docker run \
   --regions="/input/${CAPTURE_BED}" \
   --output_vcf=/output/HG002.output.vcf.gz \
   --output_gvcf=/output/HG002.output.g.vcf.gz \
-  --num_shards=${N_SHARDS}
+  --num_shards=${N_SHARDS} \
+  --vcf_stats_report
 ```
-
 
 By specifying `--model_type=WES`, you'll be using a model that is best suited
 for Illumina Whole Exome Sequencing data.

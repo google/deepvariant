@@ -109,8 +109,7 @@ flags.DEFINE_boolean(
     'grouped when transforming CallVariantsOutput to Variants.')
 flags.DEFINE_boolean(
     'vcf_stats_report', False, 'Optional. Output a visual report (HTML) of '
-    'statistics about the output VCF, along with statistics JSON files, '
-    'all at the same base path given by --outfile.')
+    'statistics about the output VCF at the same base path given by --outfile.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field

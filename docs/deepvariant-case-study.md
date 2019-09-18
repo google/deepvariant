@@ -53,7 +53,7 @@ curl https://raw.githubusercontent.com/google/deepvariant/r0.8/scripts/run_wgs_c
 
 Here is an example command:
 
-```
+```bash
 sudo nvidia-docker run \
   -v "${DATA_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
@@ -64,7 +64,8 @@ sudo nvidia-docker run \
   --reads="/input/${BAM}" \
   --output_vcf=/output/${OUTPUT_VCF} \
   --output_gvcf=/output/${OUTPUT_GVCF} \
-  --num_shards=${N_SHARDS}
+  --num_shards=${N_SHARDS} \
+  --vcf_stats_report
 ```
 
 Note that instead of using `docker`, we're using `nvidia-docker` to make use of

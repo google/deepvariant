@@ -76,6 +76,10 @@ RUN \
     "${BASH_HEADER}" \
     'python -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python -u /opt/deepvariant/bin/vcf_stats_report.py "$@"' > \
+    /opt/deepvariant/bin/vcf_stats_report && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
     /opt/deepvariant/bin/postprocess_variants \

@@ -143,8 +143,7 @@ function run_vcf_stats_report() {
   echo "Start running vcf_stats_report...Log will be in the terminal and also to ${LOG_DIR}/vcf_stats_report.log."
   python ./bazel-bin/deepvariant/vcf_stats_report.zip \
       --input_vcf "${OUTPUT_VCF}" \
-      --outfile_base "${OUTPUT_STATS}" \
-      --individual_variant_stats
+      --outfile_base "${OUTPUT_STATS}"
   echo "Done."
   echo
 }

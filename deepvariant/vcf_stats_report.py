@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-r"""Creates JSON summaries and a visual report of variants from a VCF file."""
+r"""Creates a visual HTML report about the variants from a VCF file."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -55,9 +55,6 @@ flags.DEFINE_integer(
     'negative, emit all records.')
 flags.DEFINE_integer('histogram_bins', 10,
                      'Number of bins for allele frequency histograms.')
-flags.DEFINE_boolean(
-    'individual_variant_stats', False,
-    'Include a JSON file with fine-grained stats for individual variants.')
 
 
 def main(argv):
@@ -87,8 +84,7 @@ def main(argv):
         output_basename=FLAGS.outfile_base,
         sample_name=sample_name,
         vcf_reader=reader,
-        histogram_bins=histogram_bins,
-        include_individual_variant_stats=FLAGS.individual_variant_stats)
+        histogram_bins=histogram_bins)
 
 
 if __name__ == '__main__':

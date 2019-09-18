@@ -130,7 +130,7 @@ sudo docker run \
   --vcf_stats_report **Optional flag to create a visual report of statistics about the output VCF.**
 ```
 
-This will generate 4 files (plus another 4 if you add the --vcf_stats_report
+This will generate 4 files (plus another 1 if you add the --vcf_stats_report
 flag) in `${OUTPUT_DIR}`:
 
 ```bash
@@ -146,9 +146,6 @@ output.vcf.gz
 output.vcf.gz.tbi
 # with --vcf_stats_report:
 output.visual_report.html
-output.vcf_vis_stats.json
-output.vcf_summary_stats.json
-output.vcf_per_record_stats.json
 ```
 
 ## Evaluating the results
