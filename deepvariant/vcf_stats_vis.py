@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import io
 import json
 import os
 
@@ -44,6 +45,13 @@ import tensorflow as tf
 # chart.mark_bar().encode(...).properties(...), so allowing backslash
 # continuation to break this into separate lines makes the code more readable.
 # pylint: disable=g-backslash-continuation
+
+OLD_LIB_BASE_URL = 'https://cdn.jsdelivr.net/npm//'
+NEW_LIB_BASE_URL = 'https://storage.googleapis.com/deepvariant/lib/vega/'
+
+VEGA_VERSION = '5'
+VEGA_LITE_VERSION = '3.4.0'
+VEGA_EMBED_VERSION = '4'
 
 # "pretty" genotype strings:
 REF = 'Ref (0/0)'
@@ -311,15 +319,39 @@ def _build_all_charts(stats_data, vis_data, sample_name=''):
   return all_charts
 
 
+def _altair_chart_to_html(altair_chart, download_filename):
+  """Write to a temporary string stand-in for the file to replace import URLs.
+
+  Args:
+    altair_chart: a chart object made by Altair.
+    download_filename: string filename base for when users export images.
+
+  Returns:
+    HTML in string format.
+  """
+  temp_writer = io.StringIO()
+  altair_chart.save(
+      temp_writer,
+      format='html',
+      embed_options={'downloadFileName': download_filename},
+      vegalite_version=VEGA_LITE_VERSION,
+      vega_version=VEGA_VERSION,
+      vegaembed_version=VEGA_EMBED_VERSION)
+  temp_html_string = temp_writer.getvalue()
+  html_with_new_cdn = temp_html_string.replace(OLD_LIB_BASE_URL,
+                                               NEW_LIB_BASE_URL)
+  return html_with_new_cdn
+
+
 def _save_html(basename, all_charts):
   """Save Altair chart as an HTML file."""
   output_path = basename + '.visual_report.html'
   image_download_filename = os.path.basename(basename) + '.visual_report'
+  html_string = _altair_chart_to_html(
+      altair_chart=all_charts, download_filename=image_download_filename)
+
   with tf.io.gfile.GFile(output_path, 'w') as writer:
-    all_charts.save(
-        writer,
-        format='html',
-        embed_options={'downloadFileName': image_download_filename})
+    writer.write(html_string)
 
 
 def create_visual_report(basename, stats_data, vis_data, sample_name=''):

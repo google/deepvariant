@@ -36,9 +36,11 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+
 import os
 import tempfile
 from absl.testing import absltest
+import altair as alt
 import pandas as pd
 import tensorflow as tf
 
@@ -228,6 +230,24 @@ class VcfStatsVisTest(absltest.TestCase):
     self.assertEqual(
         str(type(chart)), "<class 'altair.vegalite.v3.api.VConcatChart'>")
 
+  def test_altair_chart_to_html(self):
+    df = pd.DataFrame({"x": ["A", "B"], "y": [28, 55]})
+    c = alt.Chart(df).mark_bar().encode(x="x", y="y")
+    html_string = vcf_stats_vis._altair_chart_to_html(
+        altair_chart=c, download_filename="TEST_DOWNLOAD_FILENAME")
+    import_base = 'src="https://storage.googleapis.com/deepvariant/lib/vega/'
+    self.assertNotEqual(
+        html_string.find(import_base + 'vega@%s"' %
+                         (vcf_stats_vis.VEGA_VERSION)), -1)
+    self.assertNotEqual(
+        html_string.find(import_base + 'vega-lite@%s"' %
+                         (vcf_stats_vis.VEGA_LITE_VERSION)), -1)
+    self.assertNotEqual(
+        html_string.find(import_base + 'vega-embed@%s"' %
+                         (vcf_stats_vis.VEGA_EMBED_VERSION)), -1)
+    self.assertEqual(html_string.find("jsdelivr.net"), -1)
+    self.assertNotEqual(html_string.find("TEST_DOWNLOAD_FILENAME"), -1)
+
   def test_create_visual_report(self):
     base_dir = tempfile.mkdtemp()
     outfile_base = os.path.join(base_dir, "stats_test")
@@ -235,7 +255,6 @@ class VcfStatsVisTest(absltest.TestCase):
     vcf_stats_vis.create_visual_report(
         outfile_base, STATS_DATA, VIS_DATA, sample_name=sample_name)
     self.assertTrue(tf.io.gfile.exists(outfile_base + ".visual_report.html"))
-
 
 if __name__ == "__main__":
   absltest.main()
