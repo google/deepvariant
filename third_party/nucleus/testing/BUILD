@@ -100,6 +100,7 @@ py_test(
     size = "small",
     srcs = ["test_utils_test.py"],
     main = "test_utils_test.py",
+    # py3_tags = [],
     deps = [
         ":py_test_utils",
         "//third_party/nucleus/protos:cigar_py_pb2",
@@ -111,6 +112,7 @@ py_test(
     name = "protobuf_implementation_test",
     size = "small",
     srcs = ["protobuf_implementation_test.py"],
+    # py3_tags = [],
     deps = [
         "//third_party/nucleus/io:sam",
         "@absl_py//absl/testing:absltest",

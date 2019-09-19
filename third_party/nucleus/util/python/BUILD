@@ -24,6 +24,7 @@ py_test(
     size = "small",
     srcs = ["math_wrap_test.py"],
     data = [],
+    # py3_tags = [],
     srcs_version = "PY2AND3",
     deps = [
         ":math",

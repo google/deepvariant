@@ -95,6 +95,7 @@ py_test(
     name = "cigar_test",
     size = "small",
     srcs = ["cigar_test.py"],
+    # py3_tags = [],
     deps = [
         ":cigar",
         "//third_party/nucleus/protos:cigar_py_pb2",
@@ -108,6 +109,7 @@ py_test(
     size = "small",
     srcs = ["utils_test.py"],
     main = "utils_test.py",
+    # py3_tags = [],
     deps = [
         ":py_utils",
         ":ranges",
@@ -155,6 +157,7 @@ py_test(
     name = "genomics_math_test",
     size = "small",
     srcs = ["genomics_math_test.py"],
+    # py3_tags = [],
     deps = [
         ":genomics_math",
         "@absl_py//absl/testing:absltest",
@@ -178,6 +181,7 @@ py_test(
     size = "small",
     srcs = ["ranges_test.py"],
     data = ["//third_party/nucleus/testdata"],
+    # py3_tags = [],
     deps = [
         ":ranges",
         "//third_party/nucleus/protos:position_py_pb2",
@@ -203,6 +207,7 @@ py_test(
     name = "variantcall_utils_test",
     size = "small",
     srcs = ["variantcall_utils_test.py"],
+    # py3_tags = [],
     deps = [
         ":variantcall_utils",
         "//third_party/nucleus/protos:struct_py_pb2",
@@ -228,6 +233,7 @@ py_test(
     name = "variant_utils_test",
     size = "small",
     srcs = ["variant_utils_test.py"],
+    # py3_tags = [],
     deps = [
         ":ranges",
         ":variant_utils",
@@ -249,6 +255,7 @@ py_library(
 py_test(
     name = "struct_utils_test",
     srcs = ["struct_utils_test.py"],
+    # py3_tags = [],
     deps = [
         ":struct_utils",
         "//third_party/nucleus/protos:struct_py_pb2",
@@ -270,6 +277,7 @@ py_library(
 py_test(
     name = "vcf_constants_test",
     srcs = ["vcf_constants_test.py"],
+    # py3_tags = [],
     deps = [
         ":struct_utils",
         ":vcf_constants",
@@ -290,6 +298,7 @@ py_library(
 py_test(
     name = "errors_test",
     srcs = ["errors_test.py"],
+    # py3_tags = [],
     deps = [
         ":errors",
         "@absl_py//absl/testing:absltest",
@@ -326,6 +335,7 @@ py_library(
 py_test(
     name = "sequence_utils_test",
     srcs = ["sequence_utils_test.py"],
+    # py3_tags = [],
     deps = [
         ":sequence_utils",
         "@absl_py//absl/testing:absltest",
