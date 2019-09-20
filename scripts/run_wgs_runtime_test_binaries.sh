@@ -83,8 +83,8 @@ function setup_test() {
   aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz -d "${DATA_DIR}"
   aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi -d "${DATA_DIR}"
   # Add a checksum for the biggest file:
-  aria2c -c -x10 -s10 --checksum=md5=8986a45989b210432e80e24fd88f38c1 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_NIST_150bp_50x.bam -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_NIST_150bp_50x.bam.bai -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 --checksum=md5=8986a45989b210432e80e24fd88f38c1 http://storage.googleapis.com/deepvariant/performance-testdata/HG002_NIST_150bp_downsampled_30x.bam -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/performance-testdata/HG002_NIST_150bp_downsampled_30x.bam.bai -d "${DATA_DIR}"
   aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz -d "${DATA_DIR}"
   aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.fai -d "${DATA_DIR}"
   aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.gzi -d "${DATA_DIR}"
