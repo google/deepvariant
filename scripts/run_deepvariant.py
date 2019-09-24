@@ -79,10 +79,14 @@ flags.DEFINE_string(
     'Optional. A path to a model checkpoint to load for the `call_variants` '
     'step. If not set, the default for each --model_type will be used')
 # Optional flags for make_examples.
-flags.DEFINE_bool('keep_secondary_alignments', None,
-                  'If True, keep reads marked as secondary alignments.')
-flags.DEFINE_bool('keep_supplementary_alignments', None,
-                  'If True, keep reads marked as supplementary alignments.')
+flags.DEFINE_boolean(
+    'use_ref_for_cram', None,
+    'If True, use --ref argument as the reference file for CRAM file passed to '
+    '--reads. Reference must be on a local POSIX filesystem.')
+flags.DEFINE_boolean('keep_secondary_alignments', None,
+                     'If True, keep reads marked as secondary alignments.')
+flags.DEFINE_boolean('keep_supplementary_alignments', None,
+                     'If True, keep reads marked as supplementary alignments.')
 flags.DEFINE_integer('num_shards', 1,
                      'Optional. Number of shards for make_examples step.')
 flags.DEFINE_string(
@@ -218,6 +222,7 @@ def main(_):
       gvcf=nonvariant_site_tfrecord_path,
       regions=FLAGS.regions,
       realign_reads=False if FLAGS.model_type == 'PACBIO' else None,
+      use_ref_for_cram=FLAGS.use_ref_for_cram,
       keep_secondary_alignments=FLAGS.keep_secondary_alignments,
       keep_supplementary_alignments=FLAGS.keep_supplementary_alignments)
 
