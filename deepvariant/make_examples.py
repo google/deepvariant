@@ -92,6 +92,9 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
+# Default sample name if no sample name is found from the BAM header.
+_DEFAULT_SAMPLE_NAME = 'default'
+
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
@@ -542,20 +545,24 @@ def extract_sample_name_from_sam_reader(sam_reader):
   Raises:
     ValueError: There is not exactly one unique sample name in the SAM/BAM.
   """
-  samples = {
-      rg.sample_id
-      for rg in sam_reader.header.read_groups
-      if rg.sample_id
-  }
+  samples_list = [
+      rg.sample_id for rg in sam_reader.header.read_groups if rg.sample_id
+  ]
+  samples = set(samples_list)
   if not samples:
-    raise ValueError(
-        'No non-empty sample name found in the input reads. Please provide the '
-        'name of the sample with the --sample_name argument.')
+    logging.warning(
+        'No non-empty sample name found in the input reads. '
+        'DeepVariant will use %s as the sample name. You can also '
+        'provide a sample name with the --sample_name argument.',
+        _DEFAULT_SAMPLE_NAME)
+    return _DEFAULT_SAMPLE_NAME
   elif len(samples) > 1:
-    raise ValueError(
-        'Multiple samples ({}) were found in the input reads. DeepVariant can '
-        'only call variants from a BAM file containing a single sample.'.format(
-            ', '.join(sorted(samples))))
+    logging.warning(
+        'Multiple samples (%s) were found in the input reads. '
+        'Please confirm this is intended. For now, DeepVariant '
+        'will use the first sample name %s.', ', '.join(sorted(samples)),
+        samples_list[0])
+    return samples_list[0]
   return next(iter(samples))
 
 # ---------------------------------------------------------------------------

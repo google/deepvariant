@@ -685,32 +685,23 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
   @parameterized.parameters(
       # No samples could be found in the reads.
-      dict(
-          samples=[],
-          expected_error_message='No non-empty sample name found in the input '
-          'reads. Please provide the name of the sample with the --sample_name '
-          'argument.'),
-      # Check that we detect an empty sample name and raise an exception.
+      dict(samples=[], expected_sample_name=make_examples._DEFAULT_SAMPLE_NAME),
+      # Check that we detect an empty sample name and use default instead.
       dict(
           samples=[''],
-          expected_error_message='No non-empty sample name found in the input '
-          'reads. Please provide the name of the sample '
-          'with the --sample_name argument.'),
+          expected_sample_name=make_examples._DEFAULT_SAMPLE_NAME),
       # We have more than one sample in the reads.
-      dict(
-          samples=['sample1', 'sample2'],
-          expected_error_message=r'Multiple samples \(sample1, sample2\) were found in the input '
-          'reads. DeepVariant can only call variants from a BAM file '
-          'containing a single sample.'),
+      dict(samples=['sample1', 'sample2'], expected_sample_name='sample1'),
   )
-  def test_extract_sample_name_from_reads_detects_bad_samples(
-      self, samples, expected_error_message):
+  def test_extract_sample_name_from_reads_uses_default_when_necessary(
+      self, samples, expected_sample_name):
     mock_sample_reader = mock.Mock()
     mock_sample_reader.header = reads_pb2.SamHeader(read_groups=[
         reads_pb2.ReadGroup(sample_id=sample) for sample in samples
     ])
-    with self.assertRaisesRegexp(ValueError, expected_error_message):
-      make_examples.extract_sample_name_from_sam_reader(mock_sample_reader)
+    self.assertEqual(
+        expected_sample_name,
+        make_examples.extract_sample_name_from_sam_reader(mock_sample_reader))
 
   @flagsaver.FlagSaver
   def test_confident_regions(self):

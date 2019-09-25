@@ -93,6 +93,9 @@ flags.DEFINE_string(
     'regions', None,
     'Optional. Space-separated list of regions we want to process. Elements '
     'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
+flags.DEFINE_string(
+    'sample_name', '', 'Sample name to use for our sample_name in the output '
+    'Variant/DeepVariantCall protos.')
 
 # Optional flags for postprocess_variants.
 flags.DEFINE_string('output_gvcf', None,
@@ -224,7 +227,8 @@ def main(_):
       realign_reads=False if FLAGS.model_type == 'PACBIO' else None,
       use_ref_for_cram=FLAGS.use_ref_for_cram,
       keep_secondary_alignments=FLAGS.keep_secondary_alignments,
-      keep_supplementary_alignments=FLAGS.keep_supplementary_alignments)
+      keep_supplementary_alignments=FLAGS.keep_supplementary_alignments,
+      sample_name=FLAGS.sample_name)
 
   print('\n***** Running the command:*****\n{}\n'.format(command))
   subprocess.check_call(command, shell=True, executable='/bin/bash')
