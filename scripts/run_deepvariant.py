@@ -94,7 +94,7 @@ flags.DEFINE_string(
     'Optional. Space-separated list of regions we want to process. Elements '
     'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
 flags.DEFINE_string(
-    'sample_name', '',
+    'sample_name', None,
     'Sample name to use instead of the sample name from the input reads BAM '
     '(SM tag in the header).')
 
