@@ -24,14 +24,14 @@ This creates one output file: `${OUTPUT}.visual_report.html`
 
 ## How to read the VCF stats report
 
-![screenshot of VCF stats report](images/WGS_HG002.20190913_1432.visual_report.png)
+![screenshot of VCF stats report](images/WGS_HG002.v0.8.0_visual_report.png)
 
 Here we walk through all the charts to discuss how they are generated and how to
 interpret them.
 
 ### Variant types
 
-Insertions have ALT longer than REF, where deletions are the opposite. SNVs have
+Insertions have ALT longer than REF, where deletions are the opposite. SNPs have
 both ALT and REF of one base. Biallelic variants are those where there is only
 one alternate allele, while multiallelic variants have more than one alternate
 allele. Each variant is only counted once. Multi-allelic variants will be listed
@@ -41,15 +41,11 @@ alleles are of the same type. RefCalls are candidates that were determined to
 match the reference and are therefore not variants, although they are included
 in the VCF file (see FILTER column).
 
-### Ti/Tv ratio
+### Depth
 
-Transition (Ti) count is the number of biallelic SNVs going from purine->purine
-or pyrimidine->pyrimidine, where purines are A and G, pyrimidines are C and T.
-Transversions (Tv) are purine-> pyrimidine or pyrimidine->purine. Transitions
-are biologically more likely to occur than transversions due to the molecular
-structure of the bases, so a ratio well above one is desirable. This
-[article](https://gatkforums.broadinstitute.org/gatk/discussion/6308/evaluating-the-quality-of-a-variant-callset)
-on the GATK forums has a good discussion of how to interpret the ratio.
+This chart contains a histogram of depths, which come from the DP sub-column of
+the VCF file. All entries in the VCF are included in this chart, including
+RefCalls. Any entries without a DP are ignored.
 
 ### Quality score
 
@@ -65,7 +61,7 @@ VCF file. An important distinction here is that if the variant-caller is very
 sure that the variant is there, but not sure if it is heterozygous or
 homozygous, the QUAL score can be very high, but the genotype quality score (GQ)
 can be low. GQ is on a Phred scale, calculated as -10*log10(probability that the
-genotype is wrong).
+genotype is wrong). Any entries without a GQ are ignored.
 
 ### Variant allele frequency for all genotypes
 
@@ -81,11 +77,22 @@ all calls with two different alternate alleles, such as 1/2 or 3/5.
 
 ### Biallelic base changes
 
-Of all biallelic SNVs, this shows the counts from a particular REF (along the
+Of all biallelic SNPs, this shows the counts from a particular REF (along the
 top labeling the four charts) to a particular ALT (each bar within the charts
 labeled at the bottom). See the Ti/Tv section for a brief explanation of why
 some of these base changes tend to be more frequent than others. RefCalls and
 multi-allelic variants are not included.
+
+### Biallelic Ti/Tv ratio
+
+Transition (Ti) count is the number of biallelic SNPs going from purine->purine
+or pyrimidine->pyrimidine, where purines are A and G, pyrimidines are C and T.
+Transversions (Tv) are purine->pyrimidine or pyrimidine->purine. Transitions
+are biologically more likely to occur than transversions due to the molecular
+structure of the bases, so a ratio well above one is desirable. This
+[article](https://gatkforums.broadinstitute.org/gatk/discussion/6308/evaluating-the-quality-of-a-variant-callset)
+on the GATK forums has a good discussion of how to interpret the ratio. These
+include all biallelic SNPs, excluding RefCalls.
 
 ### Biallelic indel size distribution
 
@@ -97,10 +104,10 @@ log scale on the bottom. RefCalls and multi-allelic variants are not included.
 
 ### WGS HG002 (DeepVariant v0.8.0)
 
-![visual report of WGS HG002 case study v0.8.0](images/WGS_HG002.20190913_1432.visual_report.png)
+![visual report of WGS HG002 case study v0.8.0](images/WGS_HG002.v0.8.0_visual_report.png)
 
 ### WES HG002 (DeepVariant v0.8.0)
 
-![visual report of WES HG002 case study v0.8.0](images/WES_HG002.20190913_1455.visual_report.png)
+![visual report of WES HG002 case study v0.8.0](images/WES_HG002.v0.8.0_visual_report.png)
 
 [VCF specification]: https://samtools.github.io/hts-specs/VCFv4.3.pdf

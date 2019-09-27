@@ -49,12 +49,6 @@ _VARIANT_STATS_COLUMNS = [
 
 VariantStats = collections.namedtuple('VariantStats', _VARIANT_STATS_COLUMNS)
 
-_VARIANT_SUMMARY_STATS_COLUMNS = [
-    'record_count', 'variant_count', 'snv_count', 'insertion_count',
-    'deletion_count', 'mnp_count', 'complex_count', 'depth_mean', 'depth_stdev',
-    'gq_mean', 'gq_stdev', 'transition_count', 'transversion_count'
-]
-
 BIALLELIC_SNP = 'Biallelic_SNP'
 BIALLELIC_INSERTION = 'Biallelic_Insertion'
 BIALLELIC_DELETION = 'Biallelic_Deletion'
@@ -64,14 +58,6 @@ MULTIALLELIC_INSERTION = 'Multiallelic_Insertion'
 MULTIALLELIC_DELETION = 'Multiallelic_Deletion'
 MULTIALLELIC_COMPLEX = 'Multiallelic_Complex'
 REFCALL = 'RefCall'
-
-
-class VCFSummaryStats(
-    collections.namedtuple('VCFSummaryStats', _VARIANT_SUMMARY_STATS_COLUMNS)):
-  __slots__ = ()
-
-  def asdict(self):
-    return {k: getattr(self, k) for k in _VARIANT_SUMMARY_STATS_COLUMNS}
 
 
 def _get_variant_type(variant):
@@ -124,16 +110,15 @@ def _get_vaf(variant, vcf_reader):
   """Gets the VAF (variant allele frequency)."""
   vafs = variantcall_utils.get_format(
       variant_utils.only_call(variant), 'VAF', vcf_reader)
-  # Simple sum of alleles for multi-allelic variants
   return sum(vafs)
 
 
-def _get_variant_stats(variant, vcf_reader=None):
+def _get_variant_stats(variant, vaf_available=False, vcf_reader=None):
   """Returns a VariantStats object corresponding to the input variant."""
   vtype = _get_variant_type(variant)
   is_transition, is_transversion = _tstv(variant, vtype)
   vaf = None
-  if vcf_reader is not None:
+  if vaf_available:
     vaf = _get_vaf(variant, vcf_reader)
 
   return VariantStats(
@@ -155,8 +140,11 @@ def _get_variant_stats(variant, vcf_reader=None):
       qual=variant.quality)
 
 
-def _single_variant_stats(variants, vcf_reader=None):
-  return [_get_variant_stats(v, vcf_reader=vcf_reader) for v in variants]
+def _single_variant_stats(variants, vaf_available=False, vcf_reader=None):
+  return [
+      _get_variant_stats(v, vaf_available=vaf_available, vcf_reader=vcf_reader)
+      for v in variants
+  ]
 
 
 def _format_histogram_for_vega(counts, bins):
@@ -167,16 +155,16 @@ def _format_histogram_for_vega(counts, bins):
     bins: list of bins from np.histogram
 
   Returns:
-    A list of objects with bin_start, bin_end, and count for each bin in the
-    histogram.
+    A list of objects with s (bin start), e (bin end), and c (bin count) for
+    each bin in the histogram.
   """
   # Avoid floats becoming 0.6000000000000001 to save space in output json
   rounded_bins = [round(x, 10) for x in bins]
   # pylint: disable=g-complex-comprehension
   vega_formatted_hist = [{
-      'bin_start': rounded_bins[idx],
-      'bin_end': rounded_bins[idx + 1],
-      'count': count
+      's': rounded_bins[idx],
+      'e': rounded_bins[idx + 1],
+      'c': count
   } for idx, count in enumerate(counts)]
   # pylint: enable=g-complex-comprehension
   return vega_formatted_hist
@@ -206,7 +194,8 @@ def _vaf_histograms_by_genotype(single_stats, number_of_bins=10):
   stats_by_genotype = {}
   required_genotypes = ['[0, 0]', '[0, 1]', '[1, 1]', '[-1, -1]', '[1, 2]']
   for genotype in required_genotypes:
-    stats_by_genotype[genotype] = _fraction_histogram([], number_of_bins)
+    # Create a few placeholder bins
+    stats_by_genotype[genotype] = _fraction_histogram([], 2)
   # Count vafs from variants (replacing placeholders)
   for genotype, group in grouped_by_genotype:
     # Get VAF for each variant where it is defined
@@ -257,29 +246,12 @@ def _count_base_changes_and_indel_sizes(single_stats):
   return base_changes_for_json, indel_sizes_for_json
 
 
-def _default_limits_histogram(numbers, default_min=0, default_max=100):
-  """Create a histogram with default but flexible x-axis limits.
+def _round_down(num):
+  return int(math.floor(num))
 
-  The purpose is to standardize the x-axis of the plots without the risk of
-  hiding some real data in rare cases that don't conform to expectations.
 
-  Args:
-    numbers: a list of numbers to serve as the data for the histogram.
-    default_min: an integer.
-    default_max: an integer.
-
-  Returns:
-    histogram data as a list of bins.
-  """
-  # Set range from e.g. 0 to 100 by default but allow it to expand to include
-  # all the numbers if any fall outside of the range. E.g. a range of 0 to 100
-  # will expand to 0 to 190 if one of the numbers is 190.
-
-  bin_range = (int(math.floor(min(min(numbers), default_min))),
-               int(math.ceil(max(max(numbers), default_max))))
-  counts, bins = np.histogram(
-      numbers, range=bin_range, bins=bin_range[1] - bin_range[0])
-  return _format_histogram_for_vega(counts, bins)
+def _round_up(num):
+  return int(math.ceil(num))
 
 
 def _compute_qual_histogram(single_var_stats):
@@ -292,8 +264,30 @@ def _compute_qual_histogram(single_var_stats):
     histogram of variant quality scores.
   """
   quals = [round(v.qual, 4) for v in single_var_stats]
-  # set range from 0 to 150 by default but allow it to expand
-  return _default_limits_histogram(quals, default_min=0, default_max=150)
+
+  if quals:
+    bin_range = (_round_down(min(quals)), _round_up(max(quals) + 1))
+    counts, bins = np.histogram(
+        quals, range=bin_range, bins=bin_range[1] - bin_range[0])
+    hist = _format_histogram_for_vega(counts, bins)
+    return [x for x in hist if x['c'] > 0]
+  else:
+    return []
+
+
+def _get_integer_counts(nums):
+  """Turn a list of integers into a list of counts of those integers.
+
+  Args:
+    nums: a list of numbers (e.g. [1,2,2,4])
+
+  Returns:
+    a list of [num, count] (e.g. [[1,1],[2,2],[4,1]]) for all integers with
+    non-zero counts
+  """
+  bin_counts = np.bincount(nums)
+  non_zero_counts = [[i, x] for i, x in enumerate(bin_counts) if x > 0]
+  return non_zero_counts
 
 
 def _compute_gq_histogram(single_var_stats):
@@ -305,47 +299,18 @@ def _compute_gq_histogram(single_var_stats):
   Returns:
     histogram of genotype quality scores.
   """
-  quals = [v.genotype_quality for v in single_var_stats]
-  return _default_limits_histogram(quals, default_min=0, default_max=150)
+  quals = [
+      v.genotype_quality
+      for v in single_var_stats
+      if not isinstance(v.genotype_quality, list)
+  ]
+  return _get_integer_counts(quals)
 
 
-def _compute_summary_stats(single_stats):
-  """Computes summary statistics for a set of variants.
-
-  Args:
-    single_stats: list of VariantStats objects.
-
-  Returns:
-    A VCFSummaryStats object.
-  """
-  transposed_records = zip(*single_stats)
-  transposed_dict = dict(zip(_VARIANT_STATS_COLUMNS, transposed_records))
-
-  return VCFSummaryStats(
-      record_count=len(single_stats),
-      variant_count=sum(transposed_dict['is_variant']),
-      snv_count=sum([
-          t == BIALLELIC_SNP or t == MULTIALLELIC_SNP
-          for t in transposed_dict['variant_type']
-      ]),
-      insertion_count=sum([
-          t == BIALLELIC_INSERTION or t == MULTIALLELIC_INSERTION
-          for t in transposed_dict['variant_type']
-      ]),
-      deletion_count=sum([
-          t == BIALLELIC_DELETION or t == MULTIALLELIC_DELETION
-          for t in transposed_dict['variant_type']
-      ]),
-      mnp_count=sum(
-          [t == BIALLELIC_MNP for t in transposed_dict['variant_type']]),
-      complex_count=sum(
-          [t == MULTIALLELIC_COMPLEX for t in transposed_dict['variant_type']]),
-      depth_mean=np.mean(transposed_dict['depth']),
-      depth_stdev=np.std(transposed_dict['depth']),
-      gq_mean=np.mean(transposed_dict['genotype_quality']),
-      gq_stdev=np.std(transposed_dict['genotype_quality']),
-      transition_count=sum(transposed_dict['is_transition']),
-      transversion_count=sum(transposed_dict['is_transversion']))
+def _compute_depth_histogram(single_var_stats):
+  """Compute a histogram on the depth, with larger bins as depth increases."""
+  depths = [v.depth for v in single_var_stats if not isinstance(v.depth, list)]
+  return _get_integer_counts(depths)
 
 
 def _count_variant_types(single_stats):
@@ -356,33 +321,42 @@ def _count_variant_types(single_stats):
   return count_all_variant_types
 
 
-def _variants_to_stats_json(variants, vcf_reader=None, histogram_bins=10):
+def _count_titv(single_stats):
+  titv_counts = {'Transition': 0, 'Transversion': 0}
+  titv_counts['Transition'] = sum([v.is_transition for v in single_stats])
+  titv_counts['Transversion'] = sum([v.is_transversion for v in single_stats])
+  return titv_counts
+
+
+def _compute_variant_stats_for_charts(variants, vcf_reader=None):
   """Computes variant statistics of each variant.
 
   Args:
-    variants: iterable(Variant)
-    vcf_reader: VcfReader
-    histogram_bins: integer, number of bins for histogram
+    variants: iterable(Variant).
+    vcf_reader: VcfReader.
 
   Returns:
-    A tuple of (stats_json, summary_json), where state_json is a JSON of single
-    variant statistics, and summary_json is a JSON of single sample statistics.
+    A dict with summarized data prepared for charts.
   """
+  vaf_available = False
+  if vcf_reader:
+    vcf_columns = [col.id for col in vcf_reader.header.formats]
+    vaf_available = 'VAF' in vcf_columns
 
-  single_var_stats = _single_variant_stats(variants, vcf_reader=vcf_reader)
+  single_var_stats = _single_variant_stats(
+      variants, vaf_available=vaf_available, vcf_reader=vcf_reader)
 
-  summ_stats = _compute_summary_stats(single_var_stats).asdict()
+  titv_counts = _count_titv(single_var_stats)
+  variant_type_counts = _count_variant_types(single_var_stats)
 
   base_changes, indel_sizes = _count_base_changes_and_indel_sizes(
       single_var_stats)
 
-  histograms = _vaf_histograms_by_genotype(
-      single_var_stats, number_of_bins=histogram_bins)
+  histograms = _vaf_histograms_by_genotype(single_var_stats, number_of_bins=50)
 
   qual_histogram = _compute_qual_histogram(single_var_stats)
   gq_hist = _compute_gq_histogram(single_var_stats)
-
-  variant_type_counts = _count_variant_types(single_var_stats)
+  depth_histogram = _compute_depth_histogram(single_var_stats)
 
   vis_data = {
       'vaf_histograms_by_genotype': histograms,
@@ -390,20 +364,16 @@ def _variants_to_stats_json(variants, vcf_reader=None, histogram_bins=10):
       'base_changes': base_changes,
       'qual_histogram': qual_histogram,
       'gq_histogram': gq_hist,
-      'variant_type_counts': variant_type_counts
+      'variant_type_counts': variant_type_counts,
+      'depth_histogram': depth_histogram,
+      'titv_counts': titv_counts
   }
 
-  return summ_stats, vis_data
+  return vis_data
 
 
-def create_vcf_report(variants,
-                      output_basename,
-                      sample_name,
-                      vcf_reader=None,
-                      histogram_bins=10):
+def create_vcf_report(variants, output_basename, sample_name, vcf_reader=None):
   """Calculate VCF stats and create a visual report."""
-  summary_stats, vis_data = _variants_to_stats_json(
-      variants, vcf_reader=vcf_reader, histogram_bins=histogram_bins)
+  vis_data = _compute_variant_stats_for_charts(variants, vcf_reader=vcf_reader)
 
-  vcf_stats_vis.create_visual_report(output_basename, summary_stats, vis_data,
-                                     sample_name)
+  vcf_stats_vis.create_visual_report(output_basename, vis_data, sample_name)

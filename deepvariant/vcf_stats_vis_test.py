@@ -46,120 +46,106 @@ import tensorflow as tf
 
 from deepvariant import vcf_stats_vis
 
-ALTAIR_CHART = "<class 'altair.vegalite.v3.api.Chart'>"
-
-STATS_DATA = {
-    "insertion_count": 23,
-    "depth_mean": 27.972999999999999,
-    "record_count": 1000,
-    "snv_count": 309,
-    "deletion_count": 30,
-    "depth_stdev": 25.42967304154735,
-    "variant_count": 362,
-    "transition_count": 205,
-    "mnp_count": 0,
-    "complex_count": 0,
-    "transversion_count": 104,
-    "gq_mean": 20.869,
-    "gq_stdev": 14.447139474650337
-}
-
+# Note: histograms all have keys s, e, and c, shortened versions of
+# bin_start, bin_end, and count to save space in output HTML
 VIS_DATA = {
     "base_changes": [["G", "A", 56], ["T", "A", 17], ["C", "T", 47],
                      ["G", "C", 19], ["T", "C", 48], ["C", "A", 14],
                      ["A", "T", 9], ["A", "C", 15], ["T", "G", 9],
                      ["G", "T", 15], ["A", "G", 60], ["C", "G", 11]],
-    "gq_histogram": [{
-        "bin_start": 0,
-        "bin_end": 0.5,
-        "count": 3
-    }, {
-        "bin_start": 0.5,
-        "bin_end": 1,
-        "count": 24
-    }],
+    "gq_histogram": [[1, 3], [2, 24]],
     "indel_sizes": [[1, 6], [2, 4], [4, 2], [5, 2], [7, 2], [8, 1], [12, 1],
                     [-2, 6], [-5, 1], [-4, 7], [-3, 4], [-1, 11]],
     "qual_histogram": [{
-        "bin_start": 0,
-        "bin_end": 50,
-        "count": 10
+        "s": 0,
+        "e": 50,
+        "c": 10
     }, {
-        "bin_start": 50,
-        "bin_end": 99,
-        "count": 10
+        "s": 50,
+        "e": 99,
+        "c": 10
     }],
+    "depth_histogram": [[0, 10], [1, 20]],
     "vaf_histograms_by_genotype": {
         "[-1, -1]": [{
-            "bin_end": 0.5,
-            "bin_start": 0,
-            "count": 10
+            "e": 0.5,
+            "s": 0,
+            "c": 10
         }, {
-            "bin_end": 1,
-            "bin_start": 0.5,
-            "count": 10
+            "e": 1,
+            "s": 0.5,
+            "c": 10
         }],
         "[0, 0]": [{
-            "bin_end": 0.5,
-            "bin_start": 0,
-            "count": 10
+            "e": 0.5,
+            "s": 0,
+            "c": 10
         }, {
-            "bin_end": 1,
-            "bin_start": 0.5,
-            "count": 10
+            "e": 1,
+            "s": 0.5,
+            "c": 10
         }],
         "[0, 1]": [{
-            "bin_end": 0.5,
-            "bin_start": 0,
-            "count": 10
+            "e": 0.5,
+            "s": 0,
+            "c": 10
         }, {
-            "bin_end": 1,
-            "bin_start": 0.5,
-            "count": 10
+            "e": 1,
+            "s": 0.5,
+            "c": 10
         }],
         "[0, 2]": [{
-            "bin_end": 0.5,
-            "bin_start": 0,
-            "count": 10
+            "e": 0.5,
+            "s": 0,
+            "c": 10
         }, {
-            "bin_end": 1,
-            "bin_start": 0.5,
-            "count": 10
+            "e": 1,
+            "s": 0.5,
+            "c": 10
         }],
         "[1, 1]": [{
-            "bin_end": 0.5,
-            "bin_start": 0,
-            "count": 10
+            "e": 0.5,
+            "s": 0,
+            "c": 10
         }, {
-            "bin_end": 1,
-            "bin_start": 0.5,
-            "count": 10
+            "e": 1,
+            "s": 0.5,
+            "c": 10
         }],
         "[1, 2]": [{
-            "bin_end": 0.5,
-            "bin_start": 0,
-            "count": 10
+            "e": 0.5,
+            "s": 0,
+            "c": 10
         }, {
-            "bin_end": 1,
-            "bin_start": 0.5,
-            "count": 10
+            "e": 1,
+            "s": 0.5,
+            "c": 10
         }],
         "[1, 3]": [{
-            "bin_end": 0.5,
-            "bin_start": 0,
-            "count": 10
+            "e": 0.5,
+            "s": 0,
+            "c": 10
         }, {
-            "bin_end": 1,
-            "bin_start": 0.5,
-            "count": 10
+            "e": 1,
+            "s": 0.5,
+            "c": 10
         }]
     },
     "variant_type_counts": {
         "Biallelic_SNP": 10,
         "RefCall": 3,
         "Multiallelic_Insertion": 1
+    },
+    "titv_counts": {
+        "Transition": 20,
+        "Transversion": 10
     }
 }
+
+ALTAIR_CHART = "<class 'altair.vegalite.v3.api.Chart'>"
+FACET_CHART = "<class 'altair.vegalite.v3.api.FacetChart'>"
+LAYER_CHART = "<class 'altair.vegalite.v3.api.LayerChart'>"
+V_CONCAT_CHART = "<class 'altair.vegalite.v3.api.VConcatChart'>"
 
 
 class VcfStatsVisTest(absltest.TestCase):
@@ -188,47 +174,71 @@ class VcfStatsVisTest(absltest.TestCase):
         vcf_stats_vis._prettify_genotype("[6, 3]"),
         (vcf_stats_vis.HET_BOTH, "others"))
 
-  def test_build_type_chart(self):
-    stats = pd.DataFrame([["Deletion", 10], ["Insertion", 20]],
-                         columns=["label", "value"])
-    chart = vcf_stats_vis._build_type_chart(stats)
+  def test_integer_counts_to_histogram(self):
+    test_input = [[1, 1], [2, 2], [4, 1]]
+    expected_output = pd.DataFrame(
+        data={
+            "c": [1, 2, 1],
+            "s": [0.5, 1.5, 3.5],
+            "e": [1.5, 2.5, 4.5]
+        },
+        columns=["c", "s", "e"])
+    observed_output = vcf_stats_vis._integer_counts_to_histogram(test_input)
+    self.assertCountEqual(
+        list(observed_output.columns),
+        list(expected_output.columns),
+        msg="Wrong column names")
     self.assertEqual(
-        str(type(chart)), "<class 'altair.vegalite.v3.api.LayerChart'>")
+        list(observed_output["c"]),
+        list(expected_output["c"]),
+        msg="column c differs")
+    self.assertEqual(
+        list(observed_output["s"]),
+        list(expected_output["s"]),
+        msg="column s differs")
+    self.assertEqual(
+        list(observed_output["e"]),
+        list(expected_output["e"]),
+        msg="column e differs")
+    self.assertTrue((observed_output == expected_output).all().all())
+
+  def test_build_type_chart(self):
+    chart = vcf_stats_vis._build_type_chart(VIS_DATA["variant_type_counts"])
+    self.assertEqual(str(type(chart)), LAYER_CHART)
 
   def test_build_tt_chart(self):
-    stats = pd.DataFrame([["Transition", 10], ["Transversion", 20]],
-                         columns=["label", "value"])
-    chart = vcf_stats_vis._build_tt_chart(stats, 2.0)
-    self.assertEqual(str(type(chart)), ALTAIR_CHART)
+    chart = vcf_stats_vis._build_tt_chart(VIS_DATA["titv_counts"])
+    self.assertEqual(str(type(chart)), LAYER_CHART)
 
   def test_build_qual_histogram(self):
-    chart = vcf_stats_vis._build_qual_histogram(VIS_DATA)
+    chart = vcf_stats_vis._build_qual_histogram(VIS_DATA["qual_histogram"])
+    self.assertEqual(str(type(chart)), ALTAIR_CHART)
+
+  def test_build_depth_histogram(self):
+    chart = vcf_stats_vis._build_depth_histogram(VIS_DATA["depth_histogram"])
     self.assertEqual(str(type(chart)), ALTAIR_CHART)
 
   def test_build_gq_histogram(self):
-    chart = vcf_stats_vis._build_gq_histogram(VIS_DATA)
+    chart = vcf_stats_vis._build_gq_histogram(VIS_DATA["gq_histogram"])
     self.assertEqual(str(type(chart)), ALTAIR_CHART)
 
   def test_build_vaf_histograms(self):
-    chart = vcf_stats_vis._build_vaf_histograms(VIS_DATA)
-    self.assertEqual(
-        str(type(chart[0])), "<class 'altair.vegalite.v3.api.FacetChart'>")
+    chart = vcf_stats_vis._build_vaf_histograms(
+        VIS_DATA["vaf_histograms_by_genotype"])
+    self.assertEqual(str(type(chart[0])), FACET_CHART)
     self.assertEqual(str(type(chart[1])), ALTAIR_CHART)
 
   def test_build_base_change_chart(self):
-    chart = vcf_stats_vis._build_base_change_chart(VIS_DATA)
-    self.assertEqual(
-        str(type(chart)), "<class 'altair.vegalite.v3.api.FacetChart'>")
+    chart = vcf_stats_vis._build_base_change_chart(VIS_DATA["base_changes"])
+    self.assertEqual(str(type(chart)), FACET_CHART)
 
   def test_build_indel_size_chart(self):
-    chart = vcf_stats_vis._build_indel_size_chart(VIS_DATA)
-    self.assertEqual(
-        str(type(chart)), "<class 'altair.vegalite.v3.api.VConcatChart'>")
+    chart = vcf_stats_vis._build_indel_size_chart(VIS_DATA["indel_sizes"])
+    self.assertEqual(str(type(chart)), V_CONCAT_CHART)
 
   def test_build_all_charts(self):
-    chart = vcf_stats_vis._build_all_charts(STATS_DATA, VIS_DATA)
-    self.assertEqual(
-        str(type(chart)), "<class 'altair.vegalite.v3.api.VConcatChart'>")
+    chart = vcf_stats_vis._build_all_charts(VIS_DATA)
+    self.assertEqual(str(type(chart)), V_CONCAT_CHART)
 
   def test_altair_chart_to_html(self):
     df = pd.DataFrame({"x": ["A", "B"], "y": [28, 55]})
@@ -253,7 +263,7 @@ class VcfStatsVisTest(absltest.TestCase):
     outfile_base = os.path.join(base_dir, "stats_test")
     sample_name = "test_sample_name"
     vcf_stats_vis.create_visual_report(
-        outfile_base, STATS_DATA, VIS_DATA, sample_name=sample_name)
+        outfile_base, VIS_DATA, sample_name=sample_name)
     self.assertTrue(tf.io.gfile.exists(outfile_base + ".visual_report.html"))
 
 if __name__ == "__main__":

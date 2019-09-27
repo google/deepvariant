@@ -52,9 +52,6 @@ from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 
-VariantStatsLite = collections.namedtuple('VariantStatsLite',
-                                          ['genotype', 'vaf'])
-
 
 def setUpModule():
   testdata.init()
@@ -157,277 +154,159 @@ class VcfStatsTest(parameterized.TestCase):
             vaf=None,
             qual=0.0))
 
-  def test_compute_summary_stats(self):
-    with vcf.VcfReader(testdata.GOLDEN_POSTPROCESS_OUTPUT) as reader:
-      single_stats = vcf_stats._single_variant_stats(reader.iterate())
-      compute_summary_stats = vcf_stats._compute_summary_stats(single_stats)
-      sum_variant_count = sum([
-          compute_summary_stats.snv_count,
-          compute_summary_stats.insertion_count,
-          compute_summary_stats.deletion_count,
-          compute_summary_stats.complex_count,
-          compute_summary_stats.mnp_count,
-      ])
-      self.assertEqual(compute_summary_stats.variant_count, 71)
-      self.assertEqual(compute_summary_stats.variant_count, sum_variant_count)
-      self.assertEqual(compute_summary_stats.snv_count, 59)
-      self.assertEqual(compute_summary_stats.insertion_count, 7)
-      self.assertEqual(compute_summary_stats.deletion_count, 5)
-      self.assertEqual(compute_summary_stats.complex_count, 0)
-      self.assertEqual(compute_summary_stats.mnp_count, 0)
-      self.assertEqual(compute_summary_stats.record_count, 76)
-      self.assertAlmostEqual(compute_summary_stats.depth_mean,
-                             47.289473684210527)
-      self.assertAlmostEqual(compute_summary_stats.depth_stdev,
-                             8.8953207531791154)
-      self.assertAlmostEqual(compute_summary_stats.gq_mean, 40.236842105263158)
-      self.assertAlmostEqual(compute_summary_stats.gq_stdev, 14.59710535567045)
-
-  def test_variants_to_stats_json(self):
-    truth_summary_json = """
-      {"depth_mean": 20,"depth_stdev": 0,"gq_mean": 59,"gq_stdev": 0,
-      "record_count": 1,"snv_count": 1,"insertion_count": 0,"deletion_count": 0,
-      "complex_count": 0, "mnp_count": 0, "variant_count": 1,
-      "transition_count": 1, "transversion_count": 0}
-      """
-
-    # Without a VcfReader containing VAF, the histogram is empty
-    truth_histograms = """
-      {
-        "[0, 1]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
-        "[-1, -1]": [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
-        "[0, 0]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
-        "[1, 1]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}],
-        "[1, 2]":   [{"bin_end":0.1,"count":0,"bin_start": 0.0}, {"bin_end":0.2,"count":0,"bin_start": 0.1}, {"bin_end":0.3,"count":0,"bin_start": 0.2}, {"bin_end":0.4,"count":0,"bin_start": 0.3}, {"bin_end":0.5,"count":0,"bin_start": 0.4}, {"bin_end":0.6,"count":0,"bin_start": 0.5}, {"bin_end":0.7,"count":0,"bin_start": 0.6}, {"bin_end":0.8,"count":0,"bin_start": 0.7}, {"bin_end":0.9,"count":0,"bin_start": 0.8}, {"bin_end":1.0,"count":0,"bin_start": 0.9}]
-      }
-    """
-
-    summary_json, vis_data_json = vcf_stats._variants_to_stats_json(
-        [self.variant])
-    self.assertEqual(summary_json, json.loads(truth_summary_json))
-    self.assertEqual(vis_data_json['vaf_histograms_by_genotype'],
-                     json.loads(truth_histograms))
+  def test_compute_variant_stats_for_charts(self):
+    expected_keys = [
+        'vaf_histograms_by_genotype', 'indel_sizes', 'base_changes',
+        'qual_histogram', 'gq_histogram', 'variant_type_counts',
+        'depth_histogram', 'titv_counts'
+    ]
+    vis_data = vcf_stats._compute_variant_stats_for_charts([self.variant])
+    self.assertCountEqual(
+        vis_data.keys(),
+        expected_keys,
+        msg='vis_data does not have the right keys')
 
   def test_vaf_histograms_by_genotype(self):
-    variants = [
-        VariantStatsLite(genotype='[0, 0]', vaf=0),
-        VariantStatsLite(genotype='[1, 1]', vaf=1),
-        VariantStatsLite(genotype='[0, 1]', vaf=0.5),
-        VariantStatsLite(genotype='[0, 1]', vaf=0.5),
-        VariantStatsLite(genotype='[0, 0]', vaf=0.08),
-        VariantStatsLite(genotype='[0, 0]', vaf=0.19),
-        VariantStatsLite(genotype='[0, 1]', vaf=0.45),
-        VariantStatsLite(genotype='[0, 1]', vaf=0.65)
+    variant_stats_lite = collections.namedtuple('variant_stats_lite',
+                                                ['genotype', 'vaf'])
+    variant_stats = [
+        variant_stats_lite(genotype='[0, 0]', vaf=0),
+        variant_stats_lite(genotype='[1, 1]', vaf=1),
+        variant_stats_lite(genotype='[0, 1]', vaf=0.5),
+        variant_stats_lite(genotype='[0, 1]', vaf=0.5),
+        variant_stats_lite(genotype='[0, 0]', vaf=0.08),
+        variant_stats_lite(genotype='[0, 0]', vaf=0.19),
+        variant_stats_lite(genotype='[0, 1]', vaf=0.45),
+        variant_stats_lite(genotype='[0, 1]', vaf=0.65)
     ]
-    truth_histograms = {
-        '[0, 0]': [{
-            'bin_end': 0.1,
-            'count': 2,
-            'bin_start': 0.0
-        }, {
-            'bin_end': 0.2,
-            'count': 1,
-            'bin_start': 0.1
-        }, {
-            'bin_end': 0.3,
-            'count': 0,
-            'bin_start': 0.2
-        }, {
-            'bin_end': 0.4,
-            'count': 0,
-            'bin_start': 0.3
-        }, {
-            'bin_end': 0.5,
-            'count': 0,
-            'bin_start': 0.4
-        }, {
-            'bin_end': 0.6,
-            'count': 0,
-            'bin_start': 0.5
-        }, {
-            'bin_end': 0.7,
-            'count': 0,
-            'bin_start': 0.6
-        }, {
-            'bin_end': 0.8,
-            'count': 0,
-            'bin_start': 0.7
-        }, {
-            'bin_end': 0.9,
-            'count': 0,
-            'bin_start': 0.8
-        }, {
-            'bin_end': 1.0,
-            'count': 0,
-            'bin_start': 0.9
-        }],
-        '[0, 1]': [{
-            'bin_end': 0.1,
-            'count': 0,
-            'bin_start': 0.0
-        }, {
-            'bin_end': 0.2,
-            'count': 0,
-            'bin_start': 0.1
-        }, {
-            'bin_end': 0.3,
-            'count': 0,
-            'bin_start': 0.2
-        }, {
-            'bin_end': 0.4,
-            'count': 0,
-            'bin_start': 0.3
-        }, {
-            'bin_end': 0.5,
-            'count': 1,
-            'bin_start': 0.4
-        }, {
-            'bin_end': 0.6,
-            'count': 2,
-            'bin_start': 0.5
-        }, {
-            'bin_end': 0.7,
-            'count': 1,
-            'bin_start': 0.6
-        }, {
-            'bin_end': 0.8,
-            'count': 0,
-            'bin_start': 0.7
-        }, {
-            'bin_end': 0.9,
-            'count': 0,
-            'bin_start': 0.8
-        }, {
-            'bin_end': 1.0,
-            'count': 0,
-            'bin_start': 0.9
-        }],
-        '[1, 1]': [{
-            'bin_end': 0.1,
-            'count': 0,
-            'bin_start': 0.0
-        }, {
-            'bin_end': 0.2,
-            'count': 0,
-            'bin_start': 0.1
-        }, {
-            'bin_end': 0.3,
-            'count': 0,
-            'bin_start': 0.2
-        }, {
-            'bin_end': 0.4,
-            'count': 0,
-            'bin_start': 0.3
-        }, {
-            'bin_end': 0.5,
-            'count': 0,
-            'bin_start': 0.4
-        }, {
-            'bin_end': 0.6,
-            'count': 0,
-            'bin_start': 0.5
-        }, {
-            'bin_end': 0.7,
-            'count': 0,
-            'bin_start': 0.6
-        }, {
-            'bin_end': 0.8,
-            'count': 0,
-            'bin_start': 0.7
-        }, {
-            'bin_end': 0.9,
-            'count': 0,
-            'bin_start': 0.8
-        }, {
-            'bin_end': 1.0,
-            'count': 1,
-            'bin_start': 0.9
-        }],
-        '[-1, -1]': [{
-            'bin_start': 0.0,
-            'count': 0,
-            'bin_end': 0.1
-        }, {
-            'bin_start': 0.1,
-            'count': 0,
-            'bin_end': 0.2
-        }, {
-            'bin_start': 0.2,
-            'count': 0,
-            'bin_end': 0.3
-        }, {
-            'bin_start': 0.3,
-            'count': 0,
-            'bin_end': 0.4
-        }, {
-            'bin_start': 0.4,
-            'count': 0,
-            'bin_end': 0.5
-        }, {
-            'bin_start': 0.5,
-            'count': 0,
-            'bin_end': 0.6
-        }, {
-            'bin_start': 0.6,
-            'count': 0,
-            'bin_end': 0.7
-        }, {
-            'bin_start': 0.7,
-            'count': 0,
-            'bin_end': 0.8
-        }, {
-            'bin_start': 0.8,
-            'count': 0,
-            'bin_end': 0.9
-        }, {
-            'bin_start': 0.9,
-            'count': 0,
-            'bin_end': 1.0
-        }],
-        '[1, 2]': [{
-            'bin_start': 0.0,
-            'count': 0,
-            'bin_end': 0.1
-        }, {
-            'bin_start': 0.1,
-            'count': 0,
-            'bin_end': 0.2
-        }, {
-            'bin_start': 0.2,
-            'count': 0,
-            'bin_end': 0.3
-        }, {
-            'bin_start': 0.3,
-            'count': 0,
-            'bin_end': 0.4
-        }, {
-            'bin_start': 0.4,
-            'count': 0,
-            'bin_end': 0.5
-        }, {
-            'bin_start': 0.5,
-            'count': 0,
-            'bin_end': 0.6
-        }, {
-            'bin_start': 0.6,
-            'count': 0,
-            'bin_end': 0.7
-        }, {
-            'bin_start': 0.7,
-            'count': 0,
-            'bin_end': 0.8
-        }, {
-            'bin_start': 0.8,
-            'count': 0,
-            'bin_end': 0.9
-        }, {
-            'bin_start': 0.9,
-            'count': 0,
-            'bin_end': 1.0
-        }]
-    }
+    # s = bin_start, e = bin_end, c = count
+    truth_histograms = """
+    {
+      "[0, 1]": [{"c": 0, "e": 0.1, "s": 0.0}, {"c": 0, "e": 0.2, "s": 0.1}, {"c": 0, "e": 0.3, "s": 0.2}, {"c": 0, "e": 0.4, "s": 0.3}, {"c": 1, "e": 0.5, "s": 0.4}, {"c": 2, "e": 0.6, "s": 0.5}, {"c": 1, "e": 0.7, "s": 0.6}, {"c": 0, "e": 0.8, "s": 0.7}, {"c": 0, "e": 0.9, "s": 0.8}, {"c": 0, "e": 1.0, "s": 0.9}],
+      "[1, 1]": [{"c": 0, "e": 0.1, "s": 0.0}, {"c": 0, "e": 0.2, "s": 0.1}, {"c": 0, "e": 0.3, "s": 0.2}, {"c": 0, "e": 0.4, "s": 0.3}, {"c": 0, "e": 0.5, "s": 0.4}, {"c": 0, "e": 0.6, "s": 0.5}, {"c": 0, "e": 0.7, "s": 0.6}, {"c": 0, "e": 0.8, "s": 0.7}, {"c": 0, "e": 0.9, "s": 0.8}, {"c": 1, "e": 1.0, "s": 0.9}],
+      "[0, 0]": [{"c": 2, "e": 0.1, "s": 0.0}, {"c": 1, "e": 0.2, "s": 0.1}, {"c": 0, "e": 0.3, "s": 0.2}, {"c": 0, "e": 0.4, "s": 0.3}, {"c": 0, "e": 0.5, "s": 0.4}, {"c": 0, "e": 0.6, "s": 0.5}, {"c": 0, "e": 0.7, "s": 0.6}, {"c": 0, "e": 0.8, "s": 0.7}, {"c": 0, "e": 0.9, "s": 0.8}, {"c": 0, "e": 1.0, "s": 0.9}],
+      "[-1, -1]": [{"c": 0, "e": 0.5, "s": 0.0}, {"c": 0, "e": 1.0, "s": 0.5}],
+      "[1, 2]": [{"c": 0, "e": 0.5, "s": 0.0}, {"c": 0, "e": 1.0, "s": 0.5}]
+      }
+    """
     self.assertEqual(
-        vcf_stats._vaf_histograms_by_genotype(variants), truth_histograms)
+        vcf_stats._vaf_histograms_by_genotype(variant_stats),
+        json.loads(truth_histograms))
+
+  def test_format_histogram_for_vega(self):
+    # s = bin_start, e = bin_end, c = count
+    self.assertEqual(
+        vcf_stats._format_histogram_for_vega(counts=[2, 2], bins=[1, 2.5, 4]),
+        [{
+            's': 1,
+            'e': 2.5,
+            'c': 2
+        }, {
+            's': 2.5,
+            'e': 4,
+            'c': 2
+        }])
+
+  def test_count_titv(self):
+    variant_stats_lite = collections.namedtuple(
+        'variant_stats_lite', ['is_transition', 'is_transversion'])
+    variant_stats = [
+        variant_stats_lite(is_transition=True, is_transversion=False),
+        variant_stats_lite(is_transition=True, is_transversion=False),
+        variant_stats_lite(is_transition=True, is_transversion=False),
+        variant_stats_lite(is_transition=False, is_transversion=True),
+        variant_stats_lite(is_transition=False, is_transversion=True),
+        variant_stats_lite(is_transition=False, is_transversion=False)
+    ]
+    truth_counts = {'Transition': 3, 'Transversion': 2}
+    self.assertEqual(vcf_stats._count_titv(variant_stats), truth_counts)
+
+  def test_count_variant_types(self):
+    variant_stats_lite = collections.namedtuple('variant_stats_lite',
+                                                ['variant_type'])
+    variant_stats = [
+        variant_stats_lite(variant_type='A'),
+        variant_stats_lite(variant_type='B'),
+        variant_stats_lite(variant_type='C'),
+        variant_stats_lite(variant_type='A'),
+        variant_stats_lite(variant_type='B')
+    ]
+    truth_counts = {'A': 2, 'B': 2, 'C': 1}
+    self.assertEqual(
+        vcf_stats._count_variant_types(variant_stats), truth_counts)
+
+  def test_count_base_changes_and_indel_sizes(self):
+    variant_stats_lite = collections.namedtuple(
+        'variant_stats_lite',
+        ['reference_bases', 'alternate_bases', 'is_variant', 'variant_type'])
+    variant_stats = [
+        variant_stats_lite(
+            reference_bases='A',
+            alternate_bases=['G'],
+            is_variant=True,
+            variant_type=vcf_stats.BIALLELIC_SNP),
+        variant_stats_lite(
+            reference_bases='A',
+            alternate_bases=['AGGG'],
+            is_variant=True,
+            variant_type=vcf_stats.BIALLELIC_INSERTION),
+        variant_stats_lite(
+            reference_bases='A',
+            alternate_bases=['G'],
+            is_variant=False,
+            variant_type=vcf_stats.REFCALL),
+        variant_stats_lite(
+            reference_bases='A',
+            alternate_bases=['G', 'T'],
+            is_variant=True,
+            variant_type=vcf_stats.MULTIALLELIC_COMPLEX)
+    ]
+    truth_base_changes = [['A', 'G', 1]]
+    truth_indel_sizes = [[3, 1]]
+    base_changes, indel_sizes = vcf_stats._count_base_changes_and_indel_sizes(
+        variant_stats)
+    self.assertEqual(base_changes, truth_base_changes)
+    self.assertEqual(indel_sizes, truth_indel_sizes)
+
+  def test_compute_qual_histogram(self):
+    variant_stats_lite = collections.namedtuple('variant_stats_lite', ['qual'])
+    variant_stats = [variant_stats_lite(qual=100), variant_stats_lite(qual=49)]
+    hist = vcf_stats._compute_qual_histogram(variant_stats)
+    # s = bin_start, e = bin_end, c = count
+    self.assertEqual(hist, [{
+        'c': 1,
+        's': 49.0,
+        'e': 50.0
+    }, {
+        'c': 1,
+        's': 100.0,
+        'e': 101.0
+    }])
+
+  def test_get_integer_counts(self):
+    self.assertEqual(
+        vcf_stats._get_integer_counts([1, 2, 2, 4]), [[1, 1], [2, 2], [4, 1]])
+
+  def test_compute_gq_histogram(self):
+    variant_stats_lite = collections.namedtuple('variant_stats_lite',
+                                                ['genotype_quality'])
+    variant_stats = [
+        variant_stats_lite(genotype_quality=100),
+        variant_stats_lite(genotype_quality=100),
+        variant_stats_lite(genotype_quality=49)
+    ]
+    hist = vcf_stats._compute_gq_histogram(variant_stats)
+    self.assertEqual(hist, [[49, 1], [100, 2]])
+
+  def test_compute_depth_histogram(self):
+    variant_stats_lite = collections.namedtuple('variant_stats_lite', ['depth'])
+    variant_stats = [
+        variant_stats_lite(depth=100),
+        variant_stats_lite(depth=30),
+        variant_stats_lite(depth=30)
+    ]
+    hist = vcf_stats._compute_depth_histogram(variant_stats)
+    self.assertEqual(hist, [[30, 2], [100, 1]])
 
   def test_create_vcf_report(self):
     base_dir = tempfile.mkdtemp()

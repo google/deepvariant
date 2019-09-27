@@ -53,8 +53,6 @@ flags.DEFINE_string(
 flags.DEFINE_integer(
     'num_records', -1, 'Maximum number of records to emit. If '
     'negative, emit all records.')
-flags.DEFINE_integer('histogram_bins', 10,
-                     'Number of bins for allele frequency histograms.')
 
 
 def main(argv):
@@ -72,19 +70,21 @@ def main(argv):
           FLAGS.input_vcf))
     sample_name = sample_names[0]
 
+    # Missing GT causes error later while reading, so throw a clearer error here
+    vcf_columns = [col.id for col in reader.header.formats]
+    if 'GT' not in vcf_columns:
+      errors.log_and_raise('ERROR: No GT sub-column in VCF.')
+
     if FLAGS.num_records == -1:
       variants = reader.iterate()
     else:
       variants = itertools.islice(reader.iterate(), FLAGS.num_records)
 
-    histogram_bins = FLAGS.histogram_bins if FLAGS.histogram_bins > 2 else 2
-
     vcf_stats.create_vcf_report(
         variants,
         output_basename=FLAGS.outfile_base,
         sample_name=sample_name,
-        vcf_reader=reader,
-        histogram_bins=histogram_bins)
+        vcf_reader=reader)
 
 
 if __name__ == '__main__':
