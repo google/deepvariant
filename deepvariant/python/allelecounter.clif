@@ -40,6 +40,6 @@ from "deepvariant/allelecounter.h":
                    ref: GenomeReference,
                    interval: Range,
                    options: AlleleCounterOptions)
-      def `AddPython` as add(self, read: ConstProtoPtr<Read>)
+      def `AddPython` as add(self, read: ConstProtoPtr<Read>, sample: str)
       def `Counts` as counts(self) -> list<AlleleCount>
       def `SummaryCounts` as summary_counts(self) -> list<AlleleCountSummary>

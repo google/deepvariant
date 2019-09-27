@@ -213,15 +213,15 @@ class AlleleCounter {
                 const AlleleCounterOptions& options);
 
   // Adds the alleles from read to our AlleleCounts.
-  void Add(const ::nucleus::genomics::v1::Read& read);
+  void Add(const ::nucleus::genomics::v1::Read& read, const string& sample);
 
   // Simple wrapper around Add() that allows us to efficiently pass large
   // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and
   // calls Add(read).
-  void AddPython(
-      const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
-          wrapped) {
-    Add(*(wrapped.p_));
+  void AddPython(const nucleus::ConstProtoPtr<
+                     const ::nucleus::genomics::v1::Read>& wrapped,
+                 const string& sample) {
+    Add(*(wrapped.p_), sample);
   }
 
   // Gets the options in use by this AlleleCounter
@@ -294,6 +294,7 @@ class AlleleCounter {
 
   // Adds the ReadAlleles in to_add to our AlleleCounts.
   void AddReadAlleles(const ::nucleus::genomics::v1::Read& read,
+                      const string& sample,
                       const std::vector<ReadAllele>& to_add);
 
   // Our GenomeReference, which we use to get information about the reference

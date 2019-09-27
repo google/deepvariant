@@ -1137,6 +1137,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.options.reads_filename = testdata.CHR20_BAM
     self.options.truth_variants_filename = testdata.TRUTH_VARIANTS_VCF
     self.options.mode = deepvariant_pb2.DeepVariantOptions.TRAINING
+    self.options.variant_caller_options.sample_name = 'sample_id'
 
     self.processor = make_examples.RegionProcessor(self.options)
     self.mock_init = self.add_mock('_initialize')
@@ -1334,7 +1335,8 @@ class RegionProcessorTest(parameterized.TestCase):
     # Make sure we're creating an AlleleCounter once and adding each of our
     # reads to it.
     mock_make_ac.assert_called_once_with(self.region)
-    self.assertEqual([mock.call(r) for r in reads], mock_ac.add.call_args_list)
+    self.assertEqual([mock.call(r, 'sample_id') for r in reads],
+                     mock_ac.add.call_args_list)
 
     # Make sure we call CallVariant for each of the counts returned by the
     # allele counter.

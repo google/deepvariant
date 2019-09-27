@@ -72,7 +72,7 @@ def _candidates_from_reads(config, ref_reader, reads, region):
       ref_reader.c_reader, expanded_region, allele_counter_options)
 
   for read in reads:
-    allele_counter.add(read)
+    allele_counter.add(read, 'dummy_sample_id')
 
   model_type = config.window_selector_model.model_type
   if model_type == realigner_pb2.WindowSelectorModel.VARIANT_READS:

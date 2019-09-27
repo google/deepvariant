@@ -80,7 +80,7 @@ class WrapVariantCallingTest(absltest.TestCase):
     reads = list(sam_reader.query(region))
     self.assertNotEmpty(reads)
     for read in reads:
-      allele_counter.add(read)
+      allele_counter.add(read, 'sample_id')
 
     # Get the candidates records for this whole region.
     candidates = caller.calls_from_allele_counter(allele_counter)

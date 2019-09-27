@@ -119,7 +119,7 @@ class AlleleCounterTest : public ::testing::Test {
     // further testing.
     std::vector<string> read_names;
     for (const auto& read : reads) {
-      allele_counter->Add(read);
+      allele_counter->Add(read, "sample_id");
       read_names.push_back(allele_counter->ReadKey(read));
     }
 
@@ -157,7 +157,7 @@ class AlleleCounterTest : public ::testing::Test {
   void AddNReads(const int pos, const int n, const string& base,
                  AlleleCounter* counter) {
     for (int i = 0; i < n; ++i) {
-      counter->Add(MakeRead("chr1", pos, base, {"1M"}));
+      counter->Add(MakeRead("chr1", pos, base, {"1M"}), "sample_id");
     }
   }
 
@@ -615,7 +615,7 @@ TEST_F(AlleleCounterTest, TestLowMapqReadsAreIgnored) {
   AlleleCounter allele_counter(ref_.get(), range, options);
   auto read = MakeRead("chr1", 0, "ACGT", {"4M"});
   read.mutable_alignment()->set_mapping_quality(0);
-  allele_counter.Add(read);
+  allele_counter.Add(read, "sample_id");
 
   // Since the read has a mapping quality below our minimum, we have no counts.
   for (int i = 0; i < 4; i++) {
@@ -843,6 +843,96 @@ TEST_F(AlleleCounterTest, TestCountSummaries) {
   EXPECT_EQ(summaries[2].ref_base(), "A");
   EXPECT_EQ(summaries[2].ref_supporting_read_count(), 5);
   EXPECT_EQ(summaries[2].total_read_count(), 11);
+}
+
+//
+
+TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_read_per_sample) {
+  auto allele_counter = MakeCounter(chr_, start_, end_);
+  // REF TCCGT.
+  // Create 3 reads each one from a different sample. Each read has a SNP at
+  // position 2.
+  // Make sure that sample_alleles map is filled correctly by allele_counter.
+
+  // SNP C to T at start_ + 2
+  allele_counter->Add(MakeRead(chr_, start_, "TCTGT", {"5M"}), "sample_1");
+  // SNP C to A at start_ + 2
+  allele_counter->Add(MakeRead(chr_, start_, "TCAGT", {"5M"}), "sample_2");
+  // SNP C to G at start_ + 2
+  allele_counter->Add(MakeRead(chr_, start_, "TCGGT", {"5M"}), "sample_3");
+
+  // Fill out the expected sample_alleles proto.
+  AlleleCount expected_allele_count;
+  auto exptected_sample_alleles =
+      expected_allele_count.mutable_sample_alleles();
+  Allele* new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
+  new_allele->MergeFrom(MakeAllele("T", AlleleType::SUBSTITUTION, 1));
+
+  new_allele = (*exptected_sample_alleles)["sample_2"].add_alleles();
+  new_allele->MergeFrom(MakeAllele("A", AlleleType::SUBSTITUTION, 1));
+
+  new_allele = (*exptected_sample_alleles)["sample_3"].add_alleles();
+  new_allele->MergeFrom(MakeAllele("G", AlleleType::SUBSTITUTION, 1));
+
+  // Get allele count for the variant at position 2.
+  auto allele_count = allele_counter->Counts()[2];
+
+  // Each map value contains a list of alleles (in our case just one allele).
+  // For each map pair find a matching one from expected_allele_count and
+  // compare.
+  for (auto& sample_alleles : allele_count.sample_alleles()) {
+    string sample_id = sample_alleles.first;
+    AlleleCount_Alleles alleles = sample_alleles.second;
+    const auto& expected_alleles =
+        expected_allele_count.sample_alleles().find(sample_id);
+    EXPECT_THAT(
+        alleles.alleles(),
+        UnorderedPointwise(EqualsProto(), expected_alleles->second.alleles()));
+  }
+}
+
+TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_sample_three_reads) {
+  auto allele_counter = MakeCounter(chr_, start_, end_);
+  // REF TCCGT.
+  // Create 3 reads each one from the same sample. Each read has a SNP at
+  // position 2.
+  // Make sure that sample_alleles map is filled correctly by allele_counter.
+
+  // SNP C to T at start_ + 2
+  allele_counter->Add(MakeRead(chr_, start_, "TCTGT", {"5M"}), "sample_1");
+  // SNP C to A at start_ + 2
+  allele_counter->Add(MakeRead(chr_, start_, "TCAGT", {"5M"}), "sample_1");
+  // SNP C to G at start_ + 2
+  allele_counter->Add(MakeRead(chr_, start_, "TCGGT", {"5M"}), "sample_1");
+
+  // Fill out the expected sample_alleles proto.
+  AlleleCount expected_allele_count;
+  auto exptected_sample_alleles =
+      expected_allele_count.mutable_sample_alleles();
+  Allele* new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
+  new_allele->MergeFrom(MakeAllele("T", AlleleType::SUBSTITUTION, 1));
+
+  new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
+  new_allele->MergeFrom(MakeAllele("A", AlleleType::SUBSTITUTION, 1));
+
+  new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
+  new_allele->MergeFrom(MakeAllele("G", AlleleType::SUBSTITUTION, 1));
+
+  // Get allele count for the variant at position 2.
+  auto allele_count = allele_counter->Counts()[2];
+
+  // Each map value contains a list of alleles (in our case just one allele).
+  // For each map pair find a matching one from expected_allele_count and
+  // compare.
+  for (auto& sample_alleles : allele_count.sample_alleles()) {
+    string sample_id = sample_alleles.first;
+    AlleleCount_Alleles alleles = sample_alleles.second;
+    const auto& expected_alleles =
+        expected_allele_count.sample_alleles().find(sample_id);
+    EXPECT_THAT(
+        alleles.alleles(),
+        UnorderedPointwise(EqualsProto(), expected_alleles->second.alleles()));
+  }
 }
 
 }  // namespace deepvariant

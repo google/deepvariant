@@ -212,6 +212,15 @@ message AlleleCount {
   // A count of the number of reads that supported the reference allele but
   // whose alignment to the reference genome isn't 100% certain.
   int32 ref_nonconfident_read_count = 5;
+
+  // A map where key is a sample name and vlaue is a list of alt alleles that
+  // are supported by reads from this sample.
+  // This is needed for DeepTrio in order to determine if allele has any
+  // support in a particular sample.
+  message Alleles {
+    repeated Allele alleles = 1;
+  }
+  map<string, Alleles> sample_alleles = 6;
 }
 
 // A lighter-weight version of AlleleCount.

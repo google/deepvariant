@@ -1072,7 +1072,7 @@ class RegionProcessor(object):
 
     allele_counter = self._make_allele_counter_for_region(region)
     for read in reads:
-      allele_counter.add(read)
+      allele_counter.add(read, self.options.variant_caller_options.sample_name)
 
     candidates, gvcfs = self.variant_caller.calls_and_gvcfs(
         allele_counter, gvcf_output_enabled(self.options))

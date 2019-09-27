@@ -64,7 +64,7 @@ class WrapAlleleCounterTest(absltest.TestCase):
     reads = list(sam_reader.query(region))
     self.assertGreater(len(reads), 0)
     for read in reads:
-      allele_counter.add(read)
+      allele_counter.add(read, 'sample_id')
     counts = allele_counter.counts()
     self.assertEqual(len(counts), size)
 

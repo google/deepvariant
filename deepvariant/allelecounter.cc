@@ -230,7 +230,7 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
   return ReadAllele(interval_offset - 1, StrCat(prev_base, bases), type);
 }
 
-void AlleleCounter::AddReadAlleles(const Read& read,
+void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
                                    const std::vector<ReadAllele>& to_add) {
   for (size_t i = 0; i < to_add.size(); ++i) {
     const ReadAllele& to_add_i = to_add[i];
@@ -245,7 +245,7 @@ void AlleleCounter::AddReadAlleles(const Read& read,
     // occurs, for example, when we observe a base at position p on the genome
     // which is enqueued as the ith element of our to_add vector. But the next
     // allele is an indel allele which, because of VCF convention, occurs at
-    // position p, is enqueued at i+1 and supercedes the previous base
+    // position p, is enqueued at i+1 and supersedes the previous base
     // substitution. Resolving these conflicts here allows us to keep the
     // Read => ReadAllele algorithm logic simple.
     if (i + 1 < to_add.size() &&
@@ -260,6 +260,7 @@ void AlleleCounter::AddReadAlleles(const Read& read,
       allele_count.set_ref_supporting_read_count(prev_count + 1);
     } else {
       auto* read_alleles = allele_count.mutable_read_alleles();
+      auto* sample_alleles = allele_count.mutable_sample_alleles();
       const string key = ReadKey(read);
       const Allele allele = MakeAllele(to_add_i.bases(), to_add_i.type(), 1);
 
@@ -277,11 +278,15 @@ void AlleleCounter::AddReadAlleles(const Read& read,
       }
 
       (*read_alleles)[key] = allele;
+      // Update sample to allele map. This may allows us to determine set of
+      // samples that support each allele.
+      Allele* new_allele = (*sample_alleles)[sample].add_alleles();
+      *new_allele = allele;
     }
   }
 }
 
-void AlleleCounter::Add(const Read& read) {
+void AlleleCounter::Add(const Read& read, const string& sample) {
   // redacted
   // Make sure our incoming read has a mapping quality above our min. threshold.
   if (read.alignment().mapping_quality() <
@@ -348,7 +353,7 @@ void AlleleCounter::Add(const Read& read) {
     }
   }
 
-  AddReadAlleles(read, to_add);
+  AddReadAlleles(read, sample, to_add);
   ++n_reads_counted_;
 }
 
