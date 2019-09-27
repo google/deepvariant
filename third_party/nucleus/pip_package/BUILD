@@ -1,8 +1,6 @@
 # Description:
 #   Tools for building the Nucleus pip package.
 
-# KEEP THIS LINE to import nucleus.bzl externally
-
 licenses(["notice"])
 
 filegroup(

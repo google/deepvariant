@@ -1,5 +1,3 @@
-# KEEP THIS LINE to import nucleus.bzl externally
-
 package(
     default_visibility = [
         "//visibility:public",

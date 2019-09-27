@@ -1,6 +1,5 @@
 # Testing utilities that are temporarily located here until they can
 # be separately open source.
-# KEEP THIS LINE to import nucleus.bzl externally
 
 package(default_visibility = ["//:__subpackages__"])
 
