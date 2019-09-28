@@ -25,15 +25,11 @@ cc_library(
     name = "ssw_cpp",
     srcs = ["src/ssw_cpp.cpp"],
     hdrs = ["src/ssw_cpp.h"],
-    defines = ["DISABLE_GOOGLE_STRING"],
-    features = ["-use_header_modules"],
     deps = [":ssw"],
 )
 
 cc_binary(
     name = "_cpp_example",
     srcs = ["src/example.cpp"],
-    defines = ["DISABLE_GOOGLE_STRING"],
-    features = ["-use_header_modules"],
     deps = [":ssw_cpp"],
 )
