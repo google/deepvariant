@@ -347,7 +347,7 @@ class UnindexedFastaReaderFileTest : public ::testing::TestWithParam<string> {};
 
 // Test a couple of files that are formatted differently but should have the
 // same contents.
-INSTANTIATE_TEST_CASE_P(/* prefix */, UnindexedFastaReaderFileTest,
+INSTANTIATE_TEST_CASE_P(All, UnindexedFastaReaderFileTest,
                         ::testing::Values("unindexed.fasta", "test.fasta.gz",
                                           "unindexed_emptylines.fasta"));
 

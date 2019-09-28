@@ -259,7 +259,7 @@ TEST_F(SamWriterTest, InvalidAuxField) {
 class SamBamWriterTest : public SamWriterTest,
                          public ::testing::WithParamInterface<string> {};
 
-INSTANTIATE_TEST_CASE_P(/* no prefix */, SamBamWriterTest,
+INSTANTIATE_TEST_CASE_P(All, SamBamWriterTest,
                         ::testing::Values("test.sam", "test.bam"));
 
 TEST_P(SamBamWriterTest, WriteAndThenRead) {
@@ -297,7 +297,7 @@ TEST_P(SamBamWriterTest, WriteAndThenRead) {
 class CramWriterTest : public SamWriterTest,
                        public ::testing::WithParamInterface<bool> {};
 
-INSTANTIATE_TEST_CASE_P(/* no prefix */, CramWriterTest, ::testing::Bool());
+INSTANTIATE_TEST_CASE_P(All, CramWriterTest, ::testing::Bool());
 
 TEST_P(CramWriterTest, WriteAndThenRead) {
   auto options = SamReaderOptions();
