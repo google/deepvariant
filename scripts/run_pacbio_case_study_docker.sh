@@ -5,7 +5,7 @@ set -euo pipefail
 
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
-BASE="${HOME}/case-study"
+BASE="${HOME}/pacbio-case-study"
 BIN_VERSION="0.8.0"
 
 INPUT_DIR="${BASE}/input/data"
