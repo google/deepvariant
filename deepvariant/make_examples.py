@@ -681,8 +681,8 @@ def validate_reference_contig_coverage(ref_contigs, shared_contigs,
     common_map = ranges.contigs_dict(shared_contigs)
     for ref_contig in ref_contigs:
       status = 'matched' if ref_contig.name in common_map else 'IS MISSING'
-      pieces.append('"{}" is {} bp and {}'.format(ref_contig.name,
-                                                  ref_contig.n_bases, status))
+      pieces.append('\n"{}" is {} bp and {}'.format(ref_contig.name,
+                                                    ref_contig.n_bases, status))
     return ', '.join(pieces)
 
   ref_bp = ranges.contigs_n_bases(ref_contigs)
@@ -692,7 +692,13 @@ def validate_reference_contig_coverage(ref_contigs, shared_contigs,
     raise ValueError('Reference contigs span {} bases but only {} bases '
                      '({:.2%}) were found in common among our input files. '
                      'Check that the sources were created on a common genome '
-                     'reference build. Contig matches were: {}'.format(
+                     'reference build. Contig matches were: {}. Here is a '
+                     'useful article about different human genome reference '
+                     'builds:\n'
+                     'https://gatkforums.broadinstitute.org/gatk/discussion/'
+                     '11010/human-genome-reference-builds-grch38-hg38-b37-hg19'
+                     '\nPlease make sure the --ref input matches the build '
+                     'used for the input in --reads.'.format(
                          ref_bp, common_bp, coverage, format_contig_matches()))
 
 
