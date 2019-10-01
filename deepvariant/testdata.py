@@ -62,6 +62,7 @@ def deepvariant_testdata(filename):
 
 CHR20_FASTA = None
 CHR20_BAM = None
+CHR20_CRAM = None
 GOLDEN_TRAINING_EXAMPLES = None
 GOLDEN_CALLING_CANDIDATES = None
 GOLDEN_CALLING_EXAMPLES = None
@@ -96,6 +97,7 @@ def init():
   """Initialize global variables from flag values."""
   global CHR20_FASTA
   global CHR20_BAM
+  global CHR20_CRAM
   global GOLDEN_TRAINING_EXAMPLES
   global GOLDEN_CALLING_CANDIDATES
   global GOLDEN_CALLING_EXAMPLES
@@ -117,6 +119,7 @@ def init():
 
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
+  CHR20_CRAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.cram')
   GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz')
   GOLDEN_CALLING_CANDIDATES = deepvariant_testdata(

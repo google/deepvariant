@@ -105,10 +105,11 @@ flags.DEFINE_string(
     'Required. Aligned, sorted, indexed BAM file containing the reads we want '
     'to call. Should be aligned to a reference genome compatible with --ref.')
 flags.DEFINE_bool(
-    'use_ref_for_cram', False,
+    'use_ref_for_cram', True,
     'If true, use the --ref argument as the reference file for the CRAM '
     'file passed to --reads.  In this case, it is required that the reference '
-    'file be located on a local POSIX filesystem.')
+    'file be located on a local POSIX filesystem. To disable, specify '
+    '--nouse_ref_for_cram.')
 flags.DEFINE_string(
     'examples', None,
     'Required. Path to write tf.Example protos in TFRecord format.')
@@ -900,6 +901,9 @@ class RegionProcessor(object):
     return image_tensor.tostring(), image_tensor.shape, 'raw'
 
   def _make_sam_reader(self):
+    logging.info('Starting from v0.9.0, --use_ref_for_cram is default to true. '
+                 'If you are using CRAM input, note that we will decode CRAM '
+                 'using the reference you passed in with --ref')
     return sam.SamReader(
         self.options.reads_filename,
         ref_path=FLAGS.ref if FLAGS.use_ref_for_cram else None,

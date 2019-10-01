@@ -171,18 +171,28 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(
           mode='training', num_shards=3,
           labeler_algorithm='positional_labeler'),
+      dict(mode='calling', num_shards=0, use_cram=True),
+      dict(
+          mode='training',
+          num_shards=0,
+          use_cram=True,
+          labeler_algorithm='haplotype_labeler'),
   )
   @flagsaver.FlagSaver
   def test_make_examples_end2end(self,
                                  mode,
                                  num_shards,
+                                 use_cram=False,
                                  labeler_algorithm=None,
                                  use_fast_pass_aligner=True):
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.write_run_info = True
     FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.reads = testdata.CHR20_BAM
+    if use_cram:
+      FLAGS.reads = testdata.CHR20_CRAM
+    else:
+      FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(
         _sharded('vsc.tfrecord', num_shards))
     FLAGS.examples = test_utils.test_tmpfile(
@@ -269,6 +279,25 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           make_examples.read_make_examples_run_info(
               testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO).labeling_metrics,
           run_info.labeling_metrics)
+
+  @flagsaver.FlagSaver
+  def test_make_examples_end2end_failed_on_cram(self):
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+
+    FLAGS.use_ref_for_cram = False
+    FLAGS.write_run_info = True
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_CRAM
+    FLAGS.candidates = test_utils.test_tmpfile(_sharded('failed.vsc.tfrecord'))
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('failed.examples.tfrecord'))
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.partition_size = 1000
+    FLAGS.mode = 'training'
+    FLAGS.gvcf_gq_binsize = 5
+    options = make_examples.default_options(add_flags=True)
+    with self.assertRaisesRegexp(ValueError, 'Not found: Could not open '):
+      make_examples.make_examples_runner(options)
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @flagsaver.FlagSaver

@@ -224,6 +224,12 @@ CRAM     | 1.2G      | 10m37.904s
 -------- | --------- | -------------
 Ratio    | 57%       | 135%
 
+### Update in v0.9.0
+
+Starting from v0.9.0, we default `--use_ref_for_cram` to true.
+Please make sure your `--ref` flag is the same reference file your CRAM file
+was created with.
+
 ### Update in v0.8.0
 
 If you know which reference file your CRAM file was created with, and want to

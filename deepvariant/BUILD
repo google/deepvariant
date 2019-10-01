@@ -22,6 +22,7 @@ filegroup(
     srcs = glob([
         "testdata/*.bam*",
         "testdata/*.bed*",
+        "testdata/*.cram*",
         "testdata/*.tfrecord*",
         "testdata/*.vcf*",
         "testdata/*.fasta*",

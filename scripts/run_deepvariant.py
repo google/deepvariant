@@ -82,7 +82,9 @@ flags.DEFINE_string(
 flags.DEFINE_boolean(
     'use_ref_for_cram', None,
     'If True, use --ref argument as the reference file for CRAM file passed to '
-    '--reads. Reference must be on a local POSIX filesystem.')
+    '--reads. Reference must be on a local POSIX filesystem. Leaving this flag '
+    'unspecified is equivalent to setting it to true, which means DeepVariant '
+    'will use the --ref file to decode your CRAM file.')
 flags.DEFINE_boolean('keep_secondary_alignments', None,
                      'If True, keep reads marked as secondary alignments.')
 flags.DEFINE_boolean('keep_supplementary_alignments', None,
