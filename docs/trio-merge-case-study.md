@@ -144,8 +144,7 @@ do
     --regions="/data/${CAPTURE_BED}" \
     --output_vcf="/data/${OUTPUT_VCF}" \
     --output_gvcf="/data/${OUTPUT_GVCF}" \
-    --num_shards=${N_SHARDS} \
-    --vcf_stats_report
+    --num_shards=${N_SHARDS}
 done
 ```
 

@@ -108,7 +108,7 @@ flags.DEFINE_boolean(
     'split across multiple lines in VCF, set to False so that variants are not '
     'grouped when transforming CallVariantsOutput to Variants.')
 flags.DEFINE_boolean(
-    'vcf_stats_report', False, 'Optional. Output a visual report (HTML) of '
+    'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF at the same base path given by --outfile.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).

@@ -104,7 +104,7 @@ flags.DEFINE_string(
 flags.DEFINE_string('output_gvcf', None,
                     'Optional. Path where we should write gVCF file.')
 flags.DEFINE_boolean(
-    'vcf_stats_report', False, 'Optional. Output a visual report (HTML) of '
+    'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF.')
 
 flags.mark_flag_as_required('model_type')
@@ -167,7 +167,7 @@ def postprocess_variants_command(ref,
                                  outfile,
                                  nonvariant_site_tfrecord_path=None,
                                  gvcf_outfile=None,
-                                 vcf_stats_report=False):
+                                 vcf_stats_report=True):
   """Returns a postprocess_variants command for subprocess.check_call."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
@@ -180,8 +180,8 @@ def postprocess_variants_command(ref,
     ])
   if gvcf_outfile is not None:
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
-  if vcf_stats_report:
-    command.extend(['--vcf_stats_report'])
+  if not vcf_stats_report:
+    command.extend(['--novcf_stats_report'])
   return ' '.join(command)
 
 

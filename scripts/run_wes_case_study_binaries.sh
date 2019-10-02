@@ -143,6 +143,8 @@ function run_postprocess_variants_gVCF() {
 }
 
 ## Run `vcf_stats_report`
+# The report is also created by postprocess_variants, but this separate runner
+# script works on existing VCF files.
 function run_vcf_stats_report() {
   echo "Start running vcf_stats_report...Log will be in the terminal and also to ${LOG_DIR}/vcf_stats_report.log."
   python ./bazel-bin/deepvariant/vcf_stats_report.zip \
