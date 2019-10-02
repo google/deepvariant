@@ -215,8 +215,6 @@ message AlleleCount {
 
   // A map where key is a sample name and vlaue is a list of alt alleles that
   // are supported by reads from this sample.
-  // This is needed for DeepTrio in order to determine if allele has any
-  // support in a particular sample.
   message Alleles {
     repeated Allele alleles = 1;
   }
