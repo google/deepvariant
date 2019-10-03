@@ -48,6 +48,9 @@ NO_ALT_ALLELE = '.'
 # The alternate allele string for the gVCF "any" alternate allele.
 GVCF_ALT_ALLELE = '<*>'
 
+# Older symbolic alt allele, similar in meaning to gVCF alt allele
+SYMBOLIC_ALT_ALLELE = '<NON_REF>'
+
 # The replacement field used for missing data.
 MISSING_FIELD = '.'
 

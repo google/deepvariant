@@ -189,6 +189,31 @@ def format_position(variant):
   return '{}:{}'.format(variant.reference_name, variant.start + 1)
 
 
+def _non_excluded_alts(alts, exclude_alleles=None):
+  """Exclude any alts listed, by default: '<*>', '.', and '<NON_REF>'.
+
+  These alleles are sometimes listed in ALT column but they shouldn't be
+  analyzed and usually indicate reference blocks in formats like gVCF.
+
+  E.g. 'A'->'<*>' is NOT an insertion, and 'A'->'.' is NOT a SNP.
+
+  Args:
+    alts: a list of strings representing the alternate alleles.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
+
+  Returns:
+    alts alleles except those in exclude_alleles, by default excluding the GVCF
+    '<*>' allele, the '<NON_REF>' symbolic allele, and '.' missing field by
+    default.
+  """
+  if exclude_alleles is None:
+    exclude_alleles = [
+        vcf_constants.GVCF_ALT_ALLELE, vcf_constants.SYMBOLIC_ALT_ALLELE,
+        vcf_constants.MISSING_FIELD
+    ]
+  return [a for a in alts if a not in exclude_alleles]
+
+
 def is_snp(variant, exclude_alleles=None):
   """Is variant a SNP?
 
@@ -197,18 +222,11 @@ def is_snp(variant, exclude_alleles=None):
     exclude_alleles: list(str). The alleles in this list will be ignored.
 
   Returns:
-    True if all alleles of variant are 1 bp in length, excluding the GVCF
-    <*> allele.
+    True if all alleles of variant are 1 bp in length.
   """
-  if exclude_alleles is None:
-    exclude_alleles = [vcf_constants.GVCF_ALT_ALLELE]
-  # pyformat: disable
-  return (not is_ref(variant) and
-          len(variant.reference_bases) == 1 and
-          len(variant.alternate_bases) >= 1 and
-          all((len(x) == 1 or x in exclude_alleles)
-              for x in variant.alternate_bases))
-  # pyformat: enable
+  relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
+  return (len(variant.reference_bases) == 1 and len(relevant_alts) >= 1 and
+          all(len(x) == 1 for x in relevant_alts))
 
 
 def is_indel(variant, exclude_alleles=None):
@@ -225,36 +243,75 @@ def is_indel(variant, exclude_alleles=None):
     True if the alleles in variant indicate an insertion/deletion event
     occurs at this site.
   """
-  # redacted
-  # redacted
-  if exclude_alleles is None:
-    exclude_alleles = [vcf_constants.GVCF_ALT_ALLELE]
-  # pyformat: disable
-  return (not is_ref(variant) and
-          (len(variant.reference_bases) > 1 or
-           any((len(alt) > 1 and alt not in exclude_alleles)
-               for alt in variant.alternate_bases)))
-  # pyformat: enable
+  relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
+  if not relevant_alts:
+    return False
+  return (len(variant.reference_bases) > 1 or
+          any(len(alt) > 1 for alt in relevant_alts))
 
 
-def is_biallelic(variant):
-  """Returns True if variant has exactly one alternate allele."""
-  return len(variant.alternate_bases) == 1
+def is_biallelic(variant, exclude_alleles=None):
+  """Returns True if variant has exactly one alternate allele.
+
+  Args:
+    variant: nucleus.genomics.v1.Variant.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
+
+  Returns:
+    True if the variant has exactly one alternate allele.
+  """
+  relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
+  return len(relevant_alts) == 1
 
 
-def is_multiallelic(variant):
+def is_multiallelic(variant, exclude_alleles=None):
   """Does variant have multiple alt alleles?
 
   Args:
     variant: nucleus.genomics.v1.Variant.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
 
   Returns:
     True if variant has more than one alt allele.
   """
-  return len(variant.alternate_bases) > 1
+  relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
+  return len(relevant_alts) > 1
 
 
-def is_ref(variant):
+def variant_is_insertion(variant, exclude_alleles=None):
+  """Are all the variant's alt alleles insertions?
+
+  Args:
+    variant: nucleus.genomics.v1.Variant.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
+
+  Returns:
+    True if variant has at least one alt allele and all alts are insertions.
+  """
+  relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
+  if not relevant_alts:
+    return False
+  return all(
+      is_insertion(variant.reference_bases, alt) for alt in relevant_alts)
+
+
+def variant_is_deletion(variant, exclude_alleles=None):
+  """Are all the variant's alt alleles deletions?
+
+  Args:
+    variant: nucleus.genomics.v1.Variant.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
+
+  Returns:
+    True if variant has at least one alt allele and all alts are deletions.
+  """
+  relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
+  if not relevant_alts:
+    return False
+  return all(is_deletion(variant.reference_bases, alt) for alt in relevant_alts)
+
+
+def is_ref(variant, exclude_alleles=None):
   """Returns true if variant is a reference record.
 
   Variant protos can encode sites that aren't actually mutations in the
@@ -263,12 +320,13 @@ def is_ref(variant):
 
   Args:
     variant: nucleus.genomics.v1.Variant.
+    exclude_alleles: list(str). The alleles in this list will be ignored.
 
   Returns:
-    A boolean.
+    True if there are no actual alternate alleles.
   """
-  alts = variant.alternate_bases
-  return not alts or (len(alts) == 1 and alts[0] == vcf_constants.MISSING_FIELD)
+  relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
+  return not relevant_alts
 
 
 def variant_type(variant):
@@ -508,7 +566,7 @@ def is_variant_call(variant,
       have a non-reference (het, hom-var) genotype for the site to be considered
       a variant call?
     no_calls_are_variant: If a site has genotypes, should we consider no_call
-      genotypes as being variant or not?
+      genotypes as being variant or not? e.g. -1/1 listed as ./. in VCF
     call_indices: A list of 0-based indices. If specified, only the calls
       at the given indices will be considered. The function will return
       True if any of those calls are variant.
@@ -516,23 +574,25 @@ def is_variant_call(variant,
   Returns:
     True if variant is really a mutation call.
   """
-  if not variant.alternate_bases:
+  if is_ref(variant):
+    # No actual alt allele listed in ALT column
     return False
   elif is_filtered(variant):
+    # Anything other than PASS or . in FILTER column
     return False
   elif not variant.calls or not require_non_ref_genotype:
     return True
   # All tests after this point should only look at genotype-based fields, as
   # we may have aborted out in the prev. line due to require_non_ref_genotype.
   else:
+    # Check for non-ref genotypes and optionally no-call (-1) genotypes
     if call_indices is None:
       call_indices = range(len(variant.calls))
-    return any(
-        any(g > 0
-            for g in variant.calls[i].genotype) or
-        (no_calls_are_variant and
-         not variantcall_utils.has_genotypes(variant.calls[i]))
-        for i in call_indices)
+    for i in call_indices:
+      for g in variant.calls[i].genotype:
+        if g > 0 or (no_calls_are_variant and g < 0):
+          return True
+    return False
 
 
 def has_calls(variant):
@@ -544,10 +604,7 @@ def has_calls(variant):
   Returns:
     True if variant has one or more VariantCalls.
   """
-  # I don't want to return the actual data structure so I'm doing the
-  # explicit True/False evaluation here.
-  # pylint: disable=g-explicit-length-test
-  return len(variant.calls) > 0
+  return bool(variant.calls)
 
 
 def genotype_type(variant):

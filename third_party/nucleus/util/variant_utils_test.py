@@ -145,6 +145,7 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', 'C'], gt=None), True, True),
       (test_utils.make_variant(alleles=['A', 'C', 'AT']), True, True),
       (test_utils.make_variant(alleles=['A']), False, False),
+      (test_utils.make_variant(alleles=['A', '.']), False, False),
       (test_utils.make_variant(filters=['FAIL']), False, False),
       (test_utils.make_variant(gt=[-1, -1]), False, True),
       (test_utils.make_variant(gt=[0, 0]), False, True),
@@ -180,6 +181,7 @@ class VariantUtilsTests(parameterized.TestCase):
       self.assertEqual(
           variant_utils.is_variant_call(variant, **kwargs), expected)
 
+    no_genotypes = test_utils.make_variant(gt=[])
     no_call = test_utils.make_variant(gt=[-1, -1])
     hom_ref = test_utils.make_variant(gt=[0, 0])
     het = test_utils.make_variant(gt=[0, 1])
@@ -188,6 +190,8 @@ class VariantUtilsTests(parameterized.TestCase):
     mult2 = test_utils.make_variant_multiple_calls(
         gts=[[0, 0], [0, 1], [-1, -1]])
 
+    check_is_variant(no_genotypes, False, no_calls_are_variant=False)
+    check_is_variant(no_genotypes, False, no_calls_are_variant=False)
     check_is_variant(no_call, False, no_calls_are_variant=False)
     check_is_variant(no_call, True, no_calls_are_variant=True)
     check_is_variant(hom_ref, False, no_calls_are_variant=False)
@@ -245,6 +249,20 @@ class VariantUtilsTests(parameterized.TestCase):
     self.assertEqual(variant_utils.format_position(variant), expected)
 
   @parameterized.parameters(
+      (['C', '<*>'], None, ['C']),
+      (['C', '.'], None, ['C']),
+      (['C', '<NON_REF>'], None, ['C']),
+      (['C', '<*>', 'A', 'T'], None, ['C', 'A', 'T']),
+      (['C', '<*>', 'A', 'T'], [], ['C', '<*>', 'A', 'T']),
+      (['C'], None, ['C']),
+      (['TEST'], ['TEST'], []),
+  )
+  def test_non_excluded_alts(self, alts, excluded, expected):
+    self.assertEqual(
+        variant_utils._non_excluded_alts(alts, exclude_alleles=excluded),
+        expected)
+
+  @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), True),
       (test_utils.make_variant(alleles=['A', 'C', 'T']), True),
       (test_utils.make_variant(alleles=['A', 'AT']), False),
@@ -255,15 +273,23 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', '.']), False),
       (test_utils.make_variant(alleles=['A', 'C', '<*>']), True),
       (test_utils.make_variant(alleles=['A', 'AT', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'G', 'C', 'AT', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'C', 'G', 'T', '<*>']), True),
+      (test_utils.make_variant(alleles=['A', 'AT', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'T', '<*>']), True),
+      (test_utils.make_variant(alleles=['A', 'T', 'G', '<*>']), True),
   )
   def test_is_snp(self, variant, expected):
     self.assertEqual(variant_utils.is_snp(variant), expected)
 
   @parameterized.parameters(
-      (test_utils.make_variant(alleles=['A', 'C', '<NON_REF>']), ['<NON_REF>'],
-       True),
-      (test_utils.make_variant(alleles=['A', 'AT', '<NON_REF>']), ['<NON_REF>'],
-       False),
+      (test_utils.make_variant(alleles=['A', 'C', '<NON_REF>']), ['<NON_REF>'
+                                                                 ], True),
+      (test_utils.make_variant(alleles=['A', 'AT', '<NON_REF>']), ['<NON_REF>'
+                                                                  ], False),
+      # <NON_REF> is excluded by default
+      (test_utils.make_variant(alleles=['A', 'C', '<NON_REF>']), None, True),
+      (test_utils.make_variant(alleles=['A', 'AT', '<NON_REF>']), None, False),
   )
   def test_is_snp_symbolic_allele(self, variant, exclude_alleles, expected):
     self.assertEqual(
@@ -281,6 +307,11 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['A', '.']), False),
       (test_utils.make_variant(alleles=['A', 'C', 'AT', '<*>']), True),
       (test_utils.make_variant(alleles=['A', 'C', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'C', 'AT', '<*>']), True),
+      (test_utils.make_variant(alleles=['A', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'C', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'C', '<NON_REF>']), False),
+      (test_utils.make_variant(alleles=['A', 'AT', '<NON_REF>']), True),
   )
   def test_is_indel(self, variant, expected):
     self.assertEqual(variant_utils.is_indel(variant), expected)
@@ -303,6 +334,8 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['AT', 'A']), False),
       (test_utils.make_variant(alleles=['AT', 'A', 'CT']), True),
       (test_utils.make_variant(alleles=['A', 'C', 'AT']), True),
+      (test_utils.make_variant(alleles=['A', 'C', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'C', 'T', '<*>']), True),
   )
   def test_is_multiallelic(self, variant, expected):
     self.assertEqual(variant_utils.is_multiallelic(variant), expected)
@@ -314,9 +347,42 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['AT', 'A']), True),
       (test_utils.make_variant(alleles=['AT', 'A', 'CT']), False),
       (test_utils.make_variant(alleles=['AT']), False),
+      (test_utils.make_variant(alleles=['AT', '.']), False),
+      (test_utils.make_variant(alleles=['AT', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', 'AT', '<*>']), True),
+      (test_utils.make_variant(alleles=['AT', 'A', '<*>']), True),
+      (test_utils.make_variant(alleles=['A', 'C', 'T', '<*>']), False),
   )
   def test_is_biallelic(self, variant, expected):
     self.assertEqual(variant_utils.is_biallelic(variant), expected)
+
+  @parameterized.parameters(
+      (test_utils.make_variant(alleles=['A', 'AA']), True),
+      (test_utils.make_variant(alleles=['A', 'G']), False),
+      (test_utils.make_variant(alleles=['A', 'AT', 'AG']), True),
+      (test_utils.make_variant(alleles=['A', 'AT', 'A']), False),
+      (test_utils.make_variant(alleles=['A', 'AT', 'AGG']), True),
+      (test_utils.make_variant(alleles=['A', '.']), False),
+      (test_utils.make_variant(alleles=['A', '<*>']), False),
+      (test_utils.make_variant(alleles=['A', '<NON_REF>']), False),
+      (test_utils.make_variant(alleles=['A']), False),
+  )
+  def test_variant_is_insertion(self, variant, expected):
+    self.assertEqual(variant_utils.variant_is_insertion(variant), expected)
+
+  @parameterized.parameters(
+      (test_utils.make_variant(alleles=['AG', 'A']), True),
+      (test_utils.make_variant(alleles=['A', 'G']), False),
+      (test_utils.make_variant(alleles=['AAG', 'AC', 'AG']), True),
+      (test_utils.make_variant(alleles=['AAC', 'ATG', 'A']), False),
+      (test_utils.make_variant(alleles=['AAT', 'A', 'AA']), True),
+      (test_utils.make_variant(alleles=['AGA', '.']), False),
+      (test_utils.make_variant(alleles=['AGTT', '<*>']), False),
+      (test_utils.make_variant(alleles=['AGAGTCGACTGAT', '<NON_REF>']), False),
+      (test_utils.make_variant(alleles=['AT']), False),
+  )
+  def test_variant_is_deletion(self, variant, expected):
+    self.assertEqual(variant_utils.variant_is_deletion(variant), expected)
 
   @parameterized.parameters(
       (['A', 'C'], ['A', 'C']),
@@ -432,11 +498,24 @@ class VariantUtilsTests(parameterized.TestCase):
       (test_utils.make_variant(alleles=['AT', 'A', 'CT']), False, True),
       (test_utils.make_variant(alleles=['A', 'C', 'AT']), True, False),
       (test_utils.make_variant(alleles=['A']), False, False),
-      (test_utils.make_variant(alleles=['A', '.']), False, False),
+      (test_utils.make_variant(alleles=['AGA', '.']), False, False),
   )
   def test_has_insertion_deletion(self, variant, has_insertion, has_deletion):
     self.assertEqual(variant_utils.has_insertion(variant), has_insertion)
     self.assertEqual(variant_utils.has_deletion(variant), has_deletion)
+
+  @parameterized.parameters(
+      (test_utils.make_variant(alleles=['A']), None, True),
+      (test_utils.make_variant(alleles=['A', '.']), None, True),
+      # a gVCF reference block record is counted as ref
+      (test_utils.make_variant(alleles=['A', '<*>']), None, True),
+      # symbolic allele <NON_REF> practically counts as ref
+      (test_utils.make_variant(alleles=['A', '<NON_REF>']), None, True),
+      (test_utils.make_variant(alleles=['A', 'G']), None, False),
+      (test_utils.make_variant(alleles=['A', '<NON_REF>']), ['.'], False),
+  )
+  def test_is_ref(self, variant, excluded, expected):
+    self.assertEqual(variant_utils.is_ref(variant, excluded), expected)
 
   @parameterized.parameters(
       (test_utils.make_variant(gt=None), False),

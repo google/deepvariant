@@ -65,12 +65,8 @@ def _get_variant_type(variant):
   if variant_utils.is_variant_call(variant):
     biallelic = variant_utils.is_biallelic(variant)
     snp = variant_utils.is_snp(variant)
-    insertion = all(
-        variant_utils.is_insertion(variant.reference_bases, alt)
-        for alt in variant.alternate_bases)
-    deletion = all(
-        variant_utils.is_deletion(variant.reference_bases, alt)
-        for alt in variant.alternate_bases)
+    insertion = variant_utils.variant_is_insertion(variant)
+    deletion = variant_utils.variant_is_deletion(variant)
 
     if biallelic:
       if snp:
