@@ -60,7 +60,7 @@ function setup_test() {
 function run_deepvariant() {
   echo "Start running run_deepvariant...Log will be in the terminal and also to ${LOG_DIR}/deepvariant_runtime.log."
   sudo docker run \
-    -v "${INPUT_DIR}":"${INPUT_DIR}" \
+    -v "${DATA_DIR}":"${DATA_DIR}" \
     -v "${OUTPUT_DIR}":"${OUTPUT_DIR}" \
     deepvariant:latest \
     /opt/deepvariant/bin/run_deepvariant \
@@ -68,8 +68,8 @@ function run_deepvariant() {
     --num_shards "${N_SHARDS}" \
     --output_gvcf "${OUTPUT_GVCF}" \
     --output_vcf "${OUTPUT_VCF}" \
-    --reads "${INPUT_DIR}/${BAM}" \
-    --ref "${INPUT_DIR}/${REF}"
+    --reads "${DATA_DIR}/${BAM}" \
+    --ref "${DATA_DIR}/${REF}"
   echo "Done."
   echo
 }
