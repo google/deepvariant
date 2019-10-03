@@ -104,6 +104,13 @@ class AuxBuilder {
     CHECK(has_num_bytes_);
     uint8_t* data_array_ptr = data;
     for (const auto& entry : read_.info()) {
+      if (entry.second.values_size() != 1) {
+        // redacted
+        LOG(WARNING) << "SamWriter currently doesn't support writing info "
+                        "fields of size "
+                     << entry.second.values_size();
+        continue;
+      }
       const Value& v = entry.second.values(0);
       if (!(v.kind_case() == Value::kIntValue ||
             v.kind_case() == Value::kStringValue ||
@@ -156,9 +163,10 @@ class AuxBuilder {
       }
       if (entry.second.values_size() != 1) {
         // redacted
-        return tf::errors::Unknown(
-            "SamWriter currently doesn't support info field of size ",
-            entry.second.values_size());
+        LOG(WARNING) << "SamWriter currently doesn't support writing info "
+                        "fields of size "
+                     << entry.second.values_size();
+        continue;
       }
       const Value& v = entry.second.values(0);
       if (!(v.kind_case() == Value::kIntValue ||

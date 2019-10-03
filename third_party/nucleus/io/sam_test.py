@@ -126,19 +126,36 @@ class SamReaderTests(parameterized.TestCase):
           }),  # Empty string.
           # We skip H hex byte-array tags as they appear deprecated.
           ('X8:H:1AE301', {}),
-          # We are skipping array structures right now, so we don't expect
-          # any outputs, but we want to ensure we don't die when they are
-          # present.
-          ('X9:B:i,1', {}),
-          ('XA:B:i,1,2', {}),
-          ('XB:B:i,1,2,3', {}),
-          ('XC:B:i,1,2,3,4,5,6,7,8,9,10', {}),
-          ('XD:B:I,1,2,3', {}),
-          ('XE:B:c,1,2,3', {}),
-          ('XF:B:C,1,2,3', {}),
-          ('XG:B:f,0.12,0.34', {}),
-          ('XH:B:s,1,2,3', {}),
-          ('XI:B:S,1,2,3', {}),
+          ('X9:B:i,1', {
+              'X9': [1]
+          }),
+          ('XA:B:i,1,2', {
+              'XA': [1, 2]
+          }),
+          ('XB:B:i,1,2,3', {
+              'XB': [1, 2, 3]
+          }),
+          ('XC:B:i,1,2,3,4,5,6,7,8,9,10', {
+              'XC': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+          }),
+          ('XD:B:I,1,2,3', {
+              'XD': [1, 2, 3]
+          }),
+          ('XE:B:c,1,2,3', {
+              'XE': [1, 2, 3]
+          }),
+          ('XF:B:C,1,2,3', {
+              'XF': [1, 2, 3]
+          }),
+          ('XG:B:f,0.12,0.34', {
+              'XG': [0.12, 0.34]
+          }),
+          ('XH:B:s,1,2,3', {
+              'XH': [1, 2, 3]
+          }),
+          ('XI:B:S,1,2,3', {
+              'XI': [1, 2, 3]
+          }),
       ],
       r=r))
   def test_parsing_aux_tags(self, tag_string, expected_info):
@@ -158,6 +175,7 @@ class SamReaderTests(parameterized.TestCase):
               'X7:B:i,1.23',  # Integer byte array with a float.
               'X8:B:i,string',  # Integer byte array with a string.
               'X8:B:f,string',  # Float byte array with a string.
+              'X8:B:z,1,2,3',  # z is not a valid subtype.
           ],
           r=r))
   def test_survives_malformed_lines(self, tag_string):

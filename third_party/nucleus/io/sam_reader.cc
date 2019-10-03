@@ -327,11 +327,69 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
           return tf::errors::DataLoss("data too short for tag " + tag);
         const int n_elements = le_to_u32(s);
         if (n_elements == 0) return tf::errors::DataLoss("n_elements is zero");
-        // redacted
-        // We need to skip len * element size in bytes to clear the array
-        // itself, and 4 more bytes for n_elements int that occurs before the
+        // We need to skip 4 bytes for n_elements int that occurs before the
         // array.
-        s += 4 + n_elements * element_size;
+        s += 4;
+        if (sub_type == 'c') {
+          std::vector<int8_t> all_values;
+          for (int i = 0; i < n_elements; i++) {
+            int8_t value = le_to_i8(s);
+            all_values.push_back(value);
+            s += element_size;
+          }
+          SetInfoField(tag, all_values, read_message);
+        } else if (sub_type == 'C') {
+          std::vector<uint8_t> all_values;
+          for (int i = 0; i < n_elements; i++) {
+            uint8_t value = reinterpret_cast<uint8_t>(*s);
+            all_values.push_back(value);
+            s += element_size;
+          }
+          SetInfoField(tag, all_values, read_message);
+        } else if (sub_type == 's') {
+          std::vector<int16_t> all_values;
+          for (int i = 0; i < n_elements; i++) {
+            int16_t value = le_to_i16(s);
+            all_values.push_back(value);
+            s += element_size;
+          }
+          SetInfoField(tag, all_values, read_message);
+        } else if (sub_type == 'S') {
+          std::vector<uint16_t> all_values;
+          for (int i = 0; i < n_elements; i++) {
+            uint16_t value = le_to_u16(s);
+            all_values.push_back(value);
+            s += element_size;
+          }
+          SetInfoField(tag, all_values, read_message);
+        } else if (sub_type == 'i') {
+          std::vector<int32_t> all_values;
+          for (int i = 0; i < n_elements; i++) {
+            int32_t value = le_to_i32(s);
+            all_values.push_back(value);
+            s += element_size;
+          }
+          SetInfoField(tag, all_values, read_message);
+        } else if (sub_type == 'I') {
+          std::vector<uint32_t> all_values;
+          for (int i = 0; i < n_elements; i++) {
+            uint32_t value = le_to_u32(s);
+            all_values.push_back(value);
+            s += element_size;
+          }
+          SetInfoField(tag, all_values, read_message);
+        } else if (sub_type == 'f') {
+          std::vector<float> all_values;
+          for (int i = 0; i < n_elements; i++) {
+            float value = le_to_float(s);
+            all_values.push_back(value);
+            s += element_size;
+          }
+          SetInfoField(tag, all_values, read_message);
+        } else {
+          return tf::errors::DataLoss("Unknown subtype " +
+                                      std::to_string(sub_type));
+        }
       } break;
       default: {
         return tf::errors::DataLoss("Unknown tag " + tag);
@@ -363,7 +421,7 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
       }
       return tf::Status::OK();
     }
-  } else { // Use "QUAL" field.
+  } else {  // Use "QUAL" field.
     if (c->l_qseq) {
       uint8_t* quals = bam_get_qual(b);
       if (quals[0] != 0xff) {  // Not missing

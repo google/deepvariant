@@ -248,11 +248,15 @@ TEST_F(SamWriterTest, InvalidAuxField) {
   ASSERT_THAT(reader2->Close(), IsOK());
 
   ASSERT_EQ(3u, reads2.size());
-  for (size_t i = 0; i < reads2.size(); ++i) {
-    Read emptyAuxRead(reads[i]);
-    emptyAuxRead.clear_info();
-    EXPECT_THAT(reads2[i], EqualsProto(emptyAuxRead));
+  // First two reads should contain all but "CG" aux field.
+  for (size_t i = 0; i < reads2.size() - 1; ++i) {
+    reads[i].mutable_info()->erase("CG");
+    EXPECT_THAT(reads2[i], EqualsProto(reads[i]));
   }
+  // Read that had malformed tag should not contain any aux fields.
+  Read emptyAuxRead(reads[2]);
+  emptyAuxRead.clear_info();
+  EXPECT_THAT(reads2[2], EqualsProto(emptyAuxRead));
 }
 
 // Test SAM, BAM, CRAM formats.
@@ -270,7 +274,13 @@ TEST_P(SamBamWriterTest, WriteAndThenRead) {
       SamReader::FromFile(GetTestData(GetParam()), options).ValueOrDie());
   std::vector<Read> reads = as_vector(reader->Iterate());
   ASSERT_THAT(reader->Close(), IsOK());
-
+  // Clear out byte-array fields before writing. We support reading byte-array
+  // fields but do not yet support writing out byte-array fields (internal).
+  for (nucleus::genomics::v1::Read& r : reads) {
+    r.mutable_info()->erase("ZP");
+    r.mutable_info()->erase("ZC");
+    r.mutable_info()->erase("ZM");
+  }
   const string actual_filename = MakeTempFile(GetParam());
   std::unique_ptr<SamWriter> writer = std::move(
       SamWriter::ToFile(actual_filename, reader->Header()).ValueOrDie());
@@ -314,7 +324,13 @@ TEST_P(CramWriterTest, WriteAndThenRead) {
           .ValueOrDie());
   std::vector<Read> reads = as_vector(reader->Iterate());
   ASSERT_THAT(reader->Close(), IsOK());
-
+  // Clear out byte-array fields before writing. We support reading byte-array
+  // fields but do not yet support writing out byte-array fields (internal).
+  for (nucleus::genomics::v1::Read& r : reads) {
+    r.mutable_info()->erase("ZP");
+    r.mutable_info()->erase("ZC");
+    r.mutable_info()->erase("ZM");
+  }
   const string output_filename = MakeTempFile(filename);
   // Writing requires |ref_path| regardless becauses Reads proto doesn't have
   // embedded refs.
