@@ -1,5 +1,3 @@
-load("//:third_party/clif.bzl", "py_clif_cc")
-
 package(
     default_visibility = [
         "//visibility:public",
