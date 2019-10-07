@@ -7,6 +7,31 @@ for reading and writing data in common genomics file formats (like SAM and VCF)
 designed for painless integration with the
 [TensorFlow](https://www.tensorflow.org/) machine learning framework.
 
+## How to run
+
+We recommend using our Docker solution. The command will look like this:
+
+```
+BIN_VERSION="0.9.0"
+sudo docker run \
+  -v "YOUR_INPUT_DIR":"/input" \
+  -v "YOUR_OUTPUT_DIR:/output" \
+  google/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
+  --ref=/input/YOUR_REF \
+  --reads=/input/YOUR_BAM \
+  --output_vcf=/output/YOUR_OUTPUT_VCF \
+  --output_gvcf=/output/YOUR_OUTPUT_GVCF \
+  --num_shards=$(nproc) **This will use all your cores to run make_examples. Feel free to change.**
+```
+
+For more information, see:
+
+  * [Quick Start](https://github.com/google/deepvariant/blob/r0.9/docs/deepvariant-quick-start.md)
+  * [Full documentation](https://github.com/google/deepvariant/tree/r0.9/docs)
+
+
 ## How to cite
 
 If you're using DeepVariant in your work, please cite:
@@ -59,8 +84,8 @@ Below are the official solutions provided by the
 
 Name                                                                                                | Description
 :-------------------------------------------------------------------------------------------------: | -----------
-[Docker](https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md)           | This is the recommended method.
-[Build from source](https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-build-test.md) | DeepVariant comes with scripts to build it on Ubuntu 14 and 16, with Ubuntu 16 recommended. To build and run on other Unix-based systems, you will need to modify these scripts.
+[Docker](https://github.com/google/deepvariant/blob/r0.9/docs/deepvariant-quick-start.md)           | This is the recommended method.
+[Build from source](https://github.com/google/deepvariant/blob/r0.9/docs/deepvariant-build-test.md) | DeepVariant comes with scripts to build it on Ubuntu 14 and 16, with Ubuntu 16 recommended. To build and run on other Unix-based systems, you will need to modify these scripts.
 Prebuilt Binaries                                                                                   | Available at [`gs://deepvariant/`](https://console.cloud.google.com/storage/browser/deepvariant). These are compiled to use SSE4 and AVX instructions, so you will need a CPU (such as Intel Sandy Bridge) that supports them. You can check the `/proc/cpuinfo` file on your computer, which lists these features under "flags".
 
 ### External Solutions
@@ -77,12 +102,6 @@ Name                                                                            
 [DNAnexus DeepVariant App](https://platform.dnanexus.com/app/deepvariant_germline)                                                                                                                                                                                                                                                                                                                                       | Offers parallelized execution with a GUI interface (requires platform account).
 [Nextflow Pipeline](https://github.com/nf-core/deepvariant)                                                                                                                                                                                                                                                                                                                                                              | Offers parallel processing of multiple BAMs and Docker support.
 [DNAstack Pipeline](https://app.dnastack.com/auth/realms/DNAstack/protocol/openid-connect/auth?client_id=dnastack-client&redirect_uri=https%3A%2F%2Fapp.dnastack.com%2F%3Fredirect_fragment%3D%252Forg%252F473079%252Fproj%252F473096%252Fapp%252Fworkflow%252F425685%252Frun&state=42231553-9fbc-4d71-a10e-d6ce42415c01&nonce=daf2568d-4fe7-48e2-ab60-858937244a87&response_mode=query&response_type=code&scope=openid) | Cost-optimized DeepVariant pipeline (requires platform account).
-
-## Run DeepVariant
-
-*   [DeepVariant Quickstart](https://github.com/google/deepvariant/blob/r0.8/docs/deepvariant-quick-start.md) -
-    run DeepVariant on Docker
-*   [Full documentation](https://github.com/google/deepvariant/tree/r0.8/docs)
 
 ## Additional References
 
