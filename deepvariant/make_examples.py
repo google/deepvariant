@@ -207,10 +207,10 @@ flags.DEFINE_float('vsc_min_fraction_snps', 0.12,
                    'SNP alleles occurring at least this fraction of all '
                    'counts in our AlleleCount will be advanced as '
                    'candidates.')
-flags.DEFINE_float('vsc_min_fraction_indels', 0.12,
-                   'Indel alleles occurring at least this fraction of all '
-                   'counts in our AlleleCount will be advanced as '
-                   'candidates.')
+flags.DEFINE_float(
+    'vsc_min_fraction_indels', 0.06,
+    'Indel alleles occurring at least this fraction of all counts in our '
+    'AlleleCount will be advanced as candidates.')
 flags.DEFINE_float(
     'training_random_emit_ref_sites', NO_RANDOM_REF,
     'If > 0, emit extra random reference examples with this probability.')

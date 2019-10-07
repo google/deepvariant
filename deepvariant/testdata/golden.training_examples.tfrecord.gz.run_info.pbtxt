@@ -3418,7 +3418,7 @@ options {
     min_count_snps: 2
     min_count_indels: 2
     min_fraction_snps: 0.119999997318
-    min_fraction_indels: 0.119999997318
+    min_fraction_indels: 0.0599999986589
     random_seed: 1400605801
     sample_name: "NA12878"
     p_error: 0.0010000000475
@@ -3521,7 +3521,7 @@ labeling_metrics {
   n_truth_variant_alleles: 48
   n_candidate_variant_sites: 49
   n_candidate_variant_alleles: 49
-  n_non_confident_candidate_variant_sites: 27
+  n_non_confident_candidate_variant_sites: 30
   n_true_positive_sites: 48
   n_true_positive_alleles: 84
   n_false_positive_sites: 1
