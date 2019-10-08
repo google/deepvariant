@@ -93,7 +93,7 @@ def FlagContext(**overrides):
     Nothing, it's a context manager.
   """
   saved_flag_values = SaveFlagValues()
-  for name, value in overrides.iteritems():
+  for name, value in overrides.items():
     setattr(FLAGS, name, value)
   try:
     yield

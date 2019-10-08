@@ -107,10 +107,6 @@ flags.DEFINE_boolean(
     'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF.')
 
-flags.mark_flag_as_required('model_type')
-flags.mark_flag_as_required('ref')
-flags.mark_flag_as_required('reads')
-flags.mark_flag_as_required('output_vcf')
 
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
@@ -140,7 +136,8 @@ def make_examples_command(ref, reads, examples, **kwargs):
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
   # Extend the command with all items in kwargs.
-  for key, value in kwargs.items():
+  for key in sorted(kwargs):
+    value = kwargs[key]
     if value is None:
       continue
     if isinstance(value, bool):
@@ -208,10 +205,10 @@ def get_model_ckpt(model_type, customized_model):
     return MODEL_TYPE_MAP[model_type]
 
 
-def main(_):
-  check_or_create_intermediate_results_dir(FLAGS.intermediate_results_dir)
-  check_flags()
-
+def create_all_commands():
+  """Creates 3 commands to be executed later."""
+  commands = []
+  # make_examples
   nonvariant_site_tfrecord_path = None
   if FLAGS.output_gvcf is not None:
     nonvariant_site_tfrecord_path = os.path.join(
@@ -221,38 +218,55 @@ def main(_):
   examples = os.path.join(
       FLAGS.intermediate_results_dir,
       'make_examples.tfrecord@{}.gz'.format(FLAGS.num_shards))
-  command = make_examples_command(
-      FLAGS.ref,
-      FLAGS.reads,
-      examples,
-      gvcf=nonvariant_site_tfrecord_path,
-      regions=FLAGS.regions,
-      realign_reads=False if FLAGS.model_type == 'PACBIO' else None,
-      use_ref_for_cram=FLAGS.use_ref_for_cram,
-      keep_secondary_alignments=FLAGS.keep_secondary_alignments,
-      keep_supplementary_alignments=FLAGS.keep_supplementary_alignments,
-      sample_name=FLAGS.sample_name)
 
-  print('\n***** Running the command:*****\n{}\n'.format(command))
-  subprocess.check_call(command, shell=True, executable='/bin/bash')
+  commands.append(
+      make_examples_command(
+          FLAGS.ref,
+          FLAGS.reads,
+          examples,
+          gvcf=nonvariant_site_tfrecord_path,
+          regions=FLAGS.regions,
+          realign_reads=False if FLAGS.model_type == 'PACBIO' else None,
+          use_ref_for_cram=FLAGS.use_ref_for_cram,
+          keep_secondary_alignments=FLAGS.keep_secondary_alignments,
+          keep_supplementary_alignments=FLAGS.keep_supplementary_alignments,
+          sample_name=FLAGS.sample_name))
 
+  # call_variants
   call_variants_output = os.path.join(FLAGS.intermediate_results_dir,
                                       'call_variants_output.tfrecord.gz')
   model_ckpt = get_model_ckpt(FLAGS.model_type, FLAGS.customized_model)
-  command = call_variants_command(call_variants_output, examples, model_ckpt)
-  print('\n***** Running the command:*****\n{}\n'.format(command))
-  subprocess.check_call(command, shell=True, executable='/bin/bash')
+  commands.append(
+      call_variants_command(call_variants_output, examples, model_ckpt))
 
-  command = postprocess_variants_command(
-      FLAGS.ref,
-      call_variants_output,
-      FLAGS.output_vcf,
-      nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
-      gvcf_outfile=FLAGS.output_gvcf,
-      vcf_stats_report=FLAGS.vcf_stats_report)
-  print('\n***** Running the command:*****\n{}\n'.format(command))
-  subprocess.check_call(command, shell=True, executable='/bin/bash')
+  # postprocess_variants
+  commands.append(
+      postprocess_variants_command(
+          FLAGS.ref,
+          call_variants_output,
+          FLAGS.output_vcf,
+          nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
+          gvcf_outfile=FLAGS.output_gvcf,
+          vcf_stats_report=FLAGS.vcf_stats_report))
+
+  return commands
+
+
+def main(_):
+  check_or_create_intermediate_results_dir(FLAGS.intermediate_results_dir)
+  check_flags()
+
+  commands = create_all_commands()
+  for command in commands:
+    print('\n***** Running the command:*****\n{}\n'.format(command))
+    subprocess.check_call(command, shell=True, executable='/bin/bash')
 
 
 if __name__ == '__main__':
+  flags.mark_flags_as_required([
+      'model_type',
+      'ref',
+      'reads',
+      'output_vcf',
+  ])
   app.run(main)
