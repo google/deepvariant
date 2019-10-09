@@ -79,16 +79,6 @@ flags.DEFINE_string(
     'Optional. A path to a model checkpoint to load for the `call_variants` '
     'step. If not set, the default for each --model_type will be used')
 # Optional flags for make_examples.
-flags.DEFINE_boolean(
-    'use_ref_for_cram', None,
-    'If True, use --ref argument as the reference file for CRAM file passed to '
-    '--reads. Reference must be on a local POSIX filesystem. Leaving this flag '
-    'unspecified is equivalent to setting it to true, which means DeepVariant '
-    'will use the --ref file to decode your CRAM file.')
-flags.DEFINE_boolean('keep_secondary_alignments', None,
-                     'If True, keep reads marked as secondary alignments.')
-flags.DEFINE_boolean('keep_supplementary_alignments', None,
-                     'If True, keep reads marked as supplementary alignments.')
 flags.DEFINE_integer('num_shards', 1,
                      'Optional. Number of shards for make_examples step.')
 flags.DEFINE_string(
@@ -99,6 +89,11 @@ flags.DEFINE_string(
     'sample_name', None,
     'Sample name to use instead of the sample name from the input reads BAM '
     '(SM tag in the header).')
+flags.DEFINE_string(
+    'make_examples_extra_args', None,
+    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
+    'valid flags for make_examples.py. If the flag_value is boolean, it has to '
+    'be flag_name=true or flag_name=false.')
 
 # Optional flags for postprocess_variants.
 flags.DEFINE_string('output_gvcf', None,
@@ -115,13 +110,30 @@ MODEL_TYPE_MAP = {
 }
 
 
-def make_examples_command(ref, reads, examples, **kwargs):
+def _extra_args_to_dict(extra_args):
+  """Parses comma-separated list of flag_name=flag_value to dict."""
+  args_dict = {}
+  if extra_args is None:
+    return args_dict
+  for extra_arg in extra_args.split(','):
+    (flag_name, flag_value) = extra_arg.split('=')
+    # Check for boolean values.
+    if flag_value.lower() == 'true':
+      flag_value = True
+    elif flag_value.lower() == 'false':
+      flag_value = False
+    args_dict[flag_name] = flag_value
+  return args_dict
+
+
+def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   """Returns a make_examples command for subprocess.check_call.
 
   Args:
     ref: Input FASTA file.
     reads: Input BAM file.
     examples: Output tfrecord file containing tensorflow.Example files.
+    extra_args: Comma-separated list of flag_name=flag_value.
     **kwargs: Additional arguments to pass in for make_examples.
 
   Returns:
@@ -135,7 +147,8 @@ def make_examples_command(ref, reads, examples, **kwargs):
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
-  # Extend the command with all items in kwargs.
+  # Extend the command with all items in kwargs and extra_args.
+  kwargs.update(_extra_args_to_dict(extra_args))
   for key in sorted(kwargs):
     value = kwargs[key]
     if value is None:
@@ -224,12 +237,10 @@ def create_all_commands():
           FLAGS.ref,
           FLAGS.reads,
           examples,
+          FLAGS.make_examples_extra_args,
           gvcf=nonvariant_site_tfrecord_path,
           regions=FLAGS.regions,
           realign_reads=False if FLAGS.model_type == 'PACBIO' else None,
-          use_ref_for_cram=FLAGS.use_ref_for_cram,
-          keep_secondary_alignments=FLAGS.keep_secondary_alignments,
-          keep_supplementary_alignments=FLAGS.keep_supplementary_alignments,
           sample_name=FLAGS.sample_name))
 
   # call_variants
