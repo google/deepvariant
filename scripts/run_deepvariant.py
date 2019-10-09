@@ -149,6 +149,10 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   command.extend(['--examples', '"{}"'.format(examples)])
   # Extend the command with all items in kwargs and extra_args.
   kwargs.update(_extra_args_to_dict(extra_args))
+  if FLAGS.model_type == 'PACBIO':
+    kwargs['realign_reads'] = False
+    kwargs['vsc_min_fraction_indels'] = 0.12
+
   for key in sorted(kwargs):
     value = kwargs[key]
     if value is None:
@@ -240,7 +244,6 @@ def create_all_commands():
           FLAGS.make_examples_extra_args,
           gvcf=nonvariant_site_tfrecord_path,
           regions=FLAGS.regions,
-          realign_reads=False if FLAGS.model_type == 'PACBIO' else None,
           sample_name=FLAGS.sample_name))
 
   # call_variants

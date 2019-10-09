@@ -39,8 +39,8 @@ This case study is run using official DeepVariant Docker image.
 
 For simplicity we provide a script that downloads the input data and runs all
 the steps descibed above using DeepVariant Docker image. **Please note, that if
-you create your own script make_examples must be called with --norealign_reads
-flag for PacBio long reads.**
+you create your own script make_examples must be called with
+`--norealign_reads --vsc_min_fraction_indels 0.12` flag for PacBio long reads.**
 
 1.  Create a Google Cloud virtual instance. This command creates a virtual
     instance with 64 cores and 128 GB of memory.
