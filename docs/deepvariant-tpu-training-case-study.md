@@ -95,7 +95,7 @@ sudo apt -y install parallel
 sudo apt -y install docker.io
 ```
 
-## Run make_examples in “training” mode for training and validation sets, and in "calling" model for test set.
+## Run make_examples in “training” mode for training and validation sets.
 
 Create examples in "training" mode (which means these `tensorflow.Example`s will
 contain a `label` field).
@@ -104,11 +104,11 @@ In this tutorial, we create examples on one replicate of HG001 sequenced by
 BGISEQ-500 provided on the
 [Genome In a Bottle FTP site](https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/BGISEQ500/standard_library/readme.txt).
 
-We will create examples in 3 different sets: Training set (everything except for
+We will create examples in 2 different sets: Training set (everything except for
 chr20, 21, and 22), validation set (chr21 and 22) - These 2 sets will be used in
 `model_train` and `model_eval`, so we'll create them in "training" mode so they
-have the real labels. We'll create examples in "calling" mode for the test set
-(chr20).
+have the real labels. We will leave out chr20 for final evaluation for our
+trained model at the end.
 
 For the definition of these 3 sets in commonly used machine learning
 terminology, please refer to
@@ -172,29 +172,6 @@ This took: ~9min.
 
 Validation set is small here. We will just shuffle locally later, so no need to
 copy to out GCS bucket.
-
-### Test set ("calling" mode)
-
-```
-( time seq 0 $((N_SHARDS-1)) | \
-  parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
-    sudo docker run \
-      -v /home/${USER}:/home/${USER} \
-      google/deepvariant:"${BIN_VERSION}" \
-      /opt/deepvariant/bin/make_examples \
-      --mode calling \
-      --ref "${REF}" \
-      --reads "${BAM}" \
-      --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
-      --task {} \
-      --regions "chr20" \
-) >"${LOG_DIR}/test_set.no_label.make_examples.log" 2>&1
-```
-
-This took: 2.5min.
-
-We don't need to shuffle test set. It will eventually be used in the final
-evaluation evaluated with `hap.py` on the whole set.
 
 ## Shuffle each set of examples and generate a data configuration file for each.
 
@@ -544,38 +521,23 @@ into mind:
     finer granularity.
 
 But for now, let's use this model to do the final evaluation on the test set and
-see how much we get.
-
-Running on CPUs is reasonably fast for this size of data. So we just directly
-run on CPUs.
+see how we do. We can use the one-step command to call:
 
 ```
-( time sudo docker run \
-    -v /home/${USER}:/home/${USER} \
-    google/deepvariant:"${BIN_VERSION}" \
-    /opt/deepvariant/bin/call_variants \
-    --outfile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
-    --examples "${OUTPUT_DIR}/test_set.no_label.tfrecord@${N_SHARDS}.gz" \
-    --checkpoint "${TRAINING_DIR}/model.ckpt-48700" \
-) >"${LOG_DIR}/test_set.call_variants.log" 2>&1 &
+sudo docker run \
+  -v /home/${USER}:/home/${USER} \
+  google/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  --model_type WGS \
+  --customized_model "${TRAINING_DIR}/model.ckpt-48700" \
+  --ref "${REF}" \
+  --reads "${BAM}" \
+  --regions "chr20" \
+  --output_vcf "${OUTPUT_DIR}/test_set.vcf.gz" \
+  --num_shards=${N_SHARDS}
 ```
 
-This took < 5min.
-
-Then, run `postprocess_variants` to generate the final callsets in VCF format:
-
-```
-( time sudo docker run \
-    -v /home/${USER}:/home/${USER} \
-    google/deepvariant:"${BIN_VERSION}" \
-    /opt/deepvariant/bin/postprocess_variants \
-    --ref "${REF}" \
-    --infile "${OUTPUT_DIR}/test_set.cvo.tfrecord.gz" \
-    --outfile "${OUTPUT_DIR}/test_set.vcf.gz" \
-) >"${LOG_DIR}/test_set.postprocess_variants.log" 2>&1 &
-```
-
-This took < 30 seconds. Once this is done, we have the final callset in VCF
+Once this is done, we have the final callset in VCF
 format here: `${OUTPUT_DIR}/test_set.vcf.gz`. Next step is to run `hap.py` to
 complete the evaluation on chromosome 20:
 
