@@ -61,8 +61,9 @@ from deepvariant.python import pileup_image_native
 class SequencingTypeColor(enum.Enum):
   """Enum capturing the int64 values we encode sequencing type colors."""
   UNSPECIFIED_SEQ_TYPE = 0
-  WGS = 127
-  WES = 254
+  WGS = 85
+  WES = 170
+  TRIO = 255
 
 
 def _supporting_reads(*names):
@@ -166,7 +167,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
        SequencingTypeColor.UNSPECIFIED_SEQ_TYPE.value),
       (deepvariant_pb2.PileupImageOptions.WGS, SequencingTypeColor.WGS.value),
       (deepvariant_pb2.PileupImageOptions.WES, SequencingTypeColor.WES.value),
-  )
+      (deepvariant_pb2.PileupImageOptions.TRIO, SequencingTypeColor.TRIO.value))
   def test_sequencing_type_color(self, sequencing_type, expected_color):
     # Default
     pileup_image_encoder = _make_encoder(

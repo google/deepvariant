@@ -444,6 +444,7 @@ message PileupImageOptions {
     UNSPECIFIED_SEQ_TYPE = 0;
     WGS = 1;
     WES = 2;
+    TRIO = 3;
   }
   SequencingType sequencing_type = 27;
 }
