@@ -94,6 +94,16 @@ flags.DEFINE_string(
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
     'valid flags for make_examples.py. If the flag_value is boolean, it has to '
     'be flag_name=true or flag_name=false.')
+flags.DEFINE_string(
+    'call_variants_extra_args', None,
+    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
+    'valid flags for call_variants.py. If the flag_value is boolean, it has to '
+    'be flag_name=true or flag_name=false.')
+flags.DEFINE_string(
+    'postprocess_variants_extra_args', None,
+    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
+    'valid flags for calpostprocess_variants.py. If the flag_value is boolean, '
+    'it has to be flag_name=true or flag_name=false.')
 
 # Optional flags for postprocess_variants.
 flags.DEFINE_string('output_gvcf', None,
@@ -110,6 +120,12 @@ MODEL_TYPE_MAP = {
 }
 
 
+def _add_quotes(value):
+  if isinstance(value, str) and value.startswith('"') and value.endswith('"'):
+    return value
+  return '"{}"'.format(value)
+
+
 def _extra_args_to_dict(extra_args):
   """Parses comma-separated list of flag_name=flag_value to dict."""
   args_dict = {}
@@ -124,6 +140,21 @@ def _extra_args_to_dict(extra_args):
       flag_value = False
     args_dict[flag_name] = flag_value
   return args_dict
+
+
+def _extend_command_by_args_dict(command, extra_args):
+  """Adds `extra_args` to the command string."""
+  for key in sorted(extra_args):
+    value = extra_args[key]
+    if value is None:
+      continue
+    if isinstance(value, bool):
+      added_arg = '' if value else 'no'
+      added_arg += key
+      command.extend(['--' + added_arg])
+    else:
+      command.extend(['--' + key, _add_quotes(value)])
+  return command
 
 
 def make_examples_command(ref, reads, examples, extra_args, **kwargs):
@@ -152,33 +183,28 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   if FLAGS.model_type == 'PACBIO':
     kwargs['realign_reads'] = False
     kwargs['vsc_min_fraction_indels'] = 0.12
+  command = _extend_command_by_args_dict(command, kwargs)
 
-  for key in sorted(kwargs):
-    value = kwargs[key]
-    if value is None:
-      continue
-    if isinstance(value, bool):
-      added_arg = '' if value else 'no'
-      added_arg += key
-      command.extend(['--' + added_arg])
-    else:
-      command.extend(['--' + key, '"{}"'.format(value)])
   command.extend(['--task {}'])
   return ' '.join(command)
 
 
-def call_variants_command(outfile, examples, model_ckpt):
+def call_variants_command(outfile, examples, model_ckpt, extra_args):
   """Returns a call_variants command for subprocess.check_call."""
   command = ['time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
+  # Extend the command with all items in extra_args.
+  command = _extend_command_by_args_dict(command,
+                                         _extra_args_to_dict(extra_args))
   return ' '.join(command)
 
 
 def postprocess_variants_command(ref,
                                  infile,
                                  outfile,
+                                 extra_args,
                                  nonvariant_site_tfrecord_path=None,
                                  gvcf_outfile=None,
                                  vcf_stats_report=True):
@@ -196,6 +222,9 @@ def postprocess_variants_command(ref,
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
   if not vcf_stats_report:
     command.extend(['--novcf_stats_report'])
+  # Extend the command with all items in extra_args.
+  command = _extend_command_by_args_dict(command,
+                                         _extra_args_to_dict(extra_args))
   return ' '.join(command)
 
 
@@ -251,7 +280,8 @@ def create_all_commands():
                                       'call_variants_output.tfrecord.gz')
   model_ckpt = get_model_ckpt(FLAGS.model_type, FLAGS.customized_model)
   commands.append(
-      call_variants_command(call_variants_output, examples, model_ckpt))
+      call_variants_command(call_variants_output, examples, model_ckpt,
+                            FLAGS.call_variants_extra_args))
 
   # postprocess_variants
   commands.append(
@@ -259,6 +289,7 @@ def create_all_commands():
           FLAGS.ref,
           call_variants_output,
           FLAGS.output_vcf,
+          FLAGS.postprocess_variants_extra_args,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=FLAGS.output_gvcf,
           vcf_stats_report=FLAGS.vcf_stats_report))
