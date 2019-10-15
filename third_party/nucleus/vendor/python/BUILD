@@ -24,7 +24,6 @@ py_test(
     name = "statusor_examples_test",
     size = "small",
     srcs = ["statusor_examples_test.py"],
-    # py3_tags = [],
     deps = [
         ":statusor_examples",
         "@absl_py//absl/testing:absltest",
