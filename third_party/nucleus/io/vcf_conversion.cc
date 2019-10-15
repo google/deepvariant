@@ -1041,7 +1041,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
           // variants.proto spec, since PLs are a lower resolution version of
           // the same information.
           if (have_gl) {
-            for (int gl : gl_values[i]) {
+            for (const auto& gl : gl_values[i]) {
               call->add_genotype_likelihood(gl);
             }
           } else if (have_pl) {
