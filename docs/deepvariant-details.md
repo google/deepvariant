@@ -192,66 +192,39 @@ training data in
 ## CRAM support
 
 As of v0.7, DeepVariant accepts CRAM files as input in addition to BAM files.
-CRAM files encoded without reference compression or those with embedded
-references just work with DeepVariant. However, CRAM files using an external
-reference version may not work out-of-the-box. If the path to the original
-reference (encoded in the file's "UR" tag) is accessible on the machine directly
-or is already in the local genome cache, then DeepVariant should just work.
-Consequently, we don't recommend using CRAM files with external reference files,
-but instead suggest using read sequence compression with embedded reference
-data. (This has a minor impact of file size, but significantly improves file
-access simplicity and safety.)
+
+As of v0.9.0, we changed the default to use the reference file specified by the
+`--ref` flag, instead of the path to the original reference in the CRAM file
+(encoded in the file's "UR" tag).
 
 For more information about CRAM, see the
 [`samtools` documentation](http://www.htslib.org/doc/samtools.html) in general
 but particularly the sections on
 [Global Options](http://www.htslib.org/doc/samtools.html#GLOBAL_OPTIONS) and
 [reference sequences in CRAM](http://www.htslib.org/doc/samtools.html#REFERENCE_SEQUENCES).
+
 `htslib` also hosts a nice page
 [benchmarking CRAM](http://www.htslib.org/benchmarks/CRAM.html) with information
 on the effect of different CRAM options on file size and encoding/decoding
 performance.
 
 Here are some basic file size and runtime numbers for running a single
-`make_examples` job on the case-study data in BAM and CRAM format (with embedded
-references) on a BAM/CRAM file for all of chromosome 20 and running on
-20:10mb-11mb:
+`make_examples` job on a 30x whole genome sample in BAM and CRAM format.
 
 Filetype | Size (Gb) | Runtime (min)
 -------- | --------- | -------------
-BAM      | 2.1G      | 7m53.589s
-CRAM     | 1.2G      | 10m37.904s
--------- | --------- | -------------
-Ratio    | 57%       | 135%
+BAM      | 66.99     | 79m47.37307s
+CRAM     | 37.85     | 96m53.477s
+Ratio    | 56.50%    | 121.43%
 
-### Update in v0.9.0
+*   BAM file:
+    `gs://deepvariant/performance-testdata/HG002_NIST_150bp_downsampled_30x.bam`
+*   CRAM file:
+    `gs://deepvariant/performance-testdata/HG002_NIST_150bp_downsampled_30x.cram`
 
-Starting from v0.9.0, we default `--use_ref_for_cram` to true.
-Please make sure your `--ref` flag is the same reference file your CRAM file
-was created with.
-
-### Update in v0.8.0
-
-If you know which reference file your CRAM file was created with, and want to
-specify it directly on your local disk, you can specify
-`--use_ref_for_cram=true` in your `make_examples` run. Then, the reader will
-attempt to use the reference file specified in the `--ref` flag.
-
-An modified example command looks like:
-
-```bash
-sudo docker run \
-  -v "${INPUT_DIR}:/input" \
-  -v "${OUTPUT_DIR}:/output" \
-  google/deepvariant:0.8.0 \
-  /opt/deepvariant/bin/make_examples \
-  --mode calling \
-  --ref "/input/${REF}" \
-  --reads "/input/${CRAM}" \
-  --examples "/output/${EXAMPLES}" \
-  --gvcf "/output/${GVCF_TFRECORDS}" \
-  --use_ref_for_cram=true
-```
+Runtime was measured on
+[n1-standard-64](https://cloud.google.com/compute/docs/machine-types#n1_machine_types)
+machines.
 
 ## Commands for requesting machines used in case studies
 
