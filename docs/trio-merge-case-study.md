@@ -13,6 +13,10 @@ end-to-end on one machine. The steps below were done on a machine with this
 
 The steps in this document can be extended to merge larger cohort as well.
 
+See this workflow:
+
+![workflow](images/cohort-workflow.png?raw=true "DeepVariant+GLnexus cohort workflow")
+
 A few things to note before we start:
 
 *   If you are looking for ways to run DeepVariant in larger batches, please
