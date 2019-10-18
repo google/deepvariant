@@ -329,7 +329,7 @@ class DeepVariantInput(object):
             num_parallel_batches=_PREFETCH_BATCHES,
             drop_remainder=True))
 
-    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
+    dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
     return dataset
 
@@ -376,7 +376,7 @@ class DeepVariantInput(object):
             self.parse_tfexample,
             batch_size=batch_size,
             num_parallel_batches=self.input_map_threads))
-    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
+    dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
     return dataset
 
   def __str__(self):
