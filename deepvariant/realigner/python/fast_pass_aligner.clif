@@ -39,4 +39,6 @@ from "deepvariant/realigner/fast_pass_aligner.h":
       def `set_options` as set_options(self, options:AlignerOptions)
       def `set_is_debug` as set_is_debug(self, isDebug: bool)
       def `set_debug_read_id` as set_debug_read_id(self, readId: int)
+      def `set_ref_prefix_len` as set_ref_prefix_len(self, ref_prefix_len: int)
+      def `set_ref_suffix_len` as set_ref_suffix_len(self, set_ref_suffix_len: int)
       def `AlignReads` as realign_reads(self, reads:list<Read>) -> list<Read>

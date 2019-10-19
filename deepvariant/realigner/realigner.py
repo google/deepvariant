@@ -567,6 +567,8 @@ class Realigner(object):
     fast_pass_realigner.set_options(self.config.aln_config)
     fast_pass_realigner.set_reference(ref_seq)
     fast_pass_realigner.set_ref_start(contig, ref_start)
+    fast_pass_realigner.set_ref_prefix_len(len(ref_prefix))
+    fast_pass_realigner.set_ref_suffix_len(len(ref_suffix))
     fast_pass_realigner.set_haplotypes([
         ref_prefix + target + ref_suffix
         for target in assembled_region.haplotypes

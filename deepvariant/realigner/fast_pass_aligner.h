@@ -110,7 +110,8 @@ struct KmerOccurrence {
 // renamed. That would be better because default position = 0 is a valid
 // position.
 struct ReadAlignment {
-  ReadAlignment() : position(0), cigar(""), score(0) {}
+  static const uint16_t kNotAligned = std::numeric_limits<uint16_t>::max();
+  ReadAlignment() : position(kNotAligned), cigar(""), score(0) {}
 
   ReadAlignment(uint16_t position_param, const string& cigar_param,
                 int score_param)
@@ -123,7 +124,7 @@ struct ReadAlignment {
 
   void reset() {
     score = 0;
-    position = 0;
+    position = kNotAligned;
     cigar = "";
   }
 
@@ -132,7 +133,7 @@ struct ReadAlignment {
   int score;
 };
 
-// Cigar operation is defined by operation type and it's length.
+// Cigar operation is defined by operation type and its length.
 struct CigarOp {
   CigarOp()
       : operation(nucleus::genomics::v1::CigarUnit::OPERATION_UNSPECIFIED),
@@ -253,6 +254,12 @@ class FastPassAligner {
   void set_options(const AlignerOptions& options);
   void set_is_debug(bool is_debug) { debug_out_ = is_debug; }
   void set_debug_read_id(int read_id) { debug_read_id_ = read_id; }
+  void set_ref_prefix_len(int ref_prefix_len) {
+    ref_prefix_len_ = ref_prefix_len;
+  }
+  void set_ref_suffix_len(int ref_suffix_len) {
+    ref_suffix_len_ = ref_suffix_len;
+  }
   int16_t get_ssw_alignment_score_threshold() const {
     return ssw_alignment_score_threshold_;
   }
@@ -387,6 +394,9 @@ class FastPassAligner {
   // These attributes allow debug output.
   bool debug_out_ = false;
   int debug_read_id_ = 0;
+
+  int ref_prefix_len_;
+  int ref_suffix_len_;
 
   // Alingn reads to haplotypes by simply comparing strings. This way we will
   // be able align all the reads that are aligned to haplotypes w/o indels.

@@ -204,6 +204,15 @@ void FastPassAligner::FastAlignReadsToHaplotypes() {
     FastAlignReadsToHaplotype(haplotype,
                               &haplotype_score,
                               &read_alignment_scores);
+
+    // haplotype_score == 0 means we found a problem with this haplotype. In
+    // this case we need to discard of this haplotype.
+    if (haplotype_score == 0) {
+      for (auto& readAlignment : read_alignment_scores) {
+        readAlignment.reset();
+      }
+    }
+
     read_to_haplotype_alignments_.push_back(
         HaplotypeReadsAlignment(i, haplotype_score, read_alignment_scores));
   }
@@ -216,6 +225,8 @@ void FastPassAligner::FastAlignReadsToHaplotype(
   CHECK(haplotype_read_alignment_scores != nullptr);
   tensorflow::StringPiece bases_view(haplotype);
 
+  bool is_ref = (haplotype == reference_);
+  std::vector<int> coverage(haplotype.size(), 0);
   // In the loop we try to align reads for each position in haplotype up to
   // lastPos.
   const auto& lastPos = haplotype.length() - kmer_size_;
@@ -242,8 +253,8 @@ void FastPassAligner::FastAlignReadsToHaplotype(
           (*haplotype_read_alignment_scores)[read_id_index];
 
       // This read is already aligned, skip it.
-      if (read_alignment.position != 0
-          && read_alignment.position == target_start_pos) {
+      if (read_alignment.position != ReadAlignment::kNotAligned &&
+          read_alignment.position == target_start_pos) {
         continue;
       }
       CHECK(target_start_pos + span <= bases_view.size());
@@ -253,21 +264,16 @@ void FastPassAligner::FastAlignReadsToHaplotype(
           reads_[read_id_index],
           max_num_of_mismatches_ + 1, &num_of_mismatches);
 
-      // For reads that cannot be aligned with fast alignment we want to avoid
-      // tying them over and over. In order to do that we set position for the
-      // read even if the read could not be aligned. This way we know that the
-      // read was already tried at this position and we can skip it. Doing so
-      // reduces a number of checks per read 10 times.
-      // If score is not zero we cannot change position without fist checking
-      // the score.
-      if (read_alignment.score == 0) {
-        read_alignment.position = target_start_pos;
-      }
-
       if (num_of_mismatches <= max_num_of_mismatches_) {
         CHECK(it.read_id.is_set &&
             read_id_index < haplotype_read_alignment_scores->size());
         int oldScore = read_alignment.score;
+
+        for (auto pos = target_start_pos; pos < target_start_pos + span;
+             pos++) {
+          coverage[pos]++;
+        }
+
         if (oldScore < new_read_alignment_score) {
           read_alignment.score = new_read_alignment_score;
           *haplotype_score -= oldScore;
@@ -277,6 +283,15 @@ void FastPassAligner::FastAlignReadsToHaplotype(
         }
       }
     }  // for (matching reads)
+    // We want to discard haplotypes that don't have good read support.
+    // At the same time we don't want to discard reference haplotype because,
+    // there might be cases were not all haplotypes were generated and we can
+    // get away with that by aligning reads to reference haplotype.
+    if (coverage[i] == 0 && i >= ref_prefix_len_ &&
+        i < haplotype.size() - ref_suffix_len_ - kmer_size_ && !is_ref) {
+      *haplotype_score = 0;
+      return;
+    }
   }    // for (all k-mer positions)
 }
 
@@ -382,6 +397,11 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
     // If this read is not aligned to any of the haplotypes we try SSW.
     if (!has_at_least_one_alignment) {
       for (auto& hap_alignment : read_to_haplotype_alignments_) {
+        // If haplotype score is zero that means haplotype needs to be
+        // discarded.
+        if (hap_alignment.haplotype_score == 0) {
+          continue;
+        }
         CHECK(hap_alignment.haplotype_index < haplotypes_.size());
         SswSetReference(haplotypes_[hap_alignment.haplotype_index]);
         Alignment alignment = SswAlign(reads_[i]);
