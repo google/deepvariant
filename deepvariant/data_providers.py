@@ -372,7 +372,7 @@ class DeepVariantInput(object):
             sloppy=self.sloppy))
     tf.logging.info('self.input_map_threads=%d', self.input_map_threads)
     dataset = dataset.apply(
-        tf.contrib.data.map_and_batch(
+        tf.data.experimental.map_and_batch(
             self.parse_tfexample,
             batch_size=batch_size,
             num_parallel_batches=self.input_map_threads))
