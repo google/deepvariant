@@ -54,3 +54,6 @@ PILEUP_DEFAULT_DIMS = [
 # Number of classes represented in the data set. The three classes are
 # homozygous reference (0), heterozygous (1) and homozygous alternative (2).
 NUM_CLASSES = 3
+
+# Default sample name if no sample name is found from the BAM header.
+DEFAULT_SAMPLE_NAME = 'default'

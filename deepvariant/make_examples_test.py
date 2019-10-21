@@ -62,6 +62,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
+from deepvariant import dv_constants
 from deepvariant import make_examples
 from deepvariant import testdata
 from deepvariant import tf_utils
@@ -714,11 +715,9 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
   @parameterized.parameters(
       # No samples could be found in the reads.
-      dict(samples=[], expected_sample_name=make_examples._DEFAULT_SAMPLE_NAME),
+      dict(samples=[], expected_sample_name=dv_constants.DEFAULT_SAMPLE_NAME),
       # Check that we detect an empty sample name and use default instead.
-      dict(
-          samples=[''],
-          expected_sample_name=make_examples._DEFAULT_SAMPLE_NAME),
+      dict(samples=[''], expected_sample_name=dv_constants.DEFAULT_SAMPLE_NAME),
       # We have more than one sample in the reads.
       dict(samples=['sample1', 'sample2'], expected_sample_name='sample1'),
   )

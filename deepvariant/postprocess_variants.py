@@ -62,6 +62,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
+from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
@@ -958,13 +959,12 @@ def main(argv=()):
     record = tf_utils.get_one_example_from_examples_path(
         ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
     if record is None:
-      raise ValueError('Cannot find any records in {}'.format(','.join(paths)))
-
-    sample_name = _extract_single_sample_name(record)
-    header = dv_vcf_constants.deepvariant_header(
-        contigs=contigs, sample_names=[sample_name])
-    use_csi = _decide_to_use_csi(contigs)
-    with tempfile.NamedTemporaryFile() as temp:
+      logging.info('call_variants_output is empty. Writing out empty VCF.')
+      sample_name = dv_constants.DEFAULT_SAMPLE_NAME
+      variant_generator = iter([])
+    else:
+      sample_name = _extract_single_sample_name(record)
+      temp = tempfile.NamedTemporaryFile()
       start_time = time.time()
       postprocess_variants_lib.process_single_sites_tfrecords(
           contigs, paths, temp.name)
@@ -972,7 +972,6 @@ def main(argv=()):
                    (time.time() - start_time) / 60)
 
       logging.info('Transforming call_variants_output to variants.')
-      start_time = time.time()
       independent_variants = _transform_call_variants_output_to_variants(
           input_sorted_tfrecord_path=temp.name,
           qual_filter=FLAGS.qual_filter,
@@ -982,46 +981,53 @@ def main(argv=()):
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
 
-      start_time = time.time()
-      if not FLAGS.nonvariant_site_tfrecord_path:
-        logging.info('Writing variants to VCF.')
-        write_variants_to_vcf(
-            variant_iterable=variant_generator,
-            output_vcf_path=FLAGS.outfile,
-            header=header)
-        if FLAGS.outfile.endswith('.gz'):
-          build_index(FLAGS.outfile, use_csi)
-        logging.info('VCF creation took %s minutes',
-                     (time.time() - start_time) / 60)
-      else:
-        logging.info('Merging and writing variants to VCF and gVCF.')
-        lessthanfn = _get_contig_based_lessthan(contigs)
-        with vcf.VcfWriter(
-            FLAGS.outfile, header=header, round_qualities=True) as vcf_writer, \
-            vcf.VcfWriter(
-                FLAGS.gvcf_outfile, header=header, round_qualities=True) \
-            as gvcf_writer:
-          nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
-              FLAGS.nonvariant_site_tfrecord_path,
-              key=_get_contig_based_variant_sort_keyfn(contigs),
-              proto=variants_pb2.Variant)
-          merge_and_write_variants_and_nonvariants(
-              variant_generator, nonvariant_generator, lessthanfn, fasta_reader,
-              vcf_writer, gvcf_writer)
-        if FLAGS.outfile.endswith('.gz'):
-          build_index(FLAGS.outfile, use_csi)
-        if FLAGS.gvcf_outfile.endswith('.gz'):
-          build_index(FLAGS.gvcf_outfile, use_csi)
-        logging.info('Finished writing VCF and gVCF in %s minutes.',
-                     (time.time() - start_time) / 60)
-      if FLAGS.vcf_stats_report:
-        outfile_base = _get_base_path(FLAGS.outfile)
-        with vcf.VcfReader(FLAGS.outfile) as reader:
-          vcf_stats.create_vcf_report(
-              variants=reader.iterate(),
-              output_basename=outfile_base,
-              sample_name=sample_name,
-              vcf_reader=reader)
+    header = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[sample_name])
+    use_csi = _decide_to_use_csi(contigs)
+
+    start_time = time.time()
+    if not FLAGS.nonvariant_site_tfrecord_path:
+      logging.info('Writing variants to VCF.')
+      write_variants_to_vcf(
+          variant_iterable=variant_generator,
+          output_vcf_path=FLAGS.outfile,
+          header=header)
+      if FLAGS.outfile.endswith('.gz'):
+        build_index(FLAGS.outfile, use_csi)
+      logging.info('VCF creation took %s minutes',
+                   (time.time() - start_time) / 60)
+    else:
+      logging.info('Merging and writing variants to VCF and gVCF.')
+      lessthanfn = _get_contig_based_lessthan(contigs)
+      with vcf.VcfWriter(
+          FLAGS.outfile, header=header, round_qualities=True) as vcf_writer, \
+          vcf.VcfWriter(
+              FLAGS.gvcf_outfile, header=header, round_qualities=True) \
+          as gvcf_writer:
+        nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
+            FLAGS.nonvariant_site_tfrecord_path,
+            key=_get_contig_based_variant_sort_keyfn(contigs),
+            proto=variants_pb2.Variant)
+        merge_and_write_variants_and_nonvariants(variant_generator,
+                                                 nonvariant_generator,
+                                                 lessthanfn, fasta_reader,
+                                                 vcf_writer, gvcf_writer)
+      if FLAGS.outfile.endswith('.gz'):
+        build_index(FLAGS.outfile, use_csi)
+      if FLAGS.gvcf_outfile.endswith('.gz'):
+        build_index(FLAGS.gvcf_outfile, use_csi)
+      logging.info('Finished writing VCF and gVCF in %s minutes.',
+                   (time.time() - start_time) / 60)
+    if FLAGS.vcf_stats_report:
+      outfile_base = _get_base_path(FLAGS.outfile)
+      with vcf.VcfReader(FLAGS.outfile) as reader:
+        vcf_stats.create_vcf_report(
+            variants=reader.iterate(),
+            output_basename=outfile_base,
+            sample_name=sample_name,
+            vcf_reader=reader)
+    if record:
+      temp.close()
 
 
 if __name__ == '__main__':

@@ -56,12 +56,14 @@ import tensorflow as tf
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
+from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import vcf_constants
+from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
 from deepvariant import testdata
@@ -365,7 +367,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     postprocess_variants.main(['postprocess_variants.py'])
 
   @flagsaver.FlagSaver
-  def test_reading_empty_input_should_raise_error(self):
+  def test_reading_empty_input_outputs_vcf_and_gvcf(self):
     empty_shard_one = test_utils.test_tmpfile(
         'no_records.tfrecord-00000-of-00002')
     empty_shard_two = test_utils.test_tmpfile(
@@ -376,8 +378,25 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('no_records.vcf')
 
-    with self.assertRaisesRegexp(ValueError, 'Cannot find any records in'):
-      postprocess_variants.main(['postprocess_variants.py'])
+    FLAGS.nonvariant_site_tfrecord_path = test_utils.test_tmpfile(
+        'empty.postprocess_gvcf_input.tfrecord.gz')
+    tfrecord.write_tfrecords([], FLAGS.nonvariant_site_tfrecord_path)
+    FLAGS.gvcf_outfile = test_utils.test_tmpfile('no_records.g.vcf')
+
+    postprocess_variants.main(['postprocess_variants.py'])
+
+    fasta_reader = fasta.IndexedFastaReader(FLAGS.ref)
+    contigs = fasta_reader.header.contigs
+    expected_sample_name = dv_constants.DEFAULT_SAMPLE_NAME
+    expected_vcf = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[expected_sample_name])
+    actual_vcf = vcf.VcfReader(FLAGS.outfile).header
+    self.assertEqual(actual_vcf, expected_vcf)
+
+    expected_gvcf = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[expected_sample_name])
+    actual_gvcf = vcf.VcfReader(FLAGS.outfile).header
+    self.assertEqual(actual_gvcf, expected_gvcf)
 
   def test_extract_single_variant_name(self):
     record = _create_call_variants_output(
@@ -724,8 +743,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     self.assertEqual(variant.end, expected.end)
     self.assertAlmostEqual(variant.quality, expected.quality, places=6)
     self.assertEqual(variant.filter, expected.filter)
-    self.assertEqual(len(variant.calls), 1)
-    self.assertEqual(len(expected.calls), 1)
+    self.assertLen(variant.calls, 1)
+    self.assertLen(expected.calls, 1)
     self.assertEqual(variant.calls[0].genotype, expected.calls[0].genotype)
     self.assertEqual(variant.calls[0].info['GQ'], expected.calls[0].info['GQ'])
     for gl, expected_gl in zip(variant.calls[0].genotype_likelihood,
@@ -838,6 +857,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ([0, 0, 0, 0, 0, 1], 2, (5, [2, 2])),
   )
   def test_most_likely_genotype(self, probs, n_alts, expected):
+    del n_alts
     self.assertEqual(expected, postprocess_variants.most_likely_genotype(probs))
 
   @parameterized.parameters(1, 3, 4)

@@ -41,6 +41,7 @@ from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
+from deepvariant import dv_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import pileup_image
@@ -91,9 +92,6 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # modify this default parameter without a systematic evaluation of the impact
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
-
-# Default sample name if no sample name is found from the BAM header.
-_DEFAULT_SAMPLE_NAME = 'default'
 
 flags.DEFINE_string(
     'ref', None,
@@ -555,8 +553,8 @@ def extract_sample_name_from_sam_reader(sam_reader):
         'No non-empty sample name found in the input reads. '
         'DeepVariant will use %s as the sample name. You can also '
         'provide a sample name with the --sample_name argument.',
-        _DEFAULT_SAMPLE_NAME)
-    return _DEFAULT_SAMPLE_NAME
+        dv_constants.DEFAULT_SAMPLE_NAME)
+    return dv_constants.DEFAULT_SAMPLE_NAME
   elif len(samples) > 1:
     logging.warning(
         'Multiple samples (%s) were found in the input reads. '
