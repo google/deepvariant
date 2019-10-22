@@ -50,6 +50,7 @@ from absl import flags
 from absl import logging
 from absl.testing import absltest
 from absl.testing import parameterized
+import enum
 import mock
 
 from third_party.nucleus.io import tfrecord
@@ -154,6 +155,13 @@ def _sharded(basename, num_shards=None):
     return basename
 
 
+class TestConditions(enum.Enum):
+  """Enum capturing what the test condition we're using."""
+  USE_BAM = 1
+  USE_CRAM = 2
+  USE_MULTI_BAMS = 3
+
+
 class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
@@ -172,28 +180,44 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(
           mode='training', num_shards=3,
           labeler_algorithm='positional_labeler'),
-      dict(mode='calling', num_shards=0, use_cram=True),
+      # The following tests are for CRAM input:
+      dict(
+          mode='calling', num_shards=0, test_condition=TestConditions.USE_CRAM),
       dict(
           mode='training',
           num_shards=0,
-          use_cram=True,
+          test_condition=TestConditions.USE_CRAM,
+          labeler_algorithm='haplotype_labeler'),
+      # The following tests are for multiple BAM inputs:
+      dict(
+          mode='calling',
+          num_shards=0,
+          test_condition=TestConditions.USE_MULTI_BAMS),
+      dict(
+          mode='training',
+          num_shards=0,
+          test_condition=TestConditions.USE_MULTI_BAMS,
           labeler_algorithm='haplotype_labeler'),
   )
   @flagsaver.FlagSaver
   def test_make_examples_end2end(self,
                                  mode,
                                  num_shards,
-                                 use_cram=False,
+                                 test_condition=TestConditions.USE_BAM,
                                  labeler_algorithm=None,
                                  use_fast_pass_aligner=True):
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.write_run_info = True
     FLAGS.ref = testdata.CHR20_FASTA
-    if use_cram:
-      FLAGS.reads = testdata.CHR20_CRAM
-    else:
+    if test_condition == TestConditions.USE_BAM:
       FLAGS.reads = testdata.CHR20_BAM
+    elif test_condition == TestConditions.USE_CRAM:
+      FLAGS.reads = testdata.CHR20_CRAM
+    elif test_condition == TestConditions.USE_MULTI_BAMS:
+      FLAGS.reads = ','.join(
+          [testdata.CHR20_BAM_FIRST_HALF, testdata.CHR20_BAM_SECOND_HALF])
+
     FLAGS.candidates = test_utils.test_tmpfile(
         _sharded('vsc.tfrecord', num_shards))
     FLAGS.examples = test_utils.test_tmpfile(

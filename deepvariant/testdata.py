@@ -62,6 +62,8 @@ def deepvariant_testdata(filename):
 
 CHR20_FASTA = None
 CHR20_BAM = None
+CHR20_BAM_FIRST_HALF = None
+CHR20_BAM_SECOND_HALF = None
 CHR20_CRAM = None
 GOLDEN_TRAINING_EXAMPLES = None
 GOLDEN_CALLING_CANDIDATES = None
@@ -97,6 +99,8 @@ def init():
   """Initialize global variables from flag values."""
   global CHR20_FASTA
   global CHR20_BAM
+  global CHR20_BAM_FIRST_HALF
+  global CHR20_BAM_SECOND_HALF
   global CHR20_CRAM
   global GOLDEN_TRAINING_EXAMPLES
   global GOLDEN_CALLING_CANDIDATES
@@ -119,6 +123,25 @@ def init():
 
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
+  # # Here is how "NA12878_S1.chr20.10_10p1mb.first_half.bam"
+  # # and "NA12878_S1.chr20.10_10p1mb.second_half.bam" are split
+  # # from NA12878_S1.chr20.10_10p1mb.bam.
+  # READS_FIRST_HALF=${TESTDATA_DIR}/NA12878_S1.chr20.10_10p1mb.first_half.bam
+  # READS_SECOND_HALF=${TESTDATA_DIR}/NA12878_S1.chr20.10_10p1mb.second_half.bam
+  # READS=${TESTDATA_DIR}/NA12878_S1.chr20.10_10p1mb.bam
+  # samtools view -H ${READS} > /tmp/f1.sam
+  # cp /tmp/f1.sam /tmp/f2.sam
+  # # Because ${READS} has total of 52035 lines, we split in roughly half.
+  # samtools view ${READS} | head -26000 >> /tmp/f1.sam
+  # samtools view ${READS} | tail -26035 >> /tmp/f2.sam
+  # samtools view -S -b /tmp/f1.sam > ${READS_FIRST_HALF}
+  # samtools view -S -b /tmp/f2.sam > ${READS_SECOND_HALF}
+  # samtools index ${READS_FIRST_HALF}
+  # samtools index ${READS_SECOND_HALF}
+  CHR20_BAM_FIRST_HALF = deepvariant_testdata(
+      'NA12878_S1.chr20.10_10p1mb.first_half.bam')
+  CHR20_BAM_SECOND_HALF = deepvariant_testdata(
+      'NA12878_S1.chr20.10_10p1mb.second_half.bam')
   CHR20_CRAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.cram')
   GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz')
