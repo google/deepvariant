@@ -1162,7 +1162,8 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.reads = ''
     self.options = make_examples.default_options(add_flags=False)
     self.options.reference_filename = testdata.CHR20_FASTA
-    self.options.reads_filename = testdata.CHR20_BAM
+    if not self.options.reads_filenames:
+      self.options.reads_filenames.extend(testdata.CHR20_BAM)
     self.options.truth_variants_filename = testdata.TRUTH_VARIANTS_VCF
     self.options.mode = deepvariant_pb2.DeepVariantOptions.TRAINING
     self.options.variant_caller_options.sample_name = 'sample_id'
@@ -1305,8 +1306,8 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.realigner = mock.Mock()
     self.processor.realigner.realign_reads.return_value = [], []
 
-    self.processor.sam_reader = mock.Mock()
-    self.processor.sam_reader.query.return_value = []
+    self.processor.sam_readers = [mock.Mock()]
+    self.processor.sam_readers[0].query.return_value = []
     self.processor.in_memory_sam_reader = mock.Mock()
 
     c1, c2 = mock.Mock(), mock.Mock()
@@ -1318,7 +1319,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     self.assertEqual(([c1, c2], [e1, e2, e3], []),
                      self.processor.process(self.region))
-    self.processor.sam_reader.query.assert_called_once_with(self.region)
+    self.processor.sam_readers[0].query.assert_called_once_with(self.region)
     self.processor.realigner.realign_reads.assert_called_once_with([],
                                                                    self.region)
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(

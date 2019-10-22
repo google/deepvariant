@@ -451,7 +451,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 32.
+// Next ID: 33.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -490,7 +490,10 @@ message DeepVariantOptions {
   // Path to our genome reference.
   string reference_filename = 10;
   // Path to our source of NGS reads.
-  string reads_filename = 11;
+  repeated string reads_filenames = 32;
+  // Deprecated.
+  string deprecated_reads_filename = 11;
+
   // Path where we'll write out our candidate variants.
   string candidates_filename = 12;
   // Path to examples.

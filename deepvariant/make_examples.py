@@ -101,7 +101,8 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'reads', None,
     'Required. Aligned, sorted, indexed BAM file containing the reads we want '
-    'to call. Should be aligned to a reference genome compatible with --ref.')
+    'to call. Should be aligned to a reference genome compatible with --ref. '
+    'Can provide multiple BAMs (comma-separated).')
 flags.DEFINE_bool(
     'use_ref_for_cram', True,
     'If true, use the --ref argument as the reference file for the CRAM '
@@ -383,7 +384,8 @@ def default_options(add_flags=True, flags_obj=None):
   if flags_obj.sample_name:
     sample_name = flags_obj.sample_name
   elif flags_obj.reads:
-    with sam.SamReader(flags_obj.reads) as sam_reader:
+    # If there are multiple BAM files, use the sample name from the first one.
+    with sam.SamReader(flags_obj.reads.split(',')[0]) as sam_reader:
       sample_name = extract_sample_name_from_sam_reader(sam_reader)
   else:
     sample_name = _UNKNOWN_SAMPLE
@@ -432,7 +434,7 @@ def default_options(add_flags=True, flags_obj=None):
     if flags_obj.ref:
       options.reference_filename = flags_obj.ref
     if flags_obj.reads:
-      options.reads_filename = flags_obj.reads
+      options.reads_filenames.extend(flags_obj.reads.split(','))
     if flags_obj.confident_regions:
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
@@ -884,7 +886,7 @@ class RegionProcessor(object):
     self.options = options
     self.initialized = False
     self.ref_reader = None
-    self.sam_reader = None
+    self.sam_readers = None
     self.in_memory_sam_reader = None
     self.realigner = None
     self.pic = None
@@ -898,20 +900,25 @@ class RegionProcessor(object):
   def _encode_tensor(self, image_tensor):
     return image_tensor.tostring(), image_tensor.shape, 'raw'
 
-  def _make_sam_reader(self):
+  def _make_sam_readers(self):
+    """Creates a list of SamReaders from self.options.reads_filenames."""
     logging.info('Starting from v0.9.0, --use_ref_for_cram is default to true. '
                  'If you are using CRAM input, note that we will decode CRAM '
                  'using the reference you passed in with --ref')
-    return sam.SamReader(
-        self.options.reads_filename,
-        ref_path=FLAGS.ref if FLAGS.use_ref_for_cram else None,
-        read_requirements=self.options.read_requirements,
-        parse_aux_fields=FLAGS.parse_sam_aux_fields,
-        hts_block_size=FLAGS.hts_block_size,
-        downsample_fraction=self.options.downsample_fraction,
-        random_seed=self.options.random_seed,
-        use_original_base_quality_scores=self.options
-        .use_original_quality_scores)
+    readers = []
+    for reads_filename in self.options.reads_filenames:
+      readers.append(
+          sam.SamReader(
+              reads_filename,
+              ref_path=FLAGS.ref if FLAGS.use_ref_for_cram else None,
+              read_requirements=self.options.read_requirements,
+              parse_aux_fields=FLAGS.parse_sam_aux_fields,
+              hts_block_size=FLAGS.hts_block_size,
+              downsample_fraction=self.options.downsample_fraction,
+              random_seed=self.options.random_seed,
+              use_original_base_quality_scores=self.options
+              .use_original_quality_scores))
+    return readers
 
   def _initialize(self):
     """Initialize the resources needed for this work in the current env."""
@@ -919,7 +926,7 @@ class RegionProcessor(object):
       raise ValueError('Cannot initialize this object twice')
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
-    self.sam_reader = self._make_sam_reader()
+    self.sam_readers = self._make_sam_readers()
     self.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.realigner_enabled:
@@ -1049,7 +1056,10 @@ class RegionProcessor(object):
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
     """
-    reads = self.sam_reader.query(region)
+    reads = []
+    if self.sam_readers is not None:
+      for sam_reader in self.sam_readers:
+        reads.extend(sam_reader.query(region))
     if self.options.max_reads_per_partition > 0:
       random_for_region = np.random.RandomState(self.options.random_seed)
       reads = utils.reservoir_sample(
@@ -1192,7 +1202,7 @@ def processing_regions_from_options(options):
   """
   ref_contigs = fasta.IndexedFastaReader(
       options.reference_filename).header.contigs
-  sam_contigs = sam.SamReader(options.reads_filename).header.contigs
+  sam_contigs = sam.SamReader(options.reads_filenames[0]).header.contigs
 
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None
@@ -1358,7 +1368,7 @@ def main(argv=()):
     # Check arguments that apply to any mode.
     if not options.reference_filename:
       errors.log_and_raise('ref argument is required.', errors.CommandLineError)
-    if not options.reads_filename:
+    if not options.reads_filenames:
       errors.log_and_raise('reads argument is required.',
                            errors.CommandLineError)
     if not options.examples_filename:

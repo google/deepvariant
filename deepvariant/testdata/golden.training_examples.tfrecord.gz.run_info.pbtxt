@@ -3460,7 +3460,6 @@ options {
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
   reference_filename: "learning/genomics/deepvariant/testdata/ucsc.hg19.chr20.unittest.fasta.gz"
-  reads_filename: "learning/genomics/deepvariant/testdata/NA12878_S1.chr20.10_10p1mb.bam"
   examples_filename: "learning/genomics/deepvariant/testdata/golden.training_examples.tfrecord.gz"
   confident_regions_filename: "learning/genomics/deepvariant/testdata/test_nist.b37_chr20_100kbp_at_10mb.bed"
   truth_variants_filename: "learning/genomics/deepvariant/testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz"
@@ -3515,6 +3514,7 @@ options {
   labeler_algorithm: HAPLOTYPE_LABELER
   run_info_filename: "learning/genomics/deepvariant/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
   variant_caller: VERY_SENSITIVE_CALLER
+  reads_filenames: "learning/genomics/deepvariant/testdata/NA12878_S1.chr20.10_10p1mb.bam"
 }
 labeling_metrics {
   n_truth_variant_sites: 48
