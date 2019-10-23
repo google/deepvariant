@@ -1059,7 +1059,21 @@ class RegionProcessor(object):
     reads = []
     if self.sam_readers is not None:
       for sam_reader in self.sam_readers:
-        reads.extend(sam_reader.query(region))
+        try:
+          reads.extend(sam_reader.query(region))
+        except ValueError:
+          raise ValueError('Failed to parse BAM/CRAM file. '
+                           'This is often caused by:\n'
+                           '(1) When using a CRAM file, and setting '
+                           '--use_ref_for_cram to false (which means you want '
+                           'to use the embedded ref instead of a ref file), '
+                           'this error could be because of inability to find '
+                           'the embedded ref file.\n'
+                           '(2) Your BAM/CRAM file could be corrupted. Please '
+                           'check its md5.\n'
+                           'If you cannot find out the reason why this error '
+                           'is occurring, please report to '
+                           'https://github.com/google/deepvariant/issues')
     if self.options.max_reads_per_partition > 0:
       random_for_region = np.random.RandomState(self.options.random_seed)
       reads = utils.reservoir_sample(

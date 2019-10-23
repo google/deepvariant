@@ -318,10 +318,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         _sharded('failed.examples.tfrecord'))
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
-    FLAGS.mode = 'training'
+    FLAGS.mode = 'calling'
     FLAGS.gvcf_gq_binsize = 5
     options = make_examples.default_options(add_flags=True)
-    with self.assertRaisesRegexp(ValueError, 'Not found: Could not open '):
+    with self.assertRaisesRegexp(ValueError, 'Failed to parse BAM/CRAM file.'):
       make_examples.make_examples_runner(options)
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
