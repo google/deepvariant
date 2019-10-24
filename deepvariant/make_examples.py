@@ -1058,22 +1058,33 @@ class RegionProcessor(object):
     """
     reads = []
     if self.sam_readers is not None:
-      for sam_reader in self.sam_readers:
+      for sam_reader_index, sam_reader in enumerate(self.sam_readers):
         try:
           reads.extend(sam_reader.query(region))
-        except ValueError:
-          raise ValueError('Failed to parse BAM/CRAM file. '
-                           'This is often caused by:\n'
-                           '(1) When using a CRAM file, and setting '
-                           '--use_ref_for_cram to false (which means you want '
-                           'to use the embedded ref instead of a ref file), '
-                           'this error could be because of inability to find '
-                           'the embedded ref file.\n'
-                           '(2) Your BAM/CRAM file could be corrupted. Please '
-                           'check its md5.\n'
-                           'If you cannot find out the reason why this error '
-                           'is occurring, please report to '
-                           'https://github.com/google/deepvariant/issues')
+        except ValueError as err:
+          error_message = str(err)
+          if error_message.startswith('Data loss:'):
+            raise ValueError(
+                error_message + '\nFailed to parse BAM/CRAM file. '
+                'This is often caused by:\n'
+                '(1) When using a CRAM file, and setting '
+                '--use_ref_for_cram to false (which means you want '
+                'to use the embedded ref instead of a ref file), '
+                'this error could be because of inability to find '
+                'the embedded ref file.\n'
+                '(2) Your BAM/CRAM file could be corrupted. Please '
+                'check its md5.\n'
+                'If you cannot find out the reason why this error '
+                'is occurring, please report to '
+                'https://github.com/google/deepvariant/issues')
+          elif error_message.startswith('Not found: Unknown reference_name '):
+            raise ValueError('{}\nThe region {} does not exist in {}.'.format(
+                error_message, ranges.to_literal(region),
+                self.options.reads_filenames[sam_reader_index]))
+          else:
+            # By default, raise the ValueError as is for now.
+            raise err
+
     if self.options.max_reads_per_partition > 0:
       random_for_region = np.random.RandomState(self.options.random_seed)
       reads = utils.reservoir_sample(
@@ -1216,12 +1227,17 @@ def processing_regions_from_options(options):
   """
   ref_contigs = fasta.IndexedFastaReader(
       options.reference_filename).header.contigs
-  sam_contigs = sam.SamReader(options.reads_filenames[0]).header.contigs
 
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None
   if in_training_mode(options):
     vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
+
+  all_sam_contigs = [
+      sam.SamReader(reads_file).header.contigs
+      for reads_file in options.reads_filenames
+  ]
+  sam_contigs = common_contigs(only_true(*all_sam_contigs))
 
   contigs = _ensure_consistent_contigs(ref_contigs, sam_contigs, vcf_contigs,
                                        options.exclude_contigs,

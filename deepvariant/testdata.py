@@ -64,6 +64,7 @@ CHR20_FASTA = None
 CHR20_BAM = None
 CHR20_BAM_FIRST_HALF = None
 CHR20_BAM_SECOND_HALF = None
+NOCHR20_BAM = None
 CHR20_CRAM = None
 GOLDEN_TRAINING_EXAMPLES = None
 GOLDEN_CALLING_CANDIDATES = None
@@ -101,6 +102,7 @@ def init():
   global CHR20_BAM
   global CHR20_BAM_FIRST_HALF
   global CHR20_BAM_SECOND_HALF
+  global NOCHR20_BAM
   global CHR20_CRAM
   global GOLDEN_TRAINING_EXAMPLES
   global GOLDEN_CALLING_CANDIDATES
@@ -142,6 +144,14 @@ def init():
       'NA12878_S1.chr20.10_10p1mb.first_half.bam')
   CHR20_BAM_SECOND_HALF = deepvariant_testdata(
       'NA12878_S1.chr20.10_10p1mb.second_half.bam')
+  # # Here is how the "HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam"
+  # # file was created.
+  # samtools view -hb HG002_NIST_150bp_downsampled_30x.bam \
+  #     20:10,000,000-10,100,000 \
+  #     > HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam
+  # samtools index HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam
+  NOCHR20_BAM = deepvariant_testdata(
+      'HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam')
   CHR20_CRAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.cram')
   GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz')

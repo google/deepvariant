@@ -306,6 +306,30 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           run_info.labeling_metrics)
 
   @flagsaver.FlagSaver
+  def test_make_examples_end2end_failed_on_mismatched_multi_bam(self):
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+
+    FLAGS.write_run_info = True
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = ','.join([testdata.CHR20_BAM, testdata.NOCHR20_BAM])
+    FLAGS.candidates = test_utils.test_tmpfile(
+        _sharded('mismatched_multi_bam.vsc.tfrecord'))
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('mismatched_multi_bam.examples.tfrecord'))
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.partition_size = 1000
+    FLAGS.mode = 'calling'
+    FLAGS.gvcf_gq_binsize = 5
+    options = make_examples.default_options(add_flags=True)
+    # This shows an example of what the error message looks like:
+    with self.assertRaisesRegexp(
+        ValueError, 'Not found: Unknown reference_name '
+        'reference_name: "chr20" start: 9999999 end: 10000999\n'
+        'The region chr20:10000000-10000999 does not exist in '
+        '.*HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam.'):
+      make_examples.make_examples_runner(options)
+
+  @flagsaver.FlagSaver
   def test_make_examples_end2end_failed_on_cram(self):
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
 
