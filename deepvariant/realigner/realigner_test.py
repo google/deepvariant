@@ -48,7 +48,6 @@ import tensorflow as tf
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
-from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
@@ -68,6 +67,11 @@ def setUpModule():
 def _get_reads(region):
   with sam.SamReader(testdata.CHR20_BAM) as in_sam_reader:
     return list(in_sam_reader.query(region))
+
+
+def _get_reads_and_header(region):
+  with sam.SamReader(testdata.CHR20_BAM) as in_sam_reader:
+    return list(in_sam_reader.query(region)), in_sam_reader.header
 
 
 def _test_assembled_region(region_str, haplotypes=None):
@@ -381,13 +385,14 @@ class RealignerTest(parameterized.TestCase):
     region_str = 'chr20:10046178-10046188'
     region = ranges.parse_literal(region_str)
     assembled_region_str = 'chr20:10046096-10046267'
-    reads = _get_reads(region)
+    reads, header = _get_reads_and_header(region)
     self.config = realigner.realigner_config(FLAGS)
     self.config.diagnostics.enabled = enabled
     self.config.diagnostics.output_root = dx_dir
     self.config.diagnostics.emit_realigned_reads = emit_reads
-    self.reads_realigner = realigner.Realigner(self.config, self.ref_reader)
-    _, realigned_reads = self.reads_realigner.realign_reads(reads, region)
+    self.reads_realigner = realigner.Realigner(self.config, self.ref_reader,
+                                               header)
+    _, _ = self.reads_realigner.realign_reads(reads, region)
     self.reads_realigner.diagnostic_logger.close()  # Force close all resources.
 
     if not enabled:
@@ -426,12 +431,9 @@ class RealignerTest(parameterized.TestCase):
       reads_file = os.path.join(
           dx_dir, region_str,
           self.reads_realigner.diagnostic_logger.realigned_reads_filename)
-      if emit_reads:
-        self.assertTrue(tf.gfile.Exists(reads_file))
-        reads_from_dx = tfrecord.read_tfrecords(reads_file, reads_pb2.Read)
-        self.assertCountEqual(reads_from_dx, realigned_reads)
-      else:
-        self.assertFalse(tf.gfile.Exists(reads_file))
+
+      # if emit_reads=False then file should not exist and vice versa.
+      self.assertEqual(emit_reads, tf.gfile.Exists(reads_file))
 
 
 class RealignerIntegrationTest(absltest.TestCase):

@@ -291,7 +291,7 @@ class DiagnosticLogger(object):
                config,
                graph_filename='graph.dot',
                metrics_filename='realigner_metrics.csv',
-               realigned_reads_filename='realigned_reads.tfrecord'):
+               realigned_reads_filename='realigned_reads.bam'):
     self.config = config
     self.graph_filename = graph_filename
     self.metrics_filename = metrics_filename
@@ -330,11 +330,11 @@ class DiagnosticLogger(object):
     assert self.enabled, 'only callable when diagnostics are on'
     return self._root_join(os.path.join(ranges.to_literal(region), basename))
 
-  def log_realigned_reads(self, region, reads):
+  def log_realigned_reads(self, region, reads, shared_header=None):
     """Logs, if enabled, the realigned reads for region."""
-    if self.enabled and self.config.emit_realigned_reads:
+    if self.enabled and self.config.emit_realigned_reads and shared_header is not None:
       path = self._file_for_region(region, self.realigned_reads_filename)
-      with sam.SamWriter(path) as writer:
+      with sam.SamWriter(path, header=shared_header) as writer:
         for read in reads:
           writer.write(read)
 
@@ -454,16 +454,18 @@ class Realigner(object):
   the read's alignment.
   """
 
-  def __init__(self, config, ref_reader):
+  def __init__(self, config, ref_reader, shared_header=None):
     """Creates a new Realigner.
 
     Args:
       config: realigner_pb2.RealignerOptions protobuf.
       ref_reader: GenomeReferenceFai, indexed reference genome to query bases.
+      shared_header: header info from the input bam file
     """
     self.config = config
     self.ref_reader = ref_reader
     self.diagnostic_logger = DiagnosticLogger(self.config.diagnostics)
+    self.shared_header = shared_header
 
   def call_debruijn_graph(self, windows, reads):
     """Helper function to call debruijn_graph module."""
@@ -626,6 +628,7 @@ class Realigner(object):
 
       realigned_reads.extend(realigned_reads_copy)
 
-    self.diagnostic_logger.log_realigned_reads(region, realigned_reads)
+    self.diagnostic_logger.log_realigned_reads(region, realigned_reads,
+                                               self.shared_header)
 
     return candidate_haplotypes, realigned_reads

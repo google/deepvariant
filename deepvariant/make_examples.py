@@ -930,8 +930,11 @@ class RegionProcessor(object):
     self.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.realigner_enabled:
-      self.realigner = realigner.Realigner(self.options.realigner_options,
-                                           self.ref_reader)
+      input_bam_header = sam.SamReader(self.options.reads_filenames[0]).header
+      self.realigner = realigner.Realigner(
+          self.options.realigner_options,
+          self.ref_reader,
+          shared_header=input_bam_header)
     self.pic = pileup_image.PileupImageCreator(
         ref_reader=self.ref_reader,
         sam_reader=self.in_memory_sam_reader,
