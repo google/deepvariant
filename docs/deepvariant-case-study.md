@@ -158,9 +158,9 @@ Type  | # FN | # FP | Recall   | Precision | F1\_Score
 INDEL | 1488 | 944  | 0.996798 | 0.998048  | 0.997423
 SNP   | 1576 | 725  | 0.999483 | 0.999762  | 0.999623
 
-[install_nvidia_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/install_nvidia_docker.sh
-[run_wgs_case_study_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wgs_case_study_docker.sh
-[run_wgs_case_study_docker_gpu.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wgs_case_study_docker_gpu.sh
+[install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
+[run_wgs_case_study_docker.sh]: ../scripts/run_wgs_case_study_docker.sh
+[run_wgs_case_study_docker_gpu.sh]: ../scripts/run_wgs_case_study_docker_gpu.sh
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [CPU machine]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
 [GPU machine]: deepvariant-details.md#command-for-a-gpu-machine-on-google-cloud-platform

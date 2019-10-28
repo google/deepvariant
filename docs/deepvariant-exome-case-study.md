@@ -114,8 +114,8 @@ INDEL | 117  | 55   | 0.955000 | 0.978507  | 0.966611
 SNP   | 37   | 23   | 0.998903 | 0.999318  | 0.999110
 
 [specific machine type]: deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies
-[install_nvidia_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/install_nvidia_docker.sh
-[run_wes_case_study_docker.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wes_case_study_docker.sh
-[run_wes_case_study_docker_gpu.sh]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_wes_case_study_docker_gpu.sh
+[install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
+[run_wes_case_study_docker.sh]: ../scripts/run_wes_case_study_docker.sh
+[run_wes_case_study_docker_gpu.sh]: ../scripts/run_wes_case_study_docker_gpu.sh
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [case study on whole genome sequencing data]: deepvariant-case-study.md

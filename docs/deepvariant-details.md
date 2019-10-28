@@ -273,6 +273,6 @@ https://console.cloud.google.com/compute/instances?project=YOUR_PROJECT
 [exome case study]: deepvariant-exome-case-study.md
 [whole genome case study]: deepvariant-case-study.md
 [quick start]: deepvariant-quick-start.md
-[Running DeepVariant on Google Cloud Platform]: https://cloud.google.com/genomics/deepvariant
+[Running DeepVariant on Google Cloud Platform]: https://cloud.google.com/life-sciences/docs/tutorials/deepvariant
 [TensorFlow]: http://www.tensorflow.org/
 [Colab example]: visualizing_examples.ipynb

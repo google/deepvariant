@@ -189,4 +189,4 @@ Benchmarking Summary:
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
-[run_deepvariant.py]: https://github.com/google/deepvariant/blob/r0.8/scripts/run_deepvariant.py
+[run_deepvariant.py]: ../scripts/run_deepvariant.py
