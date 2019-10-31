@@ -374,7 +374,7 @@ class AlignerTest(parameterized.TestCase):
         quals=[64] * read_len,
         name='read')
     if exception_msg:
-      with self.assertRaisesRegexp(ValueError, exception_msg):
+      with self.assertRaisesRegex(ValueError, exception_msg):
         align_reads.sanity_check_readalignment(read)
     else:
       align_reads.sanity_check_readalignment(read)

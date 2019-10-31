@@ -238,7 +238,7 @@ class RealignerTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_window_selector_model_flags_failures(self):
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError, 'ws_min_supporting_reads should be smaller than ws_'
         'max_supporting_reads.'):
       FLAGS.ws_max_num_supporting_reads = 1
@@ -247,7 +247,7 @@ class RealignerTest(parameterized.TestCase):
       FLAGS.ws_use_window_selector_model = False
       _ = realigner.realigner_config(FLAGS)
 
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError, 'Cannot specify a ws_window_selector_model '
         'if ws_use_window_selector_model is False.'):
       FLAGS.ws_max_num_supporting_reads = -1
@@ -256,7 +256,7 @@ class RealignerTest(parameterized.TestCase):
       FLAGS.ws_use_window_selector_model = False
       _ = realigner.realigner_config(FLAGS)
 
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError, 'Cannot use both ws_min_num_supporting_reads and '
         'ws_use_window_selector_model flags.'):
       FLAGS.ws_max_num_supporting_reads = -1
@@ -265,7 +265,7 @@ class RealignerTest(parameterized.TestCase):
       FLAGS.ws_use_window_selector_model = True
       _ = realigner.realigner_config(FLAGS)
 
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError, 'Cannot use both ws_max_num_supporting_reads and '
         'ws_use_window_selector_model flags.'):
       FLAGS.ws_max_num_supporting_reads = 1
