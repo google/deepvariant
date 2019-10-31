@@ -111,8 +111,8 @@ class DataProviderTest(parameterized.TestCase):
   def test_get_dataset_raises_error_for_empty_name(self):
     dataset_config_pbtext_filename = _test_dataset_config(
         'test_get_dataset_raises_error_for_empty_name.pbtxt')
-    with self.assertRaisesRegexp(ValueError,
-                                 'dataset_config needs to have a name'):
+    with self.assertRaisesRegex(ValueError,
+                                'dataset_config needs to have a name'):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
 
@@ -123,7 +123,7 @@ class DataProviderTest(parameterized.TestCase):
     expected_exception_message = ('The dataset in the config {} does not '
                                   'have a tfrecord_path.'
                                   .format(dataset_config_pbtext_filename))
-    with self.assertRaisesRegexp(ValueError, expected_exception_message):
+    with self.assertRaisesRegex(ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
 
@@ -135,7 +135,7 @@ class DataProviderTest(parameterized.TestCase):
     expected_exception_message = ('The dataset in the config {} does not have '
                                   'a num_examples.'
                                   .format(dataset_config_pbtext_filename))
-    with self.assertRaisesRegexp(ValueError, expected_exception_message):
+    with self.assertRaisesRegex(ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
 
@@ -309,7 +309,7 @@ class DataProviderTest(parameterized.TestCase):
     self.assertEqual(valid_shape, ds.tensor_shape)
 
   def test_get_shape_from_examples_path_invalid_path(self):
-    with self.assertRaisesRegexp(Exception, '/this/path/does/not'):
+    with self.assertRaisesRegex(Exception, '/this/path/does/not'):
       data_providers.DeepVariantInput(
           mode=tf.estimator.ModeKeys.PREDICT,
           name='test_invalid_path',
@@ -429,7 +429,7 @@ class InputTest(
           break
         n += 1
         a = features['image']  # np.ndarray
-        self.assertTrue(a is not None)
+        self.assertIsNot(a, None)
         if use_tpu:
           self.assertEqual(a.dtype, np.dtype('int32'))
         else:

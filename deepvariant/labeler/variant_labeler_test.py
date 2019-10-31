@@ -244,11 +244,11 @@ class VariantLabelerTest(parameterized.TestCase):
     self.assertEqual(labeled.label_for_alt_alleles(indices), expected_label)
 
   def test_genotype_from_matched_truth_none_truth_variant_raises(self):
-    with self.assertRaisesRegexp(ValueError, 'truth_variant cannot be None'):
+    with self.assertRaisesRegex(ValueError, 'truth_variant cannot be None'):
       variant_labeler._genotype_from_matched_truth(self.snp, None)
 
   def test_genotype_from_matched_truth_no_call_truth_variant_raises(self):
-    with self.assertRaisesRegexp(ValueError, 'Expected exactly one VariantCal'):
+    with self.assertRaisesRegex(ValueError, 'Expected exactly one VariantCal'):
       variant_labeler._genotype_from_matched_truth(self.snp,
                                                    test_utils.make_variant(
                                                        start=10,
@@ -256,7 +256,7 @@ class VariantLabelerTest(parameterized.TestCase):
                                                    ))
 
   def test_genotype_from_matched_truth_no_gt_truth_variant_raises(self):
-    with self.assertRaisesRegexp(ValueError, 'truth_variant needs genotypes'):
+    with self.assertRaisesRegex(ValueError, 'truth_variant needs genotypes'):
       variant_labeler._genotype_from_matched_truth(self.snp,
                                                    test_utils.make_variant(
                                                        start=10,
@@ -265,7 +265,7 @@ class VariantLabelerTest(parameterized.TestCase):
                                                    ))
 
   def test_genotype_from_matched_truth_none_variant_raises(self):
-    with self.assertRaisesRegexp(ValueError, 'variant cannot be None'):
+    with self.assertRaisesRegex(ValueError, 'variant cannot be None'):
       variant_labeler._genotype_from_matched_truth(None, self.snp)
 
 

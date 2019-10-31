@@ -88,7 +88,7 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
     FLAGS.examples = testdata.GOLDEN_CALLING_EXAMPLES
     FLAGS.output_vcf = test_utils.test_tmpfile('unlabeled.vcf')
 
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError,
         ('Variant .* does not have any genotypes. This tool only works with '
          'variants that have been labeled')):

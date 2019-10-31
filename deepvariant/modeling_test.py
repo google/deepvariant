@@ -60,7 +60,7 @@ class ModelingTest(
     self.assertIsInstance(modeling.get_model(model_name), expected_class)
 
   def test_get_model_unknown_model_signals_error(self):
-    with self.assertRaisesRegexp(ValueError, 'Unknown model'):
+    with self.assertRaisesRegex(ValueError, 'Unknown model'):
       modeling.get_model('unknown_model_1234')
 
   def test_make_deepvariant_slim_model(self):
@@ -126,29 +126,28 @@ class ModelingTest(
     v1 = slim.variable('my_var', shape=[20, 1])
 
     # The only variables in the system are the three we've created.
-    self.assertItemsEqual([w1, w2, w3, v1], slim.get_variables())
+    self.assertCountEqual([w1, w2, w3, v1], slim.get_variables())
 
     # We get just the three model variables without any excludes.
-    self.assertItemsEqual([w1, w2, w3], model.variables_to_restore_from_model())
+    self.assertCountEqual([w1, w2, w3], model.variables_to_restore_from_model())
     # As well as when exclude_scopes is an empty list.
-    self.assertItemsEqual(
+    self.assertCountEqual(
         [w1, w2, w3], model.variables_to_restore_from_model(exclude_scopes=[]))
 
     # Excluding model/l1 variables gives us w2 and w3.
-    self.assertItemsEqual(
+    self.assertCountEqual(
         [w2, w3],
         model.variables_to_restore_from_model(exclude_scopes=['model/l1']))
     # Excluding model/l2 gives us just w1 back.
-    self.assertItemsEqual(
+    self.assertCountEqual(
         [w1],
         model.variables_to_restore_from_model(exclude_scopes=['model/l2']))
     # Excluding multiple scopes works as expected.
-    self.assertItemsEqual(
-        [],
-        model.variables_to_restore_from_model(
-            exclude_scopes=['model/l1', 'model/l2']))
+    self.assertCountEqual([],
+                          model.variables_to_restore_from_model(
+                              exclude_scopes=['model/l1', 'model/l2']))
     # Excluding the root model scope also produces no variables..
-    self.assertItemsEqual(
+    self.assertCountEqual(
         [], model.variables_to_restore_from_model(exclude_scopes=['model']))
 
 
@@ -244,8 +243,8 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
       images = tf.placeholder(tf.float32, (4, height, width, 3))
       expected_message = ('Unsupported image dimensions.* model '
                           'inception_v3.*w={} x h={}.*').format(width, height)
-      with self.assertRaisesRegexp(modeling.UnsupportedImageDimensionsError,
-                                   expected_message):
+      with self.assertRaisesRegex(modeling.UnsupportedImageDimensionsError,
+                                  expected_message):
         self.model.create(images, 3, is_training=True)
 
 

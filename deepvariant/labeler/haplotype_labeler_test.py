@@ -899,15 +899,15 @@ class LabelExamplesTest(parameterized.TestCase):
                                                 haplotypes)))
 
   def test_extend_haplotypes_raises_on_empty_prefix_list(self):
-    with self.assertRaisesRegexp(ValueError, 'prefix_haplotypes_list.*empty'):
+    with self.assertRaisesRegex(ValueError, 'prefix_haplotypes_list.*empty'):
       list(haplotype_labeler.extend_haplotypes([], {'A'}))
 
   def test_extend_haplotypes_raises_on_empty_haplotypes(self):
-    with self.assertRaisesRegexp(ValueError, 'haplotypes'):
+    with self.assertRaisesRegex(ValueError, 'haplotypes'):
       list(haplotype_labeler.extend_haplotypes([{'A'}], set()))
 
   def test_extend_haplotypes_raises_on_too_many_haplotypes(self):
-    with self.assertRaisesRegexp(ValueError, 'haplotypes'):
+    with self.assertRaisesRegex(ValueError, 'haplotypes'):
       list(haplotype_labeler.extend_haplotypes([{'A'}], {'a', 'b', 'c'}))
 
   # The reference sequence is xAAAAAy.

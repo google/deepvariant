@@ -234,7 +234,7 @@ class CallVariantsEndToEndTests(
     # We can only do this test when processing all of the variants (max_batches
     # is None), since we processed all of the examples with that model.
     if max_batches is None:
-      self.assertItemsEqual([cvo.variant for cvo in call_variants_outputs],
+      self.assertCountEqual([cvo.variant for cvo in call_variants_outputs],
                             [tf_utils.example_variant(ex) for ex in examples])
 
     # Check the CVO debug_info: not filled if include_debug_info is False;
@@ -312,7 +312,7 @@ class CallVariantsEndToEndTests(
     del example.features.feature['image/shape']
     source_path = test_utils.test_tmpfile('make_examples_out_noshape.tfrecord')
     tfrecord.write_tfrecords([example], source_path)
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError, 'Invalid image/shape: we expect to find an image/shape '
         'field with length 3.'):
       ds = call_variants.prepare_inputs(source_path)
@@ -375,7 +375,7 @@ class CallVariantsUnitTests(
       except tf.errors.OutOfRangeError:
         pass
 
-      self.assertItemsEqual(self.variants,
+      self.assertCountEqual(self.variants,
                             variant_utils.decode_variants(seen_variants))
 
   @parameterized.parameters(

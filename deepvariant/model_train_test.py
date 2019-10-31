@@ -165,7 +165,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
   @flagsaver.FlagSaver
   def test_end2end_inception_v3_embedding_invalid_embedding_size(self):
     """End-to-end test of model_train script with an invalid embedding size."""
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError, 'Expected seq_type_embedding_size '
         'to be a positive number but saw -100 '
         'instead.'):

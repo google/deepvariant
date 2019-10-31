@@ -91,7 +91,7 @@ class TFUtilsTest(parameterized.TestCase):
       }, tf_utils.model_shapes(save_path, ['v1']))
 
       # Verifies model_shapes() fails for non-existent tensors.
-      with self.assertRaisesRegexp(KeyError, 'v3'):
+      with self.assertRaisesRegex(KeyError, 'v3'):
         tf_utils.model_shapes(save_path, ['v3'])
 
   def testModelNumClasses(self):
@@ -185,9 +185,9 @@ class TFUtilsTest(parameterized.TestCase):
   def testFailedExampleImageShape(self):
     # Create an empty example that doesn't have the required image/shape field.
     example = example_pb2.Example()
-    with self.assertRaisesRegexp(ValueError,
-                                 'Invalid image/shape: we expect to find an '
-                                 'image/shape field with length 3.'):
+    with self.assertRaisesRegex(
+        ValueError, 'Invalid image/shape: we expect to find an '
+        'image/shape field with length 3.'):
       tf_utils.example_image_shape(example)
 
   @parameterized.parameters(
@@ -233,7 +233,7 @@ class TFUtilsTest(parameterized.TestCase):
     # at least on a Posix filesystem.  Other filesystems might
     # not fail like that, and will return an empty list, which
     # is turned into a different exception.
-    with self.assertRaisesRegexp(Exception, expected_partial_message):
+    with self.assertRaisesRegex(Exception, expected_partial_message):
       tf_utils.get_shape_from_examples_path(source_paths)
 
   def testStringToIntTensor(self):
