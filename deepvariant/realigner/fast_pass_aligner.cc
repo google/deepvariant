@@ -288,7 +288,7 @@ void FastPassAligner::FastAlignReadsToHaplotype(
     // there might be cases were not all haplotypes were generated and we can
     // get away with that by aligning reads to reference haplotype.
     if (coverage[i] == 0 && i >= ref_prefix_len_ &&
-        i < haplotype.size() - ref_suffix_len_ - kmer_size_ && !is_ref) {
+        i < haplotype.size() - ref_suffix_len_ && !is_ref) {
       *haplotype_score = 0;
       return;
     }
