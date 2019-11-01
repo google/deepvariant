@@ -38,6 +38,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import six
 from third_party.nucleus.protos import reference_pb2
 from deepvariant import dv_vcf_constants
 
@@ -59,8 +60,8 @@ class DvVcfConstantsTest(parameterized.TestCase):
   def test_deepvariant_header(self, contigs, sample_names):
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs, sample_names=sample_names)
-    self.assertCountEqual(header.contigs, contigs)
-    self.assertCountEqual(header.sample_names, sample_names)
+    six.assertCountEqual(self, header.contigs, contigs)
+    six.assertCountEqual(self, header.sample_names, sample_names)
     self.assertGreater(len(header.filters), 0)
     self.assertGreater(len(header.infos), 0)
     self.assertGreater(len(header.formats), 0)

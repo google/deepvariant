@@ -39,7 +39,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 from absl.testing import absltest
 from absl.testing import parameterized
-
+import six
 from third_party.nucleus.protos import cigar_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import cigar as _cigar
@@ -374,7 +374,7 @@ class AlignerTest(parameterized.TestCase):
         quals=[64] * read_len,
         name='read')
     if exception_msg:
-      with self.assertRaisesRegex(ValueError, exception_msg):
+      with six.assertRaisesRegex(self, ValueError, exception_msg):
         align_reads.sanity_check_readalignment(read)
     else:
       align_reads.sanity_check_readalignment(read)

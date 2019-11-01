@@ -36,9 +36,11 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+
 from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
+import six
 
 from third_party.nucleus.io import vcf
 
@@ -46,6 +48,7 @@ from third_party.nucleus.testing import test_utils
 from deepvariant import testdata
 from deepvariant.labeler import labeled_examples_to_vcf
 from deepvariant.testing import flagsaver
+
 
 FLAGS = flags.FLAGS
 
@@ -88,8 +91,8 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
     FLAGS.examples = testdata.GOLDEN_CALLING_EXAMPLES
     FLAGS.output_vcf = test_utils.test_tmpfile('unlabeled.vcf')
 
-    with self.assertRaisesRegex(
-        ValueError,
+    with six.assertRaisesRegex(
+        self, ValueError,
         ('Variant .* does not have any genotypes. This tool only works with '
          'variants that have been labeled')):
       labeled_examples_to_vcf.main(0)

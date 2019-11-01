@@ -45,6 +45,7 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
+import six
 import tensorflow as tf
 
 from deepvariant import data_providers_test
@@ -165,8 +166,8 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
   @flagsaver.FlagSaver
   def test_end2end_inception_v3_embedding_invalid_embedding_size(self):
     """End-to-end test of model_train script with an invalid embedding size."""
-    with self.assertRaisesRegex(
-        ValueError, 'Expected seq_type_embedding_size '
+    with six.assertRaisesRegex(
+        self, ValueError, 'Expected seq_type_embedding_size '
         'to be a positive number but saw -100 '
         'instead.'):
       FLAGS.seq_type_embedding_size = -100

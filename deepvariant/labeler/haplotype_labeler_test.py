@@ -41,6 +41,7 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
+import six
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reference_pb2
@@ -892,22 +893,23 @@ class LabelExamplesTest(parameterized.TestCase):
   )
   def test_extend_haplotypes(self, prefix_haplotypes_list, haplotypes,
                              expected):
-    self.assertCountEqual(
-        expected,
+    six.assertCountEqual(
+        self, expected,
         list(
             haplotype_labeler.extend_haplotypes(prefix_haplotypes_list,
                                                 haplotypes)))
 
   def test_extend_haplotypes_raises_on_empty_prefix_list(self):
-    with self.assertRaisesRegex(ValueError, 'prefix_haplotypes_list.*empty'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'prefix_haplotypes_list.*empty'):
       list(haplotype_labeler.extend_haplotypes([], {'A'}))
 
   def test_extend_haplotypes_raises_on_empty_haplotypes(self):
-    with self.assertRaisesRegex(ValueError, 'haplotypes'):
+    with six.assertRaisesRegex(self, ValueError, 'haplotypes'):
       list(haplotype_labeler.extend_haplotypes([{'A'}], set()))
 
   def test_extend_haplotypes_raises_on_too_many_haplotypes(self):
-    with self.assertRaisesRegex(ValueError, 'haplotypes'):
+    with six.assertRaisesRegex(self, ValueError, 'haplotypes'):
       list(haplotype_labeler.extend_haplotypes([{'A'}], {'a', 'b', 'c'}))
 
   # The reference sequence is xAAAAAy.

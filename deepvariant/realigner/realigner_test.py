@@ -44,6 +44,7 @@ import os
 from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
+import six
 import tensorflow as tf
 
 from third_party.nucleus.io import fasta
@@ -178,7 +179,8 @@ class ReadAssignmentTests(parameterized.TestCase):
         self.assembled_regions, reads)
 
     # Every read should be in the assembled regions or unassigned.
-    self.assertCountEqual(
+    six.assertCountEqual(
+        self,
         [r for ar in self.assembled_regions for r in ar.reads] + unassigned,
         reads)
 
@@ -187,7 +189,7 @@ class ReadAssignmentTests(parameterized.TestCase):
     for region_name, region in self.regions.iteritems():
       expected_reads = self.get_reads_by_name(
           expected_assignments.get(region_name, []))
-      self.assertCountEqual(region.reads, expected_reads)
+      six.assertCountEqual(self, region.reads, expected_reads)
 
 
 class RealignerTest(parameterized.TestCase):
@@ -238,8 +240,8 @@ class RealignerTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_window_selector_model_flags_failures(self):
-    with self.assertRaisesRegex(
-        ValueError, 'ws_min_supporting_reads should be smaller than ws_'
+    with six.assertRaisesRegex(
+        self, ValueError, 'ws_min_supporting_reads should be smaller than ws_'
         'max_supporting_reads.'):
       FLAGS.ws_max_num_supporting_reads = 1
       FLAGS.ws_min_num_supporting_reads = 2
@@ -247,8 +249,8 @@ class RealignerTest(parameterized.TestCase):
       FLAGS.ws_use_window_selector_model = False
       _ = realigner.realigner_config(FLAGS)
 
-    with self.assertRaisesRegex(
-        ValueError, 'Cannot specify a ws_window_selector_model '
+    with six.assertRaisesRegex(
+        self, ValueError, 'Cannot specify a ws_window_selector_model '
         'if ws_use_window_selector_model is False.'):
       FLAGS.ws_max_num_supporting_reads = -1
       FLAGS.ws_min_num_supporting_reads = -1
@@ -256,8 +258,8 @@ class RealignerTest(parameterized.TestCase):
       FLAGS.ws_use_window_selector_model = False
       _ = realigner.realigner_config(FLAGS)
 
-    with self.assertRaisesRegex(
-        ValueError, 'Cannot use both ws_min_num_supporting_reads and '
+    with six.assertRaisesRegex(
+        self, ValueError, 'Cannot use both ws_min_num_supporting_reads and '
         'ws_use_window_selector_model flags.'):
       FLAGS.ws_max_num_supporting_reads = -1
       FLAGS.ws_min_num_supporting_reads = 1
@@ -265,8 +267,8 @@ class RealignerTest(parameterized.TestCase):
       FLAGS.ws_use_window_selector_model = True
       _ = realigner.realigner_config(FLAGS)
 
-    with self.assertRaisesRegex(
-        ValueError, 'Cannot use both ws_max_num_supporting_reads and '
+    with six.assertRaisesRegex(
+        self, ValueError, 'Cannot use both ws_max_num_supporting_reads and '
         'ws_use_window_selector_model flags.'):
       FLAGS.ws_max_num_supporting_reads = 1
       FLAGS.ws_min_num_supporting_reads = -1
@@ -456,8 +458,8 @@ class RealignerIntegrationTest(absltest.TestCase):
       # We should always get back all of the reads we sent in. Instead of just
       # checking the lengths are the same, make sure all the read names are the
       # same.
-      self.assertCountEqual([r.fragment_name for r in in_reads],
-                            [r.fragment_name for r in out_reads])
+      six.assertCountEqual(self, [r.fragment_name for r in in_reads],
+                           [r.fragment_name for r in out_reads])
 
       # Check each window to make sure it's reasonable.
       for window in windows:

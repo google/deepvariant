@@ -52,6 +52,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 import numpy as np
+import six
 import tensorflow as tf
 
 from third_party.nucleus.io import fasta
@@ -325,8 +326,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.outfile = create_outfile('calls.vcf')
 
     FLAGS.group_variants = True
-    with self.assertRaisesRegexp(
-        ValueError, '`call_variants_outputs` did not pass sanity check.'):
+    with six.assertRaisesRegex(
+        self, ValueError, '`call_variants_outputs` did not pass sanity check.'):
       postprocess_variants.main(['postprocess_variants.py'])
 
     FLAGS.group_variants = False
@@ -415,7 +416,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     ]
     variant = variants_pb2.Variant(calls=variant_calls)
     record = deepvariant_pb2.CallVariantsOutput(variant=variant)
-    with self.assertRaisesRegexp(ValueError, 'Expected exactly one VariantCal'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'Expected exactly one VariantCal'):
       postprocess_variants._extract_single_sample_name(record)
 
   @parameterized.parameters(
@@ -657,7 +659,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ),
   )
   def test_exception_merge_predictions(self, inputs, text):
-    with self.assertRaisesRegexp(ValueError, text):
+    with six.assertRaisesRegex(self, ValueError, text):
       postprocess_variants.merge_predictions(inputs)
 
   @parameterized.parameters(

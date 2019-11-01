@@ -40,7 +40,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 from absl.testing import absltest
 from absl.testing import parameterized
-
+import six
 from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
@@ -244,11 +244,13 @@ class VariantLabelerTest(parameterized.TestCase):
     self.assertEqual(labeled.label_for_alt_alleles(indices), expected_label)
 
   def test_genotype_from_matched_truth_none_truth_variant_raises(self):
-    with self.assertRaisesRegex(ValueError, 'truth_variant cannot be None'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'truth_variant cannot be None'):
       variant_labeler._genotype_from_matched_truth(self.snp, None)
 
   def test_genotype_from_matched_truth_no_call_truth_variant_raises(self):
-    with self.assertRaisesRegex(ValueError, 'Expected exactly one VariantCal'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'Expected exactly one VariantCal'):
       variant_labeler._genotype_from_matched_truth(self.snp,
                                                    test_utils.make_variant(
                                                        start=10,
@@ -256,7 +258,8 @@ class VariantLabelerTest(parameterized.TestCase):
                                                    ))
 
   def test_genotype_from_matched_truth_no_gt_truth_variant_raises(self):
-    with self.assertRaisesRegex(ValueError, 'truth_variant needs genotypes'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'truth_variant needs genotypes'):
       variant_labeler._genotype_from_matched_truth(self.snp,
                                                    test_utils.make_variant(
                                                        start=10,
@@ -265,7 +268,7 @@ class VariantLabelerTest(parameterized.TestCase):
                                                    ))
 
   def test_genotype_from_matched_truth_none_variant_raises(self):
-    with self.assertRaisesRegex(ValueError, 'variant cannot be None'):
+    with six.assertRaisesRegex(self, ValueError, 'variant cannot be None'):
       variant_labeler._genotype_from_matched_truth(None, self.snp)
 
 

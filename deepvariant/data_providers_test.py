@@ -111,8 +111,8 @@ class DataProviderTest(parameterized.TestCase):
   def test_get_dataset_raises_error_for_empty_name(self):
     dataset_config_pbtext_filename = _test_dataset_config(
         'test_get_dataset_raises_error_for_empty_name.pbtxt')
-    with self.assertRaisesRegex(ValueError,
-                                'dataset_config needs to have a name'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'dataset_config needs to have a name'):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
 
@@ -123,7 +123,7 @@ class DataProviderTest(parameterized.TestCase):
     expected_exception_message = ('The dataset in the config {} does not '
                                   'have a tfrecord_path.'
                                   .format(dataset_config_pbtext_filename))
-    with self.assertRaisesRegex(ValueError, expected_exception_message):
+    with six.assertRaisesRegex(self, ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
 
@@ -135,7 +135,7 @@ class DataProviderTest(parameterized.TestCase):
     expected_exception_message = ('The dataset in the config {} does not have '
                                   'a num_examples.'
                                   .format(dataset_config_pbtext_filename))
-    with self.assertRaisesRegex(ValueError, expected_exception_message):
+    with six.assertRaisesRegex(self, ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
 
@@ -309,7 +309,7 @@ class DataProviderTest(parameterized.TestCase):
     self.assertEqual(valid_shape, ds.tensor_shape)
 
   def test_get_shape_from_examples_path_invalid_path(self):
-    with self.assertRaisesRegex(Exception, '/this/path/does/not'):
+    with six.assertRaisesRegex(self, Exception, '/this/path/does/not'):
       data_providers.DeepVariantInput(
           mode=tf.estimator.ModeKeys.PREDICT,
           name='test_invalid_path',

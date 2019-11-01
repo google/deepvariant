@@ -43,6 +43,7 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
+import six
 
 from third_party.nucleus.testing import test_utils
 
@@ -623,7 +624,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
   )
   def test_invalid_all_variants_compatible(self, variants, nonref_counts):
     calculator = haplotypes._VariantCompatibilityCalculator(variants)
-    with self.assertRaisesRegex(ValueError, 'variant'):
+    with six.assertRaisesRegex(self, ValueError, 'variant'):
       calculator.all_variants_compatible(nonref_counts)
 
   @parameterized.parameters(
@@ -653,12 +654,13 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
     self.assertEqual(list(actual), expected)
 
   def test_invalid_get_all_allele_indices_configurations(self):
-    with self.assertRaisesRegex(ValueError, r'len\(variants\) must equal'):
+    with six.assertRaisesRegex(self, ValueError, r'len\(variants\) must equal'):
       haplotypes._get_all_allele_indices_configurations(
           _resolved_compatible_outputs(), [1])
 
   def test_invalid_allele_indices_configuration_likelihood(self):
-    with self.assertRaisesRegex(ValueError, r'equal len\(allele_indices_conf'):
+    with six.assertRaisesRegex(self, ValueError,
+                               r'equal len\(allele_indices_conf'):
       haplotypes._allele_indices_configuration_likelihood(
           _resolved_compatible_outputs(), [(1, 1)])
 
@@ -678,7 +680,8 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
 
   def test_invalid_nonref_genotype_count(self):
     zero_calls_variant = test_utils.make_variant()
-    with self.assertRaisesRegex(ValueError, 'Expected exactly one VariantCal'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'Expected exactly one VariantCal'):
       haplotypes._nonref_genotype_count(zero_calls_variant)
 
   def _assert_generator_of_variants_equals_expected(self, actual, expected):
