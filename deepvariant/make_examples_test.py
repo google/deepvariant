@@ -454,14 +454,21 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(len(candidates), expected_count)
 
   def verify_nist_concordance(self, candidates, nist_variants):
-    # Tests that we call all of the real variants (according to NIST's Genome
-    # in a Bottle callset for NA12878) in our candidate callset.
+    # Tests that we call almost all of the real variants (according to NIST's
+    # Genome in a Bottle callset for NA12878) in our candidate callset.
     # Tests that we don't have an enormous number of FP calls. We should have
     # no more than 5x (arbitrary) more candidate calls than real calls. If we
     # have more it's likely due to some major pipeline problem.
     self.assertLess(len(candidates), 5 * len(nist_variants))
+    tp_count = 0
     for nist_variant in nist_variants:
-      self.assertVariantIsPresent(nist_variant, candidates)
+      if self.assertVariantIsPresent(nist_variant, candidates):
+        tp_count = tp_count + 1
+
+    self.assertGreater(
+        tp_count / len(nist_variants), 0.983,
+        'Recall must be greater than 0.983. TP={}, Truth variants={}'.format(
+            tp_count, len(nist_variants)))
 
   def assertDeepVariantExamplesEqual(self, actual, expected):
     """Asserts that actual and expected tf.Examples from DeepVariant are equal.
@@ -478,7 +485,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   def assertVariantIsPresent(self, to_find, variants):
 
     def variant_key(v):
-      return (v.reference_bases, v.start, v.end, v.reference_bases)
+      return (v.reference_bases, v.start, v.end)
 
     # Finds a call in our actual call set for each NIST variant, asserting
     # that we found exactly one.
@@ -486,12 +493,16 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         variant for variant in variants
         if variant_key(to_find) == variant_key(variant)
     ]
-    self.assertEqual(len(matches), 1, 'to_find failed {}'.format(to_find))
+    if not matches:
+      return False
 
     # Verify that every alt allele appears in the call (but the call might)
     # have more than just those calls.
-    for alt in matches[0].alternate_bases:
-      self.assertIn(alt, to_find.alternate_bases)
+    for alt in to_find.alternate_bases:
+      if alt not in matches[0].alternate_bases:
+        return False
+
+    return True
 
   def verify_variants(self, variants, region, options, is_gvcf):
     # Verifies simple properties of the Variant protos in variants. For example,
