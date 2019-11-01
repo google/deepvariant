@@ -123,10 +123,12 @@ pushd htslib-1.9 && ./configure && make && sudo make install && popd
 First, install docker if you don't have it yet: `sudo apt-get -y install
 docker.io`
 
-With the example command below, it runs DeepVariant on the trio one by one.
+With the example command below, it runs DeepVariant on the trio one by one. This
+is for demonstration only. If you're running this on a large cohort, running
+serially is not the most effective approach.
 
 ```
-N_SHARDS=64  # Change to your number of cores.
+N_SHARDS=$(nproc)  # Or change to the number of cores you want to use
 CAPTURE_BED=agilent_sureselect_human_all_exon_v5_b37_targets.bed
 VERSION=0.8.0
 
@@ -313,40 +315,28 @@ HG004  | 0.966357 | 0.999153
 
 ## Merge the trio samples using GLnexus
 
-### Download GLnexus
-
-```
-wget https://github.com/dnanexus-rnd/GLnexus/releases/download/v1.1.10/glnexus_cli
-chmod +x glnexus_cli
-```
-
 ### Run GLnexus to merge 3 gVCFs
-
-First, get the yaml file with our recommended GLnexus params for WES.
-
-```
-curl https://raw.githubusercontent.com/google/deepvariant/r0.9/deepvariant/cohort_best_practice/DeepVariantWES_v0.yml > DeepVariantWES_v0.yml
-```
 
 And then run GLnexus with this config:
 
 ```
-time ./glnexus_cli \
- --config DeepVariantWES_v0.yml \
- --bed ${DIR}/${CAPTURE_BED} \
- ${DIR}/HG004.g.vcf.gz ${DIR}/HG003.g.vcf.gz ${DIR}/HG002.g.vcf.gz \
- | bcftools view - | bgzip -c > ${DIR}/deepvariant.cohort.vcf.gz
+time sudo docker run \
+  -v "${DIR}":"/data" \
+  google/deepvariant:${VERSION} \
+  /opt/bin/glnexus_cli \
+  --config DeepVariantWES \
+  --bed "/data/${CAPTURE_BED}" \
+  /data/HG004.g.vcf.gz /data/HG003.g.vcf.gz /data/HG002.g.vcf.gz \
+  | bcftools view - | bgzip -c > ${DIR}/deepvariant.cohort.vcf.gz
 ```
 
 When we ran on this WES trio, it took only about 13 seconds. However, with WGS
 data or larger cohort, you might want to consider using jemalloc to improve
 performance. See https://github.com/dnanexus-rnd/GLnexus/wiki/Performance for
-more detail. And, if you are merging a WGS cohort, please use the
-[WGS params](https://raw.githubusercontent.com/google/deepvariant/r0.9/deepvariant/cohort_best_practice/DeepVariantWGS_v0.yml)
-instead.
-
-NOTE: If you need to re-run this, you often need to clean up the GLnexus.DB
-directory it generates before you can successfully re-run.
+more detail. And, if you are merging a WGS cohort, please use the `--config
+DeepVariantWGS`. The corresponding params can be found in
+[WGS params](../deepvariant/cohort_best_practice/DeepVariantWGS_v0.yml) and
+[WES params](../deepvariant/cohort_best_practice/DeepVariantWES_v0.yml).
 
 ## Annotate the merged VCF with Mendelian discordance information using RTG Tools
 
