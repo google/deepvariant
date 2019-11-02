@@ -13,7 +13,7 @@
 
 ARG FROM_IMAGE=ubuntu:16.04
 ARG DV_GPU_BUILD=0
-ARG VERSION=0.8.0
+ARG VERSION=0.9.0
 
 FROM ${FROM_IMAGE} as builder
 LABEL maintainer="https://github.com/google/deepvariant/issues"
