@@ -56,10 +56,10 @@ doi: https://doi.org/10.1038/nbt.4235
     [non-human species](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/).
 *   **Ease of use** - No filtering is needed beyond setting your preferred
     minimum quality threshold.
-*   **Cost effectiveness** - With an optimized setup on
-    [Google Cloud](https://cloud.google.com/life-sciences/docs/tutorials/deepvariant),
-    it costs ~$2-3 to call a whole genome and $0.20 to call an exome with
-    preemptible instances.
+*   **Cost effectiveness** - With a single non-preemptible n1-standard-16
+    machine on Google Cloud, it costs ~$9.11 to call a 30x whole genome and
+    ~$0.39 to call an exome. With preemptible pricing, the cost is $2.19 for a
+    30x whole genome and $0.09 for whole exome (not considering preemption).
 *   **Speed** - On a 64-core CPU-only machine, DeepVariant completes a 50x WGS
     in 5 hours and an exome in 16 minutes [(1)](#myfootnote1)</sup>. Multiple
     options for acceleration exist, taking the WGS pipeline to as fast as 40
