@@ -8,16 +8,25 @@ v0.4    | 9 HG001                                | 85,323,867
 v0.5    | 9 HG001<br>2 HG005<br>78 HG001 WES<br>1 HG005 WES<sup>[(1)](#vfootnote1)</sup> | 115,975,740
 v0.6    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+     | 156,571,227
 v0.7    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+     | 158,571,078
-v0.8    | 12 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+<br>(and, more `dowsample_fraction` during training)     | 346,505,686
+v0.8    | 12 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+<br>(and, more `dowsample_fraction` since last version)     | 346,505,686
+v0.9    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>2 HG006 PCR-free<br>6 HG005 PCR-free<br>5 HG001 PCR+     | 325,202,093
 
 ### WES models
 
 version | Replicates                  | #examples
 ------- | --------------------------- | ------------------------------
-v0.5    | 78 HG001 WES<br>1 HG005 WES | 15,714,062
-v0.6    | 78 HG001 WES<br>1 HG005 WES<sup>[(2)](#vfootnote2)</sup> | 15,705,449
-v0.7    | 78 HG001 WES<br>1 HG005 WES | 15,704,197
-v0.8    | 78 HG001 WES<br>1 HG005 WES<sup>[(3)](#vfootnote3)</sup> | 18,683,247
+v0.5    | 78 HG001<br>1 HG005 | 15,714,062
+v0.6    | 78 HG001<br>1 HG005<sup>[(2)](#vfootnote2)</sup> | 15,705,449
+v0.7    | 78 HG001<br>1 HG005 | 15,704,197
+v0.8    | 78 HG001<br>1 HG005<sup>[(3)](#vfootnote3)</sup> | 18,683,247
+v0.9    | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
+
+### PACBIO models
+
+version | Replicates                  | #examples
+------- | --------------------------- | ------------------------------
+v0.8    | 16 HG002 | 160,025,931
+v0.9    | 49 HG002 <sup>[(6)](#vfootnote6)</sup> | 357,507,235
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
@@ -31,11 +40,22 @@ v0.5. The number of examples changed because of the update in
 [Platinum Genomes Truthset](https://github.com/Illumina/PlatinumGenomes) to
 create more training examples outside the GIAB confident regions.
 
-## WGS training data v0.8
+<a name="vfootnote4">(4)</a>: Previously, we split train/tune by leaving 3 WES
+for tuning. Starting from this release, we leave out chr1 and chr20 from
+training, and use chr1 for tuning.
 
-We used: 12 HG001 PCR-free, 2 HG005 PCR-free, 4 HG001 PCR+ for training.
+<a name="vfootnote5">(5)</a>: Starting from this version, we padded (100bps on
+both sides) of the capture BED and used that for generating training examples.
+We also added more `downsample_fraction`.
 
-Among these 18 BAM files, 6 of them are from public sources:
+<a name="vfootnote6">(6)</a>: PacBio is the only one we currently train and
+tune HG002. We hope to move this to the same best practice like the other ones
+in the future.
+
+
+## WGS training data:
+
+Here are 6 of WGS BAM files from public sources:
 
 BAM file (`--reads`)                                                                                                                                     | PCR-free? | FASTA file (`--ref`)                                                                                                         | Truth VCF (`--truth_variants`)                                                                          | BED file (`--confident_regions`)
 -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------
