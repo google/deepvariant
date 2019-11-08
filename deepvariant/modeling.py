@@ -623,6 +623,8 @@ class DeepVariantModel(object):
     params = params if params is not None else {}
     warm_start_from = self._create_warm_start_settings(start_from_checkpoint)
     if self.use_tpu:
+      tpu_cfg=tpu_config.TPUConfig(
+          iterations_per_loop=iterations_per_loop)
       config = tpu_config.RunConfig(
           master=master,
           evaluation_master=master,
@@ -632,12 +634,7 @@ class DeepVariantModel(object):
           save_checkpoints_secs=save_checkpoints_secs,
           save_checkpoints_steps=save_checkpoints_steps,
           save_summary_steps=FLAGS.save_summary_steps,
-          tpu_config=tpu_config.TPUConfig(
-              iterations_per_loop=iterations_per_loop,
-              per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig
-              .PER_HOST_V2,
-              eval_training_input_configuration=tf.contrib.tpu
-              .InputPipelineConfig.SLICED))
+          tpu_config=tpu_cfg)
 
       classifier = tpu_estimator.TPUEstimator(
           use_tpu=self.use_tpu,
