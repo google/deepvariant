@@ -18,8 +18,8 @@ the greatest achievable accuracy for BGISEQ-500 data.
 
 We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
-accuracy comparing to the WGS model as a baseline: Indel F1 95.29% --> 98.15%;
-SNP F1: 99.87% --> 99.91%.
+accuracy comparing to the WGS model as a baseline: Indel F1 94.39% --> 98.22%;
+SNP F1: 99.85% --> 99.90%.
 
 Training for 50k steps took about 1.5 hours on Cloud TPU.
 
@@ -40,7 +40,7 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-BIN_VERSION="0.8.0"
+BIN_VERSION="0.9.0"
 
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}+data-wgs_standard"
 GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
@@ -140,7 +140,7 @@ sudo docker pull google/deepvariant:"${BIN_VERSION}"
 ) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
 ```
 
-This took ~80min. We will want to shuffle this on Dataflow later, so we copy the
+This took ~98min. We will want to shuffle this on Dataflow later, so we copy the
 data to GCS bucket first:
 
 ```
@@ -168,7 +168,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00064.gz \
 ) >"${LOG_DIR}/validation_set.with_label.make_examples.log" 2>&1
 ```
 
-This took: ~9min.
+This took: ~10min.
 
 Validation set is small here. We will just shuffle locally later, so no need to
 copy to out GCS bucket.
@@ -241,7 +241,7 @@ Output is in
 
 Data config file is in `${OUTPUT_DIR}/validation_set.dataset_config.pbtxt`.
 
-This took ~10min.
+This took ~13min.
 
 For the training set, it is too large to be running with DirectRunner on this
 instance, so we use the DataflowRunner. Before that, please make sure you enable
@@ -281,7 +281,7 @@ In order to have the best performance, you might need extra resources such as
 machines or IPs within a region. That will not be in the scope of this case
 study here.
 
-In one test run, this took about 47min on Dataflow.
+In one test run, this took about 81min on Dataflow.
 
 The output path can be found in the dataset_config file by:
 
@@ -300,11 +300,11 @@ In the output, the `tfrecord_path` should be valid paths in gs://.
 
 name: "HG001"
 tfrecord_path: "YOUR_GCS_BUCKET/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-num_examples: 3850838
+num_examples: 4157931
 ```
 
 In one test run, it wrote to 365 shards:
-`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-00365.tfrecord.gz`
+`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-03456.tfrecord.gz`
 
 ### Start a Cloud TPU
 
@@ -463,7 +463,7 @@ tensorboard --logdir ${TRAINING_DIR} --port=8080
 This gives some message like:
 
 ```
-TensorBoard 1.13.1 at http://cs-6000-devshell-vm-247549b5-8f13-496e-b413-f89e256ca2bd:8080 (Press CTRL+C to quit)
+TensorBoard 2.0.1 at http://localhost:8080/ (Press CTRL+C to quit)
 ```
 
 But that link is not usable directly. I clicked on the “Web Preview” on the top
@@ -489,31 +489,15 @@ gcloud compute tpus delete ${TPU_NAME} --zone us-central1-c
 
 ### Pick a model
 
-Copy the `*.metrics` file to local:
+You can directly look up the best checkpoint by running:
 
 ```
-mkdir -p /tmp/metrics
-gsutil -m cp  ${TRAINING_DIR}/model.ckpt-*.metrics /tmp/metrics/
+gsutil cat "${TRAINING_DIR}"/best_checkpoint.txt
 ```
 
-Run a simple script that outputs 3 fields per line: checkpoint, TPs+FNs, F1:
-
-```
-wget https://raw.githubusercontent.com/google/deepvariant/r0.8/tools/print_f1.py -O ${SHUFFLE_SCRIPT_DIR}/print_f1.py
-
-python ${SHUFFLE_SCRIPT_DIR}/print_f1.py \
---metrics_dir="/tmp/metrics/" | sort -k 3 -g -r | head -1
-```
-
-The top line I got was this:
-
-```
-48700   96418.0 0.998921385605
-```
-
-This means the model checkpoint that performs the best on the validation set is
-`${TRAINING_DIR}/model.ckpt-48700`. Based on this result, a few thoughts came
-into mind:
+In my run, this showed that the model checkpoint that performs the best on the
+validation set was `${TRAINING_DIR}/model.ckpt-36200`.
+Based on this result, a few thoughts came into mind:
 
 1.  Training more steps didn't seem to help much. Did the training overfit?
 1.  Currently we save checkpoints every 5 minutes (set by `save_interval_secs`).
@@ -529,7 +513,7 @@ sudo docker run \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
-  --customized_model "${TRAINING_DIR}/model.ckpt-48700" \
+  --customized_model "${TRAINING_DIR}/model.ckpt-36200" \
   --ref "${REF}" \
   --reads "${BAM}" \
   --regions "chr20" \
@@ -562,22 +546,22 @@ This takes about 3 minutes. The output of `hap.py` is here:
 ```
 [I] Total VCF records:         3775119
 [I] Non-reference VCF records: 3775119
-[I] Total VCF records:         126929
-[I] Non-reference VCF records: 96030
+[I] Total VCF records:         130929
+[I] Non-reference VCF records: 95922
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10023      9793       230        19137       144       8810    107       0.977053          0.986056        0.460365         0.981534                     NaN                     NaN                   1.547658                   2.047144
- INDEL   PASS        10023      9793       230        19137       144       8810    107       0.977053          0.986056        0.460365         0.981534                     NaN                     NaN                   1.547658                   2.047144
-   SNP    ALL        66237     66167        70        77899        51      11642      8       0.998943          0.999230        0.149450         0.999087                2.284397                2.201784                   1.700387                   1.785479
-   SNP   PASS        66237     66167        70        77899        51      11642      8       0.998943          0.999230        0.149450         0.999087                2.284397                2.201784                   1.700387                   1.785479
+ INDEL    ALL        10023      9805       218        19078       142       8728     97       0.978250           0.98628        0.457490         0.982249                     NaN                     NaN                   1.547658                   2.058959
+ INDEL   PASS        10023      9805       218        19078       142       8728     97       0.978250           0.98628        0.457490         0.982249                     NaN                     NaN                   1.547658                   2.058959
+   SNP    ALL        66237     66160        77        77821        57      11568     15       0.998838           0.99914        0.148649         0.998989                2.284397                2.203185                   1.700387                   1.784817
+   SNP   PASS        66237     66160        77        77821        57      11568     15       0.998838           0.99914        0.148649         0.998989                2.284397                2.203185                   1.700387                   1.784817
 ```
 
 To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 230  | 144  | 0.977053 | 0.986056  | 0.981534
-SNP   | 70   | 51   | 0.998943 | 0.999230  | 0.999087
+INDEL | 218  | 142  | 0.978250 | 0.986280  | 0.982249
+SNP   | 77   | 57   | 0.998838 | 0.999140  | 0.998989
 
 The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
@@ -599,8 +583,8 @@ Baseline:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 343  | 640  | 0.965779 | 0.940265  | 0.952851
-SNP   | 117  | 59   | 0.998234 | 0.999109  | 0.998671
+INDEL | 426  | 745  | 0.957498 | 0.930659  | 0.943888
+SNP   | 139  | 50   | 0.997901 | 0.999094  | 0.998497
 
 ### Additional things to try
 
