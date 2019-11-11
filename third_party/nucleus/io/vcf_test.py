@@ -280,6 +280,25 @@ class VcfWriterTests(parameterized.TestCase):
         self.write_variant_to_tempfile(variant), [expected_vcf_line])
 
 
+class VcfWriterHeaderlessTests(absltest.TestCase):
+  """Tests for VcfWriter with exclude_header=True."""
+
+  def test_headerless_vcf(self):
+    """Writes a headerless vcf and reads it back out."""
+    test_vcf = test_utils.genomics_core_testdata('test_sites.vcf')
+    output_vcf = test_utils.test_tmpfile('output.vcf')
+    expected_variants = []
+    with vcf.VcfReader(test_vcf) as reader:
+      with vcf.VcfWriter(
+          output_vcf, header=reader.header, exclude_header=True) as writer:
+        for record in reader:
+          expected_variants.append(record)
+          writer.write(record)
+
+      with vcf.VcfReader(output_vcf, header=reader.header) as actual_reader:
+        self.assertEqual(expected_variants, list(actual_reader))
+
+
 class VcfRoundtripTests(parameterized.TestCase):
   """Test the ability to round-trip VCF files."""
 

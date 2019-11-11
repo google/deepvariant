@@ -252,7 +252,8 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
                round_qualities=False,
                excluded_info_fields=None,
                excluded_format_fields=None,
-               retrieve_gl_and_pl_from_info_map=False):
+               retrieve_gl_and_pl_from_info_map=False,
+               exclude_header=False):
     """Initializer for NativeVcfWriter.
 
     Args:
@@ -270,6 +271,7 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
       retrieve_gl_and_pl_from_info_map: bool. If True, the "GL" and "PL" FORMAT
         fields are retrieved from the VariantCall.info map rather than from the
         top-level value in the VariantCall.genotype_likelihood field.
+      exclude_header: bool. If True, write a headerless VCF.
     """
     super(NativeVcfWriter, self).__init__()
 
@@ -280,6 +282,7 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
         excluded_info_fields=excluded_info_fields,
         excluded_format_fields=excluded_format_fields,
         retrieve_gl_and_pl_from_info_map=retrieve_gl_and_pl_from_info_map,
+        exclude_header=exclude_header,
     )
     self._writer = vcf_writer.VcfWriter.to_file(output_path, header,
                                                 writer_options)
@@ -301,7 +304,8 @@ class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
                      round_qualities=False,
                      excluded_info_fields=None,
                      excluded_format_fields=None,
-                     retrieve_gl_and_pl_from_info_map=False):
+                     retrieve_gl_and_pl_from_info_map=False,
+                     exclude_header=False):
     return NativeVcfWriter(
         output_path,
         header=header,
@@ -309,7 +313,7 @@ class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
         excluded_info_fields=excluded_info_fields,
         excluded_format_fields=excluded_format_fields,
         retrieve_gl_and_pl_from_info_map=retrieve_gl_and_pl_from_info_map,
-    )
+        exclude_header=exclude_header)
 
   def _post_init_hook(self):
     # Initialize field_access_cache.  If we are dispatching to a
