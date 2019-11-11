@@ -18,7 +18,7 @@ the greatest achievable accuracy for BGISEQ-500 data.
 
 We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
-accuracy comparing to the WGS model as a baseline: Indel F1 94.39% --> 98.22%;
+accuracy comparing to the WGS model as a baseline: Indel F1 94.39% --> 98.28%;
 SNP F1: 99.85% --> 99.90%.
 
 Training for 50k steps took about 1.5 hours on Cloud TPU.
@@ -140,7 +140,7 @@ sudo docker pull google/deepvariant:"${BIN_VERSION}"
 ) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
 ```
 
-This took ~98min. We will want to shuffle this on Dataflow later, so we copy the
+This took ~95min. We will want to shuffle this on Dataflow later, so we copy the
 data to GCS bucket first:
 
 ```
@@ -281,7 +281,7 @@ In order to have the best performance, you might need extra resources such as
 machines or IPs within a region. That will not be in the scope of this case
 study here.
 
-In one test run, this took about 81min on Dataflow.
+In one test run, this took about 80min on Dataflow.
 
 The output path can be found in the dataset_config file by:
 
@@ -304,7 +304,7 @@ num_examples: 4157931
 ```
 
 In one test run, it wrote to 365 shards:
-`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-03456.tfrecord.gz`
+`${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-02917.tfrecord.gz`
 
 ### Start a Cloud TPU
 
@@ -335,7 +335,7 @@ time gcloud compute tpus create ${USER}-demo-tpu \
 
 Once you're done with the TPU, you should remember to delete it.
 
-This command took about 3.5min to finish.
+This command took about 2min to finish.
 
 After the TPU is created, we can query it by:
 
@@ -496,7 +496,7 @@ gsutil cat "${TRAINING_DIR}"/best_checkpoint.txt
 ```
 
 In my run, this showed that the model checkpoint that performs the best on the
-validation set was `${TRAINING_DIR}/model.ckpt-36200`.
+validation set was `${TRAINING_DIR}/model.ckpt-34000`.
 Based on this result, a few thoughts came into mind:
 
 1.  Training more steps didn't seem to help much. Did the training overfit?
@@ -513,7 +513,7 @@ sudo docker run \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
-  --customized_model "${TRAINING_DIR}/model.ckpt-36200" \
+  --customized_model "${TRAINING_DIR}/model.ckpt-34000" \
   --ref "${REF}" \
   --reads "${BAM}" \
   --regions "chr20" \
@@ -546,36 +546,38 @@ This takes about 3 minutes. The output of `hap.py` is here:
 ```
 [I] Total VCF records:         3775119
 [I] Non-reference VCF records: 3775119
+[W] overlapping records at chr20:25877335 for sample 0
+[W] Variants that overlap on the reference allele: 2
 [I] Total VCF records:         130929
-[I] Non-reference VCF records: 95922
+[I] Non-reference VCF records: 95909
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10023      9805       218        19078       142       8728     97       0.978250           0.98628        0.457490         0.982249                     NaN                     NaN                   1.547658                   2.058959
- INDEL   PASS        10023      9805       218        19078       142       8728     97       0.978250           0.98628        0.457490         0.982249                     NaN                     NaN                   1.547658                   2.058959
-   SNP    ALL        66237     66160        77        77821        57      11568     15       0.998838           0.99914        0.148649         0.998989                2.284397                2.203185                   1.700387                   1.784817
-   SNP   PASS        66237     66160        77        77821        57      11568     15       0.998838           0.99914        0.148649         0.998989                2.284397                2.203185                   1.700387                   1.784817
+ INDEL    ALL        10023      9807       216        19142       133       8800     97       0.978450          0.987140        0.459722         0.982775                     NaN                     NaN                   1.547658                   2.073964
+ INDEL   PASS        10023      9807       216        19142       133       8800     97       0.978450          0.987140        0.459722         0.982775                     NaN                     NaN                   1.547658                   2.073964
+   SNP    ALL        66237     66160        77        77764        58      11509     15       0.998838          0.999125        0.147999         0.998981                2.284397                2.198947                   1.700387                   1.786324
+   SNP   PASS        66237     66160        77        77764        58      11509     15       0.998838          0.999125        0.147999         0.998981                2.284397                2.198947                   1.700387                   1.786324
 ```
 
 To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 218  | 142  | 0.978250 | 0.986280  | 0.982249
-SNP   | 77   | 57   | 0.998838 | 0.999140  | 0.998989
+INDEL | 216  | 133  | 0.978450 | 0.987140  | 0.982775
+SNP   | 77   | 58   | 0.998838 | 0.999125  | 0.998981
 
 The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
 
 ```bash
 sudo docker run \
-  -v "${DATA_DIR}:${DATA_DIR}" \
-  -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
+  -v /home/${USER}:/home/${USER} \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
-  --model_type=WGS \
-  --ref="${REF}" \
-  --reads="${BAM}" \
-  --output_vcf="${OUTPUT_DIR}/baseline.vcf.gz" \
+  --model_type WGS \
+  --ref "${REF}" \
+  --reads "${BAM}" \
+  --regions "chr20" \
+  --output_vcf "${OUTPUT_DIR}/baseline.vcf.gz" \
   --num_shards=${N_SHARDS}
 ```
 
@@ -584,7 +586,7 @@ Baseline:
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
 INDEL | 426  | 745  | 0.957498 | 0.930659  | 0.943888
-SNP   | 139  | 50   | 0.997901 | 0.999094  | 0.998497
+SNP   | 139  | 60   | 0.997901 | 0.999094  | 0.998497
 
 ### Additional things to try
 
