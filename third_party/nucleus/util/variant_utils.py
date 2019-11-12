@@ -1020,7 +1020,13 @@ def calc_an(variant):
 
 def is_singleton(variant):
   """Returns True iff the variant has exactly one non-ref VariantCall."""
-  return sum(variantcall_utils.has_variation(c) for c in variant.calls) == 1
+  non_ref_count = 0
+  for c in variant.calls:
+    if variantcall_utils.has_variation(c):
+      non_ref_count += 1
+      if non_ref_count > 1:
+        return False
+  return non_ref_count == 1
 
 
 def major_allele_frequency(variant):
