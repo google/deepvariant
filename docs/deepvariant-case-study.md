@@ -64,8 +64,7 @@ sudo nvidia-docker run \
   --reads="/input/${BAM}" \
   --output_vcf=/output/${OUTPUT_VCF} \
   --output_gvcf=/output/${OUTPUT_GVCF} \
-  --num_shards=${N_SHARDS} \
-  --vcf_stats_report
+  --num_shards=${N_SHARDS}
 ```
 
 Note that instead of using `docker`, we're using `nvidia-docker` to make use of
@@ -89,17 +88,17 @@ With the example in [run_wgs_case_study_docker.sh] on a [CPU machine],
 
 Step                               | Hardware | Wall time
 ---------------------------------- | -------- | ---------
-`make_examples`                    | 64 CPUs  | ~ 1h 10m
-`call_variants`                    | 64 CPUs  | ~ 2h 45m
-`postprocess_variants` (with gVCF) | 1 CPU    | ~ 35m
+`make_examples`                    | 64 CPUs  | ~ 1h 22m
+`call_variants`                    | 64 CPUs  | ~ 3h 09m
+`postprocess_variants` (with gVCF) | 1 CPU    | ~ 36m
 
 With the example in [run_wgs_case_study_docker_gpu.sh] on a [GPU machine],
 
 Step                               | Hardware            | Wall time
 ---------------------------------- | ------------------- | ---------
-`make_examples`                    | 16 CPUs             | ~ 3h 25m
-`call_variants`                    | 1 P100 GPU, 16 CPUs | ~    50m
-`postprocess_variants` (with gVCF) | 1 CPU               | ~    30m
+`make_examples`                    | 16 CPUs             | ~ 4h 09m
+`call_variants`                    | 1 P100 GPU, 16 CPUs | ~ 54m
+`postprocess_variants` (with gVCF) | 1 CPU               | ~ 40m
 
 Since `make_examples` doesn't utilize GPUs, bringing up one GPU machine for all
 steps might not be the most cost-effective solution. For more scalable execution
@@ -155,8 +154,8 @@ results.
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 1488 | 944  | 0.996798 | 0.998048  | 0.997423
-SNP   | 1576 | 725  | 0.999483 | 0.999762  | 0.999623
+INDEL | 1057 | 727  | 0.997726 | 0.998498  | 0.998112
+SNP   | 1503 | 733  | 0.999507 | 0.999760  | 0.999633
 
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
 [run_wgs_case_study_docker.sh]: ../scripts/run_wgs_case_study_docker.sh

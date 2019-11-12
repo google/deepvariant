@@ -32,8 +32,7 @@ sudo docker run \
   --regions="/input/${CAPTURE_BED}" \
   --output_vcf=/output/HG002.output.vcf.gz \
   --output_gvcf=/output/HG002.output.g.vcf.gz \
-  --num_shards=${N_SHARDS} \
-  --vcf_stats_report
+  --num_shards=${N_SHARDS}
 ```
 
 By specifying `--model_type=WES`, you'll be using a model that is best suited
@@ -55,11 +54,11 @@ See
 [this page](deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies)
 for the commands used to obtain different machine types on Google Cloud.
 
-Step                               | Hardware            | Wall time
----------------------------------- | ------------------- | ---------
-`make_examples`                    | 64 CPUs             | ~  8m
-`call_variants`                    | 64 CPUs             | ~  2m
-`postprocess_variants` (with gVCF) | 1 CPU               | ~  1m
+Step                               | Hardware | Wall time
+---------------------------------- | -------- | ---------
+`make_examples`                    | 64 CPUs  | ~ 10m
+`call_variants`                    | 64 CPUs  | ~ 2m
+`postprocess_variants` (with gVCF) | 1 CPU    | ~ 1m
 
 In this example, `call_variants` does not take much time on 64 CPUs. Running
 with GPU might be unnecessary. You can read
@@ -110,8 +109,8 @@ We evaluate against the capture region:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 117  | 55   | 0.955000 | 0.978507  | 0.966611
-SNP   | 37   | 23   | 0.998903 | 0.999318  | 0.999110
+INDEL | 93   | 45   | 0.964231 | 0.982531  | 0.973295
+SNP   | 32   | 14   | 0.999051 | 0.999585  | 0.999318
 
 [specific machine type]: deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh

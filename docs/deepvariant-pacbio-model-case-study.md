@@ -104,9 +104,9 @@ Next following steps are executed:
 
 Step                               | Wall time
 ---------------------------------- | ---------
-`make_examples`                    | ~ 57m
-`call_variants`                    | ~ 3h 2m
-`postprocess_variants` (with gVCF) | ~ 45m
+`make_examples`                    | ~ 63m
+`call_variants`                    | ~ 3h 19m
+`postprocess_variants` (with gVCF) | ~ 60m
 
 ## Accuracy metrics
 
@@ -116,8 +116,8 @@ on chr20.
 
 Type  | # TP  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 9992  | 180  | 156  | 0.982304 | 0.985202  | 0.983751
-SNP   | 65167 | 75   | 97   | 0.998850 | 0.998515  | 0.998683
+INDEL | 9998  | 174  | 160  | 0.982894 | 0.984851  | 0.983872
+SNP   | 65200 | 42   | 100  | 0.999356 | 0.998470  | 0.998913
 
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [https://github.com/Illumina/hap.py]: https://github.com/Illumina/hap.py

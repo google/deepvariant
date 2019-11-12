@@ -11,12 +11,11 @@ We've provided a Docker image, and some test data in a bucket on Google Cloud
 Storage. The instructions below show how to download the data through the
 corresponding public URLs from these data.
 
-### Update in r0.8 : Use Docker to run DeepVariant in one command.
+### Use Docker to run DeepVariant in one command.
 
-In the 0.8 release, we are introducing one convenient command that will run
-through all 3 steps that are required to go from a BAM file to the VCF/gVCF
-output files. You can still read about the r0.7 approach in
-[Quick Start in r0.7].
+In the 0.8 release, we introduced one convenient command that will run through
+all 3 steps that are required to go from a BAM file to the VCF/gVCF output
+files. You can still read about the r0.7 approach in [Quick Start in r0.7].
 
 If you want to compile the DeepVariant binaries for yourself, we also have a
 [Dockerfile] that you can use to build your own Docker image. You can read the
@@ -30,7 +29,7 @@ the [External Solutions] section.
 ### Get Docker image
 
 ```bash
-BIN_VERSION="0.8.0"
+BIN_VERSION="0.9.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -175,10 +174,10 @@ You should see output similar to the following.
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL            4         4         0           13         0          9      0       1.000000                 1        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
- INDEL   PASS            4         4         0           13         0          9      0       1.000000                 1        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
-   SNP    ALL           44        43         1           59         0         16      0       0.977273                 1        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
-   SNP   PASS           44        43         1           59         0         16      0       0.977273                 1        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
+ INDEL    ALL            4         4         0           13         0          9      0              1                 1        0.692308                1                     NaN                     NaN                   0.333333                   1.000000
+ INDEL   PASS            4         4         0           13         0          9      0              1                 1        0.692308                1                     NaN                     NaN                   0.333333                   1.000000
+   SNP    ALL           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
+   SNP   PASS           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
 ```
 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
