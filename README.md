@@ -30,7 +30,7 @@ For more information, see:
 
   * [Quick Start](docs/deepvariant-quick-start.md)
   * [Full documentation list](docs/README.md)
-
+  * [Best practices for multi-sample variant calling with DeepVariant](docs/trio-merge-case-study.md)
 
 ## How to cite
 
