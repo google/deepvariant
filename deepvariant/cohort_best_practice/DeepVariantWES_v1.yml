@@ -1,12 +1,15 @@
-# Custom configuration for DeepVariant Exome cohort.
+# GLnexus config for joint calling DeepVariant whole exome sequencing gVCFs.
+# See https://github.com/dnanexus-rnd/GLnexus/wiki/Configuration
 unifier_config:
     min_AQ1: 35
-    min_AQ2: 19
-    min_GQ: 30
+    min_AQ2: 20
+    min_GQ: 20
     monoallelic_sites_for_lost_alleles: true
 genotyper_config:
     required_dp: 0
     revise_genotypes: true
+    more_PL: true
+    trim_uncalled_alleles: true
     liftover_fields:
         - orig_names: [MIN_DP, DP]
           name: DP
@@ -18,7 +21,7 @@ genotyper_config:
           ignore_non_variants: true
         - orig_names: [AD]
           name: AD
-          description: '##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">'
+          description: '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">'
           type: int
           number: alleles
           combi_method: min

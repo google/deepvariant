@@ -1,4 +1,5 @@
-# Custom configuration for DeepVariant WGS cohort.
+# GLnexus config for joint calling DeepVariant whole genome sequencing gVCFs.
+# See https://github.com/dnanexus-rnd/GLnexus/wiki/Configuration
 unifier_config:
     min_AQ1: 10
     min_AQ2: 10
@@ -7,6 +8,8 @@ unifier_config:
 genotyper_config:
     required_dp: 0
     revise_genotypes: true
+    more_PL: true
+    trim_uncalled_alleles: true
     liftover_fields:
         - orig_names: [MIN_DP, DP]
           name: DP
@@ -18,7 +21,7 @@ genotyper_config:
           ignore_non_variants: true
         - orig_names: [AD]
           name: AD
-          description: '##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">'
+          description: '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">'
           type: int
           number: alleles
           combi_method: min
