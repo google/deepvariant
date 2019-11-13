@@ -1,4 +1,4 @@
-# Advanced Case study: Merge DeepVariant Whole Exome Sequencing (WES) trio call sets
+# Best practices for multi-sample variant calling with DeepVariant (WES trio demonstration)
 
 ## Overview
 

@@ -8,17 +8,13 @@
 *   [DeepVariant whole genome case study](deepvariant-case-study.md)
 *   [DeepVariant exome case study](deepvariant-exome-case-study.md)
 *   [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md)
+*   [Best practices for multi-sample variant calling](trio-merge-case-study.md)
 
 ## (Advanced) Training
 
 *   [Advanced Case Study: Train a customized SNP and small indel variant caller
     for BGISEQ-500 data](deepvariant-tpu-training-case-study.md)
 *   [DeepVariant training data](deepvariant-details-training-data.md)
-
-## (Advanced) Trio merging
-
-*   [Advanced Case study: Merge DeepVariant Whole Exome Sequencing (WES) trio
-    call sets](trio-merge-case-study.md)
 
 ## More details
 
