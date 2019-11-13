@@ -184,7 +184,7 @@ DeepVariantWGS`. The corresponding params can be found in
 
 ## Annotate the merged VCF with Mendelian discordance information using RTG Tools
 
-Create SDF template from our reference file:
+Create an SDF template from our reference file:
 
 ```
 sudo docker run \
