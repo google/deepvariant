@@ -154,7 +154,96 @@ do
 done
 ```
 
+## Merge the trio samples using GLnexus
+
+### Run GLnexus to merge 3 gVCFs
+
+And then run GLnexus with this config:
+
+```
+sudo docker pull quay.io/mlin/glnexus:v1.2.2
+
+time sudo docker run \
+  -v "${DIR}":"/data" \
+  quay.io/mlin/glnexus:v1.2.2 \
+  /usr/local/bin/glnexus_cli \
+  --config DeepVariantWES \
+  --bed "/data/${CAPTURE_BED}" \
+  /data/HG004.g.vcf.gz /data/HG003.g.vcf.gz /data/HG002.g.vcf.gz \
+  | bcftools view - | bgzip -c > ${DIR}/deepvariant.cohort.vcf.gz
+```
+
+When we ran on this WES trio, it took only about 13 seconds. For more details on
+performance, see
+[GLnexus performance guide](https://github.com/dnanexus-rnd/GLnexus/wiki/Performance).
+And, if you are merging a WGS cohort,
+please use the `--config
+DeepVariantWGS`. The corresponding params can be found in
+[WGS params](../deepvariant/cohort_best_practice/DeepVariantWGS_v1.yml) and
+[WES params](../deepvariant/cohort_best_practice/DeepVariantWES_v1.yml).
+
+## Annotate the merged VCF with Mendelian discordance information using RTG Tools
+
+Create SDF template from our reference file:
+
+```
+sudo docker run \
+  -v "${DIR}":"/data" \
+  realtimegenomics/rtg-tools format \
+  -o /data/hs37d5.sdf /data/hs37d5.fa
+```
+
+Create a PED file `$DIR/trio.ped` that looks like this (with the sample name
+of the trio):
+
+```
+#PED format pedigree
+#
+#fam-id/ind-id/pat-id/mat-id: 0=unknown
+#sex: 1=male; 2=female; 0=unknown
+#phenotype: -9=missing, 0=missing; 1=unaffected; 2=affected
+#
+#fam-id ind-id pat-id mat-id sex phen
+1 Sample_Diag-excap51-HG002-EEogPU Sample_Diag-excap51-HG003-EEogPU Sample_Diag-excap51-HG004-EEogPU 1 0
+1 Sample_Diag-excap51-HG003-EEogPU 0 0 1 0
+1 Sample_Diag-excap51-HG004-EEogPU 0 0 2 0
+```
+
+## Annotate merged VCF with RTG Tools
+
+```
+sudo docker run \
+  -v "${DIR}":"/data" \
+  realtimegenomics/rtg-tools mendelian \
+  -i /data/deepvariant.cohort.vcf.gz \
+  -o /data/deepvariant.annotated.vcf.gz \
+  --pedigree=/data/trio.ped \
+  -t /data/hs37d5.sdf \
+  | tee ${DIR}/deepvariant.input_rtg_output.txt
+```
+
+The output is:
+
+```
+Checking: /data/deepvariant.cohort.vcf.gz
+Family: [Sample_Diag-excap51-HG003-EEogPU + Sample_Diag-excap51-HG004-EEogPU] -> [Sample_Diag-excap51-HG002-EEogPU]
+1 non-pass records were skipped
+Concordance Sample_Diag-excap51-HG002-EEogPU: F:59682/60267 (99.03%)  M:60059/60245 (99.69%)  F+M:59329/60107 (98.71%)
+Sample Sample_Diag-excap51-HG002-EEogPU has less than 99.0 concordance with both parents. Check for incorrect pedigree or sample mislabelling.
+862/60626 (1.42%) records did not conform to expected call ploidy
+60430/60626 (99.68%) records were variant in at least 1 family member and checked for Mendelian constraints
+266/60430 (0.44%) records had indeterminate consistency status due to incomplete calls
+803/60430 (1.33%) records contained a violation of Mendelian constraints
+```
+
+From this report, we know that there is a 1.33% Mendelian violation rate, and
+0.44% of the records had incomplete calls (with `.`) so RTG couldn't determine
+whether there is violation or not.
+
 ## Single sample quality metrics
+
+In addition to the cohort quality statistics, for completeness we generate
+single-sample quality metrics.
 
 ### ti/tv ratio
 
@@ -313,88 +402,3 @@ HG002  | 0.973295 | 0.999318
 HG003  | 0.969842 | 0.998980
 HG004  | 0.974818 | 0.999183
 
-## Merge the trio samples using GLnexus
-
-### Run GLnexus to merge 3 gVCFs
-
-And then run GLnexus with this config:
-
-```
-sudo docker pull quay.io/mlin/glnexus:v1.2.2
-
-time sudo docker run \
-  -v "${DIR}":"/data" \
-  quay.io/mlin/glnexus:v1.2.2 \
-  /usr/local/bin/glnexus_cli \
-  --config DeepVariantWES \
-  --bed "/data/${CAPTURE_BED}" \
-  /data/HG004.g.vcf.gz /data/HG003.g.vcf.gz /data/HG002.g.vcf.gz \
-  | bcftools view - | bgzip -c > ${DIR}/deepvariant.cohort.vcf.gz
-```
-
-When we ran on this WES trio, it took only about 13 seconds. For more details on
-performance, see
-[GLnexus performance guide](https://github.com/dnanexus-rnd/GLnexus/wiki/Performance).
-And, if you are merging a WGS cohort,
-please use the `--config
-DeepVariantWGS`. The corresponding params can be found in
-[WGS params](../deepvariant/cohort_best_practice/DeepVariantWGS_v1.yml) and
-[WES params](../deepvariant/cohort_best_practice/DeepVariantWES_v1.yml).
-
-## Annotate the merged VCF with Mendelian discordance information using RTG Tools
-
-Create SDF template from our reference file:
-
-```
-sudo docker run \
-  -v "${DIR}":"/data" \
-  realtimegenomics/rtg-tools format \
-  -o /data/hs37d5.sdf /data/hs37d5.fa
-```
-
-Create a PED file `$DIR/trio.ped` that looks like this (with the sample name
-of the trio):
-
-```
-#PED format pedigree
-#
-#fam-id/ind-id/pat-id/mat-id: 0=unknown
-#sex: 1=male; 2=female; 0=unknown
-#phenotype: -9=missing, 0=missing; 1=unaffected; 2=affected
-#
-#fam-id ind-id pat-id mat-id sex phen
-1 Sample_Diag-excap51-HG002-EEogPU Sample_Diag-excap51-HG003-EEogPU Sample_Diag-excap51-HG004-EEogPU 1 0
-1 Sample_Diag-excap51-HG003-EEogPU 0 0 1 0
-1 Sample_Diag-excap51-HG004-EEogPU 0 0 2 0
-```
-
-## Annotate merged VCF with RTG Tools
-
-```
-sudo docker run \
-  -v "${DIR}":"/data" \
-  realtimegenomics/rtg-tools mendelian \
-  -i /data/deepvariant.cohort.vcf.gz \
-  -o /data/deepvariant.annotated.vcf.gz \
-  --pedigree=/data/trio.ped \
-  -t /data/hs37d5.sdf \
-  | tee ${DIR}/deepvariant.input_rtg_output.txt
-```
-
-The output is:
-
-```
-Checking: /data/deepvariant.cohort.vcf.gz
-Family: [Sample_Diag-excap51-HG003-EEogPU + Sample_Diag-excap51-HG004-EEogPU] -> [Sample_Diag-excap51-HG002-EEogPU]
-1 non-pass records were skipped
-Concordance Sample_Diag-excap51-HG002-EEogPU: F:59682/60267 (99.03%)  M:60059/60245 (99.69%)  F+M:59329/60107 (98.71%)
-Sample Sample_Diag-excap51-HG002-EEogPU has less than 99.0 concordance with both parents. Check for incorrect pedigree or sample mislabelling.
-862/60626 (1.42%) records did not conform to expected call ploidy
-60430/60626 (99.68%) records were variant in at least 1 family member and checked for Mendelian constraints
-266/60430 (0.44%) records had indeterminate consistency status due to incomplete calls
-803/60430 (1.33%) records contained a violation of Mendelian constraints
-```
-
-From this report, we know that there is a 1.33% Mendelian violation rate, and
-0.44% of the records had incomplete calls (with `.`) so RTG couldn't determine
-whether there is violation or not.
