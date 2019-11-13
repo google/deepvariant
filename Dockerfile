@@ -87,12 +87,6 @@ RUN \
     /opt/deepvariant/bin/model_eval \
     /opt/deepvariant/bin/run_deepvariant
 
-# Copy glnexus_cli v1.2.1.
-WORKDIR /opt/bin
-ADD https://github.com/dnanexus-rnd/GLnexus/releases/download/v1.2.1/glnexus_cli .
-ADD https://raw.githubusercontent.com/dnanexus-rnd/GLnexus/v1.2.1/LICENSE glnexus_cli.LICENSE
-RUN chmod +rx /opt/bin/glnexus_cli
-
 # Copy models
 WORKDIR /opt/models/wgs
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.data-00000-of-00001 .
