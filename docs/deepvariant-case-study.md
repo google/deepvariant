@@ -46,7 +46,7 @@ Before you run the script, you can read through all sections to understand the
 details. Here is a quick way to get the script and run it:
 
 ```bash
-curl https://raw.githubusercontent.com/google/deepvariant/r0.8/scripts/run_wgs_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r0.9/scripts/run_wgs_case_study_docker.sh | bash
 ```
 
 ### Running on a machine with GPU

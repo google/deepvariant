@@ -65,7 +65,7 @@ gcloud compute ssh "${USER}-cpu" --zone "us-west1-b"
 1.  Download and run the case study script:
 
 ```shell
-curl https://raw.githubusercontent.com/google/deepvariant/r0.8/scripts/run_pacbio_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r0.9/scripts/run_pacbio_case_study_docker.sh | bash
 ```
 
 ## Script description

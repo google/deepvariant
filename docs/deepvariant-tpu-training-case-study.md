@@ -217,7 +217,7 @@ Get the code that shuffles:
 
 ```
 mkdir -p ${SHUFFLE_SCRIPT_DIR}
-wget https://raw.githubusercontent.com/google/deepvariant/r0.8/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
+wget https://raw.githubusercontent.com/google/deepvariant/r0.9/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
 ```
 
 Validation set is small, so we will just shuffle locally using DirectRunner:
