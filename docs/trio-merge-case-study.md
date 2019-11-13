@@ -320,10 +320,12 @@ HG004  | 0.974818 | 0.999183
 And then run GLnexus with this config:
 
 ```
+sudo docker pull quay.io/mlin/glnexus:v1.2.2
+
 time sudo docker run \
   -v "${DIR}":"/data" \
-  google/deepvariant:${VERSION} \
-  /opt/bin/glnexus_cli \
+  quay.io/mlin/glnexus:v1.2.2 \
+  /usr/local/bin/glnexus_cli \
   --config DeepVariantWES \
   --bed "/data/${CAPTURE_BED}" \
   /data/HG004.g.vcf.gz /data/HG003.g.vcf.gz /data/HG002.g.vcf.gz \
