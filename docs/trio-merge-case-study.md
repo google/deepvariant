@@ -332,11 +332,11 @@ time sudo docker run \
   | bcftools view - | bgzip -c > ${DIR}/deepvariant.cohort.vcf.gz
 ```
 
-When we ran on this WES trio, it took only about 13 seconds. However, with WGS
-data or larger cohort, you might want to consider using jemalloc to improve
-performance. See
-[GLnexus performance guide](https://github.com/dnanexus-rnd/GLnexus/wiki/Performance)
-for more detail. And, if you are merging a WGS cohort, please use the `--config
+When we ran on this WES trio, it took only about 13 seconds. For more details on
+performance, see
+[GLnexus performance guide](https://github.com/dnanexus-rnd/GLnexus/wiki/Performance).
+And, if you are merging a WGS cohort,
+please use the `--config
 DeepVariantWGS`. The corresponding params can be found in
 [WGS params](../deepvariant/cohort_best_practice/DeepVariantWGS_v1.yml) and
 [WES params](../deepvariant/cohort_best_practice/DeepVariantWES_v1.yml).
