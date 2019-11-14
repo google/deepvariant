@@ -2,10 +2,11 @@
 
 ## Overview
 
-This document outlines all the steps and considerations for calling and
-merging a trio using DeepVariant and GLnexus. The process involves 3 major
-stages: running DeepVariant to create individual genome call sets, running
-GLnexus to merge call sets, and analyzing the merged call set.
+This document outlines all the steps and considerations for calling and merging
+a trio using DeepVariant and [GLnexus](https://github.com/dnanexus-rnd/GLnexus).
+The process involves 3 major stages: running DeepVariant to create individual
+genome call sets, running GLnexus to merge call sets, and analyzing the merged
+call set.
 
 NOTE: This case study demonstrates an example of how to run DeepVariant
 end-to-end on one machine. The steps below were done on a machine with this
