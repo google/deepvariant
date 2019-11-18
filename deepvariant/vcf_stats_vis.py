@@ -86,7 +86,10 @@ ordered_variant_type_labels = [
 
 def _dict_to_dataframe(dictionary):
   """Turn a dict object into a dataframe of with label and value columns."""
-  df = pd.DataFrame({'label': dictionary.keys(), 'value': dictionary.values()})
+  df = pd.DataFrame({
+      'label': list(dictionary.keys()),
+      'value': list(dictionary.values())
+  })
   return df
 
 
