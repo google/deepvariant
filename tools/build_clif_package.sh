@@ -54,6 +54,9 @@ PROTOBUF_VERSION="3.10.0"
 
 set -eux -o pipefail
 
+# Clear any outdated apt cache.
+sudo apt-get -y update
+
 # Figure out which linux installation we are on to fetch an appropriate version
 # of CLIF binary. Note that we only support now Ubuntu (14, 16, and 18), and
 # Debian.
