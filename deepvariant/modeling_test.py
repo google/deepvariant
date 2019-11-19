@@ -189,7 +189,7 @@ class HiddenFromUnitTest(object):
       with self.test_session() as sess:
         batch_size = 3
         values = range(91, 91 + 2 * 1 * dv_constants.PILEUP_NUM_CHANNELS)
-        all_values = values * batch_size
+        all_values = list(np.tile(values, batch_size))
         raw = np.array(
             all_values, dtype='uint8').reshape(
                 (batch_size, 2, 1, dv_constants.PILEUP_NUM_CHANNELS))

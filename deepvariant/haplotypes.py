@@ -244,7 +244,7 @@ class _LikelihoodAggregator(object):
     # variants that include that particular set of allele indices for this
     # variant.
     self._genotype_likelihood_containers = []
-    for _ in xrange(self._num_likelihoods):
+    for _ in range(self._num_likelihoods):
       self._genotype_likelihood_containers.append([])
 
   def add(self, allele_indices, likelihood):

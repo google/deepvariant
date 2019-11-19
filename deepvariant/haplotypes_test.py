@@ -645,7 +645,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
                                                  expected):
 
     def get_alt_bases(num_alts):
-      return ['C' + 'A' * i for i in xrange(1, num_alts + 1)]
+      return ['C' + 'A' * i for i in range(1, num_alts + 1)]
 
     variants = [
         _var(ref='C', alt=get_alt_bases(num_alts)) for num_alts in num_alts_list
