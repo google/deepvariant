@@ -37,9 +37,10 @@
 # compile parts of clang and LLVM. To save this build time, we use this script
 # to build CLIF, install it in /usr/local/clif, and then packages up
 # /usr/local/clif and shared protobuf libraries from /usr/local/lib into a tgz
-# called oss_clif.latest.tgz.
+# called oss_clif.${BINARY_RELEASE}.tgz.
 #
-# This oss_clif.latest.tgz is used by build-prereq.sh to build DeepVariant.
+# This oss_clif.${BINARY_RELEASE}.tgz is used by build-prereq.sh to build
+# DeepVariant.
 # Various versions that we built and released can be found under:
 # https://console.cloud.google.com/storage/browser/deepvariant/packages/oss_clif
 #
@@ -47,6 +48,9 @@
 # an official solution from CLIF.
 # GitHub issues such as https://github.com/google/deepvariant/issues/29 has
 # some relevant pointers.
+
+BINARY_RELEASE="nov18_2019"
+PROTOBUF_VERSION="3.10.0"
 
 set -eux -o pipefail
 
@@ -75,20 +79,20 @@ else
 fi
 
 CLIF_DIR=/usr/local/clif
-CLIF_PACKAGE="oss_clif.${DV_PLATFORM}.latest.tgz"
+CLIF_PACKAGE="oss_clif.${DV_PLATFORM}.${BINARY_RELEASE}.tgz"
 
 # Install prereqs.
-sudo -H apt-get -y install ninja-build subversion
+sudo -H apt-get -y install ninja-build subversion git
 sudo -H apt-get -y install virtualenv python-pip pkg-config
 sudo -H pip install 'pyparsing>=2.2.0'
-sudo -H pip install 'protobuf>=3.6.1'
+sudo -H pip install "protobuf>=${PROTOBUF_VERSION}"
 
 echo === building protobufs
 
 sudo -H apt-get install -y autoconf automake libtool curl make g++ unzip
-wget https://github.com/google/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz
-tar xvzf protobuf-cpp-3.6.1.tar.gz
-(cd protobuf-3.6.1 &&
+wget https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
+tar xvzf protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
+(cd protobuf-${PROTOBUF_VERSION} &&
   ./autogen.sh &&
   ./configure &&
   make -j 32 &&
@@ -98,6 +102,7 @@ tar xvzf protobuf-cpp-3.6.1.tar.gz
 
 echo === building CLIF
 
+rm -Rf clif || true
 git clone https://github.com/google/clif.git
 sed -i 's/\$HOME\/opt/\/usr\/local/g' clif/INSTALL.sh
 sed -i 's/-j 2//g' clif/INSTALL.sh
