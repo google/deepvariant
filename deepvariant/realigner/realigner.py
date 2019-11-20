@@ -48,7 +48,6 @@ from third_party.nucleus.io import sam
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
 from deepvariant.protos import realigner_pb2
-from deepvariant.realigner import aligner
 from deepvariant.realigner import window_selector
 from deepvariant.realigner.python import debruijn_graph
 from deepvariant.realigner.python import fast_pass_aligner
@@ -499,40 +498,6 @@ class Realigner(object):
 
     return windows_haplotypes
 
-  def call_aligner(self, assembled_region):
-    """Helper function to call aligner module."""
-    if not assembled_region.reads:
-      return []
-
-    contig = assembled_region.region.reference_name
-    ref_start = max(
-        0,
-        min(assembled_region.read_span.start, assembled_region.region.start) -
-        _REF_ALIGN_MARGIN)
-    ref_end = min(
-        self.ref_reader.contig(contig).n_bases,
-        max(assembled_region.read_span.end, assembled_region.region.end) +
-        _REF_ALIGN_MARGIN)
-
-    ref_prefix = self.ref_reader.query(
-        ranges.make_range(contig, ref_start, assembled_region.region.start))
-    ref = self.ref_reader.query(assembled_region.region)
-
-    # If we can't create the ref suffix then return the original alignments.
-    if ref_end <= assembled_region.region.end:
-      return assembled_region.reads
-    else:
-      ref_suffix = self.ref_reader.query(
-          ranges.make_range(contig, assembled_region.region.end, ref_end))
-
-    ref_region = ranges.make_range(contig, ref_start, ref_end)
-    ref_seq = ref_prefix + ref + ref_suffix
-    reads_aligner = aligner.Aligner(self.config.aln_config, ref_region, ref_seq)
-    return reads_aligner.align_reads([
-        ref_prefix + target + ref_suffix
-        for target in assembled_region.haplotypes
-    ], assembled_region.reads)
-
   def call_fast_pass_aligner(self, assembled_region):
     """Helper function to call fast pass aligner module."""
     if not assembled_region.reads:
@@ -624,7 +589,8 @@ class Realigner(object):
       if flags.FLAGS.use_fast_pass_aligner:
         realigned_reads_copy = self.call_fast_pass_aligner(assembled_region)
       else:
-        realigned_reads_copy = self.call_aligner(assembled_region)
+        raise ValueError('--use_fast_pass_aligner is always true. '
+                         'The older implementation is deprecated and removed.')
 
       realigned_reads.extend(realigned_reads_copy)
 

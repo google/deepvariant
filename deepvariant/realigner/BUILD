@@ -8,7 +8,6 @@ py_library(
     name = "realigner",
     srcs = ["realigner.py"],
     deps = [
-        ":aligner",
         ":window_selector",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/realigner/python:debruijn_graph",
@@ -97,34 +96,6 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
         "@protobuf_archive//:protobuf",
-    ],
-)
-
-py_library(
-    name = "aligner",
-    srcs = ["aligner.py"],
-    deps = [
-        ":utils",
-        "//deepvariant/realigner/python:ssw",
-        "//third_party/nucleus/protos:cigar_py_pb2",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_test(
-    name = "aligner_test",
-    size = "small",
-    srcs = ["aligner_test.py"],
-    default_python_version = "PY2",
-    deps = [
-        ":aligner",
-        "//deepvariant:py_testdata",
-        "//deepvariant/protos:realigner_py_pb2",
-        "//third_party/nucleus/protos:cigar_py_pb2",
-        "//third_party/nucleus/util:cigar",
-        "//third_party/nucleus/util:ranges",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
     ],
 )
 
