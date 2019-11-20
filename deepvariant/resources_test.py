@@ -36,10 +36,10 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
-import contextlib
 import resource
-
 from absl.testing import absltest
+# https://stackoverflow.com/questions/34630393/python2-7-contextlib-exitstack-equivalent
+import contextlib2
 import mock
 
 from deepvariant import resources
@@ -52,7 +52,7 @@ class ResourcesTest(absltest.TestCase):
     # we of course don't know their values and can only do sanity checks.
     with resources.ResourceMonitor() as monitor:
       metrics = monitor.metrics()
-      self.assertGreater(len(metrics.host_name), 0)
+      self.assertNotEmpty(metrics.host_name)
       self.assertGreater(metrics.physical_core_count, 0)
       self.assertGreater(metrics.total_memory_mb, 0)
       self.assertGreater(metrics.cpu_user_time_seconds, 0)
@@ -92,7 +92,9 @@ class ResourcesTest(absltest.TestCase):
         mock.patch.object(
             resources.psutil, 'Process', return_value=process_mock))
 
-    with contextlib.nested(*patchers):
+    with contextlib2.ExitStack() as stack:
+      for ctx in patchers:
+        stack.enter_context(ctx)
       with resources.ResourceMonitor() as monitor:
         metrics = monitor.metrics()
 
