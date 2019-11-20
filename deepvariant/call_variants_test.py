@@ -281,9 +281,12 @@ class CallVariantsEndToEndTests(
       self.assertTrue(
           0 <= gp <= 1 for gp in call_variants_output.genotype_probabilities)
 
-  @parameterized.parameters((model, bad_format)
-                            for model in modeling.production_models()
-                            for bad_format in ['', 'png'])
+  # pylint: disable=g-complex-comprehension
+  @parameterized.parameters(
+      (model, bad_format)
+      for model in modeling.production_models()
+      for bad_format in [six.b(''), six.b('png')])
+  # pylint: enable=g-complex-comprehension
   def test_call_variants_with_invalid_format(self, model, bad_format):
     # Read one good record from a valid file.
     example = next(tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))

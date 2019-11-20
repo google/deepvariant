@@ -517,7 +517,7 @@ class InputTest(
           self.assertEqual(a.shape, (tf_utils.STRING_TO_INT_BUFFER_LENGTH,))
           actual_alt_allele_indices_encoded = tf_utils.int_tensor_to_string(a)
         else:
-          self.assertIsInstance(a, six.string_types)
+          self.assertIsInstance(a, six.binary_type)
           actual_alt_allele_indices_encoded = a
         self.assertEqual(expected_alt_allele_indices_encoded,
                          actual_alt_allele_indices_encoded)
@@ -528,7 +528,7 @@ class InputTest(
           self.assertEqual(a.shape, (tf_utils.STRING_TO_INT_BUFFER_LENGTH,))
           actual_variant_encoded = tf_utils.int_tensor_to_string(a)
         else:
-          self.assertIsInstance(a, six.string_types)
+          self.assertIsInstance(a, six.binary_type)
           actual_variant_encoded = a
         self.assertEqual(expected_variant_encoded, actual_variant_encoded)
 

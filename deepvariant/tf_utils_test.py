@@ -62,7 +62,7 @@ class TFUtilsTest(parameterized.TestCase):
         end=11,
         reference_bases='C',
         alternate_bases=self.alts)
-    self.encoded_image = 'encoded_image_data'
+    self.encoded_image = six.b('encoded_image_data')
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
 
@@ -127,9 +127,10 @@ class TFUtilsTest(parameterized.TestCase):
     self.assertEqual(self.encoded_image,
                      tf_utils.example_encoded_image(example))
     self.assertEqual(
-        'raw', example.features.feature['image/format'].bytes_list.value[0])
+        six.b('raw'),
+        example.features.feature['image/format'].bytes_list.value[0])
     self.assertEqual(self.variant, tf_utils.example_variant(example))
-    self.assertEqual('1:11-11', tf_utils.example_locus(example))
+    self.assertEqual(six.b('1:11-11'), tf_utils.example_locus(example))
     self.assertEqual([0], tf_utils.example_alt_alleles_indices(example))
     self.assertEqual('1:11:C->A', tf_utils.example_key(example))
     self.assertEqual(tf_utils.EncodedVariantType.SNP.value,
@@ -139,7 +140,7 @@ class TFUtilsTest(parameterized.TestCase):
     alts = ['AA', 'CC', 'GG']
     self.variant.alternate_bases[:] = alts
     # Providing GG, AA checks that we're sorting the indices.
-    example = tf_utils.make_example(self.variant, ['GG', 'AA'], 'foo',
+    example = tf_utils.make_example(self.variant, ['GG', 'AA'], six.b('foo'),
                                     self.default_shape, self.default_format)
     self.assertEqual([0, 2], tf_utils.example_alt_alleles_indices(example))
     self.assertEqual(['AA', 'GG'], tf_utils.example_alt_alleles(example))
@@ -149,7 +150,7 @@ class TFUtilsTest(parameterized.TestCase):
 
   def testAltAllelesWithVariant(self):
     alts = list(self.variant.alternate_bases)
-    example = tf_utils.make_example(self.variant, alts, 'foo',
+    example = tf_utils.make_example(self.variant, alts, six.b('foo'),
                                     self.default_shape, self.default_format)
     self.assertEqual([0], tf_utils.example_alt_alleles_indices(example))
     with mock.patch(
@@ -249,7 +250,7 @@ class TFUtilsTest(parameterized.TestCase):
 
   def testIntTensorToString(self):
     with tf.Session() as sess:
-      s = '\001\002\003\004\005\006\007'
+      s = six.b('\001\002\003\004\005\006\007')
       it = tf_utils.string_to_int_tensor(s)
       x = sess.run(it)
       t = tf_utils.int_tensor_to_string(x)

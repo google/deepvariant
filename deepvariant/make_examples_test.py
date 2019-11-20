@@ -1449,26 +1449,31 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic = mock.Mock()
     self.add_mock(
         '_encode_tensor',
-        side_effect=[('tensor1', self.default_shape, self.default_format),
-                     ('tensor2', self.default_shape, self.default_format)])
+        side_effect=[
+            (six.b('tensor1'), self.default_shape, self.default_format),
+            (six.b('tensor2'), self.default_shape, self.default_format)
+        ])
     dv_call = mock.Mock()
     dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
     ex = mock.Mock()
     alt1, alt2 = ['C'], ['G']
-    self.processor.pic.create_pileup_images.return_value = [(alt1, 'tensor1'),
-                                                            (alt2, 'tensor2')]
+    self.processor.pic.create_pileup_images.return_value = [
+        (alt1, six.b('tensor1')), (alt2, six.b('tensor2'))
+    ]
 
     actual = self.processor.create_pileup_examples(dv_call)
 
     self.processor.pic.create_pileup_images.assert_called_once_with(dv_call)
 
     self.assertEqual(len(actual), 2)
-    for ex, (alt, img) in zip(actual, [(alt1, 'tensor1'), (alt2, 'tensor2')]):
+    for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
+                                       (alt2, six.b('tensor2'))]):
       self.assertEqual(tf_utils.example_alt_alleles(ex), alt)
       self.assertEqual(tf_utils.example_variant(ex), dv_call.variant)
       self.assertEqual(tf_utils.example_encoded_image(ex), img)
       self.assertEqual(tf_utils.example_image_shape(ex), self.default_shape)
-      self.assertEqual(tf_utils.example_image_format(ex), self.default_format)
+      self.assertEqual(
+          tf_utils.example_image_format(ex), six.b(self.default_format))
 
   @parameterized.parameters(
       # Test that a het variant gets a label value of 1 assigned to the example.
@@ -1526,8 +1531,9 @@ class RegionProcessorTest(parameterized.TestCase):
       self.processor.add_label_to_example(example, label)
 
   def _example_for_variant(self, variant):
-    return tf_utils.make_example(variant, list(variant.alternate_bases), 'foo',
-                                 self.default_shape, self.default_format)
+    return tf_utils.make_example(variant, list(variant.alternate_bases),
+                                 six.b('foo'), self.default_shape,
+                                 self.default_format)
 
   def test_use_original_quality_scores_without_parse_sam_aux_fields(self):
     FLAGS.mode = 'calling'

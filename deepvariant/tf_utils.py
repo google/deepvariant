@@ -39,7 +39,7 @@ from __future__ import print_function
 
 import enum
 import numpy as np
-
+import six
 import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
@@ -280,9 +280,10 @@ def make_example(variant,
   example = example_pb2.Example()
   features = example.features
   features.feature['locus'].bytes_list.value.append(
-      ranges.to_literal(
-          ranges.make_range(variant.reference_name, variant.start,
-                            variant.end)))
+      six.b(
+          ranges.to_literal(
+              ranges.make_range(variant.reference_name, variant.start,
+                                variant.end))))
   example_set_variant(example, variant)
   variant_type = encoded_variant_type(variant).value
   features.feature['variant_type'].int64_list.value.append(variant_type)
@@ -294,13 +295,13 @@ def make_example(variant,
           indices=alt_indices).SerializeToString())
 
   features.feature['image/encoded'].bytes_list.value.append(encoded_image)
-  features.feature['image/format'].bytes_list.value.append(image_format)
+  features.feature['image/format'].bytes_list.value.append(six.b(image_format))
   features.feature['image/shape'].int64_list.value.extend(shape)
   if second_image is not None:
     features.feature['second_image/encoded'].bytes_list.value.append(
-        second_image)
+        six.b(second_image))
     features.feature['second_image/format'].bytes_list.value.append(
-        image_format)
+        six.b(image_format))
     features.feature['second_image/shape'].int64_list.value.extend(shape)
   features.feature['sequencing_type'].int64_list.value.append(sequencing_type)
   return example
