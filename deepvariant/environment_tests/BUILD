@@ -1,4 +1,5 @@
 # KEEP THIS LINE to import nucleus.bzl externally
+# load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
 package(default_visibility = ["//:__subpackages__"])
 

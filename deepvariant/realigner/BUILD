@@ -1,3 +1,5 @@
+# load("//devtools/python/blaze:python3.bzl", "py2and3_test")
+
 package(
     default_visibility = [
         "//visibility:public",

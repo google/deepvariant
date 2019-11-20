@@ -44,6 +44,7 @@ import os
 from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
+import numpy as np
 import six
 import tensorflow as tf
 
@@ -186,7 +187,7 @@ class ReadAssignmentTests(parameterized.TestCase):
 
     # Go through each region and make sure the reads that are supposed to
     # appear in each region do in appear there.
-    for region_name, region in self.regions.iteritems():
+    for region_name, region in self.regions.items():
       expected_reads = self.get_reads_by_name(
           expected_assignments.get(region_name, []))
       six.assertCountEqual(self, region.reads, expected_reads)
@@ -356,24 +357,28 @@ class RealignerTest(parameterized.TestCase):
     """Tests that read sets don't result in a crash in reference_fai.cc."""
     region = ranges.parse_literal('chr20:63,025,320-63,025,520')
 
+    # pylint: disable=g-complex-comprehension
     reads = [
         test_utils.make_read(
             'ACCGT' * 50,
             start=63025520 - 250,
             cigar='250M',
-            quals=range(30, 35) * 50) for _ in range(20)
+            quals=list(np.tile(range(30, 35), 50))) for _ in range(20)
     ]
+    # pylint: enable=g-complex-comprehension
     self.reads_realigner.realign_reads(reads, region)
 
     # These reads are aligned off the edge of the contig. Note that the
     # reference bases in this interval are all Ns as well.
+    # pylint: disable=g-complex-comprehension
     reads = [
         test_utils.make_read(
             'TTATA' * 50,
             start=63025520 - 200,
             cigar='200M50S',
-            quals=range(30, 35) * 50) for _ in range(20)
+            quals=list(np.tile(range(30, 35), 50))) for _ in range(20)
     ]
+    # pylint: enable=g-complex-comprehension
     self.reads_realigner.realign_reads(reads, region)
 
   @parameterized.parameters(
