@@ -908,10 +908,19 @@ py_binary(
     main = "vcf_stats_report.py",
     srcs_version = "PY2AND3",
     deps = [
+        ":vcf_stats_report_lib",
+        "@absl_py//absl/flags",
+    ],
+)
+
+py_library(
+    name = "vcf_stats_report_lib",
+    srcs = ["vcf_stats_report.py"],
+    srcs_version = "PY2AND3",
+    deps = [
         ":vcf_stats",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/util:errors",
-        "@absl_py//absl/flags",
     ],
 )
 
