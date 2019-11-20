@@ -1023,7 +1023,7 @@ class DeepVariantSlimModel(DeepVariantModel):
     variant_type = features['variant_type']
     eval_metrics = (eval_metric_fn, [labels, eval_predictions, variant_type])
     if not self.use_tpu:
-      for name, value in eval_metrics[0](*eval_metrics[1]).iteritems():
+      for name, value in eval_metrics[0](*eval_metrics[1]).items():
         tf.contrib.slim.summaries.add_scalar_summary(
             value, name, print_summary=True)
     return eval_metrics

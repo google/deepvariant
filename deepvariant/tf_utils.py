@@ -205,7 +205,7 @@ def get_one_example_from_examples_path(source, proto=None):
         'Cannot find matching files with the pattern "{}"'.format(source))
   for f in files:
     try:
-      return tfrecord.read_tfrecords(f, proto=proto).next()
+      return next(tfrecord.read_tfrecords(f, proto=proto))
     except StopIteration:
       # Getting a StopIteration from one next() means source_path is empty.
       # Move on to the next one to try to get one example.

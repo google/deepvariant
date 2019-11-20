@@ -985,7 +985,7 @@ class LabelExamplesTest(parameterized.TestCase):
   )
   def test_build_haplotype(self, variants, allele_indices_and_expected):
     refseq = 'xAAAAAy'
-    for allele_indices, expected in allele_indices_and_expected.iteritems():
+    for allele_indices, expected in allele_indices_and_expected.items():
       self.assertEqual(
           expected,
           haplotype_labeler.build_haplotype(
@@ -1032,7 +1032,7 @@ class LabelExamplesTest(parameterized.TestCase):
                   (2, 2): {
                       (2,): 'TGC'
                   },
-              }.iteritems()),)
+              }.items()),)
   def test_phased_genotypes_to_haplotypes_single_variant(
       self, variants, ref, expected_frags, expected_next_pos):
     variants_and_genotypes = [
@@ -1186,10 +1186,8 @@ class LabelExamplesTest(parameterized.TestCase):
     ]
     frags, next_pos = haplotype_labeler.phased_genotypes_to_haplotypes(
         variants_and_genotypes, ref.start, ref)
-    self.assertEqual(
-        frags, {k: v
-                for k, v in expected_frags.iteritems()
-                if v is not None})
+    self.assertEqual(frags,
+                     {k: v for k, v in expected_frags.items() if v is not None})
     self.assertEqual(next_pos, expected_next_pos)
 
   @parameterized.parameters(
@@ -1374,7 +1372,7 @@ class LabelExamplesTest(parameterized.TestCase):
   def test_multi_allelic(self, candidate_alleles, truth_alleles,
                          truth_genotypes_and_expected):
     candidate = _test_variant(42, candidate_alleles)
-    for true_gt, expected_gt in truth_genotypes_and_expected.iteritems():
+    for true_gt, expected_gt in truth_genotypes_and_expected.items():
       truth = _test_variant(42, truth_alleles, true_gt)
       ref_allele = sorted([candidate_alleles[0], truth_alleles[0]], key=len)[0]
       self.assertGetsCorrectLabels(

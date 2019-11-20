@@ -177,10 +177,10 @@ class ModelEvalTest(
         # We find 47 positives, so this has to be 47.
         'TPs/All': 47,
     }
-    for key, expected_value in expected_values_for_all_exact.iteritems():
+    for key, expected_value in expected_values_for_all_exact.items():
       print(str(key) + '=' + str(metrics[0][key]))
 
-    for key, expected_value in expected_values_for_all_exact.iteritems():
+    for key, expected_value in expected_values_for_all_exact.items():
       self.assertEqual(metrics[0][key], expected_value)
 
     expected_values_for_all_close = {
@@ -189,7 +189,7 @@ class ModelEvalTest(
         # We called (2 * 47 / 48) / (1 + 47 / 48) correctly ~ 0.989474
         'F1/All': 0.989474,
     }
-    for key, expected_value in expected_values_for_all_close.iteritems():
+    for key, expected_value in expected_values_for_all_close.items():
       self.assertAlmostEqual(metrics[0][key], expected_value, places=6)
 
     for m1, m2 in zip(metrics, metrics[1:]):

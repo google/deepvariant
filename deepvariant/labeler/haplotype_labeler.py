@@ -532,7 +532,7 @@ def all_diploid_haplotypes(variants_and_genotypes, genotypes2haplotype):
 
   genotypes = [vg.genotypes for vg in variants_and_genotypes]
   generated_already = set()
-  for haploid_genotype, haplotype in genotypes2haplotype.iteritems():
+  for haploid_genotype, haplotype in genotypes2haplotype.items():
     complement = complement_haploid_genotype(haploid_genotype, genotypes)
     complement_haplotype = genotypes2haplotype.get(complement, None)
     if complement_haplotype is not None and complement not in generated_already:

@@ -296,7 +296,7 @@ def read_metrics(checkpoint_path, eval_name, file_name=None):
   """Reads the JSON of metrics for checkpoint_path in eval_dir."""
   metrics_path = checkpoint_metrics_path(checkpoint_path, eval_name, file_name)
   with tf.gfile.GFile(metrics_path) as fin:
-    return {k: float(v) for k, v in json.load(fin).iteritems()}
+    return {k: float(v) for k, v in json.load(fin).items()}
 
 
 def _write_best_checkpoint(checkpoint_path, metrics_and_values, eval_name):
@@ -314,7 +314,7 @@ def _write_best_checkpoint(checkpoint_path, metrics_and_values, eval_name):
       checkpoint_path, eval_name, file_name='best_checkpoint.txt')
   best_checkpoint_metrics_path = checkpoint_metrics_path(
       checkpoint_path, eval_name, file_name='best_checkpoint.metrics')
-  serializable = {k: str(v) for k, v in metrics_and_values.iteritems()}
+  serializable = {k: str(v) for k, v in metrics_and_values.items()}
   logging.info('Writing new best checkpoint %s with values %s',
                best_checkpoint_path, metrics_and_values)
   try:
@@ -359,7 +359,7 @@ def _write_checkpoint_metrics(checkpoint_path,
   path = checkpoint_metrics_path(checkpoint_path, eval_name)
   experiment_metrics_path = checkpoint_metrics_path(
       checkpoint_path, eval_name, file_name=current_metrics)
-  serializable = {k: str(v) for k, v in metrics_and_values.iteritems()}
+  serializable = {k: str(v) for k, v in metrics_and_values.items()}
   logging.info('Writing checkpoint metrics %s', path)
   try:
     with tf.gfile.GFile(path, 'w') as fout:

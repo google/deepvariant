@@ -1301,13 +1301,13 @@ class OutputsWriter(object):
 
   def __enter__(self):
     """API function to support with syntax."""
-    for writer in self._writers.itervalues():
+    for writer in self._writers.values():
       if writer is not None:
         writer.__enter__()
     return self
 
   def __exit__(self, exception_type, exception_value, traceback):
-    for writer in self._writers.itervalues():
+    for writer in self._writers.values():
       if writer is not None:
         writer.__exit__(exception_type, exception_value, traceback)
 

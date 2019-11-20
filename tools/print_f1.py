@@ -64,7 +64,7 @@ def read_metrics_file(path):
   with open(path) as f:
     metrics = {
         key.replace('/', '_'): float(value)
-        for key, value in json.loads(f.read()).iteritems()
+        for key, value in json.loads(f.read()).items()
     }
   metrics['checkpoint'] = extract_checkpoint_number_from_metrics_filename(path)
   metrics['F1_All'] = 2 * metrics['TPs_All'] / (

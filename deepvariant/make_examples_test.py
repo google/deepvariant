@@ -1497,7 +1497,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertIs(actual, labeled)
 
     # Check that all keys from example are present in labeled.
-    for key, value in example.features.feature.iteritems():
+    for key, value in example.features.feature.items():
       if key != 'variant/encoded':  # Special case tested below.
         self.assertEqual(value, labeled.features.feature[key])
 

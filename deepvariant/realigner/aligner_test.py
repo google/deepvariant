@@ -79,7 +79,7 @@ class PairwiseAlignerTest(parameterized.TestCase):
     return pw_aligner.align(seq2)
 
   def assertAlignmentEqual(self, alignment, expected_dict):
-    for k, v in expected_dict.iteritems():
+    for k, v in expected_dict.items():
       self.assertEqual(
           getattr(alignment, k), v,
           'Expected field {} of alignment [{}] to be {} but got {}'.format(
