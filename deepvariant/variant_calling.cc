@@ -33,7 +33,6 @@
 
 #include <algorithm>
 #include <numeric>
-#include <optional>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
