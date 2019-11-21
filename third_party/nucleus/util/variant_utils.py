@@ -543,7 +543,8 @@ def is_filtered(variant):
 def is_variant_call(variant,
                     require_non_ref_genotype=True,
                     no_calls_are_variant=False,
-                    call_indices=None):
+                    call_indices=None,
+                    apply_filter=True):
   """Is variant a non-reference call?
 
   A Variant proto doesn't always imply that there's a variant present in the
@@ -570,6 +571,8 @@ def is_variant_call(variant,
     call_indices: A list of 0-based indices. If specified, only the calls
       at the given indices will be considered. The function will return
       True if any of those calls are variant.
+    apply_filter: If set to True, will never treat this site as variant when
+      any filter other than PASS or . is set.
 
   Returns:
     True if variant is really a mutation call.
@@ -577,7 +580,7 @@ def is_variant_call(variant,
   if is_ref(variant):
     # No actual alt allele listed in ALT column
     return False
-  elif is_filtered(variant):
+  elif apply_filter and is_filtered(variant):
     # Anything other than PASS or . in FILTER column
     return False
   elif not variant.calls or not require_non_ref_genotype:

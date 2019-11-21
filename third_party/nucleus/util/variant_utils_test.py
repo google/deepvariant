@@ -175,6 +175,32 @@ class VariantUtilsTests(parameterized.TestCase):
     with self.assertRaises(Exception):
       variant_utils.is_variant_call(None)
 
+  @parameterized.parameters(
+      ([-1, 0], ['PASS'], False, False),
+      ([-1, 0], [], False, False),
+      ([-1, 1], ['FAIL'], False, True),
+      ([0, 0], ['PASS'], False, False),
+      ([0, 1], ['VQSRTrancheSNP99.80to100.00'], False, True),
+      ([0, 1], ['PASS'], True, True),
+      ([0, 1], [], True, True),
+      ([1, 1], ['FAIL'], False, True),
+      ([1, 1], ['PASS'], True, True),
+      ([1, 2], [], True, True),
+  )
+  def test_is_variant_call_apply_filter(self, genotype, filters,
+                                        expected_when_applied,
+                                        expected_when_not_applied):
+    variant = test_utils.make_variant(gt=genotype, filters=filters)
+    # The default is apply_filter=True.
+    self.assertEqual(
+        variant_utils.is_variant_call(variant), expected_when_applied)
+    self.assertEqual(
+        variant_utils.is_variant_call(variant, apply_filter=True),
+        expected_when_applied)
+    self.assertEqual(
+        variant_utils.is_variant_call(variant, apply_filter=False),
+        expected_when_not_applied)
+
   def test_is_variant_call_no_calls_are_variant(self):
 
     def check_is_variant(variant, expected, **kwargs):
