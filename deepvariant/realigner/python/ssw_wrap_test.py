@@ -37,7 +37,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 
 from absl.testing import absltest
-
+import six
 from deepvariant.realigner.python import ssw
 
 REF = 'CAGCCTTTCTGACCCGGAAATCAAAATAGGCACAACAAA'
@@ -57,7 +57,7 @@ class SswWrapTest(absltest.TestCase):
     aligner = ssw.Aligner()
     filter_ = ssw.Filter()
     length = aligner.set_reference_sequence(REF)
-    self.assertEqual(len(REF), length)
+    self.assertLen(REF, length)
     alignment = aligner.align(QUERY, filter_)
     self.assertEqual(21, alignment.sw_score)
     self.assertEqual(8, alignment.sw_score_next_best)
@@ -67,7 +67,7 @@ class SswWrapTest(absltest.TestCase):
     self.assertEqual(14, alignment.query_end)
     self.assertEqual(4, alignment.ref_end_next_best)
     self.assertEqual(2, alignment.mismatches)
-    self.assertEqual('4=1X4=1I5=', alignment.cigar_string)
+    self.assertEqual(six.b('4=1X4=1I5='), alignment.cigar_string)
 
   def test_Align2_reversed(self):
     """Tests the Align method, reversing query and ref from above."""
@@ -81,7 +81,7 @@ class SswWrapTest(absltest.TestCase):
     self.assertEqual(0, alignment.ref_begin)
     self.assertEqual(14, alignment.ref_end)
     self.assertEqual(2, alignment.mismatches)
-    self.assertEqual('8S4=1X4=1D5=17S', alignment.cigar_string)
+    self.assertEqual(six.b('8S4=1X4=1D5=17S'), alignment.cigar_string)
 
 
 if __name__ == '__main__':
