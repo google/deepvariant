@@ -27,9 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant.make_examples."""
-# assertLen isn't part of unittest externally, so disable warnings that we are
-# using assertEqual(len(...), ...) instead of assertLen(..., ...).
-# pylint: disable=g-generic-assert
 
 from __future__ import absolute_import
 from __future__ import division
@@ -451,7 +448,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     make_examples.make_examples_runner(options)
 
     candidates = list(tfrecord.read_tfrecords(FLAGS.candidates))
-    self.assertEqual(len(candidates), expected_count)
+    self.assertLen(candidates, expected_count)
 
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call almost all of the real variants (according to NIST's
@@ -515,8 +512,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         self.assertGreaterEqual(variant.start, region.start)
         self.assertLessEqual(variant.start, region.end)
       self.assertNotEqual(variant.reference_bases, '')
-      self.assertGreater(len(variant.alternate_bases), 0)
-      self.assertEqual(len(variant.calls), 1)
+      self.assertNotEmpty(variant.alternate_bases)
+      self.assertLen(variant.calls, 1)
 
       call = variant_utils.only_call(variant)
       self.assertEqual(call.call_set_name,
@@ -525,14 +522,14 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         # GVCF records should have 0/0 or ./. (un-called) genotypes as they are
         # reference sites, have genotype likelihoods and a GQ value.
         self.assertIn(list(call.genotype), [[0, 0], [-1, -1]])
-        self.assertEqual(len(call.genotype_likelihood), 3)
+        self.assertLen(call.genotype_likelihood, 3)
         self.assertGreaterEqual(variantcall_utils.get_gq(call), 0)
 
   def verify_contiguity(self, contiguous_variants, region):
     """Verifies region is fully covered by gvcf records."""
     # We expect that the intervals cover every base, so the first variant should
     # be at our interval start and the last one should end at our interval end.
-    self.assertGreater(len(contiguous_variants), 0)
+    self.assertNotEmpty(contiguous_variants)
     self.assertEqual(region.start, contiguous_variants[0].start)
     self.assertEqual(region.end, contiguous_variants[-1].end)
 
@@ -584,7 +581,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)
       # pylint: disable=g-explicit-length-test
-      self.assertGreater(len(tf_utils.example_alt_alleles_indices(example)), 0)
+      self.assertNotEmpty(tf_utils.example_alt_alleles_indices(example))
 
     # Check that the variants in the examples are good.
     variants = [tf_utils.example_variant(x) for x in examples]
@@ -609,7 +606,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     # metrics field is greater than 0. Any reasonable golden output will have at
     # least one candidate variant, and the reader should have filled in the
     # value.
-    self.assertGreater(len(golden_actual.options.run_info_filename), 0)
+    self.assertNotEmpty(golden_actual.options.run_info_filename)
     self.assertEqual(golden_actual.labeling_metrics.n_candidate_variant_sites,
                      testdata.N_GOLDEN_TRAINING_EXAMPLES)
 
@@ -1465,7 +1462,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     self.processor.pic.create_pileup_images.assert_called_once_with(dv_call)
 
-    self.assertEqual(len(actual), 2)
+    self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
                                        (alt2, six.b('tensor2'))]):
       self.assertEqual(tf_utils.example_alt_alleles(ex), alt)

@@ -244,7 +244,7 @@ class TFUtilsTest(parameterized.TestCase):
       it = tf_utils.string_to_int_tensor(s)
       x = sess.run(it)
       a = x[0]
-      self.assertEqual(a, len(s))
+      self.assertLen(s, a)
       b = list(x[1:a + 1])
       self.assertEqual(b, [1, 2, 3, 4, 5, 6, 7])
 
