@@ -5,3 +5,5 @@ mock
 numpy
 six
 protobuf
+Pillow
+ipython
