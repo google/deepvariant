@@ -97,7 +97,7 @@ def convert_6_channels_to_rgb(channels):
   """Convert 6-channel image from DeepVariant to RGB for quick visualization.
 
   The 6 channels are: "read base", "base quality", "mapping quality", "strand",
-  "supports variant", "supports reference".
+  "supports variant", "base != reference".
 
   Args:
     channels: a list of 6 numpy arrays.
@@ -107,10 +107,11 @@ def convert_6_channels_to_rgb(channels):
   """
   base = channels[0]
   # qual is the minimum of base quality and mapping quality at each position
-  qual = np.minimum(channels[1], channels[2])
-  strand = channels[3]
   # 254 is the max value for quality scores because the SAM specification has
   # 255 reserved for unavailable values.
+  qual = np.minimum(channels[1], channels[2])
+  strand = channels[3]
+  # alpha is <supports variant> * <base != reference>
   alpha = np.multiply(channels[4] / 254.0, channels[5] / 254.0)
   return np.multiply(np.stack([base, qual, strand]),
                      alpha).astype(np.uint8).transpose([1, 2, 0])
@@ -307,7 +308,7 @@ def draw_deepvariant_pileup(example=None,
       channels are provided directly.
     channels: list of 2D arrays containing the data to draw.
     composite_type: str or None. Method for combining channels. One of
-      [None,"rgb"].
+      [None,"RGB"].
     path: str. Output file path for saving as an image. If None, just show plot.
     show: bool. Whether to display the image for ipython notebooks. Set to False
       to prevent extra output when running in bulk.
@@ -324,11 +325,11 @@ def draw_deepvariant_pileup(example=None,
 
   if composite_type is None:
     img_array = np.concatenate(channels, axis=1)
-  elif composite_type == "rgb":
+  elif composite_type == "RGB":
     img_array = convert_6_channels_to_rgb(channels)
   else:
     raise ValueError(
-        "Unrecognized composite_type: {}. Must be None or 'rgb'".format(
+        "Unrecognized composite_type: {}. Must be None or 'RGB'".format(
             composite_type))
 
   array_to_png(img_array, path=path, show=show, scale=scale)

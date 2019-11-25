@@ -118,13 +118,13 @@ class VisTest(parameterized.TestCase):
     rgb = vis.convert_6_channels_to_rgb(channels)
     self.assertEqual(rgb.shape, expected_output_shape)
 
-  @parameterized.parameters((None,), ("rgb",))
+  @parameterized.parameters((None,), ("RGB",))
   def test_draw_deepvariant_pileup_with_example_input(self, composite_type):
     _, example = _mock_example_with_image((100, 10, 7))
     # Testing that it runs without error
     vis.draw_deepvariant_pileup(example=example, composite_type=composite_type)
 
-  @parameterized.parameters((None,), ("rgb",))
+  @parameterized.parameters((None,), ("RGB",))
   def test_draw_deepvariant_pileup_with_channels_input(self, composite_type):
     channels = [_image_array((100, 221)) for _ in range(6)]
     # Testing that it runs without error
