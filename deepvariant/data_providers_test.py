@@ -162,12 +162,13 @@ class DataProviderTest(parameterized.TestCase):
     # Note that we use input_fn to get an iterator, while we use
     # expected_dataset to get a filename, even though they are the same
     # type (DeepVariantInput), and may even be the same object.
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       params = {'batch_size': 1}
-      batch_feed = input_fn(params).make_one_shot_iterator().get_next()
+      batch_feed = tf.compat.v1.data.make_one_shot_iterator(
+          input_fn(params)).get_next()
 
-      sess.run(tf.global_variables_initializer())
-      sess.run(tf.local_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
+      sess.run(tf.compat.v1.local_variables_initializer())
       seen = []
       while True:
         try:
@@ -191,7 +192,7 @@ class DataProviderTest(parameterized.TestCase):
         example.features.feature['locus'].bytes_list.value[0]
         for example in tfrecord.read_tfrecords(expected_dataset.input_file_spec)
     ]
-    self.assertEqual(len(expected_loci), expected_dataset.num_examples)
+    self.assertLen(expected_loci, expected_dataset.num_examples)
     if seen != expected_loci:
       print('\n\nlen expected seen', len(expected_loci), len(seen))
       print('\n\nexpected=', expected_loci)
@@ -202,10 +203,12 @@ class DataProviderTest(parameterized.TestCase):
     self.assertEqual(dv_constants.PILEUP_DEFAULT_DIMS,
                      expected_dataset.tensor_shape)
 
+  # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
       dict(compressed_inputs=compressed_inputs, use_tpu=use_tpu)
       for compressed_inputs in [True, False]
       for use_tpu in [True, False])
+  # pylint: enable=g-complex-comprehension
   def test_reading_dataset(self, compressed_inputs, use_tpu):
     golden_dataset = make_golden_dataset(compressed_inputs, use_tpu=use_tpu)
     self.assertTfDataSetExamplesMatchExpected(
@@ -220,10 +223,12 @@ class DataProviderTest(parameterized.TestCase):
   # self.assertTfDataSetExamplesMatchExpected to sort the
   # loci it sees.  That doesn't generalize well, but we should
   # be able to fix this soon.
+  # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
       dict(compressed_inputs=compressed_inputs, use_tpu=use_tpu)
       for compressed_inputs in [True, False]
       for use_tpu in [True, False])
+  # pylint: enable=g-complex-comprehension
   def test_reading_sharded_dataset(self, compressed_inputs, use_tpu):
     golden_dataset = make_golden_dataset(compressed_inputs, use_tpu=use_tpu)
     n_shards = 3
@@ -257,12 +262,12 @@ class DataProviderTest(parameterized.TestCase):
     input_fn = make_golden_dataset(
         compressed_inputs, mode=mode, use_tpu=use_tpu)
     batch_size = 16
-    with tf.Session() as sess:
-      batch = input_fn(
-          dict(batch_size=batch_size)).make_one_shot_iterator().get_next()
+    with tf.compat.v1.Session() as sess:
+      batch = tf.compat.v1.data.make_one_shot_iterator(
+          input_fn(dict(batch_size=batch_size))).get_next()
 
       # Get our images, labels, and variants for further testing.
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
       features, labels = sess.run(batch)
       variants = features['variant']
       images = features['image']
@@ -321,6 +326,7 @@ class DataProviderTest(parameterized.TestCase):
       dict(max_examples=max_examples, batch_size=batch_size)
       for max_examples in [2, 4, 8]
       for batch_size in [4, 8, 16])
+  # pylint: enable=g-complex-comprehension
   def test_max_examples(self, max_examples, batch_size):
     input_fn = data_providers.get_input_fn_from_filespec(
         input_file_spec=testdata.GOLDEN_TRAINING_EXAMPLES,
@@ -330,10 +336,11 @@ class DataProviderTest(parameterized.TestCase):
         mode=tf.estimator.ModeKeys.TRAIN)
 
     n_batches_to_read = 100
-    with tf.Session() as sess:
-      sess.run(tf.global_variables_initializer())
+    with tf.compat.v1.Session() as sess:
+      sess.run(tf.compat.v1.global_variables_initializer())
 
-      iterator = input_fn(dict(batch_size=batch_size)).make_one_shot_iterator()
+      iterator = tf.compat.v1.data.make_one_shot_iterator(
+          input_fn(dict(batch_size=batch_size)))
       next_element = iterator.get_next()
 
       def read_loci_in_batches():
@@ -341,13 +348,13 @@ class DataProviderTest(parameterized.TestCase):
         return features['locus']
 
       batches = [read_loci_in_batches() for _ in range(n_batches_to_read)]
+      # pylint: disable=g-complex-comprehension
       unique_loci = {locus for batch in batches for locus in batch}
+      # pylint: enable=g-complex-comprehension
       # assertLen not available OSS.
       # pylint: disable=g-generic-assert
       self.assertEqual(len(unique_loci), max_examples)
       # pylint: enable=g-generic-assert
-
-  # pylint: enable=g-complex-comprehension
 
   @parameterized.parameters(
       # When max_examples is None, dataset.num_examples will equal num_examples
@@ -410,15 +417,16 @@ class InputTest(
         tensor_shape=None,
         use_tpu=use_tpu)
     params = {'batch_size': batch_size}
-    batch_feed = dvi(params).make_one_shot_iterator().get_next()
+    batch_feed = tf.compat.v1.data.make_one_shot_iterator(
+        dvi(params)).get_next()
     return batch_feed
 
   def check_batch_feed(self, batch_feed, use_tpu, expected_batch_size,
                        expected_n_batches):
     # Consume batch_feed, check that the right number of things is seen.
     with self.test_session() as sess:
-      sess.run(tf.local_variables_initializer())
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.local_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
 
       n = 0
       n_valid_entries = 0
@@ -481,8 +489,8 @@ class InputTest(
     batch_feed = self.get_batch_feed(batch_size=1, use_tpu=use_tpu)
 
     with self.test_session() as sess:
-      sess.run(tf.local_variables_initializer())
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.local_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
 
       n = 0
       while True:

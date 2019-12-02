@@ -101,9 +101,9 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
       self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
 
   @mock.patch('deepvariant'
-              '.modeling.slim.losses.softmax_cross_entropy')
+              '.modeling.tf.compat.v1.losses.softmax_cross_entropy')
   @mock.patch('deepvariant'
-              '.modeling.slim.losses.get_total_loss')
+              '.modeling.tf.compat.v1.losses.get_total_loss')
   def test_loss(self, mock_total_loss, mock_cross):
     labels = [[0, 1, 0], [1, 0, 0]]
     logits = 'Logits'
@@ -161,7 +161,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
   @parameterized.parameters((False), (True))
   @flagsaver.FlagSaver
   @mock.patch('deepvariant.model_train.'
-              'tf.train.replica_device_setter')
+              'tf.compat.v1.train.replica_device_setter')
   @mock.patch('deepvariant.model_train.run')
   def test_main_internal(self, use_tpu, mock_run, mock_device_setter):
     FLAGS.master = 'some_master'
@@ -180,7 +180,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
 
   @mock.patch('deepvariant.model_train.os.environ')
   @mock.patch('deepvariant.model_train.'
-              'tf.train.replica_device_setter')
+              'tf.compat.v1.train.replica_device_setter')
   @mock.patch('deepvariant.model_train.run')
   def test_main_tfconfig_local(self, mock_run, mock_device_setter,
                                mock_environ):
@@ -196,10 +196,10 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
       ('worker', 'worker', 10, False, '/job:worker/task:10'),
   )
   @mock.patch(
-      'deepvariant.model_train.tf.train.Server')
+      'deepvariant.model_train.tf.distribute.Server')
   @mock.patch('deepvariant.model_train.os.environ')
   @mock.patch('deepvariant.model_train.'
-              'tf.train.replica_device_setter')
+              'tf.compat.v1.train.replica_device_setter')
   @mock.patch('deepvariant.model_train.run')
   def test_main_tfconfig_dist(self, job_name, task_index, expected_is_chief,
                               expected_worker, mock_run, mock_device_setter,

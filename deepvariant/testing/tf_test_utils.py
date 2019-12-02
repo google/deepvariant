@@ -37,12 +37,15 @@ import os
 
 from absl import flags
 import tensorflow as tf
+import tf_slim
 from deepvariant import dv_constants
 from deepvariant import modeling
 
 FLAGS = flags.FLAGS
 # Constants dictating moving average.
 _MOVING_AVERAGE_DECAY = 0.995
+
+slim = tf_slim
 
 
 def write_fake_checkpoint(model_name,
@@ -58,7 +61,7 @@ def write_fake_checkpoint(model_name,
     h, w = getattr(
         model, 'input_image_shape',
         (dv_constants.PILEUP_DEFAULT_HEIGHT, dv_constants.PILEUP_DEFAULT_WIDTH))
-    images = tf.placeholder(
+    images = tf.compat.v1.placeholder(
         tf.float32, shape=(4, h, w, dv_constants.PILEUP_NUM_CHANNELS))
     model.create(images, num_classes=3, is_training=True)
     # This is gross, but necessary as model_eval assumes the model was trained
@@ -66,12 +69,12 @@ def write_fake_checkpoint(model_name,
     # just call into model_train as it uses FLAGS which conflict with the
     # flags in use by model_eval. So we inline the creation of the EMA here.
     variable_averages = tf.train.ExponentialMovingAverage(
-        moving_average_decay, tf.train.get_or_create_global_step())
-    tf.add_to_collection(
-        tf.GraphKeys.UPDATE_OPS,
-        variable_averages.apply(tf.contrib.framework.get_model_variables()))
-    sess.run(tf.global_variables_initializer())
-    save = tf.train.Saver(tf.contrib.framework.get_variables())
+        moving_average_decay, tf.compat.v1.train.get_or_create_global_step())
+    tf.compat.v1.add_to_collection(
+        tf.compat.v1.GraphKeys.UPDATE_OPS,
+        variable_averages.apply(slim.get_model_variables()))
+    sess.run(tf.compat.v1.global_variables_initializer())
+    save = tf.compat.v1.train.Saver(slim.get_variables())
     save.save(sess, path)
   return path
 
@@ -85,19 +88,20 @@ def test_tmpdir(name):
   Returns:
     str path to a tmpfile with filename name in our test tmpfile directory.
   """
-  dirname = os.path.join(tf.test.get_temp_dir(), name)
-  tf.gfile.MakeDirs(dirname)
+  dirname = os.path.join(tf.compat.v1.test.get_temp_dir(), name)
+  tf.io.gfile.makedirs(dirname)
   return dirname
 
 
 def check_file_exists(name, eval_name=None):
   """Returns true if file exists in directory."""
   if not eval_name:
-    file_name = os.path.join(tf.test.get_temp_dir(), name)
+    file_name = os.path.join(tf.compat.v1.test.get_temp_dir(), name)
   else:
-    directory = os.path.join(tf.test.get_temp_dir(), 'eval_' + eval_name)
+    directory = os.path.join(tf.compat.v1.test.get_temp_dir(),
+                             'eval_' + eval_name)
     file_name = os.path.join(directory, name)
-  return tf.gfile.Exists(file_name)
+  return tf.io.gfile.exists(file_name)
 
 
 # redacted
@@ -106,7 +110,7 @@ def check_file_exists(name, eval_name=None):
 #   for pat in required_variable_regexps))
 def check_equals_checkpoint_top_scopes(checkpoint, list_of_scopes):
   """Returns true if list_of_scopes equals the top scopes in checkpoint."""
-  reader = tf.train.NewCheckpointReader(checkpoint)
+  reader = tf.compat.v1.train.NewCheckpointReader(checkpoint)
   var_to_shape_map = reader.get_variable_to_shape_map()
   top_scopes_in_ckpt = set([x.split('/')[0] for x in var_to_shape_map.keys()])
   return top_scopes_in_ckpt == set(list_of_scopes)

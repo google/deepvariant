@@ -178,9 +178,9 @@ def loss(logits, one_hot_labels, label_smoothing):
   Returns:
     A `Tensor` whose value represents the total loss.
   """
-  slim.losses.softmax_cross_entropy(
+  tf.compat.v1.losses.softmax_cross_entropy(
       logits, one_hot_labels, label_smoothing=label_smoothing, weights=1.0)
-  return slim.losses.get_total_loss()
+  return tf.compat.v1.losses.get_total_loss()
 
 
 def run(target, unused_is_chief, device_fn, use_tpu):
@@ -228,7 +228,7 @@ def run(target, unused_is_chief, device_fn, use_tpu):
       if FLAGS.use_early_stopping:
         # Early stopping hook depends on existence of events directory.
         eval_dir = os.path.join(FLAGS.train_dir, FLAGS.early_stopping_directory)
-        tf.gfile.MakeDirs(eval_dir)
+        tf.io.gfile.makedirs(eval_dir)
 
         plateau_decrease = True
         if FLAGS.early_stopping_metric_direction == 'increase':
@@ -279,7 +279,7 @@ def parse_and_run():
   # in replica_device_setter becaue this will be set automatically based
   # on various flags.
   if not tf_config:
-    device_fn = tf.train.replica_device_setter(FLAGS.ps_tasks)
+    device_fn = tf.compat.v1.train.replica_device_setter(FLAGS.ps_tasks)
     # pylint: disable=g-long-ternary
     master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
                                      FLAGS.tpu_zone,
@@ -295,21 +295,21 @@ def parse_and_run():
 
   # If cluster information is empty run local
   if job_name is None or task_index is None:
-    device_fn = tf.train.replica_device_setter(0)
+    device_fn = tf.compat.v1.train.replica_device_setter(0)
     return run('', True, device_fn=device_fn, use_tpu=FLAGS.use_tpu)
 
   ps = cluster.get('ps', [])
   num_ps = len(ps)
 
   cluster_spec = tf.train.ClusterSpec(cluster)
-  server = tf.train.Server(
+  server = tf.distribute.Server(
       cluster_spec, job_name=job_name, task_index=task_index)
 
   if job_name == 'ps':
     server.join()
     return
   elif job_name in ['master', 'worker']:
-    device_fn = tf.train.replica_device_setter(
+    device_fn = tf.compat.v1.train.replica_device_setter(
         num_ps,
         worker_device='/job:%s/task:%d' % (job_name, task_index),
         cluster=cluster_spec)
@@ -328,7 +328,7 @@ def main(_):
 
   if FLAGS.random_seed:
     logging.info('Setting tf.random_seed to %d', FLAGS.random_seed)
-    tf.set_random_seed(FLAGS.random_seed)
+    tf.compat.v1.set_random_seed(FLAGS.random_seed)
   else:
     logging.info('Not setting tf.random_seed, will be assigned a random value')
 
@@ -350,4 +350,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

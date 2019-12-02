@@ -175,6 +175,9 @@ def checkpoints_iterator(checkpoint_dir,
   # This is here to make it easy to mock out the iterator for tests.
   return tf.contrib.training.checkpoints_iterator(
       checkpoint_dir, min_interval_secs, timeout, timeout_fn)
+  # redacted
+  # return tf.train.checkpoints_iterator(checkpoint_dir, min_interval_secs,
+  #                                      timeout, timeout_fn)
 
 
 def eval_loop(master,
@@ -294,7 +297,7 @@ def checkpoint_metrics_path(checkpoint_path, eval_name, file_name=None):
 def read_metrics(checkpoint_path, eval_name, file_name=None):
   """Reads the JSON of metrics for checkpoint_path in eval_dir."""
   metrics_path = checkpoint_metrics_path(checkpoint_path, eval_name, file_name)
-  with tf.gfile.GFile(metrics_path) as fin:
+  with tf.io.gfile.GFile(metrics_path) as fin:
     return {k: float(v) for k, v in json.load(fin).items()}
 
 
@@ -317,9 +320,9 @@ def _write_best_checkpoint(checkpoint_path, metrics_and_values, eval_name):
   logging.info('Writing new best checkpoint %s with values %s',
                best_checkpoint_path, metrics_and_values)
   try:
-    with tf.gfile.GFile(best_checkpoint_path, 'w') as fout:
+    with tf.io.gfile.GFile(best_checkpoint_path, 'w') as fout:
       fout.write(checkpoint_path + '\n')
-    with tf.gfile.GFile(best_checkpoint_metrics_path, 'w') as fout:
+    with tf.io.gfile.GFile(best_checkpoint_metrics_path, 'w') as fout:
       json.dump(serializable, fout, sort_keys=True, indent=4)
   except:  # pylint: disable=bare-except
     # Note we have a bare exception here as as there's no clear TF base
@@ -361,9 +364,9 @@ def _write_checkpoint_metrics(checkpoint_path,
   serializable = {k: str(v) for k, v in metrics_and_values.items()}
   logging.info('Writing checkpoint metrics %s', path)
   try:
-    with tf.gfile.GFile(path, 'w') as fout:
+    with tf.io.gfile.GFile(path, 'w') as fout:
       json.dump(serializable, fout, sort_keys=True, indent=4)
-    with tf.gfile.GFile(experiment_metrics_path, 'w') as eout:
+    with tf.io.gfile.GFile(experiment_metrics_path, 'w') as eout:
       json.dump(serializable, eout, sort_keys=True, indent=4)
   except:  # pylint: disable=bare-except
     # Note we have a bare exception here as as there's no clear TF base
@@ -373,4 +376,4 @@ def _write_checkpoint_metrics(checkpoint_path,
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

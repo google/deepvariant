@@ -574,13 +574,13 @@ def extract_sample_name_from_sam_reader(sam_reader):
 
 def read_make_examples_run_info(path):
   """Reads a MakeExamplesRunInfo proto in text_format from path."""
-  with tf.gfile.GFile(path) as f:
+  with tf.io.gfile.GFile(path) as f:
     return text_format.Parse(f.read(), deepvariant_pb2.MakeExamplesRunInfo())
 
 
 def write_make_examples_run_info(run_info_proto, path):
   """Writes a MakeExamplesRunInfo proto in text_format to path."""
-  with tf.gfile.GFile(path, mode='w') as writer:
+  with tf.io.gfile.GFile(path, mode='w') as writer:
     writer.write(text_format.MessageToString(run_info_proto, float_format=''))
 
 
@@ -1458,4 +1458,4 @@ if __name__ == '__main__':
       'reads',
       'ref',
   ])
-  tf.app.run()
+  tf.compat.v1.app.run()

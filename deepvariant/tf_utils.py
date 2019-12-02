@@ -322,7 +322,7 @@ def model_shapes(checkpoint_path, variables_to_get=None):
   Returns:
     A dictionary mapping variable names [string] to tensor shapes [tuple].
   """
-  reader = tf.train.NewCheckpointReader(checkpoint_path)
+  reader = tf.compat.v1.train.NewCheckpointReader(checkpoint_path)
   var_to_shape_map = reader.get_variable_to_shape_map()
   keys = variables_to_get if variables_to_get else var_to_shape_map.keys()
   return {key: tuple(var_to_shape_map[key]) for key in keys}
@@ -345,12 +345,13 @@ def model_num_classes(checkpoint_path, n_classes_model_variable):
 
 def string_to_int_tensor(x):
   """Graph operations decode a string into a fixed-size tensor of ints."""
-  decoded = tf.decode_raw(x, tf.uint8)
+  decoded = tf.io.decode_raw(x, tf.uint8)
   clipped = decoded[:STRING_TO_INT_MAX_CONTENTS_LEN]  # clip to allowed max_len
-  shape = tf.shape(clipped)
+  shape = tf.shape(input=clipped)
   slen = shape[0]
   # pad to desired max_len
-  padded = tf.pad(clipped, [[0, STRING_TO_INT_MAX_CONTENTS_LEN - slen]])
+  padded = tf.pad(
+      tensor=clipped, paddings=[[0, STRING_TO_INT_MAX_CONTENTS_LEN - slen]])
   casted = tf.cast(padded, tf.int32)
   casted.set_shape([STRING_TO_INT_MAX_CONTENTS_LEN])
   return tf.concat([[slen], casted], 0)
@@ -371,9 +372,9 @@ def compression_type_of_files(files):
 def tpu_available(sess=None):
   """Return true if a TPU device is available to the default session."""
   if sess is None:
-    init_op = tf.group(tf.global_variables_initializer(),
-                       tf.local_variables_initializer())
-    with tf.Session() as sess:
+    init_op = tf.group(tf.compat.v1.global_variables_initializer(),
+                       tf.compat.v1.local_variables_initializer())
+    with tf.compat.v1.Session() as sess:
       sess.run(init_op)
       devices = sess.list_devices()
   else:
@@ -386,9 +387,9 @@ def resolve_master(master, tpu_name, tpu_zone, gcp_project):
   if master is not None:
     return master
   elif tpu_name is not None:
-    return tf.contrib.cluster_resolver.TPUClusterResolver(
+    return tf.distribute.cluster_resolver.TPUClusterResolver(
         tpu=[tpu_name], zone=tpu_zone, project=gcp_project).get_master()
   else:
     # For k8s TPU we do not have/need tpu_name. See
     # https://cloud.google.com/tpu/docs/kubernetes-engine-setup#tensorflow-code
-    return tf.contrib.cluster_resolver.TPUClusterResolver().get_master()
+    return tf.distribute.cluster_resolver.TPUClusterResolver().get_master()

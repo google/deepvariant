@@ -1032,4 +1032,4 @@ def main(argv=()):
 
 if __name__ == '__main__':
   flags.mark_flags_as_required(['infile', 'outfile', 'ref'])
-  tf.app.run()
+  tf.compat.v1.app.run()

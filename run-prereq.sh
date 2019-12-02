@@ -105,7 +105,7 @@ fi
 pip install "${PIP_ARGS[@]}" 'requests>=2.18'
 pip install "${PIP_ARGS[@]}" 'oauth2client>=4.0.0'
 pip install "${PIP_ARGS[@]}" 'crcmod>=1.7'
-pip install "${PIP_ARGS[@]}" six
+pip install "${PIP_ARGS[@]}" 'six>=1.11.0'
 pip install "${PIP_ARGS[@]}" joblib
 pip install "${PIP_ARGS[@]}" psutil
 pip install "${PIP_ARGS[@]}" --upgrade google-api-python-client

@@ -166,16 +166,16 @@ class DeepVariantInput(object):
   def features_extraction_spec_for_mode(self, include_label_and_locus):
     """Returns a dict describing features from a TF.example."""
     spec = {
-        'image/encoded': tf.FixedLenFeature((), tf.string),
-        'variant/encoded': tf.FixedLenFeature((), tf.string),
-        'alt_allele_indices/encoded': tf.FixedLenFeature((), tf.string),
-        'variant_type': tf.FixedLenFeature((), tf.int64),
-        'sequencing_type': tf.FixedLenFeature([], tf.int64),
+        'image/encoded': tf.io.FixedLenFeature((), tf.string),
+        'variant/encoded': tf.io.FixedLenFeature((), tf.string),
+        'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
+        'variant_type': tf.io.FixedLenFeature((), tf.int64),
+        'sequencing_type': tf.io.FixedLenFeature([], tf.int64),
     }
     if include_label_and_locus:
       # N.B. int32 fails here on TPU.
-      spec['label'] = tf.FixedLenFeature((), tf.int64)
-      spec['locus'] = tf.FixedLenFeature((), tf.string)
+      spec['label'] = tf.io.FixedLenFeature((), tf.int64)
+      spec['locus'] = tf.io.FixedLenFeature((), tf.string)
     return spec
 
   def parse_tfexample(self, tf_example):
@@ -193,12 +193,13 @@ class DeepVariantInput(object):
         features ...
     """
     # redacted
-    with tf.name_scope('input'):
-      parsed = tf.parse_single_example(tf_example, self.feature_extraction_spec)
+    with tf.compat.v1.name_scope('input'):
+      parsed = tf.io.parse_single_example(
+          serialized=tf_example, features=self.feature_extraction_spec)
       image = parsed['image/encoded']
       if self.tensor_shape:
         # If the input is empty there won't be a tensor_shape.
-        image = tf.reshape(tf.decode_raw(image, tf.uint8), self.tensor_shape)
+        image = tf.reshape(tf.io.decode_raw(image, tf.uint8), self.tensor_shape)
         if self.use_tpu:
           # Cast to int32 for loading onto the TPU
           image = tf.cast(image, tf.int32)
@@ -305,7 +306,7 @@ class DeepVariantInput(object):
       dataset = dataset.apply(
           # parallel_interleave requires tf 1.5 or later; this is
           # necessary for good performance.
-          tf.contrib.data.parallel_interleave(
+          tf.data.experimental.parallel_interleave(
               load_dataset,
               cycle_length=self.input_read_threads,
               sloppy=self.sloppy))
@@ -363,13 +364,15 @@ class DeepVariantInput(object):
             self.input_file_spec),
         shuffle=False,
     )
-    tf.logging.info('self.input_read_threads=%d', self.input_read_threads)
+    tf.compat.v1.logging.info('self.input_read_threads=%d',
+                              self.input_read_threads)
     dataset = files.apply(
-        tf.contrib.data.parallel_interleave(
+        tf.data.experimental.parallel_interleave(
             load_dataset,
             cycle_length=self.input_read_threads,
             sloppy=self.sloppy))
-    tf.logging.info('self.input_map_threads=%d', self.input_map_threads)
+    tf.compat.v1.logging.info('self.input_map_threads=%d',
+                              self.input_map_threads)
     dataset = dataset.apply(
         tf.data.experimental.map_and_batch(
             self.parse_tfexample,
@@ -455,7 +458,8 @@ def get_batches(tf_dataset, model, batch_size):
             tf_dataset.mode))
 
   params = dict(batch_size=batch_size)
-  features, labels = tf_dataset(params).make_one_shot_iterator().get_next()
+  features, labels = tf.compat.v1.data.make_one_shot_iterator(
+      tf_dataset(params)).get_next()
 
   images = features['image']
   encoded_variant = features['variant']
@@ -489,7 +493,8 @@ def get_infer_batches(tf_dataset, model, batch_size):
         tf_dataset.mode))
 
   params = dict(batch_size=batch_size)
-  features = tf_dataset(params).make_one_shot_iterator().get_next()
+  features = tf.compat.v1.data.make_one_shot_iterator(
+      tf_dataset(params)).get_next()
 
   images = features['image']
   if tf_dataset.tensor_shape:
@@ -514,7 +519,7 @@ def read_dataset_config(dataset_config_filename):
   Raises:
     ValueError: if the dataset config doesn't have the necessary information.
   """
-  with tf.gfile.GFile(dataset_config_filename) as f:
+  with tf.io.gfile.GFile(dataset_config_filename) as f:
     dataset_config = text_format.Parse(
         f.read(), deepvariant_pb2.DeepVariantDatasetConfig())
 
@@ -541,5 +546,5 @@ def write_dataset_config_to_pbtxt(dataset_config, dataset_config_filename):
     dataset_config: DeepVariantDatasetConfig. The config to be written out.
     dataset_config_filename: String. Path to the output pbtxt file.
   """
-  with tf.gfile.GFile(dataset_config_filename, mode='w') as writer:
+  with tf.io.gfile.GFile(dataset_config_filename, mode='w') as writer:
     writer.write(text_format.MessageToString(dataset_config))

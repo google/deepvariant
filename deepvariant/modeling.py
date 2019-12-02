@@ -124,7 +124,7 @@ def binarize(labels, target_class):
   Returns:
     Tensor of the same shape as labels.
   """
-  labels_binary = tf.where(
+  labels_binary = tf.compat.v1.where(
       tf.equal(labels, tf.constant(target_class, dtype=tf.int64)),
       tf.zeros_like(labels), labels)
   return labels_binary
@@ -145,7 +145,7 @@ def get_class_recall(labels, predicted_class, target_class):
   """
   labels_binary = binarize(labels, target_class)
   predicted_class_binary = binarize(predicted_class, target_class)
-  return tf.metrics.recall(labels_binary, predicted_class_binary)
+  return tf.compat.v1.metrics.recall(labels_binary, predicted_class_binary)
 
 
 def get_class_precision(labels, predicted_class, target_class):
@@ -163,7 +163,7 @@ def get_class_precision(labels, predicted_class, target_class):
   """
   labels_binary = binarize(labels, target_class)
   predicted_class_binary = binarize(predicted_class, target_class)
-  return tf.metrics.precision(labels_binary, predicted_class_binary)
+  return tf.compat.v1.metrics.precision(labels_binary, predicted_class_binary)
 
 
 # redacted
@@ -186,12 +186,12 @@ def get_f1_score(labels, predictions, target_class=None):
     labels = binarize(labels, target_class)
     predictions = binarize(predictions, target_class)
 
-  precision, precision_op = tf.metrics.precision(labels, predictions)
-  recall, recall_op = tf.metrics.recall(labels, predictions)
+  precision, precision_op = tf.compat.v1.metrics.precision(labels, predictions)
+  recall, recall_op = tf.compat.v1.metrics.recall(labels, predictions)
 
   def compute_f1_score(name):
     pr_product = tf.multiply(precision, recall)
-    return tf.div(
+    return tf.compat.v1.div(
         tf.multiply(2.0, pr_product), tf.add(tf.add(precision, recall), 1e-12),
         name)
 
@@ -225,13 +225,13 @@ def is_encoded_variant_type(variant_types_tensor, type_to_select):
 # function (e.g., Accuracy) and its associated TensorFlow metric function. All
 # of the entries here will be stratified by variant_type in eval_metric_fn.
 _METRICS_FUNCS_BY_VARIANT_TYPE = {
-    'Accuracy': tf.metrics.accuracy,
-    'Precision': tf.metrics.precision,
-    'Recall': tf.metrics.recall,
-    'FPs': tf.metrics.false_positives,
-    'FNs': tf.metrics.false_negatives,
-    'TPs': tf.metrics.true_positives,
-    'TNs': tf.metrics.true_negatives,
+    'Accuracy': tf.compat.v1.metrics.accuracy,
+    'Precision': tf.compat.v1.metrics.precision,
+    'Recall': tf.compat.v1.metrics.recall,
+    'FPs': tf.compat.v1.metrics.false_positives,
+    'FNs': tf.compat.v1.metrics.false_negatives,
+    'TPs': tf.compat.v1.metrics.true_positives,
+    'TNs': tf.compat.v1.metrics.true_negatives,
 }
 
 # A set containing the names of the variant types we split our metrics by type
@@ -363,7 +363,7 @@ def eval_metric_fn(labels, predictions, variant_types):
 # mechanism might be better.
 
 
-class LoadEMAHook(tf.train.SessionRunHook):
+class LoadEMAHook(tf.estimator.SessionRunHook):
   """Hook to load EMA into their corresponding variables.
 
   This looks for the latest checkpoint in the model dir.
@@ -383,11 +383,11 @@ class LoadEMAHook(tf.train.SessionRunHook):
         ignore_missing_vars=self._ignore_missing_vars)
 
   def after_create_session(self, sess, coord):
-    tf.logging.info('Reloading EMA...')
+    tf.compat.v1.logging.info('Reloading EMA...')
     self._load_ema(sess)
 
 
-class PredictEMAHook(tf.train.SessionRunHook):
+class PredictEMAHook(tf.estimator.SessionRunHook):
   """Hook to load EMA into their corresponding variables.
 
   This reads the specified checkpoint.
@@ -407,7 +407,7 @@ class PredictEMAHook(tf.train.SessionRunHook):
         ignore_missing_vars=self._ignore_missing_vars)
 
   def after_create_session(self, sess, coord):
-    tf.logging.info('Reloading EMA...')
+    tf.compat.v1.logging.info('Reloading EMA...')
     self._load_ema(sess)
 
 
@@ -500,6 +500,7 @@ class DeepVariantModel(object):
         List of summary ops to run on the CPU host.
       """
       step = global_step[0]
+
       with tf.contrib.summary.create_file_writer(
           logdir=model_dir, filename_suffix='.host_call').as_default():
         with tf.contrib.summary.record_summaries_every_n_global_steps(
@@ -508,6 +509,18 @@ class DeepVariantModel(object):
             tf.contrib.summary.scalar(prefix + name, args[i][0], step=step)
 
           return tf.contrib.summary.all_summary_ops()
+
+      # redacted
+      #                    to TF2.
+      # with tf.compat.v2.summary.create_file_writer(
+      #     logdir=model_dir, filename_suffix='.host_call').as_default():
+      #   with tf.compat.v2.summary.record_if(
+      #       lambda: tf.math.equal(step % record_frequency_in_steps, 0)):
+      #     for i, name in enumerate(metric_names):
+      #       tf.compat.v2.summary.scalar(
+      #          name=prefix + name, data=args[i][0], step=step)
+      #
+      #     return tf.compat.v1.summary.all_v2_summary_ops()
 
     # To log the current learning rate, and gradient norm for Tensorboard, the
     # summary op needs to be run on the host CPU via host_call. host_call
@@ -531,7 +544,7 @@ class DeepVariantModel(object):
     if start_from_checkpoint:
       logging.info('Initializing model from checkpoint at %s',
                    start_from_checkpoint)
-      reader = tf.train.NewCheckpointReader(start_from_checkpoint)
+      reader = tf.compat.v1.train.NewCheckpointReader(start_from_checkpoint)
       var_to_shape_map = reader.get_variable_to_shape_map()
       if tf_utils.model_num_classes(
           start_from_checkpoint,
@@ -877,9 +890,9 @@ class DeepVariantSlimModel(DeepVariantModel):
       containing floating point values, with all points rescaled between
       -1 and 1 and possibly resized.
     """
-    images = tf.to_float(images)
+    images = tf.cast(images, dtype=tf.float32)
     images = tf.subtract(images, 128.0)
-    images = tf.div(images, 128.0)
+    images = tf.compat.v1.div(images, 128.0)
     return images
 
   def model_fn(self, features, labels, mode, params):
@@ -921,12 +934,13 @@ class DeepVariantSlimModel(DeepVariantModel):
 
     # Compute loss.
     one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)
-    tf.losses.softmax_cross_entropy(
+    tf.compat.v1.losses.softmax_cross_entropy(
         onehot_labels=one_hot_labels,
         logits=logits,
         weights=1.0,
         label_smoothing=FLAGS.label_smoothing)
-    total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
+    total_loss = tf.compat.v1.losses.get_total_loss(
+        add_regularization_losses=True)
     return self.make_ops_and_estimator(features, endpoints, labels, logits,
                                        predictions, total_loss, mode, params)
 
@@ -1023,7 +1037,7 @@ class DeepVariantSlimModel(DeepVariantModel):
     eval_metrics = (eval_metric_fn, [labels, eval_predictions, variant_type])
     if not self.use_tpu:
       for name, value in eval_metrics[0](*eval_metrics[1]).items():
-        tf.summary.scalar(tensor=value, name=name)
+        tf.compat.v1.summary.scalar(tensor=value, name=name)
     return eval_metrics
 
   def _model_fn_train(self, mode, total_loss, batches_per_epoch,
@@ -1035,11 +1049,11 @@ class DeepVariantSlimModel(DeepVariantModel):
       return None, None
 
     # Configure the learning rate using an exponetial decay.
-    global_step = tf.train.get_or_create_global_step()
+    global_step = tf.compat.v1.train.get_or_create_global_step()
     current_epoch = tf.cast(global_step, tf.float32) / batches_per_epoch
     decay_steps = int(1.0 * batches_per_epoch * num_epochs_per_decay)
 
-    learning_rate = tf.train.exponential_decay(
+    learning_rate = tf.compat.v1.train.exponential_decay(
         learning_rate=initial_learning_rate,
         global_step=global_step,
         decay_steps=decay_steps,
@@ -1053,26 +1067,27 @@ class DeepVariantSlimModel(DeepVariantModel):
     # step. Here we just use a very small constant 1e-9 as the minimum value.
     learning_rate = tf.maximum(learning_rate, 1e-9, name='learning_rate')
 
-    optimizer = tf.train.RMSPropOptimizer(
+    optimizer = tf.compat.v1.train.RMSPropOptimizer(
         learning_rate,
         rmsprop_decay,
         momentum=rmsprop_momentum,
         epsilon=rmsprop_epsilon)
     if self.use_tpu:
       optimizer = tpu_optimizer.CrossShardOptimizer(optimizer)
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
       train_op = optimizer.minimize(total_loss, global_step=global_step)
 
     # NB. In the inception code this was "tf.trainable_variables()
     # + tf.moving_average_variables()", but we've settled on just
     # tf.model_variables() in the existing production DV2.
-    variables_to_average = tf.model_variables()
+    variables_to_average = tf.compat.v1.model_variables()
     variable_averages = tf.train.ExponentialMovingAverage(
         decay=moving_average_decay, num_updates=global_step)
-    with tf.control_dependencies([train_op]), tf.name_scope('moving_average'):
+    with tf.control_dependencies([train_op
+                                 ]), tf.compat.v1.name_scope('moving_average'):
       train_op = variable_averages.apply(variables_to_average)
-    tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, train_op)
+    tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.UPDATE_OPS, train_op)
 
     # Compute the current epoch and associated learning rate from global_step.
     metric_dict = {
@@ -1149,7 +1164,7 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     endpoints = super(DeepVariantInceptionV3Embedding,
                       self)._create(images, num_classes, is_training)
 
-    with tf.variable_scope('Embeddings'):
+    with tf.compat.v1.variable_scope('Embeddings'):
       # Take the graph all the way till PreLogits
       net = endpoints['PreLogits']
       net = slim.flatten(net)
@@ -1158,7 +1173,7 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
 
       endpoints['Embeddings'] = net
 
-    with tf.variable_scope('Logits'):
+    with tf.compat.v1.variable_scope('Logits'):
       hidden_size = net.shape[1].value // 2
 
       net = slim.fully_connected(net, hidden_size, activation_fn=None)
@@ -1188,16 +1203,18 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     Returns:
       float Tensor of shape [batch_size, embedding_size].
     """
-    embedding_table = tf.get_variable(
+    embedding_table = tf.compat.v1.get_variable(
         name=word_embedding_name,
         shape=[self.vocab_size, self.embedding_size],
-        initializer=tf.contrib.layers.xavier_initializer(),
+        initializer=tf.compat.v1.keras.initializers.VarianceScaling(
+            scale=1.0, mode='fan_avg', distribution='uniform'),
         collections=[
-            tf.GraphKeys.TRAINABLE_VARIABLES, tf.GraphKeys.MODEL_VARIABLES,
-            tf.GraphKeys.GLOBAL_VARIABLES
+            tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
+            tf.compat.v1.GraphKeys.MODEL_VARIABLES,
+            tf.compat.v1.GraphKeys.GLOBAL_VARIABLES
         ])
 
-    return tf.nn.embedding_lookup(embedding_table, input_ids)
+    return tf.nn.embedding_lookup(params=embedding_table, ids=input_ids)
 
   def model_fn(self, features, labels, mode, params):
     """A model_fn for slim, satisfying the Estimator API.
@@ -1248,12 +1265,13 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
 
     # Compute loss.
     one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)
-    tf.losses.softmax_cross_entropy(
+    tf.compat.v1.losses.softmax_cross_entropy(
         onehot_labels=one_hot_labels,
         logits=logits,
         weights=1.0,
         label_smoothing=FLAGS.label_smoothing)
-    total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
+    total_loss = tf.compat.v1.losses.get_total_loss(
+        add_regularization_losses=True)
 
     return self.make_ops_and_estimator(features, endpoints, labels, logits,
                                        predictions, total_loss, mode, params)
@@ -1275,9 +1293,9 @@ class DeepVariantDummyModel(DeepVariantModel):
     # mimic the data processing pipeline used by inception. We may consider
     # removing them in a future CL, or making them optional, to reduce CPU cost
     # of this model.
-    images = tf.to_float(images)
+    images = tf.cast(images, dtype=tf.float32)
     images = tf.subtract(images, 128.0)
-    images = tf.div(images, 128.0)
+    images = tf.compat.v1.div(images, 128.0)
     return images
 
   @property
@@ -1304,8 +1322,8 @@ class DeepVariantRandomGuessModel(DeepVariantDummyModel):
 
   def _create(self, images, num_classes, is_training):
     """The Random model emits a random uniform probability for each class."""
-    batch_size = tf.shape(images)[0]
-    rand_probs = tf.random_uniform(
+    batch_size = tf.shape(input=images)[0]
+    rand_probs = tf.random.uniform(
         shape=(batch_size, num_classes), seed=self.seed)
     return {'Predictions': tf.nn.softmax(rand_probs)}
 
@@ -1318,9 +1336,9 @@ class DeepVariantRandomGuessModel(DeepVariantDummyModel):
     # batch size.
     encoded_variants = features['variant']
 
-    tf.set_random_seed(self.seed)
+    tf.compat.v1.set_random_seed(self.seed)
     rand_probs = tf.map_fn(
-        fn=lambda _: tf.random_uniform([num_classes]),
+        fn=lambda _: tf.random.uniform([num_classes]),
         elems=features['image'],
         dtype=tf.float32,
     )
@@ -1390,19 +1408,19 @@ class DeepVariantConstantModel(DeepVariantDummyModel):
         'Predictions':
             tf.reshape(
                 tf.tile(pred_const, [batch_size]),
-                shape=(batch_size, tf.shape(pred_const)[0]))
+                shape=(batch_size, tf.shape(input=pred_const)[0]))
     }
 
   def _create(self, images, num_classes, is_training):
     assert num_classes == len(self.predictions)
-    batch_size = tf.shape(images)[0]
+    batch_size = tf.shape(input=images)[0]
     pred_const = tf.constant(self.predictions)
     return self._predictions(pred_const, batch_size)
 
   def model_fn(self, features, labels, mode, params):
     """A model_fn for the constant model."""
     if mode == tf.estimator.ModeKeys.PREDICT:
-      batch_size = tf.shape(features['image'])[0]
+      batch_size = tf.shape(input=features['image'])[0]
       logging.info('actual_batch_size %s', batch_size)
     else:
       batch_size = params['batch_size']
@@ -1518,7 +1536,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
     batch_size = tower.get_shape()[0].value
     tower = tf.reshape(tower, [batch_size, -1])
 
-    with tf.variable_scope('denselayers'):
+    with tf.compat.v1.variable_scope('denselayers'):
       with slim.arg_scope([slim.fully_connected], activation_fn=tf.nn.relu):
         logits = slim.fully_connected(tower, num_classes, scope='Dense')
 
@@ -1535,12 +1553,13 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
 
     # Compute loss.
     one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)
-    tf.losses.softmax_cross_entropy(
+    tf.compat.v1.losses.softmax_cross_entropy(
         onehot_labels=one_hot_labels,
         logits=logits,
         weights=1.0,
         label_smoothing=FLAGS.label_smoothing)
-    total_loss = tf.losses.get_total_loss(add_regularization_losses=True)
+    total_loss = tf.compat.v1.losses.get_total_loss(
+        add_regularization_losses=True)
 
     return self.make_ops_and_estimator(features, endpoints, labels, logits,
                                        predictions, total_loss, mode, params)

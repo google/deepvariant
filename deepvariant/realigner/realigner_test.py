@@ -404,16 +404,16 @@ class RealignerTest(parameterized.TestCase):
 
     if not enabled:
       # Make sure our diagnostic output isn't emitted.
-      self.assertFalse(tf.gfile.Exists(dx_dir))
+      self.assertFalse(tf.io.gfile.exists(dx_dir))
     else:
       # Our root directory exists.
-      self.assertTrue(tf.gfile.IsDirectory(dx_dir))
+      self.assertTrue(tf.io.gfile.isdir(dx_dir))
 
       # We expect a realigner_metrics.csv in our rootdir with 1 entry in it.
       metrics_file = os.path.join(
           dx_dir, self.reads_realigner.diagnostic_logger.metrics_filename)
-      self.assertTrue(tf.gfile.Exists(metrics_file))
-      with tf.gfile.GFile(metrics_file) as fin:
+      self.assertTrue(tf.io.gfile.exists(metrics_file))
+      with tf.io.gfile.GFile(metrics_file) as fin:
         rows = list(csv.DictReader(fin))
         self.assertEqual(len(rows), 1)
         self.assertEqual(
@@ -426,11 +426,11 @@ class RealignerTest(parameterized.TestCase):
 
       # As does the subdirectory for this region.
       region_subdir = os.path.join(dx_dir, assembled_region_str)
-      self.assertTrue(tf.gfile.IsDirectory(region_subdir))
+      self.assertTrue(tf.io.gfile.isdir(region_subdir))
 
       # We always have a graph.dot
       self.assertTrue(
-          tf.gfile.Exists(
+          tf.io.gfile.exists(
               os.path.join(
                   region_subdir,
                   self.reads_realigner.diagnostic_logger.graph_filename)))
@@ -440,7 +440,7 @@ class RealignerTest(parameterized.TestCase):
           self.reads_realigner.diagnostic_logger.realigned_reads_filename)
 
       # if emit_reads=False then file should not exist and vice versa.
-      self.assertEqual(emit_reads, tf.gfile.Exists(reads_file))
+      self.assertEqual(emit_reads, tf.io.gfile.exists(reads_file))
 
 
 class RealignerIntegrationTest(absltest.TestCase):

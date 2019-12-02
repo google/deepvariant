@@ -71,10 +71,10 @@ class TFUtilsTest(parameterized.TestCase):
     v0 = tf.Variable([[1, 2, 3], [4, 5, 6]], dtype=tf.float32, name='v0')
     v1 = tf.Variable(
         [[[1], [2]], [[3], [4]], [[5], [6]]], dtype=tf.float32, name='v1')
-    init_all_op = tf.initialize_all_variables()
-    save = tf.train.Saver({'v0': v0, 'v1': v1})
+    init_all_op = tf.compat.v1.initialize_all_variables()
+    save = tf.compat.v1.train.Saver({'v0': v0, 'v1': v1})
     save_path = test_utils.test_tmpfile('ckpt_for_debug_string')
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       sess.run(init_all_op)
       # Saves a checkpoint.
       save.save(sess, save_path)
@@ -101,10 +101,10 @@ class TFUtilsTest(parameterized.TestCase):
     v0 = tf.Variable([[1, 2, 3]], dtype=tf.int32, name='class_variable_name')
     v1 = tf.Variable(
         [[[1], [2]], [[3], [4]], [[5], [6]]], dtype=tf.float32, name='v1')
-    init_all_op = tf.initialize_all_variables()
-    save = tf.train.Saver({class_variable_name: v0, 'v1': v1})
+    init_all_op = tf.compat.v1.initialize_all_variables()
+    save = tf.compat.v1.train.Saver({class_variable_name: v0, 'v1': v1})
     save_path = test_utils.test_tmpfile('ckpt_for_debug_classes')
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       sess.run(init_all_op)
       # Saves a checkpoint.
       save.save(sess, save_path)
@@ -239,7 +239,7 @@ class TFUtilsTest(parameterized.TestCase):
       tf_utils.get_shape_from_examples_path(source_paths)
 
   def testStringToIntTensor(self):
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       s = '\001\002\003\004\005\006\007'
       it = tf_utils.string_to_int_tensor(s)
       x = sess.run(it)
@@ -249,7 +249,7 @@ class TFUtilsTest(parameterized.TestCase):
       self.assertEqual(b, [1, 2, 3, 4, 5, 6, 7])
 
   def testIntTensorToString(self):
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       s = six.b('\001\002\003\004\005\006\007')
       it = tf_utils.string_to_int_tensor(s)
       x = sess.run(it)

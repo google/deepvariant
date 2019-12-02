@@ -118,10 +118,10 @@ class ModelingTest(
     self.assertEqual([], model.variables_to_restore_from_model())
 
     # Create two model variable and one regular variables.
-    with tf.variable_scope('model'):
-      with tf.variable_scope('l1'):
+    with tf.compat.v1.variable_scope('model'):
+      with tf.compat.v1.variable_scope('l1'):
         w1 = slim.model_variable('w1', shape=[10, 3, 3])
-      with tf.variable_scope('l2'):
+      with tf.compat.v1.variable_scope('l2'):
         w2 = slim.model_variable('w2', shape=[10, 3, 3])
         w3 = slim.model_variable('w3', shape=[10, 3, 3])
     v1 = slim.variable('my_var', shape=[20, 1])
@@ -170,17 +170,23 @@ class HiddenFromUnitTest(object):
     )
     def test_create(self, is_training):
       # Creates a training=False model.
-      self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
-      images = tf.placeholder(
+      self.assertEqual(
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
+          0)
+      images = tf.compat.v1.placeholder(
           tf.float32,
           (4, dv_constants.PILEUP_DEFAULT_HEIGHT,
            dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS))
       endpoints = self.model.create(
           images, dv_constants.NUM_CLASSES, is_training=is_training)
       if is_training:
-        self.assertNotEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
+        self.assertNotEqual(
+            len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
+            0)
       else:
-        self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
+        self.assertEqual(
+            len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
+            0)
       self.assertIn('Predictions', endpoints)
       self.assertIn('Logits', endpoints)
       self.assertEqual(endpoints['Predictions'].shape,
@@ -233,7 +239,7 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
   )
   def test_image_dimensions(self, width, height):
     with self.test_session():
-      images = tf.placeholder(tf.float32, (4, height, width, 3))
+      images = tf.compat.v1.placeholder(tf.float32, (4, height, width, 3))
       # We shouldn't get an exception creating images with these sizes.
       _ = self.model.create(images, 3, is_training=True)
 
@@ -245,7 +251,7 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
   def test_bad_inception_v3_image_dimensions_get_custom_exception(
       self, width, height):
     with self.test_session():
-      images = tf.placeholder(tf.float32, (4, height, width, 3))
+      images = tf.compat.v1.placeholder(tf.float32, (4, height, width, 3))
       expected_message = ('Unsupported image dimensions.* model '
                           'inception_v3.*w={} x h={}.*').format(width, height)
       with six.assertRaisesRegex(self, modeling.UnsupportedImageDimensionsError,
@@ -266,19 +272,24 @@ class InceptionV3EmbeddingModelTest(
       dict(is_training=False),
   )
   def test_create(self, is_training):
-    self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
-    images = tf.placeholder(
+    self.assertEqual(
+        len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0)
+    images = tf.compat.v1.placeholder(
         tf.float32,
         (4, dv_constants.PILEUP_DEFAULT_HEIGHT,
          dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS))
-    seq_type = tf.placeholder(tf.int64, (4,))
+    seq_type = tf.compat.v1.placeholder(tf.int64, (4,))
     endpoints = self.model._create((images, seq_type),
                                    dv_constants.NUM_CLASSES,
                                    is_training=is_training)
     if is_training:
-      self.assertNotEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
+      self.assertNotEqual(
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
+          0)
     else:
-      self.assertEqual(len(tf.get_collection(tf.GraphKeys.UPDATE_OPS)), 0)
+      self.assertEqual(
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
+          0)
     self.assertIn('Predictions', endpoints)
     self.assertIn('Logits', endpoints)
     self.assertEqual(endpoints['Predictions'].shape,
@@ -288,12 +299,12 @@ class InceptionV3EmbeddingModelTest(
                      (4, 2048 + self.model.embedding_size))
 
   def test_create_embeddings(self):
-    indices = tf.placeholder(tf.int64, (4,))
+    indices = tf.compat.v1.placeholder(tf.int64, (4,))
     embeddings = self.model._create_embeddings(indices)
     self.assertEqual(embeddings.shape, (4, self.model.embedding_size))
 
   def test_embedding_lookup(self):
-    indices = tf.placeholder(tf.int64, (4,))
+    indices = tf.compat.v1.placeholder(tf.int64, (4,))
     embeddings = self.model._embedding_lookup(indices)
     self.assertEqual(embeddings.shape, (4, self.model.embedding_size))
 
@@ -305,7 +316,7 @@ class RandomGuessModelTest(tf.test.TestCase):
     def predictions(seed):
       with self.test_session() as sess:
         model = modeling.DeepVariantRandomGuessModel(seed=seed)
-        images = tf.placeholder(tf.float32, (4, 10, 10, 3))
+        images = tf.compat.v1.placeholder(tf.float32, (4, 10, 10, 3))
         predictions = sess.run(model.create(images, 3, False)['Predictions'])
         return predictions
 

@@ -208,7 +208,7 @@ def _simple_gv(ref_name, start, ref_base):
 
 
 def _read_contents(path, decompress=False):
-  with tf.gfile.GFile(path, 'rb') as fin:
+  with tf.io.gfile.GFile(path, 'rb') as fin:
     contents = fin.read()
     if decompress:
       contents = gzip.GzipFile(path, fileobj=io.BytesIO(contents)).read()
@@ -316,8 +316,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
         _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT))
 
     if compressed_inputs_and_outputs:
-      self.assertTrue(tf.gfile.Exists(FLAGS.outfile + '.tbi'))
-      self.assertTrue(tf.gfile.Exists(FLAGS.gvcf_outfile + '.tbi'))
+      self.assertTrue(tf.io.gfile.exists(FLAGS.outfile + '.tbi'))
+      self.assertTrue(tf.io.gfile.exists(FLAGS.gvcf_outfile + '.tbi'))
 
   @flagsaver.FlagSaver
   def test_group_variants(self):
@@ -344,11 +344,11 @@ class PostprocessVariantsTest(parameterized.TestCase):
     postprocess_variants.build_index(vcf_file_gz, use_csi)
 
     if use_csi:
-      self.assertFalse(tf.gfile.Exists(vcf_file_gz + '.tbi'))
-      self.assertTrue(tf.gfile.Exists(vcf_file_gz + '.csi'))
+      self.assertFalse(tf.io.gfile.exists(vcf_file_gz + '.tbi'))
+      self.assertTrue(tf.io.gfile.exists(vcf_file_gz + '.csi'))
     else:
-      self.assertFalse(tf.gfile.Exists(vcf_file_gz + '.csi'))
-      self.assertTrue(tf.gfile.Exists(vcf_file_gz + '.tbi'))
+      self.assertFalse(tf.io.gfile.exists(vcf_file_gz + '.csi'))
+      self.assertTrue(tf.io.gfile.exists(vcf_file_gz + '.tbi'))
 
   @flagsaver.FlagSaver
   def test_reading_sharded_input_with_empty_shards_does_not_crash(self):

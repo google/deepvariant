@@ -332,10 +332,10 @@ def call_variants(examples_filename,
     raise ValueError(
         'Unexpected execution_hardware={} value. Allowed values are {}'.format(
             execution_hardware, ','.join(_ALLOW_EXECUTION_HARDWARE)))
-  init_op = tf.group(tf.global_variables_initializer(),
-                     tf.local_variables_initializer())
+  init_op = tf.group(tf.compat.v1.global_variables_initializer(),
+                     tf.compat.v1.local_variables_initializer())
 
-  config = tf.ConfigProto()
+  config = tf.compat.v1.ConfigProto()
   if FLAGS.config_string is not None:
     text_format.Parse(FLAGS.config_string, config)
   if execution_hardware == 'cpu':
@@ -344,7 +344,7 @@ def call_variants(examples_filename,
     config.device_count['TPU'] = 0
 
   # Perform sanity check.
-  with tf.Session(config=config) as sess:
+  with tf.compat.v1.Session(config=config) as sess:
     sess.run(init_op)
     if execution_hardware == 'accelerator':
       if not any(dev.device_type != 'CPU' for dev in sess.list_devices()):
@@ -440,4 +440,4 @@ if __name__ == '__main__':
       'outfile',
       'checkpoint',
   ])
-  tf.app.run()
+  tf.compat.v1.app.run()

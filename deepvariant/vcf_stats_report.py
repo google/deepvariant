@@ -90,4 +90,4 @@ def main(argv):
 
 if __name__ == '__main__':
   flags.mark_flags_as_required(['input_vcf', 'outfile_base'])
-  tf.app.run()
+  tf.compat.v1.app.run()

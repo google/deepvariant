@@ -214,7 +214,7 @@ def window_selector_config(flags_obj):
     if flags_obj.ws_window_selector_model is None:
       window_selector_model = _ALLELE_COUNT_LINEAR_MODEL_DEFAULT
     else:
-      with tf.gfile.GFile(flags_obj.ws_window_selector_model) as f:
+      with tf.io.gfile.GFile(flags_obj.ws_window_selector_model) as f:
         window_selector_model = text_format.Parse(
             f.read(), realigner_pb2.WindowSelectorModel())
 
@@ -317,7 +317,7 @@ class DiagnosticLogger(object):
     fullpath = os.path.join(self.config.output_root, path)
     subdir = os.path.dirname(fullpath)
     if makedirs and subdir:
-      tf.gfile.MakeDirs(subdir)
+      tf.io.gfile.makedirs(subdir)
     return fullpath
 
   def _write_csv_line(self, *args):
@@ -343,7 +343,7 @@ class DiagnosticLogger(object):
     if self.enabled:
       if graph:
         dest_file = self._file_for_region(region, self.graph_filename)
-        with tf.gfile.GFile(dest_file, 'w') as f:
+        with tf.io.gfile.GFile(dest_file, 'w') as f:
           f.write(graph.graphviz())
       self._write_csv_line(
           ranges.to_literal(region), graph.kmer_size if graph else 'NA',

@@ -84,7 +84,7 @@ class CallVariantsEndToEndTests(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
 
   def setUp(self):
-    self.checkpoint_dir = tf.test.get_temp_dir()
+    self.checkpoint_dir = tf.compat.v1.test.get_temp_dir()
 
   def assertCallVariantsEmitsNRecordsForInceptionV3(self, filename,
                                                     num_examples):
@@ -332,8 +332,8 @@ class CallVariantsEndToEndTests(
     # The API specifies that OutOfRangeError is thrown in this case.
     batches = list(data_providers.get_infer_batches(ds, model=m, batch_size=1))
     with self.test_session() as sess:
-      sess.run(tf.local_variables_initializer())
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.local_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
       try:
         _ = sess.run(batches)
       except tf.errors.OutOfRangeError:
@@ -365,8 +365,8 @@ class CallVariantsUnitTests(
         [test_utils.test_tmpfile(f) for f in file_string_input.split(',')])
 
     with self.test_session() as sess:
-      sess.run(tf.local_variables_initializer())
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.local_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
 
       ds = call_variants.prepare_inputs(file_string_input)
       _, variants, _ = data_providers.get_infer_batches(

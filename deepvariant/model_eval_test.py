@@ -65,10 +65,10 @@ class ModelEvalTest(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
 
   def setUp(self):
-    self.checkpoint_dir = tf.test.get_temp_dir()
+    self.checkpoint_dir = tf.compat.v1.test.get_temp_dir()
     # Use this to generate a random name.  The framework
     # will create the directory under self.checkpoint_dir.
-    self.eval_name = os.path.basename(tf.test.get_temp_dir())
+    self.eval_name = os.path.basename(tf.compat.v1.test.get_temp_dir())
 
   @parameterized.parameters(['inception_v3'])
   @flagsaver.FlagSaver
