@@ -45,6 +45,7 @@ from absl import flags
 from absl import logging
 from tensor2tensor.utils import metrics_hook
 import tensorflow as tf
+import tf_slim
 
 from third_party.nucleus.util import proto_utils
 from deepvariant import data_providers
@@ -52,7 +53,7 @@ from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
 
-slim = tf.contrib.slim
+slim = tf_slim
 
 FLAGS = flags.FLAGS
 

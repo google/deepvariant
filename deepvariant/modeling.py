@@ -49,6 +49,7 @@ from absl import logging
 import enum
 
 import tensorflow as tf
+import tf_slim
 
 from deepvariant import tf_utils
 from tensorflow.contrib.tpu.python.tpu import tpu_config
@@ -104,7 +105,7 @@ flags.DEFINE_integer(
 
 FLAGS = flags.FLAGS
 
-slim = tf.contrib.slim
+slim = tf_slim
 
 
 class UnsupportedImageDimensionsError(Exception):
@@ -1022,8 +1023,7 @@ class DeepVariantSlimModel(DeepVariantModel):
     eval_metrics = (eval_metric_fn, [labels, eval_predictions, variant_type])
     if not self.use_tpu:
       for name, value in eval_metrics[0](*eval_metrics[1]).items():
-        tf.contrib.slim.summaries.add_scalar_summary(
-            value, name, print_summary=True)
+        tf.summary.scalar(tensor=value, name=name)
     return eval_metrics
 
   def _model_fn_train(self, mode, total_loss, batches_per_epoch,

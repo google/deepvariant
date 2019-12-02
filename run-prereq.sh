@@ -63,7 +63,7 @@ sudo -H apt-get -qq -y update > /dev/null
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get -qq -y install pkg-config zip zlib1g-dev unzip curl lsb-release > /dev/null
+sudo -H apt-get -qq -y install pkg-config zip zlib1g-dev unzip curl lsb-release git > /dev/null
 
 note_build_stage "Install python packaging infrastructure"
 
@@ -88,6 +88,9 @@ pip install "${PIP_ARGS[@]}" enum34
 pip install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
 pip install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip install "${PIP_ARGS[@]}" 'mock>=2.0.0'
+# This version removes "from tensorflow.python.ops import map_fn", which does
+# not exist in TF1.13.1.
+pip install --user git+https://github.com/pichuan/tf-slim.git@map_fn
 
 # Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
 # source. But we know that on 16.04 we don't need to compile from source

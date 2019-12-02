@@ -54,7 +54,6 @@ from deepvariant import modeling
 from deepvariant import tf_utils
 
 
-slim = tf.contrib.slim
 FLAGS = flags.FLAGS
 
 

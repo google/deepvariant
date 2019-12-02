@@ -43,12 +43,13 @@ from absl.testing import parameterized
 import numpy as np
 import six
 import tensorflow as tf
+import tf_slim
 
 from deepvariant import dv_constants
 from deepvariant import modeling
 from deepvariant import tf_utils
 
-slim = tf.contrib.slim
+slim = tf_slim
 
 
 class ModelingTest(
