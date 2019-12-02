@@ -221,10 +221,10 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
 
   @classmethod
   def setUpClass(cls):
+    super(InceptionV3ModelTest, cls).setUpClass()
     cls.model = modeling.get_model('inception_v3')
 
-  # Note this test is only applied to inception_v3 since v2 and mobilenet don't
-  # support some of these dimensions.
+  # Note this test is only applied to inception_v3.
   @parameterized.parameters(
       dict(width=221, height=100),
       dict(width=221, height=200),
@@ -295,20 +295,6 @@ class InceptionV3EmbeddingModelTest(
     indices = tf.placeholder(tf.int64, (4,))
     embeddings = self.model._embedding_lookup(indices)
     self.assertEqual(embeddings.shape, (4, self.model.embedding_size))
-
-
-class InceptionV2ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
-
-  @classmethod
-  def setUpClass(cls):
-    cls.model = modeling.get_model('inception_v2')
-
-
-class MobileNetModelTest(HiddenFromUnitTest.SlimModelBaseTest):
-
-  @classmethod
-  def setUpClass(cls):
-    cls.model = modeling.get_model('mobilenet_v1')
 
 
 class RandomGuessModelTest(tf.test.TestCase):

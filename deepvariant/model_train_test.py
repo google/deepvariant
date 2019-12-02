@@ -71,7 +71,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
   def test_training_works_with_compressed_inputs(self):
     """End-to-end test of model_train script."""
     self._run_tiny_training(
-        model_name='mobilenet_v1',
+        model_name='inception_v3',
         dataset=data_providers_test.make_golden_dataset(
             compressed_inputs=True, use_tpu=FLAGS.use_tpu))
 
@@ -134,24 +134,6 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         model_name='inception_v3',
         dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
         warm_start_from=checkpoint_dir + '/model')
-
-  @flagsaver.FlagSaver
-  def test_end2end_inception_v3_warm_up_from_mobilenet_v1(self):
-    """Tests the behavior when warm start from mobilenet but train inception."""
-    checkpoint_dir = tf_test_utils.test_tmpdir(
-        'inception_v3_warm_up_from_mobilenet_v1')
-    tf_test_utils.write_fake_checkpoint('mobilenet_v1', self.test_session(),
-                                        checkpoint_dir)
-    self.assertTrue(
-        tf_test_utils.check_equals_checkpoint_top_scopes(
-            checkpoint_dir + '/model', ['MobilenetV1', 'global_step']))
-    self._run_tiny_training(
-        model_name='inception_v3',
-        dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
-        warm_start_from=checkpoint_dir + '/model')
-    self.assertTrue(
-        tf_test_utils.check_equals_checkpoint_top_scopes(
-            FLAGS.train_dir + '/model.ckpt-1', ['InceptionV3', 'global_step']))
 
   @flagsaver.FlagSaver
   def test_end2end_inception_v3_failed_warm_up_from(self):

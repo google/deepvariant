@@ -660,8 +660,6 @@ py_library(
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
         "@org_tensorflow_slim//:inception",
-        "@org_tensorflow_slim//:mobilenet_v1",
-        "@org_tensorflow_slim//:resnet_v2",
     ],
 )
 

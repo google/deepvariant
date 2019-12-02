@@ -56,7 +56,6 @@ from tensorflow.contrib.tpu.python.tpu import tpu_estimator
 from tensorflow.contrib.tpu.python.tpu import tpu_optimizer
 from tensorflow.python.framework import ops
 from nets import inception
-from nets import mobilenet_v1
 
 from deepvariant import dv_constants
 
@@ -896,7 +895,6 @@ class DeepVariantSlimModel(DeepVariantModel):
     """
     # NB. The basic structure of this started from
     # //third_party/cloud_tpu/models/inception/inception_v3.py
-    # and //third_party/cloud_tpu/models/mobilenet/mobilenet.py
 
     # redacted
     num_classes = dv_constants.NUM_CLASSES
@@ -1218,7 +1216,6 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     """
     # NB. The basic structure of this started from
     # //third_party/cloud_tpu/models/inception/inception_v3.py
-    # and //third_party/cloud_tpu/models/mobilenet/mobilenet.py
 
     # redacted
     num_classes = dv_constants.NUM_CLASSES
@@ -1260,54 +1257,6 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
 
     return self.make_ops_and_estimator(features, endpoints, labels, logits,
                                        predictions, total_loss, mode, params)
-
-
-class DeepVariantInceptionV2(DeepVariantSlimModel):
-  """Original DeepVariant inception_v2 network."""
-
-  def __init__(self):
-    """Creates an inception-v2 network for DeepVariant."""
-    super(DeepVariantInceptionV2, self).__init__(
-        name='inception_v2',
-        n_classes_model_variable='InceptionV2/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes_for_incompatible_shapes=[
-            'InceptionV2/Logits', 'InceptionV2/Conv2d_1a_7x7'
-        ],
-        pretrained_model_path=('/namespace/vale-project/models/classification/'
-                               'imagenet/inception_v2/model.ckpt-14284043'))
-
-  def _create(self, images, num_classes, is_training):
-    """See baseclass."""
-    with slim.arg_scope(inception.inception_v2_arg_scope()):
-      _, endpoints = inception.inception_v2(
-          inputs=images, num_classes=num_classes, is_training=is_training)
-      return endpoints
-
-
-class DeepVariantMobileNetV1(DeepVariantSlimModel):
-  """MobileNet v1 model.
-
-  More information about MobileNets can be found in their paper:
-  https://arxiv.org/pdf/1704.04861.pdf
-  """
-
-  def __init__(self):
-    super(DeepVariantMobileNetV1, self).__init__(
-        name='mobilenet_v1',
-        n_classes_model_variable='MobilenetV1/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes_for_incompatible_shapes=[
-            'MobilenetV1/Logits', 'MobilenetV1/Conv2d_0'
-        ],
-        pretrained_model_path=('/cns/ok-d/home/howarda/slim/'
-                               'mobilenet_asynch_100_224_ds_s5_cr_2.5_50/train/'
-                               'model.ckpt-19527265'))
-
-  def _create(self, images, num_classes, is_training):
-    """See baseclass."""
-    with slim.arg_scope(mobilenet_v1.mobilenet_v1_arg_scope()):
-      _, endpoints = mobilenet_v1.mobilenet_v1(
-          inputs=images, num_classes=num_classes, is_training=is_training)
-      return endpoints
 
 
 class DeepVariantDummyModel(DeepVariantModel):
@@ -1542,7 +1491,6 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
     """
     # NB. The basic structure of this started from
     # //third_party/cloud_tpu/models/inception/inception_v3.py
-    # and //third_party/cloud_tpu/models/mobilenet/mobilenet.py
 
     # redacted
     num_classes = dv_constants.NUM_CLASSES
@@ -1608,8 +1556,6 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
 _MODELS = [
     DeepVariantSmallModel(),
     DeepVariantInceptionV3(),
-    DeepVariantInceptionV2(),
-    DeepVariantMobileNetV1(),
     DeepVariantRandomGuessModel(),
     DeepVariantConstantModel(),
     DeepVariantInceptionV3Embedding(),
@@ -1625,7 +1571,6 @@ def production_models():
   """Gets a list of the models that we test extensively."""
   return [
       get_model('inception_v3'),
-      get_model('mobilenet_v1'),
       get_model('inception_v3_embedding')
   ]
 
