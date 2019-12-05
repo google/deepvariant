@@ -52,10 +52,12 @@ import tensorflow as tf
 import tf_slim
 
 from deepvariant import tf_utils
+# pylint: disable=g-direct-tensorflow-import
 from tensorflow.contrib.tpu.python.tpu import tpu_config
 from tensorflow.contrib.tpu.python.tpu import tpu_estimator
 from tensorflow.contrib.tpu.python.tpu import tpu_optimizer
 from tensorflow.python.framework import ops
+# pylint: enable=g-direct-tensorflow-import
 from nets import inception
 
 from deepvariant import dv_constants
@@ -377,7 +379,7 @@ class LoadEMAHook(tf.estimator.SessionRunHook):
   def begin(self):
     ema = tf.train.ExponentialMovingAverage(FLAGS.moving_average_decay)
     variables_to_restore = ema.variables_to_restore()
-    self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
+    self._load_ema = slim.assign_from_checkpoint_fn(
         tf.train.latest_checkpoint(self._model_dir),
         variables_to_restore,
         ignore_missing_vars=self._ignore_missing_vars)
@@ -401,7 +403,7 @@ class PredictEMAHook(tf.estimator.SessionRunHook):
   def begin(self):
     ema = tf.train.ExponentialMovingAverage(FLAGS.moving_average_decay)
     variables_to_restore = ema.variables_to_restore()
-    self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
+    self._load_ema = slim.assign_from_checkpoint_fn(
         self._checkpoint_path,
         variables_to_restore,
         ignore_missing_vars=self._ignore_missing_vars)
