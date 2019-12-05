@@ -43,7 +43,6 @@ import os
 
 from absl import flags
 from absl import logging
-from tensor2tensor.utils import metrics_hook
 import tensorflow as tf
 import tf_slim
 
@@ -226,23 +225,8 @@ def run(target, unused_is_chief, device_fn, use_tpu):
 
       training_hooks = None
       if FLAGS.use_early_stopping:
-        # Early stopping hook depends on existence of events directory.
-        eval_dir = os.path.join(FLAGS.train_dir, FLAGS.early_stopping_directory)
-        tf.io.gfile.makedirs(eval_dir)
-
-        plateau_decrease = True
-        if FLAGS.early_stopping_metric_direction == 'increase':
-          plateau_decrease = False
-
-        early_stopping_hook = metrics_hook.EarlyStoppingHook(
-            events_dir=eval_dir,
-            tag=FLAGS.early_stopping_tag,
-            num_plateau_steps=FLAGS.early_stopping_num_plateau_steps,
-            plateau_delta=FLAGS.early_stopping_plateau_delta,
-            plateau_decrease=plateau_decrease,
-            every_n_steps=FLAGS.early_stopping_every_n_steps)
-
-        training_hooks = [early_stopping_hook]
+        # redacted
+        raise ValueError('Currently not implemented.')
 
       estimator.train(
           input_fn=tf_dataset,

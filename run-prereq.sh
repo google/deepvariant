@@ -109,7 +109,6 @@ pip install "${PIP_ARGS[@]}" 'six>=1.11.0'
 pip install "${PIP_ARGS[@]}" joblib
 pip install "${PIP_ARGS[@]}" psutil
 pip install "${PIP_ARGS[@]}" --upgrade google-api-python-client
-pip install "${PIP_ARGS[@]}" 'tensor2tensor>=1.9.0'
 pip install "${PIP_ARGS[@]}" 'pandas==0.24.1'
 pip install "${PIP_ARGS[@]}" 'altair==3.1.0'
 
