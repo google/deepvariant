@@ -468,44 +468,6 @@ def get_batches(tf_dataset, model, batch_size):
   return images, labels, encoded_variant
 
 
-# Return the stream of batched images from a dataset.
-def get_infer_batches(tf_dataset, model, batch_size):
-  """Provides batches of pileup images from this dataset.
-
-  This instantiates an iterator on the dataset, and returns the
-  image, variant, alt_allele_indices, features in batches. It calls
-  model.preprocess_images on the images (but note that we will be moving
-  that step into model_fn for the Estimator api).
-
-  Args:
-    tf_dataset: DeepVariantInput.
-    model: DeepVariantModel.
-    batch_size: int.  The batch size.
-
-  Returns:
-    (image, variant, alt_allele_indices)
-
-  Raises:
-    ValueError: if the dataset has the wrong mode.
-  """
-  if tf_dataset.mode != tf.estimator.ModeKeys.PREDICT:
-    raise ValueError('tf_dataset.mode is {} but must be PREDICT.'.format(
-        tf_dataset.mode))
-
-  params = dict(batch_size=batch_size)
-  features = tf.compat.v1.data.make_one_shot_iterator(
-      tf_dataset(params)).get_next()
-
-  images = features['image']
-  if tf_dataset.tensor_shape:
-    # tensor_shape will be None if the input was an empty file.
-    images = model.preprocess_images(images)
-  variant = features['variant']
-  alt_allele_indices = features['alt_allele_indices']
-
-  return images, variant, alt_allele_indices
-
-
 # This reads a pbtxt file and returns the config proto.
 def read_dataset_config(dataset_config_filename):
   """Returns a DeepVariantDatasetConfig proto read from the dataset config file.

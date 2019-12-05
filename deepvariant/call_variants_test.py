@@ -55,7 +55,6 @@ from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from deepvariant import call_variants
-from deepvariant import data_providers
 from deepvariant import modeling
 from deepvariant import testdata
 from deepvariant import tf_utils
@@ -78,6 +77,44 @@ def setUpModule():
 # return a fake one.  The estimator understands None to mean
 # that all the variables should be left uninitialized.
 _LEAVE_MODEL_UNINITIALIZED = None
+
+
+# Return the stream of batched images from a dataset.
+def _get_infer_batches(tf_dataset, model, batch_size):
+  """Provides batches of pileup images from this dataset.
+
+  This instantiates an iterator on the dataset, and returns the
+  image, variant, alt_allele_indices, features in batches. It calls
+  model.preprocess_images on the images (but note that we will be moving
+  that step into model_fn for the Estimator api).
+
+  Args:
+    tf_dataset: DeepVariantInput.
+    model: DeepVariantModel.
+    batch_size: int.  The batch size.
+
+  Returns:
+    (image, variant, alt_allele_indices)
+
+  Raises:
+    ValueError: if the dataset has the wrong mode.
+  """
+  if tf_dataset.mode != tf.estimator.ModeKeys.PREDICT:
+    raise ValueError('tf_dataset.mode is {} but must be PREDICT.'.format(
+        tf_dataset.mode))
+
+  params = dict(batch_size=batch_size)
+  features = tf.compat.v1.data.make_one_shot_iterator(
+      tf_dataset(params)).get_next()
+
+  images = features['image']
+  if tf_dataset.tensor_shape:
+    # tensor_shape will be None if the input was an empty file.
+    images = model.preprocess_images(images)
+  variant = features['variant']
+  alt_allele_indices = features['alt_allele_indices']
+
+  return images, variant, alt_allele_indices
 
 
 class CallVariantsEndToEndTests(
@@ -320,7 +357,7 @@ class CallVariantsEndToEndTests(
         'Invalid image/shape: we expect to find an image/shape '
         'field with length 3.'):
       ds = call_variants.prepare_inputs(source_path)
-      _ = list(data_providers.get_infer_batches(ds, model=model, batch_size=1))
+      _ = list(_get_infer_batches(ds, model=model, batch_size=1))
 
   def test_call_variants_with_empty_input(self):
     source_path = test_utils.test_tmpfile('empty.tfrecord')
@@ -330,7 +367,7 @@ class CallVariantsEndToEndTests(
     m = modeling.get_model('random_guess')
 
     # The API specifies that OutOfRangeError is thrown in this case.
-    batches = list(data_providers.get_infer_batches(ds, model=m, batch_size=1))
+    batches = list(_get_infer_batches(ds, model=m, batch_size=1))
     with self.test_session() as sess:
       sess.run(tf.compat.v1.local_variables_initializer())
       sess.run(tf.compat.v1.global_variables_initializer())
@@ -369,8 +406,7 @@ class CallVariantsUnitTests(
       sess.run(tf.compat.v1.global_variables_initializer())
 
       ds = call_variants.prepare_inputs(file_string_input)
-      _, variants, _ = data_providers.get_infer_batches(
-          ds, model=self.model, batch_size=1)
+      _, variants, _ = _get_infer_batches(ds, model=self.model, batch_size=1)
 
       seen_variants = []
       try:
