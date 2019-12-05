@@ -1174,7 +1174,10 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
       endpoints['Embeddings'] = net
 
     with tf.compat.v1.variable_scope('Logits'):
-      hidden_size = net.shape[1].value // 2
+      if isinstance(net.shape[1], int):
+        hidden_size = net.shape[1] // 2
+      else:
+        hidden_size = net.shape[1].value // 2
 
       net = slim.fully_connected(net, hidden_size, activation_fn=None)
       # redacted
