@@ -2,7 +2,7 @@
 layout: post
 title: "Covering All Your Bases: Strategies to Expand Training Data for Specialized Genomics Problems"
 date: 2019-12-06
-description: "We explore three different training strategies to leverage whole-genome sequencing data to improve model performance for the specialized task of variant calling from whole-exome sequencing data: 1) jointly trainIng with both WGS and WES data, 2) warmstarting from a pre-trained WGS model, and 3) including sequencing type as an input to the model."
+description: "We explore three different training strategies to leverage whole-genome sequencing data to improve model performance for the specialized task of variant calling from whole-exome sequencing data: 1) jointly training with both WGS and WES data, 2) warmstarting from a pre-trained WGS model, and 3) including sequencing type as an input to the model."
 img: "assets/images/2019-12-06/method3-home.svg"
 authors: ["ryi","pichuan","gunjanbaid","awcarroll"]
 ---
