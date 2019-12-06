@@ -9,7 +9,7 @@ authors: ["ryi","pichuan","gunjanbaid","awcarroll"]
 
 *This work was done during Ren Yi’s internship at Google.*
 
-We would like to thank [Babak Aliphani](https://scholar.google.com/citations?user=oH21NTgAAAAJ&hl=en) and [Maria Nattestad](https://twitter.com/marianattestad) for editorial suggestions and review.
+We would like to thank [Babak Alipanahi](https://scholar.google.com/citations?user=oH21NTgAAAAJ&hl=en) and [Maria Nattestad](https://twitter.com/marianattestad) for editorial suggestions and review.
 
 **This blog post summarizes work accepted to the [Machine Learning 4 Health](https://ml4health.github.io/2019/) (ML4H) workshop at Neural Information Processing Systems (NeurIPS 2019). The full paper, titled *[Learning from Data-Rich Problems: A Case Study on Genetic Variant Calling](https://arxiv.org/abs/1911.05151)*, is available on arXiv and goes into greater technical detail.**
 
