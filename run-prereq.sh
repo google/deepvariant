@@ -65,54 +65,73 @@ note_build_stage "Install development packages"
 
 sudo -H apt-get -qq -y install pkg-config zip zlib1g-dev unzip curl lsb-release git > /dev/null
 
-note_build_stage "Install python packaging infrastructure"
+note_build_stage "Install python3 packaging infrastructure"
 
-sudo -H apt-get -qq -y install python-dev python-pip python-wheel > /dev/null
+# For altair to work, we need Python to be >= 3.5.3.
+# https://github.com/altair-viz/altair/issues/972
+# On Ubuntu 16.04, default is 3.5.2.
+# So, install Python 3.6.
+sudo -H apt-get install -y software-properties-common
 
-echo "$(python --version)"
+# Install Python 3.6.
+# Reference: https://askubuntu.com/a/1069303
+sudo -H add-apt-repository -y ppa:deadsnakes/ppa
+sudo -H apt -y update
+sudo -H apt-get install -y python3.6
+sudo -H apt-get install -y python3.6-dev
+sudo -H apt-get install -y python3.6-venv
+# If we install python3-pip directly, the pip3 version points to:
+#   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
+# Use the following lines to ensure 3.6.
+curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+sudo -H python3.6 get-pip.py
+sudo ln -sf /usr/bin/python3.6 /usr/local/bin/python3
+sudo ln -sf /usr/bin/python3.6 /usr/bin/python
 
-# This will make sure the pip command is bound to python2
-python -m pip install "${PIP_ARGS[@]}" --upgrade --force-reinstall pip
+echo "$(python3 --version)"
 
-export PATH="$HOME/.local/bin:$PATH"
-echo "$(pip --version)"
+export PATH="/usr/local/bin:$PATH"
+echo "$(pip3 --version)"
 
 ################################################################################
 # python packages
 ################################################################################
 
-note_build_stage "Install python packages"
+note_build_stage "Install python3 packages"
 
-pip install "${PIP_ARGS[@]}" contextlib2
-pip install "${PIP_ARGS[@]}" enum34
-pip install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
-pip install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
-pip install "${PIP_ARGS[@]}" 'mock>=2.0.0'
-pip install "${PIP_ARGS[@]}" 'protobuf==3.8.0'
-pip install "${PIP_ARGS[@]}" 'argparse==1.4.0'
-# Reference: https://github.com/tensorflow/serving/issues/1371
-pip install "${PIP_ARGS[@]}" future
-pip install "${PIP_ARGS[@]}" git+https://github.com/pichuan/tf-slim.git@remove_contrib
+pip3 install "${PIP_ARGS[@]}" contextlib2
+pip3 install "${PIP_ARGS[@]}" enum34
+pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
+pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
+pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
+pip3 install "${PIP_ARGS[@]}" 'protobuf==3.8.0'
+pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
+# redacted
+pip3 install "${PIP_ARGS[@]}" git+https://github.com/pichuan/tf-slim.git@remove_contrib
 
 # Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
 # source. But we know that on 16.04 we don't need to compile from source
 # See https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279061085
 if [[ "$(lsb_release -d)" == *Ubuntu*16.04.* ]]; then
-  pip install "${PIP_ARGS[@]}" 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+  pip3 install "${PIP_ARGS[@]}" 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 else
   echo "Installing numpy with -no-binary=:all:. This will take a bit longer."
-  pip install "${PIP_ARGS[@]}" --no-binary=:all: 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+  pip3 install "${PIP_ARGS[@]}" --no-binary=:all: 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 fi
 
-pip install "${PIP_ARGS[@]}" 'requests>=2.18'
-pip install "${PIP_ARGS[@]}" 'oauth2client>=4.0.0'
-pip install "${PIP_ARGS[@]}" 'crcmod>=1.7'
-pip install "${PIP_ARGS[@]}" 'six>=1.11.0'
-pip install "${PIP_ARGS[@]}" joblib
-pip install "${PIP_ARGS[@]}" psutil
-pip install "${PIP_ARGS[@]}" --upgrade google-api-python-client
-pip install "${PIP_ARGS[@]}" 'pandas==0.24.1'
-pip install "${PIP_ARGS[@]}" 'altair==3.1.0'
+# Reason:
+# ========== [Wed Dec 11 19:57:32 UTC 2019] Stage 'Install python3 packages' starting
+# ERROR: pyasn1-modules 0.2.7 has requirement pyasn1<0.5.0,>=0.4.6, but you'll have pyasn1 0.1.9 which is incompatible.
+pip3 install "${PIP_ARGS[@]}" 'pyasn1<0.5.0,>=0.4.6'
+pip3 install "${PIP_ARGS[@]}" 'requests>=2.18'
+pip3 install "${PIP_ARGS[@]}" 'oauth2client>=4.0.0'
+pip3 install "${PIP_ARGS[@]}" 'crcmod>=1.7'
+pip3 install "${PIP_ARGS[@]}" 'six>=1.11.0'
+pip3 install "${PIP_ARGS[@]}" joblib
+pip3 install "${PIP_ARGS[@]}" psutil
+pip3 install "${PIP_ARGS[@]}" --upgrade google-api-python-client
+pip3 install "${PIP_ARGS[@]}" 'pandas==0.24.1'
+pip3 install "${PIP_ARGS[@]}" 'altair==3.3.0'
 
 
 ################################################################################
@@ -135,22 +154,24 @@ else
   if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow nightly wheel"
-      pip install "${PIP_ARGS[@]}" --upgrade tf_nightly_gpu
+      pip3 install "${PIP_ARGS[@]}" --upgrade tf_nightly_gpu
     else
       echo "Installing CPU-only TensorFlow nightly wheel"
-      pip install "${PIP_ARGS[@]}" --upgrade tf_nightly
+      pip3 install "${PIP_ARGS[@]}" --upgrade tf_nightly
     fi
   else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow ${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION} wheel"
-      pip install "${PIP_ARGS[@]}" --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
+      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
       echo "Installing Intel's CPU-only MKL TensorFlow ${DV_GCP_OPTIMIZED_TF_WHL_VERSION} wheel"
-      pip install "${PIP_ARGS[@]}" --upgrade "intel-tensorflow==${DV_GCP_OPTIMIZED_TF_WHL_VERSION}"
+      pip3 install "${PIP_ARGS[@]}" --upgrade "intel-tensorflow==${DV_GCP_OPTIMIZED_TF_WHL_VERSION}"
+      echo "Installing Intel's CPU-only MKL TensorFlow ${DV_GCP_OPTIMIZED_TF_WHL_VERSION} wheel"
+      pip3 install "${PIP_ARGS[@]}" --upgrade "intel-tensorflow==${DV_GCP_OPTIMIZED_TF_WHL_VERSION}"
     else
       echo "Installing standard CPU-only TensorFlow ${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION} wheel"
-      pip install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
+      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
     fi
   fi
 fi

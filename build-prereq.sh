@@ -103,7 +103,7 @@ https://github.com/google/clif before continuing."
     exit 1
   esac
 
-  OSS_CLIF_CURL_ROOT="${DV_PACKAGE_CURL_PATH}/oss_clif"
+  OSS_CLIF_CURL_ROOT="${DV_PACKAGE_CURL_PATH}/oss_clif_py3"
   OSS_CLIF_PKG="oss_clif.${DV_PLATFORM}.latest.tgz"
 
   if [[ ! -f "/tmp/${OSS_CLIF_PKG}" ]]; then
@@ -125,9 +125,10 @@ if [[ ! -d ../tensorflow ]]; then
   (cd .. && git clone https://github.com/tensorflow/tensorflow)
 fi
 
+export PYTHON_BIN_PATH=$(which python3.6)
+export PYTHON_LIB_PATH='/usr/local/lib/python3.6/dist-packages'
 (cd ../tensorflow &&
  git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
  echo | ./configure)
 
 note_build_stage "build-prereq.sh complete"
-

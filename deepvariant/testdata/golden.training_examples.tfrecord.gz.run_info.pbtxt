@@ -3417,11 +3417,11 @@ options {
   variant_caller_options {
     min_count_snps: 2
     min_count_indels: 2
-    min_fraction_snps: 0.119999997318
-    min_fraction_indels: 0.0599999986589
+    min_fraction_snps: 0.11999999731779099
+    min_fraction_indels: 0.05999999865889549
     random_seed: 1400605801
     sample_name: "NA12878"
-    p_error: 0.0010000000475
+    p_error: 0.0010000000474974513
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
@@ -3433,11 +3433,11 @@ options {
     base_color_offset_a_and_g: 40
     base_color_offset_t_and_c: 30
     base_color_stride: 70
-    reference_alpha: 0.40000000596
+    reference_alpha: 0.4000000059604645
     reference_base_quality: 60
     allele_supporting_read_alpha: 1.0
-    allele_unsupporting_read_alpha: 0.600000023842
-    reference_matching_read_alpha: 0.20000000298
+    allele_unsupporting_read_alpha: 0.6000000238418579
+    reference_matching_read_alpha: 0.20000000298023224
     reference_mismatching_read_alpha: 1.0
     indel_anchoring_base_char: "*"
     positive_strand_color: 70
@@ -3464,7 +3464,7 @@ options {
   confident_regions_filename: "learning/genomics/deepvariant/testdata/test_nist.b37_chr20_100kbp_at_10mb.bed"
   truth_variants_filename: "learning/genomics/deepvariant/testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz"
   mode: TRAINING
-  min_shared_contigs_basepairs: 0.899999976158
+  min_shared_contigs_basepairs: 0.8999999761581421
   realigner_enabled: true
   realigner_options {
     ws_config {
@@ -3476,12 +3476,12 @@ options {
       window_selector_model {
         model_type: ALLELE_COUNT_LINEAR
         allele_count_linear_model {
-          bias: -0.683378994465
-          coeff_soft_clip: 2.99699997902
-          coeff_substitution: -0.0866440013051
-          coeff_insertion: 2.49358510971
-          coeff_deletion: 1.79591405392
-          coeff_reference: -0.0597870014608
+          bias: -0.6833789944648743
+          coeff_soft_clip: 2.996999979019165
+          coeff_substitution: -0.0866440013051033
+          coeff_insertion: 2.4935851097106934
+          coeff_deletion: 1.7959140539169312
+          coeff_reference: -0.059787001460790634
           decision_boundary: 3.0
         }
       }
@@ -3501,7 +3501,7 @@ options {
       gap_open: 8
       gap_extend: 2
       k: 23
-      error_rate: 0.00999999977648
+      error_rate: 0.009999999776482582
       read_size: 101
       kmer_size: 32
       max_num_of_mismatches: 2

@@ -31,8 +31,8 @@ py_test(
         "//deepvariant:testdata",
         "//third_party/nucleus/testdata",
     ],
-    python_version = "PY2",
-    srcs_version = "PY2AND3",
+    python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":allelecounter",
         "//deepvariant:py_testdata",
@@ -75,8 +75,8 @@ py_test(
     size = "small",
     srcs = ["variant_calling_wrap_test.py"],
     data = ["//deepvariant:testdata"],
-    python_version = "PY2",
-    srcs_version = "PY2AND3",
+    python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":allelecounter",
         ":variant_calling",

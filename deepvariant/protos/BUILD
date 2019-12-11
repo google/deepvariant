@@ -42,7 +42,7 @@ py_proto_library(
     srcs = ["deepvariant.proto"],
     default_runtime = "@com_google_protobuf//:protobuf_python",
     protoc = "@com_google_protobuf//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = [
         ":realigner_py_pb2",
         ":resources_py_pb2",
@@ -66,7 +66,7 @@ py_proto_library(
     srcs = ["realigner.proto"],
     default_runtime = "@com_google_protobuf//:protobuf_python",
     protoc = "@com_google_protobuf//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
     deps = ["//third_party/nucleus/protos:range_py_pb2"],
 )
 
@@ -98,7 +98,7 @@ py_proto_library(
     srcs = ["resources.proto"],
     default_runtime = "@com_google_protobuf//:protobuf_python",
     protoc = "@com_google_protobuf//:protoc",
-    srcs_version = "PY2AND3",
+    py_libs = ["//third_party/nucleus:__init__py"],
 )
 
 cc_proto_library(

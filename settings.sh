@@ -98,7 +98,8 @@ export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"
 # Docker image, it shouldn't be necessary.
 export DV_INSTALL_GPU_DRIVERS="${DV_INSTALL_GPU_DRIVERS:-0}"
 
-export PYTHON_BIN_PATH=$(which python)
+export PYTHON_BIN_PATH=$(which python3.6)
+export PYTHON_LIB_PATH='/usr/local/lib/python3.6/dist-packages'
 export USE_DEFAULT_PYTHON_LIB_PATH=1
 export DV_COPT_FLAGS="--copt=-march=corei7 --copt=-Wno-sign-compare --copt=-Wno-write-strings"
 

@@ -41,12 +41,12 @@ COPY --from=builder /opt/deepvariant/bazel-genfiles/licenses.zip .
 WORKDIR /opt/deepvariant/bin/
 COPY --from=builder /opt/deepvariant/run-prereq.sh .
 COPY --from=builder /opt/deepvariant/settings.sh .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/make_examples.zip  .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/call_variants.zip  .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/postprocess_variants.zip  .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/vcf_stats_report.zip  .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/model_train.zip .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/model_eval.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/call_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/postprocess_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_report.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_train.zip .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_eval.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
 RUN ./run-prereq.sh
 
@@ -109,7 +109,14 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 RUN chmod +r /opt/models/pacbio/model.ckpt*
 
 RUN apt-get -y update && \
-  apt-get install -y python-pip parallel && \
-  python -m pip uninstall -y pip  && \
-  python -m pip install pip==9.0.3 && \
-  pip install absl-py==0.7.1
+  apt-get install -y parallel && \
+  add-apt-repository -y ppa:deadsnakes/ppa && \
+  apt -y update && \
+  apt install -y python3.6 && \
+  apt install -y python3.6-dev && \
+  apt install -y python3.6-venv && \
+  curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py && \
+  python3.6 get-pip.py && \
+  ln -sf /usr/bin/python3.6 /usr/local/bin/python3 && \
+  ln -sf /usr/bin/python3.6 /usr/bin/python && \
+  pip3 install absl-py==0.8.1

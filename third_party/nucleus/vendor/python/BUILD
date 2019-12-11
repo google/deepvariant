@@ -24,6 +24,7 @@ py_test(
     name = "statusor_examples_test",
     size = "small",
     srcs = ["statusor_examples_test.py"],
+    python_version = "PY3",
     deps = [
         ":statusor_examples",
         "@absl_py//absl/testing:absltest",

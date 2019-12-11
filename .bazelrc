@@ -51,3 +51,8 @@ build --copt="-Wno-unused-function"
 # simultaneous tests is not interleaved with each other. Prints a summary at the
 # build as per summary output above.
 test --test_output=errors
+
+# Until https://github.com/bazelbuild/bazel/issues/4815 is fixed, we need
+# to force the use of our py_runtime.
+build --python_top=//:deepvariant_python_runtime
+test --python_top=//:deepvariant_python_runtime

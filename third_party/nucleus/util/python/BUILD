@@ -24,7 +24,8 @@ py_test(
     size = "small",
     srcs = ["math_wrap_test.py"],
     data = [],
-    srcs_version = "PY2AND3",
+    python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":math",
         "@absl_py//absl/testing:absltest",

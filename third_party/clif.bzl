@@ -67,9 +67,7 @@ def _clif_wrap_cc_impl(ctx):
 
     # Construct our arguments for CLIF.
     args = [
-        # redacted
-        # Python 3.
-        # "--py3output",
+        "--py3output",
         "--modname",
         ctx.attr.package_name + "." + ctx.attr.module_name,
         "-c",

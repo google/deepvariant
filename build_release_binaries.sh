@@ -105,7 +105,6 @@ bazel build -c opt \
   --output_filter=DONT_MATCH_ANYTHING \
   --noshow_loading_progress \
   --show_result=0 \
-  --noshow_progress \
   ${DV_COPT_FLAGS} \
   --build_python_zip \
   :binaries
@@ -121,9 +120,9 @@ bazel build  -c opt \
 # make sure all the builds are done before we fix things.
 
 # redacted
-fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/call_variants"
-fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/make_examples"
-fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/model_eval"
-fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/model_train"
-fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/postprocess_variants"
-fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/vcf_stats_report"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/model_eval"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/model_train"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/postprocess_variants"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/vcf_stats_report"

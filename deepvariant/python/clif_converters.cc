@@ -57,7 +57,8 @@ using ::tensorflow::string;
 // std::call_once to initialize this C++ upon the first call to our converter.
 std::once_flag import_array_flag;
 
-void call_import_array() {
+// https://github.com/kornerc/brisk/issues/3#issuecomment-237107324
+int call_import_array() {
   import_array();
 }
 
