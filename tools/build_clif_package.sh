@@ -49,30 +49,42 @@
 # GitHub issues such as https://github.com/google/deepvariant/issues/29 has
 # some relevant pointers.
 
-BINARY_RELEASE="nov18_2019"
+BINARY_RELEASE="dec10_2019"
 PROTOBUF_VERSION="3.10.0"
 
 set -eux -o pipefail
 
-# Clear any outdated apt cache.
-sudo apt-get -y update
+# Install Python 3.6.
+# Reference: https://askubuntu.com/a/1069303
+sudo -H add-apt-repository -y ppa:deadsnakes/ppa
+sudo -H apt -y update
+sudo -H apt install -y python3.6
+sudo -H apt install -y python3.6-dev
+sudo -H apt install -y python3.6-venv
+# If we install python3-pip directly, the pip3 version points to:
+#   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
+# Use the following lines to ensure 3.6.
+curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+sudo -H python3.6 get-pip.py
+sudo ln -sf /usr/bin/python3.6 /usr/local/bin/python3
+sudo ln -sf /usr/bin/python3.6 /usr/bin/python
 
 # Figure out which linux installation we are on to fetch an appropriate version
 # of CLIF binary. Note that we only support now Ubuntu (14, 16, and 18), and
 # Debian.
-if [[ $(python -mplatform) == *"Ubuntu-18"* ]]; then
+if [[ $(python3 -mplatform) == *"Ubuntu-18"* ]]; then
   export DV_PLATFORM="ubuntu-18"
   # For ubuntu 18 we install cmake
   sudo -H apt-get -y install cmake
-elif [[ $(python -mplatform) == *"Ubuntu-16"* ]]; then
+elif [[ $(python3 -mplatform) == *"Ubuntu-16"* ]]; then
   export DV_PLATFORM="ubuntu-16"
   # For ubuntu 16 we install cmake
   sudo -H apt-get -y install cmake
-elif [[ $(python -mplatform) == *"Ubuntu-14"* ]]; then
+elif [[ $(python3 -mplatform) == *"Ubuntu-14"* ]]; then
   export DV_PLATFORM="ubuntu-14"
   # For ubuntu 14 we install cmake3
   sudo -H apt-get -y install cmake3
-elif [[ $(python -mplatform | grep '[Dd]ebian-\(rodete\|9.*\)') ]]; then
+elif [[ $(python3 -mplatform | grep '[Dd]ebian-\(rodete\|9.*\)') ]]; then
   export DV_PLATFORM="debian"
    # For recent debian, we install cmake.
    sudo -H apt-get -y install cmake
@@ -86,9 +98,9 @@ CLIF_PACKAGE="oss_clif.${DV_PLATFORM}.${BINARY_RELEASE}.tgz"
 
 # Install prereqs.
 sudo -H apt-get -y install ninja-build subversion git
-sudo -H apt-get -y install virtualenv python-pip pkg-config
-sudo -H pip install 'pyparsing>=2.2.0'
-sudo -H pip install "protobuf>=${PROTOBUF_VERSION}"
+sudo -H apt-get -y install virtualenv pkg-config
+sudo -H pip3 install 'pyparsing>=2.2.0'
+sudo -H pip3 install "protobuf>=${PROTOBUF_VERSION}"
 
 echo === building protobufs
 
@@ -109,6 +121,14 @@ rm -Rf clif || true
 git clone https://github.com/google/clif.git
 sed -i 's/\$HOME\/opt/\/usr\/local/g' clif/INSTALL.sh
 sed -i 's/-j 2//g' clif/INSTALL.sh
+# For using Python3. Reference: https://github.com/google/clif
+# "If you have more than one Python version installed (eg. python2.7 and
+#  python3.6) cmake may have problems finding python libraries for the Python
+#  you specified as INSTALL.sh argument and uses the default Python instead.
+#  To help cmake use the correct Python add the following options to the cmake
+#  command (substitute the correct path for your system):"
+sed -i 's|cmake -DCMAKE_INSTALL_PREFIX="$CLIF_VIRTUALENV/clang"|cmake ...  -DCMAKE_INSTALL_PREFIX="$CLIF_VIRTUALENV/clang" -DPYTHON_INCLUDE_DIR="/usr/include/python3.6" -DPYTHON_LIBRARY="/usr/lib/x86_64-linux-gnu/libpython3.6m.so" -DPYTHON_EXECUTABLE="/usr/bin/python3.6" |' clif/INSTALL.sh
+
 (cd clif && sudo ./INSTALL.sh)
 
 echo === creating package tgz
