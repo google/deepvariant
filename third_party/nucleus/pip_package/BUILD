@@ -20,7 +20,7 @@ filegroup(
         # "@com_googlesource_code_cctz//:LICENSE.txt",
         # "@io_bazel_rules_closure//:LICENSE",
         "@org_tensorflow//:LICENSE",
-        "@protobuf_archive//:LICENSE",
+        "@com_google_protobuf//:LICENSE",
     ],
 )
 

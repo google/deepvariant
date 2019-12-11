@@ -231,7 +231,7 @@ class TFUtilsTest(parameterized.TestCase):
       ('/bad/pathA/a,/bad/pathB/b', '/bad/pathA'))
   def testGetShapeFromExamplesPathInvalidPath(self, source_paths,
                                               expected_partial_message):
-    # This calls tf.gfile.Glob, which will raise errors.OpError,
+    # This calls tf.io.gfile.Glob, which will raise errors.OpError,
     # at least on a Posix filesystem.  Other filesystems might
     # not fail like that, and will return an empty list, which
     # is turned into a different exception.
@@ -264,4 +264,5 @@ class TFUtilsTest(parameterized.TestCase):
 
 
 if __name__ == '__main__':
+  tf.compat.v1.disable_eager_execution()
   absltest.main()

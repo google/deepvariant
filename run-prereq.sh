@@ -88,9 +88,9 @@ pip install "${PIP_ARGS[@]}" enum34
 pip install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
 pip install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip install "${PIP_ARGS[@]}" 'mock>=2.0.0'
-# This version removes "from tensorflow.python.ops import map_fn", which does
-# not exist in TF1.13.1.
-pip install --user git+https://github.com/pichuan/tf-slim.git@map_fn
+pip install "${PIP_ARGS[@]}" 'protobuf==3.8.0'
+pip install "${PIP_ARGS[@]}" 'argparse==1.4.0'
+pip install "${PIP_ARGS[@]}" git+https://github.com/pichuan/tf-slim.git@remove_contrib
 
 # Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
 # source. But we know that on 16.04 we don't need to compile from source
@@ -141,13 +141,13 @@ else
   else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
-      echo "Installing GPU-enabled TensorFlow wheel"
+      echo "Installing GPU-enabled TensorFlow ${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION} wheel"
       pip install "${PIP_ARGS[@]}" --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
-      echo "Installing Intel's CPU-only MKL TensorFlow wheel"
+      echo "Installing Intel's CPU-only MKL TensorFlow ${DV_GCP_OPTIMIZED_TF_WHL_VERSION} wheel"
       pip install "${PIP_ARGS[@]}" --upgrade "intel-tensorflow==${DV_GCP_OPTIMIZED_TF_WHL_VERSION}"
     else
-      echo "Installing standard CPU-only TensorFlow wheel"
+      echo "Installing standard CPU-only TensorFlow ${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION} wheel"
       pip install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
     fi
   fi

@@ -122,7 +122,7 @@ py_library(
     name = "proto_utils",
     srcs = ["proto_utils.py"],
     deps = [
-        "@protobuf_archive//:protobuf_python",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )
 
@@ -350,9 +350,9 @@ cc_library(
     deps = [
         ":proto_ptr",
         "@clif//:cpp_runtime",
+        "@com_google_protobuf//:proto_api",
+        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
-        "@protobuf_archive//:proto_api",
-        "@protobuf_archive//:protobuf",
     ],
 )
 

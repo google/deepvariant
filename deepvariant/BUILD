@@ -150,8 +150,8 @@ cc_library(
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:samplers",
+        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -168,9 +168,9 @@ cc_test(
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
+        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -192,7 +192,7 @@ py_test(
     name = "variant_caller_test",
     size = "small",
     srcs = ["variant_caller_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
@@ -217,7 +217,7 @@ py_test(
     name = "very_sensitive_caller_test",
     size = "small",
     srcs = ["very_sensitive_caller_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
@@ -243,7 +243,7 @@ py_test(
     size = "small",
     srcs = ["vcf_caller_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
@@ -322,10 +322,12 @@ py_binary(
     srcs = [
         "make_examples.py",
     ],
-    default_python_version = "PY2",
     main = "make_examples.py",
+    python_version = "PY2",
     deps = [
         ":make_examples_lib",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
@@ -334,7 +336,7 @@ py_test(
     size = "large",
     srcs = ["make_examples_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     shard_count = 2,
     srcs_version = "PY2AND3",
     deps = [
@@ -384,8 +386,12 @@ py_library(
 py_binary(
     name = "call_variants",
     srcs = ["call_variants.py"],
-    default_python_version = "PY2",
-    deps = [":call_variants_main_lib"],
+    python_version = "PY2",
+    deps = [
+        ":call_variants_main_lib",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
 )
 
 py_library(
@@ -405,7 +411,7 @@ py_test(
     srcs = ["call_variants_test.py"],
     args = ["--use_tpu=false"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":call_variants_main_lib",
@@ -430,7 +436,7 @@ py_test(
     size = "large",
     srcs = ["call_variants_accelerator_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     tags = [
         "gpu_test",
@@ -465,7 +471,7 @@ py_test(
     size = "small",
     srcs = ["pileup_image_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":pileup_image",
@@ -532,11 +538,13 @@ py_binary(
     srcs = [
         "postprocess_variants.py",
     ],
-    default_python_version = "PY2",
     main = "postprocess_variants.py",
+    python_version = "PY2",
     deps = [
         ":postprocess_variants_py_lib",
         "@absl_py//absl/flags",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
@@ -545,7 +553,7 @@ py_test(
     size = "small",
     srcs = ["postprocess_variants_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":postprocess_variants_py_lib",
@@ -586,7 +594,7 @@ py_library(
         ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
-        "@protobuf_archive//:protobuf_python",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )
 
@@ -613,8 +621,8 @@ py_test(
     size = "medium",
     srcs = ["data_providers_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
     main = "data_providers_test.py",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":data_providers_test_lib",
@@ -637,7 +645,7 @@ py_test(
     name = "haplotypes_test",
     size = "small",
     srcs = ["haplotypes_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":haplotypes",
@@ -667,7 +675,7 @@ py_test(
     name = "modeling_test",
     size = "medium",
     srcs = ["modeling_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":dv_constants",
@@ -695,9 +703,13 @@ py_library(
 py_binary(
     name = "model_train",
     srcs = ["model_train.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
-    deps = [":model_train_main_lib"],
+    deps = [
+        ":model_train_main_lib",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
 )
 
 py_library(
@@ -716,7 +728,7 @@ py_test(
     size = "medium",
     srcs = ["model_train_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     shard_count = 10,
     srcs_version = "PY2AND3",
     tags = ["nozapfhahn"],  # timeout
@@ -751,9 +763,13 @@ py_library(
 py_binary(
     name = "model_eval",
     srcs = ["model_eval.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
-    deps = [":model_eval_main_lib"],
+    deps = [
+        ":model_eval_main_lib",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
 )
 
 py_library(
@@ -772,7 +788,7 @@ py_test(
     size = "large",
     srcs = ["model_eval_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     shard_count = 10,
     srcs_version = "PY2AND3",
     deps = [
@@ -807,7 +823,7 @@ py_test(
     name = "tf_utils_test",
     size = "small",
     srcs = ["tf_utils_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
@@ -834,7 +850,7 @@ py_test(
     name = "exclude_contigs_test",
     size = "small",
     srcs = ["exclude_contigs_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":exclude_contigs",
@@ -863,7 +879,7 @@ py_test(
     name = "dv_vcf_constants_test",
     size = "small",
     srcs = ["dv_vcf_constants_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":dv_vcf_constants",
@@ -876,7 +892,7 @@ py_test(
 py_binary(
     name = "resources",
     srcs = ["resources.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [":resources_main_lib"],
 )
@@ -891,7 +907,7 @@ py_library(
 py_test(
     name = "resources_test",
     srcs = ["resources_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":resources_main_lib",
@@ -902,12 +918,14 @@ py_test(
 py_binary(
     name = "vcf_stats_report",
     srcs = ["vcf_stats_report.py"],
-    default_python_version = "PY2",
     main = "vcf_stats_report.py",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":vcf_stats_report_lib",
         "@absl_py//absl/flags",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
@@ -938,7 +956,7 @@ py_test(
     name = "vcf_stats_test",
     srcs = ["vcf_stats_test.py"],
     data = [":testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":py_testdata",
@@ -959,11 +977,13 @@ py_library(
 py_test(
     name = "vcf_stats_vis_test",
     srcs = ["vcf_stats_vis_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":vcf_stats_vis",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )

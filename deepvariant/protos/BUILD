@@ -1,6 +1,5 @@
-load("//:third_party/clif.bzl", "py_clif_cc", "pyclif_proto_library")
-load("@protobuf_archive//:protobuf.bzl", "py_proto_library")
-load("@protobuf_archive//:protobuf.bzl", "cc_proto_library")
+load("//third_party:clif.bzl", "pyclif_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
 
 package(
     default_visibility = [
@@ -27,8 +26,8 @@ proto_library(
 cc_proto_library(
     name = "deepvariant_cc_pb2",
     srcs = ["deepvariant.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
+    default_runtime = "@com_google_protobuf//:protobuf",
+    protoc = "@com_google_protobuf//:protoc",
     deps = [
         ":realigner_cc_pb2",
         ":resources_cc_pb2",
@@ -41,8 +40,8 @@ cc_proto_library(
 py_proto_library(
     name = "deepvariant_py_pb2",
     srcs = ["deepvariant.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
+    default_runtime = "@com_google_protobuf//:protobuf_python",
+    protoc = "@com_google_protobuf//:protoc",
     srcs_version = "PY2AND3",
     deps = [
         ":realigner_py_pb2",
@@ -65,8 +64,8 @@ pyclif_proto_library(
 py_proto_library(
     name = "realigner_py_pb2",
     srcs = ["realigner.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
+    default_runtime = "@com_google_protobuf//:protobuf_python",
+    protoc = "@com_google_protobuf//:protoc",
     srcs_version = "PY2AND3",
     deps = ["//third_party/nucleus/protos:range_py_pb2"],
 )
@@ -74,8 +73,8 @@ py_proto_library(
 cc_proto_library(
     name = "realigner_cc_pb2",
     srcs = ["realigner.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
+    default_runtime = "@com_google_protobuf//:protobuf",
+    protoc = "@com_google_protobuf//:protoc",
     deps = ["//third_party/nucleus/protos:range_cc_pb2"],
 )
 
@@ -97,16 +96,16 @@ pyclif_proto_library(
 py_proto_library(
     name = "resources_py_pb2",
     srcs = ["resources.proto"],
-    default_runtime = "@protobuf_archive//:protobuf_python",
-    protoc = "@protobuf_archive//:protoc",
+    default_runtime = "@com_google_protobuf//:protobuf_python",
+    protoc = "@com_google_protobuf//:protoc",
     srcs_version = "PY2AND3",
 )
 
 cc_proto_library(
     name = "resources_cc_pb2",
     srcs = ["resources.proto"],
-    default_runtime = "@protobuf_archive//:protobuf",
-    protoc = "@protobuf_archive//:protoc",
+    default_runtime = "@com_google_protobuf//:protobuf",
+    protoc = "@com_google_protobuf//:protoc",
 )
 
 proto_library(

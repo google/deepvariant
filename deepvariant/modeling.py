@@ -50,17 +50,16 @@ import enum
 
 import tensorflow as tf
 import tf_slim
-
+from deepvariant import dv_constants
 from deepvariant import tf_utils
 # pylint: disable=g-direct-tensorflow-import
-from tensorflow.contrib.tpu.python.tpu import tpu_config
-from tensorflow.contrib.tpu.python.tpu import tpu_estimator
-from tensorflow.contrib.tpu.python.tpu import tpu_optimizer
 from tensorflow.python.framework import ops
+from tensorflow.python.tpu import tpu_config
+from tensorflow.python.tpu import tpu_estimator
+from tensorflow.python.tpu import tpu_optimizer
 # pylint: enable=g-direct-tensorflow-import
-from nets import inception
+from tf_slim.nets import inception
 
-from deepvariant import dv_constants
 
 flags.DEFINE_float(
     'label_smoothing', 1e-6,
@@ -342,7 +341,7 @@ def eval_metric_fn(labels, predictions, variant_types):
 
   # Special case F1/All to avoid a clash between the two different ways that we
   # can compute Precision and Recall (e.g., get_class_precision vs.
-  # tf.metrics.precision.
+  # tf.compat.v1.metrics.precision.
   metrics[_eval_name('F1', 'All')] = get_f1_score(labels, predicted_classes)
 
   logging.info('Metrics are %s', metrics.keys())
@@ -490,7 +489,7 @@ class DeepVariantModel(object):
       This function is executed on the CPU and should not directly reference
       any Tensors in the rest of the `model_fn`. To pass Tensors from the
       model to the `metric_fn`, provide as part of the `host_call`. See
-      https://www.tensorflow.org/api_docs/python/tf/contrib/tpu/TPUEstimatorSpec
+      https://www.tensorflow.org/api_docs/python/tf/compat/v1/estimator/tpu/TPUEstimator
       for more information.
       Arguments should match the list of `Tensor` objects passed as the second
       element in the tuple passed to `host_call`.
@@ -502,27 +501,14 @@ class DeepVariantModel(object):
         List of summary ops to run on the CPU host.
       """
       step = global_step[0]
-
-      with tf.contrib.summary.create_file_writer(
+      with tf.compat.v2.summary.create_file_writer(
           logdir=model_dir, filename_suffix='.host_call').as_default():
-        with tf.contrib.summary.record_summaries_every_n_global_steps(
-            record_frequency_in_steps, step):
+        with tf.compat.v2.summary.record_if(
+            lambda: tf.math.equal(step % record_frequency_in_steps, 0)):
           for i, name in enumerate(metric_names):
-            tf.contrib.summary.scalar(prefix + name, args[i][0], step=step)
-
-          return tf.contrib.summary.all_summary_ops()
-
-      # redacted
-      #                    to TF2.
-      # with tf.compat.v2.summary.create_file_writer(
-      #     logdir=model_dir, filename_suffix='.host_call').as_default():
-      #   with tf.compat.v2.summary.record_if(
-      #       lambda: tf.math.equal(step % record_frequency_in_steps, 0)):
-      #     for i, name in enumerate(metric_names):
-      #       tf.compat.v2.summary.scalar(
-      #          name=prefix + name, data=args[i][0], step=step)
-      #
-      #     return tf.compat.v1.summary.all_v2_summary_ops()
+            tf.compat.v2.summary.scalar(
+                name=prefix + name, data=args[i][0], step=step)
+          return tf.compat.v1.summary.all_v2_summary_ops()
 
     # To log the current learning rate, and gradient norm for Tensorboard, the
     # summary op needs to be run on the host CPU via host_call. host_call
@@ -1535,7 +1521,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
     # Perform 1x1 convolution similarly to the Inception architecture
     # (see 'Predictions' end points in inception_v3 architecture)
 
-    tower = tf.contrib.layers.conv2d(
+    tower = tf.nn.conv2d(
         mid_layer, 1, [1, 1], stride=1, activation_fn=tf.nn.relu)
 
     batch_size = tower.get_shape()[0].value

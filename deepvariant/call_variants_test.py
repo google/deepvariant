@@ -481,7 +481,8 @@ class CallVariantsUnitTests(
     if 'tpu' in devices or FLAGS.use_tpu:
       return
 
-    with mock.patch.object(call_variants.tf.Session, 'list_devices') as mock_ld:
+    with mock.patch.object(call_variants.tf.compat.v1.Session,
+                           'list_devices') as mock_ld:
       mock_ld.return_value = [
           device(name=dt + '/' + str(i), device_type=dt.upper())
           for i, dt in enumerate(devices)

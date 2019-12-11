@@ -15,7 +15,7 @@ py_test(
     name = "timer_test",
     size = "small",
     srcs = ["timer_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     deps = [
         ":timer",
         "@absl_py//absl/testing:absltest",

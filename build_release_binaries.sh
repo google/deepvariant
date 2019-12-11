@@ -56,15 +56,20 @@ function fix_zip_file {
   unzip -qq "${BN}.zip"
 
   # Step 3: Restore the symbolic links.
-  find "runfiles/com_google_deepvariant" -name '*.so' -exec ln --force -s --relative "runfiles/protobuf_archive/python/google/protobuf/pyext/_message.so" {} \;
+  find "runfiles/com_google_deepvariant" -name '*.so' -exec ln --force -s --relative "runfiles/com_google_protobuf/python/google/protobuf/pyext/_message.so" {} \;
 
   # Step 4: Fix the __main__.py's use of zipfile, which can't handle
   # symbolic links.  Replace it with an invocation of unzip, which can.
   # The lines we replace are
-  #   zf = zipfile.ZipFile(GetWindowsPathWithUNCPrefix(os.path.dirname(__file__)))
-  #   zf.extractall(GetWindowsPathWithUNCPrefix(temp_dir))
-  sed -i 's/  zf = zipfile\.ZipFile.*/  os.system("unzip -qq " + os.path.dirname(__file__) + " -d " + temp_dir)/' __main__.py
-  sed -i 's/  zf\.extractall.*//' __main__.py
+  # with zipfile.ZipFile(zip_path) as zf:
+  #   for info in zf.infolist():
+  #     zf.extract(info, dest_dir)
+  #     # UNC-prefixed paths must be absolute/normalized. See
+
+  sed -i 's/  with zipfile.ZipFile(zip_path) as zf:/  if True:/' __main__.py
+  sed -i 's/  for info in zf.infolist():/  if True:/' __main__.py
+  sed -i 's/  zf.extract(info, dest_dir)/  os.system("unzip -qq " + zip_path + " -d " + dest_dir)/' __main__.py
+  sed -i 's/  # UNC-prefixed paths must be absolute\/normalized. See/  return/' __main__.py
 
   # Step 5: Zip it back up, with zip --symbolic
   rm -f "${BN}.zip"
@@ -116,9 +121,9 @@ bazel build  -c opt \
 # make sure all the builds are done before we fix things.
 
 # redacted
-fix_zip_file "bazel-bin/deepvariant/call_variants"
-fix_zip_file "bazel-bin/deepvariant/make_examples"
-fix_zip_file "bazel-bin/deepvariant/model_eval"
-fix_zip_file "bazel-bin/deepvariant/model_train"
-fix_zip_file "bazel-bin/deepvariant/postprocess_variants"
-fix_zip_file "bazel-bin/deepvariant/vcf_stats_report"
+fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/call_variants"
+fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/make_examples"
+fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/model_eval"
+fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/model_train"
+fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/postprocess_variants"
+fix_zip_file "bazel-out/k8-py2-opt/bin/deepvariant/vcf_stats_report"

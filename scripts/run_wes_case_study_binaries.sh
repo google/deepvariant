@@ -95,7 +95,7 @@ function run_make_examples() {
   echo "Start running make_examples...Log will be in the terminal and also to ${LOG_DIR}/make_examples.log."
   seq 0 $((N_SHARDS-1)) | \
     parallel -k --line-buffer \
-      python ./bazel-bin/deepvariant/make_examples.zip \
+      python ./bazel-out/k8-py2-opt/bin/deepvariant/make_examples.zip \
         --mode calling \
         --ref "${REF}" \
         --reads "${BAM}" \
@@ -110,7 +110,7 @@ function run_make_examples() {
 ## Run `call_variants`
 function run_call_variants() {
   echo "Start running call_variants...Log will be in the terminal and also to ${LOG_DIR}/call_variants.log."
-  python ./bazel-bin/deepvariant/call_variants.zip \
+  python ./bazel-out/k8-py2-opt/bin/deepvariant/call_variants.zip \
       --outfile "${CALL_VARIANTS_OUTPUT}" \
       --examples "${EXAMPLES}" \
       --checkpoint "${MODEL}"
@@ -121,7 +121,7 @@ function run_call_variants() {
 ## Run `postprocess_variants`, without gVCFs.
 function run_postprocess_variants() {
   echo "Start running postprocess_variants (without gVCFs)...Log will be in the terminal and also to ${LOG_DIR}/postprocess_variants.log."
-  python ./bazel-bin/deepvariant/postprocess_variants.zip \
+  python ./bazel-out/k8-py2-opt/bin/deepvariant/postprocess_variants.zip \
       --ref "${REF}" \
       --infile "${CALL_VARIANTS_OUTPUT}" \
       --outfile "${OUTPUT_VCF}"
@@ -132,7 +132,7 @@ function run_postprocess_variants() {
 ## Run `postprocess_variants`, with gVCFs.
 function run_postprocess_variants_gVCF() {
   echo "Start running postprocess_variants (with gVCFs)...Log will be in the terminal and also to ${LOG_DIR}/postprocess_variants.withGVCF.log."
-  python ./bazel-bin/deepvariant/postprocess_variants.zip \
+  python ./bazel-out/k8-py2-opt/bin/deepvariant/postprocess_variants.zip \
       --ref "${REF}" \
       --infile "${CALL_VARIANTS_OUTPUT}" \
       --outfile "${OUTPUT_VCF}" \
@@ -147,7 +147,7 @@ function run_postprocess_variants_gVCF() {
 # script works on existing VCF files.
 function run_vcf_stats_report() {
   echo "Start running vcf_stats_report...Log will be in the terminal and also to ${LOG_DIR}/vcf_stats_report.log."
-  python ./bazel-bin/deepvariant/vcf_stats_report.zip \
+  python ./bazel-out/k8-py2-opt/bin/deepvariant/vcf_stats_report.zip \
       --input_vcf "${OUTPUT_VCF}" \
       --outfile_base "${OUTPUT_STATS}"
   echo "Done."

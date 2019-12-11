@@ -32,7 +32,7 @@ Utilities for reading and writing TFRecord files, especially those containing
 serialized TensorFlow Example protocol buffers.
 """
 
-# Important: Please keep this module free of TensorFlow c++ extensions.
+# Important: Please keep this module free of TensorFlow C++ extensions.
 # This makes it easy to build pure python packages for training that work with
 # CMLE.
 

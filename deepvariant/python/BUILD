@@ -1,4 +1,4 @@
-load("//:third_party/clif.bzl", "py_clif_cc")
+load("//third_party:clif.bzl", "py_clif_cc")
 
 package(
     default_visibility = [
@@ -31,7 +31,7 @@ py_test(
         "//deepvariant:testdata",
         "//third_party/nucleus/testdata",
     ],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":allelecounter",
@@ -41,6 +41,8 @@ py_test(
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
@@ -73,7 +75,7 @@ py_test(
     size = "small",
     srcs = ["variant_calling_wrap_test.py"],
     data = ["//deepvariant:testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":allelecounter",
@@ -84,6 +86,8 @@ py_test(
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 

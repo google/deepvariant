@@ -27,7 +27,7 @@ py_test(
     size = "small",
     srcs = ["realigner_test.py"],
     data = ["//deepvariant:testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     deps = [
         ":realigner",
         ":utils",
@@ -71,7 +71,7 @@ py_test(
     name = "window_selector_test",
     size = "small",
     srcs = ["window_selector_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     deps = [
         ":window_selector",
         "//deepvariant:py_testdata",
@@ -96,8 +96,8 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
-        "@protobuf_archive//:protobuf",
     ],
 )
 
@@ -164,8 +164,8 @@ cc_test(
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",
         "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
-        "@protobuf_archive//:protobuf",
     ],
 )

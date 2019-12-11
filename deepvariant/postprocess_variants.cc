@@ -84,11 +84,11 @@ void ProcessSingleSiteCallTfRecords(
         tensorflow::io::RecordReaderOptions::CreateRecordReaderOptions(option));
 
     uint64 offset = 0;
-    string data;
+    tensorflow::tstring data;
     LOG(INFO) << "Read from: " << tfrecord_path;
     while (reader.ReadRecord(&offset, &data).ok()) {
       CallVariantsOutput single_site_call;
-      QCHECK(single_site_call.ParseFromString(data))
+      QCHECK(single_site_call.ParseFromArray(data.data(), data.length()))
           << "Failed to parse CallVariantsOutput";
       // Here we assume each variant has only 1 call.
       QCHECK_EQ(single_site_call.variant().calls_size(), 1);

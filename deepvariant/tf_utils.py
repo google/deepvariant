@@ -345,7 +345,7 @@ def model_num_classes(checkpoint_path, n_classes_model_variable):
 
 def string_to_int_tensor(x):
   """Graph operations decode a string into a fixed-size tensor of ints."""
-  decoded = tf.io.decode_raw(x, tf.uint8)
+  decoded = tf.compat.v1.decode_raw(x, tf.uint8)
   clipped = decoded[:STRING_TO_INT_MAX_CONTENTS_LEN]  # clip to allowed max_len
   shape = tf.shape(input=clipped)
   slen = shape[0]

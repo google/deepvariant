@@ -141,7 +141,7 @@ flags.DEFINE_string(
     None,
     'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
     'this flag or --master. An empty value corresponds to no Cloud TPU. See '
-    'https://www.tensorflow.org/api_docs/python/tf/contrib/cluster_resolver/TPUClusterResolver'  # pylint: disable=line-too-long
+    'https://www.tensorflow.org/api_docs/python/tf/distribute/cluster_resolver/TPUClusterResolver'  # pylint: disable=line-too-long
 )
 
 flags.DEFINE_string(

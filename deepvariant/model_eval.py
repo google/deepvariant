@@ -173,11 +173,8 @@ def checkpoints_iterator(checkpoint_dir,
                          timeout=None,
                          timeout_fn=None):
   # This is here to make it easy to mock out the iterator for tests.
-  return tf.contrib.training.checkpoints_iterator(
-      checkpoint_dir, min_interval_secs, timeout, timeout_fn)
-  # redacted
-  # return tf.train.checkpoints_iterator(checkpoint_dir, min_interval_secs,
-  #                                      timeout, timeout_fn)
+  return tf.train.checkpoints_iterator(checkpoint_dir, min_interval_secs,
+                                       timeout, timeout_fn)
 
 
 def eval_loop(master,

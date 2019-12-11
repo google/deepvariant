@@ -70,7 +70,7 @@ cp -L -R "${RUNFILES}"/third_party/* "${TOPDIR}/nucleus/third_party"
 # See also the top level __init__.py that sets the sys.path to make this
 # version of protobuf have precedence over any other installed versions while
 # running Nucleus code.
-cp -L -R "${RUNFILES}/external/protobuf_archive/python/google" "${TOPDIR}/google"
+cp -L -R "${RUNFILES}/external/com_google_protobuf/python/google" "${TOPDIR}/google"
 
 # Copy top level files to /nucleus.
 cp LICENSE "${TOPDIR}/nucleus"

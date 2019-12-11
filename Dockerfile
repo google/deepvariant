@@ -41,12 +41,12 @@ COPY --from=builder /opt/deepvariant/bazel-genfiles/licenses.zip .
 WORKDIR /opt/deepvariant/bin/
 COPY --from=builder /opt/deepvariant/run-prereq.sh .
 COPY --from=builder /opt/deepvariant/settings.sh .
-COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/make_examples.zip  .
-COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/call_variants.zip  .
-COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/postprocess_variants.zip  .
-COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/vcf_stats_report.zip  .
-COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_train.zip .
-COPY --from=builder /opt/deepvariant/bazel-bin/deepvariant/model_eval.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/make_examples.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/call_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/postprocess_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/vcf_stats_report.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/model_train.zip .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-py2-opt/bin/deepvariant/model_eval.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
 RUN ./run-prereq.sh
 

@@ -1,4 +1,4 @@
-load("//:third_party/clif.bzl", "py_clif_cc")
+load("//third_party:clif.bzl", "py_clif_cc")
 # load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
 package(
@@ -37,7 +37,7 @@ py_test(
     size = "small",
     srcs = ["debruijn_graph_wrap_test.py"],
     data = ["//deepvariant:testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":debruijn_graph",
@@ -63,7 +63,7 @@ py_test(
     name = "ssw_wrap_test",
     size = "small",
     srcs = ["ssw_wrap_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     deps = [
         ":ssw",
         "@absl_py//absl/testing:absltest",
@@ -74,7 +74,7 @@ py_test(
     name = "ssw_misc_test",
     size = "small",
     srcs = ["ssw_misc_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     deps = [
         ":ssw",
         "@absl_py//absl/testing:absltest",

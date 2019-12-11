@@ -9,7 +9,7 @@ package(
 py_binary(
     name = "labeled_examples_to_vcf",
     srcs = ["labeled_examples_to_vcf.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":labeled_examples_to_vcf_main_lib",
@@ -38,7 +38,7 @@ py_test(
     name = "labeled_examples_to_vcf_test",
     srcs = ["labeled_examples_to_vcf_test.py"],
     data = ["//deepvariant:testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":labeled_examples_to_vcf_main_lib",
@@ -66,7 +66,7 @@ py_test(
     name = "variant_labeler_test",
     size = "small",
     srcs = ["variant_labeler_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":variant_labeler",
@@ -94,7 +94,7 @@ py_test(
     name = "positional_labeler_test",
     size = "small",
     srcs = ["positional_labeler_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":positional_labeler",
@@ -136,7 +136,7 @@ py_test(
     size = "small",
     srcs = ["customized_classes_labeler_test.py"],
     data = ["//deepvariant:testdata"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":customized_classes_labeler",
@@ -155,7 +155,7 @@ py_test(
 py_test(
     name = "haplotype_labeler_test",
     srcs = ["haplotype_labeler_test.py"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
     deps = [
         ":haplotype_labeler",

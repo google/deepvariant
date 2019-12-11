@@ -424,7 +424,7 @@ class InputTest(
   def check_batch_feed(self, batch_feed, use_tpu, expected_batch_size,
                        expected_n_batches):
     # Consume batch_feed, check that the right number of things is seen.
-    with self.test_session() as sess:
+    with tf.compat.v1.Session() as sess:
       sess.run(tf.compat.v1.local_variables_initializer())
       sess.run(tf.compat.v1.global_variables_initializer())
 
@@ -488,7 +488,7 @@ class InputTest(
     # although we indirectly check parse_tfexample as well.
     batch_feed = self.get_batch_feed(batch_size=1, use_tpu=use_tpu)
 
-    with self.test_session() as sess:
+    with tf.compat.v1.Session() as sess:
       sess.run(tf.compat.v1.local_variables_initializer())
       sess.run(tf.compat.v1.global_variables_initializer())
 
@@ -548,4 +548,5 @@ class InputTest(
 
 
 if __name__ == '__main__':
+  tf.compat.v1.disable_eager_execution()
   absltest.main()

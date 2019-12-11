@@ -3,7 +3,7 @@
 # if it is unique.
 workspace(name = "com_google_deepvariant")
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Note: absl_py and com_google_absl (the Python and C++ abseil libraries) are
 # provided by TensorFlow.
@@ -44,34 +44,32 @@ local_repository(
     path = "../tensorflow",
 )
 
-# Required boilerplate for tf_workspace(), apparently.
-# This is copied from https://github.com/tensorflow/tensorflow/blob/master/WORKSPACE
-# Note: This may need to be changed if we change the tensorflow branch that we
-# build against.
+# Required boilerplate for tf_workspace().
+# This is copied from https://github.com/tensorflow/tensorflow/blob/v2.0.0/WORKSPACE.
 http_archive(
     name = "io_bazel_rules_closure",
-    sha256 = "a38539c5b5c358548e75b44141b4ab637bba7c4dc02b46b1f62a96d6433f56ae",
-    strip_prefix = "rules_closure-dbb96841cc0a5fb2664c37822803b06dab20c7d1",
+    sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",
+    strip_prefix = "rules_closure-308b05b2419edb5c8ee0471b67a40403df940149",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_closure/archive/dbb96841cc0a5fb2664c37822803b06dab20c7d1.tar.gz",
-        "https://github.com/bazelbuild/rules_closure/archive/dbb96841cc0a5fb2664c37822803b06dab20c7d1.tar.gz",  # 2018-04-13
+        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz",
+        "https://github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz",  # 2019-06-13
     ],
 )
 
-# We need a protobuf version at this hash or later because we need the API
-# introduced in
-# https://github.com/google/protobuf/pull/4698 with bug fixes at
-# 4725, 4835, and 4836.
-# We also need our own BUILD file to support ProtoPtr optimizations.
+# This needs to be in sync with the version of protobuf used by TensorFlow,
+# which is currently defined in @tensorflow/tensorflow/workspace.bzl.
+# We supply our # own BUILD file, though, so we can prevent ODR violations by
+# putting all of Nucleus's C++ binary dependencies into a single library.
+# That BUILD file must be kept in sync with the version of protobuf used.
 http_archive(
-    name = "protobuf_archive",
+    name = "com_google_protobuf",
     build_file = "//:third_party/protobuf.BUILD",
-    sha256 = "ab811441e16acd6e6d19abb9fd266b0acbd7c14be331de9da7f0bdb3683ae39f",
-    strip_prefix = "protobuf-79700b56b99fa5c8c22ddef78e6c9557ff711379",
+    sha256 = "b9e92f9af8819bbbc514e2902aec860415b70209f31dfc8c4fa72515a5df9d59",
+    # This protobuf release is based on protobuf 3.8.0.
+    strip_prefix = "protobuf-310ba5ee72661c081129eb878c1bbcec936b20f0",
     urls = [
-        # redacted
-        # "https://mirror.bazel.build/github.com/google/protobuf/archive/a0e82dbe569552ac848d088391b63aaa1108d1a3.tar.gz",
-        "https://github.com/google/protobuf/archive/79700b56b99fa5c8c22ddef78e6c9557ff711379.tar.gz",
+        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz",
     ],
 )
 

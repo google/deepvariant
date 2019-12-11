@@ -338,7 +338,7 @@ CigarUnit::Operation CigarOperationFromChar(char op) {
 
 std::list<CigarOp> CigarStringToVector(const string& cigar) {
   std::list<CigarOp> cigarOps;
-  re2::StringPiece input(cigar);
+  absl::string_view input(cigar);
   RE2 pattern("(\\d+)([XIDS=])");
   int opLen;
   string opType;
@@ -510,7 +510,7 @@ void SetPositionsMap(size_t haplotype_size,
       hyplotype_alignment->hap_to_ref_positions_map;
   positions_map.resize(haplotype_size);
   RE2 pattern("(\\d+)([XIDS=])");  // matches cigar operation
-  re2::StringPiece input(hyplotype_alignment->cigar);
+  absl::string_view input(hyplotype_alignment->cigar);
   int cur_shift = 0;
   int haplotype_pos = 0;
   int last_pos = 0;
