@@ -74,7 +74,6 @@ from third_party.nucleus.util import variantcall_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 
-
 VariantAndGenotypes = collections.namedtuple('VariantAndGenotype',
                                              ['variant', 'genotypes'])
 
@@ -110,9 +109,9 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
         receive a special not-confident marker.
       max_group_size: int >= 1. The maximum number of variants we'll attempt to
         label together. Larger values increase the runtime of the algorithm.
-      max_separation: int >= 0. The maximum distance
-        between variants within a group. Sequential variants separated by more
-        than this value will be placed in separate groups for labeling.
+      max_separation: int >= 0. The maximum distance between variants within a
+        group. Sequential variants separated by more than this value will be
+        placed in separate groups for labeling.
 
     Raises:
       ValueError: if vcf_reader is None.
@@ -294,8 +293,8 @@ class ReferenceRegion(fasta.InMemoryFastaReader):
   _DUMMY_CHROM_NAME = '*'
 
   def __init__(self, bases, start):
-    super(ReferenceRegion, self).__init__([(self._DUMMY_CHROM_NAME, start,
-                                            bases)])
+    super(ReferenceRegion,
+          self).__init__([(self._DUMMY_CHROM_NAME, start, bases)])
     self.start = start
     self.end = start + len(bases)
 
@@ -343,10 +342,10 @@ def group_variants(candidates,
   the current group than allowed by max_separation.
 
   Args:
-    candidates: list[nucleus.proto.Variant]. A sorted list of candidate
-      variants on the same chromosome.
-    truths: list[nucleus.proto.Variant]. A sorted list of truth
-      variants on the same chromosome.
+    candidates: list[nucleus.proto.Variant]. A sorted list of candidate variants
+      on the same chromosome.
+    truths: list[nucleus.proto.Variant]. A sorted list of truth variants on the
+      same chromosome.
     max_group_size: int >= 0. The maximum number of variants of a specific type
       allowed within a group.
     max_separation: int >= 0. The maximum distance, in basepairs, allowed
@@ -525,10 +524,8 @@ def all_diploid_haplotypes(variants_and_genotypes, genotypes2haplotype):
 
   def complement_haploid_genotype(haploid_genotype, genotypes):
     assert len(haploid_genotype) == len(genotypes)
-    return tuple(
-        g1[1] if hg1 == g1[0] and len(g1) == 2 else g1[0]
-        for hg1, g1 in zip(haploid_genotype, genotypes)
-    )
+    return tuple(g1[1] if hg1 == g1[0] and len(g1) == 2 else g1[0]
+                 for hg1, g1 in zip(haploid_genotype, genotypes))
 
   genotypes = [vg.genotypes for vg in variants_and_genotypes]
   generated_already = set()
@@ -795,10 +792,10 @@ class HaplotypeMatch(object):
     haplotypes: list[str]. The sorted list of haplotypes produced by this match.
     candidates: list[nucleus.proto.Variant]: The list of candidate variants.
     truths: list[nucleus.proto.Variant]: The list of true variants.
-    candidate_genotypes: list[tuple]: The genotypes that, when assigned
-      to the candidate variants, give rise to haplotypes.
-    truth_genotypes: list[tuple]: The genotypes that, when assigned
-      to the known variants, give rise to haplotypes.
+    candidate_genotypes: list[tuple]: The genotypes that, when assigned to the
+      candidate variants, give rise to haplotypes.
+    truth_genotypes: list[tuple]: The genotypes that, when assigned to the known
+      variants, give rise to haplotypes.
   """
 
   def __init__(self, haplotypes, candidates, candidate_genotypes, truths,
@@ -840,7 +837,9 @@ class HaplotypeMatch(object):
 
   @property
   def match_metrics(self):
-    """Quality of this match. Lower scores are better.
+    """Quality of this match.
+
+    Lower scores are better.
 
     Returns:
       tuple[int] where all elements are >= 0: The tuple is suitable for sorting

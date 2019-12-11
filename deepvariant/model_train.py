@@ -143,9 +143,10 @@ flags.DEFINE_string(
     '. The special value "model_default" will use the default pretrained '
     'path for the selected model.')
 
-flags.DEFINE_integer('max_checkpoints_to_keep', 10,
-                     'Number of last checkpoints to keep during training. '
-                     'Passing "0" preserves all checkpoints.')
+flags.DEFINE_integer(
+    'max_checkpoints_to_keep', 10,
+    'Number of last checkpoints to keep during training. '
+    'Passing "0" preserves all checkpoints.')
 
 flags.DEFINE_string(
     'kmp_blocktime', '0',

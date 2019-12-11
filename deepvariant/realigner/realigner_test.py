@@ -167,9 +167,8 @@ class ReadAssignmentTests(parameterized.TestCase):
               'r1': ['read1'],
               'r2': ['read3', 'read5'],
               'r3': ['read4'],
-          })
-      for names in itertools.permutations(
-          ['read1', 'read2', 'read3', 'read4', 'read5']))
+          }) for names in itertools.permutations(
+              ['read1', 'read2', 'read3', 'read4', 'read5']))
   def test_assign_reads_to_assembled_regions_multiple_reads(
       self, read_names, expected_assignments):
     self.assertReadsGoToCorrectRegions(

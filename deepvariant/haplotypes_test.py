@@ -499,10 +499,11 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
               _var(chrom='1', start=6, end=8),
               _var(chrom='2', start=6, end=10)
           ],
-          expected=[[_var(chrom='1', start=1, end=5)], [
-              _var(chrom='1', start=5, end=7),
-              _var(chrom='1', start=6, end=8)
-          ], [_var(chrom='2', start=6, end=10)]]),
+          expected=[[_var(chrom='1', start=1, end=5)],
+                    [
+                        _var(chrom='1', start=5, end=7),
+                        _var(chrom='1', start=6, end=8)
+                    ], [_var(chrom='2', start=6, end=10)]]),
       # Test one large variant spanning multiple others.
       dict(
           variants=[
@@ -528,18 +529,20 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
               _var(chrom='2', start=9, end=10)
           ],
           expected=[[_var(chrom='1', start=1, end=5)],
-                    [_var(chrom='2', start=3, end=5)], [
+                    [_var(chrom='2', start=3, end=5)],
+                    [
                         _var(chrom='2', start=7, end=10),
                         _var(chrom='2', start=9, end=10)
                     ]]),
       # Same as prior test but using a generator as input.
       dict(
-          variants=(_var(chrom='1', start=1, end=5),
-                    _var(chrom='2', start=3, end=5),
-                    _var(chrom='2', start=7, end=10),
+          variants=(_var(chrom='1', start=1,
+                         end=5), _var(chrom='2', start=3,
+                                      end=5), _var(chrom='2', start=7, end=10),
                     _var(chrom='2', start=9, end=10)),
           expected=[[_var(chrom='1', start=1, end=5)],
-                    [_var(chrom='2', start=3, end=5)], [
+                    [_var(chrom='2', start=3, end=5)],
+                    [
                         _var(chrom='2', start=7, end=10),
                         _var(chrom='2', start=9, end=10)
                     ]]),

@@ -120,9 +120,9 @@ class DataProviderTest(parameterized.TestCase):
     dataset_config_pbtext_filename = _test_dataset_config(
         'test_get_dataset_raises_error_for_empty_data_split.pbtxt',
         name='some_dataset_name')
-    expected_exception_message = ('The dataset in the config {} does not '
-                                  'have a tfrecord_path.'
-                                  .format(dataset_config_pbtext_filename))
+    expected_exception_message = (
+        'The dataset in the config {} does not '
+        'have a tfrecord_path.'.format(dataset_config_pbtext_filename))
     with six.assertRaisesRegex(self, ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
@@ -132,9 +132,9 @@ class DataProviderTest(parameterized.TestCase):
         'test_get_dataset_raises_error_for_empty_num_examples.pbtxt',
         name='some_dataset_name',
         tfrecord_path='/path/to/dataset')
-    expected_exception_message = ('The dataset in the config {} does not have '
-                                  'a num_examples.'
-                                  .format(dataset_config_pbtext_filename))
+    expected_exception_message = (
+        'The dataset in the config {} does not have '
+        'a num_examples.'.format(dataset_config_pbtext_filename))
     with six.assertRaisesRegex(self, ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
           dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)

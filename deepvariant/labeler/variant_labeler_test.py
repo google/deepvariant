@@ -209,14 +209,14 @@ class VariantLabelerTest(parameterized.TestCase):
       #
       # Truth     : AGT   => A [1] + AGTGT [2]
       # Candidate : AGTGT => AGT [2] + AGTGTGT [3]
-      (['AGTGT', 'A', 'AGT', 'AGTGTGT'], ['A'],
-       ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 0),
-      (['AGTGT', 'A', 'AGT', 'AGTGTGT'], ['AGT'],
-       ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 1),
-      (['AGTGT', 'A', 'AGT', 'AGTGTGT'], ['AGTGTGT'],
-       ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 1),
-      (['AGTGT', 'A', 'AGT', 'AGTGTGT'], ['A', 'AGT'],
-       ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 1),
+      (['AGTGT', 'A', 'AGT', 'AGTGTGT'
+       ], ['A'], ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 0),
+      (['AGTGT', 'A', 'AGT', 'AGTGTGT'
+       ], ['AGT'], ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 1),
+      (['AGTGT', 'A', 'AGT', 'AGTGTGT'
+       ], ['AGTGTGT'], ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 1),
+      (['AGTGT', 'A', 'AGT', 'AGTGTGT'
+       ], ['A', 'AGT'], ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 1),
       (['AGTGT', 'A', 'AGT', 'AGTGTGT'], ['A', 'AGTGTGT'],
        ['AGT', 'A', 'AGTGT', 'AGTGTGT'], [1, 2], (2, 3), 1),
       (['AGTGT', 'A', 'AGT', 'AGTGTGT'], ['AGT', 'AGTGTGT'],
@@ -233,13 +233,11 @@ class VariantLabelerTest(parameterized.TestCase):
     variant = test_utils.make_variant(start=10, alleles=variant_alleles)
     truth_variant = test_utils.make_variant(
         start=10, alleles=truth_alleles, gt=truth_gt)
-    self.assertEqual(expected_genotype,
-                     variant_labeler._genotype_from_matched_truth(
-                         variant, truth_variant))
+    self.assertEqual(
+        expected_genotype,
+        variant_labeler._genotype_from_matched_truth(variant, truth_variant))
     labeled = variant_labeler.VariantLabel(
-        is_confident=True,
-        variant=variant,
-        genotype=expected_genotype)
+        is_confident=True, variant=variant, genotype=expected_genotype)
     indices = [variant_alleles.index(alt) - 1 for alt in alt_alleles]
     self.assertEqual(labeled.label_for_alt_alleles(indices), expected_label)
 
@@ -251,21 +249,22 @@ class VariantLabelerTest(parameterized.TestCase):
   def test_genotype_from_matched_truth_no_call_truth_variant_raises(self):
     with six.assertRaisesRegex(self, ValueError,
                                'Expected exactly one VariantCal'):
-      variant_labeler._genotype_from_matched_truth(self.snp,
-                                                   test_utils.make_variant(
-                                                       start=10,
-                                                       alleles=['A', 'C'],
-                                                   ))
+      variant_labeler._genotype_from_matched_truth(
+          self.snp, test_utils.make_variant(
+              start=10,
+              alleles=['A', 'C'],
+          ))
 
   def test_genotype_from_matched_truth_no_gt_truth_variant_raises(self):
     with six.assertRaisesRegex(self, ValueError,
                                'truth_variant needs genotypes'):
-      variant_labeler._genotype_from_matched_truth(self.snp,
-                                                   test_utils.make_variant(
-                                                       start=10,
-                                                       alleles=['A', 'C'],
-                                                       gt=[-1, -1],
-                                                   ))
+      variant_labeler._genotype_from_matched_truth(
+          self.snp,
+          test_utils.make_variant(
+              start=10,
+              alleles=['A', 'C'],
+              gt=[-1, -1],
+          ))
 
   def test_genotype_from_matched_truth_none_variant_raises(self):
     with six.assertRaisesRegex(self, ValueError, 'variant cannot be None'):

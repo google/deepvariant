@@ -125,8 +125,8 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
   def test_group_variants_examples(self, grouped_positions):
     variants, groups = _variants_from_grouped_positions(grouped_positions)
     self.assertEqual(
-        groups, haplotype_labeler.group_variants(
-            variants, [], max_separation=10))
+        groups,
+        haplotype_labeler.group_variants(variants, [], max_separation=10))
 
   @parameterized.parameters(
       dict(separation=s, max_separation=d)
@@ -644,8 +644,8 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         truths=truths,
         max_separation=max_separation,
         confident_regions=ranges.RangeSet([ranges.make_range('20', 0, 1000)]),
-        ref_reader=fasta.InMemoryFastaReader([('20', 0,
-                                               ref_prefix + 'A' * 50)]))
+        ref_reader=fasta.InMemoryFastaReader([('20', 0, ref_prefix + 'A' * 50)
+                                             ]))
     region = ranges.make_range('20', 1, 10)
     _ = list(labeler.label_variants(candidates, region))
     self.assertEqual(labeler.metrics,
@@ -688,9 +688,11 @@ class HaplotypeMatchTests(parameterized.TestCase):
     ]
     self.candidate_genotypes = [(0, 1), (0, 0), (0, 1)]
     self.truth_genotypes = [(0, 1), (0, 1), (0, 0)]
-    self.match = haplotype_labeler.HaplotypeMatch(
-        self.haplotypes, self.variants, self.candidate_genotypes, self.truths,
-        self.truth_genotypes)
+    self.match = haplotype_labeler.HaplotypeMatch(self.haplotypes,
+                                                  self.variants,
+                                                  self.candidate_genotypes,
+                                                  self.truths,
+                                                  self.truth_genotypes)
 
   def test_fields_are_expected(self):
     self.assertEqual(self.match.haplotypes, self.haplotypes)
@@ -1178,8 +1180,9 @@ class LabelExamplesTest(parameterized.TestCase):
           },
           expected_next_pos=16),
   )
-  def test_phased_genotypes_to_haplotypes_overlapping(
-      self, variants, ref, expected_frags, expected_next_pos):
+  def test_phased_genotypes_to_haplotypes_overlapping(self, variants, ref,
+                                                      expected_frags,
+                                                      expected_next_pos):
     variants_and_genotypes = [
         haplotype_labeler.VariantAndGenotypes(v, tuple(v.calls[0].genotype))
         for v in variants
@@ -1193,17 +1196,18 @@ class LabelExamplesTest(parameterized.TestCase):
   @parameterized.parameters(
       # Check that simple bi-allelic matching works for all possible possible
       # genotypes and a variety of types of alleles.
-      (dict(
-          candidate_alleles=alleles,
-          truth_alleles=alleles,
-          truth_genotype=gt,
-          # Returns [0, 1] even if truth is [1, 0], so sort the genotypes for
-          # the expected value.
-          expected_genotype=sorted(gt),
-      )
-       for gt in [[0, 1], [1, 0], [1, 1]]
-       for alleles in [['A', 'C'], ['ACC', 'A'], ['A', 'ATG'], ['AC', 'GT']]),
-  )
+      (
+          dict(
+              candidate_alleles=alleles,
+              truth_alleles=alleles,
+              truth_genotype=gt,
+              # Returns [0, 1] even if truth is [1, 0], so sort the genotypes for
+              # the expected value.
+              expected_genotype=sorted(gt),
+          )
+          for gt in [[0, 1], [1, 0], [1, 1]]
+          for alleles in [['A', 'C'], ['ACC', 'A'], ['A', 'ATG'], ['AC', 'GT']]
+      ),)
   def test_single_variants(self, candidate_alleles, truth_alleles,
                            truth_genotype, expected_genotype):
     candidate = _test_variant(42, candidate_alleles)
@@ -1301,12 +1305,18 @@ class LabelExamplesTest(parameterized.TestCase):
     enum_type = haplotype_labeler.EnumerationType.CANDIDATES
     # Note we don't need to provide a genotype for the candidate enumeration.
     self.assertEqual(
-        haplotype_labeler.genotype_options_for_variants(
-            [_test_variant(1)], enum_type), [{(0, 0), (0, 1), (1, 1)}])
+        haplotype_labeler.genotype_options_for_variants([_test_variant(1)],
+                                                        enum_type), [{(0, 0),
+                                                                      (0, 1),
+                                                                      (1, 1)}])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
-            [_test_variant(1, alleles=('A', 'C', 'G'))], enum_type),
-        [{(0, 0), (0, 1), (1, 1), (0, 2), (1, 2), (2, 2)}])
+            [_test_variant(1, alleles=('A', 'C', 'G'))], enum_type), [{(0, 0),
+                                                                       (0, 1),
+                                                                       (1, 1),
+                                                                       (0, 2),
+                                                                       (1, 2),
+                                                                       (2, 2)}])
 
   def test_genotype_options_for_variants_only_hom_ref(self):
     # Check all configurations for the ONLY_HOM_REF enumeration:
@@ -1337,8 +1347,7 @@ class LabelExamplesTest(parameterized.TestCase):
               (1, 2): (0, 1),  # G/C => 0/C
               (1, 1): (0, 0),  # G/G => 0/0
               (2, 2): (1, 1),  # C/C => C/C
-          }
-      ),
+          }),
       dict(
           candidate_alleles=['A', 'C'],
           truth_alleles=['A', 'C', 'G'],
@@ -1354,8 +1363,7 @@ class LabelExamplesTest(parameterized.TestCase):
           truth_alleles=['A', 'C', 'G'],
           truth_genotypes_and_expected={
               (i, j): (0, 0) for i, j in itertools.combinations([0, 1, 2], 2)
-          }
-      ),
+          }),
       # Here the candidate is also multi-allelic
       dict(
           candidate_alleles=['A', 'G', 'C'],

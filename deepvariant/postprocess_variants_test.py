@@ -470,8 +470,10 @@ class PostprocessVariantsTest(parameterized.TestCase):
           ('T', 'T'): [0.04],
       }),
   )
-  def test_convert_call_variants_outputs_to_probs_dict(
-      self, call_variants_outputs, alt_alleles_to_remove, expected_probs_dict):
+  def test_convert_call_variants_outputs_to_probs_dict(self,
+                                                       call_variants_outputs,
+                                                       alt_alleles_to_remove,
+                                                       expected_probs_dict):
     # In the current code, all call_variants_outputs have the same variant
     # field.
     canonical_variant = call_variants_outputs[0].variant
@@ -779,8 +781,9 @@ class PostprocessVariantsTest(parameterized.TestCase):
           [2, 2],
       ),
   )
-  def test_triallelic_genotype_in_add_call_to_variant(
-      self, highest_prob_position, expected_best_genotype):
+  def test_triallelic_genotype_in_add_call_to_variant(self,
+                                                      highest_prob_position,
+                                                      expected_best_genotype):
     """Ensures the order of GLs are interpreted correctly for triallelics."""
     raw_variant = _create_variant_with_alleles(ref='CACA', alts=['C', 'A'])
     # Create a probability with 6 elements, one of them 0.995 (best genotype),
@@ -953,8 +956,9 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_get_alt_alleles_to_remove(self, call_variants_outputs, qual_filter,
                                      expected_output):
     self.assertEqual(
-        postprocess_variants.get_alt_alleles_to_remove(
-            call_variants_outputs, qual_filter), expected_output)
+        postprocess_variants.get_alt_alleles_to_remove(call_variants_outputs,
+                                                       qual_filter),
+        expected_output)
 
   @parameterized.parameters(
       (
@@ -991,8 +995,9 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_prune_alleles(self, canonical_variant, alt_alleles_to_remove,
                          expected_variant):
     self.assertEqual(
-        postprocess_variants.prune_alleles(
-            canonical_variant, alt_alleles_to_remove), expected_variant)
+        postprocess_variants.prune_alleles(canonical_variant,
+                                           alt_alleles_to_remove),
+        expected_variant)
 
   @parameterized.parameters(
       # Check that we are simplifying alleles and that the simplification deps
@@ -1150,10 +1155,10 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     self.assertEqual(lessthan(None, variant1), False)
 
   @parameterized.parameters(
-      (_create_nonvariant('1', 10, 15, 'G'), 10, 12,
-       _create_nonvariant('1', 10, 12, 'G')),
-      (_create_nonvariant('2', 1, 9, 'C'), 3, 4,
-       _create_nonvariant('2', 3, 4, 'G')),
+      (_create_nonvariant('1', 10, 15,
+                          'G'), 10, 12, _create_nonvariant('1', 10, 12, 'G')),
+      (_create_nonvariant('2', 1, 9,
+                          'C'), 3, 4, _create_nonvariant('2', 3, 4, 'G')),
   )
   def test_create_record_from_template(self, template, start, end, expected):
     reader = dummy_reference_reader()
@@ -1216,8 +1221,8 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
 
   @parameterized.parameters(
       # One alt, with het GLs.
-      ([vcf_constants.GVCF_ALT_ALLELE],
-       [-2.0457574905606752, -0.004364805402450088, -3.0], [0.5]),
+      ([vcf_constants.GVCF_ALT_ALLELE
+       ], [-2.0457574905606752, -0.004364805402450088, -3.0], [0.5]),
       # Multi alts.
       (['G', vcf_constants.GVCF_ALT_ALLELE], [
           -1.1368906918484387, -0.5279124552610386, -0.5923808731731073,
@@ -1271,8 +1276,8 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
        [_simple_gv('1', 5, 'GTTACG'),
         _create_nonvariant('1', 11, 15, 'T')]),
       # Non-variant record is subsumed by a variant.
-      ([('1', 5, 'GTTACG')], [('1', 5, 11, 'G')],
-       [_simple_gv('1', 5, 'GTTACG')]),
+      ([('1', 5, 'GTTACG')], [('1', 5, 11, 'G')
+                             ], [_simple_gv('1', 5, 'GTTACG')]),
       # Non-variant record subsumes a variant.
       ([('1', 5, 'GTTACG')], [('1', 4, 12, 'G')], [
           _create_nonvariant('1', 4, 5, 'G'),

@@ -105,7 +105,8 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
 
     self.assertItemsEqual([ref_str, read_str], dbg.candidate_haplotypes())
 
-    self.assertGraphEqual("""\
+    self.assertGraphEqual(
+        """\
           digraph G {
           0[label=GAT];
           1[label=ATT];
@@ -138,7 +139,8 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
         quals=[30] * len(read_str),
         name='read')
     dbg = debruijn_graph.build(ref_str, [read], self.single_k_dbg_options(3))
-    self.assertGraphEqual("""\
+    self.assertGraphEqual(
+        """\
         digraph G {
         0[label=GAT];
         1[label=ATT];
@@ -167,7 +169,8 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
     dbg = debruijn_graph.build(ref_str, [read, read],
                                self.single_k_dbg_options(3))
 
-    self.assertGraphEqual("""\
+    self.assertGraphEqual(
+        """\
         digraph G {
         0[label=GAT];
         1[label=ATT];
@@ -267,8 +270,8 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
                                  self.single_k_dbg_options(2))
 
       expected_edges = '\n'.join(
-          '{} [label={} color=red];'.format(edge, 1
-                                            if edge in dropped_edges else 3)
+          '{} [label={} color=red];'.format(edge, 1 if edge in
+                                            dropped_edges else 3)
           for edge in ['0->1', '1->2', '2->3', '3->4', '4->5'])
 
       self.assertGraphEqual(
@@ -345,10 +348,10 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
       # Actual example where the cycle detector failed because the cycle only
       # occurs with the last kmer in the reference.
       dict(
-          ref=
-          ('TGGTAAGTTTATAAGGTTATAAGCTGAGAGGTTTTGCTGATCTTGGCTGAGCTCAGCTGGGCAGGTC'
-           'TTCCGGTCTTGGCTGGGGTTCACTGACACACAAGCAGCTGACAGTTGGCTGATCTAGGATGGCCTCA'
-           'GCTGGG'),
+          ref=(
+              'TGGTAAGTTTATAAGGTTATAAGCTGAGAGGTTTTGCTGATCTTGGCTGAGCTCAGCTGGGCAGGTC'
+              'TTCCGGTCTTGGCTGGGGTTCACTGACACACAAGCAGCTGACAGTTGGCTGATCTAGGATGGCCTCA'
+              'GCTGGG'),
           smallest_good_k=11),
   )
   def test_ref_cycle_detector(self, ref, smallest_good_k):

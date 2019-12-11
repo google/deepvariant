@@ -372,8 +372,8 @@ def _resolve_overlapping_variants(overlapping_variants):
   # [1/1, 1/2, 2/2] and either all or none of them will be valid depending on
   # the variants it interacts with).
   valid_nonref_count_configurations = [
-      conf for conf in itertools.product(
-          [0, 1, 2], repeat=len(overlapping_variants))
+      conf
+      for conf in itertools.product([0, 1, 2], repeat=len(overlapping_variants))
       if calculator.all_variants_compatible(conf)
   ]
 
@@ -412,8 +412,9 @@ def _resolve_overlapping_variants(overlapping_variants):
     # allele, independently for each variant.
     scaled_gls = [agg.scaled_likelihoods() for agg in likelihood_aggregators]
 
-    for variant, allele_indices, gls in zip(
-        overlapping_variants, most_likely_allele_indices_config, scaled_gls):
+    for variant, allele_indices, gls in zip(overlapping_variants,
+                                            most_likely_allele_indices_config,
+                                            scaled_gls):
       newvariant = copy.deepcopy(variant)
       call = variant_utils.only_call(newvariant)
       call.genotype[:] = allele_indices
@@ -451,8 +452,8 @@ def _get_all_allele_indices_configurations(variants,
   """
   if len(variants) != len(nonref_count_configuration):
     raise ValueError(
-        'len(variants) must equal len(nonref_count_configuration): {} vs {}'.
-        format(len(variants), len(nonref_count_configuration)))
+        'len(variants) must equal len(nonref_count_configuration): {} vs {}'
+        .format(len(variants), len(nonref_count_configuration)))
 
   allele_indices_configs = [
       variant_utils.allele_indices_with_num_alts(variant, num_alts, ploidy=2)

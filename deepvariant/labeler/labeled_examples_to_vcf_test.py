@@ -36,7 +36,6 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
-
 from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -48,7 +47,6 @@ from third_party.nucleus.testing import test_utils
 from deepvariant import testdata
 from deepvariant.labeler import labeled_examples_to_vcf
 from deepvariant.testing import flagsaver
-
 
 FLAGS = flags.FLAGS
 
@@ -69,8 +67,8 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
 
     self.assertEqual(
         open(FLAGS.output_vcf).readlines(),
-        open(testdata.deepvariant_testdata('golden.training_examples.vcf'))
-        .readlines())
+        open(testdata.deepvariant_testdata(
+            'golden.training_examples.vcf')).readlines())
 
   @flagsaver.FlagSaver
   def test_sample_name_flag(self):

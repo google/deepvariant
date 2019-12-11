@@ -357,6 +357,7 @@ def eval_metric_fn(labels, predictions, variant_types):
 
   return metrics
 
+
 # The following two classes support loading exponential moving averages into
 # their corresponding variables when a checkpoint is loaded. They're called
 # as hooks by the Estimators. Note for future work: this is the documented
@@ -596,9 +597,9 @@ class DeepVariantModel(object):
       master: a string necessary for TPU, pass FLAGS.master through.
       use_tpu: boolean.  set self.use_tpu if not None.
       start_from_checkpoint: string. If not None, initialize model from this
-      path. According to the current implementation of Estimator, this will only
-      be used in training. The inference checkpoint is loaded in a different
-      place.
+        path. According to the current implementation of Estimator, this will
+        only be used in training. The inference checkpoint is loaded in a
+        different place.
       session_config: a tf.ConfigProto to pass to RunConfig, if not use_tpu.
 
     Returns:
@@ -870,8 +871,8 @@ class DeepVariantSlimModel(DeepVariantModel):
     that efficiently execute there.
 
     Args:
-      images: An Tensor of shape [batch_size height, width, channel] with
-             uint8 values.
+      images: An Tensor of shape [batch_size height, width, channel] with uint8
+        values.
 
     Returns:
       A tensor of images of shape [batch_size height, width, channel]
@@ -1466,7 +1467,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
 
     Args:
       representation_layer: string. The name of the layer from the Inception net
-      which will be used as an endpoint.
+        which will be used as an endpoint.
 
     Raises:
       ValueError: If any of the arguments are invalid.
@@ -1562,6 +1563,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
           images, num_classes, create_aux_logits=False, is_training=is_training)
       return endpoints
 
+
 # Our list of pre-defined models.
 _MODELS = [
     DeepVariantSmallModel(),
@@ -1579,10 +1581,7 @@ def all_models():
 
 def production_models():
   """Gets a list of the models that we test extensively."""
-  return [
-      get_model('inception_v3'),
-      get_model('inception_v3_embedding')
-  ]
+  return [get_model('inception_v3'), get_model('inception_v3_embedding')]
 
 
 def get_model(model_name):

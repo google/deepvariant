@@ -112,7 +112,6 @@ flags.DEFINE_boolean(
     'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF.')
 
-
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
     'WES': '/opt/models/wes/model.ckpt',

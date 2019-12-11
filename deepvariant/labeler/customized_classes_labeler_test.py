@@ -56,8 +56,7 @@ def setUpModule():
   testdata.init()
 
 
-FakeVCFObject = collections.namedtuple('FakeVCFObject',
-                                       ['field_access_cache'])
+FakeVCFObject = collections.namedtuple('FakeVCFObject', ['field_access_cache'])
 CUSTOMIZED_INFO_FIELD_NAME = 'type'
 CUSTOMIZED_CLASSES_LIST = 'ref,class1,class2'
 
@@ -66,17 +65,17 @@ def _add_class_to_variant(variant, class_status):
   if class_status is None:
     return variant
 
-  header = variants_pb2.VcfHeader(
-      infos=[
-          variants_pb2.VcfInfo(
-              id=CUSTOMIZED_INFO_FIELD_NAME,
-              number='A',
-              type=vcf_constants.STRING_TYPE,
-              description='Customized class label for the variant.')])
+  header = variants_pb2.VcfHeader(infos=[
+      variants_pb2.VcfInfo(
+          id=CUSTOMIZED_INFO_FIELD_NAME,
+          number='A',
+          type=vcf_constants.STRING_TYPE,
+          description='Customized class label for the variant.')
+  ])
   my_cache = vcf.VcfHeaderCache(header)
   vcf_object = FakeVCFObject(field_access_cache=my_cache)
-  variant_utils.set_info(variant, CUSTOMIZED_INFO_FIELD_NAME, class_status,
-                         vcf_object=vcf_object)
+  variant_utils.set_info(
+      variant, CUSTOMIZED_INFO_FIELD_NAME, class_status, vcf_object=vcf_object)
   return variant
 
 
@@ -117,8 +116,7 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
         truth_vcf_reader=vcf.InMemoryVcfReader(variants),
         confident_regions=confident_regions,
         classes_list=CUSTOMIZED_CLASSES_LIST,
-        info_field_name=CUSTOMIZED_INFO_FIELD_NAME
-    )
+        info_field_name=CUSTOMIZED_INFO_FIELD_NAME)
 
   @parameterized.parameters(
       # Simple tests: we get back our matching variants in the confident regions
@@ -247,9 +245,8 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
         customized_classes_labeler.CustomizedClassesVariantLabel.classes_dict)
     if expected_label is None and expected_truth is not None:
       expected_class_str = expected_truth.info[
-          customized_classes_labeler.CustomizedClassesVariantLabel.
-          info_field_name
-      ].values[0].string_value
+          customized_classes_labeler.CustomizedClassesVariantLabel
+          .info_field_name].values[0].string_value
       expected_label = classes_dict[expected_class_str]
 
     labels = list(labeler.label_variants([candidate]))

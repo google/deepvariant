@@ -642,8 +642,8 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
 
     self.expected_rows = {
         'ref':
-            np.asarray(range(0, 3 * self.pic.num_channels), np.uint8).reshape(
-                1, 3, self.pic.num_channels),
+            np.asarray(range(0, 3 * self.pic.num_channels),
+                       np.uint8).reshape(1, 3, self.pic.num_channels),
         'empty':
             np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
         'read1':

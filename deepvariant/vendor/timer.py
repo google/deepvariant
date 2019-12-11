@@ -26,8 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""This module implements classes useful for timing how long an action took.
-"""
+"""This module implements classes useful for timing how long an action took."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -73,7 +72,9 @@ class Timer(object):
     self._StartInternal()
 
   def Stop(self):
-    """Stops a timer, and records the duration. Stop is idempotent.
+    """Stops a timer, and records the duration.
+
+    Stop is idempotent.
 
     Returns:
       The duration, i.e., the time (in seconds) for which the timer ran.

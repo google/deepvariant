@@ -139,8 +139,8 @@ def read_from_tfrecords_files(pipeline, input_filename_pattern_list):
   readers = []
   for i, filepattern in enumerate(input_filename_pattern_list):
     readers.append(pipeline
-                   | 'ReadTFRecordFiles_{}[{}]'.format(i, filepattern) >> beam.
-                   io.ReadFromTFRecord(filepattern, coder=coders.BytesCoder()))
+                   | 'ReadTFRecordFiles_{}[{}]'.format(i, filepattern) >> beam
+                   .io.ReadFromTFRecord(filepattern, coder=coders.BytesCoder()))
   return readers | 'Flatten' >> beam.Flatten()
 
 
@@ -178,9 +178,8 @@ def write_summary_string_to_file(pipeline, output_examples, input_pattern_list,
     input_pattern_list: str. A comma-separated string of input files.
     dataset_name: str. The name of the dataset to be written in the output.
     output_pattern_prefix: str. The prefix of the sharded output files.
-    output_filename: the output text file that contains the summary that
-                     can be parsed into DeepVariantDatasetConfig.
-
+    output_filename: the output text file that contains the summary that can be
+      parsed into DeepVariantDatasetConfig.
   """
 
   # Beam currently has no way to materialize pipeline values, so we have
@@ -218,10 +217,11 @@ def main(argv=None):
     if known_args.output_dataset_config_pbtxt:
       if not known_args.output_dataset_name:
         raise ValueError('Need to set output_dataset_name.')
-      write_summary_string_to_file(
-          p, output_examples, known_args.input_pattern_list,
-          known_args.output_dataset_name, known_args.output_pattern_prefix,
-          known_args.output_dataset_config_pbtxt)
+      write_summary_string_to_file(p, output_examples,
+                                   known_args.input_pattern_list,
+                                   known_args.output_dataset_name,
+                                   known_args.output_pattern_prefix,
+                                   known_args.output_dataset_config_pbtxt)
 
 
 if __name__ == '__main__':

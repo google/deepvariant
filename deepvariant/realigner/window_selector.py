@@ -47,8 +47,8 @@ def _candidates_from_reads(config, ref_reader, reads, region):
     config: learning.genomics.deepvariant.realigner.WindowSelectorOptions
       options determining the behavior of this window selector.
     ref_reader: GenomeReference. Indexed reference genome to query bases.
-    reads: list[nucleus.protos.Read]. The reads we are processing into
-      candidate positions.
+    reads: list[nucleus.protos.Read]. The reads we are processing into candidate
+      positions.
     region: nucleus.protos.Range. The region we are processing.
 
   Returns:
@@ -68,8 +68,9 @@ def _candidates_from_reads(config, ref_reader, reads, region):
       config.region_expansion_in_bp,
       contig_map=ranges.contigs_dict(ref_reader.header.contigs))
 
-  allele_counter = allelecounter.AlleleCounter(
-      ref_reader.c_reader, expanded_region, allele_counter_options)
+  allele_counter = allelecounter.AlleleCounter(ref_reader.c_reader,
+                                               expanded_region,
+                                               allele_counter_options)
 
   for read in reads:
     allele_counter.add(read, 'dummy_sample_id')
@@ -85,8 +86,8 @@ def _candidates_from_reads(config, ref_reader, reads, region):
         expanded_region)
   else:
     raise ValueError('Unknown enum option "{}" for '
-                     'WindowSelectorModel.model_type'
-                     .format(config.window_selector_model.model_type))
+                     'WindowSelectorModel.model_type'.format(
+                         config.window_selector_model.model_type))
 
 
 def _variant_reads_threshold_selector(allele_counter, model_conf,
@@ -108,8 +109,8 @@ def _variant_reads_threshold_selector(allele_counter, model_conf,
     allele_counter: learning.genomics.deepvariant.realigner.AlleleCounter in the
       considered region.
     model_conf: learning.genomics.deepvariant.realigner
-      .WindowSelectorOptions.VariantReadsThresholdModel
-      options determining the behavior of this window selector.
+      .WindowSelectorOptions.VariantReadsThresholdModel options determining the
+      behavior of this window selector.
     expanded_region: nucleus.protos.Range. The region we are processing.
 
   Returns:
@@ -144,8 +145,8 @@ def _allele_count_linear_selector(allele_counter, model_conf, expanded_region):
     allele_counter: learning.genomics.deepvariant.realigner.AlleleCounter in the
       considered region.
     model_conf: learning.genomics.deepvariant.realigner
-      .WindowSelectorOptions.AlleleCountLinearModel
-      options determining the behavior of this window selector.
+      .WindowSelectorOptions.AlleleCountLinearModel options determining the
+      behavior of this window selector.
     expanded_region: nucleus.protos.Range. The region we are processing.
 
   Returns:

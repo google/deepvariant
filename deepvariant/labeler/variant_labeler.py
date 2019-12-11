@@ -52,10 +52,10 @@ class VariantLabel(object):
     is_confident: bool. True if we could confidently assign a label to this
       variant, False otherwise.
     variant: nucleus.protos.Variant proto that we assigned a label for.
-    genotype: tuple of ints. The labeled genotype (e.g., (0, 1) for a het)
-      in the standard nucleus.proto.VariantCall style. Genotype can be None
-      if the labeler doesn't have any genotype to assign. If Genotype is not
-      None, the genotype of variant will be set to genotype.
+    genotype: tuple of ints. The labeled genotype (e.g., (0, 1) for a het) in
+      the standard nucleus.proto.VariantCall style. Genotype can be None if the
+      labeler doesn't have any genotype to assign. If Genotype is not None, the
+      genotype of variant will be set to genotype.
   """
 
   def __init__(self, is_confident, variant, genotype=None):
@@ -86,8 +86,8 @@ class VariantLabel(object):
         second allele.
 
     Args:
-      alt_alleles_indices: list[int]. A list of the alt_allele_indices
-        used to compute the tf.Example for this candidate.
+      alt_alleles_indices: list[int]. A list of the alt_allele_indices used to
+        compute the tf.Example for this candidate.
 
     Returns:
       int >= 0. The number of copies of alt_allele_indices we'd expect to be

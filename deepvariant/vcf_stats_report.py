@@ -44,7 +44,6 @@ from deepvariant import vcf_stats
 from third_party.nucleus.io import vcf
 from third_party.nucleus.util import errors
 
-
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('input_vcf', None, 'Path to the input VCF.')

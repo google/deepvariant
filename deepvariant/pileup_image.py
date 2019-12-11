@@ -169,8 +169,8 @@ class PileupImageCreator(object):
     """Gets the reads used to construct the pileup image around variant.
 
     Args:
-      variant: A third_party.nucleus.protos.Variant proto
-        describing the variant we are creating the pileup image of.
+      variant: A third_party.nucleus.protos.Variant proto describing the variant
+        we are creating the pileup image of.
 
     Returns:
       A list of third_party.nucleus.protos.Read protos.
@@ -184,8 +184,8 @@ class PileupImageCreator(object):
     """Gets the reference bases used to make the pileup image around variant.
 
     Args:
-      variant: A third_party.nucleus.protos.Variant proto
-        describing the variant we are creating the pileup image of.
+      variant: A third_party.nucleus.protos.Variant proto describing the variant
+        we are creating the pileup image of.
 
     Returns:
       A string of reference bases or None. Returns None if the reference
@@ -209,8 +209,8 @@ class PileupImageCreator(object):
     leaving us with the set of alts for the pileup image encoder.
 
     Args:
-      variant: third_party.nucleus.protos.Variant to
-        generate the alt allele combinations for.
+      variant: third_party.nucleus.protos.Variant to generate the alt allele
+        combinations for.
 
     Yields:
       A series of sets containing the alt alleles we want to use for a single
@@ -243,9 +243,8 @@ class PileupImageCreator(object):
       refbases: A string options.width in length containing the reference base
         sequence to encode. The middle base of this string should be at the
         start of the variant in dv_call.
-      reads: Iterable of third_party.nucleus.protos.Read
-        objects that we'll use to
-        encode the read information supporting our call. Assumes each read is
+      reads: Iterable of third_party.nucleus.protos.Read objects that we'll use
+        to encode the read information supporting our call. Assumes each read is
         aligned and is well-formed (e.g., has bases and quality scores, cigar).
         Rows of the image are encoded in the same order as reads.
       alt_alleles: A collection of alternative_bases from dv_call.variant that
@@ -266,8 +265,9 @@ class PileupImageCreator(object):
     if not alt_alleles:
       raise ValueError('alt_alleles cannot be empty')
     if any(alt not in dv_call.variant.alternate_bases for alt in alt_alleles):
-      raise ValueError('all elements of alt_alleles must be the alternate bases'
-                       ' of dv_call.variant', alt_alleles, dv_call.variant)
+      raise ValueError(
+          'all elements of alt_alleles must be the alternate bases'
+          ' of dv_call.variant', alt_alleles, dv_call.variant)
 
     image_start_pos = dv_call.variant.start - self.half_width
     if (len(dv_call.variant.reference_bases) == 1 and
@@ -277,8 +277,8 @@ class PileupImageCreator(object):
                        dv_call.variant)
 
     # We start with n copies of our encoded reference bases.
-    rows = (
-        [self._encoder.encode_reference(refbases)] * self.reference_band_height)
+    rows = ([self._encoder.encode_reference(refbases)] *
+            self.reference_band_height)
 
     # A generator that yields tuples of the form (position, row), iff the read
     # can be encoded as a valid row to be used in the pileup image.
@@ -321,8 +321,8 @@ class PileupImageCreator(object):
     See class documents for more details.
 
     Args:
-      dv_call: A learning.genomics.deepvariant.DeepVariantCall proto
-        that we want to create a TF.Example pileup image of.
+      dv_call: A learning.genomics.deepvariant.DeepVariantCall proto that we
+        want to create a TF.Example pileup image of.
 
     Returns:
       A list of tuples. The first element of the tuple is a set of alternate

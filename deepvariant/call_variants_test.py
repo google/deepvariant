@@ -63,7 +63,6 @@ from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
-
 # NB. This entire collection of tests will be invoked with '--use_tpu=' 'true'
 # and 'false' by the BUILD file, and a tpu device will be allocated when
 # necessary.
@@ -234,13 +233,13 @@ class CallVariantsEndToEndTests(
   @flagsaver.FlagSaver
   def test_call_end2end_with_labels(self, model):
     FLAGS.debugging_true_label_mode = True
-    (call_variants_outputs, examples,
-     batch_size, max_batches) = self._call_end2end_helper(
-         testdata.GOLDEN_TRAINING_EXAMPLES, model, False)
+    (call_variants_outputs, examples, batch_size,
+     max_batches) = self._call_end2end_helper(testdata.GOLDEN_TRAINING_EXAMPLES,
+                                              model, False)
     # Check that we have the right number of output protos.
     self.assertEqual(
-        len(call_variants_outputs), batch_size * max_batches
-        if max_batches else len(examples))
+        len(call_variants_outputs),
+        batch_size * max_batches if max_batches else len(examples))
 
     # Checks that at least some of the `true_label`s are filled.
     self.assertTrue(
@@ -253,13 +252,13 @@ class CallVariantsEndToEndTests(
   @flagsaver.FlagSaver
   def test_call_end2end(self, model, shard_inputs, include_debug_info):
     FLAGS.include_debug_info = include_debug_info
-    (call_variants_outputs, examples,
-     batch_size, max_batches) = self._call_end2end_helper(
-         testdata.GOLDEN_CALLING_EXAMPLES, model, shard_inputs)
+    (call_variants_outputs, examples, batch_size,
+     max_batches) = self._call_end2end_helper(testdata.GOLDEN_CALLING_EXAMPLES,
+                                              model, shard_inputs)
     # Check that we have the right number of output protos.
     self.assertEqual(
-        len(call_variants_outputs), batch_size * max_batches
-        if max_batches else len(examples))
+        len(call_variants_outputs),
+        batch_size * max_batches if max_batches else len(examples))
 
     # Check that our CallVariantsOutput (CVO) have the following critical
     # properties:
@@ -286,8 +285,8 @@ class CallVariantsEndToEndTests(
                          variant_utils.has_insertion(cvo.variant))
         self.assertEqual(cvo.debug_info.has_deletion,
                          variant_utils.has_deletion(cvo.variant))
-        self.assertEqual(cvo.debug_info.is_snp, variant_utils.is_snp(
-            cvo.variant))
+        self.assertEqual(cvo.debug_info.is_snp,
+                         variant_utils.is_snp(cvo.variant))
         self.assertEqual(cvo.debug_info.predicted_label,
                          np.argmax(cvo.genotype_probabilities))
 

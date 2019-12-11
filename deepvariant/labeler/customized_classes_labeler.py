@@ -55,14 +55,10 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
   classes_dict = None
   info_field_name = None
 
-  def __init__(self,
-               is_confident,
-               variant,
-               truth_variant,
-               classes_list,
+  def __init__(self, is_confident, variant, truth_variant, classes_list,
                info_field_name):
     self.info_field_name = info_field_name
-    self.classes_dict = {k: v for v, k in enumerate(classes_list.split(","))}
+    self.classes_dict = {k: v for v, k in enumerate(classes_list.split(','))}
     self.is_confident = is_confident
     self.variant = variant
     self.truth_variant = truth_variant
@@ -112,9 +108,9 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
     """Extract class status from nucleus.protos.Variant.info.
 
     Args:
-      info_field: INFO field of nucleus.protos.Variant proto to extract
-        the classes status from. Must contain `info_field_name` field which is
-        set to one of self.classes_dict.keys().
+      info_field: INFO field of nucleus.protos.Variant proto to extract the
+        classes status from. Must contain `info_field_name` field which is set
+        to one of self.classes_dict.keys().
 
     Returns:
       string. Class status. Has to be one of the keys of `classes_dict`.
@@ -125,18 +121,17 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
     """
 
     if self.info_field_name not in info_field.keys():
-      raise ValueError("Cannot create class labels: " +
-                       "VCF file does not contain INFO/{} field".format(
+      raise ValueError('Cannot create class labels: ' +
+                       'VCF file does not contain INFO/{} field'.format(
                            self.info_field_name))
 
     class_status = struct_utils.get_string_field(info_field,
-                                                 self.info_field_name,
-                                                 True)
+                                                 self.info_field_name, True)
 
     if class_status not in self.classes_dict.keys():
-      raise ValueError("class_status status unknown: {}. "
-                       "Known status: {}".format(
-                           class_status, self.classes_dict.keys()))
+      raise ValueError('class_status status unknown: {}. '
+                       'Known status: {}'.format(class_status,
+                                                 self.classes_dict.keys()))
     return class_status
 
 
@@ -146,6 +141,7 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
 class CustomizedClassesVariantLabeler(
     positional_labeler.PositionalVariantLabeler):
   """Extracts the class of the variant (possible values are keys in
+
      `classes_dict`) from INFO/`info_field_name` field in VCF file.
   """
 
@@ -160,7 +156,8 @@ class CustomizedClassesVariantLabeler(
         receive a special not-confident marker.
       classes_list: A common-separated string of classes.
       info_field_name: the name in INFO field where we should get the customized
-                       field from.
+        field from.
+
     Raises:
       ValueError: if vcf_reader is None.
     """
@@ -196,7 +193,8 @@ class CustomizedClassesVariantLabeler(
       is_confident, truth_variant = self._match(variant)
 
       yield CustomizedClassesVariantLabel(
-          is_confident=is_confident, variant=variant,
+          is_confident=is_confident,
+          variant=variant,
           truth_variant=truth_variant,
           classes_list=self.classes_list,
           info_field_name=self.info_field_name)

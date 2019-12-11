@@ -46,7 +46,6 @@ from deepvariant import dv_constants
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 
-
 # These are emperically determined to work well on TPU with our data sets,
 # where lots of buffering and concurrency is necessary to keep the device
 # busy.
@@ -94,10 +93,10 @@ class DeepVariantInput(object):
       mode: the mode string (from `tf.estimator.ModeKeys`).
       input_file_spec: the input filename for a tfrecord[.gz] file containing
         examples.  Can contain sharding designators.
-      num_examples: the number of examples contained in the input file.
-        Required for setting learning rate schedule in train/eval only.
-      num_classes: The number of classes in the labels of
-        this dataset. Currently defaults to DEFAULT_NUM_CLASSES.
+      num_examples: the number of examples contained in the input file. Required
+        for setting learning rate schedule in train/eval only.
+      num_classes: The number of classes in the labels of this dataset.
+        Currently defaults to DEFAULT_NUM_CLASSES.
       max_examples: The maximum number of examples to use. If None, all examples
         will be used. If not None, the first n = min(max_examples, num_examples)
         will be used. This works with training, and the n examples will repeat
@@ -118,8 +117,9 @@ class DeepVariantInput(object):
       sloppy: boolean, allow parallel_interleave to be sloppy.  Default True.
       list_files_shuffle: boolean, allow list_files to shuffle.  Default True.
       debugging_true_label_mode: boolean. If true, the input examples are
-                                 created with "training" mode. We'll parse the
-                                 'label' field even if the `mode` is PREDICT.
+        created with "training" mode. We'll parse the 'label' field even if the
+        `mode` is PREDICT.
+
     Raises:
       ValueError: if `num_examples` not provided, in a context requiring it.
     """
@@ -186,6 +186,7 @@ class DeepVariantInput(object):
 
     Args:
       tf_example: a serialized tf.Example for a DeepVariant "pileup".
+
     Returns:
       If (mode is EVAL or TRAIN) or debugging_true_label_mode:
         (features, label) ...

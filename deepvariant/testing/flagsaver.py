@@ -106,9 +106,9 @@ def _FlagSaver(func, overrides):
 
   Args:
     func: function object - This will be called between saving flags and
-        restoring flags.
+      restoring flags.
     overrides: {str: object} - Flag names mapped to their values.  These flags
-        will be set after saving the original flag state.
+      will be set after saving the original flag state.
 
   Returns:
     return value from func()

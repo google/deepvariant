@@ -30,8 +30,12 @@
 r"""Converts labeled DeepVariant examples protos into a VCF file.
 
 ./blaze-bin/learning/genomics/deepvariant/labeler/labeled_examples_to_vcf \
-  --ref $(pwd)/learning/genomics/deepvariant/testdata/ucsc.hg19.chr20.unittest.fasta.gz \
-  --examples $(pwd)/learning/genomics/deepvariant/testdata/golden.training_examples.tfrecord \
+  --ref
+  $(pwd)/learning/genomics/deepvariant/testdata/ucsc.hg19.chr20.unittest.fasta.gz
+  \
+  --examples
+  $(pwd)/learning/genomics/deepvariant/testdata/golden.training_examples.tfrecord
+  \
   --output_vcf /tmp/golden_training.vcf
 """
 # pylint: enable=line-too-long
@@ -67,8 +71,7 @@ flags.DEFINE_string(
     'VCF file.')
 flags.DEFINE_string(
     'examples', None,
-    'Required. Path to labeled, DeepVariant tf.Example protos.'
-)
+    'Required. Path to labeled, DeepVariant tf.Example protos.')
 flags.DEFINE_string('output_vcf', None,
                     'Required. Path where we will write out output VCF.')
 flags.DEFINE_string(
@@ -79,13 +82,11 @@ flags.DEFINE_string(
 flags.DEFINE_integer(
     'max_records', -1,
     'If provided, we will only read in at most max_record examples for '
-    'conversion to VCF.'
-)
+    'conversion to VCF.')
 flags.DEFINE_integer(
     'log_every', 10000,
     'How frequently should we provide updates on the conversion process? We '
-    'will log our conversion of every `log_every` variants.'
-)
+    'will log our conversion of every `log_every` variants.')
 
 
 def _example_sort_key(example):
@@ -113,18 +114,17 @@ def examples_to_variants(examples_path, max_records=None):
     ValueError: if we find a Variant in any example that doesn't have genotypes.
   """
   examples = tfrecord.read_tfrecords(examples_path, max_records=max_records)
-  variants = sorted(
-      (tf_utils.example_variant(example) for example in examples),
-      key=variant_utils.variant_range_tuple)
+  variants = sorted((tf_utils.example_variant(example) for example in examples),
+                    key=variant_utils.variant_range_tuple)
 
   for _, group in itertools.groupby(variants,
                                     variant_utils.variant_range_tuple):
     variant = next(group)
     if not variantcall_utils.has_genotypes(variant_utils.only_call(variant)):
-      raise ValueError((
-          'Variant {} does not have any genotypes. This tool only works with '
-          'variants that have been labeled.').format(
-              variant_utils.variant_key(variant)))
+      raise ValueError(
+          ('Variant {} does not have any genotypes. This tool only works with '
+           'variants that have been labeled.').format(
+               variant_utils.variant_key(variant)))
     yield variant
 
 

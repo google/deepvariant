@@ -1149,9 +1149,10 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       vcf_contigs = _make_contigs([(name, 100) for name in vcf_names])
     else:
       vcf_contigs = None
-    actual = make_examples._ensure_consistent_contigs(
-        ref_contigs, sam_contigs, vcf_contigs, names_to_exclude,
-        min_coverage_fraction)
+    actual = make_examples._ensure_consistent_contigs(ref_contigs, sam_contigs,
+                                                      vcf_contigs,
+                                                      names_to_exclude,
+                                                      min_coverage_fraction)
     self.assertEqual([a.name for a in actual], expected_names)
 
   @parameterized.parameters(

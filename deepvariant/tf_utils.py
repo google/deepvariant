@@ -109,8 +109,8 @@ def example_locus(example):
 def example_alt_alleles_indices(example):
   """Gets an iterable of the alt allele indices in example."""
   return deepvariant_pb2.CallVariantsOutput.AltAlleleIndices.FromString(
-      example.features.feature['alt_allele_indices/encoded']
-      .bytes_list.value[0]).indices
+      example.features.feature['alt_allele_indices/encoded'].bytes_list.value[0]
+  ).indices
 
 
 def example_alt_alleles(example, variant=None):
@@ -260,8 +260,8 @@ def make_example(variant,
   """Creates a new tf.Example suitable for use with DeepVariant.
 
   Args:
-    variant: third_party.nucleus.protos.Variant protobuf
-      containing information about a candidate variant call.
+    variant: third_party.nucleus.protos.Variant protobuf containing information
+      about a candidate variant call.
     alt_alleles: A set of strings. Indicates the alternate alleles used as "alt"
       when constructing the image.
     encoded_image: a Tensor of type tf.string. Should contain an image encoding
@@ -269,9 +269,9 @@ def make_example(variant,
       consistent with the image_format argument.
     shape: a list of (width, height, channel).
     image_format: string. The scheme used to encode our image.
-    second_image: a Tensor of type tf.string or None. Contains second
-      image that encodes read data from another DNA sample. Must satisfy
-      the same requirements as encoded_image.
+    second_image: a Tensor of type tf.string or None. Contains second image that
+      encodes read data from another DNA sample. Must satisfy the same
+      requirements as encoded_image.
     sequencing_type: int. The sequencing type of the input image.
 
   Returns:

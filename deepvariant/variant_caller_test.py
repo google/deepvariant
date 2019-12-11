@@ -410,8 +410,8 @@ class VariantCallerTests(parameterized.TestCase):
     # The third, fourth, and the fifth ones should never be merged, since
     # either het or hom_alt has bigger GL than hom_ref.
     counts = [(0, 18, 'A'), (0, 19, 'C'), (35, 0, 'A'), (10, 10, 'T'),
-              (4, 12, 'A'), (1, 30, 'A'), (1, 34, 'C'), (0, 20, 'T'), (0, 19,
-                                                                       'G')]
+              (4, 12, 'A'), (1, 30, 'A'), (1, 34, 'C'), (0, 20, 'T'),
+              (0, 19, 'G')]
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
     caller = DummyVariantCaller(0.01, 100, gq_resolution)
     gvcfs = list(caller.make_gvcfs(allele_counts))

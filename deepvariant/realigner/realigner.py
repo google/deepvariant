@@ -145,7 +145,6 @@ flags.DEFINE_float(
 flags.DEFINE_integer('kmer_size', 32,
                      'K-mer size for fast pass alinger reads index.')
 
-
 # Margin added to the reference sequence for the aligner module.
 _REF_ALIGN_MARGIN = 20
 
@@ -153,8 +152,8 @@ _DEFAULT_MIN_SUPPORTING_READS = 2
 _DEFAULT_MAX_SUPPORTING_READS = 300
 _ALLELE_COUNT_LINEAR_MODEL_DEFAULT = realigner_pb2.WindowSelectorModel(
     model_type=realigner_pb2.WindowSelectorModel.ALLELE_COUNT_LINEAR,
-    allele_count_linear_model=realigner_pb2.WindowSelectorModel.
-    AlleleCountLinearModel(
+    allele_count_linear_model=realigner_pb2.WindowSelectorModel
+    .AlleleCountLinearModel(
         bias=-0.683379,
         coeff_soft_clip=2.997000,
         coeff_substitution=-0.086644,
@@ -199,8 +198,8 @@ def window_selector_config(flags_obj):
         flags_obj.ws_max_num_supporting_reads)
     window_selector_model = realigner_pb2.WindowSelectorModel(
         model_type=realigner_pb2.WindowSelectorModel.VARIANT_READS,
-        variant_reads_model=realigner_pb2.WindowSelectorModel.
-        VariantReadsThresholdModel(
+        variant_reads_model=realigner_pb2.WindowSelectorModel
+        .VariantReadsThresholdModel(
             min_num_supporting_reads=min_num_supporting_reads,
             max_num_supporting_reads=max_num_supporting_reads))
   else:
@@ -267,8 +266,8 @@ def realigner_config(flags_obj):
       k=flags_obj.aln_k,
       error_rate=flags_obj.aln_error_rate,
       max_num_of_mismatches=flags_obj.max_num_mismatches,
-      realignment_similarity_threshold=flags_obj.
-      realignment_similarity_threshold,
+      realignment_similarity_threshold=flags_obj
+      .realignment_similarity_threshold,
       kmer_size=flags_obj.kmer_size)
 
   diagnostics = realigner_pb2.Diagnostics(
@@ -362,13 +361,11 @@ class AssemblyRegion(object):
     region: range_pb2.Range. This is the span of the assembled region on the
       genome.
     read_span: range_pb2.Range. This is the span of reads added to this region.
-
-  The read_span in general is expected to be wider than the region itself,
-  since we often include all reads that overlap the region at all. It is
-  possible that read_span will be smaller than region, which can happen,
-  for example, when we only have reads starts in the middle of the region.
+      The read_span in general is expected to be wider than the region itself,
+      since we often include all reads that overlap the region at all. It is
+      possible that read_span will be smaller than region, which can happen, for
+      example, when we only have reads starts in the middle of the region.
   Here's a picture of when this can happen:
-
   ref      : acgtACGTACgtgt
   region   :     ------
   read1    :       GGa
@@ -416,8 +413,8 @@ def assign_reads_to_assembled_regions(assembled_regions, reads):
   Args:
     assembled_regions: list[AssemblyRegion], list of AssemblyRegion to assign
       reads to. Does not assume AssemblyRegion are sorted.
-    reads: iterable[learning.genomics.genomics.Read], to be processed. Does
-      not assume the reads are sorted.
+    reads: iterable[learning.genomics.genomics.Read], to be processed. Does not
+      assume the reads are sorted.
 
   Returns:
     [AssemblyRegion], information on assigned reads for each assembled region.
@@ -493,8 +490,9 @@ class Realigner(object):
             span=window, haplotypes=candidate_haplotypes)
         windows_haplotypes.append(candidate_haplotypes_info)
 
-      self.diagnostic_logger.log_graph_metrics(
-          window, graph, candidate_haplotypes, graph_building_time)
+      self.diagnostic_logger.log_graph_metrics(window, graph,
+                                               candidate_haplotypes,
+                                               graph_building_time)
 
     return windows_haplotypes
 
@@ -558,10 +556,10 @@ class Realigner(object):
       - Output all input reads (whether they required realignment or not).
 
     Args:
-      reads: [`third_party.nucleus.protos.Read` protos]. The
-        list of input reads to realign.
-      region: A `third_party.nucleus.protos.Range` proto.
-        Specifies the region on the genome we should process.
+      reads: [`third_party.nucleus.protos.Read` protos]. The list of input reads
+        to realign.
+      region: A `third_party.nucleus.protos.Range` proto. Specifies the region
+        on the genome we should process.
 
     Returns:
       [realigner_pb2.CandidateHaplotypes]. Information on the list of candidate
@@ -571,8 +569,9 @@ class Realigner(object):
         ORDER AS BEFORE.
     """
     # Compute the windows where we need to assemble in the region.
-    candidate_windows = window_selector.select_windows(
-        self.config.ws_config, self.ref_reader, reads, region)
+    candidate_windows = window_selector.select_windows(self.config.ws_config,
+                                                       self.ref_reader, reads,
+                                                       region)
 
     # Assemble each of those regions.
     candidate_haplotypes = self.call_debruijn_graph(candidate_windows, reads)

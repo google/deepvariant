@@ -100,9 +100,7 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     configuration option).
 
     Args:
-      variant: Our
-        candidate third_party.nucleus.protos.Variant
-        variant.
+      variant: Our candidate third_party.nucleus.protos.Variant variant.
 
     Returns:
       A tuple of (match_status, truth_variant) where match_status is True if
@@ -126,9 +124,7 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     """Creates a version of variant with a hom-ref genotype.
 
     Args:
-      variant: Our
-        candidate third_party.nucleus.protos.Variant
-        variant.
+      variant: Our candidate third_party.nucleus.protos.Variant variant.
 
     Returns:
       A new Variant with the same position and alleles as variant but with a

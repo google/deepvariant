@@ -70,7 +70,6 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
 
-
 FLAGS = flags.FLAGS
 
 # Sentinel command line flag value indicating no downsampling should occur.
@@ -196,16 +195,19 @@ flags.DEFINE_integer(
     'By default, reads with any mapping quality are kept. Setting this field '
     'to a positive integer i will only keep reads that have a MAPQ >= i. Note '
     'this only applies to aligned reads.')
-flags.DEFINE_integer('vsc_min_count_snps', 2,
-                     'SNP alleles occurring at least this many times in our '
-                     'AlleleCount will be advanced as candidates.')
-flags.DEFINE_integer('vsc_min_count_indels', 2,
-                     'Indel alleles occurring at least this many times in '
-                     'our AlleleCount will be advanced as candidates.')
-flags.DEFINE_float('vsc_min_fraction_snps', 0.12,
-                   'SNP alleles occurring at least this fraction of all '
-                   'counts in our AlleleCount will be advanced as '
-                   'candidates.')
+flags.DEFINE_integer(
+    'vsc_min_count_snps', 2,
+    'SNP alleles occurring at least this many times in our '
+    'AlleleCount will be advanced as candidates.')
+flags.DEFINE_integer(
+    'vsc_min_count_indels', 2,
+    'Indel alleles occurring at least this many times in '
+    'our AlleleCount will be advanced as candidates.')
+flags.DEFINE_float(
+    'vsc_min_fraction_snps', 0.12,
+    'SNP alleles occurring at least this fraction of all '
+    'counts in our AlleleCount will be advanced as '
+    'candidates.')
 flags.DEFINE_float(
     'vsc_min_fraction_indels', 0.06,
     'Indel alleles occurring at least this fraction of all counts in our '
@@ -216,8 +218,9 @@ flags.DEFINE_float(
 flags.DEFINE_integer(
     'pileup_image_height', 0,
     'Height for the pileup image. If 0, uses the default height')
-flags.DEFINE_integer('pileup_image_width', 0,
-                     'Width for the pileup image. If 0, uses the default width')
+flags.DEFINE_integer(
+    'pileup_image_width', 0,
+    'Width for the pileup image. If 0, uses the default width')
 flags.DEFINE_string(
     'labeler_algorithm', 'haplotype_labeler',
     'Algorithm to use to label examples in training mode. Must be one of the '
@@ -318,7 +321,7 @@ def parse_proto_enum_flag(proto_enum_pb2,
       deepvariant_pb2.DeepVariantOptions.Mode to get the DeepVariantOptions Mode
       enum. See:
       https://developers.google.com/protocol-buffers/docs/reference/python-generated#enum
-      for more information.
+        for more information.
     flag_value: str. The name of the proto enum option from the command line we
       want to convert into the enum value.
     skip_unspecified_option: bool. If True, any enum options that include the
@@ -354,8 +357,8 @@ def default_options(add_flags=True, flags_obj=None):
     add_flags: bool. defaults to True. If True, we will push the value of
       certain FLAGS into our options. If False, those option fields are left
       uninitialized.
-    flags_obj: object.  If not None, use as the source of flags,
-      else use global FLAGS.
+    flags_obj: object.  If not None, use as the source of flags, else use global
+      FLAGS.
 
   Returns:
     deepvariant_pb2.DeepVariantOptions protobuf.
@@ -479,9 +482,10 @@ def default_options(add_flags=True, flags_obj=None):
               errors.CommandLineError)
 
     num_shards, examples, candidates, gvcf = (
-        sharded_file_utils.resolve_filespecs(
-            flags_obj.task, flags_obj.examples or '', flags_obj.candidates or
-            '', flags_obj.gvcf or ''))
+        sharded_file_utils.resolve_filespecs(flags_obj.task,
+                                             flags_obj.examples or '',
+                                             flags_obj.candidates or '',
+                                             flags_obj.gvcf or ''))
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
@@ -565,6 +569,7 @@ def extract_sample_name_from_sam_reader(sam_reader):
         samples_list[0])
     return samples_list[0]
   return next(iter(samples))
+
 
 # ---------------------------------------------------------------------------
 # Utilities for working with labeling metrics
@@ -1053,8 +1058,8 @@ class RegionProcessor(object):
     are returned.
 
     Args:
-      region: A nucleus.genomics.v1.Range object specifying the region we
-        want to realign reads.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to realign reads.
 
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
@@ -1090,8 +1095,9 @@ class RegionProcessor(object):
 
     if self.options.max_reads_per_partition > 0:
       random_for_region = np.random.RandomState(self.options.random_seed)
-      reads = utils.reservoir_sample(
-          reads, self.options.max_reads_per_partition, random_for_region)
+      reads = utils.reservoir_sample(reads,
+                                     self.options.max_reads_per_partition,
+                                     random_for_region)
     reads = list(reads)
     if self.realigner:
       _, reads = self.realigner.realign_reads(reads, region)
@@ -1101,8 +1107,8 @@ class RegionProcessor(object):
     """Finds candidate DeepVariantCall protos in region.
 
     Args:
-      region: A nucleus.genomics.v1.Range object specifying the region we
-        want to get candidates for.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to get candidates for.
 
     Returns:
       A 2-tuple. The first value is a list of deepvariant_pb2.DeepVariantCalls
@@ -1164,8 +1170,8 @@ class RegionProcessor(object):
     Args:
       candidates: list[DeepVariantCalls]: The list of candidate variant calls we
         want to label.
-      region: A nucleus.genomics.v1.Range object specifying the region we
-        want to get candidates for.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to get candidates for.
 
     Yields:
       Tuples of (candidate, label_variants.Label objects) for each candidate in

@@ -217,8 +217,8 @@ def most_likely_genotype(predictions, ploidy=2, n_alleles=2):
   Args:
     predictions: N element array-like. The real-space probabilities of each
       genotype state for this variant. The number of elements in predictions is
-      related to ploidy and n_alleles is given by
-        N = choose(ploidy + n_alleles - 1, n_alleles -1)
+      related to ploidy and n_alleles is given by N = choose(ploidy + n_alleles
+      - 1, n_alleles -1)
       for more information see:
       http://genome.sph.umich.edu/wiki/Relationship_between_Ploidy,_Alleles_and_Genotypes
     ploidy: int >= 1. The ploidy (e.g., number of chromosomes) of this sample.
@@ -284,8 +284,8 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   variant based on the genotype likelihoods in predictions.
 
   Args:
-    variant: third_party.nucleus.protos.Variant protobuf
-      to be filled in with info derived from predictions.
+    variant: third_party.nucleus.protos.Variant protobuf to be filled in with
+      info derived from predictions.
     predictions: N element array-like. The real-space probabilities of each
       genotype state for this variant.
     qual_filter: float. If predictions implies that this isn't a reference call
@@ -371,9 +371,10 @@ def _check_alt_allele_indices(call_variants_outputs):
   ])
   if all_alt_allele_indices != expected_alt_allele_indices(
       len(call_variants_outputs[0].variant.alternate_bases)):
-    logging.warning('Alt allele indices found from call_variants_outputs for '
-                    'variant %s is %s, which is invalid.',
-                    call_variants_outputs[0].variant, all_alt_allele_indices)
+    logging.warning(
+        'Alt allele indices found from call_variants_outputs for '
+        'variant %s is %s, which is invalid.', call_variants_outputs[0].variant,
+        all_alt_allele_indices)
     return False
   return True
 
@@ -398,15 +399,17 @@ def is_valid_call_variants_outputs(call_variants_outputs):
   # Sanity check that all call_variants_outputs have the same `variant`.
   for call_to_check in other_calls:
     if first_call.variant != call_to_check.variant:
-      logging.warning('Expected all inputs to merge_predictions to have the '
-                      'same `variant`, but getting %s and %s.',
-                      first_call.variant, call_to_check.variant)
+      logging.warning(
+          'Expected all inputs to merge_predictions to have the '
+          'same `variant`, but getting %s and %s.', first_call.variant,
+          call_to_check.variant)
       return False
   return True
 
 
-def convert_call_variants_outputs_to_probs_dict(
-    canonical_variant, call_variants_outputs, alt_alleles_to_remove):
+def convert_call_variants_outputs_to_probs_dict(canonical_variant,
+                                                call_variants_outputs,
+                                                alt_alleles_to_remove):
   """Converts a list of CallVariantsOutput to an internal allele probs dict.
 
   Args:
@@ -430,8 +433,8 @@ def convert_call_variants_outputs_to_probs_dict(
     if alt_alleles_to_remove.intersection(allele_set2):
       continue
     p11, p12, p22 = call_variants_output.genotype_probabilities
-    for (set1, set2, p) in [(allele_set1, allele_set1, p11), (allele_set1,
-                                                              allele_set2, p12),
+    for (set1, set2, p) in [(allele_set1, allele_set1, p11),
+                            (allele_set1, allele_set2, p12),
                             (allele_set2, allele_set2, p22)]:
       for indices in itertools.product(set1, set2):
         flattened_dict[indices].append(p)
@@ -548,8 +551,8 @@ def prune_alleles(variant, alt_alleles_to_remove):
 
   Args:
     variant: variants_pb2.Variant.
-    alt_alleles_to_remove: iterable of str. Alt alleles to remove from
-                           variant.
+    alt_alleles_to_remove: iterable of str. Alt alleles to remove from variant.
+
   Returns:
     variants_pb2.Variant with the alt alleles removed from alternate_bases.
   """
@@ -796,8 +799,7 @@ def _transform_to_gvcf_record(variant):
   """Modifies a variant to include gVCF allele and associated likelihoods.
 
   Args:
-    variant: third_party.nucleus.protos.Variant. The Variant
-      to modify.
+    variant: third_party.nucleus.protos.Variant. The Variant to modify.
 
   Returns:
     The variant after applying the modification to its alleles and
@@ -818,9 +820,10 @@ def _transform_to_gvcf_record(variant):
   return variant
 
 
-def merge_and_write_variants_and_nonvariants(
-    variant_iterable, nonvariant_iterable, lessthan, fasta_reader, vcf_writer,
-    gvcf_writer):
+def merge_and_write_variants_and_nonvariants(variant_iterable,
+                                             nonvariant_iterable, lessthan,
+                                             fasta_reader, vcf_writer,
+                                             gvcf_writer):
   """Writes records consisting of the merging of variant and non-variant sites.
 
   The merging strategy used for single-sample records is to emit variants

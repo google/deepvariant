@@ -26,8 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Evaluates a DeepVariant model during training.
-"""
+"""Evaluates a DeepVariant model during training."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -52,7 +51,6 @@ from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
-
 
 FLAGS = flags.FLAGS
 
@@ -349,9 +347,8 @@ def _write_checkpoint_metrics(checkpoint_path,
     metrics_and_values: dict[string,object]; a dictionary of key/value pairs
       containing our metrics. These will be converted to a JSON of key/string
       pairs and written out to disk.
-    eval_name: str; the name of the eval run, which is used to derive the
-      the subdirectory of checkpoint_path where the eval metrics will be
-      written.
+    eval_name: str; the name of the eval run, which is used to derive the the
+      subdirectory of checkpoint_path where the eval metrics will be written.
     current_metrics: str; a single file that contains most recent metrics
       values, and gets updated at each checkpoint.
   """

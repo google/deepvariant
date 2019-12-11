@@ -53,8 +53,8 @@ class AlleleCountLinearWindowSelectorTest(parameterized.TestCase):
   def setUp(self):
     window_selector_model = realigner_pb2.WindowSelectorModel(
         model_type=realigner_pb2.WindowSelectorModel.ALLELE_COUNT_LINEAR,
-        allele_count_linear_model=realigner_pb2.WindowSelectorModel.
-        AlleleCountLinearModel(
+        allele_count_linear_model=realigner_pb2.WindowSelectorModel
+        .AlleleCountLinearModel(
             bias=0,
             coeff_soft_clip=0,
             coeff_substitution=-0.5,
@@ -177,8 +177,8 @@ class WindowSelectorTest(parameterized.TestCase):
   def setUp(self):
     window_selector_model = realigner_pb2.WindowSelectorModel(
         model_type=realigner_pb2.WindowSelectorModel.VARIANT_READS,
-        variant_reads_model=realigner_pb2.WindowSelectorModel.
-        VariantReadsThresholdModel(
+        variant_reads_model=realigner_pb2.WindowSelectorModel
+        .VariantReadsThresholdModel(
             min_num_supporting_reads=1, max_num_supporting_reads=10))
     self.config = realigner_pb2.WindowSelectorOptions(
         min_mapq=20,

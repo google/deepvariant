@@ -69,8 +69,9 @@ class TFUtilsTest(parameterized.TestCase):
   def testModelShapes(self):
     # Builds a graph.
     v0 = tf.Variable([[1, 2, 3], [4, 5, 6]], dtype=tf.float32, name='v0')
-    v1 = tf.Variable(
-        [[[1], [2]], [[3], [4]], [[5], [6]]], dtype=tf.float32, name='v1')
+    v1 = tf.Variable([[[1], [2]], [[3], [4]], [[5], [6]]],
+                     dtype=tf.float32,
+                     name='v1')
     init_all_op = tf.compat.v1.initialize_all_variables()
     save = tf.compat.v1.train.Saver({'v0': v0, 'v1': v1})
     save_path = test_utils.test_tmpfile('ckpt_for_debug_string')
@@ -87,9 +88,8 @@ class TFUtilsTest(parameterized.TestCase):
       # Asking for v0 gives you only v0's shape.
       self.assertEqual({'v0': (2, 3)}, tf_utils.model_shapes(save_path, ['v0']))
       # Asking for v1 gives you only v1's shape.
-      self.assertEqual({
-          'v1': (3, 2, 1)
-      }, tf_utils.model_shapes(save_path, ['v1']))
+      self.assertEqual({'v1': (3, 2, 1)},
+                       tf_utils.model_shapes(save_path, ['v1']))
 
       # Verifies model_shapes() fails for non-existent tensors.
       with six.assertRaisesRegex(self, KeyError, 'v3'):
@@ -99,8 +99,9 @@ class TFUtilsTest(parameterized.TestCase):
     # Builds a graph.
     class_variable_name = 'class_variable_name'
     v0 = tf.Variable([[1, 2, 3]], dtype=tf.int32, name='class_variable_name')
-    v1 = tf.Variable(
-        [[[1], [2]], [[3], [4]], [[5], [6]]], dtype=tf.float32, name='v1')
+    v1 = tf.Variable([[[1], [2]], [[3], [4]], [[5], [6]]],
+                     dtype=tf.float32,
+                     name='v1')
     init_all_op = tf.compat.v1.initialize_all_variables()
     save = tf.compat.v1.train.Saver({class_variable_name: v0, 'v1': v1})
     save_path = test_utils.test_tmpfile('ckpt_for_debug_classes')
@@ -157,9 +158,8 @@ class TFUtilsTest(parameterized.TestCase):
         'deepvariant.tf_utils.example_variant'
     ) as mock_ex_variant:
       # Providing variant directly avoids the call to example_variant().
-      self.assertEqual(alts,
-                       tf_utils.example_alt_alleles(
-                           example, variant=self.variant))
+      self.assertEqual(
+          alts, tf_utils.example_alt_alleles(example, variant=self.variant))
       mock_ex_variant.assert_not_called()
 
       # Checks that we load the variant if needed and that our mock is working.
