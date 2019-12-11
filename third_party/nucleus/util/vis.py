@@ -41,8 +41,14 @@ from __future__ import print_function
 from IPython import display
 import numpy as np
 from PIL import Image
+from PIL import ImageDraw
 
 from third_party.nucleus.protos import variants_pb2
+
+DEEPVARIANT_CHANNEL_NAMES = [
+    'read base', 'base quality', 'mapping quality', 'strand',
+    'read supports variant', 'base differs from ref'
+]
 
 
 def get_image_array_from_example(example):
@@ -59,8 +65,8 @@ def get_image_array_from_example(example):
     numpy array of dtype np.uint8.
   """
   features = example.features.feature
-  img = features["image/encoded"].bytes_list.value[0]
-  shape = features["image/shape"].int64_list.value[0:3]
+  img = features['image/encoded'].bytes_list.value[0]
+  shape = features['image/shape'].int64_list.value[0:3]
   return np.frombuffer(img, np.uint8).reshape(shape)
 
 
@@ -117,7 +123,7 @@ def convert_6_channels_to_rgb(channels):
                      alpha).astype(np.uint8).transpose([1, 2, 0])
 
 
-def adjust_colors_for_png(arr, vmin=0, vmax=255):
+def scale_colors_for_png(arr, vmin=0, vmax=255):
   """Scale an array to integers between 0 and 255 to prep it for a PNG image.
 
   Args:
@@ -131,7 +137,7 @@ def adjust_colors_for_png(arr, vmin=0, vmax=255):
     numpy array of dtype np.uint8 (integers between 0 and 255).
   """
   if vmax == 0 or vmax <= vmin:
-    raise ValueError("vmin must be non-zero and higher than vmin.")
+    raise ValueError('vmin must be non-zero and higher than vmin.')
 
   # Careful not to modify the original array
   scaled = np.copy(arr)
@@ -147,22 +153,6 @@ def adjust_colors_for_png(arr, vmin=0, vmax=255):
   return scaled.astype(np.uint8)
 
 
-def enlarge_image_array(arr, scale):
-  """Copy the elements of an array <scale> times to enlarge an image array.
-
-  Args:
-    arr: numpy array. Input array.
-    scale: positive integer. Number of times to enlarge the array.
-
-  Returns:
-    numpy array.
-  """
-  if scale == 1:
-    return arr
-  tmp = np.repeat(arr, scale, axis=1)  # repeat the columns
-  return np.repeat(tmp, scale, axis=0)  # repeat the rows
-
-
 def _get_image_type_from_array(arr):
   """Find image type based on array dimensions.
 
@@ -175,22 +165,22 @@ def _get_image_type_from_array(arr):
   """
   if len(arr.shape) == 3 and arr.shape[2] == 3:
     # 8-bit x 3 colors
-    return "RGB"
+    return 'RGB'
   elif len(arr.shape) == 2:
     # 8-bit, gray-scale
-    return "L"
+    return 'L'
   else:
     raise ValueError(
-        "Input array must have either 2 dimensions or 3 dimensions where the "
-        "third dimension has 3 channels. i.e. arr.shape is (x,y) or (x,y,3). "
-        "Found shape {}.".format(arr.shape))
+        'Input array must have either 2 dimensions or 3 dimensions where the '
+        'third dimension has 3 channels. i.e. arr.shape is (x,y) or (x,y,3). '
+        'Found shape {}.'.format(arr.shape))
 
 
-def scale_array_for_image(arr, vmin=None, vmax=None, scale=None):
+def autoscale_colors_for_png(arr, vmin=None, vmax=None):
   """Adjust an array to prepare it for saving to an image.
 
   Re-scale numbers in the input array to go from 0 to 255 to adapt them for a
-  PNG image, and scale the image up to a nice size for convenience.
+  PNG image.
 
   Args:
     arr: numpy array. Should be 2-dimensional or 3-dimensional where the third
@@ -201,22 +191,11 @@ def scale_array_for_image(arr, vmin=None, vmax=None, scale=None):
     vmax: number (float or int). Maximum data value, which will correspond to
       white in greyscale or full presence of each color in RGB images. Default
       None takes the max of the data from arr.
-    scale: integer. Number of pixels wide and tall to show each cell in the
-      array. This sizes up the image while keeping exactly the same number of
-      pixels for every cell in the array, preserving resolution and preventing
-      any interpolation or overlapping of pixels. Default None adapts to the
-      size of the image to multiply it up until a limit of 500 pixels, a
-      convenient size for use in notebooks. If saving to a file for automated
-      processing, scale=1 is recommended to keep output files small and simple
-      while still retaining all the information content.
 
   Returns:
     (modified numpy array, image_mode)
   """
   image_mode = _get_image_type_from_array(arr)
-
-  if scale is None:
-    scale = max(1, int(500 / max(arr.shape)))
 
   if vmin is None:
     vmin = np.min(arr)
@@ -228,12 +207,72 @@ def scale_array_for_image(arr, vmin=None, vmax=None, scale=None):
   if vmin == vmax:
     vmax = vmin + 1
 
-  scaled = adjust_colors_for_png(arr, vmin=vmin, vmax=vmax)
-  scaled = enlarge_image_array(scaled, scale=scale)
+  scaled = scale_colors_for_png(arr, vmin=vmin, vmax=vmax)
   return scaled, image_mode
 
 
-def save_to_png(arr, path=None, image_mode=None, show=True):
+def add_header(img, labels, mark_midpoints=True, header_height=20):
+  """Adds labels to the image, evenly distributed across the top.
+
+  This is primarily useful for showing the names of channels.
+
+  Args:
+    img: A PIL Image.
+    labels: list of strs. Labels for segments to write across the top.
+    mark_midpoints: bool. Whether to add a small vertical line marking the
+      center of each segment of the image.
+    header_height: int. Height of the header in pixels.
+
+  Returns:
+    A new PIL Image, taller than the original img and annotated.
+  """
+
+  # Create a taller image to make space for a header at the top.
+  new_height = header_height + img.size[1]
+  new_width = img.size[0]
+
+  if img.mode == 'RGB':
+    placeholder_size = (new_height, new_width, 3)
+  else:
+    placeholder_size = (new_height, new_width)
+  placeholder = np.ones(placeholder_size, dtype=np.uint8) * 255
+
+  # Divide the image width into segments.
+  segment_width = img.size[0] / len(labels)
+
+  # Calculate midpoints for all segments.
+  midpoints = [int(segment_width * (i + 0.5)) for i in range(len(labels))]
+
+  if mark_midpoints:
+    # For each label, add a small line to mark the middle.
+    for x_position in midpoints:
+      placeholder[header_height - 5:header_height, x_position] = 0
+      # If image has an even width, it will need 2 pixels marked as the middle.
+      if segment_width % 2 == 0:
+        placeholder[header_height - 5:header_height, x_position + 1] = 0
+
+  bigger_img = Image.fromarray(placeholder, mode=img.mode)
+  # Place the original image inside the taller placeholder image.
+  bigger_img.paste(img, (0, header_height))
+
+  # Add a label for each segment.
+  draw = ImageDraw.Draw(bigger_img)
+  for i in range(len(labels)):
+    text = labels[i]
+    text_width = draw.textsize(text)[0]
+    # xy refers to the left top corner of the text, so to center the text on
+    # the midpoint, subtract half the text width from the midpoint position.
+    x_position = int(midpoints[i] - text_width / 2)
+    draw.text(xy=(x_position, 0), text=text, fill='black')
+  return bigger_img
+
+
+def save_to_png(arr,
+                path=None,
+                image_mode=None,
+                show=True,
+                labels=None,
+                scale=None):
   """Make a PNG and show it from a numpy array of dtype=np.uint8.
 
   Args:
@@ -242,6 +281,15 @@ def save_to_png(arr, path=None, image_mode=None, show=True):
     image_mode: "RGB" or "L". Leave as default=None to choose based on image
       dimensions.
     show: bool. Whether to display the image using IPython (for notebooks).
+    labels: list of str. Labels to show across the top of the image.
+    scale: integer. Number of pixels wide and tall to show each cell in the
+      array. This sizes up the image while keeping exactly the same number of
+      pixels for every cell in the array, preserving resolution and preventing
+      any interpolation or overlapping of pixels. Default None adapts to the
+      size of the image to multiply it up until a limit of 500 pixels, a
+      convenient size for use in notebooks. If saving to a file for automated
+      processing, scale=1 is recommended to keep output files small and simple
+      while still retaining all the information content.
 
   Returns:
     None.
@@ -251,9 +299,18 @@ def save_to_png(arr, path=None, image_mode=None, show=True):
 
   img = Image.fromarray(arr, mode=image_mode)
 
+  if labels is not None:
+    img = add_header(img, labels)
+
+  if scale is None:
+    scale = max(1, int(500 / max(arr.shape)))
+
+  if scale != 1:
+    img = img.resize((img.size[0] * scale, img.size[1] * scale))
+
   # Saving to a temporary file is needed even when showing in a notebook
   if path is None:
-    path = "/tmp/tmp.png"
+    path = '/tmp/tmp.png'
   img.save(path)
 
   # Show image (great for notebooks)
@@ -261,7 +318,13 @@ def save_to_png(arr, path=None, image_mode=None, show=True):
     display.display(display.Image(path))
 
 
-def array_to_png(arr, path=None, show=True, vmin=None, vmax=None, scale=None):
+def array_to_png(arr,
+                 path=None,
+                 show=True,
+                 vmin=None,
+                 vmax=None,
+                 scale=None,
+                 labels=None):
   """Save an array as a PNG image with PIL and show it.
 
   Args:
@@ -285,18 +348,26 @@ def array_to_png(arr, path=None, show=True, vmin=None, vmax=None, scale=None):
       convenient size for use in notebooks. If saving to a file for automated
       processing, scale=1 is recommended to keep output files small and simple
       while still retaining all the information content.
+    labels: list of str. Labels to show across the top of the image.
 
   Returns:
     None. Saves an image at path and optionally shows it with IPython.display.
   """
-  scaled, image_mode = scale_array_for_image(
-      arr, vmin=vmin, vmax=vmax, scale=scale)
-  save_to_png(scaled, path=path, show=show, image_mode=image_mode)
+  scaled, image_mode = autoscale_colors_for_png(arr, vmin=vmin, vmax=vmax)
+  save_to_png(
+      scaled,
+      path=path,
+      show=show,
+      image_mode=image_mode,
+      labels=labels,
+      scale=scale)
 
 
 def draw_deepvariant_pileup(example=None,
                             channels=None,
                             composite_type=None,
+                            annotated=True,
+                            labels=None,
                             path=None,
                             show=True,
                             scale=None):
@@ -309,6 +380,9 @@ def draw_deepvariant_pileup(example=None,
     channels: list of 2D arrays containing the data to draw.
     composite_type: str or None. Method for combining channels. One of
       [None,"RGB"].
+    annotated: bool. Whether to add channel labels and mark midpoints.
+    labels: list of str. Which labels to add to the image. If annotated=True,
+      use default channels labels for DeepVariant.
     path: str. Output file path for saving as an image. If None, just show plot.
     show: bool. Whether to display the image for ipython notebooks. Set to False
       to prevent extra output when running in bulk.
@@ -321,18 +395,29 @@ def draw_deepvariant_pileup(example=None,
   if example and not channels:
     channels = channels_from_example(example)
   elif not channels:
-    raise ValueError("Either example OR channels must be specified.")
+    raise ValueError('Either example OR channels must be specified.')
 
   if composite_type is None:
     img_array = np.concatenate(channels, axis=1)
-  elif composite_type == "RGB":
+    if annotated and labels is None:
+      labels = DEEPVARIANT_CHANNEL_NAMES
+  elif composite_type == 'RGB':
     img_array = convert_6_channels_to_rgb(channels)
+    if annotated and labels is None:
+      labels = ['']  # Creates one midpoint with no label.
   else:
     raise ValueError(
         "Unrecognized composite_type: {}. Must be None or 'RGB'".format(
             composite_type))
 
-  array_to_png(img_array, path=path, show=show, scale=scale)
+  array_to_png(
+      img_array,
+      path=path,
+      show=show,
+      scale=scale,
+      labels=labels,
+      vmin=0,
+      vmax=254)
 
 
 def variant_from_example(example):
@@ -345,7 +430,7 @@ def variant_from_example(example):
     A Nucleus Variant.
   """
   features = example.features.feature
-  var_string = features["variant/encoded"].bytes_list.value[0]
+  var_string = features['variant/encoded'].bytes_list.value[0]
   return variants_pb2.Variant.FromString(var_string)
 
 
@@ -358,7 +443,7 @@ def locus_id_from_variant(variant):
   Returns:
     str.
   """
-  return "{}:{}_{}".format(variant.reference_name, variant.start,
+  return '{}:{}_{}'.format(variant.reference_name, variant.start,
                            variant.reference_bases)
 
 
@@ -372,11 +457,11 @@ def alt_allele_indices_from_example(example):
     list of indices.
   """
   features = example.features.feature
-  val = features["alt_allele_indices/encoded"].bytes_list.value[0]
+  val = features['alt_allele_indices/encoded'].bytes_list.value[0]
   # Extract the encoded proto into unsigned integers and convert to regular ints
   mapped = [int(x) for x in np.frombuffer(val, dtype=np.uint8)]
-  # Format is [<field id + type>, <number of elements in array>, ...<array>]
-  # Extract the array only, leaving out the metadata
+  # Format is [<field id + type>, <number of elements in array>, ...<array>].
+  # Extract the array only, leaving out the metadata.
   return mapped[2:]
 
 
@@ -395,8 +480,8 @@ def alt_bases_from_indices(alt_allele_indices, alternate_bases):
     str. Alt allele(s) at the indices, joined by '-' if more than 1.
   """
   alleles = [alternate_bases[i] for i in alt_allele_indices]
-  # avoiding '/' to support use in file paths
-  return "-".join(alleles)
+  # Avoiding '/' to support use in file paths.
+  return '-'.join(alleles)
 
 
 def alt_from_example(example):
@@ -425,4 +510,4 @@ def locus_id_with_alt(example):
   variant = variant_from_example(example)
   locus_id = locus_id_from_variant(variant)
   alt = alt_from_example(example)
-  return "{}_{}".format(locus_id, alt)
+  return '{}_{}'.format(locus_id, alt)
