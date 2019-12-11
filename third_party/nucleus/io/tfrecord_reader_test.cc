@@ -47,10 +47,10 @@ TEST(TFRecordReaderTest, Simple) {
 
   ASSERT_TRUE(reader->GetNext());
 
-  std::string s = reader->record();
+  tensorflow::tstring s = reader->record();
 
   nucleus::genomics::v1::Variant v;
-  v.ParseFromString(s);
+  v.ParseFromArray(s.data(), s.size());
 
   ASSERT_EQ("Chr1", v.reference_name());
 

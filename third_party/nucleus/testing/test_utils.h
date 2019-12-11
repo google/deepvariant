@@ -78,10 +78,11 @@ std::vector<Proto> ReadProtosFromTFRecord(const string& path) {
   tensorflow::io::RecordReader reader(read_file.get());
   std::vector<Proto> results;
   uint64 offset = 0;
-  string data;
+  tensorflow::tstring data;
   while (reader.ReadRecord(&offset, &data).ok()) {
     Proto proto;
-    CHECK(proto.ParseFromString(data)) << "Failed to parse proto";
+    CHECK(proto.ParseFromArray(data.data(), data.size()))
+        << "Failed to parse proto";
     results.push_back(proto);
   }
   return results;
