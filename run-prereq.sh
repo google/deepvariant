@@ -90,6 +90,8 @@ pip install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip install "${PIP_ARGS[@]}" 'mock>=2.0.0'
 pip install "${PIP_ARGS[@]}" 'protobuf==3.8.0'
 pip install "${PIP_ARGS[@]}" 'argparse==1.4.0'
+# Reference: https://github.com/tensorflow/serving/issues/1371
+pip install "${PIP_ARGS[@]}" future
 pip install "${PIP_ARGS[@]}" git+https://github.com/pichuan/tf-slim.git@remove_contrib
 
 # Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
