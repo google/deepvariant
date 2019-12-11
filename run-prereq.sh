@@ -181,8 +181,8 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
     echo "Checking for CUDNN..."
     if [[ ! -e /usr/local/cuda-10.0/include/cudnn.h ]]; then
       echo "Installing CUDNN..."
-      CUDNN_TAR_FILE="cudnn-10.0-linux-x64-v7.4.2.24.tgz"
-      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v7.4.2/${CUDNN_TAR_FILE}
+      CUDNN_TAR_FILE="cudnn-10.0-linux-x64-v7.6.0.64.tgz"
+      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v7.6.0/${CUDNN_TAR_FILE}
       tar -xzvf ${CUDNN_TAR_FILE}
       sudo cp -P cuda/include/cudnn.h /usr/local/cuda-10.0/include
       sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.0/lib64/
