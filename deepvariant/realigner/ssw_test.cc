@@ -30,8 +30,10 @@
  */
 
 #include "deepvariant/realigner/ssw.h"
+
 #include <stdio.h>
 
+#include "absl/strings/str_format.h"
 #include "src/ssw_cpp.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -50,7 +52,7 @@ int Gcc54Bug() {
   a.SetReferenceSequence("tttt");
   bool ok = a.Align("ttAtt", f, &x);
   if (!ok) return 1;
-  printf("ok=%d cigar=%s\n", ok, x.cigar_string.c_str());
+  absl::PrintF("ok=%d cigar=%s\n", ok, x.cigar_string);
   if (x.cigar_string != "2=1I2=") return 1;
   return 0;
 }

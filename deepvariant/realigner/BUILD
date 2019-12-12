@@ -125,6 +125,7 @@ cc_test(
     srcs = ["ssw_test.cc"],
     deps = [
         ":ssw",
+        "@com_google_absl//absl/strings:str_format",
         "@libssw//:ssw_cpp",
         "@org_tensorflow//tensorflow/core:lib",
     ],
