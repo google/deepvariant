@@ -11,6 +11,12 @@ We've provided a Docker image, and some test data in a bucket on Google Cloud
 Storage. The instructions below show how to download the data through the
 corresponding public URLs from these data.
 
+This setup requires a machine with the AVX instruction set. To see if your
+machine meets this requirement, you can check the `/proc/cpuinfo` file, which
+lists this information under "flags". If you do not have the necessary
+instructions, see the next section for more information on how to build your own
+Docker image.
+
 ### Use Docker to run DeepVariant in one command.
 
 In the 0.8 release, we introduced one convenient command that will run through
