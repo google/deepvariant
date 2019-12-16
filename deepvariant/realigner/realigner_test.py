@@ -387,7 +387,8 @@ class RealignerTest(parameterized.TestCase):
   )
   def test_realigner_diagnostics(self, enabled, emit_reads):
     # Make sure that by default we aren't emitting any diagnostic outputs.
-    dx_dir = test_utils.test_tmpfile('dx')
+    dx_dir = test_utils.test_tmpfile('dx_enabled{}_emitreads_{}'.format(
+        enabled, emit_reads))
     region_str = 'chr20:10046178-10046188'
     region = ranges.parse_literal(region_str)
     assembled_region_str = 'chr20:10046096-10046267'
