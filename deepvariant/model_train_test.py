@@ -67,14 +67,6 @@ def setUpModule():
 
 class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
 
-  @flagsaver.FlagSaver
-  def test_training_works_with_compressed_inputs(self):
-    """End-to-end test of model_train script."""
-    self._run_tiny_training(
-        model_name='inception_v3',
-        dataset=data_providers_test.make_golden_dataset(
-            compressed_inputs=True, use_tpu=FLAGS.use_tpu))
-
   def _run_tiny_training(self, model_name, dataset, warm_start_from=''):
     """Runs one training step. This function always starts a new train_dir."""
     with mock.patch(
@@ -114,15 +106,19 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
     mock_cross.assert_called_once_with(
         logits, labels, label_smoothing=smoothing, weights=1.0)
 
-  @parameterized.parameters(
-      model.name for model in modeling.production_models() if model.is_trainable
-  )
+  # pylint: disable=g-complex-comprehension
+  @parameterized.parameters((model.name, compressed_inputs)
+                            for model in modeling.production_models()
+                            if model.is_trainable
+                            for compressed_inputs in [True, False])
+  # pylint: enable=g-complex-comprehension
   @flagsaver.FlagSaver
-  def test_end2end(self, model_name):
+  def test_end2end(self, model_name, compressed_inputs):
     """End-to-end test of model_train script."""
     self._run_tiny_training(
         model_name=model_name,
-        dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu))
+        dataset=data_providers_test.make_golden_dataset(
+            compressed_inputs=compressed_inputs, use_tpu=FLAGS.use_tpu))
 
   @flagsaver.FlagSaver
   def test_end2end_inception_v3_warm_up_from(self):
