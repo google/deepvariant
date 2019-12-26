@@ -29,7 +29,9 @@ LOG_DIR="${OUTPUT_DIR}/logs"
 # Build Docker image.
 function build_docker_image() {
   echo "Start building Docker image."
-  sudo docker build -t deepvariant .
+  # Pulling twice in case the first one times out.
+  sudo docker build -t deepvariant . || \
+    (sleep 5 ; sudo docker build -t deepvariant .)
   echo "Done building Docker image."
 }
 

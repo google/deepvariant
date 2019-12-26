@@ -34,7 +34,9 @@ CAPTURE_BED="${DATA_DIR}/agilent_sureselect_human_all_exon_v5_b37_targets.bed"
 # Build Docker image.
 function build_docker_image() {
   echo "Start building Docker image."
-  sudo docker build -t deepvariant .
+  # Pulling twice in case the first one times out.
+  sudo docker build -t deepvariant . || \
+    (sleep 5 ; sudo docker build -t deepvariant .)
   echo "Done building Docker image."
 }
 
