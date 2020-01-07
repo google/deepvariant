@@ -899,8 +899,8 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
       ExpectedVariant::kVariantExpected,
       WithCounts(MakeExpectedVariant(ref, {alt1, alt2}), {0, count, count}));
 
-  // Here alt1 is so frequent that alt2 goes below our 0.1 fraction but we still
-  // call both.
+  // Here alt1 is so frequent that alt2 goes below our 0.1 fraction so we only
+  // call alt1.
   CheckCallFromComputeVariant(
       ref, 1, caller,
       {
@@ -908,8 +908,8 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
           MakeAllele(alt2, AlleleType::SUBSTITUTION, count),
       },
       ExpectedVariant::kVariantExpected,
-      WithCounts(MakeExpectedVariant(ref, {alt1, alt2}),
-                 {0, count * 100, count}));
+      WithCounts(MakeExpectedVariant(ref, {alt1}),
+                 {0, count * 100}, count * 101));
 
   // Checking the symmetric case : alt2 is very frequent.
   CheckCallFromComputeVariant(
@@ -919,19 +919,20 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
           MakeAllele(alt2, AlleleType::SUBSTITUTION, count * 100),
       },
       ExpectedVariant::kVariantExpected,
-      WithCounts(MakeExpectedVariant(ref, {alt1, alt2}),
-                 {0, count, count * 100}));
+      WithCounts(MakeExpectedVariant(ref, {alt2}),
+                 {0, count * 100}, count * 101));
 
   // Finally, ref is very frequent but alt1 and alt2 are still included.
   CheckCallFromComputeVariant(
       ref, 1, caller,
       {
           MakeAllele(ref, AlleleType::REFERENCE, count * 100),
-          MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
-          MakeAllele(alt2, AlleleType::SUBSTITUTION, count),
+          MakeAllele(alt1, AlleleType::SUBSTITUTION, count * 50),
+          MakeAllele(alt2, AlleleType::SUBSTITUTION, count * 50),
       },
       ExpectedVariant::kVariantExpected,
-      WithCounts(MakeExpectedVariant(ref, {alt1, alt2}), {100, count, count}));
+      WithCounts(MakeExpectedVariant(ref, {alt1, alt2}),
+                 {count * 100, count * 50, count * 50}, count * 200));
 }
 
 }  // namespace deepvariant

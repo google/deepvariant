@@ -286,9 +286,12 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     CHECK(alt_to_alleles.size() == allele_map.size())
         << "Non-unique alternative alleles!";
     for (const string& alt : variant->alternate_bases()) {
-      const Allele& allele = *alt_to_alleles.find(alt)->second;
-      ad.push_back(allele.count());
-      vaf.push_back(1.0 * allele.count() / dp);
+      auto found = alt_to_alleles.find(alt);
+      if (found != alt_to_alleles.end()) {
+        const Allele& allele = *found->second;
+        ad.push_back(allele.count());
+        vaf.push_back(1.0 * allele.count() / dp);
+      }
     }
 
     nucleus::SetInfoField(kADFormatField, ad, call);
@@ -363,6 +366,7 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
     const std::vector<AlleleCount>& allele_counts) const {
   DeepVariantCall call;
   *call.mutable_variant() = variant;
+  Variant* m_variant = call.mutable_variant();
   AlleleCount allele_count_match;
 
   for (const AlleleCount& allele_count : allele_counts) {
@@ -370,12 +374,23 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
       if (!nucleus::AreCanonicalBases(allele_count.ref_base())) {
         // We don't emit calls at any site in the genome that isn't one of the
         // canonical DNA bases (one of A, C, G, or T).
-        break;
+        return nullopt;
       }
       allele_count_match = allele_count;
       break;
     }
   }
+
+  std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count_match);
+  const string refbases = CalcRefBases(allele_count_match.ref_base(),
+                                       alt_alleles);
+
+  // Compute the map from read alleles to the alleles we'll use in our Variant.
+  // Add the alternate alleles from our allele_map to the variant.
+  AlleleMap allele_map = BuildAlleleMap(allele_count_match,
+                                        alt_alleles, refbases);
+
+  AddReadDepths(allele_count_match, allele_map, m_variant);
   AddSupportingReads(allele_count_match, &call);
   return make_optional(call);
 }
