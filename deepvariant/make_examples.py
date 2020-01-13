@@ -37,6 +37,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 
 
+from absl import app
 from absl import flags
 from absl import logging
 import numpy as np
@@ -1464,4 +1465,4 @@ if __name__ == '__main__':
       'reads',
       'ref',
   ])
-  tf.compat.v1.app.run()
+  app.run(main)
