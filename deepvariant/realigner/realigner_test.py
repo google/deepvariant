@@ -46,7 +46,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
 import six
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
