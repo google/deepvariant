@@ -43,7 +43,7 @@ import os
 
 from absl import flags
 from absl import logging
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from third_party.nucleus.util import proto_utils
 from tensorflow.python.framework.errors_impl import NotFoundError

@@ -44,7 +44,7 @@ import tempfile
 from absl.testing import absltest
 from absl.testing import parameterized
 import six
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from deepvariant import testdata
 from deepvariant import vcf_stats

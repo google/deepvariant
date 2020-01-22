@@ -42,7 +42,7 @@ from absl.testing import absltest
 import altair as alt
 import pandas as pd
 import six
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from deepvariant import vcf_stats_vis
 

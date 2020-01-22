@@ -46,7 +46,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 import six
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from deepvariant import data_providers_test
 from deepvariant import model_train

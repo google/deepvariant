@@ -46,7 +46,7 @@ import time
 from absl import flags
 from absl import logging
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sharded_file_utils
