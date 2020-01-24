@@ -79,8 +79,6 @@ class GenomeReferenceTest : public ::testing::TestWithParam<
   std::unique_ptr<const GenomeReference> ref_;
 };
 
-typedef GenomeReferenceTest GenomeReferenceDeathTest;
-
 TEST_P(GenomeReferenceTest, TestBasic) {
   EXPECT_THAT(Ref().ContigNames(),
               UnorderedElementsAre("chrM", "chr1", "chr2"));
@@ -238,14 +236,8 @@ static std::unique_ptr<GenomeReference> JustLoadFai(const string& fasta,
 INSTANTIATE_TEST_CASE_P(GRT1, GenomeReferenceTest,
                         ::testing::Values(make_pair(&JustLoadFai, 0)));
 
-INSTANTIATE_TEST_CASE_P(GRT2, GenomeReferenceDeathTest,
-                        ::testing::Values(make_pair(&JustLoadFai, 0)));
-
 // Test with a large cache.
 INSTANTIATE_TEST_CASE_P(GRT3, GenomeReferenceTest,
-                        ::testing::Values(make_pair(&JustLoadFai, 64 * 1024)));
-
-INSTANTIATE_TEST_CASE_P(GRT4, GenomeReferenceDeathTest,
                         ::testing::Values(make_pair(&JustLoadFai, 64 * 1024)));
 
 TEST(StatusOrLoadFromFile, ReturnsBadStatusIfFaiIsMissing) {
