@@ -41,7 +41,7 @@ from absl import app
 from absl import flags
 from absl import logging
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from deepvariant import dv_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level

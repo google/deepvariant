@@ -46,7 +46,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 import six
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from deepvariant import data_providers_test
 from deepvariant import model_train
@@ -54,6 +54,7 @@ from deepvariant import modeling
 from deepvariant import testdata
 from deepvariant.testing import flagsaver
 from deepvariant.testing import tf_test_utils
+
 
 FLAGS = flags.FLAGS
 MOCK_SENTINEL_RETURN_VALUE = 'mocked_return_value'

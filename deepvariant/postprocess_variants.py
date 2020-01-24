@@ -46,7 +46,7 @@ import time
 from absl import flags
 from absl import logging
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sharded_file_utils
@@ -494,7 +494,7 @@ def get_alt_alleles_to_remove(call_variants_outputs, qual_filter):
 
 # redacted
 class AlleleRemapper(object):
-  """Faciliates removing alt alleles from a Variant.
+  """Facilitates removing alt alleles from a Variant.
 
   This class provides a one-to-shop for managing the information needed to
   remove alternative alleles from Variant. It provides functions and properties

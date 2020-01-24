@@ -49,7 +49,7 @@ from absl.testing import parameterized
 import mock
 import numpy as np
 import six
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
@@ -117,7 +117,8 @@ def _get_infer_batches(tf_dataset, model, batch_size):
 
 
 class CallVariantsEndToEndTests(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+    six.with_metaclass(parameterized.TestGeneratorMetaclass,
+                       tf.compat.v1.test.TestCase)):
 
   def setUp(self):
     self.checkpoint_dir = tf.compat.v1.test.get_temp_dir()

@@ -42,13 +42,14 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
 import six
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tf_slim
 
 from deepvariant import dv_constants
 from deepvariant import modeling
 from deepvariant import tf_utils
 
+tf.compat.v1.disable_eager_execution()
 slim = tf_slim
 
 

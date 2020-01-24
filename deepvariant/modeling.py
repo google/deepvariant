@@ -48,7 +48,7 @@ from absl import flags
 from absl import logging
 import enum
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tf_slim
 from deepvariant import dv_constants
 from deepvariant import tf_utils
@@ -60,6 +60,7 @@ from tensorflow.python.tpu import tpu_optimizer
 # pylint: enable=g-direct-tensorflow-import
 from tf_slim.nets import inception
 
+tf.compat.v1.disable_eager_execution()
 
 flags.DEFINE_float(
     'label_smoothing', 1e-6,

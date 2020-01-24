@@ -45,7 +45,7 @@ from absl import flags
 from absl import logging
 import numpy as np
 import six
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -58,6 +58,8 @@ from deepvariant import modeling
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 from google.protobuf import text_format
+
+tf.compat.v1.disable_eager_execution()
 
 _ALLOW_EXECUTION_HARDWARE = [
     'auto',  # Default, no validation.
