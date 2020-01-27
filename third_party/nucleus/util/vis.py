@@ -292,7 +292,7 @@ def save_to_png(arr,
       while still retaining all the information content.
 
   Returns:
-    None.
+    None. Saves an image at path and optionally shows it with IPython.display.
   """
   if image_mode is None:
     image_mode = _get_image_type_from_array(arr)
@@ -376,8 +376,9 @@ def draw_deepvariant_pileup(example=None,
   Args:
     example: A tensorflow Example containing image/encoded and image/shape
       features. Will be parsed through channels_from_example. Ignored if
-      channels are provided directly.
-    channels: list of 2D arrays containing the data to draw.
+      channels are provided directly. Either example OR channels is required.
+    channels: list of 2D arrays containing the data to draw. Either example OR
+      channels is required.
     composite_type: str or None. Method for combining channels. One of
       [None,"RGB"].
     annotated: bool. Whether to add channel labels and mark midpoints.
@@ -390,7 +391,7 @@ def draw_deepvariant_pileup(example=None,
       set it automatically for a human-readable size. Set to 1 for no scaling.
 
   Returns:
-    None.
+    None. Saves an image at path and optionally shows it with IPython.display.
   """
   if example and not channels:
     channels = channels_from_example(example)
