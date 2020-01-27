@@ -143,7 +143,9 @@ else
       pip install "${PIP_ARGS[@]}" --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
       echo "Installing Intel's CPU-only MKL TensorFlow wheel"
-      pip install "${PIP_ARGS[@]}" --upgrade "intel-tensorflow==${DV_GCP_OPTIMIZED_TF_WHL_VERSION}"
+      WHEEL_NAME=tensorflow-1.13.1-cp27-cp27mu-linux_x86_64.whl
+      curl "https://storage.googleapis.com/penporn-kokoro/tf-mkl-1.13.1-py27/${WHEEL_NAME}" > "/tmp/${WHEEL_NAME}"
+      pip install "${PIP_ARGS[@]}" --upgrade "/tmp/${WHEEL_NAME}"
     else
       echo "Installing standard CPU-only TensorFlow wheel"
       pip install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
