@@ -1,0 +1,13 @@
+name: Test
+
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-16.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install & Test 
+      run: |
+        set -x -e
+        source install.sh
+        bazel test -c opt $COPT_FLAGS nucleus/...
