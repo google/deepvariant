@@ -106,8 +106,7 @@ pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
 pip3 install "${PIP_ARGS[@]}" 'protobuf==3.8.0'
 pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
-# redacted
-pip3 install "${PIP_ARGS[@]}" git+https://github.com/pichuan/tf-slim.git@remove_contrib
+pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git
 
 # Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
 # source. But we know that on 16.04 we don't need to compile from source
