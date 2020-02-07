@@ -1,5 +1,9 @@
 # DeepVariant
 
+[![release](https://img.shields.io/badge/release-v0.9.0-green?logo=github)](https://github.com/google/deepvariant/releases)
+[![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
+[![blog](https://img.shields.io/badge/blog-orange)](https://goo.gl/deepvariant)
+
 DeepVariant is an analysis pipeline that uses a deep neural network to call
 genetic variants from next-generation DNA sequencing data. DeepVariant relies on
 [Nucleus](https://github.com/google/nucleus), a library of Python and C++ code
@@ -112,11 +116,6 @@ Name                                                                            
 [DNAnexus DeepVariant App](https://platform.dnanexus.com/app/deepvariant_germline)                                                                                                                                                                                                                                                                                                                                       | Offers parallelized execution with a GUI interface (requires platform account).
 [Nextflow Pipeline](https://github.com/nf-core/deepvariant)                                                                                                                                                                                                                                                                                                                                                              | Offers parallel processing of multiple BAMs and Docker support.
 [DNAstack Pipeline](https://app.dnastack.com/auth/realms/DNAstack/protocol/openid-connect/auth?client_id=dnastack-client&redirect_uri=https%3A%2F%2Fapp.dnastack.com%2F%3Fredirect_fragment%3D%252Forg%252F473079%252Fproj%252F473096%252Fapp%252Fworkflow%252F425685%252Frun&state=42231553-9fbc-4d71-a10e-d6ce42415c01&nonce=daf2568d-4fe7-48e2-ab60-858937244a87&response_mode=query&response_type=code&scope=openid) | Cost-optimized DeepVariant pipeline (requires platform account).
-
-## Additional References
-
-*   [DeepVariant Blog](https://goo.gl/deepvariant)
-*   [DeepVariant release notes](https://github.com/google/deepvariant/releases)
 
 ## Contribution Guidelines
 
