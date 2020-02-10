@@ -207,8 +207,10 @@ class TFUtilsTest(parameterized.TestCase):
     example.features.feature['image/shape'].int64_list.value.extend(valid_shape)
     output_file = test_utils.test_tmpfile(file_name_to_write)
     tfrecord.write_tfrecords([example], output_file)
-    tf_utils.get_shape_from_examples_path(
-        test_utils.test_tmpfile(tfrecord_path_to_match))
+    self.assertEqual(
+        valid_shape,
+        tf_utils.get_shape_from_examples_path(
+            test_utils.test_tmpfile(tfrecord_path_to_match)))
     # clean up
     gfile.Remove(output_file)
 
