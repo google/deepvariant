@@ -44,12 +44,12 @@ import mock
 import six
 import tensorflow as tf
 
+from deepvariant import tf_utils
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
-
 from tensorflow.core.example import example_pb2
-from deepvariant import tf_utils
 
 
 class TFUtilsTest(parameterized.TestCase):
@@ -209,6 +209,8 @@ class TFUtilsTest(parameterized.TestCase):
     tfrecord.write_tfrecords([example], output_file)
     tf_utils.get_shape_from_examples_path(
         test_utils.test_tmpfile(tfrecord_path_to_match))
+    # clean up
+    gfile.Remove(output_file)
 
   @parameterized.parameters(
       ('test_shape.gz', 'test_shape.gz'),
@@ -225,6 +227,8 @@ class TFUtilsTest(parameterized.TestCase):
     self.assertIsNone(
         tf_utils.get_shape_from_examples_path(
             test_utils.test_tmpfile(tfrecord_path_to_match)))
+    # Clean up
+    gfile.Remove(output_file)
 
   @parameterized.parameters(
       ('/this/path/does/not/exist', '/this/path/does/not'),
