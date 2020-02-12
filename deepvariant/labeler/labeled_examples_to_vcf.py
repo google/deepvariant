@@ -29,7 +29,7 @@
 # pylint: disable=line-too-long
 r"""Converts labeled DeepVariant examples protos into a VCF file.
 
-./blaze-out/k8-py3-opt/bin/learning/genomics/deepvariant/labeler/labeled_examples_to_vcf \
+./blaze-py3/bin/learning/genomics/deepvariant/labeler/labeled_examples_to_vcf \
   --ref
   $(pwd)/learning/genomics/deepvariant/testdata/ucsc.hg19.chr20.unittest.fasta.gz
   \
