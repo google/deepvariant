@@ -624,9 +624,7 @@ py_test(
     main = "data_providers_test.py",
     python_version = "PY3",
     srcs_version = "PY3",
-    deps = [
-        ":data_providers_test_lib",
-    ],
+    deps = [":data_providers_test_lib"],
 )
 
 py_library(
