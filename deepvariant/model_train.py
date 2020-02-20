@@ -43,7 +43,7 @@ import os
 
 from absl import flags
 from absl import logging
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from third_party.nucleus.util import proto_utils
 from deepvariant import data_providers

@@ -48,7 +48,7 @@ from absl import flags
 from absl import logging
 import enum
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tf_slim
 from deepvariant import dv_constants
 from deepvariant import tf_utils

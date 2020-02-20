@@ -38,7 +38,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 import itertools
 from absl import flags
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from deepvariant import vcf_stats
 from third_party.nucleus.io import vcf
