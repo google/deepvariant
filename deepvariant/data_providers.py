@@ -38,7 +38,7 @@ from __future__ import print_function
 
 
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from google.protobuf import text_format
 from third_party.nucleus.io import sharded_file_utils

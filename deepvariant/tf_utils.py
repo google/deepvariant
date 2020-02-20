@@ -40,7 +40,7 @@ from __future__ import print_function
 import enum
 import numpy as np
 import six
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import sharded_file_utils

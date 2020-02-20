@@ -39,7 +39,7 @@ import os
 import altair as alt
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 # Altair uses a lot of method chaining, such as
 # chart.mark_bar().encode(...).properties(...), so allowing backslash

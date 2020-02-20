@@ -49,7 +49,7 @@ from absl.testing import parameterized
 import mock
 import numpy as np
 import six
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils

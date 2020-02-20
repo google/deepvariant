@@ -41,7 +41,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 from absl.testing import absltest
 from absl.testing import parameterized
 import six
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from third_party.nucleus.testing import test_utils
 from deepvariant import call_variants
