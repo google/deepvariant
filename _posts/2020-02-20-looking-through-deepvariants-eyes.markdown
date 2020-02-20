@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Looking Through DeepVariant's Eyes"
-date: 2020-02-18
+date: 2020-02-20
 description: "DeepVariant turns variant-calling into an image classification task. Here we explore what these pileup images look like and try to do the same classification task ourselves. We show easy and difficult examples, including multiallelics. By the end, we have a better intuition for how DeepVariant works."
 img: "assets/images/2020-02-20/thumbnail.png"
 authors: ["marianattestad","gunjanbaid","awcarroll","pichuan"]
