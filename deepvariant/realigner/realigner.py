@@ -42,7 +42,7 @@ import os
 import os.path
 
 from absl import flags
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from third_party.nucleus.io import sam
 from third_party.nucleus.util import ranges
