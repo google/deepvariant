@@ -519,6 +519,15 @@ def default_options(add_flags=True, flags_obj=None):
   return options
 
 
+def logging_with_options(options, message):
+  """If options contain multiple shards, log with task/shard prefix."""
+  if options.num_shards > 1:
+    prefix = 'Task {}/{}: '.format(options.task_id, options.num_shards)
+  else:
+    prefix = ''
+  logging.info(prefix + message)
+
+
 # ---------------------------------------------------------------------------
 # Simple utilities
 # ---------------------------------------------------------------------------
@@ -908,9 +917,11 @@ class RegionProcessor(object):
 
   def _make_sam_readers(self):
     """Creates a list of SamReaders from self.options.reads_filenames."""
-    logging.info('Starting from v0.9.0, --use_ref_for_cram is default to true. '
-                 'If you are using CRAM input, note that we will decode CRAM '
-                 'using the reference you passed in with --ref')
+    logging_with_options(
+        self.options,
+        'Starting from v0.9.0, --use_ref_for_cram is default to true. '
+        'If you are using CRAM input, note that we will decode CRAM '
+        'using the reference you passed in with --ref')
     readers = []
     for reads_filename in self.options.reads_filenames:
       readers.append(
@@ -1252,7 +1263,8 @@ def processing_regions_from_options(options):
   contigs = _ensure_consistent_contigs(ref_contigs, sam_contigs, vcf_contigs,
                                        options.exclude_contigs,
                                        options.min_shared_contigs_basepairs)
-  logging.info('Common contigs are %s', [c.name for c in contigs])
+  logging_with_options(options,
+                       'Common contigs are %s' % [c.name for c in contigs])
   calling_regions = build_calling_regions(ref_contigs, options.calling_regions,
                                           options.exclude_calling_regions)
   if not calling_regions:
@@ -1328,17 +1340,20 @@ class OutputsWriter(object):
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
-  logging.info('Preparing inputs')
+  logging_with_options(options, 'Preparing inputs')
   regions = processing_regions_from_options(options)
 
   # Create a processor to create candidates and examples for each region.
   region_processor = RegionProcessor(options)
 
-  logging.info('Writing examples to %s', options.examples_filename)
+  logging_with_options(options,
+                       'Writing examples to %s' % options.examples_filename)
   if options.candidates_filename:
-    logging.info('Writing candidates to %s', options.candidates_filename)
+    logging_with_options(
+        options, 'Writing candidates to %s' % options.candidates_filename)
   if options.gvcf_filename:
-    logging.info('Writing gvcf records to %s', options.gvcf_filename)
+    logging_with_options(options,
+                         'Writing gvcf records to %s' % options.gvcf_filename)
 
   n_regions, n_candidates, n_examples = 0, 0, 0
   last_reported = 0
@@ -1365,9 +1380,9 @@ def make_examples_runner(options):
       if (int(n_candidates / FLAGS.logging_every_n_candidates) > last_reported
           or n_regions == 1):
         last_reported = int(n_candidates / FLAGS.logging_every_n_candidates)
-        logging.info('Task %s: %s candidates (%s examples) [%0.2fs elapsed]',
-                     options.task_id, n_candidates, n_examples,
-                     running_timer.Stop())
+        logging_with_options(
+            options, '%s candidates (%s examples) [%0.2fs elapsed]' %
+            (n_candidates, n_examples, running_timer.Stop()))
         running_timer = timer.TimerStart()
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
@@ -1381,11 +1396,13 @@ def make_examples_runner(options):
             'Labeling metrics requested but the selected labeling '
             'algorithm %s does not collect metrics; skipping.',
             options.labeler_algorithm)
-    logging.info('Writing MakeExamplesRunInfo to %s', options.run_info_filename)
+    logging_with_options(
+        options,
+        'Writing MakeExamplesRunInfo to %s' % options.run_info_filename)
     write_make_examples_run_info(run_info, path=options.run_info_filename)
 
-  logging.info('Found %s candidate variants', n_candidates)
-  logging.info('Created %s examples', n_examples)
+  logging_with_options(options, 'Found %s candidate variants' % n_candidates)
+  logging_with_options(options, 'Created %s examples' % n_examples)
 
 
 def main(argv=()):
