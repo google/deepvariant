@@ -171,7 +171,7 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   """
   command = [
       'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
-      'parallel -k --line-buffer', '/opt/deepvariant/bin/make_examples'
+      'parallel --halt 2 --line-buffer', '/opt/deepvariant/bin/make_examples'
   ]
   command.extend(['--mode', 'calling'])
   command.extend(['--ref', '"{}"'.format(ref)])
@@ -303,7 +303,11 @@ def main(_):
   commands = create_all_commands()
   for command in commands:
     print('\n***** Running the command:*****\n{}\n'.format(command))
-    subprocess.check_call(command, shell=True, executable='/bin/bash')
+    try:
+      subprocess.check_call(command, shell=True, executable='/bin/bash')
+    except subprocess.CalledProcessError as e:
+      logging.info(e.output)
+      raise
 
 
 if __name__ == '__main__':

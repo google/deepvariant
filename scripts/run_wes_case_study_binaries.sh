@@ -94,7 +94,7 @@ function setup_test() {
 function run_make_examples() {
   echo "Start running make_examples...Log will be in the terminal and also to ${LOG_DIR}/make_examples.log."
   seq 0 $((N_SHARDS-1)) | \
-    parallel -k --line-buffer \
+    parallel --halt 2 --line-buffer \
       python ./bazel-out/k8-opt/bin/deepvariant/make_examples.zip \
         --mode calling \
         --ref "${REF}" \
