@@ -43,6 +43,7 @@ from __future__ import print_function
 
 import os
 import subprocess
+import tempfile
 
 from absl import app
 from absl import flags
@@ -69,7 +70,7 @@ flags.DEFINE_string('output_vcf', None,
                     'Required. Path where we should write VCF file.')
 # Optional flags.
 flags.DEFINE_string(
-    'intermediate_results_dir', '/tmp/deepvariant_tmp_output',
+    'intermediate_results_dir', None,
     'Optional. If specified, this should be an existing '
     'directory that is visible insider docker, and will be '
     'used to to store intermediate outputs.')
@@ -229,8 +230,16 @@ def postprocess_variants_command(ref,
 
 def check_or_create_intermediate_results_dir(intermediate_results_dir):
   """Checks or creates the path to the directory for intermediate results."""
+  if intermediate_results_dir is None:
+    intermediate_results_dir = tempfile.mkdtemp()
   if not os.path.isdir(intermediate_results_dir):
+    logging.info('Creating a directory for intermediate results in %s',
+                 intermediate_results_dir)
     os.makedirs(intermediate_results_dir)
+  else:
+    logging.info('Re-using the directory for intermediate results in %s',
+                 intermediate_results_dir)
+  return intermediate_results_dir
 
 
 def check_flags():
@@ -250,18 +259,18 @@ def get_model_ckpt(model_type, customized_model):
     return MODEL_TYPE_MAP[model_type]
 
 
-def create_all_commands():
+def create_all_commands(intermediate_results_dir):
   """Creates 3 commands to be executed later."""
   commands = []
   # make_examples
   nonvariant_site_tfrecord_path = None
   if FLAGS.output_gvcf is not None:
     nonvariant_site_tfrecord_path = os.path.join(
-        FLAGS.intermediate_results_dir,
+        intermediate_results_dir,
         'gvcf.tfrecord@{}.gz'.format(FLAGS.num_shards))
 
   examples = os.path.join(
-      FLAGS.intermediate_results_dir,
+      intermediate_results_dir,
       'make_examples.tfrecord@{}.gz'.format(FLAGS.num_shards))
 
   commands.append(
@@ -275,7 +284,7 @@ def create_all_commands():
           sample_name=FLAGS.sample_name))
 
   # call_variants
-  call_variants_output = os.path.join(FLAGS.intermediate_results_dir,
+  call_variants_output = os.path.join(intermediate_results_dir,
                                       'call_variants_output.tfrecord.gz')
   model_ckpt = get_model_ckpt(FLAGS.model_type, FLAGS.customized_model)
   commands.append(
@@ -297,10 +306,13 @@ def create_all_commands():
 
 
 def main(_):
-  check_or_create_intermediate_results_dir(FLAGS.intermediate_results_dir)
+  intermediate_results_dir = check_or_create_intermediate_results_dir(
+      FLAGS.intermediate_results_dir)
   check_flags()
 
-  commands = create_all_commands()
+  commands = create_all_commands(intermediate_results_dir)
+  print('\n***** Intermediate results will be written to {} '
+        'in docker. ****\n'.format(intermediate_results_dir))
   for command in commands:
     print('\n***** Running the command:*****\n{}\n'.format(command))
     try:
