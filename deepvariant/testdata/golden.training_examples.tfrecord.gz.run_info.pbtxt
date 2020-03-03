@@ -3474,15 +3474,10 @@ options {
       max_window_size: 1000
       region_expansion_in_bp: 20
       window_selector_model {
-        model_type: ALLELE_COUNT_LINEAR
-        allele_count_linear_model {
-          bias: -0.6833789944648743
-          coeff_soft_clip: 2.996999979019165
-          coeff_substitution: -0.0866440013051033
-          coeff_insertion: 2.4935851097106934
-          coeff_deletion: 1.7959140539169312
-          coeff_reference: -0.059787001460790634
-          decision_boundary: 3.0
+        model_type: VARIANT_READS
+        variant_reads_model {
+          min_num_supporting_reads: 2
+          max_num_supporting_reads: 300
         }
       }
     }
@@ -3521,7 +3516,7 @@ labeling_metrics {
   n_truth_variant_alleles: 48
   n_candidate_variant_sites: 49
   n_candidate_variant_alleles: 49
-  n_non_confident_candidate_variant_sites: 30
+  n_non_confident_candidate_variant_sites: 29
   n_true_positive_sites: 48
   n_true_positive_alleles: 84
   n_false_positive_sites: 1

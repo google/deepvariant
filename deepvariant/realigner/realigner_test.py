@@ -196,6 +196,8 @@ class RealignerTest(parameterized.TestCase):
 
   def setUp(self):
     self.ref_reader = fasta.IndexedFastaReader(testdata.CHR20_FASTA)
+    # redacted
+    FLAGS.ws_use_window_selector_model = True
     self.config = realigner.realigner_config(FLAGS)
     self.reads_realigner = realigner.Realigner(self.config, self.ref_reader)
 

@@ -423,12 +423,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 6])
 
   @parameterized.parameters(
-      dict(select_types=None, expected_count=79),
-      dict(select_types='all', expected_count=79),
-      dict(select_types='snps', expected_count=64),
+      dict(select_types=None, expected_count=78),
+      dict(select_types='all', expected_count=78),
+      dict(select_types='snps', expected_count=62),
       dict(select_types='indels', expected_count=12),
-      dict(select_types='snps indels', expected_count=76),
-      dict(select_types='multi-allelics', expected_count=3),
+      dict(select_types='snps indels', expected_count=74),
+      dict(select_types='multi-allelics', expected_count=4),
   )
   @flagsaver.FlagSaver
   def test_make_examples_with_variant_selection(self, select_types,
