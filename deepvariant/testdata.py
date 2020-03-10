@@ -82,8 +82,8 @@ GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
 WS_ALLELE_COUNT_LINEAR_MODEL = None
 WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = None
 WS_VARIANT_READS_THRESHOLD_MODEL = None
-GOLDEN_VCF_CALLER_POSTPROCESS_INPUT = None
-GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT = None
+GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT = None
+GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT = None
 
 N_GOLDEN_TRAINING_EXAMPLES = 49
 N_GOLDEN_CALLING_EXAMPLES = 86
@@ -92,8 +92,8 @@ N_GOLDEN_CALLING_EXAMPLES = 86
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
 CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = None
 
-# For VcfCaller
-GOLDEN_VCF_CALLER_TRAINING_EXAMPLES = None
+# For VcfCandidateImporter
+GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = None
 
 
 def init():
@@ -120,8 +120,8 @@ def init():
   global WS_ALLELE_COUNT_LINEAR_MODEL
   global WS_ALLELE_COUNT_LINEAR_MODEL_PCKL
   global WS_VARIANT_READS_THRESHOLD_MODEL
-  global GOLDEN_VCF_CALLER_POSTPROCESS_INPUT
-  global GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT
+  global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
+  global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT
 
   CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
@@ -183,10 +183,10 @@ def init():
       'window_selector_allele_count_linear.pckl')
   WS_VARIANT_READS_THRESHOLD_MODEL = deepvariant_testdata(
       'window_selector_variant_read_threshold.pbtxt')
-  GOLDEN_VCF_CALLER_POSTPROCESS_INPUT = deepvariant_testdata(
-      'golden.vcf_caller_postprocess_single_site_input.tfrecord.gz')
-  GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT = deepvariant_testdata(
-      'golden.vcf_caller_postprocess_single_site_output.vcf')
+  GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT = deepvariant_testdata(
+      'golden.vcf_candidate_importer_postprocess_single_site_input.tfrecord.gz')
+  GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT = deepvariant_testdata(
+      'golden.vcf_candidate_importer_postprocess_single_site_output.vcf')
 
   # For CustomizedClassesVariantLabeler.
   global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
@@ -198,7 +198,7 @@ def init():
   CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'custom_pileup_image.golden.training_examples.tfrecord.gz')
 
-  # For VcfCaller
-  global GOLDEN_VCF_CALLER_TRAINING_EXAMPLES
-  GOLDEN_VCF_CALLER_TRAINING_EXAMPLES = deepvariant_testdata(
-      'golden.vcf_caller.training_examples.tfrecord.gz')
+  # For VcfCandidateImporter
+  global GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES
+  GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = deepvariant_testdata(
+      'golden.vcf_candidate_importer.training_examples.tfrecord.gz')

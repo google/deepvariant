@@ -589,7 +589,7 @@ message DeepVariantOptions {
     // The default very sensitive caller.
     VERY_SENSITIVE_CALLER = 1;
     // An advanced caller that uses an input VCF to call variants.
-    VCF_CALLER = 2;
+    VCF_CANDIDATE_IMPORTER = 2;
   }
   VariantCaller variant_caller = 31;
 }

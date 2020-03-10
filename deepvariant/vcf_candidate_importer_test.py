@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for deepvariant .vcf_caller."""
+"""Tests for deepvariant .vcf_candidate_importer."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -46,7 +46,7 @@ from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from deepvariant import testdata
-from deepvariant import vcf_caller
+from deepvariant import vcf_candidate_importer
 from deepvariant.labeler import labeled_examples_to_vcf
 from deepvariant.protos import deepvariant_pb2
 
@@ -64,11 +64,11 @@ def _reference_model_options(p_error, max_gq, gq_resolution=1):
       ploidy=2)
 
 
-class VcfCallerTests(parameterized.TestCase):
+class VcfCandidateImporterTests(parameterized.TestCase):
 
   def make_test_caller(self, p_error, max_gq, gq_resolution=1):
     options = _reference_model_options(p_error, max_gq, gq_resolution)
-    return vcf_caller.VcfCaller(
+    return vcf_candidate_importer.VcfCandidateImporter(
         options, testdata.TRUTH_VARIANTS_VCF, use_cache_table=False)
 
   def fake_allele_counter(self, start_pos, counts):
@@ -129,7 +129,7 @@ class VcfCallerTests(parameterized.TestCase):
     # as the VCF output converted from the output of make_examples.
     variants = list(
         labeled_examples_to_vcf.examples_to_variants(
-            testdata.GOLDEN_VCF_CALLER_TRAINING_EXAMPLES))
+            testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES))
     with vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF) as proposed_vcf_reader:
       # This checks the keys (like chr20:10099832:A->G) are the same.
       self.assertEqual([variant_utils.variant_key(v1) for v1 in variants], [

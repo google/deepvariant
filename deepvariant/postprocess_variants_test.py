@@ -321,7 +321,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
   @flagsaver.FlagSaver
   def test_group_variants(self):
-    FLAGS.infile = testdata.GOLDEN_VCF_CALLER_POSTPROCESS_INPUT
+    FLAGS.infile = testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = create_outfile('calls.vcf')
 
@@ -334,7 +334,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     postprocess_variants.main(['postprocess_variants.py'])
     self.assertEqual(
         _read_contents(FLAGS.outfile),
-        _read_contents(testdata.GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT))
+        _read_contents(
+            testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT))
 
   @parameterized.parameters(False, True)
   def test_build_index(self, use_csi):

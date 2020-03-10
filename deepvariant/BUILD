@@ -229,8 +229,8 @@ py_test(
 )
 
 py_library(
-    name = "vcf_caller",
-    srcs = ["vcf_caller.py"],
+    name = "vcf_candidate_importer",
+    srcs = ["vcf_candidate_importer.py"],
     srcs_version = "PY3",
     deps = [
         ":variant_caller",
@@ -239,15 +239,15 @@ py_library(
 )
 
 py_test(
-    name = "vcf_caller_test",
+    name = "vcf_candidate_importer_test",
     size = "small",
-    srcs = ["vcf_caller_test.py"],
+    srcs = ["vcf_candidate_importer_test.py"],
     data = [":testdata"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
         ":py_testdata",
-        ":vcf_caller",
+        ":vcf_candidate_importer",
         "//deepvariant/labeler:labeled_examples_to_vcf_main_lib",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:variant_utils",
@@ -291,7 +291,7 @@ py_library(
         ":pileup_image",
         ":resources_main_lib",
         ":tf_utils",
-        ":vcf_caller",
+        ":vcf_candidate_importer",
         ":very_sensitive_caller",
         "//deepvariant:dv_constants",
         "//deepvariant/labeler:customized_classes_labeler",

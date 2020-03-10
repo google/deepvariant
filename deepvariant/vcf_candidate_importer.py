@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""A VcfCaller producing DeepVariantCall and gVCF records.
+"""A VcfCandidateImporter producing DeepVariantCall and gVCF records.
 
 This module provides a way to call variants with a proposed VCF that contains
 candidates to consider.
@@ -43,7 +43,7 @@ from deepvariant import variant_caller
 FLAGS = flags.FLAGS
 
 
-class VcfCaller(variant_caller.VariantCaller):
+class VcfCandidateImporter(variant_caller.VariantCaller):
   """Call variants and gvcf records from a VCF."""
 
   def __init__(self,
@@ -51,7 +51,7 @@ class VcfCaller(variant_caller.VariantCaller):
                candidates_vcf,
                use_cache_table=True,
                max_cache_coverage=100):
-    super(VcfCaller, self).__init__(
+    super(VcfCandidateImporter, self).__init__(
         options=options,
         use_cache_table=use_cache_table,
         max_cache_coverage=max_cache_coverage)

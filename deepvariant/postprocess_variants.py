@@ -105,9 +105,10 @@ flags.DEFINE_string(
     'gvcf_outfile', None,
     'Optional. Destination path where we will write the Genomic VCF output.')
 flags.DEFINE_boolean(
-    'group_variants', True, 'If using vcf_caller and multi-allelic sites are '
-    'split across multiple lines in VCF, set to False so that variants are not '
-    'grouped when transforming CallVariantsOutput to Variants.')
+    'group_variants', True, 'If using vcf_candidate_importer and multi-allelic '
+    'sites are split across multiple lines in VCF, set to False so that '
+    'variants are not grouped when transforming CallVariantsOutput to '
+    'Variants.')
 flags.DEFINE_boolean(
     'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF at the same base path given by --outfile.')

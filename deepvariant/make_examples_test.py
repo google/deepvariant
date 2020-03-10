@@ -401,20 +401,22 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @flagsaver.FlagSaver
-  def test_make_examples_training_end2end_vcf_caller(self):
-    FLAGS.variant_caller = 'vcf_caller'
+  def test_make_examples_training_end2end_vcf_candidate_importer(self):
+    FLAGS.variant_caller = 'vcf_candidate_importer'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
-    FLAGS.candidates = test_utils.test_tmpfile(_sharded('vcf_caller.tfrecord'))
+    FLAGS.candidates = test_utils.test_tmpfile(
+        _sharded('vcf_candidate_importer.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(
-        _sharded('vcf_caller.examples.tfrecord'))
+        _sharded('vcf_candidate_importer.examples.tfrecord'))
     FLAGS.mode = 'training'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     # Set this the same in TRUTH_VARIANTS_VCF file so the matching will pass.
     FLAGS.sample_name = 'INTEGRATION'
     options = make_examples.default_options(add_flags=True)
     make_examples.make_examples_runner(options)
-    golden_file = _sharded(testdata.GOLDEN_VCF_CALLER_TRAINING_EXAMPLES)
+    golden_file = _sharded(
+        testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES)
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
         FLAGS.examples, None, options, verify_labels=True)
