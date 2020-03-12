@@ -85,19 +85,18 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     """Get a truth variant matching variant.
 
     A matching variant is defined here as one that starts at the same position
-    on the genome as variant, regardless of the alleles of variant. This allows
-    the client to make decisions on how to translate a matched between variant
-    and truth_variant into a label (e.g. by comparing the alleles).
+    on the genome as variant. The best match is then narrowed down by finding
+    the variant with a matching alt allele, if it exists, otherwise the first
+    matching variant is used regardless of alt alleles. This allows the client
+    to make decisions on how to translate a matched between variant and
+    truth_variant into a label (e.g. by comparing the alleles).
 
-    This code will emit a logging.warning() if it detects multiple
+    This code will emit a logging.info() if it detects multiple
     variants with the same chrom/start as variant provided by the
-    vcf_reader and simply return the first variant. Though technically
-    correct - VCF allows this - most files in practice merge variants
-    that occur at the same location into a single multi-allelic variant
-    record. So this assumption is reasonable. A future extension of the
-    code could attempt to choose among the competing options, refuse to
-    provide any answer, or even except out (presumably controlled by a
-    configuration option).
+    vcf_reader and return the best matching variant as described above. Though
+    technically correct - VCF allows this - most files in practice merge
+    variants that occur at the same location into a single multi-allelic variant
+    record. So this assumption is reasonable.
 
     Args:
       variant: Our candidate third_party.nucleus.protos.Variant variant.
@@ -149,10 +148,14 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     if not matches:
       return None
     elif len(matches) > 1:
-      logging.warning(
-          'Multiple matches detected, keeping first, for variant %s: %s',
-          variant, matches)
-    return matches[0]
+      logging.info('Multiple matches detected for variant %s: %s', variant,
+                   matches)
+
+    best_match = matches[0]
+    for match in matches:
+      if match.alternate_bases == variant.alternate_bases:
+        best_match = match
+    return best_match
 
 
 def _genotype_from_matched_truth(candidate_variant, truth_variant):

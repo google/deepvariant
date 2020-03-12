@@ -150,7 +150,7 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
     if expected_genotype is None and expected_truth is not None:
       expected_genotype = tuple(expected_truth.calls[0].genotype)
     labels = list(labeler.label_variants([candidate]))
-    self.assertEqual(len(labels), 1)
+    self.assertLen(labels, 1)
     self.assertEqual(candidate, labels[0].variant)
     self.assertEqual(expected_confident, labels[0].is_confident)
     self.assertEqual(expected_genotype, labels[0].genotype)
@@ -173,6 +173,42 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
     is_confident, truth_variant = labeler._match(candidate)
     self.assertEqual(is_confident, True)
     self.assertEqual(truth_variant, overlapping[1])
+
+  @parameterized.parameters(
+      dict(
+          overlapping_variants=[
+              test_utils.make_variant(start=20, alleles=['A', 'CC'], gt=[1, 1]),
+              test_utils.make_variant(
+                  start=20, alleles=['A', 'AAA'], gt=[0, 1]),
+              test_utils.make_variant(start=20, alleles=['A', 'AA'], gt=[1, 1]),
+          ],
+          candidate=test_utils.make_variant(start=20, alleles=['A', 'AAA']),
+          expected_confident=True,
+          truth_variant_idx=1),
+
+      # No candidate variant with matching alt, so use first candidate.
+      dict(
+          overlapping_variants=[
+              test_utils.make_variant(start=20, alleles=['A', 'CC'], gt=[1, 1]),
+              test_utils.make_variant(
+                  start=20, alleles=['A', 'AAA'], gt=[0, 1]),
+              test_utils.make_variant(start=20, alleles=['A', 'AA'], gt=[1, 1]),
+          ],
+          candidate=test_utils.make_variant(start=20, alleles=['A', 'TT']),
+          expected_confident=True,
+          truth_variant_idx=0),
+  )
+  def test_match_multiple_matches(self, overlapping_variants, candidate,
+                                  expected_confident, truth_variant_idx):
+    labeler = self._make_labeler(
+        overlapping_variants,
+        ranges.RangeSet(
+            [ranges.make_range(overlapping_variants[0].reference_name, 0,
+                               100)]))
+    is_confident, variant_match = labeler._match(candidate)
+    expected_variant = overlapping_variants[truth_variant_idx]
+    self.assertEqual(is_confident, expected_confident)
+    self.assertEqual(variant_match, expected_variant)
 
 
 if __name__ == '__main__':
