@@ -149,6 +149,11 @@ flags.DEFINE_string(
     'truth_variants', '',
     'Tabix-indexed VCF file containing the truth variant calls for this labels '
     'which we use to label our examples.')
+flags.DEFINE_string(
+    'proposed_variants', '',
+    '(Only used when --variant_caller=vcf_candidate_importer.) '
+    'Tabix-indexed VCF file containing the proposed positions and alts for '
+    '`vcf_candidate_importer`. The GTs will be ignored.')
 flags.DEFINE_integer('task', 0, 'Task ID of this task')
 flags.DEFINE_integer(
     'partition_size', 1000,
@@ -443,6 +448,8 @@ def default_options(add_flags=True, flags_obj=None):
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
+    if flags_obj.proposed_variants:
+      options.proposed_variants_filename = flags_obj.proposed_variants
     if flags_obj.sequencing_type_image:
       options.pic_options.num_channels += 1
       options.pic_options.sequencing_type_image = flags_obj.sequencing_type_image
@@ -970,11 +977,13 @@ class RegionProcessor(object):
         excluded_format_fields=['GL', 'GQ', 'PL'])
     confident_regions = read_confident_regions(self.options)
 
-    # If using vcf_caller, override labeler choice and use positional labeler.
     if (self.options.variant_caller ==
         deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER):
+      logging.info('For --variant_caller=vcf_candidate_importer, we '
+                   'default the labeler_algorithm to positional_labler.')
       return positional_labeler.PositionalVariantLabeler(
           truth_vcf_reader=truth_vcf_reader)
+
     if (self.options.labeler_algorithm ==
         deepvariant_pb2.DeepVariantOptions.POSITIONAL_LABELER):
       return positional_labeler.PositionalVariantLabeler(
@@ -1007,9 +1016,12 @@ class RegionProcessor(object):
     """Creates the variant_caller from options."""
     if (self.options.variant_caller ==
         deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER):
+      if in_training_mode(self.options):
+        candidates_vcf = self.options.truth_variants_filename
+      else:
+        candidates_vcf = self.options.proposed_variants_filename
       return vcf_candidate_importer.VcfCandidateImporter(
-          self.options.variant_caller_options,
-          self.options.truth_variants_filename)
+          self.options.variant_caller_options, candidates_vcf)
     elif (self.options.variant_caller ==
           deepvariant_pb2.DeepVariantOptions.VERY_SENSITIVE_CALLER):
       return very_sensitive_caller.VerySensitiveCaller(
@@ -1438,41 +1450,50 @@ def main(argv=()):
               options.n_cores), errors.CommandLineError)
 
     # Check for argument issues specific to different modes.
-    if options.variant_caller == \
-        deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
-      if not options.truth_variants_filename:
-        errors.log_and_raise(
-            'truth_variants is always required with vcf_candidate_importer.',
-            errors.CommandLineError)
-      if options.confident_regions_filename:
-        errors.log_and_raise(
-            'confident_regions is not used with '
-            'vcf_candidate_importer.', errors.CommandLineError)
-
     if in_training_mode(options):
       if not options.truth_variants_filename:
         errors.log_and_raise(
             'truth_variants is required when in training mode.',
             errors.CommandLineError)
       if not options.confident_regions_filename:
-        if options.variant_caller != \
+        if options.variant_caller == \
             deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
-          # One exception for requiring confident_regions is when the user
-          # opts to use vcf_candidate_importer.
+          logging.info('Note: --confident_regions is optional with '
+                       'vcf_candidate_importer. '
+                       'You did not specify --confident_regions, which means '
+                       'examples will be generated for the whole region.')
+        else:
           errors.log_and_raise(
               'confident_regions is required when in training mode.',
               errors.CommandLineError)
       if options.gvcf_filename:
         errors.log_and_raise('gvcf is not allowed in training mode.',
                              errors.CommandLineError)
+      if (options.variant_caller == \
+          deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER and
+          options.proposed_variants_filename):
+        errors.log_and_raise(
+            '--proposed_variants should not be used with '
+            'vcf_candidate_importer in training mode. '
+            'Use --truth_variants to pass in the candidates '
+            'with correct labels for training.', errors.CommandLineError)
     else:
       # Check for argument issues specific to calling mode.
+      if options.truth_variants_filename:
+        errors.log_and_raise('Do not specify --truth_variants in calling mode.',
+                             errors.CommandLineError)
       if options.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
         errors.log_and_raise('sample_name must be specified in calling mode.',
                              errors.CommandLineError)
       if options.variant_caller_options.gq_resolution < 1:
         errors.log_and_raise('gq_resolution must be a non-negative integer.',
                              errors.CommandLineError)
+      if options.variant_caller == \
+          deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
+        if not options.proposed_variants_filename:
+          errors.log_and_raise(
+              '--proposed_variants is required with vcf_candidate_importer in '
+              'calling mode.', errors.CommandLineError)
 
     # Run!
     make_examples_runner(options)

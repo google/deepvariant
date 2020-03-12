@@ -451,7 +451,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 33.
+// Next ID: 34.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -503,6 +503,8 @@ message DeepVariantOptions {
   string confident_regions_filename = 14;
   // Path to the truth variants, for use in labeling our examples.
   string truth_variants_filename = 15;
+  // Path to the variants for vcf_candidate_importer.
+  string proposed_variants_filename = 33;
   // Path where we should put our gVCF records.
   string gvcf_filename = 16;
 
