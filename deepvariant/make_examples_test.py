@@ -400,26 +400,39 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         examples, list(tfrecord.read_tfrecords(golden_file)))
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
+  @parameterized.parameters(
+      dict(mode='calling'),
+      dict(mode='training'),
+  )
   @flagsaver.FlagSaver
-  def test_make_examples_training_end2end_vcf_candidate_importer(self):
+  def test_make_examples_training_end2end_vcf_candidate_importer(self, mode):
     FLAGS.variant_caller = 'vcf_candidate_importer'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(
-        _sharded('vcf_candidate_importer.tfrecord'))
+        _sharded('vcf_candidate_importer.{}.tfrecord'.format(mode)))
     FLAGS.examples = test_utils.test_tmpfile(
-        _sharded('vcf_candidate_importer.examples.tfrecord'))
-    FLAGS.mode = 'training'
-    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
-    # Set this the same in TRUTH_VARIANTS_VCF file so the matching will pass.
-    FLAGS.sample_name = 'INTEGRATION'
+        _sharded('vcf_candidate_importer.examples.{}.tfrecord'.format(mode)))
+    FLAGS.mode = mode
+
+    if mode == 'calling':
+      FLAGS.sample_name = 'HG002'
+      golden_file = _sharded(
+          testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES)
+      FLAGS.proposed_variants = testdata.VCF_CANDIDATE_IMPORTER_VARIANTS
+      # Adding the following flags to match how the testdata was created.
+      FLAGS.regions = 'chr20:59,777,000-60,000,000'
+      FLAGS.realign_reads = False
+    else:
+      FLAGS.sample_name = 'INTEGRATION'
+      golden_file = _sharded(
+          testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES)
+      FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     options = make_examples.default_options(add_flags=True)
     make_examples.make_examples_runner(options)
-    golden_file = _sharded(
-        testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES)
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
-        FLAGS.examples, None, options, verify_labels=True)
+        FLAGS.examples, None, options, verify_labels=mode == 'training')
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
     self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 6])

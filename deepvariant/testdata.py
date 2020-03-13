@@ -94,6 +94,8 @@ CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = None
 
 # For VcfCandidateImporter
 GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = None
+GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES = None
+VCF_CANDIDATE_IMPORTER_VARIANTS = None
 
 
 def init():
@@ -200,5 +202,11 @@ def init():
 
   # For VcfCandidateImporter
   global GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES
+  global GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES
+  global VCF_CANDIDATE_IMPORTER_VARIANTS
   GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = deepvariant_testdata(
       'golden.vcf_candidate_importer.training_examples.tfrecord.gz')
+  GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES = deepvariant_testdata(
+      'golden.vcf_candidate_importer_calling_examples.tfrecord')
+  VCF_CANDIDATE_IMPORTER_VARIANTS = deepvariant_testdata(
+      'vcf_candidate_importer.indels.chr20.vcf.gz')
