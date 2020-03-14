@@ -351,10 +351,21 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 28.
+// Next ID: 30.
 message PileupImageOptions {
+  // redacted
   // The height, in pixels, of the pileup image we'll construct.
+  // Only used for DeepVariant.
   int32 height = 1;
+
+  // The height, in pixels, of the parent pileup image we'll construct.
+  // Only used for trios.
+  int32 height_parent = 28;
+
+  // The height, in pixels, of the child pileup image we'll construct.
+  // Only used for trios.
+  int32 height_child = 29;
+
   // The width, in pixels, of the pileup image we'll construct.
   int32 width = 2;
 
