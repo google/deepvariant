@@ -982,7 +982,8 @@ class RegionProcessor(object):
       logging.info('For --variant_caller=vcf_candidate_importer, we '
                    'default the labeler_algorithm to positional_labler.')
       return positional_labeler.PositionalVariantLabeler(
-          truth_vcf_reader=truth_vcf_reader)
+          truth_vcf_reader=truth_vcf_reader,
+          confident_regions=confident_regions)
 
     if (self.options.labeler_algorithm ==
         deepvariant_pb2.DeepVariantOptions.POSITIONAL_LABELER):

@@ -51,6 +51,7 @@ import enum
 import mock
 import six
 
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reads_pb2
@@ -405,7 +406,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(mode='training'),
   )
   @flagsaver.FlagSaver
-  def test_make_examples_training_end2end_vcf_candidate_importer(self, mode):
+  def test_make_examples_end2end_vcf_candidate_importer(self, mode):
     FLAGS.variant_caller = 'vcf_candidate_importer'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
@@ -436,6 +437,46 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
     self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 6])
+
+  @flagsaver.FlagSaver
+  def test_make_examples_training_vcf_candidate_importer_regions(self):
+    """Confirms confident_regions is used in vcf_candidate_importer training."""
+
+    def _get_examples(use_confident_regions=False):
+      # `flag_name` can be either 'confident_regions' or 'regions'. Both should
+      # be used to constrain the set of candidates generated, and as a result
+      # generating the same examples.
+      bed_path = test_utils.test_tmpfile('vcf_candidate_importer.bed')
+      with gfile.Open(bed_path, 'w') as fout:
+        fout.write('\t'.join(['chr20', '10000000', '10001000']) + '\n')
+      if use_confident_regions:
+        FLAGS.confident_regions = bed_path
+        FLAGS.regions = ''
+      else:
+        FLAGS.confident_regions = ''
+        FLAGS.regions = bed_path
+
+      FLAGS.examples = test_utils.test_tmpfile(
+          _sharded('vcf_candidate_importer.tfrecord'))
+      FLAGS.mode = 'training'
+      FLAGS.reads = testdata.CHR20_BAM
+      FLAGS.ref = testdata.CHR20_FASTA
+      FLAGS.sample_name = 'INTEGRATION'
+      FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+      FLAGS.variant_caller = 'vcf_candidate_importer'
+
+      options = make_examples.default_options(add_flags=True)
+      make_examples.make_examples_runner(options)
+      # Verify that the variants in the examples are all good.
+      examples = self.verify_examples(
+          FLAGS.examples, None, options, verify_labels=False)
+      return examples
+
+    examples_with_regions = _get_examples(use_confident_regions=False)
+    examples_with_confident_regions = _get_examples(use_confident_regions=True)
+    self.assertNotEmpty(examples_with_regions)
+    self.assertDeepVariantExamplesEqual(examples_with_regions,
+                                        examples_with_confident_regions)
 
   @parameterized.parameters(
       dict(select_types=None, expected_count=78),
