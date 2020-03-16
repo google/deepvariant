@@ -68,13 +68,43 @@ const char *const kVAFFormatField = "VAF";
 const char* const kNoAltAllele = ".";
 
 namespace {
-// Used for sorting RepeatedPtrField below.
-struct StringPtrLessThan {
-    bool operator() (const string* x, const string* y) const {
-          return *x < *y;
-    }
-};
+
+template <class T>
+std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) {
+  return std::vector<T>(container.begin(), container.end());
 }
+
+// Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
+// "GQ" key of info with a numerical value of gq, if provided) to variant.
+void AddGenotypes(const string& sample_name,
+                  const std::vector<int>& genotypes, Variant* variant) {
+  CHECK(variant != nullptr);
+
+  VariantCall* call = variant->add_calls();
+  call->set_call_set_name(sample_name);
+  for (const auto genotype : genotypes) {
+    call->add_genotype(genotype);
+  }
+}
+
+void FillVariant(const string& reference_name,
+                 int variant_start,
+                 const string& ref_bases,
+                 const string& sample_name,
+                 const std::vector<string>& alternate_bases,
+                 Variant* variant) {
+  variant->set_reference_name(reference_name);
+  variant->set_start(variant_start);
+  variant->set_reference_bases(ref_bases);
+  variant->set_end(variant->start() + ref_bases.size());
+  AddGenotypes(sample_name, {-1, -1}, variant);
+
+  for (const string& alt : alternate_bases) {
+    variant->add_alternate_bases(alt);
+  }
+}
+
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -187,19 +217,6 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
     }
   }
   return alt_alleles;
-}
-
-// Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
-// "GQ" key of info with a numerical value of gq, if provided) to variant.
-void AddGenotypes(const string& sample_name,
-                  const std::vector<int>& genotypes, Variant* variant) {
-  CHECK(variant != nullptr);
-
-  VariantCall* call = variant->add_calls();
-  call->set_call_set_name(sample_name);
-  for (const auto genotype : genotypes) {
-    call->add_genotype(genotype);
-  }
 }
 
 // Implements the less functionality needed to use an Allele as an key in a map.
@@ -340,7 +357,14 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
     // vcf_reader->Query() returns all variants that overlap a region, which
     // can incorrectly cause the same variant to be processed multiple times.
     if (variant->start() >= range.start()) {
-      variants_in_region.push_back(*variant);
+      Variant clean_variant;
+      FillVariant(variant->reference_name(),
+                  variant->start(),
+                  variant->reference_bases(),
+                  options_.sample_name(),
+                  AsVector<string>(variant->alternate_bases()),
+                  &clean_variant);
+      variants_in_region.push_back(clean_variant);
     }
   }
   return CallsFromVariantsInRegion(allele_counts, variants_in_region);
@@ -407,34 +431,36 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
   if (alt_alleles.empty() && !KeepReferenceSite()) {
     return nullopt;
   }
-  // Creates a non-reference Variant proto based on the information in
-  // allele_count and alt_alleles. This variant starts at the position of
-  // allele_count with the same reference_name. The reference_bases are
-  // calculated based on the alt_alleles, which are also set appropriately for
-  // the variant. For convenience, the alt_alleles are sorted. Also adds a
-  // single VariantCall to the Variant, with sample_name and uncalled diploid
-  // genotypes.
-  DeepVariantCall call;
-  Variant* variant = call.mutable_variant();
-  variant->set_reference_name(allele_count.position().reference_name());
-  variant->set_start(allele_count.position().position());
   const string refbases = CalcRefBases(allele_count.ref_base(), alt_alleles);
-  variant->set_reference_bases(refbases);
-  variant->set_end(variant->start() + refbases.size());
-  AddGenotypes(options_.sample_name(), {-1, -1}, variant);
-
+  std::vector<string> alternate_bases;
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
   AlleleMap allele_map = BuildAlleleMap(allele_count, alt_alleles, refbases);
   for (const auto& elt : allele_map) {
-    variant->add_alternate_bases(elt.second);
+    alternate_bases.push_back(elt.second);
   }
   // If we don't have any alt_alleles, we are generating a reference site so
   // add in the kNoAltAllele.
-  if (alt_alleles.empty()) variant->add_alternate_bases(kNoAltAllele);
-  std::sort(variant->mutable_alternate_bases()->pointer_begin(),
-            variant->mutable_alternate_bases()->pointer_end(),
-            StringPtrLessThan());
+  if (alt_alleles.empty()) alternate_bases.push_back(kNoAltAllele);
+  std::sort(alternate_bases.begin(), alternate_bases.end());
+
+  DeepVariantCall call;
+  Variant* variant = call.mutable_variant();
+  string sample_name = options_.sample_name();
+  if (variant->calls_size() > 0 && !variant->calls(0).call_set_name().empty()) {
+    sample_name = variant->calls(0).call_set_name();
+  }
+  // Creates a non-reference Variant proto based on the information in
+  // allele_count and alt_alleles. This variant starts at the position of
+  // allele_count with the same reference_name. The reference_bases are
+  // calculated based on the alt_alleles, which are also set appropriately for
+  // the variant. For convenience, the alt_alleles are sorted.
+  FillVariant(allele_count.position().reference_name(),
+              allele_count.position().position(),
+              refbases,
+              sample_name,
+              alternate_bases,
+              variant);
 
   AddReadDepths(allele_count, allele_map, variant);
   AddSupportingReads(allele_count, &call);

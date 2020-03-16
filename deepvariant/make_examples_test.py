@@ -417,7 +417,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = mode
 
     if mode == 'calling':
-      FLAGS.sample_name = 'HG002'
       golden_file = _sharded(
           testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES)
       FLAGS.proposed_variants = testdata.VCF_CANDIDATE_IMPORTER_VARIANTS
@@ -425,7 +424,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.regions = 'chr20:59,777,000-60,000,000'
       FLAGS.realign_reads = False
     else:
-      FLAGS.sample_name = 'INTEGRATION'
       golden_file = _sharded(
           testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES)
       FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -461,7 +459,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.mode = 'training'
       FLAGS.reads = testdata.CHR20_BAM
       FLAGS.ref = testdata.CHR20_FASTA
-      FLAGS.sample_name = 'INTEGRATION'
       FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
       FLAGS.variant_caller = 'vcf_candidate_importer'
 
@@ -533,7 +530,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     """
     self.assertEqual(len(actual), len(expected))
     for i in range(len(actual)):
-      self.assertEqual(decode_example(actual[i]), decode_example(expected[i]))
+      actual_example = decode_example(actual[i])
+      expected_example = decode_example(expected[i])
+      self.assertEqual(actual_example.keys(), expected_example.keys())
+      for key in actual_example:
+        self.assertEqual(actual_example[key], expected_example[key],
+                         'Failed on %s' % key)
 
   def assertVariantIsPresent(self, to_find, variants):
 
