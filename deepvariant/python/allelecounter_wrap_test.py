@@ -66,7 +66,7 @@ class WrapAlleleCounterTest(absltest.TestCase):
     for read in reads:
       allele_counter.add(read, 'sample_id')
     counts = allele_counter.counts()
-    self.assertEqual(len(counts), size)
+    self.assertLen(counts, size)
 
 
 if __name__ == '__main__':

@@ -417,7 +417,7 @@ class RealignerTest(parameterized.TestCase):
       self.assertTrue(tf.io.gfile.exists(metrics_file))
       with tf.io.gfile.GFile(metrics_file) as fin:
         rows = list(csv.DictReader(fin))
-        self.assertEqual(len(rows), 1)
+        self.assertLen(rows, 1)
         self.assertEqual(
             set(rows[0].keys()), {'window', 'k', 'n_haplotypes', 'time'})
         self.assertEqual(rows[0]['window'], assembled_region_str)

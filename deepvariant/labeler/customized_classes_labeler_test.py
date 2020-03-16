@@ -250,7 +250,7 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
       expected_label = classes_dict[expected_class_str]
 
     labels = list(labeler.label_variants([candidate]))
-    self.assertEqual(len(labels), 1)
+    self.assertLen(labels, 1)
     self.assertEqual(candidate, labels[0].variant)
     self.assertEqual(expected_confident, labels[0].is_confident)
     self.assertEqual(

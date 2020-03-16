@@ -310,7 +310,7 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
     dbg = debruijn_graph.build(ref_seq, reads, self.dbg_options())
     self.assertIsNotNone(dbg)
     self.assertEqual(44, dbg.kmer_size)
-    self.assertEqual(2, len(dbg.candidate_haplotypes()))
+    self.assertLen(dbg.candidate_haplotypes(), 2)
     self.assertIn(ref_seq, dbg.candidate_haplotypes())
 
   def test_k_exceeds_read_length(self):
