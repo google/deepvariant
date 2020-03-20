@@ -45,7 +45,7 @@ Before you run the script, you can read through all sections to understand the
 details. Here is a quick way to get the script and run it:
 
 ```bash
-curl https://raw.githubusercontent.com/google/deepvariant/r0.9/scripts/run_wes_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r0.10/scripts/run_wes_case_study_docker.sh | bash
 ```
 
 ### Runtime
@@ -56,7 +56,7 @@ for the commands used to obtain different machine types on Google Cloud.
 
 Step                               | Hardware | Wall time
 ---------------------------------- | -------- | ---------
-`make_examples`                    | 64 CPUs  | ~ 10m
+`make_examples`                    | 64 CPUs  | ~ 17m
 `call_variants`                    | 64 CPUs  | ~ 2m
 `postprocess_variants` (with gVCF) | 1 CPU    | ~ 1m
 
@@ -109,8 +109,8 @@ We evaluate against the capture region:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 93   | 45   | 0.964231 | 0.982531  | 0.973295
-SNP   | 32   | 14   | 0.999051 | 0.999585  | 0.999318
+INDEL | 92   | 42   | 0.964615 | 0.983683  | 0.974056
+SNP   | 30   | 13   | 0.999110 | 0.999614  | 0.999362
 
 [specific machine type]: deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh

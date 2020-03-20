@@ -4,6 +4,9 @@ In this case study we describe applying DeepVariant to PacBio CCS reads to call
 variants. We will call small variants from a publicly available whole genome
 from PacBio.
 
+Starting from v0.10.0, our PacBio model is trained with additional amplified
+library data, which provides a significant accuracy boost on amplified data.
+
 Case study is run on a standard Google Cloud instance. There are no special
 hardware or software requirements for running this case study. For consistency
 we use Google Cloud instance with 64 cores and 128 GB of memory. This is NOT the
@@ -38,7 +41,7 @@ This case study is run using official DeepVariant Docker image.
 ## Running
 
 For simplicity we provide a script that downloads the input data and runs all
-the steps descibed above using DeepVariant Docker image. **Please note, that if
+the steps described above using DeepVariant Docker image. **Please note, that if
 you create your own script make_examples must be called with
 `--norealign_reads --vsc_min_fraction_indels 0.12` flag for PacBio long reads.**
 
@@ -65,7 +68,7 @@ gcloud compute ssh "${USER}-cpu" --zone "us-west1-b"
 1.  Download and run the case study script:
 
 ```shell
-curl https://raw.githubusercontent.com/google/deepvariant/r0.9/scripts/run_pacbio_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r0.10/scripts/run_pacbio_case_study_docker.sh | bash
 ```
 
 ## Script description
@@ -116,8 +119,8 @@ on chr20.
 
 Type  | # TP  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 9998  | 174  | 160  | 0.982894 | 0.984851  | 0.983872
-SNP   | 65200 | 42   | 100  | 0.999356 | 0.998470  | 0.998913
+INDEL | 9998  | 174  | 166  | 0.982894 | 0.984286  | 0.983590
+SNP   | 65199 | 43   | 101  | 0.999341 | 0.998455  | 0.998898
 
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [https://github.com/Illumina/hap.py]: https://github.com/Illumina/hap.py

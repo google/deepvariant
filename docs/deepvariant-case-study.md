@@ -46,7 +46,7 @@ Before you run the script, you can read through all sections to understand the
 details. Here is a quick way to get the script and run it:
 
 ```bash
-curl https://raw.githubusercontent.com/google/deepvariant/r0.9/scripts/run_wgs_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r0.10/scripts/run_wgs_case_study_docker.sh | bash
 ```
 
 ### Running on a machine with GPU
@@ -88,17 +88,17 @@ With the example in [run_wgs_case_study_docker.sh] on a [CPU machine],
 
 Step                               | Hardware | Wall time
 ---------------------------------- | -------- | ---------
-`make_examples`                    | 64 CPUs  | ~ 1h 22m
+`make_examples`                    | 64 CPUs  | ~ 1h 46m
 `call_variants`                    | 64 CPUs  | ~ 3h 09m
-`postprocess_variants` (with gVCF) | 1 CPU    | ~ 36m
+`postprocess_variants` (with gVCF) | 1 CPU    | ~ 53m
 
 With the example in [run_wgs_case_study_docker_gpu.sh] on a [GPU machine],
 
 Step                               | Hardware            | Wall time
 ---------------------------------- | ------------------- | ---------
-`make_examples`                    | 16 CPUs             | ~ 4h 09m
-`call_variants`                    | 1 P100 GPU, 16 CPUs | ~ 54m
-`postprocess_variants` (with gVCF) | 1 CPU               | ~ 40m
+`make_examples`                    | 16 CPUs             | ~ 5h 50m
+`call_variants`                    | 1 P100 GPU, 16 CPUs | ~ 56m
+`postprocess_variants` (with gVCF) | 1 CPU               | ~ 43m
 
 Since `make_examples` doesn't utilize GPUs, bringing up one GPU machine for all
 steps might not be the most cost-effective solution. For more scalable execution
@@ -154,8 +154,8 @@ results.
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 1057 | 727  | 0.997726 | 0.998498  | 0.998112
-SNP   | 1503 | 733  | 0.999507 | 0.999760  | 0.999633
+INDEL |  937 | 717  | 0.997984 | 0.998519  | 0.998251
+SNP   | 1405 | 748  | 0.999539 | 0.999755  | 0.999647
 
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
 [run_wgs_case_study_docker.sh]: ../scripts/run_wgs_case_study_docker.sh
