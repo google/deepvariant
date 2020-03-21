@@ -82,6 +82,19 @@ def _test_assembled_region(region_str, haplotypes=None):
           span=ranges.parse_literal(region_str), haplotypes=haplotypes or []))
 
 
+def _get_cigar(read, delimiter=' '):
+  # Adding spaces to delimit terms in the cigar string for better human
+  # readability.
+  cigar = read.alignment.cigar
+  ops = {1: 'M', 2: 'I', 3: 'D', 5: 'S', 8: '=', 9: 'X'}
+  events = []
+  for c in cigar:
+    mark = ops.get(c.operation, str(c.operation))
+    num = c.operation_length
+    events.append('{}{}'.format(num, mark))
+  return delimiter.join(events)
+
+
 class ReadAssignmentTests(parameterized.TestCase):
 
   def setUp(self):
@@ -443,6 +456,84 @@ class RealignerTest(parameterized.TestCase):
 
       # if emit_reads=False then file should not exist and vice versa.
       self.assertEqual(emit_reads, tf.io.gfile.exists(reads_file))
+
+  @parameterized.parameters(
+      dict(
+          read_seq='AAGGAAGTGCTAAAATCAGAATGAGAACCATGG'
+          'ATCCATGTTCAAGTACTAATTCTGGGC',
+          prefix='AGTGATCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGG',
+          suffix='ATCCATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACC',
+          haplotypes=['CATCATCAT', ''],
+          expected_cigars=['33M 9D 27M', '60M']),
+      dict(
+          read_seq='TTGCCCGGGCATAAGGTGTTTCGGAGAAGCCTAG'
+          'TATATATA'
+          'CTCCGGTTTTTAAGTAGGGTCGTAGCAG',
+          prefix='AACGGGTCTACAAGTCTCTGCGTGTTGCCCGGGCATAAGGTGTTTCGGAGAAGCCTAG',
+          suffix='CTCCGGTTTTTAAGTAGGGTCGTAGCAGCAAAGTAAGAGTGGAACGCGTGGGCGACTA',
+          haplotypes=['', 'TATATATA'],
+          expected_cigars=['34M 8I 28M', '70M']),
+      dict(
+          read_seq='AAAAAAAAAAGGGGGGGGGGATTTTTTTTTTTTTCCCCCCCCCCCCCCC',
+          prefix='AAAAAAAAAAGGGGGGGGGG',
+          suffix='TTTTTTTTTTTTTCCCCCCCCCCCCCCC',
+          haplotypes=['A', ''],
+          expected_cigars=['49M', '20M 1I 28M']),
+  )
+  def test_align_to_haplotype(self, read_seq, prefix, suffix, haplotypes,
+                              expected_cigars):
+    test_read = test_utils.make_read(read_seq, start=1)
+    reads = [test_read]
+    # Align to each haplotype in turn.
+    for i in range(len(haplotypes)):
+      aligned_reads = self.reads_realigner.align_to_haplotype(
+          haplotypes[i], haplotypes, prefix, suffix, reads, 'test', 1)
+      self.assertEqual(len(reads), len(aligned_reads))
+      self.assertEqual(_get_cigar(aligned_reads[0]), expected_cigars[i])
+
+  @parameterized.parameters(
+      dict(alt_allele='CATTACA', ref_buffer_length=70, read_buffer_length=20),
+      dict(alt_allele='CATTACA', ref_buffer_length=20, read_buffer_length=20),
+      dict(alt_allele='G', ref_buffer_length=70, read_buffer_length=20),
+      # At or below read_buffer_length=15 the reads start to come back
+      # unaligned, but this depends on the specific ref and alt alleles, so
+      # this does not include exhaustive tests for how low these values can go.
+  )
+  def test_align_to_haplotype_stress_tests(self, alt_allele, ref_buffer_length,
+                                           read_buffer_length):
+    """Testing what happens when read and reference sequences are shorter."""
+    # Start with long prefix and suffix to enable cutting it down as necessary
+    whole_prefix = 'AGTGATCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGGTCACCTGACATAGAC'
+    whole_suffix = 'ATCCATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACCTCATTTAATCATCT'
+
+    ref_prefix = whole_prefix[-ref_buffer_length:]
+    ref_suffix = whole_suffix[:ref_buffer_length]
+
+    # Make two haplotypes.
+    ref_allele = ''
+    haplotypes = [ref_allele, alt_allele]
+
+    # Simulate one read from the reference and one from the alt haplotype.
+    read_prefix = ref_prefix[-read_buffer_length:]
+    read_suffix = ref_suffix[:read_buffer_length]
+
+    expected_cigars = [
+        # Aligning to ref haplotype: Insertion.
+        '{}M {}I {}M'.format(
+            len(read_prefix), len(alt_allele), len(read_suffix)),
+        # Aligning to alt haplotype: All matching.
+        '{}M'.format(len(read_prefix) + len(alt_allele) + len(read_suffix))
+    ]
+
+    reads = [
+        test_utils.make_read(read_prefix + alt_allele + read_suffix, start=1)
+    ]
+    # Align to each haplotype in turn.
+    for i in range(len(haplotypes)):
+      aligned_reads = self.reads_realigner.align_to_haplotype(
+          haplotypes[i], haplotypes, ref_prefix, ref_suffix, reads, 'test', 1)
+      self.assertEqual(len(reads), len(aligned_reads))
+      self.assertEqual(_get_cigar(aligned_reads[0]), expected_cigars[i])
 
 
 class RealignerIntegrationTest(absltest.TestCase):

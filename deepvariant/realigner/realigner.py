@@ -597,3 +597,46 @@ class Realigner(object):
                                                self.shared_header)
 
     return candidate_haplotypes, realigned_reads
+
+  def align_to_haplotype(self, this_haplotype, haplotypes, prefix, suffix,
+                         reads, contig, ref_start):
+    """Align reads to a given haplotype, not necessarily the reference.
+
+    Align reads to a graph of haplotypes, reporting the alignments relative
+    to a specific haplotype. This allows treating any alternate allele as
+    the reference.
+
+    Args:
+      this_haplotype: string. Sequence of the haplotype to treat as reference,
+        reporting alignments according to its coordinates.
+      haplotypes: list of strings. All haplotypes to use in the graph, including
+        this_haplotype.
+      prefix: string. Sequence to the left of where the haplotypes differ.
+      suffix: string. Sequence to the right of where the haplotypes differ.
+      reads: reads to align.
+      contig: string. Name of the 'reference' to report in read alignments.
+      ref_start: integer. Start position of the region to report in read
+        alignments. This should mark the beginning of the prefix sequence.
+
+    Returns:
+      Reads. Realigned and reported relative to the chosen haplotype.
+    """
+    fast_pass_realigner = fast_pass_aligner.FastPassAligner()
+    aln_config = self.config.aln_config
+    aln_config.read_size = len(reads[0].aligned_sequence)
+    fast_pass_realigner.set_options(aln_config)
+    fast_pass_realigner.set_reference(prefix + this_haplotype + suffix)
+    fast_pass_realigner.set_ref_start(contig, ref_start)
+
+    # Testing found that when the prefix and suffix both go right up to the
+    # ref/alt variants, the alignment does not work well, so a margin of 100
+    # bases on each side of the variant are used here to pad each
+    # haplotype with enough sequence to align against. While some further
+    # testing showed this could be reduced, 100 is the only value that has been
+    # tested with a full training experiment.
+    central_allele_margin = min(len(prefix), len(suffix), 100)
+    fast_pass_realigner.set_ref_prefix_len(len(prefix) - central_allele_margin)
+    fast_pass_realigner.set_ref_suffix_len(len(suffix) - central_allele_margin)
+    extended_haplotypes = [prefix + target + suffix for target in haplotypes]
+    fast_pass_realigner.set_haplotypes(extended_haplotypes)
+    return fast_pass_realigner.realign_reads(reads)
