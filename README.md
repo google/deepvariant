@@ -1,6 +1,6 @@
 # DeepVariant
 
-[![release](https://img.shields.io/badge/release-v0.9.0-green?logo=github)](https://github.com/google/deepvariant/releases)
+[![release](https://img.shields.io/badge/release-v0.10.0-green?logo=github)](https://github.com/google/deepvariant/releases)
 [![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
 [![blog](https://img.shields.io/badge/blog-orange)](https://goo.gl/deepvariant)
 
@@ -16,7 +16,7 @@ designed for painless integration with the
 We recommend using our Docker solution. The command will look like this:
 
 ```
-BIN_VERSION="0.9.0"
+BIN_VERSION="0.10.0"
 sudo docker run \
   -v "YOUR_INPUT_DIR":"/input" \
   -v "YOUR_OUTPUT_DIR:/output" \
@@ -30,11 +30,15 @@ sudo docker run \
   --num_shards=$(nproc) **This will use all your cores to run make_examples. Feel free to change.**
 ```
 
-For more information, see:
+If you're using GPUs, or want to use Singularity instead, see
+[Quick Start](docs/deepvariant-quick-start.md) for more details.
 
-  * [Quick Start](docs/deepvariant-quick-start.md)
+For more information, also see:
+
   * [Full documentation list](docs/README.md)
   * [Best practices for multi-sample variant calling with DeepVariant](docs/trio-merge-case-study.md)
+  * [(Advanced) Training tutorial](docs/deepvariant-training-case-study.md)
+
 
 ## How to cite
 

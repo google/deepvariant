@@ -25,7 +25,7 @@ This creates one output file: `${OUTPUT}.visual_report.html`
 
 ## How to read the VCF stats report
 
-![screenshot of VCF stats report](images/WGS_HG002.v0.9.0_visual_report.png)
+![screenshot of VCF stats report](images/WGS_HG002.v0.10.0_visual_report.png)
 
 Here we walk through all the charts to discuss how they are generated and how to
 interpret them.
@@ -103,16 +103,16 @@ log scale on the bottom. RefCalls and multi-allelic variants are not included.
 
 ## Examples
 
-### WGS case study HG002 (DeepVariant v0.9.0)
+### WGS case study HG002 (DeepVariant v0.10.0)
 
-![visual report of WGS HG002 case study v0.9.0](images/WGS_HG002.v0.9.0_visual_report.png)
+![visual report of WGS HG002 case study v0.10.0](images/WGS_HG002.v0.10.0_visual_report.png)
 
-### WES case study HG002 (DeepVariant v0.9.0)
+### WES case study HG002 (DeepVariant v0.10.0)
 
-![visual report of WES HG002 case study v0.9.0](images/WES_HG002.v0.9.0_visual_report.png)
+![visual report of WES HG002 case study v0.10.0](images/WES_HG002.v0.10.0_visual_report.png)
 
-### PacBio case study HG002 (DeepVariant v0.9.0)
+### PacBio case study HG002 (DeepVariant v0.10.0)
 
-![visual report of PacBio HG002 case study v0.9.0](images/PacBio_HG002.v0.9.0_visual_report.png)
+![visual report of PacBio HG002 case study v0.10.0](images/PacBio_HG002.v0.10.0_visual_report.png)
 
 [VCF specification]: https://samtools.github.io/hts-specs/VCFv4.3.pdf

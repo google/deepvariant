@@ -153,6 +153,55 @@ output.visual_report.html
 For more information about `output.visual_report.html`, see the
 [VCF stats report documentation](deepvariant-vcf-stats-report.md).
 
+## Notes on GPU image
+
+If you are using GPUs, you can pull the GPU version, and make sure to run with
+`nvidia-docker`:
+
+```
+sudo nvidia-docker run \
+  -v "${INPUT_DIR}":"/input" \
+  -v "${OUTPUT_DIR}:/output" \
+  google/deepvariant:"${BIN_VERSION}-gpu" \
+  /opt/deepvariant/bin/run_deepvariant \
+  ...
+```
+
+## Notes on Singularity
+
+### CPU version
+
+```
+# Pull the image.
+singularity pull docker://google/deepvariant:"${BIN_VERSION}"
+
+# Run DeepVariant.
+singularity run -B /usr/lib/locale/:/usr/lib/locale/ \
+  docker://google/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
+  --ref="${INPUT_DIR}"/ucsc.hg19.chr20.unittest.fasta \
+  --reads="${INPUT_DIR}"/NA12878_S1.chr20.10_10p1mb.bam \
+  --regions "chr20:10,000,000-10,010,000" \
+  --output_vcf="${OUTPUT_DIR}"/output.vcf.gz \
+  --output_gvcf="${OUTPUT_DIR}"/output.g.vcf.gz \
+  --num_shards=1 \ **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
+```
+
+### GPU version
+
+```
+# Pull the image.
+singularity pull docker://google/deepvariant:"${BIN_VERSION}-gpu"
+
+# Run DeepVariant.
+# Using "--nv" and "${BIN_VERSION}-gpu" is important.
+singularity run --nv -B /usr/lib/locale/:/usr/lib/locale/ \
+  docker://google/deepvariant:"${BIN_VERSION}-gpu" \
+  /opt/deepvariant/bin/run_deepvariant \
+  ...
+```
+
 ## Evaluating the results
 
 Here we use the `hap.py`
@@ -189,7 +238,7 @@ Benchmarking Summary:
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r0.9/Dockerfile
+[Dockerfile]: https://github.com/google/deepvariant/blob/r0.10/Dockerfile
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
