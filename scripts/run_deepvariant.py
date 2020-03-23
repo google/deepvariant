@@ -34,7 +34,7 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 
 For more details, see:
-https://github.com/google/deepvariant/blob/r0.9/docs/deepvariant-quick-start.md
+https://github.com/google/deepvariant/blob/r0.10/docs/deepvariant-quick-start.md
 """
 
 from __future__ import absolute_import

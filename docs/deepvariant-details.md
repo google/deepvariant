@@ -241,7 +241,7 @@ Cloud Platform. Specifying the CPU platform also allows us to report the runtime
 more consistently.
 
 ```shell
-gcloud beta compute instances create "${USER}-cpu"  \
+gcloud compute instances create "${USER}-cpu"  \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --image-family "ubuntu-1604-lts" \
   --image-project "ubuntu-os-cloud" \
@@ -254,7 +254,7 @@ gcloud beta compute instances create "${USER}-cpu"  \
 ### Command for a GPU machine on Google Cloud Platform
 
 ```shell
-gcloud beta compute instances create "${USER}-gpu" \
+gcloud compute instances create "${USER}-gpu" \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --maintenance-policy "TERMINATE" \
   --accelerator=type=nvidia-tesla-p100,count=1 \

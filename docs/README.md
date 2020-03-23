@@ -13,7 +13,7 @@
 ## (Advanced) Training
 
 *   [Advanced Case Study: Train a customized SNP and small indel variant caller
-    for BGISEQ-500 data](deepvariant-tpu-training-case-study.md)
+    for BGISEQ-500 data](deepvariant-training-case-study.md)
 *   [DeepVariant training data](deepvariant-details-training-data.md)
 
 ## More details

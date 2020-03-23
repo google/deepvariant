@@ -2,10 +2,11 @@
 
 In this case study we describe applying DeepVariant to PacBio CCS reads to call
 variants. We will call small variants from a publicly available whole genome
-from PacBio.
+CCS dataset from PacBio.
 
-Starting from v0.10.0, our PacBio model is trained with additional amplified
-library data, which provides a significant accuracy boost on amplified data.
+Starting from v0.10.0, sequence from amplified libraries is included in our
+PacBio CCS training set, providing a significant accuracy boost to variant
+detection from amplified CCS data.
 
 Case study is run on a standard Google Cloud instance. There are no special
 hardware or software requirements for running this case study. For consistency
@@ -13,9 +14,9 @@ we use Google Cloud instance with 64 cores and 128 GB of memory. This is NOT the
 fastest or cheapest configuration. For more scalable execution of DeepVariant
 see the [External Solutions] section.
 
-In v0.8 DeepVariant released a special model that works with PacBio data. In
-this case study we will apply PacBio model by specifying `PACBIO` in
-`model_type` parameter in the `run_pacbio_case_study_docker.sh` script.
+In v0.8 DeepVariant released a model for PacBio CCS data. In this case study we
+will apply PacBio model by specifying `PACBIO` in `model_type` parameter in the
+`run_pacbio_case_study_docker.sh` script.
 
 ## Case study overview
 
