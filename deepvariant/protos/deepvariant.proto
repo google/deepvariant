@@ -351,7 +351,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 30.
+// Next ID: 31.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -458,6 +458,9 @@ message PileupImageOptions {
     TRIO = 3;
   }
   SequencingType sequencing_type = 27;
+
+  // Whether and how to include alt-aligned pileup images (experimental).
+  string alt_aligned_pileup = 30;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
@@ -743,7 +746,7 @@ message LabelingMetrics {
   // runs. That said, it's valuable to note here how to compute common
   // ratiometric statistics from the counts in this proto since there are many
   // fields to choose from. I give the sites-level metrics here, but the
-  // allele-level values can be computed similarily.
+  // allele-level values can be computed similarly.
   //
   // See https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values
   // for a general description of these metrics.

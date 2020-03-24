@@ -818,8 +818,11 @@ class PileupImageCreatorTest(parameterized.TestCase):
       ], self.pic.create_pileup_images(self.dv_call))
 
       def _expected_call(alts):
-        return mock.call(self.dv_call, self.mock_ref_reader.query.return_value,
-                         self.mock_sam_reader.query.return_value, alts)
+        return mock.call(
+            dv_call=self.dv_call,
+            refbases=self.mock_ref_reader.query.return_value,
+            reads=self.mock_sam_reader.query.return_value,
+            alt_alleles=alts)
 
       self.assertEqual(mock_encoder.call_count, 3)
       mock_encoder.assert_has_calls([
@@ -827,6 +830,107 @@ class PileupImageCreatorTest(parameterized.TestCase):
           _expected_call({'T'}),
           _expected_call({'C', 'T'}),
       ])
+
+  def test_create_pileup_images_with_alt_align(self):
+    self.dv_call.variant.alternate_bases[:] = ['C', 'T']
+    haplotype_sequences = {'C': 'seq for C', 'T': 'seq for T'}
+    haplotype_alignments = {'C': 'reads for C', 'T': 'reads for T'}
+
+    with mock.patch.object(
+        self.pic, 'build_pileup', autospec=True) as mock_encoder:
+      # The represent_alt_aligned_pileups function checks for shape of the
+      # arrays, so mock with actual numpy arrays here.
+      arr = np.zeros((100, 221, 6))
+      final_pileup = np.zeros((300, 221, 6))
+      mock_encoder.side_effect = [arr] * 9
+      self.pic._options.alt_aligned_pileup = 'rows'
+
+      output = self.pic.create_pileup_images(
+          self.dv_call,
+          haplotype_alignments=haplotype_alignments,
+          haplotype_sequences=haplotype_sequences)
+      expected_output = [({'C'}, final_pileup), ({'T'}, final_pileup),
+                         ({'C', 'T'}, final_pileup)]
+      self.assertEqual([x[0] for x in output], [x[0] for x in expected_output])
+      self.assertEqual([x[1].shape for x in output],
+                       [x[1].shape for x in expected_output])
+
+      def _expected_ref_based_call(alts):
+        return mock.call(
+            dv_call=self.dv_call,
+            refbases=self.mock_ref_reader.query.return_value,
+            reads=self.mock_sam_reader.query.return_value,
+            alt_alleles=alts)
+
+      def _expected_alt_based_call(alts, refbases, reads):
+        return mock.call(
+            dv_call=self.dv_call,
+            refbases=refbases,
+            reads=reads,
+            alt_alleles=alts,
+            custom_ref=True)
+
+      self.assertEqual(mock_encoder.call_count, 7)
+      mock_encoder.assert_has_calls(
+          [
+              # Pileup for 'C':
+              _expected_ref_based_call({'C'}),
+              _expected_alt_based_call({'C'}, 'seq for C', 'reads for C'),
+              # Pileup for 'T':
+              _expected_ref_based_call({'T'}),
+              _expected_alt_based_call({'T'}, 'seq for T', 'reads for T'),
+              # Pileup for 'C/T':
+              _expected_ref_based_call({'C', 'T'}),
+              _expected_alt_based_call({'C', 'T'}, 'seq for C', 'reads for C'),
+              _expected_alt_based_call({'C', 'T'}, 'seq for T', 'reads for T'),
+          ],
+          any_order=True)
+
+  @parameterized.parameters(
+      ((100, 221, 6), 'rows', (300, 221, 6)),
+      ((100, 221, 6), 'base_channels', (100, 221, 8)),
+      ((100, 221, 6), 'diff_channels', (100, 221, 8)),
+  )
+  def test_represent_alt_aligned_pileups_outputs_correct_shape(
+      self, input_shape, representation, expected_output_shape):
+
+    ref_image = np.zeros(input_shape)
+    alt_image1 = np.zeros(input_shape)
+    alt_image2 = np.zeros(input_shape)
+
+    # Test with one alt image.
+    output = pileup_image._represent_alt_aligned_pileups(
+        representation, ref_image, [alt_image1])
+    self.assertEqual(output.shape, expected_output_shape)
+
+    # Test with two alt images.
+    output = pileup_image._represent_alt_aligned_pileups(
+        representation, ref_image, [alt_image1, alt_image2])
+    self.assertEqual(output.shape, expected_output_shape)
+
+  def test_represent_alt_aligned_pileups_raises_on_invalid_representation(self):
+    # Representation must be one of the valid options.
+    ref_image = np.zeros((100, 221, 6))
+    alt_image = np.zeros((100, 221, 6))
+    with self.assertRaises(ValueError):
+      pileup_image._represent_alt_aligned_pileups('invalid', ref_image,
+                                                  [alt_image])
+
+  def test_represent_alt_aligned_pileups_raises_on_different_shapes(self):
+    # Different shapes of input images should raise error.
+    ref_image = np.zeros((100, 221, 6))
+    alt_image = np.zeros((500, 221, 6))
+    with self.assertRaises(ValueError):
+      pileup_image._represent_alt_aligned_pileups('rows', ref_image,
+                                                  [alt_image])
+
+  def test_represent_alt_aligned_pileups_raises_on_too_many_alt_images(self):
+    # Different shapes of input images should raise error.
+    ref_image = np.zeros((100, 221, 6))
+    alt_image = np.zeros((100, 221, 6))
+    with self.assertRaises(ValueError):
+      pileup_image._represent_alt_aligned_pileups(
+          'rows', ref_image, [alt_image, alt_image, alt_image])
 
 
 if __name__ == '__main__':

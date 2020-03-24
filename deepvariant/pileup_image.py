@@ -79,11 +79,57 @@ def default_options(read_requirements=None):
       random_seed=2101079370,
       custom_pileup_image=False,
       sequencing_type_image=False,
-      sequencing_type=deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE)
+      sequencing_type=deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE,
+      alt_aligned_pileup='')
 
 
 def _compute_half_width(width):
   return int((width - 1) / 2)
+
+
+def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
+  """Combines ref and alt-aligned pileup images according to the representation.
+
+  Args:
+    representation: string, one of "rows", "base_channels", "diff_channels".
+    ref_image: 3D numpy array. The original pileup image.
+    alt_images: list of either one or two 3D numpy arrays, both of the same
+      dimensions as ref_image. Pileup image(s) of the same reads aligned to the
+      alternate haplotype(s).
+
+  Returns:
+    One 3D numpy array containing a selection of data from the input arrays.
+  """
+
+  # If there is only one alt, duplicate it to make all pileups the same size.
+  if len(alt_images) == 1:
+    alt_images = alt_images + alt_images
+  if len(alt_images) != 2:
+    raise ValueError('alt_images must contain exactly one or two arrays.')
+
+  # Ensure that all three pileups have the same shape.
+  if not ref_image.shape == alt_images[0].shape == alt_images[1].shape:
+    raise ValueError('Pileup images must be the same shape to be combined.')
+
+  if representation == 'rows':
+    # Combine all images: [ref, alt1, alt2].
+    return np.concatenate([ref_image] + alt_images, axis=0)
+  elif representation == 'base_channels':
+    channels = [ref_image[:, :, c] for c in range(ref_image.shape[2])]
+    # Add channel 0 (bases ATCG) of both alts as channels.
+    channels.append(alt_images[0][:, :, 0])
+    channels.append(alt_images[1][:, :, 0])
+    return np.stack(channels, axis=2)
+  elif representation == 'diff_channels':
+    channels = [ref_image[:, :, c] for c in range(ref_image.shape[2])]
+    # Add channel 5 (base differs from ref) of both alts as channels.
+    channels.append(alt_images[0][:, :, 5])
+    channels.append(alt_images[1][:, :, 5])
+    return np.stack(channels, axis=2)
+  else:
+    raise ValueError(
+        'alt_aligned_pileups received invalid value: "{}". Must be one of '
+        'rows, base_channels, or diff_channels.'.format(representation))
 
 
 class PileupImageCreator(object):
@@ -234,7 +280,12 @@ class PileupImageCreator(object):
       for combination in itertools.combinations([ref] + alts, 2):
         yield set(combination) - {ref}
 
-  def build_pileup(self, dv_call, refbases, reads, alt_alleles):
+  def build_pileup(self,
+                   dv_call,
+                   refbases,
+                   reads,
+                   alt_alleles,
+                   custom_ref=False):
     """Creates a pileup tensor for dv_call.
 
     Args:
@@ -251,6 +302,8 @@ class PileupImageCreator(object):
         we are treating as "alt" when constructing this pileup image. A read
         will be considered supporting the "alt" allele if it occurs in the
         support list for any alt_allele in this collection.
+      custom_ref: True if refbases should not be checked for matching against
+        variant's reference_bases.
 
     Returns:
       A [self.width, self.height, DEFAULT_NUM_CHANNEL] uint8 Tensor image.
@@ -270,11 +323,13 @@ class PileupImageCreator(object):
           ' of dv_call.variant', alt_alleles, dv_call.variant)
 
     image_start_pos = dv_call.variant.start - self.half_width
-    if (len(dv_call.variant.reference_bases) == 1 and
-        refbases[self.half_width] != dv_call.variant.reference_bases):
-      raise ValueError('center of refbases doesnt match variant.refbases',
-                       self.half_width, refbases[self.half_width],
-                       dv_call.variant)
+    if not custom_ref and (refbases[self.half_width] !=
+                           dv_call.variant.reference_bases[0]):
+      raise ValueError('The middle base of reference sequence in the window '
+                       "({} at base {}) doesn't match first "
+                       'character of variant.reference_bases ({}).'.format(
+                           refbases[self.half_width], self.half_width,
+                           dv_call.variant.reference_bases))
 
     # We start with n copies of our encoded reference bases.
     rows = ([self._encoder.encode_reference(refbases)] *
@@ -315,7 +370,10 @@ class PileupImageCreator(object):
     """Creates an empty image row as an uint8 np.array."""
     return np.zeros((1, self.width, self.num_channels), dtype=np.uint8)
 
-  def create_pileup_images(self, dv_call):
+  def create_pileup_images(self,
+                           dv_call,
+                           haplotype_alignments=None,
+                           haplotype_sequences=None):
     """Creates a DeepVariant TF.Example for the DeepVariant call dv_call.
 
     See class documents for more details.
@@ -323,6 +381,8 @@ class PileupImageCreator(object):
     Args:
       dv_call: A learning.genomics.deepvariant.DeepVariantCall proto that we
         want to create a TF.Example pileup image of.
+      haplotype_alignments: dict of read alignments keyed by haplotype.
+      haplotype_sequences: dict of sequences keyed by haplotype.
 
     Returns:
       A list of tuples. The first element of the tuple is a set of alternate
@@ -331,15 +391,45 @@ class PileupImageCreator(object):
       alt alleles.
     """
     variant = dv_call.variant
-    ref = self.get_reference_bases(variant)
-    if not ref:
-      # This interval isn't valid => we off the edge of the chromosome so return
-      # None to indicate we couldn't process this variant.
+    # Ref bases to show at the top of the pileup:
+    ref_bases = self.get_reference_bases(variant)
+    if not ref_bases:
+      # This interval isn't valid => we are off the edge of the chromosome, so
+      # return None to indicate we couldn't process this variant.
       return None
+    # `reads` contains alignments from the original bam or realigned reads.
     reads = self.get_reads(variant)
 
-    def _make_one(alt_alleles):
-      image = self.build_pileup(dv_call, ref, reads, alt_alleles)
-      return alt_alleles, image
+    alt_aligned_representation = self._options.alt_aligned_pileup
 
-    return [_make_one(alts) for alts in self._alt_allele_combinations(variant)]
+    def _pileup_for_pair_of_alts(alt_alleles):
+      """Create pileup image for one combination of alt alleles."""
+      # Always create the ref-aligned pileup image.
+      ref_image = self.build_pileup(
+          dv_call=dv_call,
+          refbases=ref_bases,
+          reads=reads,
+          alt_alleles=alt_alleles)
+      # Optionally also create pileup images with reads aligned to alts.
+      if alt_aligned_representation:
+        if not haplotype_alignments and haplotype_sequences:
+          raise ValueError(
+              'haplotype_alignments and haplotype_sequences must both be '
+              'populated if alt_aligned_pileups is turned on.')
+        # pylint: disable=g-complex-comprehension
+        alt_images = [
+            self.build_pileup(
+                dv_call=dv_call,
+                refbases=haplotype_sequences[alt],
+                reads=haplotype_alignments[alt],
+                alt_alleles=alt_alleles,
+                custom_ref=True) for alt in alt_alleles
+        ]
+        # pylint: enable=g-complex-comprehension
+        return _represent_alt_aligned_pileups(alt_aligned_representation,
+                                              ref_image, alt_images)
+      else:
+        return ref_image
+
+    return [(alts, _pileup_for_pair_of_alts(alts))
+            for alts in self._alt_allele_combinations(variant)]
