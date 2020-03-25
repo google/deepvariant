@@ -172,6 +172,12 @@ flags.DEFINE_bool(
     'write_run_info', False,
     'If True, write out a MakeExamplesRunInfo proto besides our examples in '
     'text_format.')
+flags.DEFINE_string(
+    'alt_aligned_pileup', '',
+    'Include alignments of reads against each candidate alternate allele in '
+    'the pileup image. This flag is experimental. '
+    'Default="" turns this feature off. '
+    'Options: "base_channels","diff_channels", "rows"')
 flags.DEFINE_float(
     'downsample_fraction', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
@@ -479,6 +485,8 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.height = flags_obj.pileup_image_height
     if flags_obj.pileup_image_width:
       options.pic_options.width = flags_obj.pileup_image_width
+
+    options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
 
     if flags_obj.select_variant_types:
       options.select_variant_types[:] = flags_obj.select_variant_types.split()
@@ -1156,6 +1164,72 @@ class RegionProcessor(object):
         allele_counter, gvcf_output_enabled(self.options))
     return candidates, gvcfs
 
+  def align_to_all_haplotypes(self, variant, reads):
+    """For each alternate allele, realign reads to it and get "ref" sequences.
+
+    For alt-aligned pileups, this realigns the reads to each of the alternate
+    haplotypes. It also outputs the sequence for each alternate allele, which
+    is also needed to build the pileup image.
+
+    Args:
+      variant: a nucleus.genomics.v1.Variant containing the alt alleles to align
+        against.
+      reads: a list of reads (nucleus.genomics.v1.Read) to be realigned around
+        the variant.
+
+    Returns:
+      dict of alignments keyed by haplotype, dict of window sequences keyed by
+          haplotype.
+    """
+
+    window_width = self.pic.width
+    window_half_width = self.pic.half_width
+
+    alt_alleles = list(variant.alternate_bases)
+    contig = variant.reference_name
+    ref_start = variant.start
+    ref_bases = variant.reference_bases
+    ref_end = ref_start + len(ref_bases)
+
+    # Sanity check that the reference_bases in the variant match the reference.
+    ref_query_at_variant = self.realigner.ref_reader.query(
+        ranges.make_range(contig, ref_start, ref_end))
+    if ref_bases != ref_query_at_variant:
+      raise ValueError('Error: reference_bases property in variant ({})'
+                       'does not match the bases in the reference ({}) at that '
+                       'position.'.format(ref_bases, ref_query_at_variant))
+
+    # Margin must be more than half the window width, plus some extra
+    # prefix/suffix to anchor alignments, but this value has not been optimized.
+    margin = window_half_width + 100
+    prefix = self.realigner.ref_reader.query(
+        ranges.make_range(contig, max(ref_start - margin, 0), ref_start))
+    suffix = self.realigner.ref_reader.query(
+        ranges.make_range(contig, ref_end, ref_end + margin))
+
+    # Include reference in the haplotypes for alignment.
+    haplotypes = alt_alleles + [ref_bases]
+
+    alignments_by_haplotype = {}
+    sequences_by_haplotype = {}
+    for hap in alt_alleles:
+      # Align to each of the alt_alleles:
+      alignments_by_haplotype[hap] = self.realigner.align_to_haplotype(
+          this_haplotype=hap,
+          haplotypes=haplotypes,
+          prefix=prefix,
+          suffix=suffix,
+          reads=reads,
+          contig=contig,
+          ref_start=ref_start - len(prefix))
+      # Sequence of the alt haplotype in the window:
+      end_of_prefix = prefix[-window_half_width:]
+      beginning_of_suffix = suffix[:max(window_half_width + 1 - len(hap), 0)]
+      sequences_by_haplotype[hap] = end_of_prefix + hap + beginning_of_suffix
+      # Long haplotypes can extend past the window, so enforce the width here.
+      sequences_by_haplotype[hap] = sequences_by_haplotype[hap][0:window_width]
+    return alignments_by_haplotype, sequences_by_haplotype
+
   def create_pileup_examples(self, dv_call):
     """Creates a tf.Example for DeepVariantCall.
 
@@ -1170,7 +1244,20 @@ class RegionProcessor(object):
     Returns:
       A list of tf.Example protos.
     """
-    pileup_images = self.pic.create_pileup_images(dv_call)
+    reads = self.pic.get_reads(dv_call.variant)
+    if self.options.pic_options.alt_aligned_pileup:
+      # Align the reads against each alternate allele, saving the sequences of
+      # those alleles along with the alignments for pileup images.
+      haplotype_alignments, haplotype_sequences = self.align_to_all_haplotypes(
+          dv_call.variant, reads)
+
+      pileup_images = self.pic.create_pileup_images(
+          dv_call,
+          haplotype_alignments=haplotype_alignments,
+          haplotype_sequences=haplotype_sequences)
+    else:
+      pileup_images = self.pic.create_pileup_images(dv_call)
+
     if pileup_images is None:
       # We cannot build a PileupImage for dv_call, issue a warning.
       logging.warning('Could not create PileupImage for candidate at %s:%s',

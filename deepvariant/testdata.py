@@ -97,6 +97,9 @@ GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = None
 GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES = None
 VCF_CANDIDATE_IMPORTER_VARIANTS = None
 
+# For alt-aligned pileups
+ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = None
+
 
 def init():
   """Initialize global variables from flag values."""
@@ -210,3 +213,8 @@ def init():
       'golden.vcf_candidate_importer_calling_examples.tfrecord')
   VCF_CANDIDATE_IMPORTER_VARIANTS = deepvariant_testdata(
       'vcf_candidate_importer.indels.chr20.vcf.gz')
+
+  # For alt-aligned pileups
+  global ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES
+  ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
+      'alt_aligned_pileup.golden.training_examples.tfrecord.gz')

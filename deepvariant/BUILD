@@ -346,6 +346,7 @@ py_test(
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/testing:flagsaver",
+        "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/protos:reads_py_pb2",

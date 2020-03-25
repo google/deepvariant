@@ -52,6 +52,7 @@ import mock
 import six
 
 from tensorflow.python.platform import gfile
+from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reads_pb2
@@ -293,7 +294,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                                   num_shards)
       expected_gvcfs = list(
           tfrecord.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant))
-      self.assertItemsEqual(gvcfs, expected_gvcfs)
+      # Despite the name, assertCountEqual checks that all elements match.
+      self.assertCountEqual(gvcfs, expected_gvcfs)
 
     if (mode == 'training' and num_shards == 0 and
         labeler_algorithm != 'positional_labeler'):
@@ -474,6 +476,32 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertNotEmpty(examples_with_regions)
     self.assertDeepVariantExamplesEqual(examples_with_regions,
                                         examples_with_confident_regions)
+
+  # Golden sets are created with learning/genomics/internal/create_golden.sh
+  @flagsaver.FlagSaver
+  def test_make_examples_training_end2end_with_alt_aligned_pileup(self):
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
+    FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.partition_size = 1000
+    FLAGS.mode = 'training'
+    FLAGS.gvcf_gq_binsize = 5
+    FLAGS.alt_aligned_pileup = 'rows'  # This is the only input change.
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    options = make_examples.default_options(add_flags=True)
+    make_examples.make_examples_runner(options)
+    golden_file = _sharded(testdata.ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES)
+    # Verify that the variants in the examples are all good.
+    examples = self.verify_examples(
+        FLAGS.examples, region, options, verify_labels=True)
+    self.assertDeepVariantExamplesEqual(
+        examples, list(tfrecord.read_tfrecords(golden_file)))
+    # Pileup image should have 3 rows of height 100, so resulting height is 300.
+    self.assertEqual(decode_example(examples[0])['image/shape'], [300, 221, 6])
 
   @parameterized.parameters(
       dict(select_types=None, expected_count=78),
@@ -1288,6 +1316,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.options.variant_caller_options.sample_name = 'sample_id'
 
     self.processor = make_examples.RegionProcessor(self.options)
+    self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
     self.mock_init = self.add_mock('_initialize')
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
@@ -1603,6 +1632,55 @@ class RegionProcessorTest(parameterized.TestCase):
         'If use_original_quality_scores is set then parse_sam_aux_fields must be set too.'
     ):
       make_examples.default_options(add_flags=True)
+
+  @parameterized.parameters(
+      [
+          dict(window_width=221),
+          dict(window_width=1001),
+      ],)
+  def test_align_to_all_haplotypes(self, window_width):
+    # align_to_all_haplotypes() will pull from the reference, so choose a
+    # real variant.
+    region = ranges.parse_literal('chr20:10,046,000-10,046,400')
+    nist_reader = vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF)
+    nist_variants = list(nist_reader.query(region))
+    # We picked this region to have exactly one known variant:
+    # reference_bases: "AAGAAAGAAAG"
+    # alternate_bases: "A", a deletion of 10 bp
+    # start: 10046177
+    # end: 10046188
+    # reference_name: "chr20"
+
+    variant = nist_variants[0]
+
+    self.processor.pic = mock.Mock()
+    self.processor.pic.width = window_width
+    self.processor.pic.half_width = int((self.processor.pic.width - 1) / 2)
+
+    self.processor.realigner = mock.Mock()
+    # Using a real ref_reader to test that the reference allele matches
+    # between the variant and the reference at the variant's coordinates.
+    self.processor.realigner.ref_reader = self.ref_reader
+
+    self.processor.realigner.align_to_haplotype = mock.Mock()
+    hap_alignments, hap_sequences = self.processor.align_to_all_haplotypes(
+        variant, [mock.Mock()])
+
+    # Both outputs are keyed by alt allele.
+    self.assertCountEqual(hap_alignments.keys(), ['A'])
+    self.assertCountEqual(hap_sequences.keys(), ['A'])
+
+    # Sequence must be the length of the window.
+    self.assertLen(hap_sequences['A'], self.processor.pic.width)
+
+    # align_to_haplotype should be called once for each alt (1 alt here).
+    self.processor.realigner.align_to_haplotype.assert_called_once()
+
+    # If variant reference_bases are wrong, it should raise a ValueError.
+    variant.reference_bases = 'G'
+    with six.assertRaisesRegex(self, ValueError,
+                               'does not match the bases in the reference'):
+      self.processor.align_to_all_haplotypes(variant, [mock.Mock()])
 
 
 if __name__ == '__main__':
