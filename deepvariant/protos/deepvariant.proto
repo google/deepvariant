@@ -834,6 +834,19 @@ message LabelingMetrics {
   int32 n_truth_multiallelics_sites_with_missed_alleles = 16;
 }
 
+// Statistics about MakeExamples.
+// Next ID: 7.
+message MakeExamplesStats {
+  int32 num_examples = 1;
+
+  int32 num_indels = 2;
+  int32 num_snps = 3;
+
+  int32 num_class_0 = 4;
+  int32 num_class_1 = 5;
+  int32 num_class_2 = 6;
+}
+
 // Configuration and runtime information about a MakeExamples run in
 // DeepVariant.
 // Next ID: 4.
