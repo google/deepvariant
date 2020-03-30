@@ -622,7 +622,7 @@ message DeepVariantDatasetConfig {
   // Number of examples for this dataset. Right now this needs to be manually
   // filled in order to compute how the learning rate decays, and also used
   // in make_training_batches.
-  int32 num_examples = 3;
+  uint32 num_examples = 3;
 }
 
 // Next ID: 3.
