@@ -138,7 +138,7 @@ Vertex DeBruijnGraph::EnsureVertex(string_view kmer) {
     v = boost::add_vertex(VertexInfo{kmer_copy}, g_);
     // N.B.: must use the long-lived string in the map key as the referent of
     // the string_view key.
-    kmer_to_vertex_[string_view(g_[v].kmer)] = v;
+    kmer_to_vertex_[g_[v].kmer] = v;
   }
 
   return v;
