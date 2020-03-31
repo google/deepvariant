@@ -98,6 +98,17 @@ class ModelingTest(
             modeling.is_encoded_variant_type(
                 tensor, tf_utils.EncodedVariantType.INDEL)), [False, True] * 4)
 
+  @parameterized.parameters(
+      dict(labels=[0, 2, 1, 0], target_class=0, expected=[0, 1, 1, 0]),
+      dict(labels=[0, 2, 1, 0], target_class=1, expected=[1, 1, 0, 1]),
+      dict(labels=[0, 2, 1, 0], target_class=2, expected=[1, 0, 1, 1]),
+  )
+  def test_binarize(self, labels, target_class, expected):
+    with self.test_session() as sess:
+      result = sess.run(
+          modeling.binarize(np.array(labels), np.array(target_class)))
+      self.assertListEqual(result.tolist(), expected)
+
   @parameterized.parameters([True, False])
   def test_eval_metric_fn(self, include_variant_types):
     labels = tf.constant([1, 0], dtype=tf.int64)

@@ -117,18 +117,19 @@ class UnsupportedImageDimensionsError(Exception):
 def binarize(labels, target_class):
   """Binarize labels and predictions.
 
-  The labels that are not equal to target_class parameter are set to zero.
+  The labels that are equal to target_class parameter are set to 0, else
+  set to 1.
 
   Args:
     labels: the ground-truth labels for the examples.
-    target_class: index of the class that is left as non-zero.
+    target_class: index of the class that is left as zero.
 
   Returns:
     Tensor of the same shape as labels.
   """
   labels_binary = tf.compat.v1.where(
       tf.equal(labels, tf.constant(target_class, dtype=tf.int64)),
-      tf.zeros_like(labels), labels)
+      tf.zeros_like(labels), tf.ones_like(labels))
   return labels_binary
 
 
