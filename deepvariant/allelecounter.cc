@@ -36,8 +36,8 @@
 #include <cstddef>
 
 #include "deepvariant/utils.h"
-#include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/util/utils.h"
@@ -89,9 +89,53 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count) {
   return to_return;
 }
 
+std::vector<Allele> SumAlleleCounts(
+    const std::vector<AlleleCount>& allele_counts) {
+  std::map<std::pair<string_view, AlleleType>, int> allele_sums;
+  for (const AlleleCount& allele_count : allele_counts) {
+    for (const auto& entry : allele_count.read_alleles()) {
+      ++allele_sums[{entry.second.bases(), entry.second.type()}];
+    }
+  }
+
+  std::vector<Allele> to_return;
+  to_return.reserve(allele_sums.size());
+  for (const auto& entry : allele_sums) {
+    to_return.push_back(MakeAllele(string(entry.first.first),
+                                   entry.first.second, entry.second));
+  }
+
+  // Creates a synthetic reference Allele if we saw any reference containing
+  // alleles, whose count is tracked (for performance reasons) as an integer
+  // in the AlleleCount.ref_supporting_read_count field of the proto. This
+  // synthetic allele allows us to provide the same API from this function: a
+  // vector of the Alleles observed in allele_count without having to track the
+  // read names for reference containing reads, which is very memory-intensive.
+  int ref_support_for_all_samples = 0;
+  for (const AlleleCount& allele_count : allele_counts) {
+    ref_support_for_all_samples += allele_count.ref_supporting_read_count();
+  }
+  if (ref_support_for_all_samples > 0 && !allele_counts.empty()) {
+    to_return.push_back(MakeAllele(allele_counts[0].ref_base(),
+                                   AlleleType::REFERENCE,
+                                   ref_support_for_all_samples));
+  }
+
+  return to_return;
+}
+
 int TotalAlleleCounts(const AlleleCount& allele_count) {
   return allele_count.read_alleles_size() +
          allele_count.ref_supporting_read_count();
+}
+
+int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts) {
+  int total_allele_count = 0;
+  for (const AlleleCount& allele_count : allele_counts) {
+    total_allele_count += (allele_count.read_alleles_size() +
+                           allele_count.ref_supporting_read_count());
+  }
+  return total_allele_count;
 }
 
 // Returns true if all the bases in read from offset to offset + len pass

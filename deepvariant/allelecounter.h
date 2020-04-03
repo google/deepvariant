@@ -62,10 +62,22 @@ using tensorflow::int64;
 // field set to the number of reads that carried that allele.
 std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count);
 
+// Summarizes the counts of all of the distinct alleles present in allele_count
+// for one position combined for all DeepTrio samples. Effectively this function
+// merges allele_count from all DeepTrio samples.
+// This function is similar to SumAlleleCounts(const AlleleCount& allele_count)
+std::vector<Allele> SumAlleleCounts(
+    const std::vector<AlleleCount>& allele_counts);
+
 // Gets the total count of observed alleles in this allele_count, which is the
 // sum of the observed non-reference alleles in read_alleles + the total number
 // of reference supporting reads.
 int TotalAlleleCounts(const AlleleCount& allele_count);
+
+// Gets the total count of observed alleles in allele_count from all DeepTrio
+// samples, which is the sum of the observed non-reference alleles in
+// read_alleles + the total number of reference supporting reads.
+int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts);
 
 // Represents an Allele observed in a read at a specific position in our
 // interval. Supports the concept that the site should be skipped but still

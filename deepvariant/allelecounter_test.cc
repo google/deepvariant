@@ -31,22 +31,25 @@
 
 // UnitTests for allelecounter.{h,cc}.
 #include "deepvariant/allelecounter.h"
+
+#include <cstdint>
 #include <numeric>
+#include <string>
+#include <vector>
 
 #include "deepvariant/utils.h"
-#include "third_party/nucleus/io/reference.h"
-#include "third_party/nucleus/protos/position.pb.h"
-#include "third_party/nucleus/testing/test_utils.h"
-#include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/strings/strcat.h"
-#include "tensorflow/core/platform/logging.h"
-
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
+#include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
+#include "tensorflow/core/lib/strings/strcat.h"
+#include "tensorflow/core/platform/logging.h"
 
 namespace learning {
 namespace genomics {
@@ -191,6 +194,21 @@ class AlleleCounterTest : public ::testing::Test {
     return read;
   }
 
+  AlleleCount MakeAlleleCount(
+      const nucleus::genomics::v1::Position& position, const string& ref_base,
+      int32_t ref_supporting_read_count,
+      const std::unordered_map<string, Allele>& read_alleles) {
+    AlleleCount allele_count;
+    allele_count.mutable_position()->MergeFrom(position);
+    allele_count.set_ref_base(ref_base);
+    allele_count.set_ref_supporting_read_count(ref_supporting_read_count);
+    for (const auto& read_allele_entry : read_alleles) {
+      (*allele_count.mutable_read_alleles())[read_allele_entry.first] =
+          read_allele_entry.second;
+    }
+    return allele_count;
+  }
+
   int read_name_counter_ = 0;
   AlleleCounterOptions options_;
   Read read_;
@@ -228,6 +246,48 @@ TEST_F(AlleleCounterTest, TestCreate) {
     EXPECT_THAT(string{seq_}.substr(i, 1), count.ref_base());
     EXPECT_THAT(true, Eq(count.read_alleles().empty()));
   }
+}
+
+// Here we test a common case when we have 3 sample, there are 3 reads in each
+// of the samples. As a result we should have one alt allele with 2 supporting
+// reads and one ref allele with 7 supporting reads.
+TEST_F(AlleleCounterTest, TestSumAlleleCountsMultipleSamples) {
+  std::vector<Allele> expected_alleles(
+      {MakeAllele("T", AlleleType::SUBSTITUTION, 2),
+       MakeAllele("A", AlleleType::REFERENCE, 7)});
+
+  std::vector<AlleleCount> allele_counts = {
+      MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
+                      std::unordered_map<string, Allele>(
+                          {{"parent1_read_1",
+                            MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
+      MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
+                      std::unordered_map<string, Allele>(
+                          {{"child_read_2",
+                            MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
+      MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
+                      std::unordered_map<string, Allele>())};
+
+  std::vector<Allele> allele_sum = SumAlleleCounts(allele_counts);
+  EXPECT_THAT(allele_sum, UnorderedPointwise(EqualsProto(), expected_alleles));
+}
+
+// Here we test the same case as previous (TestSumAlleleCountsMultipleSamples)
+// Total count should be 9 since we have 3 reads in each of 3 samples.
+TEST_F(AlleleCounterTest, TestTotalAlleleCounts) {
+  std::vector<AlleleCount> allele_counts = {
+      MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
+                      std::unordered_map<string, Allele>(
+                          {{"parent1_read_1",
+                            MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
+      MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
+                      std::unordered_map<string, Allele>(
+                          {{"child_read_2",
+                            MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
+      MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
+                      std::unordered_map<string, Allele>())};
+
+  EXPECT_EQ(TotalAlleleCounts(allele_counts), 9);
 }
 
 TEST_F(AlleleCounterTest, TestAddSimpleRead) {
