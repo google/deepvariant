@@ -44,10 +44,19 @@ import six
 from third_party.nucleus.protos import cigar_pb2
 
 # A frozenset of all CigarUnit.Operation enum values that advance the alignment
-# with respect to the reference genome.
+# with respect to the reference genome and read, respectively.
 REF_ADVANCING_OPS = frozenset([
-    cigar_pb2.CigarUnit.ALIGNMENT_MATCH, cigar_pb2.CigarUnit.SEQUENCE_MATCH,
-    cigar_pb2.CigarUnit.DELETE, cigar_pb2.CigarUnit.SKIP,
+    cigar_pb2.CigarUnit.ALIGNMENT_MATCH,
+    cigar_pb2.CigarUnit.SEQUENCE_MATCH,
+    cigar_pb2.CigarUnit.DELETE,
+    cigar_pb2.CigarUnit.SKIP,
+    cigar_pb2.CigarUnit.SEQUENCE_MISMATCH
+])
+READ_ADVANCING_OPS = frozenset([
+    cigar_pb2.CigarUnit.ALIGNMENT_MATCH,
+    cigar_pb2.CigarUnit.SEQUENCE_MATCH,
+    cigar_pb2.CigarUnit.INSERT,
+    cigar_pb2.CigarUnit.CLIP_SOFT,
     cigar_pb2.CigarUnit.SEQUENCE_MISMATCH
 ])
 
