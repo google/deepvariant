@@ -447,8 +447,9 @@ message PileupImageOptions {
   // Include custom pileup image feature.
   bool custom_pileup_image = 25;
 
+  //  (Experimental feature that was removed.)
   // Include sequencing type image feature.
-  bool sequencing_type_image = 26;
+  bool unused_sequencing_type_image = 26;
 
   // Sequencing type of input bam file.
   enum SequencingType {

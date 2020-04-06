@@ -275,11 +275,6 @@ flags.DEFINE_bool(
     'Experimental - please do not set this flag. If True, an '
     'additional channel will be added to encode CIGAR op length '
     'for indels.')
-flags.DEFINE_bool(
-    'sequencing_type_image', False,
-    'If True, add an additional channel representing the sequencing type of '
-    'the input example. This flag is experimental and is not currently being '
-    'used.')
 flags.DEFINE_string(
     'sequencing_type', None,
     'A string representing input bam file sequencing_type. Permitted values are '
@@ -456,13 +451,10 @@ def default_options(add_flags=True, flags_obj=None):
       options.truth_variants_filename = flags_obj.truth_variants
     if flags_obj.proposed_variants:
       options.proposed_variants_filename = flags_obj.proposed_variants
-    if flags_obj.sequencing_type_image:
-      options.pic_options.num_channels += 1
-      options.pic_options.sequencing_type_image = flags_obj.sequencing_type_image
-      if flags_obj.sequencing_type:
-        options.pic_options.sequencing_type = parse_proto_enum_flag(
-            deepvariant_pb2.PileupImageOptions.SequencingType,
-            flags_obj.sequencing_type)
+    if flags_obj.sequencing_type:
+      options.pic_options.sequencing_type = parse_proto_enum_flag(
+          deepvariant_pb2.PileupImageOptions.SequencingType,
+          flags_obj.sequencing_type)
     if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
       options.downsample_fraction = flags_obj.downsample_fraction
 

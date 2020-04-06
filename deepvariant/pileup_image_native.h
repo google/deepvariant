@@ -60,13 +60,11 @@ struct ImageRow {
   std::vector<unsigned char> sequencing_type;
   int num_channels;
   bool custom_pileup_image;
-  bool sequencing_type_image;
 
   int Width() const;
   explicit ImageRow(int width,
                     int num_channels,
-                    bool custom_pileup_image,
-                    bool sequencing_type_image);
+                    bool custom_pileup_image);
 };
 
 class PileupImageEncoderNative {

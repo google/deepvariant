@@ -820,31 +820,9 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     self.assertEqual(
         options.variant_caller_options.fraction_reference_sites_to_emit, 0.0)
 
-  @parameterized.parameters(
-      (False, False, None,
-       deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE, 6),
-      (True, True, None,
-       deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE, 7),
-      (True, True, 'WES', deepvariant_pb2.PileupImageOptions.WES, 7),
-      (True, True, 'WGS', deepvariant_pb2.PileupImageOptions.WGS, 7),
-  )
-  @flagsaver.FlagSaver
-  def test_valid_sequencing_type(self, flag_image, expected_image,
-                                 flag_seq_type, expected_seq_type,
-                                 num_channels):
-    FLAGS.mode = 'training'
-
-    FLAGS.sequencing_type_image = flag_image
-    FLAGS.sequencing_type = flag_seq_type
-    options = make_examples.default_options(add_flags=True)
-    self.assertEqual(options.pic_options.sequencing_type, expected_seq_type)
-    self.assertEqual(options.pic_options.sequencing_type_image, expected_image)
-    self.assertEqual(options.pic_options.num_channels, num_channels)
-
   @flagsaver.FlagSaver
   def test_invalid_sequencing_type(self):
     FLAGS.mode = 'training'
-    FLAGS.sequencing_type_image = True
     FLAGS.sequencing_type = 'wGs'
     with self.assertRaises(ValueError):
       make_examples.default_options(add_flags=True)

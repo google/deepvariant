@@ -90,8 +90,7 @@ const float kMaxPixelValueAsFloat = 254.0;
 
 ImageRow::ImageRow(int width,
                    int num_channels,
-                   bool custom_pileup_image,
-                   bool sequencing_type_image)
+                   bool custom_pileup_image)
     : base(width, 0),
       base_quality(width, 0),
       mapping_quality(width, 0),
@@ -101,8 +100,7 @@ ImageRow::ImageRow(int width,
       op_length(width, 0),
       sequencing_type(width, 0),
       num_channels(num_channels),
-      custom_pileup_image(custom_pileup_image),
-      sequencing_type_image(sequencing_type_image)
+      custom_pileup_image(custom_pileup_image)
 {}
 
 int ImageRow::Width() const {
@@ -123,9 +121,6 @@ PileupImageEncoderNative::PileupImageEncoderNative(
         << "Width must be odd; found " << options_.width();
     int optional_channels(0);
     if (options_.custom_pileup_image()) {
-      optional_channels++;
-    }
-    if (options_.sequencing_type_image()) {
       optional_channels++;
     }
     int num_channels = NUM_CHANNELS + optional_channels;
@@ -205,8 +200,7 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
                                      const vector<string>& alt_alleles) {
   ImageRow img_row(ref_bases.size(),
                    options_.num_channels(),
-                   options_.custom_pileup_image(),
-                   options_.sequencing_type_image());
+                   options_.custom_pileup_image());
   const bool supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
   const int mapping_quality = read.alignment().mapping_quality();
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
@@ -216,7 +210,6 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
   const int min_base_quality = options_.read_requirements().min_base_quality();
   const int min_mapping_quality =
       options_.read_requirements().min_mapping_quality();
-  const uint8 sequencing_type_color = SequencingTypeColor();
 
   // Bail early if this read's mapping quality is too low.
   if (mapping_quality < min_mapping_quality) {
@@ -269,9 +262,6 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
       img_row.on_positive_strand[col] = strand_color;
       img_row.supports_alt[col]       = alt_color;
       img_row.matches_ref[col]        = MatchesRefColor(matches_ref);
-      if (options_.sequencing_type_image()) {
-        img_row.sequencing_type[col] = sequencing_type_color;
-      }
       if (options_.custom_pileup_image()) {
         img_row.op_length[col] = op_len;
         // Fill in deletion pixels
@@ -386,14 +376,10 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
   uint8 strand_color = StrandColor(true);
   uint8 alt_color = SupportsAltColor(false);
   uint8 ref_color = MatchesRefColor(true);
-  // redacted
-  // feature to 0.
-  uint8 sequencing_type_color = SequencingTypeColor();
 
   ImageRow img_row(ref_bases.size(),
                    options_.num_channels(),
-                   options_.custom_pileup_image(),
-                   options_.sequencing_type_image());
+                   options_.custom_pileup_image());
   for (size_t i = 0; i < ref_bases.size(); ++i) {
     img_row.base[i]               = BaseColor(ref_bases[i]);
     img_row.base_quality[i]       = base_quality_color;
@@ -401,9 +387,6 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
     img_row.on_positive_strand[i] = strand_color;
     img_row.supports_alt[i]       = alt_color;
     img_row.matches_ref[i]        = ref_color;
-    if (options_.sequencing_type_image()) {
-      img_row.sequencing_type[i] = sequencing_type_color;
-    }
     if (options_.custom_pileup_image()) {
       img_row.op_length[i] = 1;
     }
