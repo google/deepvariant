@@ -489,7 +489,7 @@ def alt_from_example(example):
   """Get alt allele(s) from a DeepVariant example.
 
   Args:
-    example: a DeepVariant make_examples output example
+    example: a DeepVariant make_examples output example.
 
   Returns:
     str. The bases of the alt alleles, joined by a -.
@@ -503,7 +503,7 @@ def locus_id_with_alt(example):
   """Get complete locus ID from a DeepVariant example.
 
   Args:
-    example: a DeepVariant make_examples output example
+    example: a DeepVariant make_examples output example.
 
   Returns:
     str in the form "chr:pos_ref_alt.
@@ -512,3 +512,20 @@ def locus_id_with_alt(example):
   locus_id = locus_id_from_variant(variant)
   alt = alt_from_example(example)
   return '{}_{}'.format(locus_id, alt)
+
+
+def label_from_example(example):
+  """Get the "label" from an example.
+
+  Args:
+    example: a DeepVariant make_examples output example.
+
+  Returns:
+    integer (0, 1, or 2 for regular DeepVariant examples) or None if the
+        example has no label.
+  """
+  val = example.features.feature['label'].int64_list.value
+  if val:
+    return int(val[0])
+  else:
+    return None

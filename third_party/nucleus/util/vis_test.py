@@ -275,6 +275,14 @@ class VisTest(parameterized.TestCase):
     alt = vis.alt_bases_from_indices(indices, alternate_bases)
     self.assertEqual(alt, expected)
 
+  @parameterized.parameters([(0), (1), (2)])
+  def test_label_from_example(self, truth_label):
+    feature = {'label': _int_feature([truth_label])}
+    example = example_pb2.Example(
+        features=feature_pb2.Features(feature=feature))
+    output = vis.label_from_example(example)
+    self.assertEqual(truth_label, output)
+
 
 if __name__ == '__main__':
   absltest.main()
