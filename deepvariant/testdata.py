@@ -90,7 +90,6 @@ N_GOLDEN_CALLING_EXAMPLES = 86
 
 # For CustomizedClassesVariantLabeler
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
-CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = None
 
 # For VcfCandidateImporter
 GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = None
@@ -197,11 +196,6 @@ def init():
   global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
   CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'customized_classes.golden.training_examples.tfrecord.gz')
-
-  # For adding an extra channel.
-  global CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES
-  CUSTOM_PILEUP_IMAGE_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
-      'custom_pileup_image.golden.training_examples.tfrecord.gz')
 
   # For VcfCandidateImporter
   global GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES

@@ -438,14 +438,17 @@ message PileupImageOptions {
   // The number of data channels in our pileup images.
   int32 num_channels = 22;
 
+  //  (Experimental feature that was removed.)
   // The character we'll use when encoding insertion anchor bases.
-  string insert_base_char = 23;
+  string unused_insert_base_char = 23;
 
+  //  (Experimental feature that was removed.)
   // The character we'll use when encoding deletion anchor bases.
-  string delete_base_char = 24;
+  string unused_delete_base_char = 24;
 
+  //  (Experimental feature that was removed.)
   // Include custom pileup image feature.
-  bool custom_pileup_image = 25;
+  bool unused_custom_pileup_image = 25;
 
   //  (Experimental feature that was removed.)
   // Include sequencing type image feature.

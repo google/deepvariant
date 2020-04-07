@@ -89,18 +89,15 @@ const float kMaxPixelValueAsFloat = 254.0;
 
 
 ImageRow::ImageRow(int width,
-                   int num_channels,
-                   bool custom_pileup_image)
+                   int num_channels)
     : base(width, 0),
       base_quality(width, 0),
       mapping_quality(width, 0),
       on_positive_strand(width, 0),
       supports_alt(width, 0),
       matches_ref(width, 0),
-      op_length(width, 0),
       sequencing_type(width, 0),
-      num_channels(num_channels),
-      custom_pileup_image(custom_pileup_image)
+      num_channels(num_channels)
 {}
 
 int ImageRow::Width() const {
@@ -109,7 +106,6 @@ int ImageRow::Width() const {
         base.size() == on_positive_strand.size() &&
         base.size() == supports_alt.size() &&
         base.size() == matches_ref.size() &&
-        base.size() == op_length.size() &&
         base.size() == sequencing_type.size());
   return base.size();
 }
@@ -119,11 +115,7 @@ PileupImageEncoderNative::PileupImageEncoderNative(
     : options_(options) {
     CHECK((options_.width() % 2 == 1) && options_.width() >= 3)
         << "Width must be odd; found " << options_.width();
-    int optional_channels(0);
-    if (options_.custom_pileup_image()) {
-      optional_channels++;
-    }
-    int num_channels = NUM_CHANNELS + optional_channels;
+    int num_channels = NUM_CHANNELS;
     CHECK(options_.num_channels() == num_channels)
         << "Expected options.num_channels to be " << num_channels
         << " but saw " << options_.num_channels() << " instead";
@@ -132,8 +124,6 @@ PileupImageEncoderNative::PileupImageEncoderNative(
 // Gets the pixel color (int) for a base.
 int PileupImageEncoderNative::BaseColor(char base) const {
   switch (base) {
-    case 'I': return (10 + options_.base_color_stride() * 2);
-    case 'D': return (60 + options_.base_color_stride() * 1);
     case 'A': return (options_.base_color_offset_a_and_g() +
                       options_.base_color_stride() * 3);
     case 'G': return (options_.base_color_offset_a_and_g() +
@@ -199,8 +189,7 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
                                      int image_start_pos,
                                      const vector<string>& alt_alleles) {
   ImageRow img_row(ref_bases.size(),
-                   options_.num_channels(),
-                   options_.custom_pileup_image());
+                   options_.num_channels());
   const bool supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
   const int mapping_quality = read.alignment().mapping_quality();
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
@@ -222,24 +211,17 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
   // Return value: true on normal exit; false if we determine that we
   // have a low quality base at the call position (in which case we
   // should return null) from EncodeRead.
-  std::function<bool(int, int, const CigarUnit::Operation&, int)>
+  std::function<bool(int, int, const CigarUnit::Operation&)>
   action_per_cigar_unit = [&](int ref_i,
                               int read_i,
-                              const CigarUnit::Operation& cigar_op,
-                              int op_len) {
+                              const CigarUnit::Operation& cigar_op) {
     char read_base = 0;
     if (cigar_op == CigarUnit::INSERT) {
       // redacted
       read_base = options_.indel_anchoring_base_char()[0];
-      if (options_.custom_pileup_image()) {
-        read_base = options_.insert_base_char()[0];
-      }
     } else if (cigar_op == CigarUnit::DELETE) {
       ref_i -= 1;  // Adjust anchor base on reference
       read_base = options_.indel_anchoring_base_char()[0];
-      if (options_.custom_pileup_image()) {
-        read_base = options_.delete_base_char()[0];
-      }
     } else if (cigar_op == CigarUnit::ALIGNMENT_MATCH ||
                cigar_op == CigarUnit::SEQUENCE_MATCH  ||
                cigar_op == CigarUnit::SEQUENCE_MISMATCH) {
@@ -262,20 +244,6 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
       img_row.on_positive_strand[col] = strand_color;
       img_row.supports_alt[col]       = alt_color;
       img_row.matches_ref[col]        = MatchesRefColor(matches_ref);
-      if (options_.custom_pileup_image()) {
-        img_row.op_length[col] = op_len;
-        // Fill in deletion pixels
-        if (cigar_op == CigarUnit::DELETE) {
-          for (int i = 0; i <= op_len; i++) {
-            int pos = col + i;
-            if (pos >= ref_bases.size()) {
-              break;
-            }
-            img_row.base[pos] = BaseColor(read_base);
-            img_row.op_length[pos] = op_len;
-          }
-        }
-      }
     }
     return true;
   };
@@ -331,7 +299,7 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
       case CigarUnit::SEQUENCE_MISMATCH:
         // Alignment op.
         for (int i = 0; i < op_len; i++) {
-          ok = ok && action_per_cigar_unit(ref_i, read_i, op, 0);
+          ok = ok && action_per_cigar_unit(ref_i, read_i, op);
           ref_i++;
           read_i++;
         }
@@ -339,13 +307,13 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
       case CigarUnit::INSERT:
       case CigarUnit::CLIP_SOFT:
         // Insert op.
-        ok = action_per_cigar_unit(ref_i - 1, read_i, op, op_len);
+        ok = action_per_cigar_unit(ref_i - 1, read_i, op);
         read_i += op_len;
         break;
       case CigarUnit::DELETE:
       case CigarUnit::SKIP:
         // Delete op.
-        ok = action_per_cigar_unit(ref_i, read_i - 1, op, op_len);
+        ok = action_per_cigar_unit(ref_i, read_i - 1, op);
         ref_i += op_len;
         break;
       case CigarUnit::CLIP_HARD:
@@ -378,8 +346,7 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
   uint8 ref_color = MatchesRefColor(true);
 
   ImageRow img_row(ref_bases.size(),
-                   options_.num_channels(),
-                   options_.custom_pileup_image());
+                   options_.num_channels());
   for (size_t i = 0; i < ref_bases.size(); ++i) {
     img_row.base[i]               = BaseColor(ref_bases[i]);
     img_row.base_quality[i]       = base_quality_color;
@@ -387,9 +354,6 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
     img_row.on_positive_strand[i] = strand_color;
     img_row.supports_alt[i]       = alt_color;
     img_row.matches_ref[i]        = ref_color;
-    if (options_.custom_pileup_image()) {
-      img_row.op_length[i] = 1;
-    }
   }
 
   return std::unique_ptr<ImageRow>(new ImageRow(img_row));

@@ -56,15 +56,12 @@ struct ImageRow {
   std::vector<unsigned char> on_positive_strand;
   std::vector<unsigned char> supports_alt;
   std::vector<unsigned char> matches_ref;
-  std::vector<unsigned char> op_length;
   std::vector<unsigned char> sequencing_type;
   int num_channels;
-  bool custom_pileup_image;
 
   int Width() const;
   explicit ImageRow(int width,
-                    int num_channels,
-                    bool custom_pileup_image);
+                    int num_channels);
 };
 
 class PileupImageEncoderNative {

@@ -270,11 +270,6 @@ flags.DEFINE_string(
     'respectively. Multiple selectors can be specified, so that '
     '--select_variant_types="snps indels" would keep all bi-allelic SNPs and '
     'indels')
-flags.DEFINE_bool(
-    'custom_pileup_image', False,
-    'Experimental - please do not set this flag. If True, an '
-    'additional channel will be added to encode CIGAR op length '
-    'for indels.')
 flags.DEFINE_string(
     'sequencing_type', None,
     'A string representing input bam file sequencing_type. Permitted values are '
@@ -457,12 +452,6 @@ def default_options(add_flags=True, flags_obj=None):
           flags_obj.sequencing_type)
     if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
       options.downsample_fraction = flags_obj.downsample_fraction
-
-    if flags_obj.custom_pileup_image:
-      options.pic_options.custom_pileup_image = flags_obj.custom_pileup_image
-      options.pic_options.num_channels += 1
-      options.pic_options.insert_base_char = 'I'
-      options.pic_options.delete_base_char = 'D'
 
     if flags_obj.multi_allelic_mode:
       multi_allelic_enum = {
