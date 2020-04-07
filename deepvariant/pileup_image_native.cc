@@ -176,12 +176,6 @@ int PileupImageEncoderNative::StrandColor(bool on_positive_strand) const {
           options_.negative_strand_color());
 }
 
-int PileupImageEncoderNative::SequencingTypeColor() const {
-  int spacing = 255 / (NUM_SEQ_TYPE - 1);
-  int sequencing_type_color = options_.sequencing_type() * spacing;
-  return sequencing_type_color;
-}
-
 std::unique_ptr<ImageRow>
 PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
                                      const string& ref_bases,

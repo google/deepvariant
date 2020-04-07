@@ -108,8 +108,6 @@ class PileupImageEncoderNative {
   int BaseQualityColor(int base_qual) const;
   // Get the pixel color (int) for a base mapping quality.
   int MappingQualityColor(int mapping_qual) const;
-  // Get the encoded input sequencing_type.
-  int SequencingTypeColor() const;
 
  private:
   const PileupImageOptions options_;
