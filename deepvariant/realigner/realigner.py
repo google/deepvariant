@@ -37,6 +37,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 import csv
 import os
 import os.path
@@ -44,15 +45,16 @@ import os.path
 from absl import flags
 import tensorflow as tf
 
-from third_party.nucleus.io import sam
-from third_party.nucleus.util import ranges
-from third_party.nucleus.util import utils
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import window_selector
 from deepvariant.realigner.python import debruijn_graph
 from deepvariant.realigner.python import fast_pass_aligner
 from deepvariant.vendor import timer
 from google.protobuf import text_format
+from third_party.nucleus.io import sam
+from third_party.nucleus.util import cigar as cigar_utils
+from third_party.nucleus.util import ranges
+from third_party.nucleus.util import utils
 
 _UNSET_WS_INT_FLAG = -1
 
@@ -268,7 +270,8 @@ def realigner_config(flags_obj):
       max_num_of_mismatches=flags_obj.max_num_mismatches,
       realignment_similarity_threshold=flags_obj
       .realignment_similarity_threshold,
-      kmer_size=flags_obj.kmer_size)
+      kmer_size=flags_obj.kmer_size,
+      force_alignment=False)
 
   diagnostics = realigner_pb2.Diagnostics(
       enabled=bool(flags_obj.realigner_diagnostics),
@@ -529,6 +532,7 @@ class Realigner(object):
     # checks.
     self.config.aln_config.read_size = len(
         assembled_region.reads[0].aligned_sequence)
+    self.config.aln_config.force_alignment = False
     fast_pass_realigner.set_options(self.config.aln_config)
     fast_pass_realigner.set_reference(ref_seq)
     fast_pass_realigner.set_ref_start(contig, ref_start)
@@ -624,6 +628,7 @@ class Realigner(object):
     fast_pass_realigner = fast_pass_aligner.FastPassAligner()
     aln_config = self.config.aln_config
     aln_config.read_size = len(reads[0].aligned_sequence)
+    aln_config.force_alignment = True
     fast_pass_realigner.set_options(aln_config)
     fast_pass_realigner.set_reference(prefix + this_haplotype + suffix)
     fast_pass_realigner.set_ref_start(contig, ref_start)
@@ -640,3 +645,118 @@ class Realigner(object):
     extended_haplotypes = [prefix + target + suffix for target in haplotypes]
     fast_pass_realigner.set_haplotypes(extended_haplotypes)
     return fast_pass_realigner.realign_reads(reads)
+
+
+def trim_cigar(cigar, ref_trim, ref_length):
+  """Trim a cigar string to a certain reference length.
+
+  Args:
+    cigar: list of `nucleus.protos.CigarUnit`s of the original read alignment.
+    ref_trim: integer. Number of reference bases to trim off the beginning of
+      the read.
+    ref_length: integer. Number of reference bases to cover with the read, the
+      middle part that is not trimmed from the start or end of the read.
+
+  Returns:
+    new_cigar: list of `nucleus.protos.CigarUnit`s of the final read alignment,
+        after the left and/or right have been trimmed off.
+    read_trim: The number of bases of the read that are trimmed off.
+    new_read_length: The number of bases of the read that remain after trimming.
+        This is different from the final number of reference bases; for example,
+        an insertion makes the read longer without affecting the reference.
+  """
+  # First consume the ref until the trim is covered.
+  trim_remaining = ref_trim
+  # Then consume the ref until the ref_length is covered.
+  ref_to_cover_remaining = ref_length
+  read_trim = 0
+  new_cigar = []
+  new_read_length = 0
+  for cigar_unit in cigar:
+    c = copy.deepcopy(cigar_unit)
+    # Each operation moves forward in the ref, the read, or both.
+    advances_ref = c.operation in cigar_utils.REF_ADVANCING_OPS
+    advances_read = c.operation in cigar_utils.READ_ADVANCING_OPS
+    ref_step = c.operation_length if advances_ref else 0
+    # First, use up each operation until the trimmed area is covered.
+    if trim_remaining > 0:
+      if ref_step <= trim_remaining:
+        # Fully apply to the trim.
+        trim_remaining -= ref_step
+        read_trim += c.operation_length if advances_read else 0
+        continue
+      else:
+        # Partially apply to finish the trim.
+        ref_step -= trim_remaining
+        read_trim += trim_remaining if advances_read else 0
+        # If trim finishes here, the rest of the ref_step can apply to the
+        # next stage and count towards covering the given ref window.
+        c.operation_length = ref_step
+        trim_remaining = 0
+
+    # Once the trim is done, start applying cigar entries to covering the ref
+    # window.
+    if trim_remaining == 0:
+      if ref_step <= ref_to_cover_remaining:
+        # Fully apply to the window.
+        new_cigar.append(c)
+        ref_to_cover_remaining -= ref_step
+        new_read_length += c.operation_length if advances_read else 0
+      else:
+        # Partially apply to finish the window.
+        c.operation_length = ref_to_cover_remaining
+        new_cigar.append(c)
+        new_read_length += c.operation_length if advances_read else 0
+        ref_to_cover_remaining = 0
+        break
+
+  return new_cigar, read_trim, new_read_length
+
+
+def trim_read(read, region):
+  """Trim a read down to the part that aligns within a given region.
+
+  The following properties of the read are updated, trimming on both sides as
+  necessary to save only the parts of the read that fit fully within the
+  region, potentially starting and ending at the region's boundaries:
+  - The alignment position (read.alignment.position.position).
+  - The read sequence (read.aligned_sequence).
+  - Base qualities (read.aligned_quality).
+  - The cigar string of the alignment (read.alignment.cigar)
+
+  Args:
+    read: A `nucleus.protos.Read` that is aligned to the region.
+    region: A `nucleus.protos.Range` region.
+
+  Returns:
+    a new `nucleus.protos.Read` trimmed to the region.
+  """
+  if not read.alignment:
+    raise ValueError('Read must already be aligned.')
+
+  read_start = read.alignment.position.position
+
+  trim_left = max(region.start - read_start, 0)
+
+  ref_length = region.end - max(region.start, read_start)
+  new_cigar, read_trim, new_read_length = trim_cigar(read.alignment.cigar,
+                                                     trim_left, ref_length)
+
+  # Create a deep copy of the read to get all recursive properties and prevent
+  # mutating the original.
+  new_read = copy.deepcopy(read)
+  if trim_left != 0:
+    new_read.alignment.position.position = region.start
+  # Replace aligned_sequence, a string:
+  new_read.aligned_sequence = read.aligned_sequence[read_trim:read_trim +
+                                                    new_read_length]
+  # Replace aligned_quality, a repeated integer:
+  new_read.aligned_quality[:] = read.aligned_quality[read_trim:read_trim +
+                                                     new_read_length]
+
+  # Direct assignment on a repeated message field is not allowed, but this
+  # accomplishes replacing cigar with new_cigar.
+  del new_read.alignment.cigar[:]
+  new_read.alignment.cigar.extend(new_cigar)
+
+  return new_read

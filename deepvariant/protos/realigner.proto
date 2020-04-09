@@ -201,6 +201,12 @@ message AlignerOptions {
   // Smith-Waterman alignment. Alignment is discarded if read is aligned to
   // a haplotype with too many mismatches.
   double realignment_similarity_threshold = 11;
+
+  // Force realignment so the original alignment is never returned, defaulting
+  // instead to computing a new SSW alignment against the reference. This is
+  // used for alt-aligned pileups where reads are aligned to a new "reference",
+  // making the original read alignments invalid.
+  bool force_alignment = 12;
 }
 
 // Config parameters for "alignment (aln)" phase.

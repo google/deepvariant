@@ -502,8 +502,7 @@ def default_options(add_flags=True, flags_obj=None):
         parse_regions_flag(flags_obj.exclude_regions))
 
     options.realigner_enabled = flags_obj.realign_reads
-    if options.realigner_enabled:
-      options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
+    options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
     options.max_reads_per_partition = flags_obj.max_reads_per_partition
 
@@ -942,7 +941,7 @@ class RegionProcessor(object):
     self.sam_readers = self._make_sam_readers()
     self.in_memory_sam_reader = sam.InMemorySamReader([])
 
-    if self.options.realigner_enabled:
+    if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup:
       input_bam_header = sam.SamReader(self.options.reads_filenames[0]).header
       self.realigner = realigner.Realigner(
           self.options.realigner_options,
@@ -1069,8 +1068,8 @@ class RegionProcessor(object):
   def region_reads(self, region):
     """Update in_memory_sam_reader with read alignments overlapping the region.
 
-    If self.realigner is set, uses realigned reads, otherwise original reads
-    are returned.
+    If self.options.realigner_enabled is set, uses realigned reads, otherwise
+    original reads are returned.
 
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
@@ -1114,7 +1113,7 @@ class RegionProcessor(object):
                                      self.options.max_reads_per_partition,
                                      random_for_region)
     reads = list(reads)
-    if self.realigner:
+    if self.options.realigner_enabled:
       _, reads = self.realigner.realign_reads(reads, region)
     return reads
 
@@ -1183,13 +1182,16 @@ class RegionProcessor(object):
     # Margin must be more than half the window width, plus some extra
     # prefix/suffix to anchor alignments, but this value has not been optimized.
     margin = window_half_width + 100
+
+    alignment_region = ranges.make_range(contig, max(ref_start - margin, 0),
+                                         ref_end + margin)
+    trimmed_reads = [realigner.trim_read(r, alignment_region) for r in reads]
+    # Filter reads to a minimum read length of 15 bp after trimming.
+    reads = [r for r in trimmed_reads if len(r.aligned_sequence) >= 15]
     prefix = self.realigner.ref_reader.query(
         ranges.make_range(contig, max(ref_start - margin, 0), ref_start))
     suffix = self.realigner.ref_reader.query(
         ranges.make_range(contig, ref_end, ref_end + margin))
-
-    # Include reference in the haplotypes for alignment.
-    haplotypes = alt_alleles + [ref_bases]
 
     alignments_by_haplotype = {}
     sequences_by_haplotype = {}
@@ -1197,7 +1199,7 @@ class RegionProcessor(object):
       # Align to each of the alt_alleles:
       alignments_by_haplotype[hap] = self.realigner.align_to_haplotype(
           this_haplotype=hap,
-          haplotypes=haplotypes,
+          haplotypes=[hap],
           prefix=prefix,
           suffix=suffix,
           reads=reads,

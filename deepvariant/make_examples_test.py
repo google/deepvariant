@@ -1401,6 +1401,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
   def test_process_with_realigner(self):
     self.processor.options.mode = deepvariant_pb2.DeepVariantOptions.CALLING
+    self.processor.options.realigner_enabled = True
     self.processor.options.realigner_options.CopyFrom(
         realigner_pb2.RealignerOptions())
     self.processor.realigner = mock.Mock()
@@ -1614,9 +1615,12 @@ class RegionProcessorTest(parameterized.TestCase):
     # between the variant and the reference at the variant's coordinates.
     self.processor.realigner.ref_reader = self.ref_reader
 
+    read = test_utils.make_read(
+        'A' * 101, start=10046100, cigar='101M', quals=[30] * 101)
+
     self.processor.realigner.align_to_haplotype = mock.Mock()
     hap_alignments, hap_sequences = self.processor.align_to_all_haplotypes(
-        variant, [mock.Mock()])
+        variant, [read])
 
     # Both outputs are keyed by alt allele.
     self.assertCountEqual(hap_alignments.keys(), ['A'])
@@ -1632,7 +1636,7 @@ class RegionProcessorTest(parameterized.TestCase):
     variant.reference_bases = 'G'
     with six.assertRaisesRegex(self, ValueError,
                                'does not match the bases in the reference'):
-      self.processor.align_to_all_haplotypes(variant, [mock.Mock()])
+      self.processor.align_to_all_haplotypes(variant, [read])
 
 
 if __name__ == '__main__':

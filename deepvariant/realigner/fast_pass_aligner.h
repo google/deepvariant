@@ -381,6 +381,7 @@ class FastPassAligner {
   uint8_t mismatch_penalty_ = 6;
   uint8_t gap_opening_penalty_ = 8;
   uint8_t gap_extending_penalty_ = 1;
+  bool force_alignment_ = false;
 
   // Threshold is calculated from this flag using the following formula.
   // score_threshold = match_score_ * read_size_ * <similarity_threshold_>

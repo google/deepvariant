@@ -48,16 +48,17 @@ import numpy as np
 import six
 import tensorflow as tf
 
-from third_party.nucleus.io import fasta
-from third_party.nucleus.io import sam
-from third_party.nucleus.protos import reads_pb2
-from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import ranges
 from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import realigner
 from deepvariant.realigner import utils
 from deepvariant.testing import flagsaver
+from third_party.nucleus.io import fasta
+from third_party.nucleus.io import sam
+from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.testing import test_utils
+from third_party.nucleus.util import cigar as cigar_utils
+from third_party.nucleus.util import ranges
 
 FLAGS = flags.FLAGS
 
@@ -80,19 +81,6 @@ def _test_assembled_region(region_str, haplotypes=None):
   return realigner.AssemblyRegion(
       realigner_pb2.CandidateHaplotypes(
           span=ranges.parse_literal(region_str), haplotypes=haplotypes or []))
-
-
-def _get_cigar(read, delimiter=' '):
-  # Adding spaces to delimit terms in the cigar string for better human
-  # readability.
-  cigar = read.alignment.cigar
-  ops = {1: 'M', 2: 'I', 3: 'D', 5: 'S', 8: '=', 9: 'X'}
-  events = []
-  for c in cigar:
-    mark = ops.get(c.operation, str(c.operation))
-    num = c.operation_length
-    events.append('{}{}'.format(num, mark))
-  return delimiter.join(events)
 
 
 class ReadAssignmentTests(parameterized.TestCase):
@@ -464,7 +452,7 @@ class RealignerTest(parameterized.TestCase):
           prefix='AGTGATCTAGTCCTTTTTGTTGTGCAAAAGGAAGTGCTAAAATCAGAATGAGAACCATGG',
           suffix='ATCCATGTTCAAGTACTAATTCTGGGCAAGACACTGTTCTAAGTGCTATGAATATATTACC',
           haplotypes=['CATCATCAT', ''],
-          expected_cigars=['33M 9D 27M', '60M']),
+          expected_cigars=['33M9D27M', '60M']),
       dict(
           read_seq='TTGCCCGGGCATAAGGTGTTTCGGAGAAGCCTAG'
           'TATATATA'
@@ -472,13 +460,13 @@ class RealignerTest(parameterized.TestCase):
           prefix='AACGGGTCTACAAGTCTCTGCGTGTTGCCCGGGCATAAGGTGTTTCGGAGAAGCCTAG',
           suffix='CTCCGGTTTTTAAGTAGGGTCGTAGCAGCAAAGTAAGAGTGGAACGCGTGGGCGACTA',
           haplotypes=['', 'TATATATA'],
-          expected_cigars=['34M 8I 28M', '70M']),
+          expected_cigars=['34M8I28M', '70M']),
       dict(
           read_seq='AAAAAAAAAAGGGGGGGGGGATTTTTTTTTTTTTCCCCCCCCCCCCCCC',
           prefix='AAAAAAAAAAGGGGGGGGGG',
           suffix='TTTTTTTTTTTTTCCCCCCCCCCCCCCC',
           haplotypes=['A', ''],
-          expected_cigars=['49M', '20M 1I 28M']),
+          expected_cigars=['49M', '20M1I28M']),
   )
   def test_align_to_haplotype(self, read_seq, prefix, suffix, haplotypes,
                               expected_cigars):
@@ -489,7 +477,9 @@ class RealignerTest(parameterized.TestCase):
       aligned_reads = self.reads_realigner.align_to_haplotype(
           haplotypes[i], haplotypes, prefix, suffix, reads, 'test', 1)
       self.assertEqual(len(reads), len(aligned_reads))
-      self.assertEqual(_get_cigar(aligned_reads[0]), expected_cigars[i])
+      self.assertEqual(
+          cigar_utils.format_cigar_units(aligned_reads[0].alignment.cigar),
+          expected_cigars[i])
 
   @parameterized.parameters(
       dict(alt_allele='CATTACA', ref_buffer_length=70, read_buffer_length=20),
@@ -519,8 +509,7 @@ class RealignerTest(parameterized.TestCase):
 
     expected_cigars = [
         # Aligning to ref haplotype: Insertion.
-        '{}M {}I {}M'.format(
-            len(read_prefix), len(alt_allele), len(read_suffix)),
+        '{}M{}I{}M'.format(len(read_prefix), len(alt_allele), len(read_suffix)),
         # Aligning to alt haplotype: All matching.
         '{}M'.format(len(read_prefix) + len(alt_allele) + len(read_suffix))
     ]
@@ -533,7 +522,9 @@ class RealignerTest(parameterized.TestCase):
       aligned_reads = self.reads_realigner.align_to_haplotype(
           haplotypes[i], haplotypes, ref_prefix, ref_suffix, reads, 'test', 1)
       self.assertEqual(len(reads), len(aligned_reads))
-      self.assertEqual(_get_cigar(aligned_reads[0]), expected_cigars[i])
+      self.assertEqual(
+          cigar_utils.format_cigar_units(aligned_reads[0].alignment.cigar),
+          expected_cigars[i])
 
 
 class RealignerIntegrationTest(absltest.TestCase):
@@ -567,6 +558,171 @@ class RealignerIntegrationTest(absltest.TestCase):
       windows_count += len(windows)
 
     self.assertGreater(windows_count, 0)
+
+
+class TrimTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      dict(
+          cigar='3M2D5M3I10M',
+          ref_trim=6,
+          ref_length=9,
+          expected_cigar='4M3I5M',
+          expected_read_trim=4,
+          expected_read_length=12,
+          comment='Start and end window in different match operations.'),
+      dict(
+          cigar='30M',
+          ref_trim=5,
+          ref_length=10,
+          expected_cigar='10M',
+          expected_read_trim=5,
+          expected_read_length=10,
+          comment='Start and end window in the same cigar entry'),
+      dict(
+          cigar='10D10M',
+          ref_trim=5,
+          ref_length=10,
+          expected_cigar='5D5M',
+          expected_read_trim=0,
+          expected_read_length=5,
+          comment='Start window in a deletion'),
+      dict(
+          cigar='10I10M',
+          ref_trim=5,
+          ref_length=5,
+          expected_cigar='5M',
+          expected_read_trim=15,
+          expected_read_length=5,
+          comment='Start window in an insertion'),
+      dict(
+          cigar='10M',
+          ref_trim=5,
+          ref_length=10,
+          expected_cigar='5M',
+          expected_read_trim=5,
+          expected_read_length=5,
+          comment='Read ends before the window'),
+      dict(
+          cigar='10M',
+          ref_trim=20,
+          ref_length=10,
+          expected_cigar='',
+          expected_read_trim=10,
+          expected_read_length=0,
+          comment='Read ends before the trim'),
+      dict(
+          cigar='10M20D10M',
+          ref_trim=12,
+          ref_length=5,
+          expected_cigar='5D',
+          expected_read_trim=10,
+          expected_read_length=0,
+          comment='Deletion covers the whole window'),
+      dict(
+          cigar='10M20I10M',
+          ref_trim=10,
+          ref_length=20,
+          expected_cigar='20I10M',
+          expected_read_trim=10,
+          expected_read_length=30,
+          comment='Trim to edge of an insertion'),
+      dict(
+          cigar='10M2I10M',
+          ref_trim=0,
+          ref_length=20,
+          expected_cigar='10M2I10M',
+          expected_read_trim=0,
+          expected_read_length=22,
+          comment='Zero trim'),
+  )
+  def test_trim_cigar(self, cigar, ref_trim, ref_length, expected_cigar,
+                      expected_read_trim, expected_read_length, comment):
+    read = test_utils.make_read('AAAATAAAATAAAATAAAATA', start=100, cigar=cigar)
+    output_cigar, output_read_trim, output_read_length = realigner.trim_cigar(
+        read.alignment.cigar, ref_trim, ref_length)
+    self.assertEqual(
+        cigar_utils.format_cigar_units(output_cigar),
+        expected_cigar,
+        msg='Wrong cigar for: {}'.format(comment))
+    self.assertEqual(
+        output_read_trim,
+        expected_read_trim,
+        msg='Wrong read trim for: {}'.format(comment))
+    self.assertEqual(
+        output_read_length,
+        expected_read_length,
+        msg='Wrong read length for: {}'.format(comment))
+    self.assertEqual(
+        cigar_utils.format_cigar_units(read.alignment.cigar),
+        cigar,
+        msg='Cigar in original read was mutated.')
+
+  @parameterized.parameters([
+      # Window region literals are 1-based, but all other coordinates are
+      # 0-based: chr1:11-20 means start at 10 and end at 20 (exclusive).
+      dict(
+          window='chr1:11-20',
+          cigar='9M',
+          start=8,
+          read_length=9,
+          expected_cigar='7M',
+          expected_position=10,
+          expected_read_length=7,
+          comment='Trim first 2 bases'),
+      dict(
+          window='chr1:11-20',
+          cigar='9M',
+          start=13,
+          read_length=9,
+          expected_cigar='7M',
+          expected_position=13,
+          expected_read_length=7,
+          comment='Trim last 2 bases'),
+      dict(
+          window='chr1:11-20',
+          cigar='5M',
+          start=12,
+          read_length=5,
+          expected_cigar='5M',
+          expected_position=12,
+          expected_read_length=5,
+          comment='Read fits entirely inside window'),
+      dict(
+          window='chr1:11-20',
+          cigar='9M',
+          start=10,
+          read_length=9,
+          expected_cigar='9M',
+          expected_position=10,
+          expected_read_length=9,
+          comment='Read starts and ends at window edges'),
+  ])
+  def test_trim_read(self, window, cigar, start, read_length, expected_cigar,
+                     expected_position, expected_read_length, comment):
+    read = test_utils.make_read(
+        'A' * read_length, start=start, cigar=cigar, quals=[30] * read_length)
+    region = ranges.parse_literal(window)
+    output = realigner.trim_read(read, region)
+    self.assertEqual(
+        expected_cigar,
+        cigar_utils.format_cigar_units(output.alignment.cigar),
+        msg='Wrong cigar for case: {}'.format(comment))
+    # Start position of the alignment.
+    self.assertEqual(
+        output.alignment.position.position,
+        expected_position,
+        msg='Wrong position for case: {}'.format(comment))
+    # Read sequence.
+    self.assertLen(
+        output.aligned_sequence,
+        expected_read_length,
+        msg='Wrong length of aligned_sequence for case: {}'.format(comment))
+    # Base quality scores.
+    self.assertLen(
+        output.aligned_quality,
+        expected_read_length,
+        msg='Wrong  length of aligned_quality for case: {}'.format(comment))
 
 
 if __name__ == '__main__':

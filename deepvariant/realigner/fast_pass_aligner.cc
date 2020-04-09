@@ -94,6 +94,7 @@ void FastPassAligner::set_options(const AlignerOptions& options) {
   if (options.gap_extend() > 0) {
     this->gap_extending_penalty_ = options.gap_extend();
   }
+  this->force_alignment_ = options.force_alignment();
 
   CHECK(kmer_size_ >= 3 && kmer_size_ <= 32);
   CHECK_GE(similarity_threshold_, 0.0);
@@ -187,7 +188,7 @@ Alignment FastPassAligner::SswAlign(const string& target) const {
   if (ssw_aligner_->Align(target, filter, &alignment)) {
     return alignment;
   } else {
-    // redacted
+    VLOG(2) << "SSW alignment failed for query: '" << target << "'";
     return Alignment();
   }
 }
@@ -397,9 +398,11 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
     // If this read is not aligned to any of the haplotypes we try SSW.
     if (!has_at_least_one_alignment) {
       for (auto& hap_alignment : read_to_haplotype_alignments_) {
-        // If haplotype score is zero that means haplotype needs to be
-        // discarded.
-        if (hap_alignment.haplotype_score == 0) {
+        // Skip haplotypes with no read support (score=0), except if
+        // force_alignment, then compute an alignment against the reference no
+        // matter what.
+        if (hap_alignment.haplotype_score == 0 &&
+            !(force_alignment_ && hap_alignment.is_reference)) {
           continue;
         }
         CHECK(hap_alignment.haplotype_index < haplotypes_.size());
@@ -469,11 +472,22 @@ void FastPassAligner::RealignReadsToReference(
         cu->set_operation(op.operation);
         cu->set_operation_length(op.length);
       }
+
       if (!readToRefCigarOps.empty()) {
         realigned_read.set_allocated_alignment(new_alignment.release());
+      } else if (force_alignment_) {
+        LOG(WARNING) << "Force alignment failed. Could not merge cigars "
+                     << "from read-hap and hap-ref alignments. "
+                     << "Keeping the original alignment.";
       }
       (*realigned_reads)->push_back(realigned_read);
     } else {  // keep original alignment
+      if (force_alignment_) {
+        // When alignment is forced, not being able to get a new alignment is
+        // serious enough to output a warning.
+        LOG(FATAL) << "Force alignment failed. Keeping the original alignment. "
+                   << "Tell mnat@ if you see this error.";
+      }
       (*realigned_reads)->push_back(realigned_read);
     }
   }  // for
@@ -565,16 +579,14 @@ bool FastPassAligner::GetBestReadAlignment(
   int best_score = 0;
   bool best_haplotype_found = false;
   for (int hap_index = 0; hap_index < haplotypes_.size(); hap_index++) {
-    if (read_to_haplotype_alignments_[hap_index]
-                .read_alignment_scores[readId]
-                .score > best_score
-        // If compared scores are equal preference is given to a read alignment
-        // to a non-reference haplotype.
-        || (best_score > 0 &&
-            read_to_haplotype_alignments_[hap_index]
-                    .read_alignment_scores[readId]
-                    .score == best_score &&
-            !read_to_haplotype_alignments_[hap_index].is_reference)) {
+    int hap_score = read_to_haplotype_alignments_[hap_index]
+                        .read_alignment_scores[readId]
+                        .score;
+    // If compared scores are equal, preference is given to a read alignment
+    // against a non-reference haplotype.
+    if (hap_score > best_score ||
+        (best_score > 0 && hap_score == best_score &&
+         !read_to_haplotype_alignments_[hap_index].is_reference)) {
       best_score = read_to_haplotype_alignments_[hap_index]
                        .read_alignment_scores[readId]
                        .score;
@@ -857,7 +869,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
       // redacted
     } else {
       VLOG(2) << "read " << static_cast<int>(read_index)
-          << ", could not be aligned, alignedLength="
+          << ", could not be aligned. Could not merge cigars. alignedLength="
           << AlignedLength(*read_to_ref_cigar_ops);
       read_to_ref_cigar_ops->clear();
       return;
