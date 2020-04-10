@@ -948,6 +948,37 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
                  {count * 100, count * 50, count * 50}, count * 200));
 }
 
+// See internal.
+TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+  int ref_supporting_read_count = 9;
+
+  const std::vector<Allele> read_alleles = {
+      MakeAllele("CA", AlleleType::DELETION, 1),
+      MakeAllele("CA", AlleleType::DELETION, 1),
+      MakeAllele("CA", AlleleType::DELETION, 1),
+      MakeAllele("CA", AlleleType::DELETION, 1),
+      MakeAllele("CA", AlleleType::DELETION, 1),
+      MakeAllele("CA", AlleleType::DELETION, 1),
+      MakeAllele("CAA", AlleleType::DELETION, 1),
+      MakeAllele("CAA", AlleleType::DELETION, 1),
+      MakeAllele("CAA", AlleleType::DELETION, 1),
+  };
+  const AlleleCount allele_count =
+      MakeAlleleCount(kChr,      // chr_name
+                      92457968,  // start
+                      "C",       // ref_base
+                      ref_supporting_read_count, read_alleles);
+  // redacted
+  // It should be {ref_supporting_read_count, 6} instead.
+  CheckCallFromComputeVariant(
+      1, caller, {allele_count}, ExpectedVariant::kVariantExpected,
+      WithCounts(MakeExpectedVariant("CA", {"C"}, 92457968),
+                 {ref_supporting_read_count, 3},
+                 ref_supporting_read_count + read_alleles.size()));
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
