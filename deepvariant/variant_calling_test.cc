@@ -36,24 +36,17 @@
 #include "deepvariant/utils.h"
 #include "google/protobuf/repeated_field.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
-
-#include <gmock/gmock-generated-matchers.h>
-#include <gmock/gmock-matchers.h>
-#include <gmock/gmock-more-matchers.h>
-
-#include "tensorflow/core/platform/test.h"
-#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
 using nucleus::EqualsProto;
-using nucleus::IsFinite;
 using nucleus::MakePosition;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
@@ -61,25 +54,37 @@ using tensorflow::gtl::optional;
 using tensorflow::strings::StrCat;
 using ::testing::DoubleNear;
 using ::testing::Eq;
-using ::testing::Pointwise;
 using ::testing::UnorderedElementsAre;
 
 constexpr char kSampleName[] = "MySampleName";
 constexpr char kChr[] = "chr1";
 constexpr int64 kStart = 10;
 
+AlleleCount MakeAlleleCount(const string& chr_name, int start,
+                            const string& ref_base,
+                            int ref_supporting_read_count,
+                            const std::vector<Allele>& read_alleles) {
+  AlleleCount allele_count;
+  *allele_count.mutable_position() = nucleus::MakePosition(chr_name, start);
+  QCHECK_EQ(ref_base.length(), 1) << "AlleleCount.ref_base has to be one char.";
+  allele_count.set_ref_base(ref_base);
+  allele_count.set_ref_supporting_read_count(ref_supporting_read_count);
+  for (int i = 0; i < read_alleles.size(); ++i) {
+    (*allele_count.mutable_read_alleles())[StrCat("read_", i)] =
+        read_alleles[i];
+  }
+  return allele_count;
+}
+
 AlleleCount MakeTestAlleleCount(int total_n, int alt_n, const string& ref = "A",
                                 int start = 100) {
   CHECK_GE(total_n, alt_n) << "Total number of reads must be >= n alt reads";
-  AlleleCount allele_count;
-  *allele_count.mutable_position() = nucleus::MakePosition("chr1", start);
-  allele_count.set_ref_base(ref);
-  allele_count.set_ref_supporting_read_count(total_n - alt_n);
+  std::vector<Allele> read_alleles;
   const Allele read_allele = MakeAllele("C", AlleleType::SUBSTITUTION, 1);
   for (int i = 0; i < alt_n; ++i) {
-    (*allele_count.mutable_read_alleles())[StrCat("read_", i)] = read_allele;
+    read_alleles.push_back(read_allele);
   }
-  return allele_count;
+  return MakeAlleleCount(kChr, start, ref, total_n - alt_n, read_alleles);
 }
 
 enum class ExpectedVariant {
