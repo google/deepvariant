@@ -216,15 +216,23 @@ class VariantCallingTest : public ::testing::Test {
   // DeepVariantCall produced by ComputeVariants for further testing in the
   // callee.
   optional<DeepVariantCall> CheckCallFromComputeVariant(
+      const int expected_len, const VariantCaller& caller,
+      const std::vector<AlleleCount>& allele_counts,
+      const ExpectedVariant expect_variant, const Variant& expected_variant) {
+    const optional<DeepVariantCall> optional_variant =
+        caller.ComputeVariant(expected_variant, allele_counts);
+    CheckVariant(optional_variant, expect_variant, expected_variant);
+    return optional_variant;
+  }
+
+  optional<DeepVariantCall> CheckCallFromComputeVariant(
       const string& ref, const int expected_len, const VariantCaller& caller,
       const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& expected_variant) {
     AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
     std::vector<AlleleCount> allele_counts = {allele_count};
-    const optional<DeepVariantCall> optional_variant =
-        caller.ComputeVariant(expected_variant, allele_counts);
-    CheckVariant(optional_variant, expect_variant, expected_variant);
-    return optional_variant;
+    return CheckCallFromComputeVariant(expected_len, caller, allele_counts,
+                                       expect_variant, expected_variant);
   }
 
   AlleleCount ConstructAlleleCount(const string& ref,
