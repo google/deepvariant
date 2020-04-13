@@ -37,6 +37,7 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/match.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
@@ -101,6 +102,32 @@ void FillVariant(const string& reference_name,
 
   for (const string& alt : alternate_bases) {
     variant->add_alternate_bases(alt);
+  }
+}
+
+void MakeVariantConsistentWithRefAndAlts(
+    const string& refbases, const std::vector<Allele>& alt_alleles,
+    Variant* variant_to_fix) {
+  if (variant_to_fix->reference_bases() == refbases) {
+    // No fix needed if the reference bases are identical.
+    return;
+  }
+  QCHECK_NE(variant_to_fix->reference_bases().length(), refbases.length())
+      << "Proposed variant has incorrect ref bases: "
+      << "Problematic variant=" << variant_to_fix->DebugString();
+
+  if (variant_to_fix->reference_bases().length() < refbases.length()) {
+    QCHECK(absl::StartsWith(refbases, variant_to_fix->reference_bases()))
+        << "Proposed variant has incorrect ref bases: "
+        << "Problematic variant=" << variant_to_fix->DebugString();
+    string suffix = refbases.substr(variant_to_fix->reference_bases().length(),
+                                    refbases.length());
+    variant_to_fix->set_reference_bases(
+        absl::StrCat(variant_to_fix->reference_bases(), suffix));
+    for (int i = 0; i < variant_to_fix->alternate_bases_size(); ++i) {
+      variant_to_fix->set_alternate_bases(
+          i, absl::StrCat(variant_to_fix->alternate_bases(i), suffix));
+    }
   }
 }
 
@@ -406,8 +433,9 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
   }
 
   std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count_match);
-  const string refbases = CalcRefBases(allele_count_match.ref_base(),
-                                       alt_alleles);
+  string refbases = CalcRefBases(allele_count_match.ref_base(),
+                                 alt_alleles);
+  MakeVariantConsistentWithRefAndAlts(refbases, alt_alleles, m_variant);
 
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.

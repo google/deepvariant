@@ -970,12 +970,11 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs) {
                       92457968,  // start
                       "C",       // ref_base
                       ref_supporting_read_count, read_alleles);
-  // redacted
-  // It should be {ref_supporting_read_count, 6} instead.
+
   CheckCallFromComputeVariant(
       1, caller, {allele_count}, ExpectedVariant::kVariantExpected,
-      WithCounts(MakeExpectedVariant("CA", {"C"}, 92457968),
-                 {ref_supporting_read_count, 3},
+      WithCounts(MakeExpectedVariant("CAA", {"CA"}, 92457968),
+                 {ref_supporting_read_count, 6},
                  ref_supporting_read_count + read_alleles.size()));
 }
 

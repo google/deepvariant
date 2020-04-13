@@ -143,12 +143,11 @@ cc_library(
         ":allelecounter",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:vcf_reader",
-        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:samplers",
-        "@com_google_protobuf//:protobuf",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
