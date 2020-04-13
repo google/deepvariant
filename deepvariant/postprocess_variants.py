@@ -610,6 +610,7 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
   first_call, other_calls = call_variants_outputs[0], call_variants_outputs[1:]
   canonical_variant = first_call.variant
   if not other_calls:
+    canonical_variant = simplify_alleles(canonical_variant)
     return canonical_variant, first_call.genotype_probabilities
 
   alt_alleles_to_remove = get_alt_alleles_to_remove(call_variants_outputs,

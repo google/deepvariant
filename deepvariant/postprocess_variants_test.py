@@ -144,7 +144,7 @@ def _create_variant_with_alleles(ref=None, alts=None, start=0):
 
 
 def _create_call_variants_output(indices,
-                                 probabilities,
+                                 probabilities=None,
                                  ref=None,
                                  alts=None,
                                  variant=None):
@@ -549,12 +549,28 @@ class PostprocessVariantsTest(parameterized.TestCase):
               alts=['C', 'G', 'T']),
       ], [0, 0.001, 0, 0.0002, 0, 0, 0.0002, 0.0003, 0.9997, 0.00006]),
   )
-  def test_merge_predictions(self, inputs, expected_unnormalized_probs):
+  def test_merge_predictions_probs(self, inputs, expected_unnormalized_probs):
     denominator = sum(expected_unnormalized_probs)
     for permuted_inputs in itertools.permutations(inputs):
       _, predictions = postprocess_variants.merge_predictions(permuted_inputs)
       np.testing.assert_almost_equal(
           predictions, [x / denominator for x in expected_unnormalized_probs])
+
+  @parameterized.parameters(
+      ([
+          _create_call_variants_output(indices=[0], ref='CA', alts=['A']),
+      ], ['CA', 'A']),
+      ([
+          _create_call_variants_output(indices=[0], ref='CAA', alts=['AA']),
+      ], ['CA', 'A']),
+      ([
+          _create_call_variants_output(indices=[0], ref='GA', alts=['GAA']),
+      ], ['G', 'GA']),
+  )
+  def test_merge_predictions_simplify_variant(self, inputs, expected_alleles):
+    output_variants, _ = postprocess_variants.merge_predictions(inputs)
+    self.assertEqual(output_variants.reference_bases, expected_alleles[0])
+    self.assertEqual(output_variants.alternate_bases, expected_alleles[1:])
 
   @parameterized.parameters(
       # With 1 alt allele, we expect to see 1 alt_allele_indices: [0].
@@ -1001,6 +1017,39 @@ class PostprocessVariantsTest(parameterized.TestCase):
         expected_variant)
 
   @parameterized.parameters(
+      dict(
+          alleles=['CAA', 'CA', 'C'],
+          start=5,
+          expected_alleles=['CAA', 'CA', 'C'],
+          expected_end=8),
+      dict(
+          alleles=['CAA', 'CA'],
+          start=4,
+          expected_alleles=['CA', 'C'],
+          expected_end=6),
+      dict(
+          alleles=['CAA', 'C'],
+          start=3,
+          expected_alleles=['CAA', 'C'],
+          expected_end=6),
+      dict(
+          alleles=['CCA', 'CA'],
+          start=2,
+          expected_alleles=['CC', 'C'],
+          expected_end=4),
+  )
+  def test_simplify_alleles(self, alleles, start, expected_alleles,
+                            expected_end):
+    """Test that simplify_alleles works as expected."""
+    variant = _create_variant_with_alleles(
+        ref=alleles[0], alts=alleles[1:], start=start)
+    simplified = postprocess_variants.simplify_alleles(variant)
+    self.assertEqual(simplified.reference_bases, expected_alleles[0])
+    self.assertEqual(simplified.alternate_bases, expected_alleles[1:])
+    self.assertEqual(simplified.start, start)
+    self.assertEqual(simplified.end, expected_end)
+
+  @parameterized.parameters(
       # Check that we are simplifying alleles and that the simplification deps
       # on the alleles we've removed.
       dict(
@@ -1031,8 +1080,9 @@ class PostprocessVariantsTest(parameterized.TestCase):
           expected_alleles=['CC', 'C'],
           expected_end=4),
   )
-  def test_simplify_alleles(self, alleles, start, alt_alleles_to_remove,
-                            expected_alleles, expected_end):
+  def test_prune_and_simplify_alleles(self, alleles, start,
+                                      alt_alleles_to_remove, expected_alleles,
+                                      expected_end):
     """Test that prune_alleles + simplify_alleles works as expected."""
     variant = _create_variant_with_alleles(
         ref=alleles[0], alts=alleles[1:], start=start)
