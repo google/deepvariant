@@ -330,12 +330,17 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     CHECK(alt_to_alleles.size() == allele_map.size())
         << "Non-unique alternative alleles!";
     for (const string& alt : variant->alternate_bases()) {
+      int count_of_allele = 0;
       auto found = alt_to_alleles.find(alt);
       if (found != alt_to_alleles.end()) {
-        const Allele& allele = *found->second;
-        ad.push_back(allele.count());
-        vaf.push_back(1.0 * allele.count() / dp);
+        count_of_allele = (*found->second).count();
       }
+      double this_vaf = 0.0;
+      if (dp > 0) {
+        this_vaf = 1.0 * count_of_allele / dp;
+      }
+      ad.push_back(count_of_allele);
+      vaf.push_back(this_vaf);
     }
 
     nucleus::SetInfoField(kADFormatField, ad, call);
