@@ -187,12 +187,28 @@ class VariantCallingTest : public ::testing::Test {
               alleles, expect_variant, partial_expected_variant);
   }
 
-  void CheckCallFromComputeVariant(const string& ref,
-                                   const int min_alt_count,
-                                   const std::vector<Allele>& alleles,
-                                   const ExpectedVariant expect_variant,
-                                   const Variant& partial_expected_variant) {
-    CheckCallFromComputeVariant(
+  // redacted
+  // functions below should be cleaned up. And, the assumption that the
+  // proposed variant is the same as the expected variant should also be
+  // re-examined.
+  optional<DeepVariantCall> CheckCallFromComputeVariantWithSameProposedVariant(
+      const string& ref, const VariantCaller& caller,
+      const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
+      const Variant& expected_variant) {
+    AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
+    std::vector<AlleleCount> allele_counts = {allele_count};
+    const Variant& proposed_variant = expected_variant;
+    return CheckCallFromComputeVariant(caller, proposed_variant, allele_counts,
+                                       expect_variant, expected_variant);
+  }
+
+  void CheckCallFromComputeVariantWithSameProposedVariant(
+      const string& ref,
+      const int min_alt_count,
+      const std::vector<Allele>& alleles,
+      const ExpectedVariant expect_variant,
+      const Variant& partial_expected_variant) {
+    CheckCallFromComputeVariantWithSameProposedVariant(
         ref, VariantCaller(MakeOptions(min_alt_count)), alleles,
         expect_variant, partial_expected_variant);
   }
@@ -218,22 +234,14 @@ class VariantCallingTest : public ::testing::Test {
   // callee.
   optional<DeepVariantCall> CheckCallFromComputeVariant(
       const VariantCaller& caller,
+      const Variant& proposed_variant,
       const std::vector<AlleleCount>& allele_counts,
-      const ExpectedVariant expect_variant, const Variant& expected_variant) {
+      const ExpectedVariant expect_variant,
+      const Variant& expected_variant) {
     const optional<DeepVariantCall> optional_variant =
-        caller.ComputeVariant(expected_variant, allele_counts);
+        caller.ComputeVariant(proposed_variant, allele_counts);
     CheckVariant(optional_variant, expect_variant, expected_variant);
     return optional_variant;
-  }
-
-  optional<DeepVariantCall> CheckCallFromComputeVariant(
-      const string& ref, const VariantCaller& caller,
-      const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
-      const Variant& expected_variant) {
-    AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
-    std::vector<AlleleCount> allele_counts = {allele_count};
-    return CheckCallFromComputeVariant(caller, allele_counts,
-                                       expect_variant, expected_variant);
   }
 
   AlleleCount ConstructAlleleCount(const string& ref,
@@ -904,7 +912,7 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
 
   // Both alt1 and alt2 are above the min count and are at 0.5 fraction >= 0.1
   // so our record is contains both.
-  CheckCallFromComputeVariant(
+  CheckCallFromComputeVariantWithSameProposedVariant(
       ref, caller,
       {
           MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
@@ -915,7 +923,7 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
 
   // Here alt1 is so frequent that alt2 goes below our 0.1 fraction so we only
   // call alt1.
-  CheckCallFromComputeVariant(
+  CheckCallFromComputeVariantWithSameProposedVariant(
       ref, caller,
       {
           MakeAllele(alt1, AlleleType::SUBSTITUTION, count * 100),
@@ -926,7 +934,7 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
                  {0, count * 100}, count * 101));
 
   // Checking the symmetric case : alt2 is very frequent.
-  CheckCallFromComputeVariant(
+  CheckCallFromComputeVariantWithSameProposedVariant(
       ref, caller,
       {
           MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
@@ -937,7 +945,7 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
                  {0, count * 100}, count * 101));
 
   // Finally, ref is very frequent but alt1 and alt2 are still included.
-  CheckCallFromComputeVariant(
+  CheckCallFromComputeVariantWithSameProposedVariant(
       ref, caller,
       {
           MakeAllele(ref, AlleleType::REFERENCE, count * 100),
@@ -972,8 +980,12 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs) {
                       "C",       // ref_base
                       ref_supporting_read_count, read_alleles);
 
+  Variant proposed_variant = MakeExpectedVariant("CA", {"C"}, 92457968);
   CheckCallFromComputeVariant(
-      caller, {allele_count}, ExpectedVariant::kVariantExpected,
+      caller,
+      proposed_variant,
+      {allele_count},
+      ExpectedVariant::kVariantExpected,
       WithCounts(MakeExpectedVariant("CAA", {"CA"}, 92457968),
                  {ref_supporting_read_count, 6},
                  ref_supporting_read_count + read_alleles.size()));

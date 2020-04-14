@@ -128,6 +128,7 @@ void MakeVariantConsistentWithRefAndAlts(
       variant_to_fix->set_alternate_bases(
           i, absl::StrCat(variant_to_fix->alternate_bases(i), suffix));
     }
+    variant_to_fix->set_end(variant_to_fix->end() + suffix.length());
   }
 }
 
