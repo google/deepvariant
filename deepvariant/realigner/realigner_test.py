@@ -526,6 +526,18 @@ class RealignerTest(parameterized.TestCase):
           cigar_utils.format_cigar_units(aligned_reads[0].alignment.cigar),
           expected_cigars[i])
 
+  def test_align_to_haplotype_empty_reads(self):
+    # Empty reads as input should return empty reads as output.
+    aligned_reads = self.reads_realigner.align_to_haplotype(
+        this_haplotype='G',
+        haplotypes=['G', ''],
+        prefix='AAA',
+        suffix='AAA',
+        reads=[],
+        contig='test',
+        ref_start=1)
+    self.assertEqual(aligned_reads, [])
+
 
 class RealignerIntegrationTest(absltest.TestCase):
 

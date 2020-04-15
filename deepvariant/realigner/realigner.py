@@ -625,6 +625,8 @@ class Realigner(object):
     Returns:
       Reads. Realigned and reported relative to the chosen haplotype.
     """
+    if not reads:
+      return []
     fast_pass_realigner = fast_pass_aligner.FastPassAligner()
     aln_config = self.config.aln_config
     aln_config.read_size = len(reads[0].aligned_sequence)
