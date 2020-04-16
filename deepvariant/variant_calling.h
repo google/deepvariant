@@ -65,6 +65,20 @@ extern const char *const kDPFormatField;
 extern const char *const kADFormatField;
 extern const char *const kVAFFormatField;
 
+// Implements the less functionality needed to use an Allele as an key in a map.
+struct OrderAllele {
+  bool operator()(const Allele& allele1, const Allele& allele2) const {
+    // Note we ignore count (and other potential fields) because they aren't
+    // relevant in uses of this map.
+    if (allele1.type() != allele2.type()) {
+      return allele1.type() < allele2.type();
+    } else {
+      return allele1.bases() < allele2.bases();
+    }
+  }
+};
+using AlleleMap = std::map<Allele, string, OrderAllele>;
+
 // A very simple but highly sensitive variant caller.
 //
 // This class implements a very simple variant caller using the data
@@ -171,7 +185,8 @@ class VariantCaller {
       const std::vector<AlleleCount>& allele_counts) const;
 
   // Adds supporting reads to the DeepVariantCall.
-  void AddSupportingReads(const AlleleCount& allele_count,
+  void AddSupportingReads(const ::google::protobuf::Map<string, Allele>& read_alleles,
+                          const AlleleMap& allele_map,
                           DeepVariantCall* call) const;
 
  private:

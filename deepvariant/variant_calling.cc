@@ -247,20 +247,6 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   return alt_alleles;
 }
 
-// Implements the less functionality needed to use an Allele as an key in a map.
-struct OrderAllele {
-  bool operator()(const Allele& allele1, const Allele& allele2) const {
-    // Note we ignore count (and other potential fields) because they aren't
-    // relevant in uses of this map.
-    if (allele1.type() != allele2.type()) {
-      return allele1.type() < allele2.type();
-    } else {
-      return allele1.bases() < allele2.bases();
-    }
-  }
-};
-using AlleleMap = std::map<Allele, string, OrderAllele>;
-
 AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
                          const std::vector<Allele>& alt_alleles,
                          const string& ref_bases) {
@@ -445,11 +431,11 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
 
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
-  AlleleMap allele_map = BuildAlleleMap(allele_count_match,
-                                        alt_alleles, refbases);
+  const AlleleMap allele_map =
+      BuildAlleleMap(allele_count_match, alt_alleles, refbases);
 
   AddReadDepths(allele_count_match, allele_map, m_variant);
-  AddSupportingReads(allele_count_match, &call);
+  AddSupportingReads(allele_count_match.read_alleles(), allele_map, &call);
   return make_optional(call);
 }
 
@@ -469,7 +455,8 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
   std::vector<string> alternate_bases;
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
-  AlleleMap allele_map = BuildAlleleMap(allele_count, alt_alleles, refbases);
+  const AlleleMap allele_map = BuildAlleleMap(
+      allele_count, alt_alleles, refbases);
   for (const auto& elt : allele_map) {
     alternate_bases.push_back(elt.second);
   }
@@ -497,20 +484,18 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
               variant);
 
   AddReadDepths(allele_count, allele_map, variant);
-  AddSupportingReads(allele_count, &call);
+  AddSupportingReads(allele_count.read_alleles(), allele_map, &call);
   return make_optional(call);
 }
 
-void VariantCaller::AddSupportingReads(const AlleleCount& allele_count,
-                                       DeepVariantCall* call) const {
-  std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count);
-  const string refbases = CalcRefBases(allele_count.ref_base(), alt_alleles);
-  AlleleMap allele_map = BuildAlleleMap(allele_count, alt_alleles, refbases);
-
+void VariantCaller::AddSupportingReads(
+    const ::google::protobuf::Map<string, Allele>& read_alleles,
+    const AlleleMap& allele_map,
+    DeepVariantCall* call) const {
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.
   const string unknown_allele = kSupportingUncalledAllele;
-  for (const auto& read_name_allele : allele_count.read_alleles()) {
+  for (const auto& read_name_allele : read_alleles) {
     const string& read_name = read_name_allele.first;
     const Allele& allele = read_name_allele.second;
 
