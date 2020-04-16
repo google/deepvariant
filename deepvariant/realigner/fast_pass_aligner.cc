@@ -370,16 +370,28 @@ void FastPassAligner::AlignHaplotypesToReference() {
   for (auto& haplotype_alignment : read_to_haplotype_alignments_) {
     Filter filter;
     CHECK(haplotype_alignment.haplotype_index < haplotypes_.size());
-    Alignment alignment =
-        SswAlign(haplotypes_[haplotype_alignment.haplotype_index]);
     auto hap_len = haplotypes_[haplotype_alignment.haplotype_index].size();
-    if (alignment.sw_score > 0) {
-      haplotype_alignment.is_reference =
-          AlignmentIsRef(alignment.cigar_string, hap_len);
-      haplotype_alignment.cigar = alignment.cigar_string;
+    // Most of the time, one haplotype will perfectly match the reference.
+    if (haplotypes_[haplotype_alignment.haplotype_index] == reference_) {
+      haplotype_alignment.is_reference = true;
+      haplotype_alignment.cigar = absl::StrCat(hap_len, "=");
       haplotype_alignment.cigar_ops =
           CigarStringToVector(haplotype_alignment.cigar);
-      haplotype_alignment.ref_pos = alignment.ref_begin;
+      haplotype_alignment.ref_pos = 0;
+    } else {
+      Alignment alignment =
+          SswAlign(haplotypes_[haplotype_alignment.haplotype_index]);
+      if (alignment.sw_score > 0) {
+        // In rare cases, the ref haplotype will be a substring of the ref, and
+        // therefore not caught by the string equality check above.
+        haplotype_alignment.is_reference =
+            AlignmentIsRef(alignment.cigar_string, hap_len);
+
+        haplotype_alignment.cigar = alignment.cigar_string;
+        haplotype_alignment.cigar_ops =
+            CigarStringToVector(haplotype_alignment.cigar);
+        haplotype_alignment.ref_pos = alignment.ref_begin;
+      }
     }
   }
 }
@@ -483,8 +495,6 @@ void FastPassAligner::RealignReadsToReference(
       (*realigned_reads)->push_back(realigned_read);
     } else {  // keep original alignment
       if (force_alignment_) {
-        // When alignment is forced, not being able to get a new alignment is
-        // serious enough to output a warning.
         LOG(FATAL) << "Force alignment failed. Keeping the original alignment. "
                    << "Tell mnat@ if you see this error.";
       }
