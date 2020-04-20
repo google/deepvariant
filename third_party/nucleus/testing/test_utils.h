@@ -77,7 +77,7 @@ std::vector<Proto> ReadProtosFromTFRecord(const string& path) {
   TF_CHECK_OK(env->NewRandomAccessFile(path, &read_file));
   tensorflow::io::RecordReader reader(read_file.get());
   std::vector<Proto> results;
-  uint64 offset = 0;
+  tensorflow::uint64 offset = 0;
   tensorflow::tstring data;
   while (reader.ReadRecord(&offset, &data).ok()) {
     Proto proto;
