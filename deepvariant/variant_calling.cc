@@ -37,6 +37,7 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/utils.h"
 #include "absl/strings/match.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -293,6 +294,7 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
 // allele_map is needed to map between the Variant reference and alternate_bases
 // and the Alleles used in allele_count.
 void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
+                   const string& allele_map_refbases,
                    Variant* variant) {
   // Set the DP to the total good reads seen at this position.
   VariantCall* call = variant->mutable_calls(0);
@@ -310,15 +312,18 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     std::vector<double> vaf;
     ad.push_back(allele_count.ref_supporting_read_count());
 
-    std::map<tensorflow::StringPiece, const Allele*> alt_to_alleles;
+    std::map<string, const Allele*> alt_to_alleles;
     for (const auto& entry : allele_map) {
-      alt_to_alleles[entry.second] = &entry.first;
+      const string key = SimplifyRefAlt(allele_map_refbases, entry.second);
+      alt_to_alleles[key] = &entry.first;
     }
     CHECK(alt_to_alleles.size() == allele_map.size())
         << "Non-unique alternative alleles!";
     for (const string& alt : variant->alternate_bases()) {
+      const string simplified_ref_alt = SimplifyRefAlt(
+          variant->reference_bases(), alt);
       int count_of_allele = 0;
-      auto found = alt_to_alleles.find(alt);
+      auto found = alt_to_alleles.find(simplified_ref_alt);
       if (found != alt_to_alleles.end()) {
         count_of_allele = (*found->second).count();
       }
@@ -434,7 +439,7 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
   const AlleleMap allele_map =
       BuildAlleleMap(allele_count_match, alt_alleles, refbases);
 
-  AddReadDepths(allele_count_match, allele_map, m_variant);
+  AddReadDepths(allele_count_match, allele_map, refbases, m_variant);
   AddSupportingReads(allele_count_match.read_alleles(), allele_map, &call);
   return make_optional(call);
 }
@@ -482,8 +487,7 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
               sample_name,
               alternate_bases,
               variant);
-
-  AddReadDepths(allele_count, allele_map, variant);
+  AddReadDepths(allele_count, allele_map, refbases, variant);
   AddSupportingReads(allele_count.read_alleles(), allele_map, &call);
   return make_optional(call);
 }

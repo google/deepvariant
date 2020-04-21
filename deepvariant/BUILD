@@ -141,6 +141,7 @@ cc_library(
     hdrs = ["variant_calling.h"],
     deps = [
         ":allelecounter",
+        ":utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:vcf_reader",
         "//third_party/nucleus/protos:variants_cc_pb2",
@@ -496,6 +497,7 @@ cc_library(
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

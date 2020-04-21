@@ -1016,11 +1016,14 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
       proposed_variant,
       {allele_count},
       ExpectedVariant::kVariantExpected,
-      // Currently, the 4 "TACAC" DELETIONs above get incorrectly accounted for
-      // "T". Because they represent "TACAC->T", and we only match directly on
-      // the ALT "T". This is incorrect and need to be fixed next.
+      // Now, the 4 "TACAC" DELELTIONs above are correctly counted under
+      // TACACACACAC->TACACAC.
+      // This is because now we correct recognize that
+      // TACAC->T
+      // is equivalent to
+      // TACACACACAC->TACACAC.
       WithCounts(MakeExpectedVariant("TACACACACAC", {"TACACAC", "T"}, 66618315),
-                 {ref_supporting_read_count, 0, 4},
+                 {ref_supporting_read_count, 4, 0},
                  ref_supporting_read_count + read_alleles.size()));
 }
 
