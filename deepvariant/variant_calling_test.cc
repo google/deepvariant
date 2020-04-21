@@ -991,6 +991,39 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs) {
                  ref_supporting_read_count + read_alleles.size()));
 }
 
+// See internal.
+TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+  int ref_supporting_read_count = 8;
+
+  const std::vector<Allele> read_alleles = {
+      MakeAllele("TACAC", AlleleType::DELETION, 1),
+      MakeAllele("TACAC", AlleleType::DELETION, 1),
+      MakeAllele("TACAC", AlleleType::DELETION, 1),
+      MakeAllele("TACAC", AlleleType::DELETION, 1),
+  };
+  const AlleleCount allele_count =
+      MakeAlleleCount(kChr,      // chr_name
+                      66618315,  // start
+                      "T",       // ref_base
+                      ref_supporting_read_count, read_alleles);
+
+  Variant proposed_variant = MakeExpectedVariant("TACACACACAC",
+                                                 {"TACACAC", "T"}, 66618315);
+  CheckCallFromComputeVariant(
+      caller,
+      proposed_variant,
+      {allele_count},
+      ExpectedVariant::kVariantExpected,
+      // Currently, the 4 "TACAC" DELETIONs above get incorrectly accounted for
+      // "T". Because they represent "TACAC->T", and we only match directly on
+      // the ALT "T". This is incorrect and need to be fixed next.
+      WithCounts(MakeExpectedVariant("TACACACACAC", {"TACACAC", "T"}, 66618315),
+                 {ref_supporting_read_count, 0, 4},
+                 ref_supporting_read_count + read_alleles.size()));
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
