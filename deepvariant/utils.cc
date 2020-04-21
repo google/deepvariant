@@ -31,6 +31,7 @@
 
 #include "deepvariant/utils.h"
 
+#include "absl/strings/str_cat.h"
 #include "third_party/nucleus/util/utils.h"
 
 namespace learning {
@@ -47,6 +48,30 @@ Allele MakeAllele(const string& bases,
   allele.set_count(count);
   return allele;
 }
+
+string SimplifyRefAlt(const string& ref, const string& alt) {
+  int shortest_allele_len = ref.length();
+  if (alt.length() < shortest_allele_len) {
+    shortest_allele_len = alt.length();
+  }
+  int common_suffix_len = 0;
+  for (int suffix_idx = 1; suffix_idx < shortest_allele_len; ++suffix_idx) {
+    if (ref.at(ref.length()-suffix_idx) != alt.at(alt.length()-suffix_idx)) {
+      break;
+    }
+    common_suffix_len = suffix_idx;
+  }
+
+  if (common_suffix_len == 0) {
+    return absl::StrCat(ref, "->", alt);
+  } else {
+    return absl::StrCat(ref.substr(0, ref.length()-common_suffix_len),
+                        "->",
+                        alt.substr(0, alt.length()-common_suffix_len));
+  }
+}
+
+
 
 }  // namespace deepvariant
 }  // namespace genomics

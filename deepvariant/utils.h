@@ -48,6 +48,9 @@ Allele MakeAllele(const string& bases,
                   const AlleleType type,
                   const int count);
 
+// First simplifies ref and alt by removing the common suffix, and the returns
+// simplified_ref->simplified_alt.
+string SimplifyRefAlt(const string& ref, const string& alt);
 
 }  // namespace deepvariant
 }  // namespace genomics

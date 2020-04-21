@@ -31,14 +31,13 @@
 
 #include "deepvariant/utils.h"
 
-#include "third_party/nucleus/testing/test_utils.h"
-
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
+#include "third_party/nucleus/testing/test_utils.h"
 
 namespace learning {
 namespace genomics {
@@ -51,6 +50,15 @@ TEST(UtilsTest, TestMakeAllele) {
               EqualsProto("bases: \"A\" type: REFERENCE count: 1"));
   EXPECT_THAT(MakeAllele("AC", AlleleType::INSERTION, 10),
               EqualsProto("bases: \"AC\" type: INSERTION count: 10"));
+}
+
+TEST(UtilsTest, TestSimplifyRefAlt) {
+  EXPECT_EQ(SimplifyRefAlt("CAA", "CA"), "CA->C");
+  EXPECT_EQ(SimplifyRefAlt("CA", "C"), "CA->C");
+  EXPECT_EQ(SimplifyRefAlt("ATGTG", "ATGTGTGTGTGTG"), "A->ATGTGTGTG");
+  // This input will likely not happen the way we currently use this function.
+  // But I want to make sure the output is not empty.
+  EXPECT_EQ(SimplifyRefAlt("C", "C"), "C->C");
 }
 
 }  // namespace deepvariant
