@@ -110,7 +110,7 @@ struct KmerOccurrence {
 // renamed. That would be better because default position = 0 is a valid
 // position.
 struct ReadAlignment {
-  static const uint16_t kNotAligned = std::numeric_limits<uint16_t>::max();
+  static constexpr uint16_t kNotAligned = std::numeric_limits<uint16_t>::max();
   ReadAlignment() : position(kNotAligned), cigar(""), score(0) {}
 
   ReadAlignment(uint16_t position_param, const string& cigar_param,

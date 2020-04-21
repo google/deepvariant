@@ -52,7 +52,7 @@ namespace deepvariant {
 class FastPassAlignerTest : public ::testing::Test {
  protected:
   FastPassAligner aligner_;
-  static const int kSomeScore = 100;
+  static constexpr int kSomeScore = 100;
 
   void SetUp() override {
     // Test reference for most of the test. Some tests create a different
