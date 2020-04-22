@@ -1011,7 +1011,7 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
 
   Variant proposed_variant = MakeExpectedVariant("TACACACACAC",
                                                  {"TACACAC", "T"}, 66618315);
-  CheckCallFromComputeVariant(
+  optional<DeepVariantCall> dv_call = CheckCallFromComputeVariant(
       caller,
       proposed_variant,
       {allele_count},
@@ -1025,6 +1025,14 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
       WithCounts(MakeExpectedVariant("TACACACACAC", {"TACACAC", "T"}, 66618315),
                  {ref_supporting_read_count, 4, 0},
                  ref_supporting_read_count + read_alleles.size()));
+  QCHECK_EQ(dv_call->allele_support_size(), 1);
+  // Currently, this test shows the supporting reads are still incorrectly
+  // added to TACACACACAC->T.
+  // It should be added to "TACACAC", which means "TACACACACAC->TACACAC"
+  // for the corresponding proposed variant.
+  const auto it = dv_call->allele_support().find("T");
+  QCHECK(it != dv_call->allele_support().end());
+  QCHECK_EQ(it->second.read_names_size(), 4);
 }
 
 }  // namespace deepvariant
