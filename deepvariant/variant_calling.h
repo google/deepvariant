@@ -186,7 +186,7 @@ class VariantCaller {
 
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(const ::google::protobuf::Map<string, Allele>& read_alleles,
-                          const AlleleMap& allele_map,
+                          const AlleleMap& allele_map, const string& refbases,
                           DeepVariantCall* call) const;
 
  private:

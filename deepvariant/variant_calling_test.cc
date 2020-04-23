@@ -1026,11 +1026,11 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
                  {ref_supporting_read_count, 4, 0},
                  ref_supporting_read_count + read_alleles.size()));
   QCHECK_EQ(dv_call->allele_support_size(), 1);
-  // Currently, this test shows the supporting reads are still incorrectly
-  // added to TACACACACAC->T.
-  // It should be added to "TACACAC", which means "TACACACACAC->TACACAC"
-  // for the corresponding proposed variant.
-  const auto it = dv_call->allele_support().find("T");
+  // Confirm that the 4 alleles "MakeAllele("TACAC", AlleleType::DELETION, 1)
+  // above are correctly added to the corrresponding variant
+  // "TACACACACAC->TACACAC", which is the same as "TACAC->T" after the
+  // right-trimming simplification.
+  const auto it = dv_call->allele_support().find("TACACAC");
   QCHECK(it != dv_call->allele_support().end());
   QCHECK_EQ(it->second.read_names_size(), 4);
 }

@@ -133,6 +133,15 @@ void MakeVariantConsistentWithRefAndAlts(
   }
 }
 
+// Assumption: `short_str` is a prefix of `long_str`.
+// Return the suffix on long_str.
+string GetSuffixFromTwoAlleles(const string& short_str,
+                               const string& long_str) {
+  QCHECK(absl::StartsWith(long_str, short_str))
+      << short_str << " has to be a prefix of " << long_str;
+  return long_str.substr(short_str.length(), long_str.length());
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -440,7 +449,8 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
       BuildAlleleMap(allele_count_match, alt_alleles, refbases);
 
   AddReadDepths(allele_count_match, allele_map, refbases, m_variant);
-  AddSupportingReads(allele_count_match.read_alleles(), allele_map, &call);
+  AddSupportingReads(allele_count_match.read_alleles(), allele_map, refbases,
+                     &call);
   return make_optional(call);
 }
 
@@ -488,14 +498,19 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
               alternate_bases,
               variant);
   AddReadDepths(allele_count, allele_map, refbases, variant);
-  AddSupportingReads(allele_count.read_alleles(), allele_map, &call);
+  AddSupportingReads(allele_count.read_alleles(), allele_map, refbases, &call);
   return make_optional(call);
 }
 
 void VariantCaller::AddSupportingReads(
     const ::google::protobuf::Map<string, Allele>& read_alleles,
-    const AlleleMap& allele_map,
+    const AlleleMap& allele_map, const string& refbases,
     DeepVariantCall* call) const {
+  string suffix = "";
+  if (call->variant().reference_bases().length() > refbases.length()) {
+    suffix = GetSuffixFromTwoAlleles(refbases,
+                                     call->variant().reference_bases());
+  }
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.
   const string unknown_allele = kSupportingUncalledAllele;
@@ -507,8 +522,9 @@ void VariantCaller::AddSupportingReads(
     // supporting reads for alternate alleles.
     if (allele.type() != AlleleType::REFERENCE) {
       auto it = allele_map.find(allele);
-      const string& supported_allele =
-          it == allele_map.end() ? unknown_allele : it->second;
+      const string supported_allele =
+          it == allele_map.end() ? unknown_allele : absl::StrCat(it->second,
+                                                                 suffix);
       DeepVariantCall_SupportingReads& supports =
           (*call->mutable_allele_support())[supported_allele];
       supports.add_read_names(read_name);
