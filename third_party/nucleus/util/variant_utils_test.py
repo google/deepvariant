@@ -58,6 +58,17 @@ TRUE_DUP = variant_utils.AlleleMismatchType.duplicate_true_alleles
 TRUE_MISS = variant_utils.AlleleMismatchType.unmatched_true_alleles
 EVAL_MISS = variant_utils.AlleleMismatchType.unmatched_eval_alleles
 
+_DEFAULT_SAMPLE_NAME = 'NA12878'
+
+
+def _create_variant_with_alleles(ref=None, alts=None, start=0):
+  """Creates a Variant record with specified alternate_bases."""
+  return variants_pb2.Variant(
+      reference_bases=ref,
+      alternate_bases=alts,
+      start=start,
+      calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)])
+
 
 class VariantUtilsTests(parameterized.TestCase):
 
@@ -440,6 +451,39 @@ class VariantUtilsTests(parameterized.TestCase):
     self.assertEqual(
         variant_utils.simplify_alleles(*reversed(alleles)),
         tuple(reversed(expected)))
+
+  @parameterized.parameters(
+      dict(
+          alleles=['CAA', 'CA', 'C'],
+          start=5,
+          expected_alleles=['CAA', 'CA', 'C'],
+          expected_end=8),
+      dict(
+          alleles=['CAA', 'CA'],
+          start=4,
+          expected_alleles=['CA', 'C'],
+          expected_end=6),
+      dict(
+          alleles=['CAA', 'C'],
+          start=3,
+          expected_alleles=['CAA', 'C'],
+          expected_end=6),
+      dict(
+          alleles=['CCA', 'CA'],
+          start=2,
+          expected_alleles=['CC', 'C'],
+          expected_end=4),
+  )
+  def test_simplify_variant_alleles(self, alleles, start, expected_alleles,
+                                    expected_end):
+    """Test that simplify_variant_alleles works as expected."""
+    variant = _create_variant_with_alleles(
+        ref=alleles[0], alts=alleles[1:], start=start)
+    simplified = variant_utils.simplify_variant_alleles(variant)
+    self.assertEqual(simplified.reference_bases, expected_alleles[0])
+    self.assertEqual(simplified.alternate_bases, expected_alleles[1:])
+    self.assertEqual(simplified.start, start)
+    self.assertEqual(simplified.end, expected_end)
 
   @parameterized.parameters(
       (['A', 'C'], ['A', 'C'], NO_MISMATCH),

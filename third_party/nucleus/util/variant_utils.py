@@ -534,6 +534,28 @@ def simplify_alleles(*alleles):
     return alleles
 
 
+def simplify_variant_alleles(variant):
+  """Replaces the alleles in variants with their simplified versions.
+
+  This function takes a variant and replaces its ref and alt alleles with those
+  produced by a call to variant_utils.simplify_alleles() to remove common
+  postfix bases in the alleles that may be present due to pruning away alleles.
+
+  Args:
+    variant: learning.genomics.genomics.Variant proto we want to simplify.
+
+  Returns:
+    variant with its ref and alt alleles replaced with their simplified
+      equivalents.
+  """
+  simplified_alleles = simplify_alleles(variant.reference_bases,
+                                        *variant.alternate_bases)
+  variant.reference_bases = simplified_alleles[0]
+  variant.alternate_bases[:] = simplified_alleles[1:]
+  variant.end = variant.start + len(variant.reference_bases)
+  return variant
+
+
 def is_filtered(variant):
   """Returns True if variant has a non-PASS filter field, or False otherwise."""
   return bool(variant.filter) and any(

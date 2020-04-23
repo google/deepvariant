@@ -569,6 +569,7 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:genomics_math",
+        "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:vcf_constants",
         "@absl_py//absl/flags",
         "@absl_py//absl/testing:absltest",

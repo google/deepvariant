@@ -573,28 +573,6 @@ def prune_alleles(variant, alt_alleles_to_remove):
   return new_variant
 
 
-def simplify_alleles(variant):
-  """Replaces the alleles in variants with their simplified versions.
-
-  This function takes a variant and replaces its ref and alt alleles with those
-  produced by a call to variant_utils.simplify_alleles() to remove common
-  postfix bases in the alleles that may be present due to pruning away alleles.
-
-  Args:
-    variant: learning.genomics.genomics.Variant proto we want to simplify.
-
-  Returns:
-    variant with its ref and alt alleles replaced with their simplified
-      equivalents.
-  """
-  simplified_alleles = variant_utils.simplify_alleles(variant.reference_bases,
-                                                      *variant.alternate_bases)
-  variant.reference_bases = simplified_alleles[0]
-  variant.alternate_bases[:] = simplified_alleles[1:]
-  variant.end = variant.start + len(variant.reference_bases)
-  return variant
-
-
 def merge_predictions(call_variants_outputs, qual_filter=None):
   """Merges the predictions from the multi-allelic calls."""
   # See the logic described in the class PileupImageCreator pileup_image.py
@@ -610,7 +588,8 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
   first_call, other_calls = call_variants_outputs[0], call_variants_outputs[1:]
   canonical_variant = first_call.variant
   if not other_calls:
-    canonical_variant = simplify_alleles(canonical_variant)
+    canonical_variant = variant_utils.simplify_variant_alleles(
+        canonical_variant)
     return canonical_variant, first_call.genotype_probabilities
 
   alt_alleles_to_remove = get_alt_alleles_to_remove(call_variants_outputs,
@@ -626,10 +605,10 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
   if sum(predictions) == 0:
     predictions = [1.0] * len(predictions)
   denominator = sum(predictions)
-  # Note the simplify_alleles call *must* happen after the predictions
+  # Note the simplify_variant_alleles call *must* happen after the predictions
   # calculation above. flattened_probs_dict is indexed by alt allele, and
   # simplify can change those alleles so we cannot simplify until afterwards.
-  canonical_variant = simplify_alleles(canonical_variant)
+  canonical_variant = variant_utils.simplify_variant_alleles(canonical_variant)
   return canonical_variant, [i / denominator for i in predictions]
 
 

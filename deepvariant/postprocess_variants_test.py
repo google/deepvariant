@@ -63,6 +63,7 @@ from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import vcf_constants
 from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
@@ -1017,39 +1018,6 @@ class PostprocessVariantsTest(parameterized.TestCase):
         expected_variant)
 
   @parameterized.parameters(
-      dict(
-          alleles=['CAA', 'CA', 'C'],
-          start=5,
-          expected_alleles=['CAA', 'CA', 'C'],
-          expected_end=8),
-      dict(
-          alleles=['CAA', 'CA'],
-          start=4,
-          expected_alleles=['CA', 'C'],
-          expected_end=6),
-      dict(
-          alleles=['CAA', 'C'],
-          start=3,
-          expected_alleles=['CAA', 'C'],
-          expected_end=6),
-      dict(
-          alleles=['CCA', 'CA'],
-          start=2,
-          expected_alleles=['CC', 'C'],
-          expected_end=4),
-  )
-  def test_simplify_alleles(self, alleles, start, expected_alleles,
-                            expected_end):
-    """Test that simplify_alleles works as expected."""
-    variant = _create_variant_with_alleles(
-        ref=alleles[0], alts=alleles[1:], start=start)
-    simplified = postprocess_variants.simplify_alleles(variant)
-    self.assertEqual(simplified.reference_bases, expected_alleles[0])
-    self.assertEqual(simplified.alternate_bases, expected_alleles[1:])
-    self.assertEqual(simplified.start, start)
-    self.assertEqual(simplified.end, expected_end)
-
-  @parameterized.parameters(
       # Check that we are simplifying alleles and that the simplification deps
       # on the alleles we've removed.
       dict(
@@ -1083,11 +1051,11 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_prune_and_simplify_alleles(self, alleles, start,
                                       alt_alleles_to_remove, expected_alleles,
                                       expected_end):
-    """Test that prune_alleles + simplify_alleles works as expected."""
+    """Test that prune_alleles + simplify_variant_alleles works as expected."""
     variant = _create_variant_with_alleles(
         ref=alleles[0], alts=alleles[1:], start=start)
     pruned = postprocess_variants.prune_alleles(variant, alt_alleles_to_remove)
-    simplified = postprocess_variants.simplify_alleles(pruned)
+    simplified = variant_utils.simplify_variant_alleles(pruned)
     self.assertEqual(simplified.reference_bases, expected_alleles[0])
     self.assertEqual(simplified.alternate_bases, expected_alleles[1:])
     self.assertEqual(simplified.start, start)
