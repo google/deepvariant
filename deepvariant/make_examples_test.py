@@ -1116,6 +1116,34 @@ class MakeExamplesUnitTest(parameterized.TestCase):
           task_id=task,
           num_shards=num_shards)
 
+  @parameterized.parameters(
+      # One variant in region.
+      (['x:100-200'], ['x:150-151'], [0]),
+      # Different chromosomes.
+      (['x:100-200'], ['y:150-151'], []),
+      # A variant at the beginning of a region.
+      (['x:100-200', 'x:201-300'], ['x:100-101'], [0]),
+      (['x:1-10', 'x:11-20', 'x:21-30'], ['x:11-12'], [1]),
+      # A variant before all the regions.
+      (['x:11-20', 'x:20-30'], ['x:1-2'], []),
+      # A variant after all the regions.
+      (['x:1-10', 'x:11-20', 'x:21-30'], ['x:40-50'], []),
+      # Multiple variants in the same region.
+      (['x:11-20', 'x:21-30'
+       ], ['x:1-2', 'x:25-26', 'x:25-26', 'x:26-27', 'x:40-50'], [1]),
+      # A variant spanning multiple regions belongs where it starts.
+      (['x:1-10', 'x:11-20', 'x:21-30', 'x:31-40', 'x:41-50', 'x:51-60'
+       ], ['x:15-66'], [1]),
+  )
+  def test_filter_regions_by_vcf(self, region_literals, variant_literals,
+                                 regions_to_keep):
+    regions = [ranges.parse_literal(l) for l in region_literals]
+    variant_positions = [ranges.parse_literal(l) for l in variant_literals]
+    output = make_examples.filter_regions_by_vcf(regions, variant_positions)
+    list_output = list(output)
+    list_expected = [regions[i] for i in regions_to_keep]
+    self.assertEqual(list_output, list_expected)
+
   def test_catches_bad_argv(self):
     with mock.patch.object(logging, 'error') as mock_logging,\
         mock.patch.object(sys, 'exit') as mock_exit:

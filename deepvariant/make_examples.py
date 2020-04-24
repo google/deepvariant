@@ -36,12 +36,16 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+import collections
+import time
+
 
 from absl import app
 from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
+
 from deepvariant import dv_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
@@ -817,6 +821,55 @@ def regions_to_process(contigs,
     return partitioned
 
 
+def filter_regions_by_vcf(regions, variant_positions):
+  """Filter a list of regions to only those that contain variants.
+
+  Args:
+    regions: a list of Range objects representing regions to filter on.
+    variant_positions: a list of Range objects containing the positions of
+      variants.
+
+  Returns:
+    filtered_regions: a list of Range objects, each of which appeared in the
+        input regions and contains at least one of the input variants.
+  """
+
+  def dict_by_chromosome(list_of_ranges):
+    d = collections.defaultdict(list)
+    for r in list_of_ranges:
+      d[r.reference_name].append(r)
+    for c in d:
+      d[c] = sorted(d[c], key=lambda x: (x.start, x.end))
+    return d
+
+  region_dict = dict_by_chromosome(regions)
+  variant_dict = dict_by_chromosome(variant_positions)
+  filtered_regions = []
+  for c in region_dict:
+    ri = 0
+    vi = 0
+    if c not in variant_dict:
+      # Skip chromosomes with no variants.
+      continue
+    while ri < len(region_dict[c]) and vi < len(variant_dict[c]):
+      region = region_dict[c][ri]
+      variant = variant_dict[c][vi]
+      if variant.start >= region.start and variant.start < region.end:
+        # When the variant falls within the region, then keep the region.
+        filtered_regions.append(region)
+        # Move both indices because we're already keeping this region, and we
+        # don't need to see any more variants inside this same region.
+        ri += 1
+        vi += 1
+      elif region.start < variant.start:
+        # Move past this region since the next variant comes later.
+        ri += 1
+      else:
+        # Found another variant in the previous region we already included.
+        vi += 1
+
+  return filtered_regions
+
 # ---------------------------------------------------------------------------
 # Region processor
 # ---------------------------------------------------------------------------
@@ -1364,7 +1417,29 @@ def processing_regions_from_options(options):
       task_id=options.task_id,
       num_shards=options.num_shards)
 
-  return regions
+  if in_training_mode(options):
+    candidates_vcf = options.truth_variants_filename
+  else:
+    candidates_vcf = options.proposed_variants_filename
+
+  if candidates_vcf:
+    before = time.time()
+    variant_positions = []
+    with vcf.VcfReader(candidates_vcf) as vcf_reader:
+      for variant in vcf_reader:
+        variant_positions.append(variant_utils.variant_position(variant))
+
+    region_list = list(regions)
+    filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
+    time_elapsed = time.time() - before
+    logging_with_options(
+        options, 'Filtering regions took {} seconds and reduced the number of '
+        'regions to process from {} to {} regions containing variants from the '
+        'supplied VCF.'.format(
+            round(time_elapsed, 2), len(region_list), len(filtered_regions)))
+    return (r for r in filtered_regions)
+  else:
+    return regions
 
 
 # redacted
