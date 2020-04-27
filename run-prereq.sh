@@ -130,7 +130,7 @@ pip3 install "${PIP_ARGS[@]}" joblib
 pip3 install "${PIP_ARGS[@]}" psutil
 pip3 install "${PIP_ARGS[@]}" --upgrade google-api-python-client
 pip3 install "${PIP_ARGS[@]}" 'pandas==0.24.1'
-pip3 install "${PIP_ARGS[@]}" 'altair==3.3.0'
+pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 
 
 ################################################################################

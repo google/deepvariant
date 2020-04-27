@@ -142,10 +142,12 @@ VIS_DATA = {
     }
 }
 
-ALTAIR_CHART = "<class 'altair.vegalite.v3.api.Chart'>"
-FACET_CHART = "<class 'altair.vegalite.v3.api.FacetChart'>"
-LAYER_CHART = "<class 'altair.vegalite.v3.api.LayerChart'>"
-V_CONCAT_CHART = "<class 'altair.vegalite.v3.api.VConcatChart'>"
+
+def is_an_altair_chart(chart):
+  # Chart type strings look like: "<class 'altair.vegalite.v3.api.FacetChart'>"
+  # Chart, FacetChart, LayerChart, and VConcatChart.
+  string_type = str(type(chart))
+  return 'altair' in string_type and 'Chart' in string_type
 
 
 class VcfStatsVisTest(absltest.TestCase):
@@ -203,43 +205,47 @@ class VcfStatsVisTest(absltest.TestCase):
         msg='column e differs')
     self.assertTrue((observed_output == expected_output).all().all())
 
+  def test_chart_type_negative_control(self):
+    self.assertFalse(is_an_altair_chart('some string'))
+    self.assertFalse(is_an_altair_chart(None))
+
   def test_build_type_chart(self):
     chart = vcf_stats_vis._build_type_chart(VIS_DATA['variant_type_counts'])
-    self.assertEqual(str(type(chart)), LAYER_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_build_tt_chart(self):
     chart = vcf_stats_vis._build_tt_chart(VIS_DATA['titv_counts'])
-    self.assertEqual(str(type(chart)), LAYER_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_build_qual_histogram(self):
     chart = vcf_stats_vis._build_qual_histogram(VIS_DATA['qual_histogram'])
-    self.assertEqual(str(type(chart)), ALTAIR_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_build_depth_histogram(self):
     chart = vcf_stats_vis._build_depth_histogram(VIS_DATA['depth_histogram'])
-    self.assertEqual(str(type(chart)), ALTAIR_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_build_gq_histogram(self):
     chart = vcf_stats_vis._build_gq_histogram(VIS_DATA['gq_histogram'])
-    self.assertEqual(str(type(chart)), ALTAIR_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_build_vaf_histograms(self):
     chart = vcf_stats_vis._build_vaf_histograms(
         VIS_DATA['vaf_histograms_by_genotype'])
-    self.assertEqual(str(type(chart[0])), FACET_CHART)
-    self.assertEqual(str(type(chart[1])), ALTAIR_CHART)
+    self.assertTrue(is_an_altair_chart(chart[0]))
+    self.assertTrue(is_an_altair_chart(chart[1]))
 
   def test_build_base_change_chart(self):
     chart = vcf_stats_vis._build_base_change_chart(VIS_DATA['base_changes'])
-    self.assertEqual(str(type(chart)), FACET_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_build_indel_size_chart(self):
     chart = vcf_stats_vis._build_indel_size_chart(VIS_DATA['indel_sizes'])
-    self.assertEqual(str(type(chart)), V_CONCAT_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_build_all_charts(self):
     chart = vcf_stats_vis._build_all_charts(VIS_DATA)
-    self.assertEqual(str(type(chart)), V_CONCAT_CHART)
+    self.assertTrue(is_an_altair_chart(chart))
 
   def test_altair_chart_to_html(self):
     df = pd.DataFrame({'x': ['A', 'B'], 'y': [28, 55]})
