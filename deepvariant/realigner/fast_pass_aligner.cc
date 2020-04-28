@@ -421,15 +421,13 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
         SswSetReference(haplotypes_[hap_alignment.haplotype_index]);
         Alignment alignment = SswAlign(reads_[i]);
         if (alignment.sw_score > 0) {
-          if (alignment.sw_score >= score_threshold) {
-            if (hap_alignment.read_alignment_scores[i].score <
-                alignment.sw_score) {
-              hap_alignment.read_alignment_scores[i].score = alignment.sw_score;
-              hap_alignment.read_alignment_scores[i].cigar =
-                  alignment.cigar_string;
-              hap_alignment.read_alignment_scores[i].position =
-                  alignment.ref_begin;
-            }
+          if (alignment.sw_score >= score_threshold ||
+              (force_alignment_ && hap_alignment.is_reference)) {
+            hap_alignment.read_alignment_scores[i].score = alignment.sw_score;
+            hap_alignment.read_alignment_scores[i].cigar =
+                alignment.cigar_string;
+            hap_alignment.read_alignment_scores[i].position =
+                alignment.ref_begin;
           }
         }
       }
@@ -495,8 +493,11 @@ void FastPassAligner::RealignReadsToReference(
       (*realigned_reads)->push_back(realigned_read);
     } else {  // keep original alignment
       if (force_alignment_) {
-        LOG(FATAL) << "Force alignment failed. Keeping the original alignment. "
-                   << "Tell mnat@ if you see this error.";
+        LOG(FATAL) << "Force alignment failed. Keeping the original "
+                      "alignment at "
+                   << read.alignment().position().reference_name() << ":"
+                   << read.alignment().position().position()
+                   << ". Tell mnat@ if you see this error.";
       }
       (*realigned_reads)->push_back(realigned_read);
     }
