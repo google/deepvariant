@@ -1235,16 +1235,17 @@ class RegionProcessor(object):
     # Margin must be more than half the window width, plus some extra
     # prefix/suffix to anchor alignments, but this value has not been optimized.
     margin = window_half_width + 100
-
+    valid_end = min(
+        self.realigner.ref_reader.contig(contig).n_bases, ref_end + margin)
     alignment_region = ranges.make_range(contig, max(ref_start - margin, 0),
-                                         ref_end + margin)
+                                         valid_end)
     trimmed_reads = [realigner.trim_read(r, alignment_region) for r in reads]
     # Filter reads to a minimum read length of 15 bp after trimming.
     reads = [r for r in trimmed_reads if len(r.aligned_sequence) >= 15]
     prefix = self.realigner.ref_reader.query(
         ranges.make_range(contig, max(ref_start - margin, 0), ref_start))
     suffix = self.realigner.ref_reader.query(
-        ranges.make_range(contig, ref_end, ref_end + margin))
+        ranges.make_range(contig, ref_end, valid_end))
 
     alignments_by_haplotype = {}
     sequences_by_haplotype = {}
