@@ -283,6 +283,11 @@ class VisTest(parameterized.TestCase):
     output = vis.label_from_example(example)
     self.assertEqual(truth_label, output)
 
+  @parameterized.parameters([(0), (1), (2), (8), (9), (20)])
+  def test_deepvariant_channel_names(self, num_channels):
+    output = vis._deepvariant_channel_names(num_channels)
+    self.assertLen(output, num_channels)
+
 
 if __name__ == '__main__':
   absltest.main()
