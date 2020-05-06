@@ -524,6 +524,8 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
             None,
         'read4':
             np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
+        'read5':
+            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
     }
 
     # Setup our shared mocks.
@@ -609,6 +611,44 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
     ])
     self.assertImageMatches(image, 'ref', 'ref', 'read1', 'read4')
+
+  @parameterized.parameters(
+      (True, ['ref', 'ref', 'read2', 'read4', 'read1', 'read5']),
+      (False, ['ref', 'ref', 'read1', 'read2', 'read4', 'read5']))
+  def test_image_creation_with_haplotype_sorting(self, sort_by_haplotypes,
+                                                 expected_reads_layout):
+    # There are 4 reads. They are expected to be sorted by HP tag.
+
+    read1 = test_utils.make_read('AGC', start=0, cigar='3M', name='read1')
+    read1.info['HP'].values.add().int_value = 2
+    read2 = test_utils.make_read('AGC', start=1, cigar='3M', name='read2')
+    read2.info['HP'].values.add().int_value = 1
+    read4 = test_utils.make_read('AGC', start=3, cigar='3M', name='read4')
+    read4.info['HP'].values.add().int_value = 1
+    read5 = test_utils.make_read('AGC', start=4, cigar='3M', name='read5')
+    read5.info['HP'].values.add().int_value = 2
+
+    # Change height to 6 so that we have at least 4 rows for reads to test
+    # sorting by haplotypes.
+    self.pic.height = 6
+    # Change options to set sort_by_haplotypes flag.
+    self.pic._options.sort_by_haplotypes = sort_by_haplotypes
+    image = self.pic.build_pileup(self.dv_call, self.ref,
+                                  [read1, read2, read4, read5],
+                                  {self.alt_allele})
+    self.mock_enc_ref.assert_called_once_with(self.ref)
+    self.assertEqual(self.mock_enc_read.call_args_list, [
+        mock.call(self.dv_call, self.ref, read1, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, read2, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, read4, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, read5, 9, {self.alt_allele}),
+    ])
+
+    self.assertEqual(image.shape,
+                     (self.pic.height, self.pic.width, self.pic.num_channels))
+    expected_image = np.vstack(
+        [self.expected_rows[name] for name in expected_reads_layout])
+    npt.assert_equal(image, expected_image)
 
 
 class PileupImageCreatorTest(parameterized.TestCase):

@@ -351,7 +351,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 31.
+// Next ID: 32.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -465,6 +465,10 @@ message PileupImageOptions {
 
   // Whether and how to include alt-aligned pileup images (experimental).
   string alt_aligned_pileup = 30;
+
+  // If set reads are sorted by haplotype tag (HP tag) and then by alignment
+  // position.
+  bool sort_by_haplotypes = 31;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

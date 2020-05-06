@@ -333,14 +333,23 @@ class PileupImageCreator(object):
     rows = ([self._encoder.encode_reference(refbases)] *
             self.reference_band_height)
 
-    # A generator that yields tuples of the form (position, row), iff the read
-    # can be encoded as a valid row to be used in the pileup image.
+    # A generator that yields tuples of the form (haplotype, position, row),
+    # if the read can be encoded as a valid row to be used in the pileup image.
     def _row_generator():
+      """A generator that yields tuples of the form (haplotype, position, row)."""
       for read in reads:
         read_row = self._encoder.encode_read(dv_call, refbases, read,
                                              image_start_pos, alt_alleles)
         if read_row is not None:
-          yield read.alignment.position.position, read_row
+          hap_idx = 0
+          if self._options.sort_by_haplotypes:
+            if 'HP' not in read.info or not next(
+                iter(read.info.get('HP').values)).HasField('int_value'):
+              raise ValueError('--sort_by_haplotypes flag is set but no HP '
+                               'tag containing integer value(s) was found in '
+                               'the input reads')
+            hap_idx = next(iter(read.info.get('HP').values)).int_value
+          yield hap_idx, read.alignment.position.position, read_row
 
     # We add a row for each read in order, down-sampling if the number of reads
     # is greater than self.max_reads. Sort the reads by their alignment
@@ -349,9 +358,9 @@ class PileupImageCreator(object):
     sample = sorted(
         utils.reservoir_sample(
             _row_generator(), self.max_reads, random=random_for_image),
-        key=lambda x: x[0])
+        key=lambda x: (x[0], x[1]))
 
-    rows += [read_row for _, read_row in sample]
+    rows += [read_row for _, _, read_row in sample]
 
     # Finally, fill in any missing rows to bring our image to self.height rows
     # with empty (all black) pixels.

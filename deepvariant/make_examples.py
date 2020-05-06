@@ -280,6 +280,10 @@ flags.DEFINE_string(
     '"WGS" and "WES", which represent whole genome sequencing and whole exome '
     'sequencing, respectively. This flag is experimental and is not currently '
     'being used.')
+flags.DEFINE_bool(
+    'sort_by_haplotypes', False,
+    'If True, reads are sorted by haplotypes (using HP tag), '
+    'parse_sam_aux_fields has to be set for this to work.')
 
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
@@ -497,6 +501,12 @@ def default_options(add_flags=True, flags_obj=None):
           'If use_original_quality_scores is set then parse_sam_aux_fields '
           'must be set too.', errors.CommandLineError)
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
+
+    if flags_obj.sort_by_haplotypes and not flags_obj.parse_sam_aux_fields:
+      errors.log_and_raise(
+          '--sort_by_haplotypes requires --parse_sam_aux_fields to be set ',
+          errors.CommandLineError)
+    options.pic_options.sort_by_haplotypes = flags_obj.sort_by_haplotypes
 
     if flags_obj.write_run_info:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
