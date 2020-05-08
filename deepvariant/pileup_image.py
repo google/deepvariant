@@ -71,7 +71,7 @@ def default_options(read_requirements=None):
       mapping_quality_cap=60,
       height=dv_constants.PILEUP_DEFAULT_HEIGHT,
       width=dv_constants.PILEUP_DEFAULT_WIDTH,
-      num_channels=dv_constants.PILEUP_NUM_CHANNELS,
+      num_channels=6,
       read_overlap_buffer_bp=5,
       read_requirements=read_requirements,
       multi_allelic_mode=deepvariant_pb2.PileupImageOptions.ADD_HET_ALT_IMAGES,
@@ -250,14 +250,15 @@ class PileupImageCreator(object):
     genotype likelihood calculations we need for n alt alleles (see class docs
     for background). The easiest way to do this is to calculate all combinations
     of 2 alleles from ref + alts and then strip away the reference alleles,
-    leaving us with the set of alts for the pileup image encoder.
+    leaving us with the set of alts for the pileup image encoder. The sets are
+    converted to sorted lists at the end for downstream consistency.
 
     Args:
       variant: third_party.nucleus.protos.Variant to generate the alt allele
         combinations for.
 
     Yields:
-      A series of sets containing the alt alleles we want to use for a single
+      A series of lists containing the alt alleles we want to use for a single
       pileup image. The entire series covers all combinations of alt alleles
       needed for variant.
 
@@ -273,10 +274,10 @@ class PileupImageCreator(object):
     elif (self.multi_allelic_mode ==
           deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES):
       for alt in alts:
-        yield set([alt])
+        yield sorted([alt])
     else:
       for combination in itertools.combinations([ref] + alts, 2):
-        yield set(combination) - {ref}
+        yield sorted(list(set(combination) - {ref}))
 
   def build_pileup(self,
                    dv_call,

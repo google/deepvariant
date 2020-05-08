@@ -1433,7 +1433,7 @@ def processing_regions_from_options(options):
   else:
     candidates_vcf = options.proposed_variants_filename
 
-  if candidates_vcf:
+  if candidates_vcf and not gvcf_output_enabled(options):
     before = time.time()
     variant_positions = []
     with vcf.VcfReader(candidates_vcf) as vcf_reader:

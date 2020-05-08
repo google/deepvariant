@@ -670,16 +670,16 @@ class PileupImageCreatorTest(parameterized.TestCase):
                                            self.mock_sam_reader, **kwargs)
 
   @parameterized.parameters(
-      ('A', ['C'], [{'C'}]),
-      ('A', ['C', 'G'], [{'C'}, {'G'}, {'C', 'G'}]),
+      ('A', ['C'], [['C']]),
+      ('A', ['C', 'G'], [['C'], ['G'], ['C', 'G']]),
   )
   def test_alt_combinations(self, ref, alts, expected):
     variant = variants_pb2.Variant(reference_bases=ref, alternate_bases=alts)
     self.assertEqual(expected, list(self.pic._alt_allele_combinations(variant)))
 
   @parameterized.parameters(
-      ('A', ['C'], [{'C'}]),
-      ('A', ['C', 'G'], [{'C'}, {'G'}]),
+      ('A', ['C'], [['C']]),
+      ('A', ['C', 'G'], [['C'], ['G']]),
   )
   def test_alt_combinations_no_het_alt(self, ref, alts, expected):
     options = pileup_image.default_options()
@@ -722,9 +722,9 @@ class PileupImageCreatorTest(parameterized.TestCase):
       mock_encoder.side_effect = ['mi1', 'mi2', 'mi3']
 
       self.assertEqual([
-          ({'C'}, 'mi1'),
-          ({'T'}, 'mi2'),
-          ({'C', 'T'}, 'mi3'),
+          (['C'], 'mi1'),
+          (['T'], 'mi2'),
+          (['C', 'T'], 'mi3'),
       ], self.pic.create_pileup_images(self.dv_call))
 
       def _expected_call(alts):
@@ -736,9 +736,9 @@ class PileupImageCreatorTest(parameterized.TestCase):
 
       self.assertEqual(mock_encoder.call_count, 3)
       mock_encoder.assert_has_calls([
-          _expected_call({'C'}),
-          _expected_call({'T'}),
-          _expected_call({'C', 'T'}),
+          _expected_call(['C']),
+          _expected_call(['T']),
+          _expected_call(['C', 'T']),
       ])
 
   def test_create_pileup_images_with_alt_align(self):
@@ -759,8 +759,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
           self.dv_call,
           haplotype_alignments=haplotype_alignments,
           haplotype_sequences=haplotype_sequences)
-      expected_output = [({'C'}, final_pileup), ({'T'}, final_pileup),
-                         ({'C', 'T'}, final_pileup)]
+      expected_output = [(['C'], final_pileup), (['T'], final_pileup),
+                         (['C', 'T'], final_pileup)]
       self.assertEqual([x[0] for x in output], [x[0] for x in expected_output])
       self.assertEqual([x[1].shape for x in output],
                        [x[1].shape for x in expected_output])
@@ -784,15 +784,15 @@ class PileupImageCreatorTest(parameterized.TestCase):
       mock_encoder.assert_has_calls(
           [
               # Pileup for 'C':
-              _expected_ref_based_call({'C'}),
-              _expected_alt_based_call({'C'}, 'seq for C', 'reads for C'),
+              _expected_ref_based_call(['C']),
+              _expected_alt_based_call(['C'], 'seq for C', 'reads for C'),
               # Pileup for 'T':
-              _expected_ref_based_call({'T'}),
-              _expected_alt_based_call({'T'}, 'seq for T', 'reads for T'),
+              _expected_ref_based_call(['T']),
+              _expected_alt_based_call(['T'], 'seq for T', 'reads for T'),
               # Pileup for 'C/T':
-              _expected_ref_based_call({'C', 'T'}),
-              _expected_alt_based_call({'C', 'T'}, 'seq for C', 'reads for C'),
-              _expected_alt_based_call({'C', 'T'}, 'seq for T', 'reads for T'),
+              _expected_ref_based_call(['C', 'T']),
+              _expected_alt_based_call(['C', 'T'], 'seq for C', 'reads for C'),
+              _expected_alt_based_call(['C', 'T'], 'seq for T', 'reads for T'),
           ],
           any_order=True)
 
