@@ -344,12 +344,9 @@ class PileupImageCreator(object):
         if read_row is not None:
           hap_idx = 0
           if self._options.sort_by_haplotypes:
-            if 'HP' not in read.info or not next(
-                iter(read.info.get('HP').values)).HasField('int_value'):
-              raise ValueError('--sort_by_haplotypes flag is set but no HP '
-                               'tag containing integer value(s) was found in '
-                               'the input reads')
-            hap_idx = next(iter(read.info.get('HP').values)).int_value
+            if 'HP' in read.info and next(iter(
+                read.info.get('HP').values)).HasField('int_value'):
+              hap_idx = next(iter(read.info.get('HP').values)).int_value
           yield hap_idx, read.alignment.position.position, read_row
 
     # We add a row for each read in order, down-sampling if the number of reads
