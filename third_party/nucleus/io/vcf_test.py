@@ -156,6 +156,34 @@ class VcfReaderTests(absltest.TestCase):
     self.assertNotEqual(tfrecord_reader.c_reader, 0)
 
 
+class VcfReaderInputTests(absltest.TestCase):
+  """Tests VcfReader behavior on specific inputs."""
+
+  def test_header_format_mixed_order(self):
+    """Tests reading a VCF with unconventional FORMAT field definition.
+
+    Tests reading a VCF in which the properties of the format
+    fields are defined in mixed order in the header. For example,
+
+    ##FORMAT=<ID=GT,Type=String,Number=1,Description="GT description">
+
+    (In normal VCFs "Number" should come before "Type".)
+    """
+    with vcf.VcfReader(
+        test_utils.genomics_core_testdata(
+            'header_format_mixed_order.vcf')) as vreader:
+      formats = vreader.header.formats
+      variants = list(vreader)
+    self.assertLen(formats, 1)
+    self.assertEqual(formats[0].id, 'GT')
+    self.assertEqual(formats[0].number, '1')
+    self.assertEqual(formats[0].type, 'String')
+    self.assertEqual(formats[0].description, 'GT description')
+    self.assertLen(variants, 2)
+    self.assertEqual(variants[0].calls[0].genotype, [0, 1])
+    self.assertEqual(variants[1].calls[0].genotype, [1, 1])
+
+
 def _format_expected_variant(ref, alts, format_spec, *samples):
   base = ['20', 1, '.', ref, alts, 0, '.', '.', format_spec]
   return base + list(samples)

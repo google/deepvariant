@@ -547,17 +547,31 @@ void AddInfo(const bcf_hrec_t* hrec, nucleus::genomics::v1::VcfInfo* info) {
 // Adds FORMAT information from the bcf_hrec_t to the VcfFormatInfo object.
 void AddFormatInfo(const bcf_hrec_t* hrec,
                    nucleus::genomics::v1::VcfFormatInfo* format) {
-  if (hrec->nkeys >= 4 && string(hrec->keys[0]) == "ID" &&
-      string(hrec->keys[1]) == "Number" && string(hrec->keys[2]) == "Type" &&
-      string(hrec->keys[3]) == "Description") {
-    format->set_id(hrec->vals[0]);
-    format->set_number(hrec->vals[1]);
-    format->set_type(hrec->vals[2]);
-    // redacted
-    format->set_description(string(Unquote(hrec->vals[3])));
+  std::string id, number, type, description;
+  for (int i = 0; i < hrec->nkeys; i++) {
+    if (string(hrec->keys[i]) == "ID") {
+      id = hrec->vals[i];
+    } else if (string(hrec->keys[i]) == "Number") {
+      number = hrec->vals[i];
+    } else if (string(hrec->keys[i]) == "Type") {
+      type = hrec->vals[i];
+    } else if (string(hrec->keys[i]) == "Description") {
+      // redacted
+      description = string(Unquote(hrec->vals[i]));
+    }
+  }
+  if (!id.empty() && !number.empty() && !type.empty()) {
+    format->set_id(id);
+    format->set_number(number);
+    format->set_type(type);
+    format->set_description(description);
+  } else if (!id.empty()) {
+    LOG(WARNING) << "Malformed FORMAT field " + id +
+                        ": Number or Type definition is missing. Leaving this "
+                        "format empty.";
   } else {
-    LOG(WARNING) << "Malformed FORMAT field detected in header, leaving this "
-                    "format empty";
+    LOG(WARNING) << "Found malformed FORMAT field, all FORMAT fields must "
+                    "define ID, Number, and Type. ";
   }
 }
 

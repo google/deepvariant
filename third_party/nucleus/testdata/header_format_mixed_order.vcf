@@ -1,0 +1,6 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Type=String,Number=1,Description="GT description">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Fido
+Chr1	21	DogSNP1	A	T	0	.	.	GT	0/1
+Chr1	22	DogSNP2	A	T	0	.	.	GT	1/1
