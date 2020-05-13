@@ -170,8 +170,10 @@ flags.DEFINE_integer(
 flags.DEFINE_string(
     'multi_allelic_mode', '',
     'How to handle multi-allelic candidate variants. For DEBUGGING')
-flags.DEFINE_bool('realign_reads', True,
-                  'If True, locally realign reads before calling variants.')
+flags.DEFINE_bool(
+    'realign_reads', True,
+    'If True, locally realign reads before calling variants. '
+    'Reads longer than 500 bp are never realigned.')
 flags.DEFINE_bool(
     'write_run_info', False,
     'If True, write out a MakeExamplesRunInfo proto besides our examples in '
@@ -1177,6 +1179,25 @@ class RegionProcessor(object):
                                      random_for_region)
     reads = list(reads)
     if self.options.realigner_enabled:
+      max_read_length_to_realign = 500
+      if max_read_length_to_realign > 0:
+        long_reads = [
+            read for read in reads
+            if len(read.aligned_sequence) > max_read_length_to_realign
+        ]
+
+        short_reads = [
+            read for read in reads
+            if len(read.aligned_sequence) <= max_read_length_to_realign
+        ]
+
+        _, realigned_short_reads = self.realigner.realign_reads(
+            short_reads, region)
+
+        # Long reads will be listed before short reads when both are present.
+        # Examples with only short or only long reads will be unaffected.
+        return long_reads + realigned_short_reads
+
       _, reads = self.realigner.realign_reads(reads, region)
     return reads
 
@@ -1428,29 +1449,37 @@ def processing_regions_from_options(options):
       task_id=options.task_id,
       num_shards=options.num_shards)
 
-  if in_training_mode(options):
-    candidates_vcf = options.truth_variants_filename
-  else:
-    candidates_vcf = options.proposed_variants_filename
+  region_list = list(regions)
+  # When processing many regions, check for a VCF to narrow down the regions.
+  if not gvcf_output_enabled(options) and len(region_list) > 10000:
+    if in_training_mode(options):
+      filter_vcf = options.truth_variants_filename
+      logging_with_options(
+          options, 'Reading VCF to see if we can skip processing some regions '
+          'without variants in the --truth_variants VCF.')
+    else:
+      filter_vcf = options.proposed_variants_filename
+      if filter_vcf:
+        logging_with_options(
+            options, 'Reading VCF to skip processing some regions without '
+            'variants in the --proposed_variants VCF.')
+    if filter_vcf:
+      before = time.time()
+      variant_positions = []
+      with vcf.VcfReader(filter_vcf) as vcf_reader:
+        for variant in vcf_reader:
+          variant_positions.append(variant_utils.variant_position(variant))
 
-  if candidates_vcf and not gvcf_output_enabled(options):
-    before = time.time()
-    variant_positions = []
-    with vcf.VcfReader(candidates_vcf) as vcf_reader:
-      for variant in vcf_reader:
-        variant_positions.append(variant_utils.variant_position(variant))
-
-    region_list = list(regions)
-    filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
-    time_elapsed = time.time() - before
-    logging_with_options(
-        options, 'Filtering regions took {} seconds and reduced the number of '
-        'regions to process from {} to {} regions containing variants from the '
-        'supplied VCF.'.format(
-            round(time_elapsed, 2), len(region_list), len(filtered_regions)))
-    return (r for r in filtered_regions)
-  else:
-    return regions
+      filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
+      time_elapsed = time.time() - before
+      logging_with_options(
+          options,
+          'Filtering regions took {} seconds and reduced the number of '
+          'regions to process from {} to {} regions containing variants '
+          'from the supplied VCF.'.format(
+              round(time_elapsed, 2), len(region_list), len(filtered_regions)))
+      return filtered_regions
+  return region_list
 
 
 # redacted
