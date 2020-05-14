@@ -60,6 +60,7 @@ def default_options(read_requirements=None):
       base_color_stride=70,
       allele_supporting_read_alpha=1.0,
       allele_unsupporting_read_alpha=0.6,
+      other_allele_supporting_read_alpha=0.6,
       reference_matching_read_alpha=0.2,
       reference_mismatching_read_alpha=1.0,
       indel_anchoring_base_char='*',

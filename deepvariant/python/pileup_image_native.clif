@@ -55,7 +55,7 @@ from "deepvariant/pileup_image_native.h":
           self, on_positive_strand: bool) -> int
 
       def `SupportsAltColor` as supports_alt_color(
-          self, read_supports_alt: bool) -> int
+          self, read_supports_alt: int) -> int
 
       def `MatchesRefColor` as matches_ref_color(
           self, base_matches_ref: bool) -> int

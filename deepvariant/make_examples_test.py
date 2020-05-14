@@ -920,6 +920,20 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     self.assertTrue(make_examples.gvcf_output_enabled(options))
 
+  @flagsaver.FlagSaver
+  def test_add_supporting_other_alt_color(self):
+    FLAGS.mode = 'training'
+    FLAGS.gvcf = ''
+    FLAGS.reads = ''
+    FLAGS.ref = ''
+    FLAGS.examples = ''
+    FLAGS.add_supporting_other_alt_color = True
+    options = make_examples.default_options(add_flags=True)
+    self.assertAlmostEqual(
+        options.pic_options.other_allele_supporting_read_alpha, 0.3)
+    self.assertAlmostEqual(options.pic_options.allele_unsupporting_read_alpha,
+                           0.6)
+
   def test_validate_ref_contig_coverage(self):
     ref_contigs = _make_contigs([('1', 100), ('2', 100)])
 

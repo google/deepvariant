@@ -136,12 +136,19 @@ class PileupImageEncoderTest(parameterized.TestCase):
     self.assertAlmostEqual(pie.strand_color(on_positive_strand), expected_color)
 
   @parameterized.parameters(
-      (False, int(254.0 * 0.2)),
-      (True, int(254.0 * 0.1)),
+      (0, int(254.0 * 0.2), 0.6),
+      (1, int(254.0 * 0.1), 0.6),
+      (2, int(254.0 * 0.6), 0.6),
+      (0, int(254.0 * 0.2), 0.3),
+      (1, int(254.0 * 0.1), 0.3),
+      (2, int(254.0 * 0.3), 0.3),
   )
-  def test_supports_alt_color(self, supports_alt, expected_color):
+  def test_supports_alt_color(self, supports_alt, expected_color,
+                              other_allele_supporting_read_alpha):
     pie = _make_encoder(
-        allele_supporting_read_alpha=0.1, allele_unsupporting_read_alpha=0.2)
+        allele_supporting_read_alpha=0.1,
+        allele_unsupporting_read_alpha=0.2,
+        other_allele_supporting_read_alpha=other_allele_supporting_read_alpha)
     self.assertAlmostEqual(pie.supports_alt_color(supports_alt), expected_color)
 
   @parameterized.parameters(
@@ -472,7 +479,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
             start=10,
             end=11,
             reference_bases='A',
-            alternate_bases=[alt_allele]),
+            alternate_bases=['C', 'G']),
         allele_support={
             'C': _supporting_reads('read1/1', 'read3/2'),
             'G': _supporting_reads('read2/1', 'read2/2'),
@@ -494,6 +501,50 @@ class PileupImageEncoderTest(parameterized.TestCase):
     ]
 
     self.assertEqual(list(actual[0, 1]), expected)
+
+  @parameterized.parameters(
+      ('read1', 1, 'C', 'C', True, int(254.0 * 1.0)),
+      # This read isn't present in allele support for 'C'.
+      ('read1', 2, 'C', 'C', True, int(254.0 * 0.6)),
+      ('read2', 1, 'C', 'G', True, int(254.0 * 0.3)),
+      ('read1', 1, 'C', 'C', False, int(254.0 * 1.0)),
+      # This read isn't present in allele support for 'C'.
+      ('read1', 2, 'C', 'C', False, int(254.0 * 0.6)),
+      ('read2', 1, 'C', 'G', False, int(254.0 * 0.6)),
+  )
+  def test_read_support_multiallelic(self, read_name, read_number, alt_allele,
+                                     read_base, add_supporting_other_alt_color,
+                                     expected_color):
+    """supports_alt is encoded as the 5th channel out of the 7 channels."""
+    dv_call = deepvariant_pb2.DeepVariantCall(
+        variant=variants_pb2.Variant(
+            reference_name='chr1',
+            start=10,
+            end=11,
+            reference_bases='A',
+            alternate_bases=['C', 'G']),
+        allele_support={
+            'C': _supporting_reads('read1/1'),
+            'G': _supporting_reads('read2/1', 'read2/2'),
+        })
+    read = test_utils.make_read(
+        read_base,
+        start=dv_call.variant.start,
+        cigar='1M',
+        quals=[50],
+        name=read_name)
+    read.read_number = read_number
+
+    if add_supporting_other_alt_color:
+      other_allele_supporting_read_alpha = 0.3
+    else:
+      other_allele_supporting_read_alpha = 0.6
+
+    pie = _make_encoder(
+        other_allele_supporting_read_alpha=other_allele_supporting_read_alpha)
+    actual = pie.encode_read(dv_call, 'TAT', read, dv_call.variant.start - 1,
+                             alt_allele)
+    self.assertEqual(actual[0, 1, 4], expected_color)
 
 
 class PileupImageCreatorEncodePileupTest(parameterized.TestCase):

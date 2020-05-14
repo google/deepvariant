@@ -286,6 +286,10 @@ flags.DEFINE_bool(
     'sort_by_haplotypes', False,
     'If True, reads are sorted by haplotypes (using HP tag), '
     'parse_sam_aux_fields has to be set for this to work.')
+flags.DEFINE_bool(
+    'add_supporting_other_alt_color', False,
+    'If True, reads supporting an alt not represented in the '
+    'pileup image are colored differently for multiallelics.')
 
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
@@ -478,6 +482,8 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.width = flags_obj.pileup_image_width
 
     options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
+    if flags_obj.add_supporting_other_alt_color:
+      options.pic_options.other_allele_supporting_read_alpha = 0.3
 
     if flags_obj.select_variant_types:
       options.select_variant_types[:] = flags_obj.select_variant_types.split()

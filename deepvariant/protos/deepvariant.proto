@@ -351,7 +351,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 32.
+// Next ID: 33.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -394,6 +394,8 @@ message PileupImageOptions {
 
   // The alpha to apply to reads that support our alt alleles.
   float allele_supporting_read_alpha = 9;
+  // The alpha to apply to reads that support the other alt allele.
+  float other_allele_supporting_read_alpha = 32;
   // The alpha to apply to reads that do not support our alt alleles.
   float allele_unsupporting_read_alpha = 10;
   // The alpha to apply to a base that matches the reference sequence.

@@ -101,7 +101,7 @@ class PileupImageEncoderNative {
   // Get the strand pixel color (int) for a positive strand observation.
   int StrandColor(bool on_positive_strand) const;
   // Get the pixel color (int) for a read that supports an alt allele.
-  int SupportsAltColor(bool read_supports_alt) const;
+  int SupportsAltColor(int read_supports_alt) const;
   // Get the pixel color (int) for a read that matches ref.
   int MatchesRefColor(bool base_matches_ref) const;
   // Get the pixel color (int) for a base read quality.

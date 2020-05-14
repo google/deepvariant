@@ -58,24 +58,36 @@ using tensorflow::uint8;
 
 namespace {
 
-// Does this read support one of the alternative alleles?
-inline bool ReadSupportsAlt(const DeepVariantCall& dv_call,
-                            const Read& read,
-                            const std::vector<string>& alt_alleles) {
+// Does this read support ref, one of the alternative alleles, or an allele we
+// aren't considering?
+inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
+                           const std::vector<string>& alt_alleles) {
   string key = (read.fragment_name() + "/" +
                 std::to_string(read.read_number()));
-  for (const string& alt_allele : alt_alleles) {
+
+  // Iterate over all alts, not just alt_alleles.
+  for (const string& alt_allele : dv_call.variant().alternate_bases()) {
     const auto& allele_support = dv_call.allele_support();
     const bool alt_allele_present_in_call =
         allele_support.find(alt_allele) != allele_support.cend();
+
     if (alt_allele_present_in_call) {
       const auto& supp_read_names = allele_support.at(alt_allele).read_names();
       for (const string& read_name : supp_read_names) {
-        if (read_name == key) return true;
+        const bool alt_in_alt_alleles =
+            std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
+            alt_alleles.end();
+        // Read can support an alt we are currently considering (1), a different
+        // alt not present in alt_alleles (2), or ref (0).
+        if (read_name == key && alt_in_alt_alleles) {
+          return 1;
+        } else if (read_name == key && !alt_in_alt_alleles) {
+          return 2;
+        }
       }
     }
   }
-  return false;
+  return 0;
 }
 
 }  // namespace
@@ -149,10 +161,16 @@ int PileupImageEncoderNative::MatchesRefColor(bool base_matches_ref) const {
   return static_cast<int>(kMaxPixelValueAsFloat * alpha);
 }
 
-int PileupImageEncoderNative::SupportsAltColor(bool read_supports_alt) const {
-  float alpha = (read_supports_alt ?
-                 options_.allele_supporting_read_alpha() :
-                 options_.allele_unsupporting_read_alpha());
+int PileupImageEncoderNative::SupportsAltColor(int read_supports_alt) const {
+  float alpha;
+  if (read_supports_alt == 0) {
+    alpha = options_.allele_unsupporting_read_alpha();
+  } else if (read_supports_alt == 1) {
+    alpha = options_.allele_supporting_read_alpha();
+  } else {
+    CHECK_EQ(read_supports_alt, 2) << "read_supports_alt can only be 0/1/2.";
+    alpha = options_.other_allele_supporting_read_alpha();
+  }
   return static_cast<int>(kMaxPixelValueAsFloat * alpha);
 }
 
@@ -184,7 +202,7 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
                                      const vector<string>& alt_alleles) {
   ImageRow img_row(ref_bases.size(),
                    options_.num_channels());
-  const bool supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
+  const int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
   const int mapping_quality = read.alignment().mapping_quality();
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
   const uint8 alt_color = SupportsAltColor(supports_alt);
@@ -336,7 +354,7 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
   uint8 mapping_quality_color = MappingQualityColor(ref_qual);
   // We use "+" strand color for the reference.
   uint8 strand_color = StrandColor(true);
-  uint8 alt_color = SupportsAltColor(false);
+  uint8 alt_color = SupportsAltColor(0);
   uint8 ref_color = MatchesRefColor(true);
 
   ImageRow img_row(ref_bases.size(),
