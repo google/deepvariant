@@ -107,7 +107,7 @@ https://github.com/google/clif before continuing."
   OSS_CLIF_PKG="oss_clif.${DV_PLATFORM}.latest.tgz"
 
   if [[ ! -f "/tmp/${OSS_CLIF_PKG}" ]]; then
-    curl "${OSS_CLIF_CURL_ROOT}/${OSS_CLIF_PKG}" > /tmp/${OSS_CLIF_PKG}
+    wget "${OSS_CLIF_CURL_ROOT}/${OSS_CLIF_PKG}" -O /tmp/${OSS_CLIF_PKG}
   fi
 
   (cd / && sudo tar xzf "/tmp/${OSS_CLIF_PKG}")

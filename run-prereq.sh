@@ -167,7 +167,7 @@ else
       echo "Installing Intel's CPU-only MKL TensorFlow ${DV_GCP_OPTIMIZED_TF_WHL_VERSION} wheel"
       # redacted
       WHEEL_NAME=tensorflow-2.0.0-cp36-cp36m-linux_x86_64.whl
-      curl "https://storage.googleapis.com/penporn-kokoro/tf-mkl-2.0-py36/${WHEEL_NAME}" > "/tmp/${WHEEL_NAME}"
+      wget "https://storage.googleapis.com/penporn-kokoro/tf-mkl-2.0-py36/${WHEEL_NAME}" -O "/tmp/${WHEEL_NAME}"
       pip3 install "${PIP_ARGS[@]}" --upgrade "/tmp/${WHEEL_NAME}"
     else
       echo "Installing standard CPU-only TensorFlow ${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION} wheel"
