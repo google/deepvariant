@@ -48,7 +48,7 @@ sudo -H apt-get -qq -y update
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release > /dev/null
+sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release wget > /dev/null
 
 ################################################################################
 # bazel
