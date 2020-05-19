@@ -63,7 +63,7 @@ sudo -H apt-get -qq -y update > /dev/null
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get -qq -y install pkg-config zip zlib1g-dev unzip curl lsb-release git > /dev/null
+sudo -H apt-get -qq -y install pkg-config zip zlib1g-dev unzip curl git lsb-release wget > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
 
