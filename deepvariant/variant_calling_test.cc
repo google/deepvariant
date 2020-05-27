@@ -68,7 +68,7 @@ AlleleCount MakeAlleleCount(const absl::string_view chr_name, int start,
   AlleleCount allele_count;
   *allele_count.mutable_position() = nucleus::MakePosition(chr_name, start);
   QCHECK_EQ(ref_base.length(), 1) << "AlleleCount.ref_base has to be one char.";
-  allele_count.set_ref_base(ref_base);
+  allele_count.set_ref_base(ref_base.data(), ref_base.size());
   allele_count.set_ref_supporting_read_count(ref_supporting_read_count);
   for (int i = 0; i < read_alleles.size(); ++i) {
     (*allele_count.mutable_read_alleles())[StrCat("read_", i)] =
@@ -122,8 +122,9 @@ Variant MakeExpectedVariant(const absl::string_view ref,
   Variant variant;
   variant.set_reference_name(kChr);
   variant.set_start(start);
-  variant.set_reference_bases(ref);
-  for (const auto alt_allele : alts) variant.add_alternate_bases(alt_allele);
+  variant.set_reference_bases(ref.data(), ref.size());
+  for (const auto alt_allele : alts)
+    variant.add_alternate_bases(alt_allele.data(), alt_allele.size());
 
   if (alts.empty()) {
     // Variant should be a single bp gVCF record with the kGVCFAltAllele
