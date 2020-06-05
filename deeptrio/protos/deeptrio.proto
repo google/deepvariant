@@ -1,0 +1,246 @@
+// Copyright 2017 Google LLC.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from this
+//    software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+
+package learning.genomics.deeptrio;
+
+import "deepvariant/protos/deepvariant.proto";
+import "deepvariant/protos/realigner.proto";
+import "deepvariant/protos/resources.proto";
+import "third_party/nucleus/protos/reads.proto";
+
+// High-level options that encapsulates all of the parameters needed to run
+// DeepTrio end-to-end.
+// Next ID: 35.
+message DeepTrioOptions {
+  // A list of contig names we never want to call variants on. For example,
+  // chrM in humans is the mitocondrial genome and the caller isn't trained to
+  // call variants on that genome.
+  repeated string exclude_contigs = 1;
+
+  // List of regions where we want to call variants. If missing, we will call
+  // variants throughout the entire genome.
+  repeated string calling_regions = 2;
+
+  // Fixed random seed to use for DeepTrio itself.
+  uint32 random_seed = 3;
+
+  // The number of cores to use when running DeepTrio. Must be >= 1.
+  int32 n_cores = 4;
+
+  // Options to control how we run the AlleleCounter.
+  learning.genomics.deepvariant.AlleleCounterOptions allele_counter_options = 5;
+
+  // Options to control how we call candidate variants.
+  learning.genomics.deepvariant.VariantCallerOptions variant_caller_options = 6;
+
+  // Options to control how we generate pileup images.
+  learning.genomics.deepvariant.PileupImageOptions pic_options = 7;
+
+  // Options to control how we label our examples.
+  learning.genomics.deepvariant.VariantLabelerOptions labeler_options = 8;
+
+  // Only reads satisfying these requirements will be used in DeepTrio.
+  // This parameters are propagated as appropriate to read_requirement fields
+  // in our tool-specific options.
+  nucleus.genomics.v1.ReadRequirements read_requirements = 9;
+
+  // Options to control out input data sources and output data sinks.
+  // Path to our genome reference.
+  string reference_filename = 10;
+  // Path to our source of NGS reads.
+  string reads_filename = 11;
+  // Path where we'll write out our candidate variants.
+
+  // Path to parents source BAMs. Only used for trio calling.
+  string reads_parent1_filename = 31;
+  string reads_parent2_filename = 32;
+
+  string candidates_filename = 12;
+  // Path to examples.
+  string examples_filename = 13;
+  // Path to a list of regions we are confident in, for determining which
+  // candidate variants get labels.
+  string confident_regions_filename = 14;
+  // Path to the truth variants, for use in labeling our examples.
+  string truth_variants_filename = 15;
+  // Path where we should put our gVCF records.
+  string gvcf_filename = 16;
+
+  // The name of the deep learning model to use with DeepTrio.
+  string model_name = 17;
+
+  enum Mode {
+    UNSPECIFIED = 0;
+    CALLING = 1;
+    TRAINING = 2;
+  }
+  Mode mode = 18;
+
+  // The minimum fraction of basepairs that must be shared by all contigs common
+  // to DeepTrio inputs and the reference contigs alone. If the common
+  // contigs cover less than min_shared_contig_basepairs of the reference genome
+  // contigs DeepTrio will signal an error that the input datasets aren't
+  // from compatible genomes.
+  float min_shared_contigs_basepairs = 19;
+
+  // The task identifier, as an integer, of this task. If we are running with
+  // multiple tasks processing the same inputs into sharded outputs, this id
+  // should be set to a number from 0 (master) to N - 1 to indicate which of the
+  // tasks we are currently processing.
+  int32 task_id = 20;
+
+  // When running in sharded output mode (i.e., writing outputs to foo@N), this
+  // field captures the number of sharded outputs (i.e., N). When not running in
+  // sharded output mode, this field should be 0.
+  int32 num_shards = 21;
+
+  // Options to control realigner module.
+
+  // Whether the realigner should be enabled.
+  bool realigner_enabled = 22;
+  // Settings for the realigner module.
+  learning.genomics.deepvariant.RealignerOptions realigner_options = 23;
+
+  // The maximum number of reads per partition that we consider before following
+  // processing such as sampling and realigner.
+  int32 max_reads_per_partition = 24;
+
+  // Should we downsample our reads and if so, by how much? If == 0.0 (default),
+  // no downsampling occurs. But if set, must be between 0.0 and 1.0 and
+  // indicates the probability that a read will be kept (randomly) when read
+  // from the input for the child's BAM. This option makes it easy to simulate
+  // lower coverage data.
+  float downsample_fraction_child = 25;
+
+  // Same as downsample_fraction_child but applied to parent BAMs.
+  float downsample_fraction_parents = 34;
+
+  // List of regions where we DON'T want to call variants. If missing, no
+  // regions will be excluded from calling.
+  repeated string exclude_calling_regions = 26;
+
+  // An enumeration of all of the labeler algorithms we support in DeepTrio.
+  enum LabelerAlgorithm {
+    UNSPECIFIED_LABELER_ALGORITHM = 0;
+    // The labeling algorithm used with DeepTrio 0.4-0.5, which does position
+    // matching to find truth variant to label our candidates.
+    POSITIONAL_LABELER = 1;
+    // A haplotype-aware labeling algorithm, similar to hap.py xcmp, that looks
+    // for genotypes for candidate variants that produce haplotypes that match
+    // those implied by the genotypes of our truth variants. Produces more
+    // accurate labels than the POSITIONAL_LABELER labeling algorithm.
+    HAPLOTYPE_LABELER = 2;
+    // The labeling algorithm which labels the variants into customized classes
+    // specified in the specified INFO field in the VCF file.
+    CUSTOMIZED_CLASSES_LABELER = 3;
+  }
+  // The labeling algorithm we are using in this DeepTrio run. Only needed
+  // when in CALLING mode.
+  LabelerAlgorithm labeler_algorithm = 27;
+  string run_info_filename = 28;
+
+  // By default aligned_quality field is read from QUAL in SAM. If flag is set,
+  // aligned_quality field is read from OQ tag in SAM.
+  bool use_original_quality_scores = 29;
+
+  // A list of variant types that we want to restrict our examples to. E.g.,
+  // select_variant_types = ['snps'] would indicate that we only want to
+  // generate SNP candidate variants.
+  repeated string select_variant_types = 30;
+
+  enum VariantCaller {
+    UNSPECIFIED_CALLER = 0;
+    // The default very sensitive caller.
+    VERY_SENSITIVE_CALLER = 1;
+    // An advanced caller that uses an input VCF to call variants.
+    VCF_CALLER = 2;
+  }
+  VariantCaller variant_caller = 33;
+}
+
+// Next ID: 18.
+message DeepTrioInputDatasets {
+  // Fields in Dataset are provided to make_examples.py as arguments.
+  message Dataset {
+    // Path to a BED file that contains the confident regions for creating TF
+    // examples.
+    string confident_regions = 1;
+    // Path to a BAM file that contains the DNA reads for creating TF examples.
+    string reads = 2;
+    // Path to a FASTA file that contains the reference genome.
+    string reads_parent1 = 11;
+    string sample_name_parent1 = 12;
+    string reads_parent2 = 13;
+    string sample_name_parent2 = 14;
+    string sample_name_to_call = 15;
+    string ref = 3;
+    // Path to a VCF file that contains the truth variants information.
+    string truth_variants = 4;
+    // Space-separated list of regions we want to process.
+    string regions = 5;
+    // A float number (< 1.0) that allows make_examples to sample more HOMREF
+    // examples. The value can also be "null" which means using the default.
+    string training_random_emit_ref_sites = 6;
+    // List of downsample_fractions. Accepted values are strings that can be
+    // parsed into a value between (0, 1), or the string "null" which means
+    // no downsampling.
+    repeated string downsample_fractions = 7;
+
+    repeated string downsample_fractions_child = 16;
+    repeated string downsample_fractions_parents = 17;
+
+    // Space-separated list of regions we want to exclude.
+    string exclude_regions = 8;
+
+    // Optional. If set, use this sample_name for make_examples.
+    string sample_name = 9;
+
+    // Optional. Can be set to the sequencing type of the input BAM file: 'WGS'
+    // or 'WES'.
+    string sequencing_type = 10;
+  }
+  repeated Dataset datasets = 1;
+  string group_name = 2;
+}
+
+message DeepTrioInputDatasetsGroup {
+  repeated DeepTrioInputDatasets groups = 1;
+}
+
+// Configuration and runtime information about a MakeExamples run in
+// DeepVariant.
+// Next ID: 5.
+message MakeExamplesRunInfo {
+  DeepTrioOptions options = 1;
+  learning.genomics.deepvariant.LabelingMetrics labeling_metrics = 2;
+  learning.genomics.deepvariant.ResourceMetrics resource_metrics = 3;
+  learning.genomics.deepvariant.MakeExamplesStats stats = 4;
+}
