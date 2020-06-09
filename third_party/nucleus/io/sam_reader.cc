@@ -35,12 +35,14 @@
 
 #include <errno.h>
 #include <stdint.h>
+
 #include <map>
 #include <utility>
 #include <vector>
 
 #include "google/protobuf/repeated_field.h"
 #include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "htslib/cram.h"
@@ -664,12 +666,13 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
 
   bam_hdr_t* header = sam_hdr_read(fp);
   if (header == nullptr) {
+    string errmsg = absl::StrCat("bad SAM header: ", fp->fn);
     int retval = hts_close(fp);
     fp = nullptr;
     if (retval < 0) {
-      return tf::errors::Internal("hts_close() failed during nonexistent header ");
+      return tf::errors::Internal("hts_close() failed on file with ", errmsg);
     }
-    return tf::errors::Unknown("Could not parse SAM header ");
+    return tf::errors::Unknown("Could not parse file with ", errmsg);
   }
 
   hts_idx_t* idx = nullptr;

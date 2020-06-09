@@ -149,8 +149,8 @@ class SamReaderTest(parameterized.TestCase):
         self.assertIsInstance(query_iterable2, clif_postproc.WrappedCppIterable)
 
   def test_from_file_raises_with_missing_bam(self):
-    with self.assertRaisesRegexp(ValueError,
-                                 'Not found: Could not open missing.bam'):
+    with self.assertRaisesRegex(ValueError,
+                                'Not found: Could not open missing.bam'):
       sam_reader.SamReader.from_file(
           reads_path='missing.bam', ref_path='', options=self.options)
 
@@ -160,9 +160,9 @@ class SamReaderTest(parameterized.TestCase):
     with reader:
       pass
     # At this point the reader is closed.
-    with self.assertRaisesRegexp(ValueError, 'Cannot Iterate a closed'):
+    with self.assertRaisesRegex(ValueError, 'Cannot Iterate a closed'):
       reader.iterate()
-    with self.assertRaisesRegexp(ValueError, 'Cannot Query a closed'):
+    with self.assertRaisesRegex(ValueError, 'Cannot Query a closed'):
       reader.query(ranges.parse_literal('chr20:10,000,000-10,000,100'))
 
   @parameterized.parameters('test.sam', 'unindexed.bam')
@@ -171,15 +171,15 @@ class SamReaderTest(parameterized.TestCase):
     window = ranges.parse_literal('chr20:10,000,000-10,000,100')
     with sam_reader.SamReader.from_file(
         reads_path=path, ref_path='', options=self.options) as reader:
-      with self.assertRaisesRegexp(ValueError, 'Cannot query without an index'):
+      with self.assertRaisesRegex(ValueError, 'Cannot query without an index'):
         reader.query(window)
 
   def test_query_raises_with_bad_range(self):
     with sam_reader.SamReader.from_file(
         reads_path=self.bam, ref_path='', options=self.options) as reader:
-      with self.assertRaisesRegexp(ValueError, 'Unknown reference_name'):
+      with self.assertRaisesRegex(ValueError, 'Unknown reference_name'):
         reader.query(ranges.parse_literal('XXX:1-10'))
-      with self.assertRaisesRegexp(ValueError, 'unknown reference interval'):
+      with self.assertRaisesRegex(ValueError, 'unknown reference interval'):
         reader.query(ranges.parse_literal('chr20:10-5'))
 
   def test_sam_iterate_raises_on_malformed_record(self):
@@ -193,9 +193,10 @@ class SamReaderTest(parameterized.TestCase):
 
   def test_headless_sam_raises(self):
     headerless = test_utils.genomics_core_testdata('headerless.sam')
-    with self.assertRaisesRegexp(ValueError, 'Could not parse SAM header'):
+    with self.assertRaisesRegex(ValueError,
+                                'Could not parse file with bad SAM header'):
       sam_reader.SamReader.from_file(
-        reads_path=headerless, ref_path='', options=self.options)
+          reads_path=headerless, ref_path='', options=self.options)
 
 
 if __name__ == '__main__':
