@@ -117,7 +117,7 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
           options_.retrieve_gl_and_pl_from_info_map()) {
   CHECK(fp != nullptr);
 
-  VcfHeaderConverter::ConvertFromPb(vcf_header_, &header_);
+  TF_CHECK_OK(VcfHeaderConverter::ConvertFromPb(vcf_header_, &header_));
 }
 
 tf::Status VcfWriter::WriteHeader() {

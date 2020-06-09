@@ -272,7 +272,7 @@ class VcfHeaderConverter {
 
   // Converts a proto VcfHeader to a bcf_hdr_t. Caller needs to take ownership
   // of |h|.
-  static void ConvertFromPb(const nucleus::genomics::v1::VcfHeader &vcf_header,
+  static tensorflow::Status ConvertFromPb(const nucleus::genomics::v1::VcfHeader &vcf_header,
                             bcf_hdr_t **h);
 };
 

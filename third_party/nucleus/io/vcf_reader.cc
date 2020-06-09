@@ -128,7 +128,7 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileWithHeader(
     const nucleus::genomics::v1::VcfReaderOptions& options,
     const nucleus::genomics::v1::VcfHeader& header) {
   bcf_hdr_t* h = nullptr;
-  VcfHeaderConverter::ConvertFromPb(header, &h);
+  TF_RETURN_IF_ERROR(VcfHeaderConverter::ConvertFromPb(header, &h));
   return FromFileHelper(vcf_filepath, options, h);
 }
 

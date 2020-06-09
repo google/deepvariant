@@ -663,8 +663,14 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
   }
 
   bam_hdr_t* header = sam_hdr_read(fp);
-  if (header == nullptr)
-    return tf::errors::Unknown("Couldn't parse header for ", fp->fn);
+  if (header == nullptr) {
+    int retval = hts_close(fp);
+    fp = nullptr;
+    if (retval < 0) {
+      return tf::errors::Internal("hts_close() failed during nonexistent header ");
+    }
+    return tf::errors::Unknown("Could not parse SAM header ");
+  }
 
   hts_idx_t* idx = nullptr;
   if (FileTypeIsIndexable(fp->format)) {

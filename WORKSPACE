@@ -14,17 +14,18 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 # //absl/{time,synchronization}
 http_archive(
     name = "com_googlesource_code_cctz",
-    urls = ["https://github.com/google/cctz/archive/master.zip"],
     strip_prefix = "cctz-master",
+    urls = ["https://github.com/google/cctz/archive/master.zip"],
 )
 
+# This is the 1.10.2 release of htslib.
 http_archive(
     name = "htslib",
     build_file = "//:third_party/htslib.BUILD",
-    sha256 = "c4d3ae84014f8a80f5011521f391e917bc3b4f6ebd78e97f238472e95849ec14",
-    strip_prefix = "htslib-1.9",
+    sha256 = "f7994e9636f8a4032dea477a8613f5f73b330c23b5538e45666ce7306240ac14",
+    strip_prefix = "htslib-1.10.2",
     urls = [
-        "https://github.com/samtools/htslib/archive/1.9.zip"
+        "https://github.com/samtools/htslib/archive/1.10.2.zip",
     ],
 )
 

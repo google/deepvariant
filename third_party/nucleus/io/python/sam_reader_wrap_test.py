@@ -193,11 +193,9 @@ class SamReaderTest(parameterized.TestCase):
 
   def test_headless_sam_raises(self):
     headerless = test_utils.genomics_core_testdata('headerless.sam')
-    reader = sam_reader.SamReader.from_file(
+    with self.assertRaisesRegexp(ValueError, 'Could not parse SAM header'):
+      sam_reader.SamReader.from_file(
         reads_path=headerless, ref_path='', options=self.options)
-    iterable = iter(reader.iterate())
-    with self.assertRaises(ValueError):
-      next(iterable)
 
 
 if __name__ == '__main__':

@@ -899,7 +899,7 @@ void VcfHeaderConverter::ConvertToPb(const bcf_hdr_t* hdr,
   }
 }
 
-void VcfHeaderConverter::ConvertFromPb(
+tensorflow::Status VcfHeaderConverter::ConvertFromPb(
     const nucleus::genomics::v1::VcfHeader& vcf_header, bcf_hdr_t** h) {
   // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>
   // filter automatically.
@@ -932,7 +932,11 @@ void VcfHeaderConverter::ConvertFromPb(
     bcf_hdr_add_sample(*h, sampleName.c_str());
   }
   bcf_hdr_add_sample(*h, nullptr);
-  bcf_hdr_sync(*h);
+  int ret = bcf_hdr_sync(*h);
+  if (ret < 0) {
+    return tensorflow::errors::DataLoss("Couldn't sync bcf header");
+  }
+  return tensorflow::Status::OK();
 }
 
 // Convert a C string to uppercase, in place, unless it starts with "<".

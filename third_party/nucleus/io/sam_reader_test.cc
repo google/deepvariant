@@ -205,12 +205,8 @@ TEST(SamReaderTest, TestBamSampleExtraction) {
 }
 
 TEST(SamReaderTest, TestHeaderlessSamIsNotOkay) {
-  std::unique_ptr<SamReader> reader = std::move(
-      SamReader::FromFile(GetTestData("headerless.sam"), SamReaderOptions())
-          .ValueOrDie());
-  auto iterator = reader->Iterate().ValueOrDie();
-  Read r;
-  StatusOr<bool> status =  iterator->Next(&r);
+  StatusOr<std::unique_ptr<SamReader>> status = SamReader::FromFile(
+      GetTestData("headerless.sam"), SamReaderOptions());
   ASSERT_EQ(status.ok(), false);
 }
 
