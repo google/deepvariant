@@ -109,6 +109,15 @@ bazel build -c opt \
   --build_python_zip \
   :binaries
 
+# shellcheck disable=SC2086
+bazel build -c opt \
+  --output_filter=DONT_MATCH_ANYTHING \
+  --noshow_loading_progress \
+  --show_result=0 \
+  ${DV_COPT_FLAGS} \
+  --build_python_zip \
+  :binaries-deeptrio
+
 bazel build  -c opt \
   --output_filter=DONT_MATCH_ANYTHING \
   --noshow_loading_progress \
@@ -122,6 +131,7 @@ bazel build  -c opt \
 # redacted
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples"
+fix_zip_file "bazel-out/k8-opt/bin/deeptrio/make_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/model_eval"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/model_train"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/postprocess_variants"

@@ -6,6 +6,18 @@ package(
     ],
 )
 
+filegroup(
+    name = "binaries",
+    srcs = [
+        "make_examples",
+        "//deepvariant:call_variants",
+        "//deepvariant:model_eval",
+        "//deepvariant:model_train",
+        "//deepvariant:postprocess_variants",
+        "//deepvariant:vcf_stats_report",
+    ],
+)
+
 py_library(
     name = "pileup_image",
     srcs = ["pileup_image.py"],

@@ -22,6 +22,13 @@ filegroup(
     ],
 )
 
+filegroup(
+    name = "binaries-deeptrio",
+    srcs = [
+        "//deeptrio:binaries",
+    ],
+)
+
 exports_files(["LICENSE"])
 
 filegroup(
@@ -49,6 +56,7 @@ cc_library(
     name = "all_extensions",
     srcs = [],
     deps = [
+        "//deeptrio/python:variant_calling_deeptrio_cclib",
         "//deepvariant/python:allelecounter_cclib",
         "//deepvariant/python:pileup_image_native_cclib",
         "//deepvariant/python:postprocess_variants_cclib",
