@@ -644,6 +644,8 @@ message DeepVariantInputDatasets {
     // examples.
     string confident_regions = 1;
     // Path to a BAM file that contains the DNA reads for creating TF examples.
+    // This can be a path with wildcard characters that can be globbed and
+    // expanded into multiple BAM files.
     string reads = 2;
     // Path to a FASTA file that contains the reference genome.
     string ref = 3;
