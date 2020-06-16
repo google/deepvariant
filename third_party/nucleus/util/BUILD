@@ -369,11 +369,7 @@ cc_library(
 py_library(
     name = "vis",
     srcs = ["vis.py"],
-    deps = [
-        "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/py/IPython:ipython-libs",
-        "//third_party/py/PIL:pil",
-    ],
+    deps = ["//third_party/nucleus/protos:variants_py_pb2"],
 )
 
 py_test(

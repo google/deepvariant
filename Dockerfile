@@ -45,6 +45,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examp
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/call_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/postprocess_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_report.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_train.zip .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_eval.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
@@ -79,12 +80,17 @@ RUN \
     /opt/deepvariant/bin/vcf_stats_report && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
+    'python /opt/deepvariant/bin/show_examples.zip "$@"' > \
+    /opt/deepvariant/bin/show_examples && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
     'python -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
     /opt/deepvariant/bin/postprocess_variants \
     /opt/deepvariant/bin/vcf_stats_report \
+    /opt/deepvariant/bin/show_examples \
     /opt/deepvariant/bin/model_train \
     /opt/deepvariant/bin/model_eval \
     /opt/deepvariant/bin/run_deepvariant

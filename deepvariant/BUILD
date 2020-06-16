@@ -12,6 +12,7 @@ filegroup(
         "model_eval",
         "model_train",
         "postprocess_variants",
+        "show_examples",
         "vcf_stats_report",
     ],
 )
@@ -987,5 +988,49 @@ py_test(
         "@absl_py//absl/testing:absltest",
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_binary(
+    name = "show_examples",
+    srcs = ["show_examples.py"],
+    python_version = "PY3",
+    deps = [
+        ":show_examples_lib",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_library(
+    name = "show_examples_lib",
+    srcs = ["show_examples.py"],
+    srcs_version = "PY3",
+    deps = [
+        "//third_party/nucleus/io:sharded_file_utils",
+        "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:vis",
+        "@absl_py//absl:app",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "show_examples_test",
+    srcs = ["show_examples_test.py"],
+    data = [":testdata"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":py_testdata",
+        ":show_examples",
+        "//deepvariant/testing:flagsaver",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
