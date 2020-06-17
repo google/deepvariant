@@ -98,7 +98,7 @@ doi: https://doi.org/10.1101/2020.02.10.942086
 ### Official Solutions
 
 Below are the official solutions provided by the
-[Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/).
+[Genomics team in Google Health](https://health.google/health-research/).
 
 Name                                                                                                | Description
 :-------------------------------------------------------------------------------------------------: | -----------
@@ -109,7 +109,7 @@ Prebuilt Binaries                                                               
 ### External Solutions
 
 The following pipelines are not created or maintained by the
-[Genomics team in Google Brain](https://research.google.com/teams/brain/genomics/).
+[Genomics team in Google Health](https://health.google/health-research/).
 Please contact the relevant teams if you have any questions or concerns.
 
 Name                                                                                                                                                                                                                                                                                                                                                                                                                     | Description
