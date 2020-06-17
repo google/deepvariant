@@ -1,4 +1,4 @@
-# Copyright 2017 Google LLC.
+# Copyright 2020 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -56,6 +56,7 @@ import six
 from deeptrio import make_examples
 from deeptrio import testdata
 from deeptrio.protos import deeptrio_pb2
+from deepvariant import make_examples_utils
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
@@ -267,7 +268,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                                   num_shards)
       expected_gvcfs = list(
           tfrecord.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant))
-      self.assertItemsEqual(gvcfs, expected_gvcfs)
+      # Despite its name, assertCountEqual checks that all items are equal.
+      self.assertCountEqual(gvcfs, expected_gvcfs)
 
     if (mode == 'training' and num_shards == 0 and
         labeler_algorithm != 'positional_labeler'):
@@ -561,8 +563,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         make_examples.parse_proto_enum_flag(enum_pb2, flag_value), expected)
 
   def test_parse_proto_enum_flag_error_handling(self):
-    with self.assertRaisesRegexp(
-        ValueError,
+    with six.assertRaisesRegex(
+        self, ValueError,
         'Unknown enum option "foo". Allowed options are CALLING,TRAINING'):
       make_examples.parse_proto_enum_flag(deeptrio_pb2.DeepTrioOptions.Mode,
                                           'foo')
@@ -738,7 +740,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     mock_sample_reader.header = reads_pb2.SamHeader(read_groups=[
         reads_pb2.ReadGroup(sample_id=sample) for sample in samples
     ])
-    with self.assertRaisesRegexp(ValueError, expected_error_message):
+    with six.assertRaisesRegex(self, ValueError, expected_error_message):
       make_examples.extract_sample_name_from_sam_reader(mock_sample_reader)
 
   @flagsaver.FlagSaver
@@ -849,21 +851,21 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
     # No common contigs always blows up.
     for threshold in [0.0, 0.1, 0.5, 0.9, 1.0]:
-      with self.assertRaisesRegexp(ValueError, 'span 200'):
+      with six.assertRaisesRegex(self, ValueError, 'span 200'):
         make_examples.validate_reference_contig_coverage(
             ref_contigs, [], threshold)
 
     # Dropping either contig brings up below our 0.9 threshold.
-    with self.assertRaisesRegexp(ValueError, 'span 200'):
+    with six.assertRaisesRegex(self, ValueError, 'span 200'):
       make_examples.validate_reference_contig_coverage(
           ref_contigs, _make_contigs([('1', 100)]), 0.9)
 
-    with self.assertRaisesRegexp(ValueError, 'span 200'):
+    with six.assertRaisesRegex(self, ValueError, 'span 200'):
       make_examples.validate_reference_contig_coverage(
           ref_contigs, _make_contigs([('2', 100)]), 0.9)
 
     # Our actual overlap is 50%, so check that we raise when appropriate.
-    with self.assertRaisesRegexp(ValueError, 'span 200'):
+    with six.assertRaisesRegex(self, ValueError, 'span 200'):
       make_examples.validate_reference_contig_coverage(
           ref_contigs, _make_contigs([('2', 100)]), 0.6)
     self.assertIsNone(
@@ -1139,7 +1141,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       vcf_contigs = _make_contigs([(name, 100) for name in vcf_names])
     else:
       vcf_contigs = None
-    with self.assertRaisesRegexp(ValueError, 'Reference contigs span'):
+    with six.assertRaisesRegex(self, ValueError, 'Reference contigs span'):
       make_examples._ensure_consistent_contigs(ref_contigs, sam_contigs,
                                                vcf_contigs, names_to_exclude,
                                                min_coverage_fraction)
@@ -1183,13 +1185,15 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.examples = 'examples.tfrecord'
 
     options = make_examples.default_options(add_flags=True)
-    with self.assertRaisesRegexp(ValueError, 'The regions to call is empty.'):
+    with six.assertRaisesRegex(self, ValueError,
+                               'The regions to call is empty.'):
       make_examples.processing_regions_from_options(options)
 
 
 class RegionProcessorTest(parameterized.TestCase):
 
   def setUp(self):
+    super(RegionProcessorTest, self).setUp()
     self.region = ranges.parse_literal('20:10,000,000-10,000,100')
 
     FLAGS.reads = ''
@@ -1206,6 +1210,10 @@ class RegionProcessorTest(parameterized.TestCase):
     self.mock_init = self.add_mock('_initialize')
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
+    parent1 = make_examples_utils.Sample(in_memory_sam_reader=mock.Mock())
+    child = make_examples_utils.Sample(in_memory_sam_reader=mock.Mock())
+    parent2 = make_examples_utils.Sample(in_memory_sam_reader=mock.Mock())
+    self.processor.samples = [parent1, child, parent2]
 
   def add_mock(self, name, retval='dontadd', side_effect='dontadd'):
     patcher = mock.patch.object(self.processor, name, autospec=True)
@@ -1228,7 +1236,6 @@ class RegionProcessorTest(parameterized.TestCase):
     c1, c2 = mock.Mock(), mock.Mock()
     l1, l2 = mock.Mock(), mock.Mock()
     e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
-    self.processor.in_memory_sam_reader = mock.Mock()
     self.add_mock('region_reads', retval=[r1, r2])
     self.add_mock('candidates_in_region', retval=([c1, c2], []))
     mock_cpe = self.add_mock(
@@ -1237,8 +1244,10 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_alte = self.add_mock('add_label_to_example', side_effect=[e1, e2, e3])
     self.assertEqual(([c1, c2], [e1, e2, e3], []),
                      self.processor.process(self.region))
-    self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
-        [r1, r2])
+
+    in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
+    in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])
+
     # We don't try to label variants when in calling mode.
     self.assertEqual([mock.call(c1), mock.call(c2)], mock_cpe.call_args_list)
 
@@ -1259,7 +1268,7 @@ class RegionProcessorTest(parameterized.TestCase):
     dv_call = mock.Mock()
     self.processor.pic.create_pileup_images.return_value = None
     self.assertEqual([], self.processor.create_pileup_examples(dv_call))
-    self.processor.pic.create_pileup_images.assert_called_once_with(dv_call)
+    self.processor.pic.create_pileup_images.assert_called_once()
 
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
@@ -1279,7 +1288,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     actual = self.processor.create_pileup_examples(dv_call)
 
-    self.processor.pic.create_pileup_images.assert_called_once_with(dv_call)
+    self.processor.pic.create_pileup_images.assert_called_once()
 
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
@@ -1342,8 +1351,8 @@ class RegionProcessorTest(parameterized.TestCase):
         variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
         genotype=(0, 1))
     example = self._example_for_variant(label.variant)
-    with self.assertRaisesRegexp(
-        ValueError, 'Cannot add a non-confident label to an example'):
+    with six.assertRaisesRegex(
+        self, ValueError, 'Cannot add a non-confident label to an example'):
       self.processor.add_label_to_example(example, label)
 
   def _example_for_variant(self, variant):
@@ -1364,8 +1373,8 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.examples = 'examples.tfrecord'
     FLAGS.use_original_quality_scores = True
 
-    with self.assertRaisesRegexp(
-        Exception,
+    with six.assertRaisesRegex(
+        self, Exception,
         'If use_original_quality_scores is set then parse_sam_aux_fields must be set too.'
     ):
       make_examples.default_options(add_flags=True)
@@ -1428,8 +1437,9 @@ class RegionProcessorTest(parameterized.TestCase):
         'A' * 101, start=10046100, cigar='101M', quals=[30] * 101)
 
     self.processor.realigner.align_to_haplotype = mock.Mock()
-    hap_alignments, hap_sequences = self.processor.align_to_all_haplotypes(
-        variant, [read])
+    alt_info = self.processor.align_to_all_haplotypes(variant, [read])
+    hap_alignments = alt_info['alt_alignments']
+    hap_sequences = alt_info['alt_sequences']
 
     # Both outputs are keyed by alt allele.
     self.assertCountEqual(hap_alignments.keys(), ['A'])

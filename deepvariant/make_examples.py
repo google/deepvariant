@@ -1,4 +1,4 @@
-# Copyright 2017 Google LLC.
+# Copyright 2020 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -49,6 +49,7 @@ import tensorflow as tf
 from deepvariant import dv_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
+from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
@@ -542,7 +543,7 @@ def logging_with_options(options, message):
     prefix = 'Task {}/{}: '.format(options.task_id, options.num_shards)
   else:
     prefix = ''
-  logging.info(prefix + message)
+  logging.info(prefix, message)
 
 
 # ---------------------------------------------------------------------------
@@ -973,6 +974,7 @@ class RegionProcessor(object):
     self.pic = None
     self.labeler = None
     self.variant_caller = None
+    self.samples = []
 
   def _make_allele_counter_for_region(self, region):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
@@ -1009,6 +1011,7 @@ class RegionProcessor(object):
       raise ValueError('Cannot initialize this object twice')
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
+
     self.sam_readers = self._make_sam_readers()
     self.in_memory_sam_reader = sam.InMemorySamReader([])
 
@@ -1018,10 +1021,17 @@ class RegionProcessor(object):
           self.options.realigner_options,
           self.ref_reader,
           shared_header=input_bam_header)
+
+    # Organize sam readers into samples to enable generalizing to N samples.
+    sample = make_examples_utils.Sample(
+        sam_reader=self.sam_readers,
+        in_memory_sam_reader=self.in_memory_sam_reader)
+
+    self.samples = [sample]
     self.pic = pileup_image.PileupImageCreator(
         ref_reader=self.ref_reader,
-        sam_reader=self.in_memory_sam_reader,
-        options=self.options.pic_options)
+        options=self.options.pic_options,
+        samples=self.samples)
 
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
@@ -1302,7 +1312,10 @@ class RegionProcessor(object):
       sequences_by_haplotype[hap] = end_of_prefix + hap + beginning_of_suffix
       # Long haplotypes can extend past the window, so enforce the width here.
       sequences_by_haplotype[hap] = sequences_by_haplotype[hap][0:window_width]
-    return alignments_by_haplotype, sequences_by_haplotype
+    return {
+        'alt_alignments': alignments_by_haplotype,
+        'alt_sequences': sequences_by_haplotype
+    }
 
   def create_pileup_examples(self, dv_call):
     """Creates a tf.Example for DeepVariantCall.
@@ -1318,19 +1331,33 @@ class RegionProcessor(object):
     Returns:
       A list of tf.Example protos.
     """
-    reads = self.pic.get_reads(dv_call.variant)
+    reads_for_samples = [
+        self.pic.get_reads(
+            dv_call.variant, sam_reader=sample.in_memory_sam_reader)
+        for sample in self.samples
+    ]
     if self.options.pic_options.alt_aligned_pileup:
       # Align the reads against each alternate allele, saving the sequences of
       # those alleles along with the alignments for pileup images.
-      haplotype_alignments, haplotype_sequences = self.align_to_all_haplotypes(
-          dv_call.variant, reads)
-
+      alt_info_for_samples = [
+          self.align_to_all_haplotypes(dv_call.variant, reads)
+          for reads in reads_for_samples
+      ]
+      # Each sample has different reads and thus different alt-alignments.
+      haplotype_alignments_for_samples = [
+          sample['alt_alignments'] for sample in alt_info_for_samples
+      ]
+      # All samples share the same alt sequences, so select the first one.
+      haplotype_sequences = alt_info_for_samples[0]['alt_sequences']
       pileup_images = self.pic.create_pileup_images(
-          dv_call,
-          haplotype_alignments=haplotype_alignments,
+          dv_call=dv_call,
+          reads_for_samples=reads_for_samples,
+          haplotype_alignments_for_samples=haplotype_alignments_for_samples,
           haplotype_sequences=haplotype_sequences)
+
     else:
-      pileup_images = self.pic.create_pileup_images(dv_call)
+      pileup_images = self.pic.create_pileup_images(
+          dv_call=dv_call, reads_for_samples=reads_for_samples)
 
     if pileup_images is None:
       # We cannot build a PileupImage for dv_call, issue a warning.

@@ -1,4 +1,4 @@
-# Copyright 2017 Google LLC.
+# Copyright 2020 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -37,6 +37,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 
 import copy
+import enum
 import errno
 import platform
 import sys
@@ -47,7 +48,6 @@ from absl import flags
 from absl import logging
 from absl.testing import absltest
 from absl.testing import parameterized
-import enum
 import mock
 import six
 
@@ -1298,6 +1298,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 class RegionProcessorTest(parameterized.TestCase):
 
   def setUp(self):
+    super(RegionProcessorTest, self).setUp()
     self.region = ranges.parse_literal('chr20:10,000,000-10,000,100')
 
     FLAGS.reads = ''
@@ -1523,7 +1524,8 @@ class RegionProcessorTest(parameterized.TestCase):
     dv_call = mock.Mock()
     self.processor.pic.create_pileup_images.return_value = None
     self.assertEqual([], self.processor.create_pileup_examples(dv_call))
-    self.processor.pic.create_pileup_images.assert_called_once_with(dv_call)
+    self.processor.pic.create_pileup_images.assert_called_once_with(
+        dv_call=dv_call, reads_for_samples=[])
 
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
@@ -1543,7 +1545,8 @@ class RegionProcessorTest(parameterized.TestCase):
 
     actual = self.processor.create_pileup_examples(dv_call)
 
-    self.processor.pic.create_pileup_images.assert_called_once_with(dv_call)
+    self.processor.pic.create_pileup_images.assert_called_once_with(
+        dv_call=dv_call, reads_for_samples=[])
 
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
@@ -1661,9 +1664,9 @@ class RegionProcessorTest(parameterized.TestCase):
         'A' * 101, start=10046100, cigar='101M', quals=[30] * 101)
 
     self.processor.realigner.align_to_haplotype = mock.Mock()
-    hap_alignments, hap_sequences = self.processor.align_to_all_haplotypes(
-        variant, [read])
-
+    alt_info = self.processor.align_to_all_haplotypes(variant, [read])
+    hap_alignments = alt_info['alt_alignments']
+    hap_sequences = alt_info['alt_sequences']
     # Both outputs are keyed by alt allele.
     self.assertCountEqual(hap_alignments.keys(), ['A'])
     self.assertCountEqual(hap_sequences.keys(), ['A'])

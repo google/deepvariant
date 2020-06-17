@@ -1,4 +1,4 @@
-// Copyright 2017 Google LLC.
+// Copyright 2020 Google LLC.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -355,16 +355,7 @@ message VariantLabelerOptions {
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
-  // Only used for DeepVariant.
   int32 height = 1;
-
-  // The height, in pixels, of the parent pileup image we'll construct.
-  // Only used for trios.
-  int32 height_parent = 28;
-
-  // The height, in pixels, of the child pileup image we'll construct.
-  // Only used for trios.
-  int32 height_child = 29;
 
   // The width, in pixels, of the pileup image we'll construct.
   int32 width = 2;

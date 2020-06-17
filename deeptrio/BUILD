@@ -19,41 +19,6 @@ filegroup(
 )
 
 py_library(
-    name = "pileup_image",
-    srcs = ["pileup_image.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":dt_constants",
-        "//deeptrio/protos:deeptrio_py_pb2",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//deepvariant/python:pileup_image_native",
-        "//third_party/nucleus/protos:reads_py_pb2",
-        "//third_party/nucleus/util:py_utils",
-        "//third_party/nucleus/util:ranges",
-    ],
-)
-
-py_test(
-    name = "pileup_image_test",
-    size = "small",
-    srcs = ["pileup_image_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":pileup_image",
-        "//deeptrio/protos:deeptrio_py_pb2",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//deepvariant/python:pileup_image_native",
-        "//third_party/nucleus/io:fasta",
-        "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/nucleus/testing:testing_py",
-        "//third_party/nucleus/util:ranges",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
     name = "dt_constants",
     srcs = ["dt_constants.py"],
     srcs_version = "PY3",
@@ -194,12 +159,14 @@ py_library(
     srcs = ["make_examples.py"],
     srcs_version = "PY3",
     deps = [
-        ":pileup_image",
+        ":dt_constants",
         ":vcf_caller",
         ":very_sensitive_caller",
         "//deeptrio/protos:deeptrio_py_pb2",
         "//deepvariant:exclude_contigs",
         "//deepvariant:logging_level",
+        "//deepvariant:make_examples_utils",
+        "//deepvariant:pileup_image",
         "//deepvariant:resources_main_lib",
         "//deepvariant:tf_utils",
         "//deepvariant/labeler:customized_classes_labeler",
@@ -249,6 +216,7 @@ py_test(
         ":make_examples_lib",
         ":py_testdata",
         "//deeptrio/protos:deeptrio_py_pb2",
+        "//deepvariant:make_examples_utils",
         "//deepvariant:tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",

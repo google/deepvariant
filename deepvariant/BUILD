@@ -288,6 +288,7 @@ py_library(
     deps = [
         ":exclude_contigs",
         ":logging_level",
+        ":make_examples_utils",
         ":pileup_image",
         ":resources_main_lib",
         ":tf_utils",
@@ -328,6 +329,25 @@ py_binary(
         ":make_examples_lib",
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_library(
+    name = "make_examples_utils",
+    srcs = ["make_examples_utils.py"],
+    srcs_version = "PY3",
+    deps = [
+    ],
+)
+
+py_test(
+    name = "make_examples_utils_test",
+    srcs = ["make_examples_utils_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":make_examples_utils",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -475,6 +495,7 @@ py_test(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
+        ":make_examples_utils",
         ":pileup_image",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",

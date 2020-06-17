@@ -1,4 +1,4 @@
-# Copyright 2017 Google LLC.
+# Copyright 2020 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -192,11 +192,11 @@ class PileupImageCreator(object):
   with the alt alleles used for each image.
   """
 
-  def __init__(self, options, ref_reader, sam_reader):
+  def __init__(self, options, ref_reader, samples):
     self._options = options
     self._encoder = pileup_image_native.PileupImageEncoderNative(self._options)
     self._ref_reader = ref_reader
-    self._sam_reader = sam_reader
+    self._samples = samples
 
   def __getattr__(self, attr):
     """Gets attributes from self._options as though they are our attributes."""
@@ -206,16 +206,13 @@ class PileupImageCreator(object):
   def half_width(self):
     return _compute_half_width(self._options.width)
 
-  @property
-  def max_reads(self):
-    return self.height - self.reference_band_height
-
-  def get_reads(self, variant):
+  def get_reads(self, variant, sam_reader):
     """Gets the reads used to construct the pileup image around variant.
 
     Args:
       variant: A third_party.nucleus.protos.Variant proto describing the variant
         we are creating the pileup image of.
+      sam_reader: Nucleus sam_reader from which to query.
 
     Returns:
       A list of third_party.nucleus.protos.Read protos.
@@ -223,7 +220,7 @@ class PileupImageCreator(object):
     query_start = variant.start - self._options.read_overlap_buffer_bp
     query_end = variant.end + self._options.read_overlap_buffer_bp
     region = ranges.make_range(variant.reference_name, query_start, query_end)
-    return list(self._sam_reader.query(region))
+    return list(sam_reader.query(region))
 
   def get_reference_bases(self, variant):
     """Gets the reference bases used to make the pileup image around variant.
@@ -283,7 +280,7 @@ class PileupImageCreator(object):
   def build_pileup(self,
                    dv_call,
                    refbases,
-                   reads,
+                   reads_for_samples,
                    alt_alleles,
                    custom_ref=False):
     """Creates a pileup tensor for dv_call.
@@ -294,7 +291,8 @@ class PileupImageCreator(object):
       refbases: A string options.width in length containing the reference base
         sequence to encode. The middle base of this string should be at the
         start of the variant in dv_call.
-      reads: Iterable of third_party.nucleus.protos.Read objects that we'll use
+      reads_for_samples: list by sample of Iterable of
+        third_party.nucleus.protos.Read objects that we'll use
         to encode the read information supporting our call. Assumes each read is
         aligned and is well-formed (e.g., has bases and quality scores, cigar).
         Rows of the image are encoded in the same order as reads.
@@ -306,7 +304,8 @@ class PileupImageCreator(object):
         variant's reference_bases.
 
     Returns:
-      A [self.width, self.height, DEFAULT_NUM_CHANNEL] uint8 Tensor image.
+      A uint8 Tensor image of shape
+        [self.width, <sum of sample pileup heights>, DEFAULT_NUM_CHANNEL]
 
     Raises:
       ValueError: if any arguments are invalid.
@@ -321,6 +320,11 @@ class PileupImageCreator(object):
       raise ValueError(
           'all elements of alt_alleles must be the alternate bases'
           ' of dv_call.variant', alt_alleles, dv_call.variant)
+    if len(self._samples) != len(reads_for_samples):
+      raise ValueError(
+          'The number of self._samples ({}) must be the same as the number of '
+          'reads_for_samples ({}).'.format(
+              len(self._samples), len(reads_for_samples)))
 
     image_start_pos = dv_call.variant.start - self.half_width
     if not custom_ref and (refbases[self.half_width] !=
@@ -331,46 +335,63 @@ class PileupImageCreator(object):
                            refbases[self.half_width], self.half_width,
                            dv_call.variant.reference_bases))
 
-    # We start with n copies of our encoded reference bases.
-    rows = ([self._encoder.encode_reference(refbases)] *
-            self.reference_band_height)
+    def build_pileup_for_one_sample(reads, sample):
+      """Create read pileup image section for one sample."""
+      # We start with n copies of our encoded reference bases.
+      rows = ([self._encoder.encode_reference(refbases)] *
+              self.reference_band_height)
 
-    # A generator that yields tuples of the form (haplotype, position, row),
-    # if the read can be encoded as a valid row to be used in the pileup image.
-    def _row_generator():
-      """A generator that yields tuples of the form (haplotype, position, row)."""
-      for read in reads:
-        read_row = self._encoder.encode_read(dv_call, refbases, read,
-                                             image_start_pos, alt_alleles)
-        if read_row is not None:
-          hap_idx = 0
-          if self._options.sort_by_haplotypes:
-            if 'HP' in read.info and next(iter(
-                read.info.get('HP').values)).HasField('int_value'):
-              hap_idx = next(iter(read.info.get('HP').values)).int_value
-          yield hap_idx, read.alignment.position.position, read_row
+      # A generator that yields tuples of the form (haplotype, position, row),
+      # if the read can be encoded as a valid row to be used in the pileup
+      # image.
+      def _row_generator():
+        """A generator that yields tuples of (haplotype, position, row)."""
+        for read in reads:
+          read_row = self._encoder.encode_read(dv_call, refbases, read,
+                                               image_start_pos, alt_alleles)
+          if read_row is not None:
+            hap_idx = 0
+            if self._options.sort_by_haplotypes:
+              if 'HP' in read.info and next(iter(
+                  read.info.get('HP').values)).HasField('int_value'):
+                hap_idx = next(iter(read.info.get('HP').values)).int_value
+            yield hap_idx, read.alignment.position.position, read_row
 
-    # We add a row for each read in order, down-sampling if the number of reads
-    # is greater than self.max_reads. Sort the reads by their alignment
-    # position.
-    random_for_image = np.random.RandomState(self._options.random_seed)
-    sample = sorted(
-        utils.reservoir_sample(
-            _row_generator(), self.max_reads, random=random_for_image),
-        key=lambda x: (x[0], x[1]))
+      # We add a row for each read in order, down-sampling if the number of
+      # reads is greater than the max reads for each sample. Sort the reads by
+      # their alignment position.
+      random_for_image = np.random.RandomState(self._options.random_seed)
 
-    rows += [read_row for _, _, read_row in sample]
+      # Use sample height or default to pic height.
+      if sample.pileup_height is not None:
+        pileup_height = sample.pileup_height
+      else:
+        pileup_height = self.height
 
-    # Finally, fill in any missing rows to bring our image to self.height rows
-    # with empty (all black) pixels.
-    n_missing_rows = self.height - len(rows)
-    if n_missing_rows > 0:
-      # Add values to rows to fill it out with zeros.
-      rows += [self._empty_image_row()] * n_missing_rows
+      max_reads = pileup_height - self.reference_band_height
+      pileup_of_reads = sorted(
+          utils.reservoir_sample(
+              _row_generator(), max_reads, random=random_for_image),
+          key=lambda x: (x[0], x[1]))
+
+      rows += [read_row for _, _, read_row in pileup_of_reads]
+
+      # Finally, fill in any missing rows to bring our image to pileup_height
+      # rows with empty (all black) pixels.
+      n_missing_rows = pileup_height - len(rows)
+      if n_missing_rows > 0:
+        # Add values to rows to fill it out with zeros.
+        rows += [self._empty_image_row()] * n_missing_rows
+      return rows
+
+    sample_sections = []
+    for i, sample in enumerate(self._samples):
+      sample_sections.extend(
+          build_pileup_for_one_sample(reads_for_samples[i], sample))
 
     # Vertically stack the image rows to create a single
     # h x w x DEFAULT_NUM_CHANNEL image.
-    return np.vstack(rows)
+    return np.vstack(sample_sections)
 
   def _empty_image_row(self):
     """Creates an empty image row as an uint8 np.array."""
@@ -378,7 +399,8 @@ class PileupImageCreator(object):
 
   def create_pileup_images(self,
                            dv_call,
-                           haplotype_alignments=None,
+                           reads_for_samples,
+                           haplotype_alignments_for_samples=None,
                            haplotype_sequences=None):
     """Creates a DeepVariant TF.Example for the DeepVariant call dv_call.
 
@@ -387,7 +409,9 @@ class PileupImageCreator(object):
     Args:
       dv_call: A learning.genomics.deepvariant.DeepVariantCall proto that we
         want to create a TF.Example pileup image of.
-      haplotype_alignments: dict of read alignments keyed by haplotype.
+      reads_for_samples: list of read generators, one for each sample.
+      haplotype_alignments_for_samples: list with a dict for each sample of read
+        alignments keyed by haplotype.
       haplotype_sequences: dict of sequences keyed by haplotype.
 
     Returns:
@@ -403,8 +427,6 @@ class PileupImageCreator(object):
       # This interval isn't valid => we are off the edge of the chromosome, so
       # return None to indicate we couldn't process this variant.
       return None
-    # `reads` contains alignments from the original bam or realigned reads.
-    reads = self.get_reads(variant)
 
     alt_aligned_representation = self._options.alt_aligned_pileup
 
@@ -414,11 +436,11 @@ class PileupImageCreator(object):
       ref_image = self.build_pileup(
           dv_call=dv_call,
           refbases=ref_bases,
-          reads=reads,
+          reads_for_samples=reads_for_samples,
           alt_alleles=alt_alleles)
       # Optionally also create pileup images with reads aligned to alts.
       if alt_aligned_representation:
-        if not haplotype_alignments and haplotype_sequences:
+        if not haplotype_alignments_for_samples and haplotype_sequences:
           raise ValueError(
               'haplotype_alignments and haplotype_sequences must both be '
               'populated if alt_aligned_pileups is turned on.')
@@ -427,13 +449,16 @@ class PileupImageCreator(object):
             self.build_pileup(
                 dv_call=dv_call,
                 refbases=haplotype_sequences[alt],
-                reads=haplotype_alignments[alt],
+                reads_for_samples=[
+                    sample[alt] for sample in haplotype_alignments_for_samples
+                ],
                 alt_alleles=alt_alleles,
                 custom_ref=True) for alt in alt_alleles
         ]
         # pylint: enable=g-complex-comprehension
-        return _represent_alt_aligned_pileups(alt_aligned_representation,
-                                              ref_image, alt_images)
+        composite_image = _represent_alt_aligned_pileups(
+            alt_aligned_representation, ref_image, alt_images)
+        return composite_image
       else:
         return ref_image
 

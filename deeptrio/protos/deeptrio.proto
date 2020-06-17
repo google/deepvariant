@@ -1,4 +1,4 @@
-// Copyright 2017 Google LLC.
+// Copyright 2020 Google LLC.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -38,7 +38,7 @@ import "third_party/nucleus/protos/reads.proto";
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepTrio end-to-end.
-// Next ID: 35.
+// Next ID: 37.
 message DeepTrioOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -184,6 +184,12 @@ message DeepTrioOptions {
     VCF_CALLER = 2;
   }
   VariantCaller variant_caller = 33;
+
+  // The height, in pixels, of the parent pileup image we'll construct.
+  int32 height_parent = 35;
+
+  // The height, in pixels, of the child pileup image we'll construct.
+  int32 height_child = 36;
 }
 
 // Next ID: 18.

@@ -1,4 +1,4 @@
-# Copyright 2017 Google LLC.
+# Copyright 2020 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -43,12 +43,14 @@ from absl import logging
 import numpy as np
 import tensorflow.compat.v1 as tf
 
-from deeptrio import pileup_image
+from deeptrio import dt_constants
 from deeptrio import vcf_caller
 from deeptrio import very_sensitive_caller
 from deeptrio.protos import deeptrio_pb2
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
+from deepvariant import make_examples_utils
+from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
 from deepvariant.labeler import customized_classes_labeler
@@ -445,6 +447,10 @@ def default_options(add_flags=True, flags_obj=None):
 
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
+  # Set DeepTrio-specific pileup constants.
+  pic_options.height = dt_constants.PILEUP_DEFAULT_HEIGHT
+  pic_options.width = dt_constants.PILEUP_DEFAULT_WIDTH
+
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
       partition_size=flags_obj.partition_size, read_requirements=read_reqs)
 
@@ -520,15 +526,19 @@ def default_options(add_flags=True, flags_obj=None):
       }[flags_obj.multi_allelic_mode]
       options.pic_options.multi_allelic_mode = multi_allelic_enum
 
+    # Pileup heights are assigned to samples later when they are created.
     if flags_obj.pileup_image_height_parent:
-      options.pic_options.height_parent = flags_obj.pileup_image_height_parent
-    if flags_obj.pileup_image_height_child:
-      options.pic_options.height_child = flags_obj.pileup_image_height_child
+      options.height_parent = flags_obj.pileup_image_height_parent
+    else:
+      options.height_parent = dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT
 
-    if (options.pic_options.height_parent > 100 or
-        options.pic_options.height_parent < 10 or
-        options.pic_options.height_child > 100 or
-        options.pic_options.height_child < 10):
+    if flags_obj.pileup_image_height_child:
+      options.height_child = flags_obj.pileup_image_height_child
+    else:
+      options.height_child = dt_constants.PILEUP_DEFAULT_HEIGHT_CHILD
+
+    if (options.height_parent > 100 or options.height_parent < 10 or
+        options.height_child > 100 or options.height_child < 10):
       errors.log_and_raise('Pileup image heights must be between 10 and 100.')
 
     if flags_obj.pileup_image_width:
@@ -955,6 +965,7 @@ class RegionProcessor(object):
     self.pic = None
     self.labeler = None
     self.variant_caller = None
+    self.samples = []
 
   def _make_allele_counter_for_region(self, region):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
@@ -983,6 +994,7 @@ class RegionProcessor(object):
       raise ValueError('Cannot initialize this object twice')
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
+
     self.sam_reader = self._make_sam_reader(
         self.options.reads_filename, self.options.downsample_fraction_child)
     if self.options.reads_parent1_filename:
@@ -998,9 +1010,25 @@ class RegionProcessor(object):
     else:
       self.sam_reader_parent2 = None
 
-    self.in_memory_sam_reader = sam.InMemorySamReader([])
-    self.in_memory_sam_reader_parent1 = sam.InMemorySamReader([])
-    self.in_memory_sam_reader_parent2 = sam.InMemorySamReader([])
+    # Keep each sample organized with its relevant info.
+    child = make_examples_utils.Sample(
+        name='child',
+        sam_reader=self.sam_reader,
+        in_memory_sam_reader=sam.InMemorySamReader([]),
+        pileup_height=self.options.height_child)
+    parent1 = make_examples_utils.Sample(
+        name='parent1',
+        sam_reader=self.sam_reader_parent1,
+        in_memory_sam_reader=sam.InMemorySamReader([]),
+        pileup_height=self.options.height_parent)
+    parent2 = make_examples_utils.Sample(
+        name='parent2',
+        sam_reader=self.sam_reader_parent2,
+        in_memory_sam_reader=sam.InMemorySamReader([]),
+        pileup_height=self.options.height_parent)
+
+    # Ordering here determines the order of pileups from top to bottom.
+    self.samples = [parent1, child, parent2]
 
     if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup:
       input_bam_header = sam.SamReader(self.options.reads_filename).header
@@ -1013,10 +1041,8 @@ class RegionProcessor(object):
 
     self.pic = pileup_image.PileupImageCreator(
         ref_reader=self.ref_reader,
-        sam_reader=self.in_memory_sam_reader,
         options=self.options.pic_options,
-        sam_reader_parent1=self.in_memory_sam_reader_parent1,
-        sam_reader_parent2=self.in_memory_sam_reader_parent2)
+        samples=self.samples)
 
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
@@ -1097,24 +1123,15 @@ class RegionProcessor(object):
     if not self.initialized:
       self._initialize()
 
-    # realignment happens inside region_reads function. Realignment must be done
-    # separately for each sample.
-    reads = self.region_reads(region, self.sam_reader)
-    self.in_memory_sam_reader.replace_reads(reads)
-    if hasattr(self, 'sam_reader_parent1') and self.sam_reader_parent1:
-      reads_parent1 = self.region_reads(region, self.sam_reader_parent1)
-      self.in_memory_sam_reader_parent1.replace_reads(reads_parent1)
-    else:
-      reads_parent1 = None
-    if hasattr(self, 'sam_reader_parent2') and self.sam_reader_parent2:
-      reads_parent2 = self.region_reads(region, self.sam_reader_parent2)
-      self.in_memory_sam_reader_parent2.replace_reads(reads_parent2)
-    else:
-      reads_parent2 = None
+    # Get reads in the region for each sample into its in-memory sam reader,
+    # optionally realigning reads.
+    for sample in self.samples:
+      if sample.in_memory_sam_reader is not None:
+        sample.in_memory_sam_reader.replace_reads(
+            self.region_reads(region, sample.sam_reader))
 
-    # Candidates are created using both parents and child
-    candidates, gvcfs = self.candidates_in_region(region, reads, reads_parent1,
-                                                  reads_parent2)
+    # Candidates are created using both parents and child, using self.samples.
+    candidates, gvcfs = self.candidates_in_region(region)
 
     if self.options.select_variant_types:
       candidates = list(
@@ -1151,6 +1168,8 @@ class RegionProcessor(object):
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
     """
+    if sam_reader is None:
+      return []
     reads = sam_reader.query(region)
     if self.options.max_reads_per_partition > 0:
       random_for_region = np.random.RandomState(self.options.random_seed)
@@ -1181,17 +1200,12 @@ class RegionProcessor(object):
       _, reads = self.realigner.realign_reads(reads, region)
     return reads
 
-  def candidates_in_region(self, region, reads, reads_parent1, reads_parent2):
+  def candidates_in_region(self, region):
     """Finds candidate DeepVariantCall protos in region.
 
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to get candidates for.
-      reads: Iterator for a list of nucleus.genomics.v1.Read of child reads.
-      reads_parent1: Iterator for a list of nucleus.genomics.v1.Read of parent1
-        reads.
-      reads_parent2: Iterator for a list of nucleus.genomics.v1.Read of parent2
-        reads.
 
     Returns:
       A 2-tuple. The first value is a list of deeptrio_pb2.DeepVariantCalls
@@ -1199,6 +1213,12 @@ class RegionProcessor(object):
       nucleus.genomics.v1.Variant protos containing gVCF information for all
       reference sites, if gvcf generation is enabled, otherwise returns [].
     """
+
+    # Child is in the middle in self.samples.
+    reads_parent1 = self.samples[0].in_memory_sam_reader.query(region)
+    reads = self.samples[1].in_memory_sam_reader.query(region)
+    reads_parent2 = self.samples[2].in_memory_sam_reader.query(region)
+
     if not reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
       # we need to return the gVCF records calculated by the caller below.
@@ -1255,7 +1275,7 @@ class RegionProcessor(object):
       dict of alignments keyed by haplotype, dict of window sequences keyed by
           haplotype.
     """
-
+    # redacted
     window_width = self.pic.width
     window_half_width = self.pic.half_width
 
@@ -1276,16 +1296,17 @@ class RegionProcessor(object):
     # Margin must be more than half the window width, plus some extra
     # prefix/suffix to anchor alignments, but this value has not been optimized.
     margin = window_half_width + 100
-
+    valid_end = min(
+        self.realigner.ref_reader.contig(contig).n_bases, ref_end + margin)
     alignment_region = ranges.make_range(contig, max(ref_start - margin, 0),
-                                         ref_end + margin)
+                                         valid_end)
     trimmed_reads = [realigner.trim_read(r, alignment_region) for r in reads]
     # Filter reads to a minimum read length of 15 bp after trimming.
     reads = [r for r in trimmed_reads if len(r.aligned_sequence) >= 15]
     prefix = self.realigner.ref_reader.query(
         ranges.make_range(contig, max(ref_start - margin, 0), ref_start))
     suffix = self.realigner.ref_reader.query(
-        ranges.make_range(contig, ref_end, ref_end + margin))
+        ranges.make_range(contig, ref_end, valid_end))
 
     alignments_by_haplotype = {}
     sequences_by_haplotype = {}
@@ -1305,7 +1326,10 @@ class RegionProcessor(object):
       sequences_by_haplotype[hap] = end_of_prefix + hap + beginning_of_suffix
       # Long haplotypes can extend past the window, so enforce the width here.
       sequences_by_haplotype[hap] = sequences_by_haplotype[hap][0:window_width]
-    return alignments_by_haplotype, sequences_by_haplotype
+    return {
+        'alt_alignments': alignments_by_haplotype,
+        'alt_sequences': sequences_by_haplotype
+    }
 
   def create_pileup_examples(self, dv_call):
     """Creates a tf.Example for DeepVariantCall.
@@ -1321,29 +1345,32 @@ class RegionProcessor(object):
     Returns:
       A list of tf.Example protos.
     """
-
+    reads_for_samples = [
+        self.pic.get_reads(
+            dv_call.variant, sam_reader=sample.in_memory_sam_reader)
+        for sample in self.samples
+    ]
     if self.options.pic_options.alt_aligned_pileup:
-      reads = self.pic.get_reads(dv_call.variant)
-      reads_parent1 = self.pic.get_reads(dv_call.variant, parent=1)
-      reads_parent2 = self.pic.get_reads(dv_call.variant, parent=2)
-
       # Align the reads against each alternate allele, saving the sequences of
       # those alleles along with the alignments for pileup images.
-      haplotype_alignments, haplotype_sequences = self.align_to_all_haplotypes(
-          dv_call.variant, reads)
-      parent1_hap_alns, _ = self.align_to_all_haplotypes(
-          dv_call.variant, reads_parent1)
-      parent2_hap_alns, _ = self.align_to_all_haplotypes(
-          dv_call.variant, reads_parent2)
-
+      alt_info_for_samples = [
+          self.align_to_all_haplotypes(dv_call.variant, reads)
+          for reads in reads_for_samples
+      ]
+      # Each sample has different reads and thus different alt-alignments.
+      haplotype_alignments_for_samples = [
+          sample['alt_alignments'] for sample in alt_info_for_samples
+      ]
+      # All samples share the same alt sequences, so select the first one.
+      haplotype_sequences = alt_info_for_samples[0]['alt_sequences']
       pileup_images = self.pic.create_pileup_images(
-          dv_call,
-          haplotype_alignments=haplotype_alignments,
-          haplotype_sequences=haplotype_sequences,
-          parent1_hap_alns=parent1_hap_alns,
-          parent2_hap_alns=parent2_hap_alns)
+          dv_call=dv_call,
+          reads_for_samples=reads_for_samples,
+          haplotype_alignments_for_samples=haplotype_alignments_for_samples,
+          haplotype_sequences=haplotype_sequences)
     else:
-      pileup_images = self.pic.create_pileup_images(dv_call)
+      pileup_images = self.pic.create_pileup_images(
+          dv_call=dv_call, reads_for_samples=reads_for_samples)
 
     if pileup_images is None:
       # We cannot build a PileupImage for dv_call, issue a warning.

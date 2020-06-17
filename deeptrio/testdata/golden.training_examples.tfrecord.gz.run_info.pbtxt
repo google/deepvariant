@@ -3454,8 +3454,6 @@ options {
     random_seed: 2101079370
     num_channels: 6
     sequencing_type: TRIO
-    height_parent: 100
-    height_child: 100
   }
   read_requirements {
     min_mapping_quality: 10
