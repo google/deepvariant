@@ -122,7 +122,7 @@ You can run everything with the following command:
 ```bash
 sudo docker run \
   -v "${INPUT_DIR}":"/input" \
-  -v "${OUTPUT_DIR}:/output" \
+  -v "${OUTPUT_DIR}":"/output" \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
