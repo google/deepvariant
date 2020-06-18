@@ -349,8 +349,6 @@ cc_library(
     hdrs = [
         "proto_ptr.h",
     ],
-    deps = [
-    ],
 )
 
 cc_library(

@@ -336,8 +336,6 @@ py_library(
     name = "make_examples_utils",
     srcs = ["make_examples_utils.py"],
     srcs_version = "PY3",
-    deps = [
-    ],
 )
 
 py_test(
@@ -886,7 +884,6 @@ py_library(
     name = "dv_constants",
     srcs = ["dv_constants.py"],
     srcs_version = "PY3",
-    deps = [],
 )
 
 py_library(

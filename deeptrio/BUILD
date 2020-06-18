@@ -22,7 +22,6 @@ py_library(
     name = "dt_constants",
     srcs = ["dt_constants.py"],
     srcs_version = "PY3",
-    deps = [],
 )
 
 py_library(

@@ -8,5 +8,4 @@ licenses(["notice"])
 py_library(
     name = "__init__py",
     srcs = ["__init__.py"],
-    deps = [],
 )
