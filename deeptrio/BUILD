@@ -200,6 +200,8 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":make_examples_lib",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
