@@ -543,7 +543,7 @@ def logging_with_options(options, message):
     prefix = 'Task {}/{}: '.format(options.task_id, options.num_shards)
   else:
     prefix = ''
-  logging.info(prefix, message)
+  logging.info('%s%s', prefix, message)
 
 
 # ---------------------------------------------------------------------------
