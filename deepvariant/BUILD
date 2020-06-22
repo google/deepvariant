@@ -426,7 +426,7 @@ py_library(
 
 py_test(
     name = "call_variants_test",
-    size = "medium",
+    size = "large",
     srcs = ["call_variants_test.py"],
     args = ["--use_tpu=false"],
     data = [":testdata"],
@@ -695,7 +695,7 @@ py_library(
 
 py_test(
     name = "modeling_test",
-    size = "medium",
+    size = "large",
     srcs = ["modeling_test.py"],
     python_version = "PY3",
     srcs_version = "PY3",
