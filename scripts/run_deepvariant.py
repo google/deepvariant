@@ -120,8 +120,16 @@ MODEL_TYPE_MAP = {
 }
 
 
+def _is_quoted(value):
+  if value.startswith('"') and value.endswith('"'):
+    return True
+  if value.startswith("'") and value.endswith("'"):
+    return True
+  return False
+
+
 def _add_quotes(value):
-  if isinstance(value, str) and value.startswith('"') and value.endswith('"'):
+  if isinstance(value, str) and _is_quoted(value):
     return value
   return '"{}"'.format(value)
 
@@ -172,7 +180,7 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   """
   command = [
       'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
-      'parallel --halt 2 --line-buffer', '/opt/deepvariant/bin/make_examples'
+      'parallel -q --halt 2 --line-buffer', '/opt/deepvariant/bin/make_examples'
   ]
   command.extend(['--mode', 'calling'])
   command.extend(['--ref', '"{}"'.format(ref)])
