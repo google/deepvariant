@@ -194,8 +194,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(
         _sharded('vsc.tfrecord', num_shards))
+    child_candidates = test_utils.test_tmpfile(
+        _sharded('vsc_child.tfrecord', num_shards))
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards))
+    child_examples = test_utils.test_tmpfile(
+        _sharded('examples_child.tfrecord', num_shards))
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
@@ -207,6 +211,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     if mode == 'calling':
       FLAGS.gvcf = test_utils.test_tmpfile(
           _sharded('gvcf.tfrecord', num_shards))
+      child_gvcf = test_utils.test_tmpfile(
+          _sharded('gvcf_child.tfrecord', num_shards))
     else:
       FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
       FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
@@ -229,7 +235,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # to check lots of properties of the output.
     candidates = sorted(
         tfrecord.read_tfrecords(
-            FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall),
+            child_candidates, proto=deepvariant_pb2.DeepVariantCall),
         key=lambda c: variant_utils.variant_range_tuple(c.variant))
     self.verify_deepvariant_calls(candidates, options)
     self.verify_variants([call.variant for call in candidates],
@@ -238,8 +244,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                          is_gvcf=False)
 
     # Verify that the variants in the examples are all good.
-    examples = self.verify_examples(
-        FLAGS.examples, region, options, verify_labels=mode == 'training')
+    if mode == 'calling':
+      examples = self.verify_examples(
+          child_examples, region, options, verify_labels=False)
+    else:
+      examples = self.verify_examples(
+          FLAGS.examples, region, options, verify_labels=True)
     example_variants = [tf_utils.example_variant(ex) for ex in examples]
     self.verify_variants(example_variants, region, options, is_gvcf=False)
 
@@ -261,7 +271,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
       # Check the quality of our generated gvcf file.
       gvcfs = variant_utils.sorted_variants(
-          tfrecord.read_tfrecords(FLAGS.gvcf, proto=variants_pb2.Variant))
+          tfrecord.read_tfrecords(child_gvcf, proto=variants_pb2.Variant))
       self.verify_variants(gvcfs, region, options, is_gvcf=True)
       self.verify_contiguity(gvcfs, region)
       gvcf_golden_file = _sharded(testdata.GOLDEN_POSTPROCESS_GVCF_INPUT,
@@ -370,6 +380,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
+    child_candidates = test_utils.test_tmpfile(_sharded('vsc_child.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
     FLAGS.partition_size = 1000
     FLAGS.mode = 'calling'
@@ -377,7 +388,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     make_examples.make_examples_runner(options)
 
-    candidates = list(tfrecord.read_tfrecords(FLAGS.candidates))
+    candidates = list(tfrecord.read_tfrecords(child_candidates))
     self.assertEqual(len(candidates), expected_count)
 
   def verify_nist_concordance(self, candidates, nist_variants):
@@ -1237,13 +1248,16 @@ class RegionProcessorTest(parameterized.TestCase):
     l1, l2 = mock.Mock(), mock.Mock()
     e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
     self.add_mock('region_reads', retval=[r1, r2])
-    self.add_mock('candidates_in_region', retval=([c1, c2], []))
+    self.add_mock('candidates_in_region', retval=({'child': [c1, c2]}, {}))
     mock_cpe = self.add_mock(
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
     mock_lc = self.add_mock('label_candidates', retval=[(c1, l1), (c2, l2)])
     mock_alte = self.add_mock('add_label_to_example', side_effect=[e1, e2, e3])
-    self.assertEqual(([c1, c2], [e1, e2, e3], []),
-                     self.processor.process(self.region))
+    self.assertEqual(({
+        'child': [c1, c2]
+    }, {
+        'child': [e1, e2, e3]
+    }, {}), self.processor.process(self.region))
 
     in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
     in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])

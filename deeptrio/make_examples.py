@@ -36,6 +36,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+import os
 
 from absl import app
 from absl import flags
@@ -129,7 +130,9 @@ flags.DEFINE_bool(
     'file be located on a local POSIX filesystem.')
 flags.DEFINE_string(
     'examples', None,
-    'Required. Path to write tf.Example protos in TFRecord format.')
+    'Required. Path to write tf.Example protos in TFRecord format. This is the '
+    'root path, as the actual files will be written to this path + suffix, '
+    'where suffix corresponds to sample.')
 flags.DEFINE_string(
     'candidates', '',
     'Candidate DeepVariantCalls in tfrecord format. For DEBUGGING.')
@@ -1109,13 +1112,14 @@ class RegionProcessor(object):
         genome we should process.
 
     Returns:
-      Three values. First is a list of the found candidates, which are
-      deepvariant.DeepVariantCall objects. The second value is a list of filled
+      Three values. First is a dict of the found candidates, which are
+      deepvariant.DeepVariantCall objects. The second value is a dict of filled
       in tf.Example protos. For example, these will include the candidate
       variant, the pileup image, and, if in training mode, the truth variants
-      and labels needed for training. The third value is a list of
+      and labels needed for training. The third value is a dict of
       nucleus.genomics.v1.Variant protos containing gVCF information for all
-      reference sites, if gvcf generation is enabled, otherwise returns [].
+      reference sites, if gvcf generation is enabled, otherwise returns []. Each
+      dict is keyed by sample.
     """
     region_timer = timer.TimerStart()
 
@@ -1130,29 +1134,33 @@ class RegionProcessor(object):
         sample.in_memory_sam_reader.replace_reads(
             self.region_reads(region, sample.sam_reader))
 
-    # Candidates are created using both parents and child, using self.samples.
-    candidates, gvcfs = self.candidates_in_region(region)
+    # Candidates are created using both parents and child
+    candidates_dict, gvcfs_dict = self.candidates_in_region(region)
+    examples_dict = {}
+    for sample, candidates in candidates_dict.items():
+      examples_dict[sample] = []
 
-    if self.options.select_variant_types:
-      candidates = list(
-          filter_candidates(candidates, self.options.select_variant_types))
+      if self.options.select_variant_types:
+        candidates = list(
+            filter_candidates(candidates, self.options.select_variant_types))
 
-    if in_training_mode(self.options):
-      examples = []
-      for candidate, label in self.label_candidates(candidates, region):
-        for example in self.create_pileup_examples(candidate):
-          self.add_label_to_example(example, label)
-          examples.append(example)
-    else:
-      examples = []
-      for candidate in candidates:
-        for example in self.create_pileup_examples(candidate):
-          examples.append(example)
+      if in_training_mode(self.options):
+        for candidate, label in self.label_candidates(candidates, region):
+          for example in self.create_pileup_examples(candidate):
+            self.add_label_to_example(example, label)
+            examples_dict[sample].append(example)
+      else:
+        for candidate in candidates:
+          for example in self.create_pileup_examples(candidate):
+            examples_dict[sample].append(example)
 
-    logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
-                 len(examples), ranges.to_literal(region),
-                 ranges.length(region), region_timer.Stop())
-    return candidates, examples, gvcfs
+      candidates_dict[sample] = candidates
+      logging.vlog(
+          2, 'Found %s candidates in %s [%d bp, sample %s] '
+          '[%0.2fs elapsed]', len(examples_dict[sample]),
+          ranges.to_literal(region), ranges.length(region), sample,
+          region_timer.Stop())
+    return candidates_dict, examples_dict, gvcfs_dict
 
   def region_reads(self, region, sam_reader):
     """Update in_memory_sam_reader with read alignments overlapping the region.
@@ -1208,8 +1216,8 @@ class RegionProcessor(object):
         to get candidates for.
 
     Returns:
-      A 2-tuple. The first value is a list of deeptrio_pb2.DeepVariantCalls
-      objects, in coordidate order. The second value is a list of
+      A 2-tuple. The first value is a dict of deeptrio_pb2.DeepVariantCalls
+      objects, in coordidate order. The second value is a dict of
       nucleus.genomics.v1.Variant protos containing gVCF information for all
       reference sites, if gvcf generation is enabled, otherwise returns [].
     """
@@ -1222,7 +1230,7 @@ class RegionProcessor(object):
     if not reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
       # we need to return the gVCF records calculated by the caller below.
-      return [], []
+      return {}, {}
 
     allele_counters = {}
 
@@ -1236,7 +1244,7 @@ class RegionProcessor(object):
           read, self.options.variant_caller_options.sample_name)
 
     # If parent1 is specified create allele counter and populate it with reads
-    if reads_parent1:
+    if FLAGS.reads_parent1:
       allele_counters[
           FLAGS.sample_name_parent1] = self._make_allele_counter_for_region(
               region)
@@ -1245,7 +1253,7 @@ class RegionProcessor(object):
             read, FLAGS.sample_name_parent1)
 
     # If parent2 is specified create allele counter and populate it with reads
-    if reads_parent2:
+    if FLAGS.reads_parent2:
       allele_counters[
           FLAGS.sample_name_parent2] = self._make_allele_counter_for_region(
               region)
@@ -1253,9 +1261,29 @@ class RegionProcessor(object):
         allele_counters[FLAGS.sample_name_parent2].add(
             read, FLAGS.sample_name_parent2)
 
-    candidates, gvcfs = self.variant_caller.calls_and_gvcfs(
-        allele_counters, gvcf_output_enabled(self.options),
-        FLAGS.sample_name_to_call)
+    candidates = {}
+    gvcfs = {}
+
+    if in_training_mode(self.options):
+      candidates[FLAGS.sample_name_to_call], gvcfs[
+          FLAGS.sample_name_to_call] = (
+              self.variant_caller.calls_and_gvcfs(
+                  allele_counters, gvcf_output_enabled(self.options),
+                  FLAGS.sample_name_to_call))
+      return candidates, gvcfs
+
+    candidates['child'], gvcfs['child'] = self.variant_caller.calls_and_gvcfs(
+        allele_counters, gvcf_output_enabled(self.options), FLAGS.sample_name)
+    if FLAGS.reads_parent1:
+      candidates['parent1'], gvcfs['parent1'] = (
+          self.variant_caller.calls_and_gvcfs(allele_counters,
+                                              gvcf_output_enabled(self.options),
+                                              FLAGS.sample_name_parent1))
+    if FLAGS.reads_parent2:
+      candidates['parent2'], gvcfs['parent2'] = (
+          self.variant_caller.calls_and_gvcfs(allele_counters,
+                                              gvcf_output_enabled(self.options),
+                                              FLAGS.sample_name_parent2))
     return candidates, gvcfs
 
   def align_to_all_haplotypes(self, variant, reads):
@@ -1496,18 +1524,38 @@ def processing_regions_from_options(options):
 class OutputsWriter(object):
   """Manages all of the outputs of make_examples in a single place."""
 
-  def __init__(self, options):
+  def __init__(self, options, suffix=None):
     self._writers = {k: None for k in ['candidates', 'examples', 'gvcfs']}
 
     if options.candidates_filename:
-      self._add_writer('candidates',
-                       tfrecord.Writer(options.candidates_filename))
+      self._add_writer(
+          'candidates',
+          tfrecord.Writer(
+              self._add_suffix(options.candidates_filename, suffix)))
 
     if options.examples_filename:
-      self._add_writer('examples', tfrecord.Writer(options.examples_filename))
+      self._add_writer(
+          'examples',
+          tfrecord.Writer(self._add_suffix(options.examples_filename, suffix)))
 
     if options.gvcf_filename:
-      self._add_writer('gvcfs', tfrecord.Writer(options.gvcf_filename))
+      self._add_writer(
+          'gvcfs',
+          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)))
+
+  def _add_suffix(self, file_path, suffix):
+    """Adds suffix to file name."""
+    if not suffix:
+      return file_path
+
+    file_dir, file_base = os.path.split(file_path)
+
+    file_split = file_base.split('.')
+    file_split[0] = '%s_%s' % (file_split[0], suffix)
+    new_file_base = ('.').join(file_split)
+
+    new_file = os.path.join(file_dir, new_file_base)
+    return new_file
 
   def write_examples(self, *examples):
     self._write('examples', *examples)
@@ -1583,10 +1631,24 @@ def make_examples_runner(options):
   n_class_0, n_class_1, n_class_2 = 0, 0, 0
   n_snps, n_indels = 0, 0
   last_reported = 0
-  with OutputsWriter(options) as writer:
-    running_timer = timer.TimerStart()
-    for region in regions:
-      candidates, examples, gvcfs = region_processor.process(region)
+  running_timer = timer.TimerStart()
+
+  writers_dict = {}
+
+  for region in regions:
+    candidates_dict, examples_dict, gvcfs_dict = region_processor.process(
+        region)
+    for sample in candidates_dict:
+      candidates = candidates_dict[sample]
+      examples = examples_dict[sample]
+      gvcfs = gvcfs_dict[sample]
+
+      if sample not in writers_dict:
+        # Only use suffix in calling mode
+        suffix = None if in_training_mode(options) else sample
+        writers_dict[sample] = OutputsWriter(options, suffix=suffix)
+      writer = writers_dict[sample]
+
       n_candidates += len(candidates)
       n_examples += len(examples)
       n_regions += 1
