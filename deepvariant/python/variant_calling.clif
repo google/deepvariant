@@ -28,8 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "deepvariant/protos/deepvariant_pyclif.h" import *
-from "deepvariant/python/allelecounter_clif.h" import *
-from "third_party/nucleus/io/python/vcf_reader_clif.h" import *
+from "deepvariant/python/allelecounter.h" import *
+from "third_party/nucleus/io/python/vcf_reader.h" import *
 
 from "deepvariant/variant_calling.h":
   namespace `learning::genomics::deepvariant`:
