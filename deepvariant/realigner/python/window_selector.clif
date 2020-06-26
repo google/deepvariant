@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from "deepvariant/python/allelecounter.h" import *
+from "deepvariant/python/allelecounter_clif.h" import *
 from "deepvariant/protos/realigner_pyclif.h" import *
 
 from "deepvariant/realigner/window_selector.h":
