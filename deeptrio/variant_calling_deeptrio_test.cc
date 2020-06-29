@@ -96,7 +96,7 @@ AlleleCount* MakeTestAlleleCount(
 void ReleaseAlleleCountPointers(
     const std::unordered_map<std::string,
            std::vector<nucleus::ConstProtoPtr<AlleleCount>>> allele_counts) {
-  for (auto allele_count_entry : allele_counts) {
+  for (const auto& allele_count_entry : allele_counts) {
     for (auto ac : allele_count_entry.second) {
       delete ac.p_;
     }
