@@ -3454,17 +3454,18 @@ options {
     random_seed: 2101079370
     num_channels: 6
     sequencing_type: TRIO
+    other_allele_supporting_read_alpha: 0.6000000238418579
   }
   read_requirements {
     min_mapping_quality: 10
     min_base_quality: 10
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
-  reference_filename: "learning/genomics/deeptrio/testdata/hs37d5.chr20.fa"
-  reads_filename: "learning/genomics/deeptrio/testdata/HG001.chr20.10_10p1mb_sorted.bam"
-  examples_filename: "learning/genomics/deeptrio/testdata/golden.training_examples.tfrecord.gz"
-  confident_regions_filename: "learning/genomics/deeptrio/testdata/test_giab.b37_chr20_100kbp_at_10mb.bed"
-  truth_variants_filename: "learning/genomics/deeptrio/testdata/test_hg001_giab_grch37_chr20_100kbp_at_10mb.vcf.gz"
+  reference_filename: "deeptrio/testdata/input/hs37d5.chr20.fa"
+  reads_filename: "deeptrio/testdata/input/HG001.chr20.10_10p1mb_sorted.bam"
+  examples_filename: "deeptrio/testdata/golden.training_examples.tfrecord.gz"
+  confident_regions_filename: "deeptrio/testdata/input/test_giab.b37_chr20_100kbp_at_10mb.bed"
+  truth_variants_filename: "deeptrio/testdata/input/test_hg001_giab_grch37_chr20_100kbp_at_10mb.vcf.gz"
   mode: TRAINING
   min_shared_contigs_basepairs: 0.8999999761581421
   realigner_enabled: true
@@ -3509,10 +3510,12 @@ options {
   }
   max_reads_per_partition: 1500
   labeler_algorithm: HAPLOTYPE_LABELER
-  run_info_filename: "learning/genomics/deeptrio/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
-  reads_parent1_filename: "learning/genomics/deeptrio/testdata/NA12891.chr20.10_10p1mb_sorted.bam"
-  reads_parent2_filename: "learning/genomics/deeptrio/testdata/NA12892.chr20.10_10p1mb_sorted.bam"
+  run_info_filename: "deeptrio/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
+  reads_parent1_filename: "deeptrio/testdata/input/NA12891.chr20.10_10p1mb_sorted.bam"
+  reads_parent2_filename: "deeptrio/testdata/input/NA12892.chr20.10_10p1mb_sorted.bam"
   variant_caller: VERY_SENSITIVE_CALLER
+  height_parent: 100
+  height_child: 100
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3529,15 +3532,15 @@ labeling_metrics {
   n_exact_position_and_allele_and_genotype_matches: 48
 }
 resource_metrics {
-  host_name: "redacted"
+  host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1211.24175
-  total_memory_mb: 64146
-  wall_time_seconds: 3.2418439388275146
-  cpu_user_time_seconds: 8.932881
-  cpu_system_time_seconds: 1.131822
-  memory_peak_rss_mb: 323
-  read_bytes: 388829184
+  cpu_frequency_mhz: 3699.9974999999995
+  total_memory_mb: 64142
+  wall_time_seconds: 3.1138226985931396
+  cpu_user_time_seconds: 9.162998
+  cpu_system_time_seconds: 1.116943
+  memory_peak_rss_mb: 426
+  read_bytes: 321683456
   write_bytes: 20480
 }
 stats {

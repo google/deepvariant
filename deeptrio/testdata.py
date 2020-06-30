@@ -121,23 +121,25 @@ def init():
   global GOLDEN_VCF_CALLER_POSTPROCESS_INPUT
   global GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT
 
-  CHR20_FASTA = deeptrio_testdata('hs37d5.chr20.fa')
-  HG001_CHR20_BAM = deeptrio_testdata('HG001.chr20.10_10p1mb_sorted.bam')
-  NA12891_CHR20_BAM = deeptrio_testdata('NA12891.chr20.10_10p1mb_sorted.bam')
-  NA12892_CHR20_BAM = deeptrio_testdata('NA12892.chr20.10_10p1mb_sorted.bam')
+  CHR20_FASTA = deeptrio_testdata('input/hs37d5.chr20.fa')
+  HG001_CHR20_BAM = deeptrio_testdata('input/HG001.chr20.10_10p1mb_sorted.bam')
+  NA12891_CHR20_BAM = deeptrio_testdata(
+      'input/NA12891.chr20.10_10p1mb_sorted.bam')
+  NA12892_CHR20_BAM = deeptrio_testdata(
+      'input/NA12892.chr20.10_10p1mb_sorted.bam')
   GOLDEN_TRAINING_EXAMPLES = deeptrio_testdata(
       'golden.training_examples.tfrecord.gz')
   GOLDEN_CALLING_CANDIDATES = deeptrio_testdata(
-      'golden.calling_examples.tfrecord.gz')
+      'golden_child.calling_examples.tfrecord.gz')
   GOLDEN_CALLING_EXAMPLES = deeptrio_testdata(
-      'golden.calling_examples.tfrecord.gz')
+      'golden_child.calling_examples.tfrecord.gz')
   CONFIDENT_REGIONS_BED = deeptrio_testdata(
-      'test_giab.b37_chr20_100kbp_at_10mb.bed')
+      'input/test_giab.b37_chr20_100kbp_at_10mb.bed')
   TRUTH_VARIANTS_VCF = deeptrio_testdata(
-      'HG001_chr20_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
+      'input/HG001_chr20_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
   )
   TRUTH_VARIANTS_VCF_WITH_TYPES = deeptrio_testdata(
-      'with_types.test_nist.b37_chr20_4kbp_at_10mb.vcf.gz')
+      'input/with_types.test_nist.b37_chr20_4kbp_at_10mb.vcf.gz')
   GOLDEN_POSTPROCESS_INPUT = deeptrio_testdata(
       'golden.postprocess_single_site_input.tfrecord.gz')
   GOLDEN_POSTPROCESS_OUTPUT = deeptrio_testdata(
@@ -145,7 +147,7 @@ def init():
   GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = deeptrio_testdata(
       'golden.postprocess_single_site_output.vcf.gz')
   GOLDEN_POSTPROCESS_GVCF_INPUT = deeptrio_testdata(
-      'golden.postprocess_gvcf_input.tfrecord.gz')
+      'golden_child.postprocess_gvcf_input.tfrecord.gz')
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deeptrio_testdata(
       'golden.postprocess_gvcf_output.g.vcf')
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deeptrio_testdata(
