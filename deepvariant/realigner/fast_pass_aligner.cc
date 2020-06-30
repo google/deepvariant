@@ -429,6 +429,9 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
             hap_alignment.read_alignment_scores[i].position =
                 alignment.ref_begin;
           }
+        } else if (force_alignment_ && hap_alignment.is_reference) {
+          LOG(WARNING) << "Force alignment will fail because the SSW "
+                       << "alignment had a score of 0.";
         }
       }
     }
@@ -491,15 +494,20 @@ void FastPassAligner::RealignReadsToReference(
                      << "Keeping the original alignment.";
       }
       (*realigned_reads)->push_back(realigned_read);
-    } else {  // keep original alignment
+    } else {  // Could not find a new alignment.
       if (force_alignment_) {
-        LOG(FATAL) << "Force alignment failed. Keeping the original "
-                      "alignment at "
-                   << read.alignment().position().reference_name() << ":"
-                   << read.alignment().position().position()
-                   << ". Tell mnat@ if you see this error.";
+        LOG(WARNING) << "Force alignment failed. "
+                     << "Leaving out the read previously aligned at position "
+                     << read.alignment().position().reference_name() << ":"
+                     << read.alignment().position().position()
+                     << " from alt-aligned section of pileup image.";
+        // By not adding it to the realigned_reads array, this read will be
+        // left out of the pileup image.
+      } else {
+        // Keep the original alignment.
+        VLOG(3) << "Keeping original alignment (force_alignment is off)";
+        (*realigned_reads)->push_back(realigned_read);
       }
-      (*realigned_reads)->push_back(realigned_read);
     }
   }  // for
 }

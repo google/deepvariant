@@ -1336,6 +1336,11 @@ class RegionProcessor(object):
             dv_call.variant, sam_reader=sample.in_memory_sam_reader)
         for sample in self.samples
     ]
+    logging.vlog(
+        3, 'create_pileup_examples for variant: {}:{}_{}'.format(
+            dv_call.variant.reference_name, dv_call.variant.start,
+            dv_call.variant.reference_bases))
+
     if self.options.pic_options.alt_aligned_pileup:
       # Align the reads against each alternate allele, saving the sequences of
       # those alleles along with the alignments for pileup images.
@@ -1347,6 +1352,7 @@ class RegionProcessor(object):
       haplotype_alignments_for_samples = [
           sample['alt_alignments'] for sample in alt_info_for_samples
       ]
+
       # All samples share the same alt sequences, so select the first one.
       haplotype_sequences = alt_info_for_samples[0]['alt_sequences']
       pileup_images = self.pic.create_pileup_images(
