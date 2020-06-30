@@ -35,6 +35,9 @@ from __future__ import print_function
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import vcf_constants
 
+# Current release version of DeepVariant.
+DEEP_VARIANT_VERSION = '1.0.0'
+
 # FILTER field IDs.
 DEEP_VARIANT_PASS = 'PASS'
 DEEP_VARIANT_REF_FILTER = 'RefCall'
@@ -62,6 +65,9 @@ def deepvariant_header(contigs, sample_names):
     A nucleus.genomics.v1.VcfHeader proto with known fixed headers and the given
     samples and contigs populated.
   """
+  version = variants_pb2.VcfExtra(
+      key='DeepVariant_version', value=DEEP_VARIANT_VERSION)
+
   return variants_pb2.VcfHeader(
       fileformat='VCFv4.2',
       filters=[
@@ -96,4 +102,4 @@ def deepvariant_header(contigs, sample_names):
       ],
       contigs=contigs,
       sample_names=sample_names,
-  )
+      extras=[version])
