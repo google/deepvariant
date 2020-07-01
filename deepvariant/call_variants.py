@@ -316,18 +316,62 @@ def call_variants(examples_filename,
     logging.info('Set KMP_BLOCKTIME to %s', os.environ['KMP_BLOCKTIME'])
 
   # Read a single TFExample to make sure we're not loading an older version.
-  example_format = tf_utils.get_format_from_examples_path(examples_filename)
-  if example_format is None:
+  first_example = tf_utils.get_one_example_from_examples_path(examples_filename)
+  if first_example is None:
     logging.warning(
         'Unable to read any records from %s. Output will contain '
         'zero records.', examples_filename)
     tfrecord.write_tfrecords([], output_file)
     return
-  elif example_format != six.b('raw'):
+
+  example_format = tf_utils.example_image_format(first_example)
+  example_shape = tf_utils.example_image_shape(first_example)
+  if example_format != six.b('raw'):
     raise ValueError('The TF examples in {} has image/format \'{}\' '
                      '(expected \'raw\') which means you might need to rerun '
                      'make_examples to generate the examples again.'.format(
                          examples_filename, example_format))
+  logging.info('Shape of input examples: %s', str(example_shape))
+
+  if checkpoint_path is not None:
+    reader = tf.compat.v1.train.NewCheckpointReader(checkpoint_path)
+    shape_map_for_layers = reader.get_variable_to_shape_map()
+    first_layer = 'InceptionV3/Conv2d_1a_3x3/weights'
+    # For a shape map of [3, 3, 6, 32] for the Conv2d_1a_3x3 layer, the 6
+    # is the number of channels.
+    num_channels_in_checkpoint_model = shape_map_for_layers[first_layer][2]
+    if num_channels_in_checkpoint_model != example_shape[2]:
+      logging.warning('Make sure to use the model from the same version of '
+                      'DeepVariant that you are running. '
+                      'The default number of channels changed in version 1.0.0 '
+                      'from 6 to 8.')
+      raise ValueError('The number of channels in examples and checkpoint '
+                       'should match, but the checkpoint has {} channels while '
+                       'the examples have {}.'.format(
+                           num_channels_in_checkpoint_model, example_shape[2]))
+    # The model checkpoint includes information on the number of channels but
+    # unfortunately not the width or height.
+    if example_shape[0] not in [100, 300]:
+      logging.warning('The height of the input image is not 100 (standard in '
+                      'DeepVariant) or 300 (standard in DeepTrio). '
+                      'Please double-check that the model is trained with the '
+                      'same parameters and version of DeepVariant as you '
+                      'generated the examples with. An error will not appear '
+                      'when these are mismatched because of how InceptionV3 '
+                      'works. Note that if you set --pileup_image_height in '
+                      'DeepVariant, then you must use a model trained with '
+                      'that same parameter.')
+
+    if example_shape[1] != 221:
+      logging.warning('The width of the input image is not 221 (standard in '
+                      'DeepVariant). '
+                      'Please double-check that the model is trained with the '
+                      'same parameters and version of DeepVariant as you '
+                      'generated the examples with. An error will not appear '
+                      'when these are mismatched because of how InceptionV3 '
+                      'works. Note that if you set --pileup_image_width in '
+                      'DeepVariant, then you must use a model trained with '
+                      'that same parameter.')
 
   # Check accelerator status.
   if execution_hardware not in _ALLOW_EXECUTION_HARDWARE:
@@ -374,6 +418,7 @@ def call_variants(examples_filename,
     predict_hooks = []
   else:
     predict_hooks = [h(checkpoint_path) for h in model.session_predict_hooks()]
+
   predictions = iter(
       estimator.predict(
           input_fn=tf_dataset,
@@ -400,8 +445,12 @@ def call_variants(examples_filename,
           logging.INFO,
           ('Processed %s examples in %s batches [%.3f sec per 100]'),
           _LOG_EVERY_N, n_examples, n_batches, (100 * duration) / n_examples)
+    # One last log to capture the extra examples.
+    logging.info('Processed %s examples in %s batches [%.3f sec per 100]',
+                 n_examples, n_batches, (100 * duration) / n_examples)
 
-    logging.info('Done evaluating variants')
+    logging.info('Done calling variants from a total of %d examples.',
+                 n_examples)
 
 
 def main(argv=()):
