@@ -3453,16 +3453,17 @@ options {
     mapping_quality_cap: 60
     random_seed: 2101079370
     num_channels: 6
+    other_allele_supporting_read_alpha: 0.6000000238418579
   }
   read_requirements {
     min_mapping_quality: 10
     min_base_quality: 10
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
-  reference_filename: "learning/genomics/deepvariant/testdata/ucsc.hg19.chr20.unittest.fasta.gz"
-  examples_filename: "learning/genomics/deepvariant/testdata/golden.training_examples.tfrecord.gz"
-  confident_regions_filename: "learning/genomics/deepvariant/testdata/test_nist.b37_chr20_100kbp_at_10mb.bed"
-  truth_variants_filename: "learning/genomics/deepvariant/testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz"
+  reference_filename: "deepvariant/testdata/input/ucsc.hg19.chr20.unittest.fasta.gz"
+  examples_filename: "deepvariant/testdata/golden.training_examples.tfrecord.gz"
+  confident_regions_filename: "deepvariant/testdata/input/test_nist.b37_chr20_100kbp_at_10mb.bed"
+  truth_variants_filename: "deepvariant/testdata/input/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz"
   mode: TRAINING
   min_shared_contigs_basepairs: 0.8999999761581421
   realigner_enabled: true
@@ -3507,9 +3508,9 @@ options {
   }
   max_reads_per_partition: 1500
   labeler_algorithm: HAPLOTYPE_LABELER
-  run_info_filename: "learning/genomics/deepvariant/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
+  run_info_filename: "deepvariant/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
   variant_caller: VERY_SENSITIVE_CALLER
-  reads_filenames: "learning/genomics/deepvariant/testdata/NA12878_S1.chr20.10_10p1mb.bam"
+  reads_filenames: "deepvariant/testdata/input/NA12878_S1.chr20.10_10p1mb.bam"
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3526,14 +3527,14 @@ labeling_metrics {
   n_exact_position_and_allele_and_genotype_matches: 48
 }
 resource_metrics {
-  host_name: "redacted"
-  physical_core_count: 24
-  cpu_frequency_mhz: 1197.788375
-  total_memory_mb: 64390
-  wall_time_seconds: 0.692148923874
-  cpu_user_time_seconds: 8.902997
-  cpu_system_time_seconds: 5.747972
-  memory_peak_rss_mb: 588
-  read_bytes: 961339392
-  write_bytes: 16384
+  host_name: "host"
+  physical_core_count: 6
+  cpu_frequency_mhz: 1200.3653333333334
+  total_memory_mb: 64142
+  wall_time_seconds: 0.9019463062286377
+  cpu_user_time_seconds: 5.817451
+  cpu_system_time_seconds: 0.904666
+  memory_peak_rss_mb: 378
+  read_bytes: 300986368
+  write_bytes: 20480
 }

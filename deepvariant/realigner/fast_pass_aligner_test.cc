@@ -66,8 +66,9 @@ class FastPassAlignerTest : public ::testing::Test {
   std::vector<nucleus::genomics::v1::Read> LoadReadProtosFromFile(
       const string& filename) {
     string file_path = nucleus::GetTestData(filename,
-        "deepvariant/testdata");
+        "deepvariant/testdata/input");
     std::ifstream reads_stream(file_path);
+    QCHECK(!reads_stream.fail()) << "Failed to read " << file_path;
 
     std::vector<nucleus::genomics::v1::Read> reads;
     string proto_str;
@@ -89,8 +90,9 @@ class FastPassAlignerTest : public ::testing::Test {
 
   void LoadReferenceFromFile(const string& filename, string* reference) {
     string file_path = nucleus::GetTestData(filename,
-        "deepvariant/testdata");
+        "deepvariant/testdata/input");
     std::ifstream ref_stream(file_path);
+    QCHECK(!ref_stream.fail()) << "Failed to read " << file_path;
     ref_stream >> *reference;
     ref_stream.close();
   }
@@ -98,8 +100,9 @@ class FastPassAlignerTest : public ::testing::Test {
   void LoadHaplotypesFromFile(const string& filename,
                               std::vector<string>* haplotypes) {
     string file_path = nucleus::GetTestData(filename,
-        "deepvariant/testdata");
+        "deepvariant/testdata/input");
     std::ifstream haps_stream(file_path);
+    QCHECK(!haps_stream.fail()) << "Failed to read " << file_path;
     string line;
     while (std::getline(haps_stream, line)) {
       haplotypes->push_back(line);

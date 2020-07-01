@@ -127,8 +127,8 @@ def init():
   global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
   global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT
 
-  CHR20_FASTA = deepvariant_testdata('ucsc.hg19.chr20.unittest.fasta.gz')
-  CHR20_BAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.bam')
+  CHR20_FASTA = deepvariant_testdata('input/ucsc.hg19.chr20.unittest.fasta.gz')
+  CHR20_BAM = deepvariant_testdata('input/NA12878_S1.chr20.10_10p1mb.bam')
   # # Here is how "NA12878_S1.chr20.10_10p1mb.first_half.bam"
   # # and "NA12878_S1.chr20.10_10p1mb.second_half.bam" are split
   # # from NA12878_S1.chr20.10_10p1mb.bam.
@@ -145,9 +145,9 @@ def init():
   # samtools index ${READS_FIRST_HALF}
   # samtools index ${READS_SECOND_HALF}
   CHR20_BAM_FIRST_HALF = deepvariant_testdata(
-      'NA12878_S1.chr20.10_10p1mb.first_half.bam')
+      'input/NA12878_S1.chr20.10_10p1mb.first_half.bam')
   CHR20_BAM_SECOND_HALF = deepvariant_testdata(
-      'NA12878_S1.chr20.10_10p1mb.second_half.bam')
+      'input/NA12878_S1.chr20.10_10p1mb.second_half.bam')
   # # Here is how the "HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam"
   # # file was created.
   # samtools view -hb HG002_NIST_150bp_downsampled_30x.bam \
@@ -155,8 +155,8 @@ def init():
   #     > HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam
   # samtools index HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam
   NOCHR20_BAM = deepvariant_testdata(
-      'HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam')
-  CHR20_CRAM = deepvariant_testdata('NA12878_S1.chr20.10_10p1mb.cram')
+      'input/HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam')
+  CHR20_CRAM = deepvariant_testdata('input/NA12878_S1.chr20.10_10p1mb.cram')
   GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz')
   GOLDEN_CALLING_CANDIDATES = deepvariant_testdata(
@@ -164,11 +164,11 @@ def init():
   GOLDEN_CALLING_EXAMPLES = deepvariant_testdata(
       'golden.calling_examples.tfrecord.gz')
   CONFIDENT_REGIONS_BED = deepvariant_testdata(
-      'test_nist.b37_chr20_100kbp_at_10mb.bed')
+      'input/test_nist.b37_chr20_100kbp_at_10mb.bed')
   TRUTH_VARIANTS_VCF = deepvariant_testdata(
-      'test_nist.b37_chr20_100kbp_at_10mb.vcf.gz')
+      'input/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz')
   TRUTH_VARIANTS_VCF_WITH_TYPES = deepvariant_testdata(
-      'with_types.test_nist.b37_chr20_4kbp_at_10mb.vcf.gz')
+      'input/with_types.test_nist.b37_chr20_4kbp_at_10mb.vcf.gz')
   GOLDEN_POSTPROCESS_INPUT = deepvariant_testdata(
       'golden.postprocess_single_site_input.tfrecord.gz')
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
@@ -182,11 +182,11 @@ def init():
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz.run_info.pbtxt')
   WS_ALLELE_COUNT_LINEAR_MODEL = deepvariant_testdata(
-      'window_selector_allele_count_linear.pbtxt')
+      'obsolete/window_selector_allele_count_linear.pbtxt')
   WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = deepvariant_testdata(
-      'window_selector_allele_count_linear.pckl')
+      'obsolete/window_selector_allele_count_linear.pckl')
   WS_VARIANT_READS_THRESHOLD_MODEL = deepvariant_testdata(
-      'window_selector_variant_read_threshold.pbtxt')
+      'obsolete/window_selector_variant_read_threshold.pbtxt')
   GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT = deepvariant_testdata(
       'golden.vcf_candidate_importer_postprocess_single_site_input.tfrecord.gz')
   GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT = deepvariant_testdata(
@@ -206,7 +206,7 @@ def init():
   GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES = deepvariant_testdata(
       'golden.vcf_candidate_importer_calling_examples.tfrecord')
   VCF_CANDIDATE_IMPORTER_VARIANTS = deepvariant_testdata(
-      'vcf_candidate_importer.indels.chr20.vcf.gz')
+      'input/vcf_candidate_importer.indels.chr20.vcf.gz')
 
   # For alt-aligned pileups
   global ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES

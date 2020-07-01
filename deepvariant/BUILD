@@ -21,14 +21,9 @@ filegroup(
     name = "testdata",
     testonly = True,
     srcs = glob([
-        "testdata/*.bam*",
-        "testdata/*.bed*",
-        "testdata/*.cram*",
-        "testdata/*.tfrecord*",
-        "testdata/*.vcf*",
-        "testdata/*.fasta*",
-        "testdata/*.pbtxt*",
-        "testdata/*.pckl*",
+        "testdata/input/*",
+        "testdata/obsolete/*",
+        "testdata/*",
     ]),
 )
 
