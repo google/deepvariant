@@ -322,8 +322,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
 
-  # redacted
-
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @flagsaver.FlagSaver
   def test_make_examples_training_end2end_with_alt_aligned_pileup(self):

@@ -45,7 +45,6 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 
 from deeptrio import dt_constants
-from deeptrio import vcf_caller
 from deeptrio import very_sensitive_caller
 from deeptrio.protos import deeptrio_pb2
 from deepvariant import exclude_contigs
@@ -1060,10 +1059,6 @@ class RegionProcessor(object):
         excluded_format_fields=['GL', 'GQ', 'PL'])
     confident_regions = read_confident_regions(self.options)
 
-    # If using vcf_caller, override labeler choice and use positional labeler.
-    if self.options.variant_caller == deeptrio_pb2.DeepTrioOptions.VCF_CALLER:
-      return positional_labeler.PositionalVariantLabeler(
-          truth_vcf_reader=truth_vcf_reader)
     if (self.options.labeler_algorithm ==
         deeptrio_pb2.DeepTrioOptions.POSITIONAL_LABELER):
       return positional_labeler.PositionalVariantLabeler(
@@ -1094,11 +1089,8 @@ class RegionProcessor(object):
 
   def _make_variant_caller_from_options(self):
     """Creates the variant_caller from options."""
-    if self.options.variant_caller == deeptrio_pb2.DeepTrioOptions.VCF_CALLER:
-      return vcf_caller.VcfCaller(self.options.variant_caller_options,
-                                  self.options.truth_variants_filename)
-    elif (self.options.variant_caller ==
-          deeptrio_pb2.DeepTrioOptions.VERY_SENSITIVE_CALLER):
+    if (self.options.variant_caller ==
+        deeptrio_pb2.DeepTrioOptions.VERY_SENSITIVE_CALLER):
       return very_sensitive_caller.VerySensitiveCaller(
           self.options.variant_caller_options)
     else:
@@ -1739,28 +1731,15 @@ def main(argv=()):
           'Currently only supports n_cores == 1 but got {}.'.format(
               options.n_cores), errors.CommandLineError)
 
-    # Check for argument issues specific to different modes.
-    if options.variant_caller == deeptrio_pb2.DeepTrioOptions.VCF_CALLER:
-      if not options.truth_variants_filename:
-        errors.log_and_raise(
-            'truth_variants is always required with vcf_caller.',
-            errors.CommandLineError)
-      if options.confident_regions_filename:
-        errors.log_and_raise('confident_regions is not used with vcf_caller.',
-                             errors.CommandLineError)
     if in_training_mode(options):
       if not options.truth_variants_filename:
         errors.log_and_raise(
             'truth_variants is required when in training mode.',
             errors.CommandLineError)
       if not options.confident_regions_filename:
-        if options.variant_caller != \
-            deeptrio_pb2.DeepTrioOptions.VCF_CALLER:
-          # One exception for requiring confident_regions is when the user
-          # opts to use vcf_caller.
-          errors.log_and_raise(
-              'confident_regions is required when in training mode.',
-              errors.CommandLineError)
+        errors.log_and_raise(
+            'confident_regions is required when in training mode.',
+            errors.CommandLineError)
       if options.gvcf_filename:
         errors.log_and_raise('gvcf is not allowed in training mode.',
                              errors.CommandLineError)

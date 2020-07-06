@@ -80,17 +80,12 @@ GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
 WS_ALLELE_COUNT_LINEAR_MODEL = None
 WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = None
 WS_VARIANT_READS_THRESHOLD_MODEL = None
-GOLDEN_VCF_CALLER_POSTPROCESS_INPUT = None
-GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT = None
 
 N_GOLDEN_TRAINING_EXAMPLES = 63
 N_GOLDEN_CALLING_EXAMPLES = 103
 
 # For CustomizedClassesVariantLabeler
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
-
-# For VcfCaller
-GOLDEN_VCF_CALLER_TRAINING_EXAMPLES = None
 
 # For alt-aligned pileups
 ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = None
@@ -118,8 +113,6 @@ def init():
   global WS_ALLELE_COUNT_LINEAR_MODEL
   global WS_ALLELE_COUNT_LINEAR_MODEL_PCKL
   global WS_VARIANT_READS_THRESHOLD_MODEL
-  global GOLDEN_VCF_CALLER_POSTPROCESS_INPUT
-  global GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT
 
   CHR20_FASTA = deeptrio_testdata('input/hs37d5.chr20.fa')
   HG001_CHR20_BAM = deeptrio_testdata('input/HG001.chr20.10_10p1mb_sorted.bam')
@@ -127,6 +120,7 @@ def init():
       'input/NA12891.chr20.10_10p1mb_sorted.bam')
   NA12892_CHR20_BAM = deeptrio_testdata(
       'input/NA12892.chr20.10_10p1mb_sorted.bam')
+
   GOLDEN_TRAINING_EXAMPLES = deeptrio_testdata(
       'golden.training_examples.tfrecord.gz')
   GOLDEN_CALLING_CANDIDATES = deeptrio_testdata(
@@ -158,20 +152,11 @@ def init():
       'window_selector_allele_count_linear.pckl')
   WS_VARIANT_READS_THRESHOLD_MODEL = deeptrio_testdata(
       'window_selector_variant_read_threshold.pbtxt')
-  GOLDEN_VCF_CALLER_POSTPROCESS_INPUT = deeptrio_testdata(
-      'golden.vcf_caller_postprocess_single_site_input.tfrecord.gz')
-  GOLDEN_VCF_CALLER_POSTPROCESS_OUTPUT = deeptrio_testdata(
-      'golden.vcf_caller_postprocess_single_site_output.vcf')
 
   # For CustomizedClassesVariantLabeler.
   global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
   CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = deeptrio_testdata(
       'customized_classes.golden.training_examples.tfrecord.gz')
-
-  # For VcfCaller
-  global GOLDEN_VCF_CALLER_TRAINING_EXAMPLES
-  GOLDEN_VCF_CALLER_TRAINING_EXAMPLES = deeptrio_testdata(
-      'golden.vcf_caller.training_examples.tfrecord.gz')
 
   # For alt-aligned pileups
   global ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES

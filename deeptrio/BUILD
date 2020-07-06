@@ -116,34 +116,6 @@ cc_test(
 )
 
 py_library(
-    name = "vcf_caller",
-    srcs = ["vcf_caller.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":variant_caller",
-        "//third_party/nucleus/io:vcf",
-    ],
-)
-
-py_test(
-    name = "vcf_caller_test",
-    size = "enormous",
-    srcs = ["vcf_caller_test.py"],
-    data = [":testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":py_testdata",
-        ":vcf_caller",
-        "//deepvariant/labeler:labeled_examples_to_vcf_main_lib",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//third_party/nucleus/util:variant_utils",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
     name = "py_testdata",
     testonly = True,
     srcs = ["testdata.py"],
@@ -159,7 +131,6 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":dt_constants",
-        ":vcf_caller",
         ":very_sensitive_caller",
         "//deeptrio/protos:deeptrio_py_pb2",
         "//deepvariant:exclude_contigs",
