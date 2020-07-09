@@ -45,7 +45,6 @@ import platform
 import sys
 
 
-
 from absl import flags
 from absl import logging
 from absl.testing import absltest
@@ -194,8 +193,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(
         _sharded('vsc.tfrecord', num_shards))
-    child_candidates = test_utils.test_tmpfile(
-        _sharded('vsc_child.tfrecord', num_shards))
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards))
     child_examples = test_utils.test_tmpfile(
@@ -213,9 +210,13 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           _sharded('gvcf.tfrecord', num_shards))
       child_gvcf = test_utils.test_tmpfile(
           _sharded('gvcf_child.tfrecord', num_shards))
+      child_candidates = test_utils.test_tmpfile(
+          _sharded('vsc_child.tfrecord', num_shards))
     else:
       FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
       FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+      child_candidates = test_utils.test_tmpfile(
+          _sharded('vsc.tfrecord', num_shards))
 
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
