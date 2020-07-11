@@ -211,4 +211,4 @@ def init():
   # For alt-aligned pileups
   global ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES
   ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
-      'alt_aligned_pileup.golden.training_examples.tfrecord.gz')
+      'golden.alt_aligned_pileup_rows_examples.tfrecord.gz')

@@ -410,7 +410,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, None, options, verify_labels=mode == 'training')
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
-    self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 6])
+    self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 8])
 
   @flagsaver.FlagSaver
   def test_make_examples_training_vcf_candidate_importer_regions(self):

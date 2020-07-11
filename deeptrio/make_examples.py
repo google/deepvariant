@@ -191,12 +191,13 @@ flags.DEFINE_bool(
     'text_format.')
 # alt_aligned_pileups=rows is unavailable in DeepTrio, since it makes the final
 # pileup tensor too tall for InceptionV3.
-flags.DEFINE_string(
-    'alt_aligned_pileup', '',
+flags.DEFINE_enum(
+    'alt_aligned_pileup', 'none', ['none', 'base_channels', 'diff_channels'],
     'Include alignments of reads against each candidate alternate allele in '
-    'the pileup image. This flag is experimental. '
-    'Empty string "" turns this feature off.'
-    'Options: "base_channels","diff_channels')
+    'the pileup image. "none" turns this feature off. '
+    'The default is "none".'
+    'Options: "none", "base_channels","diff_channels"')
+
 flags.DEFINE_float(
     'downsample_fraction_child', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
@@ -1032,7 +1033,7 @@ class RegionProcessor(object):
     # Ordering here determines the order of pileups from top to bottom.
     self.samples = [parent1, child, parent2]
 
-    if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup:
+    if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup != 'none':
       input_bam_header = sam.SamReader(self.options.reads_filename).header
       self.realigner = realigner.Realigner(
           self.options.realigner_options,
@@ -1370,7 +1371,7 @@ class RegionProcessor(object):
             dv_call.variant, sam_reader=sample.in_memory_sam_reader)
         for sample in self.samples
     ]
-    if self.options.pic_options.alt_aligned_pileup:
+    if self.options.pic_options.alt_aligned_pileup != 'none':
       # Align the reads against each alternate allele, saving the sequences of
       # those alleles along with the alignments for pileup images.
       alt_info_for_samples = [

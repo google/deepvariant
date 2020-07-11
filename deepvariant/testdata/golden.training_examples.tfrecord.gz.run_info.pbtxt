@@ -3453,6 +3453,7 @@ options {
     mapping_quality_cap: 60
     random_seed: 2101079370
     num_channels: 6
+    alt_aligned_pileup: "diff_channels"
     other_allele_supporting_read_alpha: 0.6000000238418579
   }
   read_requirements {
@@ -3502,6 +3503,7 @@ options {
       kmer_size: 32
       max_num_of_mismatches: 2
       realignment_similarity_threshold: 0.16934
+      force_alignment: true
     }
     diagnostics {
     }
@@ -3529,12 +3531,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1200.3653333333334
+  cpu_frequency_mhz: 1240.7578333333333
   total_memory_mb: 64142
-  wall_time_seconds: 0.9019463062286377
-  cpu_user_time_seconds: 5.817451
-  cpu_system_time_seconds: 0.904666
-  memory_peak_rss_mb: 378
-  read_bytes: 300986368
+  wall_time_seconds: 0.9516043663024902
+  cpu_user_time_seconds: 5.506375
+  cpu_system_time_seconds: 0.8286089999999999
+  memory_peak_rss_mb: 375
+  read_bytes: 294600704
   write_bytes: 20480
 }

@@ -44,7 +44,7 @@ PILEUP_DEFAULT_WIDTH = 221
 PILEUP_DEFAULT_HEIGHT = 100
 
 # Not a default because it's hard-coded into the code.
-PILEUP_NUM_CHANNELS = 6
+PILEUP_NUM_CHANNELS = 8
 
 # The dimensions of a pileup image tensor as height x width x rank.
 PILEUP_DEFAULT_DIMS = [

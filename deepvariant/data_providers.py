@@ -46,7 +46,7 @@ from deepvariant import dv_constants
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 
-# These are emperically determined to work well on TPU with our data sets,
+# These are empirically determined to work well on TPU with our data sets,
 # where lots of buffering and concurrency is necessary to keep the device
 # busy.
 # These are settable in the constructor.

@@ -79,7 +79,7 @@ def default_options(read_requirements=None):
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=2101079370,
       sequencing_type=deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE,
-      alt_aligned_pileup='')
+      alt_aligned_pileup='none')
 
 
 def _compute_half_width(width):
@@ -127,7 +127,8 @@ def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
     return np.stack(channels, axis=2)
   else:
     raise ValueError(
-        'alt_aligned_pileups received invalid value: "{}". Must be one of '
+        '_represent_alt_aligned_pileups received invalid value for '
+        'representation: "{}". Must be one of '
         'rows, base_channels, or diff_channels.'.format(representation))
 
 
@@ -439,7 +440,7 @@ class PileupImageCreator(object):
           reads_for_samples=reads_for_samples,
           alt_alleles=alt_alleles)
       # Optionally also create pileup images with reads aligned to alts.
-      if alt_aligned_representation:
+      if alt_aligned_representation != 'none':
         if not haplotype_alignments_for_samples and haplotype_sequences:
           raise ValueError(
               'haplotype_alignments and haplotype_sequences must both be '

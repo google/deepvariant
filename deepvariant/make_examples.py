@@ -179,12 +179,13 @@ flags.DEFINE_bool(
     'write_run_info', False,
     'If True, write out a MakeExamplesRunInfo proto besides our examples in '
     'text_format.')
-flags.DEFINE_string(
-    'alt_aligned_pileup', '',
+flags.DEFINE_enum(
+    'alt_aligned_pileup', 'diff_channels',
+    ['none', 'base_channels', 'diff_channels', 'rows'],
     'Include alignments of reads against each candidate alternate allele in '
-    'the pileup image. This flag is experimental. '
-    'Default="" turns this feature off. '
-    'Options: "base_channels","diff_channels", "rows"')
+    'the pileup image. "none" turns this feature off. '
+    'The default is "diff_channels".'
+    'Options: "none", "base_channels","diff_channels", "rows"')
 flags.DEFINE_float(
     'downsample_fraction', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
@@ -1015,7 +1016,7 @@ class RegionProcessor(object):
     self.sam_readers = self._make_sam_readers()
     self.in_memory_sam_reader = sam.InMemorySamReader([])
 
-    if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup:
+    if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup != 'none':
       input_bam_header = sam.SamReader(self.options.reads_filenames[0]).header
       self.realigner = realigner.Realigner(
           self.options.realigner_options,
@@ -1341,7 +1342,7 @@ class RegionProcessor(object):
             dv_call.variant.reference_name, dv_call.variant.start,
             dv_call.variant.reference_bases))
 
-    if self.options.pic_options.alt_aligned_pileup:
+    if self.options.pic_options.alt_aligned_pileup != 'none':
       # Align the reads against each alternate allele, saving the sequences of
       # those alleles along with the alignments for pileup images.
       alt_info_for_samples = [
