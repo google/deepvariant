@@ -3409,7 +3409,7 @@ options {
   allele_counter_options {
     partition_size: 1000
     read_requirements {
-      min_mapping_quality: 10
+      min_mapping_quality: 5
       min_base_quality: 10
       min_base_quality_mode: ENFORCED_BY_CLIENT
     }
@@ -3445,7 +3445,7 @@ options {
     base_quality_cap: 40
     read_overlap_buffer_bp: 5
     read_requirements {
-      min_mapping_quality: 10
+      min_mapping_quality: 5
       min_base_quality: 10
       min_base_quality_mode: ENFORCED_BY_CLIENT
     }
@@ -3457,7 +3457,7 @@ options {
     other_allele_supporting_read_alpha: 0.6000000238418579
   }
   read_requirements {
-    min_mapping_quality: 10
+    min_mapping_quality: 5
     min_base_quality: 10
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
@@ -3531,12 +3531,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1240.7578333333333
+  cpu_frequency_mhz: 1301.7215833333332
   total_memory_mb: 64142
-  wall_time_seconds: 0.9516043663024902
-  cpu_user_time_seconds: 5.506375
-  cpu_system_time_seconds: 0.8286089999999999
-  memory_peak_rss_mb: 375
-  read_bytes: 294600704
+  wall_time_seconds: 1.6400227546691895
+  cpu_user_time_seconds: 8.997739
+  cpu_system_time_seconds: 4.470188
+  memory_peak_rss_mb: 371
+  read_bytes: 802750464
   write_bytes: 20480
 }
