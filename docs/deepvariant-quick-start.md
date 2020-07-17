@@ -19,9 +19,10 @@ Docker image.
 
 ### Use Docker to run DeepVariant in one command.
 
-In the 0.8 release, we introduced one convenient command that will run through
-all 3 steps that are required to go from a BAM file to the VCF/gVCF output
-files. You can still read about the r0.7 approach in [Quick Start in r0.7].
+Starting from the 0.8 release, we introduced one convenient command that will
+run through all 3 steps that are required to go from a BAM file to the VCF/gVCF
+output files. You can still read about the r0.7 approach in
+[Quick Start in r0.7].
 
 If you want to compile the DeepVariant binaries for yourself, we also have a
 [Dockerfile] that you can use to build your own Docker image. You can read the
@@ -35,7 +36,7 @@ the [External Solutions] section.
 ### Get Docker image
 
 ```bash
-BIN_VERSION="0.10.0"
+BIN_VERSION="rc1.0.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -155,11 +156,11 @@ For more information about `output.visual_report.html`, see the
 
 ## Notes on GPU image
 
-If you are using GPUs, you can pull the GPU version, and make sure to run with
-`nvidia-docker`:
+If you are using GPUs, you can pull the GPU version, and make sure you run with
+`--gpus 1` (because DeepVariant currently can only make use of 1 GPU):
 
 ```
-sudo nvidia-docker run \
+sudo docker run --gpus 1 \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
   google/deepvariant:"${BIN_VERSION}-gpu" \
@@ -238,7 +239,7 @@ Benchmarking Summary:
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r0.10/Dockerfile
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.0/Dockerfile
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
