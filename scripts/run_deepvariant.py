@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC.
+# Copyright 2020 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -53,7 +53,7 @@ FLAGS = flags.FLAGS
 
 # Required flags.
 flags.DEFINE_enum(
-    'model_type', None, ['WGS', 'WES', 'PACBIO'],
+    'model_type', None, ['WGS', 'WES', 'PACBIO', 'HYBRID_PACBIO_ILLUMINA'],
     'Required. Type of model to use for variant calling. Each '
     'model_type has an associated default model, which can be '
     'overridden by the --customized_model flag.')
@@ -117,6 +117,7 @@ MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
     'WES': '/opt/models/wes/model.ckpt',
     'PACBIO': '/opt/models/pacbio/model.ckpt',
+    'HYBRID_PACBIO_ILLUMINA': '/opt/models/hybrid_pacbio_illumina/model.ckpt',
 }
 
 
