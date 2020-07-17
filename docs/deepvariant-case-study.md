@@ -46,7 +46,7 @@ Before you run the script, you can read through all sections to understand the
 details. Here is a quick way to get the script and run it:
 
 ```bash
-curl https://raw.githubusercontent.com/google/deepvariant/r0.10/scripts/run_wgs_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wgs_case_study_docker.sh | bash
 ```
 
 ### Running on a machine with GPU
@@ -54,7 +54,7 @@ curl https://raw.githubusercontent.com/google/deepvariant/r0.10/scripts/run_wgs_
 Here is an example command:
 
 ```bash
-sudo nvidia-docker run \
+sudo docker run --gpus 1 \
   -v "${DATA_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
   google/deepvariant:"${BIN_VERSION}-gpu" \
@@ -67,14 +67,13 @@ sudo nvidia-docker run \
   --num_shards=${N_SHARDS}
 ```
 
-Note that instead of using `docker`, we're using `nvidia-docker` to make use of
-the GPU. `call_variants` is the only step that uses the GPU.
+Note that we add `--gpus 1` to make use of the GPU. `call_variants` is the only
+step that uses the GPU, and can only use one at a time.
 `make_examples` and `postprocess_variants` do not run on GPU.
 
 
 The script [run_wgs_case_study_docker_gpu.sh] shows a full example, including
-calling a script [install_nvidia_docker.sh] that helps you install
-`nvidia-docker`.
+calling a script [install_nvidia_docker.sh] that helps you install.
 
 ### Runtime
 
@@ -88,17 +87,17 @@ With the example in [run_wgs_case_study_docker.sh] on a [CPU machine],
 
 Step                               | Hardware | Wall time
 ---------------------------------- | -------- | ---------
-`make_examples`                    | 64 CPUs  | ~ 1h 46m
-`call_variants`                    | 64 CPUs  | ~ 3h 09m
-`postprocess_variants` (with gVCF) | 1 CPU    | ~ 53m
+`make_examples`                    | 64 CPUs  | ~ 2h
+`call_variants`                    | 64 CPUs  | ~ 4h 50m
+`postprocess_variants` (with gVCF) | 1 CPU    | ~ 1h 30m
 
 With the example in [run_wgs_case_study_docker_gpu.sh] on a [GPU machine],
 
 Step                               | Hardware            | Wall time
 ---------------------------------- | ------------------- | ---------
-`make_examples`                    | 16 CPUs             | ~ 5h 50m
-`call_variants`                    | 1 P100 GPU, 16 CPUs | ~ 56m
-`postprocess_variants` (with gVCF) | 1 CPU               | ~ 43m
+`make_examples`                    | 16 CPUs             | ~ 6h 40m
+`call_variants`                    | 1 P100 GPU, 16 CPUs | ~ 1h 10m
+`postprocess_variants` (with gVCF) | 1 CPU               | ~ 1h 10m
 
 Since `make_examples` doesn't utilize GPUs, bringing up one GPU machine for all
 steps might not be the most cost-effective solution. For more scalable execution
@@ -108,32 +107,16 @@ of DeepVariant see the [External Solutions] section.
 
 The original source of data used in this case study:
 
-1.  BAM file: HG002_NIST_150bp_50x.bam
+1.  BAM file: HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam
 
     The original FASTQ file comes from the
-    [PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/).
-    We ran it through
-    [PrecisionFDA's BWA-MEM app](https://precision.fda.gov/apps/app-BpF9YGQ0bxjbjk6Fx1F0KJF0)
-    with default setting, and then got the HG002_NIST_150bp_50x.bam file as
-    output.
+    [PrecisionFDA Truth Challenge V2](https://precision.fda.gov/challenges/10).
+    We mapped with BWA-MEM.
 
-    Since 2019-02-26, the file was further processed using SAMtools 1.9 and
-    HTSlib 1.9 to address formatting problems caused by an older version of
-    HTSlib:
-
-    ```
-    samtools view -bh HG002_NIST_150bp_50x.bam -o HG002_NIST_150bp_50x.bam
-    ```
-
-    The FASTQ files are originally from the
-    [Genome in a Bottle Consortium](http://jimb.stanford.edu/giab-resources/).
-    For more information, see this
-    [Scientific Data paper](https://www.nature.com/articles/sdata201625).
-
-1.  FASTA file: hs37d5.fa.gz
+1.  FASTA file: GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 
     The original file came from:
-    [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence).
+    [ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids](ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids).
     Because DeepVariant requires bgzip files, we had to unzip and bgzip it, and
     create corresponding index files.
 
@@ -142,7 +125,7 @@ The original source of data used in this case study:
     These come from NIST, as part of the
     [Genome in a Bottle project](http://jimb.stanford.edu/giab/). They are
     downloaded from
-    [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/)
+    [ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020](ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020)
 
 ## Variant call quality
 
@@ -152,10 +135,10 @@ program from Illumina to evaluate the resulting vcf file. This serves as a check
 to ensure the three DeepVariant commands ran correctly and produced high-quality
 results.
 
-Type  | # FN | # FP | Recall   | Precision | F1\_Score
------ | ---- | ---- | -------- | --------- | ---------
-INDEL |  937 | 717  | 0.997984 | 0.998519  | 0.998251
-SNP   | 1405 | 748  | 0.999539 | 0.999755  | 0.999647
+Type  |  # FN |  # FP | Recall   | Precision | F1\_Score
+----- | ----- | ----- | -------- | --------- | ---------
+INDEL |  3181 | 1164  | 0.993946 | 0.997867  | 0.995903
+SNP   | 19904 | 4346  | 0.994086 | 0.998703  | 0.996389
 
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
 [run_wgs_case_study_docker.sh]: ../scripts/run_wgs_case_study_docker.sh

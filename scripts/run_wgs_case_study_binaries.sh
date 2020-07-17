@@ -14,10 +14,10 @@ INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
 MODEL="${MODELS_DIR}/model.ckpt"
 DATA_DIR="${INPUT_DIR}/data"
-REF="${DATA_DIR}/hs37d5.fa.gz"
-BAM="${DATA_DIR}/HG002_NIST_150bp_50x.bam"
-TRUTH_VCF="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"
-TRUTH_BED="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"
+REF="${DATA_DIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
+BAM="${DATA_DIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
+TRUTH_VCF="${DATA_DIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz"
+TRUTH_BED="${DATA_DIR}/HG002_GRCh38_1_22_v4.2_benchmark.bed"
 
 N_SHARDS="64"
 
@@ -75,17 +75,16 @@ function setup_test() {
   fi
 
   # Copy the data, using http:// because of https://github.com/aria2/aria2/issues/1012.
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi -d "${DATA_DIR}"
-  # Add a checksum for the biggest file:
-  aria2c -c -x10 -s10 --checksum=md5=8986a45989b210432e80e24fd88f38c1  http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_NIST_150bp_50x.bam -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_NIST_150bp_50x.bam.bai -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.fai -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.gzi -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gzi -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.fai -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh38_1_22_v4.2_benchmark.bed -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam.bai -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz.fai -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz.gzi -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gzi -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai -d "${DATA_DIR}"
 }
 
 ## Run `make_examples`
@@ -153,7 +152,7 @@ function run_vcf_stats_report() {
 
 ## Evaluation: run hap.py
 echo "Start evaluation with hap.py..."
-UNCOMPRESSED_REF="${DATA_DIR}/hs37d5.fa"
+UNCOMPRESSED_REF="${DATA_DIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
 
 # hap.py cannot read the compressed fa, so uncompress
 # into a writable directory. Index file was downloaded earlier.
