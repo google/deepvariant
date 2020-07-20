@@ -45,7 +45,7 @@ Before you run the script, you can read through all sections to understand the
 details. Here is a quick way to get the script and run it:
 
 ```bash
-curl https://raw.githubusercontent.com/google/deepvariant/r0.10/scripts/run_wes_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wes_case_study_docker.sh | bash
 ```
 
 ### Runtime
@@ -82,11 +82,10 @@ Same as described in the
 
 ### Truth VCF and BED
 
-`HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_*`
-are from NIST, as part of the
+`HG002_GRCh37_1_22_v4.1_draft_benchmark.*` are from NIST, as part of the
 [Genomes in a Bottle project](http://jimb.stanford.edu/giab/). They are
 downloaded from
-[ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/)
+[ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.1_SmallVariantDraftBenchmark_12182019/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.1_SmallVariantDraftBenchmark_12182019/GRCh37/)
 
 ### Capture target BED file
 
@@ -109,8 +108,8 @@ We evaluate against the capture region:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 92   | 42   | 0.964615 | 0.983683  | 0.974056
-SNP   | 30   | 13   | 0.999110 | 0.999614  | 0.999362
+INDEL | 126  |  62  | 0.958278 | 0.979299  | 0.968674
+SNP   | 395  | 120  | 0.989760 | 0.996870  | 0.993303
 
 [specific machine type]: deepvariant-details.md#commands-for-requesting-machines-used-in-case-studies
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
