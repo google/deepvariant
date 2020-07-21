@@ -192,6 +192,7 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   if FLAGS.model_type == 'PACBIO':
     kwargs['realign_reads'] = False
     kwargs['vsc_min_fraction_indels'] = 0.12
+    kwargs['min_mapping_quality'] = 1
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
