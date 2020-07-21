@@ -56,6 +56,7 @@ from deeptrio import make_examples
 from deeptrio import testdata
 from deeptrio.protos import deeptrio_pb2
 from deepvariant import make_examples_utils
+from deepvariant import pileup_image
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
@@ -1223,7 +1224,23 @@ class RegionProcessorTest(parameterized.TestCase):
     parent1 = make_examples_utils.Sample(in_memory_sam_reader=mock.Mock())
     child = make_examples_utils.Sample(in_memory_sam_reader=mock.Mock())
     parent2 = make_examples_utils.Sample(in_memory_sam_reader=mock.Mock())
-    self.processor.samples = [parent1, child, parent2]
+    self.processor.samples = {}
+    self.processor.samples['child'] = [parent1, child, parent2]
+    self.processor.samples['parent1'] = [parent1, child, parent2]
+    self.processor.samples['parent2'] = [parent2, child, parent1]
+    self.processor.pics = {}
+    self.processor.pics['child'] = pileup_image.PileupImageCreator(
+        ref_reader=self.processor.ref_reader,
+        options=self.processor.options.pic_options,
+        samples=self.processor.samples['child'])
+    self.processor.pics['parent1'] = pileup_image.PileupImageCreator(
+        ref_reader=self.processor.ref_reader,
+        options=self.processor.options.pic_options,
+        samples=self.processor.samples['parent1'])
+    self.processor.pics['parent2'] = pileup_image.PileupImageCreator(
+        ref_reader=self.processor.ref_reader,
+        options=self.processor.options.pic_options,
+        samples=self.processor.samples['parent2'])
 
   def add_mock(self, name, retval='dontadd', side_effect='dontadd'):
     patcher = mock.patch.object(self.processor, name, autospec=True)
@@ -1258,11 +1275,14 @@ class RegionProcessorTest(parameterized.TestCase):
         'child': [e1, e2, e3]
     }, {}), self.processor.process(self.region))
 
-    in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
+    in_memory_sam_reader = self.processor.samples['child'][
+        1].in_memory_sam_reader
     in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])
 
     # We don't try to label variants when in calling mode.
-    self.assertEqual([mock.call(c1), mock.call(c2)], mock_cpe.call_args_list)
+    self.assertEqual(
+        [mock.call(c1, 'child'), mock.call(c2, 'child')],
+        mock_cpe.call_args_list)
 
     if mode == deeptrio_pb2.DeepTrioOptions.CALLING:
       # In calling mode, we never try to label.
@@ -1277,14 +1297,15 @@ class RegionProcessorTest(parameterized.TestCase):
       ], mock_alte.call_args_list)
 
   def test_create_pileup_examples_handles_none(self):
-    self.processor.pic = mock.Mock()
+    self.processor.pics['child'] = mock.Mock()
     dv_call = mock.Mock()
-    self.processor.pic.create_pileup_images.return_value = None
-    self.assertEqual([], self.processor.create_pileup_examples(dv_call))
-    self.processor.pic.create_pileup_images.assert_called_once()
+    self.processor.pics['child'].create_pileup_images.return_value = None
+    self.assertEqual([],
+                     self.processor.create_pileup_examples(dv_call, 'child'))
+    self.processor.pics['child'].create_pileup_images.assert_called_once()
 
   def test_create_pileup_examples(self):
-    self.processor.pic = mock.Mock()
+    self.processor.pics['child'] = mock.Mock()
     self.add_mock(
         '_encode_tensor',
         side_effect=[
@@ -1295,13 +1316,13 @@ class RegionProcessorTest(parameterized.TestCase):
     dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
     ex = mock.Mock()
     alt1, alt2 = ['C'], ['G']
-    self.processor.pic.create_pileup_images.return_value = [
+    self.processor.pics['child'].create_pileup_images.return_value = [
         (alt1, six.b('tensor1')), (alt2, six.b('tensor2'))
     ]
 
-    actual = self.processor.create_pileup_examples(dv_call)
+    actual = self.processor.create_pileup_examples(dv_call, 'child')
 
-    self.processor.pic.create_pileup_images.assert_called_once()
+    self.processor.pics['child'].create_pileup_images.assert_called_once()
 
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
@@ -1437,9 +1458,9 @@ class RegionProcessorTest(parameterized.TestCase):
 
     variant = nist_variants[0]
 
-    self.processor.pic = mock.Mock()
-    self.processor.pic.width = window_width
-    self.processor.pic.half_width = int((self.processor.pic.width - 1) / 2)
+    self.processor.pics['child'] = mock.Mock()
+    self.processor.pics['child'].width = window_width
+    self.processor.pics['child'].half_width = int((window_width - 1) / 2)
 
     self.processor.realigner = mock.Mock()
     # Using a real ref_reader to test that the reference allele matches
@@ -1459,7 +1480,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertCountEqual(hap_sequences.keys(), ['A'])
 
     # Sequence must be the length of the window.
-    self.assertLen(hap_sequences['A'], self.processor.pic.width)
+    self.assertLen(hap_sequences['A'], self.processor.pics['child'].width)
 
     # align_to_haplotype should be called once for each alt (1 alt here).
     self.processor.realigner.align_to_haplotype.assert_called_once()

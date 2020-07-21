@@ -965,10 +965,10 @@ class RegionProcessor(object):
     self.sam_reader = None
     self.in_memory_sam_reader = None
     self.realigner = None
-    self.pic = None
+    self.pics = None
     self.labeler = None
     self.variant_caller = None
-    self.samples = []
+    self.samples = {}
 
   def _make_allele_counter_for_region(self, region):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
@@ -1031,7 +1031,10 @@ class RegionProcessor(object):
         pileup_height=self.options.height_parent)
 
     # Ordering here determines the order of pileups from top to bottom.
-    self.samples = [parent1, child, parent2]
+    self.samples = {}
+    self.samples['child'] = [parent1, child, parent2]
+    self.samples['parent1'] = [parent1, child, parent2]
+    self.samples['parent2'] = [parent2, child, parent1]
 
     if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup != 'none':
       input_bam_header = sam.SamReader(self.options.reads_filename).header
@@ -1042,10 +1045,19 @@ class RegionProcessor(object):
 
     self.options.pic_options.sequencing_type = deepvariant_pb2.PileupImageOptions.TRIO
 
-    self.pic = pileup_image.PileupImageCreator(
+    self.pics = {}
+    self.pics['child'] = pileup_image.PileupImageCreator(
         ref_reader=self.ref_reader,
         options=self.options.pic_options,
-        samples=self.samples)
+        samples=self.samples['child'])
+    self.pics['parent1'] = pileup_image.PileupImageCreator(
+        ref_reader=self.ref_reader,
+        options=self.options.pic_options,
+        samples=self.samples['parent1'])
+    self.pics['parent2'] = pileup_image.PileupImageCreator(
+        ref_reader=self.ref_reader,
+        options=self.options.pic_options,
+        samples=self.samples['parent2'])
 
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
@@ -1122,7 +1134,7 @@ class RegionProcessor(object):
 
     # Get reads in the region for each sample into its in-memory sam reader,
     # optionally realigning reads.
-    for sample in self.samples:
+    for sample in self.samples['child']:
       if sample.in_memory_sam_reader is not None:
         sample.in_memory_sam_reader.replace_reads(
             self.region_reads(region, sample.sam_reader))
@@ -1139,12 +1151,12 @@ class RegionProcessor(object):
 
       if in_training_mode(self.options):
         for candidate, label in self.label_candidates(candidates, region):
-          for example in self.create_pileup_examples(candidate):
+          for example in self.create_pileup_examples(candidate, sample):
             self.add_label_to_example(example, label)
             examples_dict[sample].append(example)
       else:
         for candidate in candidates:
-          for example in self.create_pileup_examples(candidate):
+          for example in self.create_pileup_examples(candidate, sample):
             examples_dict[sample].append(example)
 
       candidates_dict[sample] = candidates
@@ -1216,9 +1228,9 @@ class RegionProcessor(object):
     """
 
     # Child is in the middle in self.samples.
-    reads_parent1 = self.samples[0].in_memory_sam_reader.query(region)
-    reads = self.samples[1].in_memory_sam_reader.query(region)
-    reads_parent2 = self.samples[2].in_memory_sam_reader.query(region)
+    reads_parent1 = self.samples['child'][0].in_memory_sam_reader.query(region)
+    reads = self.samples['child'][1].in_memory_sam_reader.query(region)
+    reads_parent2 = self.samples['child'][2].in_memory_sam_reader.query(region)
 
     if not reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
@@ -1297,8 +1309,8 @@ class RegionProcessor(object):
           haplotype.
     """
     # redacted
-    window_width = self.pic.width
-    window_half_width = self.pic.half_width
+    window_width = self.pics['child'].width
+    window_half_width = self.pics['child'].half_width
 
     alt_alleles = list(variant.alternate_bases)
     contig = variant.reference_name
@@ -1352,7 +1364,7 @@ class RegionProcessor(object):
         'alt_sequences': sequences_by_haplotype
     }
 
-  def create_pileup_examples(self, dv_call):
+  def create_pileup_examples(self, dv_call, samples_id):
     """Creates a tf.Example for DeepVariantCall.
 
     This function calls PileupImageCreator.create_pileup_images on dv_call to
@@ -1362,14 +1374,15 @@ class RegionProcessor(object):
 
     Args:
       dv_call: A DeepVariantCall.
+      samples_id: string Sample id of the sample to call.
 
     Returns:
       A list of tf.Example protos.
     """
     reads_for_samples = [
-        self.pic.get_reads(
+        self.pics[samples_id].get_reads(
             dv_call.variant, sam_reader=sample.in_memory_sam_reader)
-        for sample in self.samples
+        for sample in self.samples[samples_id]
     ]
     if self.options.pic_options.alt_aligned_pileup != 'none':
       # Align the reads against each alternate allele, saving the sequences of
@@ -1384,13 +1397,13 @@ class RegionProcessor(object):
       ]
       # All samples share the same alt sequences, so select the first one.
       haplotype_sequences = alt_info_for_samples[0]['alt_sequences']
-      pileup_images = self.pic.create_pileup_images(
+      pileup_images = self.pics[samples_id].create_pileup_images(
           dv_call=dv_call,
           reads_for_samples=reads_for_samples,
           haplotype_alignments_for_samples=haplotype_alignments_for_samples,
           haplotype_sequences=haplotype_sequences)
     else:
-      pileup_images = self.pic.create_pileup_images(
+      pileup_images = self.pics[samples_id].create_pileup_images(
           dv_call=dv_call, reads_for_samples=reads_for_samples)
 
     if pileup_images is None:
