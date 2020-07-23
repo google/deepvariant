@@ -3454,6 +3454,7 @@ options {
     random_seed: 2101079370
     num_channels: 6
     sequencing_type: TRIO
+    alt_aligned_pileup: "none"
     other_allele_supporting_read_alpha: 0.6000000238418579
   }
   read_requirements {
@@ -3534,14 +3535,14 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1226.6009166666665
-  total_memory_mb: 64146
-  wall_time_seconds: 4.761536121368408
-  cpu_user_time_seconds: 12.679857
-  cpu_system_time_seconds: 4.86722
-  memory_peak_rss_mb: 430
-  read_bytes: 809836544
-  write_bytes: 36864
+  cpu_frequency_mhz: 1372.9495833333333
+  total_memory_mb: 64142
+  wall_time_seconds: 2.9750428199768066
+  cpu_user_time_seconds: 8.786353
+  cpu_system_time_seconds: 3.8682559999999997
+  memory_peak_rss_mb: 447
+  read_bytes: 802672640
+  write_bytes: 20480
 }
 stats {
   num_examples: 63
