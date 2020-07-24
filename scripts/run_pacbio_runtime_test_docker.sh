@@ -14,10 +14,8 @@ BASE="${HOME}/pacbio-case-study"
 
 INPUT_DIR="${BASE}/input"
 DATA_DIR="${INPUT_DIR}/data"
-REF="hs37d5.fa.gz"
-BAM="pacbio.8M.30x.bam"
-TRUTH_VCF="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"
-TRUTH_BED="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"
+REF="GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+BAM="HG002.pfda_challenge.grch38.phased.bam"
 
 N_SHARDS=$(nproc)
 
@@ -47,16 +45,13 @@ function setup_test() {
   sudo apt-get -y install aria2
 
   # Copy the data
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/${TRUTH_BED}
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/${TRUTH_VCF}
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/${TRUTH_VCF}.tbi
   aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/pacbio-case-study-testdata/${BAM}
   aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/pacbio-case-study-testdata/${BAM}.bai
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.fai
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.gzi
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gzi
-  aria2c -c -x10 -s10 -d "${DATA_DIR}" http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.fai
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz"
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz.fai"
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz.gzi"
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gzi"
+  aria2c -c -x10 -s10 -d "${DATA_DIR}" "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.fai"
 }
 
 function run_deepvariant() {
@@ -71,7 +66,7 @@ function run_deepvariant() {
     --output_gvcf "${OUTPUT_GVCF}" \
     --output_vcf "${OUTPUT_VCF}" \
     --reads "${DATA_DIR}/${BAM}" \
-    --ref "${DATA_DIR}/${REF}"
+    --ref "${DATA_DIR}/${REF}.gz"
   echo "Done."
   echo
 }

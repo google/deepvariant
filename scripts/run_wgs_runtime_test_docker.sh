@@ -14,10 +14,8 @@ BASE="${HOME}/case-study"
 
 INPUT_DIR="${BASE}/input"
 DATA_DIR="${INPUT_DIR}/data"
-REF="${DATA_DIR}/hs37d5.fa.gz"
-BAM="${DATA_DIR}/HG002_NIST_150bp_downsampled_30x.bam"
-TRUTH_VCF="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"
-TRUTH_BED="${DATA_DIR}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"
+REF="GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+BAM="HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
 
 N_SHARDS=$(nproc)
 
@@ -51,17 +49,13 @@ function setup_test() {
   sudo apt-get -y install aria2
 
   # Copy the data
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi -d "${DATA_DIR}"
-  # Add a checksum for the biggest file:
-  aria2c -c -x10 -s10 --checksum=md5=c578973fa6b36cb59e6a62003fed8ae4 http://storage.googleapis.com/deepvariant/performance-testdata/HG002_NIST_150bp_downsampled_30x.bam -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/performance-testdata/HG002_NIST_150bp_downsampled_30x.bam.bai -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.fai -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.gzi -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gzi -d "${DATA_DIR}"
-  aria2c -c -x10 -s10 http://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.fai -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 "http://storage.googleapis.com/deepvariant/case-study-testdata/${BAM}" -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 "http://storage.googleapis.com/deepvariant/case-study-testdata/${BAM}.bai" -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 "http://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz" -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 "http://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz.fai" -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 "http://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz.gzi" -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 "http://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gzi" -d "${DATA_DIR}"
+  aria2c -c -x10 -s10 "http://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.fai" -d "${DATA_DIR}"
 }
 
 function run_deepvariant() {
@@ -75,8 +69,8 @@ function run_deepvariant() {
     --num_shards "${N_SHARDS}" \
     --output_gvcf "${OUTPUT_GVCF}" \
     --output_vcf "${OUTPUT_VCF}" \
-    --reads "${BAM}" \
-    --ref "${REF}"
+    --reads "${DATA_DIR}/${BAM}" \
+    --ref "${DATA_DIR}/${REF}.gz"
   echo "Done."
   echo
 }
