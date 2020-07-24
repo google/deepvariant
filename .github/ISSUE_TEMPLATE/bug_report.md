@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: 'Problem encountered while running DeepVariant'
+about: 'Tell us what happened, so we can try to help'
 title: ''
 labels: ''
 assignees: ''
