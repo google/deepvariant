@@ -654,7 +654,11 @@ def _ensure_consistent_contigs(ref_contigs,
 
   # Compute the common contigs among our inputs, and check that the contigs are
   # sufficiently consistent among each other.
-  contigs = common_contigs(only_true(ref_contigs, sam_contigs, vcf_contigs))
+  contigs = common_contigs(only_true(ref_contigs, sam_contigs))
+  if vcf_contigs:
+    # If VCF contigs exist, we just check the name (not the length).
+    vcf_contigs_names = set([x.name for x in vcf_contigs])
+    contigs = [x for x in contigs if x.name in vcf_contigs_names]
   validate_reference_contig_coverage(ref_contigs, contigs,
                                      min_coverage_fraction)
   return contigs
