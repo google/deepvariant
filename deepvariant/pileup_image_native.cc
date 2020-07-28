@@ -31,6 +31,8 @@
 
 #include "deepvariant/pileup_image_native.h"
 
+#include <math.h>
+
 #include <algorithm>
 #include <functional>
 #include <iterator>
@@ -90,6 +92,40 @@ inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
   return 0;
 }
 
+// Get the allele frequency of the alt allele that is carried by a read.
+inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
+                                 const Read& read,
+                                 const std::vector<string>& alt_alleles) {
+  string key = (read.fragment_name() + "/" +
+                std::to_string(read.read_number()));
+
+  // Iterate over all alts, not just alt_alleles.
+  for (const string& alt_allele : dv_call.variant().alternate_bases()) {
+    const auto& allele_support = dv_call.allele_support();
+    auto it_read = allele_support.find(alt_allele);
+
+    if (it_read != allele_support.end()){
+      const auto& supp_read_names = it_read->second.read_names();
+      for (const string& read_name : supp_read_names) {
+        const bool alt_in_alt_alleles =
+              std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
+              alt_alleles.end();
+        // If the read supports an alt we are currently considering, return the
+        // associated allele frequency.
+        if (read_name == key && alt_in_alt_alleles) {
+          auto it = dv_call.allele_frequency().find(alt_allele);
+          if (it != dv_call.allele_frequency().end())
+            return it->second;
+          else
+            return 0;
+        }
+      }
+    }
+  }
+  // If cannot find the matching variant, set the frequency to 0.
+  return 0;
+}
+
 }  // namespace
 
 
@@ -101,7 +137,8 @@ const float kMaxPixelValueAsFloat = 254.0;
 
 
 ImageRow::ImageRow(int width,
-                   int num_channels)
+                   int num_channels,
+                   bool use_allele_frequency)
     : base(width, 0),
       base_quality(width, 0),
       mapping_quality(width, 0),
@@ -109,7 +146,9 @@ ImageRow::ImageRow(int width,
       supports_alt(width, 0),
       matches_ref(width, 0),
       sequencing_type(width, 0),
-      num_channels(num_channels)
+      allele_frequency(width, 0),
+      num_channels(num_channels),
+      use_allele_frequency(use_allele_frequency)
 {}
 
 int ImageRow::Width() const {
@@ -118,7 +157,8 @@ int ImageRow::Width() const {
         base.size() == on_positive_strand.size() &&
         base.size() == supports_alt.size() &&
         base.size() == matches_ref.size() &&
-        base.size() == sequencing_type.size());
+        base.size() == sequencing_type.size() &&
+        base.size() == allele_frequency.size());
   return base.size();
 }
 
@@ -127,10 +167,6 @@ PileupImageEncoderNative::PileupImageEncoderNative(
     : options_(options) {
     CHECK((options_.width() % 2 == 1) && options_.width() >= 3)
         << "Width must be odd; found " << options_.width();
-    int num_channels = NUM_CHANNELS;
-    CHECK(options_.num_channels() == num_channels)
-        << "Expected options.num_channels to be " << num_channels
-        << " but saw " << options_.num_channels() << " instead";
 }
 
 // Gets the pixel color (int) for a base.
@@ -159,6 +195,20 @@ int PileupImageEncoderNative::MatchesRefColor(bool base_matches_ref) const {
                  options_.reference_matching_read_alpha() :
                  options_.reference_mismatching_read_alpha());
   return static_cast<int>(kMaxPixelValueAsFloat * alpha);
+}
+
+// Get allele frequency color for a read.
+// Convert a frequency value in float to color intensity (int) and normalize.
+int PileupImageEncoderNative::AlleleFrequencyColor(float allele_frequency)
+    const {
+  if (allele_frequency <= options_.min_non_zero_allele_frequency()) {
+    return 0;
+  } else {
+    float log10_af = log10(allele_frequency);
+    float log10_min = log10(options_.min_non_zero_allele_frequency());
+    return ((log10_min - log10_af) / log10_min) *
+        static_cast<int>(kMaxPixelValueAsFloat);
+  }
 }
 
 int PileupImageEncoderNative::SupportsAltColor(int read_supports_alt) const {
@@ -201,7 +251,8 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
                                      int image_start_pos,
                                      const vector<string>& alt_alleles) {
   ImageRow img_row(ref_bases.size(),
-                   options_.num_channels());
+                   options_.num_channels(),
+                   options_.use_allele_frequency());
   const int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
   const int mapping_quality = read.alignment().mapping_quality();
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
@@ -211,6 +262,10 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
   const int min_base_quality = options_.read_requirements().min_base_quality();
   const int min_mapping_quality =
       options_.read_requirements().min_mapping_quality();
+
+  const float allele_frequency = (options_.use_allele_frequency())?
+      ReadAlleleFrequency(dv_call, read, alt_alleles) : 0;
+  const uint8 allele_frequency_color = AlleleFrequencyColor(allele_frequency);
 
   // Bail early if this read's mapping quality is too low.
   if (mapping_quality < min_mapping_quality) {
@@ -256,6 +311,9 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
       img_row.on_positive_strand[col] = strand_color;
       img_row.supports_alt[col]       = alt_color;
       img_row.matches_ref[col]        = MatchesRefColor(matches_ref);
+      if (img_row.use_allele_frequency) {
+        img_row.allele_frequency[col] = allele_frequency_color;
+      }
     }
     return true;
   };
@@ -356,9 +414,11 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
   uint8 strand_color = StrandColor(true);
   uint8 alt_color = SupportsAltColor(0);
   uint8 ref_color = MatchesRefColor(true);
+  uint8 allele_frequency_color = AlleleFrequencyColor(0);
 
   ImageRow img_row(ref_bases.size(),
-                   options_.num_channels());
+                   options_.num_channels(),
+                   options_.use_allele_frequency());
   for (size_t i = 0; i < ref_bases.size(); ++i) {
     img_row.base[i]               = BaseColor(ref_bases[i]);
     img_row.base_quality[i]       = base_quality_color;
@@ -366,6 +426,9 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
     img_row.on_positive_strand[i] = strand_color;
     img_row.supports_alt[i]       = alt_color;
     img_row.matches_ref[i]        = ref_color;
+    if (img_row.use_allele_frequency){
+      img_row.allele_frequency[i] = allele_frequency_color;
+    }
   }
 
   return std::unique_ptr<ImageRow>(new ImageRow(img_row));

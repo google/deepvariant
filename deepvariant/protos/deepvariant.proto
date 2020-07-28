@@ -258,6 +258,7 @@ message DeepVariantCall {
     repeated string read_names = 1;
   }
   map<string, SupportingReads> allele_support = 2;
+  map<string, float> allele_frequency = 3;
 }
 
 // Options to control how our AlleleCounter code works.
@@ -351,7 +352,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 33.
+// Next ID: 35.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -462,11 +463,18 @@ message PileupImageOptions {
   // If set reads are sorted by haplotype tag (HP tag) and then by alignment
   // position.
   bool sort_by_haplotypes = 31;
+
+  // Minimal non-zero allele frequency. This is used when normalizing color
+  // intensities for the allele frequency channel.
+  float min_non_zero_allele_frequency = 33;
+
+  // Whether to consider allele frequencies.
+  bool use_allele_frequency = 34;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 34.
+// Next ID: 36.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -609,6 +617,12 @@ message DeepVariantOptions {
     VCF_CANDIDATE_IMPORTER = 2;
   }
   VariantCaller variant_caller = 31;
+
+  // If flag is set, consider allele frequency.
+  bool use_allele_frequency = 34;
+
+  // A list of VCF or VCF.gz files that specify allele frequency information.
+  repeated string population_vcf_filenames = 35;
 }
 
 // Config describe information needed for a dataset that can be used for
@@ -629,7 +643,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 11.
+  // Next ID: 12.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -661,6 +675,9 @@ message DeepVariantInputDatasets {
     // Optional. Can be set to the sequencing type of the input BAM file: 'WGS'
     // or 'WES'.
     string sequencing_type = 10;
+
+    // Optional. Space-separated list of cohort callsets in VCF of VCF.gz.
+    string population_vcfs = 11;
   }
   repeated Dataset datasets = 1;
   string group_name = 2;

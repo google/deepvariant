@@ -81,6 +81,9 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
     *cur++ = img_row->on_positive_strand[i];
     *cur++ = img_row->supports_alt[i];
     *cur++ = img_row->matches_ref[i];
+    if (img_row->use_allele_frequency) {
+      *cur++ = img_row->allele_frequency[i];
+    }
   }
   return PyArray_Return(res);
 }

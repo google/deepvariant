@@ -57,11 +57,14 @@ struct ImageRow {
   std::vector<unsigned char> supports_alt;
   std::vector<unsigned char> matches_ref;
   std::vector<unsigned char> sequencing_type;
+  std::vector<unsigned char> allele_frequency;
   int num_channels;
+  bool use_allele_frequency;
 
   int Width() const;
   explicit ImageRow(int width,
-                    int num_channels);
+                    int num_channels,
+                    bool use_allele_frequency);
 };
 
 class PileupImageEncoderNative {
@@ -102,6 +105,8 @@ class PileupImageEncoderNative {
   int StrandColor(bool on_positive_strand) const;
   // Get the pixel color (int) for a read that supports an alt allele.
   int SupportsAltColor(int read_supports_alt) const;
+  // Get the pixel color (int) for a read with an allele frequency.
+  int AlleleFrequencyColor(float allele_frequency) const;
   // Get the pixel color (int) for a read that matches ref.
   int MatchesRefColor(bool base_matches_ref) const;
   // Get the pixel color (int) for a base read quality.

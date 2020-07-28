@@ -79,7 +79,9 @@ def default_options(read_requirements=None):
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=2101079370,
       sequencing_type=deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE,
-      alt_aligned_pileup='none')
+      alt_aligned_pileup='none',
+      min_non_zero_allele_frequency=0.00001,
+      use_allele_frequency=False)
 
 
 def _compute_half_width(width):
