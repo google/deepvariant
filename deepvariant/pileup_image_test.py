@@ -73,9 +73,32 @@ def _make_dv_call(ref_bases='A', alt_bases='C'):
       allele_support={'C': _supporting_reads('read1/1', 'read2/1')})
 
 
+def _make_dv_call_with_allele_frequency(ref_bases='A',
+                                        alt_bases='C',
+                                        alt_frequency=0.1):
+  return deepvariant_pb2.DeepVariantCall(
+      variant=variants_pb2.Variant(
+          reference_name='chr1',
+          start=10,
+          end=11,
+          reference_bases=ref_bases,
+          alternate_bases=[alt_bases]),
+      allele_support={'C': _supporting_reads('read1/1', 'read2/1')},
+      allele_frequency=dict(A=1 - alt_frequency, C=alt_frequency))
+
+
 def _make_encoder(read_requirements=None, **kwargs):
   """Make a PileupImageEncoderNative with overrideable default options."""
   options = pileup_image.default_options(read_requirements)
+  options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
+  return pileup_image_native.PileupImageEncoderNative(options)
+
+
+def _make_encoder_with_allele_frequency(read_requirements=None, **kwargs):
+  """Make a PileupImageEncoderNative with overrideable default options."""
+  options = pileup_image.default_options(read_requirements)
+  options.use_allele_frequency = True
+  options.num_channels += 1
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image_native.PileupImageEncoderNative(options)
 
@@ -208,6 +231,34 @@ class PileupImageEncoderTest(parameterized.TestCase):
     self.assertImageRowEquals(
         _make_encoder().encode_read(dv_call, 'ACAGT', read, start, alt_allele),
         full_expected)
+
+  def test_encode_read_matches_with_allele_frequency(self):
+    # Same test case as test_encode_read_matches(), with allele frequency.
+    start = 10
+    dv_call = _make_dv_call_with_allele_frequency()
+    alt_allele = dv_call.variant.alternate_bases[0]
+    read = test_utils.make_read(
+        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
+    full_expected = np.dstack([
+        # Base.
+        (250, 30, 30, 180, 100),
+        # Base quality.
+        (63, 69, 76, 82, 88),
+        # Mapping quality.
+        (211, 211, 211, 211, 211),
+        # Strand channel (forward or reverse)
+        (70, 70, 70, 70, 70),
+        # Supports alt or not.
+        (254, 254, 254, 254, 254),
+        # Matches ref or not.
+        (50, 50, 254, 50, 50),
+        # Allele frequencies
+        (203, 203, 203, 203, 203)
+    ]).astype(np.uint8)
+
+    self.assertImageRowEquals(
+        _make_encoder_with_allele_frequency().encode_read(
+            dv_call, 'ACAGT', read, start, alt_allele), full_expected)
 
   # pylint:disable=g-complex-comprehension
   @parameterized.parameters((bases_start, bases_end)
@@ -550,6 +601,14 @@ class PileupImageEncoderTest(parameterized.TestCase):
     actual = pie.encode_read(dv_call, 'TAT', read, dv_call.variant.start - 1,
                              alt_allele)
     self.assertEqual(actual[0, 1, 4], expected_color)
+
+  @parameterized.parameters((1, 254), (0.2, 218), (0.1, 203), (0.01, 152),
+                            (0.001, 101), (0.00031415, 76), (0.00001, 0),
+                            (0, 0))
+  def test_allele_frequency_color(self, allele_frequency, expected_color):
+    pie = _make_encoder()
+    self.assertAlmostEqual(
+        pie.allele_frequency_color(allele_frequency), expected_color)
 
 
 class PileupImageCreatorEncodePileupTest(parameterized.TestCase):

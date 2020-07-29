@@ -84,6 +84,8 @@ WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = None
 WS_VARIANT_READS_THRESHOLD_MODEL = None
 GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT = None
 GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT = None
+VCF_WITH_ALLELE_FREQUENCIES = None
+CHR20_GRCH38_FASTA = None
 
 N_GOLDEN_TRAINING_EXAMPLES = 49
 N_GOLDEN_CALLING_EXAMPLES = 86
@@ -126,6 +128,8 @@ def init():
   global WS_VARIANT_READS_THRESHOLD_MODEL
   global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
   global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT
+  global VCF_WITH_ALLELE_FREQUENCIES
+  global CHR20_GRCH38_FASTA
 
   CHR20_FASTA = deepvariant_testdata('input/ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('input/NA12878_S1.chr20.10_10p1mb.bam')
@@ -191,6 +195,9 @@ def init():
       'golden.vcf_candidate_importer_postprocess_single_site_input.tfrecord.gz')
   GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.vcf_candidate_importer_postprocess_single_site_output.vcf')
+  VCF_WITH_ALLELE_FREQUENCIES = deepvariant_testdata(
+      'input/allele_frequencies_vcf.vcf.gz')
+  CHR20_GRCH38_FASTA = deepvariant_testdata('input/grch38.chr20_10M.fa.gz')
 
   # For CustomizedClassesVariantLabeler.
   global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
