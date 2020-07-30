@@ -344,6 +344,24 @@ class PileupImageCreator(object):
       rows = ([self._encoder.encode_reference(refbases)] *
               self.reference_band_height)
 
+      def _update_hap_index(read, sort_by_haplotypes_sample_hp_tag):
+        default_hap_idx = 0  # By default, reads with no HP is set to 0.
+        if 'HP' not in read.info:
+          return default_hap_idx
+        hp_field = next(iter(read.info.get('HP').values))
+        if not hp_field.HasField('int_value'):
+          return default_hap_idx
+        hp_value = hp_field.int_value
+        if (sort_by_haplotypes_sample_hp_tag > 0 and
+            hp_value == sort_by_haplotypes_sample_hp_tag):
+          # For the target HP tag, set it to -1 so it will be sorted on
+          # top of the pileup image.
+          return -1
+        elif hp_value < 0:
+          return 0  # For reads with HP < 0, assume it is not tagged.
+        else:
+          return hp_value
+
       # A generator that yields tuples of the form (haplotype, position, row),
       # if the read can be encoded as a valid row to be used in the pileup
       # image.
@@ -352,13 +370,13 @@ class PileupImageCreator(object):
         for read in reads:
           read_row = self._encoder.encode_read(dv_call, refbases, read,
                                                image_start_pos, alt_alleles)
-          if read_row is not None:
-            hap_idx = 0
-            if self._options.sort_by_haplotypes:
-              if 'HP' in read.info and next(iter(
-                  read.info.get('HP').values)).HasField('int_value'):
-                hap_idx = next(iter(read.info.get('HP').values)).int_value
-            yield hap_idx, read.alignment.position.position, read_row
+          if read_row is None:
+            continue
+          hap_idx = 0  # By default, reads with no HP is set to 0.
+          if self._options.sort_by_haplotypes:
+            hap_idx = _update_hap_index(
+                read, self._options.sort_by_haplotypes_sample_hp_tag)
+          yield hap_idx, read.alignment.position.position, read_row
 
       # We add a row for each read in order, down-sampling if the number of
       # reads is greater than the max reads for each sample. Sort the reads by

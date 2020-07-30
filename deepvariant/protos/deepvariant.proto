@@ -352,7 +352,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how our we construct pileup images.
-// Next ID: 35.
+// Next ID: 36.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -470,6 +470,10 @@ message PileupImageOptions {
 
   // Whether to consider allele frequencies.
   bool use_allele_frequency = 34;
+
+  // If set reads are sorted by haplotype tag (HP tag) and then by alignment
+  // position.
+  int32 sort_by_haplotypes_sample_hp_tag = 35;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
@@ -643,7 +647,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 12.
+  // Next ID: 13.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -678,6 +682,9 @@ message DeepVariantInputDatasets {
 
     // Optional. Space-separated list of cohort callsets in VCF of VCF.gz.
     string population_vcfs = 11;
+
+    // Optional. Used in make_examples.
+    int32 sort_by_haplotypes_sample_hp_tag = 12;
   }
   repeated Dataset datasets = 1;
   string group_name = 2;

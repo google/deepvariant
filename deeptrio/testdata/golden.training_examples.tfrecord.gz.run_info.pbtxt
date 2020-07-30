@@ -3456,6 +3456,7 @@ options {
     sequencing_type: TRIO
     alt_aligned_pileup: "none"
     other_allele_supporting_read_alpha: 0.6000000238418579
+    min_non_zero_allele_frequency: 9.999999747378752e-06
   }
   read_requirements {
     min_mapping_quality: 10
@@ -3535,13 +3536,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1372.9495833333333
+  cpu_frequency_mhz: 1424.4078333333334
   total_memory_mb: 64142
-  wall_time_seconds: 2.9750428199768066
-  cpu_user_time_seconds: 8.786353
-  cpu_system_time_seconds: 3.8682559999999997
-  memory_peak_rss_mb: 447
-  read_bytes: 802672640
+  wall_time_seconds: 3.218712568283081
+  cpu_user_time_seconds: 9.545558
+  cpu_system_time_seconds: 4.21771
+  memory_peak_rss_mb: 430
+  read_bytes: 815681536
   write_bytes: 20480
 }
 stats {

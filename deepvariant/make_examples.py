@@ -288,6 +288,10 @@ flags.DEFINE_bool(
     'sort_by_haplotypes', False,
     'If True, reads are sorted by haplotypes (using HP tag), '
     'parse_sam_aux_fields has to be set for this to work.')
+flags.DEFINE_integer(
+    'sort_by_haplotypes_sample_hp_tag', 0,
+    'If set to > 0, reads with this HP tag will be sorted on top. '
+    'sort_by_haplotypes has to be set to True for this to work.')
 flags.DEFINE_bool(
     'add_supporting_other_alt_color', False,
     'If True, reads supporting an alt not represented in the '
@@ -520,11 +524,21 @@ def default_options(add_flags=True, flags_obj=None):
           'must be set too.', errors.CommandLineError)
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
 
+    if flags_obj.sort_by_haplotypes_sample_hp_tag < 0:
+      errors.log_and_raise(
+          '--sort_by_haplotypes_sample_hp_tag has to be set to a positive int.',
+          errors.CommandLineError)
+    if (flags_obj.sort_by_haplotypes_sample_hp_tag > 0 and
+        not flags_obj.sort_by_haplotypes):
+      errors.log_and_raise(
+          '--sort_by_haplotypes_sample_hp_tag requires --sort_by_haplotypes to be '
+          'set ', errors.CommandLineError)
     if flags_obj.sort_by_haplotypes and not flags_obj.parse_sam_aux_fields:
       errors.log_and_raise(
           '--sort_by_haplotypes requires --parse_sam_aux_fields to be set ',
           errors.CommandLineError)
     options.pic_options.sort_by_haplotypes = flags_obj.sort_by_haplotypes
+    options.pic_options.sort_by_haplotypes_sample_hp_tag = flags_obj.sort_by_haplotypes_sample_hp_tag
 
     if flags_obj.write_run_info:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
