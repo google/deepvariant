@@ -248,6 +248,36 @@ function run_happy() {
   echo "Done."
 }
 
+function run_all_call_variants() {
+  (time run_call_variants "${EXAMPLES_CHILD}" "${CHILD_MODEL}" "${CALL_VARIANTS_OUTPUT_CHILD}") >> "${LOG_DIR}/call_variants.log" 2>&1
+  (time run_call_variants "${EXAMPLES_PARENT1}" "${PARENT_MODEL}" "${CALL_VARIANTS_OUTPUT_PARENT1}") >> "${LOG_DIR}/call_variants.log" 2>&1
+  (time run_call_variants "${EXAMPLES_PARENT2}" "${PARENT_MODEL}" "${CALL_VARIANTS_OUTPUT_PARENT2}") >> "${LOG_DIR}/call_variants.log" 2>&1
+}
+
+function run_all_postprocess_variants() {
+  (time run_postprocess_variants "${CALL_VARIANTS_OUTPUT_CHILD}" "${OUTPUT_VCF_CHILD}") >> "${LOG_DIR}/postprocess_variants.log" 2>&1
+  (time run_postprocess_variants "${CALL_VARIANTS_OUTPUT_PARENT1}" "${OUTPUT_VCF_PARENT1}") >> "${LOG_DIR}/postprocess_variants.log" 2>&1
+  (time run_postprocess_variants "${CALL_VARIANTS_OUTPUT_PARENT2}" "${OUTPUT_VCF_PARENT2}") >> "${LOG_DIR}/postprocess_variants.log" 2>&1
+}
+
+function run_all_postprocess_variants_gVCF() {
+  (time run_postprocess_variants_gVCF "${CALL_VARIANTS_OUTPUT_CHILD}" "${OUTPUT_VCF_CHILD}" "${OUTPUT_GVCF_CHILD}" "${GVCF_TFRECORDS_CHILD}") >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
+  (time run_postprocess_variants_gVCF "${CALL_VARIANTS_OUTPUT_PARENT1}" "${OUTPUT_VCF_PARENT1}" "${OUTPUT_GVCF_PARENT1}" "${GVCF_TFRECORDS_PARENT1}") >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
+  (time run_postprocess_variants_gVCF "${CALL_VARIANTS_OUTPUT_PARENT2}" "${OUTPUT_VCF_PARENT2}" "${OUTPUT_GVCF_PARENT2}" "${GVCF_TFRECORDS_PARENT2}") >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
+}
+
+function run_all_vcf_stats_report() {
+  (time run_vcf_stats_report "${OUTPUT_VCF_CHILD}" "${OUTPUT_STATS_CHILD}") 2>&1 | tee "${LOG_DIR}/vcf_stats_report_child.log"
+  (time run_vcf_stats_report "${OUTPUT_VCF_PARENT1}" "${OUTPUT_STATS_PARENT1}") 2>&1 | tee "${LOG_DIR}/vcf_stats_report_parent1.log"
+  (time run_vcf_stats_report "${OUTPUT_VCF_PARENT2}" "${OUTPUT_STATS_PARENT2}") 2>&1 | tee "${LOG_DIR}/vcf_stats_report_parent2.log"
+}
+
+function run_all_happy_reports() {
+  run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" 2>&1 | tee "${LOG_DIR}/happy_child.log"
+  run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
+  run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" 2>&1 | tee "${LOG_DIR}/happy_parent2.log"
+}
+
 function main() {
   echo 'Starting the test...'
   local -r child_model_http_dir="${1:-$DEFAULT_CHILD_MODEL_HTTP_DIR}"
@@ -258,21 +288,11 @@ function main() {
   build_binaries
   setup_test
   (time run_make_examples) 2>&1 | tee "${LOG_DIR}/make_examples.log"
-  (time run_call_variants "${EXAMPLES_CHILD}" "${CHILD_MODEL}" "${CALL_VARIANTS_OUTPUT_CHILD}") 2>&1 | tee "${LOG_DIR}/call_variants_child.log"
-  (time run_call_variants "${EXAMPLES_PARENT1}" "${PARENT_MODEL}" "${CALL_VARIANTS_OUTPUT_PARENT1}") 2>&1 | tee "${LOG_DIR}/call_variants_parent1.log"
-  (time run_call_variants "${EXAMPLES_PARENT2}" "${PARENT_MODEL}" "${CALL_VARIANTS_OUTPUT_PARENT2}") 2>&1 | tee "${LOG_DIR}/call_variants_parent2.log"
-  (time run_postprocess_variants "${CALL_VARIANTS_OUTPUT_CHILD}" "${OUTPUT_VCF_CHILD}") 2>&1 | tee "${LOG_DIR}/postprocess_variants_child.log"
-  (time run_postprocess_variants "${CALL_VARIANTS_OUTPUT_PARENT1}" "${OUTPUT_VCF_PARENT1}") 2>&1 | tee "${LOG_DIR}/postprocess_variants_parent1.log"
-  (time run_postprocess_variants "${CALL_VARIANTS_OUTPUT_PARENT2}" "${OUTPUT_VCF_PARENT2}") 2>&1 | tee "${LOG_DIR}/postprocess_variants_parent2.log"
-  (time run_postprocess_variants_gVCF "${CALL_VARIANTS_OUTPUT_CHILD}" "${OUTPUT_VCF_CHILD}" "${OUTPUT_GVCF_CHILD}" "${GVCF_TFRECORDS_CHILD}") 2>&1 | tee "${LOG_DIR}/postprocess_variants_child.withGVCF.log"
-  (time run_postprocess_variants_gVCF "${CALL_VARIANTS_OUTPUT_PARENT1}" "${OUTPUT_VCF_PARENT1}" "${OUTPUT_GVCF_PARENT1}" "${GVCF_TFRECORDS_PARENT1}") 2>&1 | tee "${LOG_DIR}/postprocess_variants_parent1.withGVCF.log"
-  (time run_postprocess_variants_gVCF "${CALL_VARIANTS_OUTPUT_PARENT2}" "${OUTPUT_VCF_PARENT2}" "${OUTPUT_GVCF_PARENT2}" "${GVCF_TFRECORDS_PARENT2}") 2>&1 | tee "${LOG_DIR}/postprocess_variants_parent2.withGVCF.log"
-  (time run_vcf_stats_report "${OUTPUT_VCF_CHILD}" "${OUTPUT_STATS_CHILD}") 2>&1 | tee "${LOG_DIR}/vcf_stats_report_child.log"
-  (time run_vcf_stats_report "${OUTPUT_VCF_PARENT1}" "${OUTPUT_STATS_PARENT1}") 2>&1 | tee "${LOG_DIR}/vcf_stats_report_parent1.log"
-  (time run_vcf_stats_report "${OUTPUT_VCF_PARENT2}" "${OUTPUT_STATS_PARENT2}") 2>&1 | tee "${LOG_DIR}/vcf_stats_report_parent2.log"
-  run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" 2>&1 | tee "${LOG_DIR}/happy_child.log"
-  run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
-  run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
+  (time run_all_call_variants) >> "${LOG_DIR}/call_variants.log" 2>&1
+  (time run_all_postprocess_variants) >> "${LOG_DIR}/postprocess_variants.log" 2>&1
+  (time run_all_postprocess_variants_gVCF) >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
+  run_all_vcf_stats_report
+  run_all_happy_reports
 }
 
 main "$@"
