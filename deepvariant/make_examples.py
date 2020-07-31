@@ -180,7 +180,7 @@ flags.DEFINE_bool(
     'If True, write out a MakeExamplesRunInfo proto besides our examples in '
     'text_format.')
 flags.DEFINE_enum(
-    'alt_aligned_pileup', 'diff_channels',
+    'alt_aligned_pileup', 'none',
     ['none', 'base_channels', 'diff_channels', 'rows'],
     'Include alignments of reads against each candidate alternate allele in '
     'the pileup image. "none" turns this feature off. '

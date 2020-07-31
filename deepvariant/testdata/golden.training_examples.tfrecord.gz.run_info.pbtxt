@@ -1,6 +1,4 @@
 options {
-  exclude_contigs: "chrM"
-  exclude_contigs: "MT"
   exclude_contigs: "GL000207.1"
   exclude_contigs: "GL000226.1"
   exclude_contigs: "GL000229.1"
@@ -3453,7 +3451,7 @@ options {
     mapping_quality_cap: 60
     random_seed: 2101079370
     num_channels: 6
-    alt_aligned_pileup: "diff_channels"
+    alt_aligned_pileup: "none"
     other_allele_supporting_read_alpha: 0.6000000238418579
     min_non_zero_allele_frequency: 9.999999747378752e-06
   }
@@ -3504,7 +3502,6 @@ options {
       kmer_size: 32
       max_num_of_mismatches: 2
       realignment_similarity_threshold: 0.16934
-      force_alignment: true
     }
     diagnostics {
     }
@@ -3532,12 +3529,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1233.428
+  cpu_frequency_mhz: 1282.7708333333333
   total_memory_mb: 64142
-  wall_time_seconds: 1.0084834098815918
-  cpu_user_time_seconds: 5.747749
-  cpu_system_time_seconds: 3.580166
-  memory_peak_rss_mb: 372
-  read_bytes: 794136576
+  wall_time_seconds: 0.8439829349517822
+  cpu_user_time_seconds: 5.414739
+  cpu_system_time_seconds: 0.8536929999999999
+  memory_peak_rss_mb: 366
+  read_bytes: 303001600
   write_bytes: 20480
 }
