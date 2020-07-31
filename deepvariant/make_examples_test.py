@@ -410,7 +410,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, None, options, verify_labels=mode == 'training')
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
-    self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 6])
+    self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 8])
 
   @flagsaver.FlagSaver
   def test_make_examples_training_vcf_candidate_importer_regions(self):
@@ -452,13 +452,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                                         examples_with_confident_regions)
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
-  @parameterized.parameters(
-      dict(alt_align='rows', expected_shape=[300, 221, 6]),
-      dict(alt_align='diff_channels', expected_shape=[100, 221, 8]),
-  )
   @flagsaver.FlagSaver
-  def test_make_examples_training_end2end_with_alt_aligned_pileup(
-      self, alt_align, expected_shape):
+  def test_make_examples_training_end2end_with_alt_aligned_pileup(self):
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.ref = testdata.CHR20_FASTA
@@ -468,28 +463,19 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
-    FLAGS.alt_aligned_pileup = alt_align  # This is the only input change.
+    FLAGS.alt_aligned_pileup = 'rows'  # This is the only input change.
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     options = make_examples.default_options(add_flags=True)
-    # Run make_examples with the flags above.
     make_examples.make_examples_runner(options)
-
-    # Check the output for shape and against the golden file.
-    if alt_align == 'rows':
-      golden_file = _sharded(testdata.ALT_ALIGNED_ROWS_EXAMPLES)
-    elif alt_align == 'diff_channels':
-      golden_file = _sharded(testdata.ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES)
-    else:
-      raise ValueError("Golden data doesn't exist for this alt_align option: "
-                       '{}'.format(alt_align))
+    golden_file = _sharded(testdata.ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES)
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
         FLAGS.examples, region, options, verify_labels=True)
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
     # Pileup image should have 3 rows of height 100, so resulting height is 300.
-    self.assertEqual(decode_example(examples[0])['image/shape'], expected_shape)
+    self.assertEqual(decode_example(examples[0])['image/shape'], [300, 221, 6])
 
   @parameterized.parameters(
       dict(select_types=None, expected_count=78),
@@ -1876,10 +1862,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic.create_pileup_images.return_value = None
     self.assertEqual([], self.processor.create_pileup_examples(dv_call))
     self.processor.pic.create_pileup_images.assert_called_once_with(
-        dv_call=dv_call,
-        reads_for_samples=[],
-        haplotype_alignments_for_samples=None,
-        haplotype_sequences=None)
+        dv_call=dv_call, reads_for_samples=[])
 
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
@@ -1900,10 +1883,7 @@ class RegionProcessorTest(parameterized.TestCase):
     actual = self.processor.create_pileup_examples(dv_call)
 
     self.processor.pic.create_pileup_images.assert_called_once_with(
-        dv_call=dv_call,
-        reads_for_samples=[],
-        haplotype_alignments_for_samples=None,
-        haplotype_sequences=None)
+        dv_call=dv_call, reads_for_samples=[])
 
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),

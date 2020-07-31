@@ -80,7 +80,6 @@ def default_options(read_requirements=None):
       random_seed=2101079370,
       sequencing_type=deepvariant_pb2.PileupImageOptions.UNSPECIFIED_SEQ_TYPE,
       alt_aligned_pileup='none',
-      types_to_alt_align='indels',
       min_non_zero_allele_frequency=0.00001,
       use_allele_frequency=False)
 
@@ -462,23 +461,22 @@ class PileupImageCreator(object):
           alt_alleles=alt_alleles)
       # Optionally also create pileup images with reads aligned to alts.
       if alt_aligned_representation != 'none':
-        if haplotype_alignments_for_samples is None or haplotype_sequences is None:
-          pileup_shape = (self.height, self.width, self.num_channels)
-          alt_images = [
-              np.zeros(pileup_shape, dtype=np.uint8) for alt in alt_alleles
-          ]
-        else:
-          alt_images = []
-          for alt in alt_alleles:
-            alt_image = self.build_pileup(
+        if not haplotype_alignments_for_samples and haplotype_sequences:
+          raise ValueError(
+              'haplotype_alignments and haplotype_sequences must both be '
+              'populated if alt_aligned_pileups is turned on.')
+        # pylint: disable=g-complex-comprehension
+        alt_images = [
+            self.build_pileup(
                 dv_call=dv_call,
                 refbases=haplotype_sequences[alt],
                 reads_for_samples=[
                     sample[alt] for sample in haplotype_alignments_for_samples
                 ],
                 alt_alleles=alt_alleles,
-                custom_ref=True)
-            alt_images.append(alt_image)
+                custom_ref=True) for alt in alt_alleles
+        ]
+        # pylint: enable=g-complex-comprehension
         composite_image = _represent_alt_aligned_pileups(
             alt_aligned_representation, ref_image, alt_images)
         return composite_image
