@@ -341,10 +341,6 @@ def call_variants(examples_filename,
     # is the number of channels.
     num_channels_in_checkpoint_model = shape_map_for_layers[first_layer][2]
     if num_channels_in_checkpoint_model != example_shape[2]:
-      logging.warning('Make sure to use the model from the same version of '
-                      'DeepVariant that you are running. '
-                      'The default number of channels changed in version 1.0.0 '
-                      'from 6 to 8.')
       raise ValueError('The number of channels in examples and checkpoint '
                        'should match, but the checkpoint has {} channels while '
                        'the examples have {}.'.format(

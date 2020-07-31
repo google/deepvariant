@@ -99,7 +99,8 @@ GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES = None
 VCF_CANDIDATE_IMPORTER_VARIANTS = None
 
 # For alt-aligned pileups
-ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = None
+ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES = None
+ALT_ALIGNED_ROWS_EXAMPLES = None
 
 
 def init():
@@ -216,6 +217,9 @@ def init():
       'input/vcf_candidate_importer.indels.chr20.vcf.gz')
 
   # For alt-aligned pileups
-  global ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES
-  ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
+  global ALT_ALIGNED_ROWS_EXAMPLES
+  global ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES
+  ALT_ALIGNED_ROWS_EXAMPLES = deepvariant_testdata(
       'golden.alt_aligned_pileup_rows_examples.tfrecord.gz')
+  ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES = deepvariant_testdata(
+      'golden.alt_aligned_pileup_diff_channels_examples.tfrecord.gz')
