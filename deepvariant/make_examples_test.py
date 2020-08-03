@@ -1876,7 +1876,10 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic.create_pileup_images.return_value = None
     self.assertEqual([], self.processor.create_pileup_examples(dv_call))
     self.processor.pic.create_pileup_images.assert_called_once_with(
-        dv_call=dv_call, reads_for_samples=[])
+        dv_call=dv_call,
+        reads_for_samples=[],
+        haplotype_alignments_for_samples=None,
+        haplotype_sequences=None)
 
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
@@ -1897,7 +1900,10 @@ class RegionProcessorTest(parameterized.TestCase):
     actual = self.processor.create_pileup_examples(dv_call)
 
     self.processor.pic.create_pileup_images.assert_called_once_with(
-        dv_call=dv_call, reads_for_samples=[])
+        dv_call=dv_call,
+        reads_for_samples=[],
+        haplotype_alignments_for_samples=None,
+        haplotype_sequences=None)
 
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),

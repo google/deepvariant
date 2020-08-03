@@ -969,6 +969,7 @@ class RegionProcessor(object):
     self.labeler = None
     self.variant_caller = None
     self.samples = {}
+    self.sample_to_train = None
 
   def _make_allele_counter_for_region(self, region):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
@@ -1061,6 +1062,15 @@ class RegionProcessor(object):
 
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
+
+    if FLAGS.sample_name_to_call == FLAGS.sample_name:
+      self.sample_to_train = 'child'
+    elif FLAGS.sample_name_to_call == FLAGS.sample_name_parent1:
+      self.sample_to_train = 'parent1'
+    else:
+      raise ValueError(
+          'sample_name_to_call must match either sample_name or sample_name_parent1 '
+      )
 
     self.variant_caller = self._make_variant_caller_from_options()
     self.initialized = True
@@ -1270,11 +1280,10 @@ class RegionProcessor(object):
     gvcfs = {}
 
     if in_training_mode(self.options):
-      candidates[FLAGS.sample_name_to_call], gvcfs[
-          FLAGS.sample_name_to_call] = (
-              self.variant_caller.calls_and_gvcfs(
-                  allele_counters, gvcf_output_enabled(self.options),
-                  FLAGS.sample_name_to_call))
+      candidates[self.sample_to_train], gvcfs[self.sample_to_train] = (
+          self.variant_caller.calls_and_gvcfs(allele_counters,
+                                              gvcf_output_enabled(self.options),
+                                              FLAGS.sample_name_to_call))
       return candidates, gvcfs
 
     candidates['child'], gvcfs['child'] = self.variant_caller.calls_and_gvcfs(
