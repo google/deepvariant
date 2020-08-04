@@ -189,10 +189,13 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   command.extend(['--examples', '"{}"'.format(examples)])
   # Extend the command with all items in kwargs and extra_args.
   kwargs.update(_extra_args_to_dict(extra_args))
-  if FLAGS.model_type == 'PACBIO':
-    kwargs['realign_reads'] = False
-    kwargs['vsc_min_fraction_indels'] = 0.12
   command = _extend_command_by_args_dict(command, kwargs)
+  if FLAGS.model_type == 'PACBIO':
+    special_args = {}
+    special_args['realign_reads'] = False
+    special_args['vsc_min_fraction_indels'] = 0.12
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    command = _extend_command_by_args_dict(command, special_args)
 
   command.extend(['--task {}'])
   return ' '.join(command)
