@@ -6,13 +6,13 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/pacbio-case-study"
-BIN_VERSION="0.10.0"
+BIN_VERSION="rc1.0.0"
 
 INPUT_DIR="${BASE}/input/data"
-REF="hs37d5.fa.gz"
-BAM="pacbio.8M.30x.bam"
-TRUTH_VCF="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"
-TRUTH_BED="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"
+REF="GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+BAM="HG002.pfda_challenge.grch38.phased.bam"
+TRUTH_VCF="HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz"
+TRUTH_BED="HG002_GRCh38_1_22_v4.2_benchmark.bed"
 
 N_SHARDS="64"
 
@@ -59,11 +59,11 @@ function setup_test() {
   aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/case-study-testdata/${TRUTH_VCF}.tbi" -d "${INPUT_DIR}"
   aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/pacbio-case-study-testdata/${BAM}" -d "${INPUT_DIR}"
   aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/pacbio-case-study-testdata/${BAM}.bai" -d "${INPUT_DIR}"
-  aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz -d "${INPUT_DIR}"
-  aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.fai -d "${INPUT_DIR}"
-  aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gz.gzi -d "${INPUT_DIR}"
-  aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.gzi -d "${INPUT_DIR}"
-  aria2c -c -x10 -s10 https://storage.googleapis.com/deepvariant/case-study-testdata/hs37d5.fa.fai -d "${INPUT_DIR}"
+  aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz" -d "${INPUT_DIR}"
+  aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz.fai" -d "${INPUT_DIR}"
+  aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gz.gzi" -d "${INPUT_DIR}"
+  aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.gzi" -d "${INPUT_DIR}"
+  aria2c -c -x10 -s10 "https://storage.googleapis.com/deepvariant/case-study-testdata/${REF}.fai" -d "${INPUT_DIR}"
 
   ## Pull the docker image.
   sudo docker pull google/deepvariant:"${BIN_VERSION}"
@@ -101,7 +101,7 @@ function run_deepvariant_with_docker() {
     google/deepvariant:"${BIN_VERSION}" \
     /opt/deepvariant/bin/run_deepvariant \
     --model_type=PACBIO \
-    --ref="/input/${REF}" \
+    --ref="/input/${REF}.gz" \
     --reads="/input/${BAM}" \
     --output_vcf=/output/${OUTPUT_VCF} \
     --output_gvcf=/output/${OUTPUT_GVCF} \
@@ -113,12 +113,12 @@ function run_deepvariant_with_docker() {
 
 ## Evaluation: run hap.py
 echo "Start evaluation with hap.py..."
-UNCOMPRESSED_REF="${INPUT_DIR}/hs37d5.fa"
+UNCOMPRESSED_REF="${INPUT_DIR}/${REF}"
 
 function run_happy() {
   # hap.py cannot read the compressed fa, so uncompress
   # into a writable directory. Index file was downloaded earlier.
-  zcat <"${INPUT_DIR}/${REF}" >"${UNCOMPRESSED_REF}"
+  zcat <"${INPUT_DIR}/${REF}.gz" >"${UNCOMPRESSED_REF}"
 
   sudo docker pull pkrusche/hap.py
   ( sudo docker run -i \
@@ -129,7 +129,7 @@ function run_happy() {
     "${OUTPUT_DIR}/${OUTPUT_VCF}" \
     -f "${INPUT_DIR}/${TRUTH_BED}" \
     -r "${UNCOMPRESSED_REF}" \
-    -l 20 \
+    -l chr20 \
     -o "${OUTPUT_DIR}/happy.output" \
     --engine=vcfeval
   ) 2>&1 | tee "${LOG_DIR}/happy.log"

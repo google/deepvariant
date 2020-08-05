@@ -43,9 +43,10 @@ This case study is run using the official DeepVariant Docker image.
 For simplicity we provide a script that downloads the input data and runs all
 the steps described above using DeepVariant Docker image. **Please note, that if
 you create your own script `make_examples` must be called with
-`--norealign_reads --vsc_min_fraction_indels 0.12` flag for PacBio long reads.**
+`--norealign_reads --vsc_min_fraction_indels 0.12
+--alt_aligned_pileup "diff_channels"` flags for PacBio long reads.**
 
-1.  Create a Google Cloud virtual instance. This command creates a virtual
+*   Create a Google Cloud virtual instance. This command creates a virtual
     instance with 64 cores and 128 GB of memory.
 
 ```shell
@@ -59,35 +60,41 @@ gcloud beta compute instances create "${USER}-cpu"  \
   --min-cpu-platform "Intel Skylake"
 ```
 
-1.  Login to a newly created instance:
+*   Login to a newly created instance:
 
 ```shell
 gcloud compute ssh "${USER}-cpu" --zone "us-west1-b"
 ```
 
-1.  Download and run the case study script:
+*   Download and run the case study script:
 
 ```shell
-curl https://raw.githubusercontent.com/google/deepvariant/r0.10/scripts/run_pacbio_case_study_docker.sh | bash
+curl https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_pacbio_case_study_docker.sh | bash
 ```
 
 ## Script description
 
 Before running the DeepVariant steps, the following input data is downloaded:
 
-*   BAM file: pacbio.8M.30x.bam. Publicly available PacBio BAM file.
-    [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/
-    PacBio_SequelII_CCS_11kb/HG002.SequelII.pbmm2.hs37d5.whatshap.haplotag.RTG.10x.trio.bam](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/PacBio_SequelII_CCS_11kb/HG002.SequelII.pbmm2.hs37d5.whatshap.haplotag.RTG.10x.trio.bam)
+*   BAM file: HG002.pfda_challenge.grch38.phased.bam
 
-*   Reference file: hs37d5.fa.gz. The original file came from:
-    [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence).
+    The original FASTQ file comes from the
+    [PrecisionFDA Truth Challenge V2](https://precision.fda.gov/challenges/10).
+    We mapped with pbmm2.
+
+*   FASTA file: GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
+
+    The original file came from:
+    [ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids](ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids).
     Because DeepVariant requires bgzip files, we had to unzip and bgzip it, and
     create corresponding index files.
 
-*   Truth VCF and BED. These come from NIST, as part of the
+*   Truth VCF and BED
+
+    These come from NIST, as part of the
     [Genome in a Bottle project](http://jimb.stanford.edu/giab/). They are
     downloaded from
-    [ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/)
+    [ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020](ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020)
 
 Next the following steps are executed:
 
@@ -108,9 +115,9 @@ Next the following steps are executed:
 
 Step                               | Wall time
 ---------------------------------- | ---------
-`make_examples`                    | ~ 63m
-`call_variants`                    | ~ 3h 19m
-`postprocess_variants` (with gVCF) | ~ 60m
+`make_examples`                    | ~ 162m
+`call_variants`                    | ~ 206m
+`postprocess_variants` (with gVCF) | ~ 72m
 
 ## Accuracy metrics
 
@@ -120,8 +127,8 @@ evaluation on chr20.
 
 Type  | # TP  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 9998  | 174  | 166  | 0.982894 | 0.984286  | 0.983590
-SNP   | 65199 | 43   | 101  | 0.999341 | 0.998455  | 0.998898
+INDEL | 11051 | 205  | 148  | 0.981787 | 0.987240  | 0.984506
+SNP   | 71277 | 56   | 6    | 0.999215 | 0.999916  | 0.999565
 
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [https://github.com/Illumina/hap.py]: https://github.com/Illumina/hap.py
