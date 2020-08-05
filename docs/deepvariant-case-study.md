@@ -87,15 +87,15 @@ With the example in [run_wgs_case_study_docker.sh] on a [CPU machine],
 
 Step                               | Hardware | Wall time
 ---------------------------------- | -------- | ---------
-`make_examples`                    | 64 CPUs  | ~ 2h
-`call_variants`                    | 64 CPUs  | ~ 4h 50m
-`postprocess_variants` (with gVCF) | 1 CPU    | ~ 1h 30m
+`make_examples`                    | 64 CPUs  | ~ 1.5h
+`call_variants`                    | 64 CPUs  | ~ 4.5h
+`postprocess_variants` (with gVCF) | 1 CPU    | ~ 1.5h
 
 With the example in [run_wgs_case_study_docker_gpu.sh] on a [GPU machine],
 
 Step                               | Hardware            | Wall time
 ---------------------------------- | ------------------- | ---------
-`make_examples`                    | 16 CPUs             | ~ 6h 40m
+`make_examples`                    | 16 CPUs             | ~ 5h
 `call_variants`                    | 1 P100 GPU, 16 CPUs | ~ 1h 10m
 `postprocess_variants` (with gVCF) | 1 CPU               | ~ 1h 10m
 
@@ -135,10 +135,10 @@ program from Illumina to evaluate the resulting vcf file. This serves as a check
 to ensure the three DeepVariant commands ran correctly and produced high-quality
 results.
 
-Type  |  # FN |  # FP | Recall   | Precision | F1\_Score
------ | ----- | ----- | -------- | --------- | ---------
-INDEL |  3181 | 1164  | 0.993946 | 0.997867  | 0.995903
-SNP   | 19904 | 4346  | 0.994086 | 0.998703  | 0.996389
+Type  | # TP    | # FN  | # FP | Recall   | Precision | F1\_Score
+----- | ------- | ----- | ---- | -------- | --------- | ---------
+INDEL | 522259  | 3207  | 1187 | 0.993897 | 0.997825  | 0.995857
+SNP   | 3345988 | 19352 | 3955 | 0.994250 | 0.998820  | 0.996530
 
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
 [run_wgs_case_study_docker.sh]: ../scripts/run_wgs_case_study_docker.sh

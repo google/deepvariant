@@ -230,10 +230,10 @@ You should see output similar to the following.
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.166667
- INDEL   PASS            4         4         0           14         0         10      0              1                 1        0.714286                1                     NaN                     NaN                   0.333333                   1.166667
-   SNP    ALL           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
-   SNP   PASS           44        44         0           60         0         16      0              1                 1        0.266667                1                     1.2                1.307692                   0.333333                   0.395349
+ INDEL    ALL            4         4         0           14         0         10      0       1.000000                 1        0.714286         1.000000                     NaN                     NaN                   0.333333                   1.166667
+ INDEL   PASS            4         4         0           14         0         10      0       1.000000                 1        0.714286         1.000000                     NaN                     NaN                   0.333333                   1.166667
+   SNP    ALL           44        43         1           59         0         16      0       0.977273                 1        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.372093
+   SNP   PASS           44        43         1           59         0         16      0       0.977273                 1        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.372093
 ```
 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
