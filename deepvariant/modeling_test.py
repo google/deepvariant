@@ -56,8 +56,8 @@ slim = tf_slim
 class ModelingTest(
     six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
 
-  @parameterized.parameters(
-      (model.name, type(model)) for model in modeling.all_models())
+  @parameterized.parameters((model_class().name, type(model_class()))
+                            for model_class in modeling.all_models())
   def test_get_model_existing_models(self, model_name, expected_class):
     self.assertIsInstance(modeling.get_model(model_name), expected_class)
 

@@ -39,6 +39,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import enum
 import itertools
 import math
 
@@ -46,10 +47,9 @@ import math
 
 from absl import flags
 from absl import logging
-import enum
-
 import tensorflow as tf
 import tf_slim
+
 from deepvariant import dv_constants
 from deepvariant import tf_utils
 # pylint: disable=g-direct-tensorflow-import
@@ -1566,19 +1566,19 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
       return endpoints
 
 
-# Our list of pre-defined models.
-_MODELS = [
-    DeepVariantSmallModel(),
-    DeepVariantInceptionV3(),
-    DeepVariantRandomGuessModel(),
-    DeepVariantConstantModel(),
-    DeepVariantInceptionV3Embedding(),
+# Our list of pre-defined model classes.
+_MODEL_CLASSES = [
+    DeepVariantSmallModel,
+    DeepVariantInceptionV3,
+    DeepVariantRandomGuessModel,
+    DeepVariantConstantModel,
+    DeepVariantInceptionV3Embedding,
 ]
 
 
 def all_models():
-  """Gets a list of the all of the known models."""
-  return list(_MODELS)
+  """Gets a list of the all of the known model classes."""
+  return list(_MODEL_CLASSES)
 
 
 def production_models():
@@ -1586,12 +1586,13 @@ def production_models():
   return [get_model('inception_v3'), get_model('inception_v3_embedding')]
 
 
-def get_model(model_name):
+def get_model(model_name, **kwargs):
   """Looks up a DeepVariantModel by name.
 
   Args:
     model_name: String. Looks for a pre-defined DeepVariantModel with a name
       equal to this model_name string.
+    **kwargs: arguments to pass to model constructor.
 
   Returns:
     A DeepVariantModel instance.
@@ -1599,8 +1600,10 @@ def get_model(model_name):
   Raises:
     ValueError: If no model exists with model_name.
   """
-  for model in _MODELS:
+  for model_class in _MODEL_CLASSES:
+    # Instantiate the model with any provided arguments.
+    model = model_class(**kwargs)
     if model_name == model.name:
       return model
   raise ValueError('Unknown model_name {}, options are {}'.format(
-      model_name, [model.name for model in _MODELS]))
+      model_name, [model_class().name for model_class in _MODEL_CLASSES]))
