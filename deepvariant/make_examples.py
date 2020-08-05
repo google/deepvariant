@@ -1478,11 +1478,15 @@ class RegionProcessor(object):
 
     # Get allele frequencies for candidates.
     if self.options.use_allele_frequency:
+      # One population VCF for all contigs.
       if len(self.options.population_vcf_filenames) == 1:
         population_vcf_reader = self.population_vcf_readers
+      # One population VCF for each contig.
+      # If a key is not found, set population_vcf_reader to None.
+      # For example, many population studies don't include `chrM`.
       else:
-        population_vcf_reader = self.population_vcf_readers[
-            region.reference_name]
+        population_vcf_reader = self.population_vcf_readers.get(
+            region.reference_name, None)
       candidates = list(
           self.add_allele_frequencies_to_candidates(candidates,
                                                     population_vcf_reader))
@@ -1684,20 +1688,29 @@ class RegionProcessor(object):
       candidates: Iterable of DeepVariantCall protos that are the candidates we
         want to process.
       population_vcf_reader: A VcfReader object that reads the associated
-        population VCF file for candidates.
+        population VCF file for candidates. None if the contig is not found.
 
     Yields:
       DeepVariantCall protos. The same set of input candidates, with field
         allele_frequency filled.
     """
     for candidate in candidates:
+      if population_vcf_reader:
+        dict_allele_frequency = find_matching_allele_frequency(
+            variant=candidate.variant,
+            population_vcf_reader=population_vcf_reader,
+            ref_reader=self.ref_reader)
+      else:
+        # Set ALT frequencies to 0 if population_vcf_reader is None.
+        dict_allele_frequency = {}
+        dict_allele_frequency[candidate.variant.reference_bases] = 1
+        for alt in candidate.variant.alternate_bases:
+          dict_allele_frequency[alt] = 0
+
       yield deepvariant_pb2.DeepVariantCall(
           variant=candidate.variant,
           allele_support=candidate.allele_support,
-          allele_frequency=find_matching_allele_frequency(
-              variant=candidate.variant,
-              population_vcf_reader=population_vcf_reader,
-              ref_reader=self.ref_reader))
+          allele_frequency=dict_allele_frequency)
 
   def create_pileup_examples(self, dv_call):
     """Creates a tf.Example for DeepVariantCall.

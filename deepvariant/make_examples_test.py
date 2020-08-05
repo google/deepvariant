@@ -2055,12 +2055,40 @@ class RegionProcessorTest(parameterized.TestCase):
           expected_return=dict(C=0.9998, T=0.0002)))
   def test_add_allele_frequencies_to_candidates(self, dv_calls,
                                                 expected_return):
-    vcf_reader = vcf.VcfReader(testdata.VCF_WITH_ALLELE_FREQUENCIES)
+    pop_vcf_reader = vcf.VcfReader(testdata.VCF_WITH_ALLELE_FREQUENCIES)
     self.processor.ref_reader = fasta.IndexedFastaReader(
         testdata.CHR20_GRCH38_FASTA)
     updated_dv_call = list(
         self.processor.add_allele_frequencies_to_candidates(
-            dv_calls, vcf_reader))
+            dv_calls, pop_vcf_reader))
+    actual_frequency = updated_dv_call[0].allele_frequency
+    # Compare keys.
+    self.assertSetEqual(
+        set(actual_frequency.keys()), set(expected_return.keys()))
+    # Compare values (almost equal).
+    for key in actual_frequency.keys():
+      self.assertAlmostEqual(actual_frequency[key], expected_return[key])
+
+  @parameterized.parameters(
+      dict(
+          dv_calls=iter([
+              deepvariant_pb2.DeepVariantCall(
+                  variant=variants_pb2.Variant(
+                      reference_name='chrM',
+                      start=10000,
+                      end=10001,
+                      reference_bases='T',
+                      alternate_bases=['G']),
+                  allele_support=None)
+          ]),
+          expected_return=dict(T=1, G=0)))
+  def test_add_allele_frequencies_to_candidates_invalid_vcf(
+      self, dv_calls, expected_return):
+    pop_vcf_reader = None
+    self.processor.ref_reader = None
+    updated_dv_call = list(
+        self.processor.add_allele_frequencies_to_candidates(
+            dv_calls, pop_vcf_reader))
     actual_frequency = updated_dv_call[0].allele_frequency
     # Compare keys.
     self.assertSetEqual(
