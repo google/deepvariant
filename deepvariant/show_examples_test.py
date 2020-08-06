@@ -209,6 +209,19 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
         msg='Specific examples and their output filenames should be the same '
         'if the inputs are the same.')
 
+  @flagsaver.FlagSaver
+  def test_show_examples_raises_on_wrong_column_labels(self):
+    output_prefix = test_utils.test_tmpfile('column_labels')
+    FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES
+    FLAGS.output = output_prefix
+    FLAGS.column_labels = 'read base,base quality,mapping quality,strand'
+    with self.assertRaisesRegex(ValueError, '--column_labels'):
+      show_examples.run()
+
+    # With 6 channel names, it should run without error:
+    FLAGS.column_labels = '1,2,3,4,5,6'
+    show_examples.run()
+
 
 if __name__ == '__main__':
   absltest.main()

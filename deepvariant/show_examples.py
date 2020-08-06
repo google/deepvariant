@@ -94,6 +94,10 @@ flags.DEFINE_bool('verbose', False,
 flags.DEFINE_bool(
     'truth_labels', True, 'For examples with truth labels, '
     'add the truth label to the file name.')
+flags.DEFINE_string(
+    'column_labels', None, 'Comma-separated column labels to print on image. '
+    'Defaults to the standard channel names of DeepVariant. '
+    'Use --noannotation to remove them entirely.')
 
 UPDATE_EVERY_N_EXAMPLES = 10000
 MAX_SIZE_TO_PRINT = 5
@@ -214,6 +218,11 @@ def create_region_filter(region_flag_string, verbose=False):
 def run():
   """Create pileup images from examples, filtered in various ways."""
   with errors.clean_commandline_error_exit():
+    if FLAGS.column_labels:
+      column_labels = FLAGS.column_labels.split(',')
+    else:
+      column_labels = None
+
     filter_to_vcf = FLAGS.vcf is not None
     if filter_to_vcf:
       ids_from_vcf = parse_vcf(FLAGS.vcf)
@@ -294,6 +303,13 @@ def run():
 
       # Extract and format example into channels.
       channels = vis.channels_from_example(example)
+      if column_labels is not None and len(column_labels) != len(channels):
+        raise ValueError(
+            '--column_labels must have {} names separated by commas, since '
+            'there are {} channels in the examples. '
+            'However, {} column labels were found: {}'.format(
+                len(channels), len(channels), len(column_labels),
+                ','.join(['"{}"'.format(x) for x in column_labels])))
 
       output_prefix = '{}_'.format(
           FLAGS.output) if FLAGS.output is not None else ''
@@ -309,7 +325,8 @@ def run():
             path=channels_output,
             scale=1,
             show=False,
-            annotated=FLAGS.annotation)
+            annotated=FLAGS.annotation,
+            labels=column_labels)
 
       # Create RGB image and save to file.
       if make_rgb:
@@ -321,7 +338,8 @@ def run():
             path=rgb_output,
             scale=1,
             show=False,
-            annotated=FLAGS.annotation)
+            annotated=FLAGS.annotation,
+            labels=column_labels)
 
       # Check if --num_records quota has been hit yet.
       num_output += 1
