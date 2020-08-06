@@ -91,12 +91,11 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     to make decisions on how to translate a matched between variant and
     truth_variant into a label (e.g. by comparing the alleles).
 
-    This code will emit a logging.info() if it detects multiple
-    variants with the same chrom/start as variant provided by the
-    vcf_reader and return the best matching variant as described above. Though
-    technically correct - VCF allows this - most files in practice merge
-    variants that occur at the same location into a single multi-allelic variant
-    record. So this assumption is reasonable.
+    If multiple variants are detected, this code will attempt to find the best
+    match by comparing to `variant`. Note that some simplification of alleles
+    are applied first before we compare. For example, 'GAAA->GAA' should be the
+    same as 'GA->G'. If no good matches are detected, the logic currently falls
+    back to the first element in matches.
 
     Args:
       variant: Our candidate third_party.nucleus.protos.Variant variant.
@@ -110,6 +109,7 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
       hom-ref here, or a synthetic variant with the same position and alleles as
       variant but with a hom-ref genotype.
     """
+    variant = variant_utils.simplify_variant_alleles(variant)
     matched_variant = self._find_matching_variant_in_reader(variant)
     confident_or_no_constraint = (
         self._confident_regions is None or
@@ -141,20 +141,27 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     """Finds a variant in vcf_reader compatible with variant, if one exists."""
     region = variant_utils.variant_position(variant)
     matches = [
-        truth_variant for truth_variant in self._get_truth_variants(region)
+        variant_utils.simplify_variant_alleles(truth_variant)
+        for truth_variant in self._get_truth_variants(region)
         if variant.start == truth_variant.start
     ]
 
     if not matches:
       return None
-    elif len(matches) > 1:
-      logging.info('Multiple matches detected for variant %s: %s', variant,
-                   matches)
 
-    best_match = matches[0]
+    best_match = None
     for match in matches:
-      if match.alternate_bases == variant.alternate_bases:
+      if (match.alternate_bases == variant.alternate_bases and
+          match.reference_bases == variant.reference_bases):
         best_match = match
+
+    if best_match is None:
+      logging.info(
+          'Multiple matches detected; no good match found. Fall back '
+          'to first. variant: %s: matches: %s', variant, matches)
+      # redacted
+      # likely not the best. Think about what to do for different use cases.
+      best_match = matches[0]
     return best_match
 
 

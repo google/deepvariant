@@ -197,6 +197,18 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
           candidate=test_utils.make_variant(start=20, alleles=['A', 'TT']),
           expected_confident=True,
           truth_variant_idx=0),
+      # GAAA->GAA is the same as GA->A (the second one in matches), but if we
+      # don't simplify the alleles before comparing, there will be no match and
+      # will incorrectly fall back to the first one.
+      dict(
+          overlapping_variants=[
+              test_utils.make_variant(
+                  start=20, alleles=['GAA', 'G'], gt=[1, 1]),
+              test_utils.make_variant(start=20, alleles=['GA', 'G'], gt=[0, 1]),
+          ],
+          candidate=test_utils.make_variant(start=20, alleles=['GAAA', 'GAA']),
+          expected_confident=True,
+          truth_variant_idx=1),
   )
   def test_match_multiple_matches(self, overlapping_variants, candidate,
                                   expected_confident, truth_variant_idx):
