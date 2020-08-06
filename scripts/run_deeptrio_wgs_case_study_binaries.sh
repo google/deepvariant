@@ -153,7 +153,6 @@ function run_make_examples() {
         --sample_name_parent2 "${SAMPLE_NAME_PARENT2}" \
         --examples "${EXAMPLES_PREFIX}" \
         --gvcf "${GVCF_TFRECORDS_PREFIX}" \
-        --regions 20 \
         --task {}
   echo "Done."
   echo
@@ -243,7 +242,6 @@ function run_happy() {
     -f "${truth_bed}" \
     -r "${UNCOMPRESSED_REF}" \
     -o "${OUTPUT_DIR}/happy.output" \
-    -l 20 \
     --engine=vcfeval
   echo "Done."
 }
