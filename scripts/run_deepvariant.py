@@ -166,6 +166,15 @@ def _extend_command_by_args_dict(command, extra_args):
   return command
 
 
+def _update_kwargs_with_warning(kwargs, extra_args):
+  for k, v in extra_args.items():
+    if k in kwargs:
+      print('\nWarning: --{} is previously set to {}, now to {}.'.format(
+          k, kwargs[k], v))
+    kwargs[k] = v
+  return kwargs
+
+
 def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   """Returns a make_examples command for subprocess.check_call.
 
@@ -187,15 +196,16 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
-  # Extend the command with all items in kwargs and extra_args.
-  kwargs.update(_extra_args_to_dict(extra_args))
-  command = _extend_command_by_args_dict(command, kwargs)
   if FLAGS.model_type == 'PACBIO':
     special_args = {}
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
-    command = _extend_command_by_args_dict(command, special_args)
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+
+  # Extend the command with all items in kwargs and extra_args.
+  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
+  command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
   return ' '.join(command)
