@@ -1644,7 +1644,7 @@ class RegionProcessor(object):
 
     # Margin must be more than half the window width, plus some extra
     # prefix/suffix to anchor alignments, but this value has not been optimized.
-    margin = window_half_width + 100
+    margin = window_half_width
     valid_end = min(
         self.realigner.ref_reader.contig(contig).n_bases, ref_end + margin)
     alignment_region = ranges.make_range(contig, max(ref_start - margin, 0),
