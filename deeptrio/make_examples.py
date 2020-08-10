@@ -186,7 +186,7 @@ flags.DEFINE_bool(
     'If True, locally realign reads before calling variants. '
     'Reads longer than 500 bp are never realigned.')
 flags.DEFINE_bool(
-    'write_run_info', True,
+    'write_run_info', False,
     'If True, write out a MakeExamplesRunInfo proto besides our examples in '
     'text_format.')
 # alt_aligned_pileups=rows is unavailable in DeepTrio, since it makes the final
