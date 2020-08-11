@@ -1213,7 +1213,9 @@ class PileupImageCreatorTest(parameterized.TestCase):
 
   def test_create_pileup_images_with_alt_align(self):
     self.dv_call.variant.alternate_bases[:] = ['C', 'T']
-    haplotype_sequences = {'C': 'seq for C', 'T': 'seq for T'}
+    seq_for_c = 'C' * self.pic.width
+    seq_for_t = 'T' * self.pic.width
+    haplotype_sequences = {'C': seq_for_c, 'T': seq_for_t}
     haplotype_alignments = {'C': 'reads for C', 'T': 'reads for T'}
 
     with mock.patch.object(
@@ -1256,16 +1258,32 @@ class PileupImageCreatorTest(parameterized.TestCase):
           [
               # Pileup for 'C':
               _expected_ref_based_call(['C']),
-              _expected_alt_based_call(['C'], 'seq for C', 'reads for C'),
+              _expected_alt_based_call(['C'], seq_for_c, 'reads for C'),
               # Pileup for 'T':
               _expected_ref_based_call(['T']),
-              _expected_alt_based_call(['T'], 'seq for T', 'reads for T'),
+              _expected_alt_based_call(['T'], seq_for_t, 'reads for T'),
               # Pileup for 'C/T':
               _expected_ref_based_call(['C', 'T']),
-              _expected_alt_based_call(['C', 'T'], 'seq for C', 'reads for C'),
-              _expected_alt_based_call(['C', 'T'], 'seq for T', 'reads for T'),
+              _expected_alt_based_call(['C', 'T'], seq_for_c, 'reads for C'),
+              _expected_alt_based_call(['C', 'T'], seq_for_t, 'reads for T'),
           ],
           any_order=True)
+
+  def test_create_pileup_images_with_mismatched_alt_ref(self):
+    self.dv_call.variant.alternate_bases[:] = ['T']
+    # Deliberatly make the length different from self.pic.width.
+    haplotype_sequences = {'T': 'T' * (self.pic.width + 1)}
+    haplotype_alignments = {'T': 'reads for T'}
+    with mock.patch.object(
+        self.pic, 'build_pileup', autospec=True) as mock_encoder:
+      self.pic._options.alt_aligned_pileup = 'rows'
+      output = self.pic.create_pileup_images(
+          dv_call=self.dv_call,
+          reads_for_samples=self.reads_for_samples,
+          haplotype_alignments_for_samples=[haplotype_alignments],
+          haplotype_sequences=haplotype_sequences)
+      self.assertIsNone(output)
+      self.assertEqual(mock_encoder.call_count, 1)
 
   @parameterized.parameters(
       ((100, 221, 6), 'rows', (300, 221, 6)),

@@ -35,6 +35,7 @@ from __future__ import print_function
 import itertools
 
 
+from absl import logging
 import numpy as np
 
 from third_party.nucleus.protos import reads_pb2
@@ -470,6 +471,12 @@ class PileupImageCreator(object):
         else:
           alt_images = []
           for alt in alt_alleles:
+            if len(haplotype_sequences[alt]) != self.width:
+              logging.warning(
+                  'haplotype_sequences[alt] is %d long but pileup '
+                  'image width is %d. Giving up on this image',
+                  len(haplotype_sequences[alt]), self.width)
+              return None
             alt_image = self.build_pileup(
                 dv_call=dv_call,
                 refbases=haplotype_sequences[alt],
@@ -485,5 +492,13 @@ class PileupImageCreator(object):
       else:
         return ref_image
 
-    return [(alts, _pileup_for_pair_of_alts(alts))
-            for alts in self._alt_allele_combinations(variant)]
+    retval = []
+    for alts in self._alt_allele_combinations(variant):
+      pileup = _pileup_for_pair_of_alts(alts)
+      # If the pileup is None, this can mean that we're near the edge of the
+      # contig, so one pileup width is invalid.
+      # Return None to indicate we couldn't process this variant.
+      if pileup is None:
+        return None
+      retval.append((alts, pileup))
+    return retval
