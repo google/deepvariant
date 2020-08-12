@@ -1047,3 +1047,22 @@ py_test(
         "@absl_py//absl/testing:parameterized",
     ],
 )
+
+py_library(
+    name = "attention_module",
+    srcs = ["attention_module.py"],
+    srcs_version = "PY3",
+)
+
+py_test(
+    name = "attention_module_test",
+    srcs = ["attention_module_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":attention_module",
+        ":dv_constants",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
