@@ -34,15 +34,12 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 
 For more details, see:
-https://github.com/google/deepvariant/blob/r0.10/docs/deepvariant-quick-start.md
+https://github.com/google/deepvariant/blob/r1.0/docs/deepvariant-quick-start.md
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import os
 import subprocess
+import sys
 import tempfile
 
 from absl import app
@@ -74,6 +71,11 @@ flags.DEFINE_string(
     'Optional. If specified, this should be an existing '
     'directory that is visible insider docker, and will be '
     'used to to store intermediate outputs.')
+flags.DEFINE_boolean(
+    'version',
+    None,
+    'Optional. If true, print out version number and exit.',
+    allow_hide_cpp=True)
 # Optional flags for call_variants.
 flags.DEFINE_string(
     'customized_model', None,
@@ -119,6 +121,10 @@ MODEL_TYPE_MAP = {
     'PACBIO': '/opt/models/pacbio/model.ckpt',
     'HYBRID_PACBIO_ILLUMINA': '/opt/models/hybrid_pacbio_illumina/model.ckpt',
 }
+
+# Current release version of DeepVariant.
+# Should be the same in dv_vcf_constants.py.
+DEEP_VARIANT_VERSION = '1.0.0'
 
 
 def _is_quoted(value):
@@ -328,6 +334,16 @@ def create_all_commands(intermediate_results_dir):
 
 
 def main(_):
+  if FLAGS.version:
+    print('DeepVariant version {}'.format(DEEP_VARIANT_VERSION))
+    return
+
+  for flag_key in ['model_type', 'ref', 'reads', 'output_vcf']:
+    if FLAGS.get_flag_value(flag_key, None) is None:
+      sys.stderr.write('--{} is required.\n'.format(flag_key))
+      sys.stderr.write('Pass --helpshort or --helpfull to see help on flags.\n')
+      sys.exit(1)
+
   intermediate_results_dir = check_or_create_intermediate_results_dir(
       FLAGS.intermediate_results_dir)
   check_flags()
@@ -345,10 +361,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  flags.mark_flags_as_required([
-      'model_type',
-      'ref',
-      'reads',
-      'output_vcf',
-  ])
   app.run(main)
