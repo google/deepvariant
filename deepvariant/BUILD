@@ -1066,3 +1066,10 @@ py_test(
         "@absl_py//absl/testing:parameterized",
     ],
 )
+
+py_library(
+    name = "attention_inception_v3",
+    srcs = ["attention_inception_v3.py"],
+    srcs_version = "PY3",
+    deps = [":attention_module"],
+)
