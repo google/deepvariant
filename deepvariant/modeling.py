@@ -59,6 +59,7 @@ from tensorflow.python.tpu import tpu_estimator
 from tensorflow.python.tpu import tpu_optimizer
 # pylint: enable=g-direct-tensorflow-import
 from tf_slim.nets import inception
+from deepvariant import attention_inception_v3
 
 tf.compat.v1.disable_eager_execution()
 
@@ -1271,6 +1272,39 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
                                        predictions, total_loss, mode, params)
 
 
+class DeepVariantAttentionInceptionV3(DeepVariantSlimModel):
+  """DeepVariant inception_v3 network."""
+
+  def __init__(self, attention_module='', attention_position='all'):
+    """Creates an inception-v3 network for DeepVariant."""
+    super(DeepVariantAttentionInceptionV3, self).__init__(
+        name='attention_inception_v3',
+        n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
+        excluded_scopes_for_incompatible_shapes=[
+            'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
+        ],
+        pretrained_model_path=('/namespace/vale-project/models/classification/'
+                               'imagenet/inception_v3/model.ckpt-9591376'))
+    self.supported_dimensions_message = (
+        'odd widths between 75-361 and any heights between 75-362')
+
+    self.attention_module = attention_module
+    self.attention_position = attention_position
+
+  def _create(self, images, num_classes, is_training):
+    """See baseclass."""
+    with slim.arg_scope(
+        attention_inception_v3.attention_inception_v3_arg_scope()):
+      _, endpoints = attention_inception_v3.attention_inception_v3(
+          images,
+          num_classes,
+          create_aux_logits=False,
+          is_training=is_training,
+          attention_module=self.attention_module,
+          attention_position=self.attention_position)
+    return endpoints
+
+
 class DeepVariantDummyModel(DeepVariantModel):
   """BaseClass for dummy models that are useful for testing and benchmarking."""
 
@@ -1568,11 +1602,9 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
 
 # Our list of pre-defined model classes.
 _MODEL_CLASSES = [
-    DeepVariantSmallModel,
-    DeepVariantInceptionV3,
-    DeepVariantRandomGuessModel,
-    DeepVariantConstantModel,
-    DeepVariantInceptionV3Embedding,
+    DeepVariantSmallModel, DeepVariantInceptionV3, DeepVariantRandomGuessModel,
+    DeepVariantConstantModel, DeepVariantInceptionV3Embedding,
+    DeepVariantAttentionInceptionV3
 ]
 
 
@@ -1602,7 +1634,10 @@ def get_model(model_name, **kwargs):
   """
   for model_class in _MODEL_CLASSES:
     # Instantiate the model with any provided arguments.
-    model = model_class(**kwargs)
+    if kwargs:
+      model = DeepVariantAttentionInceptionV3(**kwargs)
+    else:
+      model = model_class()
     if model_name == model.name:
       return model
   raise ValueError('Unknown model_name {}, options are {}'.format(

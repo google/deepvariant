@@ -679,6 +679,8 @@ py_library(
     srcs = ["modeling.py"],
     srcs_version = "PY3",
     deps = [
+        ":attention_inception_v3",
+        ":attention_module",
         ":data_providers",
         ":tf_utils",
         "//third_party/nucleus/util:variant_utils",

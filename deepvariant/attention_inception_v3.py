@@ -40,8 +40,9 @@ from __future__ import print_function
 import tensorflow.compat.v1 as tf
 import tf_slim as slim
 
-from tf_slim.nets import inception_utils
-.learning.genomics.deepvariant.attention_module as att
+# redacted
+# from tf_slim.nets import inception_utils
+from deepvariant import attention_module as att
 
 # pylint: disable=g-long-lambda
 trunc_normal = lambda stddev: tf.truncated_normal_initializer(
@@ -698,5 +699,58 @@ def _reduced_kernel_size_for_small_input(input_tensor, kernel_size):
                        min(shape[2], kernel_size[1])]
   return kernel_size_out
 
+# redacted
+# inception_v3_arg_scope = inception_utils.inception_arg_scope
 
-inception_v3_arg_scope = inception_utils.inception_arg_scope
+
+def attention_inception_v3_arg_scope(
+    weight_decay=0.00004,
+    use_batch_norm=True,
+    batch_norm_decay=0.9997,
+    batch_norm_epsilon=0.001,
+    activation_fn=tf.nn.relu,
+    batch_norm_updates_collections=tf.GraphKeys.UPDATE_OPS,
+    batch_norm_scale=False):
+  """Defines the default arg scope for inception models.
+
+  Args:
+    weight_decay: The weight decay to use for regularizing the model.
+    use_batch_norm: "If `True`, batch_norm is applied after each convolution.
+    batch_norm_decay: Decay for batch norm moving average.
+    batch_norm_epsilon: Small float added to variance to avoid dividing by zero
+      in batch norm.
+    activation_fn: Activation function for conv2d.
+    batch_norm_updates_collections: Collection for the update ops for batch
+      norm.
+    batch_norm_scale: If True, uses an explicit `gamma` multiplier to scale the
+      activations in the batch normalization layer.
+
+  Returns:
+    An `arg_scope` to use for the inception models.
+  """
+  batch_norm_params = {
+      # Decay for the moving averages.
+      'decay': batch_norm_decay,
+      # epsilon to prevent 0s in variance.
+      'epsilon': batch_norm_epsilon,
+      # collection containing update_ops.
+      'updates_collections': batch_norm_updates_collections,
+      # use fused batch norm if possible.
+      'fused': None,
+      'scale': batch_norm_scale,
+  }
+  if use_batch_norm:
+    normalizer_fn = slim.batch_norm
+    normalizer_params = batch_norm_params
+  else:
+    normalizer_fn = None
+    normalizer_params = {}
+  # Set weight_decay for weights in Conv and FC layers.
+  with slim.arg_scope([slim.conv2d, slim.fully_connected],
+                      weights_regularizer=slim.l2_regularizer(weight_decay)):
+    with slim.arg_scope([slim.conv2d],
+                        weights_initializer=slim.variance_scaling_initializer(),
+                        activation_fn=activation_fn,
+                        normalizer_fn=normalizer_fn,
+                        normalizer_params=normalizer_params) as sc:
+      return sc
