@@ -107,7 +107,6 @@ function run_deepvariant_with_docker() {
       --output_vcf=/output/${OUTPUT_VCF} \
       --output_gvcf=/output/${OUTPUT_GVCF} \
       --num_shards=${N_SHARDS} \
-      --make_examples_extra_args='alt_aligned_pileup="diff_channels",types_to_alt_align="all"' \
       "${extra_args[@]-}"
   echo "Done."
   echo

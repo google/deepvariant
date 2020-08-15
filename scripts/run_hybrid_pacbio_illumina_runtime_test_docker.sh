@@ -67,7 +67,6 @@ function run_deepvariant() {
       --output_gvcf "${OUTPUT_GVCF}" \
       --output_vcf "${OUTPUT_VCF}" \
       --reads "${DATA_DIR}/${BAM}" \
-      --make_examples_extra_args='alt_aligned_pileup="diff_channels",types_to_alt_align="all"' \
       --ref "${DATA_DIR}/${REF}.gz"
   echo "Done."
   echo
