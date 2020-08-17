@@ -294,6 +294,55 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         haplotype_labeler.group_variants([deletion], [truth], max_separation=1),
         expected)
 
+  def test_group_variants_exceeds_max_gt_options_product(self):
+    # This is an extreme case from a DeepTrio exome training run. internal.
+    candidates = [
+        _test_variant(36206921, alleles=('A', 'C', 'G', 'T')),
+        _test_variant(36206925, alleles=('GA', 'G', 'TA')),
+        _test_variant(36206926, alleles=('A', 'C', 'T')),
+        _test_variant(36206927, alleles=('T', 'G')),
+        _test_variant(36206930, alleles=('G', 'C', 'GC', 'GT', 'T')),
+        _test_variant(36206931, alleles=('G', 'A', 'C', 'GT', 'T')),
+        _test_variant(36206934, alleles=('A', 'C', 'T')),
+        _test_variant(36206937, alleles=('G', 'C', 'T'))
+    ]
+    grouped = haplotype_labeler.group_variants(
+        candidates, [],
+        max_group_size=haplotype_labeler._MAX_GROUP_SIZE,
+        max_separation=haplotype_labeler._MAX_SEPARATION_WITHIN_VARIANT_GROUP,
+        max_gt_options_product=10000000)
+    # The 8 variants each have #GT: 10, 6, 6, 3, 15, 15, 6, 6.
+    # Combining any of them will be 10*6*6*3*15*15*6*6 = 8748000.
+    # Here we set a max_gt_options_product larger than that. So they are all
+    # grouped together.
+    self.assertLen(grouped, 1)
+    self.assertLen(grouped[0][0], 8)
+
+    grouped_small_max_gt_product = haplotype_labeler.group_variants(
+        candidates, [],
+        max_group_size=haplotype_labeler._MAX_GROUP_SIZE,
+        max_separation=haplotype_labeler._MAX_SEPARATION_WITHIN_VARIANT_GROUP,
+        max_gt_options_product=haplotype_labeler._MAX_GT_OPTIONS_PRODUCT)
+    # The 8 variants each have #GT: 10, 6, 6, 3, 15, 15, 6, 6.
+    # Because _MAX_GT_OPTIONS_PRODUCT is 100000, the split is:
+    # 5 variants in one group: 10*6*6*3*15 = 16200
+    # 3 variants in the next group: 15*6*6 = 540
+    self.assertLen(grouped_small_max_gt_product, 2)
+    self.assertEqual((len(grouped_small_max_gt_product[0][0]),
+                      len(grouped_small_max_gt_product[1][0])), (5, 3))
+
+    grouped_smaller_max_gt_product = haplotype_labeler.group_variants(
+        candidates, [],
+        max_group_size=haplotype_labeler._MAX_GROUP_SIZE,
+        max_separation=haplotype_labeler._MAX_SEPARATION_WITHIN_VARIANT_GROUP,
+        max_gt_options_product=10)
+    # The 8 variants each have #GT: 10, 6, 6, 3, 15, 15, 6, 6.
+    # Combining any of them will be more than max_gt_options_product=10.
+    # So each individual is split into their own group.
+    self.assertLen(grouped_smaller_max_gt_product, 8)
+    for g in grouped_smaller_max_gt_product:
+      self.assertLen(g[0], 1)
+
   @parameterized.parameters(
       # Check a simple case of two SNPs.
       dict(

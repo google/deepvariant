@@ -85,6 +85,9 @@ _MAX_GROUP_SIZE = 8
 # the HaplotypeLabeler class for more information.
 _MAX_SEPARATION_WITHIN_VARIANT_GROUP = 30
 
+# The default maximum product of possible genotypes combinations.
+_MAX_GT_OPTIONS_PRODUCT = 100000
+
 # True we will generate enough information into our logs to help debug bad
 # regions.
 _DEBUG_PRINTING_IS_ENABLED = False
@@ -98,7 +101,8 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
                ref_reader,
                confident_regions,
                max_group_size=_MAX_GROUP_SIZE,
-               max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP):
+               max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP,
+               max_gt_options_product=_MAX_GT_OPTIONS_PRODUCT):
     """Creates a new HaplotypeVariantLabeler.
 
     Args:
@@ -112,6 +116,8 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
       max_separation: int >= 0. The maximum distance between variants within a
         group. Sequential variants separated by more than this value will be
         placed in separate groups for labeling.
+      max_gt_options_product: int >= 0. The maximum number of combinations
+        of genotypes (product of all genotypes in the group).
 
     Raises:
       ValueError: if vcf_reader is None.
@@ -123,6 +129,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     self._ref_reader = ref_reader
     self.max_group_size = max_group_size
     self.max_separation = max_separation
+    self.max_gt_options_product = max_gt_options_product
     self._metrics = deepvariant_pb2.LabelingMetrics()
 
   def label_variants(self, variants, region):
@@ -133,7 +140,8 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
         candidates=list(variants),
         truths=list(self._get_truth_variants(region)),
         max_group_size=self.max_group_size,
-        max_separation=self.max_separation)
+        max_separation=self.max_separation,
+        max_gt_options_product=self.max_gt_options_product)
 
     # Now loop over our grouped variants, labeling them, and yielding
     # VariantLabel objects.
@@ -322,7 +330,8 @@ def _raise_if_not_sorted_or_not_on_same_chromosome(variants):
 def group_variants(candidates,
                    truths,
                    max_group_size=_MAX_GROUP_SIZE,
-                   max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP):
+                   max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP,
+                   max_gt_options_product=_MAX_GT_OPTIONS_PRODUCT):
   """Splits candidate and truth variants into smaller groups if necessary.
 
   This function takes in a list of candidate and truth variants and splits up
@@ -350,6 +359,8 @@ def group_variants(candidates,
       allowed within a group.
     max_separation: int >= 0. The maximum distance, in basepairs, allowed
       between the closest variants within a group.
+    max_gt_options_product: int >= 0. The maximum number of combinations
+      of genotypes (product of all genotypes in the group).
 
   Returns:
     A list of grouped variants in 2-tuples, such as:
@@ -365,8 +376,16 @@ def group_variants(candidates,
     raise ValueError('max_group_size={} must be >= 0'.format(max_group_size))
   if max_separation < 0:
     raise ValueError('max_separation={} must be >= 0'.format(max_separation))
+  if max_gt_options_product < 0:
+    raise ValueError(
+        'max_gt_options_product={} must be >= 0'.format(max_gt_options_product))
   _raise_if_not_sorted_or_not_on_same_chromosome(candidates)
   _raise_if_not_sorted_or_not_on_same_chromosome(truths)
+
+  def _num_genotypes(variant):
+    """For example, if there is 2 alts, there are 6 (==4*3/2) possible GTs."""
+    num_ref_and_alts = len(variant.alternate_bases) + 1
+    return (num_ref_and_alts + 1) * num_ref_and_alts / 2
 
   def to_grouped_variants(variants, candidate_type):
     """Converts a Variant proto to a _VariantToGroup tuple."""
@@ -380,9 +399,15 @@ def group_variants(candidates,
     """Splits a list of _VariantToGroup into candidate and truth variants."""
     return _of_type(group, _CANDIDATE_MARKER), _of_type(group, _TRUTH_MARKER)
 
-  def _include_in_variant_group(group, group_variant):
+  def _include_in_variant_group(group, group_variant, new_gt_options_product):
     if not group:
       return True
+    if new_gt_options_product >= max_gt_options_product:
+      logging.info(
+          'Not including more because genotype_options_product will '
+          'be %s, which exceeds max(=%s)', new_gt_options_product,
+          max_gt_options_product)
+      return False
     n_of_type = sum(1 for g in group if g.type == group_variant.type)
     if n_of_type >= max_group_size:
       return False
@@ -403,12 +428,18 @@ def group_variants(candidates,
   # the predicate _include_in_variant_group.
   groups = []
   current_group = []
+  current_gt_options_product = 1
   for group_variant in groupable_variants:
-    if _include_in_variant_group(current_group, group_variant):
+    new_gt_options_product = current_gt_options_product * _num_genotypes(
+        group_variant.variant)
+    if _include_in_variant_group(current_group, group_variant,
+                                 new_gt_options_product):
       current_group.append(group_variant)
+      current_gt_options_product = new_gt_options_product
     else:
       groups.append(current_group)
       current_group = [group_variant]
+      current_gt_options_product = _num_genotypes(group_variant.variant)
   if current_group:
     groups.append(current_group)
 
