@@ -1,4 +1,15 @@
-# DeepVariant + PacBio local Quickstart
+# Using DeepVariant for small variant calling from PacBio HiFi reads
+
+In this case study we describe applying DeepVariant to PacBio HiFi reads to call
+variants. We will call small variants from a publicly available whole genome
+HiFi dataset from PacBio.
+
+This case study involves a two-step process of variant calling. After the first
+round of calling, variants are phased and used to haplotag the input BAM. For
+the highest accuracy, variants are called again in a second pass. If somewhat
+lower Indel accuracy is acceptable in exchange for shorter run-time, the
+first-pass calls be used. Accuracy benchmarks for each pass are showin in this
+case study.
 
 ## Prepare environment
 
