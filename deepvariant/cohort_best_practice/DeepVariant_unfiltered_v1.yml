@@ -1,14 +1,15 @@
-# GLnexus config for joint calling DeepVariant whole exome sequencing gVCFs.
+# GLnexus config for merging DeepVariant gVCFs with no QC filters or
+# genotype revision.
 # See https://github.com/dnanexus-rnd/GLnexus/wiki/Configuration
 unifier_config:
-    min_AQ1: 35
-    min_AQ2: 20
-    min_GQ: 20
+    min_AQ1: 0
+    min_AQ2: 0
+    min_GQ: 0
     monoallelic_sites_for_lost_alleles: true
     max_alleles_per_site: 32
 genotyper_config:
     required_dp: 0
-    revise_genotypes: true
+    revise_genotypes: false
     allow_partial_data: true
     more_PL: true
     trim_uncalled_alleles: true
