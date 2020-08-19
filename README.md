@@ -4,12 +4,29 @@
 [![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
 [![blog](https://img.shields.io/badge/blog-orange)](https://goo.gl/deepvariant)
 
-DeepVariant is an analysis pipeline that uses a deep neural network to call
-genetic variants from next-generation DNA sequencing data. DeepVariant relies on
-[Nucleus](https://github.com/google/nucleus), a library of Python and C++ code
-for reading and writing data in common genomics file formats (like SAM and VCF)
-designed for painless integration with the
-[TensorFlow](https://www.tensorflow.org/) machine learning framework.
+DeepVariant is a deep learning-based variant caller that takes aligned reads (in
+BAM or CRAM format), produces pileup image tensors from them, classify each
+tensor using a convolutional neural network, and finally reports the results in
+a standard VCF or gVCF file.
+
+DeepVariant supports:
+
+*   Germline variant-calling in diploid organisms.
+    *   For somatic data or any other samples where the genotypes go beyond two
+        copies of DNA, DeepVariant will not work out of the box because the only
+        genotypes supported are hom-alt, het, and hom-ref.
+    *   The models included with DeepVariant are only trained on human data. For
+        other organisms, see the
+        [blog post on non-human variant-calling](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/)
+        for some possible pitfalls and how to handle them.
+*   Calling from NGS and long-read sequencing data.
+    *   NGS (Illumina) data for either a
+        [whole genome](docs/deepvariant-case-study.md) or
+        [whole exome](docs/deepvariant-exome-case-study.md).
+    *   PacBio HiFi data, see the
+        [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
+    *   ONT long-read data by using
+        [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper/blob/master/docs/PEPPER_variant_calling.md).
 
 ## How to run
 
@@ -30,21 +47,21 @@ docker run \
   --num_shards=$(nproc) **This will use all your cores to run make_examples. Feel free to change.**
 ```
 
-To see all flags you can use, run:
-```
-docker run google/deepvariant:"${BIN_VERSION}" --help
-```
-
+To see all flags you can use, run: `docker run
+google/deepvariant:"${BIN_VERSION}" --help`
 
 If you're using GPUs, or want to use Singularity instead, see
-[Quick Start](docs/deepvariant-quick-start.md) for more details.
+[Quick Start](docs/deepvariant-quick-start.md) for more details or see all the
+[setup options](#deepvariant_setup) available including solutions on external
+platforms.
 
 For more information, also see:
 
-  * [Full documentation list](docs/README.md)
-  * [Best practices for multi-sample variant calling with DeepVariant](docs/trio-merge-case-study.md)
-  * [(Advanced) Training tutorial](docs/deepvariant-training-case-study.md)
-
+*   [Full documentation list](docs/README.md)
+*   [Detailed usage guide](docs/deepvariant-details.md) with more information on
+    the input and output file formats and how to work with them.
+*   [Best practices for multi-sample variant calling with DeepVariant](docs/trio-merge-case-study.md)
+*   [(Advanced) Training tutorial](docs/deepvariant-training-case-study.md)
 
 ## How to cite
 
@@ -69,7 +86,9 @@ doi: https://doi.org/10.1101/2020.02.10.942086
 *   **High accuracy** - In 2016 DeepVariant won
     [PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/results)
     for best SNP Performance. DeepVariant maintains high accuracy across data
-    from different sequencing technologies, prep methods, and species.
+    from different sequencing technologies, prep methods, and species. For
+    [lower coverage](https://google.github.io/deepvariant/posts/2019-09-10-twenty-is-the-new-thirty-comparing-current-and-historical-wgs-accuracy-across-coverage/),
+    using DeepVariant makes an especially great difference.
 *   **Flexibility** - Out-of-the-box use for
     [PCR-positive](https://ai.googleblog.com/2018/04/deepvariant-accuracy-improvements-for.html)
     samples and
@@ -93,6 +112,22 @@ doi: https://doi.org/10.1101/2020.02.10.942086
     accelerators like GPUs and TPUs.
 
 <a name="myfootnote1">(1)</a>: Time estimates do not include mapping.
+
+## How DeepVariant works
+
+![diagram of stages in DeepVariant](docs/images/inference_flow_diagram.svg)
+
+For more information on the pileup images and how to read them, please see the
+["Looking through DeepVariant's Eyes" blog post](https://google.github.io/deepvariant/posts/2020-02-20-looking-through-deepvariants-eyes/).
+
+DeepVariant relies on [Nucleus](https://github.com/google/nucleus), a library of
+Python and C++ code for reading and writing data in common genomics file formats
+(like SAM and VCF) designed for painless integration with the
+[TensorFlow](https://www.tensorflow.org/) machine learning framework. Nucleus
+was built with DeepVariant in mind and open-sourced separately so it can be used
+by anyone in the genomics research community for other projects. See this blog
+post on
+[Using Nucleus and TensorFlow for DNA Sequencing Error Correction](https://google.github.io/deepvariant/posts/2019-01-31-using-nucleus-and-tensorflow-for-dna-sequencing-error-correction/).
 
 ## DeepVariant Setup
 

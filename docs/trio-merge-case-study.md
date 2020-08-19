@@ -80,9 +80,9 @@ aria2c -c -x10 -s10 -d "${DIR}" https://storage.googleapis.com/deepvariant/exome
 
 There have been newer version of the truth files, including
 [v4.1, GRCh37 for HG002](ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.1_SmallVariantDraftBenchmark_12182019/GRCh37),
-and [v4.2, GRCh38 for HG002-4](ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020/).
+and
+[v4.2, GRCh38 for HG002-4](ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020/).
 In the future we will plan to update this documentation with newer versions.
-
 
 HG002:
 
@@ -188,12 +188,12 @@ When we ran on this WES trio, it took only about 13 seconds. For more details on
 performance, see
 [GLnexus performance guide](https://github.com/dnanexus-rnd/GLnexus/wiki/Performance).
 
-For a WGS cohort, we recommend using `--config
-DeepVariantWGS` instead of `DeepVariantWES`. Another preset
-`DeepVariant_unfiltered` is available in `glnexus:v1.2.7` or later versions for
-merging DeepVariant gVCFs with no QC filters or genotype revision (see [GitHub
-issue #326](https://github.com/google/deepvariant/issues/326) for a potential
-use case). The details of these presets can be found
+For a WGS cohort, we recommend using `--config DeepVariantWGS` instead of
+`DeepVariantWES`. Another preset `DeepVariant_unfiltered` is available in
+`glnexus:v1.2.7` or later versions for merging DeepVariant gVCFs with no QC
+filters or genotype revision (see
+[GitHub issue #326](https://github.com/google/deepvariant/issues/326) for a
+potential use case). The details of these presets can be found
 [here](../deepvariant/cohort_best_practice).
 
 ## Annotate the merged VCF with Mendelian discordance information using RTG Tools
@@ -275,8 +275,9 @@ do
 done
 ```
 
-| Sample | [3]ts | [4]tv | [5]ts/tv | [6]ts (1st ALT) | [7]tv (1st ALT) | [8]ts/tv (1st ALT) |
-| ------ | ----- | ----- | -------- | --------------- | --------------- | ------------------ |
+| Sample | [3]ts | [4]tv | [5]ts/tv | [6]ts (1st | [7]tv (1st | [8]ts/tv (1st |
+:        :       :       :          : ALT)       : ALT)       : ALT)          :
+| ------ | ----- | ----- | -------- | ---------- | ---------- | ------------- |
 | HG002  | 30016 | 11709 | 2.56     | 30002      | 11693      | 2.57          |
 | HG003  | 29880 | 11747 | 2.54     | 29871      | 11731      | 2.55          |
 | HG004  | 30133 | 11860 | 2.54     | 30120      | 11848      | 2.54          |
@@ -296,8 +297,9 @@ done
 
 Which resulted in this table:
 
-| Sample | [3]ts | [4]tv | [5]ts/tv | [6]ts (1st ALT) | [7]tv (1st ALT) | [8]ts/tv (1st ALT) |
-| ------ | ----- | ----- | -------- | --------------- | --------------- | ------------------ |
+| Sample | [3]ts | [4]tv | [5]ts/tv | [6]ts (1st | [7]tv (1st | [8]ts/tv (1st |
+:        :       :       :          : ALT)       : ALT)       : ALT)          :
+| ------ | ----- | ----- | -------- | ---------- | ---------- | ------------- |
 | HG002  | 24474 | 9255  | 2.64     | 24469      | 9245       | 2.65          |
 | HG003  | 24175 | 9182  | 2.63     | 24172      | 9174       | 2.63          |
 | HG004  | 24313 | 9334  | 2.60     | 24306      | 9327       | 2.61          |

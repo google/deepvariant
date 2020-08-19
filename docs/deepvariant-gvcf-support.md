@@ -145,8 +145,7 @@ number of records generated relative to the baseline of a 50x whole genome with
 `--gvcf_gq_binsize 1`) at different coverage levels, for GQ bins of size 1, 3,
 5, and 10. The value of each bar is written in blue font above it for clarity.
 
-![gVCF
-size](DeepVariant-gvcf-sizes-figure.png?raw=true "DeepVariant gVCF sizes")
+![gVCF size](images/DeepVariant-gvcf-sizes-figure.png?raw=true "DeepVariant gVCF sizes")
 
 ### Runtime
 
