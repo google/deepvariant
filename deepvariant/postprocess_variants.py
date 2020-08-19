@@ -112,6 +112,9 @@ flags.DEFINE_boolean(
 flags.DEFINE_boolean(
     'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF at the same base path given by --outfile.')
+flags.DEFINE_string(
+    'sample_name', None,
+    'Optional. If set, this will be used as the sample name in the output VCF.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -140,11 +143,17 @@ def _extract_single_sample_name(record):
 
   Returns:
     The name of the single individual in the first proto in the file.
+    If --sample_name is set, use that instead.
 
   Raises:
     ValueError: There is not exactly one VariantCall in the proto or the
         call_set_name of the VariantCall is not populated.
   """
+  if FLAGS.sample_name:
+    logging.info(
+        '--sample_name is set in postprocess_variant. Using %s as the '
+        'sample name.', FLAGS.sample_name)
+    return FLAGS.sample_name
   variant = record.variant
   call = variant_utils.only_call(variant)
   name = call.call_set_name

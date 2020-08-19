@@ -91,7 +91,8 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'sample_name', None,
     'Sample name to use instead of the sample name from the input reads BAM '
-    '(SM tag in the header).')
+    '(SM tag in the header). This flag is used for both make_examples and '
+    'postprocess_variants.')
 flags.DEFINE_string(
     'make_examples_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
@@ -239,7 +240,8 @@ def postprocess_variants_command(ref,
                                  extra_args,
                                  nonvariant_site_tfrecord_path=None,
                                  gvcf_outfile=None,
-                                 vcf_stats_report=True):
+                                 vcf_stats_report=True,
+                                 sample_name=None):
   """Returns a postprocess_variants command for subprocess.check_call."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
@@ -254,6 +256,8 @@ def postprocess_variants_command(ref,
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
   if not vcf_stats_report:
     command.extend(['--novcf_stats_report'])
+  if sample_name is not None:
+    command.extend(['--sample_name', '"{}"'.format(sample_name)])
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
@@ -332,7 +336,8 @@ def create_all_commands(intermediate_results_dir):
           FLAGS.postprocess_variants_extra_args,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=FLAGS.output_gvcf,
-          vcf_stats_report=FLAGS.vcf_stats_report))
+          vcf_stats_report=FLAGS.vcf_stats_report,
+          sample_name=FLAGS.sample_name))
 
   return commands
 

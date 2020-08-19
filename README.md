@@ -16,8 +16,8 @@ designed for painless integration with the
 We recommend using our Docker solution. The command will look like this:
 
 ```
-BIN_VERSION="0.10.0"
-sudo docker run \
+BIN_VERSION="1.0.0"
+docker run \
   -v "YOUR_INPUT_DIR":"/input" \
   -v "YOUR_OUTPUT_DIR:/output" \
   google/deepvariant:"${BIN_VERSION}" \
@@ -29,6 +29,12 @@ sudo docker run \
   --output_gvcf=/output/YOUR_OUTPUT_GVCF \
   --num_shards=$(nproc) **This will use all your cores to run make_examples. Feel free to change.**
 ```
+
+To see all flags you can use, run:
+```
+docker run google/deepvariant:"${BIN_VERSION}" --help
+```
+
 
 If you're using GPUs, or want to use Singularity instead, see
 [Quick Start](docs/deepvariant-quick-start.md) for more details.
