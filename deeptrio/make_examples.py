@@ -458,7 +458,11 @@ def default_options(add_flags=True, flags_obj=None):
       partition_size=flags_obj.partition_size, read_requirements=read_reqs)
 
   sample_name = assign_sample_name(flags_obj.sample_name, flags_obj.reads)
-  variant_caller_options = deepvariant_pb2.VariantCallerOptions(
+  sample_name_parent1 = assign_sample_name(flags_obj.sample_name_parent1,
+                                           flags_obj.reads_parent1)
+  sample_name_parent2 = assign_sample_name(flags_obj.sample_name_parent2,
+                                           flags_obj.reads_parent2)
+  variant_caller_options_child = deepvariant_pb2.VariantCallerOptions(
       min_count_snps=flags_obj.vsc_min_count_snps,
       min_count_indels=flags_obj.vsc_min_count_indels,
       min_fraction_snps=flags_obj.vsc_min_fraction_snps,
@@ -471,6 +475,32 @@ def default_options(add_flags=True, flags_obj=None):
       max_gq=50,
       gq_resolution=flags_obj.gvcf_gq_binsize,
       ploidy=2)
+  variant_caller_options_parent1 = deepvariant_pb2.VariantCallerOptions(
+      min_count_snps=flags_obj.vsc_min_count_snps,
+      min_count_indels=flags_obj.vsc_min_count_indels,
+      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
+      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
+      # Not specified by default: fraction_reference_sites_to_emit,
+      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
+      random_seed=1400605801,
+      sample_name=sample_name_parent1,
+      p_error=0.001,
+      max_gq=50,
+      gq_resolution=flags_obj.gvcf_gq_binsize,
+      ploidy=2)
+  variant_caller_options_parent2 = deepvariant_pb2.VariantCallerOptions(
+      min_count_snps=flags_obj.vsc_min_count_snps,
+      min_count_indels=flags_obj.vsc_min_count_indels,
+      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
+      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
+      # Not specified by default: fraction_reference_sites_to_emit,
+      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
+      random_seed=1400605801,
+      sample_name=sample_name_parent2,
+      p_error=0.001,
+      max_gq=50,
+      gq_resolution=flags_obj.gvcf_gq_binsize,
+      ploidy=2)
 
   options = deeptrio_pb2.DeepTrioOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,
@@ -479,7 +509,9 @@ def default_options(add_flags=True, flags_obj=None):
       # # Not specified by default: calling_regions = 3;
       read_requirements=read_reqs,
       allele_counter_options=allele_counter_options,
-      variant_caller_options=variant_caller_options,
+      variant_caller_options_child=variant_caller_options_child,
+      variant_caller_options_parent1=variant_caller_options_parent1,
+      variant_caller_options_parent2=variant_caller_options_parent2,
       pic_options=pic_options,
       n_cores=1,
       task_id=0,
@@ -595,7 +627,7 @@ def default_options(add_flags=True, flags_obj=None):
 
     if (options.mode == deeptrio_pb2.DeepTrioOptions.TRAINING and
         flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF):
-      options.variant_caller_options.fraction_reference_sites_to_emit = (
+      options.variant_caller_options_child.fraction_reference_sites_to_emit = (
           flags_obj.training_random_emit_ref_sites)
 
   return options
@@ -1072,7 +1104,12 @@ class RegionProcessor(object):
           'sample_name_to_call must match either sample_name or sample_name_parent1 '
       )
 
-    self.variant_caller = self._make_variant_caller_from_options()
+    self.variant_caller_child = self._make_variant_caller_from_options(
+        self.options.variant_caller_options_child)
+    self.variant_caller_parent1 = self._make_variant_caller_from_options(
+        self.options.variant_caller_options_parent1)
+    self.variant_caller_parent2 = self._make_variant_caller_from_options(
+        self.options.variant_caller_options_parent2)
     self.initialized = True
 
   def _make_labeler_from_options(self):
@@ -1110,12 +1147,11 @@ class RegionProcessor(object):
       raise ValueError('Unexpected labeler_algorithm',
                        self.options.labeler_algorithm)
 
-  def _make_variant_caller_from_options(self):
+  def _make_variant_caller_from_options(self, variant_caller_options):
     """Creates the variant_caller from options."""
     if (self.options.variant_caller ==
         deeptrio_pb2.DeepTrioOptions.VERY_SENSITIVE_CALLER):
-      return very_sensitive_caller.VerySensitiveCaller(
-          self.options.variant_caller_options)
+      return very_sensitive_caller.VerySensitiveCaller(variant_caller_options)
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
 
@@ -1249,14 +1285,15 @@ class RegionProcessor(object):
 
     allele_counters = {}
 
-    # Instantiate allele counter for target sample
-    allele_counters[self.options.variant_caller_options
+    # Instantiate allele counter for child sample
+    allele_counters[self.options.variant_caller_options_child
                     .sample_name] = self._make_allele_counter_for_region(region)
 
     # Add target sample reads to allele counter
     for read in reads:
-      allele_counters[self.options.variant_caller_options.sample_name].add(
-          read, self.options.variant_caller_options.sample_name)
+      allele_counters[
+          self.options.variant_caller_options_child.sample_name].add(
+              read, self.options.variant_caller_options_child.sample_name)
 
     # If parent1 is specified create allele counter and populate it with reads
     if FLAGS.reads_parent1:
@@ -1279,25 +1316,31 @@ class RegionProcessor(object):
     candidates = {}
     gvcfs = {}
 
+    # redacted
+    # model is being trained. It may stay this way for now since it doesn't
+    # matter what variant_caller instance is used for training, but it doesn't
+    # look clean this way.
     if in_training_mode(self.options):
       candidates[self.sample_to_train], gvcfs[self.sample_to_train] = (
-          self.variant_caller.calls_and_gvcfs(allele_counters,
-                                              gvcf_output_enabled(self.options),
-                                              FLAGS.sample_name_to_call))
+          self.variant_caller_child.calls_and_gvcfs(
+              allele_counters, gvcf_output_enabled(self.options),
+              FLAGS.sample_name_to_call))
       return candidates, gvcfs
 
-    candidates['child'], gvcfs['child'] = self.variant_caller.calls_and_gvcfs(
-        allele_counters, gvcf_output_enabled(self.options), FLAGS.sample_name)
+    candidates['child'], gvcfs[
+        'child'] = self.variant_caller_child.calls_and_gvcfs(
+            allele_counters, gvcf_output_enabled(self.options),
+            FLAGS.sample_name)
     if FLAGS.reads_parent1:
       candidates['parent1'], gvcfs['parent1'] = (
-          self.variant_caller.calls_and_gvcfs(allele_counters,
-                                              gvcf_output_enabled(self.options),
-                                              FLAGS.sample_name_parent1))
+          self.variant_caller_parent1.calls_and_gvcfs(
+              allele_counters, gvcf_output_enabled(self.options),
+              FLAGS.sample_name_parent1))
     if FLAGS.reads_parent2:
       candidates['parent2'], gvcfs['parent2'] = (
-          self.variant_caller.calls_and_gvcfs(allele_counters,
-                                              gvcf_output_enabled(self.options),
-                                              FLAGS.sample_name_parent2))
+          self.variant_caller_parent2.calls_and_gvcfs(
+              allele_counters, gvcf_output_enabled(self.options),
+              FLAGS.sample_name_parent2))
     return candidates, gvcfs
 
   def align_to_all_haplotypes(self, variant, reads):
@@ -1768,28 +1811,35 @@ def main(argv=()):
                              errors.CommandLineError)
     else:
       # Check for argument issues specific to calling mode.
-      if options.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
-        errors.log_and_raise('sample_name must be specified in calling mode.',
-                             errors.CommandLineError)
-      if options.variant_caller_options.gq_resolution < 1:
+      if (options.variant_caller_options_child.sample_name == _UNKNOWN_SAMPLE or
+          (FLAGS.sample_name_parent1 and
+           options.variant_caller_options_parent1.sample_name == _UNKNOWN_SAMPLE
+          ) or
+          (FLAGS.sample_name_parent2 and
+           options.variant_caller_options_parent2.sample_name == _UNKNOWN_SAMPLE
+          )):
+        errors.log_and_raise(
+            'sample_name must be specified for all samples in calling mode.',
+            errors.CommandLineError)
+      if options.variant_caller_options_child.gq_resolution < 1:
         errors.log_and_raise('gq_resolution must be a non-negative integer.',
                              errors.CommandLineError)
 
     # Sanity check the sample_names.
-    if (options.variant_caller_options.sample_name == FLAGS.sample_name_parent1
-        or
-        options.variant_caller_options.sample_name == FLAGS.sample_name_parent2
-       ):
+    if (options.variant_caller_options_child.sample_name ==
+        FLAGS.sample_name_parent1 or
+        options.variant_caller_options_child.sample_name ==
+        FLAGS.sample_name_parent2):
       errors.log_and_raise(
           'The sample_name of the child is the same as one of '
           'the parents.', errors.CommandLineError)
     # If --sample_name_to_call is not set, use the child's sample_name.
     # This is for backward compatibility.
     if FLAGS.sample_name_to_call is None:
-      FLAGS.sample_name_to_call = options.variant_caller_options.sample_name
+      FLAGS.sample_name_to_call = options.variant_caller_options_child.sample_name
     if FLAGS.sample_name_to_call not in [
-        options.variant_caller_options.sample_name, FLAGS.sample_name_parent1,
-        FLAGS.sample_name_parent2
+        options.variant_caller_options_child.sample_name,
+        FLAGS.sample_name_parent1, FLAGS.sample_name_parent2
     ]:
       errors.log_and_raise('--sample_name_to_call has to be one of the trio.',
                            errors.CommandLineError)

@@ -1,6 +1,4 @@
 options {
-  exclude_contigs: "chrM"
-  exclude_contigs: "MT"
   exclude_contigs: "GL000207.1"
   exclude_contigs: "GL000226.1"
   exclude_contigs: "GL000229.1"
@@ -3414,7 +3412,7 @@ options {
       min_base_quality_mode: ENFORCED_BY_CLIENT
     }
   }
-  variant_caller_options {
+  variant_caller_options_child {
     min_count_snps: 2
     min_count_indels: 2
     min_fraction_snps: 0.03999999910593033
@@ -3457,6 +3455,7 @@ options {
     alt_aligned_pileup: "none"
     other_allele_supporting_read_alpha: 0.6000000238418579
     min_non_zero_allele_frequency: 9.999999747378752e-06
+    types_to_alt_align: "indels"
   }
   read_requirements {
     min_mapping_quality: 10
@@ -3518,6 +3517,30 @@ options {
   variant_caller: VERY_SENSITIVE_CALLER
   height_parent: 100
   height_child: 100
+  variant_caller_options_parent1 {
+    min_count_snps: 2
+    min_count_indels: 2
+    min_fraction_snps: 0.03999999910593033
+    min_fraction_indels: 0.03999999910593033
+    random_seed: 1400605801
+    sample_name: "parent1"
+    p_error: 0.0010000000474974513
+    max_gq: 50
+    gq_resolution: 5
+    ploidy: 2
+  }
+  variant_caller_options_parent2 {
+    min_count_snps: 2
+    min_count_indels: 2
+    min_fraction_snps: 0.03999999910593033
+    min_fraction_indels: 0.03999999910593033
+    random_seed: 1400605801
+    sample_name: "parent2"
+    p_error: 0.0010000000474974513
+    max_gq: 50
+    gq_resolution: 5
+    ploidy: 2
+  }
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3536,13 +3559,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1424.4078333333334
-  total_memory_mb: 64142
-  wall_time_seconds: 3.218712568283081
-  cpu_user_time_seconds: 9.545558
-  cpu_system_time_seconds: 4.21771
-  memory_peak_rss_mb: 430
-  read_bytes: 815681536
+  cpu_frequency_mhz: 1201.2979166666669
+  total_memory_mb: 64146
+  wall_time_seconds: 3.3550260066986084
+  cpu_user_time_seconds: 8.99439
+  cpu_system_time_seconds: 1.217948
+  memory_peak_rss_mb: 427
+  read_bytes: 324825088
   write_bytes: 20480
 }
 stats {

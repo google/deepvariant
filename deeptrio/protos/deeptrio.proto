@@ -38,7 +38,7 @@ import "third_party/nucleus/protos/reads.proto";
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepTrio end-to-end.
-// Next ID: 37.
+// Next ID: 39.
 message DeepTrioOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -59,7 +59,12 @@ message DeepTrioOptions {
   learning.genomics.deepvariant.AlleleCounterOptions allele_counter_options = 5;
 
   // Options to control how we call candidate variants.
-  learning.genomics.deepvariant.VariantCallerOptions variant_caller_options = 6;
+  learning.genomics.deepvariant.VariantCallerOptions
+      variant_caller_options_child = 6;
+  learning.genomics.deepvariant.VariantCallerOptions
+      variant_caller_options_parent1 = 37;
+  learning.genomics.deepvariant.VariantCallerOptions
+      variant_caller_options_parent2 = 38;
 
   // Options to control how we generate pileup images.
   learning.genomics.deepvariant.PileupImageOptions pic_options = 7;

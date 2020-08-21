@@ -458,7 +458,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
       call = variant_utils.only_call(variant)
       self.assertEqual(call.call_set_name,
-                       options.variant_caller_options.sample_name)
+                       options.variant_caller_options_child.sample_name)
       if is_gvcf:
         # GVCF records should have 0/0 or ./. (un-called) genotypes as they are
         # reference sites, have genotype likelihoods and a GQ value.
@@ -506,7 +506,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         self.assertIn(alt_allele, list(call.allele_support))
         self.assertGreaterEqual(
             len(call.allele_support[alt_allele].read_names),
-            options.variant_caller_options.min_count_snps)
+            options.variant_caller_options_child.min_count_snps)
 
   def verify_examples(self, examples_filename, region, options, verify_labels):
     # Do some simple structural checks on the tf.Examples in the file.
@@ -693,7 +693,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.training_random_emit_ref_sites = 0.3
     options = make_examples.default_options(add_flags=True)
     self.assertAlmostEqual(
-        options.variant_caller_options.fraction_reference_sites_to_emit, 0.3)
+        options.variant_caller_options_child.fraction_reference_sites_to_emit,
+        0.3)
 
   @flagsaver.FlagSaver
   def test_default_options_without_training_random_emit_ref_sites(self):
@@ -715,7 +716,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     # redacted
     # As an approximation, we directly check that the value should be exactly 0.
     self.assertEqual(
-        options.variant_caller_options.fraction_reference_sites_to_emit, 0.0)
+        options.variant_caller_options_child.fraction_reference_sites_to_emit,
+        0.0)
 
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()
