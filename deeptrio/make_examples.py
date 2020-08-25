@@ -252,7 +252,7 @@ flags.DEFINE_integer(
     'Indel alleles occurring at least this many times in '
     'our AlleleCount will be advanced as candidates.')
 flags.DEFINE_float(
-    'vsc_min_fraction_snps', 0.04,
+    'vsc_min_fraction_snps', 0.08,
     'SNP alleles occurring at least this fraction of all '
     'counts in our AlleleCount will be advanced as '
     'candidates.')
