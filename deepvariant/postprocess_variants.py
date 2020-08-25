@@ -1055,6 +1055,11 @@ def main(argv=()):
     if record is None:
       logging.info('call_variants_output is empty. Writing out empty VCF.')
       sample_name = dv_constants.DEFAULT_SAMPLE_NAME
+      if FLAGS.sample_name:
+        logging.info(
+            '--sample_name is set in postprocess_variant. Using %s as the '
+            'sample name.', FLAGS.sample_name)
+        sample_name = FLAGS.sample_name
       variant_generator = iter([])
     else:
       sample_name = _extract_single_sample_name(record)
