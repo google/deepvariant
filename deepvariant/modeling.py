@@ -562,7 +562,7 @@ class DeepVariantModel(object):
           vars_to_warm_start='|'.join(vars_to_include))
     else:
       # If warm_start_from is an empty string, specifically set it to None.
-      logging.info('Initializing model with random parameters')
+      logging.vlog(3, 'Initializing model with random parameters')
       return None
 
   def make_estimator(self,

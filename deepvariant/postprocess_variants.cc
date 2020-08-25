@@ -94,15 +94,17 @@ void ProcessSingleSiteCallTfRecords(
       QCHECK_EQ(single_site_call.variant().calls_size(), 1);
       single_site_calls.push_back(single_site_call);
     }
-    LOG(INFO) << "Done reading: " << tfrecord_path
-              << ". #entries in single_site_calls = "
-              << single_site_calls.size();
+    if (tfrecord_paths.size() > 1) {
+      LOG(INFO) << "Done reading: " << tfrecord_path
+                << ". #entries in single_site_calls = "
+                << single_site_calls.size();
+    }
   }
   LOG(INFO) << "Total #entries in single_site_calls = "
             << single_site_calls.size();
-  LOG(INFO) << "Start SortSingleSiteCalls";
+  VLOG(3) << "Start SortSingleSiteCalls";
   SortSingleSiteCalls(contigs, &single_site_calls);
-  LOG(INFO) << "Done SortSingleSiteCalls";
+  VLOG(3) << "Done SortSingleSiteCalls";
 
   // Write sorted calls to output_tfrecord_path.
   std::unique_ptr<tensorflow::WritableFile> output_file;

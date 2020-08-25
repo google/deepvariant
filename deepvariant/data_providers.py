@@ -38,6 +38,7 @@ from __future__ import print_function
 
 
 
+from absl import logging
 import tensorflow as tf
 
 from google.protobuf import text_format
@@ -365,15 +366,14 @@ class DeepVariantInput(object):
             self.input_file_spec),
         shuffle=False,
     )
-    tf.compat.v1.logging.info('self.input_read_threads=%d',
-                              self.input_read_threads)
+    logging.vlog(3,
+                 'self.input_read_threads={}'.format(self.input_read_threads))
     dataset = files.apply(
         tf.data.experimental.parallel_interleave(
             load_dataset,
             cycle_length=self.input_read_threads,
             sloppy=self.sloppy))
-    tf.compat.v1.logging.info('self.input_map_threads=%d',
-                              self.input_map_threads)
+    logging.vlog(3, 'self.input_map_threads={}'.format(self.input_map_threads))
     dataset = dataset.apply(
         tf.data.experimental.map_and_batch(
             self.parse_tfexample,

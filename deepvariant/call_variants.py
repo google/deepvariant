@@ -313,7 +313,8 @@ def call_variants(examples_filename,
   """Main driver of call_variants."""
   if FLAGS.kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
-    logging.info('Set KMP_BLOCKTIME to %s', os.environ['KMP_BLOCKTIME'])
+    logging.vlog(3,
+                 'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME']))
 
   # Read a single TFExample to make sure we're not loading an older version.
   first_example = tf_utils.get_one_example_from_examples_path(examples_filename)
