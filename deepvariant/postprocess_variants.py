@@ -39,6 +39,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 import collections
 import copy
 import itertools
+import os
 import tempfile
 import time
 
@@ -115,6 +116,10 @@ flags.DEFINE_boolean(
 flags.DEFINE_string(
     'sample_name', None,
     'Optional. If set, this will be used as the sample name in the output VCF.')
+flags.DEFINE_boolean(
+    'use_multiallelic_model', False,
+    'If True, use a specialized model for genotype resolution of multiallelic '
+    'cases with two alts.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -582,7 +587,85 @@ def prune_alleles(variant, alt_alleles_to_remove):
   return new_variant
 
 
-def merge_predictions(call_variants_outputs, qual_filter=None):
+def get_multiallelic_distributions(call_variants_outputs, pruned_alleles):
+  """Return 9 values for 3 distributions from given multiallelic CVOs.
+
+  This function is only called for sites with two alt alleles remaining after
+  pruning. However, call_variants_outputs contains CVOs from pruned and unpruned
+  alleles, so we ignore the CVOs containing alleles that were pruned.
+
+  Args:
+    call_variants_outputs: list of CVOs for a multiallelic site with exactly two
+      alts after pruning. For such a site, we would expect 3 CVOs (alt1, alt2,
+      alt1/2). However, there may be more than 3 CVOs if some alleles were
+      pruned at this site.
+    pruned_alleles: set of strings corresponding to pruned alleles. Used to
+      filter CVOs for pruned alleles.
+
+  Returns:
+    final_probs: array of shape (1, 9). The 9 values correspond to three model
+      output distributions. The first is from the image containing alt1, the
+      second is from the image for alt2, the third is from the image with both
+      alt1 and alt2.
+  """
+
+  alt_allele_indices_to_probs = {}
+
+  # Find the CVOs with two alts, corresponding to the image with alt1 and alt2.
+  for cvo in call_variants_outputs:
+    indices = cvo.alt_allele_indices.indices[:]
+    curr_alleles = [cvo.variant.alternate_bases[i] for i in indices]
+    curr_alleles_pruned = any([a in pruned_alleles for a in curr_alleles])
+
+    # Ignore CVOs containing pruned alleles.
+    if len(indices) == 2 and not curr_alleles_pruned:
+      first_alt_index = min(indices)
+      second_alt_index = max(indices)
+      probs = cvo.genotype_probabilities[:]
+      alt_allele_indices_to_probs[(first_alt_index, second_alt_index)] = probs
+
+  # Find the single alt CVOs.
+  for cvo in call_variants_outputs:
+    if len(cvo.alt_allele_indices.indices[:]) == 1:
+      index = cvo.alt_allele_indices.indices[0]
+      if index == first_alt_index or index == second_alt_index:
+        probs = cvo.genotype_probabilities[:]
+        alt_allele_indices_to_probs[index] = probs
+
+  assert len(alt_allele_indices_to_probs) == 3
+  # Concatenate all probabilities into one array.
+  final_probs = np.array([
+      alt_allele_indices_to_probs[first_alt_index] +
+      alt_allele_indices_to_probs[second_alt_index] +
+      alt_allele_indices_to_probs[(first_alt_index, second_alt_index)]
+  ])
+  return final_probs
+
+
+def get_multiallelic_model(use_multiallelic_model):
+  """Loads and returns the model, which must be in saved model format.
+
+  Args:
+    use_multiallelic_model: if True, use a specialized model for genotype
+      resolution of multiallelic cases with two alts.
+
+  Returns:
+    A keras model instance if use_multiallelic_model, else None.
+  """
+
+  if not use_multiallelic_model:
+    return None
+
+  curr_dir = os.path.dirname(__file__)
+  multiallelic_model_path = os.path.join(curr_dir, 'multiallelic_model')
+
+
+  return tf.keras.models.load_model(multiallelic_model_path, compile=False)
+
+
+def merge_predictions(call_variants_outputs,
+                      qual_filter=None,
+                      multiallelic_model=None):
   """Merges the predictions from the multi-allelic calls."""
   # See the logic described in the class PileupImageCreator pileup_image.py
   #
@@ -603,22 +686,33 @@ def merge_predictions(call_variants_outputs, qual_filter=None):
 
   alt_alleles_to_remove = get_alt_alleles_to_remove(call_variants_outputs,
                                                     qual_filter)
+
+  # flattened_probs_dict doesn't get used if we run the multiallelic model.
   flattened_probs_dict = convert_call_variants_outputs_to_probs_dict(
       canonical_variant, call_variants_outputs, alt_alleles_to_remove)
 
   canonical_variant = prune_alleles(canonical_variant, alt_alleles_to_remove)
-  predictions = [
-      min(flattened_probs_dict[(m, n)]) for _, _, m, n in
-      variant_utils.genotype_ordering_in_likelihoods(canonical_variant)
-  ]
-  if sum(predictions) == 0:
-    predictions = [1.0] * len(predictions)
-  denominator = sum(predictions)
+  # Run alternate model for multiallelic cases.
+  num_alts = len(canonical_variant.alternate_bases)
+  if num_alts == 2 and multiallelic_model is not None:
+    # We have 3 CVOs for 2 alts. In this case, there are 6 possible genotypes.
+    cvo_probs = get_multiallelic_distributions(call_variants_outputs,
+                                               alt_alleles_to_remove)
+    normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]
+  else:
+    predictions = [
+        min(flattened_probs_dict[(m, n)]) for _, _, m, n in
+        variant_utils.genotype_ordering_in_likelihoods(canonical_variant)
+    ]
+    if sum(predictions) == 0:
+      predictions = [1.0] * len(predictions)
+    denominator = sum(predictions)
+    normalized_predictions = [i / denominator for i in predictions]
   # Note the simplify_variant_alleles call *must* happen after the predictions
   # calculation above. flattened_probs_dict is indexed by alt allele, and
   # simplify can change those alleles so we cannot simplify until afterwards.
   canonical_variant = variant_utils.simplify_variant_alleles(canonical_variant)
-  return canonical_variant, [i / denominator for i in predictions]
+  return canonical_variant, normalized_predictions
 
 
 def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
@@ -666,7 +760,8 @@ def _sort_grouped_variants(group):
 def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
                                                 qual_filter,
                                                 multi_allelic_qual_filter,
-                                                sample_name, group_variants):
+                                                sample_name, group_variants,
+                                                use_multiallelic_model):
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
   Variants present in the input TFRecord are converted to Variant protos, with
@@ -684,10 +779,14 @@ def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
     sample_name: str. Sample name to write to VCF file.
     group_variants: bool. If true, group variants that have same start and end
       position.
+    use_multiallelic_model: if True, use a specialized model for genotype
+      resolution of multiallelic cases with two alts.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
+  multiallelic_model = get_multiallelic_model(
+      use_multiallelic_model=use_multiallelic_model)
   group_fn = None
   if group_variants:
     group_fn = lambda x: variant_utils.variant_range(x.variant)
@@ -697,7 +796,9 @@ def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
       group_fn):
     outputs = _sort_grouped_variants(group)
     canonical_variant, predictions = merge_predictions(
-        outputs, multi_allelic_qual_filter)
+        outputs,
+        multi_allelic_qual_filter,
+        multiallelic_model=multiallelic_model)
     variant = add_call_to_variant(
         canonical_variant,
         predictions,
@@ -970,7 +1071,8 @@ def main(argv=()):
           qual_filter=FLAGS.qual_filter,
           multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
           sample_name=sample_name,
-          group_variants=FLAGS.group_variants)
+          group_variants=FLAGS.group_variants,
+          use_multiallelic_model=FLAGS.use_multiallelic_model)
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
 

@@ -558,20 +558,80 @@ class PostprocessVariantsTest(parameterized.TestCase):
           predictions, [x / denominator for x in expected_unnormalized_probs])
 
   @parameterized.parameters(
+      # Example with 2 alternate_bases:
+      # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
       ([
-          _create_call_variants_output(indices=[0], ref='CA', alts=['A']),
-      ], ['CA', 'A']),
+          _create_call_variants_output(
+              indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[1], probabilities=[0.03, 0.93, 0.04], alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[0, 1], probabilities=[0.03, 0.92, 0.05], alts=['C', 'T'])
+      ], [0.033062, 0.10498016, 0.00496365, 0.5842303, 0.2543793, 0.01838462]),
+      # One more example with 2 alternate_bases:
+      # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
       ([
-          _create_call_variants_output(indices=[0], ref='CAA', alts=['AA']),
-      ], ['CA', 'A']),
+          _create_call_variants_output(
+              indices=[1], probabilities=[0.978, 0.03, 0.002], alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[0, 1],
+              probabilities=[0.992, 0.007, 0.001],
+              alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[0],
+              probabilities=[0.99997, 0.00002, 0.00001],
+              alts=['C', 'T']),
+      ], [
+          9.3330729e-01, 1.5126608e-02, 6.1836297e-04, 4.9650513e-02,
+          2.9180625e-05, 1.2679433e-03
+      ]),
+      # An extreme case where our logic could result in ZeroDivisionError if
+      # we don't handle this special case.
       ([
-          _create_call_variants_output(indices=[0], ref='GA', alts=['GAA']),
-      ], ['G', 'GA']),
+          _create_call_variants_output(
+              indices=[0], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[1], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']),
+          _create_call_variants_output(
+              indices=[0, 1], probabilities=[1.0, 0.0, 0.0], alts=['C', 'T'])
+      ], [
+          1.3300395e-03, 9.5756045e-03, 1.9776919e-05, 7.6043198e-04,
+          9.3802148e-01, 5.0292656e-02
+      ]),
+      # Example where all alt alleles are below qual_filter, but we keep one
+      # where the qual is highest among the ones filtered out.
+      ([
+          _create_call_variants_output(
+              indices=[0, 1],
+              probabilities=[1, 0, 0],
+              variant=_create_variant_with_alleles(alts=['C', 'T'])),
+          _create_call_variants_output(
+              indices=[0],
+              probabilities=[0.99, 0.01, 0],
+              variant=_create_variant_with_alleles(alts=['C', 'T'])),
+          _create_call_variants_output(
+              indices=[1],
+              probabilities=[1, 0, 0],
+              variant=_create_variant_with_alleles(alts=['C', 'T'])),
+      ], [0.99, 0.01, 0.0], 6),
   )
-  def test_merge_predictions_simplify_variant(self, inputs, expected_alleles):
-    output_variants, _ = postprocess_variants.merge_predictions(inputs)
-    self.assertEqual(output_variants.reference_bases, expected_alleles[0])
-    self.assertEqual(output_variants.alternate_bases, expected_alleles[1:])
+  @flagsaver.FlagSaver
+  def test_merge_predictions_multiallelics_probs(self,
+                                                 inputs,
+                                                 expected_unnormalized_probs,
+                                                 qual_filter=None):
+    FLAGS.use_multiallelic_model = True
+    multiallelic_model = postprocess_variants.get_multiallelic_model(
+        use_multiallelic_model=FLAGS.use_multiallelic_model)
+    denominator = sum(expected_unnormalized_probs)
+    for permuted_inputs in itertools.permutations(inputs):
+      _, predictions = postprocess_variants.merge_predictions(
+          permuted_inputs,
+          multiallelic_model=multiallelic_model,
+          qual_filter=qual_filter)
+      np.testing.assert_almost_equal(
+          predictions, [x / denominator for x in expected_unnormalized_probs],
+          decimal=5)
 
   @parameterized.parameters(
       # With 1 alt allele, we expect to see 1 alt_allele_indices: [0].

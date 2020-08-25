@@ -24,6 +24,7 @@ filegroup(
         "testdata/input/*",
         "testdata/obsolete/*",
         "testdata/*",
+        "multiallelic_model/**",
     ]),
 )
 
@@ -520,6 +521,9 @@ cc_library(
 py_library(
     name = "postprocess_variants_py_lib",
     srcs = ["postprocess_variants.py"],
+    data = glob([
+        "multiallelic_model/**",
+    ]),
     srcs_version = "PY3",
     deps = [
         ":dv_vcf_constants",
