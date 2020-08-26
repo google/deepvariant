@@ -50,6 +50,7 @@ CALL_VARIANTS_OUTPUT_PARENT2="${OUTPUT_DIR}/call_variants_output_parent2.tfrecor
 OUTPUT_VCF_CHILD="${OUTPUT_DIR}/HG002.output.vcf.gz"
 OUTPUT_VCF_PARENT1="${OUTPUT_DIR}/HG003.output.vcf.gz"
 OUTPUT_VCF_PARENT2="${OUTPUT_DIR}/HG004.output.vcf.gz"
+OUTPUT_VCF_MERGED="${OUTPUT_DIR}/HG002-3-4.output.vcf.gz"
 OUTPUT_GVCF_CHILD="${OUTPUT_DIR}/HG002.output.g.vcf.gz"
 OUTPUT_GVCF_PARENT1="${OUTPUT_DIR}/HG003.output.g.vcf.gz"
 OUTPUT_GVCF_PARENT2="${OUTPUT_DIR}/HG004.output.g.vcf.gz"
@@ -252,6 +253,18 @@ function run_happy() {
   echo "Done."
 }
 
+function run_glnexus() {
+  sudo docker pull quay.io/mlin/glnexus:v1.2.7
+
+  time sudo docker run \
+    -v "${OUTPUT_DIR}":"${OUTPUT_DIR}" \
+    quay.io/mlin/glnexus:v1.2.7 \
+    /usr/local/bin/glnexus_cli \
+    --config DeepVariantWGS \
+    "${OUTPUT_GVCF_PARENT2}" "${OUTPUT_GVCF_PARENT1}" "${OUTPUT_GVCF_CHILD}" \
+    | bcftools view - | bgzip -c > "${OUTPUT_VCF_MERGED}"
+}
+
 function run_all_call_variants() {
   (time run_call_variants "${EXAMPLES_CHILD}" "${CHILD_MODEL}" "${CALL_VARIANTS_OUTPUT_CHILD}") >> "${LOG_DIR}/call_variants.log" 2>&1
   (time run_call_variants "${EXAMPLES_PARENT1}" "${PARENT_MODEL}" "${CALL_VARIANTS_OUTPUT_PARENT1}") >> "${LOG_DIR}/call_variants.log" 2>&1
@@ -295,6 +308,7 @@ function main() {
   (time run_all_call_variants) >> "${LOG_DIR}/call_variants.log" 2>&1
   (time run_all_postprocess_variants) >> "${LOG_DIR}/postprocess_variants.log" 2>&1
   (time run_all_postprocess_variants_gVCF) >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
+  run_glnexus
   run_all_vcf_stats_report
   run_all_happy_reports
 }
