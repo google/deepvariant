@@ -195,7 +195,7 @@ def get_f1_score(labels, predictions, target_class=None):
 
   def compute_f1_score(name):
     pr_product = tf.multiply(precision, recall)
-    return tf.compat.v1.div(
+    return tf.math.divide(
         tf.multiply(2.0, pr_product), tf.add(tf.add(precision, recall), 1e-12),
         name)
 
@@ -884,7 +884,7 @@ class DeepVariantSlimModel(DeepVariantModel):
     """
     images = tf.cast(images, dtype=tf.float32)
     images = tf.subtract(images, 128.0)
-    images = tf.compat.v1.div(images, 128.0)
+    images = tf.math.divide(images, 128.0)
     return images
 
   def model_fn(self, features, labels, mode, params):
@@ -1323,7 +1323,7 @@ class DeepVariantDummyModel(DeepVariantModel):
     # of this model.
     images = tf.cast(images, dtype=tf.float32)
     images = tf.subtract(images, 128.0)
-    images = tf.compat.v1.div(images, 128.0)
+    images = tf.math.divide(images, 128.0)
     return images
 
   @property
