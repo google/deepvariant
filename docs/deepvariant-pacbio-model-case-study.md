@@ -1,45 +1,64 @@
 # Using DeepVariant for small variant calling from PacBio HiFi reads
 
+#### Author: William Rowell <wrowell@pacificbiosciences.com>
+
 In this case study we describe applying DeepVariant to PacBio HiFi reads to call
 variants. We will call small variants from a publicly available whole genome
 HiFi dataset from PacBio.
 
 This case study involves a two-step process of variant calling. After the first
-round of calling, variants are phased and used to haplotag the input BAM. For
+round of calling, SNVs are phased and used to haplotag the input BAM. For
 the highest accuracy, variants are called again in a second pass. If somewhat
 lower Indel accuracy is acceptable in exchange for shorter run-time, the
-first-pass calls be used. Accuracy benchmarks for each pass are showin in this
+first-pass calls be used. Accuracy benchmarks for each pass are shown for this
 case study.
+
 
 ## Prepare environment
 
 ### Tools
 
-- singularity
-- samtools
-- whatshap
+[Singularity](https://sylabs.io/docs/) will be used to run DeepVariant and
+[hap.py](https://github.com/illumina/hap.py), and we'll use
+[miniconda](https://docs.conda.io/en/latest/miniconda.html) and a conda
+environment to handle the other dependencies for the case study, samtools and
+whatshap.
+
+-   singularity (must be installed by `root` user; outside of the scope of this
+    case study)
+-   samtools
+-   whatshap
 
 ```bash
+# add channels to conda configuration
 conda config --add channels defaults
 conda config --add channels bioconda
 conda config --add channels conda-forge
 
+# create the environment and install dependencies
 conda create -n deepvariant_whatshap
 conda activate deepvariant_whatshap
-
-conda install singularity==3.5.3 whatshap==1.0 samtools==1.10
+conda install whatshap==1.0 samtools==1.10
 ```
 
 ### Download Reference
 
+We will be using GRCh38 for this case study.
+
 ```bash
 mkdir -p reference
 
+# download and decompress
 curl ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz | gunzip > reference/GRCh38_no_alt_analysis_set.fasta
+
+# index reference
 samtools faidx reference/GRCh38_no_alt_analysis_set.fasta
 ```
 
 ### Download Genome in a Bottle Benchmarks
+
+We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
+variant benchmarks for HG002.
 
 ```bash
 mkdir -p benchmark
@@ -53,13 +72,14 @@ curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG002_GRC
 
 ### Download HG002 chr20 HiFi alignments
 
+We'll use HG002 chr20 HiFi reads publicly available from the [PrecisionFDA Truth v2 Challenge](https://precision.fda.gov/challenges/10).
+
 ```bash
 mkdir -p input
+HTTPDIR=https://downloads.pacbcloud.com/public/dataset/HG002/deepvariant-case-study
 
-FTPDIR=http://storage.googleapis.com/deepvariant/pacbio-case-study-testdata
-
-curl ${FTPDIR}/HG002.GRCh38.chr20.bam > input/HG002.GRCh38.chr20.bam
-curl ${FTPDIR}/HG002.GRCh38.chr20.bam.bai > input/HG002.GRCh38.chr20.bam.bai
+curl ${HTTPDIR}/HG002.GRCh38.chr20.pFDA_truthv2.bam > input/HG002.GRCh38.chr20.pFDA_truthv2.bam
+curl ${HTTPDIR}/HG002.GRCh38.chr20.pFDA_truthv2.bam.bai > input/HG002.GRCh38.chr20.pFDA_truthv2.bam.bai
 ```
 
 ## Run DeepVariant on chromosome 20 alignments
@@ -74,7 +94,7 @@ singularity exec --bind /usr/lib/locale/ \
     /opt/deepvariant/bin/run_deepvariant \
     --model_type PACBIO \
     --ref reference/GRCh38_no_alt_analysis_set.fasta \
-    --reads input/HG002.GRCh38.chr20.bam \
+    --reads input/HG002.GRCh38.chr20.pFDA_truthv2.bam \
     --output_vcf deepvariant1/output.vcf.gz \
     --num_shards $(nproc) \
     --regions chr20
@@ -90,7 +110,7 @@ whatshap phase \
         --reference reference/GRCh38_no_alt_analysis_set.fasta \
         --chromosome chr20 \
         deepvariant1/output.vcf.gz \
-        input/HG002.GRCh38.chr20.bam
+        input/HG002.GRCh38.chr20.pFDA_truthv2.bam
 
 tabix -p vcf whatshap/deepvariant1.phased.vcf.gz
 ```
@@ -102,7 +122,7 @@ whatshap haplotag \
         --output whatshap/HG002.GRCh38.chr20.haplotagged.bam \
         --reference reference/GRCh38_no_alt_analysis_set.fasta \
         whatshap/deepvariant1.phased.vcf.gz \
-        input/HG002.GRCh38.chr20.bam
+        input/HG002.GRCh38.chr20.pFDA_truthv2.bam
 
 samtools index whatshap/HG002.GRCh38.chr20.haplotagged.bam
 ```
@@ -148,10 +168,10 @@ First pass output:
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11256     11068       188        21670       139      10059     90       0.983298          0.988029        0.464190         0.985658                     NaN                     NaN                   1.561710                   2.079747
- INDEL   PASS        11256     11068       188        21670       139      10059     90       0.983298          0.988029        0.464190         0.985658                     NaN                     NaN                   1.561710                   2.079747
-   SNP    ALL        71333     71279        54        95192         5      23828      5       0.999243          0.999930        0.250315         0.999586                2.314904                2.011701                   1.715978                   2.020670
-   SNP   PASS        71333     71279        54        95192         5      23828      5       0.999243          0.999930        0.250315         0.999586                2.314904                2.011701                   1.715978                   2.020670
+ INDEL    ALL        11256     11048       208        21583       150       9985     97       0.981521          0.987067        0.462633         0.984286                     NaN                     NaN                   1.561710                   2.063683
+ INDEL   PASS        11256     11048       208        21583       150       9985     97       0.981521          0.987067        0.462633         0.984286                     NaN                     NaN                   1.561710                   2.063683
+   SNP    ALL        71333     71277        56        95048         7      23684      6       0.999215          0.999902        0.249179         0.999558                2.314904                2.018283                   1.715978                   2.017439
+   SNP   PASS        71333     71277        56        95048         7      23684      6       0.999215          0.999902        0.249179         0.999558                2.314904                2.018283                   1.715978                   2.017439
 ```
 
 ## Benchmark Second Pass
@@ -176,8 +196,8 @@ Second pass output:
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11256     11161        95        22092        99      10424     62       0.991560          0.991515        0.471845         0.991538                     NaN                     NaN                   1.561710                   2.223964
- INDEL   PASS        11256     11161        95        22092        99      10424     62       0.991560          0.991515        0.471845         0.991538                     NaN                     NaN                   1.561710                   2.223964
-   SNP    ALL        71333     71280        53        95017         5      23651      5       0.999257          0.999930        0.248913         0.999593                2.314904                2.010292                   1.715978                   2.005063
-   SNP   PASS        71333     71280        53        95017         5      23651      5       0.999257          0.999930        0.248913         0.999593                2.314904                2.010292                   1.715978                   2.005063
+ INDEL    ALL        11256     11146       110        22043       116      10374     66       0.990227          0.990059        0.470626         0.990143                     NaN                     NaN                   1.561710                   2.225178
+ INDEL   PASS        11256     11146       110        22043       116      10374     66       0.990227          0.990059        0.470626         0.990143                     NaN                     NaN                   1.561710                   2.225178
+   SNP    ALL        71333     71274        59        94898        10      23533      8       0.999173          0.999860        0.247982         0.999516                2.314904                2.016874                   1.715978                   2.001392
+   SNP   PASS        71333     71274        59        94898        10      23533      8       0.999173          0.999860        0.247982         0.999516                2.314904                2.016874                   1.715978                   2.001392
 ```
