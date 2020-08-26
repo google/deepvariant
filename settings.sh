@@ -92,6 +92,7 @@ export DV_USE_GCP_OPTIMIZED_TF_WHL="${DV_USE_GCP_OPTIMIZED_TF_WHL:-1}"
 export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-${DV_GCP_OPTIMIZED_TF_WHL_VERSION}.deepvariant_gcp-cp27-none-linux_x86_64.whl"
 export GCP_OPTIMIZED_TF_WHL_PATH="${DV_PACKAGE_BUCKET_PATH}/tensorflow"
 export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"
+export DV_TF_NUMPY_VERSION="1.16"  # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 
 # Set this to 1 to make our prereq scripts install the CUDA libraries.
 # If you already have CUDA installed, such as on a properly provisioned

@@ -112,10 +112,10 @@ pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git
 # source. But we know that on 16.04 we don't need to compile from source
 # See https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279061085
 if [[ "$(lsb_release -d)" == *Ubuntu*16.04.* ]]; then
-  pip3 install "${PIP_ARGS[@]}" 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+  pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
 else
   echo "Installing numpy with -no-binary=:all:. This will take a bit longer."
-  pip3 install "${PIP_ARGS[@]}" --no-binary=:all: 'numpy==1.16' # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+  pip3 install "${PIP_ARGS[@]}" --no-binary=:all: "numpy==${DV_TF_NUMPY_VERSION}"
 fi
 
 # Reason:
