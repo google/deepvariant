@@ -250,7 +250,9 @@ def make_golden_dataset(compressed_inputs=False):
   return source_path
 
 
-def create_outfile(file_name, compressed_outputs=False):
+def create_outfile(file_name, compressed_outputs=False, only_keep_pass=False):
+  if only_keep_pass:
+    file_name += '.pass_only'
   if compressed_outputs:
     file_name += '.gz'
   return test_utils.test_tmpfile(file_name)
@@ -296,22 +298,32 @@ class AlleleRemapperTest(parameterized.TestCase):
 
 class PostprocessVariantsTest(parameterized.TestCase):
 
-  @parameterized.parameters(False, True)
+  # pylint: disable=g-complex-comprehension
+  @parameterized.parameters((compressed_inputs_and_outputs, only_keep_pass)
+                            for compressed_inputs_and_outputs in [False, True]
+                            for only_keep_pass in [False, True])
+  # pylint: enable=g-complex-comprehension
   @flagsaver.FlagSaver
-  def test_call_end2end(self, compressed_inputs_and_outputs):
+  def test_call_end2end(self, compressed_inputs_and_outputs, only_keep_pass):
     FLAGS.infile = make_golden_dataset(compressed_inputs_and_outputs)
     FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.outfile = create_outfile('calls.vcf', compressed_inputs_and_outputs)
+    FLAGS.outfile = create_outfile('calls.vcf', compressed_inputs_and_outputs,
+                                   only_keep_pass)
     FLAGS.nonvariant_site_tfrecord_path = (
         testdata.GOLDEN_POSTPROCESS_GVCF_INPUT)
     FLAGS.gvcf_outfile = create_outfile('gvcf_calls.vcf',
-                                        compressed_inputs_and_outputs)
-
+                                        compressed_inputs_and_outputs,
+                                        only_keep_pass)
+    FLAGS.only_keep_pass = only_keep_pass
     postprocess_variants.main(['postprocess_variants.py'])
 
+    if only_keep_pass:
+      vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT_PASS_ONLY
+    else:
+      vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT
     self.assertEqual(
         _read_contents(FLAGS.outfile, compressed_inputs_and_outputs),
-        _read_contents(testdata.GOLDEN_POSTPROCESS_OUTPUT))
+        _read_contents(vcf_output))
     self.assertEqual(
         _read_contents(FLAGS.gvcf_outfile, compressed_inputs_and_outputs),
         _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT))

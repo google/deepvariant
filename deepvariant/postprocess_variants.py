@@ -120,6 +120,8 @@ flags.DEFINE_boolean(
     'use_multiallelic_model', False,
     'If True, use a specialized model for genotype resolution of multiallelic '
     'cases with two alts.')
+flags.DEFINE_boolean('only_keep_pass', False, 'If True, only keep PASS calls.')
+
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -726,10 +728,14 @@ def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
   logging.info('Writing output to VCF file: %s', output_vcf_path)
   with vcf.VcfWriter(
       output_vcf_path, header=header, round_qualities=True) as writer:
-    for idx, variant in enumerate(variant_iterable):
-      logging.log_every_n(logging.INFO, '%s variants written.', _LOG_EVERY_N,
-                          idx + 1)
-      writer.write(variant)
+    count = 0
+    for variant in variant_iterable:
+      if (not FLAGS.only_keep_pass or
+          variant.filter == [dv_vcf_constants.DEEP_VARIANT_PASS]):
+        count += 1
+        writer.write(variant)
+        logging.log_every_n(logging.INFO, '%s variants written.', _LOG_EVERY_N,
+                            count)
 
 
 def _zero_scale_gl(variant):
@@ -948,7 +954,9 @@ def merge_and_write_variants_and_nonvariants(variant_iterable,
 
   while variant is not None or nonvariant is not None:
     if lessthan(variant, nonvariant):
-      vcf_writer.write(variant)
+      if (not FLAGS.only_keep_pass or
+          variant.filter == [dv_vcf_constants.DEEP_VARIANT_PASS]):
+        vcf_writer.write(variant)
       gvcf_variant = _transform_to_gvcf_record(_zero_scale_gl(variant))
       gvcf_writer.write(gvcf_variant)
       variant = next_or_none(variant_iterable)
