@@ -165,7 +165,8 @@ string MakeAltAllele(const string& prefix,
 // A good alt allele is one that is a substitution, insertion, or deletion,
 // and satisfies our min count and min fraction requirements.
 VariantCaller::AlleleRejectionAcceptance VariantCaller::IsGoodAltAllele(
-    const Allele& allele, const int total_count) const {
+    const Allele& allele, const int total_count,
+    const bool apply_trio_coefficient) const {
   if (allele.type() == AlleleType::REFERENCE) {
     return AlleleRejectionAcceptance::REJECTED_REF;
   }
@@ -178,7 +179,11 @@ VariantCaller::AlleleRejectionAcceptance VariantCaller::IsGoodAltAllele(
     return AlleleRejectionAcceptance::REJECTED_OTHER;
   }
 
-  if ((1.0 * allele.count()) / total_count < min_fraction(allele)) {
+  if ((1.0 * allele.count()) / total_count <
+      min_fraction(allele) *
+          (apply_trio_coefficient
+               ? options_.vsc_allele_fraction_trio_coefficient()
+               : 1.0)) {
     return AlleleRejectionAcceptance::REJECTED_LOW_RATIO;
   }
 
@@ -221,7 +226,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   // First process target_sample_alleles
   for (const auto& allele : target_sample_alleles) {
     AlleleRejectionAcceptance allele_acceptance =
-        IsGoodAltAllele(allele, target_samples_total_count);
+        IsGoodAltAllele(allele, target_samples_total_count, false);
     if (allele_acceptance == AlleleRejectionAcceptance::ACCEPTED) {
       alt_alleles.push_back(allele);
       continue;
@@ -232,8 +237,8 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
       for (const auto& all_samples_allele : all_sample_alleles) {
         if (IsAllelesTheSame(allele, all_samples_allele) &&
             AlleleRejectionAcceptance::ACCEPTED ==
-                IsGoodAltAllele(all_samples_allele,
-                                all_samples_total_count)) {
+                IsGoodAltAllele(all_samples_allele, all_samples_total_count,
+                                true)) {
           alt_alleles.push_back(allele);
           break;
         }  // if (Found good allele in other samples)
@@ -358,7 +363,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
     return std::vector<DeepVariantCall>();
   }
 
-  // Constains AlleleCount objects for each position of the target sample.
+  // Contains AlleleCount objects for each position of the target sample.
   const std::vector<nucleus::ConstProtoPtr<AlleleCount>>&
       target_sample_allele_counts = it->second;
 

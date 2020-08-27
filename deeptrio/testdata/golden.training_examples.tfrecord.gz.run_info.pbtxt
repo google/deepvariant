@@ -3415,14 +3415,15 @@ options {
   variant_caller_options_child {
     min_count_snps: 2
     min_count_indels: 2
-    min_fraction_snps: 0.07999999821186066
-    min_fraction_indels: 0.03999999910593033
+    min_fraction_snps: 0.11999999731779099
+    min_fraction_indels: 0.05999999865889549
     random_seed: 1400605801
     sample_name: "child"
     p_error: 0.0010000000474974513
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
+    vsc_allele_fraction_trio_coefficient: 0.6700000166893005
   }
   pic_options {
     height: 300
@@ -3520,8 +3521,8 @@ options {
   variant_caller_options_parent1 {
     min_count_snps: 2
     min_count_indels: 2
-    min_fraction_snps: 0.07999999821186066
-    min_fraction_indels: 0.03999999910593033
+    min_fraction_snps: 0.11999999731779099
+    min_fraction_indels: 0.05999999865889549
     random_seed: 1400605801
     sample_name: "parent1"
     p_error: 0.0010000000474974513
@@ -3532,8 +3533,8 @@ options {
   variant_caller_options_parent2 {
     min_count_snps: 2
     min_count_indels: 2
-    min_fraction_snps: 0.07999999821186066
-    min_fraction_indels: 0.03999999910593033
+    min_fraction_snps: 0.11999999731779099
+    min_fraction_indels: 0.05999999865889549
     random_seed: 1400605801
     sample_name: "parent2"
     p_error: 0.0010000000474974513
@@ -3545,13 +3546,13 @@ options {
 labeling_metrics {
   n_truth_variant_sites: 48
   n_truth_variant_alleles: 48
-  n_candidate_variant_sites: 55
-  n_candidate_variant_alleles: 55
-  n_non_confident_candidate_variant_sites: 37
+  n_candidate_variant_sites: 50
+  n_candidate_variant_alleles: 50
+  n_non_confident_candidate_variant_sites: 28
   n_true_positive_sites: 48
   n_true_positive_alleles: 84
-  n_false_positive_sites: 7
-  n_false_positive_alleles: 7
+  n_false_positive_sites: 2
+  n_false_positive_alleles: 2
   n_exact_position_matches: 48
   n_exact_position_and_allele_matches: 48
   n_exact_position_and_allele_and_genotype_matches: 48
@@ -3559,20 +3560,20 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1234.9463333333333
-  total_memory_mb: 64146
-  wall_time_seconds: 2.4440386295318604
-  cpu_user_time_seconds: 8.540653
-  cpu_system_time_seconds: 4.427579
-  memory_peak_rss_mb: 438
-  read_bytes: 816807936
-  write_bytes: 6086656
+  cpu_frequency_mhz: 1345.5018333333335
+  total_memory_mb: 64047
+  wall_time_seconds: 2.846517562866211
+  cpu_user_time_seconds: 8.54434
+  cpu_system_time_seconds: 2.841358
+  memory_peak_rss_mb: 435
+  read_bytes: 827678720
+  write_bytes: 20480
 }
 stats {
-  num_examples: 55
+  num_examples: 50
   num_indels: 5
-  num_snps: 50
-  num_class_0: 7
+  num_snps: 45
+  num_class_0: 2
   num_class_1: 12
   num_class_2: 36
 }

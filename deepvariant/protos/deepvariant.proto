@@ -304,6 +304,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
+// Next ID: 13
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -314,6 +315,9 @@ message VariantCallerOptions {
   // AlleleCount are considered candidate variants.
   float min_fraction_snps = 3;
   float min_fraction_indels = 4;
+  // Coefficient that is applied to min_fraction_snps and min_fraction_indels
+  // for creating candidates in trio mode.
+  float vsc_allele_fraction_trio_coefficient = 12;
 
   // If provided, we will emit "candidate" variant records at a random fraction
   // of otherwise non-candidate sites. Useful for training.
@@ -346,12 +350,12 @@ message VariantCallerOptions {
   int32 ploidy = 11;
 }
 
-// Options to control how our we label variant calls.
+// Options to control how we label variant calls.
 message VariantLabelerOptions {
   // Currently there are no options for VariantLabeler.
 }
 
-// Options to control how our we construct pileup images.
+// Options to control how we construct pileup images.
 // Next ID: 37.
 message PileupImageOptions {
   // redacted

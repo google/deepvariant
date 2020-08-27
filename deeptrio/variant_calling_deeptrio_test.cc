@@ -118,6 +118,7 @@ VariantCallerOptions MakeOptions(
   options.set_min_count_indels(min_count);
   options.set_min_fraction_snps(min_fraction);
   options.set_min_fraction_indels(min_fraction);
+  options.set_vsc_allele_fraction_trio_coefficient(1.0);
   options.set_sample_name(sample_name);
   if (fraction_reference_sites_to_emit > 0)
     options.set_fraction_reference_sites_to_emit(
@@ -497,6 +498,7 @@ TEST_F(VariantCallingTest, TestMinSNPIndelSeparately) {
   options.set_min_count_indels(10);
   options.set_min_fraction_snps(0.1);
   options.set_min_fraction_indels(0.5);
+  options.set_vsc_allele_fraction_trio_coefficient(1.0);
   options.set_sample_name(kSampleName);
   options.set_ploidy(2);
   VariantCaller caller(options);
@@ -895,6 +897,57 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCountsUnevenCoverage) {
   Variant variant = WithCounts(MakeExpectedVariant("A", {"T"}, 10), {2, 2});
   EXPECT_EQ(candidates.size(), 1);
   EXPECT_THAT(candidates[0].variant(), EqualsProto(variant));
+  ReleaseAlleleCountPointers(allele_counts);
+}
+
+// Testing that candidate is not created when allele fraction is less than
+// threshold, and is created when allele_fraction_trio_coefficient is used.
+TEST_F(VariantCallingTest,
+       TestCallsFromAlleleCountsWithAlleleFractionTrioCoefficient) {
+  // Parent 1:
+  // SNP A -> T with 2 reads support and 18 reads ref support
+  //
+  // Child:
+  // SNP A -> T with 1 reads support and 9 reads ref support
+  //
+  // Parent 2:
+  // no alt alleles, 3 reads support ref
+  //
+  // set_min_fraction_snps >= 0.2
+
+  const std::unordered_map<std::string,
+                           std::vector<nucleus::ConstProtoPtr<AlleleCount>>>
+      allele_counts = {
+          {"parent_1", {nucleus::ConstProtoPtr<AlleleCount>(
+              MakeTestAlleleCount(20, 2, "parent_1", "A", "T", 10))}},
+          {"child", {nucleus::ConstProtoPtr<AlleleCount>(
+              MakeTestAlleleCount(10, 7, "child", "A", "T", 10))}},
+          {"parent_2", {nucleus::ConstProtoPtr<AlleleCount>(
+              MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
+
+  // When vsc_allele_fraction_trio_coefficient is set to 1.0 it doesn't affect
+  // allele filter. We expect that candidate won't be created since allele
+  // fraction is 0.225 is less than 0.226
+  VariantCallerOptions options = MakeOptions(0, 0.226);
+  options.set_vsc_allele_fraction_trio_coefficient(1.0);
+  const VariantCaller caller(options);
+  std::vector<DeepVariantCall> candidates =
+      caller.CallsFromAlleleCounts(allele_counts, "parent_1");
+  EXPECT_EQ(candidates.size(), 0);
+
+  // Now we set vsc_allele_fraction_trio_coefficient to 0.5 which should result
+  // in candidate to be created.
+  VariantCallerOptions options2 = MakeOptions(0, 0.226);
+  options2.set_vsc_allele_fraction_trio_coefficient(0.5);
+  const VariantCaller caller2(options2);
+  Variant variant = WithCounts(MakeExpectedVariant("A", {"T"}, 10), {18, 2});
+
+  std::vector<DeepVariantCall> candidates2 =
+      caller2.CallsFromAlleleCounts(allele_counts, "parent_1");
+  EXPECT_EQ(candidates2.size(), 1);
+  EXPECT_THAT(candidates2[0].variant(), EqualsProto(variant));
+
+
   ReleaseAlleleCountPointers(allele_counts);
 }
 
