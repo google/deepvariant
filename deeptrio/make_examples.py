@@ -423,6 +423,24 @@ def assign_sample_name(sample_name_flag, reads):
   return sample_name
 
 
+def initialize_variant_caller(the_sample_name, flags_obj):
+  return deepvariant_pb2.VariantCallerOptions(
+      min_count_snps=flags_obj.vsc_min_count_snps,
+      min_count_indels=flags_obj.vsc_min_count_indels,
+      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
+      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
+      vsc_allele_fraction_trio_coefficient=flags_obj
+      .vsc_allele_fraction_trio_coefficient,
+      # Not specified by default: fraction_reference_sites_to_emit,
+      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
+      random_seed=1400605801,
+      sample_name=the_sample_name,
+      p_error=0.001,
+      max_gq=50,
+      gq_resolution=flags_obj.gvcf_gq_binsize,
+      ploidy=2)
+
+
 def default_options(add_flags=True, flags_obj=None):
   """Creates a DeepTrioOptions proto populated with reasonable defaults.
 
@@ -466,47 +484,13 @@ def default_options(add_flags=True, flags_obj=None):
                                            flags_obj.reads_parent1)
   sample_name_parent2 = assign_sample_name(flags_obj.sample_name_parent2,
                                            flags_obj.reads_parent2)
-  variant_caller_options_child = deepvariant_pb2.VariantCallerOptions(
-      min_count_snps=flags_obj.vsc_min_count_snps,
-      min_count_indels=flags_obj.vsc_min_count_indels,
-      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
-      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
-      vsc_allele_fraction_trio_coefficient=flags_obj
-      .vsc_allele_fraction_trio_coefficient,
-      # Not specified by default: fraction_reference_sites_to_emit,
-      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
-      random_seed=1400605801,
-      sample_name=sample_name,
-      p_error=0.001,
-      max_gq=50,
-      gq_resolution=flags_obj.gvcf_gq_binsize,
-      ploidy=2)
-  variant_caller_options_parent1 = deepvariant_pb2.VariantCallerOptions(
-      min_count_snps=flags_obj.vsc_min_count_snps,
-      min_count_indels=flags_obj.vsc_min_count_indels,
-      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
-      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
-      # Not specified by default: fraction_reference_sites_to_emit,
-      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
-      random_seed=1400605801,
-      sample_name=sample_name_parent1,
-      p_error=0.001,
-      max_gq=50,
-      gq_resolution=flags_obj.gvcf_gq_binsize,
-      ploidy=2)
-  variant_caller_options_parent2 = deepvariant_pb2.VariantCallerOptions(
-      min_count_snps=flags_obj.vsc_min_count_snps,
-      min_count_indels=flags_obj.vsc_min_count_indels,
-      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
-      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
-      # Not specified by default: fraction_reference_sites_to_emit,
-      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
-      random_seed=1400605801,
-      sample_name=sample_name_parent2,
-      p_error=0.001,
-      max_gq=50,
-      gq_resolution=flags_obj.gvcf_gq_binsize,
-      ploidy=2)
+
+  variant_caller_options_child = initialize_variant_caller(
+      sample_name, flags_obj)
+  variant_caller_options_parent1 = initialize_variant_caller(
+      sample_name_parent1, flags_obj)
+  variant_caller_options_parent2 = initialize_variant_caller(
+      sample_name_parent2, flags_obj)
 
   options = deeptrio_pb2.DeepTrioOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,
