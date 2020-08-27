@@ -526,6 +526,7 @@ py_library(
     ]),
     srcs_version = "PY3",
     deps = [
+        # END_INTERNAL
         ":dv_vcf_constants",
         ":logging_level",
         ":tf_utils",
