@@ -570,7 +570,7 @@ py_binary(
 
 py_test(
     name = "postprocess_variants_test",
-    size = "small",
+    size = "medium",
     srcs = ["postprocess_variants_test.py"],
     data = [":testdata"],
     python_version = "PY3",
