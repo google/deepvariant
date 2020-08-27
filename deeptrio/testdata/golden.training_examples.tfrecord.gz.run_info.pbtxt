@@ -3529,6 +3529,7 @@ options {
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
+    vsc_allele_fraction_trio_coefficient: 0.6700000166893005
   }
   variant_caller_options_parent2 {
     min_count_snps: 2
@@ -3541,6 +3542,7 @@ options {
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
+    vsc_allele_fraction_trio_coefficient: 0.6700000166893005
   }
 }
 labeling_metrics {
@@ -3560,13 +3562,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1345.5018333333335
-  total_memory_mb: 64047
-  wall_time_seconds: 2.846517562866211
-  cpu_user_time_seconds: 8.54434
-  cpu_system_time_seconds: 2.841358
-  memory_peak_rss_mb: 435
-  read_bytes: 827678720
+  cpu_frequency_mhz: 1200.3433333333332
+  total_memory_mb: 64142
+  wall_time_seconds: 2.022289276123047
+  cpu_user_time_seconds: 8.152958
+  cpu_system_time_seconds: 3.9623369999999998
+  memory_peak_rss_mb: 440
+  read_bytes: 825491456
   write_bytes: 20480
 }
 stats {

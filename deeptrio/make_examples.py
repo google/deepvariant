@@ -197,6 +197,12 @@ flags.DEFINE_enum(
     'the pileup image. "none" turns this feature off. '
     'The default is "none".'
     'Options: "none", "base_channels","diff_channels"')
+flags.DEFINE_enum(
+    'types_to_alt_align', 'indels', ['indels', 'all'],
+    'When --alt_aligned_pileup is not none, this flag determines whether to '
+    'align to the alt alleles only for indels or for all variant types '
+    'including SNPs. Ignored if --alt_aligned_pileup is "none". This flag is '
+    'experimental and is not compatible with the pre-trained release models.')
 
 flags.DEFINE_float(
     'downsample_fraction_child', NO_DOWNSAMPLING,
@@ -570,6 +576,7 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.width = flags_obj.pileup_image_width
 
     options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
+    options.pic_options.types_to_alt_align = flags_obj.types_to_alt_align
 
     if flags_obj.select_variant_types:
       options.select_variant_types[:] = flags_obj.select_variant_types.split()
@@ -1426,7 +1433,17 @@ class RegionProcessor(object):
             dv_call.variant, sam_reader=sample.in_memory_sam_reader)
         for sample in self.samples[samples_id]
     ]
+    # Decide whether each candidate needs ALT-alignment.
+    alt_align_this_variant = False
     if self.options.pic_options.alt_aligned_pileup != 'none':
+      if self.options.pic_options.types_to_alt_align == 'indels':
+        alt_align_this_variant = variant_utils.is_indel(dv_call.variant)
+      else:  # types_to_alt_align can only be 'all' or 'indels'.
+        alt_align_this_variant = True
+
+    haplotype_alignments_for_samples = None
+    haplotype_sequences = None
+    if alt_align_this_variant:
       # Align the reads against each alternate allele, saving the sequences of
       # those alleles along with the alignments for pileup images.
       alt_info_for_samples = [
@@ -1437,16 +1454,15 @@ class RegionProcessor(object):
       haplotype_alignments_for_samples = [
           sample['alt_alignments'] for sample in alt_info_for_samples
       ]
+
       # All samples share the same alt sequences, so select the first one.
       haplotype_sequences = alt_info_for_samples[0]['alt_sequences']
-      pileup_images = self.pics[samples_id].create_pileup_images(
-          dv_call=dv_call,
-          reads_for_samples=reads_for_samples,
-          haplotype_alignments_for_samples=haplotype_alignments_for_samples,
-          haplotype_sequences=haplotype_sequences)
-    else:
-      pileup_images = self.pics[samples_id].create_pileup_images(
-          dv_call=dv_call, reads_for_samples=reads_for_samples)
+
+    pileup_images = self.pics[samples_id].create_pileup_images(
+        dv_call=dv_call,
+        reads_for_samples=reads_for_samples,
+        haplotype_alignments_for_samples=haplotype_alignments_for_samples,
+        haplotype_sequences=haplotype_sequences)
 
     if pileup_images is None:
       # We cannot build a PileupImage for dv_call, issue a warning.
