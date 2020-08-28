@@ -209,10 +209,6 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
-  elif FLAGS.model_type == 'HYBRID_PACBIO_ILLUMINA':
-    special_args = {}
-    special_args['alt_aligned_pileup'] = 'diff_channels'
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
