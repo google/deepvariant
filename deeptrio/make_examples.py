@@ -1375,9 +1375,10 @@ class RegionProcessor(object):
                        'does not match the bases in the reference ({}) at that '
                        'position.'.format(ref_bases, ref_query_at_variant))
 
-    # Margin must be more than half the window width, plus some extra
-    # prefix/suffix to anchor alignments, but this value has not been optimized.
-    margin = window_half_width + 100
+    # Margin must be equal to or more than half the window width.
+    # Some extra prefix/suffix can be added to anchor alignments, but currently
+    # we don't add extra.
+    margin = window_half_width
     valid_end = min(
         self.realigner.ref_reader.contig(contig).n_bases, ref_end + margin)
     alignment_region = ranges.make_range(contig, max(ref_start - margin, 0),
