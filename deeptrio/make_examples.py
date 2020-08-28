@@ -245,7 +245,7 @@ flags.DEFINE_integer(
     'only be considered if all bases in the allele have a quality greater than '
     'min_base_quality.')
 flags.DEFINE_integer(
-    'min_mapping_quality', 10,
+    'min_mapping_quality', 5,
     'By default, reads with any mapping quality are kept. Setting this field '
     'to a positive integer i will only keep reads that have a MAPQ >= i. Note '
     'this only applies to aligned reads.')
