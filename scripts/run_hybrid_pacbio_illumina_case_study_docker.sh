@@ -10,15 +10,15 @@ BIN_VERSION="rc1.0.0"
 
 INPUT_DIR="${BASE}/input/data"
 REF="GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
-BAM="HG002.hybrid_pacbio_illumina.challenge.bam"
-TRUTH_VCF="HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz"
-TRUTH_BED="HG002_GRCh38_1_22_v4.2_benchmark.bed"
+BAM="HG003_hybrid_35x_ilmn_35x_pacb.grch38.phased.bam"
+TRUTH_VCF="HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz"
+TRUTH_BED="HG003_GRCh38_1_22_v4.2_benchmark.bed"
 
 N_SHARDS="64"
 
 OUTPUT_DIR="${BASE}/output"
-OUTPUT_VCF="HG002.output.vcf.gz"
-OUTPUT_GVCF="HG002.output.g.vcf.gz"
+OUTPUT_VCF="HG003.output.vcf.gz"
+OUTPUT_GVCF="HG003.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
 function setup_test() {

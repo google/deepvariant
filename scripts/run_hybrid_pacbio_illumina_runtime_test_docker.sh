@@ -15,13 +15,13 @@ BASE="${HOME}/hybrid-pacbio-illumina-case-study"
 INPUT_DIR="${BASE}/input"
 DATA_DIR="${INPUT_DIR}/data"
 REF="GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
-BAM="HG002.hybrid_pacbio_illumina.challenge.bam"
+BAM="HG003_hybrid_35x_ilmn_35x_pacb.grch38.phased.bam"
 
 N_SHARDS=$(nproc)
 
 OUTPUT_DIR="${BASE}/output"
-OUTPUT_VCF="${OUTPUT_DIR}/HG002.output.vcf.gz"
-OUTPUT_GVCF="${OUTPUT_DIR}/HG002.output.g.vcf.gz"
+OUTPUT_VCF="${OUTPUT_DIR}/HG003.output.vcf.gz"
+OUTPUT_GVCF="${OUTPUT_DIR}/HG003.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
 # Build Docker image.
