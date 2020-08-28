@@ -88,7 +88,9 @@ doi: https://doi.org/10.1101/2020.02.10.942086
     for best SNP Performance. DeepVariant maintains high accuracy across data
     from different sequencing technologies, prep methods, and species. For
     [lower coverage](https://google.github.io/deepvariant/posts/2019-09-10-twenty-is-the-new-thirty-comparing-current-and-historical-wgs-accuracy-across-coverage/),
-    using DeepVariant makes an especially great difference.
+    using DeepVariant makes an especially great difference. See
+    [metrics](docs/metrics.md) for the latest accuracy numbers on each of the
+    sequencing types.
 *   **Flexibility** - Out-of-the-box use for
     [PCR-positive](https://ai.googleblog.com/2018/04/deepvariant-accuracy-improvements-for.html)
     samples and

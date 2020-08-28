@@ -8,6 +8,7 @@
 *   [DeepVariant whole genome case study](deepvariant-case-study.md)
 *   [DeepVariant exome case study](deepvariant-exome-case-study.md)
 *   [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md)
+*   [Runtime and accuracy metrics for all DeepVariant models](metrics.md)
 *   [Best practices for multi-sample variant calling](trio-merge-case-study.md)
 
 ## (Advanced) Training
