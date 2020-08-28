@@ -342,7 +342,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
-    FLAGS.alt_aligned_pileup = 'diff_channels'  # This is the only input change.
+
+    # The following 3 lines are added.
+    FLAGS.alt_aligned_pileup = 'diff_channels'
+    FLAGS.pileup_image_height_child = 60
+    FLAGS.pileup_image_height_parent = 40
+
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     options = make_examples.default_options(add_flags=True)
@@ -354,7 +359,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
     # Pileup image should now have 8 channels.
-    self.assertEqual(decode_example(examples[0])['image/shape'], [300, 221, 8])
+    # Height should be 60 + 40 * 2 = 140.
+    self.assertEqual(decode_example(examples[0])['image/shape'], [140, 221, 8])
 
   @parameterized.parameters(
       dict(select_types=None, expected_count=78),

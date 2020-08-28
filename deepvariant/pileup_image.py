@@ -112,7 +112,11 @@ def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
 
   # Ensure that all three pileups have the same shape.
   if not ref_image.shape == alt_images[0].shape == alt_images[1].shape:
-    raise ValueError('Pileup images must be the same shape to be combined.')
+    raise ValueError('Pileup images must be the same shape to be combined. '
+                     'ref_image.shape is {}. alt_images[0].shape is {}. '
+                     'alt_images[1].shape is {}.'.format(
+                         ref_image.shape, alt_images[0].shape,
+                         alt_images[1].shape))
 
   if representation == 'rows':
     # Combine all images: [ref, alt1, alt2].
@@ -464,7 +468,13 @@ class PileupImageCreator(object):
       # Optionally also create pileup images with reads aligned to alts.
       if alt_aligned_representation != 'none':
         if haplotype_alignments_for_samples is None or haplotype_sequences is None:
-          pileup_shape = (self.height, self.width, self.num_channels)
+          # Use sample height or default to pic height.
+          sample_heights = [sample.pileup_height for sample in self._samples]
+          if None not in sample_heights:
+            pileup_height = sum(sample_heights)
+          else:
+            pileup_height = self.height
+          pileup_shape = (pileup_height, self.width, self.num_channels)
           alt_images = [
               np.zeros(pileup_shape, dtype=np.uint8) for alt in alt_alleles
           ]
