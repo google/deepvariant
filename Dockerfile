@@ -122,13 +122,4 @@ RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
 RUN apt-get -y update && \
   apt-get install -y parallel && \
-  add-apt-repository -y ppa:deadsnakes/ppa && \
-  apt -y update && \
-  apt install -y python3.6 && \
-  apt install -y python3.6-dev && \
-  apt install -y python3.6-venv && \
-  curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py && \
-  python3.6 get-pip.py && \
-  ln -sf /usr/bin/python3.6 /usr/local/bin/python3 && \
-  ln -sf /usr/bin/python3.6 /usr/bin/python && \
   pip3 install absl-py==0.8.1
