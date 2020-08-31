@@ -254,7 +254,8 @@ function run_happy() {
 }
 
 function run_glnexus() {
-  sudo docker pull quay.io/mlin/glnexus:v1.2.7
+  sudo docker pull quay.io/mlin/glnexus:v1.2.7 || \
+    (sleep 5 ; sudo docker pull quay.io/mlin/glnexus:v1.2.7)
 
   time sudo docker run \
     -v "${OUTPUT_DIR}":"${OUTPUT_DIR}" \
@@ -308,7 +309,7 @@ function main() {
   (time run_all_call_variants) >> "${LOG_DIR}/call_variants.log" 2>&1
   (time run_all_postprocess_variants) >> "${LOG_DIR}/postprocess_variants.log" 2>&1
   (time run_all_postprocess_variants_gVCF) >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
-  run_glnexus
+  # run_glnexus
   run_all_vcf_stats_report
   run_all_happy_reports
 }
