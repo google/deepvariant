@@ -11,6 +11,7 @@ v0.7    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+     | 158,571,07
 v0.8    | 12 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+<br>(and, more `dowsample_fraction` since last version)     | 346,505,686
 v0.9    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>2 HG006 PCR-free<br>2 HG007 PCR-free<br>5 HG001 PCR+     | 325,202,093
 v0.10   | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>2 HG006 PCR-free<br>2 HG007 PCR-free<br>5 HG001 PCR+     | 339,410,078
+v1.0    | 11 HG001<br>2 HG005-HG007<br>2 HG002-HG004<sup>[(7)](#vfootnote7)</sup>     | 317,486,837
 
 ### WES models
 
@@ -22,6 +23,7 @@ v0.7    | 78 HG001<br>1 HG005 | 15,704,197
 v0.8    | 78 HG001<br>1 HG005<sup>[(3)](#vfootnote3)</sup> | 18,683,247
 v0.9    | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
 v0.10   | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
+v1.0    | 32 HG001<br>9 HG002<br>6 HG003<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(7)](#vfootnote7)</sup> | 10,716,281
 
 ### PACBIO models
 
@@ -30,6 +32,7 @@ version | Replicates                  | #examples
 v0.8    | 16 HG002 | 160,025,931
 v0.9    | 49 HG002 <sup>[(6)](#vfootnote6)</sup> | 357,507,235
 v0.10   | 49 HG002, 2 HG003, 2 HG004, 1 HG002 (amplified) <sup>[(6)](#vfootnote6)</sup> | 472,711,858
+v1.0    | 1 HG001<br>9 HG002<br>2 HG003<br>2 HG004<br>1 HG005 <sup>[(8)](#vfootnote8)</sup>  | 302,331,948
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
@@ -51,9 +54,15 @@ training, and use chr1 for tuning.
 both sides) of the capture BED and used that for generating training examples.
 We also added more `downsample_fraction`.
 
-<a name="vfootnote6">(6)</a>: PacBio is the only one we currently uses HG002 in
-training and tuning. We hope to move this to the same best practice like the
-other ones in the future.
+<a name="vfootnote6">(6)</a>: (Before v1.0) PacBio is the only one we currently
+uses HG002 in training and tuning.
+
+<a name="vfootnote7">(7)</a>: In v1.0, we train on HG002-HG004 for WGS as well,
+but only using examples from the region of NIST truth confident region v4.2
+subtracting v3.3.2.
+
+<a name="vfootnote8">(8)</a>: In v1.0, PacBio training data contains training
+examples with haplotag sorted images and unsorted images.
 
 
 ## WGS training data:
