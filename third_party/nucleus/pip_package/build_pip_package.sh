@@ -36,7 +36,7 @@
 #   source install.sh
 # before running this script.  In addition, if you make any changes to the
 # source code, you should rebuild:
-#   bazel build -c opt $COPT_FLAGS nucleus/pip_package:build_pip_package
+#   bazel build -c opt $BAZEL_FLAGS nucleus/pip_package:build_pip_package
 
 set -e
 set -x
