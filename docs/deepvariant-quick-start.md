@@ -36,7 +36,7 @@ the [External Solutions] section.
 ### Get Docker image
 
 ```bash
-BIN_VERSION="rc1.0.0"
+BIN_VERSION="1.0.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -132,10 +132,11 @@ sudo docker run \
   --regions "chr20:10,000,000-10,010,000" \
   --output_vcf=/output/output.vcf.gz \
   --output_gvcf=/output/output.g.vcf.gz \
+  --intermediate_results_dir /output/intermediate_results_dir \ **This flag is optional. Set to keep the intermediate results.
   --num_shards=1 \ **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
 ```
 
-This will generate 5 files in `${OUTPUT_DIR}`:
+This will generate 5 files and 1 directory in `${OUTPUT_DIR}`:
 
 ```bash
 ls -1 ${OUTPUT_DIR}
@@ -144,6 +145,7 @@ ls -1 ${OUTPUT_DIR}
 outputting:
 
 ```
+intermediate_results_dir
 output.g.vcf.gz
 output.g.vcf.gz.tbi
 output.vcf.gz
@@ -151,13 +153,23 @@ output.vcf.gz.tbi
 output.visual_report.html
 ```
 
+The directory "intermediate_results_dir" exists because
+`--intermediate_results_dir /output/intermediate_results_dir` is specified. This
+directory contains the intermediate output of make_examples and call_variants
+steps.
+
 For more information about `output.visual_report.html`, see the
 [VCF stats report documentation](deepvariant-vcf-stats-report.md).
 
 ## Notes on GPU image
 
 If you are using GPUs, you can pull the GPU version, and make sure you run with
-`--gpus 1` (because DeepVariant currently can only make use of 1 GPU):
+`--gpus 1`. `call_variants` is the only step that uses the GPU, and can only use
+one at a time. `make_examples` and `postprocess_variants` do not run on GPU.
+
+For an example to install GPU driver and docker, see [install_nvidia_docker.sh].
+
+
 
 ```
 sudo docker run --gpus 1 \
@@ -186,6 +198,7 @@ singularity run -B /usr/lib/locale/:/usr/lib/locale/ \
   --regions "chr20:10,000,000-10,010,000" \
   --output_vcf="${OUTPUT_DIR}"/output.vcf.gz \
   --output_gvcf="${OUTPUT_DIR}"/output.g.vcf.gz \
+  --intermediate_results_dir "${OUTPUT_DIR}/intermediate_results_dir" \ **Optional.
   --num_shards=1 \ **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
 ```
 
@@ -245,3 +258,4 @@ Benchmarking Summary:
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
 [run_deepvariant.py]: ../scripts/run_deepvariant.py
+[install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
