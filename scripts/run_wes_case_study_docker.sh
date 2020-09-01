@@ -6,7 +6,7 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/exome-case-study"
-BIN_VERSION="rc1.0.0"
+BIN_VERSION="1.0.0"
 
 INPUT_DIR="${BASE}/input/data"
 REF="hs37d5.fa"
