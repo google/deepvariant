@@ -80,13 +80,13 @@ sudo -H apt -y update
 sudo -H apt-get install -y python3.6
 sudo -H apt-get install -y python3.6-dev
 sudo -H apt-get install -y python3.6-venv
+sudo ln -sf /usr/bin/python3.6 /usr/local/bin/python3
+sudo ln -sf /usr/bin/python3.6 /usr/bin/python
 # If we install python3-pip directly, the pip3 version points to:
 #   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
 # Use the following lines to ensure 3.6.
 curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
-sudo -H python3.6 get-pip.py
-sudo ln -sf /usr/bin/python3.6 /usr/local/bin/python3
-sudo ln -sf /usr/bin/python3.6 /usr/bin/python
+sudo -H python3 get-pip.py --force-reinstall
 
 echo "$(python3 --version)"
 
