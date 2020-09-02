@@ -6,7 +6,7 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
-MODEL_VERSION="rc1.0.0"
+MODEL_VERSION="1.0.0"
 MODEL_NAME="DeepVariant-inception_v3-${MODEL_VERSION}+data-wgs_standard"
 DEFAULT_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepVariant/${MODEL_VERSION}/${MODEL_NAME}"
 
