@@ -86,7 +86,7 @@ sudo ln -sf /usr/bin/python3.6 /usr/bin/python
 #   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
 # Use the following lines to ensure 3.6.
 curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py --force-reinstall
+python3 get-pip.py --force-reinstall --user
 
 echo "$(python3 --version)"
 
