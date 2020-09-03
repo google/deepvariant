@@ -110,6 +110,8 @@ function setup_test() {
   sudo apt-get -y install parallel
   sudo apt-get -y install docker.io
   sudo apt-get -y install aria2
+  sudo apt-get -y install bcftools
+  sudo apt-get -y install tabix
 
   copy_model "${child_model_http_dir}" "${CHILD_MODEL_DIR}"
   copy_model "${parent_model_http_dir}" "${PARENT_MODEL_DIR}"
@@ -309,7 +311,7 @@ function main() {
   (time run_all_call_variants) >> "${LOG_DIR}/call_variants.log" 2>&1
   (time run_all_postprocess_variants) >> "${LOG_DIR}/postprocess_variants.log" 2>&1
   (time run_all_postprocess_variants_gVCF) >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
-  # run_glnexus
+  run_glnexus
   run_all_vcf_stats_report
   run_all_happy_reports
 }
