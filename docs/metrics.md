@@ -15,7 +15,7 @@ total                            | 431m = 6.7 hours
 
 ### Accuracy
 
-hap.py results on HG002 (all chromosomes).
+hap.py results on HG002 (all chromosomes), using NIST v4.2 truth.
 
 Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ----- | ---- | -------- | --------- | --------
@@ -38,7 +38,7 @@ total                            | 21m
 
 ### Accuracy
 
-hap.py results on HG002 (all chromosomes).
+hap.py results on HG002 (all chromosomes), using NIST v4.1 truth.
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
@@ -47,6 +47,8 @@ SNP   | 38180   | 396  | 116  | 0.989735 | 0.996975  | 0.993341
 
 
 ## PacBio (HiFi)
+
+### Runtime
 
 Runtime is on HG002 (all chromosomes).
 
@@ -59,7 +61,7 @@ total                            | 421 = 7 hours
 
 ### Accuracy
 
-hap.py results on HG002 (chr20).
+hap.py results on HG002 (chr20), using NIST v4.2 truth.
 
 (The input BAM is haplotagged already and DeepVariant
 was run with `--sort_by_haplotypes=true --parse_sam_aux_fields=true`.)
@@ -84,8 +86,8 @@ total                            | 455 m = 7.6 hours
 
 ### Accuracy
 
-Evaluating on HG003 (all chromosomes), which was held out while training the
-hybrid model.
+Evaluating on HG003 (all chromosomes, using NIST v4.2 truth), which was held out
+while training the hybrid model.
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
