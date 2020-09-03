@@ -126,7 +126,7 @@ sudo docker run \
   -v "${OUTPUT_DIR}":"/output" \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
-  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
+  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO,HYBRID_PACBIO_ILLUMINA]**
   --ref=/input/ucsc.hg19.chr20.unittest.fasta \
   --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
   --regions "chr20:10,000,000-10,010,000" \
@@ -192,7 +192,7 @@ singularity pull docker://google/deepvariant:"${BIN_VERSION}"
 singularity run -B /usr/lib/locale/:/usr/lib/locale/ \
   docker://google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
-  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
+  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO,HYBRID_PACBIO_ILLUMINA]**
   --ref="${INPUT_DIR}"/ucsc.hg19.chr20.unittest.fasta \
   --reads="${INPUT_DIR}"/NA12878_S1.chr20.10_10p1mb.bam \
   --regions "chr20:10,000,000-10,010,000" \

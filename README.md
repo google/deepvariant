@@ -1,6 +1,6 @@
 # DeepVariant
 
-[![release](https://img.shields.io/badge/release-v0.10.0-green?logo=github)](https://github.com/google/deepvariant/releases)
+[![release](https://img.shields.io/badge/release-v1.0.0-green?logo=github)](https://github.com/google/deepvariant/releases)
 [![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
 [![blog](https://img.shields.io/badge/blog-orange)](https://goo.gl/deepvariant)
 
@@ -27,6 +27,8 @@ DeepVariant supports:
         [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
     *   ONT long-read data by using
         [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper/blob/master/docs/PEPPER_variant_calling.md).
+    *   Hybrid PacBio HiFi + Illumina WGS, see the
+        [hybrid case study](docs/deepvariant-hybrid-case-study.md).
 
 ## How to run
 
@@ -39,7 +41,7 @@ docker run \
   -v "YOUR_OUTPUT_DIR:/output" \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
-  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO]**
+  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO,HYBRID_PACBIO_ILLUMINA]**
   --ref=/input/YOUR_REF \
   --reads=/input/YOUR_BAM \
   --output_vcf=/output/YOUR_OUTPUT_VCF \
