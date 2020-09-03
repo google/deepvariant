@@ -6,10 +6,10 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
-MODEL_VERSION="0.10.0"
+MODEL_VERSION=redacted
 # redacted
-DEFAULT_CHILD_MODEL_HTTP_DIR="gs://brain-genomics/deeptrio/models/wgs-illumina-child"
-DEFAULT_PARENT_MODEL_HTTP_DIR="gs://brain-genomics/deeptrio/models/wgs-illumina-parent"
+DEFAULT_CHILD_MODEL_HTTP_DIR=redacted
+DEFAULT_PARENT_MODEL_HTTP_DIR=redacted
 
 INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
