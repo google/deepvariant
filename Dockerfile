@@ -122,4 +122,4 @@ RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
 RUN apt-get -y update && \
   apt-get install -y parallel && \
-  pip3 install absl-py==0.8.1
+  PATH="${HOME}/.local/bin:$PATH" pip3 install absl-py==0.8.1
