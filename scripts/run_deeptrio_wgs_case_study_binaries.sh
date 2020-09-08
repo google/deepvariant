@@ -88,7 +88,8 @@ function copy_model() {
     gsutil cp "${model_http_dir}"/model.index "${MODELS_DIR}"
     gsutil cp "${model_http_dir}"/model.meta "${MODELS_DIR}"
   else
-    echo 'Could not copy model. Unknown address prefix. ${model_http_dir}'
+    echo "Could not copy model. Unknown address prefix: ${model_http_dir}"
+    exit 1
   fi
 }
 
