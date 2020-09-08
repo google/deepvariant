@@ -43,7 +43,7 @@ set -x
 
 # When changing NUCLEUS_VERSION, be sure to also change it in
 # egg_files/PKG-INFO.
-NUCLEUS_VERSION="0.5.2"
+NUCLEUS_VERSION="0.5.3"
 PACKAGE_NAME="google_nucleus-${NUCLEUS_VERSION}"
 PYTHON_VERSION="3.5"
 
