@@ -6,17 +6,15 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
-# redacted
-DEFAULT_CHILD_MODEL_HTTP_DIR="gs://brain-genomics/deeptrio/models/wgs-illumina-child"
-DEFAULT_PARENT_MODEL_HTTP_DIR="gs://brain-genomics/deeptrio/models/wgs-illumina-parent"
+DEFAULT_CHILD_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepTrio/1.0.0/DeepTrio-inception_v3-1.0.0-rc1+data-wgs_child_standard"
+DEFAULT_PARENT_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepTrio/1.0.0/DeepTrio-inception_v3-1.0.0-rc1+data-wgs_parent_standard"
 
 INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
 CHILD_MODEL_DIR="${MODELS_DIR}/child"
 PARENT_MODEL_DIR="${MODELS_DIR}/parent"
-# redacted
-CHILD_MODEL="${CHILD_MODEL_DIR}/model"
-PARENT_MODEL="${PARENT_MODEL_DIR}/model"
+CHILD_MODEL="${CHILD_MODEL_DIR}/model.ckpt"
+PARENT_MODEL="${PARENT_MODEL_DIR}/model.ckpt"
 DATA_DIR="${INPUT_DIR}/data"
 REF="${DATA_DIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
 BAM_CHILD="${DATA_DIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
@@ -78,14 +76,14 @@ function copy_model() {
   GS_ADDRESS="^gs:\/\/.*"
   if [[ $model_http_dir =~ $HTTPS_ADDRESS ]];
   then
-    aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.data-00000-of-00001
-    aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.index
-    aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.meta
+    aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.ckpt.data-00000-of-00001
+    aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.ckpt.index
+    aria2c -c -x10 -s10 -d "${MODELS_DIR}" "${model_http_dir}"/model.ckpt.meta
   elif [[ $model_http_dir =~ $GS_ADDRESS ]];
   then
-    gsutil cp "${model_http_dir}"/model.data-00000-of-00001 "${MODELS_DIR}"
-    gsutil cp "${model_http_dir}"/model.index "${MODELS_DIR}"
-    gsutil cp "${model_http_dir}"/model.meta "${MODELS_DIR}"
+    gsutil cp "${model_http_dir}"/model.ckpt.data-00000-of-00001 "${MODELS_DIR}"
+    gsutil cp "${model_http_dir}"/model.ckpt.index "${MODELS_DIR}"
+    gsutil cp "${model_http_dir}"/model.ckpt.meta "${MODELS_DIR}"
   else
     echo "Could not copy model. Unknown address prefix: ${model_http_dir}"
     exit 1
@@ -308,8 +306,11 @@ function main() {
   build_binaries
   setup_test
   (time run_make_examples) 2>&1 | tee "${LOG_DIR}/make_examples.log"
+  echo "run_all_call_variants output to ${LOG_DIR}/call_variants.log"
   (time run_all_call_variants) >> "${LOG_DIR}/call_variants.log" 2>&1
+  echo "run_all_postprocess_variants output to ${LOG_DIR}/postprocess_variants.log"
   (time run_all_postprocess_variants) >> "${LOG_DIR}/postprocess_variants.log" 2>&1
+  echo "run_all_postprocess_variants_gVCF output to ${LOG_DIR}/postprocess_variants.withGVCF.log"
   (time run_all_postprocess_variants_gVCF) >> "${LOG_DIR}/postprocess_variants.withGVCF.log" 2>&1
   run_glnexus
   run_all_vcf_stats_report
