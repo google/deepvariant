@@ -107,7 +107,7 @@ make_examples.tfrecord-?????-of-?????.gz
 For running on GPU machines, or using Singularity instead of Docker, see
 [Quick Start](deepvariant-quick-start.md).
 
-## Benchmark on chr20
+## Benchmark on all chromosomes
 
 ```bash
 mkdir -p happy
