@@ -140,6 +140,10 @@ class TFRecordWriter(GenomicsWriter):
     self._writer.write(proto.SerializeToString())
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
+    self.close()
+
+  def close(self):
+    """Explicitly closes writer."""
     self._writer.close()
 
 
