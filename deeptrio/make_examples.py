@@ -1152,6 +1152,10 @@ class RegionProcessor(object):
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
 
+  def initialize(self):
+    if not self.initialized:
+      self._initialize()
+
   def process(self, region):
     """Finds candidates and creates corresponding examples in a region.
 
@@ -1608,6 +1612,11 @@ class OutputsWriter(object):
           'gvcfs',
           tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)))
 
+  def close_all(self):
+    for writer in self._writers.values():
+      if writer is not None:
+        writer.close()
+
   def _add_suffix(self, file_path, suffix):
     """Adds suffix to file name."""
     if not suffix:
@@ -1685,6 +1694,7 @@ def make_examples_runner(options):
 
   # Create a processor to create candidates and examples for each region.
   region_processor = RegionProcessor(options)
+  region_processor.initialize()
 
   logging.info('Writing examples to %s', options.examples_filename)
   if options.candidates_filename:
@@ -1699,6 +1709,11 @@ def make_examples_runner(options):
   running_timer = timer.TimerStart()
 
   writers_dict = {}
+  for sample in region_processor.samples['child']:
+    if sample.sam_reader is not None:
+      # Only use suffix in calling mode
+      suffix = None if in_training_mode(options) else sample.name
+      writers_dict[sample.name] = OutputsWriter(options, suffix=suffix)
 
   for region in regions:
     candidates_dict, examples_dict, gvcfs_dict = region_processor.process(
@@ -1708,10 +1723,6 @@ def make_examples_runner(options):
       examples = examples_dict[sample]
       gvcfs = gvcfs_dict[sample]
 
-      if sample not in writers_dict:
-        # Only use suffix in calling mode
-        suffix = None if in_training_mode(options) else sample
-        writers_dict[sample] = OutputsWriter(options, suffix=suffix)
       writer = writers_dict[sample]
 
       n_candidates += len(candidates)
@@ -1745,6 +1756,10 @@ def make_examples_runner(options):
                      options.task_id, n_candidates, n_examples,
                      running_timer.Stop())
         running_timer = timer.TimerStart()
+
+  for writer in writers_dict.values():
+    writer.close_all()
+
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
     make_examples_stats = deepvariant_pb2.MakeExamplesStats(
