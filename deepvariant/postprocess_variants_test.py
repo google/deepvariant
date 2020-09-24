@@ -381,37 +381,66 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
     postprocess_variants.main(['postprocess_variants.py'])
 
-  @flagsaver.FlagSaver
-  def test_reading_empty_input_outputs_vcf_and_gvcf(self):
-    empty_shard_one = test_utils.test_tmpfile(
-        'no_records.tfrecord-00000-of-00002')
-    empty_shard_two = test_utils.test_tmpfile(
-        'no_records.tfrecord-00001-of-00002')
-    tfrecord.write_tfrecords([], empty_shard_one)
-    tfrecord.write_tfrecords([], empty_shard_two)
-    FLAGS.infile = test_utils.test_tmpfile('no_records.tfrecord@2')
+  @parameterized.parameters(
+      ([
+          test_utils.make_variant(
+              chrom='chr20',
+              start=3,
+              end=4,
+              alleles=['A', 'T'],
+              sample_name='vcf_sample_name',
+              gt=[0, 1],
+              gls=[-.001, -5, -10])
+      ], [], 'flag_sample_name', 'vcf_sample_name'),
+      ([], [
+          test_utils.make_variant(
+              chrom='chr20',
+              start=0,
+              end=1,
+              alleles=['A', vcf_constants.GVCF_ALT_ALLELE],
+              sample_name='gvcf_sample_name',
+              gt=[0, 0],
+              gls=[-.001, -5, -10])
+      ], 'flag_sample_name', 'gvcf_sample_name'),
+      # flag_sample_name only used when no CVOs or nonvariant TFRecords present.
+      ([], [], 'flag_sample_name', 'flag_sample_name'),
+      ([], [], None, dv_constants.DEFAULT_SAMPLE_NAME),
+  )
+  def test_sample_name_set_correctly(self, variants, nonvariants,
+                                     sample_name_flag, expected_sample_name):
+    shard = test_utils.test_tmpfile('records.cvo.tfrecord-00000-of-00001')
+    cvos = [
+        _create_call_variants_output(
+            indices=[0], probabilities=[0.19, 0.75, 0.06], variant=variant)
+        for variant in variants
+    ]
+
+    tfrecord.write_tfrecords(cvos, shard)
+    FLAGS.infile = test_utils.test_tmpfile('records.cvo.tfrecord@1')
     FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.outfile = test_utils.test_tmpfile('no_records.vcf')
+    FLAGS.outfile = test_utils.test_tmpfile('records.vcf')
+    FLAGS.sample_name = sample_name_flag
 
     FLAGS.nonvariant_site_tfrecord_path = test_utils.test_tmpfile(
-        'empty.postprocess_gvcf_input.tfrecord.gz')
-    tfrecord.write_tfrecords([], FLAGS.nonvariant_site_tfrecord_path)
-    FLAGS.gvcf_outfile = test_utils.test_tmpfile('no_records.g.vcf')
+        'records.postprocess_gvcf_input.tfrecord.gz')
+    tfrecord.write_tfrecords(nonvariants, FLAGS.nonvariant_site_tfrecord_path)
+    FLAGS.gvcf_outfile = test_utils.test_tmpfile('records.g.vcf')
 
     postprocess_variants.main(['postprocess_variants.py'])
 
     fasta_reader = fasta.IndexedFastaReader(FLAGS.ref)
     contigs = fasta_reader.header.contigs
-    expected_sample_name = dv_constants.DEFAULT_SAMPLE_NAME
-    expected_vcf = dv_vcf_constants.deepvariant_header(
+    expected_vcf_header = dv_vcf_constants.deepvariant_header(
         contigs=contigs, sample_names=[expected_sample_name])
-    actual_vcf = vcf.VcfReader(FLAGS.outfile).header
-    self.assertEqual(actual_vcf, expected_vcf)
+    vcf_reader = vcf.VcfReader(FLAGS.outfile)
+    self.assertEqual(vcf_reader.header, expected_vcf_header)
+    self.assertLen(list(vcf_reader), len(variants))
 
     expected_gvcf = dv_vcf_constants.deepvariant_header(
         contigs=contigs, sample_names=[expected_sample_name])
-    actual_gvcf = vcf.VcfReader(FLAGS.outfile).header
-    self.assertEqual(actual_gvcf, expected_gvcf)
+    gvcf_reader = vcf.VcfReader(FLAGS.gvcf_outfile)
+    self.assertEqual(gvcf_reader.header, expected_gvcf)
+    self.assertLen(list(gvcf_reader), len(nonvariants) + len(variants))
 
   def test_extract_single_variant_name(self):
     record = _create_call_variants_output(

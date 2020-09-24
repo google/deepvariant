@@ -115,7 +115,8 @@ flags.DEFINE_boolean(
     'statistics about the output VCF at the same base path given by --outfile.')
 flags.DEFINE_string(
     'sample_name', None,
-    'Optional. If set, this will be used as the sample name in the output VCF.')
+    'Optional. If set, this will only be used if the sample name cannot be '
+    'determined from the CallVariantsOutput or non-variant sites protos.')
 flags.DEFINE_boolean(
     'use_multiallelic_model', False,
     'If True, use a specialized model for genotype resolution of multiallelic '
@@ -150,17 +151,11 @@ def _extract_single_sample_name(record):
 
   Returns:
     The name of the single individual in the first proto in the file.
-    If --sample_name is set, use that instead.
 
   Raises:
     ValueError: There is not exactly one VariantCall in the proto or the
         call_set_name of the VariantCall is not populated.
   """
-  if FLAGS.sample_name:
-    logging.info(
-        '--sample_name is set in postprocess_variant. Using %s as the '
-        'sample name.', FLAGS.sample_name)
-    return FLAGS.sample_name
   variant = record.variant
   call = variant_utils.only_call(variant)
   name = call.call_set_name
@@ -1032,6 +1027,63 @@ def build_index(vcf_file, csi=False):
     tabix.build_index(vcf_file)
 
 
+def get_cvo_paths_and_first_record():
+  """Returns sharded filenames for and one record from CVO input file."""
+
+  paths = sharded_file_utils.maybe_generate_sharded_filenames(FLAGS.infile)
+  record = tf_utils.get_one_example_from_examples_path(
+      ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
+  return paths, record
+
+
+def get_sample_name():
+  """Determines the sample name to be used for the output VCF and gVCF.
+
+  We check the following sources to determine the sample name and use the first
+  name available:
+    1) CallVariantsOutput
+    2) nonvariant site TFRecords
+    3) --sample_name flag
+    4) default sample name
+
+  Returns:
+    sample_name used when writing the output VCF and gVCF.
+  """
+
+  _, record = get_cvo_paths_and_first_record()
+  if FLAGS.nonvariant_site_tfrecord_path:
+    gvcf_record = tf_utils.get_one_example_from_examples_path(
+        FLAGS.nonvariant_site_tfrecord_path, proto=variants_pb2.Variant)
+
+  if record is not None:
+    sample_name = _extract_single_sample_name(record)
+    logging.info('Using sample name from call_variants output. Sample name: %s',
+                 sample_name)
+    if FLAGS.sample_name:
+      logging.info('--sample_name is set but was not used.')
+
+  elif FLAGS.nonvariant_site_tfrecord_path and gvcf_record and gvcf_record.calls:
+    sample_name = gvcf_record.calls[0].call_set_name
+    logging.info(
+        'call_variants output is empty, so using sample name from TFRecords at '
+        '--nonvariant_site_tfrecord_path. Sample name: %s', sample_name)
+    if FLAGS.sample_name:
+      logging.info('--sample_name is set but was not used.')
+
+  elif FLAGS.sample_name:
+    sample_name = FLAGS.sample_name
+    logging.info(
+        'call_variants output and nonvariant TFRecords are empty. Using sample '
+        'name set with --sample_name. Sample name: %s', sample_name)
+
+  else:
+    sample_name = dv_constants.DEFAULT_SAMPLE_NAME
+    logging.info(
+        'Could not determine sample name and --sample_name is unset. Using the '
+        'default sample name. Sample name: %s', sample_name)
+  return sample_name
+
+
 def main(argv=()):
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
@@ -1047,34 +1099,23 @@ def main(argv=()):
           'gvcf_outfile flags to be set.', errors.CommandLineError)
 
     proto_utils.uses_fast_cpp_protos_or_die()
-
     logging_level.set_from_flag()
 
     fasta_reader = fasta.IndexedFastaReader(
         FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
     contigs = fasta_reader.header.contigs
-    paths = sharded_file_utils.maybe_generate_sharded_filenames(FLAGS.infile)
-    # Read one CallVariantsOutput record and extract the sample name from it.
-    # Note that this assumes that all CallVariantsOutput protos in the infile
-    # contain a single VariantCall within their constituent Variant proto, and
-    # that the call_set_name is identical in each of the records.
-    record = tf_utils.get_one_example_from_examples_path(
-        ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
-    if record is None:
+    sample_name = get_sample_name()
+    cvo_paths, cvo_record = get_cvo_paths_and_first_record()
+
+    if cvo_record is None:
       logging.info('call_variants_output is empty. Writing out empty VCF.')
-      sample_name = dv_constants.DEFAULT_SAMPLE_NAME
-      if FLAGS.sample_name:
-        logging.info(
-            '--sample_name is set in postprocess_variant. Using %s as the '
-            'sample name.', FLAGS.sample_name)
-        sample_name = FLAGS.sample_name
       variant_generator = iter([])
     else:
-      sample_name = _extract_single_sample_name(record)
       temp = tempfile.NamedTemporaryFile()
       start_time = time.time()
       postprocess_variants_lib.process_single_sites_tfrecords(
-          contigs, paths, temp.name)
+          contigs, cvo_paths, temp.name)
+
       logging.info('CVO sorting took %s minutes',
                    (time.time() - start_time) / 60)
 
@@ -1134,7 +1175,7 @@ def main(argv=()):
             output_basename=outfile_base,
             sample_name=sample_name,
             vcf_reader=reader)
-    if record:
+    if cvo_record:
       temp.close()
 
 
