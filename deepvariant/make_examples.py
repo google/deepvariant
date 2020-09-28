@@ -37,6 +37,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 
 import collections
+import re
 import time
 
 
@@ -304,7 +305,8 @@ flags.DEFINE_bool(
     'pileup image are colored differently for multiallelics.')
 flags.DEFINE_string(
     'population_vcfs', None,
-    'Optional. Tabix-indexed VCF file (or list of VCFs broken by chromosome) '
+    'Optional. Tabix-indexed VCF file (or list of VCFs broken by chromosome),'
+    ' separated by comma or space, '
     'containing population allele frequencies.')
 flags.DEFINE_bool(
     'use_allele_frequency', False,
@@ -573,7 +575,8 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.num_channels += 1
       options.pic_options.use_allele_frequency = True
     if flags_obj.population_vcfs:
-      options.population_vcf_filenames.extend(flags_obj.population_vcfs.split())
+      options.population_vcf_filenames.extend(
+          re.split(',| ', flags_obj.population_vcfs))
 
   return options
 
