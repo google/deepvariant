@@ -130,7 +130,6 @@ function run_happy() {
     "${OUTPUT_DIR}/${OUTPUT_VCF}" \
     -f "${INPUT_DIR}/${TRUTH_BED}" \
     -r "${UNCOMPRESSED_REF}" \
-    -l chr20 \
     -o "${OUTPUT_DIR}/happy.output" \
     --engine=vcfeval
   ) 2>&1 | tee "${LOG_DIR}/happy.log"
