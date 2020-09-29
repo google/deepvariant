@@ -406,6 +406,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ([], [], 'flag_sample_name', 'flag_sample_name'),
       ([], [], None, dv_constants.DEFAULT_SAMPLE_NAME),
   )
+  @flagsaver.FlagSaver
   def test_sample_name_set_correctly(self, variants, nonvariants,
                                      sample_name_flag, expected_sample_name):
     shard = test_utils.test_tmpfile('records.cvo.tfrecord-00000-of-00001')
