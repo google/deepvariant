@@ -6,10 +6,7 @@ package(
 
 licenses(["notice"])
 
-exports_files([
-    "LICENSE",
-    "message_module.cc",
-])
+exports_files(["message_module.cc"])
 
 cc_library(
     name = "vendor_cpp",

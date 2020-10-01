@@ -9,8 +9,6 @@ package(
 
 licenses(["notice"])
 
-exports_files(["LICENSE"])
-
 py_clif_cc(
     name = "math",
     srcs = ["math.clif"],

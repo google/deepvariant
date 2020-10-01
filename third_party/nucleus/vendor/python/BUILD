@@ -9,8 +9,6 @@ package(
 
 licenses(["notice"])
 
-exports_files(["LICENSE"])
-
 py_clif_cc(
     name = "statusor_examples",
     srcs = ["statusor_examples.clif"],
