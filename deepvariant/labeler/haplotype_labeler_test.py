@@ -85,9 +85,9 @@ def _make_labeler(truths=None,
 
   if confident_regions is None:
     # Use the reference of the truth variants if possible, otherwise just use
-    # a dummy placeholder value for the contig name and make the confident
+    # a placeholder placeholder value for the contig name and make the confident
     # region a giant span.
-    contig = truths[0].reference_name if truths else 'dummy'
+    contig = truths[0].reference_name if truths else 'placeholder'
     confident_regions = ranges.RangeSet(
         [ranges.make_range(contig, 0, 1000000000)])
 

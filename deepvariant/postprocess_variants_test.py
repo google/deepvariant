@@ -84,7 +84,7 @@ _CONTIGS = [
 ]
 
 
-def dummy_reference_reader():
+def placeholder_reference_reader():
   return fasta.InMemoryFastaReader(chromosomes=[
       ('1', 0, 'AACCGGTTACGTTCGATTTTAAAACCCCGGGG'),
       ('2', 0, 'GCAGTGACGTAGCGATGACGTAGACGCTTACG'),
@@ -1282,7 +1282,7 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
                           'C'), 3, 4, _create_nonvariant('2', 3, 4, 'G')),
   )
   def test_create_record_from_template(self, template, start, end, expected):
-    reader = dummy_reference_reader()
+    reader = placeholder_reference_reader()
     actual = postprocess_variants._create_record_from_template(
         template, start, end, reader)
     self.assertEqual(actual, expected)
@@ -1424,7 +1424,7 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     viter = (_simple_variant(*v) for v in variants)
     nonviter = (_create_nonvariant(*nv) for nv in nonvariants)
     lessthan = postprocess_variants._get_contig_based_lessthan(_CONTIGS)
-    reader = dummy_reference_reader()
+    reader = placeholder_reference_reader()
 
     mock_vcf_writer = MockVcfWriter()
     mock_gvcf_writer = MockVcfWriter()

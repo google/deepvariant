@@ -415,7 +415,7 @@ cc_library(
             # parser expand wildcards, so the main method's argv will contain the
             # expanded list instead of the wildcards.
             #
-            # Adding dummy "-DEFAULTLIB:kernel32.lib", because:
+            # Adding placeholder "-DEFAULTLIB:kernel32.lib", because:
             # - Microsoft ships this object file next to default libraries
             # - but this file is not a library, just a precompiled object
             # - "-WHOLEARCHIVE" and "-DEFAULTLIB" only accept library,

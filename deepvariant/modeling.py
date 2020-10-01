@@ -1305,18 +1305,18 @@ class DeepVariantAttentionInceptionV3(DeepVariantSlimModel):
     return endpoints
 
 
-class DeepVariantDummyModel(DeepVariantModel):
-  """BaseClass for dummy models that are useful for testing and benchmarking."""
+class DeepVariantPlaceholderModel(DeepVariantModel):
+  """BaseClass for placeholder models that are useful for testing and benchmarking."""
 
   def __init__(self, name):
-    """Creates a Dummy model."""
+    """Creates a Placeholder model."""
     # Note the pretrained model path isn't used but we must return a valid
     # string so here we just return "UNUSED".
-    super(DeepVariantDummyModel, self).__init__(
+    super(DeepVariantPlaceholderModel, self).__init__(
         name=name, pretrained_model_path='UNUSED')
 
   def preprocess_images(self, images):
-    """Preprocess images for dummy model."""
+    """Preprocess images for placeholder model."""
     # Note these calculations aren't necessary, but they are included here to
     # mimic the data processing pipeline used by inception. We may consider
     # removing them in a future CL, or making them optional, to reduce CPU cost
@@ -1328,11 +1328,11 @@ class DeepVariantDummyModel(DeepVariantModel):
 
   @property
   def is_trainable(self):
-    """A dummy model cannot be trained."""
+    """A placeholder model cannot be trained."""
     return False
 
 
-class DeepVariantRandomGuessModel(DeepVariantDummyModel):
+class DeepVariantRandomGuessModel(DeepVariantPlaceholderModel):
   """Assigns a random probability to each class.
 
   This model is mostly useful for testing of DeepVariant, as the evaluation of
@@ -1405,7 +1405,7 @@ class DeepVariantRandomGuessModel(DeepVariantDummyModel):
       return spec.as_estimator_spec()
 
 
-class DeepVariantConstantModel(DeepVariantDummyModel):
+class DeepVariantConstantModel(DeepVariantPlaceholderModel):
   """Returns a constant probability distribution for each example."""
 
   def __init__(self, predictions=None):

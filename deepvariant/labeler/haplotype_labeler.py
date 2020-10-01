@@ -296,18 +296,19 @@ class ReferenceRegion(fasta.InMemoryFastaReader):
 
   # We don't want to worry about the chromosome we are working on for code
   # clarity, so we create an InMemoryFastaReader that has a single chromosome
-  # named _DUMMY_CHROM_NAME which allows us to provide a bases(start, end)
+  # named _PLACEHOLDER_CHROM_NAME which allows us to provide a bases(start, end)
   # function for convenient reading of bases.
-  _DUMMY_CHROM_NAME = '*'
+  _PLACEHOLDER_CHROM_NAME = '*'
 
   def __init__(self, bases, start):
     super(ReferenceRegion,
-          self).__init__([(self._DUMMY_CHROM_NAME, start, bases)])
+          self).__init__([(self._PLACEHOLDER_CHROM_NAME, start, bases)])
     self.start = start
     self.end = start + len(bases)
 
   def bases(self, start, end):
-    return self.query(ranges.make_range(self._DUMMY_CHROM_NAME, start, end))
+    return self.query(
+        ranges.make_range(self._PLACEHOLDER_CHROM_NAME, start, end))
 
 
 _CANDIDATE_MARKER = 'candidate'

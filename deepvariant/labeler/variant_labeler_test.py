@@ -52,15 +52,15 @@ def setUpModule():
   testdata.init()
 
 
-class DummyVariantLabeler(variant_labeler.VariantLabeler):
-  """A dummy VariantLabeler.
+class PlaceholderVariantLabeler(variant_labeler.VariantLabeler):
+  """A placeholder VariantLabeler.
 
   This class provides a label_variants implementation and so allows the base
   class to be instantiated and its methods tested.
   """
 
   def __init__(self, *pos, **kwargs):
-    super(DummyVariantLabeler, self).__init__(*pos, **kwargs)
+    super(PlaceholderVariantLabeler, self).__init__(*pos, **kwargs)
 
   def label_variants(self, variants, region):
     raise NotImplementedError
@@ -79,7 +79,7 @@ class VariantLabelerTest(parameterized.TestCase):
     variants = [v1, v2, v3_filtered, v4_del, v5_non_confident]
     reader = vcf.InMemoryVcfReader(variants=variants)
     confident_regions = ranges.RangeSet([ranges.make_range('1', 1, 100)])
-    labeler = DummyVariantLabeler(
+    labeler = PlaceholderVariantLabeler(
         truth_vcf_reader=reader, confident_regions=confident_regions)
 
     # Check that we get v1 and v2 specifically when only they are covered by the

@@ -64,8 +64,8 @@ def _reference_model_options(p_error, max_gq, gq_resolution=1):
       ploidy=2)
 
 
-class DummyVariantCaller(variant_caller.VariantCaller):
-  """A dummy VariantCaller.
+class PlaceholderVariantCaller(variant_caller.VariantCaller):
+  """A placeholder VariantCaller.
 
   This class provides a get_candidates implementation and so allows
   the base class to be instantiated and its methods tested.
@@ -77,7 +77,7 @@ class DummyVariantCaller(variant_caller.VariantCaller):
                gq_resolution=1,
                use_cache_table=False,
                max_cache_coverage=100):
-    super(DummyVariantCaller, self).__init__(
+    super(PlaceholderVariantCaller, self).__init__(
         options=_reference_model_options(p_error, max_gq, gq_resolution),
         use_cache_table=use_cache_table,
         max_cache_coverage=max_cache_coverage)
@@ -191,7 +191,7 @@ class VariantCallerTests(parameterized.TestCase):
   )
   def test_ref_calc(self, total_n, alt_n, p_error, max_gq, expected_likelihoods,
                     expected_gq):
-    caller = DummyVariantCaller(p_error, max_gq)
+    caller = PlaceholderVariantCaller(p_error, max_gq)
     gq, likelihoods = caller.reference_confidence(total_n - alt_n, total_n)
     npt.assert_allclose(expected_likelihoods, likelihoods, atol=1e-6)
     self.assertEqual(expected_gq, gq)
@@ -237,7 +237,7 @@ class VariantCallerTests(parameterized.TestCase):
   # pylint: enable=g-complex-comprehension
   def test_handles_large_reference_counts(self, n_ref, n_alt_fraction):
     """Tests that we don't blow up when the coverage gets really high."""
-    caller = DummyVariantCaller(0.01, 100)
+    caller = PlaceholderVariantCaller(0.01, 100)
     n_alt = int(n_alt_fraction * n_ref)
     gq, likelihoods = caller._calc_reference_confidence(n_ref, n_ref + n_alt)
     self.assertTrue(
@@ -248,7 +248,7 @@ class VariantCallerTests(parameterized.TestCase):
   @parameterized.parameters(*variant_caller.CANONICAL_DNA_BASES)
   def test_gvcf_basic(self, ref):
     options = _reference_model_options(0.01, 100)
-    caller = DummyVariantCaller(0.01, 100)
+    caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
     gvcfs = list(caller.make_gvcfs(allele_counter.summary_counts()))
     self.assertLen(gvcfs, 1)
@@ -265,13 +265,13 @@ class VariantCallerTests(parameterized.TestCase):
 
   @parameterized.parameters('N', 'R', 'W', 'B')
   def test_gvcf_basic_skips_iupac_ref_base(self, ref):
-    caller = DummyVariantCaller(0.01, 100)
+    caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
     self.assertEmpty(list(caller.make_gvcfs(allele_counter.summary_counts())))
 
   @parameterized.parameters('X', '>', '!')
   def test_gvcf_basic_raises_with_bad_ref_base(self, ref):
-    caller = DummyVariantCaller(0.01, 100)
+    caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
     with self.assertRaisesRegexp(ValueError,
                                  'Invalid reference base={}'.format(ref)):
@@ -336,7 +336,7 @@ class VariantCallerTests(parameterized.TestCase):
   )
   def test_make_gvcfs(self, counts, expecteds):
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
-    caller = DummyVariantCaller(0.01, 100)
+    caller = PlaceholderVariantCaller(0.01, 100)
     gvcfs = list(caller.make_gvcfs(allele_counts))
 
     self.assertLen(gvcfs, len(expecteds))
@@ -413,7 +413,7 @@ class VariantCallerTests(parameterized.TestCase):
               (4, 12, 'A'), (1, 30, 'A'), (1, 34, 'C'), (0, 20, 'T'),
               (0, 19, 'G')]
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
-    caller = DummyVariantCaller(0.01, 100, gq_resolution)
+    caller = PlaceholderVariantCaller(0.01, 100, gq_resolution)
     gvcfs = list(caller.make_gvcfs(allele_counts))
     self.assertLen(gvcfs, len(expecteds))
     for actual, expected in zip(gvcfs, expecteds):
@@ -426,7 +426,7 @@ class VariantCallerTests(parameterized.TestCase):
     # implemented the get_candidates method.
     counts = [(0, 0, 'A'), (10, 10, 'G'), (0, 0, 'G'), (0, 0, 'G'),
               (10, 10, 'T')]
-    caller = DummyVariantCaller(0.01, 100)
+    caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(10, counts)
     allele_counters = {}
     allele_counters['sample_id'] = allele_counter
@@ -466,8 +466,8 @@ class VariantCallerCacheTests(parameterized.TestCase):
   @classmethod
   def setUpClass(cls):
     super(VariantCallerCacheTests, cls).setUpClass()
-    cls.raw_caller = DummyVariantCaller(0.1, 50, use_cache_table=False)
-    cls.cache_caller = DummyVariantCaller(
+    cls.raw_caller = PlaceholderVariantCaller(0.1, 50, use_cache_table=False)
+    cls.cache_caller = PlaceholderVariantCaller(
         0.1, 50, use_cache_table=True, max_cache_coverage=_CACHE_COVERAGE)
 
   # pylint: disable=g-complex-comprehension

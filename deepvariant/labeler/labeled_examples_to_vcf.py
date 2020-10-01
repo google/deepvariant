@@ -145,7 +145,7 @@ def peek_sample_name(variants_iter):
     first = next(variants_iter)
     return first.calls[0].call_set_name, itertools.chain([first], variants_iter)
   except StopIteration:
-    # No variants, just return a dummy value.
+    # No variants, just return a placeholder value.
     return 'UNKNOWN', iter([])
 
 
