@@ -114,7 +114,7 @@ def init():
   global WS_ALLELE_COUNT_LINEAR_MODEL_PCKL
   global WS_VARIANT_READS_THRESHOLD_MODEL
 
-  CHR20_FASTA = deeptrio_testdata('input/hs37d5.chr20.fa')
+  CHR20_FASTA = deeptrio_testdata('input/hs37d5.chr20.fa.gz')
   HG001_CHR20_BAM = deeptrio_testdata('input/HG001.chr20.10_10p1mb_sorted.bam')
   NA12891_CHR20_BAM = deeptrio_testdata(
       'input/NA12891.chr20.10_10p1mb_sorted.bam')
