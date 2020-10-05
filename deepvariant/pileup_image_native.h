@@ -58,13 +58,16 @@ struct ImageRow {
   std::vector<unsigned char> matches_ref;
   std::vector<unsigned char> sequencing_type;
   std::vector<unsigned char> allele_frequency;
+  std::vector<unsigned char> hp_value;
   int num_channels;
   bool use_allele_frequency;
+  bool add_hp_channel;
 
   int Width() const;
   explicit ImageRow(int width,
                     int num_channels,
-                    bool use_allele_frequency);
+                    bool use_allele_frequency,
+                    bool add_hp_channel);
 };
 
 class PileupImageEncoderNative {

@@ -84,6 +84,9 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
     if (img_row->use_allele_frequency) {
       *cur++ = img_row->allele_frequency[i];
     }
+    if (img_row->add_hp_channel) {
+      *cur++ = img_row->hp_value[i];
+    }
   }
   return PyArray_Return(res);
 }

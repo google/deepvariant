@@ -43,6 +43,7 @@
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -126,8 +127,29 @@ inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
   return 0;
 }
 
-}  // namespace
-
+int GetHPValueForHPChannel(const Read& read) {
+  if (!read.info().contains("HP")) {
+    return 0;
+  }
+  const auto& hp_values = read.info().at("HP").values();
+  if (hp_values.empty()) {
+    return 0;
+  }
+  if (hp_values.size() > 1) {
+    LOG(WARNING) << "Unexpected: Read contains more than one HP tag. Return 0";
+    return 0;
+  }
+  int hp_value = hp_values[0].int_value();
+  // See the description of --add_hp_channel flag in make_examples.py: Currently
+  // we only support value of 1, 2, or 0.
+  if (hp_value != 0 && hp_value != 1 && hp_value != 2) {
+    LOG(FATAL)
+        << "This function is currently used when --add_hp_channel is set. "
+        << "HP value has to be either 1, 2, or 0. Found a read with HP="
+        << hp_value << ", read=" << read.DebugString();
+  }
+  return hp_value;
+}
 
 // The maximum value a pixel can have as a float. We use the 254.0
 // value as originally set in DeepVariant v1. This means our pixel
@@ -135,10 +157,27 @@ inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
 // gives us 255 or 256 possible pixel values.
 const float kMaxPixelValueAsFloat = 254.0;
 
+// Get allele frequency color for a read.
+// Convert a frequency value in float to color intensity (int) and normalize.
+uint8 HPValueColor(int hp_value) {
+  if (hp_value == 0) {
+    return 0;
+  } else if (hp_value == 1) {
+    return kMaxPixelValueAsFloat / 2;
+  } else if (hp_value == 2) {
+    return static_cast<int>(kMaxPixelValueAsFloat);
+  }
+  LOG(FATAL)
+      << "This function is currently used when --add_hp_channel is set. "
+      << "HP value has to be either 1, 2, or 0.";
+}
+
+}  // namespace
 
 ImageRow::ImageRow(int width,
                    int num_channels,
-                   bool use_allele_frequency)
+                   bool use_allele_frequency,
+                   bool add_hp_channel)
     : base(width, 0),
       base_quality(width, 0),
       mapping_quality(width, 0),
@@ -147,8 +186,10 @@ ImageRow::ImageRow(int width,
       matches_ref(width, 0),
       sequencing_type(width, 0),
       allele_frequency(width, 0),
+      hp_value(width, 0),
       num_channels(num_channels),
-      use_allele_frequency(use_allele_frequency)
+      use_allele_frequency(use_allele_frequency),
+      add_hp_channel(add_hp_channel)
 {}
 
 int ImageRow::Width() const {
@@ -158,7 +199,8 @@ int ImageRow::Width() const {
         base.size() == supports_alt.size() &&
         base.size() == matches_ref.size() &&
         base.size() == sequencing_type.size() &&
-        base.size() == allele_frequency.size());
+        base.size() == allele_frequency.size() &&
+        base.size() == hp_value.size());
   return base.size();
 }
 
@@ -252,7 +294,8 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
                                      const vector<string>& alt_alleles) {
   ImageRow img_row(ref_bases.size(),
                    options_.num_channels(),
-                   options_.use_allele_frequency());
+                   options_.use_allele_frequency(),
+                   options_.add_hp_channel());
   const int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
   const int mapping_quality = read.alignment().mapping_quality();
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
@@ -266,6 +309,8 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
   const float allele_frequency = (options_.use_allele_frequency())?
       ReadAlleleFrequency(dv_call, read, alt_alleles) : 0;
   const uint8 allele_frequency_color = AlleleFrequencyColor(allele_frequency);
+  const int hp_value =
+      (options_.add_hp_channel()) ? GetHPValueForHPChannel(read) : 0;
 
   // Bail early if this read's mapping quality is too low.
   if (mapping_quality < min_mapping_quality) {
@@ -313,6 +358,9 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
       img_row.matches_ref[col]        = MatchesRefColor(matches_ref);
       if (img_row.use_allele_frequency) {
         img_row.allele_frequency[col] = allele_frequency_color;
+      }
+      if (img_row.add_hp_channel) {
+        img_row.hp_value[col] = HPValueColor(hp_value);
       }
     }
     return true;
@@ -418,7 +466,8 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
 
   ImageRow img_row(ref_bases.size(),
                    options_.num_channels(),
-                   options_.use_allele_frequency());
+                   options_.use_allele_frequency(),
+                   options_.add_hp_channel());
   for (size_t i = 0; i < ref_bases.size(); ++i) {
     img_row.base[i]               = BaseColor(ref_bases[i]);
     img_row.base_quality[i]       = base_quality_color;
@@ -428,6 +477,9 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
     img_row.matches_ref[i]        = ref_color;
     if (img_row.use_allele_frequency){
       img_row.allele_frequency[i] = allele_frequency_color;
+    }
+    if (img_row.add_hp_channel) {
+      img_row.hp_value[i] = HPValueColor(0);
     }
   }
 

@@ -356,7 +356,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how we construct pileup images.
-// Next ID: 37.
+// Next ID: 38.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -481,6 +481,10 @@ message PileupImageOptions {
 
   // Which variant types to use alt-align on.
   string types_to_alt_align = 36;
+
+  // If true, add an additional channel where the color information per-read
+  // indicates the HP value.
+  bool add_hp_channel = 37;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

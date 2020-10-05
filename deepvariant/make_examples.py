@@ -300,6 +300,9 @@ flags.DEFINE_integer(
     'If set to > 0, reads with this HP tag will be sorted on top. '
     'sort_by_haplotypes has to be set to True for this to work.')
 flags.DEFINE_bool(
+    'add_hp_channel', False,
+    'If true, add another channel to represent HP tags per read.')
+flags.DEFINE_bool(
     'add_supporting_other_alt_color', False,
     'If True, reads supporting an alt not represented in the '
     'pileup image are colored differently for multiallelics.')
@@ -532,6 +535,14 @@ def default_options(add_flags=True, flags_obj=None):
           'If use_original_quality_scores is set then parse_sam_aux_fields '
           'must be set too.', errors.CommandLineError)
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
+
+    if (flags_obj.add_hp_channel and not flags_obj.parse_sam_aux_fields):
+      errors.log_and_raise(
+          'If add_hp_channel is set then parse_sam_aux_fields must be set, '
+          'otherwise HP tags will not be read in.', errors.CommandLineError)
+    if flags_obj.add_hp_channel:
+      options.pic_options.num_channels += 1
+      options.pic_options.add_hp_channel = True
 
     if flags_obj.sort_by_haplotypes_sample_hp_tag < 0:
       errors.log_and_raise(
