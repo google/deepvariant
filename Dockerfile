@@ -13,6 +13,7 @@
 
 ARG FROM_IMAGE=ubuntu:16.04
 ARG DV_GPU_BUILD=0
+ARG DV_OPENVINO_BUILD=0
 ARG VERSION=1.0.0
 
 FROM ${FROM_IMAGE} as builder
@@ -24,16 +25,68 @@ ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 # Copying DeepVariant source code
 COPY . /opt/deepvariant
 
+ARG DV_OPENVINO_BUILD
+ENV DV_OPENVINO_BUILD=${DV_OPENVINO_BUILD}
+
+ARG VERSION
+ENV VERSION=${VERSION}
+
 WORKDIR /opt/deepvariant
+
+RUN echo "Acquire::http::proxy \"$http_proxy\";\n" \
+         "Acquire::https::proxy \"$https_proxy\";" > "/etc/apt/apt.conf"
 
 RUN ./build-prereq.sh \
   && PATH="${HOME}/bin:${PATH}" ./build_release_binaries.sh  # PATH for bazel
 
+# Copy models
+WORKDIR /opt/models/wgs
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.meta .
+RUN chmod +r /opt/models/wgs/model.ckpt*
+
+WORKDIR /opt/models/wes
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
+RUN chmod +r /opt/models/wes/model.ckpt*
+
+WORKDIR /opt/models/pacbio
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.meta .
+RUN chmod +r /opt/models/pacbio/model.ckpt*
+
+WORKDIR /opt/models/hybrid_pacbio_illumina
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.meta .
+RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
+
+# Convert model to OpenVINO format
+RUN if [ "${DV_OPENVINO_BUILD}" = "1" ]; then \
+      python3 -m pip install networkx defusedxml test-generator==0.1.1; \
+      sed -i -E 's/from deepvariant import tf_utils//' /opt/deepvariant/deepvariant/modeling.py; \
+      export PYTHONPATH=/opt/deepvariant:${PYTHONPATH}; \
+      for model in wgs wes pacbio hybrid_pacbio_illumina; do \
+        cd /opt/models/${model}; \
+        python3 /opt/deepvariant/scripts/freeze_graph.py --checkpoint model.ckpt --output model.pb; \
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo.py --input_model model.pb --input_shape "[1, 100, 221, 6]"; \
+        rm model.pb; \
+      done \
+    fi
+
 FROM ${FROM_IMAGE}
 ARG DV_GPU_BUILD
+ARG DV_OPENVINO_BUILD
 ARG VERSION
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
+ENV DV_OPENVINO_BUILD=${DV_OPENVINO_BUILD}
 ENV VERSION ${VERSION}
+
+RUN echo "Acquire::http::proxy \"$http_proxy\";\n" \
+         "Acquire::https::proxy \"$https_proxy\";" > "/etc/apt/apt.conf"
 
 WORKDIR /opt/
 COPY --from=builder /opt/deepvariant/bazel-genfiles/licenses.zip .
@@ -49,6 +102,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examp
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_train.zip .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_eval.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
+COPY --from=builder /opt/models /opt/models
 RUN ./run-prereq.sh
 
 # Create shell wrappers for python zip files for easier use.
@@ -95,31 +149,11 @@ RUN \
     /opt/deepvariant/bin/model_eval \
     /opt/deepvariant/bin/run_deepvariant
 
-# Copy models
-WORKDIR /opt/models/wgs
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/wgs/model.ckpt*
-
-WORKDIR /opt/models/wes
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/wes/model.ckpt*
-
-WORKDIR /opt/models/pacbio
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/pacbio/model.ckpt*
-
-WORKDIR /opt/models/hybrid_pacbio_illumina
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
-
 RUN apt-get -y update && \
   apt-get install -y parallel && \
-  PATH="${HOME}/.local/bin:$PATH" pip3 install absl-py==0.8.1
+  python3 -m ensurepip && \
+  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1
+
+# Setup OpenVINO environment
+ENV LD_LIBRARY_PATH=/opt/intel/openvino/inference_engine/lib/intel64/:/opt/intel/openvino/inference_engine/external/tbb/lib/:/opt/intel/openvino/deployment_tools/ngraph/lib/:$LD_LIBRARY_PATH \
+    PYTHONPATH=/opt/intel/openvino/python/python3.6/:$PYTHONPATH

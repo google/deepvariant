@@ -1,0 +1,73 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on: [push, pull_request]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+
+    # Runs a single command using the runners shell
+    - name: Build
+      run: docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1
+
+    - name: Download testdata
+      run: |
+        INPUT_DIR="${PWD}/quickstart-testdata"
+        DATA_HTTP_DIR="https://storage.googleapis.com/deepvariant/quickstart-testdata"
+        mkdir -p ${INPUT_DIR}
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam.bai
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.bed
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.fai
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.fai
+        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.gzi
+    - name: Test
+      run: |
+        INPUT_DIR="${PWD}/quickstart-testdata"
+        REF_OUTPUT_DIR="${PWD}/quickstart-ref"
+        docker run \
+          -v "${INPUT_DIR}":"/input" \
+          -v "${REF_OUTPUT_DIR}:/output" \
+          deepvariant \
+          /opt/deepvariant/bin/run_deepvariant \
+          --model_type=WGS \
+          --ref=/input/ucsc.hg19.chr20.unittest.fasta \
+          --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
+          --regions "chr20:10,000,000-10,010,000" \
+          --output_vcf=/output/output.vcf.gz \
+          --output_gvcf=/output/output.g.vcf.gz \
+          --num_shards=1
+        OUTPUT_DIR="${PWD}/quickstart-output-ovino"
+        docker run \
+          -v "${INPUT_DIR}":"/input" \
+          -v "${OUTPUT_DIR}:/output" \
+          deepvariant \
+          /opt/deepvariant/bin/run_deepvariant \
+          --model_type=WGS \
+          --ref=/input/ucsc.hg19.chr20.unittest.fasta \
+          --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
+          --regions "chr20:10,000,000-10,010,000" \
+          --output_vcf=/output/output.vcf.gz \
+          --output_gvcf=/output/output.g.vcf.gz \
+          --call_variants_extra_args="use_openvino=True" \
+          --num_shards=1
+        files=$(ls $REF_OUTPUT_DIR); \
+        for f in $files; do \
+            cmp $REF_OUTPUT_DIR/$f $OUTPUT_DIR/$f; \
+        done
