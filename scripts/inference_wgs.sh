@@ -29,6 +29,7 @@ CUSTOMIZED_MODEL="${2:-}"
 MAKE_EXAMPLES_ARGS="${3:-}"
 CALL_VARIANTS_ARGS="${4:-}"
 POSTPROCESS_VARIANTS_ARGS="${5:-}"
+REGIONS="${6:-}"
 
 ## Create local directory structure
 mkdir -p "${OUTPUT_DIR}"
@@ -36,6 +37,7 @@ mkdir -p "${INPUT_DIR}"
 mkdir -p "${LOG_DIR}"
 
 declare -a extra_args
+declare -a happy_args
 
 if [[ -n $CUSTOMIZED_MODEL ]]
 then
@@ -58,6 +60,11 @@ fi
 if [[ -n $POSTPROCESS_VARIANTS_ARGS ]]
 then
   extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
+fi
+if [[ -n $REGIONS ]]
+then
+  extra_args+=( --regions "${REGIONS}")
+  happy_args+=( -l "${REGIONS}")
 fi
 
 ## Download extra packages
@@ -119,7 +126,6 @@ time ( sudo docker run \
   --model_type=WGS \
   --ref="/input/${REF}.gz" \
   --reads="/input/${BAM}" \
-  --regions="chr20" \
   --output_vcf=/output/${OUTPUT_VCF} \
   --output_gvcf=/output/${OUTPUT_GVCF} \
   --num_shards=${N_SHARDS} \
@@ -136,6 +142,7 @@ UNCOMPRESSED_REF="${INPUT_DIR}/${REF}"
 zcat <"${INPUT_DIR}/${REF}.gz" >"${UNCOMPRESSED_REF}"
 
 sudo docker pull pkrusche/hap.py
+# shellcheck disable=SC2068
 ( sudo docker run -i \
 -v "${INPUT_DIR}:${INPUT_DIR}" \
 -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
@@ -144,8 +151,8 @@ pkrusche/hap.py /opt/hap.py/bin/hap.py \
   "${OUTPUT_DIR}/${OUTPUT_VCF}" \
   -f "${INPUT_DIR}/${TRUTH_BED}" \
   -r "${UNCOMPRESSED_REF}" \
-  -l chr20 \
   -o "${OUTPUT_DIR}/happy.output" \
-  --engine=vcfeval
+  --engine=vcfeval \
+  ${happy_args[@]-}
 ) 2>&1 | tee "${LOG_DIR}/happy.log"
 echo "Done."

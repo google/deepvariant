@@ -29,6 +29,10 @@ CUSTOMIZED_MODEL="${2:-}"
 MAKE_EXAMPLES_ARGS="${3:-}"
 CALL_VARIANTS_ARGS="${4:-}"
 POSTPROCESS_VARIANTS_ARGS="${5:-}"
+REGIONS="${6:-}"
+
+declare -a extra_args
+declare -a happy_args
 
 function setup_test() {
 
@@ -92,8 +96,6 @@ function run_deepvariant_with_docker() {
   echo "Run DeepVariant..."
   echo "using IMAGE=$IMAGE"
 
-  declare -a extra_args
-
   if [[ -n $CUSTOMIZED_MODEL ]]
   then
     echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
@@ -116,6 +118,11 @@ function run_deepvariant_with_docker() {
   then
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
   fi
+  if [[ -n $REGIONS ]]
+  then
+    extra_args+=( --regions "${REGIONS}")
+    happy_args+=( -l "${REGIONS}")
+  fi
 
   time ( sudo docker run \
     -v "${INPUT_DIR}:/input" \
@@ -125,7 +132,6 @@ function run_deepvariant_with_docker() {
       --model_type="HYBRID_PACBIO_ILLUMINA" \
       --ref="/input/${REF}.gz" \
       --reads="/input/${BAM}" \
-      --regions="chr20" \
       --output_vcf=/output/${OUTPUT_VCF} \
       --output_gvcf=/output/${OUTPUT_GVCF} \
       --num_shards=${N_SHARDS} \
@@ -144,6 +150,7 @@ function run_happy() {
   zcat <"${INPUT_DIR}/${REF}.gz" >"${UNCOMPRESSED_REF}"
 
   sudo docker pull pkrusche/hap.py
+  # shellcheck disable=SC2068
   ( sudo docker run -i \
   -v "${INPUT_DIR}:${INPUT_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
@@ -152,9 +159,9 @@ function run_happy() {
     "${OUTPUT_DIR}/${OUTPUT_VCF}" \
     -f "${INPUT_DIR}/${TRUTH_BED}" \
     -r "${UNCOMPRESSED_REF}" \
-    -l chr20 \
     -o "${OUTPUT_DIR}/happy.output" \
-    --engine=vcfeval
+    --engine=vcfeval \
+    ${happy_args[@]-}
   ) 2>&1 | tee "${LOG_DIR}/happy.log"
   echo "Done."
 }
