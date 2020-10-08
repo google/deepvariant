@@ -125,7 +125,7 @@ function run_deepvariant_with_docker() {
     happy_args+=( -l "${REGIONS}")
   fi
 
-  time (sudo docker run \
+  (time (sudo docker run \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
     "${IMAGE}" \
@@ -137,7 +137,7 @@ function run_deepvariant_with_docker() {
     --output_gvcf=/output/${OUTPUT_GVCF} \
     --num_shards=${N_SHARDS} \
     "${extra_args[@]-}"
-  echo "Done.") 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log"
+  echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log"
   echo
 }
 
