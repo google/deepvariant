@@ -69,7 +69,8 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
-    commands = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, post_process_commands = run_deeptrio.create_all_commands(
+        '/tmp/deeptrio_tmp_output')
 
     extra_args_plus_gvcf = (
         '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
@@ -128,7 +129,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--checkpoint "/opt/models/deeptrio/{}/parent/model.ckpt"'.format(
             model_type.lower()))
     self.assertEqual(
-        commands[4], 'time /opt/deepvariant/bin/postprocess_variants '
+        post_process_commands[0],
+        'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
@@ -137,7 +139,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_child"')
     self.assertEqual(
-        commands[5], 'time /opt/deepvariant/bin/postprocess_variants '
+        post_process_commands[1],
+        'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz" '
@@ -146,7 +149,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_parent1"')
     self.assertEqual(
-        commands[6], 'time /opt/deepvariant/bin/postprocess_variants '
+        post_process_commands[2],
+        'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz" '
@@ -154,7 +158,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--nonvariant_site_tfrecord_path '
         '"/tmp/deeptrio_tmp_output/gvcf_parent2.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_parent2"')
-    self.assertLen(commands, 7)
+    self.assertLen(commands, 4)
+    self.assertLen(post_process_commands, 3)
 
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
   @flagsaver.FlagSaver
@@ -171,7 +176,8 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
-    commands = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, post_process_commands = run_deeptrio.create_all_commands(
+        '/tmp/deeptrio_tmp_output')
 
     extra_args_plus_gvcf = (
         '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
@@ -221,7 +227,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--checkpoint "/opt/models/deeptrio/{}/parent/model.ckpt"'.format(
             model_type.lower()))
     self.assertEqual(
-        commands[3], 'time /opt/deepvariant/bin/postprocess_variants '
+        post_process_commands[0],
+        'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
@@ -230,7 +237,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_child"')
     self.assertEqual(
-        commands[4], 'time /opt/deepvariant/bin/postprocess_variants '
+        post_process_commands[1],
+        'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz" '
@@ -239,7 +247,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_parent1"')
     # pylint: disable=g-generic-assert
-    self.assertLen(commands, 5)
+    self.assertLen(commands, 3)
+    self.assertLen(post_process_commands, 2)
 
   @parameterized.parameters(
       (None, '--alt_aligned_pileup "diff_channels" '
@@ -276,7 +285,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.regions = None
     FLAGS.make_examples_extra_args = make_examples_extra_args
-    commands = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
     self.assertEqual(
         commands[0], 'time seq 0 63 | parallel -q --halt 2 --line-buffer '
         '/opt/deepvariant/bin/deeptrio/make_examples --mode calling '
@@ -315,7 +324,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_parent2 = 'your_vcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.regions = regions
-    commands = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
 
     self.assertEqual(
         commands[0], 'time seq 0 63 | parallel -q --halt 2 --line-buffer '
@@ -349,7 +358,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.make_examples_extra_args = 'keep_secondary_alignments'
     with six.assertRaisesRegex(self, ValueError, 'not enough values to unpack'):
-      _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+      _, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
 
   @parameterized.parameters(
       ('batch_size=1024', '--batch_size "1024"'),
@@ -377,7 +386,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.call_variants_extra_args = call_variants_extra_args
-    commands = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
 
     self.assertEqual(
         commands[1], 'time /opt/deepvariant/bin/call_variants '
@@ -409,10 +418,12 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.postprocess_variants_extra_args = postprocess_variants_extra_args
-    commands = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    _, commands_post_process = run_deeptrio.create_all_commands(
+        '/tmp/deeptrio_tmp_output')
 
     self.assertEqual(
-        commands[4], 'time /opt/deepvariant/bin/postprocess_variants '
+        commands_post_process[0],
+        'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
@@ -453,10 +464,12 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.vcf_stats_report = vcf_stats_report
     FLAGS.postprocess_variants_extra_args = postprocess_variants_extra_args
-    commands = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    _, commands_post_process = run_deeptrio.create_all_commands(
+        '/tmp/deeptrio_tmp_output')
 
     self.assertEqual(
-        commands[4], 'time /opt/deepvariant/bin/postprocess_variants '
+        commands_post_process[0],
+        'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '

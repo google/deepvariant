@@ -425,6 +425,7 @@ def generate_postprocess_variants_command(sample, intermediate_results_dir,
 def create_all_commands(intermediate_results_dir):
   """Creates 3 commands to be executed later."""
   commands = []
+  post_process_commands = []
 
   # make_examples
   nonvariant_site_tfrecord_path = None
@@ -467,24 +468,24 @@ def create_all_commands(intermediate_results_dir):
                                        intermediate_results_dir))
 
   # postprocess_variants for child
-  commands.append(
+  post_process_commands.append(
       generate_postprocess_variants_command(CHILD, intermediate_results_dir,
                                             FLAGS.output_vcf_child,
                                             FLAGS.output_gvcf_child))
 
   if FLAGS.reads_parent1 is not None:
-    commands.append(
+    post_process_commands.append(
         generate_postprocess_variants_command(PARENT1, intermediate_results_dir,
                                               FLAGS.output_vcf_parent1,
                                               FLAGS.output_gvcf_parent1))
 
   if FLAGS.reads_parent2 is not None:
-    commands.append(
+    post_process_commands.append(
         generate_postprocess_variants_command(PARENT2, intermediate_results_dir,
                                               FLAGS.output_vcf_parent2,
                                               FLAGS.output_gvcf_parent2))
 
-  return commands
+  return commands, post_process_commands
 
 
 def main(_):
@@ -528,7 +529,8 @@ def main(_):
       FLAGS.intermediate_results_dir)
   check_flags()
 
-  commands = create_all_commands(intermediate_results_dir)
+  commands, post_process_commands = create_all_commands(
+      intermediate_results_dir)
   print('\n***** Intermediate results will be written to {} '
         'in docker. ****\n'.format(intermediate_results_dir))
   for command in commands:
@@ -538,6 +540,17 @@ def main(_):
     except subprocess.CalledProcessError as e:
       logging.info(e.output)
       raise
+  proc_handles = []
+  for command in post_process_commands:
+    print('\n***** Starting the command:*****\n{}\n'.format(command))
+    try:
+      proc_handles.append(
+          subprocess.Popen(command, shell=True, executable='/bin/bash'))
+    except subprocess.CalledProcessError as e:
+      logging.info(e.output)
+      raise
+  return_codes = [p.wait() for p in proc_handles]
+  print('post_process returns: {}'.format(list(return_codes)))
 
 
 if __name__ == '__main__':
