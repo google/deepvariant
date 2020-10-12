@@ -919,9 +919,8 @@ def find_matching_allele_frequency(variant,
       candidate_haps, cohort_haps)
 
   if dict_allele_frequency:
-    v = variant
-    logging.info('%s:%d-%d, %s > %s', v.reference_name, v.start, v.end,
-                 v.reference_bases, dict_allele_frequency)
+    logging.vlog(3, '%s:%d-%d, %s > %s', variant.reference_name, variant.start,
+                 variant.end, variant.reference_bases, dict_allele_frequency)
 
   return dict_allele_frequency
 
