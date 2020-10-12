@@ -52,6 +52,7 @@ from deepvariant.realigner.python import fast_pass_aligner
 from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import sam
+from third_party.nucleus.protos import cigar_pb2
 from third_party.nucleus.util import cigar as cigar_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
@@ -675,17 +676,17 @@ def trim_cigar(cigar, ref_trim, ref_length):
   new_cigar = []
   new_read_length = 0
   for cigar_unit in cigar:
-    c = copy.deepcopy(cigar_unit)
+    c_operation_length = cigar_unit.operation_length
     # Each operation moves forward in the ref, the read, or both.
-    advances_ref = c.operation in cigar_utils.REF_ADVANCING_OPS
-    advances_read = c.operation in cigar_utils.READ_ADVANCING_OPS
-    ref_step = c.operation_length if advances_ref else 0
+    advances_ref = cigar_unit.operation in cigar_utils.REF_ADVANCING_OPS
+    advances_read = cigar_unit.operation in cigar_utils.READ_ADVANCING_OPS
+    ref_step = c_operation_length if advances_ref else 0
     # First, use up each operation until the trimmed area is covered.
     if trim_remaining > 0:
       if ref_step <= trim_remaining:
         # Fully apply to the trim.
         trim_remaining -= ref_step
-        read_trim += c.operation_length if advances_read else 0
+        read_trim += c_operation_length if advances_read else 0
         continue
       else:
         # Partially apply to finish the trim.
@@ -693,7 +694,7 @@ def trim_cigar(cigar, ref_trim, ref_length):
         read_trim += trim_remaining if advances_read else 0
         # If trim finishes here, the rest of the ref_step can apply to the
         # next stage and count towards covering the given ref window.
-        c.operation_length = ref_step
+        c_operation_length = ref_step
         trim_remaining = 0
 
     # Once the trim is done, start applying cigar entries to covering the ref
@@ -701,14 +702,20 @@ def trim_cigar(cigar, ref_trim, ref_length):
     if trim_remaining == 0:
       if ref_step <= ref_to_cover_remaining:
         # Fully apply to the window.
-        new_cigar.append(c)
+        new_cigar.append(
+            cigar_pb2.CigarUnit(
+                operation=cigar_unit.operation,
+                operation_length=c_operation_length))
         ref_to_cover_remaining -= ref_step
-        new_read_length += c.operation_length if advances_read else 0
+        new_read_length += c_operation_length if advances_read else 0
       else:
         # Partially apply to finish the window.
-        c.operation_length = ref_to_cover_remaining
-        new_cigar.append(c)
-        new_read_length += c.operation_length if advances_read else 0
+        c_operation_length = ref_to_cover_remaining
+        new_cigar.append(
+            cigar_pb2.CigarUnit(
+                operation=cigar_unit.operation,
+                operation_length=c_operation_length))
+        new_read_length += c_operation_length if advances_read else 0
         ref_to_cover_remaining = 0
         break
 
