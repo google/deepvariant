@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018 Google LLC.
+# Copyright 2020 Google LLC.
 
 set -euo pipefail
 
@@ -128,6 +128,7 @@ echo "using IMAGE=$IMAGE"
   --output_vcf="/output/${OUTPUT_VCF}" \
   --output_gvcf="/output/${OUTPUT_GVCF}" \
   --num_shards=${N_SHARDS} \
+  --logging_dir="/output/logs" \
   "${extra_args[@]-}"
 echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log"
 echo

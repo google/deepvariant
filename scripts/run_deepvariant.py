@@ -65,6 +65,8 @@ flags.DEFINE_string(
     'to call. Should be aligned to a reference genome compatible with --ref.')
 flags.DEFINE_string('output_vcf', None,
                     'Required. Path where we should write VCF file.')
+flags.DEFINE_string('logging_dir', None,
+                    'Required. Directory where we should write log files.')
 # Optional flags.
 flags.DEFINE_string(
     'intermediate_results_dir', None,
@@ -196,7 +198,7 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
     (string) A command to run.
   """
   command = [
-      'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
+      '(', 'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
       'parallel -q --halt 2 --line-buffer', '/opt/deepvariant/bin/make_examples'
   ]
   command.extend(['--mode', 'calling'])
@@ -214,19 +216,26 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
 
-  command.extend(['--task {}'])
+  command.extend(['--task {}', ')'])
+  if FLAGS.logging_dir:
+    command.extend(
+        ['2>&1 | tee {}/make_examples.log'.format(FLAGS.logging_dir)])
   return ' '.join(command)
 
 
 def call_variants_command(outfile, examples, model_ckpt, extra_args):
   """Returns a call_variants command for subprocess.check_call."""
-  command = ['time', '/opt/deepvariant/bin/call_variants']
+  command = ['(', 'time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
+  command.extend([')'])
+  if FLAGS.logging_dir:
+    command.extend(
+        ['2>&1 | tee {}/call_variants.log'.format(FLAGS.logging_dir)])
   return ' '.join(command)
 
 
@@ -239,7 +248,7 @@ def postprocess_variants_command(ref,
                                  vcf_stats_report=True,
                                  sample_name=None):
   """Returns a postprocess_variants command for subprocess.check_call."""
-  command = ['time', '/opt/deepvariant/bin/postprocess_variants']
+  command = ['(', 'time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
@@ -257,6 +266,10 @@ def postprocess_variants_command(ref,
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
+  command.extend([')'])
+  if FLAGS.logging_dir:
+    command.extend(
+        ['2>&1 | tee {}/postprocess_variants.log'.format(FLAGS.logging_dir)])
   return ' '.join(command)
 
 
@@ -352,6 +365,10 @@ def main(_):
   intermediate_results_dir = check_or_create_intermediate_results_dir(
       FLAGS.intermediate_results_dir)
   check_flags()
+
+  if FLAGS.logging_dir and not os.path.isdir(FLAGS.logging_dir):
+    logging.info('Creating a directory for logs in %s', FLAGS.logging_dir)
+    os.makedirs(FLAGS.logging_dir)
 
   commands = create_all_commands(intermediate_results_dir)
   print('\n***** Intermediate results will be written to {} '
