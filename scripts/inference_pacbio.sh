@@ -81,13 +81,17 @@ function setup_test() {
   if [[ "${BUILD_DOCKER}" = true ]]
   then
     IMAGE="deepvariant:latest"
-    # Pulling twice in case the first one times out.
+    # Building twice in case the first one times out.
     sudo docker build -t deepvariant . || \
       (sleep 5 ; sudo docker build -t deepvariant .)
     echo "Done building Docker image ${IMAGE}."
   else
-    IMAGE="google/deepvariant:${BIN_VERSION}"
-    sudo docker pull "${IMAGE}"
+    # Public Docker images are on
+    # google/deepvariant or gcr.io/deepvariant-docker/deepvariant
+    IMAGE="gcr.io/deepvariant-docker/deepvariant:${BIN_VERSION}"
+    # Pulling twice in case the first one times out.
+    sudo docker pull "${IMAGE}" || \
+      (sleep 5 ; sudo docker pull "${IMAGE}")
   fi
 }
 
