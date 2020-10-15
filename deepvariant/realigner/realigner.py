@@ -37,7 +37,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import copy
 import csv
 import os
 import os.path
@@ -53,6 +52,7 @@ from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import sam
 from third_party.nucleus.protos import cigar_pb2
+from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import cigar as cigar_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
@@ -751,21 +751,34 @@ def trim_read(read, region):
   new_cigar, read_trim, new_read_length = trim_cigar(read.alignment.cigar,
                                                      trim_left, ref_length)
 
-  # Create a deep copy of the read to get all recursive properties and prevent
-  # mutating the original.
-  new_read = copy.deepcopy(read)
+  # Copy everything but aligned_sequence and aligned_quality fields of the read
+  # to get all recursive properties and prevent mutating the original.
+  new_read = reads_pb2.Read()
+  new_read.fragment_name = read.fragment_name
+  new_read.id = read.id
+  new_read.read_group_id = read.read_group_id
+  new_read.read_group_set_id = read.read_group_set_id
+  new_read.read_number = read.read_number
+  new_read.fragment_length = read.fragment_length
+  new_read.number_reads = read.number_reads
+  for each_info_key in read.info:
+    new_read.info[each_info_key].CopyFrom(read.info[each_info_key])
+  new_read.alignment.position.position = read.alignment.position.position
+  new_read.alignment.position.reference_name = read.alignment.position.reference_name
+  new_read.alignment.position.reverse_strand = read.alignment.position.reverse_strand
+  new_read.alignment.mapping_quality = read.alignment.mapping_quality
+
   if trim_left != 0:
     new_read.alignment.position.position = region.start
-  # Replace aligned_sequence, a string:
+  # Set aligned_sequence, a string:
   new_read.aligned_sequence = read.aligned_sequence[read_trim:read_trim +
                                                     new_read_length]
-  # Replace aligned_quality, a repeated integer:
+  # Set aligned_quality, a repeated integer:
   new_read.aligned_quality[:] = read.aligned_quality[read_trim:read_trim +
                                                      new_read_length]
 
-  # Direct assignment on a repeated message field is not allowed, but this
-  # accomplishes replacing cigar with new_cigar.
-  del new_read.alignment.cigar[:]
+  # Direct assignment on a repeated message field is not allowed, so setting
+  # the cigar by using 'extend'.
   new_read.alignment.cigar.extend(new_cigar)
 
   return new_read
