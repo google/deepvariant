@@ -767,6 +767,13 @@ def trim_read(read, region):
   new_read.alignment.position.reference_name = read.alignment.position.reference_name
   new_read.alignment.position.reverse_strand = read.alignment.position.reverse_strand
   new_read.alignment.mapping_quality = read.alignment.mapping_quality
+  # Following fields are not needed but we copy them for consistency:
+  new_read.next_mate_position.CopyFrom(read.next_mate_position)
+  new_read.proper_placement = read.proper_placement
+  new_read.duplicate_fragment = read.duplicate_fragment
+  new_read.failed_vendor_quality_checks = read.failed_vendor_quality_checks
+  new_read.secondary_alignment = read.secondary_alignment
+  new_read.supplementary_alignment = read.supplementary_alignment
 
   if trim_left != 0:
     new_read.alignment.position.position = region.start

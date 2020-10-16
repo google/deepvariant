@@ -60,6 +60,7 @@ from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import cigar as cigar_utils
 from third_party.nucleus.util import ranges
 
+
 FLAGS = flags.FLAGS
 
 
@@ -735,6 +736,7 @@ class TrimTest(parameterized.TestCase):
         output.aligned_quality,
         expected_read_length,
         msg='Wrong  length of aligned_quality for case: {}'.format(comment))
+
 
 
 if __name__ == '__main__':
