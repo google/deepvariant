@@ -14,8 +14,6 @@
 ARG FROM_IMAGE=ubuntu:16.04
 ARG DV_GPU_BUILD=0
 ARG VERSION=1.0.0
-ARG VERSION_DEEPTRIO=1.0.0
-ARG FULL_VERSION_DEEPTRIO=1.0.0-rc1
 
 FROM ${FROM_IMAGE} as builder
 LABEL maintainer="https://github.com/google/deepvariant/issues"
@@ -34,12 +32,8 @@ RUN ./build-prereq.sh \
 FROM ${FROM_IMAGE}
 ARG DV_GPU_BUILD
 ARG VERSION
-ARG VERSION_DEEPTRIO
-ARG FULL_VERSION_DEEPTRIO
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ENV VERSION ${VERSION}
-ENV VERSION_DEEPTRIO ${VERSION_DEEPTRIO}
-ENV FULL_VERSION_DEEPTRIO ${FULL_VERSION_DEEPTRIO}
 
 WORKDIR /opt/
 COPY --from=builder /opt/deepvariant/bazel-genfiles/licenses.zip .
@@ -55,8 +49,6 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examp
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_train.zip .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_eval.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
-COPY --from=builder /opt/deepvariant/scripts/run_deeptrio.py ./deeptrio/
-COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deeptrio/make_examples.zip  ./deeptrio/
 RUN ./run-prereq.sh
 
 # Create shell wrappers for python zip files for easier use.
@@ -66,10 +58,6 @@ RUN \
     "${BASH_HEADER}" \
     'python /opt/deepvariant/bin/make_examples.zip "$@"' > \
     /opt/deepvariant/bin/make_examples && \
-  printf "%s\n%s\n" \
-    "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/deeptrio/make_examples.zip "$@"' > \
-    /opt/deepvariant/bin/deeptrio/make_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
     'python /opt/deepvariant/bin/call_variants.zip "$@"' > \
@@ -98,20 +86,14 @@ RUN \
     "${BASH_HEADER}" \
     'python -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
-  printf "%s\n%s\n" \
-    "${BASH_HEADER}" \
-    'python -u /opt/deepvariant/bin/deeptrio/run_deeptrio.py "$@"' > \
-    /opt/deepvariant/bin/deeptrio/run_deeptrio && \
   chmod +x /opt/deepvariant/bin/make_examples \
-    /opt/deepvariant/bin/deeptrio/make_examples \
     /opt/deepvariant/bin/call_variants \
     /opt/deepvariant/bin/postprocess_variants \
     /opt/deepvariant/bin/vcf_stats_report \
     /opt/deepvariant/bin/show_examples \
     /opt/deepvariant/bin/model_train \
     /opt/deepvariant/bin/model_eval \
-    /opt/deepvariant/bin/run_deepvariant \
-    /opt/deepvariant/bin/deeptrio/run_deeptrio
+    /opt/deepvariant/bin/run_deepvariant
 
 # Copy models
 WORKDIR /opt/models/wgs
@@ -137,42 +119,6 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.index .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.meta .
 RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
-
-WORKDIR /opt/models/deeptrio/wgs/child
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wgs_child_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wgs_child_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wgs_child_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/deeptrio/wgs/child/model.ckpt*
-
-WORKDIR /opt/models/deeptrio/wgs/parent
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wgs_parent_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wgs_parent_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wgs_parent_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/deeptrio/wgs/parent/model.ckpt*
-
-WORKDIR /opt/models/deeptrio/pacbio/child
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-pacbio_child_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-pacbio_child_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-pacbio_child_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/deeptrio/wgs/child/model.ckpt*
-
-WORKDIR /opt/models/deeptrio/pacbio/parent
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-pacbio_parent_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-pacbio_parent_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-pacbio_parent_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/deeptrio/wgs/parent/model.ckpt*
-
-WORKDIR /opt/models/deeptrio/wes/child
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wes_child_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wes_child_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wes_child_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/deeptrio/wgs/child/model.ckpt*
-
-WORKDIR /opt/models/deeptrio/wes/parent
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wes_parent_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wes_parent_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${FULL_VERSION_DEEPTRIO}+data-wes_parent_standard/model.ckpt.meta .
-RUN chmod +r /opt/models/deeptrio/wgs/parent/model.ckpt*
 
 RUN apt-get -y update && \
   apt-get install -y parallel && \
