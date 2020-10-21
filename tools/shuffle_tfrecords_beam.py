@@ -73,9 +73,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
-import hashlib
 import logging
-import textwrap
 
 import apache_beam as beam
 from apache_beam import coders
@@ -149,6 +147,8 @@ def shuffle_records(input_examples):
 
   def sha1(input_bytes):
     """Returns the sha1 hash of input_bytes."""
+    # SparkRunner requires this to be a lazy/local import
+    import hashlib
     m = hashlib.sha1()
     m.update(input_bytes)
     return m.digest()
@@ -159,12 +159,21 @@ def shuffle_records(input_examples):
           | 'DropKey' >> beam.FlatMap(lambda x: x[1]))
 
 
-def make_config_string(name, tfrecord_path, num_examples):
-  return textwrap.dedent("""
-  name: "{}"
-  tfrecord_path: "{}-?????-of-?????.tfrecord.gz"
-  num_examples: {}
-  """.format(name, tfrecord_path, num_examples))
+# SparkRunner has some issue with using lambda functions in beam.Map
+# Hence, this has been turned into a callable
+class MakeConfigStringCaller:
+  def __init__(self, dataset_name, output_pattern_prefix):
+    self.name = dataset_name
+    self.tfrecord_path = output_pattern_prefix
+
+  def __call__(self, num_examples):
+    # SparkRunner requires this to be a lazy/local import
+    import textwrap
+    return textwrap.dedent("""
+    name: "{}"
+    tfrecord_path: "{}-?????-of-?????.tfrecord.gz"
+    num_examples: {}
+    """.format(self.name, self.tfrecord_path, num_examples))
 
 
 def write_summary_string_to_file(pipeline, output_examples, input_pattern_list,
@@ -190,7 +199,7 @@ def write_summary_string_to_file(pipeline, output_examples, input_pattern_list,
       output_examples
       | 'CountOutputExamples' >> beam.combiners.Count.Globally())
   config_str = num_examples | 'MakeConfigStr' >> beam.Map(
-      lambda n: make_config_string(dataset_name, output_pattern_prefix, n))
+      MakeConfigStringCaller(dataset_name, output_pattern_prefix))
 
   merged_strings = (comment_str, config_str) | 'FlattenStrs' >> beam.Flatten()
   _ = (
