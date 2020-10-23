@@ -34,6 +34,7 @@ CUSTOMIZED_MODEL="${2:-}"
 MAKE_EXAMPLES_ARGS="${3:-}"
 CALL_VARIANTS_ARGS="${4:-}"
 POSTPROCESS_VARIANTS_ARGS="${5:-}"
+USE_GPU="${7:-false}"
 
 ## Create local directory structure
 mkdir -p "${OUTPUT_DIR}"
@@ -41,6 +42,7 @@ mkdir -p "${INPUT_DIR}"
 mkdir -p "${LOG_DIR}"
 
 declare -a extra_args
+declare -a docker_args
 
 if [[ -n $CUSTOMIZED_MODEL ]]
 then
@@ -104,21 +106,40 @@ aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvarian
 
 if [[ "${BUILD_DOCKER}" = true ]]
 then
-  IMAGE="deepvariant:latest"
-  # Pulling twice in case the first one times out.
-  sudo docker build -t deepvariant . || \
-    (sleep 5 ; sudo docker build -t deepvariant .)
-  echo "Done building Docker image ${IMAGE}."
+  if [[ "${USE_GPU}" = true ]]
+  then
+    IMAGE="deepvariant_gpu:latest"
+    sudo docker build \
+      --build-arg=FROM_IMAGE=nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04 \
+      --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
+    echo "Done building GPU Docker image ${IMAGE}."
+    docker_args+=( --gpus 1 )
+  else
+    IMAGE="deepvariant:latest"
+    # Pulling twice in case the first one times out.
+    sudo docker build -t deepvariant . || \
+      (sleep 5 ; sudo docker build -t deepvariant .)
+    echo "Done building Docker image ${IMAGE}."
+  fi
 else
-  IMAGE="google/deepvariant:${BIN_VERSION}"
-  sudo docker pull "${IMAGE}"
+  if [[ "${USE_GPU}" = true ]]
+  then
+    IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
+    sudo docker pull "${IMAGE}"
+    docker_args+=( --gpus 1 )
+  else
+    IMAGE="google/deepvariant:${BIN_VERSION}"
+    sudo docker pull "${IMAGE}"
+  fi
 fi
 
 echo "Run DeepVariant..."
 echo "using IMAGE=$IMAGE"
+# shellcheck disable=SC2068
 (time ( sudo docker run \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
+  ${docker_args[@]-} \
   "${IMAGE}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WES \

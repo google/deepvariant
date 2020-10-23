@@ -30,9 +30,11 @@ MAKE_EXAMPLES_ARGS="${3:-}"
 CALL_VARIANTS_ARGS="${4:-}"
 POSTPROCESS_VARIANTS_ARGS="${5:-}"
 REGIONS="${6:-}"
+USE_GPU="${7:-false}"
 
 declare -a extra_args
 declare -a happy_args
+declare -a docker_args
 
 function setup_test() {
 
@@ -80,18 +82,31 @@ function setup_test() {
 
   if [[ "${BUILD_DOCKER}" = true ]]
   then
-    IMAGE="deepvariant:latest"
-    # Building twice in case the first one times out.
-    sudo docker build -t deepvariant . || \
-      (sleep 5 ; sudo docker build -t deepvariant .)
-    echo "Done building Docker image ${IMAGE}."
+    if [[ "${USE_GPU}" = true ]]
+    then
+      IMAGE="deepvariant_gpu:latest"
+      sudo docker build \
+        --build-arg=FROM_IMAGE=nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04 \
+        --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
+      echo "Done building GPU Docker image ${IMAGE}."
+      docker_args+=( --gpus 1 )
+    else
+      IMAGE="deepvariant:latest"
+      # Building twice in case the first one times out.
+      sudo docker build -t deepvariant . || \
+        (sleep 5 ; sudo docker build -t deepvariant .)
+      echo "Done building Docker image ${IMAGE}."
+    fi
   else
-    # Public Docker images are on
-    # google/deepvariant or gcr.io/deepvariant-docker/deepvariant
-    IMAGE="gcr.io/deepvariant-docker/deepvariant:${BIN_VERSION}"
-    # Pulling twice in case the first one times out.
-    sudo docker pull "${IMAGE}" || \
-      (sleep 5 ; sudo docker pull "${IMAGE}")
+    if [[ "${USE_GPU}" = true ]]
+    then
+      IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
+      sudo docker pull "${IMAGE}"
+      docker_args+=( --gpus 1 )
+    else
+      IMAGE="google/deepvariant:${BIN_VERSION}"
+      sudo docker pull "${IMAGE}"
+    fi
   fi
 }
 
@@ -129,9 +144,11 @@ function run_deepvariant_with_docker() {
     happy_args+=( -l "${REGIONS}")
   fi
 
+  # shellcheck disable=SC2068
   (time (sudo docker run \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
+    ${docker_args[@]-} \
     "${IMAGE}" \
     /opt/deepvariant/bin/run_deepvariant \
     --model_type=PACBIO \
