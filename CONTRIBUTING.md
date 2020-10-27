@@ -1,12 +1,11 @@
 # How to Contribute
 
-Sorry, we don't take contributions to the main DeepVariant codebase at the
-moment. We expect to open the project for contributions in 1H 2018 after we
-configure continuous integration testing on github, formalize the external code
-review process, among other technical tasks to ensure that the DeepVariant
-codebase maintains its current high quality coding and testing standards.
+We cannot merge external pull requests into the DeepVariant repository at this
+time. The source of truth for DeepVariant lives in an internal Google codebase,
+and changes must first be made internally.
 
-In the meantime, please feel free to fork the DeepVariant codebase and prepare
-in your fork any patches you'd eventually like to contribute and let us know
-about them so we can prioritize putting the necessary infrastructure in place
-to accept external contributions.
+However, we still welcome community contributions! Please feel free to fork the
+DeepVariant repository and open a pull request or issue with suggested edits. To
+incorporate your contributions, we will make the changes internally and then
+push them to GitHub in the subsequent release. We will attribute the changes to
+you in the commit description and release notes.
