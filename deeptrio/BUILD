@@ -89,6 +89,7 @@ cc_library(
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:samplers",
+        "@com_google_absl//absl/container:node_hash_map",
         "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
     ],

@@ -38,6 +38,7 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/node_hash_map.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
@@ -368,7 +369,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
       target_sample_allele_counts = it->second;
 
   // Initialize a vector of iterators - one iterator per sample.
-  std::unordered_map<
+  absl::node_hash_map<
       string, std::vector<nucleus::ConstProtoPtr<AlleleCount>>::const_iterator>
       allele_counter_iterators;
   for (const auto& sample_allele_counts : allele_counts) {
