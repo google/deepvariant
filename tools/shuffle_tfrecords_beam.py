@@ -124,6 +124,10 @@ def parse_cmdline(argv):
     default=1,
     type=int,
   )
+  parser.add_argument(
+    "--debug",
+    help="Enable debug messages", action="store_true", default=False,
+  )
 
   known_args, pipeline_args = parser.parse_known_args(argv)
 
@@ -143,7 +147,8 @@ def partition(example, num_buckets):
     return address
 
   address = determine_hash(example)
-  return address % num_buckets
+  bucket = address % num_buckets
+  return bucket
 
 
 def read_from_tfrecords_files(pipeline, input_filename_pattern_list, num_buckets):
@@ -236,6 +241,10 @@ def write_summary_string_to_file(pipeline, output_examples, input_pattern_list,
 def main(argv=None):
   """Main entry point; defines and runs the pipeline."""
   known_args, pipeline_args = parse_cmdline(argv)
+  if known_args.debug:
+    logging.getLogger().setLevel(logging.DEBUG)
+  else:
+    logging.getLogger().setLevel(logging.INFO)
   pipeline_options = PipelineOptions(pipeline_args)
   with beam.Pipeline(options=pipeline_options) as p:
     input_examples = read_from_tfrecords_files(
@@ -261,5 +270,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-  logging.getLogger().setLevel(logging.INFO)
   main()
