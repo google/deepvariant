@@ -5,30 +5,33 @@
 [![blog](https://img.shields.io/badge/blog-orange)](https://goo.gl/deepvariant)
 
 DeepVariant is a deep learning-based variant caller that takes aligned reads (in
-BAM or CRAM format), produces pileup image tensors from them, classify each
+BAM or CRAM format), produces pileup image tensors from them, classifies each
 tensor using a convolutional neural network, and finally reports the results in
 a standard VCF or gVCF file.
 
-DeepVariant supports:
+DeepVariant supports germline variant-calling in diploid organisms.
 
-*   Germline variant-calling in diploid organisms.
-    *   For somatic data or any other samples where the genotypes go beyond two
-        copies of DNA, DeepVariant will not work out of the box because the only
-        genotypes supported are hom-alt, het, and hom-ref.
-    *   The models included with DeepVariant are only trained on human data. For
-        other organisms, see the
-        [blog post on non-human variant-calling](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/)
-        for some possible pitfalls and how to handle them.
-*   Calling from NGS and long-read sequencing data.
-    *   NGS (Illumina) data for either a
-        [whole genome](docs/deepvariant-case-study.md) or
-        [whole exome](docs/deepvariant-exome-case-study.md).
-    *   PacBio HiFi data, see the
-        [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
-    *   ONT long-read data by using
-        [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper/blob/master/docs/PEPPER_variant_calling.md).
-    *   Hybrid PacBio HiFi + Illumina WGS, see the
-        [hybrid case study](docs/deepvariant-hybrid-case-study.md).
+*   NGS (Illumina) data for either a
+    [whole genome](docs/deepvariant-case-study.md) or
+    [whole exome](docs/deepvariant-exome-case-study.md).
+*   PacBio HiFi data, see the
+    [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
+*   Hybrid PacBio HiFi + Illumina WGS, see the
+    [hybrid case study](docs/deepvariant-hybrid-case-study.md).
+*   Oxford Nanopore long-read data by using
+    [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper/blob/master/docs/PEPPER_variant_calling.md).
+*   Genapsys data, by using a
+    [model retrained by Genapsys](https://github.com/GenapsysInc/genapsys_deepvariant/blob/master/docs/GenapSys_DeepVariant_WES_Model.md).
+
+Please also note:
+
+*   For somatic data or any other samples where the genotypes go beyond two
+    copies of DNA, DeepVariant will not work out of the box because the only
+    genotypes supported are hom-alt, het, and hom-ref.
+*   The models included with DeepVariant are only trained on human data. For
+    other organisms, see the
+    [blog post on non-human variant-calling](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/)
+    for some possible pitfalls and how to handle them.
 
 ## How to run
 
