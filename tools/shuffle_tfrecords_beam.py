@@ -118,13 +118,35 @@ def parse_cmdline(argv):
   parser.add_argument(
       '--output_dataset_name',
       help='Optional unless --output_dataset_config_pbtxt is set.')
+  parser.add_argument(
+    '--num_buckets',
+    help="Number of output partitions to use",
+    default=1,
+    type=int,
+  )
 
   known_args, pipeline_args = parser.parse_known_args(argv)
+
+  assert(known_args.num_buckets > 0), "Minimum one bucket should be provided"
 
   return known_args, pipeline_args
 
 
-def read_from_tfrecords_files(pipeline, input_filename_pattern_list):
+def partition(example, num_buckets):
+  """ Partition examples into multiple buckets """
+  def determine_hash(input_bytes):
+    import hashlib
+    m = hashlib.blake2b(input_bytes, digest_size=4)
+    address = 0
+    for i, b in enumerate(m.digest()):
+      address += b * (2 ** (i * 8))
+    return address
+
+  address = determine_hash(example)
+  return address % num_buckets
+
+
+def read_from_tfrecords_files(pipeline, input_filename_pattern_list, num_buckets):
   """Reads records from TFRecord files.
 
   Args:
@@ -139,10 +161,12 @@ def read_from_tfrecords_files(pipeline, input_filename_pattern_list):
     readers.append(pipeline
                    | 'ReadTFRecordFiles_{}[{}]'.format(i, filepattern) >> beam
                    .io.ReadFromTFRecord(filepattern, coder=coders.BytesCoder()))
-  return readers | 'Flatten' >> beam.Flatten()
+  all_readers = readers | 'Flatten' >> beam.Flatten()
+  partitioned_readers = all_readers | 'PartitionInputs' >> beam.Partition(partition, num_buckets)
+  return partitioned_readers
 
 
-def shuffle_records(input_examples):
+def shuffle_records(input_examples, index=0):
   """Shuffles the input_examples in a effectively random order."""
 
   def sha1(input_bytes):
@@ -154,9 +178,9 @@ def shuffle_records(input_examples):
     return m.digest()
 
   return (input_examples
-          | 'Randomize' >> beam.Map(lambda x: (sha1(x), x))
-          | 'Groupby' >> beam.GroupByKey()
-          | 'DropKey' >> beam.FlatMap(lambda x: x[1]))
+          | 'Randomize%d' % index >> beam.Map(lambda x: (sha1(x), x))
+          | 'Groupby%d' % index >> beam.GroupByKey()
+          | 'DropKey%d' % index >> beam.FlatMap(lambda x: x[1]))
 
 
 # SparkRunner has some issue with using lambda functions in beam.Map
@@ -215,9 +239,12 @@ def main(argv=None):
   pipeline_options = PipelineOptions(pipeline_args)
   with beam.Pipeline(options=pipeline_options) as p:
     input_examples = read_from_tfrecords_files(
-        p, known_args.input_pattern_list.split(','))
+        p, known_args.input_pattern_list.split(','),
+        known_args.num_buckets)
 
-    output_examples = shuffle_records(input_examples)
+    output_examples = [
+      shuffle_records(ie, i) for i, ie in enumerate(input_examples)
+    ] | 'FlattenOutputs' >> beam.Flatten()
 
     _ = output_examples | beam.io.WriteToTFRecord(
         file_path_prefix=known_args.output_pattern_prefix,
