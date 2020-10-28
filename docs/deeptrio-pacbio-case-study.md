@@ -1,4 +1,4 @@
-# DeepTrio whole genome sequencing case study
+# Using DeepTrio for small variant calling from the trio sequenced with PacBio HiFi
 
 In this case study, we describe applying DeepTrio to a real WGS trio. Then we
 assess the quality of the DeepTrio variant calls with `hap.py`. In addition we
@@ -52,21 +52,21 @@ curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG004_GRC
 
 ### Download HG002, HG003, and HG004 BAM files
 
-We'll use HG002, HG003, HG004 Illumina WGS reads publicly available from the
+We'll use HG002, HG003, HG004 PacBio HiFi WGS reads publicly available from the
 [PrecisionFDA Truth v2 Challenge](https://precision.fda.gov/challenges/10).
 
 ```bash
 mkdir -p input
-HTTPDIR=https://storage.googleapis.com/deepvariant/case-study-testdata
+HTTPDIR=https://storage.googleapis.com/deepvariant/pacbio-case-study-testdata
 
-curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam
-curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai
+curl ${HTTPDIR}/HG002.pfda_challenge.grch38.phased.chr20.bam > input/HG002.pfda_challenge.grch38.phased.chr20.bam
+curl ${HTTPDIR}/HG002.pfda_challenge.grch38.phased.chr20.bam.bai > input/HG002.pfda_challenge.grch38.phased.chr20.bam.bai
 
-curl ${HTTPDIR}/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam > input/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam
-curl ${HTTPDIR}/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > input/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai
+curl ${HTTPDIR}/HG003.pfda_challenge.grch38.phased.chr20.bam > input/HG003.pfda_challenge.grch38.phased.chr20.bam
+curl ${HTTPDIR}/HG003.pfda_challenge.grch38.phased.chr20.bam.bai > input/HG003.pfda_challenge.grch38.phased.chr20.bam.bai
 
-curl ${HTTPDIR}/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam > input/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam
-curl ${HTTPDIR}/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > input/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai
+curl ${HTTPDIR}/HG004.pfda_challenge.grch38.phased.chr20.bam > input/HG004.pfda_challenge.grch38.phased.chr20.bam
+curl ${HTTPDIR}/HG004.pfda_challenge.grch38.phased.chr20.bam.bai > input/HG004.pfda_challenge.grch38.phased.chr20.bam.bai
 ```
 
 ## Running DeepTrio with one command
@@ -85,32 +85,40 @@ mkdir -p output/intermediate_results_dir
 BIN_VERSION=1.0.1rc
 
 time sudo docker run \
-  -v "${PWD}/input":"/input"   \
-  -v "${PWD}/output":"/output"  \
+  -v "${PWD}/input":"/input" \
+  -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   gcr.io/deepvariant-docker/deeptrio:"${BIN_VERSION}" \
   /opt/deepvariant/bin/deeptrio/run_deeptrio \
-  --model_type WGS \
+  --model_type PACBIO \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
-  --reads_child /input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
-  --reads_parent1 /input/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
-  --reads_parent2 /input/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
+  --reads_child /input/HG002.pfda_challenge.grch38.phased.chr20.bam \
+  --reads_parent1 /input/HG003.pfda_challenge.grch38.phased.chr20.bam \
+  --reads_parent2 /input/HG004.pfda_challenge.grch38.phased.chr20.bam \
   --output_vcf_child /output/HG002.output.vcf.gz \
   --output_vcf_parent1 /output/HG003.output.vcf.gz \
   --output_vcf_parent2 /output/HG004.output.vcf.gz \
   --sample_name_child 'HG002' \
   --sample_name_parent1 'HG003' \
   --sample_name_parent2 'HG004' \
-  --num_shards $(nproc)  \
-  --regions chr20 \
+  --num_shards $(nproc) \
   --intermediate_results_dir /output/intermediate_results_dir \
   --output_gvcf_child /output/HG002.g.vcf.gz \
   --output_gvcf_parent1 /output/HG003.g.vcf.gz \
-  --output_gvcf_parent2 /output/HG004.g.vcf.gz
+  --output_gvcf_parent2 /output/HG004.g.vcf.gz \
+  --regions chr20 \
+  --make_examples_extra_args "sort_by_haplotypes=true,parse_sam_aux_fields=true"
 ```
 
-By specifying `--model_type WGS`, you'll be using a model that is best suited
-for Illumina Whole Genome Sequencing data.
+Note that there are extra arguments added: "sort_by_haplotypes" and
+"parse_sam_aux_fields". These extra arguments make use of a phased reads, thus
+allowing a further improvement of the accuracy. In order to use this feature
+input BAM files have to be phased. For the detailed description on how to do
+that please see
+[DeepVariant tutorial](https://github.com/google/deepvariant/blob/r1.0/docs/deepvariant-pacbio-model-case-study.md)
+
+By specifying `--model_type PACBIO`, you'll be using a model that is best suited
+for PacBio HiFi Whole Genome Sequencing data.
 
 `--intermediate_results_dir` flag is optional. By specifying it, the
 intermediate outputs of `make_examples` and `call_variants` stages can be found
@@ -203,12 +211,12 @@ As a result we should get the following output:
 ```bash
 Checking: /output/HG002_trio_merged.vcf.gz
 Family: [HG003 + HG004] -> [HG002]
-35 non-pass records were skipped
-Concordance HG002: F:133992/134497 (99.62%)  M:134059/134588 (99.61%)  F+M:132670/133643 (99.27%)
-0/137097 (0.00%) records did not conform to expected call ploidy
-136009/137097 (99.21%) records were variant in at least 1 family member and checked for Mendelian constraints
-2022/136009 (1.49%) records had indeterminate consistency status due to incomplete calls
-1058/136009 (0.78%) records contained a violation of Mendelian constraints
+45 non-pass records were skipped
+Concordance HG002: F:143838/144142 (99.79%)  M:143867/144177 (99.78%)  F+M:142108/142800 (99.52%)
+0/148910 (0.00%) records did not conform to expected call ploidy
+146501/148910 (98.38%) records were variant in at least 1 family member and checked for Mendelian constraints
+3317/146501 (2.26%) records had indeterminate consistency status due to incomplete calls
+748/146501 (0.51%) records contained a violation of Mendelian constraints
 ```
 
 ### Perform analysis with hap.py against 4.2 truth set
@@ -267,22 +275,22 @@ sudo docker run \
 ```
 Benchmarking Summary for HG002:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11256     11208        48        21259        18       9601     11       0.995736          0.998456        0.451620         0.997094                     NaN                     NaN                   1.561710                   2.070802
- INDEL   PASS        11256     11208        48        21259        18       9601     11       0.995736          0.998456        0.451620         0.997094                     NaN                     NaN                   1.561710                   2.070802
-   SNP    ALL        71333     71064       269        87357        29      16213      4       0.996229          0.999592        0.185595         0.997908                2.314904                2.053626                   1.715978                   1.712794
-   SNP   PASS        71333     71064       269        87357        29      16213      4       0.996229          0.999592        0.185595         0.997908                2.314904                2.053626                   1.715978                   1.712794
+ INDEL    ALL        11256     11214        42        22325        73      10571     24       0.996269          0.993789        0.473505         0.995027                     NaN                     NaN                   1.561710                   2.282047
+ INDEL   PASS        11256     11214        42        22325        73      10571     24       0.996269          0.993789        0.473505         0.995027                     NaN                     NaN                   1.561710                   2.282047
+   SNP    ALL        71333     71273        60        94297        20      22929     16       0.999159          0.999720        0.243157         0.999439                2.314904                2.023814                   1.715978                   2.001115
+   SNP   PASS        71333     71273        60        94297        20      22929     16       0.999159          0.999720        0.243157         0.999439                2.314904                2.023814                   1.715978                   2.001115
 
 Benchmarking Summary for HG003:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10634     10582        52        21062        19       9999     14       0.995110          0.998283        0.474741         0.996694                     NaN                     NaN                   1.749861                   2.247423
- INDEL   PASS        10634     10582        52        21062        19       9999     14       0.995110          0.998283        0.474741         0.996694                     NaN                     NaN                   1.749861                   2.247423
-   SNP    ALL        70209     69972       237        85198        54      15147     18       0.996624          0.999229        0.177786         0.997925                2.297347                2.069257                   1.884533                   1.874380
-   SNP   PASS        70209     69972       237        85198        54      15147     18       0.996624          0.999229        0.177786         0.997925                2.297347                2.069257                   1.884533                   1.874380
+ INDEL    ALL        10634     10584        50        22122        72      10974     34       0.995298          0.993541        0.496067         0.994419                     NaN                     NaN                   1.749861                   2.498041
+ INDEL   PASS        10634     10584        50        22122        72      10974     34       0.995298          0.993541        0.496067         0.994419                     NaN                     NaN                   1.749861                   2.498041
+   SNP    ALL        70209     70186        23        94386        29      24118     15       0.999672          0.999587        0.255525         0.999630                2.297347                1.977766                   1.884533                   2.173085
+   SNP   PASS        70209     70186        23        94386        29      24118     15       0.999672          0.999587        0.255525         0.999630                2.297347                1.977766                   1.884533                   2.173085
 
 Benchmarking Summary for HG004:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11036     10985        51        21471        27       9967     17       0.995379          0.997653        0.464208         0.996515                     NaN                     NaN                   1.791542                   2.318601
- INDEL   PASS        11036     10985        51        21471        27       9967     17       0.995379          0.997653        0.464208         0.996515                     NaN                     NaN                   1.791542                   2.318601
-   SNP    ALL        71933     71701       232        86303        53      14504     10       0.996775          0.999262        0.168059         0.998017                2.309582                2.071909                   1.878938                   1.772111
-   SNP   PASS        71933     71701       232        86303        53      14504     10       0.996775          0.999262        0.168059         0.998017                2.309582                2.071909                   1.878938                   1.772111
+ INDEL    ALL        11036     10984        52        22518        76      10950     31       0.995288          0.993430        0.486278         0.994358                     NaN                     NaN                   1.791542                   2.507959
+ INDEL   PASS        11036     10984        52        22518        76      10950     31       0.995288          0.993430        0.486278         0.994358                     NaN                     NaN                   1.791542                   2.507959
+   SNP    ALL        71933     71861        72        95483        32      23506     11       0.998999          0.999555        0.246180         0.999277                2.309582                1.995672                   1.878938                   2.019747
+   SNP   PASS        71933     71861        72        95483        32      23506     11       0.998999          0.999555        0.246180         0.999277                2.309582                1.995672                   1.878938                   2.019747
 ```
