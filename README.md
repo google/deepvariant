@@ -20,8 +20,8 @@ DeepVariant supports germline variant-calling in diploid organisms.
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
 *   Oxford Nanopore long-read data by using
     [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper/blob/master/docs/PEPPER_variant_calling.md).
-*   Genapsys data, by using a
-    [model retrained by Genapsys](https://github.com/GenapsysInc/genapsys_deepvariant/blob/master/docs/GenapSys_DeepVariant_WES_Model.md).
+*   GenapSys data, by using a
+    [model retrained by GenapSys](https://github.com/GenapsysInc/genapsys_deepvariant/blob/master/docs/GenapSys_DeepVariant_WES_Model.md).
 
 Please also note:
 
@@ -88,7 +88,10 @@ doi: https://doi.org/10.1101/2020.02.10.942086
 
 ## Why Use DeepVariant?
 
-*   **High accuracy** - In 2016 DeepVariant won
+*   **High accuracy** - DeepVariant won 2020
+    [PrecisionFDA Truth Challenge V2](https://precision.fda.gov/challenges/10/view/results)
+    for All Benchmark Regions for ONT, PacBio, and Multiple Technologies
+    categories, and 2016
     [PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/results)
     for best SNP Performance. DeepVariant maintains high accuracy across data
     from different sequencing technologies, prep methods, and species. For
@@ -107,11 +110,11 @@ doi: https://doi.org/10.1101/2020.02.10.942086
 *   **Ease of use** - No filtering is needed beyond setting your preferred
     minimum quality threshold.
 *   **Cost effectiveness** - With a single non-preemptible n1-standard-16
-    machine on Google Cloud, it costs ~$9.11 to call a 30x whole genome and
-    ~$0.39 to call an exome. With preemptible pricing, the cost is $2.19 for a
-    30x whole genome and $0.09 for whole exome (not considering preemption).
-*   **Speed** - On a 64-core CPU-only machine, DeepVariant completes a 50x WGS
-    in 5 hours and an exome in 16 minutes [(1)](#myfootnote1)</sup>. Multiple
+    machine on Google Cloud, it costs ~$11.8 to call a 30x whole genome and
+    ~$0.89 to call an exome. With preemptible pricing, the cost is $2.84 for a
+    30x whole genome and $0.21 for whole exome (not considering preemption).
+*   **Speed** - On a 64-core CPU-only machine, DeepVariant completes a 35x WGS
+    in 7 hours and an exome in 21 minutes [(1)](#myfootnote1)</sup>. Multiple
     options for acceleration exist, taking the WGS pipeline to as fast as 40
     minutes (see [external solutions](#external-solutions)).
 *   **Usage options** - DeepVariant can be run via Docker or binaries, using
@@ -141,7 +144,7 @@ post on
 ### Prerequisites
 
 *   Unix-like operating system (cannot run on Windows)
-*   Python 2.7
+*   Python 3.6
 
 ### Official Solutions
 
