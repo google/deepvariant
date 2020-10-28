@@ -51,17 +51,17 @@ def write_fake_checkpoint(model_name,
                           session,
                           checkpoint_dir,
                           moving_average_decay=_MOVING_AVERAGE_DECAY,
-                          name='model'):
+                          name='model',
+                          height=dv_constants.PILEUP_DEFAULT_HEIGHT,
+                          width=dv_constants.PILEUP_DEFAULT_WIDTH,
+                          num_channels=dv_constants.PILEUP_NUM_CHANNELS):
   """Writes a fake TensorFlow checkpoint to checkpoint_dir."""
   path = os.path.join(checkpoint_dir, name)
   with session as sess:
     model = modeling.get_model(model_name)
     # Needed to protect ourselves for models without an input image shape.
-    h, w = getattr(
-        model, 'input_image_shape',
-        (dv_constants.PILEUP_DEFAULT_HEIGHT, dv_constants.PILEUP_DEFAULT_WIDTH))
-    images = tf.compat.v1.placeholder(
-        tf.float32, shape=(4, h, w, dv_constants.PILEUP_NUM_CHANNELS))
+    h, w = getattr(model, 'input_image_shape', (height, width))
+    images = tf.compat.v1.placeholder(tf.float32, shape=(4, h, w, num_channels))
     model.create(images, num_classes=3, is_training=True)
     # This is gross, but necessary as model_eval assumes the model was trained
     # with model_train which uses exp moving averages. Unfortunately we cannot

@@ -69,12 +69,15 @@ class ModelingTest(
     model = modeling.DeepVariantSlimModel(
         name='foo',
         n_classes_model_variable=['n_classes'],
-        excluded_scopes_for_incompatible_shapes=['logits'],
+        excluded_scopes_for_incompatible_classes=['logits'],
+        excluded_scopes_for_incompatible_channels=['logits'],
         pretrained_model_path='path')
 
     self.assertEqual('foo', model.name)
     self.assertEqual(['n_classes'], model.n_classes_model_variable)
-    self.assertEqual(['logits'], model.excluded_scopes_for_incompatible_shapes)
+    self.assertEqual(['logits'], model.excluded_scopes_for_incompatible_classes)
+    self.assertEqual(['logits'],
+                     model.excluded_scopes_for_incompatible_channels)
     self.assertEqual('path', model.pretrained_model_path)
 
   def test_is_encoded_variant_type(self):

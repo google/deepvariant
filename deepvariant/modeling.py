@@ -106,6 +106,11 @@ flags.DEFINE_integer(
     'Set the embedding size for the sequencing type embeddings. Default is 200. '
     'This flag is only useful when model_name is `inception_v3_embedding`.')
 
+flags.DEFINE_bool(
+    'allow_warmstart_from_different_num_channels', False,
+    'If True, always allow warmstarting from model checkpoints '
+    'that has different number of channels.')
+
 FLAGS = flags.FLAGS
 
 slim = tf_slim
@@ -536,27 +541,30 @@ class DeepVariantModel(object):
     if start_from_checkpoint:
       logging.info('Initializing model from checkpoint at %s',
                    start_from_checkpoint)
+      excluded_scopes = set()
       reader = tf.compat.v1.train.NewCheckpointReader(start_from_checkpoint)
       var_to_shape_map = reader.get_variable_to_shape_map()
       if tf_utils.model_num_classes(
           start_from_checkpoint,
-          self.n_classes_model_variable) == dv_constants.NUM_CLASSES:
-        logging.info('The model checkpoint to warm start from has the same '
-                     'number of classes. If this is in training, we will '
-                     'clear excluded_scopes_for_incompatible_shapes so we '
-                     'include everything for '
-                     'warm starting....')
-        vars_to_include = var_to_shape_map.keys()
-      else:
+          self.n_classes_model_variable) != dv_constants.NUM_CLASSES:
+        excluded_scopes.update(self.excluded_scopes_for_incompatible_classes)
+      if FLAGS.allow_warmstart_from_different_num_channels:
+        excluded_scopes.update(self.excluded_scopes_for_incompatible_channels)
+      if excluded_scopes:
         logging.info(
             'The model checkpoint to warm start from has different '
-            'number of classes. If this is in training, we will '
-            'use excluded_scopes_for_incompatible_shapes=%s',
-            self.excluded_scopes_for_incompatible_shapes)
+            'shapes. If this is in training, we will '
+            'exclude: %s', excluded_scopes)
         vars_to_include = [
-            v for v in var_to_shape_map.keys() if not v.startswith(
-                tuple(self.excluded_scopes_for_incompatible_shapes))
+            v for v in var_to_shape_map.keys()
+            if not v.startswith(tuple(excluded_scopes))
         ]
+      else:
+        logging.info('The model checkpoint to warm start from should have the '
+                     'same number of classes and same numbers of channels.'
+                     'If this is in training, we will include everything for '
+                     'warm starting....')
+        vars_to_include = var_to_shape_map.keys()
       return tf.estimator.WarmStartSettings(
           ckpt_to_initialize_from=start_from_checkpoint,
           vars_to_warm_start='|'.join(vars_to_include))
@@ -839,7 +847,8 @@ class DeepVariantSlimModel(DeepVariantModel):
   """Baseclass for DeepVariant models based on Slim networks."""
 
   def __init__(self, name, pretrained_model_path, n_classes_model_variable,
-               excluded_scopes_for_incompatible_shapes):
+               excluded_scopes_for_incompatible_classes,
+               excluded_scopes_for_incompatible_channels):
     """Creates an DeepVariant CNN network based on a tf.slim model.
 
     Args:
@@ -849,23 +858,22 @@ class DeepVariantSlimModel(DeepVariantModel):
         model that we can use to determine the shape of the output
         classification layer of the model. For example, in inception-v3 from
         slim this is 'InceptionV3/Logits/Conv2d_1c_1x1/weights'.
-      excluded_scopes_for_incompatible_shapes: list of str. A list of scopes
+      excluded_scopes_for_incompatible_classes: set of str. A set of scopes
         that will be excluded when restoring from a checkpoint to avoid loading
-        incompatible shapes.
-
+        incompatible #classes.
+      excluded_scopes_for_incompatible_channels: set of str. A set of scopes
+        that will be excluded when restoring from a checkpoint to avoid loading
+        incompatible #channels.
     Raises:
       ValueError: If any of the arguments are invalid.
     """
     super(DeepVariantSlimModel, self).__init__(
         name=name, pretrained_model_path=pretrained_model_path)
-    if not excluded_scopes_for_incompatible_shapes:
-      raise ValueError(
-          'Got an empty value for '
-          'excluded_scopes_for_incompatible_shapes',
-          excluded_scopes_for_incompatible_shapes)
     self.n_classes_model_variable = n_classes_model_variable
-    self.excluded_scopes_for_incompatible_shapes = (
-        excluded_scopes_for_incompatible_shapes)
+    self.excluded_scopes_for_incompatible_classes = (
+        excluded_scopes_for_incompatible_classes)
+    self.excluded_scopes_for_incompatible_channels = (
+        excluded_scopes_for_incompatible_channels)
 
   def preprocess_images(self, images):
     """Applies preprocessing operations for Inception images.
@@ -1107,9 +1115,10 @@ class DeepVariantInceptionV3(DeepVariantSlimModel):
     super(DeepVariantInceptionV3, self).__init__(
         name='inception_v3',
         n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes_for_incompatible_shapes=[
+        excluded_scopes_for_incompatible_classes=[
             'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
         ],
+        excluded_scopes_for_incompatible_channels=['InceptionV3/Conv2d_1a_3x3'],
         pretrained_model_path=('/namespace/vale-project/models/classification/'
                                'imagenet/inception_v3/model.ckpt-9591376'))
     self.supported_dimensions_message = (
@@ -1280,9 +1289,10 @@ class DeepVariantAttentionInceptionV3(DeepVariantSlimModel):
     super(DeepVariantAttentionInceptionV3, self).__init__(
         name='attention_inception_v3',
         n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes_for_incompatible_shapes=[
+        excluded_scopes_for_incompatible_classes=[
             'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
         ],
+        excluded_scopes_for_incompatible_channels=['InceptionV3/Conv2d_1a_3x3'],
         pretrained_model_path=('/namespace/vale-project/models/classification/'
                                'imagenet/inception_v3/model.ckpt-9591376'))
     self.supported_dimensions_message = (
@@ -1513,9 +1523,10 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
         pretrained_model_path=('/namespace/vale-project/models/classification/'
                                'imagenet/inception_v3/model.ckpt-9591376'),
         n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
-        excluded_scopes_for_incompatible_shapes=[
+        excluded_scopes_for_incompatible_classes=[
             'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
-        ])
+        ],
+        excluded_scopes_for_incompatible_channels=['InceptionV3/Conv2d_1a_3x3'])
 
     self.representation_layer = representation_layer
 

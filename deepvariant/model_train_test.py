@@ -49,6 +49,7 @@ import six
 import tensorflow as tf
 
 from deepvariant import data_providers_test
+from deepvariant import dv_constants
 from deepvariant import model_train
 from deepvariant import modeling
 from deepvariant import testdata
@@ -131,6 +132,44 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         model_name='inception_v3',
         dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
         warm_start_from=checkpoint_dir + '/model')
+
+  @flagsaver.FlagSaver
+  def test_end2end_inception_v3_warm_up_allow_different_num_channels(self):
+    """End-to-end test of model_train script."""
+    FLAGS.allow_warmstart_from_different_num_channels = True
+    checkpoint_dir = tf_test_utils.test_tmpdir(
+        'inception_v3_warm_up_allow_different_num_channels')
+    tf_test_utils.write_fake_checkpoint(
+        'inception_v3',
+        self.test_session(),
+        checkpoint_dir,
+        num_channels=dv_constants.PILEUP_NUM_CHANNELS + 1)
+    self._run_tiny_training(
+        model_name='inception_v3',
+        dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
+        warm_start_from=checkpoint_dir + '/model')
+
+  @flagsaver.FlagSaver
+  def test_end2end_inception_v3_warm_up_by_default_fail_diff_num_channels(self):
+    """End-to-end test of model_train script."""
+    checkpoint_dir = tf_test_utils.test_tmpdir(
+        'test_end2end_inception_v3_warm_up_by_default_fail_diff_num_channels')
+    tf_test_utils.write_fake_checkpoint(
+        'inception_v3',
+        self.test_session(),
+        checkpoint_dir,
+        num_channels=dv_constants.PILEUP_NUM_CHANNELS + 1)
+    with self.assertRaisesRegex(
+        ValueError,
+        r'Shape of variable InceptionV3/Conv2d_1a_3x3/weights:0 \(\(.*\)\) '
+        r'doesn\'t match with shape of tensor '
+        r'InceptionV3/Conv2d_1a_3x3/weights \(\[.*\]\) from checkpoint reader.'
+    ):
+      self._run_tiny_training(
+          model_name='inception_v3',
+          dataset=data_providers_test.make_golden_dataset(
+              use_tpu=FLAGS.use_tpu),
+          warm_start_from=checkpoint_dir + '/model')
 
   @flagsaver.FlagSaver
   def test_end2end_inception_v3_failed_warm_up_from(self):
