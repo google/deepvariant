@@ -122,7 +122,7 @@ def parse_cmdline(argv):
       help='Optional unless --output_dataset_config_pbtxt is set.')
   parser.add_argument(
     '--num_buckets',
-    help="Number of output partitions to use",
+    help="Number for partitioning",
     default=1,
     type=int,
   )
@@ -144,10 +144,9 @@ def parse_cmdline(argv):
 
   known_args, pipeline_args = parser.parse_known_args(argv)
 
-  assert(known_args.num_buckets > 0), "Minimum one bucket should be provided"
-
   if known_args.pre_partition:
     assert(known_args.pre_partition_workdir is not None), "Provide working directory for pre-partition"
+    assert(known_args.num_buckets > 0), "Minimum of one bucket should be provided for pre-partition"
 
   return known_args, pipeline_args
 
