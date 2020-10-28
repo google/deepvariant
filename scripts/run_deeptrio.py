@@ -90,6 +90,8 @@ flags.DEFINE_boolean(
     None,
     'Optional. If true, print out version number and exit.',
     allow_hide_cpp=True)
+flags.DEFINE_string('logging_dir', None,
+                    'Required. Directory where we should write log files.')
 # Optional flags for call_variants.
 flags.DEFINE_string(
     'customized_model', None,
@@ -319,10 +321,15 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
+
+  if FLAGS.logging_dir:
+    command.extend(
+        ['2>&1 | tee {}/make_examples.log'.format(FLAGS.logging_dir)])
+
   return ' '.join(command)
 
 
-def call_variants_command(outfile, examples, model_ckpt, extra_args):
+def call_variants_command(outfile, examples, model_ckpt, sample, extra_args):
   """Returns a call_variants command for subprocess.check_call."""
   command = ['time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
@@ -331,12 +338,18 @@ def call_variants_command(outfile, examples, model_ckpt, extra_args):
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
+  if FLAGS.logging_dir:
+    command.extend([
+        '2>&1 | tee {}/call_variants_{}.log'.format(FLAGS.logging_dir, sample)
+    ])
+
   return ' '.join(command)
 
 
 def postprocess_variants_command(ref,
                                  infile,
                                  outfile,
+                                 sample,
                                  extra_args,
                                  nonvariant_site_tfrecord_path=None,
                                  gvcf_outfile=None,
@@ -358,6 +371,12 @@ def postprocess_variants_command(ref,
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
+  if FLAGS.logging_dir:
+    command.extend([
+        '2>&1 | tee {}/postprocess_variants_{}.log'.format(
+            FLAGS.logging_dir, sample)
+    ])
+
   return ' '.join(command)
 
 
@@ -401,7 +420,7 @@ def generate_call_variants_command(sample, model_ckpt,
           CALL_VARIANTS_OUTPUT_COMMON_SUFFIX),
       EXAMPLES_NAME_PATTERN.format(
           examples_common_prefix(intermediate_results_dir), sample,
-          examples_common_suffix(FLAGS.num_shards)), model_ckpt,
+          examples_common_suffix(FLAGS.num_shards)), model_ckpt, sample,
       FLAGS.call_variants_extra_args)
 
 
@@ -414,6 +433,7 @@ def generate_postprocess_variants_command(sample, intermediate_results_dir,
           call_variants_output_common_prefix(intermediate_results_dir), sample,
           CALL_VARIANTS_OUTPUT_COMMON_SUFFIX),
       output_vcf,
+      sample,
       FLAGS.postprocess_variants_extra_args,
       NO_VARIANT_TFRECORD_PATTERN.format(
           nonvariant_site_tfrecord_common_suffix(intermediate_results_dir),
