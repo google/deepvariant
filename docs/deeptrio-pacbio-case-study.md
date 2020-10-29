@@ -54,6 +54,8 @@ curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG004_GRC
 
 We'll use HG002, HG003, HG004 PacBio HiFi WGS reads publicly available from the
 [PrecisionFDA Truth v2 Challenge](https://precision.fda.gov/challenges/10).
+These reads have been aligned to the GRCh38_no_alt_analysis reference using
+[pbmm2](https://github.com/PacificBiosciences/pbmm2).
 
 ```bash
 mkdir -p input
@@ -72,9 +74,9 @@ curl ${HTTPDIR}/HG004.pfda_challenge.grch38.phased.chr20.bam.bai > input/HG004.p
 ## Running DeepTrio with one command
 
 DeepTrio pipeline consists of 4 steps: `make_examples`, `call_variants`,
-`postprocess_variants` and `GLNexus merge`. It is possible to run DeepTrio with
-one command using the `run_deepvariant` script. GLNexus is run as a separate
-command.
+`postprocess_variants` and `GLNexus merge`. It is possible to run the first
+three steps with one command using the `run_deeptrio` script. GLNexus
+is run as a separate command.
 
 ### Running on a CPU-only machine
 
@@ -83,6 +85,8 @@ mkdir -p output
 mkdir -p output/intermediate_results_dir
 
 BIN_VERSION=1.0.1rc
+
+sudo docker pull gcr.io/deepvariant-docker/deeptrio:"${BIN_VERSION}"
 
 time sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -115,7 +119,7 @@ Note that there are extra arguments added: "sort_by_haplotypes" and
 allowing a further improvement of the accuracy. In order to use this feature
 input BAM files have to be phased. For the detailed description on how to do
 that please see
-[DeepVariant tutorial](https://github.com/google/deepvariant/blob/r1.0/docs/deepvariant-pacbio-model-case-study.md)
+[DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md).
 
 By specifying `--model_type PACBIO`, you'll be using a model that is best suited
 for PacBio HiFi Whole Genome Sequencing data.
@@ -139,7 +143,8 @@ make_examples_parent2.tfrecord-?????-of-?????.gz
 ```
 
 For running on GPU machines, or using Singularity instead of Docker, see
-[Quick Start](deepvariant-quick-start.md).
+[Quick Start](deepvariant-quick-start.md) or
+[DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md).
 
 ## Merge VCFs using GLNexus
 
@@ -150,6 +155,8 @@ using GLNexus.
 # BCFTools are required:
 sudo apt-get -y install bcftools
 sudo apt-get -y install tabix
+
+sudo docker pull quay.io/mlin/glnexus:v1.2.7
 
 sudo docker run \
   -v "${PWD}/output":"/output" \
@@ -171,9 +178,11 @@ HG002_trio_merged.vcf.gz
 
 ## Benchmark on chr20
 
-### Calculate mendelian vialation rate
+### Calculate Mendelian Violation rate
 
 ```bash
+sudo docker pull realtimegenomics/rtg-tools
+
 sudo docker run \
   -v "${PWD}/input":"/input" \
   -v "${PWD}/reference":"/reference" \
@@ -219,7 +228,7 @@ Concordance HG002: F:143838/144142 (99.79%)  M:143867/144177 (99.78%)  F+M:14210
 748/146501 (0.51%) records contained a violation of Mendelian constraints
 ```
 
-### Perform analysis with hap.py against 4.2 truth set
+### Benchmark variant calls against 4.2 truth set with hap.py
 
 ```bash
 mkdir -p happy
