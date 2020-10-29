@@ -11,7 +11,7 @@ Stage                            | Time (minutes)
 make_examples                    | 89m
 call_variants                    | 258m
 postprocess_variants (with gVCF) | 84m
-total                            | 431m = 6.7 hours
+total                            | 431m = 7.2 hours
 
 ### Accuracy
 
@@ -57,7 +57,7 @@ Stage                            | Time (minutes)
 make_examples                    | 152m
 call_variants                    | 204m
 postprocess_variants (with gVCF) | 65m
-total                            | 421 = 7 hours
+total                            | 421m = 7 hours
 
 ### Accuracy
 
