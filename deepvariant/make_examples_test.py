@@ -1975,12 +1975,13 @@ class RegionProcessorTest(parameterized.TestCase):
                                  six.b('foo'), self.default_shape,
                                  self.default_format)
 
-  def test_use_original_quality_scores_without_parse_sam_aux_fields(self):
+  def test_use_original_quality_scores_and_parse_sam_aux_fields_false(self):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.examples = 'examples.tfrecord'
     FLAGS.use_original_quality_scores = True
+    FLAGS.parse_sam_aux_fields = False
 
     with six.assertRaisesRegex(
         self, Exception,

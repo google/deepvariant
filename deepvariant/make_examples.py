@@ -272,8 +272,12 @@ flags.DEFINE_bool('keep_supplementary_alignments', False,
 flags.DEFINE_bool('keep_secondary_alignments', False,
                   'If True, keep reads marked as secondary alignments.')
 flags.DEFINE_bool(
-    'parse_sam_aux_fields', False,
-    'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed.')
+    'parse_sam_aux_fields', None,
+    'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed. '
+    'By default this flag is None. This flag will be automatically turned on '
+    'if other flags need it (e.g., sort_by_haplotypes). '
+    'If it is explicitly set by the user (either True or False), the '
+    'user-specified value will be used.')
 flags.DEFINE_bool('use_original_quality_scores', False,
                   'If True, base quality scores are read from OQ tag.')
 flags.DEFINE_string(
@@ -383,6 +387,16 @@ def parse_proto_enum_flag(proto_enum_pb2,
       options = [o for o in options if 'unspecified' not in o.lower()]
     raise ValueError('Unknown enum option "{}". Allowed options are {}'.format(
         flag_value, ','.join(sorted(options))))
+
+
+def set_parse_sam_aux_fields(flags_obj, flag_names):
+  for flag_name in flag_names:
+    if flags_obj[flag_name].value:
+      logging.warning(
+          'Because --%s=true, --parse_sam_aux_fields is set to '
+          'true to enable reading auxiliary fields from reads.', flag_name)
+    return True
+  return False
 
 
 def parse_regions_flag(regions_flag_value):
@@ -530,6 +544,16 @@ def default_options(add_flags=True, flags_obj=None):
     options.gvcf_filename = gvcf
     options.task_id = flags_obj.task
     options.num_shards = num_shards
+
+    # First, if parse_sam_aux_fields is still None (which means the users didn't
+    # set it. We added some logic to decide its value.
+    if flags_obj.parse_sam_aux_fields is None:
+      flags_that_needs_sam_aux_fields = [
+          'add_hp_channel', 'sort_by_haplotypes', 'use_original_quality_scores'
+      ]
+      flags_obj.parse_sam_aux_fields = set_parse_sam_aux_fields(
+          flags_obj, flags_that_needs_sam_aux_fields)
+
     if flags_obj.use_original_quality_scores and not flags_obj.parse_sam_aux_fields:
       errors.log_and_raise(
           'If use_original_quality_scores is set then parse_sam_aux_fields '
