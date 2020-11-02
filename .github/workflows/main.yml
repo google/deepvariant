@@ -39,6 +39,8 @@ jobs:
         wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.gzi
     - name: Test
       run: |
+        for model in WGS PACBIO HYBRID_PACBIO_ILLUMINA; do
+
         INPUT_DIR="${PWD}/quickstart-testdata"
         REF_OUTPUT_DIR="${PWD}/quickstart-ref"
         docker run \
@@ -46,20 +48,21 @@ jobs:
           -v "${REF_OUTPUT_DIR}:/output" \
           deepvariant \
           /opt/deepvariant/bin/run_deepvariant \
-          --model_type=WGS \
+          --model_type=${model} \
           --ref=/input/ucsc.hg19.chr20.unittest.fasta \
           --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
           --regions "chr20:10,000,000-10,010,000" \
           --output_vcf=/output/output.vcf.gz \
           --output_gvcf=/output/output.g.vcf.gz \
           --num_shards=1
+
         OUTPUT_DIR="${PWD}/quickstart-output-ovino"
         docker run \
           -v "${INPUT_DIR}":"/input" \
           -v "${OUTPUT_DIR}:/output" \
           deepvariant \
           /opt/deepvariant/bin/run_deepvariant \
-          --model_type=WGS \
+          --model_type=${model} \
           --ref=/input/ucsc.hg19.chr20.unittest.fasta \
           --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
           --regions "chr20:10,000,000-10,010,000" \
@@ -67,7 +70,11 @@ jobs:
           --output_gvcf=/output/output.g.vcf.gz \
           --call_variants_extra_args="use_openvino=True" \
           --num_shards=1
+
         files=$(ls $REF_OUTPUT_DIR); \
         for f in $files; do \
             cmp $REF_OUTPUT_DIR/$f $OUTPUT_DIR/$f; \
+        done
+        sudo rm -r $REF_OUTPUT_DIR $OUTPUT_DIR
+
         done

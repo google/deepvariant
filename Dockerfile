@@ -71,8 +71,9 @@ RUN if [ "${DV_OPENVINO_BUILD}" = "1" ]; then \
       export PYTHONPATH=/opt/deepvariant:${PYTHONPATH}; \
       for model in wgs wes pacbio hybrid_pacbio_illumina; do \
         cd /opt/models/${model}; \
-        python3 /opt/deepvariant/scripts/freeze_graph.py --checkpoint model.ckpt --output model.pb; \
-        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo.py --input_model model.pb --input_shape "[1, 100, 221, 6]"; \
+        if [ "${model}" = "pacbio" ]; then ch=8; else ch=6; fi; \
+        python3 /opt/deepvariant/scripts/freeze_graph.py --checkpoint model.ckpt --output model.pb --channels ${ch}; \
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo.py --input_model model.pb --input_shape "[1, 100, 221, ${ch}]"; \
         rm model.pb; \
       done \
     fi

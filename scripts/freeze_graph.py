@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description='Script to create a frozen graph fo
 parser.add_argument('--checkpoint', required=True, help='Path to model.ckpt')
 parser.add_argument('--output', required=True, help='Path to output .pb file')
 parser.add_argument('--moving_average_decay', default=0.9999, help='The decay to use for the moving average')
+parser.add_argument('--channels', default=6, type=int, help='Number of channels in input tensor')
 args = parser.parse_args()
 
 model = get_model('inception_v3')
@@ -19,7 +20,7 @@ out_node = 'InceptionV3/Predictions/Reshape_1'
 in_node = 'input'
 
 # https://github.com/google/deepvariant/blob/r1.0/deepvariant/dv_constants.py
-inp = tf.compat.v1.placeholder(shape=[1, 100, 221, 6], dtype=tf.float32, name=in_node)
+inp = tf.compat.v1.placeholder(shape=[1, 100, 221, args.channels], dtype=tf.float32, name=in_node)
 b = model.create(inp, num_classes=3, is_training=False)
 
 ema = tf.train.ExponentialMovingAverage(args.moving_average_decay)
