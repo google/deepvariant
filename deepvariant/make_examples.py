@@ -554,16 +554,27 @@ def default_options(add_flags=True, flags_obj=None):
       flags_obj.parse_sam_aux_fields = set_parse_sam_aux_fields(
           flags_obj, flags_that_needs_sam_aux_fields)
 
-    if flags_obj.use_original_quality_scores and not flags_obj.parse_sam_aux_fields:
-      errors.log_and_raise(
-          'If use_original_quality_scores is set then parse_sam_aux_fields '
-          'must be set too.', errors.CommandLineError)
+    for flags_strictly_needs_sam_aux_fields in [
+        'sort_by_haplotypes', 'use_original_quality_scores'
+    ]:
+      if (flags_obj[flags_strictly_needs_sam_aux_fields].value and
+          not flags_obj.parse_sam_aux_fields):
+        errors.log_and_raise(
+            'If --{} is set then parse_sam_aux_fields '
+            'must be set too.'.format(flags_strictly_needs_sam_aux_fields),
+            errors.CommandLineError)
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
 
-    if (flags_obj.add_hp_channel and not flags_obj.parse_sam_aux_fields):
-      errors.log_and_raise(
-          'If add_hp_channel is set then parse_sam_aux_fields must be set, '
-          'otherwise HP tags will not be read in.', errors.CommandLineError)
+    for flag_optionally_needs_sam_aux_fields in ['add_hp_channel']:
+      if (flags_obj[flag_optionally_needs_sam_aux_fields].value and
+          not flags_obj.parse_sam_aux_fields):
+        logging.warning(
+            'WARGNING! --%s is set but --parse_sam_aux_fields is not '
+            'set. This will cause aux fields to not be read in. The relevant '
+            'values might be zero. For example, for --add_hp_channel, '
+            'resulting in an empty HP channel. If this is not what you '
+            'intended, please stop and enable --parse_sam_aux_fields.',
+            flag_optionally_needs_sam_aux_fields)
     if flags_obj.add_hp_channel:
       options.pic_options.num_channels += 1
       options.pic_options.add_hp_channel = True

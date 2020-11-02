@@ -1975,19 +1975,50 @@ class RegionProcessorTest(parameterized.TestCase):
                                  six.b('foo'), self.default_shape,
                                  self.default_format)
 
-  def test_use_original_quality_scores_and_parse_sam_aux_fields_false(self):
+  @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')
+  def test_flags_strictly_needs_sam_aux_fields(
+      self, flags_strictly_needs_sam_aux_fields):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.examples = 'examples.tfrecord'
-    FLAGS.use_original_quality_scores = True
+    FLAGS[flags_strictly_needs_sam_aux_fields].value = True
     FLAGS.parse_sam_aux_fields = False
 
     with six.assertRaisesRegex(
         self, Exception,
-        'If use_original_quality_scores is set then parse_sam_aux_fields must be set too.'
-    ):
+        'If --{} is set then parse_sam_aux_fields must be set too.'.format(
+            flags_strictly_needs_sam_aux_fields)):
       make_examples.default_options(add_flags=True)
+
+  @parameterized.parameters(
+      ('add_hp_channel', True, None),
+      ('add_hp_channel', False,
+       'WARGNING! --{} is set but --parse_sam_aux_fields is not set.'),
+      ('add_hp_channel', None,
+       'Because --{}=true, --parse_sam_aux_fields is set to true to enable '
+       'reading auxiliary fields from reads.'),
+  )
+  def test_flag_optionally_needs_sam_aux_fields_with_different_parse_sam_aux_fields(
+      self, flag_optionally_needs_sam_aux_fields, parse_sam_aux_fields,
+      expected_message):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = 'examples.tfrecord'
+    FLAGS[flag_optionally_needs_sam_aux_fields].value = True
+    FLAGS.parse_sam_aux_fields = parse_sam_aux_fields
+
+    with self.assertLogs() as logs:
+      make_examples.default_options(add_flags=True)
+    warning_messages = [x for x in logs.output if x.startswith('WARNING')]
+    if expected_message:
+      self.assertLen(warning_messages, 1)
+      self.assertRegex(
+          warning_messages[0],
+          expected_message.format(flag_optionally_needs_sam_aux_fields))
+    else:
+      self.assertEmpty(warning_messages)
 
   @parameterized.parameters(
       [
