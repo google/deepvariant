@@ -229,6 +229,12 @@ function run_glnexus() {
     | bcftools view - | bgzip -c > "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}"
 }
 
+function extract_samples() {
+  bcftools view -s HG002 "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}" > "${OUTPUT_DIR}/HG002_split.vcf"
+  bcftools view -s HG003 "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}" > "${OUTPUT_DIR}/HG003_split.vcf"
+  bcftools view -s HG004 "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}" > "${OUTPUT_DIR}/HG004_split.vcf"
+}
+
 ## Evaluation: run hap.py
 function run_happy() {
   local -r truth_vcf="${1}"
@@ -262,6 +268,9 @@ function run_all_happy_reports() {
   run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" 2>&1 | tee "${LOG_DIR}/happy_child.log"
   run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
   run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" 2>&1 | tee "${LOG_DIR}/happy_parent2.log"
+  run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_child_split.log"
+  run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent1_split.log"
+  run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent2_split.log"
 }
 
 ## Run `vcf_stats_report`
@@ -296,6 +305,7 @@ function main() {
   get_docker_image
   run_deeptrio
   run_glnexus
+  extract_samples
   # redacted
   #run_all_vcf_stats_report
   run_all_happy_reports
