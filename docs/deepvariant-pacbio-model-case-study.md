@@ -36,9 +36,9 @@ conda config --add channels bioconda
 conda config --add channels conda-forge
 
 # create the environment and install dependencies
-conda create -n deepvariant_whatshap
+conda create -y -n deepvariant_whatshap
 conda activate deepvariant_whatshap
-conda install whatshap==1.0 samtools==1.10
+conda install -y whatshap==1.0 samtools==1.10
 ```
 
 ### Download Reference
@@ -58,28 +58,28 @@ samtools faidx reference/GRCh38_no_alt_analysis_set.fasta
 ### Download Genome in a Bottle Benchmarks
 
 We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
-variant benchmarks for HG002.
+variant benchmarks for HG003.
 
 ```bash
 mkdir -p benchmark
 
 FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
 
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
 ```
 
-### Download HG002 chr20 HiFi alignments
+### Download HG003 chr20 HiFi alignments
 
-We'll use HG002 chr20 HiFi reads publicly available from the [PrecisionFDA Truth v2 Challenge](https://precision.fda.gov/challenges/10).
+We'll use HG003 chr20 HiFi reads publicly available from the [PrecisionFDA Truth v2 Challenge](https://precision.fda.gov/challenges/10).
 
 ```bash
 mkdir -p input
-HTTPDIR=https://downloads.pacbcloud.com/public/dataset/HG002/deepvariant-case-study
+HTTPDIR=https://downloads.pacbcloud.com/public/dataset/HG003/deepvariant-case-study
 
-curl ${HTTPDIR}/HG002.GRCh38.chr20.pFDA_truthv2.bam > input/HG002.GRCh38.chr20.pFDA_truthv2.bam
-curl ${HTTPDIR}/HG002.GRCh38.chr20.pFDA_truthv2.bam.bai > input/HG002.GRCh38.chr20.pFDA_truthv2.bam.bai
+curl ${HTTPDIR}/HG003.GRCh38.chr20.pFDA_truthv2.bam > input/HG003.GRCh38.chr20.pFDA_truthv2.bam
+curl ${HTTPDIR}/HG003.GRCh38.chr20.pFDA_truthv2.bam.bai > input/HG003.GRCh38.chr20.pFDA_truthv2.bam.bai
 ```
 
 ## Run DeepVariant on chromosome 20 alignments
@@ -94,7 +94,7 @@ singularity exec --bind /usr/lib/locale/ \
     /opt/deepvariant/bin/run_deepvariant \
     --model_type PACBIO \
     --ref reference/GRCh38_no_alt_analysis_set.fasta \
-    --reads input/HG002.GRCh38.chr20.pFDA_truthv2.bam \
+    --reads input/HG003.GRCh38.chr20.pFDA_truthv2.bam \
     --output_vcf deepvariant1/output.vcf.gz \
     --num_shards $(nproc) \
     --regions chr20
@@ -110,7 +110,7 @@ whatshap phase \
         --reference reference/GRCh38_no_alt_analysis_set.fasta \
         --chromosome chr20 \
         deepvariant1/output.vcf.gz \
-        input/HG002.GRCh38.chr20.pFDA_truthv2.bam
+        input/HG003.GRCh38.chr20.pFDA_truthv2.bam
 
 tabix -p vcf whatshap/deepvariant1.phased.vcf.gz
 ```
@@ -119,12 +119,12 @@ tabix -p vcf whatshap/deepvariant1.phased.vcf.gz
 
 ```bash
 whatshap haplotag \
-        --output whatshap/HG002.GRCh38.chr20.haplotagged.bam \
+        --output whatshap/HG003.GRCh38.chr20.haplotagged.bam \
         --reference reference/GRCh38_no_alt_analysis_set.fasta \
         whatshap/deepvariant1.phased.vcf.gz \
-        input/HG002.GRCh38.chr20.pFDA_truthv2.bam
+        input/HG003.GRCh38.chr20.pFDA_truthv2.bam
 
-samtools index whatshap/HG002.GRCh38.chr20.haplotagged.bam
+samtools index whatshap/HG003.GRCh38.chr20.haplotagged.bam
 ```
 
 ## Run DeepVariant on haplotagged chromosome 20 alignments
@@ -139,7 +139,7 @@ singularity exec --bind /usr/lib/locale/ \
     /opt/deepvariant/bin/run_deepvariant \
     --model_type PACBIO \
     --ref reference/GRCh38_no_alt_analysis_set.fasta \
-    --reads whatshap/HG002.GRCh38.chr20.haplotagged.bam \
+    --reads whatshap/HG003.GRCh38.chr20.haplotagged.bam \
     --make_examples_extra_args="sort_by_haplotypes=true,parse_sam_aux_fields=true" \
     --output_vcf deepvariant2/output.vcf.gz \
     --num_shards $(nproc) \
@@ -155,11 +155,11 @@ singularity exec docker://pkrusche/hap.py:latest \
     /opt/hap.py/bin/hap.py \
         --threads $(nproc) \
         -r reference/GRCh38_no_alt_analysis_set.fasta \
-        -f benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed \
+        -f benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
         -o happy/giab-comparison.v4.2.first_pass \
         --engine=vcfeval \
         -l chr20 \
-        benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+        benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
         deepvariant1/output.vcf.gz
 ```
 
@@ -168,10 +168,10 @@ First pass output:
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11256     11048       208        21583       150       9985     97       0.981521          0.987067        0.462633         0.984286                     NaN                     NaN                   1.561710                   2.063683
- INDEL   PASS        11256     11048       208        21583       150       9985     97       0.981521          0.987067        0.462633         0.984286                     NaN                     NaN                   1.561710                   2.063683
-   SNP    ALL        71333     71277        56        95048         7      23684      6       0.999215          0.999902        0.249179         0.999558                2.314904                2.018283                   1.715978                   2.017439
-   SNP   PASS        71333     71277        56        95048         7      23684      6       0.999215          0.999902        0.249179         0.999558                2.314904                2.018283                   1.715978                   2.017439
+ INDEL    ALL        10634     10458       176        21458       124      10447     85       0.983449          0.988739        0.486858         0.986087                     NaN                     NaN                   1.749861                   2.277673
+ INDEL   PASS        10634     10458       176        21458       124      10447     85       0.983449          0.988739        0.486858         0.986087                     NaN                     NaN                   1.749861                   2.277673
+   SNP    ALL        70209     70180        29        93937        25      23666      5       0.999587          0.999644        0.251935         0.999616                2.297347                1.991024                   1.884533                   2.111166
+   SNP   PASS        70209     70180        29        93937        25      23666      5       0.999587          0.999644        0.251935         0.999616                2.297347                1.991024                   1.884533                   2.111166
 ```
 
 ## Benchmark Second Pass
@@ -183,11 +183,11 @@ singularity exec docker://pkrusche/hap.py:latest \
     /opt/hap.py/bin/hap.py \
         --threads $(nproc) \
         -r reference/GRCh38_no_alt_analysis_set.fasta \
-        -f benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed \
+        -f benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
         -o happy/giab-comparison.v4.2.second_pass \
         --engine=vcfeval \
         -l chr20 \
-        benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+        benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
         deepvariant2/output.vcf.gz
 ```
 
@@ -196,8 +196,8 @@ Second pass output:
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11256     11146       110        22043       116      10374     66       0.990227          0.990059        0.470626         0.990143                     NaN                     NaN                   1.561710                   2.225178
- INDEL   PASS        11256     11146       110        22043       116      10374     66       0.990227          0.990059        0.470626         0.990143                     NaN                     NaN                   1.561710                   2.225178
-   SNP    ALL        71333     71274        59        94898        10      23533      8       0.999173          0.999860        0.247982         0.999516                2.314904                2.016874                   1.715978                   2.001392
-   SNP   PASS        71333     71274        59        94898        10      23533      8       0.999173          0.999860        0.247982         0.999516                2.314904                2.016874                   1.715978                   2.001392
+ INDEL    ALL        10634     10537        97        21930        94      10866     58       0.990878          0.991504        0.495486         0.991191                     NaN                     NaN                   1.749861                   2.430139
+ INDEL   PASS        10634     10537        97        21930        94      10866     58       0.990878          0.991504        0.495486         0.991191                     NaN                     NaN                   1.749861                   2.430139
+   SNP    ALL        70209     70189        20        93591        14      23320      2       0.999715          0.999801        0.249169         0.999758                2.297347                1.989335                   1.884533                   2.099871
+   SNP   PASS        70209     70189        20        93591        14      23320      2       0.999715          0.999801        0.249169         0.999758                2.297347                1.989335                   1.884533                   2.099871
 ```
