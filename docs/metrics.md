@@ -50,26 +50,27 @@ SNP   | 38180   | 396  | 116  | 0.989735 | 0.996975  | 0.993341
 
 ### Runtime
 
-Runtime is on HG002 (all chromosomes).
+Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 152m
-call_variants                    | 204m
-postprocess_variants (with gVCF) | 65m
-total                            | 421m = 7 hours
+make_examples                    | 113m
+call_variants                    | 218m
+postprocess_variants (with gVCF) | 73m
+total                            | 404m = 6.7 hours
 
 ### Accuracy
 
-hap.py results on HG002 (chr20), using NIST v4.2 truth.
+hap.py results on HG003 (all chromosomes, using NIST v4.2 truth), which was held
+out while training.
 
-(The input BAM is haplotagged already and DeepVariant
+(The input BAM is phased already and DeepVariant
 was run with `--sort_by_haplotypes=true --parse_sam_aux_fields=true`.)
 
-Type  | # TP  | # FN | # FP | Recall   | Precision | F1_Score
------ | ----- | ---- | ---- | -------- | --------- | --------
-Indel | 11142 | 114  | 111  | 0.989872 | 0.990483  | 0.990177
-SNP   | 71273 | 60   | 15   | 0.999159 | 0.999790  | 0.999474
+Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
+----- | ------- | ---- | ---- | -------- | --------- | --------
+Indel |  501468 | 3442 | 3461 | 0.993183 | 0.993416  | 0.993300
+SNP   | 3327592 | 3898 | 2535 | 0.998830 | 0.999239  | 0.999035
 
 ## Hybrid (Illumina + PacBio HiFi)
 
@@ -115,8 +116,8 @@ curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_we
 bash run_wes_case_study_docker.sh
 
 # PacBio (should take about 7 hours)
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_pacbio_case_study_docker.sh
-bash run_pacbio_case_study_docker.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_pacbio.sh
+bash inference_pacbio.sh
 
 # Hybrid (should take about 7 hours)
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_hybrid_pacbio_illumina_case_study_docker.sh
