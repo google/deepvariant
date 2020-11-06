@@ -131,4 +131,11 @@ export PYTHON_LIB_PATH='/usr/local/lib/python3.6/dist-packages'
  git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
  echo | ./configure)
 
+# We use TensorFlow's .bazelrc as part of DeepVariant's. In it they use a java
+# toolchain flag based on a definition in a BUILD file in the TF repo. This
+# causes that flag's usage to raise build errors when building DeepVariant
+# unless we also include that BUILD file.
+mkdir -p third_party/toolchains/java
+cp ../tensorflow/third_party/toolchains/java/BUILD third_party/toolchains/java/
+
 note_build_stage "build-prereq.sh complete"

@@ -118,11 +118,13 @@ bazel build -c opt \
   --build_python_zip \
   :binaries-deeptrio
 
+# shellcheck disable=SC2086
 bazel build  -c opt \
   --output_filter=DONT_MATCH_ANYTHING \
   --noshow_loading_progress \
   --show_result=0 \
   --noshow_progress \
+  ${DV_COPT_FLAGS} \
   :licenses_zip
 
 # Bazel understandably doesn't like it when its output files are edited, so

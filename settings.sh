@@ -39,7 +39,7 @@ export TF_NEED_GCP=1
 export CUDNN_INSTALL_PATH="/usr/lib/x86_64-linux-gnu"
 
 # The version of bazel we want to build DeepVariant.
-DV_BAZEL_VERSION="0.26.1"
+DV_BAZEL_VERSION="3.1.0"
 
 # We need to make sure that $HOME/bin is first in the binary search path so that
 # `bazel` will find the latest version of bazel installed in the user's home
@@ -68,12 +68,12 @@ export DV_TF_NIGHTLY_BUILD="${DV_TF_NIGHTLY_BUILD:-0}"
 if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
   export DV_CPP_TENSORFLOW_TAG="master"
 else
-  export DV_CPP_TENSORFLOW_TAG="v2.0.0"
+  export DV_CPP_TENSORFLOW_TAG="v2.3.0"
 fi
 # These WHL_VERSIONs determine the Python version of TensorFlow we use.
-export DV_GCP_OPTIMIZED_TF_WHL_VERSION="2.0.0"
-export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="2.0.0"
-export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.0.0"
+export DV_GCP_OPTIMIZED_TF_WHL_VERSION="2.3.0"
+export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="2.3.0"
+export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.3.0"
 
 # Set this to 1 to use DeepVariant with GPUs. Set it to an already existing
 # value in the environment (allowing command line control of the build),
@@ -92,7 +92,7 @@ export DV_USE_GCP_OPTIMIZED_TF_WHL="${DV_USE_GCP_OPTIMIZED_TF_WHL:-1}"
 export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-${DV_GCP_OPTIMIZED_TF_WHL_VERSION}.deepvariant_gcp-cp27-none-linux_x86_64.whl"
 export GCP_OPTIMIZED_TF_WHL_PATH="${DV_PACKAGE_BUCKET_PATH}/tensorflow"
 export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"
-export DV_TF_NUMPY_VERSION="1.16"  # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+export DV_TF_NUMPY_VERSION="1.18.5"  # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 
 # Set this to 1 to make our prereq scripts install the CUDA libraries.
 # If you already have CUDA installed, such as on a properly provisioned
@@ -102,7 +102,14 @@ export DV_INSTALL_GPU_DRIVERS="${DV_INSTALL_GPU_DRIVERS:-0}"
 export PYTHON_BIN_PATH=$(which python3.6)
 export PYTHON_LIB_PATH='/usr/local/lib/python3.6/dist-packages'
 export USE_DEFAULT_PYTHON_LIB_PATH=1
-export DV_COPT_FLAGS="--copt=-march=corei7 --copt=-Wno-sign-compare --copt=-Wno-write-strings"
+# N.B. The --experimental_build_setting_api had to be added on protobuf
+# upgrade to 3.9.2 to avoid error in bazel_skylib:
+#   "parameter 'build_setting' is experimental and thus unavailable with the
+#    current flags. It may be enabled by setting
+#    --experimental_build_setting_api"
+# Presumably it won't be needed at some later point when bazel_skylib is
+# upgraded again.
+export DV_COPT_FLAGS="--copt=-march=corei7 --copt=-Wno-sign-compare --copt=-Wno-write-strings --experimental_build_setting_api"
 
 function note_build_stage {
   echo "========== [$(date)] Stage '${1}' starting"

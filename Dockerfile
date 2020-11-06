@@ -36,7 +36,7 @@ ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ENV VERSION ${VERSION}
 
 WORKDIR /opt/
-COPY --from=builder /opt/deepvariant/bazel-genfiles/licenses.zip .
+COPY --from=builder /opt/deepvariant/bazel-bin/licenses.zip .
 
 WORKDIR /opt/deepvariant/bin/
 COPY --from=builder /opt/deepvariant/run-prereq.sh .

@@ -1,5 +1,9 @@
 # Bazel (https://bazel.build/) BUILD file for Protobuf.
 
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test", "objc_library")
+load("@rules_java//java:defs.bzl", "java_library")
+load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain", "proto_library")
+
 licenses(["notice"])
 
 exports_files(["LICENSE"])
@@ -19,7 +23,7 @@ config_setting(
 # ZLIB configuration
 ################################################################################
 
-ZLIB_DEPS = ["@zlib_archive//:zlib"]
+ZLIB_DEPS = ["@zlib//:zlib"]
 
 ################################################################################
 # Protobuf Runtime Library
@@ -116,13 +120,15 @@ cc_library(
         "src/google/protobuf/any_lite.cc",
         "src/google/protobuf/arena.cc",
         "src/google/protobuf/extension_set.cc",
+        "src/google/protobuf/generated_enum_util.cc",
         "src/google/protobuf/generated_message_table_driven_lite.cc",
         "src/google/protobuf/generated_message_util.cc",
         "src/google/protobuf/implicit_weak_message.cc",
         "src/google/protobuf/io/coded_stream.cc",
-        "src/google/protobuf/io/strtod.cc",
         "src/google/protobuf/io/io_win32.cc",
+        "src/google/protobuf/io/strtod.cc",
         "src/google/protobuf/io/zero_copy_stream.cc",
+        "src/google/protobuf/io/zero_copy_stream_impl.cc",
         "src/google/protobuf/io/zero_copy_stream_impl_lite.cc",
         "src/google/protobuf/message_lite.cc",
         "src/google/protobuf/parse_context.cc",
@@ -176,7 +182,6 @@ cc_library(
         "src/google/protobuf/io/gzip_stream.cc",
         "src/google/protobuf/io/printer.cc",
         "src/google/protobuf/io/tokenizer.cc",
-        "src/google/protobuf/io/zero_copy_stream_impl.cc",
         "src/google/protobuf/map_field.cc",
         "src/google/protobuf/message.cc",
         "src/google/protobuf/reflection_ops.cc",
@@ -683,6 +688,107 @@ java_library(
 )
 
 java_library(
+    name = "protobuf_javalite",
+    srcs = [
+        # Keep in sync with java/lite/pom.xml
+        "java/core/src/main/java/com/google/protobuf/AbstractMessageLite.java",
+        "java/core/src/main/java/com/google/protobuf/AbstractParser.java",
+        "java/core/src/main/java/com/google/protobuf/AbstractProtobufList.java",
+        "java/core/src/main/java/com/google/protobuf/AllocatedBuffer.java",
+        "java/core/src/main/java/com/google/protobuf/Android.java",
+        "java/core/src/main/java/com/google/protobuf/ArrayDecoders.java",
+        "java/core/src/main/java/com/google/protobuf/BinaryReader.java",
+        "java/core/src/main/java/com/google/protobuf/BinaryWriter.java",
+        "java/core/src/main/java/com/google/protobuf/BooleanArrayList.java",
+        "java/core/src/main/java/com/google/protobuf/BufferAllocator.java",
+        "java/core/src/main/java/com/google/protobuf/ByteBufferWriter.java",
+        "java/core/src/main/java/com/google/protobuf/ByteOutput.java",
+        "java/core/src/main/java/com/google/protobuf/ByteString.java",
+        "java/core/src/main/java/com/google/protobuf/CodedInputStream.java",
+        "java/core/src/main/java/com/google/protobuf/CodedInputStreamReader.java",
+        "java/core/src/main/java/com/google/protobuf/CodedOutputStream.java",
+        "java/core/src/main/java/com/google/protobuf/CodedOutputStreamWriter.java",
+        "java/core/src/main/java/com/google/protobuf/DoubleArrayList.java",
+        "java/core/src/main/java/com/google/protobuf/ExperimentalApi.java",
+        "java/core/src/main/java/com/google/protobuf/ExtensionLite.java",
+        "java/core/src/main/java/com/google/protobuf/ExtensionRegistryFactory.java",
+        "java/core/src/main/java/com/google/protobuf/ExtensionRegistryLite.java",
+        "java/core/src/main/java/com/google/protobuf/ExtensionSchema.java",
+        "java/core/src/main/java/com/google/protobuf/ExtensionSchemaLite.java",
+        "java/core/src/main/java/com/google/protobuf/ExtensionSchemas.java",
+        "java/core/src/main/java/com/google/protobuf/FieldInfo.java",
+        "java/core/src/main/java/com/google/protobuf/FieldSet.java",
+        "java/core/src/main/java/com/google/protobuf/FieldType.java",
+        "java/core/src/main/java/com/google/protobuf/FloatArrayList.java",
+        "java/core/src/main/java/com/google/protobuf/GeneratedMessageInfoFactory.java",
+        "java/core/src/main/java/com/google/protobuf/GeneratedMessageLite.java",
+        "java/core/src/main/java/com/google/protobuf/IntArrayList.java",
+        "java/core/src/main/java/com/google/protobuf/Internal.java",
+        "java/core/src/main/java/com/google/protobuf/InvalidProtocolBufferException.java",
+        "java/core/src/main/java/com/google/protobuf/IterableByteBufferInputStream.java",
+        "java/core/src/main/java/com/google/protobuf/JavaType.java",
+        "java/core/src/main/java/com/google/protobuf/LazyField.java",
+        "java/core/src/main/java/com/google/protobuf/LazyFieldLite.java",
+        "java/core/src/main/java/com/google/protobuf/LazyStringArrayList.java",
+        "java/core/src/main/java/com/google/protobuf/LazyStringList.java",
+        "java/core/src/main/java/com/google/protobuf/ListFieldSchema.java",
+        "java/core/src/main/java/com/google/protobuf/LongArrayList.java",
+        "java/core/src/main/java/com/google/protobuf/ManifestSchemaFactory.java",
+        "java/core/src/main/java/com/google/protobuf/MapEntryLite.java",
+        "java/core/src/main/java/com/google/protobuf/MapFieldLite.java",
+        "java/core/src/main/java/com/google/protobuf/MapFieldSchema.java",
+        "java/core/src/main/java/com/google/protobuf/MapFieldSchemaLite.java",
+        "java/core/src/main/java/com/google/protobuf/MapFieldSchemas.java",
+        "java/core/src/main/java/com/google/protobuf/MessageInfo.java",
+        "java/core/src/main/java/com/google/protobuf/MessageInfoFactory.java",
+        "java/core/src/main/java/com/google/protobuf/MessageLite.java",
+        "java/core/src/main/java/com/google/protobuf/MessageLiteOrBuilder.java",
+        "java/core/src/main/java/com/google/protobuf/MessageLiteToString.java",
+        "java/core/src/main/java/com/google/protobuf/MessageSchema.java",
+        "java/core/src/main/java/com/google/protobuf/MessageSetSchema.java",
+        "java/core/src/main/java/com/google/protobuf/MutabilityOracle.java",
+        "java/core/src/main/java/com/google/protobuf/NewInstanceSchema.java",
+        "java/core/src/main/java/com/google/protobuf/NewInstanceSchemaLite.java",
+        "java/core/src/main/java/com/google/protobuf/NewInstanceSchemas.java",
+        "java/core/src/main/java/com/google/protobuf/NioByteString.java",
+        "java/core/src/main/java/com/google/protobuf/OneofInfo.java",
+        "java/core/src/main/java/com/google/protobuf/Parser.java",
+        "java/core/src/main/java/com/google/protobuf/PrimitiveNonBoxingCollection.java",
+        "java/core/src/main/java/com/google/protobuf/ProtoSyntax.java",
+        "java/core/src/main/java/com/google/protobuf/Protobuf.java",
+        "java/core/src/main/java/com/google/protobuf/ProtobufArrayList.java",
+        "java/core/src/main/java/com/google/protobuf/ProtobufLists.java",
+        "java/core/src/main/java/com/google/protobuf/ProtocolStringList.java",
+        "java/core/src/main/java/com/google/protobuf/RawMessageInfo.java",
+        "java/core/src/main/java/com/google/protobuf/Reader.java",
+        "java/core/src/main/java/com/google/protobuf/RopeByteString.java",
+        "java/core/src/main/java/com/google/protobuf/Schema.java",
+        "java/core/src/main/java/com/google/protobuf/SchemaFactory.java",
+        "java/core/src/main/java/com/google/protobuf/SchemaUtil.java",
+        "java/core/src/main/java/com/google/protobuf/SmallSortedMap.java",
+        "java/core/src/main/java/com/google/protobuf/StructuralMessageInfo.java",
+        "java/core/src/main/java/com/google/protobuf/TextFormatEscaper.java",
+        "java/core/src/main/java/com/google/protobuf/UninitializedMessageException.java",
+        "java/core/src/main/java/com/google/protobuf/UnknownFieldSchema.java",
+        "java/core/src/main/java/com/google/protobuf/UnknownFieldSetLite.java",
+        "java/core/src/main/java/com/google/protobuf/UnknownFieldSetLiteSchema.java",
+        "java/core/src/main/java/com/google/protobuf/UnmodifiableLazyStringList.java",
+        "java/core/src/main/java/com/google/protobuf/UnsafeUtil.java",
+        "java/core/src/main/java/com/google/protobuf/Utf8.java",
+        "java/core/src/main/java/com/google/protobuf/WireFormat.java",
+        "java/core/src/main/java/com/google/protobuf/Writer.java",
+    ],
+    javacopts = select({
+        "//:jdk9": ["--add-modules=jdk.unsupported"],
+        "//conditions:default": [
+            "-source 7",
+            "-target 7",
+        ],
+    }),
+    visibility = ["//visibility:public"],
+)
+
+java_library(
     name = "protobuf_java_util",
     srcs = glob([
         "java/util/src/main/java/com/google/protobuf/util/*.java",
@@ -762,17 +868,10 @@ cc_binary(
     deps = [
         ":protobuf",
         ":proto_api",
-        # This is an ugly but necessary hack to get the Nucleus protobuf
-        # descriptors loaded into the generated DescriptorPool managed by
-        # _message.so.  Without this, Nucleus "fast_cpp_protos" will be
-        # backed by DynamicMessages and not the true C++ generated classes.
-        # That in turn will cause fast conversions in
-        # nucleus/util/proto_clif_converter.h to break.
-        # Also, this relies on dlopen() (which Python uses to load C++
-        # extension modules like _message.so) initializing C++ static objects
-        # before returning.  That is true on Linux, Solaris, BSD, and OS/X,
-        # but not guaranteed by POSIX.  See
-        # https://stackoverflow.com/questions/40115688/are-static-c-objects-in-dynamically-loaded-libraries-initialized-before-dlopen
+        # The below Nucleus-specific dependencies cause its protobuf descriptors
+        # to be loaded into the  DescriptorPool managed by _message.so and put
+        # all Nucleus C++ extensions here to avoid ODR violations. See
+        # an internal document for more details.
         "@//third_party/nucleus/protos:all_nucleus_protos_cc",
         # Include all C++ extensions here, so that there is only one
         # C++ extension and we avoid ODR violations.
@@ -1055,4 +1154,109 @@ py_proto_library(
     ],
     default_runtime = "",
     protoc = ":protoc",
+)
+
+################################################################################
+# Conformance tests
+################################################################################
+
+proto_library(
+    name = "test_messages_proto2_proto",
+    srcs = ["src/google/protobuf/test_messages_proto2.proto"],
+    visibility = ["//visibility:public"],
+)
+
+proto_library(
+    name = "test_messages_proto3_proto",
+    srcs = ["src/google/protobuf/test_messages_proto3.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":any_proto",
+        ":duration_proto",
+        ":field_mask_proto",
+        ":struct_proto",
+        ":timestamp_proto",
+        ":wrappers_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "test_messages_proto2_proto_cc",
+    srcs = ["src/google/protobuf/test_messages_proto2.proto"],
+)
+
+cc_proto_library(
+    name = "test_messages_proto3_proto_cc",
+    srcs = ["src/google/protobuf/test_messages_proto3.proto"],
+    deps = [
+        ":cc_wkt_protos",
+    ],
+)
+
+proto_library(
+    name = "conformance_proto",
+    srcs = ["conformance/conformance.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "conformance_proto_cc",
+    srcs = ["conformance/conformance.proto"],
+)
+
+cc_library(
+    name = "jsoncpp",
+    srcs = ["conformance/third_party/jsoncpp/jsoncpp.cpp"],
+    hdrs = ["conformance/third_party/jsoncpp/json.h"],
+    includes = ["conformance"],
+)
+
+cc_library(
+    name = "conformance_test",
+    srcs = [
+        "conformance/conformance_test.cc",
+        "conformance/conformance_test_runner.cc",
+    ],
+    hdrs = [
+        "conformance/conformance_test.h",
+    ],
+    includes = [
+        "conformance",
+        "src",
+    ],
+    deps = [":conformance_proto_cc"],
+)
+
+cc_library(
+    name = "binary_json_conformance_suite",
+    srcs = ["conformance/binary_json_conformance_suite.cc"],
+    hdrs = ["conformance/binary_json_conformance_suite.h"],
+    deps = [
+        ":conformance_test",
+        ":jsoncpp",
+        ":test_messages_proto2_proto_cc",
+        ":test_messages_proto3_proto_cc",
+    ],
+)
+
+cc_library(
+    name = "text_format_conformance_suite",
+    srcs = ["conformance/text_format_conformance_suite.cc"],
+    hdrs = ["conformance/text_format_conformance_suite.h"],
+    deps = [
+        ":conformance_test",
+        ":test_messages_proto2_proto_cc",
+        ":test_messages_proto3_proto_cc",
+    ],
+)
+
+cc_binary(
+    name = "conformance_test_runner",
+    srcs = ["conformance/conformance_test_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":binary_json_conformance_suite",
+        ":conformance_test",
+        ":text_format_conformance_suite",
+    ],
 )

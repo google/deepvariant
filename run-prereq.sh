@@ -104,7 +104,7 @@ pip3 install "${PIP_ARGS[@]}" enum34
 pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
 pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
-pip3 install "${PIP_ARGS[@]}" 'protobuf==3.8.0'
+pip3 install "${PIP_ARGS[@]}" 'protobuf==3.9.2'
 pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
 pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git
 
@@ -168,8 +168,8 @@ else
     elif [[ "${DV_USE_GCP_OPTIMIZED_TF_WHL}" = "1" ]]; then
       echo "Installing Intel's CPU-only MKL TensorFlow ${DV_GCP_OPTIMIZED_TF_WHL_VERSION} wheel"
       # redacted
-      WHEEL_NAME=tensorflow-2.0.0-cp36-cp36m-linux_x86_64.whl
-      wget "https://storage.googleapis.com/penporn-kokoro/tf-mkl-2.0-py36/${WHEEL_NAME}" -O "/tmp/${WHEEL_NAME}"
+      WHEEL_NAME=tensorflow-2.3.0-cp36-cp36m-linux_x86_64.whl
+      wget "https://storage.googleapis.com/deepvariant/packages/tensorflow/${WHEEL_NAME}" -O "/tmp/${WHEEL_NAME}"
       pip3 install "${PIP_ARGS[@]}" --upgrade "/tmp/${WHEEL_NAME}"
     else
       echo "Installing standard CPU-only TensorFlow ${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION} wheel"

@@ -54,5 +54,11 @@ test --test_output=errors
 
 # Until https://github.com/bazelbuild/bazel/issues/4815 is fixed, we need
 # to force the use of our py_runtime.
-build --python_top=//:deepvariant_python_runtime
-test --python_top=//:deepvariant_python_runtime
+# Versions of bazel used by TensorFlow 2.1+ disable the use of --python_top by
+# default with the below error message, necessitating the additional flag.
+#  "ERROR: `--python_top` is disabled by `--incompatible_use_python_toolchains`.
+#    Instead of configuring the Python runtime directly, register a Python
+#    toolchain. See https://github.com/bazelbuild/bazel/issues/7899. You can
+#    temporarily revert to the legacy flag-based way of specifying toolchains by
+#    setting `--incompatible_use_python_toolchains=false`."
+build --python_top=//:deepvariant_python_runtime --incompatible_use_python_toolchains=false

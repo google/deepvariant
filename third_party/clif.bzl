@@ -158,7 +158,7 @@ def _get_repository_roots(ctx, files):
     """
     ctx = ctx  # unused
     result = {}
-    for f in files:
+    for f in files.to_list():
         root = f.root.path
         if root:
             if root not in result:

@@ -46,7 +46,7 @@ local_repository(
 )
 
 # Required boilerplate for tf_workspace().
-# This is copied from https://github.com/tensorflow/tensorflow/blob/v2.0.0/WORKSPACE.
+# This is copied from https://github.com/tensorflow/tensorflow/blob/v2.3.0/WORKSPACE.
 http_archive(
     name = "io_bazel_rules_closure",
     sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",
@@ -59,27 +59,29 @@ http_archive(
 
 # This needs to be in sync with the version of protobuf used by TensorFlow,
 # which is currently defined in @tensorflow/tensorflow/workspace.bzl.
-# We supply our # own BUILD file, though, so we can prevent ODR violations by
+# We supply our own BUILD file, though, so we can prevent ODR violations by
 # putting all of Nucleus's C++ binary dependencies into a single library.
 # That BUILD file must be kept in sync with the version of protobuf used.
 http_archive(
     name = "com_google_protobuf",
     build_file = "//:third_party/protobuf.BUILD",
-    sha256 = "b9e92f9af8819bbbc514e2902aec860415b70209f31dfc8c4fa72515a5df9d59",
-    # This protobuf release is based on protobuf 3.8.0.
-    strip_prefix = "protobuf-310ba5ee72661c081129eb878c1bbcec936b20f0",
+    sha256 = "cfcba2df10feec52a84208693937c17a4b5df7775e1635c1e3baffc487b24c9b",
+    # This protobuf release is based on protobuf 3.9.2.
+    strip_prefix = "protobuf-3.9.2",
     urls = [
-        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz",
-        "https://github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz",
+        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
+        "https://github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
     ],
 )
 
 # bazel_skylib is now a required dependency of protobuf_archive.
 http_archive(
     name = "bazel_skylib",
-    sha256 = "bbccf674aa441c266df9894182d80de104cabd19be98be002f6d478aaa31574d",
-    strip_prefix = "bazel-skylib-2169ae1c374aab4a09aa90e65efe1a3aad4e279b",
-    urls = ["https://github.com/bazelbuild/bazel-skylib/archive/2169ae1c374aab4a09aa90e65efe1a3aad4e279b.tar.gz"],
+    sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
+    ],
 )
 
 # Import all of the tensorflow dependencies.

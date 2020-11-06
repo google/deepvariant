@@ -174,7 +174,8 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
   @flagsaver.FlagSaver
   def test_end2end_inception_v3_failed_warm_up_from(self):
     """End-to-end test of model_train script with a non-existent path."""
-    with self.assertRaises(tf.errors.OpError):
+    # Internal TF raises tf.errors.OpError, public TF raises ValueError.
+    with self.assertRaises((tf.errors.OpError, ValueError)):
       self._run_tiny_training(
           model_name='inception_v3',
           dataset=data_providers_test.make_golden_dataset(
