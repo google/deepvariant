@@ -4,24 +4,23 @@
 
 ### Runtime
 
-Runtime is on HG002 (all chromosomes).
+Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 89m
-call_variants                    | 258m
-postprocess_variants (with gVCF) | 84m
-total                            | 431m = 7.2 hours
+make_examples                    | 92m
+call_variants                    | 227m
+postprocess_variants (with gVCF) | 88m
+total                            | 407m = 6.8 hours
 
 ### Accuracy
 
-hap.py results on HG002 (all chromosomes), using NIST v4.2 truth.
+hap.py results on HG003 (all chromosomes), using NIST v4.2 truth.
 
 Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ----- | ---- | -------- | --------- | --------
-Indel | 522259  | 3207  | 1187 | 0.993897 | 0.997825  | 0.995857
-SNP   | 3345988 | 19352 | 3955 | 0.994250 | 0.998820  | 0.996530
-
+Indel |  501841 |  3069 | 1389 | 0.993922 | 0.997351  | 0.995634
+SNP   | 3310730 | 20760 | 6202 | 0.993769 | 0.998131  | 0.995945
 
 ## WES (Illumina)
 
@@ -109,7 +108,7 @@ Download and run any of the following case study scripts:
 ```
 # WGS (should take about 7 hours)
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wgs_case_study_docker.sh
-bash run_wgs_case_study_docker.sh
+bash inference_wgs.sh
 
 # WES (should take about 20 minutes)
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wes_case_study_docker.sh

@@ -29,29 +29,29 @@ curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > reference/G
 ### Download Genome in a Bottle Benchmarks
 
 We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
-variant benchmarks for HG002.
+variant benchmarks for HG003.
 
 ```bash
 mkdir -p benchmark
 
 FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
 
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
 ```
 
-### Download HG002 chr20 BAM
+### Download HG003 chr20 BAM
 
-We'll use HG002 Illumina WGS reads publicly available from the
+We'll use HG003 Illumina WGS reads publicly available from the
 [PrecisionFDA Truth v2 Challenge](https://precision.fda.gov/challenges/10).
 
 ```bash
 mkdir -p input
 HTTPDIR=https://storage.googleapis.com/deepvariant/case-study-testdata
 
-curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam
-curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai
+curl ${HTTPDIR}/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam > input/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam
+curl ${HTTPDIR}/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > input/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai
 ```
 
 
@@ -77,9 +77,9 @@ sudo docker run \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
-  --reads /input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
-  --output_vcf /output/HG002.output.vcf.gz \
-  --output_gvcf /output/HG002.output.g.vcf.gz \
+  --reads /input/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
+  --output_vcf /output/HG003.output.vcf.gz \
+  --output_gvcf /output/HG003.output.g.vcf.gz \
   --num_shards $(nproc) \
   --regions chr20 \
   --intermediate_results_dir /output/intermediate_results_dir
@@ -115,9 +115,9 @@ sudo docker run \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
   pkrusche/hap.py /opt/hap.py/bin/hap.py \
-  /benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz \
-  /output/HG002.output.vcf.gz \
-  -f /benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed \
+  /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /output/HG003.output.vcf.gz \
+  -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/happy.output \
   --engine=vcfeval \
@@ -129,9 +129,9 @@ Output:
 ```
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11256     11195        61        21168        21       9524     15       0.994581          0.998196        0.449924         0.996385                     NaN                     NaN                   1.561710                   2.052819
- INDEL   PASS        11256     11195        61        21168        21       9524     15       0.994581          0.998196        0.449924         0.996385                     NaN                     NaN                   1.561710                   2.052819
-   SNP    ALL        71333     70999       334        87792        48      16695     12       0.995318          0.999325        0.190165         0.997317                2.314904                2.058643                   1.715978                   1.745049
-   SNP   PASS        71333     70999       334        87792        48      16695     12       0.995318          0.999325        0.190165         0.997317                2.314904                2.058643                   1.715978                   1.745049
+ INDEL    ALL        10634     10576        58        21101        26      10040     22       0.994546          0.997649        0.475807         0.996095                     NaN                     NaN                   1.749861                   2.264070
+ INDEL   PASS        10634     10576        58        21101        26      10040     22       0.994546          0.997649        0.475807         0.996095                     NaN                     NaN                   1.749861                   2.264070
+   SNP    ALL        70209     69943       266        86372        76      16323     17       0.996211          0.998915        0.188985         0.997561                2.297347                2.060724                   1.884533                   1.922491
+   SNP   PASS        70209     69943       266        86372        76      16323     17       0.996211          0.998915        0.188985         0.997561                2.297347                2.060724                   1.884533                   1.922491
 ```
 
