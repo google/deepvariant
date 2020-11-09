@@ -73,7 +73,11 @@ RUN if [ "${DV_OPENVINO_BUILD}" = "1" ]; then \
         cd /opt/models/${model}; \
         if [ "${model}" = "pacbio" ]; then ch=8; else ch=6; fi; \
         python3 /opt/deepvariant/scripts/freeze_graph.py --checkpoint model.ckpt --output model.pb --channels ${ch}; \
-        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo.py --input_model model.pb --input_shape "[1, 100, 221, ${ch}]"; \
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo.py \
+            --input_model model.pb \
+            --input_shape "[1, 100, 221, ${ch}]" \
+            --mean_values "[$(printf '128,%.0s' $(seq ${ch}))]" \
+            --scale 128; \
         rm model.pb; \
       done \
     fi
