@@ -53,6 +53,7 @@ using ::testing::Pointwise;
 constexpr char kBedFilename[] = "test_regions.bed";
 constexpr char kGzippedBedFilename[] = "test_regions.bed.gz";
 constexpr char kMalformedBedFilename[] = "malformed.bed";
+constexpr char k5ColumnBedFileName[] = "5col.bed";
 
 class BedReaderTest : public ::testing::Test {
  protected:
@@ -137,6 +138,13 @@ TEST_F(BedReaderTest, MalformedBedRecord) {
 
   EXPECT_DEATH(as_vector(reader->Iterate()),
                "BED record has invalid number of fields");
+}
+
+TEST_F(BedReaderTest, FiveColBedRecord) {
+  auto status = BedReader::FromFile(GetTestData(k5ColumnBedFileName),
+                                    nucleus::genomics::v1::BedReaderOptions());
+  // See https://github.com/google/deepvariant/issues/374#issuecomment-723752207
+  EXPECT_FALSE(status.ok());
 }
 
 }  // namespace nucleus

@@ -47,7 +47,9 @@ StatusOr<std::unique_ptr<TextReader>> TextReader::FromFile(const string& path) {
   htsFile* fp = hts_open_x(path, "r");
 
   if (fp == nullptr) {
-    return tf::errors::NotFound("Could not open ", path);
+    return tf::errors::NotFound("Could not open ", path,
+                                ". The file might not exist, or the format "
+                                "detected by htslib might be incorrect.");
   } else {
     auto reader = absl::WrapUnique(new TextReader(fp));
     return std::move(reader);
