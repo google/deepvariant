@@ -75,7 +75,6 @@ RUN if [ "${DV_OPENVINO_BUILD}" = "1" ]; then \
         python3 /opt/deepvariant/scripts/freeze_graph.py --checkpoint model.ckpt --output model.pb --channels ${ch}; \
         python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo.py \
             --input_model model.pb \
-            --input_shape "[1, 100, 221, ${ch}]" \
             --mean_values "[$(printf '128,%.0s' $(seq ${ch}))]" \
             --scale 128; \
         rm model.pb; \

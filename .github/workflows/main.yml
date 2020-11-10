@@ -24,37 +24,32 @@ jobs:
 
     - name: Download testdata
       run: |
-        INPUT_DIR="${PWD}/quickstart-testdata"
-        DATA_HTTP_DIR="https://storage.googleapis.com/deepvariant/quickstart-testdata"
-        mkdir -p ${INPUT_DIR}
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/NA12878_S1.chr20.10_10p1mb.bam.bai
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.bed
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.fai
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.fai
-        wget -P ${INPUT_DIR} "${DATA_HTTP_DIR}"/ucsc.hg19.chr20.unittest.fasta.gz.gzi
+        mkdir -p input
+        FTPDIR=ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids
+        curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz | gunzip > input/GRCh38_no_alt_analysis_set.fasta
+        curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > input/GRCh38_no_alt_analysis_set.fasta.fai
+      
+        HTTPDIR=https://storage.googleapis.com/deepvariant/case-study-testdata
+        curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam
+        curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai
     - name: Test
       run: |
-        for model in WGS PACBIO HYBRID_PACBIO_ILLUMINA; do
+        for model in WGS WES PACBIO HYBRID_PACBIO_ILLUMINA; do
 
-        INPUT_DIR="${PWD}/quickstart-testdata"
-        REF_OUTPUT_DIR="${PWD}/quickstart-ref"
+        INPUT_DIR="${PWD}/input"
+        REF_OUTPUT_DIR="${PWD}/reference"
         docker run \
           -v "${INPUT_DIR}":"/input" \
           -v "${REF_OUTPUT_DIR}:/output" \
           deepvariant \
           /opt/deepvariant/bin/run_deepvariant \
           --model_type=${model} \
-          --ref=/input/ucsc.hg19.chr20.unittest.fasta \
-          --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
+          --ref=/input/GRCh38_no_alt_analysis_set.fasta \
+          --reads=/input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
           --regions "chr20:10,000,000-10,010,000" \
-          --output_vcf=/output/output.vcf.gz \
-          --output_gvcf=/output/output.g.vcf.gz \
-          --num_shards=1
+          --output_vcf=/output/HG002.output.vcf.gz \
+          --output_gvcf=/output/HG002.output.g.vcf.gz \
+          --num_shards=$(nproc)
 
         OUTPUT_DIR="${PWD}/quickstart-output-ovino"
         docker run \
@@ -63,13 +58,13 @@ jobs:
           deepvariant \
           /opt/deepvariant/bin/run_deepvariant \
           --model_type=${model} \
-          --ref=/input/ucsc.hg19.chr20.unittest.fasta \
-          --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
+          --ref=/input/GRCh38_no_alt_analysis_set.fasta \
+          --reads=/input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
           --regions "chr20:10,000,000-10,010,000" \
-          --output_vcf=/output/output.vcf.gz \
-          --output_gvcf=/output/output.g.vcf.gz \
+          --output_vcf=/output/HG002.output.vcf.gz \
+          --output_gvcf=/output/HG002.output.g.vcf.gz \
           --call_variants_extra_args="use_openvino=True" \
-          --num_shards=1
+          --num_shards=$(nproc)
 
         files=$(ls $REF_OUTPUT_DIR); \
         for f in $files; do \
