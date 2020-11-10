@@ -9,22 +9,22 @@ BASE="${HOME}/exome-case-study"
 BIN_VERSION="1.0.0"
 
 INPUT_DIR="${BASE}/input/data"
-REF="hs37d5.fa"
-BAM="151002_7001448_0359_AC7F6GANXX_Sample_HG002-EEogPU_v02-KIT-Av5_AGATGTAC_L008.posiSrt.markDup.bam"
-TRUTH_VCF="HG002_GRCh37_1_22_v4.1_draft_benchmark.vcf.gz"
-TRUTH_BED="HG002_GRCh37_1_22_v4.1_draft_benchmark.bed"
+REF="GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+BAM="HG003.novaseq.wes_idt.100x.dedup.bam"
+TRUTH_VCF="HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz"
+TRUTH_BED="HG003_GRCh38_1_22_v4.2_benchmark.bed"
 
 N_SHARDS="64"
 
 OUTPUT_DIR="${BASE}/output"
-EXAMPLES="${OUTPUT_DIR}/HG002.examples.tfrecord@${N_SHARDS}.gz"
-GVCF_TFRECORDS="${OUTPUT_DIR}/HG002.gvcf.tfrecord@${N_SHARDS}.gz"
-CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/HG002.cvo.tfrecord.gz"
-OUTPUT_VCF="HG002.output.vcf.gz"
-OUTPUT_GVCF="HG002.output.g.vcf.gz"
+EXAMPLES="${OUTPUT_DIR}/HG003.examples.tfrecord@${N_SHARDS}.gz"
+GVCF_TFRECORDS="${OUTPUT_DIR}/HG003.gvcf.tfrecord@${N_SHARDS}.gz"
+CALL_VARIANTS_OUTPUT="${OUTPUT_DIR}/HG003.cvo.tfrecord.gz"
+OUTPUT_VCF="HG003.output.vcf.gz"
+OUTPUT_GVCF="HG003.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
-CAPTURE_BED="agilent_sureselect_human_all_exon_v5_b37_targets.bed"
+CAPTURE_BED="idt_capture_novogene.grch38.bed"
 
 # Whether to build docker image.
 BUILD_DOCKER="${1:-false}"
@@ -91,18 +91,19 @@ if ! hash docker 2>/dev/null; then
   sudo apt-get -qq -y install docker-ce
 fi
 
+GCS_DATA_DIR="https://storage.googleapis.com/deepvariant"
 # Copy the data
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" https://storage.googleapis.com/deepvariant/exome-case-study-testdata/151002_7001448_0359_AC7F6GANXX_Sample_HG002-EEogPU_v02-KIT-Av5_AGATGTAC_L008.posiSrt.markDup.bai
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${BAM}"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${TRUTH_BED}"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${TRUTH_VCF}"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${TRUTH_VCF}.tbi"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${CAPTURE_BED}"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${REF}.gz"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${REF}.gz.fai"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${REF}.gz.gzi"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${REF}.gzi"
-aria2c -c -x10 -s10 -d "${INPUT_DIR}" "https://storage.googleapis.com/deepvariant/exome-case-study-testdata/${REF}.fai"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/exome-case-study-testdata/${BAM}"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/exome-case-study-testdata/${BAM}.bai"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/exome-case-study-testdata/${CAPTURE_BED}"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${TRUTH_BED}"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${TRUTH_VCF}"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${TRUTH_VCF}.tbi"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${REF}.gz"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${REF}.gz.fai"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${REF}.gz.gzi"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${REF}.gzi"
+aria2c -c -x10 -s10 -d "${INPUT_DIR}" "${GCS_DATA_DIR}/case-study-testdata/${REF}.fai"
 
 if [[ "${BUILD_DOCKER}" = true ]]
 then
