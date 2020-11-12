@@ -8,14 +8,15 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 92m
-call_variants                    | 227m
-postprocess_variants (with gVCF) | 88m
-total                            | 407m = 6.8 hours
+make_examples                    | 94m
+call_variants                    | 215m
+postprocess_variants (with gVCF) | 86m
+total                            | 395m = 6.6 hours
 
 ### Accuracy
 
-hap.py results on HG003 (all chromosomes), using NIST v4.2 truth.
+hap.py results on HG003 (all chromosomes, using NIST v4.2 truth), which was held
+out while training.
 
 Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ----- | ---- | -------- | --------- | --------
@@ -26,23 +27,24 @@ SNP   | 3310730 | 20760 | 6202 | 0.993769 | 0.998131  | 0.995945
 
 ### Runtime
 
-Runtime is on HG002 (all chromosomes).
+Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 18m
+make_examples                    | 8m
 call_variants                    | 2m
 postprocess_variants (with gVCF) | 1m
-total                            | 21m
+total                            | 11m
 
 ### Accuracy
 
-hap.py results on HG002 (all chromosomes), using NIST v4.1 truth.
+hap.py results on HG003 (all chromosomes, using NIST v4.2 truth), which was held
+out while training.
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 2896    | 124  | 81   | 0.958940 | 0.973134  | 0.965985
-SNP   | 38180   | 396  | 116  | 0.989735 | 0.996975  | 0.993341
+Indel | 1025    | 28   | 19   | 0.973409 | 0.982126  | 0.977748
+SNP   | 25005   | 319  | 169  | 0.987403 | 0.993287  | 0.990337
 
 
 ## PacBio (HiFi)
@@ -53,10 +55,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 113m
-call_variants                    | 218m
-postprocess_variants (with gVCF) | 73m
-total                            | 404m = 6.7 hours
+make_examples                    | 115m
+call_variants                    | 195m
+postprocess_variants (with gVCF) | 72m
+total                            | 382m = 6.4 hours
 
 ### Accuracy
 
@@ -79,10 +81,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 136m
-call_variants                    | 259m
-postprocess_variants (with gVCF) | 60m
-total                            | 455 m = 7.6 hours
+make_examples                    | 145m
+call_variants                    | 230m
+postprocess_variants (with gVCF) | 58m
+total                            | 433 m = 7.2 hours
 
 ### Accuracy
 
