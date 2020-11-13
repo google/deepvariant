@@ -142,12 +142,6 @@ Variant MakeExpectedVariant(const std::string& ref,
     variant.add_alternate_bases(alt_allele);
 
   if (alts.empty()) {
-    // Variant should be a single bp gVCF record with the kGVCFAltAllele
-    // marker, genotypes of 0/0, and a GQ value of 0 (currently not
-    // determined). Note that these are simple, baseline tests for any site
-    // that doesn't have a variant call. Detailed testing of the proper gVCF
-    // statistical calculations will come when those calculations appear.
-    // redacted
     variant.set_end(variant.start() + 1);
     variant.add_alternate_bases(kGVCFAltAllele);
     CHECK(google::protobuf::TextFormat::ParseFromString(

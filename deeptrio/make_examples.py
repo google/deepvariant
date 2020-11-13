@@ -1317,10 +1317,6 @@ class RegionProcessor(object):
     candidates = {}
     gvcfs = {}
 
-    # redacted
-    # model is being trained. It may stay this way for now since it doesn't
-    # matter what variant_caller instance is used for training, but it doesn't
-    # look clean this way.
     if in_training_mode(self.options):
       candidates[self.sample_to_train], gvcfs[self.sample_to_train] = (
           self.variant_caller_child.calls_and_gvcfs(
@@ -1747,8 +1743,6 @@ def make_examples_runner(options):
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
 
-      # Output timing for every N candidates.
-      # redacted
       if (int(n_candidates / FLAGS.logging_every_n_candidates) > last_reported
           or n_regions == 1):
         last_reported = int(n_candidates / FLAGS.logging_every_n_candidates)
