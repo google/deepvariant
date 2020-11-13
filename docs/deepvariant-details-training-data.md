@@ -32,7 +32,7 @@ version | Replicates                  | #examples
 v0.8    | 16 HG002 | 160,025,931
 v0.9    | 49 HG002 <sup>[(6)](#vfootnote6)</sup> | 357,507,235
 v0.10   | 49 HG002, 2 HG003, 2 HG004, 1 HG002 (amplified) <sup>[(6)](#vfootnote6)</sup> | 472,711,858
-v1.0    | 1 HG001<br>9 HG002<br>2 HG003<br>2 HG004<br>1 HG005 <sup>[(8)](#vfootnote8)</sup>  | 302,331,948
+v1.0    | 1 HG001<br>2 HG002<br>2 HG003<br>2 HG004<br>1 HG005 <sup>[(8)](#vfootnote8)</sup>  | 302,331,948
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
