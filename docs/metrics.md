@@ -55,10 +55,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 115m
-call_variants                    | 195m
-postprocess_variants (with gVCF) | 72m
-total                            | 382m = 6.4 hours
+make_examples                    | 116m
+call_variants                    | 222m
+postprocess_variants (with gVCF) | 71m
+total                            | 409m = 6.8 hours
 
 ### Accuracy
 
@@ -70,8 +70,8 @@ was run with `--sort_by_haplotypes=true --parse_sam_aux_fields=true`.)
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel |  501468 | 3442 | 3461 | 0.993183 | 0.993416  | 0.993300
-SNP   | 3327592 | 3898 | 2535 | 0.998830 | 0.999239  | 0.999035
+Indel |  501912 | 2998 | 2845 | 0.994062 | 0.994586  | 0.994324
+SNP   | 3327712 | 3778 | 2274 | 0.998866 | 0.999318  | 0.999092
 
 ## Hybrid (Illumina + PacBio HiFi)
 

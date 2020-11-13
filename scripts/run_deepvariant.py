@@ -210,6 +210,7 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['add_hp_channel'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   # Extend the command with all items in kwargs and extra_args.
