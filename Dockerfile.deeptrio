@@ -39,7 +39,7 @@ ENV VERSION_DEEPTRIO ${VERSION_DEEPTRIO}
 ENV FULL_VERSION_DEEPTRIO ${FULL_VERSION_DEEPTRIO}
 
 WORKDIR /opt/
-COPY --from=builder /opt/deepvariant/bazel-genfiles/licenses.zip .
+COPY --from=builder /opt/deepvariant/bazel-bin/licenses.zip .
 
 WORKDIR /opt/deepvariant/bin/
 COPY --from=builder /opt/deepvariant/run-prereq.sh .
