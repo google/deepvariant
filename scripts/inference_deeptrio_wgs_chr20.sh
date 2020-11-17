@@ -6,6 +6,7 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
+BIN_VERSION="1.0.1rc"
 
 INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
@@ -180,7 +181,7 @@ function get_docker_image() {
       (sleep 5 ; sudo docker -f Dockerfile.deeptrio build -t deeptrio .)
     echo "Done building Docker image ${IMAGE}."
   else
-    IMAGE="google/deeptrio:${BIN_VERSION}"
+    IMAGE="gcr.io/deepvariant-docker/deeptrio:${BIN_VERSION}"
     sudo docker pull "${IMAGE}"
   fi
 }
