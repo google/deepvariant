@@ -51,12 +51,12 @@ if [[ "$EUID" = "0" ]]; then
   apt-get -qq -y install sudo > /dev/null
   PIP_ARGS=(
     "-qq"
-    "--ignore-installed")
+    "--force-reinstall")
 else
   PIP_ARGS=(
     "--user"
     "-qq"
-    "--ignore-installed")
+    "--force-reinstall")
 fi
 
 note_build_stage "Update package list"
