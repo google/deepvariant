@@ -6,7 +6,7 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
-BIN_VERSION="1.0.1rc"
+BIN_VERSION="1.1.0-rc20201118"
 
 INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
@@ -181,7 +181,7 @@ function get_docker_image() {
       (sleep 5 ; sudo docker -f Dockerfile.deeptrio build -t deeptrio .)
     echo "Done building Docker image ${IMAGE}."
   else
-    IMAGE="gcr.io/deepvariant-docker/deeptrio:${BIN_VERSION}"
+    IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}"
     sudo docker pull "${IMAGE}"
   fi
 }
@@ -225,7 +225,7 @@ function run_glnexus() {
     -v "${OUTPUT_DIR}":"/output" \
     quay.io/mlin/glnexus:v1.2.7 \
     /usr/local/bin/glnexus_cli \
-    --config DeepVariantWGS \
+    --config DeepVariant_unfiltered \
     "/output/${OUTPUT_GVCF_PARENT2}" "/output/${OUTPUT_GVCF_PARENT1}" "/output/${OUTPUT_GVCF_CHILD}" \
     | bcftools view - | bgzip -c > "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}"
 }
