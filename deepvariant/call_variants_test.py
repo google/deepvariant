@@ -45,6 +45,7 @@ import sys
 from absl import flags
 from absl import logging
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import mock
 import numpy as np
@@ -59,7 +60,6 @@ from deepvariant import modeling
 from deepvariant import testdata
 from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
-from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
@@ -231,7 +231,7 @@ class CallVariantsEndToEndTests(
     return call_variants_outputs, examples, batch_size, max_batches
 
   @parameterized.parameters(model for model in modeling.production_models())
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_call_end2end_with_labels(self, model):
     FLAGS.debugging_true_label_mode = True
     (call_variants_outputs, examples, batch_size,
@@ -250,7 +250,7 @@ class CallVariantsEndToEndTests(
                             for shard_inputs in [False, True]
                             for model in modeling.production_models()
                             for include_debug_info in [False, True])
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_call_end2end(self, model, shard_inputs, include_debug_info):
     FLAGS.include_debug_info = include_debug_info
     (call_variants_outputs, examples, batch_size,

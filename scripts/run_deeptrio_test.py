@@ -39,10 +39,10 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 from absl import flags
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import six
 from deepvariant.opensource_only.scripts import run_deeptrio
-from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
@@ -51,7 +51,7 @@ FLAGS = flags.FLAGS
 class RunDeeptrioTest(parameterized.TestCase):
 
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_basic_command(self, model_type):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
@@ -162,7 +162,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     self.assertLen(post_process_commands, 3)
 
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_duo_command(self, model_type):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
@@ -265,7 +265,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--norealign_reads '
        '--vsc_min_fraction_indels "0.03" '),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_pacbio_args_overwrite(self, make_examples_extra_args, expected_args):
     """Confirms that adding extra flags can overwrite the default from mode."""
     FLAGS.model_type = 'PACBIO'
@@ -339,7 +339,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '%s '
         '--task {}' % expected_args)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_make_examples_extra_args_invalid(self):
     FLAGS.model_type = 'WGS'
     FLAGS.ref = 'your_ref'
@@ -367,7 +367,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--batch_size "4096" '
        '--config_string "gpu_options: {per_process_gpu_memory_fraction: 0.5}"'),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_call_variants_extra_args(self, call_variants_extra_args,
                                     expected_args):
     FLAGS.model_type = 'WGS'
@@ -398,7 +398,7 @@ class RunDeeptrioTest(parameterized.TestCase):
 
   @parameterized.parameters(
       ('qual_filter=3.0', '--qual_filter "3.0"'),)
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_postprocess_variants_extra_args(self,
                                            postprocess_variants_extra_args,
                                            expected_args):
@@ -443,7 +443,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       (False, 'vcf_stats_report=false',
        '--novcf_stats_report --novcf_stats_report'),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_postprocess_variants_duplicate_extra_args(
       self, vcf_stats_report, postprocess_variants_extra_args,
       expected_vcf_stats_report):

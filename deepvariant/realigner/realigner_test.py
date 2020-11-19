@@ -43,6 +43,7 @@ import os
 
 from absl import flags
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import numpy as np
 import six
@@ -52,7 +53,6 @@ from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import realigner
 from deepvariant.realigner import utils
-from deepvariant.testing import flagsaver
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
 from third_party.nucleus.protos import reads_pb2
@@ -224,7 +224,7 @@ class RealignerTest(parameterized.TestCase):
           use_ws_model=True),
       # Use the default AlleleCountLinearModel.
       dict(model=None, min_supporting=-1, max_supporting=-1, use_ws_model=True))
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_window_selector_model_flags(self, model, min_supporting,
                                        max_supporting, use_ws_model):
     # This indirection is needed because the symbols in testdata are not set
@@ -242,7 +242,7 @@ class RealignerTest(parameterized.TestCase):
     # exceptions.
     _ = realigner.realigner_config(FLAGS)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_window_selector_model_flags_failures(self):
     with six.assertRaisesRegex(
         self, ValueError, 'ws_min_supporting_reads should be smaller than ws_'

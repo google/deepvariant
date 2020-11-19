@@ -38,6 +38,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 from absl import flags
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import six
 
@@ -46,7 +47,6 @@ from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils
 from deepvariant import testdata
 from deepvariant.labeler import labeled_examples_to_vcf
-from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
@@ -57,7 +57,7 @@ def setUpModule():
 
 class ExamplesToVCFUnitTest(parameterized.TestCase):
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_end2end(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES + '@3'  # Sharded.
@@ -70,7 +70,7 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
         open(testdata.deepvariant_testdata(
             'golden.training_examples.vcf')).readlines())
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_sample_name_flag(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES
@@ -83,7 +83,7 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
       self.assertEqual(
           list(vcf_reader.header.sample_names), [FLAGS.sample_name])
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_raises_for_unlabeled_examples(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.examples = testdata.GOLDEN_CALLING_EXAMPLES

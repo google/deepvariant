@@ -41,9 +41,11 @@ py_test(
     deps = [
         ":labeled_examples_to_vcf_main_lib",
         "//deepvariant:py_testdata",
-        "//deepvariant/testing:flagsaver",
         "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@absl_py//absl/flags",
         "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:flagsaver",
         "@absl_py//absl/testing:parameterized",
     ],
 )

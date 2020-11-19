@@ -48,6 +48,7 @@ import sys
 from absl import flags
 from absl import logging
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import mock
 import six
@@ -60,7 +61,6 @@ from deepvariant import pileup_image
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
-from deepvariant.testing import flagsaver
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
@@ -175,7 +175,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           mode='training', num_shards=3,
           labeler_algorithm='positional_labeler'),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_make_examples_end2end(self,
                                  mode,
                                  num_shards,
@@ -293,7 +293,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           run_info.labeling_metrics)
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_make_examples_training_end2end_with_customized_classes_labeler(self):
     FLAGS.labeler_algorithm = 'customized_classes_labeler'
     FLAGS.customized_classes_labeler_classes_list = 'ref,class1,class2'
@@ -325,7 +325,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         examples, list(tfrecord.read_tfrecords(golden_file)))
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_make_examples_training_end2end_with_alt_aligned_pileup(self):
     region = ranges.parse_literal('20:10,000,000-10,010,000')
     FLAGS.regions = [ranges.to_literal(region)]
@@ -370,7 +370,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(select_types='snps indels', expected_count=74),
       dict(select_types='multi-allelics', expected_count=4),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_make_examples_with_variant_selection(self, select_types,
                                                 expected_count):
     if select_types is not None:
@@ -586,7 +586,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       make_examples.parse_proto_enum_flag(deeptrio_pb2.DeepTrioOptions.Mode,
                                           'foo')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_keep_duplicates(self):
     FLAGS.keep_duplicates = True
     FLAGS.ref = testdata.CHR20_FASTA
@@ -605,7 +605,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     self.assertEqual(options.pic_options.read_requirements.keep_duplicates,
                      True)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_keep_supplementary_alignments(self):
     FLAGS.keep_supplementary_alignments = True
     FLAGS.ref = testdata.CHR20_FASTA
@@ -625,7 +625,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         options.pic_options.read_requirements.keep_supplementary_alignments,
         True)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_keep_secondary_alignments(self):
     FLAGS.keep_secondary_alignments = True
     FLAGS.ref = testdata.CHR20_FASTA
@@ -644,7 +644,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     self.assertEqual(
         options.pic_options.read_requirements.keep_secondary_alignments, True)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_min_base_quality(self):
     FLAGS.min_base_quality = 5
     FLAGS.ref = testdata.CHR20_FASTA
@@ -662,7 +662,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(options.pic_options.read_requirements.min_base_quality, 5)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_min_mapping_quality(self):
     FLAGS.min_mapping_quality = 15
     FLAGS.ref = testdata.CHR20_FASTA
@@ -681,7 +681,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     self.assertEqual(options.pic_options.read_requirements.min_mapping_quality,
                      15)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_default_options_with_training_random_emit_ref_sites(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.HG001_CHR20_BAM
@@ -702,7 +702,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         options.variant_caller_options_child.fraction_reference_sites_to_emit,
         0.3)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_default_options_without_training_random_emit_ref_sites(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.HG001_CHR20_BAM
@@ -762,7 +762,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     with six.assertRaisesRegex(self, ValueError, expected_error_message):
       make_examples.extract_sample_name_from_sam_reader(mock_sample_reader)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_confident_regions(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.HG001_CHR20_BAM
@@ -821,7 +821,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
           'candidates': ('baz@10', 'baz-00001-of-00010')
       },),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_sharded_outputs1(self, settings):
     # Set all of the requested flag values.
     for name, (flag_val, _) in settings.items():
@@ -839,7 +839,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       expected = settings[name][1] if name in settings else ''
       self.assertEqual(expected, option_val)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_gvcf_output_enabled_is_false_without_gvcf_flag(self):
     FLAGS.mode = 'training'
     FLAGS.gvcf = ''
@@ -849,7 +849,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     self.assertFalse(make_examples.gvcf_output_enabled(options))
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_gvcf_output_enabled_is_true_with_gvcf_flag(self):
     FLAGS.mode = 'training'
     FLAGS.gvcf = '/tmp/foo.vcf'
@@ -1065,7 +1065,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         '"[\'make_examples.py\', \'extra_arg\']".')
     mock_exit.assert_called_once_with(errno.ENOENT)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_catches_bad_flags(self):
     # Set all of the requested flag values.
     region = ranges.parse_literal('20:10,000,000-10,010,000')
@@ -1165,7 +1165,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
                                                vcf_contigs, names_to_exclude,
                                                min_coverage_fraction)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_regions_and_exclude_regions_flags(self):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
@@ -1188,7 +1188,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         _from_literals_list(
             ['20:10,000,000-10,009,999', '20:10,100,001-11,000,000']))
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_incorrect_empty_regions(self):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
@@ -1427,7 +1427,7 @@ class RegionProcessorTest(parameterized.TestCase):
       dict(height_parent=100, height_child=101),
       dict(height_parent=101, height_child=100),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_image_heights(self, height_parent, height_child):
     FLAGS.pileup_image_height_parent = height_parent
     FLAGS.pileup_image_height_child = height_child

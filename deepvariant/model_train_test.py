@@ -43,6 +43,7 @@ import uuid
 
 from absl import flags
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import mock
 import six
@@ -53,7 +54,6 @@ from deepvariant import dv_constants
 from deepvariant import model_train
 from deepvariant import modeling
 from deepvariant import testdata
-from deepvariant.testing import flagsaver
 from deepvariant.testing import tf_test_utils
 
 
@@ -114,7 +114,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
                             if model.is_trainable
                             for compressed_inputs in [True, False])
   # pylint: enable=g-complex-comprehension
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_end2end(self, model_name, compressed_inputs):
     """End-to-end test of model_train script."""
     self._run_tiny_training(
@@ -122,7 +122,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         dataset=data_providers_test.make_golden_dataset(
             compressed_inputs=compressed_inputs, use_tpu=FLAGS.use_tpu))
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_end2end_inception_v3_warm_up_from(self):
     """End-to-end test of model_train script."""
     checkpoint_dir = tf_test_utils.test_tmpdir('inception_v3_warm_up_from')
@@ -133,7 +133,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
         warm_start_from=checkpoint_dir + '/model')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_end2end_inception_v3_warm_up_allow_different_num_channels(self):
     """End-to-end test of model_train script."""
     FLAGS.allow_warmstart_from_different_num_channels = True
@@ -149,7 +149,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
         warm_start_from=checkpoint_dir + '/model')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_end2end_inception_v3_warm_up_by_default_fail_diff_num_channels(self):
     """End-to-end test of model_train script."""
     checkpoint_dir = tf_test_utils.test_tmpdir(
@@ -171,7 +171,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
               use_tpu=FLAGS.use_tpu),
           warm_start_from=checkpoint_dir + '/model')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_end2end_inception_v3_failed_warm_up_from(self):
     """End-to-end test of model_train script with a non-existent path."""
     # Internal TF raises tf.errors.OpError, public TF raises ValueError.
@@ -182,7 +182,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
               use_tpu=FLAGS.use_tpu),
           warm_start_from='this/path/does/not/exist')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_end2end_inception_v3_embedding_invalid_embedding_size(self):
     """End-to-end test of model_train script with an invalid embedding size."""
     with six.assertRaisesRegex(
@@ -196,7 +196,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
               use_tpu=FLAGS.use_tpu))
 
   @parameterized.parameters((False), (True))
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   @mock.patch('deepvariant.model_train.'
               'tf.compat.v1.train.replica_device_setter')
   @mock.patch('deepvariant.model_train.run')
@@ -269,7 +269,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
       ('task', 10),
       ('ps_tasks', 5),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   @mock.patch('deepvariant.model_train.os.environ')
   def test_main_invalid_args(self, flag_name, flag_value, mock_environ):
     # Ensure an exception is raised if flags and TF_CONFIG are set.

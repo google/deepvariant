@@ -34,11 +34,11 @@ import os
 
 from absl import flags
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 
 from deepvariant import show_examples
 from deepvariant import testdata
-from deepvariant.testing import flagsaver
 from third_party.nucleus.testing import test_utils
 
 FLAGS = flags.FLAGS
@@ -130,7 +130,7 @@ class ShowExamplesTest(parameterized.TestCase):
 
 class ShowExamplesEnd2EndTest(absltest.TestCase):
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_show_examples_end2end_calling_examples(self):
     output_prefix = test_utils.test_tmpfile('calling')
     FLAGS.examples = testdata.GOLDEN_CALLING_EXAMPLES
@@ -145,7 +145,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
         any(['label' in filename for filename in filenames]),
         msg='Calling examples should NOT produce labeled images.')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_show_examples_end2end_training_examples(self):
     output_prefix = test_utils.test_tmpfile('training')
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES
@@ -160,7 +160,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
         all(['label' in filename for filename in filenames]),
         msg='Training examples should produce labeled images.')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_show_examples_end2end_all_optional_parameters(self):
     # Set all the optional parameters to check that they all work together.
     output_prefix = test_utils.test_tmpfile('kitchen_sink')
@@ -209,7 +209,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
         msg='Specific examples and their output filenames should be the same '
         'if the inputs are the same.')
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_show_examples_raises_on_wrong_column_labels(self):
     output_prefix = test_utils.test_tmpfile('column_labels')
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES

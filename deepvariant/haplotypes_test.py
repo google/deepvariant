@@ -41,6 +41,7 @@ import types
 
 from absl import flags
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import numpy as np
 import six
@@ -48,7 +49,6 @@ import six
 from third_party.nucleus.testing import test_utils
 
 from deepvariant import haplotypes
-from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
@@ -147,7 +147,7 @@ def _resolved_compatible_outputs():
 
 class ResolveOverlappingVariantsTest(parameterized.TestCase):
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_maybe_resolve_conflicting_variants(self):
     FLAGS.disable_haplotype_resolution = False
     # Note: Most of the resolution code is tested below in the
@@ -182,7 +182,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
           variants=_resolvable_incompatible_inputs(),
           expected=_resolvable_incompatible_inputs()),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_can_disable_haplotype_resolution(self, disable_haplotype_resolution,
                                             variants, expected):
     FLAGS.disable_haplotype_resolution = disable_haplotype_resolution

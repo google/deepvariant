@@ -41,6 +41,7 @@ import os
 
 from absl import flags
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import mock
 import six
@@ -49,7 +50,6 @@ import tensorflow as tf
 from deepvariant import data_providers_test
 from deepvariant import model_eval
 from deepvariant import testdata
-from deepvariant.testing import flagsaver
 from deepvariant.testing import tf_test_utils
 
 FLAGS = flags.FLAGS
@@ -71,7 +71,7 @@ class ModelEvalTest(
     self.eval_name = os.path.basename(tf.compat.v1.test.get_temp_dir())
 
   @parameterized.parameters(['inception_v3'])
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   @mock.patch('deepvariant.data_providers.'
               'get_input_fn_from_dataset')
   def test_end2end(self, model_name, mock_get_input_fn_from_dataset):
@@ -110,7 +110,7 @@ class ModelEvalTest(
 
   # Using a constant model, check that running an eval returns the expected
   # metrics.
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   @mock.patch(
       'deepvariant.model_eval.checkpoints_iterator')
   @mock.patch('deepvariant.data_providers.'

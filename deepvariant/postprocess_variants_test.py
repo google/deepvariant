@@ -49,6 +49,7 @@ import sys
 from absl import flags
 from absl import logging
 from absl.testing import absltest
+from absl.testing import flagsaver
 from absl.testing import parameterized
 import mock
 import numpy as np
@@ -70,7 +71,6 @@ from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
 from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
-from deepvariant.testing import flagsaver
 
 FLAGS = flags.FLAGS
 
@@ -303,7 +303,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
                             for compressed_inputs_and_outputs in [False, True]
                             for only_keep_pass in [False, True])
   # pylint: enable=g-complex-comprehension
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_call_end2end(self, compressed_inputs_and_outputs, only_keep_pass):
     FLAGS.infile = make_golden_dataset(compressed_inputs_and_outputs)
     FLAGS.ref = testdata.CHR20_FASTA
@@ -332,7 +332,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       self.assertTrue(tf.io.gfile.exists(FLAGS.outfile + '.tbi'))
       self.assertTrue(tf.io.gfile.exists(FLAGS.gvcf_outfile + '.tbi'))
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_group_variants(self):
     FLAGS.infile = testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
     FLAGS.ref = testdata.CHR20_FASTA
@@ -364,7 +364,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       self.assertFalse(tf.io.gfile.exists(vcf_file_gz + '.csi'))
       self.assertTrue(tf.io.gfile.exists(vcf_file_gz + '.tbi'))
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_reading_sharded_input_with_empty_shards_does_not_crash(self):
     valid_variants = tfrecord.read_tfrecords(
         testdata.GOLDEN_POSTPROCESS_INPUT,
@@ -406,7 +406,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ([], [], 'flag_sample_name', 'flag_sample_name'),
       ([], [], None, dv_constants.DEFAULT_SAMPLE_NAME),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_sample_name_set_correctly(self, variants, nonvariants,
                                      sample_name_flag, expected_sample_name):
     shard = test_utils.test_tmpfile('records.cvo.tfrecord-00000-of-00001')
@@ -657,7 +657,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
               variant=_create_variant_with_alleles(alts=['C', 'T'])),
       ], [0.99, 0.01, 0.0], 6),
   )
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_merge_predictions_multiallelics_probs(self,
                                                  inputs,
                                                  expected_unnormalized_probs,
@@ -1215,7 +1215,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         postprocess_variants.expected_alt_allele_indices(num_alternate_bases),
         expected_indices)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_catches_bad_argv(self):
     # Define valid flags to ensure raise occurs due to argv issues.
     FLAGS.infile = make_golden_dataset(False)
@@ -1230,7 +1230,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         '"[\'postprocess_variants.py\', \'extra_arg\']".')
     mock_exit.assert_called_once_with(errno.ENOENT)
 
-  @flagsaver.FlagSaver
+  @flagsaver.flagsaver
   def test_catches_bad_flags(self):
     FLAGS.infile = make_golden_dataset(False)
     FLAGS.ref = testdata.CHR20_FASTA
