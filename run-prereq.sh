@@ -50,13 +50,11 @@ if [[ "$EUID" = "0" ]]; then
   apt-get -qq -y update > /dev/null
   apt-get -qq -y install sudo > /dev/null
   PIP_ARGS=(
-    "-qq"
-    "--force-reinstall")
+    "-qq")
 else
   PIP_ARGS=(
     "--user"
-    "-qq"
-    "--force-reinstall")
+    "-qq")
 fi
 
 note_build_stage "Update package list"
@@ -125,7 +123,7 @@ fi
 # ERROR: pyasn1-modules 0.2.7 has requirement pyasn1<0.5.0,>=0.4.6, but you'll have pyasn1 0.1.9 which is incompatible.
 pip3 install "${PIP_ARGS[@]}" 'pyasn1<0.5.0,>=0.4.6'
 pip3 install "${PIP_ARGS[@]}" 'requests>=2.18'
-pip3 install "${PIP_ARGS[@]}" 'oauth2client>=4.0.0'
+pip3 install "${PIP_ARGS[@]}" --ignore-installed 'oauth2client>=4.0.0'
 pip3 install "${PIP_ARGS[@]}" 'crcmod>=1.7'
 pip3 install "${PIP_ARGS[@]}" 'six>=1.11.0'
 pip3 install "${PIP_ARGS[@]}" joblib
