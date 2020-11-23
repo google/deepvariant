@@ -45,10 +45,15 @@ source settings.sh
 
 note_build_stage "Misc setup"
 
+APT_ARGS=(
+"-qq"
+"-y"
+)
+
 if [[ "$EUID" = "0" ]]; then
   # Ensure sudo exists, even if we don't need it.
-  apt-get -qq -y update > /dev/null
-  apt-get -qq -y install sudo > /dev/null
+  apt-get update "${APT_ARGS[@]}" > /dev/null
+  apt-get install "${APT_ARGS[@]}" sudo > /dev/null
   PIP_ARGS=(
     "-qq")
 else
@@ -59,11 +64,11 @@ fi
 
 note_build_stage "Update package list"
 
-sudo -H apt-get -qq -y update > /dev/null
+sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get -qq -y install pkg-config zip zlib1g-dev unzip curl git lsb-release wget > /dev/null
+sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git lsb-release wget > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
 
@@ -71,15 +76,15 @@ note_build_stage "Install python3 packaging infrastructure"
 # https://github.com/altair-viz/altair/issues/972
 # On Ubuntu 16.04, default is 3.5.2.
 # So, install Python 3.6.
-sudo -H apt-get install -y software-properties-common
+sudo -H apt-get install "${APT_ARGS[@]}" software-properties-common
 
 # Install Python 3.6.
 # Reference: https://askubuntu.com/a/1069303
 sudo -H add-apt-repository -y ppa:deadsnakes/ppa
-sudo -H apt -y update
-sudo -H apt-get install -y python3.6
-sudo -H apt-get install -y python3.6-dev
-sudo -H apt-get install -y python3.6-venv
+sudo -H apt update "${APT_ARGS[@]}"
+sudo -H apt-get install "${APT_ARGS[@]}" python3.6
+sudo -H apt-get install "${APT_ARGS[@]}" python3.6-dev
+sudo -H apt-get install "${APT_ARGS[@]}" python3.6-venv
 sudo ln -sf /usr/bin/python3.6 /usr/local/bin/python3
 sudo ln -sf /usr/bin/python3.6 /usr/bin/python
 # If we install python3-pip directly, the pip3 version points to:
@@ -198,8 +203,8 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
       sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
       sudo -H dpkg -i "./${CUDA_DEB}"
-      sudo -H apt-get -qq -y update > /dev/null
-      sudo -H apt-get -qq -y install cuda-10-0 > /dev/null
+      sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
+      sudo -H apt-get install "${APT_ARGS[@]}" cuda-10-0 > /dev/null
     fi
     echo "Checking for CUDNN..."
     if [[ ! -e /usr/local/cuda-10.0/include/cudnn.h ]]; then
@@ -214,7 +219,7 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
     fi
 
     # Tensorflow says to do this.
-    sudo -H apt-get -qq -y install libcupti-dev > /dev/null
+    sudo -H apt-get install "${APT_ARGS[@]}" libcupti-dev > /dev/null
   fi
 
   # If we are doing a gpu-build, nvidia-smi should be install. Run it so we
@@ -230,9 +235,9 @@ fi
 note_build_stage "Install other packages"
 
 # for htslib
-sudo -H apt-get -qq -y install libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev > /dev/null
+sudo -H apt-get install "${APT_ARGS[@]}" libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev > /dev/null
 
 # for the debruijn graph
-sudo -H apt-get -qq -y install libboost-graph-dev > /dev/null
+sudo -H apt-get install "${APT_ARGS[@]}" libboost-graph-dev > /dev/null
 
 note_build_stage "run-prereq.sh complete"
