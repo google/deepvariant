@@ -33,6 +33,29 @@ Please also note:
     [blog post on non-human variant-calling](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/)
     for some possible pitfalls and how to handle them.
 
+## DeepTrio
+
+DeepTrio is a deep learning-based trio variant caller built on top of
+DeepVariant. DeepTrio extends DeepVariant's functionality, allowing it to
+utilize a power of neural networs to predict genomic variants in trios or duos.
+For the detiled description and instrcutions on how to run DeepTrio see the
+[document](docs/deeptrio-details.md).
+
+DeepTrio supports germline variant-calling in diploid organisms for the
+following types of input data:
+
+*   NGS (Illumina) data for either
+    [whole genome](docs/deeptrio-wgs-case-study.md) or whole exome.
+*   PacBio HiFi data, see the
+    [PacBio case study](docs/deeptrio-pacbio-case-study.md).
+
+Please also note:
+
+*   All DeepTrio models were trained on human data.
+*   It is possible to use DeepTrio with only 2 samples (child, and parent).
+*   External tool [GLNexus](https://github.com/dnanexus-rnd/GLnexus) is used to
+    merge output VCFs.
+
 ## How to run
 
 We recommend using our Docker solution. The command will look like this:
