@@ -43,6 +43,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/container/node_hash_map.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -209,7 +210,7 @@ class VariantCallingTest : public ::testing::Test {
                                       const ExpectedVariant expect_variant,
                                       const Variant& expected_variant) {
     AlleleCount allele_count = ConstructAlleleCount(ref, alleles, "sample_id");
-    std::unordered_map<std::string, AlleleCount> allele_count_per_sample;
+    absl::node_hash_map<std::string, AlleleCount> allele_count_per_sample;
     allele_count_per_sample["sample_id"] = allele_count;
     const optional<DeepVariantCall> optional_variant =
         caller.CallVariant(allele_count_per_sample, "sample_id");

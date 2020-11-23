@@ -201,7 +201,7 @@ bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
 // Returns the vector of allele objects from allele_count that satisfy
 // IsGoodAltAllele().
 std::vector<Allele> VariantCaller::SelectAltAlleles(
-    const std::unordered_map<std::string, AlleleCount>& allele_counts,
+    const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
     const string& target_sample) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
@@ -383,7 +383,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
   // for each sample simultaniously.
   while (allele_counter_iterators[target_sample] !=
          target_sample_allele_counts.end()) {
-    std::unordered_map<std::string, AlleleCount> allele_counts_per_sample;
+    absl::node_hash_map<std::string, AlleleCount> allele_counts_per_sample;
     for (const auto& sample_counter : allele_counts) {
       if (allele_counter_iterators[sample_counter.first] !=
           allele_counts.at(sample_counter.first).end()) {
@@ -413,7 +413,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
 }
 
 optional<DeepVariantCall> VariantCaller::CallVariant(
-    const std::unordered_map<std::string, AlleleCount>& allele_counts,
+    const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
     const string& target_sample) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
@@ -478,9 +478,8 @@ AlleleMap::const_iterator FindAllele(const Allele& allele,
 }
 
 void VariantCaller::AddSupportingReads(
-    const std::unordered_map<std::string, AlleleCount>& allele_counts,
-    const AlleleMap& allele_map,
-    const string& target_sample,
+    const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
+    const AlleleMap& allele_map, const string& target_sample,
     DeepVariantCall* call) const {
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.

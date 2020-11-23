@@ -38,6 +38,7 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/node_hash_map.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
 #include "tensorflow/core/lib/gtl/optional.h"
@@ -169,14 +170,14 @@ class VariantCaller {
   // appropriate end. The genotypes of the VariantCall will be set to -1 and -1
   // (diploid no-call).
   tensorflow::gtl::optional<DeepVariantCall> CallVariant(
-      const std::unordered_map<std::string, AlleleCount>& allele_counts,
+      const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const std::string& target_sample) const;
 
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(
-      const std::unordered_map<std::string, AlleleCount>& allele_counts,
-      const AlleleMap& allele_map,
-      const std::string& target_sample, DeepVariantCall* call) const;
+      const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
+      const AlleleMap& allele_map, const std::string& target_sample,
+      DeepVariantCall* call) const;
 
  private:
   enum AlleleRejectionAcceptance {
@@ -199,7 +200,7 @@ class VariantCaller {
   }
 
   std::vector<Allele> SelectAltAlleles(
-      const std::unordered_map<std::string, AlleleCount>& allele_counts,
+      const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const std::string& target_sample) const;
   AlleleRejectionAcceptance IsGoodAltAllele(
       const Allele& allele, const int total_count,
