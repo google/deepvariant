@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 94m
-call_variants                    | 215m
-postprocess_variants (with gVCF) | 86m
-total                            | 395m = 6.6 hours
+make_examples                    | 98m
+call_variants                    | 238m
+postprocess_variants (with gVCF) | 88m
+total                            | 424m = 7.1 hours
 
 ### Accuracy
 
@@ -55,10 +55,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 116m
-call_variants                    | 222m
+make_examples                    | 111m
+call_variants                    | 210m
 postprocess_variants (with gVCF) | 71m
-total                            | 409m = 6.8 hours
+total                            | 392m = 6.5 hours
 
 ### Accuracy
 
@@ -81,9 +81,9 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 145m
-call_variants                    | 230m
-postprocess_variants (with gVCF) | 58m
+make_examples                    | 154m
+call_variants                    | 220m
+postprocess_variants (with gVCF) | 59m
 total                            | 433 m = 7.2 hours
 
 ### Accuracy
@@ -112,7 +112,7 @@ Download and run any of the following case study scripts:
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wgs_case_study_docker.sh
 bash inference_wgs.sh
 
-# WES (should take about 20 minutes)
+# WES (should take less than 20 minutes)
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wes_case_study_docker.sh
 bash run_wes_case_study_docker.sh
 
