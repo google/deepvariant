@@ -104,7 +104,7 @@ pip3 install "${PIP_ARGS[@]}" enum34
 pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
 pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
-pip3 install "${PIP_ARGS[@]}" 'protobuf==3.9.2'
+pip3 install "${PIP_ARGS[@]}" 'protobuf==3.12.0'
 pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
 pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git
 
