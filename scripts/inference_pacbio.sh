@@ -126,9 +126,7 @@ function run_deepvariant_with_docker() {
   fi
   if [[ -n $MAKE_EXAMPLES_ARGS ]]
   then
-    extra_args+=( --make_examples_extra_args "sort_by_haplotypes=true,parse_sam_aux_fields=true,${MAKE_EXAMPLES_ARGS}")
-  else
-    extra_args+=( --make_examples_extra_args "sort_by_haplotypes=true,parse_sam_aux_fields=true" )
+    extra_args+=( --make_examples_extra_args "${MAKE_EXAMPLES_ARGS}")
   fi
   if [[ -n $CALL_VARIANTS_ARGS ]]
   then
@@ -152,6 +150,7 @@ function run_deepvariant_with_docker() {
     "${IMAGE}" \
     /opt/deepvariant/bin/run_deepvariant \
     --model_type=PACBIO \
+    --use_hp_information \
     --ref="/input/${REF}.gz" \
     --reads="/input/${BAM}" \
     --output_vcf=/output/${OUTPUT_VCF} \

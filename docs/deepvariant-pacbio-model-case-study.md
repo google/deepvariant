@@ -140,7 +140,7 @@ singularity exec --bind /usr/lib/locale/ \
     --model_type PACBIO \
     --ref reference/GRCh38_no_alt_analysis_set.fasta \
     --reads whatshap/HG003.GRCh38.chr20.haplotagged.bam \
-    --make_examples_extra_args="sort_by_haplotypes=true,parse_sam_aux_fields=true" \
+    --use_hp_information \
     --output_vcf deepvariant2/output.vcf.gz \
     --num_shards $(nproc) \
     --regions chr20
