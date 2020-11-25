@@ -182,7 +182,8 @@ function get_docker_image() {
     echo "Done building Docker image ${IMAGE}."
   else
     IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}"
-    sudo docker pull "${IMAGE}"
+    sudo docker pull "${IMAGE}" || \
+      (sleep 5 ; sudo docker pull "${IMAGE}")
   fi
 }
 

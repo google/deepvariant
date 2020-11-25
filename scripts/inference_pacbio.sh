@@ -101,11 +101,13 @@ function setup_test() {
     if [[ "${USE_GPU}" = true ]]
     then
       IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
-      sudo docker pull "${IMAGE}"
+      sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")
       docker_args+=( --gpus 1 )
     else
       IMAGE="google/deepvariant:${BIN_VERSION}"
-      sudo docker pull "${IMAGE}"
+      sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")
     fi
   fi
 }
