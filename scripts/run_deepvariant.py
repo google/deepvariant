@@ -183,7 +183,7 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
   """Updates `kwargs` with `extra_args`; crashes if `conflict_args` changed."""
   for k, v in extra_args.items():
     if k in kwargs:
-      if k in conflict_args and kwargs[k] != v:
+      if conflict_args is not None and k in conflict_args and kwargs[k] != v:
         raise ValueError('The extra_args "{}" conflicts with other flags. '
                          'Please fix and try again. '
                          'Starting in v1.1.0, if you are running with '

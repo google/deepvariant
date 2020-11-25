@@ -119,6 +119,10 @@ flags.DEFINE_string(
     'Parent2 Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads_parent2.')
+flags.DEFINE_boolean(
+    'use_hp_information', None,
+    'Optional. If True, corresponding flags will be set to properly use the HP '
+    'information present in the BAM input.')
 flags.DEFINE_string(
     'make_examples_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
@@ -249,9 +253,18 @@ def _extend_command_by_args_dict(command, extra_args):
   return command
 
 
-def _update_kwargs_with_warning(kwargs, extra_args):
+def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
+  """Updates `kwargs` with `extra_args`; crashes if `conflict_args` changed."""
   for k, v in extra_args.items():
     if k in kwargs:
+      if conflict_args is not None and k in conflict_args and kwargs[k] != v:
+        raise ValueError('The extra_args "{}" conflicts with other flags. '
+                         'Please fix and try again. '
+                         'Starting in v1.1.0, if you are running with '
+                         'PACBIO and want to use HP tags, please use the new '
+                         '--use_hp_information flag instead of using '
+                         '`--make_examples_extra_args="sort_by_haplotypes=true,'
+                         'parse_sam_aux_fields=true"`'.format(k))
       print('\nWarning: --{} is previously set to {}, now to {}.'.format(
           k, kwargs[k], v))
     kwargs[k] = v
@@ -303,10 +316,15 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
   special_args[
       'pileup_image_height_parent'] = DEEP_TRIO_WGS_PILEUP_HEIGHT_PARENT
 
+  conflict_args = None
   if FLAGS.model_type == 'PACBIO':
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['sort_by_haplotypes'] = special_args[
+        'parse_sam_aux_fields'] = bool(FLAGS.use_hp_information)
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+    conflict_args = ['sort_by_haplotypes', 'parse_sam_aux_fields']
 
   if FLAGS.model_type == 'WES':
     special_args[
@@ -317,7 +335,8 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   # Extend the command with all items in kwargs and extra_args.
-  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
+  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args),
+                                       conflict_args)
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
@@ -402,6 +421,10 @@ def check_flags():
         'model for %s, `call_variants` step will load %s '
         'instead.', FLAGS.model_type, FLAGS.customized_model)
 
+  if FLAGS.use_hp_information and FLAGS.model_type != 'PACBIO':
+    raise ValueError('--use_hp_information can only be used with '
+                     '--model_type="PACBIO"')
+
 
 def get_model_ckpt(model_type, customized_model):
   """Return the path to the model checkpoint based on the input args."""
@@ -444,6 +467,7 @@ def generate_postprocess_variants_command(sample, intermediate_results_dir,
 
 def create_all_commands(intermediate_results_dir):
   """Creates 3 commands to be executed later."""
+  check_flags()
   commands = []
   post_process_commands = []
 
@@ -547,7 +571,6 @@ def main(_):
 
   intermediate_results_dir = check_or_create_intermediate_results_dir(
       FLAGS.intermediate_results_dir)
-  check_flags()
 
   commands, post_process_commands = create_all_commands(
       intermediate_results_dir)

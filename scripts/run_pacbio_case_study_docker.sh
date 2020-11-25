@@ -75,7 +75,7 @@ function run_deepvariant_with_docker() {
   # If a customized model is specified, copy the model files to your local disk.
   GS_ADDRESS="^gs:\/\/.*"
   declare -a extra_args
-  extra_args=( --make_examples_extra_args "sort_by_haplotypes=true,parse_sam_aux_fields=true" )
+  extra_args=( --use_hp_information )
 
   if [[ -z $model_http_dir ]];
   then

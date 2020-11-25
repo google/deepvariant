@@ -191,9 +191,11 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--pileup_image_height_parent "100" '),
       ('PACBIO', '--alt_aligned_pileup "diff_channels" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
        '--norealign_reads '
+       '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.12" '))
   @flagsaver.flagsaver
   def test_make_examples_commands_with_types(self, model_type,
@@ -240,9 +242,11 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--pileup_image_height_parent "100" '),
       ('PACBIO', '--alt_aligned_pileup "diff_channels" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
        '--norealign_reads '
+       '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.12" '))
   @flagsaver.flagsaver
   def test_duo_make_examples_commands_with_types(self, model_type,
@@ -277,16 +281,20 @@ class RunDeeptrioTest(parameterized.TestCase):
   @parameterized.parameters(
       (None, '--alt_aligned_pileup "diff_channels" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
        '--norealign_reads '
+       '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.12" '),
       ('alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
        '--alt_aligned_pileup "rows" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
        '--norealign_reads '
+       '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.03" '),
   )
   @flagsaver.flagsaver
@@ -322,6 +330,66 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--sample_name_parent2 "your_sample_parent2" '
         '%s'
         '--task {}' % expected_args)
+
+  @parameterized.parameters(
+      (None, ('sort_by_haplotypes=true,parse_sam_aux_fields=true'), True),
+      (True, ('sort_by_haplotypes=true,parse_sam_aux_fields=true'), False),
+  )
+  @flagsaver.flagsaver
+  def test_use_hp_information_conflicts(self, use_hp_information,
+                                        make_examples_extra_args, has_conflict):
+    """Confirms that PacBio use_hp_information can conflict with HP args."""
+    FLAGS.model_type = 'PACBIO'
+    FLAGS.ref = 'your_ref'
+    FLAGS.sample_name_child = 'your_sample_child'
+    FLAGS.sample_name_parent1 = 'your_sample_parent1'
+    FLAGS.sample_name_parent2 = 'your_sample_parent2'
+    FLAGS.reads_child = 'your_bam_child'
+    FLAGS.reads_parent1 = 'your_bam_parent1'
+    FLAGS.reads_parent2 = 'your_bam_parent2'
+    FLAGS.output_vcf_child = 'your_vcf_child'
+    FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
+    FLAGS.output_vcf_parent2 = 'your_vcf_parent2'
+    FLAGS.output_gvcf_child = 'your_gvcf_child'
+    FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
+    FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
+    FLAGS.num_shards = 64
+    FLAGS.regions = None
+    FLAGS.use_hp_information = use_hp_information
+    FLAGS.make_examples_extra_args = make_examples_extra_args
+    if has_conflict:
+      with six.assertRaisesRegex(self, ValueError,
+                                 'conflicts with other flags'):
+        run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    else:
+      # Otherwise, the command should run without rasing errors.
+      run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+
+  @parameterized.parameters('WGS', 'WES')
+  @flagsaver.flagsaver
+  def test_use_hp_information_only_with_pacbio(self, model_type):
+    """Confirms use_hp_information only works for."""
+    FLAGS.model_type = model_type
+    FLAGS.ref = 'your_ref'
+    FLAGS.sample_name_child = 'your_sample_child'
+    FLAGS.sample_name_parent1 = 'your_sample_parent1'
+    FLAGS.sample_name_parent2 = 'your_sample_parent2'
+    FLAGS.reads_child = 'your_bam_child'
+    FLAGS.reads_parent1 = 'your_bam_parent1'
+    FLAGS.reads_parent2 = 'your_bam_parent2'
+    FLAGS.output_vcf_child = 'your_vcf_child'
+    FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
+    FLAGS.output_vcf_parent2 = 'your_vcf_parent2'
+    FLAGS.output_gvcf_child = 'your_gvcf_child'
+    FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
+    FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
+    FLAGS.num_shards = 64
+    FLAGS.regions = None
+    FLAGS.use_hp_information = True
+    with six.assertRaisesRegex(
+        self, ValueError, '--use_hp_information can only be used with '
+        '--model_type="PACBIO"'):
+      run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
 
   @parameterized.parameters(
       ('chr1:20-30', '--pileup_image_height_child "60" '

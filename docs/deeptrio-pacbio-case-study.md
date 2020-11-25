@@ -111,15 +111,13 @@ time sudo docker run \
   --output_gvcf_parent1 /output/HG003.g.vcf.gz \
   --output_gvcf_parent2 /output/HG004.g.vcf.gz \
   --regions chr20 \
-  --make_examples_extra_args "sort_by_haplotypes=true,parse_sam_aux_fields=true"
+  --use_hp_information
 ```
 
-Note that there are extra arguments added: "sort_by_haplotypes" and
-"parse_sam_aux_fields". These extra arguments make use of a phased reads, thus
-allowing a further improvement of the accuracy. In order to use this feature
-input BAM files have to be phased. For the detailed description on how to do
-that please see
-[DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md).
+The `--use_hp_information` arg makes use of a phased reads, thus allowing a
+further improvement of the accuracy. In order to use this feature input BAM
+files have to be phased. For the detailed description on how to do that please
+see [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md).
 
 By specifying `--model_type PACBIO`, you'll be using a model that is best suited
 for PacBio HiFi Whole Genome Sequencing data.
