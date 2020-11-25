@@ -52,7 +52,7 @@ class RunDeeptrioTest(parameterized.TestCase):
 
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
   @flagsaver.flagsaver
-  def test_basic_command(self, model_type):
+  def test_call_variants_postprocess_variants_commands(self, model_type):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads_child = 'your_bam_child'
@@ -72,41 +72,6 @@ class RunDeeptrioTest(parameterized.TestCase):
     commands, post_process_commands = run_deeptrio.create_all_commands(
         '/tmp/deeptrio_tmp_output')
 
-    extra_args_plus_gvcf = (
-        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-        '--pileup_image_height_child "60" '
-        '--pileup_image_height_parent "40" ')
-    if model_type == 'PACBIO':
-      # --gvcf is added in the middle because the flags are sorted
-      # alphabetically. PacBio flags here is now mixed with some others.
-      extra_args_plus_gvcf = (
-          '--alt_aligned_pileup "diff_channels" '
-          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-          '--pileup_image_height_child "60" '
-          '--pileup_image_height_parent "40" '
-          '--norealign_reads '
-          '--vsc_min_fraction_indels "0.12" ')
-    if model_type == 'WES':
-      extra_args_plus_gvcf = (
-          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-          '--pileup_image_height_child "100" '
-          '--pileup_image_height_parent "100" ')
-
-    self.assertEqual(
-        commands[0], 'time seq 0 63 '
-        '| parallel -q --halt 2 --line-buffer '
-        '/opt/deepvariant/bin/deeptrio/make_examples '
-        '--mode calling '
-        '--ref "your_ref" '
-        '--reads_parent1 "your_bam_parent1" '
-        '--reads_parent2 "your_bam_parent2" '
-        '--reads "your_bam_child" '
-        '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
-        '--sample_name "your_sample_child" '
-        '--sample_name_parent1 "your_sample_parent1" '
-        '--sample_name_parent2 "your_sample_parent2" '
-        '%s'
-        '--task {}' % extra_args_plus_gvcf)
     self.assertEqual(
         commands[1], 'time /opt/deepvariant/bin/call_variants '
         '--outfile '
@@ -163,7 +128,7 @@ class RunDeeptrioTest(parameterized.TestCase):
 
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
   @flagsaver.flagsaver
-  def test_duo_command(self, model_type):
+  def test_duo_call_variants_postprocess_variants_commands(self, model_type):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads_child = 'your_bam_child'
@@ -179,39 +144,6 @@ class RunDeeptrioTest(parameterized.TestCase):
     commands, post_process_commands = run_deeptrio.create_all_commands(
         '/tmp/deeptrio_tmp_output')
 
-    extra_args_plus_gvcf = (
-        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-        '--pileup_image_height_child "60" '
-        '--pileup_image_height_parent "40" ')
-    if model_type == 'PACBIO':
-      # --gvcf is added in the middle because the flags are sorted
-      # alphabetically. PacBio flags here is now mixed with some others.
-      extra_args_plus_gvcf = (
-          '--alt_aligned_pileup "diff_channels" '
-          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-          '--pileup_image_height_child "60" '
-          '--pileup_image_height_parent "40" '
-          '--norealign_reads '
-          '--vsc_min_fraction_indels "0.12" ')
-    if model_type == 'WES':
-      extra_args_plus_gvcf = (
-          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-          '--pileup_image_height_child "100" '
-          '--pileup_image_height_parent "100" ')
-
-    self.assertEqual(
-        commands[0], 'time seq 0 63 '
-        '| parallel -q --halt 2 --line-buffer '
-        '/opt/deepvariant/bin/deeptrio/make_examples '
-        '--mode calling '
-        '--ref "your_ref" '
-        '--reads_parent1 "your_bam_parent1" '
-        '--reads "your_bam_child" '
-        '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
-        '--sample_name "your_sample_child" '
-        '--sample_name_parent1 "your_sample_parent1" '
-        '%s'
-        '--task {}' % extra_args_plus_gvcf)
     self.assertEqual(
         commands[1], 'time /opt/deepvariant/bin/call_variants '
         '--outfile '
@@ -249,6 +181,98 @@ class RunDeeptrioTest(parameterized.TestCase):
     # pylint: disable=g-generic-assert
     self.assertLen(commands, 3)
     self.assertLen(post_process_commands, 2)
+
+  @parameterized.parameters(
+      ('WGS', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--pileup_image_height_child "60" '
+       '--pileup_image_height_parent "40" '),
+      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--pileup_image_height_child "100" '
+       '--pileup_image_height_parent "100" '),
+      ('PACBIO', '--alt_aligned_pileup "diff_channels" '
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--pileup_image_height_child "60" '
+       '--pileup_image_height_parent "40" '
+       '--norealign_reads '
+       '--vsc_min_fraction_indels "0.12" '))
+  @flagsaver.flagsaver
+  def test_make_examples_commands_with_types(self, model_type,
+                                             extra_args_plus_gvcf):
+    FLAGS.model_type = model_type
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads_child = 'your_bam_child'
+    FLAGS.reads_parent1 = 'your_bam_parent1'
+    FLAGS.reads_parent2 = 'your_bam_parent2'
+    FLAGS.sample_name_child = 'your_sample_child'
+    FLAGS.sample_name_parent1 = 'your_sample_parent1'
+    FLAGS.sample_name_parent2 = 'your_sample_parent2'
+    FLAGS.output_vcf_child = 'your_vcf_child'
+    FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
+    FLAGS.output_vcf_parent2 = 'your_vcf_parent2'
+    FLAGS.output_gvcf_child = 'your_gvcf_child'
+    FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
+    FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
+    FLAGS.output_gvcf_merged = 'your_gvcf_merged'
+    FLAGS.num_shards = 64
+    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    self.assertEqual(
+        commands[0], 'time seq 0 63 '
+        '| parallel -q --halt 2 --line-buffer '
+        '/opt/deepvariant/bin/deeptrio/make_examples '
+        '--mode calling '
+        '--ref "your_ref" '
+        '--reads_parent1 "your_bam_parent1" '
+        '--reads_parent2 "your_bam_parent2" '
+        '--reads "your_bam_child" '
+        '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+        '--sample_name "your_sample_child" '
+        '--sample_name_parent1 "your_sample_parent1" '
+        '--sample_name_parent2 "your_sample_parent2" '
+        '%s'
+        '--task {}' % extra_args_plus_gvcf)
+
+  @parameterized.parameters(
+      ('WGS', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--pileup_image_height_child "60" '
+       '--pileup_image_height_parent "40" '),
+      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--pileup_image_height_child "100" '
+       '--pileup_image_height_parent "100" '),
+      ('PACBIO', '--alt_aligned_pileup "diff_channels" '
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+       '--pileup_image_height_child "60" '
+       '--pileup_image_height_parent "40" '
+       '--norealign_reads '
+       '--vsc_min_fraction_indels "0.12" '))
+  @flagsaver.flagsaver
+  def test_duo_make_examples_commands_with_types(self, model_type,
+                                                 extra_args_plus_gvcf):
+    FLAGS.model_type = model_type
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads_child = 'your_bam_child'
+    FLAGS.reads_parent1 = 'your_bam_parent1'
+    FLAGS.sample_name_child = 'your_sample_child'
+    FLAGS.sample_name_parent1 = 'your_sample_parent1'
+    FLAGS.output_vcf_child = 'your_vcf_child'
+    FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
+    FLAGS.output_gvcf_child = 'your_gvcf_child'
+    FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
+    FLAGS.output_gvcf_merged = 'your_gvcf_merged'
+    FLAGS.num_shards = 64
+    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    self.assertEqual(
+        commands[0], 'time seq 0 63 '
+        '| parallel -q --halt 2 --line-buffer '
+        '/opt/deepvariant/bin/deeptrio/make_examples '
+        '--mode calling '
+        '--ref "your_ref" '
+        '--reads_parent1 "your_bam_parent1" '
+        '--reads "your_bam_child" '
+        '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+        '--sample_name "your_sample_child" '
+        '--sample_name_parent1 "your_sample_parent1" '
+        '%s'
+        '--task {}' % extra_args_plus_gvcf)
 
   @parameterized.parameters(
       (None, '--alt_aligned_pileup "diff_channels" '
