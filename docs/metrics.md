@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 98m
-call_variants                    | 238m
-postprocess_variants (with gVCF) | 88m
-total                            | 424m = 7.1 hours
+make_examples                    | 94m
+call_variants                    | 224m
+postprocess_variants (with gVCF) | 87m
+total                            | 405m = 6.8 hours
 
 ### Accuracy
 
@@ -55,18 +55,18 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 111m
-call_variants                    | 210m
-postprocess_variants (with gVCF) | 71m
-total                            | 392m = 6.5 hours
+make_examples                    | 112m
+call_variants                    | 197m
+postprocess_variants (with gVCF) | 72m
+total                            | 381m = 6.4 hours
 
 ### Accuracy
 
 hap.py results on HG003 (all chromosomes, using NIST v4.2 truth), which was held
 out while training.
 
-(The input BAM is phased already and DeepVariant
-was run with `--sort_by_haplotypes=true --parse_sam_aux_fields=true`.)
+(The input BAM is phased already and DeepVariant was run with
+`--use_hp_information=true`.)
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
@@ -81,10 +81,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 154m
-call_variants                    | 220m
-postprocess_variants (with gVCF) | 59m
-total                            | 433 m = 7.2 hours
+make_examples                    | 153m
+call_variants                    | 230m
+postprocess_variants (with gVCF) | 61m
+total                            | 444 m = 7.4 hours
 
 ### Accuracy
 

@@ -34,7 +34,7 @@ For production use cases on larger datasets, we recommend looking into the
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.1.0-rc20201118"
+BIN_VERSION="1.1.0-rc20201124"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
