@@ -109,7 +109,7 @@ you can run this case study within about half an hour (tested on 64 CPUs).
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.1.0-rc20201124"
+BIN_VERSION="1.1.0-rc20201125"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
