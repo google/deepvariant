@@ -99,6 +99,11 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
+# For --profile_by_region, these columns will be written out in this order.
+PROFILE_BY_REGION_COLUMNS = ('region', 'get reads', 'find candidates',
+                             'make pileup images', 'write outputs', 'num reads',
+                             'num candidates', 'num examples')
+
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
@@ -319,6 +324,11 @@ flags.DEFINE_bool(
     'use_allele_frequency', False,
     'If True, add another channel for pileup images to represent allele '
     'frequency information gathered from population callsets.')
+flags.DEFINE_string(
+    'profile_by_region', None,
+    '[optional] Output filename for a TSV file of runtimes and '
+    'other stats by region. If examples are sharded, this should be sharded '
+    'into the same number of shards as the examples.')
 
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
@@ -534,16 +544,18 @@ def default_options(add_flags=True, flags_obj=None):
               .format(svt, ', '.join(_VARIANT_TYPE_SELECTORS)),
               errors.CommandLineError)
 
-    num_shards, examples, candidates, gvcf = (
+    num_shards, examples, candidates, gvcf, profile_by_region = (
         sharded_file_utils.resolve_filespecs(flags_obj.task,
                                              flags_obj.examples or '',
                                              flags_obj.candidates or '',
-                                             flags_obj.gvcf or ''))
+                                             flags_obj.gvcf or '',
+                                             flags_obj.profile_by_region or ''))
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
     options.task_id = flags_obj.task
     options.num_shards = num_shards
+    options.profile_by_region = profile_by_region
 
     # First, if parse_sam_aux_fields is still None (which means the users didn't
     # set it. We added some logic to decide its value.
@@ -687,6 +699,11 @@ def extract_sample_name_from_sam_reader(sam_reader):
         samples_list[0])
     return samples_list[0]
   return next(iter(samples))
+
+
+def trim_runtime(seconds: float) -> float:
+  """Round seconds (float) to the nearest millisecond."""
+  return round(seconds, 3)
 
 
 # ---------------------------------------------------------------------------
@@ -1397,7 +1414,7 @@ class RegionProcessor(object):
 
     return population_vcf_readers
 
-  def _initialize(self):
+  def initialize(self):
     """Initialize the resources needed for this work in the current env."""
     if self.initialized:
       raise ValueError('Cannot initialize this object twice')
@@ -1503,26 +1520,38 @@ class RegionProcessor(object):
         genome we should process.
 
     Returns:
-      Three values. First is a list of the found candidates, which are
+      Four values. First is a list of the found candidates, which are
       deepvariant.DeepVariantCall objects. The second value is a list of filled
       in tf.Example protos. For example, these will include the candidate
       variant, the pileup image, and, if in training mode, the truth variants
       and labels needed for training. The third value is a list of
       nucleus.genomics.v1.Variant protos containing gVCF information for all
       reference sites, if gvcf generation is enabled, otherwise returns [].
+      Fourth is a dict of runtimes in seconds keyed by stage.
     """
     region_timer = timer.TimerStart()
 
-    # Print some basic information about what we are doing.
-    if not self.initialized:
-      self._initialize()
+    runtimes = {}
 
-    self.in_memory_sam_reader.replace_reads(self.region_reads(region))
+    before_get_reads = time.time()
+    if not self.initialized:
+      self.initialize()
+
+    reads = self.region_reads(region)
+    runtimes['num reads'] = len(reads)
+    self.in_memory_sam_reader.replace_reads(reads)
+
+    runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
+    before_find_candidates = time.time()
     candidates, gvcfs = self.candidates_in_region(region)
 
     if self.options.select_variant_types:
       candidates = list(
           filter_candidates(candidates, self.options.select_variant_types))
+
+    runtimes['find candidates'] = trim_runtime(time.time() -
+                                               before_find_candidates)
+    before_make_pileup_images = time.time()
 
     # Get allele frequencies for candidates.
     if self.options.use_allele_frequency:
@@ -1555,7 +1584,12 @@ class RegionProcessor(object):
     logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
                  len(examples), ranges.to_literal(region),
                  ranges.length(region), region_timer.Stop())
-    return candidates, examples, gvcfs
+
+    runtimes['make pileup images'] = trim_runtime(time.time() -
+                                                  before_make_pileup_images)
+    runtimes['num examples'] = len(examples)
+    runtimes['num candidates'] = len(candidates)
+    return candidates, examples, gvcfs, runtimes
 
   def region_reads(self, region):
     """Update in_memory_sam_reader with read alignments overlapping the region.
@@ -1976,7 +2010,9 @@ class OutputsWriter(object):
   """Manages all of the outputs of make_examples in a single place."""
 
   def __init__(self, options):
-    self._writers = {k: None for k in ['candidates', 'examples', 'gvcfs']}
+    self._writers = {
+        k: None for k in ['candidates', 'examples', 'gvcfs', 'runtime']
+    }
 
     if options.candidates_filename:
       self._add_writer('candidates',
@@ -1988,6 +2024,13 @@ class OutputsWriter(object):
     if options.gvcf_filename:
       self._add_writer('gvcfs', tfrecord.Writer(options.gvcf_filename))
 
+    if options.profile_by_region:
+      self._add_writer('runtime',
+                       tf.io.gfile.GFile(options.profile_by_region, mode='w'))
+      writer = self._writers['runtime']
+      writer.__enter__()
+      writer.write('\t'.join(PROFILE_BY_REGION_COLUMNS) + '\n')
+
   def write_examples(self, *examples):
     self._write('examples', *examples)
 
@@ -1996,6 +2039,11 @@ class OutputsWriter(object):
 
   def write_candidates(self, *candidates):
     self._write('candidates', *candidates)
+
+  def write_runtime(self, stats_dict):
+    columns = [str(stats_dict.get(k, 'NA')) for k in PROFILE_BY_REGION_COLUMNS]
+    writer = self._writers['runtime']
+    writer.write('\t'.join(columns) + '\n')
 
   def _add_writer(self, name, writer):
     if name not in self._writers:
@@ -2028,11 +2076,14 @@ class OutputsWriter(object):
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
+  before_initializing_inputs = time.time()
+
   logging_with_options(options, 'Preparing inputs')
   regions = processing_regions_from_options(options)
 
   # Create a processor to create candidates and examples for each region.
   region_processor = RegionProcessor(options)
+  region_processor.initialize()
 
   logging_with_options(options,
                        'Writing examples to %s' % options.examples_filename)
@@ -2046,22 +2097,32 @@ def make_examples_runner(options):
   n_regions, n_candidates, n_examples = 0, 0, 0
   last_reported = 0
   with OutputsWriter(options) as writer:
+    logging_with_options(
+        options, 'Overhead for preparing inputs: %d seconds' %
+        (time.time() - before_initializing_inputs))
+
     running_timer = timer.TimerStart()
     for region in regions:
-      candidates, examples, gvcfs = region_processor.process(region)
+      candidates, examples, gvcfs, runtimes = region_processor.process(region)
       n_candidates += len(candidates)
       n_examples += len(examples)
       n_regions += 1
 
+      before_write_outputs = time.time()
       writer.write_candidates(*candidates)
 
-      # If we have any gvcf records, write them out. This if also serves to
+      # If we have any gvcf records, write them out. This also serves to
       # protect us from trying to write to the gvcfs output of writer when gvcf
       # generation is turned off. In that case, gvcfs will always be empty and
       # we'll never execute the write.
       if gvcfs:
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
+      if options.profile_by_region:
+        runtimes['write outputs'] = trim_runtime(time.time() -
+                                                 before_write_outputs)
+        runtimes['region'] = ranges.to_literal(region)
+        writer.write_runtime(stats_dict=runtimes)
 
       # Output timing for every N candidates.
       # redacted
@@ -2072,6 +2133,7 @@ def make_examples_runner(options):
             options, '%s candidates (%s examples) [%0.2fs elapsed]' %
             (n_candidates, n_examples, running_timer.Stop()))
         running_timer = timer.TimerStart()
+
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
     run_info = deepvariant_pb2.MakeExamplesRunInfo(

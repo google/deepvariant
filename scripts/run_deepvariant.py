@@ -112,7 +112,7 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'postprocess_variants_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for calpostprocess_variants.py. If the flag_value is boolean, '
+    'valid flags for postprocess_variants.py. If the flag_value is boolean, '
     'it has to be flag_name=true or flag_name=false.')
 
 # Optional flags for postprocess_variants.
@@ -218,6 +218,16 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
+
+  if FLAGS.logging_dir is not None:
+    runtime_directory = os.path.join(FLAGS.logging_dir,
+                                     'make_examples_runtime_by_region')
+    os.makedirs(runtime_directory)
+    profile_by_region = os.path.join(
+        runtime_directory,
+        'make_examples_runtime@{}.tsv'.format(FLAGS.num_shards))
+    command.extend(['--profile_by_region', '"{}"'.format(profile_by_region)])
+
   conflict_args = None
   if FLAGS.model_type == 'PACBIO':
     special_args = {}

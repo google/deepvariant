@@ -491,6 +491,42 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # Pileup image should have 3 rows of height 100, so resulting height is 300.
     self.assertEqual(decode_example(examples[0])['image/shape'], expected_shape)
 
+  @flagsaver.flagsaver
+  def test_make_examples_runtime_profile_by_region(self):
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.mode = 'calling'
+    num_shards = 4
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('examples.tfrecord', num_shards))
+    # Use same number of shards for profiling files as examples.
+    output_prefix = test_utils.test_tmpfile('runtime_profile')
+    FLAGS.profile_by_region = output_prefix + '@{}'.format(num_shards)
+    FLAGS.task = 2
+    # Run make_examples with those FLAGS.
+    options = make_examples.default_options(add_flags=True)
+    make_examples.make_examples_runner(options)
+    # Sharded output ending in @4 becomes -00002-of-00004 for task 2.
+    expected_output_path = output_prefix + '-0000{}-of-00004'.format(FLAGS.task)
+    expected_columns = [
+        'region', 'get reads', 'find candidates', 'make pileup images',
+        'write outputs', 'num reads', 'num candidates', 'num examples'
+    ]
+
+    with gfile.Open(expected_output_path, 'r') as fin:
+      header = fin.readline()
+      column_names = header.strip().split('\t')
+      self.assertEqual(expected_columns, column_names)
+      non_header_lines = fin.readlines()
+      self.assertLen(non_header_lines, 3)
+      one_row = non_header_lines[0].strip().split('\t')
+      self.assertEqual(len(one_row), len(column_names))
+      self.assertGreater(int(one_row[5]), 0, msg='num reads > 0')
+      self.assertGreater(int(one_row[6]), 0, msg='num candidates > 0')
+      self.assertGreater(int(one_row[7]), 0, msg='num examples > 0')
+
   @parameterized.parameters(
       dict(select_types=None, expected_count=78),
       dict(select_types='all', expected_count=78),
@@ -1663,7 +1699,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     self.processor = make_examples.RegionProcessor(self.options)
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
-    self.mock_init = self.add_mock('_initialize')
+    self.mock_init = self.add_mock('initialize')
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
 
@@ -1713,7 +1749,11 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_cir = self.add_mock('candidates_in_region', retval=([], []))
     mock_cpe = self.add_mock('create_pileup_examples', retval=[])
     mock_lc = self.add_mock('label_candidates')
-    self.assertEqual(([], [], []), self.processor.process(self.region))
+    candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
+    self.assertEmpty(candidates)
+    self.assertEmpty(examples)
+    self.assertEmpty(gvcfs)
+    self.assertIsInstance(runtimes, dict)
     mock_rr.assert_called_once_with(self.region)
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [])
@@ -1740,8 +1780,11 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_lc = self.add_mock(
         'label_candidates', retval=[(mock_candidate, mock_label)])
     mock_alte = self.add_mock('add_label_to_example', retval=mock_example)
-    self.assertEqual(([mock_candidate], [mock_example], []),
-                     self.processor.process(self.region))
+    candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
+    self.assertEqual(candidates, [mock_candidate])
+    self.assertEqual(examples, [mock_example])
+    self.assertEmpty(gvcfs)
+    self.assertIsInstance(runtimes, dict)
     mock_rr.assert_called_once_with(self.region)
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [mock_read])
@@ -1774,8 +1817,11 @@ class RegionProcessorTest(parameterized.TestCase):
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
     mock_lc = self.add_mock('label_candidates', retval=[(c1, l1), (c2, l2)])
     mock_alte = self.add_mock('add_label_to_example', side_effect=[e1, e2, e3])
-    self.assertEqual(([c1, c2], [e1, e2, e3], []),
-                     self.processor.process(self.region))
+    candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
+    self.assertEqual(candidates, [c1, c2])
+    self.assertEqual(examples, [e1, e2, e3])
+    self.assertEmpty(gvcfs)
+    self.assertIsInstance(runtimes, dict)
     self.processor.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [r1, r2])
     # We don't try to label variants when in calling mode.
@@ -1812,8 +1858,11 @@ class RegionProcessorTest(parameterized.TestCase):
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
     mock_lc = self.add_mock('label_candidates')
 
-    self.assertEqual(([c1, c2], [e1, e2, e3], []),
-                     self.processor.process(self.region))
+    candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
+    self.assertEqual(candidates, [c1, c2])
+    self.assertEqual(examples, [e1, e2, e3])
+    self.assertEmpty(gvcfs)
+    self.assertIsInstance(runtimes, dict)
     self.processor.sam_readers[0].query.assert_called_once_with(self.region)
     self.processor.realigner.realign_reads.assert_called_once_with([],
                                                                    self.region)

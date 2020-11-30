@@ -489,7 +489,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 36.
+// Next ID: 37.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -638,6 +638,9 @@ message DeepVariantOptions {
 
   // A list of VCF or VCF.gz files that specify allele frequency information.
   repeated string population_vcf_filenames = 35;
+
+  // Path to output optional runtime profiling by region.
+  string profile_by_region = 36;
 }
 
 // Config describe information needed for a dataset that can be used for
