@@ -154,7 +154,9 @@ flags.DEFINE_string(
 
 flags.DEFINE_boolean('use_tpu', False, 'Use tpu if available.')
 
-flags.DEFINE_boolean('use_openvino', False, 'Use Intel OpenVINO as backend')
+flags.DEFINE_boolean('use_openvino', OpenVINOEstimator.is_available() and not tf.test.is_gpu_available(),
+                     'Use Intel OpenVINO as backend. '
+                     'Default is True for CPU only environment with OpenVINO installed')
 
 flags.DEFINE_string(
     'kmp_blocktime', '0',

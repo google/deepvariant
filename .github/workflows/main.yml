@@ -28,7 +28,7 @@ jobs:
         FTPDIR=ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids
         curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz | gunzip > input/GRCh38_no_alt_analysis_set.fasta
         curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > input/GRCh38_no_alt_analysis_set.fasta.fai
-      
+
         HTTPDIR=https://storage.googleapis.com/deepvariant/case-study-testdata
         curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam
         curl ${HTTPDIR}/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > input/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai
@@ -49,6 +49,7 @@ jobs:
           --regions "chr20:10,000,000-10,010,000" \
           --output_vcf=/output/HG002.output.vcf.gz \
           --output_gvcf=/output/HG002.output.g.vcf.gz \
+          --call_variants_extra_args="use_openvino=False" \
           --num_shards=$(nproc)
 
         OUTPUT_DIR="${PWD}/quickstart-output-ovino"
@@ -63,7 +64,6 @@ jobs:
           --regions "chr20:10,000,000-10,010,000" \
           --output_vcf=/output/HG002.output.vcf.gz \
           --output_gvcf=/output/HG002.output.g.vcf.gz \
-          --call_variants_extra_args="use_openvino=True" \
           --num_shards=$(nproc)
 
         files=$(ls $REF_OUTPUT_DIR); \

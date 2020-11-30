@@ -9,7 +9,9 @@ from queue import Queue
 try:
   from openvino.inference_engine import IECore, StatusCode
   import mo_tf
+  openvino_available = True
 except:
+  openvino_available = False
   pass
 
 
@@ -42,6 +44,11 @@ def freeze_graph(model, checkpoint_path, num_channels, moving_average_decay=0.99
 
 
 class OpenVINOEstimator(object):
+  @staticmethod
+  def is_available():
+    return openvino_available
+
+
   def __init__(self, checkpoint_path, num_channels, *, input_fn, model):
     freeze_graph(model, checkpoint_path, num_channels)
     subprocess.run([mo_tf.__file__, '--input_model=model.pb', '--scale=128',
