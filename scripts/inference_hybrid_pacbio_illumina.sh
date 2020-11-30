@@ -3,6 +3,100 @@
 
 set -euo pipefail
 
+
+USAGE=$'
+Example usage:
+inference_hybrid_pacbio_illumina.sh --docker_build true --use_gpu true
+
+Flags:
+--docker_build (true|false)  Whether to build docker image. (default: false)
+--use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
+--customized_model Path to checkpoint directory containing model checkpoint.
+--regions Regions passed into both variant calling and hap.py.
+--make_examples_flags Flags for make_examples, specified as "flag1=param1,flag2=param2".
+--call_variants_flags Flags for call_variants, specified as "flag1=param1,flag2=param2".
+--postprocess_variants_flags  Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
+'
+
+# Specify default values.
+BUILD_DOCKER=false
+USE_GPU=false
+REGIONS=""
+CUSTOMIZED_MODEL=""
+MAKE_EXAMPLES_ARGS=""
+CALL_VARIANTS_ARGS=""
+POSTPROCESS_VARIANTS_ARGS=""
+
+while (( "$#" )); do
+  case "$1" in
+    --docker_build)
+      BUILD_DOCKER="$2"
+      if [[ ${BUILD_DOCKER} != "true" ]] && [[ ${BUILD_DOCKER} != "false" ]]; then
+        echo "Error: --docker_build needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --use_gpu)
+      USE_GPU="$2"
+      if [[ ${USE_GPU} != "true" ]] && [[ ${USE_GPU} != "false" ]]; then
+        echo "Error: --use_gpu needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --regions)
+      REGIONS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --customized_model)
+      CUSTOMIZED_MODEL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --make_examples_flags)
+      MAKE_EXAMPLES_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --call_variants_flags)
+      CALL_VARIANTS_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --postprocess_variants_flags)
+      POSTPROCESS_VARIANTS_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    -*|--*=) # other flags not supported
+      echo "Error: unrecognized flag $1" >&2
+      echo "$USAGE" >&2
+      exit 1
+      ;;
+    *)
+      echo "Error: unrecognized extra args $1" >&2
+      echo "$USAGE" >&2
+      exit 1
+      ;;
+  esac
+done
+
+echo "========================="
+echo "BUILD_DOCKER: $BUILD_DOCKER"
+echo "CUSTOMIZED_MODEL: $CUSTOMIZED_MODEL"
+echo "REGIONS: $REGIONS"
+echo "MAKE_EXAMPLES_ARGS: $MAKE_EXAMPLES_ARGS"
+echo "CALL_VARIANTS_ARGS: $CALL_VARIANTS_ARGS"
+echo "POSTPROCESS_VARIANTS_ARGS: $POSTPROCESS_VARIANTS_ARGS"
+echo "USE_GPU: $USE_GPU"
+echo "========================="
+
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/hybrid-pacbio-illumina-case-study"
