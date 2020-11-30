@@ -192,29 +192,31 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       exit 1
     fi
 
-    # from https://cloud.google.com/compute/docs/gpus/add-gpus
+    # https://www.tensorflow.org/install/gpu?hl=en#ubuntu_1604_cuda_101
     echo "Checking for CUDA..."
-    if ! dpkg-query -W cuda-10-0; then
+    if ! dpkg-query -W cuda-10-1; then
       echo "Installing CUDA..."
-      CUDA_DEB="cuda-repo-ubuntu1604_10.0.130-1_amd64.deb"
+      CUDA_DEB="cuda-repo-ubuntu1604_10.1.243-1_amd64.deb"
       curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
       sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
       sudo -H dpkg -i "./${CUDA_DEB}"
       sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-      sudo -H apt-get install "${APT_ARGS[@]}" cuda-10-0 > /dev/null
+      sudo -H apt-get install "${APT_ARGS[@]}" cuda-10-1 > /dev/null
     fi
     echo "Checking for CUDNN..."
-    if [[ ! -e /usr/local/cuda-10.0/include/cudnn.h ]]; then
+    if [[ ! -e /usr/local/cuda-10.1/include/cudnn.h ]]; then
       echo "Installing CUDNN..."
-      CUDNN_TAR_FILE="cudnn-10.0-linux-x64-v7.6.0.64.tgz"
-      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v7.6.0/${CUDNN_TAR_FILE}
+      CUDNN_TAR_FILE="cudnn-10.1-linux-x64-v7.6.5.32.tgz"
+      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v7.6.5/${CUDNN_TAR_FILE}
       tar -xzvf ${CUDNN_TAR_FILE}
-      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-10.0/include
-      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.0/lib64/
-      sudo chmod a+r /usr/local/cuda-10.0/lib64/libcudnn*
+      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-10.1/include
+      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.1/lib64/
+      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.1/lib64/
+      sudo chmod a+r /usr/local/cuda-10.1/lib64/libcudnn*
+      # https://stackoverflow.com/questions/55224016/importerror-libcublas-so-10-0-cannot-open-shared-object-file-no-such-file-or/64472380#64472380
+      export LD_LIBRARY_PATH=/usr/local/cuda-10.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
       sudo ldconfig
     fi
-
     # Tensorflow says to do this.
     sudo -H apt-get install "${APT_ARGS[@]}" libcupti-dev > /dev/null
   fi

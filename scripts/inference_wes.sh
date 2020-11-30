@@ -108,7 +108,7 @@ then
   then
     IMAGE="deepvariant_gpu:latest"
     sudo docker build \
-      --build-arg=FROM_IMAGE=nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04 \
+      --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu16.04 \
       --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
     echo "Done building GPU Docker image ${IMAGE}."
     docker_args+=( --gpus 1 )
