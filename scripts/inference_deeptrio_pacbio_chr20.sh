@@ -39,9 +39,14 @@ while (( "$#" )); do
       shift # Remove argument value from processing
       ;;
     --use_gpu)
-      echo "Error: --use_gpu is not used in this script." >&2
-      echo "$USAGE" >&2
-      exit 1
+      USE_GPU="$2"
+      if [[ ${USE_GPU} != "true" ]] && [[ ${USE_GPU} != "false" ]]; then
+        echo "Error: --use_gpu needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
       ;;
     --regions)
       REGIONS="$2"
@@ -253,15 +258,33 @@ function setup_args() {
 function get_docker_image() {
   if [[ "${BUILD_DOCKER}" = true ]]
   then
-    IMAGE="deeptrio:latest"
-    # Pulling twice in case the first one times out.
-    sudo docker build -f Dockerfile.deeptrio -t deeptrio . --build-arg DV_OPENVINO_BUILD=1 || \
-      (sleep 5 ; sudo docker build -f Dockerfile.deeptrio -t deeptrio . --build-arg DV_OPENVINO_BUILD=1 )
-    echo "Done building Docker image ${IMAGE}."
+    if [[ "${USE_GPU}" = true ]]
+    then
+      IMAGE="deeptrio_gpu:latest"
+      sudo docker build \
+        --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu16.04 \
+        --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu .
+      echo "Done building GPU Docker image ${IMAGE}."
+      docker_args+=( --gpus 1 )
+    else
+      IMAGE="deeptrio:latest"
+      # Pulling twice in case the first one times out.
+      sudo docker build -f Dockerfile.deeptrio -t deeptrio . --build-arg DV_OPENVINO_BUILD=1 || \
+        (sleep 5 ; sudo docker build -f Dockerfile.deeptrio -t deeptrio . --build-arg DV_OPENVINO_BUILD=1 )
+      echo "Done building Docker image ${IMAGE}."
+    fi
   else
-    IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}"
-    sudo docker pull "${IMAGE}" || \
-      (sleep 5 ; sudo docker pull "${IMAGE}")
+    if [[ "${USE_GPU}" = true ]]
+    then
+      IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}-gpu"
+      sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")
+      docker_args+=( --gpus 1 )
+    else
+      IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}"
+      sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")
+    fi
   fi
 }
 
