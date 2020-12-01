@@ -1,6 +1,6 @@
 # DeepVariant
 
-[![release](https://img.shields.io/badge/release-v1.0.0-green?logo=github)](https://github.com/google/deepvariant/releases)
+[![release](https://img.shields.io/badge/release-v1.1.0-green?logo=github)](https://github.com/google/deepvariant/releases)
 [![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
 [![blog](https://img.shields.io/badge/blog-orange)](https://goo.gl/deepvariant)
 
@@ -37,9 +37,9 @@ Please also note:
 
 DeepTrio is a deep learning-based trio variant caller built on top of
 DeepVariant. DeepTrio extends DeepVariant's functionality, allowing it to
-utilize a power of neural networs to predict genomic variants in trios or duos.
-For the detiled description and instrcutions on how to run DeepTrio see the
-[document](docs/deeptrio-details.md).
+utilize a power of neural networks to predict genomic variants in trios or duos.
+See [this document] (docs/deeptrio-details.md) for more details and instructions
+on how to run DeepTrio.
 
 DeepTrio supports germline variant-calling in diploid organisms for the
 following types of input data:
@@ -52,16 +52,16 @@ following types of input data:
 Please also note:
 
 *   All DeepTrio models were trained on human data.
-*   It is possible to use DeepTrio with only 2 samples (child, and parent).
+*   It is possible to use DeepTrio with only 2 samples (child, and one parent).
 *   External tool [GLNexus](https://github.com/dnanexus-rnd/GLnexus) is used to
     merge output VCFs.
 
-## How to run
+## How to run DeepVariant
 
 We recommend using our Docker solution. The command will look like this:
 
 ```
-BIN_VERSION="1.0.0"
+BIN_VERSION="1.1.0"
 docker run \
   -v "YOUR_INPUT_DIR":"/input" \
   -v "YOUR_OUTPUT_DIR:/output" \
@@ -72,8 +72,14 @@ docker run \
   --reads=/input/YOUR_BAM \
   --output_vcf=/output/YOUR_OUTPUT_VCF \
   --output_gvcf=/output/YOUR_OUTPUT_GVCF \
+  --call_variants_extra_args="use_openvino=true" \ **Optional. Setting this will use OpenVINO on Intel CPUs, which empirically reduces call_variants runtime by 15%-25%.
   --num_shards=$(nproc) **This will use all your cores to run make_examples. Feel free to change.**
 ```
+
+NOTE: `--call_variants_extra_args="use_openvino=true"` is added in 1.1.0. We are
+considering setting this as default for CPU in the future. If you have any
+questions or feedback, feel free to
+[open an issue](https://github.com/google/deepvariant/issues/new).
 
 To see all flags you can use, run: `docker run
 google/deepvariant:"${BIN_VERSION}" --help`
@@ -136,10 +142,10 @@ doi: https://doi.org/10.1101/2020.02.10.942086
     machine on Google Cloud, it costs ~$11.8 to call a 30x whole genome and
     ~$0.89 to call an exome. With preemptible pricing, the cost is $2.84 for a
     30x whole genome and $0.21 for whole exome (not considering preemption).
-*   **Speed** - On a 64-core CPU-only machine, DeepVariant completes a 35x WGS
-    in 7 hours and an exome in 21 minutes [(1)](#myfootnote1)</sup>. Multiple
-    options for acceleration exist, taking the WGS pipeline to as fast as 40
-    minutes (see [external solutions](#external-solutions)).
+*   **Speed** - See [metrics](docs/metrics.md) for the runtime of all supported
+    datatypes on a 64-core CPU-only machine</sup>. Multiple options for
+    acceleration exist, taking the WGS pipeline to as fast as 40 minutes
+    (see [external solutions](#external-solutions)).
 *   **Usage options** - DeepVariant can be run via Docker or binaries, using
     both on-premise hardware or in the cloud, with support for hardware
     accelerators like GPUs and TPUs.
