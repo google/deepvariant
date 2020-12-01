@@ -115,17 +115,6 @@ OUTPUT_VCF="HG003.output.vcf.gz"
 OUTPUT_GVCF="HG003.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
-# Whether to build docker image.
-BUILD_DOCKER="${1:-false}"
-
-# Optional extra flags for DeepVariant.
-CUSTOMIZED_MODEL="${2:-}"
-MAKE_EXAMPLES_ARGS="${3:-}"
-CALL_VARIANTS_ARGS="${4:-}"
-POSTPROCESS_VARIANTS_ARGS="${5:-}"
-REGIONS="${6:-}"
-USE_GPU="${7:-false}"
-
 declare -a extra_args
 declare -a happy_args
 declare -a docker_args
