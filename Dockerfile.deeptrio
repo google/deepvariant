@@ -151,8 +151,17 @@ RUN \
 RUN apt-get -y update && \
   apt-get install -y parallel && \
   python3 -m ensurepip && \
-  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1
+  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1 && \
+  apt-get clean autoclean && \
+  apt-get autoremove -y --purge && \
+  rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/opt/deepvariant/bin/deeptrio:/opt/deepvariant/bin:${PATH}"
 
 # Setup OpenVINO environment.
 ENV LD_LIBRARY_PATH=/opt/intel/openvino/inference_engine/lib/intel64/:/opt/intel/openvino/inference_engine/external/tbb/lib/:/opt/intel/openvino/deployment_tools/ngraph/lib/:$LD_LIBRARY_PATH \
     PYTHONPATH=/opt/intel/openvino/python/python3.6/:$PYTHONPATH
+
+WORKDIR /opt/deepvariant
+
+ENTRYPOINT ["/opt/deepvariant/bin/deeptrio/run_deeptrio"]

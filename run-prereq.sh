@@ -92,6 +92,7 @@ sudo ln -sf /usr/bin/python3.6 /usr/bin/python
 # Use the following lines to ensure 3.6.
 curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
 python3 get-pip.py --force-reinstall --user
+rm -f get-pip.py
 
 echo "$(python3 --version)"
 
@@ -230,12 +231,13 @@ fi
 # OpenVINO
 ################################################################################
 if [[ "${DV_OPENVINO_BUILD}" = "1" ]]; then
-  sudo -H apt-get -y install apt-transport-https
+  sudo -H apt-get install "${APT_ARGS[@]}" apt-transport-https > /dev/null
   curl -o GPG-PUB-KEY-INTEL-OPENVINO-2020 https://apt.repos.intel.com/openvino/2020/GPG-PUB-KEY-INTEL-OPENVINO-2020
   sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2020
-  sudo echo "deb https://apt.repos.intel.com/openvino/2020 all main" | sudo tee - a /etc/apt/sources.list.d/intel-openvino-2020.list
-  sudo -H apt-get update
-  sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu16-2020.4.287
+  sudo echo "deb https://apt.repos.intel.com/openvino/2020 all main" | sudo tee /etc/apt/sources.list.d/intel-openvino-2020.list
+  sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
+  sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu16-2020.4.287 > /dev/null
+  rm -f GPG-PUB-KEY-INTEL-OPENVINO-2020
 fi
 
 ################################################################################
