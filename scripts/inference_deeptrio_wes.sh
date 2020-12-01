@@ -3,6 +3,94 @@
 
 set -euo pipefail
 
+USAGE=$'
+Example usage:
+inference_deeptrio_wes.sh --docker_build true
+
+Flags:
+--docker_build (true|false)  Whether to build docker image. (default: false)
+--use_gpu  Currently not used in this script.
+--customized_model Path to checkpoint directory containing model checkpoint.
+--regions Regions passed into both variant calling and hap.py.
+--make_examples_flags Flags for make_examples, specified as "flag1=param1,flag2=param2".
+--call_variants_flags Flags for call_variants, specified as "flag1=param1,flag2=param2".
+--postprocess_variants_flags  Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
+'
+
+# Specify default values.
+BUILD_DOCKER=false
+USE_GPU=false
+REGIONS=""
+CUSTOMIZED_MODEL=""
+MAKE_EXAMPLES_ARGS=""
+CALL_VARIANTS_ARGS=""
+POSTPROCESS_VARIANTS_ARGS=""
+
+while (( "$#" )); do
+  case "$1" in
+    --docker_build)
+      BUILD_DOCKER="$2"
+      if [[ ${BUILD_DOCKER} != "true" ]] && [[ ${BUILD_DOCKER} != "false" ]]; then
+        echo "Error: --docker_build needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --use_gpu)
+      echo "Error: --use_gpu is not used in this script." >&2
+      echo "$USAGE" >&2
+      exit 1
+      ;;
+    --regions)
+      REGIONS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --customized_model)
+      CUSTOMIZED_MODEL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --make_examples_flags)
+      MAKE_EXAMPLES_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --call_variants_flags)
+      CALL_VARIANTS_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --postprocess_variants_flags)
+      POSTPROCESS_VARIANTS_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    -*|--*=) # other flags not supported
+      echo "Error: unrecognized flag $1" >&2
+      echo "$USAGE" >&2
+      exit 1
+      ;;
+    *)
+      echo "Error: unrecognized extra args $1" >&2
+      echo "$USAGE" >&2
+      exit 1
+      ;;
+  esac
+done
+
+echo "========================="
+echo "BUILD_DOCKER: $BUILD_DOCKER"
+echo "CUSTOMIZED_MODEL: $CUSTOMIZED_MODEL"
+echo "REGIONS: $REGIONS"
+echo "MAKE_EXAMPLES_ARGS: $MAKE_EXAMPLES_ARGS"
+echo "CALL_VARIANTS_ARGS: $CALL_VARIANTS_ARGS"
+echo "POSTPROCESS_VARIANTS_ARGS: $POSTPROCESS_VARIANTS_ARGS"
+echo "USE_GPU: $USE_GPU"
+echo "========================="
+
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
@@ -55,16 +143,6 @@ OUTPUT_STATS_CHILD="HG002.output.vcf_stats"
 OUTPUT_STATS_PARENT1="HG003.output.vcf_stats"
 OUTPUT_STATS_PARENT2="HG004.output.vcf_stats"
 LOG_DIR="${OUTPUT_DIR}/logs"
-
-# Whether to build docker image.
-BUILD_DOCKER="${1:-false}"
-
-# Optional extra flags for DeepVariant.
-CUSTOMIZED_MODEL="${2:-}"
-MAKE_EXAMPLES_ARGS="${3:-}"
-CALL_VARIANTS_ARGS="${4:-}"
-POSTPROCESS_VARIANTS_ARGS="${5:-}"
-REGIONS="${6:-}"
 
 declare -a extra_args
 declare -a happy_args
