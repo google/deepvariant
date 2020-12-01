@@ -274,6 +274,7 @@ function run_deeptrio() {
     "${IMAGE}" \
   /opt/deepvariant/bin/deeptrio/run_deeptrio \
     --model_type PACBIO \
+    --use_hp_information \
     --ref="/input/${REF}.gz" \
     --reads_child "/input/${BAM_CHILD}" \
     --reads_parent1 "/input/${BAM_PARENT1}" \
