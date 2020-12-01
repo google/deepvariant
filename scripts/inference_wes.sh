@@ -13,9 +13,9 @@ Flags:
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and hap.py. (Not applicable in inference_wes.sh)
---make_examples_flags Flags for make_examples, specified as "flag1=param1,flag2=param2".
---call_variants_flags Flags for call_variants, specified as "flag1=param1,flag2=param2".
---postprocess_variants_flags  Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
+--make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
+--call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
+--postprocess_variants_extra_args  Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 '
 
 # Specify default values.
@@ -59,17 +59,17 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --make_examples_flags)
+    --make_examples_extra_args)
       MAKE_EXAMPLES_ARGS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --call_variants_flags)
+    --call_variants_extra_args)
       CALL_VARIANTS_ARGS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --postprocess_variants_flags)
+    --postprocess_variants_extra_args)
       POSTPROCESS_VARIANTS_ARGS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
