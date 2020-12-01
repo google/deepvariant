@@ -27,23 +27,74 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """An estimator that uses OpenVINO."""
+import os
 import queue
+import subprocess
 import threading
 import tensorflow as tf
+import tf_slim as slim
 
 try:
   from openvino.inference_engine import IECore  # pylint: disable=g-import-not-at-top
   from openvino.inference_engine import StatusCode  # pylint: disable=g-import-not-at-top
+  import mo_tf  # pylint: disable=g-import-not-at-top
+  # redacted
+  # For now, including this in the try/except block as well.
+  # Fix this with a correct dep and also add unit test
+  from tensorflow.python.tools import optimize_for_inference_lib  # pylint: disable=g-import-not-at-top
 except ImportError:
   pass
+
+
+def freeze_graph(model,
+                 checkpoint_path,
+                 num_channels,
+                 moving_average_decay=0.9999):
+  """Converts model ckpts."""
+  out_node = 'InceptionV3/Predictions/Reshape_1'
+  in_node = 'input'
+
+  # redacted
+  # Not all our images have the 100, 221 dimension. How does
+  # this affect the correctness of this code?
+  inp = tf.compat.v1.placeholder(
+      shape=[1, 100, 221, num_channels], dtype=tf.float32, name=in_node)
+  _ = model.create(inp, num_classes=3, is_training=False)
+
+  ema = tf.train.ExponentialMovingAverage(moving_average_decay)
+  variables_to_restore = ema.variables_to_restore()
+
+  load_ema = slim.assign_from_checkpoint_fn(
+      checkpoint_path, variables_to_restore, ignore_missing_vars=True)
+
+  with tf.compat.v1.Session() as sess:
+    sess.run(tf.compat.v1.global_variables_initializer())
+    load_ema(sess)
+
+    graph_def = sess.graph.as_graph_def()
+    graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
+        sess, graph_def, [out_node])
+    graph_def = optimize_for_inference_lib.optimize_for_inference(
+        graph_def, [in_node], [out_node], tf.float32.as_datatype_enum)
+
+    with tf.io.gfile.GFile('model.pb', 'wb') as f:
+      f.write(graph_def.SerializeToString())
 
 
 class OpenVINOEstimator(object):
   """An estimator for OpenVINO."""
 
-  def __init__(self, model_xml, model_bin, *, input_fn, model):
+  def __init__(self, checkpoint_path, num_channels, *, input_fn, model):
+    freeze_graph(model, checkpoint_path, num_channels)
+    subprocess.run([
+        mo_tf.__file__, '--input_model=model.pb', '--scale=128',
+        '--mean_values', '[{}]'.format(','.join(['128'] * num_channels))
+    ],
+                   check=True)
+    os.remove('model.pb')
+
     self.ie = IECore()
-    net = self.ie.read_network(model_xml, model_bin)
+    net = self.ie.read_network('model.xml', 'model.bin')
     net.input_info['input'].precision = 'U8'
     self.exec_net = self.ie.load_network(
         net,

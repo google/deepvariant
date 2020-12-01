@@ -405,10 +405,9 @@ def call_variants(examples_filename,
   # Prepare input stream and estimator.
   tf_dataset = prepare_inputs(source_path=examples_filename, use_tpu=use_tpu)
   if FLAGS.use_openvino:
-    model_path = os.path.splitext(checkpoint_path)[0]
     ie_estimator = OpenVINOEstimator(
-        model_path + '.xml',
-        model_path + '.bin',
+        checkpoint_path,
+        num_channels_in_checkpoint_model,
         input_fn=tf_dataset,
         model=model)
     predictions = iter(ie_estimator)
