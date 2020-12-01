@@ -269,8 +269,8 @@ function get_docker_image() {
     else
       IMAGE="deeptrio:latest"
       # Pulling twice in case the first one times out.
-      sudo docker build -f Dockerfile.deeptrio -t deeptrio . --build-arg DV_OPENVINO_BUILD=1 || \
-        (sleep 5 ; sudo docker build -f Dockerfile.deeptrio -t deeptrio . --build-arg DV_OPENVINO_BUILD=1 )
+      sudo docker build -f Dockerfile.deeptrio -t deeptrio . || \
+        (sleep 5 ; sudo docker build -f Dockerfile.deeptrio -t deeptrio . )
       echo "Done building Docker image ${IMAGE}."
     fi
   else
