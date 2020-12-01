@@ -388,6 +388,7 @@ py_library(
         ":data_providers",
         ":logging_level",
         ":modeling",
+        ":openvino_estimator",
         ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
@@ -622,6 +623,12 @@ py_library(
         "//third_party/nucleus/io:sharded_file_utils",
         "@com_google_protobuf//:protobuf_python",
     ],
+)
+
+py_library(
+    name = "openvino_estimator",
+    srcs = ["openvino_estimator.py"],
+    srcs_version = "PY3",
 )
 
 py_library(

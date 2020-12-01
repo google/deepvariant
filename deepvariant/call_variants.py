@@ -56,6 +56,7 @@ from deepvariant import data_providers
 from deepvariant import logging_level
 from deepvariant import modeling
 from deepvariant import tf_utils
+from deepvariant.openvino_estimator import OpenVINOEstimator
 from deepvariant.protos import deepvariant_pb2
 from google.protobuf import text_format
 
@@ -152,6 +153,8 @@ flags.DEFINE_string(
     'must specify either this flag or --tpu_name.')
 
 flags.DEFINE_boolean('use_tpu', False, 'Use tpu if available.')
+
+flags.DEFINE_boolean('use_openvino', False, 'Use Intel OpenVINO as backend.')
 
 flags.DEFINE_string(
     'kmp_blocktime', '0',
@@ -401,26 +404,36 @@ def call_variants(examples_filename,
 
   # Prepare input stream and estimator.
   tf_dataset = prepare_inputs(source_path=examples_filename, use_tpu=use_tpu)
-  estimator = model.make_estimator(
-      batch_size=batch_size,
-      master=master,
-      use_tpu=use_tpu,
-      session_config=config,
-  )
-
-  # Instantiate the prediction "stream", and select the EMA values from
-  # the model.
-  if checkpoint_path is None:
-    # Unit tests use this branch.
-    predict_hooks = []
+  if FLAGS.use_openvino:
+    model_path = os.path.splitext(checkpoint_path)[0]
+    ie_estimator = OpenVINOEstimator(
+        model_path + '.xml',
+        model_path + '.bin',
+        input_fn=tf_dataset,
+        model=model)
+    predictions = iter(ie_estimator)
   else:
-    predict_hooks = [h(checkpoint_path) for h in model.session_predict_hooks()]
+    estimator = model.make_estimator(
+        batch_size=batch_size,
+        master=master,
+        use_tpu=use_tpu,
+        session_config=config,
+    )
 
-  predictions = iter(
-      estimator.predict(
-          input_fn=tf_dataset,
-          checkpoint_path=checkpoint_path,
-          hooks=predict_hooks))
+    # Instantiate the prediction "stream", and select the EMA values from
+    # the model.
+    if checkpoint_path is None:
+      # Unit tests use this branch.
+      predict_hooks = []
+    else:
+      predict_hooks = [
+          h(checkpoint_path) for h in model.session_predict_hooks()
+      ]
+    predictions = iter(
+        estimator.predict(
+            input_fn=tf_dataset,
+            checkpoint_path=checkpoint_path,
+            hooks=predict_hooks))
 
   # Consume predictions one at a time and write them to output_file.
   logging.info('Writing calls to %s', output_file)

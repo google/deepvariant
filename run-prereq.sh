@@ -80,7 +80,7 @@ sudo -H apt-get install "${APT_ARGS[@]}" software-properties-common
 
 # Install Python 3.6.
 # Reference: https://askubuntu.com/a/1069303
-sudo -H add-apt-repository -y ppa:deadsnakes/ppa
+sudo -H -E add-apt-repository -y ppa:deadsnakes/ppa
 sudo -H apt update "${APT_ARGS[@]}"
 sudo -H apt-get install "${APT_ARGS[@]}" python3.6
 sudo -H apt-get install "${APT_ARGS[@]}" python3.6-dev
@@ -226,6 +226,17 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   nvidia-smi || :
 fi
 
+################################################################################
+# OpenVINO
+################################################################################
+if [[ "${DV_OPENVINO_BUILD}" = "1" ]]; then
+  sudo -H apt-get -y install apt-transport-https
+  curl -o GPG-PUB-KEY-INTEL-OPENVINO-2020 https://apt.repos.intel.com/openvino/2020/GPG-PUB-KEY-INTEL-OPENVINO-2020
+  sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2020
+  sudo echo "deb https://apt.repos.intel.com/openvino/2020 all main" | sudo tee - a /etc/apt/sources.list.d/intel-openvino-2020.list
+  sudo -H apt-get update
+  sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu16-2020.4.287
+fi
 
 ################################################################################
 # Misc dependencies

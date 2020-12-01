@@ -202,8 +202,8 @@ then
   else
     IMAGE="deepvariant:latest"
     # Pulling twice in case the first one times out.
-    sudo docker build -t deepvariant . || \
-      (sleep 5 ; sudo docker build -t deepvariant .)
+    sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1 || \
+      (sleep 5 ; sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1)
     echo "Done building Docker image ${IMAGE}."
   fi
 else
