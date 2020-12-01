@@ -262,6 +262,7 @@ function get_docker_image() {
     then
       IMAGE="deeptrio_gpu:latest"
       sudo docker build \
+        -f Dockerfile.deeptrio \
         --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu16.04 \
         --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu .
       echo "Done building GPU Docker image ${IMAGE}."
@@ -291,9 +292,11 @@ function get_docker_image() {
 function run_deeptrio() {
   echo "Run DeepTrio..."
   echo "using IMAGE=$IMAGE"
+  # shellcheck disable=SC2068
   (time ( sudo docker run \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
+    ${docker_args[@]-} \
     "${IMAGE}" \
   /opt/deepvariant/bin/deeptrio/run_deeptrio \
     --model_type PACBIO \
@@ -362,7 +365,7 @@ function run_happy() {
     "/output/${vcf_output}" \
     -f "/input/${truth_bed}" \
     -r "/input/${REF}" \
-    -o "/output/happy.output" \
+    -o "/output/happy.output${vcf_output}" \
     --engine=vcfeval \
     -l chr20
   echo "Done."
