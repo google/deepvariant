@@ -238,6 +238,7 @@ if [[ "${DV_OPENVINO_BUILD}" = "1" ]]; then
   sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
   sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu16-2020.4.287 > /dev/null
   rm -f GPG-PUB-KEY-INTEL-OPENVINO-2020
+  pip3 install "${PIP_ARGS[@]}" networkx defusedxml test-generator==0.1.1
 fi
 
 ################################################################################

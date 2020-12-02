@@ -136,10 +136,6 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.meta .
 RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
-RUN if [ "${DV_OPENVINO_BUILD}" = "1" ]; then \
-      python3 -m pip install networkx defusedxml test-generator==0.1.1; \
-    fi
-
 RUN apt-get -y update && \
   apt-get install -y parallel && \
   python3 -m ensurepip && \
