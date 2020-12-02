@@ -99,7 +99,7 @@ echo "========================="
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
-BIN_VERSION="1.1.0-rc20201118"
+BIN_VERSION="1.1.0"
 
 INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
