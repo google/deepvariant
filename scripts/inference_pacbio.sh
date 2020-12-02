@@ -6,7 +6,7 @@ set -euo pipefail
 
 USAGE=$'
 Example usage:
-inference_pacbio.sh --docker_build true --use_gpu true
+inference_pacbio.sh --call_variants_extra_args "use_openvino=true"
 
 Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
@@ -100,7 +100,7 @@ echo "========================="
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/pacbio-case-study"
-BIN_VERSION="1.1.0-rc20201125"
+BIN_VERSION="1.1.0-rc20201201"
 
 INPUT_DIR="${BASE}/input/data"
 REF="GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"

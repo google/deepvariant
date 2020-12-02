@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 94m
-call_variants                    | 224m
-postprocess_variants (with gVCF) | 87m
-total                            | 405m = 6.8 hours
+make_examples                    | 97m
+call_variants                    | 216m (180m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+postprocess_variants (with gVCF) | 88m
+total                            | 401m = 6.7 hours
 
 ### Accuracy
 
@@ -56,9 +56,9 @@ Runtime is on HG003 (all chromosomes).
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
 make_examples                    | 112m
-call_variants                    | 197m
+call_variants                    | 228m (166m with OpenVINO<sup>[*](#vfootnote1)</sup>)
 postprocess_variants (with gVCF) | 72m
-total                            | 381m = 6.4 hours
+total                            | 412m = 6.8 hours
 
 ### Accuracy
 
@@ -81,10 +81,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 153m
-call_variants                    | 230m
-postprocess_variants (with gVCF) | 61m
-total                            | 444 m = 7.4 hours
+make_examples                    | 146m
+call_variants                    | 230m (185m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+postprocess_variants (with gVCF) | 62m
+total                            | 438 m = 7.3 hours
 
 ### Accuracy
 
@@ -109,25 +109,30 @@ Download and run any of the following case study scripts:
 
 ```
 # WGS (should take about 7 hours)
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wgs_case_study_docker.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_wgs.sh
 bash inference_wgs.sh
 
 # WES (should take less than 20 minutes)
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_wes_case_study_docker.sh
-bash run_wes_case_study_docker.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_wes.sh
+bash inference_wes.sh
 
 # PacBio (should take about 7 hours)
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_pacbio.sh
 bash inference_pacbio.sh
 
 # Hybrid (should take about 7 hours)
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/run_hybrid_pacbio_illumina_case_study_docker.sh
-bash run_hybrid_pacbio_illumina_case_study_docker.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_hybrid_pacbio_illumina.sh
+bash inference_hybrid_pacbio_illumina.sh
 ```
 
 Runtime metrics are taken from the resulting log after each stage of
 DeepVariant, and the accuracy metrics come from the hap.py summary.csv output
 file.
+
+<a name="vfootnote1">*</a>: To use OpenVINO on Intel CPUs, run with
+`--call_variants_extra_args "use_openvino=true"` with the Docker one-step
+command. Also see https://github.com/google/deepvariant/pull/363 for more
+details.
 
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [CPU instance with 64 CPUs]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
