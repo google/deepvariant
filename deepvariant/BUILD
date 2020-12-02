@@ -629,6 +629,9 @@ py_library(
     name = "openvino_estimator",
     srcs = ["openvino_estimator.py"],
     srcs_version = "PY3",
+    deps = [
+        "@absl_py//absl/logging",
+    ],
 )
 
 py_library(

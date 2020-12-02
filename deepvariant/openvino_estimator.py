@@ -31,6 +31,7 @@ import os
 import queue
 import subprocess
 import threading
+from absl import logging
 import tensorflow as tf
 import tf_slim as slim
 
@@ -48,17 +49,16 @@ except ImportError:
 
 def freeze_graph(model,
                  checkpoint_path,
-                 num_channels,
+                 tensor_shape,
                  moving_average_decay=0.9999):
   """Converts model ckpts."""
+  logging.info('Processing ckpt=%s, tensor_shape=%s', checkpoint_path,
+               tensor_shape)
   out_node = 'InceptionV3/Predictions/Reshape_1'
   in_node = 'input'
 
-  # redacted
-  # Not all our images have the 100, 221 dimension. How does
-  # this affect the correctness of this code?
   inp = tf.compat.v1.placeholder(
-      shape=[1, 100, 221, num_channels], dtype=tf.float32, name=in_node)
+      shape=[1] + tensor_shape, dtype=tf.float32, name=in_node)
   _ = model.create(inp, num_classes=3, is_training=False)
 
   ema = tf.train.ExponentialMovingAverage(moving_average_decay)
@@ -84,11 +84,12 @@ def freeze_graph(model,
 class OpenVINOEstimator(object):
   """An estimator for OpenVINO."""
 
-  def __init__(self, checkpoint_path, num_channels, *, input_fn, model):
-    freeze_graph(model, checkpoint_path, num_channels)
+  def __init__(self, checkpoint_path, input_fn, model):
+    tensor_shape = input_fn.tensor_shape
+    freeze_graph(model, checkpoint_path, tensor_shape)
     subprocess.run([
         mo_tf.__file__, '--input_model=model.pb', '--scale=128',
-        '--mean_values', '[{}]'.format(','.join(['128'] * num_channels))
+        '--mean_values', '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
     ],
                    check=True)
     os.remove('model.pb')
