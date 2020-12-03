@@ -86,7 +86,7 @@ curl ${HTTPDIR}/HG003.GRCh38.chr20.pFDA_truthv2.bam.bai > input/HG003.GRCh38.chr
 
 ```bash
 ulimit -u 10000 # https://stackoverflow.com/questions/52026652/openblas-blas-thread-init-pthread-create-resource-temporarily-unavailable/54746150#54746150
-BIN_VERSION="1.1.0-rc20201125"
+BIN_VERSION="1.1.0-rc20201201"
 mkdir -p deepvariant1
 
 singularity exec --bind /usr/lib/locale/ \
@@ -131,7 +131,7 @@ samtools index whatshap/HG003.GRCh38.chr20.haplotagged.bam
 
 ```bash
 ulimit -u 10000 # https://stackoverflow.com/questions/52026652/openblas-blas-thread-init-pthread-create-resource-temporarily-unavailable/54746150#54746150
-BIN_VERSION="1.1.0-rc20201125"
+BIN_VERSION="1.1.0-rc20201201"
 mkdir -p deepvariant2
 
 singularity exec --bind /usr/lib/locale/ \
