@@ -222,7 +222,10 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   if FLAGS.logging_dir is not None:
     runtime_directory = os.path.join(FLAGS.logging_dir,
                                      'make_examples_runtime_by_region')
-    os.makedirs(runtime_directory)
+    if not os.path.isdir(runtime_directory):
+      logging.info('Creating a make_examples runtime by region directory in %s',
+                   runtime_directory)
+      os.makedirs(runtime_directory)
     profile_by_region = os.path.join(
         runtime_directory,
         'make_examples_runtime@{}.tsv'.format(FLAGS.num_shards))
