@@ -1,0 +1,39 @@
+# DeepTrio training data
+
+### WGS models
+
+| version      | Replicates                         | #examples   |
+| ------------ | ---------------------------------- | ----------- |
+| Child model  |                                    |             |
+| 1.1.0        | 4 HG001/NA12891/NA12892 trios<br>7 HG005/HG006/HG007 trios <br>3 HG002/HG004/HG004 trios<sup>[(1)](#vfootnote1)</sup>| 566,589,652 |
+| Parent model |                                    |             |
+| 1.1.0        | 7 HG005/HG006/HG007 trios <br> 3 HG002/HG004/HG004 trios<sup>[(1)](#vfootnote1)</sup> | 315,847,934 |
+
+### WES models
+
+| version      | Replicates                                      | #examples  |
+| ------------ | ----------------------------------------------- | ---------- |
+| Child model  |                                                 |            |
+| 1.1.0        | 27 HG001/NA12891/NA12892 trios<br>6 HG005/HG006/HG007 trios <br>7 HG002/HG004/HG004 trios  | 18,002,596 |
+| Parent model |                                                 |            |
+| 1.1.0        | 6 HG005/HG006/HG007 trios <br> 6 HG002/HG004/HG004 trios  | 4,131,018  |
+
+### PACBIO models
+
+| version      | Replicates                         | #examples   |
+| ------------ | ---------------------------------- | ----------- |
+| Child model  |                                    |             |
+| 1.1.0        | 1 HG005/HG006/HG007 trio <br>8 HG002/HG004/HG004 trios<sup>[(2)](#vfootnote2)</sup> | 397,610,700 |
+| Parent model |                                    |             |
+| 1.1.0        | 1 HG005/HG006/HG007 trio <br> 8 HG002/HG004/HG004 trios<sup>[(3)](#vfootnote3)</sup> | 386,418,918 |
+
+
+<a name="vfootnote1">(1)</a>: We include HG002/HG003/HG004 for training WGS
+model, but only using examples from the region of NIST truth confident region
+v4.2 subtracting v3.3.2.
+
+<a name="vfootnote2">(2)</a>: We use the entire HG002/HG003/HG004 trio for
+PacBio model training.
+
+<a name="vfootnote3">(3)</a>: PacBio training data contains training examples
+with haplotag sorted images and unsorted images.
