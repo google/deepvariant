@@ -28,9 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """An estimator that uses OpenVINO."""
 import os
-import queue
 import subprocess
-import threading
 from absl import logging
 import tensorflow as tf
 import tf_slim as slim
@@ -45,6 +43,8 @@ try:
   from tensorflow.python.tools import optimize_for_inference_lib  # pylint: disable=g-import-not-at-top
 except ImportError:
   pass
+
+_LOG_EVERY_N = 15000
 
 
 def freeze_graph(model,
@@ -105,25 +105,23 @@ class OpenVINOEstimator(object):
     self.tf_sess = tf.compat.v1.Session()
     self.input_fn = input_fn
     self.model = model
-    self.outputs = {}
-    self.results = queue.Queue()
-    self.process_thread = threading.Thread(target=self._process)
-    self.features = tf.compat.v1.data.make_one_shot_iterator(
-        self.input_fn({'batch_size': 64})).get_next()
+    self.outputs = []
 
-  def _process(self):
+  def __iter__(self):
     """Read input data."""
-    self.images = self.features['image']
-    self.variant = self.features['variant']
-    self.alt_allele_indices = self.features['alt_allele_indices']
-
+    features = tf.compat.v1.data.make_one_shot_iterator(
+        self.input_fn({'batch_size': 64})).get_next()
+    self.images = features['image']
+    self.variant = features['variant']
+    self.alt_allele_indices = features['alt_allele_indices']
+    self.iter_id = 0
+    logging.info('Using OpenVINO in call_variants.')
     try:
       # List that maps infer requests to index of processed input.
       # -1 means that request has not been started yet.
       infer_request_input_id = [-1] * len(self.exec_net.requests)
 
       inp_id = 0
-      iter_id = 0
       while True:
         # Get next input
         inp, variant, alt_allele_indices = self.tf_sess.run(
@@ -150,20 +148,18 @@ class OpenVINOEstimator(object):
 
           # Start this request on new data
           infer_request_input_id[infer_request_id] = inp_id
-          self.outputs[inp_id] = {
+          inp_id += 1
+          logging.log_every_n(
+              logging.INFO,
+              ('Processed %s examples in call_variants (using OpenVINO)'),
+              _LOG_EVERY_N, inp_id)
+          self.outputs.append({
               'probabilities': None,
               'variant': variant[i],
               'alt_allele_indices': alt_allele_indices[i]
-          }
-          inp_id += 1
-          request.async_infer({'input': inp[i:i + 1].transpose(0, 3, 1, 2)})
+          })
 
-          while self.outputs:
-            if self.outputs[iter_id]['probabilities'] is not None:
-              self.results.put(self.outputs.pop(iter_id))
-              iter_id += 1
-            else:
-              break
+          request.async_infer({'input': inp[i:i + 1].transpose(0, 3, 1, 2)})
 
     except (StopIteration, tf.errors.OutOfRangeError):
       # Copy rest of outputs
@@ -173,17 +169,14 @@ class OpenVINOEstimator(object):
       for infer_request_id, out_id in enumerate(infer_request_input_id):
         if not self.outputs[out_id]['probabilities']:
           request = self.exec_net.requests[infer_request_id]
-          res = self.outputs[out_id]
-          res['probabilities'] = request.output_blobs[
+          self.outputs[out_id]['probabilities'] = request.output_blobs[
               'InceptionV3/Predictions/Softmax'].buffer.reshape(-1)
-          self.results.put(res)
-
-  def __iter__(self):
-    self.process_thread.start()
     return self
 
   def __next__(self):
-    if self.process_thread.isAlive() or not self.results.empty():
-      return self.results.get()
+    if self.iter_id < len(self.outputs):
+      res = self.outputs[self.iter_id]
+      self.iter_id += 1
+      return res
     else:
       raise StopIteration
