@@ -152,4 +152,4 @@ ENV LD_LIBRARY_PATH=/opt/intel/openvino/inference_engine/lib/intel64/:/opt/intel
 
 WORKDIR /opt/deepvariant
 
-ENTRYPOINT ["/opt/deepvariant/bin/run_deepvariant"]
+CMD ["/opt/deepvariant/bin/run_deepvariant", "--help"]

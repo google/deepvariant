@@ -123,4 +123,4 @@ ENV PATH="/opt/deepvariant/bin/deeptrio:/opt/deepvariant/bin:${PATH}"
 
 WORKDIR /opt/deepvariant
 
-ENTRYPOINT ["/opt/deepvariant/bin/deeptrio/run_deeptrio"]
+CMD ["/opt/deepvariant/bin/deeptrio/run_deeptrio", "--help"]
