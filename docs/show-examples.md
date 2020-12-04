@@ -1,4 +1,4 @@
-# Saving human-readable images from DeepVariant examples
+# show_examples: Saving human-readable images from DeepVariant examples
 
 This is a short guide to using the show_examples tool to view the pileup images
 used within DeepVariant and save them as PNG image files. This tool is

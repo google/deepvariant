@@ -14,8 +14,9 @@
 
 ## Visualization and analysis
 
-*   [Saving human-readable images from DeepVariant examples](show-examples.md)
+*   [show_examples: Saving human-readable images from DeepVariant examples](show-examples.md)
 *   [VCF stats report](deepvariant-vcf-stats-report.md)
+*   [Runtime by region for make_examples](runtime-by-region.md)
 
 ### Colab notebooks
 
