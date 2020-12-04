@@ -19,8 +19,8 @@ the greatest achievable accuracy for BGISEQ-500 data.
 We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
 accuracy comparing to the WGS model as a baseline:
-Indel F1 94.6562% --> 98.0581%;
-SNP F1: 99.8445% --> 99.8974%.
+Indel F1 95.4794% --> 98.1160%;
+SNP F1: 99.8679% --> 99.8996%.
 
 Training for 50,000 steps took about 1.5 hours on 1 GPU. Currently we cannot
 train on multiple GPUs.
@@ -39,7 +39,7 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-BIN_VERSION="1.0.0"
+BIN_VERSION="1.1.0"
 
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}+data-wgs_standard"
 GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
@@ -93,7 +93,8 @@ gunzip "${DATA_DIR}/ucsc_hg19.fa.gz"
 ```
 sudo apt -y update
 sudo apt -y install parallel
-curl https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/install_nvidia_docker.sh | bash -x
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.0/scripts/install_nvidia_docker.sh
+bash -x install_nvidia_docker.sh
 ```
 
 ## Run make_examples in “training” mode for training and validation sets.
@@ -127,7 +128,7 @@ sudo docker pull google/deepvariant:"${BIN_VERSION}-gpu"
 
 ```
 ( time seq 0 $((N_SHARDS-1)) | \
-  parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
+  parallel --halt 2 --line-buffer \
     sudo docker run \
       -v ${HOME}:${HOME} \
       google/deepvariant:"${BIN_VERSION}-gpu" \
@@ -140,7 +141,7 @@ sudo docker pull google/deepvariant:"${BIN_VERSION}-gpu"
       --confident_regions "${TRUTH_BED}" \
       --task {} \
       --regions "'chr1'" \
-) >"${LOG_DIR}/training_set.with_label.make_examples.log" 2>&1
+) 2>&1 | tee "${LOG_DIR}/training_set.with_label.make_examples.log"
 ```
 
 Output from each individual parallel run can be found in
@@ -158,10 +159,10 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz \
 
 ```
 ( time seq 0 $((N_SHARDS-1)) | \
-  parallel --halt 2 --joblog "${LOG_DIR}/log" --res "${LOG_DIR}" \
+  parallel --halt 2 --line-buffer \
     sudo docker run \
       -v /home/${USER}:/home/${USER} \
-      google/deepvariant:"${BIN_VERSION}" \
+      google/deepvariant:"${BIN_VERSION}-gpu" \
       /opt/deepvariant/bin/make_examples \
       --mode training \
       --ref "${REF}" \
@@ -171,7 +172,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz \
       --confident_regions "${TRUTH_BED}" \
       --task {} \
       --regions "'chr21'" \
-) >"${LOG_DIR}/validation_set.with_label.make_examples.log" 2>&1
+) 2>&1 | tee "${LOG_DIR}/validation_set.with_label.make_examples.log"
 ```
 
 This took: ~6min.
@@ -211,7 +212,7 @@ Then, get the code that shuffles:
 
 ```
 mkdir -p ${SHUFFLE_SCRIPT_DIR}
-wget https://raw.githubusercontent.com/google/deepvariant/r1.0/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
+wget https://raw.githubusercontent.com/google/deepvariant/r1.1/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
 ```
 
 Next, we shuffle the data using DataflowRunner. Before that, please make sure
@@ -402,7 +403,7 @@ gsutil cat "${TRAINING_DIR}"/best_checkpoint.txt
 ```
 
 In my run, this showed that the model checkpoint that performs the best on the
-validation set was `${TRAINING_DIR}/model.ckpt-30195`.
+validation set was `${TRAINING_DIR}/model.ckpt-31342`.
 
 
 Let's use this model to do the final evaluation on the test set and see how we
@@ -414,7 +415,7 @@ sudo docker run --gpus 1 \
   google/deepvariant:"${BIN_VERSION}-gpu" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
-  --customized_model "${TRAINING_DIR}/model.ckpt-30195" \
+  --customized_model "${TRAINING_DIR}/model.ckpt-31342" \
   --ref "${REF}" \
   --reads "${BAM_CHR20}" \
   --regions "chr20" \
@@ -447,24 +448,24 @@ The output of `hap.py` is here:
 ```
 [I] Total VCF records:         3775119
 [I] Non-reference VCF records: 3775119
-[W] overlapping records at chr20:26085824 for sample 0
+[W] overlapping records at chr20:52120305 for sample 0
 [W] Variants that overlap on the reference allele: 2
 [I] Total VCF records:         133028
-[I] Non-reference VCF records: 98203
+[I] Non-reference VCF records: 97629
 Benchmarking Summary:
   Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10023      9801       222        19661       173       9285    114       0.977851          0.983327        0.472255         0.980581                     NaN                     NaN                   1.547658                   2.117513
- INDEL   PASS        10023      9801       222        19661       173       9285    114       0.977851          0.983327        0.472255         0.980581                     NaN                     NaN                   1.547658                   2.117513
-   SNP    ALL        66237     66181        56        79577        80      13283     10       0.999155          0.998793        0.166920         0.998974                2.284397                2.191819                   1.700387                   1.824948
-   SNP   PASS        66237     66181        56        79577        80      13283     10       0.999155          0.998793        0.166920         0.998974                2.284397                2.191819                   1.700387                   1.824948
+ INDEL    ALL        10023      9805       218        19550       165       9181    120       0.978250          0.984087        0.469616         0.981160                     NaN                     NaN                   1.547658                   2.094355
+ INDEL   PASS        10023      9805       218        19550       165       9181    120       0.978250          0.984087        0.469616         0.981160                     NaN                     NaN                   1.547658                   2.094355
+   SNP    ALL        66237     66170        67        79110        66      12836     14       0.998988          0.999004        0.162255         0.998996                2.284397                2.190363                   1.700387                   1.812224
+   SNP   PASS        66237     66170        67        79110        66      12836     14       0.998988          0.999004        0.162255         0.998996                2.284397                2.190363                   1.700387                   1.812224
 ```
 
 To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 222  | 173  | 0.977851 | 0.983327  | 0.980581
-SNP   | 56   | 80   | 0.999155 | 0.998793  | 0.998974
+INDEL | 218  | 165  | 0.978250 | 0.984087  | 0.981160
+SNP   | 67   | 66   | 0.998988 | 0.999004  | 0.998996
 
 The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
@@ -486,8 +487,8 @@ Baseline:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 359  | 763  | 0.964182 | 0.929574  | 0.946562
-SNP   | 130  | 76   | 0.998037 | 0.998852  | 0.998445
+INDEL | 364  | 574  | 0.963684 | 0.946068  | 0.954794
+SNP   | 111  | 64   | 0.998324 | 0.999034  | 0.998679
 
 ### Additional things to try
 
