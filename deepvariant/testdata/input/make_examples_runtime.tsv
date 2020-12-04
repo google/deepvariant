@@ -1,0 +1,6 @@
+region	get reads	find candidates	make pileup images	write outputs	num reads	num candidates	num examples
+0:1-1000	0.095	0.186	0.176	0.005	37	2	2
+0:1001-2000	0.139	0.188	0.257	0.016	37	3	3
+0:3001-4000	0.145	0.197	0.315	0.016	33	3	3
+0:4001-5000	0.148	0.2	0.366	0.016	36	3	3
+0:5001-6000	0.153	0.204	0.104	0.006	39	1	1

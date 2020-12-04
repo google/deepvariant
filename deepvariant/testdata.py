@@ -102,6 +102,8 @@ VCF_CANDIDATE_IMPORTER_VARIANTS = None
 # For alt-aligned pileups
 ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES = None
 ALT_ALIGNED_ROWS_EXAMPLES = None
+RUNTIME_BY_REGION = None
+RUNTIME_BY_REGION_SHARDED = None
 
 
 def init():
@@ -227,3 +229,9 @@ def init():
       'golden.alt_aligned_pileup_rows_examples.tfrecord.gz')
   ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES = deepvariant_testdata(
       'golden.alt_aligned_pileup_diff_channels_examples.tfrecord.gz')
+
+  global RUNTIME_BY_REGION
+  global RUNTIME_BY_REGION_SHARDED
+  RUNTIME_BY_REGION = deepvariant_testdata('input/make_examples_runtime.tsv')
+  RUNTIME_BY_REGION_SHARDED = deepvariant_testdata(
+      'input/make_examples_runtime@2.tsv')
