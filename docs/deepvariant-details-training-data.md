@@ -12,6 +12,7 @@ v0.8    | 12 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+<br>(and, more `d
 v0.9    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>2 HG006 PCR-free<br>2 HG007 PCR-free<br>5 HG001 PCR+     | 325,202,093
 v0.10   | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>2 HG006 PCR-free<br>2 HG007 PCR-free<br>5 HG001 PCR+     | 339,410,078
 v1.0    | 11 HG001<br>2 HG005-HG007<br>2 HG002-HG004<sup>[(7)](#vfootnote7)</sup>     | 317,486,837
+v1.1    | 12 HG001<br>3 HG002<br>3 HG004<br>3 HG005<br>3 HG006<br>3 HG007<br><sup>[(9)](#vfootnote9)</sup> | 388,337,190
 
 ### WES models
 
@@ -24,7 +25,7 @@ v0.8    | 78 HG001<br>1 HG005<sup>[(3)](#vfootnote3)</sup> | 18,683,247
 v0.9    | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
 v0.10   | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
 v1.0    | 32 HG001<br>9 HG002<br>6 HG003<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(7)](#vfootnote7)</sup> | 10,716,281
-
+v1.0    | 41 HG001<br>9 HG002<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<br><sup>[(9)](#vfootnote9)</sup> | 13,450,688
 ### PACBIO models
 
 version | Replicates                  | #examples
@@ -33,6 +34,7 @@ v0.8    | 16 HG002 | 160,025,931
 v0.9    | 49 HG002 <sup>[(6)](#vfootnote6)</sup> | 357,507,235
 v0.10   | 49 HG002, 2 HG003, 2 HG004, 1 HG002 (amplified) <sup>[(6)](#vfootnote6)</sup> | 472,711,858
 v1.0    | 1 HG001<br>2 HG002<br>2 HG003<br>2 HG004<br>1 HG005 <sup>[(8)](#vfootnote8)</sup>  | 302,331,948
+v1.0    | 1 HG001<br>9 HG002<br>2 HG004<br>1 HG005<br><sup>[(9)](#vfootnote9)</sup> | 569,225,616
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
@@ -64,6 +66,9 @@ subtracting v3.3.2.
 <a name="vfootnote8">(8)</a>: In v1.0, PacBio training data contains training
 examples with haplotag sorted images and unsorted images.
 
+<a name="vfootnote9">(9)</a>: In v1.1, we exclude HG003 from training. And we
+use all NIST truth confident regions for HG001-HG007 (except for HG003) for
+training. We've always excluded chr20-22 from training.
 
 ## WGS training data:
 
