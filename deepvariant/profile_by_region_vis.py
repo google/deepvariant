@@ -63,7 +63,7 @@ flags.DEFINE_string('output', 'runtime_by_region_report.html',
 RUNTIME_COLUMNS = [
     'get reads', 'find candidates', 'make pileup images', 'write outputs'
 ]
-COUNT_COLUMNS = ['num reads', 'num examples', 'num candidates']
+COUNT_COLUMNS = ['num reads', 'num candidates', 'num examples']
 
 CSS_STYLES = """
 <style>
@@ -243,8 +243,8 @@ def pareto_by_task_tooltip(row: pd.Series) -> str:
   Returns:
     A string to show as the tooltip for a pareto curve.
   """
-  return (f"{row['task cumsum order']:.2f}% of regions "
-          f"account for {row['task cumsum fraction']:.2f}% of "
+  return (f"{row['task cumsum order'] * 100:.2f}% of regions "
+          f"account for {row['task cumsum fraction'] * 100:.2f}% of "
           f"the runtime in task {row['Task']}")
 
 
@@ -526,26 +526,26 @@ def make_all_charts(
             'histogram_bottom_99_percent',
         'chart':
             stage_histogram(
-                bottom_99_percent, title='Regions in the bottom 99% by runtime')
+                bottom_99_percent,
+                title='Runtime by stage for regions in the bottom 99%')
     }, {
         'id':
             'histogram_top_100',
         'chart':
             stage_histogram(
-                top_100,
-                title='Runtime by stage for top 100 regions by runtime')
+                top_100, title='Runtime by stage for regions in the top 100')
     }, {
         'id':
             'scatter_grid_top_5000',
         'chart':
             correlation_scatter_charts(
-                top_5000, title='Trends for top 5000 regions by runtime')
+                top_5000, title='Trends for regions in the top 5000')
     }, {
         'id':
             'scatter_grid_bottom_99_percent',
         'chart':
             correlation_scatter_charts(
-                bottom_99_percent, title='Regions in the bottom 99% by runtime')
+                bottom_99_percent, title='Trends for regions in the bottom 99%')
     }])
   return charts
 
