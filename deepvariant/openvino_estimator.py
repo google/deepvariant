@@ -64,7 +64,6 @@ class OpenVINOEstimator(object):
                                          num_requests=0)
     self.tf_sess = tf.compat.v1.Session()
     self.input_fn = input_fn
-    self.model = model
     self.outputs = {}
     self.results = Queue()
     self.process_thread = Thread(target=self._process)
@@ -77,13 +76,13 @@ class OpenVINOEstimator(object):
     self.variant = self.features['variant']
     self.alt_allele_indices = self.features['alt_allele_indices']
 
+    iter_id = 0
     try:
       # List that maps infer requests to index of processed input.
       # -1 means that request has not been started yet.
       infer_request_input_id = [-1] * len(self.exec_net.requests)
 
       inp_id = 0
-      iter_id = 0
       while True:
         # Get next input
         inp, variant, alt_allele_indices = self.tf_sess.run([self.images, self.variant, self.alt_allele_indices])
@@ -132,9 +131,10 @@ class OpenVINOEstimator(object):
       for infer_request_id, out_id in enumerate(infer_request_input_id):
         if not self.outputs[out_id]['probabilities']:
           request = self.exec_net.requests[infer_request_id]
-          res = self.outputs[out_id]
-          res['probabilities'] = request.output_blobs['InceptionV3/Predictions/Softmax'].buffer.reshape(-1)
-          self.results.put(res)
+          self.outputs[out_id]['probabilities'] = request.output_blobs['InceptionV3/Predictions/Softmax'].buffer.reshape(-1)
+      while self.outputs:
+          self.results.put(self.outputs.pop(iter_id))
+          iter_id += 1
 
 
   def __iter__(self):
