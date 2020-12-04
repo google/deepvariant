@@ -12,6 +12,7 @@ filegroup(
         "model_eval",
         "model_train",
         "postprocess_variants",
+        "profile_by_region_vis",
         "show_examples",
         "vcf_stats_report",
     ],

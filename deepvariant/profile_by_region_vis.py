@@ -567,7 +567,7 @@ def make_report(input_path: str, title: str,
   charts = make_all_charts(df, by_task)
 
   # Write a subtitle with some top-level stats.
-  subtitle = (f'Totals: {len(df)} regions '
+  subtitle = (f'Runtime profiling for make_examples on {len(df)} regions '
               f'across {len(by_task)} task{"(s)" if len(by_task) > 1 else ""}')
 
   # Write the HTML report with all the charts.
