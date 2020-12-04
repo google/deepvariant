@@ -43,7 +43,7 @@ Use the `runtime_by_region_vis` script to create a visual report of the
 make_examples runtime by region data.
 
 ```bash
-BIN_VERSION="1.1.0-rc20201125" # Only available in v1.1+.
+BIN_VERSION="1.1.0" # Only available in v1.1+.
 docker run \
   -v "INPUT_DIR":"/input" \
   -v "OUTPUT_DIR:/output" \

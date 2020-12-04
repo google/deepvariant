@@ -131,7 +131,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
-DEEP_VARIANT_VERSION = '1.0.0'
+DEEP_VARIANT_VERSION = '1.1.0'
 
 
 def _is_quoted(value):

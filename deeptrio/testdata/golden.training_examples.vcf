@@ -10,7 +10,7 @@
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth for each allele">
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods rounded to the closest integer">
-##DeepVariant_version=1.0.0
+##DeepVariant_version=1.1.0
 ##contig=<ID=20,length=63025520>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	child
 20	10001019	.	T	G	0	.	.	GT:DP:AD:VAF	0/1:16:10,6:0.375

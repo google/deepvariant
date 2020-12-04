@@ -167,7 +167,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
-DEEP_TRIO_VERSION = '1.0.0'
+DEEP_TRIO_VERSION = '1.1.0'
 GLNEXUS_VERSION = 'v1.2.7'
 
 DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
