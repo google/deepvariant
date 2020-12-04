@@ -492,7 +492,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(decode_example(examples[0])['image/shape'], expected_shape)
 
   @flagsaver.flagsaver
-  def test_make_examples_runtime_profile_by_region(self):
+  def test_make_examples_runtime_runtime_by_region(self):
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
@@ -503,7 +503,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         _sharded('examples.tfrecord', num_shards))
     # Use same number of shards for profiling files as examples.
     output_prefix = test_utils.test_tmpfile('runtime_profile')
-    FLAGS.profile_by_region = output_prefix + '@{}'.format(num_shards)
+    FLAGS.runtime_by_region = output_prefix + '@{}'.format(num_shards)
     FLAGS.task = 2
     # Run make_examples with those FLAGS.
     options = make_examples.default_options(add_flags=True)

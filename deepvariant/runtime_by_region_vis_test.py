@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for DeepVariant profile_by_region_vis visual report script."""
+"""Tests for DeepVariant runtime_by_region_vis visual report script."""
 
 import io
 
@@ -34,7 +34,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import pandas as pd
 
-from deepvariant import profile_by_region_vis
+from deepvariant import runtime_by_region_vis
 from deepvariant import testdata
 
 
@@ -73,7 +73,7 @@ def is_an_altair_chart(chart):
   return 'altair' in string_type and 'Chart' in string_type
 
 
-class ProfileByRegionVisTest(parameterized.TestCase):
+class RuntimeByRegionVisTest(parameterized.TestCase):
 
   @parameterized.parameters(
       dict(sharded=False, expected_regions=5),
@@ -86,7 +86,7 @@ class ProfileByRegionVisTest(parameterized.TestCase):
       input_path = testdata.RUNTIME_BY_REGION
 
     html_output = io.StringIO()
-    profile_by_region_vis.make_report(
+    runtime_by_region_vis.make_report(
         input_path=input_path, title='my fancy title', html_output=html_output)
     html = html_output.getvalue()
     self.assertIn(
@@ -114,11 +114,11 @@ class ProfileByRegionVisTest(parameterized.TestCase):
   )
   def test_format_runtime_string(self, raw_seconds, expected):
     self.assertEqual(expected,
-                     profile_by_region_vis.format_runtime_string(raw_seconds))
+                     runtime_by_region_vis.format_runtime_string(raw_seconds))
 
   def test_read_data_and_make_dataframes(self):
     input_path = testdata.RUNTIME_BY_REGION
-    df, by_task = profile_by_region_vis.read_data_and_make_dataframes(
+    df, by_task = runtime_by_region_vis.read_data_and_make_dataframes(
         input_path)
     # Compare as json strings.
     self.assertEqual(df.to_json(), JSON_DF)
@@ -130,12 +130,12 @@ class ProfileByRegionVisTest(parameterized.TestCase):
 
   def test_totals_by_stage(self):
     by_task = pd.read_json(JSON_BY_TASK_DF)
-    chart = profile_by_region_vis.totals_by_stage(by_task)
+    chart = runtime_by_region_vis.totals_by_stage(by_task)
     self.assertTrue(is_an_altair_chart(chart))
 
   def test_pareto_and_runtimes_by_task(self):
     df = pd.read_json(JSON_DF)
-    chart = profile_by_region_vis.pareto_and_runtimes_by_task(df)
+    chart = runtime_by_region_vis.pareto_and_runtimes_by_task(df)
     self.assertTrue(is_an_altair_chart(chart))
 
   @parameterized.parameters(
@@ -144,24 +144,24 @@ class ProfileByRegionVisTest(parameterized.TestCase):
   )
   def test_stage_histogram(self, dataframe_json, msg):
     df = pd.read_json(dataframe_json)
-    chart = profile_by_region_vis.stage_histogram(df, title='chart title')
+    chart = runtime_by_region_vis.stage_histogram(df, title='chart title')
     self.assertTrue(is_an_altair_chart(chart), msg=msg)
     chart_json = chart.to_json()
     self.assertIn('chart title', chart_json)
 
   def test_selected_longest_and_median_regions(self):
     df = pd.read_json(JSON_DF)
-    chart = profile_by_region_vis.selected_longest_and_median_regions(df)
+    chart = runtime_by_region_vis.selected_longest_and_median_regions(df)
     self.assertTrue(is_an_altair_chart(chart))
 
   def test_top_regions_producing_zero_examples(self):
     df = pd.read_json(JSON_DF)
-    chart = profile_by_region_vis.top_regions_producing_zero_examples(df)
+    chart = runtime_by_region_vis.top_regions_producing_zero_examples(df)
     self.assertTrue(is_an_altair_chart(chart))
 
   def test_correlation_scatter_charts(self):
     df = pd.read_json(JSON_DF)
-    chart = profile_by_region_vis.correlation_scatter_charts(
+    chart = runtime_by_region_vis.correlation_scatter_charts(
         df, title='chart title')
     self.assertTrue(is_an_altair_chart(chart))
     chart_json = chart.to_json()
@@ -169,7 +169,7 @@ class ProfileByRegionVisTest(parameterized.TestCase):
 
   def test_individual_region_bars(self):
     df = pd.read_json(JSON_DF)
-    chart = profile_by_region_vis.individual_region_bars(
+    chart = runtime_by_region_vis.individual_region_bars(
         df, title='chart title')
     self.assertTrue(is_an_altair_chart(chart))
     chart_json = chart.to_json()

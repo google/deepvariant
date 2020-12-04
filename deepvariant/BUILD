@@ -12,7 +12,7 @@ filegroup(
         "model_eval",
         "model_train",
         "postprocess_variants",
-        "profile_by_region_vis",
+        "runtime_by_region_vis",
         "show_examples",
         "vcf_stats_report",
     ],
@@ -1096,19 +1096,19 @@ py_library(
 )
 
 py_binary(
-    name = "profile_by_region_vis",
-    srcs = ["profile_by_region_vis.py"],
+    name = "runtime_by_region_vis",
+    srcs = ["runtime_by_region_vis.py"],
     python_version = "PY3",
     deps = [
-        ":profile_by_region_vis_lib",
+        ":runtime_by_region_vis_lib",
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
 py_library(
-    name = "profile_by_region_vis_lib",
-    srcs = ["profile_by_region_vis.py"],
+    name = "runtime_by_region_vis_lib",
+    srcs = ["runtime_by_region_vis.py"],
     srcs_version = "PY3",
     deps = [
         "//third_party/nucleus/io:sharded_file_utils",
@@ -1118,14 +1118,14 @@ py_library(
 )
 
 py_test(
-    name = "profile_by_region_vis_test",
-    srcs = ["profile_by_region_vis_test.py"],
+    name = "runtime_by_region_vis_test",
+    srcs = ["runtime_by_region_vis_test.py"],
     data = [":testdata"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
-        ":profile_by_region_vis_lib",
         ":py_testdata",
+        ":runtime_by_region_vis_lib",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],

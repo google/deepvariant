@@ -640,7 +640,7 @@ message DeepVariantOptions {
   repeated string population_vcf_filenames = 35;
 
   // Path to output optional runtime profiling by region.
-  string profile_by_region = 36;
+  string runtime_by_region = 36;
 }
 
 // Config describe information needed for a dataset that can be used for

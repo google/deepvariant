@@ -226,10 +226,10 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
       logging.info('Creating a make_examples runtime by region directory in %s',
                    runtime_directory)
       os.makedirs(runtime_directory)
-    profile_by_region = os.path.join(
+    runtime_by_region = os.path.join(
         runtime_directory,
         'make_examples_runtime@{}.tsv'.format(FLAGS.num_shards))
-    command.extend(['--profile_by_region', '"{}"'.format(profile_by_region)])
+    command.extend(['--runtime_by_region', '"{}"'.format(runtime_by_region)])
 
   conflict_args = None
   if FLAGS.model_type == 'PACBIO':

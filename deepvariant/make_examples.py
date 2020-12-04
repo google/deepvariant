@@ -99,8 +99,8 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
-# For --profile_by_region, these columns will be written out in this order.
-PROFILE_BY_REGION_COLUMNS = ('region', 'get reads', 'find candidates',
+# For --runtime_by_region, these columns will be written out in this order.
+RUNTIME_BY_REGION_COLUMNS = ('region', 'get reads', 'find candidates',
                              'make pileup images', 'write outputs', 'num reads',
                              'num candidates', 'num examples')
 
@@ -325,7 +325,7 @@ flags.DEFINE_bool(
     'If True, add another channel for pileup images to represent allele '
     'frequency information gathered from population callsets.')
 flags.DEFINE_string(
-    'profile_by_region', None,
+    'runtime_by_region', None,
     '[optional] Output filename for a TSV file of runtimes and '
     'other stats by region. If examples are sharded, this should be sharded '
     'into the same number of shards as the examples.')
@@ -544,18 +544,18 @@ def default_options(add_flags=True, flags_obj=None):
               .format(svt, ', '.join(_VARIANT_TYPE_SELECTORS)),
               errors.CommandLineError)
 
-    num_shards, examples, candidates, gvcf, profile_by_region = (
+    num_shards, examples, candidates, gvcf, runtime_by_region = (
         sharded_file_utils.resolve_filespecs(flags_obj.task,
                                              flags_obj.examples or '',
                                              flags_obj.candidates or '',
                                              flags_obj.gvcf or '',
-                                             flags_obj.profile_by_region or ''))
+                                             flags_obj.runtime_by_region or ''))
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
     options.task_id = flags_obj.task
     options.num_shards = num_shards
-    options.profile_by_region = profile_by_region
+    options.runtime_by_region = runtime_by_region
 
     # First, if parse_sam_aux_fields is still None (which means the users didn't
     # set it. We added some logic to decide its value.
@@ -2024,12 +2024,12 @@ class OutputsWriter(object):
     if options.gvcf_filename:
       self._add_writer('gvcfs', tfrecord.Writer(options.gvcf_filename))
 
-    if options.profile_by_region:
+    if options.runtime_by_region:
       self._add_writer('runtime',
-                       tf.io.gfile.GFile(options.profile_by_region, mode='w'))
+                       tf.io.gfile.GFile(options.runtime_by_region, mode='w'))
       writer = self._writers['runtime']
       writer.__enter__()
-      writer.write('\t'.join(PROFILE_BY_REGION_COLUMNS) + '\n')
+      writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
 
   def write_examples(self, *examples):
     self._write('examples', *examples)
@@ -2041,7 +2041,7 @@ class OutputsWriter(object):
     self._write('candidates', *candidates)
 
   def write_runtime(self, stats_dict):
-    columns = [str(stats_dict.get(k, 'NA')) for k in PROFILE_BY_REGION_COLUMNS]
+    columns = [str(stats_dict.get(k, 'NA')) for k in RUNTIME_BY_REGION_COLUMNS]
     writer = self._writers['runtime']
     writer.write('\t'.join(columns) + '\n')
 
@@ -2118,7 +2118,7 @@ def make_examples_runner(options):
       if gvcfs:
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
-      if options.profile_by_region:
+      if options.runtime_by_region:
         runtimes['write outputs'] = trim_runtime(time.time() -
                                                  before_write_outputs)
         runtimes['region'] = ranges.to_literal(region)
