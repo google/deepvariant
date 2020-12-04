@@ -1705,11 +1705,14 @@ def make_examples_runner(options):
   running_timer = timer.TimerStart()
 
   writers_dict = {}
-  for sample in region_processor.samples['child']:
-    if sample.sam_reader is not None:
-      # Only use suffix in calling mode
-      suffix = None if in_training_mode(options) else sample.name
-      writers_dict[sample.name] = OutputsWriter(options, suffix=suffix)
+  if not in_training_mode(options):
+    for sample in region_processor.samples['child']:
+      if sample.sam_reader is not None:
+        # Only use suffix in calling mode
+        suffix = None if in_training_mode(options) else sample.name
+        writers_dict[sample.name] = OutputsWriter(options, suffix=suffix)
+  else:
+    writers_dict['child'] = OutputsWriter(options, suffix=None)
 
   for region in regions:
     candidates_dict, examples_dict, gvcfs_dict = region_processor.process(

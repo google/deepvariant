@@ -3463,7 +3463,7 @@ options {
     min_base_quality: 10
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
-  reference_filename: "deeptrio/testdata/input/hs37d5.chr20.fa"
+  reference_filename: "deeptrio/testdata/input/hs37d5.chr20.fa.gz"
   reads_filename: "deeptrio/testdata/input/HG001.chr20.10_10p1mb_sorted.bam"
   examples_filename: "deeptrio/testdata/golden.training_examples.tfrecord.gz"
   confident_regions_filename: "deeptrio/testdata/input/test_giab.b37_chr20_100kbp_at_10mb.bed"
@@ -3562,13 +3562,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1206.2075
-  total_memory_mb: 64142
-  wall_time_seconds: 2.065969944000244
-  cpu_user_time_seconds: 7.998498
-  cpu_system_time_seconds: 3.882217
-  memory_peak_rss_mb: 435
-  read_bytes: 814608384
+  cpu_frequency_mhz: 1269.1045833333335
+  total_memory_mb: 63979
+  wall_time_seconds: 1.9738483428955078
+  cpu_user_time_seconds: 7.571522
+  cpu_system_time_seconds: 2.544096
+  memory_peak_rss_mb: 417
+  read_bytes: 810033152
   write_bytes: 20480
 }
 stats {
