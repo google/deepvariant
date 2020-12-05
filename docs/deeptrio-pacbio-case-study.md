@@ -244,7 +244,7 @@ sudo docker run \
   /output/HG002.output.vcf.gz \
   -f /benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
-  -o /happy/happy.output \
+  -o /happy/HG002.output \
   --engine=vcfeval \
   -l chr20
 
@@ -259,7 +259,7 @@ sudo docker run \
   /output/HG003.output.vcf.gz \
   -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
-  -o /happy/happy.output \
+  -o /happy/HG003.output \
   --engine=vcfeval \
   -l chr20
 
@@ -274,7 +274,7 @@ sudo docker run \
   /output/HG004.output.vcf.gz \
   -f /benchmark/HG004_GRCh38_1_22_v4.2_benchmark.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
-  -o /happy/happy.output \
+  -o /happy/HG004.output \
   --engine=vcfeval \
   -l chr20
 ```
