@@ -1,8 +1,9 @@
 # DeepTrio quick start
 
-This document explains how to quickly start using DeepTrio to generate variant
-calls for trio samples. This tutorial does not cover all possible settings of
-DeepTrio. It is intended to be a starting point for using DeepTrio.
+This document explains how to quickly start using
+[DeepTrio](deeptrio-details.md) to generate variant calls for trio samples. This
+tutorial does not cover all possible settings of DeepTrio. It is intended to be
+a starting point for using DeepTrio.
 
 ## Background
 
@@ -48,9 +49,9 @@ Before you start, you need to have the following input files:
 1.  A reference genome in [FASTA] format and its corresponding index file
     (.fai).
 
-1.  An aligned reads files in [BAM] format and their corresponding index files
-    (.bai). You get this by aligning the reads from a sequencing instrument,
-    using an aligner like [BWA] for example.
+1.  For each sample, one aligned reads file in [BAM] format and its
+    corresponding index file (.bai). You get this by aligning the reads from a
+    sequencing instrument, using an aligner like [BWA] for example.
 
 We've prepared a small test data bundle for use in this quick start guide that
 can be downloaded to your instance from the public URLs.
@@ -192,7 +193,7 @@ The directory "intermediate_results_dir" exists because
 directory contains the intermediate output of make_examples and call_variants
 steps.
 
-For more information about `output.visual_report.html`, see the
+For more information about the `HG00*.output.visual_report.html` files, see the
 [VCF stats report documentation](deepvariant-vcf-stats-report.md).
 
 ## Notes on GPU image
@@ -261,8 +262,9 @@ singularity run --nv -B /usr/lib/locale/:/usr/lib/locale/ \
 
 Here we use the `hap.py`
 ([https://github.com/Illumina/hap.py](https://github.com/Illumina/hap.py))
-program from Illumina to evaluate the resulting 10 kilobase vcf file. This
-serves as a quick check to ensure the three DeepVariant commands ran correctly.
+program from Illumina to evaluate the resulting three VCF files (only covering
+10 kb of chr20 for this small example). Here the DeepTrio output VCF for each
+sample is compared against the corresponding truth set from GIAB.
 
 ```bash
 # Pull docker image locally
@@ -277,7 +279,7 @@ sudo docker run -it \
   /output/HG002.output.vcf.gz \
   -f "/input/HG002_GRCh38_1_22_v4.2_benchmark.bed" \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
-  -o "/output/happy.output" \
+  -o "/output/HG002.happy" \
   --engine=vcfeval \
   -l chr20:10000000-10010000
 
@@ -290,7 +292,7 @@ sudo docker run -it \
   /output/HG003.output.vcf.gz \
   -f "/input/HG003_GRCh38_1_22_v4.2_benchmark.bed" \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
-  -o "/output/happy.output" \
+  -o "/output/HG003.happy" \
   --engine=vcfeval \
   -l chr20:10000000-10010000
 
@@ -303,7 +305,7 @@ sudo docker run -it \
   /output/HG004.output.vcf.gz \
   -f "/input/HG004_GRCh38_1_22_v4.2_benchmark.bed" \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
-  -o "/output/happy.output" \
+  -o "/output/HG004.happy" \
   --engine=vcfeval \
   -l chr20:10000000-10010000
 
