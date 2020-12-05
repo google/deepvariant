@@ -6,8 +6,8 @@ set -euo pipefail
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
 BASE="${HOME}/case-study"
-DEFAULT_CHILD_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepTrio/1.1.0/DeepTrio-inception_v3-1.1.0-rc1+data-wgs_child_standard"
-DEFAULT_PARENT_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepTrio/1.1.0/DeepTrio-inception_v3-1.1.0-rc1+data-wgs_parent_standard"
+DEFAULT_CHILD_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepTrio/1.1.0/DeepTrio-inception_v3-1.1.0+data-wgs_child_standard"
+DEFAULT_PARENT_MODEL_HTTP_DIR="https://storage.googleapis.com/deepvariant/models/DeepTrio/1.1.0/DeepTrio-inception_v3-1.1.0+data-wgs_parent_standard"
 
 INPUT_DIR="${BASE}/input"
 MODELS_DIR="${INPUT_DIR}/models"
