@@ -4,12 +4,12 @@
 
 DeepTrio is built on top of DeepVariant. It is intended for variant calling of
 trios or duos. The main advantage of DeepTrio is that genetic inheritance is
-considered by a neural network for calling variants for trio samples. Also,
-variant candidates are generated from all samples at once which ensures a
+considered by a neural network for calling variants in trio samples. Also,
+variant candidates are generated from all samples at once, which ensures a
 genotype call is made for any position in the trio with a variant. Since
-DeepTrio is built on top of DeepVariant all
-[general information](deepvariant-details.md) for DeepVariant is also applied to
-DeepTrio. At the highest level user needs to provide the following:
+DeepTrio is built on top of DeepVariant,
+[general information](deepvariant-details.md) for DeepVariant also applies to
+DeepTrio. At the highest level, a user needs to provide the following:
 
 1.  A reference genome in [FASTA](https://en.wikipedia.org/wiki/FASTA_format)
     format and its corresponding
@@ -26,12 +26,12 @@ The output of DeepTrio is a set of variants in
 child and one or two parents.
 
 Similar to DeepVariant, DeepTrio is composed of three stages: `make_examples`,
-`call_variants`, and `postprocess_variants`. Some of the components:
-`call_variants`, `postprocess_variants` are shared with DeepVariant, and
+`call_variants`, and `postprocess_variants`. Some of the components (
+`call_variants`, `postprocess_variants`) are shared with DeepVariant, and
 `make_examples` is specialized for DeepTrio. More details about each program are
-described in details in the
-[Inputs and outputs](deepvariant-details.md#inputs-and-outputs) section of
-DeepVariant.
+described in detail in the
+[Inputs and outputs](deepvariant-details.md#inputs-and-outputs) section of the
+DeepVariant documentation.
 
 DeepTrio comes with three models for different types of input data:
 
@@ -48,34 +48,36 @@ DeepTrio using docker.
 
 Merging VCFs can be done using
 [GLNexus](https://github.com/dnanexus-rnd/GLnexus) which has been optimized for
-use with DeepVariant gVCFs. The process is described in DeepTrio case studies:
-[DeepTrio whole genome sequencing case study](deeptrio-wgs-case-study.md) and
+use with DeepVariant gVCFs. The process is described in the DeepTrio case
+studies
+([DeepTrio whole genome sequencing case study](deeptrio-wgs-case-study.md) and
 [Using DeepTrio for small variant calling from the trio sequenced with PacBio
-HiFi](deeptrio-pacbio-case-study.md), and in the manuscript:
-["Accurate, scalable cohort variant calls using DeepVariant and GLnexus"](https://www.biorxiv.org/content/10.1101/2020.02.10.942086v2)
+HiFi](deeptrio-pacbio-case-study.md)), and in the manuscript,
+["Accurate, scalable cohort variant calls using DeepVariant and GLnexus"](https://www.biorxiv.org/content/10.1101/2020.02.10.942086v2).
 
 Please note that DeepTrio can be run with a `run_deeptrio.py` script that
-automate all DeepTrio pipeline steps and thus greatly simplify the inference
-pipeline. Details of using can be found in the section below as well as in
-DeepTrio case studies.
+automates all DeepTrio steps and thus greatly simplifies the inference pipeline.
+The details of using this script can be found in the section below as well as in
+the DeepTrio case studies.
 
-If needed, DeepTrio can be built from the source. For more details please refer
-to [Building DeeepTrio](deeptrio-build-test.md).
+If needed, DeepTrio can be built from source. For more details please refer to
+[Building DeeepTrio](deeptrio-build-test.md).
 
 ## DeepTrio Input assumptions
 
 The reference genome FASTA, passed in using the `--ref` flag, must be indexed
-and can either be uncompressed or compressed with bgzip.
+and can either be uncompressed or compressed with `bgzip`.
 
 All BAM files should be aligned to a "compatible" version of the genome
-reference provided as the `--ref`. DeepVariant will only process contigs shared
-by both the BAM and reference. BAM files must be also sorted and indexed. They
-must exist on disk, so you cannot pipe them into DeepVariant. Duplicate marking
-may be performed, in our analyses there is almost no difference in accuracy
-except at lower (<20x) coverages. Finally, we recommend that you do not perform
-BQSR. Running BQSR has a small decrease on accuracy.
+reference provided as the `--ref`. DeepTrio will only process contigs shared by
+both the BAM and reference. BAM files must be also sorted and indexed. They must
+exist on disk, so you cannot pipe them into DeepTrio. Duplicate marking may be
+performed. In our analyses, there is almost no difference in accuracy with and
+without duplicate marking except at lower (<20x) coverages. Finally, we
+recommend that you do not perform BQSR. Running BQSR has a small decrease on
+accuracy.
 
-If you are providing `--regions` or other similar arguments these should refer
+If you are providing `--regions` or other similar arguments, these should refer
 to contigs present in the reference genome. These arguments accept
 space-separated lists, so all of the follow examples are valid arguments for
 `--regions` or similar arguments:
@@ -86,9 +88,10 @@ space-separated lists, so all of the follow examples are valid arguments for
 
 ## Training data
 
-DeepTrio models are trained using publicly available latest GIAB benchmarks. You
-can find more details about the training data for each DeepTrio model in
-[DeepTrio Training Data document](deeptrio-details-training-data.md)
+DeepTrio models are trained using the latest publicly avavilable GIAB
+benchmarks. You can find more details about the training data for each DeepTrio
+model in the
+[DeepTrio Training Data document](deeptrio-details-training-data.md).
 
 ## DeepVariant dependency
 
