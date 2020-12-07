@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: google-nucleus
-Version: 0.5.4
+Version: 0.5.5
 Summary: A library for reading and writing genomics data.
 Home-page: https://github.com/google/nucleus
 Author: The Genomics team in Google Brain

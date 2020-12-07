@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018 Google LLC.
+# Copyright 2020 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@ set -x
 
 # When changing NUCLEUS_VERSION, be sure to also change it in
 # egg_files/PKG-INFO.
-NUCLEUS_VERSION="0.5.4"
+NUCLEUS_VERSION="0.5.5"
 PACKAGE_NAME="google_nucleus-${NUCLEUS_VERSION}"
 PYTHON_VERSION="3.5"
 
