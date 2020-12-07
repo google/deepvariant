@@ -1,8 +1,9 @@
 # Using DeepTrio for small variant calling from the trio sequenced with PacBio HiFi
 
-In this case study, we describe applying DeepTrio to a real WGS trio. Then we
-assess the quality of the DeepTrio variant calls with `hap.py`. In addition we
-evaluate a mendelian violation rate for a merged VCF.
+In this case study, we describe applying [DeepTrio](deeptrio-details.md) to a
+real PacBio WGS trio. Then we assess the quality of the DeepTrio variant calls
+with `hap.py`. In addition we evaluate a Mendelian violation rate for a merged
+VCF.
 
 To make it faster to run over this case study, we run only on chromosome 20.
 
@@ -84,15 +85,17 @@ is run as a separate command.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION=1.0.1rc
+BIN_VERSION="1.1.0"
 
-sudo docker pull gcr.io/deepvariant-docker/deeptrio:"${BIN_VERSION}"
+sudo apt -y update
+sudo apt-get -y install docker.io
+sudo docker pull google/deepvariant:deeptrio-"${BIN_VERSION}"
 
 time sudo docker run \
   -v "${PWD}/input":"/input" \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
-  gcr.io/deepvariant-docker/deeptrio:"${BIN_VERSION}" \
+  google/deepvariant:deeptrio-"${BIN_VERSION}" \
   /opt/deepvariant/bin/deeptrio/run_deeptrio \
   --model_type PACBIO \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
