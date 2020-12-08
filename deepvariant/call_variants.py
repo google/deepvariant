@@ -447,15 +447,13 @@ def call_variants(examples_filename,
       n_batches = n_examples // batch_size + 1
       duration = time.time() - start_time
 
-      if not FLAGS.use_openvino:
-        logging.log_every_n(
-            logging.INFO,
-            ('Processed %s examples in %s batches [%.3f sec per 100]'),
-            _LOG_EVERY_N, n_examples, n_batches, (100 * duration) / n_examples)
+      logging.log_every_n(
+          logging.INFO,
+          ('Processed %s examples in %s batches [%.3f sec per 100]'),
+          _LOG_EVERY_N, n_examples, n_batches, (100 * duration) / n_examples)
     # One last log to capture the extra examples.
-    if not FLAGS.use_openvino:
-      logging.info('Processed %s examples in %s batches [%.3f sec per 100]',
-                   n_examples, n_batches, (100 * duration) / n_examples)
+    logging.info('Processed %s examples in %s batches [%.3f sec per 100]',
+                  n_examples, n_batches, (100 * duration) / n_examples)
 
     logging.info('Done calling variants from a total of %d examples.',
                  n_examples)

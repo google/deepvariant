@@ -32,6 +32,8 @@ import subprocess
 from absl import logging
 import tensorflow as tf
 import tf_slim as slim
+from threading import Thread
+from queue import Queue
 
 try:
   from openvino.inference_engine import IECore  # pylint: disable=g-import-not-at-top
@@ -43,8 +45,6 @@ try:
   from tensorflow.python.tools import optimize_for_inference_lib  # pylint: disable=g-import-not-at-top
 except ImportError:
   pass
-
-_LOG_EVERY_N = 15000
 
 
 def freeze_graph(model,
@@ -103,19 +103,22 @@ class OpenVINOEstimator(object):
         config={'CPU_THROUGHPUT_STREAMS': 'CPU_THROUGHPUT_AUTO'},
         num_requests=0)
     self.tf_sess = tf.compat.v1.Session()
-    self.input_fn = input_fn
-    self.model = model
-    self.outputs = []
+    self.outputs = {}
+    self.results = Queue()
+    self.process_thread = Thread(target=self._process)
+    # NOTE: Do not move Session creation or make_one_shot_iterator
+    # into the thread because it will lead to efficiency regression
+    self.features = tf.compat.v1.data.make_one_shot_iterator(
+        input_fn({'batch_size': 64})).get_next()
 
-  def __iter__(self):
+  def _process(self):
     """Read input data."""
-    features = tf.compat.v1.data.make_one_shot_iterator(
-        self.input_fn({'batch_size': 64})).get_next()
-    self.images = features['image']
-    self.variant = features['variant']
-    self.alt_allele_indices = features['alt_allele_indices']
-    self.iter_id = 0
+    all_images = self.features['image']
+    all_variant = self.features['variant']
+    all_alt_allele_indices = self.features['alt_allele_indices']
+
     logging.info('Using OpenVINO in call_variants.')
+    iter_id = 0
     try:
       # List that maps infer requests to index of processed input.
       # -1 means that request has not been started yet.
@@ -125,7 +128,7 @@ class OpenVINOEstimator(object):
       while True:
         # Get next input
         inp, variant, alt_allele_indices = self.tf_sess.run(
-            [self.images, self.variant, self.alt_allele_indices])
+            [all_images, all_variant, all_alt_allele_indices])
 
         for i in range(inp.shape[0]):
           # Get idle infer request
@@ -148,18 +151,21 @@ class OpenVINOEstimator(object):
 
           # Start this request on new data
           infer_request_input_id[infer_request_id] = inp_id
-          inp_id += 1
-          logging.log_every_n(
-              logging.INFO,
-              ('Processed %s examples in call_variants (using OpenVINO)'),
-              _LOG_EVERY_N, inp_id)
-          self.outputs.append({
+          self.outputs[inp_id] = {
               'probabilities': None,
               'variant': variant[i],
               'alt_allele_indices': alt_allele_indices[i]
-          })
+          }
+          inp_id += 1
 
           request.async_infer({'input': inp[i:i + 1].transpose(0, 3, 1, 2)})
+
+          while self.outputs:
+            if not self.outputs[iter_id]['probabilities'] is None:
+              self.results.put(self.outputs.pop(iter_id))
+              iter_id += 1
+            else:
+              break
 
     except (StopIteration, tf.errors.OutOfRangeError):
       # Copy rest of outputs
@@ -171,12 +177,18 @@ class OpenVINOEstimator(object):
           request = self.exec_net.requests[infer_request_id]
           self.outputs[out_id]['probabilities'] = request.output_blobs[
               'InceptionV3/Predictions/Softmax'].buffer.reshape(-1)
+      while self.outputs:
+          self.results.put(self.outputs.pop(iter_id))
+          iter_id += 1
+
+
+  def __iter__(self):
+    self.process_thread.start()
     return self
 
+
   def __next__(self):
-    if self.iter_id < len(self.outputs):
-      res = self.outputs[self.iter_id]
-      self.iter_id += 1
-      return res
+    if self.process_thread.isAlive() or not self.results.empty():
+      return self.results.get()
     else:
       raise StopIteration
