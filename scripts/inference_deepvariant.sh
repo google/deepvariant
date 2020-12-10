@@ -147,24 +147,6 @@ while (( "$#" )); do
   esac
 done
 
-echo "========================="
-echo "BUILD_DOCKER: $BUILD_DOCKER"
-echo "CUSTOMIZED_MODEL: $CUSTOMIZED_MODEL"
-echo "REGIONS: $REGIONS"
-echo "MAKE_EXAMPLES_ARGS: $MAKE_EXAMPLES_ARGS"
-echo "CALL_VARIANTS_ARGS: $CALL_VARIANTS_ARGS"
-echo "POSTPROCESS_VARIANTS_ARGS: $POSTPROCESS_VARIANTS_ARGS"
-echo "USE_GPU: $USE_GPU"
-echo "MODEL_PRESET: $MODEL_PRESET"
-echo "MODEL_TYPE: $MODEL_TYPE"
-echo "BIN_VERSION: $BIN_VERSION"
-echo "REF: $REF"
-echo "BAM: $BAM"
-echo "TRUTH_VCF: $TRUTH_VCF"
-echo "TRUTH_BED: $TRUTH_BED"
-echo "CAPTURE_BED: $CAPTURE_BED"
-echo "========================="
-
 ## Presets
 # These settings specify the commonly run case studies
 GCS_DATA_DIR="https://storage.googleapis.com/deepvariant"
@@ -238,6 +220,23 @@ if [[ "${MODEL_TYPE}" = "WES" ]]; then
   happy_args+=( -T "${INPUT_DIR}/$(basename $CAPTURE_BED)")
 fi
 
+echo "========================="
+echo "BUILD_DOCKER: $BUILD_DOCKER"
+echo "CUSTOMIZED_MODEL: $CUSTOMIZED_MODEL"
+echo "REGIONS: $REGIONS"
+echo "MAKE_EXAMPLES_ARGS: $MAKE_EXAMPLES_ARGS"
+echo "CALL_VARIANTS_ARGS: $CALL_VARIANTS_ARGS"
+echo "POSTPROCESS_VARIANTS_ARGS: $POSTPROCESS_VARIANTS_ARGS"
+echo "USE_GPU: $USE_GPU"
+echo "MODEL_PRESET: $MODEL_PRESET"
+echo "MODEL_TYPE: $MODEL_TYPE"
+echo "BIN_VERSION: $BIN_VERSION"
+echo "REF: $REF"
+echo "BAM: $BAM"
+echo "TRUTH_VCF: $TRUTH_VCF"
+echo "TRUTH_BED: $TRUTH_BED"
+echo "CAPTURE_BED: $CAPTURE_BED"
+echo "========================="
 
 function copy_data() {
   # For the presets, we use `aria2c https://storage.googleapis.com/...` since
