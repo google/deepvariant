@@ -69,24 +69,13 @@ sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
 note_build_stage "Install development packages"
 
 sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git lsb-release wget > /dev/null
+sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
 
-# For altair to work, we need Python to be >= 3.5.3.
-# https://github.com/altair-viz/altair/issues/972
-# On Ubuntu 16.04, default is 3.5.2.
-# So, install Python 3.6.
-sudo -H apt-get install "${APT_ARGS[@]}" software-properties-common
-
-# Install Python 3.6.
-# Reference: https://askubuntu.com/a/1069303
-sudo -H -E add-apt-repository -y ppa:deadsnakes/ppa
-sudo -H apt update "${APT_ARGS[@]}"
-sudo -H apt-get install "${APT_ARGS[@]}" python3.6
 sudo -H apt-get install "${APT_ARGS[@]}" python3.6-dev
-sudo -H apt-get install "${APT_ARGS[@]}" python3.6-venv
-sudo ln -sf /usr/bin/python3.6 /usr/local/bin/python3
-sudo ln -sf /usr/bin/python3.6 /usr/bin/python
+sudo ln -sf /usr/bin/python3 /usr/local/bin/python3
+sudo ln -sf /usr/bin/python3 /usr/bin/python
 # If we install python3-pip directly, the pip3 version points to:
 #   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
 # Use the following lines to ensure 3.6.
@@ -115,13 +104,13 @@ pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
 pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git
 
 # Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
-# source. But we know that on 16.04 we don't need to compile from source
+# source.
 # See https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279061085
-if [[ "$(lsb_release -d)" == *Ubuntu*16.04.* ]]; then
-  pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
-else
-  echo "Installing numpy with -no-binary=:all:. This will take a bit longer."
+if [[ "$(lsb_release -d)" == *Ubuntu*14.04.* ]]; then
+  echo "Installing numpy with --no-binary=:all:. This will take a bit longer."
   pip3 install "${PIP_ARGS[@]}" --no-binary=:all: "numpy==${DV_TF_NUMPY_VERSION}"
+else
+  pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
 fi
 
 # Reason:
@@ -186,23 +175,40 @@ fi
 # CUDA
 ################################################################################
 
+# See https://www.tensorflow.org/install/source#gpu for versions required.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   if [[ "${DV_INSTALL_GPU_DRIVERS}" = "1" ]]; then
-    if [[ "$(lsb_release -d)" != *Ubuntu*16.*.* ]]; then
-      echo "CUDA installation only configured for Ubuntu 16"
+    UBUNTU_VERSION=$(lsb_release -r|cut -f 2|sed -e 's/\.//')
+    if [[ $UBUNTU_VERSION != "1804" ]]; then
+      echo "CUDA installation only configured and tested for Ubuntu 18."
       exit 1
     fi
 
-    # https://www.tensorflow.org/install/gpu?hl=en#ubuntu_1604_cuda_101
+    # https://www.tensorflow.org/install/gpu?hl=en#ubuntu_1804_cuda_101
     echo "Checking for CUDA..."
     if ! dpkg-query -W cuda-10-1; then
       echo "Installing CUDA..."
-      CUDA_DEB="cuda-repo-ubuntu1604_10.1.243-1_amd64.deb"
-      curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_DEB}
-      sudo -H apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
+      CUDA_DEB="cuda-repo-ubuntu${UBUNTU_VERSION}_10.1.243-1_amd64.deb"
+      curl -O "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/${CUDA_DEB}"
+      sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
       sudo -H dpkg -i "./${CUDA_DEB}"
       sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-      sudo -H apt-get install "${APT_ARGS[@]}" cuda-10-1 > /dev/null
+      ML_DEB="nvidia-machine-learning-repo-ubuntu${UBUNTU_VERSION}_1.0.0-1_amd64.deb"
+      curl -O "http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu${UBUNTU_VERSION}/x86_64/${ML_DEB}"
+      sudo -H apt-get install "${APT_ARGS[@]}" "./${ML_DEB}"
+      sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
+      # Install development and runtime libraries (~4GB)
+      sudo -H apt-get install --no-install-recommends "${APT_ARGS[@]}" \
+          cuda-10-1 \
+          libcudnn7=7.6.5.32-1+cuda10.1  \
+          libcudnn7-dev=7.6.5.32-1+cuda10.1
+
+      # Install TensorRT. Requires that libcudnn7 is installed above.
+      sudo -H apt-get install --no-install-recommends "${APT_ARGS[@]}" \
+          libnvinfer6=6.0.1-1+cuda10.1 \
+          libnvinfer-dev=6.0.1-1+cuda10.1 \
+          libnvinfer-plugin6=6.0.1-1+cuda10.1
+      rm -f "./${CUDA_DEB}" "./${ML_DEB}"
     fi
     echo "Checking for CUDNN..."
     if [[ ! -e /usr/local/cuda-10.1/include/cudnn.h ]]; then
@@ -214,8 +220,6 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.1/lib64/
       sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.1/lib64/
       sudo chmod a+r /usr/local/cuda-10.1/lib64/libcudnn*
-      # https://stackoverflow.com/questions/55224016/importerror-libcublas-so-10-0-cannot-open-shared-object-file-no-such-file-or/64472380#64472380
-      export LD_LIBRARY_PATH=/usr/local/cuda-10.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
       sudo ldconfig
     fi
     # Tensorflow says to do this.
@@ -232,12 +236,13 @@ fi
 ################################################################################
 if [[ "${DV_OPENVINO_BUILD}" = "1" ]]; then
   sudo -H apt-get install "${APT_ARGS[@]}" apt-transport-https > /dev/null
-  curl -o GPG-PUB-KEY-INTEL-OPENVINO-2020 https://apt.repos.intel.com/openvino/2020/GPG-PUB-KEY-INTEL-OPENVINO-2020
-  sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2020
-  sudo echo "deb https://apt.repos.intel.com/openvino/2020 all main" | sudo tee /etc/apt/sources.list.d/intel-openvino-2020.list
+  curl -o GPG-PUB-KEY-INTEL-OPENVINO-2021 https://apt.repos.intel.com/openvino/2021/GPG-PUB-KEY-INTEL-OPENVINO-2021
+  sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2021
+  sudo echo "deb https://apt.repos.intel.com/openvino/2021 all main" | sudo tee /etc/apt/sources.list.d/intel-openvino-2021.list
   sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-  sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu16-2020.4.287 > /dev/null
-  rm -f GPG-PUB-KEY-INTEL-OPENVINO-2020
+  sudo apt-get install "${APT_ARGS[@]}" --no-install-recommends intel-openvino-dev-ubuntu18-2021.1.110 > /dev/null
+  sudo ln -s /opt/intel/openvino_2021 /opt/intel/openvino
+  rm -f GPG-PUB-KEY-INTEL-OPENVINO-2021
   pip3 install "${PIP_ARGS[@]}" networkx defusedxml test-generator==0.1.1
 fi
 

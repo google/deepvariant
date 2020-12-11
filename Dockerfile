@@ -8,10 +8,10 @@
 # $ sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1
 #
 # To build for GPU, use a command like:
-# $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu16.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
+# $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
 
 
-ARG FROM_IMAGE=ubuntu:16.04
+ARG FROM_IMAGE=ubuntu:18.04
 ARG DV_GPU_BUILD=0
 ARG DV_OPENVINO_BUILD=0
 ARG VERSION=1.1.0
@@ -143,8 +143,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
 RUN apt-get -y update && \
-  apt-get install -y parallel && \
-  python3 -m ensurepip && \
+  apt-get install -y parallel python3-pip && \
   PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \
