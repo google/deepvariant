@@ -77,14 +77,14 @@ the CPUs/GPUs that you need. To start with, you might want to request quota for
 
 DeepVariant can make use of multiple CPU cores and (currently, a single) GPU
 device. For this "quick start" guide, let's allocate an 8-core non-preemptible
-instance in your default zone with a single GPU, running Ubuntu 16.04, with a
+instance in your default zone with a single GPU, running Ubuntu 18.04, with a
 disk of reasonable size for modest work with genomic data. From our local
 command line, we do:
 
 ```shell
 gcloud beta compute instances create "${USER}-deepvariant-quickstart" \
   --scopes "compute-rw,storage-full,cloud-platform"  \
-  --image-family ubuntu-1604-lts --image-project ubuntu-os-cloud \
+  --image-family ubuntu-1804-lts --image-project ubuntu-os-cloud \
   --machine-type n1-standard-8  \
   --boot-disk-size=200GB \
   --zone us-west1-b \
@@ -118,7 +118,7 @@ You should land at a shell prompt in your new instance!
 NOTE: All of these steps can also be completed from the Cloud Console, if you
 prefer. Consult [this
 guide](https://cloud.google.com/compute/docs/quickstart-linux), but be sure to
-choose Ubuntu 16.04 as your image, as DeepVariant has not been tested on other
+choose Ubuntu 18.04 as your image, as DeepVariant has not been tested on other
 Linux distributions.
 
 For more information about getting started with Compute Engine, see:

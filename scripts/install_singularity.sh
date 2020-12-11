@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright 2019 Google LLC.
-# This script is used to install `singularity` 3.3.0 on Ubutun 16.04.
+# This script is used to install `singularity` 3.3.0 on Ubutun 18.04.
 # For different Linux distributions and versions, modifications might be needed.
 # Installation instructions are from: https://sylabs.io/docs/
 

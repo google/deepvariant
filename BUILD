@@ -93,8 +93,6 @@ cc_library(
 # we need to specify and force the use of a py_runtime.
 # Python3.6 (at least 3.5.3) is needed because of altair. See this bug:
 # https://github.com/altair-viz/altair/issues/972
-# Ubuntu16.04 default is Python 3.5.2, which is why we need to specifically
-# update the Python version.
 py_runtime(
     name = "deepvariant_python_runtime",
     files = [],

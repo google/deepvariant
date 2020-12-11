@@ -8,10 +8,10 @@
 # $ sudo docker build -f Dockerfile.deeptrio -t deeptrio .
 #
 # To build for GPU, use a command like:
-# $ sudo docker build -f Dockerfile.deeptrio --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu16.04 --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu .
+# $ sudo docker build -f Dockerfile.deeptrio --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04 --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu .
 
 
-ARG FROM_IMAGE=ubuntu:16.04
+ARG FROM_IMAGE=ubuntu:18.04
 ARG DV_GPU_BUILD=0
 ARG VERSION_DEEPTRIO=1.1.0
 ARG FULL_VERSION_DEEPTRIO=1.1.0
@@ -112,8 +112,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRI
 RUN chmod +r /opt/models/deeptrio/wes/parent/model.ckpt*
 
 RUN apt-get -y update && \
-  apt-get install -y parallel && \
-  python3 -m ensurepip && \
+  apt-get install -y parallel python3-pip && \
   PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \
