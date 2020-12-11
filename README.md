@@ -184,7 +184,7 @@ Below are the official solutions provided by the
 Name                                                                                                | Description
 :-------------------------------------------------------------------------------------------------: | -----------
 [Docker](docs/deepvariant-quick-start.md)           | This is the recommended method.
-[Build from source](docs/deepvariant-build-test.md) | DeepVariant comes with scripts to build it on Ubuntu 14 and 16, with Ubuntu 16 recommended. To build and run on other Unix-based systems, you will need to modify these scripts.
+[Build from source](docs/deepvariant-build-test.md) | DeepVariant comes with scripts to build it on Ubuntu 18.04. To build and run on other Unix-based systems, you will need to modify these scripts.
 Prebuilt Binaries                                                                                   | Available at [`gs://deepvariant/`](https://console.cloud.google.com/storage/browser/deepvariant). These are compiled to use SSE4 and AVX instructions, so you will need a CPU (such as Intel Sandy Bridge) that supports them. You can check the `/proc/cpuinfo` file on your computer, which lists these features under "flags".
 
 ### External Solutions

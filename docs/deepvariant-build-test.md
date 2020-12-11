@@ -1,9 +1,9 @@
 ## Building DeepVariant from sources
 
-DeepVariant comes with scripts to build it on Ubuntu 14 and 16, with Ubuntu 16
-recommended. It can likely be built and run on other unix-based systems with
-some minimal modifications to these scripts. One way to get access to a machine
-running Ubuntu is through a cloud computing platform like Google Cloud Engine.
+DeepVariant comes with scripts to build it on Ubuntu 18.04. It can likely be
+built and run on other unix-based systems with some minimal modifications to
+these scripts. One way to get access to a machine running Ubuntu is through a
+cloud computing platform like Google Cloud Engine.
 
 First install the [Google Cloud SDK](https://cloud.google.com/sdk/downloads),
 because we will need to use its `gsutil` command to fetch some dependencies.
