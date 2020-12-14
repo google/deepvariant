@@ -37,9 +37,9 @@ Please also note:
 
 DeepTrio is a deep learning-based trio variant caller built on top of
 DeepVariant. DeepTrio extends DeepVariant's functionality, allowing it to
-utilize a power of neural networks to predict genomic variants in trios or duos.
-See [this document] (docs/deeptrio-details.md) for more details and instructions
-on how to run DeepTrio.
+utilize the power of neural networks to predict genomic variants in trios or
+duos. See [this page](docs/deeptrio-details.md) for more details and
+instructions on how to run DeepTrio.
 
 DeepTrio supports germline variant-calling in diploid organisms for the
 following types of input data:
