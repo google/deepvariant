@@ -89,20 +89,6 @@ load("@org_tensorflow//tensorflow:workspace.bzl", "tf_workspace")
 
 tf_workspace(tf_repo_name = "org_tensorflow")
 
-# Pull in slim.
-# slim is  located inside the tensorflow/models repository.
-# The slim subdirectory in the tensorflow/models repository has its own
-# WORKSPACE file so we need to strip a prefix to make it the root of the
-# repository.
-# The prefix is "models-<commit>/slim"
-# where commit is the full commit.
-# Pin to the lastest version that builds for now. See internal#comment4.
-http_archive(
-    name = "org_tensorflow_slim",
-    strip_prefix = "models-6d140f139cf02ceb87afa76024c4b502a556a3e5/slim",
-    urls = ["https://github.com/tensorflow/models/archive/6d140f1.tar.gz"],
-)
-
 new_local_repository(
     name = "clif",
     build_file = "third_party/clif.BUILD",

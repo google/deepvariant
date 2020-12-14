@@ -41,7 +41,7 @@ import tensorflow.compat.v1 as tf
 import tf_slim as slim
 
 # redacted
-# from tf_slim.nets import inception_utils
+# from tensorflow_models.slim.nets import inception_utils
 from deepvariant import attention_module as att
 
 # pylint: disable=g-long-lambda

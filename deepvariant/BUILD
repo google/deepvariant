@@ -706,7 +706,6 @@ py_library(
         "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
-        "@org_tensorflow_slim//:inception",
     ],
 )
 

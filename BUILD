@@ -37,7 +37,6 @@ filegroup(
         ":LICENSE",
         "//third_party:abseil_cpp.LICENSE",  # redacted
         "//third_party:boost.LICENSE",
-        "//third_party:tensorflow_models.LICENSE",  # redacted
         "@com_google_protobuf//:LICENSE",
         "@com_googlesource_code_re2//:LICENSE",
         "@htslib//:LICENSE",

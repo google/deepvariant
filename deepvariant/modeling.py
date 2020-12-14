@@ -49,6 +49,7 @@ from absl import flags
 from absl import logging
 import tensorflow as tf
 import tf_slim
+from tf_slim.nets import inception_v3
 
 from deepvariant import dv_constants
 from deepvariant import tf_utils
@@ -58,7 +59,6 @@ from tensorflow.python.tpu import tpu_config
 from tensorflow.python.tpu import tpu_estimator
 from tensorflow.python.tpu import tpu_optimizer
 # pylint: enable=g-direct-tensorflow-import
-from tf_slim.nets import inception
 from deepvariant import attention_inception_v3
 
 tf.compat.v1.disable_eager_execution()
@@ -1126,8 +1126,8 @@ class DeepVariantInceptionV3(DeepVariantSlimModel):
 
   def _create(self, images, num_classes, is_training):
     """See baseclass."""
-    with slim.arg_scope(inception.inception_v3_arg_scope()):
-      _, endpoints = inception.inception_v3(
+    with slim.arg_scope(inception_v3.inception_v3_arg_scope()):
+      _, endpoints = inception_v3.inception_v3(
           images, num_classes, create_aux_logits=False, is_training=is_training)
       return endpoints
 
@@ -1605,8 +1605,8 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
 
   def _create(self, images, num_classes, is_training):
     """See baseclass."""
-    with slim.arg_scope(inception.inception_v3_arg_scope()):
-      _, endpoints = inception.inception_v3(
+    with slim.arg_scope(inception_v3.inception_v3_arg_scope()):
+      _, endpoints = inception_v3.inception_v3(
           images, num_classes, create_aux_logits=False, is_training=is_training)
       return endpoints
 
