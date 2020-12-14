@@ -83,6 +83,8 @@ _CONTIGS = [
     reference_pb2.ContigInfo(name='10', n_bases=300),
 ]
 
+_FILTERED_ALT_PROB = postprocess_variants._FILTERED_ALT_PROB
+
 
 def placeholder_reference_reader():
   return fasta.InMemoryFastaReader(chromosomes=[
@@ -481,7 +483,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
               probabilities=[0.03, 0.92, 0.05],
               ref='A',
               alts=['C', 'T'])
-      ], set(), {
+      ], set(), False, {
           ('A', 'A'): [0.19, 0.03, 0.03],
           ('A', 'C'): [0.75, 0.92],
           ('C', 'C'): [0.06, 0.05],
@@ -508,24 +510,70 @@ class PostprocessVariantsTest(parameterized.TestCase):
               probabilities=[0.03, 0.92, 0.05],
               ref='A',
               alts=['C', 'T'])
-      ], set(['C']), {
+      ], set(['C']), False, {
           ('A', 'A'): [0.03],
           ('A', 'T'): [0.93],
           ('T', 'T'): [0.04],
       }),
+      # Test debug_output_all_candidates
+      ([
+          _create_call_variants_output(
+              indices=[0],
+              probabilities=[0.03, 0.05, 0.85],
+              ref='A',
+              alts=['ACC', 'ACCC']),
+          _create_call_variants_output(
+              indices=[1],
+              probabilities=[0.03, 0.04, 0.92],
+              ref='A',
+              alts=['ACC', 'ACCC']),
+          _create_call_variants_output(
+              indices=[0, 1],
+              probabilities=[0.03, 0.05, 0.92],
+              ref='A',
+              alts=['ACC', 'ACCC']),
+      ], set(['ACC']), True, {
+          ('A', 'A'): [_FILTERED_ALT_PROB, 0.03, _FILTERED_ALT_PROB],
+          ('A', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
+          ('ACC', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
+          ('A', 'ACCC'): [0.04, _FILTERED_ALT_PROB],
+          ('ACC', 'ACCC'): [_FILTERED_ALT_PROB],
+          ('ACCC', 'ACC'): [_FILTERED_ALT_PROB],
+          ('ACCC', 'ACCC'): [0.92, _FILTERED_ALT_PROB],
+      }),
+      # Test debug_output_all_candidates=False
+      ([
+          _create_call_variants_output(
+              indices=[0],
+              probabilities=[0.03, 0.05, 0.85],
+              ref='A',
+              alts=['ACC', 'ACCC']),
+          _create_call_variants_output(
+              indices=[1],
+              probabilities=[0.03, 0.04, 0.92],
+              ref='A',
+              alts=['ACC', 'ACCC']),
+          _create_call_variants_output(
+              indices=[0, 1],
+              probabilities=[0.03, 0.05, 0.92],
+              ref='A',
+              alts=['ACC', 'ACCC']),
+      ], set(['ACC']), False, {
+          ('A', 'A'): [0.03],
+          ('A', 'ACCC'): [0.04],
+          ('ACCC', 'ACCC'): [0.92],
+      }),
   )
-  def test_convert_call_variants_outputs_to_probs_dict(self,
-                                                       call_variants_outputs,
-                                                       alt_alleles_to_remove,
-                                                       expected_probs_dict):
+  def test_convert_call_variants_outputs_to_probs_dict(
+      self, call_variants_outputs, alt_alleles_to_remove,
+      debug_output_all_candidates, expected_probs_dict):
     # In the current code, all call_variants_outputs have the same variant
     # field.
     canonical_variant = call_variants_outputs[0].variant
     self.assertEqual(
         postprocess_variants.convert_call_variants_outputs_to_probs_dict(
-            canonical_variant,
-            call_variants_outputs,
-            alt_alleles_to_remove=alt_alleles_to_remove), expected_probs_dict)
+            canonical_variant, call_variants_outputs, alt_alleles_to_remove,
+            debug_output_all_candidates), expected_probs_dict)
 
   @parameterized.parameters(
       # Example with 2 alternate_bases:
@@ -598,6 +646,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
       _, predictions = postprocess_variants.merge_predictions(permuted_inputs)
       np.testing.assert_almost_equal(
           predictions, [x / denominator for x in expected_unnormalized_probs])
+
+  @parameterized.parameters(
+      ([0.001, 0.017, 0.30, _FILTERED_ALT_PROB,
+        0.327], [0.0015504, 0.0263566, 0.4651163, 0.0, 0.5069767]))
+  def test_normalize_predictions(self, predictions, expected_predictions):
+    norm_predictions = postprocess_variants.normalize_predictions(predictions)
+    np.testing.assert_almost_equal(norm_predictions, expected_predictions)
 
   @parameterized.parameters(
       # Example with 2 alternate_bases:

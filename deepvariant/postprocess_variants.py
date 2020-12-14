@@ -121,6 +121,12 @@ flags.DEFINE_boolean(
     'use_multiallelic_model', False,
     'If True, use a specialized model for genotype resolution of multiallelic '
     'cases with two alts.')
+flags.DEFINE_boolean(
+    'debug_output_all_candidates', False,
+    'If True, output all candidates considered by DeepVariant. Filtered '
+    'candidates are assigned a GL=0 and added as ALTs alleles, but do not '
+    'appear in any sample genotypes. This flag is used for debugging purposes. '
+    'Incompatible with the multiallelic caller.')
 flags.DEFINE_boolean('only_keep_pass', False, 'If True, only keep PASS calls.')
 
 
@@ -141,6 +147,10 @@ _FASTA_CACHE_SIZE = 300000000
 
 # When this was set, it's about 20 seconds per log.
 _LOG_EVERY_N = 100000
+
+# When outputting all alt alleles, use placeholder value to indicate genotype
+# will be soft-filtered.
+_FILTERED_ALT_PROB = -9.0
 
 
 def _extract_single_sample_name(record):
@@ -419,21 +429,25 @@ def is_valid_call_variants_outputs(call_variants_outputs):
   return True
 
 
-def convert_call_variants_outputs_to_probs_dict(canonical_variant,
-                                                call_variants_outputs,
-                                                alt_alleles_to_remove):
+def convert_call_variants_outputs_to_probs_dict(
+    canonical_variant,
+    call_variants_outputs,
+    alt_alleles_to_remove,
+    debug_output_all_candidates=False):
   """Converts a list of CallVariantsOutput to an internal allele probs dict.
 
   Args:
     canonical_variant: variants_pb2.Variant.
     call_variants_outputs: list of CallVariantsOutput.
     alt_alleles_to_remove: set of strings. Alleles to remove.
+    debug_output_all_candidates: If True, set low qual alleles to be
+      soft-filtered.
 
   Returns:
     Dictionary of {(allele1, allele2): list of probabilities},
     where allele1 and allele2 are strings.
   """
-  flattened_dict = collections.defaultdict(lambda: [])
+  flattened_dict = collections.defaultdict(list)
   if not call_variants_outputs:
     return flattened_dict
 
@@ -442,9 +456,17 @@ def convert_call_variants_outputs_to_probs_dict(canonical_variant,
     allele_set2 = frozenset(
         canonical_variant.alternate_bases[index]
         for index in call_variants_output.alt_allele_indices.indices)
-    if alt_alleles_to_remove.intersection(allele_set2):
+    has_alleles_to_rm = bool(alt_alleles_to_remove.intersection(allele_set2))
+    if has_alleles_to_rm and not debug_output_all_candidates:
       continue
-    p11, p12, p22 = call_variants_output.genotype_probabilities
+    if has_alleles_to_rm:
+      # This block is run when debug_output_all_candidates=True
+      # It sets genotype likelihood to a placeholder value,
+      # which is later used to set GL=1.0 (prob=0).
+      p11, p12, p22 = (_FILTERED_ALT_PROB, _FILTERED_ALT_PROB,
+                       _FILTERED_ALT_PROB)
+    else:
+      p11, p12, p22 = call_variants_output.genotype_probabilities
     for (set1, set2, p) in [(allele_set1, allele_set1, p11),
                             (allele_set1, allele_set2, p12),
                             (allele_set2, allele_set2, p22)]:
@@ -660,9 +682,22 @@ def get_multiallelic_model(use_multiallelic_model):
   return tf.keras.models.load_model(multiallelic_model_path, compile=False)
 
 
+def normalize_predictions(predictions):
+  """Normalize predictions and handle soft-filtered alt alleles."""
+  if sum(predictions) == 0:
+    predictions = [1.0] * len(predictions)
+  denominator = sum(
+      [i if i != _FILTERED_ALT_PROB else 0.0 for i in predictions]) or 1.0
+  normalized_predictions = [
+      i / denominator if i != _FILTERED_ALT_PROB else 0.0 for i in predictions
+  ]
+  return normalized_predictions
+
+
 def merge_predictions(call_variants_outputs,
                       qual_filter=None,
-                      multiallelic_model=None):
+                      multiallelic_model=None,
+                      debug_output_all_candidates=False):
   """Merges the predictions from the multi-allelic calls."""
   # See the logic described in the class PileupImageCreator pileup_image.py
   #
@@ -684,11 +719,12 @@ def merge_predictions(call_variants_outputs,
   alt_alleles_to_remove = get_alt_alleles_to_remove(call_variants_outputs,
                                                     qual_filter)
 
-  # flattened_probs_dict doesn't get used if we run the multiallelic model.
+  # flattened_probs_dict is only used with the multiallelic model
   flattened_probs_dict = convert_call_variants_outputs_to_probs_dict(
-      canonical_variant, call_variants_outputs, alt_alleles_to_remove)
-
-  canonical_variant = prune_alleles(canonical_variant, alt_alleles_to_remove)
+      canonical_variant, call_variants_outputs, alt_alleles_to_remove,
+      debug_output_all_candidates)
+  if not debug_output_all_candidates:
+    canonical_variant = prune_alleles(canonical_variant, alt_alleles_to_remove)
   # Run alternate model for multiallelic cases.
   num_alts = len(canonical_variant.alternate_bases)
   if num_alts == 2 and multiallelic_model is not None:
@@ -697,14 +733,18 @@ def merge_predictions(call_variants_outputs,
                                                alt_alleles_to_remove)
     normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]
   else:
+
+    def min_alt_filter(probs):
+      return min([x for x in probs if x != _FILTERED_ALT_PROB] or [0])
+
     predictions = [
-        min(flattened_probs_dict[(m, n)]) for _, _, m, n in
+        min_alt_filter(flattened_probs_dict[(m, n)]) for _, _, m, n in
         variant_utils.genotype_ordering_in_likelihoods(canonical_variant)
     ]
     if sum(predictions) == 0:
       predictions = [1.0] * len(predictions)
-    denominator = sum(predictions)
-    normalized_predictions = [i / denominator for i in predictions]
+    normalized_predictions = normalize_predictions(predictions)
+
   # Note the simplify_variant_alleles call *must* happen after the predictions
   # calculation above. flattened_probs_dict is indexed by alt allele, and
   # simplify can change those alleles so we cannot simplify until afterwards.
@@ -762,7 +802,8 @@ def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
                                                 qual_filter,
                                                 multi_allelic_qual_filter,
                                                 sample_name, group_variants,
-                                                use_multiallelic_model):
+                                                use_multiallelic_model,
+                                                debug_output_all_candidates):
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
   Variants present in the input TFRecord are converted to Variant protos, with
@@ -782,6 +823,8 @@ def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
       position.
     use_multiallelic_model: if True, use a specialized model for genotype
       resolution of multiallelic cases with two alts.
+    debug_output_all_candidates: if True, output all alleles considered by
+      DeepVariant.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
@@ -799,7 +842,8 @@ def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
     canonical_variant, predictions = merge_predictions(
         outputs,
         multi_allelic_qual_filter,
-        multiallelic_model=multiallelic_model)
+        multiallelic_model=multiallelic_model,
+        debug_output_all_candidates=debug_output_all_candidates)
     variant = add_call_to_variant(
         canonical_variant,
         predictions,
@@ -1098,6 +1142,11 @@ def main(argv=()):
           'gVCF creation requires both nonvariant_site_tfrecord_path and '
           'gvcf_outfile flags to be set.', errors.CommandLineError)
 
+    if (FLAGS.use_multiallelic_model and FLAGS.debug_output_all_candidates):
+      errors.log_and_raise(
+          'debug_output_all_candidates is incompatible with the '
+          'multiallelic model.', errors.CommandLineError)
+
     proto_utils.uses_fast_cpp_protos_or_die()
     logging_level.set_from_flag()
 
@@ -1126,7 +1175,8 @@ def main(argv=()):
           multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
           sample_name=sample_name,
           group_variants=FLAGS.group_variants,
-          use_multiallelic_model=FLAGS.use_multiallelic_model)
+          use_multiallelic_model=FLAGS.use_multiallelic_model,
+          debug_output_all_candidates=FLAGS.debug_output_all_candidates)
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
 

@@ -116,7 +116,7 @@ class ResourceMonitor(object):
       self.metrics_pb.memory_peak_rss_mb = int(rusage.ru_maxrss / 1024)
     except resource.error:
       # The OS call to get rusage failed, so just don't set the field values,
-      # leaving them as the defalt values of 0.
+      # leaving them as the default values of 0.
       pass
 
     # Create a psutil.Process pointed at the current process.
