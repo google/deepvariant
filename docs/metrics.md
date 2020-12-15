@@ -107,6 +107,8 @@ Use `gcloud compute ssh` to log in to the newly created instance.
 
 Download and run any of the following case study scripts:
 
+redacted
+
 ```
 # WGS (should take about 7 hours)
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_wgs.sh
