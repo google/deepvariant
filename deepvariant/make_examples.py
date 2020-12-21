@@ -1973,35 +1973,30 @@ def processing_regions_from_options(options):
       num_shards=options.num_shards)
 
   region_list = list(regions)
-  # When processing many regions, check for a VCF to narrow down the regions.
-  if not gvcf_output_enabled(options) and len(region_list) > 10000:
-    if in_training_mode(options):
-      filter_vcf = options.truth_variants_filename
-      logging_with_options(
-          options, 'Reading VCF to see if we can skip processing some regions '
-          'without variants in the --truth_variants VCF.')
-    else:
-      filter_vcf = options.proposed_variants_filename
-      if filter_vcf:
-        logging_with_options(
-            options, 'Reading VCF to skip processing some regions without '
-            'variants in the --proposed_variants VCF.')
-    if filter_vcf:
-      before = time.time()
-      variant_positions = []
-      with vcf.VcfReader(filter_vcf) as vcf_reader:
-        for variant in vcf_reader:
-          variant_positions.append(variant_utils.variant_position(variant))
+  # When using VcfCandidateImporter, it is safe to skip regions without
+  # candidates as long as gVCF output is not needed. There is a tradeoff
+  # though because it takes time to read the VCF, which is only worth it if
+  # there are enough regions.
+  if options.proposed_variants_filename and len(
+      region_list) > 10000 and not gvcf_output_enabled(options):
+    logging_with_options(
+        options, 'Reading VCF to skip processing some regions without '
+        'variants in the --proposed_variants VCF.')
+    before = time.time()
+    variant_positions = []
+    with vcf.VcfReader(options.proposed_variants_filename) as vcf_reader:
+      for variant in vcf_reader:
+        variant_positions.append(variant_utils.variant_position(variant))
 
-      filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
-      time_elapsed = time.time() - before
-      logging_with_options(
-          options,
-          'Filtering regions took {} seconds and reduced the number of '
-          'regions to process from {} to {} regions containing variants '
-          'from the supplied VCF.'.format(
-              round(time_elapsed, 2), len(region_list), len(filtered_regions)))
-      return filtered_regions
+    filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
+    time_elapsed = time.time() - before
+    logging_with_options(
+        options, 'Filtering regions took {} seconds and reduced the number of '
+        'regions to process from {} to {} regions containing variants '
+        'from the supplied VCF of proposed variants.'.format(
+            trim_runtime(time_elapsed), len(region_list),
+            len(filtered_regions)))
+    return filtered_regions
   return region_list
 
 
