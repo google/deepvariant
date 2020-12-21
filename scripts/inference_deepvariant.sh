@@ -342,9 +342,9 @@ function run_deepvariant_with_docker() {
 
   if [[ -n $CUSTOMIZED_MODEL ]]; then
     echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
-    gsutil cp "${CUSTOMIZED_MODEL}"/model.ckpt.data-00000-of-00001 "${INPUT_DIR}"
-    gsutil cp "${CUSTOMIZED_MODEL}"/model.ckpt.index "${INPUT_DIR}"
-    gsutil cp "${CUSTOMIZED_MODEL}"/model.ckpt.meta "${INPUT_DIR}"
+    gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
+    gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
+    gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
     extra_args+=( --customized_model "/input/model.ckpt")
   else
       echo "No custom model specified."
