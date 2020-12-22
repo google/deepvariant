@@ -48,7 +48,7 @@ DEEP_VARIANT_MIN_DP_FORMAT = 'MIN_DP'
 DEEP_VARIANT_VAF_FORMAT = 'VAF'
 
 
-def deepvariant_header(contigs, sample_names):
+def deepvariant_header(contigs, sample_names, add_info_candidates=False):
   """Returns a VcfHeader used for writing VCF output.
 
   This function fills out the FILTER, INFO, FORMAT, and extra header information
@@ -60,6 +60,8 @@ def deepvariant_header(contigs, sample_names):
     contigs: list(ContigInfo). The list of contigs on which variants were
       called.
     sample_names: list(str). The list of samples present in the run.
+    add_info_candidates: Adds the 'CANDIDATES' info field for
+      debugging purposes.
 
   Returns:
     A nucleus.genomics.v1.VcfHeader proto with known fixed headers and the given
@@ -67,6 +69,18 @@ def deepvariant_header(contigs, sample_names):
   """
   version = variants_pb2.VcfExtra(
       key='DeepVariant_version', value=DEEP_VARIANT_VERSION)
+
+  info_fields = [
+      vcf_constants.reserved_info_field('END'),
+  ]
+
+  if add_info_candidates:
+    info_fields.append(
+        variants_pb2.VcfInfo(
+            id='CANDIDATES',
+            number='1',
+            type=vcf_constants.STRING_TYPE,
+            description='pipe-delimited candidate alleles.'))
 
   return variants_pb2.VcfHeader(
       fileformat='VCFv4.2',
@@ -80,9 +94,7 @@ def deepvariant_header(contigs, sample_names):
               description='Confidence in this variant being real is below '
               'calling threshold.'),
       ],
-      infos=[
-          vcf_constants.reserved_info_field('END'),
-      ],
+      infos=info_fields,
       formats=[
           vcf_constants.reserved_format_field('GT'),
           vcf_constants.reserved_format_field('GQ'),

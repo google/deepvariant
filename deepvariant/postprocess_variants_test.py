@@ -66,6 +66,7 @@ from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import vcf_constants
+from third_party.nucleus.util.struct_utils import get_string_field
 from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
@@ -532,7 +533,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
               probabilities=[0.03, 0.05, 0.92],
               ref='A',
               alts=['ACC', 'ACCC']),
-      ], set(['ACC']), True, {
+      ], set(['ACC']), 'ALT', {
           ('A', 'A'): [_FILTERED_ALT_PROB, 0.03, _FILTERED_ALT_PROB],
           ('A', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
           ('ACC', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
@@ -541,7 +542,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
           ('ACCC', 'ACC'): [_FILTERED_ALT_PROB],
           ('ACCC', 'ACCC'): [0.92, _FILTERED_ALT_PROB],
       }),
-      # Test debug_output_all_candidates=False
+      # Test debug_output_all_candidates=None
       ([
           _create_call_variants_output(
               indices=[0],
@@ -558,7 +559,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
               probabilities=[0.03, 0.05, 0.92],
               ref='A',
               alts=['ACC', 'ACCC']),
-      ], set(['ACC']), False, {
+      ], set(['ACC']), None, {
           ('A', 'A'): [0.03],
           ('A', 'ACCC'): [0.04],
           ('ACCC', 'ACCC'): [0.92],
@@ -646,6 +647,35 @@ class PostprocessVariantsTest(parameterized.TestCase):
       _, predictions = postprocess_variants.merge_predictions(permuted_inputs)
       np.testing.assert_almost_equal(
           predictions, [x / denominator for x in expected_unnormalized_probs])
+
+  @parameterized.parameters(
+      ([
+          _create_call_variants_output(
+              indices=[0],
+              probabilities=[0.999, 0.001, 0],
+              alts=['C', 'G', 'T']),
+          _create_call_variants_output(
+              indices=[0, 1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']),
+          _create_call_variants_output(
+              indices=[0, 2],
+              probabilities=[0.0001, 0.9996, 0.0003],
+              alts=['C', 'G', 'T']),
+          _create_call_variants_output(
+              indices=[1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']),
+          _create_call_variants_output(
+              indices=[1, 2],
+              probabilities=[0.0001, 0.0002, 0.9997],
+              alts=['C', 'G', 'T']),
+          _create_call_variants_output(
+              indices=[2],
+              probabilities=[0.00004, 0.9999, 0.00006],
+              alts=['C', 'G', 'T']),
+      ], ['C', 'G', 'T']),)
+  def test_candidate_info_field(self, inputs, expected_candidates):
+    merge_pred = postprocess_variants.merge_predictions
+    variant, _ = merge_pred(inputs, debug_output_all_candidates='INFO')
+    obs_candidates = get_string_field(variant.info, 'CANDIDATES')[0].split('|')
+    self.assertSameElements(obs_candidates, expected_candidates)
 
   @parameterized.parameters(
       ([0.001, 0.017, 0.30, _FILTERED_ALT_PROB,

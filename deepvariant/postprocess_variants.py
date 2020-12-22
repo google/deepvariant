@@ -63,6 +63,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
+from third_party.nucleus.util.struct_utils import add_string_field
 from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
@@ -121,12 +122,13 @@ flags.DEFINE_boolean(
     'use_multiallelic_model', False,
     'If True, use a specialized model for genotype resolution of multiallelic '
     'cases with two alts.')
-flags.DEFINE_boolean(
-    'debug_output_all_candidates', False,
-    'If True, output all candidates considered by DeepVariant. Filtered '
-    'candidates are assigned a GL=0 and added as ALTs alleles, but do not '
-    'appear in any sample genotypes. This flag is used for debugging purposes. '
-    'Incompatible with the multiallelic caller.')
+flags.DEFINE_enum(
+    'debug_output_all_candidates', None, ['ALT', 'INFO'],
+    'Outputs all candidates considered by DeepVariant as additional ALT '
+    'alleles  or as an INFO field. For ALT, filtered candidates are assigned '
+    'a GL=0 and added as ALTs alleles, but do not appear in any sample '
+    'genotypes. This flag is useful for debugging purposes. '
+    'ALT-mode is incompatible with the multiallelic caller.')
 flags.DEFINE_boolean('only_keep_pass', False, 'If True, only keep PASS calls.')
 
 
@@ -433,14 +435,14 @@ def convert_call_variants_outputs_to_probs_dict(
     canonical_variant,
     call_variants_outputs,
     alt_alleles_to_remove,
-    debug_output_all_candidates=False):
+    debug_output_all_candidates=None):
   """Converts a list of CallVariantsOutput to an internal allele probs dict.
 
   Args:
     canonical_variant: variants_pb2.Variant.
     call_variants_outputs: list of CallVariantsOutput.
     alt_alleles_to_remove: set of strings. Alleles to remove.
-    debug_output_all_candidates: If True, set low qual alleles to be
+    debug_output_all_candidates: If 'ALT', set low qual alleles to be
       soft-filtered.
 
   Returns:
@@ -457,10 +459,10 @@ def convert_call_variants_outputs_to_probs_dict(
         canonical_variant.alternate_bases[index]
         for index in call_variants_output.alt_allele_indices.indices)
     has_alleles_to_rm = bool(alt_alleles_to_remove.intersection(allele_set2))
-    if has_alleles_to_rm and not debug_output_all_candidates:
+    if has_alleles_to_rm and debug_output_all_candidates != 'ALT':
       continue
     if has_alleles_to_rm:
-      # This block is run when debug_output_all_candidates=True
+      # This block is run when debug_output_all_candidates=ALT
       # It sets genotype likelihood to a placeholder value,
       # which is later used to set GL=1.0 (prob=0).
       p11, p12, p22 = (_FILTERED_ALT_PROB, _FILTERED_ALT_PROB,
@@ -697,7 +699,7 @@ def normalize_predictions(predictions):
 def merge_predictions(call_variants_outputs,
                       qual_filter=None,
                       multiallelic_model=None,
-                      debug_output_all_candidates=False):
+                      debug_output_all_candidates=None):
   """Merges the predictions from the multi-allelic calls."""
   # See the logic described in the class PileupImageCreator pileup_image.py
   #
@@ -723,7 +725,11 @@ def merge_predictions(call_variants_outputs,
   flattened_probs_dict = convert_call_variants_outputs_to_probs_dict(
       canonical_variant, call_variants_outputs, alt_alleles_to_remove,
       debug_output_all_candidates)
-  if not debug_output_all_candidates:
+
+  if debug_output_all_candidates == 'INFO':
+    add_string_field(canonical_variant.info, 'CANDIDATES',
+                     '|'.join(canonical_variant.alternate_bases))
+  if debug_output_all_candidates != 'ALT':
     canonical_variant = prune_alleles(canonical_variant, alt_alleles_to_remove)
   # Run alternate model for multiallelic cases.
   num_alts = len(canonical_variant.alternate_bases)
@@ -823,8 +829,8 @@ def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
       position.
     use_multiallelic_model: if True, use a specialized model for genotype
       resolution of multiallelic cases with two alts.
-    debug_output_all_candidates: if True, output all alleles considered by
-      DeepVariant.
+    debug_output_all_candidates: if 'ALT', output all alleles considered by
+      DeepVariant as ALT alleles.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
@@ -1142,10 +1148,11 @@ def main(argv=()):
           'gVCF creation requires both nonvariant_site_tfrecord_path and '
           'gvcf_outfile flags to be set.', errors.CommandLineError)
 
-    if (FLAGS.use_multiallelic_model and FLAGS.debug_output_all_candidates):
+    if (FLAGS.use_multiallelic_model and
+        FLAGS.debug_output_all_candidates == 'ALT'):
       errors.log_and_raise(
-          'debug_output_all_candidates is incompatible with the '
-          'multiallelic model.', errors.CommandLineError)
+          'debug_output_all_candidates=ALT is incompatible with the '
+          'multiallelic model. Use INFO instead.', errors.CommandLineError)
 
     proto_utils.uses_fast_cpp_protos_or_die()
     logging_level.set_from_flag()
@@ -1180,8 +1187,11 @@ def main(argv=()):
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants)
 
+    add_info_candidates = FLAGS.debug_output_all_candidates == 'INFO'
     header = dv_vcf_constants.deepvariant_header(
-        contigs=contigs, sample_names=[sample_name])
+        contigs=contigs,
+        sample_names=[sample_name],
+        add_info_candidates=add_info_candidates)
     use_csi = _decide_to_use_csi(contigs)
 
     start_time = time.time()
