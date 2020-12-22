@@ -165,6 +165,12 @@ do
 done
 ```
 
+Note: The BAM files should provide unique names for each sample in their `SM`
+header tag, which is usually derived from a command-line flag to the read
+aligner. If your BAM files don't have unique `SM` tags (and if it's not feasible
+to adjust the alignment pipeline), add the `--sample_name=XYZ` flag to
+`run_deepvariant` to override the sample name written into the gVCF file header.
+
 ## Merge the trio samples using GLnexus
 
 ### Run GLnexus to merge 3 gVCFs
