@@ -382,11 +382,11 @@ function run_deepvariant_with_docker() {
   echo
 }
 
-## Evaluation: run hap.py
-echo "Start evaluation with hap.py..."
 UNCOMPRESSED_REF="${INPUT_DIR}/$(basename $REF)"
 
 function run_happy() {
+  ## Evaluation: run hap.py
+  echo "Start evaluation with hap.py..."
   # hap.py cannot read the compressed fa, so uncompress
   # into a writable directory. Index file was downloaded earlier.
   zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}"
