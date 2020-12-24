@@ -238,6 +238,11 @@ echo "TRUTH_BED: $TRUTH_BED"
 echo "CAPTURE_BED: $CAPTURE_BED"
 echo "========================="
 
+function copy_gs_file() {
+  echo "Copying from \"$1\" to \"$2\""
+  gsutil -m cp "$1" "$2"
+}
+
 function copy_data() {
   # For the presets, we use `aria2c https://storage.googleapis.com/...` since
   # some users have had difficulty installing gsutil in the past.
@@ -258,18 +263,18 @@ function copy_data() {
       aria2c -c -x10 -s10 "${CAPTURE_BED}" -d "${INPUT_DIR}"
     fi
   else
-    gsutil -m cp "${TRUTH_BED}" "${INPUT_DIR}"
-    gsutil -m cp "${TRUTH_VCF}" "${INPUT_DIR}"
-    gsutil -m cp "${TRUTH_VCF}.tbi" "${INPUT_DIR}"
-    gsutil -m cp "${BAM}" "${INPUT_DIR}"
-    gsutil -m cp "${BAM}.bai" "${INPUT_DIR}"
-    gsutil -m cp "${REF}.gz" "${INPUT_DIR}"
-    gsutil -m cp "${REF}.gz.fai" "${INPUT_DIR}"
-    gsutil -m cp "${REF}.gz.gzi" "${INPUT_DIR}"
-    gsutil -m cp "${REF}.gzi" "${INPUT_DIR}"
-    gsutil -m cp "${REF}.fai" "${INPUT_DIR}"
+    copy_gs_file "${TRUTH_BED}" "${INPUT_DIR}"
+    copy_gs_file "${TRUTH_VCF}" "${INPUT_DIR}"
+    copy_gs_file "${TRUTH_VCF}.tbi" "${INPUT_DIR}"
+    copy_gs_file "${BAM}" "${INPUT_DIR}"
+    copy_gs_file "${BAM}.bai" "${INPUT_DIR}"
+    copy_gs_file "${REF}.gz" "${INPUT_DIR}"
+    copy_gs_file "${REF}.gz.fai" "${INPUT_DIR}"
+    copy_gs_file "${REF}.gz.gzi" "${INPUT_DIR}"
+    copy_gs_file "${REF}.gzi" "${INPUT_DIR}"
+    copy_gs_file "${REF}.fai" "${INPUT_DIR}"
     if [[ "${MODEL_TYPE}" = "WES" ]]; then
-      gsutil -m cp "${CAPTURE_BED}" "${INPUT_DIR}"
+      copy_gs_file "${CAPTURE_BED}" "${INPUT_DIR}"
     fi
   fi
 }
