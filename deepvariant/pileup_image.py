@@ -350,7 +350,7 @@ class PileupImageCreator(object):
       rows = ([self._encoder.encode_reference(refbases)] *
               self.reference_band_height)
 
-      def _update_hap_index(read, sort_by_haplotypes_sample_hp_tag):
+      def _update_hap_index(read, hp_tag_for_assembly_polishing):
         default_hap_idx = 0  # By default, reads with no HP is set to 0.
         if 'HP' not in read.info:
           return default_hap_idx
@@ -358,8 +358,8 @@ class PileupImageCreator(object):
         if not hp_field.HasField('int_value'):
           return default_hap_idx
         hp_value = hp_field.int_value
-        if (sort_by_haplotypes_sample_hp_tag > 0 and
-            hp_value == sort_by_haplotypes_sample_hp_tag):
+        if (hp_tag_for_assembly_polishing > 0 and
+            hp_value == hp_tag_for_assembly_polishing):
           # For the target HP tag, set it to -1 so it will be sorted on
           # top of the pileup image.
           return -1
@@ -381,7 +381,7 @@ class PileupImageCreator(object):
           hap_idx = 0  # By default, reads with no HP is set to 0.
           if self._options.sort_by_haplotypes:
             hap_idx = _update_hap_index(
-                read, self._options.sort_by_haplotypes_sample_hp_tag)
+                read, self._options.hp_tag_for_assembly_polishing)
           yield hap_idx, read.alignment.position.position, read_row
 
       # We add a row for each read in order, down-sampling if the number of

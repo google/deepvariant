@@ -803,9 +803,9 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
       (True, 1, ['ref', 'ref', 'read2', 'read4', 'read6', 'read1', 'read5']),
       (True, 2, ['ref', 'ref', 'read1', 'read5', 'read6', 'read2', 'read4']),
   )
-  def test_image_creation_with_haplotype_sorting(
-      self, sort_by_haplotypes, sort_by_haplotypes_sample_hp_tag,
-      expected_reads_layout):
+  def test_image_creation_with_haplotype_sorting(self, sort_by_haplotypes,
+                                                 hp_tag_for_assembly_polishing,
+                                                 expected_reads_layout):
     # There are 5 reads. They are expected to be sorted by HP tag.
     read1 = test_utils.make_read('AGC', start=0, cigar='3M', name='read1')
     read1.info['HP'].values.add().int_value = 2
@@ -823,7 +823,7 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
     self.pic.height = 7
     # Change options to set sort_by_haplotypes flag.
     self.pic._options.sort_by_haplotypes = sort_by_haplotypes
-    self.pic._options.sort_by_haplotypes_sample_hp_tag = sort_by_haplotypes_sample_hp_tag
+    self.pic._options.hp_tag_for_assembly_polishing = hp_tag_for_assembly_polishing
     image = self.pic.build_pileup(
         dv_call=self.dv_call,
         refbases=self.ref,

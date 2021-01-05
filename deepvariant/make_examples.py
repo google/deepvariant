@@ -305,7 +305,7 @@ flags.DEFINE_bool(
     'If True, reads are sorted by haplotypes (using HP tag), '
     'parse_sam_aux_fields has to be set for this to work.')
 flags.DEFINE_integer(
-    'sort_by_haplotypes_sample_hp_tag', 0,
+    'hp_tag_for_assembly_polishing', 0,
     'If set to > 0, reads with this HP tag will be sorted on top. '
     'sort_by_haplotypes has to be set to True for this to work.')
 flags.DEFINE_bool(
@@ -591,21 +591,21 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.num_channels += 1
       options.pic_options.add_hp_channel = True
 
-    if flags_obj.sort_by_haplotypes_sample_hp_tag < 0:
+    if flags_obj.hp_tag_for_assembly_polishing < 0:
       errors.log_and_raise(
-          '--sort_by_haplotypes_sample_hp_tag has to be set to a positive int.',
+          '--hp_tag_for_assembly_polishing has to be set to a positive int.',
           errors.CommandLineError)
-    if (flags_obj.sort_by_haplotypes_sample_hp_tag > 0 and
+    if (flags_obj.hp_tag_for_assembly_polishing > 0 and
         not flags_obj.sort_by_haplotypes):
       errors.log_and_raise(
-          '--sort_by_haplotypes_sample_hp_tag requires --sort_by_haplotypes to be '
+          '--hp_tag_for_assembly_polishing requires --sort_by_haplotypes to be '
           'set ', errors.CommandLineError)
     if flags_obj.sort_by_haplotypes and not flags_obj.parse_sam_aux_fields:
       errors.log_and_raise(
           '--sort_by_haplotypes requires --parse_sam_aux_fields to be set ',
           errors.CommandLineError)
     options.pic_options.sort_by_haplotypes = flags_obj.sort_by_haplotypes
-    options.pic_options.sort_by_haplotypes_sample_hp_tag = flags_obj.sort_by_haplotypes_sample_hp_tag
+    options.pic_options.hp_tag_for_assembly_polishing = flags_obj.hp_tag_for_assembly_polishing
 
     if flags_obj.write_run_info:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION

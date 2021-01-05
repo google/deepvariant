@@ -356,7 +356,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how we construct pileup images.
-// Next ID: 38.
+// Next ID: 39.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -475,9 +475,8 @@ message PileupImageOptions {
   // Whether to consider allele frequencies.
   bool use_allele_frequency = 34;
 
-  // If set reads are sorted by haplotype tag (HP tag) and then by alignment
-  // position.
-  int32 sort_by_haplotypes_sample_hp_tag = 35;
+  // For assembly polishing, specifies the HP tag we're calling for.
+  int32 hp_tag_for_assembly_polishing = 38;
 
   // Which variant types to use alt-align on.
   string types_to_alt_align = 36;
@@ -485,6 +484,9 @@ message PileupImageOptions {
   // If true, add an additional channel where the color information per-read
   // indicates the HP value.
   bool add_hp_channel = 37;
+
+  // Deprecated fields.
+  int32 sort_by_haplotypes_sample_hp_tag = 35 [deprecated = true];
 }
 
 // High-level options that encapsulates all of the parameters needed to run
@@ -661,7 +663,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 13.
+  // Next ID: 14.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -696,7 +698,10 @@ message DeepVariantInputDatasets {
     string population_vcfs = 11;
 
     // Optional. Used in make_examples.
-    int32 sort_by_haplotypes_sample_hp_tag = 12;
+    int32 hp_tag_for_assembly_polishing = 13;
+
+    // Deprecated fields.
+    int32 sort_by_haplotypes_sample_hp_tag = 12 [deprecated = true];
   }
   repeated Dataset datasets = 1;
   string group_name = 2;
