@@ -103,10 +103,14 @@ def _make_encoder_with_allele_frequency(read_requirements=None, **kwargs):
   return pileup_image_native.PileupImageEncoderNative(options)
 
 
-def _make_encoder_with_hp_channel(read_requirements=None, **kwargs):
+def _make_encoder_with_hp_channel(read_requirements=None,
+                                  hp_tag_for_assembly_polishing=None,
+                                  **kwargs):
   """Make a PileupImageEncoderNative with overrideable default options."""
   options = pileup_image.default_options(read_requirements)
   options.add_hp_channel = True
+  if hp_tag_for_assembly_polishing is not None:
+    options.hp_tag_for_assembly_polishing = hp_tag_for_assembly_polishing
   options.num_channels += 1
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image_native.PileupImageEncoderNative(options)
@@ -245,11 +249,18 @@ class PileupImageEncoderTest(parameterized.TestCase):
       # The corresponding colors here are defined in HPValueColor in
       # pileup_image_native.cc.
       # Reads with no HP values will resulted in a value of 0.
-      (None, 0),
-      (0, 0),
-      (1, 254 / 2),
-      (2, 254))
-  def test_encode_read_matches_with_hp_channel(self, hp_value, hp_color):
+      (None, 0, None),
+      (0, 0, None),
+      (1, 254 / 2, None),
+      (2, 254, None),
+      # And, the color of 1 and 2 should swap when
+      # hp_tag_for_assembly_polishing is set to 2.
+      (None, 0, 2),
+      (0, 0, 2),
+      (1, 254, 2),
+      (2, 254 / 2, 2))
+  def test_encode_read_matches_with_hp_channel(self, hp_value, hp_color,
+                                               hp_tag_for_assembly_polishing):
     # Same test case as test_encode_read_matches(), with --add_hp_channel.
     start = 10
     dv_call = _make_dv_call_with_allele_frequency()
@@ -277,9 +288,9 @@ class PileupImageEncoderTest(parameterized.TestCase):
     ]).astype(np.uint8)
 
     self.assertImageRowEquals(
-        _make_encoder_with_hp_channel().encode_read(dv_call, 'ACAGT', read,
-                                                    start, alt_allele),
-        full_expected)
+        _make_encoder_with_hp_channel(
+            hp_tag_for_assembly_polishing=hp_tag_for_assembly_polishing)
+        .encode_read(dv_call, 'ACAGT', read, start, alt_allele), full_expected)
 
   def test_encode_read_matches_with_allele_frequency(self):
     # Same test case as test_encode_read_matches(), with allele frequency.
@@ -799,8 +810,14 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
 
   @parameterized.parameters(
       (False, 0, ['ref', 'ref', 'read1', 'read6', 'read2', 'read4', 'read5']),
+      # hp_tag_for_assembly_polishing=0 is the same as not setting it.
+      # The sorting order should be reads with HP=0, HP=1, HP=2 (default).
       (True, 0, ['ref', 'ref', 'read6', 'read2', 'read4', 'read1', 'read5']),
+      # hp_tag_for_assembly_polishing=1 means: sort the reads with HP=1 on top.
+      # The sorting order should be reads with HP=1, HP=0, HP=2.
       (True, 1, ['ref', 'ref', 'read2', 'read4', 'read6', 'read1', 'read5']),
+      # hp_tag_for_assembly_polishing=2 means: sort the reads with HP=2 on top.
+      # The sorting order should be reads with HP=2, HP=0, HP=1.
       (True, 2, ['ref', 'ref', 'read1', 'read5', 'read6', 'read2', 'read4']),
   )
   def test_image_creation_with_haplotype_sorting(self, sort_by_haplotypes,

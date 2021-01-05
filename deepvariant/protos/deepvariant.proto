@@ -697,7 +697,7 @@ message DeepVariantInputDatasets {
     // Optional. Space-separated list of cohort callsets in VCF of VCF.gz.
     string population_vcfs = 11;
 
-    // Optional. Used in make_examples.
+    // Optional. Used in make_examples for assembly polishing use case.
     int32 hp_tag_for_assembly_polishing = 13;
 
     // Deprecated fields.

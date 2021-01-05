@@ -127,7 +127,8 @@ inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
   return 0;
 }
 
-int GetHPValueForHPChannel(const Read& read) {
+int GetHPValueForHPChannel(const Read& read,
+                           int hp_tag_for_assembly_polishing) {
   if (!read.info().contains("HP")) {
     return 0;
   }
@@ -148,6 +149,16 @@ int GetHPValueForHPChannel(const Read& read) {
         << "HP value has to be either 1, 2, or 0. Found a read with HP="
         << hp_value << ", read=" << read.DebugString();
   }
+  // If hp_tag_for_assembly_polishing is set to 2, this is a special case
+  // assembly polishing:
+  // If we're calling HP=2, when displayed with --add_hp_channel, we want to
+  // swap the color of reads with HP=2 and HP=1.
+  if (hp_tag_for_assembly_polishing == 2) {
+    if (hp_value == 1) return 2;
+    if (hp_value == 2) return 1;
+  }
+
+  // Otherwise, keep the default behavior.
   return hp_value;
 }
 
@@ -309,8 +320,10 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
   const float allele_frequency = (options_.use_allele_frequency())?
       ReadAlleleFrequency(dv_call, read, alt_alleles) : 0;
   const uint8 allele_frequency_color = AlleleFrequencyColor(allele_frequency);
-  const int hp_value =
-      (options_.add_hp_channel()) ? GetHPValueForHPChannel(read) : 0;
+  const int hp_value = (options_.add_hp_channel())
+                           ? GetHPValueForHPChannel(
+                                 read, options_.hp_tag_for_assembly_polishing())
+                           : 0;
 
   // Bail early if this read's mapping quality is too low.
   if (mapping_quality < min_mapping_quality) {
