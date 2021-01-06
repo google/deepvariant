@@ -88,6 +88,19 @@ def _mock_example_with_variant_and_alt_allele_indices(
   return example_pb2.Example(features=feature_pb2.Features(feature=feature))
 
 
+def _mock_pileup_array_with_reads():
+  shape = (10, 15)  # (height, width)
+  pileup = np.zeros(shape)
+  # Top 5 rows and all other non-read space is left as 0.
+  # Like an actual pileup with 4 reads, each 8 bases long.
+  pileup[5, 0:8] = 254
+  pileup[6, 1:9] = 254
+  pileup[7, 4:12] = 100  # One read with low value.
+  pileup[8, 6:14] = 254
+  pileup[8, 8:10] = 100  # Two bases of another read with low value.
+  return pileup
+
+
 class VisTest(parameterized.TestCase):
 
   def test_get_image_array_from_example(self):
@@ -127,7 +140,7 @@ class VisTest(parameterized.TestCase):
   @parameterized.parameters((None,), ('RGB',))
   def test_draw_deepvariant_pileup_with_channels_input(self, composite_type):
     channels = [_image_array((100, 221)) for _ in range(6)]
-    # Testing that it runs without error
+    # Testing that it runs without error.
     vis.draw_deepvariant_pileup(
         channels=channels, composite_type=composite_type)
 
@@ -287,6 +300,94 @@ class VisTest(parameterized.TestCase):
   def test_deepvariant_channel_names(self, num_channels):
     output = vis._deepvariant_channel_names(num_channels)
     self.assertLen(output, num_channels)
+
+  def test_remove_ref_band(self):
+    pileup = _mock_pileup_array_with_reads()
+    bottom_part = vis.remove_ref_band(pileup)
+    self.assertEqual((pileup.shape[0] - 5, pileup.shape[1]),
+                     bottom_part.shape,
+                     msg='Checking output shape is correct.')
+    # Since the ref band is all zero, the sum should stay the same.
+    self.assertEqual(
+        np.sum(pileup),
+        np.sum(bottom_part),
+        msg='Checking bottom part of pileup is intact.')
+
+    test_pileup = np.zeros((100, 200))
+    self.assertEqual((95, 200), vis.remove_ref_band(test_pileup).shape)
+
+    too_small = np.zeros((4, 10)) + 254
+    with self.assertRaises(AssertionError):
+      vis.remove_ref_band(too_small)
+
+  def test_fraction_low_base_quality(self):
+    shape = (10, 15)
+    high_quality = [[], np.zeros(shape) + 254]
+    low_quality = [[], np.zeros(shape) + 100]
+    empty = [[], np.zeros(shape)]
+    golden_pileup = [[], _mock_pileup_array_with_reads()]
+    self.assertEqual(
+        0, vis.fraction_low_base_quality(high_quality), msg='All high quality')
+    self.assertEqual(
+        1, vis.fraction_low_base_quality(low_quality), msg='All low quality')
+    self.assertEqual(
+        0, vis.fraction_low_base_quality(empty), msg='Empty pileup, no reads')
+    self.assertEqual(
+        0.3125,
+        vis.fraction_low_base_quality(golden_pileup),
+        msg='Mixed high and low quality')
+
+  def test_fraction_reads_with_low_mapq(self):
+    shape = (10, 15)
+    filler_channels = [0] * 2
+    high_quality = filler_channels + [np.zeros(shape) + 254]
+    low_quality = filler_channels + [np.zeros(shape) + 100]
+    empty = filler_channels + [np.zeros(shape)]
+    golden_pileup = filler_channels + [_mock_pileup_array_with_reads()]
+    self.assertEqual(
+        0,
+        vis.fraction_reads_with_low_mapq(high_quality),
+        msg='All high quality')
+    self.assertEqual(
+        1, vis.fraction_reads_with_low_mapq(low_quality), msg='All low quality')
+    self.assertEqual(
+        0,
+        vis.fraction_reads_with_low_mapq(empty),
+        msg='Empty pileup, no reads')
+    self.assertEqual(
+        0.25,
+        vis.fraction_reads_with_low_mapq(golden_pileup),
+        msg='Mixed high and low quality')
+
+  def test_fraction_read_support_and_describer(self):
+    shape = (10, 15)
+    filler_channels = [0] * 4
+    all_support = filler_channels + [np.zeros(shape) + 254]
+    no_support = filler_channels + [np.zeros(shape) + 100]
+    empty = filler_channels + [np.zeros(shape)]
+    golden_pileup = filler_channels + [_mock_pileup_array_with_reads()]
+
+    self.assertEqual(1, vis.fraction_read_support(all_support))
+    self.assertEqual('all', vis.describe_read_support(all_support))
+
+    self.assertEqual(0, vis.fraction_read_support(no_support))
+    self.assertEqual('low', vis.describe_read_support(no_support))
+
+    self.assertEqual(0, vis.fraction_read_support(empty))
+    self.assertEqual('low', vis.describe_read_support(empty))
+
+    self.assertEqual(0.75, vis.fraction_read_support(golden_pileup))
+    self.assertEqual('half', vis.describe_read_support(golden_pileup))
+
+  @parameterized.parameters([
+      dict(k=12, n=24, expected_p=1.0),
+      dict(k=1, n=4, expected_p=0.625),
+      dict(k=0, n=4, expected_p=0.125),
+      dict(k=0, n=8, expected_p=0.0078125)
+  ])
+  def test_binomial_test(self, k, n, expected_p):
+    observed_p = vis.binomial_test(k=k, n=n)
+    self.assertEqual(expected_p, observed_p)
 
 
 if __name__ == '__main__':

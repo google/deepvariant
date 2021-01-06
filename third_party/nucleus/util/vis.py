@@ -39,6 +39,9 @@ from __future__ import division
 # removed import for python2 type annotation support
 from __future__ import print_function
 
+import math
+from typing import List
+
 from IPython import display
 import numpy as np
 from PIL import Image
@@ -551,3 +554,129 @@ def label_from_example(example):
     return int(val[0])
   else:
     return None
+
+
+def remove_ref_band(arr: np.ndarray,
+                    num_top_rows_to_skip: int = 5) -> np.ndarray:
+  """Removes the reference rows at the top of a pileup image array."""
+  assert len(arr.shape) == 2
+  assert arr.shape[0] > num_top_rows_to_skip
+  return arr[num_top_rows_to_skip:, :]
+
+
+def fraction_low_base_quality(channels: List[np.ndarray],
+                              threshold: int = 127) -> float:
+  """Gets fraction of bases that have low base quality scores in a pileup.
+
+  Args:
+      channels: A list of channels of a DeepVariant pileup image. This only uses
+        channels[1], the base quality channel.
+      threshold: Bases qualities below this will be considered low quality. The
+        default is 127 because this is half of the max (254).
+
+  Returns:
+      The fraction of bases with base quality below the threshold.
+  """
+  basequal_channel = remove_ref_band(channels[1])
+  non_zero_values = basequal_channel[basequal_channel > 0]
+
+  num_non_zero = non_zero_values.shape[0]
+  if num_non_zero == 0:
+    return 0.0
+  return sum((non_zero_values < threshold) * 1.0) / num_non_zero
+
+
+def fraction_reads_with_low_mapq(channels: List[np.ndarray],
+                                 threshold: int = 127) -> float:
+  """Gets fraction of reads that have low mapping quality scores in pileup.
+
+  Args:
+      channels: A list of channels of a DeepVariant pileup image. This only uses
+        channels[2], the mapping quality channel.
+      threshold: int. Default is 127 because this is half of the max (254).
+
+  Returns:
+      The fraction of bases with mapping quality below the threshold.
+  """
+  mapq_channel = remove_ref_band(channels[2])
+  # Get max value of each row, aka each read.
+  max_row_values = np.amax(mapq_channel, axis=1)
+
+  non_zero_values = max_row_values[max_row_values > 0]
+  num_non_zero = non_zero_values.shape[0]
+  if num_non_zero == 0:
+    return 0.0
+  return sum((non_zero_values < threshold) * 1.0) / num_non_zero
+
+
+def fraction_read_support(channels: List[np.ndarray]) -> float:
+  """Gets fraction of reads that support the variant.
+
+  Args:
+      channels: A list of channels of a DeepVariant pileup image. This only uses
+        channels[4], the 'read supports variant' channel.
+
+  Returns:
+      Fraction of reads supporting the alternate allele(s), ranging from [0, 1].
+  """
+  support_channel = remove_ref_band(channels[4])
+  max_row_values = np.amax(support_channel, axis=1)
+
+  non_zero_values = max_row_values[max_row_values > 0]
+  num_non_zero = non_zero_values.shape[0]
+  if num_non_zero == 0:
+    return 0.0
+  return sum(non_zero_values == 254) * 1.0 / num_non_zero
+
+
+def describe_read_support(channels: List[np.ndarray]) -> str:
+  """Calculates read support and describes it categorically.
+
+  Computes read support as a fraction and returns a convenient descriptive term
+  according to the following thresholds: 'low' is [0, 0.3],
+  'half' is (0.3, 0.8], and 'all' is (0.8, 1].
+
+  Args:
+      channels: A list of channels of a DeepVariant pileup image. This only uses
+        channels[4], the 'read supports variant' channel.
+
+  Returns:
+      Categorical description of the read support: 'all', 'half', or 'low'.
+  """
+  fraction_support = fraction_read_support(channels)
+  if fraction_support > 0.8:
+    return 'all'
+  elif fraction_support > 0.3:
+    return 'half'
+  else:
+    return 'low'
+
+
+def binomial_test(k: int, n: int) -> float:
+  """Calculates a two-tailed binomial test with p=0.5, without scipy.
+
+  Since the expected probability is 0.5, it simplifies a few things:
+  1) (0.5**x)*(0.5**(n-x)) = (0.5**n)
+  2) A two-tailed test is simply doubling when p = 0.5.
+  Scipy is much larger than Nucleus, so this avoids adding it as a dependency.
+
+  Args:
+    k: Number of "successes", in this case, the number of supporting reads.
+    n: Number of "trials", in this case, the total number of reads.
+
+  Returns:
+    The p-value for the binomial test.
+  """
+  if k == n / 2:
+    return 1.0
+  sum_of_ps = 0
+
+  # With p=0.5, the distribution is symmetric, allowing this simplification:
+  k = min(k, n - k)
+  # Add up all the exact probabilities for each scenario more extreme than k.
+  for x in range(0, k + 1):
+    # After python 3.8, the following line can be replaced using math.comb.
+    n_choose_x = math.factorial(n) / math.factorial(x) / math.factorial(n - x)
+    p_for_i = n_choose_x * (0.5**n)
+    sum_of_ps += p_for_i
+  return sum_of_ps * 2  # Doubling because it's a two-tailed test.
