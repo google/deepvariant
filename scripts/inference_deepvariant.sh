@@ -32,22 +32,24 @@ Note: All paths to dataset must be of the form "gs://..."
 '
 
 # Specify default values.
+# Booleans; sorted alphabetically.
 BUILD_DOCKER=false
 USE_GPU=false
-REGIONS=""
+# Strings; sorted alphabetically.
+BAM=""
+BIN_VERSION=""
+CALL_VARIANTS_ARGS=""
+CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
 MAKE_EXAMPLES_ARGS=""
-CALL_VARIANTS_ARGS=""
-POSTPROCESS_VARIANTS_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
-BIN_VERSION=""
-REF=""
-BAM=""
-TRUTH_VCF=""
-TRUTH_BED=""
-CAPTURE_BED=""
+POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
+REF=""
+REGIONS=""
+TRUTH_BED=""
+TRUTH_VCF=""
 
 while (( "$#" )); do
   case "$1" in
@@ -228,22 +230,24 @@ if [[ "${MODEL_TYPE}" = "WES" ]]; then
 fi
 
 echo "========================="
+echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
-echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
-echo "REGIONS: ${REGIONS}"
-echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
-echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
-echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
 echo "USE_GPU: ${USE_GPU}"
+echo "# Strings; sorted alphabetically."
+echo "BAM: ${BAM}"
+echo "BIN_VERSION: ${BIN_VERSION}"
+echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
+echo "CAPTURE_BED: ${CAPTURE_BED}"
+echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
+echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
-echo "BIN_VERSION: ${BIN_VERSION}"
-echo "REF: ${REF}"
-echo "BAM: ${BAM}"
-echo "TRUTH_VCF: ${TRUTH_VCF}"
-echo "TRUTH_BED: ${TRUTH_BED}"
-echo "CAPTURE_BED: ${CAPTURE_BED}"
+echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
+echo "REF: ${REF}"
+echo "REGIONS: ${REGIONS}"
+echo "TRUTH_BED: ${TRUTH_BED}"
+echo "TRUTH_VCF: ${TRUTH_VCF}"
 echo "========================="
 
 function copy_gs_file() {
