@@ -17,6 +17,7 @@ Flags:
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WES, PACBIO, or HYBRID_PACBIO_ILLUMINA.
+--proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepVariant model to run (WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA)
@@ -46,6 +47,7 @@ BAM=""
 TRUTH_VCF=""
 TRUTH_BED=""
 CAPTURE_BED=""
+PROPOSED_VARIANTS=""
 
 while (( "$#" )); do
   case "$1" in
@@ -134,6 +136,11 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --proposed_variants)
+      PROPOSED_VARIANTS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     -*|--*=) # other flags not supported
       echo "Error: unrecognized flag $1" >&2
       echo "$USAGE" >&2
@@ -156,7 +163,7 @@ declare -a extra_args
 declare -a happy_args
 declare -a docker_args
 
-if [[ -n $MODEL_PRESET ]]; then
+if [[ -n "${MODEL_PRESET}" ]]; then
   BIN_VERSION="1.1.0"
 fi
 
@@ -194,7 +201,7 @@ elif [[ "${MODEL_PRESET}" = "HYBRID_PACBIO_ILLUMINA" ]]; then
   TRUTH_VCF="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz"
   TRUTH_BED="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed"
 else
-  if [[ -n $MODEL_PRESET ]]; then
+  if [[ -n "${MODEL_PRESET}" ]]; then
     echo "Error: --model_preset must be one of WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA." >&2
     exit 1
   fi
@@ -212,7 +219,7 @@ if [[ "${MODEL_TYPE}" = "PACBIO" ]]; then
   extra_args+=( --use_hp_information )
 fi
 if [[ "${MODEL_TYPE}" = "WES" ]]; then
-  if [[ -n $REGIONS ]]; then
+  if [[ -n "${REGIONS}" ]]; then
     echo "Error: --regions is not used with model_type WES. Please use --capture_bed." >&2
     exit 1
   fi
@@ -221,21 +228,22 @@ if [[ "${MODEL_TYPE}" = "WES" ]]; then
 fi
 
 echo "========================="
-echo "BUILD_DOCKER: $BUILD_DOCKER"
-echo "CUSTOMIZED_MODEL: $CUSTOMIZED_MODEL"
-echo "REGIONS: $REGIONS"
-echo "MAKE_EXAMPLES_ARGS: $MAKE_EXAMPLES_ARGS"
-echo "CALL_VARIANTS_ARGS: $CALL_VARIANTS_ARGS"
-echo "POSTPROCESS_VARIANTS_ARGS: $POSTPROCESS_VARIANTS_ARGS"
-echo "USE_GPU: $USE_GPU"
-echo "MODEL_PRESET: $MODEL_PRESET"
-echo "MODEL_TYPE: $MODEL_TYPE"
-echo "BIN_VERSION: $BIN_VERSION"
-echo "REF: $REF"
-echo "BAM: $BAM"
-echo "TRUTH_VCF: $TRUTH_VCF"
-echo "TRUTH_BED: $TRUTH_BED"
-echo "CAPTURE_BED: $CAPTURE_BED"
+echo "BUILD_DOCKER: ${BUILD_DOCKER}"
+echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
+echo "REGIONS: ${REGIONS}"
+echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
+echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
+echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
+echo "USE_GPU: ${USE_GPU}"
+echo "MODEL_PRESET: ${MODEL_PRESET}"
+echo "MODEL_TYPE: ${MODEL_TYPE}"
+echo "BIN_VERSION: ${BIN_VERSION}"
+echo "REF: ${REF}"
+echo "BAM: ${BAM}"
+echo "TRUTH_VCF: ${TRUTH_VCF}"
+echo "TRUTH_BED: ${TRUTH_BED}"
+echo "CAPTURE_BED: ${CAPTURE_BED}"
+echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "========================="
 
 function copy_gs_file() {
@@ -275,6 +283,10 @@ function copy_data() {
     copy_gs_file "${REF}.fai" "${INPUT_DIR}"
     if [[ "${MODEL_TYPE}" = "WES" ]]; then
       copy_gs_file "${CAPTURE_BED}" "${INPUT_DIR}"
+    fi
+    if [[ -n "${PROPOSED_VARIANTS}" ]]; then
+      copy_gs_file "${PROPOSED_VARIANTS}" "${INPUT_DIR}"
+      copy_gs_file "${PROPOSED_VARIANTS}.tbi" "${INPUT_DIR}"
     fi
   fi
 }
@@ -343,10 +355,10 @@ function setup_test() {
 
 function run_deepvariant_with_docker() {
   echo "Run DeepVariant..."
-  echo "using IMAGE=$IMAGE"
+  echo "using IMAGE=${IMAGE}"
 
-  if [[ -n $CUSTOMIZED_MODEL ]]; then
-    echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
+  if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
+    echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
     gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
     gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
     gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
@@ -354,16 +366,22 @@ function run_deepvariant_with_docker() {
   else
       echo "No custom model specified."
   fi
-  if [[ -n $MAKE_EXAMPLES_ARGS ]]; then
+  if [[ -n "${MAKE_EXAMPLES_ARGS}" ]]; then
+    # In order to use proposed variants, we have to pass vcf_candidate_importer
+    # to make_examples_extra_args, so we know that we will enter this if
+    # statement.
+    if [[ -n "${PROPOSED_VARIANTS}" ]]; then
+      MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},proposed_variants=/input/$(basename "$PROPOSED_VARIANTS")"
+    fi
     extra_args+=( --make_examples_extra_args "${MAKE_EXAMPLES_ARGS}")
   fi
-  if [[ -n $CALL_VARIANTS_ARGS ]]; then
+  if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
     extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
   fi
-  if [[ -n $POSTPROCESS_VARIANTS_ARGS ]]; then
+  if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
   fi
-  if [[ -n $REGIONS ]]; then
+  if [[ -n "${REGIONS}" ]]; then
     extra_args+=( --regions "${REGIONS}")
     happy_args+=( -l "${REGIONS}")
   fi
