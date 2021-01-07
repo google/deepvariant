@@ -4,9 +4,10 @@
 
 This document outlines all the steps and considerations for calling and merging
 a trio using DeepVariant and [GLnexus](https://github.com/dnanexus-rnd/GLnexus).
-These best practices were developed and evaluated as described in the bioRxiv
-preprint
-[Accurate, scalable cohort variant calls using DeepVariant and GLnexus](https://doi.org/10.1101/2020.02.10.942086).
+These best practices were developed and evaluated as described in the article
+published in _Bioinformatics_:
+[Accurate, scalable cohort variant calls using DeepVariant and GLnexus](https://doi.org/10.1093/bioinformatics/btaa1081)
+(2021).
 
 The process involves 3 major stages: running DeepVariant to create individual
 genome call sets, running GLnexus to merge call sets, and analyzing the merged

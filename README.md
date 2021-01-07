@@ -102,7 +102,7 @@ For more information, also see:
 
 If you're using DeepVariant in your work, please cite:
 
-[A universal SNP and small-indel variant caller using deep neural networks. Nature Biotechnology 36, 983–987 (2018).](https://rdcu.be/7Dhl) <br/>
+[A universal SNP and small-indel variant caller using deep neural networks. _Nature Biotechnology_ 36, 983–987 (2018).](https://rdcu.be/7Dhl) <br/>
 Ryan Poplin, Pi-Chuan Chang, David Alexander, Scott Schwartz, Thomas Colthurst, Alexander Ku, Dan Newburger, Jojo Dijamco, Nam Nguyen, Pegah T. Afshar, Sam S. Gross, Lizzie Dorfman, Cory Y. McLean, and Mark A. DePristo.<br/>
 doi: https://doi.org/10.1038/nbt.4235
 
@@ -110,11 +110,11 @@ Additionally, if you are generating multi-sample calls using our
 [DeepVariant and GLnexus Best Practices](docs/trio-merge-case-study.md), please
 cite:
 
-[Accurate, scalable cohort variant calls using DeepVariant and GLnexus. bioRxiv
-10.1101/2020.02.10.942086v1 (2020).](https://www.biorxiv.org/content/10.1101/2020.02.10.942086v1)<br/>
+[Accurate, scalable cohort variant calls using DeepVariant and GLnexus.
+_Bioinformatics_ (2021).](https://doi.org/10.1093/bioinformatics/btaa1081)<br/>
 Taedong Yun, Helen Li, Pi-Chuan Chang, Michael F. Lin, Andrew Carroll, and Cory Y.
 McLean.<br/>
-doi: https://doi.org/10.1101/2020.02.10.942086
+doi: https://doi.org/10.1093/bioinformatics/btaa1081
 
 ## Why Use DeepVariant?
 
