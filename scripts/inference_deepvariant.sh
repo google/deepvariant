@@ -11,6 +11,7 @@ inference_deepvariant.sh --model_preset "WGS" --docker_build true --use_gpu true
 Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
+--use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO.
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
@@ -35,6 +36,7 @@ Note: All paths to dataset must be of the form "gs://..."
 # Booleans; sorted alphabetically.
 BUILD_DOCKER=false
 USE_GPU=false
+USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 # Strings; sorted alphabetically.
 BAM=""
 BIN_VERSION=""
@@ -67,6 +69,16 @@ while (( "$#" )); do
       USE_GPU="$2"
       if [[ ${USE_GPU} != "true" ]] && [[ ${USE_GPU} != "false" ]]; then
         echo "Error: --use_gpu needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --use_hp_information)
+      USE_HP_INFORMATION="$2"
+      if [[ "${USE_HP_INFORMATION}" != "true" ]] && [[ "${USE_HP_INFORMATION}" != "false" ]]; then
+        echo "Error: --use_hp_information needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -210,6 +222,19 @@ else
 
 fi
 
+## Flag consistency sanity checks.
+
+## The user should have not set --use_hp_information if it's not PACBIO.
+if [[ "${USE_HP_INFORMATION}" != "unset" ]] && [[ "${MODEL_TYPE}" != "PACBIO" ]]; then
+  echo "Error: Only set --use_hp_information for PACBIO." >&2
+  exit 1
+fi
+if [[ "${USE_HP_INFORMATION}" == "unset" ]] && [[ "${MODEL_TYPE}" == "PACBIO" ]]; then
+  # This is for backward-compatibility.
+  echo "For PACBIO, set use_hp_information=true if it's not explicitly set."
+  USE_HP_INFORMATION="true"
+fi
+
 N_SHARDS="64"
 INPUT_DIR="${BASE}/input/data"
 OUTPUT_DIR="${BASE}/output"
@@ -217,9 +242,6 @@ OUTPUT_VCF="deepvariant.output.vcf.gz"
 OUTPUT_GVCF="deepvariant.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
-if [[ "${MODEL_TYPE}" = "PACBIO" ]]; then
-  extra_args+=( --use_hp_information )
-fi
 if [[ "${MODEL_TYPE}" = "WES" ]]; then
   if [[ -n "${REGIONS}" ]]; then
     echo "Error: --regions is not used with model_type WES. Please use --capture_bed." >&2
@@ -233,6 +255,7 @@ echo "========================="
 echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "USE_GPU: ${USE_GPU}"
+echo "USE_HP_INFORMATION: ${USE_HP_INFORMATION}"
 echo "# Strings; sorted alphabetically."
 echo "BAM: ${BAM}"
 echo "BIN_VERSION: ${BIN_VERSION}"
@@ -381,6 +404,11 @@ function run_deepvariant_with_docker() {
   fi
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
     extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
+  fi
+  if [[ "${USE_HP_INFORMATION}" == "true" ]] || [[ "${USE_HP_INFORMATION}" == "false" ]]; then
+    # Note that because --use_hp_information is a binary flag, I need to use
+    # the --flag=(true|false) format, or use --[no]flag format.
+    extra_args+=( "--use_hp_information=${USE_HP_INFORMATION}" )
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
