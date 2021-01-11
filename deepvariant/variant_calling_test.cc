@@ -917,6 +917,74 @@ TEST_F(VariantCallingTest, TestCallsFromVcfQueryingVcf) {
       reader.get()), "Not found: Unknown reference_name 'contigNotInVcf'");
 }
 
+TEST_F(VariantCallingTest, TestCallsFromVcfDetails) {
+  // redacted
+  // For human readability, here is the content of the VCF:
+  /*
+  $ zcat learning/genomics/deepvariant/testdata/input/test_calls_from_vcf.vcf.gz
+  ##fileformat=VCFv4.2
+  ##contig=<ID=contigInHeaderWithCandidates,length=10>
+  ##contig=<ID=contigInHeaderNoCandidates,length=10>
+  #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  default
+  contigInHeaderWithCandidates    3       .       T       G       60      PASS    .       GT      ./.
+  contigNotInHeaderWithCandidates 1       .       A       G       60      PASS    .       GT      ./.
+  */
+  const VariantCaller caller(MakeOptions());
+  std::unique_ptr<nucleus::VcfReader> reader = std::move(
+      nucleus::VcfReader::FromFile(
+          nucleus::GetTestData("test_calls_from_vcf.vcf.gz",
+                               "deepvariant/testdata/input"),
+          nucleus::genomics::v1::VcfReaderOptions())
+          .ValueOrDie());
+  // The AlleleCount represents 10 reads.
+  // 5 reads supporting ref "T"
+  // 3 reads supporting alt "A"
+  // 2 reads supporting alt "G"
+  // ---------------
+  //   POS: 0123456
+  //   REF:   T
+  // ---------------
+  // Reads:   A
+  //          A
+  //          A
+  //          G
+  //          G
+  //          T
+  //          T
+  //          T
+  //          T
+  //          T
+  // ---------------
+  const AlleleCount allele_count =
+      MakeAlleleCount("contigInHeaderWithCandidates",  // chr_name
+                      2,                               // start
+                      "T",                             // ref_base
+                      5,  // ref_supporting_read_count
+                      {MakeAllele("A", AlleleType::SUBSTITUTION, 1),
+                       MakeAllele("A", AlleleType::SUBSTITUTION, 1),
+                       MakeAllele("A", AlleleType::SUBSTITUTION, 1),
+                       MakeAllele("G", AlleleType::SUBSTITUTION, 1),
+                       MakeAllele("G", AlleleType::SUBSTITUTION, 1)});
+
+  // Querying contigInHeaderWithCandidates returns 1 candidate.
+  std::vector<DeepVariantCall> candidates = caller.CallsFromVcf(
+      {allele_count}, MakeRange("contigInHeaderWithCandidates", 0, 5),
+      reader.get());
+  EXPECT_EQ(candidates.size(), 1);
+  EXPECT_EQ(candidates[0].variant().reference_bases(), "T");
+  EXPECT_EQ(candidates[0].variant().alternate_bases_size(), 1);
+  EXPECT_EQ(candidates[0].variant().alternate_bases(0), "G");
+  EXPECT_EQ(candidates[0].variant().calls_size(), 1);
+  EXPECT_EQ(candidates[0].variant().calls(0).info_size(), 3);
+  EXPECT_EQ(candidates[0].variant().calls(0).info().at("AD").ShortDebugString(),
+            "values { int_value: 5 } values { int_value: 2 }");
+  EXPECT_EQ(candidates[0].variant().calls(0).info().at("DP").ShortDebugString(),
+            "values { int_value: 10 }");
+  EXPECT_EQ(
+      candidates[0].variant().calls(0).info().at("VAF").ShortDebugString(),
+      "values { number_value: 0.2 }");
+}
+
 TEST_F(VariantCallingTest, TestCallsFromVariantsInRegion) {
   // Our test AlleleCounts are 5 positions:
   //
