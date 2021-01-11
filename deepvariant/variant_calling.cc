@@ -376,10 +376,9 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
-    const AlleleCounter& allele_counter,
+    const std::vector<AlleleCount>& allele_counts,
+    const Range& range,
     nucleus::VcfReader* vcf_reader_ptr) const {
-  std::vector<AlleleCount> allele_counts = allele_counter.Counts();
-  Range range = allele_counter.Interval();
   std::vector<Variant> variants_in_region;
   // An error here is fatal and whole program will fail if unable to query vcf.
   std::shared_ptr<nucleus::VariantIterable> variants =
@@ -401,6 +400,13 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
     }
   }
   return CallsFromVariantsInRegion(allele_counts, variants_in_region);
+}
+
+std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
+    const AlleleCounter& allele_counter,
+    nucleus::VcfReader* vcf_reader_ptr) const {
+  return CallsFromVcf(allele_counter.Counts(), allele_counter.Interval(),
+                      vcf_reader_ptr);
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
