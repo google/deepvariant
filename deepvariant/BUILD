@@ -155,10 +155,12 @@ cc_test(
     name = "variant_calling_test",
     size = "small",
     srcs = ["variant_calling_test.cc"],
+    data = ["//deepvariant:testdata"],
     deps = [
         ":utils",
         ":variant_calling",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/io:vcf_reader",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",

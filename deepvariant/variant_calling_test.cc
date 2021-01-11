@@ -36,6 +36,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "google/protobuf/repeated_field.h"
+#include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -49,6 +50,8 @@ namespace deepvariant {
 
 using nucleus::EqualsProto;
 using nucleus::MakePosition;
+using nucleus::MakeRange;
+using nucleus::VcfReader;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using tensorflow::gtl::optional;
@@ -873,6 +876,45 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
   ASSERT_THAT(candidates.size(), Eq(2));
   EXPECT_THAT(candidates[0].variant(), EqualsProto(variant2));
   EXPECT_THAT(candidates[1].variant(), EqualsProto(variant5));
+}
+
+TEST_F(VariantCallingTest, TestCallsFromVcfQueryingVcf) {
+  // redacted
+  // For human readability, here is the content of the VCF:
+  /*
+  $ zcat learning/genomics/deepvariant/testdata/input/test_calls_from_vcf.vcf.gz
+  ##fileformat=VCFv4.2
+  ##contig=<ID=contigInHeaderWithCandidates,length=10>
+  ##contig=<ID=contigInHeaderNoCandidates,length=10>
+  #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  default
+  contigInHeaderWithCandidates    3       .       T       G       60      PASS    .       GT      ./.
+  contigNotInHeaderWithCandidates 1       .       A       G       60      PASS    .       GT      ./.
+  */
+  const VariantCaller caller(MakeOptions());
+  std::unique_ptr<nucleus::VcfReader> reader = std::move(
+      nucleus::VcfReader::FromFile(
+          nucleus::GetTestData("test_calls_from_vcf.vcf.gz",
+                               "deepvariant/testdata/input"),
+          nucleus::genomics::v1::VcfReaderOptions())
+          .ValueOrDie());
+  std::vector<AlleleCount> allele_count_not_used = {AlleleCount()};
+
+  // Querying in contigInHeaderWithCandidates returns one candidate.
+  std::vector<DeepVariantCall> candidates1 = caller.CallsFromVcf(
+      allele_count_not_used, MakeRange("contigInHeaderWithCandidates", 0, 5),
+      reader.get());
+  EXPECT_EQ(candidates1.size(), 1);
+
+  // Querying contigInHeaderNoCandidates returns 0 candidate and doesn't crash.
+  std::vector<DeepVariantCall> candidates2 = caller.CallsFromVcf(
+      allele_count_not_used, MakeRange("contigInHeaderNoCandidates", 0, 5),
+      reader.get());
+  EXPECT_EQ(candidates2.size(), 0);
+
+  // Querying contigNotInVcf currently crashes. redacted
+  EXPECT_DEATH(caller.CallsFromVcf(
+      allele_count_not_used, MakeRange("contigNotInVcf", 0, 5),
+      reader.get()), "Not found: Unknown reference_name 'contigNotInVcf'");
 }
 
 TEST_F(VariantCallingTest, TestCallsFromVariantsInRegion) {
