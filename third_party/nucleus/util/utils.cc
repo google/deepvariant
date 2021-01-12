@@ -48,7 +48,6 @@ using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Position;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
-using nucleus::genomics::v1::ReadRequirements;
 using nucleus::genomics::v1::Variant;
 
 using absl::string_view;
@@ -251,22 +250,6 @@ bool IsReadProperlyPlaced(const Read& read) {
           read.next_mate_position().reference_name().empty() ||
           !read.has_alignment() ||
           AlignedContig(read) == read.next_mate_position().reference_name());
-}
-
-bool ReadSatisfiesRequirements(const Read& read,
-                               const ReadRequirements& requirements) {
-  return (requirements.keep_duplicates() || !read.duplicate_fragment()) &&
-         (requirements.keep_failed_vendor_quality_checks() ||
-          !read.failed_vendor_quality_checks()) &&
-         (requirements.keep_secondary_alignments() ||
-          !read.secondary_alignment()) &&
-         (requirements.keep_supplementary_alignments() ||
-          !read.supplementary_alignment()) &&
-         (requirements.keep_unaligned() || read.has_alignment()) &&
-         (requirements.keep_improperly_placed() ||
-          IsReadProperlyPlaced(read)) &&
-         (!read.has_alignment() || read.alignment().mapping_quality() >=
-                                       requirements.min_mapping_quality());
 }
 
 inline string_view ClippedSubstr(string_view s, size_t pos, size_t n) {

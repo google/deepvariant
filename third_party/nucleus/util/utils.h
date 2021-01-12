@@ -179,11 +179,6 @@ inline bool ReadOverlapsRegionPython(
 // strict than the proper pair SAM flag.
 bool IsReadProperlyPlaced(const nucleus::genomics::v1::Read& read);
 
-// Returns false if Read does not satisfy all of the ReadRequirements.
-bool ReadSatisfiesRequirements(
-    const nucleus::genomics::v1::Read& read,
-    const nucleus::genomics::v1::ReadRequirements& requirements);
-
 // Return a string_view that reflects removing quotation from the ends the
 // input.  (e.g. '"foo"' -> "foo"; '\'foo\'' -> 'foo')
 // If the input string not quoted (on both sides, using the same quote mark),

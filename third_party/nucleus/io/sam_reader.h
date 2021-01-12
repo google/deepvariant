@@ -194,6 +194,15 @@ class SamReader : public Reader {
   mutable FractionalSampler sampler_;
 };
 
+namespace sam_reader_internal {
+
+// Returns false if Read does not satisfy all of the ReadRequirements.
+bool ReadSatisfiesRequirements(
+    const nucleus::genomics::v1::Read& read,
+    const nucleus::genomics::v1::ReadRequirements& requirements);
+
+}  // namespace sam_reader_internal
+
 }  // namespace nucleus
 
 #endif  // THIRD_PARTY_NUCLEUS_IO_SAM_READER_H_

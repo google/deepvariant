@@ -200,7 +200,39 @@ void AddProgramToHeader(const string& line,
   }
 }
 
+// This function is only checking the Read fields that has been filled.
+// If you're modifying this function, please make sure any fields here have
+// been previously filled.
+bool PartialReadSatisfiesRequirements(
+    const Read& read,
+    const nucleus::genomics::v1::ReadRequirements& requirements) {
+  // Using the fields that have been filled so far to check a subset of the
+  // requirement in ReadSatisfiesRequirements function in utils.cc.
+  // This helps us to abort earlier as needed.
+  return (requirements.keep_duplicates() || !read.duplicate_fragment()) &&
+         (requirements.keep_failed_vendor_quality_checks() ||
+          !read.failed_vendor_quality_checks()) &&
+         (requirements.keep_secondary_alignments() ||
+          !read.secondary_alignment()) &&
+         (requirements.keep_supplementary_alignments() ||
+          !read.supplementary_alignment());
+}
+
 }  // namespace
+
+namespace sam_reader_internal {
+// Returns false if Read does not satisfy all of the ReadRequirements.
+bool ReadSatisfiesRequirements(
+    const Read& read,
+    const nucleus::genomics::v1::ReadRequirements& requirements) {
+  return PartialReadSatisfiesRequirements(read, requirements) &&
+      (requirements.keep_unaligned() || read.has_alignment()) &&
+      (requirements.keep_improperly_placed() ||
+       IsReadProperlyPlaced(read)) &&
+      (!read.has_alignment() || read.alignment().mapping_quality() >=
+       requirements.min_mapping_quality());
+}
+} // namespace sam_reader_internal
 
 // -----------------------------------------------------------------------------
 //
@@ -441,6 +473,10 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
                     "Could not read base quality scores");
 }
 
+// Returns with tensorflow::error::Code::ABORTED if the read doesn't
+// satisfy read requirements. When that happens, the function aborts early and
+// doesn't fill the other fields such as aligned_sequence, which can be
+// expensive in long reads.
 tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
                        const SamReaderOptions& options, Read* read_message) {
   CHECK(h != nullptr) << "BAM header cannot be null";
@@ -467,6 +503,13 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
   bool paired = c->flag & BAM_FPAIRED;
   read_message->set_read_number(c->flag & BAM_FREAD1 || !paired ? 0 : 1);
   read_message->set_number_reads(paired ? 2 : 1);
+
+  if (options.has_read_requirements() &&
+      !PartialReadSatisfiesRequirements(*read_message,
+                                        options.read_requirements())) {
+    return tf::Status(tensorflow::error::Code::ABORTED,
+                      "Read doesn't satisfy requirements.");
+  }
 
   if (c->l_qseq) {
     // Convert the seq if it is present.
@@ -714,7 +757,8 @@ SamReader::~SamReader() {
 // Returns true if read should be returned to the client, or false otherwise.
 bool SamReader::KeepRead(const nucleus::genomics::v1::Read& read) const {
   return (!options_.has_read_requirements() ||
-          ReadSatisfiesRequirements(read, options_.read_requirements())) &&
+          sam_reader_internal::ReadSatisfiesRequirements(
+              read, options_.read_requirements())) &&
          // Downsample if the downsampling fraction is set.
          // Note that this can in be moved into the lower-level reader loops for
          // a slight efficiency gain (don't have to convert from bam_t to Read
@@ -791,7 +835,12 @@ StatusOr<bool> SamIterableBase::Next(Read* out) {
       return tf::errors::DataLoss("Failed to parse SAM record");
     }
     // Convert to proto.
-    TF_RETURN_IF_ERROR(ConvertToPb(header_, bam1_, sam_reader->options(), out));
+    tf::Status status = ConvertToPb(header_, bam1_, sam_reader->options(), out);
+    if (status.code() == tensorflow::error::Code::ABORTED) {
+      // "ABORT" from ConvertToPb means requirements were not met.
+      continue;
+    }
+    TF_RETURN_IF_ERROR(status);
   } while (!sam_reader->KeepRead(*out));
   return true;
 }

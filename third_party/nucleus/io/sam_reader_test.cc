@@ -50,14 +50,15 @@
 
 namespace nucleus {
 
+using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::ReadRequirements;
 using nucleus::genomics::v1::SamHeader;
 using nucleus::genomics::v1::SamReaderOptions;
 using nucleus::proto::IgnoringFieldPaths;
 using nucleus::proto::Partially;
 using std::vector;
-using ::testing::Eq;
 using ::testing::IsEmpty;
 using ::testing::Pointwise;
 using ::testing::SizeIs;
@@ -387,5 +388,115 @@ TEST_F(SamReaderQueryTest, NextFailsOnReleasedIterable) {
   ASSERT_THAT(it->Release(), IsOK());
   EXPECT_THAT(it->Next(&read), IsNotOKWithMessage("Reader is not alive"));
 }
+
+namespace sam_reader_internal {
+
+class ReadRequirementTest : public ::testing::Test {
+ protected:
+  Read read_;
+  ReadRequirements reqs_;
+
+  ReadRequirementTest() {
+    read_.set_fragment_name("read1");
+    read_.set_aligned_sequence("ABC");
+    read_.set_number_reads(2);
+    read_.set_proper_placement(true);
+    LinearAlignment& aln = *read_.mutable_alignment();
+    aln.set_mapping_quality(90);
+    *aln.mutable_position() = MakePosition("chr1", 10);
+  }
+};
+
+TEST_F(ReadRequirementTest, ThatEmptyReadFailsBecauseOfNoAlignment) {
+  Read read = Read();
+  EXPECT_FALSE(ReadSatisfiesRequirements(read, reqs_));
+  *(read.mutable_alignment()->mutable_position()) = MakePosition("chr1", 1);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestBaseReadSatisfiesRequirements) {
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestDuplicateFilter) {
+  read_.set_duplicate_fragment(true);
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+  reqs_.set_keep_duplicates(true);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestVenderFilter) {
+  read_.set_failed_vendor_quality_checks(true);
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+  reqs_.set_keep_failed_vendor_quality_checks(true);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestSecondaryAlignmentFilter) {
+  read_.set_secondary_alignment(true);
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+  reqs_.set_keep_secondary_alignments(true);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestSupplmentaryAlignmentFilter) {
+  read_.set_supplementary_alignment(true);
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+  reqs_.set_keep_supplementary_alignments(true);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestProperPlacement) {
+  // We don't use reads that aren't properly placed. Here the read's mate is
+  // mapped to chrX but the read is mapped to chr1. This is an improper pair.
+  read_.set_proper_placement(false);
+  *read_.mutable_next_mate_position() = MakePosition("chrX", 25);
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+  // Now the read's mate is mapped to chr1 so it is properly placed.
+  *read_.mutable_next_mate_position() = MakePosition("chr1", 25);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+  reqs_.set_keep_improperly_placed(true);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestSingleEndedProperPlacement) {
+  // Singled ended reads pass.
+  read_.set_number_reads(1);
+  read_.set_proper_placement(false);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+  reqs_.set_keep_improperly_placed(true);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+TEST_F(ReadRequirementTest, TestMappingQuality) {
+  const int min_mapq = 10;
+
+  // There's no minimum set, so even with mapq 0 this read should pass.
+  read_.mutable_alignment()->set_mapping_quality(0);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+
+  // We also keep reads with the default mapping_quality.
+  read_.mutable_alignment()->clear_mapping_quality();
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+
+  // Setting the min_mapping_quality now rejects the read.
+  reqs_.set_min_mapping_quality(min_mapq);
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+
+  // Check that the min_mapping_quality calculation is correct.
+  read_.mutable_alignment()->set_mapping_quality(min_mapq - 1);
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+  read_.mutable_alignment()->set_mapping_quality(min_mapq);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+
+  // A read without a alignment but otherwise good will pass even without
+  // satisfying our mapping quality as long as keep_unaligned is true.
+  read_.clear_alignment();
+  EXPECT_FALSE(ReadSatisfiesRequirements(read_, reqs_));
+  reqs_.set_keep_unaligned(true);
+  EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
+}
+
+}  // namespace sam_reader_internal
 
 }  // namespace nucleus
