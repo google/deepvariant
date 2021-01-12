@@ -134,13 +134,13 @@ class VisTest(parameterized.TestCase):
   @parameterized.parameters((None,), ('RGB',))
   def test_draw_deepvariant_pileup_with_example_input(self, composite_type):
     _, example = _mock_example_with_image((100, 10, 7))
-    # Testing that it runs without error
+    # Test that it runs without error.
     vis.draw_deepvariant_pileup(example=example, composite_type=composite_type)
 
   @parameterized.parameters((None,), ('RGB',))
   def test_draw_deepvariant_pileup_with_channels_input(self, composite_type):
     channels = [_image_array((100, 221)) for _ in range(6)]
-    # Testing that it runs without error.
+    # Test that it runs without error.
     vis.draw_deepvariant_pileup(
         channels=channels, composite_type=composite_type)
 
@@ -368,26 +368,141 @@ class VisTest(parameterized.TestCase):
     golden_pileup = filler_channels + [_mock_pileup_array_with_reads()]
 
     self.assertEqual(1, vis.fraction_read_support(all_support))
-    self.assertEqual('all', vis.describe_read_support(all_support))
+    self.assertEqual(vis.ReadSupport.ALL,
+                     vis.describe_read_support(all_support))
 
     self.assertEqual(0, vis.fraction_read_support(no_support))
-    self.assertEqual('low', vis.describe_read_support(no_support))
+    self.assertEqual(vis.ReadSupport.LOW, vis.describe_read_support(no_support))
 
     self.assertEqual(0, vis.fraction_read_support(empty))
-    self.assertEqual('low', vis.describe_read_support(empty))
+    self.assertEqual(vis.ReadSupport.LOW, vis.describe_read_support(empty))
 
     self.assertEqual(0.75, vis.fraction_read_support(golden_pileup))
-    self.assertEqual('half', vis.describe_read_support(golden_pileup))
+    self.assertEqual(vis.ReadSupport.HALF,
+                     vis.describe_read_support(golden_pileup))
 
   @parameterized.parameters([
       dict(k=12, n=24, expected_p=1.0),
       dict(k=1, n=4, expected_p=0.625),
+      dict(k=3, n=4, expected_p=0.625),
       dict(k=0, n=4, expected_p=0.125),
-      dict(k=0, n=8, expected_p=0.0078125)
+      dict(k=4, n=4, expected_p=0.125),
+      dict(k=0, n=8, expected_p=0.0078125),
+      dict(k=8, n=8, expected_p=0.0078125)
   ])
   def test_binomial_test(self, k, n, expected_p):
     observed_p = vis.binomial_test(k=k, n=n)
     self.assertEqual(expected_p, observed_p)
+
+  @parameterized.parameters([
+      dict(test_case='support = forward', expected=0.0625),
+      dict(test_case='support = reverse', expected=0.0625),
+      dict(test_case='support = 5+/5-', expected=1.0),
+      dict(test_case='support = 2+/2-', expected=1.0),
+      # From scipy.stats.binom_test(x=1, n=6):
+      dict(test_case='support = 1+/5-', expected=0.21875),
+      # For two-tailed, this must match the previous:
+      dict(test_case='support = 5+/1-', expected=0.21875)
+  ])
+  def test_pvalue_for_strand_bias(self, test_case, expected):
+    shape = (15, 4)
+    strand = np.zeros(shape)
+    strand[5:10, :] = 240  # Forward.
+    strand[10:15, :] = 70  # Reverse.
+
+    read_support = np.zeros(shape)
+    if test_case == 'support = forward':
+      read_support[5:10, :] = 254  # Supporting.
+      read_support[10:15, :] = 100  # Anything not 254 means not supporting.
+    elif test_case == 'support = reverse':
+      read_support[5:10, :] = 100  # Not supporting.
+      read_support[10:15, :] = 254  # Supporting.
+    elif test_case == 'support = 5+/5-':
+      read_support[5:15, :] = 254  # All support: five forward, five reverse.
+    elif test_case == 'support = 2+/2-':
+      read_support[5:15, :] = 100  # Most not supporting.
+      read_support[8:12, :] = 254  # Two supporting from each strand.
+    elif test_case == 'support = 1+/5-':
+      read_support[5:15, :] = 100  # Most not supporting.
+      read_support[5:6, :] = 254  # One forward support.
+      read_support[10:15, :] = 254  # Five reverse support.
+    elif test_case == 'support = 5+/1-':
+      read_support[5:15, :] = 100  # Most not supporting.
+      read_support[5:10, :] = 254  # Five forward support.
+      read_support[10:11, :] = 254  # One reverse support.
+    else:
+      raise ValueError('test_case not recognized')
+
+    filler_channels = [0] * 3
+    channels = filler_channels + [strand, read_support]
+    self.assertEqual(expected, vis.pvalue_for_strand_bias(channels))
+
+  @parameterized.parameters([
+      dict(
+          test_case='nearby_variants',
+          expected_description=vis.Diff.NEARBY_VARIANTS,
+          expected_diff_fraction=0.0,
+          expected_nearby_variants=5),
+      dict(
+          test_case='few_diffs',
+          expected_description=vis.Diff.FEW_DIFFS,
+          expected_diff_fraction=0.0,
+          expected_nearby_variants=2),
+      dict(
+          test_case='many_diffs',
+          expected_description=vis.Diff.MANY_DIFFS,
+          expected_diff_fraction=0.1,
+          expected_nearby_variants=0),
+      dict(
+          test_case='empty',
+          expected_description=vis.Diff.FEW_DIFFS,
+          expected_diff_fraction=0.0,
+          expected_nearby_variants=0)
+  ])
+  def test_analyze_diff_and_nearby_variants_and_describe_diff(
+      self, test_case, expected_description, expected_diff_fraction,
+      expected_nearby_variants):
+    shape = (15, 8)
+    diff_channel = np.zeros(shape) + 100
+    if test_case == 'nearby_variants':
+      # Five columns with homozygous variants:
+      diff_channel[5:, [0, 1, 2, 4, 6]] = 254
+    elif test_case == 'few_diffs':
+      # Less than five columns with homozygous variants:
+      diff_channel[5:, [2, 5]] = 254
+    elif test_case == 'many_diffs':
+      # One read full of differences:
+      diff_channel[5, 0:8] = 254
+    elif test_case == 'empty':
+      # No reads:
+      diff_channel = np.zeros(shape)
+    else:
+      raise ValueError('test_case not recognized')
+    filler_channels = [0] * 5
+    channels = filler_channels + [diff_channel]
+    diff_fraction, nearby_variants = vis.analyze_diff_and_nearby_variants(
+        channels)
+    self.assertEqual(diff_fraction, expected_diff_fraction)
+    self.assertEqual(nearby_variants, expected_nearby_variants)
+    self.assertEqual(expected_description, vis.describe_diff(channels))
+
+  def test_curate_pileup(self):
+    # Use the same pileup array for all of the channels.
+    # It has 4 reads, 2 of which are high values throughout the read, one read
+    # is all low values, and one read is high values except 2 lower-value bases.
+    channels = [_mock_pileup_array_with_reads() for _ in range(6)]
+    tags = vis.curate_pileup(channels)
+
+    # One read plus a few bases are low quality:
+    self.assertEqual(tags.base_quality, vis.BaseQuality.BAD)
+    # One fully low quality read out of four is enough to be "bad" mapq:
+    self.assertEqual(tags.mapping_quality, vis.MappingQuality.BAD)
+    # Not enough reads to get a p-value below 0.05 for strand bias:
+    self.assertEqual(tags.strand_bias, vis.StrandBias.GOOD)
+    # Many differences (large fraction of high values):
+    self.assertEqual(tags.diff_category, vis.Diff.MANY_DIFFS)
+    # One of four reads supporting is interpreted as roughly heterozygous:
+    self.assertEqual(tags.read_support, vis.ReadSupport.HALF)
 
 
 if __name__ == '__main__':

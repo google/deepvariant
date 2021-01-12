@@ -39,8 +39,9 @@ from __future__ import division
 # removed import for python2 type annotation support
 from __future__ import print_function
 
+import enum
 import math
-from typing import List
+from typing import List, Tuple, NamedTuple
 
 from IPython import display
 import numpy as np
@@ -55,6 +56,41 @@ DEEPVARIANT_CHANNEL_NAMES = [
     'read supports variant', 'base differs from ref', 'alternate allele 1',
     'alternate allele 2'
 ]
+
+
+class Diff(enum.Enum):
+  FEW_DIFFS = 1
+  MANY_DIFFS = 2
+  NEARBY_VARIANTS = 3
+
+
+class BaseQuality(enum.Enum):
+  GOOD = 1
+  BAD = 2
+
+
+class MappingQuality(enum.Enum):
+  GOOD = 1
+  BAD = 2
+
+
+class StrandBias(enum.Enum):
+  GOOD = 1
+  BIASED = 2
+
+
+class ReadSupport(enum.Enum):
+  ALL = 1
+  HALF = 2
+  LOW = 3
+
+
+PileupCuration = NamedTuple('PileupCuration',
+                            [('base_quality', BaseQuality),
+                             ('mapping_quality', MappingQuality),
+                             ('strand_bias', StrandBias),
+                             ('diff_category', Diff),
+                             ('read_support', ReadSupport)])
 
 
 def get_image_array_from_example(example):
@@ -629,27 +665,27 @@ def fraction_read_support(channels: List[np.ndarray]) -> float:
   return sum(non_zero_values == 254) * 1.0 / num_non_zero
 
 
-def describe_read_support(channels: List[np.ndarray]) -> str:
+def describe_read_support(channels: List[np.ndarray]) -> ReadSupport:
   """Calculates read support and describes it categorically.
 
   Computes read support as a fraction and returns a convenient descriptive term
-  according to the following thresholds: 'low' is [0, 0.3],
-  'half' is (0.3, 0.8], and 'all' is (0.8, 1].
+  according to the following thresholds: LOW is [0, 0.3], HALF is (0.3, 0.8],
+  and ALL is (0.8, 1].
 
   Args:
       channels: A list of channels of a DeepVariant pileup image. This only uses
         channels[4], the 'read supports variant' channel.
 
   Returns:
-      Categorical description of the read support: 'all', 'half', or 'low'.
+      A ReadSupport value.
   """
   fraction_support = fraction_read_support(channels)
   if fraction_support > 0.8:
-    return 'all'
+    return ReadSupport.ALL
   elif fraction_support > 0.3:
-    return 'half'
+    return ReadSupport.HALF
   else:
-    return 'low'
+    return ReadSupport.LOW
 
 
 def binomial_test(k: int, n: int) -> float:
@@ -667,6 +703,8 @@ def binomial_test(k: int, n: int) -> float:
   Returns:
     The p-value for the binomial test.
   """
+  if not k <= n:
+    raise ValueError('k must be <= n')
   if k == n / 2:
     return 1.0
   sum_of_ps = 0
@@ -680,3 +718,139 @@ def binomial_test(k: int, n: int) -> float:
     p_for_i = n_choose_x * (0.5**n)
     sum_of_ps += p_for_i
   return sum_of_ps * 2  # Doubling because it's a two-tailed test.
+
+
+def pvalue_for_strand_bias(channels: List[np.ndarray]) -> float:
+  """Calculates a rough p-value for strand bias in pileup.
+
+  Using the strand and read-supports-variant channels, compares the numbers of
+  forward and reverse reads among the supporting reads and returns a p-value
+  using a two-tailed binomial test.
+
+  Args:
+      channels: List of DeepVariant channels. Uses channels[3] (strand) and
+        channels[4] (read support).
+
+  Returns:
+      P-value for whether the supporting reads show strand bias.
+  """
+  strand = remove_ref_band(channels[3])
+  forward_strand = strand == 240
+  reverse_strand = strand == 70
+
+  read_support = remove_ref_band(channels[4])
+  read_support = (read_support == 254) * 1.0
+  forward_support = read_support * forward_strand
+  reverse_support = read_support * reverse_strand
+
+  forward_supporting = int(sum(np.amax(forward_support, axis=1)))
+  reverse_supporting = int(sum(np.amax(reverse_support, axis=1)))
+
+  return binomial_test(
+      k=forward_supporting, n=forward_supporting + reverse_supporting)
+
+
+def analyze_diff_and_nearby_variants(
+    channels: List[np.ndarray]) -> Tuple[float, int]:
+  """Analyzes which differences belong to nearby variants and which do not.
+
+  This attempts to identify putative nearby variants from the pileup image
+  alone, and then excludes these columns of the pileup to calculate the
+  remaining fraction of differences that may be attributed to sequencing errors.
+
+  Args:
+      channels: A list of channels of a DeepVariant pileup image. This only uses
+        channels[5], the 'differs from ref' channel.
+
+  Returns:
+      Two outputs: diff fraction, number of likely nearby variants.
+  """
+  diff_channel = remove_ref_band(channels[5])
+
+  # Count the number of diff pixels per column.
+  column_diffs = np.sum(diff_channel == 254, axis=0)
+  # Count number of differences per base position.
+  column_read_count = np.sum(diff_channel != 0, axis=0)
+  # Divide to get the fraction of reads showing a diff at each base (column).
+  # Adding 1 here avoids dividing by zero (exact fraction here is not vital).
+  fraction = column_diffs * 1.0 / (column_read_count + 1)
+
+  # Columns with more differences could be variants.
+  nearby_variant_columns = (fraction > 0.1) * (column_diffs > 4) * 1
+  num_potential_nearby_variants = sum(nearby_variant_columns)
+
+  # Exclude potential variants when calculating error fraction.
+  nearby_variant_mask = np.array([nearby_variant_columns] *
+                                 diff_channel.shape[0])
+  mask_to_remove_nearby_variants = 1 - nearby_variant_mask
+  non_variant_diffs = (diff_channel == 254) * mask_to_remove_nearby_variants
+
+  # Calculate differences as fraction of the total number of read bases.
+  total_read_area = np.sum((diff_channel != 0))
+  diff_fraction = 0 if total_read_area == 0 else np.sum(
+      non_variant_diffs) / total_read_area
+  return diff_fraction, num_potential_nearby_variants
+
+
+def describe_diff(channels: List[np.ndarray],
+                  diff_fraction_threshold: float = 0.01) -> Diff:
+  """Describes a pileup image by its diff channel, including nearby variants.
+
+  Returns Diff.MANY_DIFFS if the fraction of differences outside potential
+  nearby variants is above the diff_fraction_threshold, which is usually
+  indicative of sequencing errors. Otherwise return Diff.NEARBY_VARIANTS if
+  there are five or more of these, or Diff.FEW_DIFFS if neither of these
+  special cases apply.
+
+  Args:
+      channels: A list of channels of a DeepVariant pileup image. This only uses
+        channels[5], the 'differs from ref' channel.
+      diff_fraction_threshold: Fraction of total bases of all reads that can
+        differ, above which the pileup will be designated as 'many_diffs'.
+        Differences that appear due to nearby variants (neater columns) do not
+        count towards this threshold. The default is set by visual curation of
+        Illumina reads, so it may be necessary to increase this for higher-error
+        sequencing types.
+
+  Returns:
+      One Diff value.
+  """
+  diff_fraction, nearby_variants = analyze_diff_and_nearby_variants(channels)
+  # Thresholds were chosen by visual experimentation, i.e. human curation.
+  if diff_fraction > diff_fraction_threshold:
+    return Diff.MANY_DIFFS
+  elif nearby_variants >= 5:
+    return Diff.NEARBY_VARIANTS
+  else:
+    return Diff.FEW_DIFFS
+
+
+def curate_pileup(channels: List[np.ndarray]) -> PileupCuration:
+  """Runs all automated curation functions and outputs categorical tags.
+
+  The following values are possible for each descriptor:
+  * base_quality: GOOD (>5% low quality) or BAD.
+  * mapping_quality: GOOD (<5% low quality) or BAD.
+  * strand_biased: BIASED (p-value < 0.05) or GOOD.
+  * diff_category: MANY_DIFFS (>1% differences), NEARBY_VARIANTS (5+ variants),
+  or FEW_DIFFS otherwise.
+  * read_support: LOW (<=30%), HALF (30-80%), ALL (>80%).
+
+  The thresholds were all set by trying to match human curation.
+
+  Args:
+      channels: A list of DeepVariant channels.
+
+  Returns:
+      A PileupCuration NamedTuple.
+  """
+
+  return PileupCuration(
+      base_quality=BaseQuality.GOOD
+      if fraction_low_base_quality(channels) < 0.05 else BaseQuality.BAD,
+      mapping_quality=MappingQuality.GOOD
+      if fraction_reads_with_low_mapq(channels) < 0.05 else MappingQuality.BAD,
+      strand_bias=StrandBias.BIASED
+      if pvalue_for_strand_bias(channels) < 0.05 else StrandBias.GOOD,
+      diff_category=describe_diff(channels),
+      read_support=describe_read_support(channels))
