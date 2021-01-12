@@ -380,24 +380,30 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
     const Range& range,
     nucleus::VcfReader* vcf_reader_ptr) const {
   std::vector<Variant> variants_in_region;
-  // An error here is fatal and whole program will fail if unable to query vcf.
-  std::shared_ptr<nucleus::VariantIterable> variants =
-      vcf_reader_ptr->Query(range).ValueOrDie();
-  for (const auto& v : variants) {
-    const Variant* variant = v.ValueOrDie();
-    // This ensures we only keep variants that start in this region. By default,
-    // vcf_reader->Query() returns all variants that overlap a region, which
-    // can incorrectly cause the same variant to be processed multiple times.
-    if (variant->start() >= range.start()) {
-      Variant clean_variant;
-      FillVariant(variant->reference_name(),
-                  variant->start(),
-                  variant->reference_bases(),
-                  options_.sample_name(),
-                  AsVector<string>(variant->alternate_bases()),
-                  &clean_variant);
-      variants_in_region.push_back(clean_variant);
+  nucleus::StatusOr<std::shared_ptr<nucleus::VariantIterable>> status =
+      vcf_reader_ptr->Query(range);
+  if (status.ok()) {
+    std::shared_ptr<nucleus::VariantIterable> variants = status.ValueOrDie();
+    for (const auto& v : variants) {
+      const Variant* variant = v.ValueOrDie();
+      // This ensures we only keep variants that start in this region.
+      // By default, vcf_reader->Query() returns all variants that overlap a
+      // region, which can incorrectly cause the same variant to be processed
+      // multiple times.
+      if (variant->start() >= range.start()) {
+        Variant clean_variant;
+        FillVariant(variant->reference_name(),
+                    variant->start(),
+                    variant->reference_bases(),
+                    options_.sample_name(),
+                    AsVector<string>(variant->alternate_bases()),
+                    &clean_variant);
+        variants_in_region.push_back(clean_variant);
+      }
     }
+  } else {
+    LOG(WARNING) << nucleus::MakeIntervalStr(range)
+        << " cannot be found in proposed VCF header. Skip this region.";
   }
   return CallsFromVariantsInRegion(allele_counts, variants_in_region);
 }

@@ -911,10 +911,11 @@ TEST_F(VariantCallingTest, TestCallsFromVcfQueryingVcf) {
       reader.get());
   EXPECT_EQ(candidates2.size(), 0);
 
-  // Querying contigNotInVcf currently crashes. redacted
-  EXPECT_DEATH(caller.CallsFromVcf(
+  // Querying contigNotInVcf returns empty results.
+  std::vector<DeepVariantCall> candidates3 = caller.CallsFromVcf(
       allele_count_not_used, MakeRange("contigNotInVcf", 0, 5),
-      reader.get()), "Not found: Unknown reference_name 'contigNotInVcf'");
+      reader.get());
+  EXPECT_EQ(candidates3.size(), 0);
 }
 
 TEST_F(VariantCallingTest, TestCallsFromVcfDetails) {
