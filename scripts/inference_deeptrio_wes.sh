@@ -291,11 +291,11 @@ function get_docker_image() {
     if [[ "${USE_GPU}" = true ]]
     then
       IMAGE="deeptrio_gpu:latest"
-      run echo "Done building GPU Docker image ${IMAGE}."
       run "sudo docker build \
         -f Dockerfile.deeptrio \
         --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04 \
         --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu ."
+      run echo "Done building GPU Docker image ${IMAGE}."
       docker_args+=( --gpus 1 )
     else
       IMAGE="deeptrio:latest"
