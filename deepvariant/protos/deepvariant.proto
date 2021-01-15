@@ -491,7 +491,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 37.
+// Next ID: 43.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -643,6 +643,18 @@ message DeepVariantOptions {
 
   // Path to output optional runtime profiling by region.
   string runtime_by_region = 36;
+
+  bool use_ref_for_cram = 37;
+
+  bool parse_sam_aux_fields = 38;
+
+  int32 hts_block_size = 39;
+
+  int32 logging_every_n_candidates = 40;
+
+  string customized_classes_labeler_classes_list = 41;
+
+  string customized_classes_labeler_info_field_name = 42;
 }
 
 // Config describe information needed for a dataset that can be used for
