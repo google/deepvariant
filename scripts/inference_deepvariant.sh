@@ -10,6 +10,7 @@ inference_deepvariant.sh --model_preset "WGS" --docker_build true --use_gpu true
 
 Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
+--dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
 --use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO.
 --customized_model Path to checkpoint directory containing model checkpoint.
@@ -35,6 +36,7 @@ Note: All paths to dataset must be of the form "gs://..."
 # Specify default values.
 # Booleans; sorted alphabetically.
 BUILD_DOCKER=false
+DRY_RUN=false
 USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 # Strings; sorted alphabetically.
@@ -59,6 +61,16 @@ while (( "$#" )); do
       BUILD_DOCKER="$2"
       if [[ ${BUILD_DOCKER} != "true" ]] && [[ ${BUILD_DOCKER} != "false" ]]; then
         echo "Error: --docker_build needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --dry_run)
+      DRY_RUN="$2"
+      if [[ ${DRY_RUN} != "true" ]] && [[ ${DRY_RUN} != "false" ]]; then
+        echo "Error: --dry_run needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -254,6 +266,7 @@ fi
 echo "========================="
 echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
+echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "USE_HP_INFORMATION: ${USE_HP_INFORMATION}"
 echo "# Strings; sorted alphabetically."
@@ -273,12 +286,28 @@ echo "TRUTH_BED: ${TRUTH_BED}"
 echo "TRUTH_VCF: ${TRUTH_VCF}"
 echo "========================="
 
+function run() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    # Prints out command to stdout and a [DRY RUN] tag to stderr.
+    # This allows the users to use the dry_run mode to get a list of
+    # executable commands by redirecting stdout to a file.
+    1>&2 printf "[DRY RUN] " && echo "$*"
+  else
+    echo "$*"
+    eval "$@"
+  fi
+}
+
 function copy_gs_file() {
   echo "Copying from \"$1\" to \"$2\""
   gsutil -m cp "$1" "$2"
 }
 
 function copy_data() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    return
+  fi
+
   # For the presets, we use `aria2c https://storage.googleapis.com/...` since
   # some users have had difficulty installing gsutil in the past.
   # However, in the general use case, we prefer to use `gsutil cp`, so to use
@@ -319,6 +348,9 @@ function copy_data() {
 }
 
 function setup_test() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    return
+  fi
 
   ## Create local directory structure
   mkdir -p "${OUTPUT_DIR}"
@@ -350,48 +382,52 @@ function setup_test() {
   fi
 
   copy_data
+}
 
+function setup_args() {
   if [[ "${BUILD_DOCKER}" = true ]]; then
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="deepvariant_gpu:latest"
-      sudo docker build \
+      run "sudo docker build \
         --build-arg=FROM_IMAGE=nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04 \
-        --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
-      echo "Done building GPU Docker image ${IMAGE}."
+        --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu ."
+      run echo "Done building GPU Docker image ${IMAGE}."
       docker_args+=( --gpus 1 )
     else
       IMAGE="deepvariant:latest"
       # Building twice in case the first one times out.
-      sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1 || \
-        (sleep 5 ; sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1)
-      echo "Done building Docker image ${IMAGE}."
+      run "sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1 || \
+        (sleep 5 ; sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1)"
+      run echo "Done building Docker image ${IMAGE}."
     fi
   else
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
-      sudo docker pull "${IMAGE}" || \
-        (sleep 5 ; sudo docker pull "${IMAGE}")
+      # shellcheck disable=SC2027
+      run "sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
     else
       IMAGE="google/deepvariant:${BIN_VERSION}"
-      sudo docker pull "${IMAGE}" || \
-        (sleep 5 ; sudo docker pull "${IMAGE}")
+      # shellcheck disable=SC2027
+      run "sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")"
     fi
   fi
 }
 
 function run_deepvariant_with_docker() {
-  echo "Run DeepVariant..."
-  echo "using IMAGE=${IMAGE}"
+  run echo "Run DeepVariant..."
+  run echo "using IMAGE=${IMAGE}"
 
   if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
-    echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
-    gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
-    gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-    gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
+    run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
+    run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
+    run gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
+    run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
     extra_args+=( --customized_model "/input/model.ckpt")
   else
-      echo "No custom model specified."
+    run echo "No custom model specified."
   fi
   if [[ -n "${MAKE_EXAMPLES_ARGS}" ]]; then
     # In order to use proposed variants, we have to pass vcf_candidate_importer
@@ -418,8 +454,12 @@ function run_deepvariant_with_docker() {
     happy_args+=( -l "${REGIONS}")
   fi
 
+  # shellcheck disable=SC2027
+  # shellcheck disable=SC2046
   # shellcheck disable=SC2068
-  (time (sudo docker run \
+  # shellcheck disable=SC2086
+  # shellcheck disable=SC2145
+  run "(time (sudo docker run \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
     ${docker_args[@]-} \
@@ -432,23 +472,29 @@ function run_deepvariant_with_docker() {
     --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards=${N_SHARDS} \
     --logging_dir="/output/logs" \
-    "${extra_args[@]-}"
-  echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log"
+    "${extra_args[@]-}" && \
+  echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""
   echo
 }
 
-UNCOMPRESSED_REF="${INPUT_DIR}/$(basename $REF)"
 
 function run_happy() {
   ## Evaluation: run hap.py
-  echo "Start evaluation with hap.py..."
+  run echo "Start evaluation with hap.py..."
+  UNCOMPRESSED_REF="${INPUT_DIR}/$(basename $REF)"
   # hap.py cannot read the compressed fa, so uncompress
   # into a writable directory. Index file was downloaded earlier.
-  zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}"
+  # shellcheck disable=SC2027
+  # shellcheck disable=SC2046
+  # shellcheck disable=SC2086
+  run "zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}""
 
-  sudo docker pull pkrusche/hap.py
-  # shellcheck disable=SC2068
-  ( sudo docker run -i \
+  run "sudo docker pull pkrusche/hap.py"
+  # shellcheck disable=SC2027
+  # shellcheck disable=SC2046
+  # shellcheck disable=SC2086
+  # shellcheck disable=SC2145
+  run "( sudo docker run -i \
   -v "${INPUT_DIR}:${INPUT_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
   pkrusche/hap.py /opt/hap.py/bin/hap.py \
@@ -458,17 +504,22 @@ function run_happy() {
     -r "${UNCOMPRESSED_REF}" \
     -o "${OUTPUT_DIR}/happy.output" \
     --engine=vcfeval \
-    ${happy_args[@]-}
-  ) 2>&1 | tee "${LOG_DIR}/happy.log"
-  echo "Done."
+    ${happy_args[@]-} \
+  ) 2>&1 | tee "${LOG_DIR}/happy.log""
+  run echo "Done."
 }
 
 function main() {
-  echo 'Starting the test...'
+  run echo 'Starting the test...'
 
   setup_test
+  setup_args
   run_deepvariant_with_docker
-  run_happy 2>&1 | tee "${LOG_DIR}/happy.log"
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    run_happy
+  else
+    run_happy 2>&1 | tee "${LOG_DIR}/happy.log"
+  fi
 }
 
 main "$@"
