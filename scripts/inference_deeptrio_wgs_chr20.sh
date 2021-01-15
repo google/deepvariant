@@ -9,6 +9,7 @@ inference_deeptrio_wgs_chr20.sh --docker_build true
 
 Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
+--dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu  Currently not used in this script.
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
@@ -20,6 +21,7 @@ Flags:
 # Specify default values.
 BUILD_DOCKER=false
 USE_GPU=false
+DRY_RUN=false
 REGIONS=""
 CUSTOMIZED_MODEL=""
 MAKE_EXAMPLES_ARGS=""
@@ -42,6 +44,16 @@ while (( "$#" )); do
       USE_GPU="$2"
       if [[ ${USE_GPU} != "true" ]] && [[ ${USE_GPU} != "false" ]]; then
         echo "Error: --use_gpu needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --dry_run)
+      DRY_RUN="$2"
+      if [[ ${DRY_RUN} != "true" ]] && [[ ${DRY_RUN} != "false" ]]; then
+        echo "Error: --dry_run needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -89,12 +101,25 @@ done
 echo "========================="
 echo "BUILD_DOCKER: $BUILD_DOCKER"
 echo "CUSTOMIZED_MODEL: $CUSTOMIZED_MODEL"
+echo "DRY_RUN: $DRY_RUN"
 echo "REGIONS: $REGIONS"
 echo "MAKE_EXAMPLES_ARGS: $MAKE_EXAMPLES_ARGS"
 echo "CALL_VARIANTS_ARGS: $CALL_VARIANTS_ARGS"
 echo "POSTPROCESS_VARIANTS_ARGS: $POSTPROCESS_VARIANTS_ARGS"
 echo "USE_GPU: $USE_GPU"
 echo "========================="
+
+function run() {
+  if [[ ${DRY_RUN} == "true" ]]; then
+    # Prints out command to stdout and a [DRY RUN] tag to stderr.
+    # This allows the users to use the dry_run mode to get a list of
+    # executable commands by redirecting stdout to a file.
+    1>&2 printf "[DRY RUN] " && echo "$*"
+  else
+    echo "$*"
+    eval "$@"
+  fi
+}
 
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
@@ -152,6 +177,10 @@ declare -a extra_args
 declare -a happy_args
 
 function setup_test() {
+  if [[ ${DRY_RUN} == "true" ]]; then
+    return
+  fi
+
   ## Create local directory structure
   mkdir -p "${OUTPUT_DIR}"
   mkdir -p "${DATA_DIR}"
@@ -161,9 +190,6 @@ function setup_test() {
   mkdir -p "${LOG_DIR}"
 
   ## Download extra packages
-  # There are some extra programs we will need.
-  # We are going to use [GNU Parallel](https://www.gnu.org/software/parallel/) to
-  # run `make_examples`.
   sudo apt-get -y update
   sudo apt-get -y install aria2
   sudo apt-get -y install bcftools
@@ -220,7 +246,7 @@ function setup_args() {
   if [[ -n $CUSTOMIZED_MODEL ]]
   then
     # redacted
-    echo "No custom model specified."
+    run echo "No custom model specified."
     # echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
     # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.data-00000-of-00001 "${INPUT_DIR}/child/"
     # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.index "${INPUT_DIR}child/"
@@ -230,7 +256,7 @@ function setup_args() {
     # gsutil cp "${CUSTOMIZED_MODEL}"/parent/model.ckpt.meta "${INPUT_DIR}parent/"
     # extra_args+=( --customized_model "/input/model.ckpt")
   else
-      echo "No custom model specified."
+    run echo "No custom model specified."
   fi
 
   if [[ -n $MAKE_EXAMPLES_ARGS ]]
@@ -261,30 +287,32 @@ function get_docker_image() {
     if [[ "${USE_GPU}" = true ]]
     then
       IMAGE="deeptrio_gpu:latest"
-      sudo docker build \
+      run "sudo docker build \
         -f Dockerfile.deeptrio \
         --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04 \
-        --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu .
-      echo "Done building GPU Docker image ${IMAGE}."
+        --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu ."
+      run echo "Done building GPU Docker image ${IMAGE}."
       docker_args+=( --gpus 1 )
     else
       IMAGE="deeptrio:latest"
       # Pulling twice in case the first one times out.
-      sudo docker build -f Dockerfile.deeptrio -t deeptrio . || \
-        (sleep 5 ; sudo docker build -f Dockerfile.deeptrio -t deeptrio . )
-      echo "Done building Docker image ${IMAGE}."
+      run "sudo docker build -f Dockerfile.deeptrio -t deeptrio . || \
+        (sleep 5 ; sudo docker build -f Dockerfile.deeptrio -t deeptrio . )"
+      run echo "Done building Docker image ${IMAGE}."
     fi
   else
     if [[ "${USE_GPU}" = true ]]
     then
       IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}-gpu"
-      sudo docker pull "${IMAGE}" || \
-        (sleep 5 ; sudo docker pull "${IMAGE}")
+      # shellcheck disable=SC2027
+      run "sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
     else
       IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}"
-      sudo docker pull "${IMAGE}" || \
-        (sleep 5 ; sudo docker pull "${IMAGE}")
+      # shellcheck disable=SC2027
+      run "sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")"
     fi
   fi
 }
@@ -292,8 +320,12 @@ function get_docker_image() {
 function run_deeptrio() {
   echo "Run DeepTrio..."
   echo "using IMAGE=$IMAGE"
+  # shellcheck disable=SC2027
+  # shellcheck disable=SC2046
   # shellcheck disable=SC2068
-  (time ( sudo docker run \
+  # shellcheck disable=SC2086
+  # shellcheck disable=SC2145
+  run "(time ( sudo docker run \
     -v "${INPUT_DIR}":"/input" \
     ${docker_args[@]-} \
     -v "${OUTPUT_DIR}:/output" \
@@ -317,12 +349,16 @@ function run_deeptrio() {
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
     --regions chr20 \
     --logging_dir="/output/logs" \
-    "${extra_args[@]-}"
-  echo "Done.")) 2>&1 | tee "${LOG_DIR}/deeptrio_runtime.log"
+    "${extra_args[@]-}" && \
+  echo "Done.")) 2>&1 | tee "${LOG_DIR}/deeptrio_runtime.log""
   echo
 }
 
 function run_glnexus() {
+  if [[ ${DRY_RUN} == "true" ]]; then
+    return
+  fi
+
   sudo docker pull quay.io/mlin/glnexus:v1.2.7 || \
     (sleep 5 ; sudo docker pull quay.io/mlin/glnexus:v1.2.7)
 
@@ -336,6 +372,10 @@ function run_glnexus() {
 }
 
 function extract_samples() {
+  if [[ ${DRY_RUN} == "true" ]]; then
+    return
+  fi
+
   bcftools view -s HG002 "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}" > "${OUTPUT_DIR}/HG002_split.vcf"
   bcftools view -s HG003 "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}" > "${OUTPUT_DIR}/HG003_split.vcf"
   bcftools view -s HG004 "${OUTPUT_DIR}/${OUTPUT_VCF_MERGED}" > "${OUTPUT_DIR}/HG004_split.vcf"
@@ -347,16 +387,19 @@ function run_happy() {
   local -r truth_bed="${2}"
   local -r vcf_output="${3}"
 
-  echo "Start evaluation with hap.py..."
+  run echo "Start evaluation with hap.py..."
 
   # hap.py cannot read the compressed fa, so uncompress
   # into a writable directory. Index file was downloaded earlier.
-  zcat <"${INPUT_DIR}/${REF}.gz" >"${INPUT_DIR}/${REF}"
+  # shellcheck disable=SC2086
+  run "zcat <"${INPUT_DIR}/${REF}.gz" >"${INPUT_DIR}/${REF}""
 
   # Pulling twice in case the first one times out.
-  sudo docker pull pkrusche/hap.py || \
-    (sleep 5 ; sudo docker pull pkrusche/hap.py)
-  sudo docker run -i \
+  run "sudo docker pull pkrusche/hap.py || \
+    (sleep 5 ; sudo docker pull pkrusche/hap.py)"
+  # shellcheck disable=SC2027
+  # shellcheck disable=SC2086
+  run "sudo docker run -i \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
   pkrusche/hap.py /opt/hap.py/bin/hap.py \
@@ -366,23 +409,36 @@ function run_happy() {
     -r "/input/${REF}" \
     -o "/output/happy.output${vcf_output}" \
     --engine=vcfeval \
-    -l chr20
-  echo "Done."
+    -l chr20"
+  run echo "Done."
 }
 
 function run_all_happy_reports() {
-  run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" 2>&1 | tee "${LOG_DIR}/happy_child.log"
-  run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
-  run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" 2>&1 | tee "${LOG_DIR}/happy_parent2.log"
-  run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_child_split.log"
-  run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent1_split.log"
-  run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent2_split.log"
+  if [[ ${DRY_RUN} == "true" ]]; then
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}"
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf"
+  else
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" 2>&1 | tee "${LOG_DIR}/happy_child.log"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" 2>&1 | tee "${LOG_DIR}/happy_parent2.log"
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_child_split.log"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent1_split.log"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent2_split.log"
+  fi
 }
 
 ## Run `vcf_stats_report`
 # The report is also created by postprocess_variants, but this separate runner
 # script works on existing VCF files.
 function run_vcf_stats_report() {
+  if [[ ${DRY_RUN} == "true" ]]; then
+    return
+  fi
+
   local -r vcf_output="${1}"
   local -r stats_output="${2}"
   echo "Start running vcf_stats_report...Log will be in the terminal and also to ${LOG_DIR}/vcf_stats_report.log."
@@ -412,8 +468,6 @@ function main() {
   run_deeptrio
   run_glnexus
   extract_samples
-  # redacted
-  #run_all_vcf_stats_report
   run_all_happy_reports
 }
 
