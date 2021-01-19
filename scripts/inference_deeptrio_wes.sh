@@ -123,7 +123,7 @@ function run() {
 
 ## Preliminaries
 # Set a number of shell variables, to make what follows easier to read.
-BASE="${HOME}/case-study"
+BASE="${HOME}/exome-case-study"
 BIN_VERSION="1.1.0"
 
 INPUT_DIR="${BASE}/input"
@@ -351,8 +351,7 @@ function run_deeptrio() {
     --output_gvcf_parent1 "/output/${OUTPUT_GVCF_PARENT1}" \
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
     --logging_dir="/output/logs" \
-    --regions="/input/${CAPTURE_BED}" \
-    "${extra_args[@]-}" && \
+    --regions="/input/${CAPTURE_BED}" "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deeptrio_runtime.log""
   echo
 }
@@ -409,7 +408,7 @@ function run_happy() {
     -f "/input/${truth_bed}" \
     -T "/input/${CAPTURE_BED}" \
     -r "/input/${REF}" \
-    -o "/output/happy.output${vcf_output}" \
+    -o "/output/happy.output-${vcf_output}" \
     --engine=vcfeval \
     ${happy_args[@]-}"
   run echo "Done."
