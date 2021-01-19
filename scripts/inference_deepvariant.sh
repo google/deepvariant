@@ -384,12 +384,12 @@ function setup_test() {
   copy_data
 }
 
-function setup_args() {
+function get_docker_image() {
   if [[ "${BUILD_DOCKER}" = true ]]; then
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="deepvariant_gpu:latest"
       run "sudo docker build \
-        --build-arg=FROM_IMAGE=nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04 \
+        --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04 \
         --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu ."
       run echo "Done building GPU Docker image ${IMAGE}."
       docker_args+=( --gpus 1 )
@@ -416,10 +416,7 @@ function setup_args() {
   fi
 }
 
-function run_deepvariant_with_docker() {
-  run echo "Run DeepVariant..."
-  run echo "using IMAGE=${IMAGE}"
-
+function setup_args() {
   if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
     run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
@@ -453,7 +450,11 @@ function run_deepvariant_with_docker() {
     extra_args+=( --regions "${REGIONS}")
     happy_args+=( -l "${REGIONS}")
   fi
+}
 
+function run_deepvariant_with_docker() {
+  run echo "Run DeepVariant..."
+  run echo "using IMAGE=${IMAGE}"
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2068
@@ -513,6 +514,7 @@ function main() {
   run echo 'Starting the test...'
 
   setup_test
+  get_docker_image
   setup_args
   run_deepvariant_with_docker
   if [[ "${DRY_RUN}" == "true" ]]; then
