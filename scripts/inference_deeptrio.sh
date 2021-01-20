@@ -29,19 +29,12 @@ DRY_RUN=false
 USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 # Strings; sorted alphabetically.
-BAM=""
-BIN_VERSION=""
 CALL_VARIANTS_ARGS=""
-CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
-MODEL_TYPE=""
 POSTPROCESS_VARIANTS_ARGS=""
-REF=""
 REGIONS=""
-TRUTH_BED=""
-TRUTH_VCF=""
 
 while (( "$#" )); do
   case "$1" in
@@ -223,7 +216,7 @@ LOG_DIR="${OUTPUT_DIR}/logs"
 
 if [[ "${MODEL_TYPE}" = "WES" ]]; then
   if [[ -n "${REGIONS}" ]]; then
-    echo "Error: --regions is not used with model_type WES. Please use --capture_bed." >&2
+    echo "Error: --regions is not used with model_type WES." >&2
     exit 1
   fi
   extra_args+=( --regions="/input/$(basename $CAPTURE_BED)")
@@ -237,19 +230,12 @@ echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "USE_HP_INFORMATION: ${USE_HP_INFORMATION}"
 echo "# Strings; sorted alphabetically."
-echo "BAM: ${BAM}"
-echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
-echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
-echo "MODEL_TYPE: ${MODEL_TYPE}"
 echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
-echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
-echo "TRUTH_BED: ${TRUTH_BED}"
-echo "TRUTH_VCF: ${TRUTH_VCF}"
 echo "========================="
 
 function run() {
