@@ -19,16 +19,7 @@ Flags:
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WES, or PACBIO.
 
-If model_preset is not specified, the below flags are required:
---model_type Type of DeepTrio model to run (WGS, WES, PACBIO)
---bin_version Version of DeepTrio model to use
---ref Path to GCP bucket containing ref file (.fa)
---bam Path to GCP bucket containing BAM
---truth_vcf Path to GCP bucket containing truth VCF
---truth_bed Path to GCP bucket containing truth BED
---capture_bed Path to GCP bucket containing captured file (only needed for WES model_type)
-
-Note: All paths to dataset must be of the form "gs://..."
+Currently, model_preset has to be set for inference_deeptrio.sh.
 '
 
 # Specify default values.
@@ -124,41 +115,6 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --model_type)
-      MODEL_TYPE="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --bin_version)
-      BIN_VERSION="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --ref)
-      REF="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --bam)
-      BAM="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --truth_vcf)
-      TRUTH_VCF="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --truth_bed)
-      TRUTH_BED="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --capture_bed)
-      CAPTURE_BED="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
     -*|--*=) # other flags not supported
       echo "Error: unrecognized flag $1" >&2
       echo "$USAGE" >&2
@@ -176,14 +132,11 @@ done
 # These settings specify the commonly run case studies
 GCS_DATA_DIR="https://storage.googleapis.com/deepvariant"
 BASE="${HOME}/custom-case-study"
+BIN_VERSION="1.1.0"
 
 declare -a extra_args
 declare -a happy_args
 declare -a docker_args
-
-if [[ -n "${MODEL_PRESET}" ]]; then
-  BIN_VERSION="1.1.0"
-fi
 
 if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   MODEL_TYPE="PACBIO"
@@ -229,11 +182,8 @@ elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   TRUTH_BED_PARENT2="${GCS_DATA_DIR}/case-study-testdata/HG004_GRCh38_1_22_v4.2_benchmark.bed"
   CAPTURE_BED="${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed"
 else
-  if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS, WES, or PACBIO." >&2
-    exit 1
-  fi
-
+  echo "Error: --model_preset must be one of WGS, WES, or PACBIO." >&2
+  exit 1
 fi
 
 ## Flag consistency sanity checks.
