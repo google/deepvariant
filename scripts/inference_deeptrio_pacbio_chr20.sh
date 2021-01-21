@@ -318,8 +318,8 @@ function get_docker_image() {
 }
 
 function run_deeptrio() {
-  echo "Run DeepTrio..."
-  echo "using IMAGE=$IMAGE"
+  run echo "Run DeepTrio..."
+  run echo "using IMAGE=$IMAGE"
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2068
@@ -347,9 +347,8 @@ function run_deeptrio() {
     --output_gvcf_child "/output/${OUTPUT_GVCF_CHILD}" \
     --output_gvcf_parent1 "/output/${OUTPUT_GVCF_PARENT1}" \
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
-    --regions chr20 \
     --logging_dir="/output/logs" \
-    --use_hp_information=true "${extra_args[@]-}"    && \
+    --use_hp_information=true --regions chr20 "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deeptrio_runtime.log""
   echo
 }
@@ -460,7 +459,7 @@ function run_all_vcf_stats_report() {
 }
 
 function main() {
-  echo 'Starting the test...'
+  run echo 'Starting the test...'
 
   setup_test
   setup_args
