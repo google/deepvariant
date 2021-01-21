@@ -18,9 +18,15 @@ layout: default
         {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
         <span class="post-meta">{{ post.date | date: date_format }}</span>
         <h3>
-          <a class="post-link" href="{{ post.url | relative_url }}">
-            {{ post.title | escape }}
-          </a>
+            {% if post.external_url %}
+            <a class="post-link" href="{{ post.external_url }}" target="_blank">
+                {{ post.title | escape }} →
+            </a> <small>[External: {{ post.source }}]</small>
+            {% else %}
+            <a class="post-link" href="{{ post.url | relative_url }}">
+                {{ post.title | escape }}
+            </a>
+            {% endif %}
         </h3>
 
         <div class="column-container">
