@@ -1,4 +1,3 @@
-# load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 load("//third_party:clif.bzl", "py_clif_cc")
 # KEEP THIS LINE to import nucleus.bzl externally
 
