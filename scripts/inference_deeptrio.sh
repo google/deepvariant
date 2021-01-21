@@ -11,14 +11,14 @@ Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
---use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO.
+--use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO*.
 --bin_version Version of DeepTrio model to use.
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, WES, or PACBIO.
+--model_preset Preset case study to run: WGS, WGS_CHR20, WES, PACBIO, or PACBIO_CHR20.
 
 Currently, model_preset has to be set for inference_deeptrio.sh.
 '
@@ -144,6 +144,18 @@ if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BAM_CHILD="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.bam"
   BAM_PARENT1="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.bam"
   BAM_PARENT2="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG004.pfda_challenge.grch38.phased.bam"
+elif [[ "${MODEL_PRESET}" = "PACBIO_CHR20" ]]; then
+  MODEL_TYPE="PACBIO"
+  BASE="${HOME}/pacbio-case-study"
+
+  BAM_CHILD="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.chr20.bam"
+  BAM_PARENT1="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.chr20.bam"
+  BAM_PARENT2="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG004.pfda_challenge.grch38.phased.chr20.bam"
+
+  if [[ -n "${REGIONS}" ]]; then
+    echo "For --model_preset=${MODEL_PRESET}, regions will be set to chr20."
+  fi
+  REGIONS=chr20
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   MODEL_TYPE="WGS"
   BASE="${HOME}/wgs-case-study"
@@ -151,6 +163,18 @@ elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   BAM_CHILD="${GCS_DATA_DIR}/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
   BAM_PARENT1="${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
   BAM_PARENT2="${GCS_DATA_DIR}/case-study-testdata/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
+elif [[ "${MODEL_PRESET}" = "WGS_CHR20" ]]; then
+  MODEL_TYPE="WGS"
+  BASE="${HOME}/wgs-case-study"
+
+  BAM_CHILD="${GCS_DATA_DIR}/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam"
+  BAM_PARENT1="${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam"
+  BAM_PARENT2="${GCS_DATA_DIR}/case-study-testdata/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam"
+
+  if [[ -n "${REGIONS}" ]]; then
+    echo "For --model_preset=${MODEL_PRESET}, regions will be set to chr20."
+  fi
+  REGIONS=chr20
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   MODEL_TYPE="WES"
   BASE="${HOME}/exome-case-study"
