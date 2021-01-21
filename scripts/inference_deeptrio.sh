@@ -12,6 +12,7 @@ Flags:
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
 --use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO.
+--bin_version Version of DeepTrio model to use.
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
@@ -29,6 +30,7 @@ DRY_RUN=false
 USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 # Strings; sorted alphabetically.
+BIN_VERSION="1.1.0"
 CALL_VARIANTS_ARGS=""
 CUSTOMIZED_MODEL=""
 MAKE_EXAMPLES_ARGS=""
@@ -83,6 +85,11 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --bin_version)
+      BIN_VERSION="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --customized_model)
       CUSTOMIZED_MODEL="$2"
       shift # Remove argument name from processing
@@ -125,7 +132,6 @@ done
 # These settings specify the commonly run case studies
 GCS_DATA_DIR="https://storage.googleapis.com/deepvariant"
 BASE="${HOME}/custom-case-study"
-BIN_VERSION="1.1.0"
 
 declare -a extra_args
 declare -a happy_args
@@ -230,6 +236,7 @@ echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "USE_HP_INFORMATION: ${USE_HP_INFORMATION}"
 echo "# Strings; sorted alphabetically."
+echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
@@ -383,12 +390,14 @@ function get_docker_image() {
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}-gpu"
       # shellcheck disable=SC2027
+      # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
     else
       IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}"
       # shellcheck disable=SC2027
+      # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
     fi
