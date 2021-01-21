@@ -13,6 +13,7 @@ Flags:
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
 --use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO.
+--bin_version Version of DeepVariant model to use
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
@@ -23,7 +24,6 @@ Flags:
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepVariant model to run (WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA)
---bin_version Version of DeepVariant model to use
 --ref Path to GCP bucket containing ref file (.fa)
 --bam Path to GCP bucket containing BAM
 --truth_vcf Path to GCP bucket containing truth VCF
@@ -41,7 +41,7 @@ USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 # Strings; sorted alphabetically.
 BAM=""
-BIN_VERSION=""
+BIN_VERSION="1.1.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
@@ -188,10 +188,6 @@ BASE="${HOME}/custom-case-study"
 declare -a extra_args
 declare -a happy_args
 declare -a docker_args
-
-if [[ -n "${MODEL_PRESET}" ]]; then
-  BIN_VERSION="1.1.0"
-fi
 
 if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   MODEL_TYPE="PACBIO"
@@ -404,12 +400,14 @@ function get_docker_image() {
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
       # shellcheck disable=SC2027
+      # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
     else
       IMAGE="google/deepvariant:${BIN_VERSION}"
       # shellcheck disable=SC2027
+      # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
     fi
