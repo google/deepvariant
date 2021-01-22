@@ -516,7 +516,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
           ('A', 'T'): [0.93],
           ('T', 'T'): [0.04],
       }),
-      # Test debug_output_all_candidates
+      # Test debug_output_all_candidates=ALT
       ([
           _create_call_variants_output(
               indices=[0],
