@@ -129,25 +129,25 @@ SNP   | 25008 | 241  | 17   | 0.990455 | 0.999321  | 0.994868
 
 For simplicity and consistency, we report runtime with a
 [CPU instance with 64 CPUs](deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform)
-This is NOT the fastest or cheapest configuration. For more scalable execution
-of DeepVariant see the [External Solutions] section.
+For bigger datasets (WGS and PACBIO), we used bigger disk size (900G).
+This is NOT the fastest or cheapest configuration. For more scalable execution,
+see the [External Solutions] section.
 
 Use `gcloud compute ssh` to log in to the newly created instance.
 
 Download and run any of the following case study scripts:
 
 ```
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_deeptrio.sh
+
 # WGS
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_deeptrio_wgs.sh
-bash inference_deeptrio_wgs.sh
+bash inference_deeptrio.sh --model_preset WGS
 
 # WES
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_deeptrio_wes.sh
-bash inference_deeptrio_wes.sh
+bash inference_deeptrio.sh --model_preset WES
 
-# PacBio (should take about 7 hours)
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_deeptrio_pacbio.sh
-bash inference_deeptrio_pacbio.sh
+# PacBio
+bash inference_deeptrio.sh --model_preset PACBIO
 
 ```
 
