@@ -100,11 +100,6 @@ PCR-Free and PCR-Positive.
 
 These accuracies are based on the Genome in a Bottle confident regions. The
 superior mappability of the PacBio CCS reads likely means this accuracy can be
-achieved over more of the genome (including clinically important genes) than
-with short reads.
-
-These accuracies are based on the Genome in a Bottle confident regions. The
-superior mappability of the PacBio CCS reads likely means this accuracy can be
 achieved over more of the genome (including
 [clinically important genes](https://academic.oup.com/hmg/article/27/R2/R234/4996216))
 than with short reads.
