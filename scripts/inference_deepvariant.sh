@@ -295,32 +295,28 @@ function run() {
 }
 
 function copy_gs_file() {
-  echo "Copying from \"$1\" to \"$2\""
-  gsutil -m cp "$1" "$2"
+  run echo "Copying from \"$1\" to \"$2\""
+  run gsutil -m cp "$1" "$2"
 }
 
 function copy_data() {
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    return
-  fi
-
   # For the presets, we use `aria2c https://storage.googleapis.com/...` since
   # some users have had difficulty installing gsutil in the past.
   # However, in the general use case, we prefer to use `gsutil cp`, so to use
   # custom data with this script gsutil is required.
   if [[ -n "${MODEL_PRESET}" ]]; then
-    aria2c -c -x10 -s10 "${TRUTH_BED}" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${TRUTH_VCF}" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${TRUTH_VCF}.tbi" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${BAM}" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${BAM}.bai" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${REF}.gz" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${REF}.gz.fai" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${REF}.gz.gzi" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${REF}.gzi" -d "${INPUT_DIR}"
-    aria2c -c -x10 -s10 "${REF}.fai" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${TRUTH_BED}" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${TRUTH_VCF}" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${TRUTH_VCF}.tbi" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${BAM}" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${BAM}.bai" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${REF}.gz" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${REF}.gz.fai" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${REF}.gz.gzi" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${REF}.gzi" -d "${INPUT_DIR}"
+    run aria2c -c -x10 -s10 "${REF}.fai" -d "${INPUT_DIR}"
     if [[ "${MODEL_PRESET}" = "WES" ]]; then
-      aria2c -c -x10 -s10 "${CAPTURE_BED}" -d "${INPUT_DIR}"
+      run aria2c -c -x10 -s10 "${CAPTURE_BED}" -d "${INPUT_DIR}"
     fi
   else
     copy_gs_file "${TRUTH_BED}" "${INPUT_DIR}"
@@ -376,8 +372,6 @@ function setup_test() {
     sudo apt-get -qq -y update
     sudo apt-get -qq -y install docker-ce
   fi
-
-  copy_data
 }
 
 function get_docker_image() {
@@ -512,6 +506,7 @@ function main() {
   run echo 'Starting the test...'
 
   setup_test
+  copy_data
   get_docker_image
   setup_args
   run_deepvariant_with_docker
