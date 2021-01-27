@@ -294,48 +294,35 @@ function run() {
   fi
 }
 
-function copy_gs_file() {
-  run echo "Copying from \"$1\" to \"$2\""
-  run gsutil -m cp "$1" "$2"
+function copy_gs_or_http_file() {
+  if [[ "$1" == http* ]]; then
+    run aria2c -c -x10 -s10 "$1" -d "$2"
+  elif [[ "$1" == gs://* ]]; then
+    run echo "Copying from \"$1\" to \"$2\""
+    run gsutil -m cp "$1" "$2"
+  else
+    echo "Unrecognized file format: $1" >&2
+    exit 1
+  fi
 }
 
 function copy_data() {
-  # For the presets, we use `aria2c https://storage.googleapis.com/...` since
-  # some users have had difficulty installing gsutil in the past.
-  # However, in the general use case, we prefer to use `gsutil cp`, so to use
-  # custom data with this script gsutil is required.
-  if [[ -n "${MODEL_PRESET}" ]]; then
-    run aria2c -c -x10 -s10 "${TRUTH_BED}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF}.tbi" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${BAM}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${BAM}.bai" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gz" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gz.fai" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gz.gzi" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gzi" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.fai" -d "${INPUT_DIR}"
-    if [[ "${MODEL_PRESET}" = "WES" ]]; then
-      run aria2c -c -x10 -s10 "${CAPTURE_BED}" -d "${INPUT_DIR}"
-    fi
-  else
-    copy_gs_file "${TRUTH_BED}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF}.tbi" "${INPUT_DIR}"
-    copy_gs_file "${BAM}" "${INPUT_DIR}"
-    copy_gs_file "${BAM}.bai" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gz" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gz.fai" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gz.gzi" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gzi" "${INPUT_DIR}"
-    copy_gs_file "${REF}.fai" "${INPUT_DIR}"
-    if [[ "${MODEL_TYPE}" = "WES" ]]; then
-      copy_gs_file "${CAPTURE_BED}" "${INPUT_DIR}"
-    fi
-    if [[ -n "${PROPOSED_VARIANTS}" ]]; then
-      copy_gs_file "${PROPOSED_VARIANTS}" "${INPUT_DIR}"
-      copy_gs_file "${PROPOSED_VARIANTS}.tbi" "${INPUT_DIR}"
-    fi
+  copy_gs_or_http_file "${TRUTH_BED}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF}.tbi" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gz" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gz.fai" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gz.gzi" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gzi" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.fai" "${INPUT_DIR}"
+  if [[ "${MODEL_TYPE}" = "WES" ]]; then
+    copy_gs_or_http_file "${CAPTURE_BED}" "${INPUT_DIR}"
+  fi
+  if [[ -n "${PROPOSED_VARIANTS}" ]]; then
+    copy_gs_or_http_file "${PROPOSED_VARIANTS}" "${INPUT_DIR}"
+    copy_gs_or_http_file "${PROPOSED_VARIANTS}.tbi" "${INPUT_DIR}"
   fi
 }
 

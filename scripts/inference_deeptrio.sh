@@ -281,71 +281,44 @@ function run() {
   fi
 }
 
-function copy_gs_file() {
-  run echo "Copying from \"$1\" to \"$2\""
-  run gsutil -m cp "$1" "$2"
+function copy_gs_or_http_file() {
+  if [[ "$1" == http* ]]; then
+    run aria2c -c -x10 -s10 "$1" -d "$2"
+  elif [[ "$1" == gs://* ]]; then
+    run echo "Copying from \"$1\" to \"$2\""
+    run gsutil -m cp "$1" "$2"
+  else
+    echo "Unrecognized file format: $1" >&2
+    exit 1
+  fi
 }
 
 function copy_data() {
-  # For the presets, we use `aria2c https://storage.googleapis.com/...` since
-  # some users have had difficulty installing gsutil in the past.
-  # However, in the general use case, we prefer to use `gsutil cp`, so to use
-  # custom data with this script gsutil is required.
-  if [[ -n "${MODEL_PRESET}" ]]; then
-    # Copy HG002 truth
-    run aria2c -c -x10 -s10 "${TRUTH_BED_CHILD}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF_CHILD}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF_CHILD}.tbi" -d "${INPUT_DIR}"
-    # Copy HG003 truth
-    run aria2c -c -x10 -s10 "${TRUTH_BED_PARENT1}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF_PARENT1}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF_PARENT1}.tbi" -d "${INPUT_DIR}"
-    # Copy HG004 truth
-    run aria2c -c -x10 -s10 "${TRUTH_BED_PARENT2}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF_PARENT2}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${TRUTH_VCF_PARENT2}.tbi" -d "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_BED_CHILD}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF_CHILD}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF_CHILD}.tbi" "${INPUT_DIR}"
+  # Copy HG003 truth
+  copy_gs_or_http_file "${TRUTH_BED_PARENT1}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF_PARENT1}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF_PARENT1}.tbi" "${INPUT_DIR}"
+  # Copy HG004 truth
+  copy_gs_or_http_file "${TRUTH_BED_PARENT2}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF_PARENT2}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${TRUTH_VCF_PARENT2}.tbi" "${INPUT_DIR}"
 
-    run aria2c -c -x10 -s10 "${BAM_CHILD}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${BAM_CHILD}.bai" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${BAM_PARENT1}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${BAM_PARENT1}.bai" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${BAM_PARENT2}" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${BAM_PARENT2}.bai" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gz" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gz.fai" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gz.gzi" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.gzi" -d "${INPUT_DIR}"
-    run aria2c -c -x10 -s10 "${REF}.fai" -d "${INPUT_DIR}"
-    if [[ "${MODEL_PRESET}" = "WES" ]]; then
-      run aria2c -c -x10 -s10 "${CAPTURE_BED}" -d "${INPUT_DIR}"
-    fi
-  else
-    copy_gs_file "${TRUTH_BED_CHILD}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF_CHILD}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF_CHILD}.tbi" "${INPUT_DIR}"
-    # Copy HG003 truth
-    copy_gs_file "${TRUTH_BED_PARENT1}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF_PARENT1}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF_PARENT1}.tbi" "${INPUT_DIR}"
-    # Copy HG004 truth
-    copy_gs_file "${TRUTH_BED_PARENT2}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF_PARENT2}" "${INPUT_DIR}"
-    copy_gs_file "${TRUTH_VCF_PARENT2}.tbi" "${INPUT_DIR}"
-
-    copy_gs_file "${BAM_CHILD}" "${INPUT_DIR}"
-    copy_gs_file "${BAM_CHILD}.bai" "${INPUT_DIR}"
-    copy_gs_file "${BAM_PARENT1}" "${INPUT_DIR}"
-    copy_gs_file "${BAM_PARENT1}.bai" "${INPUT_DIR}"
-    copy_gs_file "${BAM_PARENT2}" "${INPUT_DIR}"
-    copy_gs_file "${BAM_PARENT2}.bai" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gz" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gz.fai" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gz.gzi" "${INPUT_DIR}"
-    copy_gs_file "${REF}.gzi" "${INPUT_DIR}"
-    copy_gs_file "${REF}.fai" "${INPUT_DIR}"
-    if [[ "${MODEL_TYPE}" = "WES" ]]; then
-      copy_gs_file "${CAPTURE_BED}" "${INPUT_DIR}"
-    fi
+  copy_gs_or_http_file "${BAM_CHILD}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM_CHILD}.bai" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM_PARENT1}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM_PARENT1}.bai" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM_PARENT2}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM_PARENT2}.bai" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gz" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gz.fai" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gz.gzi" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.gzi" "${INPUT_DIR}"
+  copy_gs_or_http_file "${REF}.fai" "${INPUT_DIR}"
+  if [[ "${MODEL_TYPE}" = "WES" ]]; then
+    copy_gs_or_http_file "${CAPTURE_BED}" "${INPUT_DIR}"
   fi
 }
 
