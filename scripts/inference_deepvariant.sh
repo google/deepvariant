@@ -295,10 +295,10 @@ function run() {
 }
 
 function copy_gs_or_http_file() {
+  run echo "Copying from \"$1\" to \"$2\""
   if [[ "$1" == http* ]]; then
     run aria2c -c -x10 -s10 "$1" -d "$2"
   elif [[ "$1" == gs://* ]]; then
-    run echo "Copying from \"$1\" to \"$2\""
     run gsutil -m cp "$1" "$2"
   else
     echo "Unrecognized file format: $1" >&2
