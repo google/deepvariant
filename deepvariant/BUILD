@@ -425,6 +425,7 @@ py_test(
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
         "//third_party/nucleus/util:vcf_constants",
+        "//third_party/nucleus/util:vis",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
         "@absl_py//absl/testing:absltest",

@@ -706,7 +706,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
   def test_get_ref_haplotype_and_offset(self, dv_variant, cohort_variants,
                                         expected_ref_haplotype,
                                         expected_ref_offset):
-    ref_reader = fasta.IndexedFastaReader(testdata.CHR20_GRCH38_FASTA)
+    ref_reader = fasta.IndexedFastaReader(testdata.GRCH38_FASTA)
     ref_haplotype, ref_offset = make_examples_core.get_ref_haplotype_and_offset(
         dv_variant, cohort_variants, ref_reader)
     self.assertEqual(ref_haplotype, expected_ref_haplotype)
@@ -881,7 +881,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           label='matched_snp_2'))
   def test_find_matching_allele_frequency(self, variant, expected_return,
                                           label):
-    ref_reader = fasta.IndexedFastaReader(testdata.CHR20_GRCH38_FASTA)
+    ref_reader = fasta.IndexedFastaReader(testdata.GRCH38_FASTA)
     vcf_reader = vcf.VcfReader(testdata.VCF_WITH_ALLELE_FREQUENCIES)
     allele_frequencies = make_examples_core.find_matching_allele_frequency(
         variant, vcf_reader, ref_reader)
@@ -1350,8 +1350,7 @@ class RegionProcessorTest(parameterized.TestCase):
   def test_add_allele_frequencies_to_candidates(self, dv_calls,
                                                 expected_return):
     pop_vcf_reader = vcf.VcfReader(testdata.VCF_WITH_ALLELE_FREQUENCIES)
-    self.processor.ref_reader = fasta.IndexedFastaReader(
-        testdata.CHR20_GRCH38_FASTA)
+    self.processor.ref_reader = fasta.IndexedFastaReader(testdata.GRCH38_FASTA)
     updated_dv_call = list(
         self.processor.add_allele_frequencies_to_candidates(
             dv_calls, pop_vcf_reader))

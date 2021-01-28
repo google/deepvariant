@@ -49,8 +49,14 @@ from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
 import mock
+import numpy as np
 import six
 
+from deepvariant import make_examples
+from deepvariant import make_examples_core
+from deepvariant import testdata
+from deepvariant import tf_utils
+from deepvariant.protos import deepvariant_pb2
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
@@ -60,11 +66,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
-from deepvariant import make_examples
-from deepvariant import make_examples_core
-from deepvariant import testdata
-from deepvariant import tf_utils
-from deepvariant.protos import deepvariant_pb2
+from third_party.nucleus.util import vis
 
 FLAGS = flags.FLAGS
 
@@ -514,6 +516,65 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
     candidates = list(tfrecord.read_tfrecords(FLAGS.candidates))
     self.assertLen(candidates, expected_count)
+
+  @parameterized.parameters(dict(mode='one vcf'), dict(mode='two vcfs'))
+  @flagsaver.flagsaver
+  def test_make_examples_with_allele_frequency(self, mode):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.GRCH38_FASTA
+    FLAGS.reads = testdata.GRCH38_CHR20_AND_21_BAM
+    num_shards = 1
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('examples.tfrecord', num_shards))
+    region = ranges.parse_literal('chr20:61001-62000')
+    FLAGS.use_allele_frequency = True
+    FLAGS.regions = [ranges.to_literal(region)]
+    if mode == 'one vcf':
+      FLAGS.population_vcfs = testdata.AF_VCF_CHR20_AND_21
+    elif mode == 'two vcfs':
+      FLAGS.population_vcfs = ' '.join(
+          [testdata.AF_VCF_CHR20, testdata.AF_VCF_CHR21])
+    else:
+      raise ValueError('Invalid mode for parameterized test.')
+    options = make_examples.default_options(add_flags=True)
+    # Run make_examples with the flags above.
+    make_examples_core.make_examples_runner(options)
+
+    # Verify that the variants in the examples are all good.
+    examples = self.verify_examples(
+        FLAGS.examples, region, options, verify_labels=False)
+
+    # Pileup images should have one extra channel.
+    self.assertEqual([100, 221, 7], decode_example(examples[0])['image/shape'])
+
+    # Test there is something in the added channel.
+    # Values capture whether each loci has been seen in the observed examples.
+    population_matched_loci = {
+        'chr20:61539_A': False,
+        'chr20:61634_G': False,
+        'chr20:61644_G': False
+    }
+
+    for example in examples:
+      locus_id = vis.locus_id_from_variant(vis.variant_from_example(example))
+      if locus_id in population_matched_loci.keys():
+        channels = vis.channels_from_example(example)
+        self.assertGreater(
+            np.sum(channels[6]),
+            0,
+            msg='There should be '
+            'something in the 7th channel for variant '
+            '%s' % locus_id)
+        population_matched_loci[locus_id] = True
+    self.assertTrue(
+        all(population_matched_loci.values()),
+        msg='Check that all '
+        '3 sample loci appeared in the examples.')
+
+    # Check against the golden file (same for both modes).
+    golden_file = _sharded(testdata.GOLDEN_ALLELE_FREQUENCY_EXAMPLES)
+    examples_from_golden = list(tfrecord.read_tfrecords(golden_file))
+    self.assertDeepVariantExamplesEqual(examples_from_golden, examples)
 
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call almost all of the real variants (according to NIST's

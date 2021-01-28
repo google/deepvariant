@@ -85,25 +85,32 @@ WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = None
 WS_VARIANT_READS_THRESHOLD_MODEL = None
 GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT = None
 GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT = None
-VCF_WITH_ALLELE_FREQUENCIES = None
-CHR20_GRCH38_FASTA = None
 
 N_GOLDEN_TRAINING_EXAMPLES = 49
 N_GOLDEN_CALLING_EXAMPLES = 86
 
-# For CustomizedClassesVariantLabeler
+# For CustomizedClassesVariantLabeler:
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
 
-# For VcfCandidateImporter
+# For VcfCandidateImporter:
 GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = None
 GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES = None
 VCF_CANDIDATE_IMPORTER_VARIANTS = None
 
-# For alt-aligned pileups
+# For alt-aligned pileups:
 ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES = None
 ALT_ALIGNED_ROWS_EXAMPLES = None
 RUNTIME_BY_REGION = None
 RUNTIME_BY_REGION_SHARDED = None
+
+# For allele frequency:
+VCF_WITH_ALLELE_FREQUENCIES = None
+GRCH38_FASTA = None
+AF_VCF_CHR20 = None
+AF_VCF_CHR21 = None
+AF_VCF_CHR20_AND_21 = None
+GRCH38_CHR20_AND_21_BAM = None
+GOLDEN_ALLELE_FREQUENCY_EXAMPLES = None
 
 
 def init():
@@ -133,8 +140,6 @@ def init():
   global WS_VARIANT_READS_THRESHOLD_MODEL
   global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
   global GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT
-  global VCF_WITH_ALLELE_FREQUENCIES
-  global CHR20_GRCH38_FASTA
 
   CHR20_FASTA = deepvariant_testdata('input/ucsc.hg19.chr20.unittest.fasta.gz')
   CHR20_BAM = deepvariant_testdata('input/NA12878_S1.chr20.10_10p1mb.bam')
@@ -202,16 +207,13 @@ def init():
       'golden.vcf_candidate_importer_postprocess_single_site_input.tfrecord.gz')
   GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.vcf_candidate_importer_postprocess_single_site_output.vcf')
-  VCF_WITH_ALLELE_FREQUENCIES = deepvariant_testdata(
-      'input/allele_frequencies_vcf.vcf.gz')
-  CHR20_GRCH38_FASTA = deepvariant_testdata('input/grch38.chr20_10M.fa.gz')
 
-  # For CustomizedClassesVariantLabeler.
+  # For CustomizedClassesVariantLabeler:
   global CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES
   CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'customized_classes.golden.training_examples.tfrecord.gz')
 
-  # For VcfCandidateImporter
+  # For VcfCandidateImporter:
   global GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES
   global GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES
   global VCF_CANDIDATE_IMPORTER_VARIANTS
@@ -222,7 +224,7 @@ def init():
   VCF_CANDIDATE_IMPORTER_VARIANTS = deepvariant_testdata(
       'input/vcf_candidate_importer.indels.chr20.vcf.gz')
 
-  # For alt-aligned pileups
+  # For alt-aligned pileups:
   global ALT_ALIGNED_ROWS_EXAMPLES
   global ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES
   ALT_ALIGNED_ROWS_EXAMPLES = deepvariant_testdata(
@@ -230,8 +232,36 @@ def init():
   ALT_ALIGNED_DIFF_CHANNELS_EXAMPLES = deepvariant_testdata(
       'golden.alt_aligned_pileup_diff_channels_examples.tfrecord.gz')
 
+  # For runtime-by-region in make_examples:
   global RUNTIME_BY_REGION
   global RUNTIME_BY_REGION_SHARDED
   RUNTIME_BY_REGION = deepvariant_testdata('input/make_examples_runtime.tsv')
   RUNTIME_BY_REGION_SHARDED = deepvariant_testdata(
       'input/make_examples_runtime@2.tsv')
+
+  # For allele_frequency with GRCh38:
+  global VCF_WITH_ALLELE_FREQUENCIES
+  global GRCH38_FASTA
+  global AF_VCF_CHR20
+  global AF_VCF_CHR21
+  global AF_VCF_CHR20_AND_21
+  global GRCH38_CHR20_AND_21_BAM
+  global GOLDEN_ALLELE_FREQUENCY_EXAMPLES
+  VCF_WITH_ALLELE_FREQUENCIES = deepvariant_testdata(
+      'input/allele_frequencies_vcf.vcf.gz')
+
+  # Fasta filtered to regions: chr20:1-10000000 and chr21:1-10000000.
+  GRCH38_FASTA = deepvariant_testdata('input/grch38.chr20_and_21_10M.fa.gz')
+  # VCFs filtered to chr20:1-100000 and chr21:5100000-5200000.
+  AF_VCF_CHR20 = deepvariant_testdata('input/cohort-chr20_100k.vcf.gz')
+  AF_VCF_CHR21 = deepvariant_testdata('input/cohort-chr21_100k.vcf.gz')
+  AF_VCF_CHR20_AND_21 = deepvariant_testdata(
+      'input/cohort-chr20_and_chr21_100k.vcf.gz')
+  # This bam filtered to regions: chr20:61001-62000 and chr21:5114000-5114999
+  # and header is edited with the following to match the GRCH38_FASTA:
+  # @SQ     SN:chr20        LN:10000000
+  # @SQ     SN:chr21        LN:10000000
+  GRCH38_CHR20_AND_21_BAM = deepvariant_testdata(
+      'input/grch38_1k_subset_chr20_and_chr21.bam')
+  GOLDEN_ALLELE_FREQUENCY_EXAMPLES = deepvariant_testdata(
+      'golden.allele_frequency_examples.tfrecord.gz')
