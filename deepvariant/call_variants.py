@@ -157,6 +157,11 @@ flags.DEFINE_boolean('use_tpu', False, 'Use tpu if available.')
 flags.DEFINE_boolean('use_openvino', False, 'Use Intel OpenVINO as backend.')
 
 flags.DEFINE_string(
+    'openvino_model_dir', '',
+    'If set, use this directory to save the temporary model '
+    'file for OpenVINO.')
+
+flags.DEFINE_string(
     'kmp_blocktime', '0',
     'Value to set the KMP_BLOCKTIME environment variable to for efficient MKL '
     'inference. See https://www.tensorflow.org/performance/performance_guide '
@@ -406,7 +411,10 @@ def call_variants(examples_filename,
   tf_dataset = prepare_inputs(source_path=examples_filename, use_tpu=use_tpu)
   if FLAGS.use_openvino:
     ie_estimator = OpenVINOEstimator(
-        checkpoint_path, input_fn=tf_dataset, model=model)
+        checkpoint_path,
+        input_fn=tf_dataset,
+        model=model,
+        openvino_model_dir=FLAGS.openvino_model_dir)
     predictions = iter(ie_estimator)
   else:
     estimator = model.make_estimator(

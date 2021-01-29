@@ -50,6 +50,7 @@ _LOG_EVERY_N = 15000
 def freeze_graph(model,
                  checkpoint_path,
                  tensor_shape,
+                 openvino_model_pb,
                  moving_average_decay=0.9999):
   """Converts model ckpts."""
   logging.info('Processing ckpt=%s, tensor_shape=%s', checkpoint_path,
@@ -77,25 +78,30 @@ def freeze_graph(model,
     graph_def = optimize_for_inference_lib.optimize_for_inference(
         graph_def, [in_node], [out_node], tf.float32.as_datatype_enum)
 
-    with tf.io.gfile.GFile('model.pb', 'wb') as f:
+    with tf.io.gfile.GFile(openvino_model_pb, 'wb') as f:
       f.write(graph_def.SerializeToString())
 
 
 class OpenVINOEstimator(object):
   """An estimator for OpenVINO."""
 
-  def __init__(self, checkpoint_path, input_fn, model):
+  def __init__(self, checkpoint_path, input_fn, model, openvino_model_dir=''):
     tensor_shape = input_fn.tensor_shape
-    freeze_graph(model, checkpoint_path, tensor_shape)
-    subprocess.run([
-        mo_tf.__file__, '--input_model=model.pb', '--scale=128',
+    openvino_model_pb = os.path.join(openvino_model_dir, 'model.pb')
+    freeze_graph(model, checkpoint_path, tensor_shape, openvino_model_pb)
+    mo_tf_args = [
+        mo_tf.__file__, '--input_model=' + openvino_model_pb, '--scale=128',
         '--mean_values', '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
-    ],
-                   check=True)
-    os.remove('model.pb')
+    ]
+    if openvino_model_dir:
+      mo_tf_args.append('--output_dir=' + openvino_model_dir)
+    subprocess.run(mo_tf_args, check=True)
+    os.remove(openvino_model_pb)
 
     self.ie = IECore()
-    net = self.ie.read_network('model.xml', 'model.bin')
+    net = self.ie.read_network(
+        os.path.join(openvino_model_dir, 'model.xml'),
+        os.path.join(openvino_model_dir, 'model.bin'))
     net.input_info['input'].precision = 'U8'
     self.exec_net = self.ie.load_network(
         net,
