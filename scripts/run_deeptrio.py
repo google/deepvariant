@@ -589,7 +589,7 @@ def main(_):
         raise
   proc_handles = []
   for command in post_process_commands:
-    print('\n***** Starting the command:*****\n{}\n'.format(command))
+    print('\n***** Running the command:*****\n{}\n'.format(command))
     if not FLAGS.dry_run:
       try:
         proc_handles.append(
