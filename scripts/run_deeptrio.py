@@ -80,6 +80,9 @@ flags.DEFINE_string(
     'output_vcf_parent2', None,
     'Required. Path where we should write VCF file for parent2.')
 # Optional flags.
+flags.DEFINE_boolean(
+    'dry_run', False,
+    'Optional. If True, only prints out commands without executing them.')
 flags.DEFINE_string(
     'intermediate_results_dir', None,
     'Optional. If specified, this should be an existing '
@@ -578,22 +581,25 @@ def main(_):
         'in docker. ****\n'.format(intermediate_results_dir))
   for command in commands:
     print('\n***** Running the command:*****\n{}\n'.format(command))
-    try:
-      subprocess.check_call(command, shell=True, executable='/bin/bash')
-    except subprocess.CalledProcessError as e:
-      logging.info(e.output)
-      raise
+    if not FLAGS.dry_run:
+      try:
+        subprocess.check_call(command, shell=True, executable='/bin/bash')
+      except subprocess.CalledProcessError as e:
+        logging.info(e.output)
+        raise
   proc_handles = []
   for command in post_process_commands:
     print('\n***** Starting the command:*****\n{}\n'.format(command))
-    try:
-      proc_handles.append(
-          subprocess.Popen(command, shell=True, executable='/bin/bash'))
-    except subprocess.CalledProcessError as e:
-      logging.info(e.output)
-      raise
-  return_codes = [p.wait() for p in proc_handles]
-  print('post_process returns: {}'.format(list(return_codes)))
+    if not FLAGS.dry_run:
+      try:
+        proc_handles.append(
+            subprocess.Popen(command, shell=True, executable='/bin/bash'))
+      except subprocess.CalledProcessError as e:
+        logging.info(e.output)
+        raise
+  if not FLAGS.dry_run:
+    return_codes = [p.wait() for p in proc_handles]
+    print('post_process returns: {}'.format(list(return_codes)))
 
 
 if __name__ == '__main__':

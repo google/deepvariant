@@ -68,6 +68,9 @@ flags.DEFINE_string('output_vcf', None,
 flags.DEFINE_string('logging_dir', None,
                     'Required. Directory where we should write log files.')
 # Optional flags.
+flags.DEFINE_boolean(
+    'dry_run', False,
+    'Optional. If True, only prints out commands without executing them.')
 flags.DEFINE_string(
     'intermediate_results_dir', None,
     'Optional. If specified, this should be an existing '
@@ -410,11 +413,12 @@ def main(_):
         'in docker. ****\n'.format(intermediate_results_dir))
   for command in commands:
     print('\n***** Running the command:*****\n{}\n'.format(command))
-    try:
-      subprocess.check_call(command, shell=True, executable='/bin/bash')
-    except subprocess.CalledProcessError as e:
-      logging.info(e.output)
-      raise
+    if not FLAGS.dry_run:
+      try:
+        subprocess.check_call(command, shell=True, executable='/bin/bash')
+      except subprocess.CalledProcessError as e:
+        logging.info(e.output)
+        raise
 
 
 if __name__ == '__main__':
