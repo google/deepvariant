@@ -107,6 +107,9 @@ class ModelEvalTest(
     self.assertTrue(
         tf_test_utils.check_file_exists(
             'best_checkpoint.metrics', eval_name=self.eval_name))
+    self.assertEqual(
+        tf.train.load_checkpoint(self.checkpoint_dir).get_tensor('global_step'),
+        0)
 
   # Using a constant model, check that running an eval returns the expected
   # metrics.
@@ -125,6 +128,7 @@ class ModelEvalTest(
             self.test_session(),
             self.checkpoint_dir,
             FLAGS.moving_average_decay,
+            global_step=i,
             name='model' + str(i)) for i in range(n_checkpoints)
     ]
 
@@ -141,7 +145,9 @@ class ModelEvalTest(
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
     FLAGS.master = ''
     model_eval.main(0)
-
+    self.assertEqual(
+        tf.train.load_checkpoint(self.checkpoint_dir).get_tensor('global_step'),
+        n_checkpoints - 1)
     self.assertEqual(mock_get_input_fn_from_dataset.call_args_list, [
         mock.call(
             use_tpu=FLAGS.use_tpu,
@@ -193,6 +199,9 @@ class ModelEvalTest(
       self.assertAlmostEqual(metrics[0][key], expected_value, places=6)
 
     for m1, m2 in zip(metrics, metrics[1:]):
+      # Remove global_step from comparison first.
+      m1.pop('global_step', None)
+      m2.pop('global_step', None)
       self.assertEqual(m1, m2)
 
 

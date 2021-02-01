@@ -54,7 +54,8 @@ def write_fake_checkpoint(model_name,
                           name='model',
                           height=dv_constants.PILEUP_DEFAULT_HEIGHT,
                           width=dv_constants.PILEUP_DEFAULT_WIDTH,
-                          num_channels=dv_constants.PILEUP_NUM_CHANNELS):
+                          num_channels=dv_constants.PILEUP_NUM_CHANNELS,
+                          global_step=0):
   """Writes a fake TensorFlow checkpoint to checkpoint_dir."""
   path = os.path.join(checkpoint_dir, name)
   with session as sess:
@@ -73,6 +74,10 @@ def write_fake_checkpoint(model_name,
         tf.compat.v1.GraphKeys.UPDATE_OPS,
         variable_averages.apply(slim.get_model_variables()))
     sess.run(tf.compat.v1.global_variables_initializer())
+    if global_step:
+      inc_op = tf.compat.v1.assign_add(tf.compat.v1.train.get_global_step(),
+                                       global_step)
+      sess.run(inc_op)
     save = tf.compat.v1.train.Saver(slim.get_variables())
     save.save(sess, path)
   return path
