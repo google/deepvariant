@@ -111,8 +111,8 @@ flags.DEFINE_integer(
     'Maximum seconds between checkpoints before evaluation '
     'terminates.')
 
-flags.DEFINE_integer('max_evaluations', None,
-                     'Max number of batches to evaluate')
+flags.DEFINE_integer('max_ckpt_to_evaluate', None,
+                     'Max ckpt number to evaluate (inclusive).')
 
 flags.DEFINE_integer(
     'max_examples', None,
@@ -161,7 +161,7 @@ def main(_):
       batch_size=FLAGS.batch_size,
       max_examples=FLAGS.max_examples,
       eval_name=FLAGS.eval_name,
-      max_evaluations=FLAGS.max_evaluations,
+      max_ckpt_to_evaluate=FLAGS.max_ckpt_to_evaluate,
       use_tpu=FLAGS.use_tpu,
   )
 
@@ -175,6 +175,17 @@ def checkpoints_iterator(checkpoint_dir,
                                        timeout, timeout_fn)
 
 
+def get_latest_step_from_checkpoint_dir(checkpoint_dir):
+  try:
+    latest_step = tf.train.load_checkpoint(checkpoint_dir).get_tensor(
+        'global_step')
+    logging.info('Latest ckpt from %s was %s', checkpoint_dir, latest_step)
+  except ValueError:
+    logging.info('Unable to get latest ckpt from %s. Return None',
+                 checkpoint_dir)
+  return latest_step
+
+
 def eval_loop(master,
               dataset_config_pbtxt,
               checkpoint_dir,
@@ -182,7 +193,7 @@ def eval_loop(master,
               batch_size,
               max_examples,
               eval_name,
-              max_evaluations,
+              max_ckpt_to_evaluate,
               use_tpu=False):
   """Evaluate incoming checkpoints, until the specified end."""
   logging.info('Running fixed eval for: %s', dataset_config_pbtxt)
@@ -227,7 +238,6 @@ def eval_loop(master,
     return True
 
   # Run evaluation when there's a new checkpoint
-  num_evaluations = 0
   for ckpt in checkpoints_iterator(
       checkpoint_dir=checkpoint_dir,
       min_interval_secs=FLAGS.min_eval_interval_s,
@@ -267,10 +277,13 @@ def eval_loop(master,
 
     _write_checkpoint_metrics(ckpt, eval_results, eval_name)
 
-    # An alternative strategy might check step-number-of-ckpt >= train_steps.
-    num_evaluations += 1
-    if max_evaluations is not None and num_evaluations >= max_evaluations:
-      logging.info('Evaluation finished after %d evaluations', num_evaluations)
+    latest_step = get_latest_step_from_checkpoint_dir(ckpt)
+    if (max_ckpt_to_evaluate is not None and latest_step is not None and
+        latest_step >= max_ckpt_to_evaluate):
+      logging.info(
+          'Stop evaluation because '
+          'latest_step(%s) >= max_ckpt_to_evaluate(%s)', latest_step,
+          max_ckpt_to_evaluate)
       break
 
   return

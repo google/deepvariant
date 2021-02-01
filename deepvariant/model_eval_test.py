@@ -84,7 +84,7 @@ class ModelEvalTest(
     FLAGS.batch_size = 2
     FLAGS.checkpoint_dir = self.checkpoint_dir
     FLAGS.eval_name = self.eval_name
-    FLAGS.max_evaluations = 1
+    FLAGS.max_ckpt_to_evaluate = 0
     FLAGS.max_examples = 2
     FLAGS.best_checkpoint_metric = 'F1/All'
     FLAGS.model_name = model_name
@@ -140,7 +140,7 @@ class ModelEvalTest(
     FLAGS.batch_size = 2
     FLAGS.checkpoint_dir = self.checkpoint_dir
     FLAGS.eval_name = self.eval_name
-    FLAGS.max_evaluations = n_checkpoints
+    FLAGS.max_ckpt_to_evaluate = n_checkpoints - 1
     FLAGS.model_name = 'constant'
     FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
     FLAGS.master = ''
