@@ -45,6 +45,7 @@ py_library(
     name = "deepvariant_py",
     srcs = [],
     deps = [
+        ":allele_frequency",
         ":call_variants_lib",
         ":data_providers",
         ":dv_vcf_constants",
@@ -310,6 +311,7 @@ py_library(
     srcs = ["make_examples_core.py"],
     srcs_version = "PY3",
     deps = [
+        ":allele_frequency",
         ":make_examples_utils",
         ":pileup_image",
         ":resources_main_lib",
@@ -359,7 +361,6 @@ py_test(
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/protos:reference_py_pb2",
-        "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:variant_utils",
@@ -396,6 +397,36 @@ py_test(
     python_version = "PY3",
     deps = [
         ":make_examples_utils",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "allele_frequency",
+    srcs = ["allele_frequency.py"],
+    srcs_version = "PY3",
+    deps = [
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:variant_utils",
+        "@absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "allele_frequency_test",
+    srcs = ["allele_frequency_test.py"],
+    data = [":testdata"],
+    python_version = "PY3",
+    deps = [
+        ":allele_frequency",
+        ":py_testdata",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/protos:variants_py_pb2",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
