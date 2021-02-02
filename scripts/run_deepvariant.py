@@ -194,8 +194,9 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
                          '--use_hp_information flag instead of using '
                          '`--make_examples_extra_args="sort_by_haplotypes=true,'
                          'parse_sam_aux_fields=true"`'.format(k))
-      print('\nWarning: --{} is previously set to {}, now to {}.'.format(
-          k, kwargs[k], v))
+      if kwargs[k] != v:
+        print('\nWarning: --{} is previously set to {}, now to {}.'.format(
+            k, kwargs[k], v))
     kwargs[k] = v
   return kwargs
 

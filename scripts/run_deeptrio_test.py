@@ -36,6 +36,8 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+import io
+from unittest import mock
 
 from absl import flags
 from absl.testing import absltest
@@ -49,6 +51,18 @@ FLAGS = flags.FLAGS
 
 # pylint: disable=line-too-long
 class RunDeeptrioTest(parameterized.TestCase):
+
+  def _create_all_commands_and_check_stdout(self, expected_stdout=None):
+    with mock.patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+      commands, postprocess_cmds = run_deeptrio.create_all_commands(
+          '/tmp/deeptrio_tmp_output')
+      # Confirm that these basic commands don't have extra messages printed out
+      # to stdout.
+      if expected_stdout is None:
+        self.assertEmpty(mock_stdout.getvalue())
+      else:
+        self.assertEqual(mock_stdout.getvalue(), expected_stdout)
+    return commands, postprocess_cmds
 
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
   @flagsaver.flagsaver
@@ -69,8 +83,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
-    commands, post_process_commands = run_deeptrio.create_all_commands(
-        '/tmp/deeptrio_tmp_output')
+    commands, postprocess_cmds = self._create_all_commands_and_check_stdout()
 
     self.assertEqual(
         commands[1], 'time /opt/deepvariant/bin/call_variants '
@@ -94,8 +107,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--checkpoint "/opt/models/deeptrio/{}/parent/model.ckpt"'.format(
             model_type.lower()))
     self.assertEqual(
-        post_process_commands[0],
-        'time /opt/deepvariant/bin/postprocess_variants '
+        postprocess_cmds[0], 'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
@@ -104,8 +116,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_child"')
     self.assertEqual(
-        post_process_commands[1],
-        'time /opt/deepvariant/bin/postprocess_variants '
+        postprocess_cmds[1], 'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz" '
@@ -114,8 +125,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_parent1"')
     self.assertEqual(
-        post_process_commands[2],
-        'time /opt/deepvariant/bin/postprocess_variants '
+        postprocess_cmds[2], 'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz" '
@@ -124,7 +134,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_parent2.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_parent2"')
     self.assertLen(commands, 4)
-    self.assertLen(post_process_commands, 3)
+    self.assertLen(postprocess_cmds, 3)
 
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
   @flagsaver.flagsaver
@@ -141,8 +151,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
-    commands, post_process_commands = run_deeptrio.create_all_commands(
-        '/tmp/deeptrio_tmp_output')
+    commands, postprocess_cmds = self._create_all_commands_and_check_stdout()
 
     self.assertEqual(
         commands[1], 'time /opt/deepvariant/bin/call_variants '
@@ -159,8 +168,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--checkpoint "/opt/models/deeptrio/{}/parent/model.ckpt"'.format(
             model_type.lower()))
     self.assertEqual(
-        post_process_commands[0],
-        'time /opt/deepvariant/bin/postprocess_variants '
+        postprocess_cmds[0], 'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
@@ -169,8 +177,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_child"')
     self.assertEqual(
-        post_process_commands[1],
-        'time /opt/deepvariant/bin/postprocess_variants '
+        postprocess_cmds[1], 'time /opt/deepvariant/bin/postprocess_variants '
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz" '
@@ -180,7 +187,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--gvcf_outfile "your_gvcf_parent1"')
     # pylint: disable=g-generic-assert
     self.assertLen(commands, 3)
-    self.assertLen(post_process_commands, 2)
+    self.assertLen(postprocess_cmds, 2)
 
   @parameterized.parameters(
       ('WGS', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
@@ -216,7 +223,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
-    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = self._create_all_commands_and_check_stdout()
     self.assertEqual(
         commands[0], 'time seq 0 63 '
         '| parallel -q --halt 2 --line-buffer '
@@ -263,7 +270,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
-    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = self._create_all_commands_and_check_stdout()
     self.assertEqual(
         commands[0], 'time seq 0 63 '
         '| parallel -q --halt 2 --line-buffer '
@@ -286,7 +293,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--pileup_image_height_parent "40" '
        '--norealign_reads '
        '--nosort_by_haplotypes '
-       '--vsc_min_fraction_indels "0.12" '),
+       '--vsc_min_fraction_indels "0.12" ', None),
       ('alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
        '--alt_aligned_pileup "rows" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
@@ -295,10 +302,15 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--pileup_image_height_parent "40" '
        '--norealign_reads '
        '--nosort_by_haplotypes '
-       '--vsc_min_fraction_indels "0.03" '),
+       '--vsc_min_fraction_indels "0.03" ',
+       '\nWarning: --alt_aligned_pileup is previously set to diff_channels, '
+       'now to "rows".\n'
+       '\nWarning: --vsc_min_fraction_indels is previously set to 0.12, '
+       'now to 0.03.\n'),
   )
   @flagsaver.flagsaver
-  def test_pacbio_args_overwrite(self, make_examples_extra_args, expected_args):
+  def test_pacbio_args_overwrite(self, make_examples_extra_args, expected_args,
+                                 expected_stdout):
     """Confirms that adding extra flags can overwrite the default from mode."""
     FLAGS.model_type = 'PACBIO'
     FLAGS.ref = 'your_ref'
@@ -317,7 +329,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.regions = None
     FLAGS.make_examples_extra_args = make_examples_extra_args
-    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = self._create_all_commands_and_check_stdout(expected_stdout)
     self.assertEqual(
         commands[0], 'time seq 0 63 | parallel -q --halt 2 --line-buffer '
         '/opt/deepvariant/bin/deeptrio/make_examples --mode calling '
@@ -416,7 +428,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_parent2 = 'your_vcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.regions = regions
-    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = self._create_all_commands_and_check_stdout()
 
     self.assertEqual(
         commands[0], 'time seq 0 63 | parallel -q --halt 2 --line-buffer '
@@ -478,7 +490,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.call_variants_extra_args = call_variants_extra_args
-    commands, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
+    commands, _ = self._create_all_commands_and_check_stdout()
 
     self.assertEqual(
         commands[1], 'time /opt/deepvariant/bin/call_variants '
@@ -510,8 +522,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.postprocess_variants_extra_args = postprocess_variants_extra_args
-    _, commands_post_process = run_deeptrio.create_all_commands(
-        '/tmp/deeptrio_tmp_output')
+    _, commands_post_process = self._create_all_commands_and_check_stdout()
 
     self.assertEqual(
         commands_post_process[0],
