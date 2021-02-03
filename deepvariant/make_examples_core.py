@@ -778,18 +778,12 @@ class RegionProcessor(object):
 
     # Get allele frequencies for candidates.
     if self.options.use_allele_frequency:
-      # One population VCF for all contigs.
-      if len(self.options.population_vcf_filenames) == 1:
-        population_vcf_reader = self.population_vcf_readers
-      # One population VCF for each contig.
-      # If a key is not found, set population_vcf_reader to None.
-      # For example, many population studies don't include `chrM`.
-      else:
-        population_vcf_reader = self.population_vcf_readers.get(
-            region.reference_name, None)
       candidates = list(
           allele_frequency.add_allele_frequencies_to_candidates(
-              candidates, population_vcf_reader, self.ref_reader))
+              candidates=candidates,
+              population_vcf_reader=self.population_vcf_readers[
+                  region.reference_name],
+              ref_reader=self.ref_reader))
 
     # pylint: disable=g-complex-comprehension
     if in_training_mode(self.options):

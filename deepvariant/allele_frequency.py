@@ -28,7 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Functionality for including allele frequencies in DeepVariant pileups."""
 
+import collections
+from typing import DefaultDict, Sequence, Optional
+
 from absl import logging
+
 from third_party.nucleus.io import vcf
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
@@ -285,34 +289,40 @@ def find_matching_allele_frequency(variant,
   return dict_allele_frequency
 
 
-def make_population_vcf_readers(population_vcf_filenames):
-  """Create a dict of VcfReader objects.
+def make_population_vcf_readers(
+    population_vcf_filenames: Sequence[str]
+) -> DefaultDict[str, Optional[vcf.VcfReader]]:
+  """Creates VcfReaders for the given VCF file paths, organized by reference.
 
-  If the length of population_vcf_filenames is one, all variants are listed
-  in one file, and one VcfReader object is created.
-  If the length is greater than one, we assume there's a one-to-one mapping
-  between variants and VCF files, and will return a dict.
+  VcfReaders can be made either from a single VCF that covers all the relevant
+  reference sequences or strictly one VCF per reference sequence. By returning
+  a defaultdict, any code using the output of this function does not have to
+  consider whether there are multiple VCFs or not, it can simply query by
+  chromosome and get a reader.
 
   Args:
     population_vcf_filenames: Paths to files (VCF or VCF.gz) with population
       genotypes.
 
   Raises:
-    ValueError: if there are more than one VCF files containing variants
-      from one chromosome.
+    ValueError: If there is more than one VCF file containing variants
+      from the same chromosome.
 
   Returns:
-    The return type depends on the length of population_vcf_filenames.
-    (a) A VcfReader object if only one VCF file is provided.
-    (b) A dict maps contig names to associated VcfReader objects if more than
-        one VCF file are provided.
+    A defaultdict that maps from a reference name to an associated VcfReader.
+    If there was only one VCF provided, all references will map to that one
+    reader. If more than one VCF was provided, the references will have a
+    reader each, while any that were not included will map to None.
   """
   # If only one VCF file is provided.
   if len(population_vcf_filenames) == 1:
-    return vcf.VcfReader(population_vcf_filenames[0])
+    # The DefaultDict allows later code to query for any chromosome and still
+    # get the same reader. This is great for compatibility with multi-VCF below.
+    return collections.defaultdict(
+        lambda: vcf.VcfReader(population_vcf_filenames[0]))
 
   # If more than one VCF files are provided.
-  population_vcf_readers = {}
+  population_vcf_readers = DefaultDict(lambda: None)
 
   for vcf_filename in population_vcf_filenames:
     population_vcf_reader = vcf.VcfReader(vcf_filename, header=None)

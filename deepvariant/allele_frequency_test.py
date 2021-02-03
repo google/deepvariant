@@ -382,6 +382,43 @@ class AlleleFrequencyTest(parameterized.TestCase):
       self.assertAlmostEqual(
           allele_frequencies[key], expected_return[key], msg=label)
 
+  def test_make_population_vcf_readers_with_multiple_vcfs(self):
+    filenames = [testdata.AF_VCF_CHR20, testdata.AF_VCF_CHR21]
+
+    output = allele_frequency.make_population_vcf_readers(filenames)
+
+    self.assertIsInstance(output['chr20'], vcf.VcfReader)
+    self.assertIsInstance(output['chr21'], vcf.VcfReader)
+    self.assertEqual(next(output['chr20']).reference_name, 'chr20')
+    self.assertEqual(next(output['chr21']).reference_name, 'chr21')
+    # Check that chr22 has no reader rather than outputting another reader for
+    # a different chromosome.
+    self.assertIsNone(output['chr22'])
+
+  def test_make_population_vcf_readers_with_one_vcf(self):
+    filenames = [testdata.AF_VCF_CHR20_AND_21]
+
+    output = allele_frequency.make_population_vcf_readers(filenames)
+
+    self.assertIsInstance(output['chr20'], vcf.VcfReader)
+    self.assertIsInstance(output['chr21'], vcf.VcfReader)
+    self.assertIsInstance(output['chr22'], vcf.VcfReader)
+    # All reference names should map to the same VCF that starts with chr20.
+    self.assertEqual(next(output['chr20']).reference_name, 'chr20')
+    self.assertEqual(next(output['chr21']).reference_name, 'chr20')
+    self.assertEqual(next(output['chr22']).reference_name, 'chr20')
+
+  def test_make_population_vcf_readers_raises_on_shared_chromosomes(self):
+    filenames = [
+        testdata.AF_VCF_CHR20, testdata.AF_VCF_CHR21,
+        testdata.AF_VCF_CHR20_AND_21
+    ]
+
+    with self.assertRaisesRegex(
+        expected_exception=ValueError,
+        expected_regex='Variants on chr20 are included in multiple VCFs'):
+      allele_frequency.make_population_vcf_readers(filenames)
+
   @parameterized.parameters(
       dict(
           dv_calls=iter([
