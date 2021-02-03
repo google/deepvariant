@@ -588,19 +588,15 @@ def main(_):
       except subprocess.CalledProcessError as e:
         logging.info(e.output)
         raise
-  proc_handles = []
   for command in post_process_commands:
     print('\n***** Running the command:*****\n{}\n'.format(command))
-    if not FLAGS.dry_run:
-      try:
-        proc_handles.append(
-            subprocess.Popen(command, shell=True, executable='/bin/bash'))
-      except subprocess.CalledProcessError as e:
-        logging.info(e.output)
-        raise
   if not FLAGS.dry_run:
-    return_codes = [p.wait() for p in proc_handles]
-    print('post_process returns: {}'.format(list(return_codes)))
+    return_codes = [
+        subprocess.Popen(command, shell=True, executable='/bin/bash')
+        for command in post_process_commands
+    ]
+    if any([x.wait() > 0 for x in return_codes]):
+      raise Exception('One or more postprocess_variants failed.')
 
 
 if __name__ == '__main__':
