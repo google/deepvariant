@@ -136,6 +136,10 @@ sudo docker run \
   --num_shards=1 \ **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
 ```
 
+NOTE: If you want to look at all the commands being run, you can add
+`--dry_run=true` to the command above, which will print out all the commands
+but not execute them.
+
 This will generate 5 files and 1 directory in `${OUTPUT_DIR}`:
 
 ```bash

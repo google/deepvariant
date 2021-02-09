@@ -161,6 +161,10 @@ sudo docker run \
   --output_gvcf_parent2 /output/HG004.g.vcf.gz
 ```
 
+NOTE: If you want to look at all the commands being run, you can add
+`--dry_run=true` to the command above, which will print out all the commands
+but not execute them.
+
 This will generate 15 files and 1 directory in `${OUTPUT_DIR}`:
 
 ```bash
