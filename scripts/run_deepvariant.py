@@ -258,12 +258,18 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   return ' '.join(command)
 
 
-def call_variants_command(outfile, examples, model_ckpt, extra_args):
+def call_variants_command(outfile, examples, model_ckpt,
+                          intermediate_results_dir, extra_args):
   """Returns a call_variants command for subprocess.check_call."""
   command = ['(', 'time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
+  # --openvino_model_dir will only be used if use_openvino is set to true for
+  # call_variants. But it won't hurt to set it anyway, so setting it to the
+  # intermediate_results_dir.
+  command.extend(
+      ['--openvino_model_dir', '"{}"'.format(intermediate_results_dir)])
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
@@ -374,6 +380,7 @@ def create_all_commands(intermediate_results_dir):
   model_ckpt = get_model_ckpt(FLAGS.model_type, FLAGS.customized_model)
   commands.append(
       call_variants_command(call_variants_output, examples, model_ckpt,
+                            intermediate_results_dir,
                             FLAGS.call_variants_extra_args))
 
   # postprocess_variants
