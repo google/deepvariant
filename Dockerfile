@@ -64,6 +64,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examp
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_train.zip .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_eval.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/freeze_graph.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
 
 RUN ./run-prereq.sh
@@ -105,6 +106,10 @@ RUN \
     /opt/deepvariant/bin/runtime_by_region_vis && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
+    'python /opt/deepvariant/bin/freeze_graph.zip "$@"' > \
+    /opt/deepvariant/bin/freeze_graph && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
     'python -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
   chmod +x /opt/deepvariant/bin/make_examples \
@@ -115,7 +120,8 @@ RUN \
     /opt/deepvariant/bin/runtime_by_region_vis \
     /opt/deepvariant/bin/model_train \
     /opt/deepvariant/bin/model_eval \
-    /opt/deepvariant/bin/run_deepvariant
+    /opt/deepvariant/bin/run_deepvariant \
+    /opt/deepvariant/bin/freeze_graph
 
 # Copy models
 WORKDIR /opt/models/wgs
