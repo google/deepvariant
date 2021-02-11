@@ -55,7 +55,6 @@ CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
   CallVariantsOutput single_site_call;
   // Add one call to fulfill the assumption of variant having one call.
   single_site_call.mutable_variant()->add_calls();
-  // redacted comment
   single_site_call.mutable_variant()->set_reference_name(
       string(reference_name));
   single_site_call.mutable_variant()->set_start(start);
