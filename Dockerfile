@@ -149,7 +149,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
 RUN apt-get -y update && \
-  apt-get install -y parallel python3-pip && \
+  apt-get install -y parallel python3-pip samtools && \
   PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \
