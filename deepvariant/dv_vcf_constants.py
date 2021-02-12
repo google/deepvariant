@@ -45,10 +45,14 @@ DEEP_VARIANT_QUAL_FILTER = 'LowQual'
 
 # FORMAT field IDs.
 DEEP_VARIANT_MIN_DP_FORMAT = 'MIN_DP'
+DEEP_VARIANT_MED_DP_FORMAT = 'MED_DP'
 DEEP_VARIANT_VAF_FORMAT = 'VAF'
 
 
-def deepvariant_header(contigs, sample_names, add_info_candidates=False):
+def deepvariant_header(contigs,
+                       sample_names,
+                       add_info_candidates=False,
+                       include_med_dp=False):
   """Returns a VcfHeader used for writing VCF output.
 
   This function fills out the FILTER, INFO, FORMAT, and extra header information
@@ -62,6 +66,7 @@ def deepvariant_header(contigs, sample_names, add_info_candidates=False):
     sample_names: list(str). The list of samples present in the run.
     add_info_candidates: Adds the 'CANDIDATES' info field for
       debugging purposes.
+    include_med_dp: boolean. If True, we will include MED_DP.
 
   Returns:
     A nucleus.genomics.v1.VcfHeader proto with known fixed headers and the given
@@ -73,7 +78,23 @@ def deepvariant_header(contigs, sample_names, add_info_candidates=False):
   info_fields = [
       vcf_constants.reserved_info_field('END'),
   ]
-
+  formats = [
+      vcf_constants.reserved_format_field('GT'),
+      vcf_constants.reserved_format_field('GQ'),
+      vcf_constants.reserved_format_field('DP'),
+      variants_pb2.VcfFormatInfo(
+          id=DEEP_VARIANT_MIN_DP_FORMAT,
+          number='1',
+          type='Integer',
+          description='Minimum DP observed within the GVCF block.'),
+      vcf_constants.reserved_format_field('AD'),
+      variants_pb2.VcfFormatInfo(
+          id=DEEP_VARIANT_VAF_FORMAT,
+          number='A',
+          type='Float',
+          description='Variant allele fractions.'),
+      vcf_constants.reserved_format_field('PL'),
+  ]
   if add_info_candidates:
     info_fields.append(
         variants_pb2.VcfInfo(
@@ -81,6 +102,15 @@ def deepvariant_header(contigs, sample_names, add_info_candidates=False):
             number='1',
             type=vcf_constants.STRING_TYPE,
             description='pipe-delimited candidate alleles.'))
+
+  if include_med_dp:
+    formats.append(
+        variants_pb2.VcfFormatInfo(
+            id=DEEP_VARIANT_MED_DP_FORMAT,
+            number='1',
+            type='Integer',
+            description='Median DP observed within the GVCF block '
+            'rounded to the nearest integer.'))
 
   return variants_pb2.VcfHeader(
       fileformat='VCFv4.2',
@@ -95,23 +125,7 @@ def deepvariant_header(contigs, sample_names, add_info_candidates=False):
               'calling threshold.'),
       ],
       infos=info_fields,
-      formats=[
-          vcf_constants.reserved_format_field('GT'),
-          vcf_constants.reserved_format_field('GQ'),
-          vcf_constants.reserved_format_field('DP'),
-          variants_pb2.VcfFormatInfo(
-              id=DEEP_VARIANT_MIN_DP_FORMAT,
-              number='1',
-              type='Integer',
-              description='Minimum DP observed within the GVCF block.'),
-          vcf_constants.reserved_format_field('AD'),
-          variants_pb2.VcfFormatInfo(
-              id=DEEP_VARIANT_VAF_FORMAT,
-              number='A',
-              type='Float',
-              description='Variant allele fractions.'),
-          vcf_constants.reserved_format_field('PL'),
-      ],
+      formats=formats,
       contigs=contigs,
       sample_names=sample_names,
       extras=[version])

@@ -37,6 +37,7 @@ import collections
 import itertools
 import math
 import operator
+import statistics
 
 
 import numpy as np
@@ -216,7 +217,7 @@ class VariantCaller(object):
     gq = int(min(np.floor(gq), self.options.max_gq))
     return gq, log10_probs
 
-  def make_gvcfs(self, allele_count_summaries):
+  def make_gvcfs(self, allele_count_summaries, include_med_dp=False):
     """Primary interface function for computing gVCF confidence at a site.
 
     Looks at the counts in the provided list of AlleleCountSummary protos and
@@ -236,6 +237,8 @@ class VariantCaller(object):
         coordinate-sorted order. Each proto is used to get the read counts for
         reference and alternate alleles, the reference position, and reference
         base.
+      include_med_dp: boolean. If True, in the gVCF records, we will include
+                      MED_DP.
 
     Yields:
       third_party.nucleus.protos.Variant proto in
@@ -300,6 +303,7 @@ class VariantCaller(object):
         combinable = list(combinable)
         min_gq = min(elt.raw_gq for elt in combinable)
         min_dp = min(elt.read_depth for elt in combinable)
+        med_dp = int(statistics.median(elt.read_depth for elt in combinable))
         first_record, last_record = combinable[0], combinable[-1]
         call = variants_pb2.VariantCall(
             call_set_name=self.options.sample_name,
@@ -307,6 +311,8 @@ class VariantCaller(object):
             genotype_likelihood=first_record.likelihoods)
         variantcall_utils.set_gq(call, min_gq)
         variantcall_utils.set_min_dp(call, min_dp)
+        if include_med_dp:
+          variantcall_utils.set_med_dp(call, med_dp)
         yield variants_pb2.Variant(
             reference_name=first_record.summary_counts.reference_name,
             reference_bases=first_record.summary_counts.ref_base,
@@ -328,6 +334,8 @@ class VariantCaller(object):
               genotype_likelihood=elt.likelihoods)
           variantcall_utils.set_gq(call, elt.raw_gq)
           variantcall_utils.set_min_dp(call, elt.read_depth)
+          if include_med_dp:
+            variantcall_utils.set_med_dp(call, elt.read_depth)
           yield variants_pb2.Variant(
               reference_name=elt.summary_counts.reference_name,
               reference_bases=elt.summary_counts.ref_base,
@@ -336,7 +344,10 @@ class VariantCaller(object):
               end=elt.summary_counts.position + 1,
               calls=[call])
 
-  def calls_and_gvcfs(self, allele_counter, include_gvcfs):
+  def calls_and_gvcfs(self,
+                      allele_counter,
+                      include_gvcfs,
+                      include_med_dp=False):
     """Gets variant calls and gvcf records for all sites in allele_counter.
 
     Args:
@@ -344,6 +355,8 @@ class VariantCaller(object):
         to find candidate variants and create gvcf records.
       include_gvcfs: boolean. If True, we will compute gVCF records for all of
         the AlleleCounts in AlleleCounter.
+      include_med_dp: boolean. If True, in the gVCF records, we will include
+                      MED_DP.
 
     Returns:
       Two values. The first is a list of DeepVariantCall protos containing our
@@ -353,7 +366,8 @@ class VariantCaller(object):
     candidates = self.get_candidates(allele_counter)
     gvcfs = []
     if include_gvcfs:
-      gvcfs = list(self.make_gvcfs(allele_counter.summary_counts()))
+      gvcfs = list(
+          self.make_gvcfs(allele_counter.summary_counts(), include_med_dp))
     return candidates, gvcfs
 
   @abc.abstractmethod

@@ -183,6 +183,17 @@ def get_gq(variant_call):
   return get_format(variant_call, 'GQ')
 
 
+def set_med_dp(variant_call, med_dp):
+  """Sets the 'MED_DP' field of the VariantCall."""
+  struct_utils.set_int_field(variant_call.info, 'MED_DP', med_dp)
+
+
+def get_med_dp(variant_call):
+  """Gets the 'MED_DP' field of the VariantCall."""
+  return struct_utils.get_int_field(
+      variant_call.info, 'MED_DP', is_single_field=True)
+
+
 def set_min_dp(variant_call, min_dp):
   """Sets the 'MIN_DP' field of the VariantCall."""
   struct_utils.set_int_field(variant_call.info, 'MIN_DP', min_dp)

@@ -142,6 +142,11 @@ class VariantcallUtilsTests(parameterized.TestCase):
           setter=variantcall_utils.set_min_dp,
           getter=variantcall_utils.get_min_dp,
           values=range(10)),
+      dict(
+          field_name='MED_DP',
+          setter=variantcall_utils.set_med_dp,
+          getter=variantcall_utils.get_med_dp,
+          values=range(10)),
   )
   def test_variantcall_format_roundtrip(self, field_name, setter, getter,
                                         values):

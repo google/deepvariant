@@ -245,12 +245,15 @@ class VariantCallerTests(parameterized.TestCase):
         'Non-finite likelihoods {}'.format(likelihoods))
     self.assertEqual(100, gq)
 
-  @parameterized.parameters(*variant_caller.CANONICAL_DNA_BASES)
-  def test_gvcf_basic(self, ref):
+  @parameterized.parameters((base, include_med_dp)
+                            for base in variant_caller.CANONICAL_DNA_BASES
+                            for include_med_dp in [True, False])
+  def test_gvcf_basic(self, ref, include_med_dp):
     options = _reference_model_options(0.01, 100)
     caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
-    gvcfs = list(caller.make_gvcfs(allele_counter.summary_counts()))
+    gvcfs = list(
+        caller.make_gvcfs(allele_counter.summary_counts(), include_med_dp))
     self.assertLen(gvcfs, 1)
     self.assertGVCF(
         gvcfs[0],
@@ -261,7 +264,8 @@ class VariantCallerTests(parameterized.TestCase):
         min_dp=0,
         chrom='chr1',
         gls=[-0.47712125472] * 3,
-        sample_name=options.sample_name)
+        sample_name=options.sample_name,
+        med_dp=0 if include_med_dp else None)
 
   @parameterized.parameters('N', 'R', 'W', 'B')
   def test_gvcf_basic_skips_iupac_ref_base(self, ref):
@@ -287,7 +291,8 @@ class VariantCallerTests(parameterized.TestCase):
                  chrom='chr1',
                  gls=None,
                  sample_name=None,
-                 gts=None):
+                 gts=None,
+                 med_dp=None):
     if chrom:
       self.assertEqual(gvcf.reference_name, chrom)
     call = variant_utils.only_call(gvcf)
@@ -301,6 +306,12 @@ class VariantCallerTests(parameterized.TestCase):
     self.assertIn('MIN_DP', call.info)
     self.assertLen(call.info['MIN_DP'].values, 1)
     self.assertEqual(variantcall_utils.get_min_dp(call), min_dp)
+    if med_dp is not None:
+      self.assertIn('MED_DP', call.info)
+      self.assertLen(call.info['MED_DP'].values, 1)
+      self.assertEqual(variantcall_utils.get_med_dp(call), med_dp)
+    else:
+      self.assertNotIn('MED_DP', call.info)
     if gls is not None:
       npt.assert_allclose(list(gvcf.calls[0].genotype_likelihood), gls)
     if sample_name:
@@ -347,62 +358,63 @@ class VariantCallerTests(parameterized.TestCase):
       dict(
           gq_resolution=1,
           expecteds=[
-              dict(start=1, end=2, ref='A', gq=53, min_dp=18),
-              dict(start=2, end=3, ref='C', gq=56, min_dp=19),
-              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
-              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
-              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
-              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
-              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
-              dict(start=8, end=9, ref='T', gq=59, min_dp=20),
-              dict(start=9, end=10, ref='G', gq=56, min_dp=19),
+              dict(start=1, end=2, ref='A', gq=53, med_dp=18, min_dp=18),
+              dict(start=2, end=3, ref='C', gq=56, med_dp=19, min_dp=19),
+              dict(start=3, end=4, ref='A', gq=0, med_dp=35, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, med_dp=20, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, med_dp=16, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, med_dp=31, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, med_dp=35, min_dp=35),
+              dict(start=8, end=9, ref='T', gq=59, med_dp=20, min_dp=20),
+              dict(start=9, end=10, ref='G', gq=56, med_dp=19, min_dp=19),
           ]),
       # Binning by 3 does not cause any records to be merged.
       dict(
           gq_resolution=3,
           expecteds=[
-              dict(start=1, end=2, ref='A', gq=53, min_dp=18),
-              dict(start=2, end=3, ref='C', gq=56, min_dp=19),
-              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
-              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
-              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
-              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
-              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
-              dict(start=8, end=9, ref='T', gq=59, min_dp=20),
-              dict(start=9, end=10, ref='G', gq=56, min_dp=19),
+              dict(start=1, end=2, ref='A', gq=53, med_dp=18, min_dp=18),
+              dict(start=2, end=3, ref='C', gq=56, med_dp=19, min_dp=19),
+              dict(start=3, end=4, ref='A', gq=0, med_dp=35, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, med_dp=20, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, med_dp=16, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, med_dp=31, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, med_dp=35, min_dp=35),
+              dict(start=8, end=9, ref='T', gq=59, med_dp=20, min_dp=20),
+              dict(start=9, end=10, ref='G', gq=56, med_dp=19, min_dp=19),
           ]),
       # Binning by 4 causes the first merge, of the first two records.
       dict(
           gq_resolution=4,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=53, min_dp=18),
-              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
-              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
-              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
-              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
-              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
-              dict(start=8, end=9, ref='T', gq=59, min_dp=20),
-              dict(start=9, end=10, ref='G', gq=56, min_dp=19),
+              dict(start=1, end=3, ref='A', gq=53, med_dp=18, min_dp=18),
+              dict(start=3, end=4, ref='A', gq=0, med_dp=35, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, med_dp=20, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, med_dp=16, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, med_dp=31, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, med_dp=35, min_dp=35),
+              dict(start=8, end=9, ref='T', gq=59, med_dp=20, min_dp=20),
+              dict(start=9, end=10, ref='G', gq=56, med_dp=19, min_dp=19),
           ]),
       dict(
           gq_resolution=10,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=53, min_dp=18),
-              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
-              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
-              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
-              dict(start=6, end=7, ref='A', gq=72, min_dp=31),
-              dict(start=7, end=8, ref='C', gq=83, min_dp=35),
-              dict(start=8, end=10, ref='T', gq=56, min_dp=19),
+              dict(start=1, end=3, ref='A', gq=53, med_dp=18, min_dp=18),
+              dict(start=3, end=4, ref='A', gq=0, med_dp=35, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, med_dp=20, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, med_dp=16, min_dp=16),
+              dict(start=6, end=7, ref='A', gq=72, med_dp=31, min_dp=31),
+              dict(start=7, end=8, ref='C', gq=83, med_dp=35, min_dp=35),
+              dict(start=8, end=10, ref='T', gq=56, med_dp=19, min_dp=19),
           ]),
       dict(
           gq_resolution=45,
           expecteds=[
-              dict(start=1, end=3, ref='A', gq=53, min_dp=18),
-              dict(start=3, end=4, ref='A', gq=0, min_dp=35),
-              dict(start=4, end=5, ref='T', gq=0, min_dp=20),
-              dict(start=5, end=6, ref='A', gq=0, min_dp=16),
-              dict(start=6, end=10, ref='A', gq=56, min_dp=19),
+              dict(start=1, end=3, ref='A', gq=53, med_dp=18, min_dp=18),
+              dict(start=3, end=4, ref='A', gq=0, med_dp=35, min_dp=35),
+              dict(start=4, end=5, ref='T', gq=0, med_dp=20, min_dp=20),
+              dict(start=5, end=6, ref='A', gq=0, med_dp=16, min_dp=16),
+              # 25 comes from int(median([31, 35, 20, 19])).
+              dict(start=6, end=10, ref='A', gq=56, med_dp=25, min_dp=19),
           ]),
   )
   def test_quantize_gvcfs(self, gq_resolution, expecteds):
@@ -414,7 +426,7 @@ class VariantCallerTests(parameterized.TestCase):
               (0, 19, 'G')]
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
     caller = PlaceholderVariantCaller(0.01, 100, gq_resolution)
-    gvcfs = list(caller.make_gvcfs(allele_counts))
+    gvcfs = list(caller.make_gvcfs(allele_counts, include_med_dp=True))
     self.assertLen(gvcfs, len(expecteds))
     for actual, expected in zip(gvcfs, expecteds):
       self.assertGVCF(actual, **expected)
