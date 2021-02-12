@@ -39,6 +39,7 @@ BUILD_DOCKER=false
 DRY_RUN=false
 USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
+SAVE_INTERMEDIATE_RESULTS=false
 # Strings; sorted alphabetically.
 BAM=""
 BIN_VERSION="1.1.0"
@@ -91,6 +92,16 @@ while (( "$#" )); do
       USE_HP_INFORMATION="$2"
       if [[ "${USE_HP_INFORMATION}" != "true" ]] && [[ "${USE_HP_INFORMATION}" != "false" ]]; then
         echo "Error: --use_hp_information needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --save_intermediate_results)
+      SAVE_INTERMEDIATE_RESULTS="$2"
+      if [[ "${SAVE_INTERMEDIATE_RESULTS}" != "true" ]] && [[ "${SAVE_INTERMEDIATE_RESULTS}" != "false" ]]; then
+        echo "Error: --save_intermediate_results needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -259,12 +270,17 @@ if [[ "${MODEL_TYPE}" = "WES" ]]; then
   happy_args+=( -T "${INPUT_DIR}/$(basename $CAPTURE_BED)")
 fi
 
+if [[ "${SAVE_INTERMEDIATE_RESULTS}" == "true" ]]; then
+  extra_args+=( --intermediate_results_dir "/output/intermediate_results_dir")
+fi
+
 echo "========================="
 echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "USE_HP_INFORMATION: ${USE_HP_INFORMATION}"
+echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "# Strings; sorted alphabetically."
 echo "BAM: ${BAM}"
 echo "BIN_VERSION: ${BIN_VERSION}"
