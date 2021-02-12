@@ -193,35 +193,35 @@ if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   MODEL_TYPE="PACBIO"
   BASE="${HOME}/pacbio-case-study"
 
-  REF="${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
-  BAM="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.bam"
-  TRUTH_VCF="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz"
-  TRUTH_BED="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed"
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed}"
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   MODEL_TYPE="WGS"
   BASE="${HOME}/wgs-case-study"
 
-  REF="${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
-  BAM="${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
-  TRUTH_VCF="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz"
-  TRUTH_BED="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed"
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed}"
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   MODEL_TYPE="WES"
   BASE="${HOME}/exome-case-study"
 
-  REF="${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
-  BAM="${GCS_DATA_DIR}/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam"
-  TRUTH_VCF="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz"
-  TRUTH_BED="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed"
-  CAPTURE_BED="${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed"
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed}"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed}"
 elif [[ "${MODEL_PRESET}" = "HYBRID_PACBIO_ILLUMINA" ]]; then
   MODEL_TYPE="HYBRID_PACBIO_ILLUMINA"
   BASE="${HOME}/hybrid-pacbio-illumina-case-study"
 
-  REF="${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
-  BAM="${GCS_DATA_DIR}/hybrid-case-study-testdata/HG003_hybrid_35x_ilmn_35x_pacb.grch38.phased.bam"
-  TRUTH_VCF="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz"
-  TRUTH_BED="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed"
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/hybrid-case-study-testdata/HG003_hybrid_35x_ilmn_35x_pacb.grch38.phased.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2_benchmark.bed}"
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
     echo "Error: --model_preset must be one of WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA." >&2
