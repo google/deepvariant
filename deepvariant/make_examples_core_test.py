@@ -787,7 +787,9 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # Make sure we call CallVariant for each of the counts returned by the
     # allele counter.
-    mock_vc.calls_and_gvcfs.assert_called_once_with(mock_ac, include_gvcfs)
+    include_med_dp = False
+    mock_vc.calls_and_gvcfs.assert_called_once_with(mock_ac, include_gvcfs,
+                                                    include_med_dp)
 
     # Finally, our actual result should be the single 'variant' and potentially
     # the gvcf records.

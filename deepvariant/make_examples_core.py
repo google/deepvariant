@@ -903,7 +903,8 @@ class RegionProcessor(object):
       allele_counter.add(read, self.options.variant_caller_options.sample_name)
 
     candidates, gvcfs = self.variant_caller.calls_and_gvcfs(
-        allele_counter, gvcf_output_enabled(self.options))
+        allele_counter, gvcf_output_enabled(self.options),
+        self.options.include_med_dp)
     return candidates, gvcfs
 
   def align_to_all_haplotypes(self, variant, reads):

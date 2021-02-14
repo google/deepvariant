@@ -491,7 +491,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 43.
+// Next ID: 44.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -547,6 +547,8 @@ message DeepVariantOptions {
   string proposed_variants_filename = 33;
   // Path where we should put our gVCF records.
   string gvcf_filename = 16;
+  // Whether to generate MED_DP in gVCF records or not.
+  bool include_med_dp = 43;
 
   // The name of the deep learning model to use with DeepVariant.
   string model_name = 17;

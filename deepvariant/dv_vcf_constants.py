@@ -52,7 +52,7 @@ DEEP_VARIANT_VAF_FORMAT = 'VAF'
 def deepvariant_header(contigs,
                        sample_names,
                        add_info_candidates=False,
-                       include_med_dp=False):
+                       include_med_dp=True):
   """Returns a VcfHeader used for writing VCF output.
 
   This function fills out the FILTER, INFO, FORMAT, and extra header information

@@ -126,6 +126,8 @@ flags.DEFINE_integer(
     'gvcf_gq_binsize', 5,
     'Bin size in which to quantize gVCF genotype qualities. Larger bin size '
     'reduces the number of gVCF records at a loss of quality granularity.')
+flags.DEFINE_bool('include_med_dp', False,
+                  'If true, include MED_DP in the output gVCF records.')
 flags.DEFINE_string(
     'confident_regions', '',
     'Regions that we are confident are hom-ref or a variant in BED format. In '
@@ -444,6 +446,7 @@ def default_options(add_flags=True, flags_obj=None):
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
+    options.include_med_dp = flags_obj.include_med_dp
     options.task_id = flags_obj.task
     options.num_shards = num_shards
     options.runtime_by_region = runtime_by_region
