@@ -363,11 +363,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(decode_example(examples[0])['image/shape'], [140, 221, 8])
 
   @parameterized.parameters(
-      dict(select_types=None, expected_count=78),
-      dict(select_types='all', expected_count=78),
+      dict(select_types=None, expected_count=79),
+      dict(select_types='all', expected_count=79),
       dict(select_types='snps', expected_count=64),
-      dict(select_types='indels', expected_count=10),
-      dict(select_types='snps indels', expected_count=74),
+      dict(select_types='indels', expected_count=11),
+      dict(select_types='snps indels', expected_count=75),
       dict(select_types='multi-allelics', expected_count=4),
   )
   @flagsaver.flagsaver

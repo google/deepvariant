@@ -246,7 +246,7 @@ class WindowSelectorTest(parameterized.TestCase):
       # quality are included.
       dict(
           read=test_utils.make_read(
-              'AAGTA', start=10, cigar='2M2I1M', quals=[64, 64, 10, 30, 64]),
+              'AAGTA', start=10, cigar='2M2I1M', quals=[64, 64, 10, 21, 64]),
           expected=[]),
       # The left 2S operator is ignored because one base has a 10 quality.
       dict(
@@ -254,7 +254,7 @@ class WindowSelectorTest(parameterized.TestCase):
               'TGATAC',
               start=10,
               cigar='2S3M1S',
-              quals=[64, 10, 64, 64, 64, 64]),
+              quals=[21, 10, 64, 64, 64, 64]),
           expected=[11, 12, 13]),
       # The right 1S operator is ignored because one base has a 10 quality.
       dict(

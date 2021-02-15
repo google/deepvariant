@@ -63,6 +63,12 @@ std::vector<int> VariantReadsWindowSelectorCandidates(
     for (const auto& entry : counts[i].read_alleles()) {
       const Allele& allele = entry.second;
 
+      // We used to discard low quality allele counts. Now we keep them, but
+      // in order to maintain the original logic the filter is added.
+      if (allele.is_low_quality()) {
+        continue;
+      }
+
       int start, end;
       switch (allele.type()) {
         case SUBSTITUTION:

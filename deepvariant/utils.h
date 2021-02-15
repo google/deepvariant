@@ -44,9 +44,8 @@ namespace deepvariant {
 using tensorflow::string;
 
 // Creates an allele with the provided bases, type, and count.
-Allele MakeAllele(const string& bases,
-                  const AlleleType type,
-                  const int count);
+Allele MakeAllele(const string& bases, const AlleleType type, const int count,
+                  const bool is_low_quality = false);
 
 // First simplifies ref and alt by removing the common suffix, and the returns
 // simplified_ref->simplified_alt.

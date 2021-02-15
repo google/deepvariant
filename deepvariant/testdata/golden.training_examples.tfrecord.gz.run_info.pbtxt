@@ -3512,6 +3512,10 @@ options {
   run_info_filename: "deepvariant/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
   variant_caller: VERY_SENSITIVE_CALLER
   reads_filenames: "deepvariant/testdata/input/NA12878_S1.chr20.10_10p1mb.bam"
+  use_ref_for_cram: true
+  parse_sam_aux_fields: true
+  hts_block_size: 134217728
+  logging_every_n_candidates: 100
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3530,12 +3534,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1200.1029999999998
+  cpu_frequency_mhz: 1230.5985833333334
   total_memory_mb: 63978
-  wall_time_seconds: 1.744377613067627
-  cpu_user_time_seconds: 5.804764
-  cpu_system_time_seconds: 2.572658
-  memory_peak_rss_mb: 381
-  read_bytes: 807477248
+  wall_time_seconds: 0.8633794784545898
+  cpu_user_time_seconds: 5.920051
+  cpu_system_time_seconds: 2.5497449999999997
+  memory_peak_rss_mb: 376
+  read_bytes: 848179200
   write_bytes: 20480
 }

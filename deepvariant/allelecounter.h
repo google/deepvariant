@@ -60,24 +60,31 @@ using tensorflow::int64;
 // Computes and returns a vector of Allele objects, one for each distinct Allele
 // across all reads in allele_count. Each allele in the vector has its count
 // field set to the number of reads that carried that allele.
-std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count);
+std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
+                                    bool include_low_quality = false);
 
 // Summarizes the counts of all of the distinct alleles present in allele_count
 // for one position combined for all DeepTrio samples. Effectively this function
 // merges allele_count from all DeepTrio samples.
 // This function is similar to SumAlleleCounts(const AlleleCount& allele_count)
 std::vector<Allele> SumAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts);
+    const std::vector<AlleleCount>& allele_counts,
+    bool include_low_quality = false);
+
+int TotalRefCounts(const AlleleCount& allele_count,
+                   bool include_low_quality = false);
 
 // Gets the total count of observed alleles in this allele_count, which is the
 // sum of the observed non-reference alleles in read_alleles + the total number
 // of reference supporting reads.
-int TotalAlleleCounts(const AlleleCount& allele_count);
+int TotalAlleleCounts(const AlleleCount& allele_count,
+                      bool include_low_quality = false);
 
 // Gets the total count of observed alleles in allele_count from all DeepTrio
 // samples, which is the sum of the observed non-reference alleles in
 // read_alleles + the total number of reference supporting reads.
-int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts);
+int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
+                      bool include_low_quality = false);
 
 // Represents an Allele observed in a read at a specific position in our
 // interval. Supports the concept that the site should be skipped but still
@@ -95,8 +102,12 @@ class ReadAllele {
   ReadAllele() = default;
 
   // Creates a ReadAllele with position, bases, and type.
-  ReadAllele(int position, const string& bases, const AlleleType& type)
-      : position_(position), bases_(bases), type_(type) {}
+  ReadAllele(int position, const string& bases, const AlleleType& type,
+             bool is_low_quality = false)
+      : position_(position),
+        bases_(bases),
+        type_(type),
+        low_quality_allele_(is_low_quality) {}
 
   // Gets the position of this ReadAllele. Can be < 0 or >= IntervalLength(),
   // indicating that the ReadAllele refers to a position outside of the
@@ -112,12 +123,15 @@ class ReadAllele {
   // Gets the type of the allele observed at this position.
   const AlleleType& type() const { return type_; }
 
+  bool is_low_quality() const { return low_quality_allele_; }
+
  private:
   static constexpr int kInvalidPosition = -1;
 
   const int position_ = kInvalidPosition;
   const string bases_ = "";
   const AlleleType type_ = AlleleType::UNSPECIFIED;
+  bool low_quality_allele_ = false;
 };
 
 // Workhorse class to compute AlleleCounts over an interval on the genome.

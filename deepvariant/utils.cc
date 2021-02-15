@@ -38,14 +38,13 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-
-Allele MakeAllele(const string& bases,
-                  const AlleleType type,
-                  const int count) {
+Allele MakeAllele(const string& bases, const AlleleType type, const int count,
+                  const bool is_low_quality) {
   Allele allele;
   allele.set_bases(bases);
   allele.set_type(type);
   allele.set_count(count);
+  allele.set_is_low_quality(is_low_quality);
   return allele;
 }
 

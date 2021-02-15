@@ -61,10 +61,15 @@ using nucleus::genomics::v1::Read;
 using absl::StrCat;
 
 
-std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count) {
+// redacted
+// functionality is identical.
+std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
+                                    bool include_low_quality) {
   std::map<std::pair<string_view, AlleleType>, int> allele_sums;
   for (const auto& entry : allele_count.read_alleles()) {
-    ++allele_sums[{entry.second.bases(), entry.second.type()}];
+    if (include_low_quality || !entry.second.is_low_quality()) {
+      ++allele_sums[{entry.second.bases(), entry.second.type()}];
+    }
   }
 
   std::vector<Allele> to_return;
@@ -90,11 +95,14 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count) {
 }
 
 std::vector<Allele> SumAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts) {
+    const std::vector<AlleleCount>& allele_counts,
+    bool include_low_quality) {
   std::map<std::pair<string_view, AlleleType>, int> allele_sums;
   for (const AlleleCount& allele_count : allele_counts) {
     for (const auto& entry : allele_count.read_alleles()) {
-      ++allele_sums[{entry.second.bases(), entry.second.type()}];
+      if (include_low_quality || !entry.second.is_low_quality()) {
+        ++allele_sums[{entry.second.bases(), entry.second.type()}];
+      }
     }
   }
 
@@ -124,16 +132,28 @@ std::vector<Allele> SumAlleleCounts(
   return to_return;
 }
 
-int TotalAlleleCounts(const AlleleCount& allele_count) {
-  return allele_count.read_alleles_size() +
-         allele_count.ref_supporting_read_count();
+// redacted
+// functionality is identical.
+int TotalAlleleCounts(const AlleleCount& allele_count,
+                      bool include_low_quality) {
+  return std::count_if(
+      allele_count.read_alleles().begin(),
+      allele_count.read_alleles().end(),
+         [include_low_quality](google::protobuf::Map<string, Allele>::value_type e) {
+           return !e.second.is_low_quality() || include_low_quality;
+         }) + allele_count.ref_supporting_read_count();
 }
 
-int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts) {
+int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
+                      bool include_low_quality) {
   int total_allele_count = 0;
   for (const AlleleCount& allele_count : allele_counts) {
-    total_allele_count += (allele_count.read_alleles_size() +
-                           allele_count.ref_supporting_read_count());
+    total_allele_count += std::count_if(
+        allele_count.read_alleles().begin(), allele_count.read_alleles().end(),
+        [include_low_quality](google::protobuf::Map<string, Allele>::value_type e) {
+          return !e.second.is_low_quality() || include_low_quality;
+        });
+    total_allele_count += allele_count.ref_supporting_read_count();
   }
   return total_allele_count;
 }
@@ -143,17 +163,21 @@ int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts) {
 // offset + len must be less than or equal to the length of the aligned
 // sequence of read or a CHECK will fail.
 bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
-                    int len, const AlleleCounterOptions& options) {
+                    int len, const AlleleCounterOptions& options,
+                    bool& is_low_quality) {
   CHECK_LE(offset + len, read.aligned_quality_size());
 
   const int min_base_quality = options.read_requirements().min_base_quality();
+  int indel_base_quality = 0;
   for (int i = 0; i < len; i++) {
-    if (read.aligned_quality(offset + i) < min_base_quality) {
-      return false;
-    }
+    indel_base_quality += read.aligned_quality(offset + i);
     if (!nucleus::IsCanonicalBase(read.aligned_sequence()[offset + i])) {
       return false;
     }
+  }
+  is_low_quality = false;
+  if (indel_base_quality < min_base_quality * len) {
+    is_low_quality = true;
   }
   return true;
 }
@@ -216,10 +240,12 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
                                               const CigarUnit& cigar) {
   const int op_len = cigar.operation_length();
   const string prev_base = GetPrevBase(read, read_offset, interval_offset);
+  bool is_low_quality_read_allele = false;
 
   if (prev_base.empty() || !nucleus::AreCanonicalBases(prev_base) ||
       (cigar.operation() != CigarUnit::DELETE &&
-       !CanBasesBeUsed(read, read_offset, op_len, options_))) {
+       !CanBasesBeUsed(read, read_offset, op_len, options_,
+                       is_low_quality_read_allele))) {
     // There is no prev_base (we are at the start of the contig), or the bases
     // are unusable, so don't actually add the indel allele.
     return ReadAllele();
@@ -271,7 +297,8 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
       LOG(FATAL) << "Unexpected cigar operation: " << cigar.DebugString();
   }
 
-  return ReadAllele(interval_offset - 1, StrCat(prev_base, bases), type);
+  return ReadAllele(interval_offset - 1, StrCat(prev_base, bases), type,
+                    is_low_quality_read_allele);
 }
 
 void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
@@ -300,13 +327,16 @@ void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
     AlleleCount& allele_count = counts_[to_add_i.position()];
 
     if (to_add_i.type() == AlleleType::REFERENCE) {
-      const int prev_count = allele_count.ref_supporting_read_count();
-      allele_count.set_ref_supporting_read_count(prev_count + 1);
+      if (!to_add_i.is_low_quality()) {
+        const int prev_count = allele_count.ref_supporting_read_count();
+        allele_count.set_ref_supporting_read_count(prev_count + 1);
+      }
     } else {
       auto* read_alleles = allele_count.mutable_read_alleles();
       auto* sample_alleles = allele_count.mutable_sample_alleles();
       const string key = ReadKey(read);
-      const Allele allele = MakeAllele(to_add_i.bases(), to_add_i.type(), 1);
+      const Allele allele = MakeAllele(to_add_i.bases(), to_add_i.type(), 1,
+                                       to_add_i.is_low_quality());
 
       // Naively, there should never be multiple counts for the same read key.
       // We detect such a situation here but only write out a warning. It would
@@ -354,14 +384,17 @@ void AlleleCounter::Add(const Read& read, const string& sample) {
         for (int i = 0; i < op_len; ++i) {
           const int ref_offset = interval_offset + i;
           const int base_offset = read_offset + i;
+          bool is_low_quality_read_allele = false;
           if (IsValidRefOffset(ref_offset) &&
-              CanBasesBeUsed(read, base_offset, 1, options_)) {
+              CanBasesBeUsed(read, base_offset, 1, options_,
+                             is_low_quality_read_allele)) {
             const AlleleType type =
                 ref_bases_[ref_offset] == read_seq[base_offset]
                     ? AlleleType::REFERENCE
                     : AlleleType::SUBSTITUTION;
             to_add.emplace_back(ref_offset,
-                                string(read_seq.substr(base_offset, 1)), type);
+                                string(read_seq.substr(base_offset, 1)), type,
+                               is_low_quality_read_allele);
           }
         }
         read_offset += op_len;

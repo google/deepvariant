@@ -151,7 +151,10 @@ class AlleleCounterTest : public ::testing::Test {
       const int act_total =
           std::accumulate(expected[i].cbegin(), expected[i].cend(), 0,
                           [](const int total, const Allele& allele) {
-                            return total + allele.count();
+                            if (!allele.is_low_quality())
+                              return total + allele.count();
+                            else
+                              return total;
                           });
       EXPECT_THAT(act_total, Eq(TotalAlleleCounts(allele_count)));
     }
@@ -703,7 +706,13 @@ TEST_F(AlleleCounterTest, TestMinBaseQualInsertion) {
   // A bad base in the insertion stops us from adding that allele but it
   // preserves our good base before the insertion.
   std::vector<std::vector<Allele>> expected = {
-      {MakeAllele("T", AlleleType::REFERENCE, 1)},
+      // If our INS was a good quality we would have the following vector:
+      // [INS (TAAA), REF(C)]
+      // But due to a low quality base we don't count INS in SumAlleleCounts
+      // Now our vector is [REF(C)]
+      // It is very confusing to not have REF(T) in our vector. But, if we keep
+      // it there we would overcount ref alleles  while analyzing the insertion.
+      {},
       {MakeAllele("C", AlleleType::REFERENCE, 1)},
       {},
       {},
@@ -712,7 +721,10 @@ TEST_F(AlleleCounterTest, TestMinBaseQualInsertion) {
 
   for (const int bad_pos : {1, 2, 3}) {
     auto read = MakeRead(chr_, start_, "TAAAC", {"1M", "3I", "1M"});
-    read.set_aligned_quality(bad_pos, min_base_quality() - 1);
+    for (int i = 0; i < read.aligned_sequence().size(); i++) {
+      read.set_aligned_quality(i, min_base_quality() + 1);
+    }
+    read.set_aligned_quality(bad_pos, min_base_quality() - 3);
     AddAndCheckReads(read, expected);
   }
 }
@@ -732,10 +744,13 @@ TEST_F(AlleleCounterTest, TestMinBaseQualIndelBadInitialBase) {
 
   // The insertion has a bad base, but the C anchor is good so instead of the
   // Cxxx allele we see C as a match.
-  read.set_aligned_quality(3, min_base_quality() - 1);
+  for (int i = 0; i < read.aligned_sequence().size(); i++) {
+    read.set_aligned_quality(i, min_base_quality() + 1);
+  }
+  read.set_aligned_quality(3, min_base_quality() - 4);
   AddAndCheckReads(read, {
                              {MakeAllele("T", AlleleType::REFERENCE, 1)},
-                             {MakeAllele("C", AlleleType::REFERENCE, 1)},
+                             {},
                              {MakeAllele("C", AlleleType::REFERENCE, 1)},
                              {MakeAllele("G", AlleleType::REFERENCE, 1)},
                              {MakeAllele("T", AlleleType::REFERENCE, 1)},

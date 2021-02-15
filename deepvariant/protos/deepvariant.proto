@@ -88,6 +88,9 @@ message Allele {
   // were observed (which can happen if you want to record that you checked
   // for some allele in the data and never saw any evidence for it).
   int32 count = 3;
+
+  // Set to true if allele contains low quality bases.
+  bool is_low_quality = 4;
 }
 
 // An AlleleCount summarizes the NGS data observed at a position in the genome.
