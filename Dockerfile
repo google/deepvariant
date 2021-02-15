@@ -69,6 +69,10 @@ COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
 
 RUN ./run-prereq.sh
 
+# Make python3.6 default.
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 0 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.6 0
+
 # Create shell wrappers for python zip files for easier use.
 RUN \
   BASH_HEADER='#!/bin/bash' && \
