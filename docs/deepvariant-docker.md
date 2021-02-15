@@ -36,7 +36,7 @@ docker image. In this example, we are going to use the quickstart test data:
 
 ```bash
 mkdir -p input
-gsutil -m cp gs://deepvariant/quickstart-testdata/* input/
+gsutil -m cp "gs://deepvariant/quickstart-testdata/*" input/
 ```
 
 Copy the model:
