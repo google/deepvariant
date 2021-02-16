@@ -35,6 +35,7 @@
 
 set -euo pipefail
 
+echo ========== This script is only maintained for Ubuntu 18.04.
 echo ========== Load config settings.
 
 source settings.sh
@@ -68,7 +69,7 @@ sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git lsb-release wget > /dev/null
+sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null
 sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
@@ -103,15 +104,7 @@ pip3 install "${PIP_ARGS[@]}" 'protobuf==3.12.0'
 pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
 pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git
 
-# Because of an issue with pypi's numpy on Ubuntu 14.04. we need to compile from
-# source.
-# See https://github.com/tensorflow/tensorflow/issues/6968#issuecomment-279061085
-if [[ "$(lsb_release -d)" == *Ubuntu*14.04.* ]]; then
-  echo "Installing numpy with --no-binary=:all:. This will take a bit longer."
-  pip3 install "${PIP_ARGS[@]}" --no-binary=:all: "numpy==${DV_TF_NUMPY_VERSION}"
-else
-  pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
-fi
+pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
 
 # Reason:
 # ========== [Wed Dec 11 19:57:32 UTC 2019] Stage 'Install python3 packages' starting
@@ -178,12 +171,8 @@ fi
 # See https://www.tensorflow.org/install/source#gpu for versions required.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   if [[ "${DV_INSTALL_GPU_DRIVERS}" = "1" ]]; then
-    UBUNTU_VERSION=$(lsb_release -r|cut -f 2|sed -e 's/\.//')
-    if [[ $UBUNTU_VERSION != "1804" ]]; then
-      echo "CUDA installation only configured and tested for Ubuntu 18."
-      exit 1
-    fi
-
+    # This script is only maintained for Ubuntu 18.04.
+    UBUNTU_VERSION="1804"
     # https://www.tensorflow.org/install/gpu?hl=en#ubuntu_1804_cuda_101
     echo "Checking for CUDA..."
     if ! dpkg-query -W cuda-10-1; then

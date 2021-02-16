@@ -30,6 +30,7 @@ set -euo pipefail
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+echo ========== This script is only maintained for Ubuntu 18.04.
 echo ========== Load config settings.
 
 source settings.sh
@@ -48,7 +49,7 @@ sudo -H apt-get -qq -y update
 
 note_build_stage "Install development packages"
 
-sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release wget > /dev/null
+sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null
 
 ################################################################################
 # bazel
@@ -84,24 +85,11 @@ ensure_wanted_bazel_version "${DV_BAZEL_VERSION}"
 
 note_build_stage "Install CLIF binary"
 
-if [[ -e /usr/local/clif/bin/pyclif ]];
+if [[ -e /usr/local/bin/pyclif ]];
 then
   echo "CLIF already installed."
 else
-  # Figure out which linux installation we are on to fetch an appropriate
-  # version of the pre-built CLIF binary. Note that we only support now Ubuntu
-  # 14, 16, and 18.
-  case "$(lsb_release -d)" in
-    *Ubuntu*18.*.*) export DV_PLATFORM="ubuntu-18" ;;
-    *Ubuntu*16.*.*) export DV_PLATFORM="ubuntu-16" ;;
-    *Ubuntu*14.*.*) export DV_PLATFORM="ubuntu-14" ;;
-    *Debian*9.*)    export DV_PLATFORM="debian" ;;
-    *Debian*rodete) export DV_PLATFORM="debian" ;;
-    *) echo "CLIF is not installed on this machine and a prebuilt binary is not
-available for this platform. Please install CLIF at
-https://github.com/google/clif before continuing."
-    exit 1
-  esac
+  export DV_PLATFORM="ubuntu-18"
 
   OSS_CLIF_CURL_ROOT="${DV_PACKAGE_CURL_PATH}/oss_clif_py3"
   OSS_CLIF_PKG="oss_clif.${DV_PLATFORM}.latest.tgz"
