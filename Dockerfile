@@ -78,43 +78,43 @@ RUN \
   BASH_HEADER='#!/bin/bash' && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/make_examples.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/make_examples.zip "$@"' > \
     /opt/deepvariant/bin/make_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/call_variants.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/call_variants.zip "$@"' > \
     /opt/deepvariant/bin/call_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
     /opt/deepvariant/bin/postprocess_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/model_train.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/model_train.zip "$@"' > \
     /opt/deepvariant/bin/model_train && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/model_eval.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/model_eval.zip "$@"' > \
     /opt/deepvariant/bin/model_eval && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/vcf_stats_report.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/vcf_stats_report.zip "$@"' > \
     /opt/deepvariant/bin/vcf_stats_report && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/show_examples.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/show_examples.zip "$@"' > \
     /opt/deepvariant/bin/show_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/runtime_by_region_vis.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/runtime_by_region_vis.zip "$@"' > \
     /opt/deepvariant/bin/runtime_by_region_vis && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/freeze_graph.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/freeze_graph.zip "$@"' > \
     /opt/deepvariant/bin/freeze_graph && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
+    'python3 -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
@@ -153,7 +153,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
 RUN apt-get -y update && \
-  apt-get install -y parallel python3-pip && \
+  apt-get install -y parallel python3-pip samtools && \
   PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \

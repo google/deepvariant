@@ -59,19 +59,19 @@ RUN \
   BASH_HEADER='#!/bin/bash' && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/deeptrio/make_examples.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/deeptrio/make_examples.zip "$@"' > \
     /opt/deepvariant/bin/deeptrio/make_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/call_variants.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/call_variants.zip "$@"' > \
     /opt/deepvariant/bin/call_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
+    'python3 /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
     /opt/deepvariant/bin/postprocess_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python -u /opt/deepvariant/bin/deeptrio/run_deeptrio.py "$@"' > \
+    'python3 -u /opt/deepvariant/bin/deeptrio/run_deeptrio.py "$@"' > \
     /opt/deepvariant/bin/deeptrio/run_deeptrio && \
   chmod +x /opt/deepvariant/bin/deeptrio/make_examples \
     /opt/deepvariant/bin/call_variants \
@@ -116,7 +116,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRI
 RUN chmod +r /opt/models/deeptrio/wes/parent/model.ckpt*
 
 RUN apt-get -y update && \
-  apt-get install -y parallel python3-pip && \
+  apt-get install -y parallel python3-pip samtools && \
   PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \
