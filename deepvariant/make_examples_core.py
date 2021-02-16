@@ -1253,6 +1253,24 @@ class OutputsWriter(object):
         writer.write(proto)
 
 
+def get_example_counts(examples):
+  """Returns a breakdown of examples by categories (label and type)."""
+  labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
+  types = {
+      tf_utils.EncodedVariantType.SNP: 0,
+      tf_utils.EncodedVariantType.INDEL: 0,
+      tf_utils.EncodedVariantType.UNKNOWN: 0
+  }
+
+  for example in examples:
+    example_label = tf_utils.example_label(example)
+    example_type = tf_utils.encoded_variant_type(
+        tf_utils.example_variant(example))
+    labels[example_label] += 1
+    types[example_type] += 1
+  return labels, types
+
+
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
@@ -1275,6 +1293,10 @@ def make_examples_runner(options):
                          'Writing gvcf records to %s' % options.gvcf_filename)
 
   n_regions, n_candidates, n_examples = 0, 0, 0
+  # Ideally this would use dv_constants.NUM_CLASSES, which requires generalizing
+  # deepvariant_pb2.MakeExamplesStats to use an array for the class counts.
+  n_class_0, n_class_1, n_class_2 = 0, 0, 0
+  n_snps, n_indels = 0, 0
   last_reported = 0
   with OutputsWriter(options) as writer:
     logging_with_options(
@@ -1287,6 +1309,14 @@ def make_examples_runner(options):
       n_candidates += len(candidates)
       n_examples += len(examples)
       n_regions += 1
+
+      if in_training_mode(options) and options.run_info_filename:
+        labels, types = get_example_counts(examples)
+        n_class_0 += labels[0]
+        n_class_1 += labels[1]
+        n_class_2 += labels[2]
+        n_snps += types[tf_utils.EncodedVariantType.SNP]
+        n_indels += types[tf_utils.EncodedVariantType.INDEL]
 
       before_write_outputs = time.time()
       writer.write_candidates(*candidates)
@@ -1316,8 +1346,17 @@ def make_examples_runner(options):
 
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
+    make_examples_stats = deepvariant_pb2.MakeExamplesStats(
+        num_examples=n_examples,
+        num_snps=n_snps,
+        num_indels=n_indels,
+        num_class_0=n_class_0,
+        num_class_1=n_class_1,
+        num_class_2=n_class_2)
     run_info = deepvariant_pb2.MakeExamplesRunInfo(
-        options=options, resource_metrics=resource_monitor.metrics())
+        options=options,
+        resource_metrics=resource_monitor.metrics(),
+        stats=make_examples_stats)
     if in_training_mode(options):
       if region_processor.labeler.metrics is not None:
         run_info.labeling_metrics.CopyFrom(region_processor.labeler.metrics)

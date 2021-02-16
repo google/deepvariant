@@ -910,9 +910,10 @@ message MakeExamplesStats {
 
 // Configuration and runtime information about a MakeExamples run in
 // DeepVariant.
-// Next ID: 4.
+// Next ID: 5.
 message MakeExamplesRunInfo {
   DeepVariantOptions options = 1;
   LabelingMetrics labeling_metrics = 2;
   ResourceMetrics resource_metrics = 3;
+  MakeExamplesStats stats = 4;
 }
