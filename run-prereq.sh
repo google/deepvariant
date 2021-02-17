@@ -75,7 +75,8 @@ sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
 note_build_stage "Install python3 packaging infrastructure"
 
 sudo -H apt-get install "${APT_ARGS[@]}" python3.6-dev
-sudo ln -sf /usr/bin/python3 /usr/local/bin/python3
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 0
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.6 0
 # If we install python3-pip directly, the pip3 version points to:
 #   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
 # Use the following lines to ensure 3.6.
