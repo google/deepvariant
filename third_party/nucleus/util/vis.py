@@ -53,8 +53,8 @@ from third_party.nucleus.protos import variants_pb2
 
 DEEPVARIANT_CHANNEL_NAMES = [
     'read base', 'base quality', 'mapping quality', 'strand',
-    'read supports variant', 'base differs from ref', 'alternate allele 1',
-    'alternate allele 2'
+    'read supports variant', 'base differs from ref', 'haplotype tag',
+    'alternate allele 1', 'alternate allele 2'
 ]
 
 
