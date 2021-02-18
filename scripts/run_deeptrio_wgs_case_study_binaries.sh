@@ -147,7 +147,7 @@ function run_make_examples() {
   echo "Start running make_examples...Log will be in the terminal and also to ${LOG_DIR}/make_examples.log."
   seq 0 $((N_SHARDS-1)) | \
     parallel --halt 2 --line-buffer \
-      python ./bazel-bin/deeptrio/make_examples.zip \
+      python3 ./bazel-bin/deeptrio/make_examples.zip \
         --mode calling \
         --ref "${REF}" \
         --reads "${BAM_CHILD}" \
@@ -171,7 +171,7 @@ function run_call_variants() {
   local -r examples="${1}"
   local -r model="${2}"
   local -r cvo_output="${3}"
-  python ./bazel-bin/deepvariant/call_variants.zip \
+  python3 ./bazel-bin/deepvariant/call_variants.zip \
       --outfile "${cvo_output}" \
       --examples "${examples}" \
       --checkpoint "${model}"
@@ -184,7 +184,7 @@ function run_postprocess_variants() {
   echo "Start running postprocess_variants (without gVCFs)...Log will be in the terminal and also to ${LOG_DIR}/postprocess_variants.log."
   local -r cvo_output="${1}"
   local -r vcf_output="${2}"
-  python ./bazel-bin/deepvariant/postprocess_variants.zip \
+  python3 ./bazel-bin/deepvariant/postprocess_variants.zip \
       --ref "${REF}" \
       --infile "${cvo_output}" \
       --outfile "${vcf_output}"
@@ -200,7 +200,7 @@ function run_postprocess_variants_gVCF() {
   local -r gvcf_output="${3}"
   local -r gvcf_tfrecords="${4}"
 
-  python ./bazel-bin/deepvariant/postprocess_variants.zip \
+  python3 ./bazel-bin/deepvariant/postprocess_variants.zip \
       --ref "${REF}" \
       --infile "${cvo_output}" \
       --outfile "${vcf_output}" \
@@ -217,7 +217,7 @@ function run_vcf_stats_report() {
   local -r vcf_output="${1}"
   local -r stats_output="${2}"
   echo "Start running vcf_stats_report...Log will be in the terminal and also to ${LOG_DIR}/vcf_stats_report.log."
-  python ./bazel-bin/deepvariant/vcf_stats_report.zip \
+  python3 ./bazel-bin/deepvariant/vcf_stats_report.zip \
       --input_vcf "${vcf_output}" \
       --outfile_base "${stats_output}"
   echo "Done."
