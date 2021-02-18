@@ -89,11 +89,9 @@ void AddGenotypes(const string& sample_name,
   }
 }
 
-void FillVariant(const string& reference_name,
-                 int variant_start,
-                 const string& ref_bases,
-                 const string& sample_name,
-                 const std::vector<string>& alternate_bases,
+void FillVariant(const string& reference_name, int variant_start,
+                 const string& ref_bases, const string& sample_name,
+                 const std::vector<std::string>& alternate_bases,
                  Variant* variant) {
   variant->set_reference_name(reference_name);
   variant->set_start(variant_start);
@@ -321,7 +319,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     std::vector<double> vaf;
     ad.push_back(allele_count.ref_supporting_read_count());
 
-    std::map<string, const Allele*> alt_to_alleles;
+    std::map<std::string, const Allele*> alt_to_alleles;
     for (const auto& entry : allele_map) {
       const string key = SimplifyRefAlt(allele_map_refbases, entry.second);
       alt_to_alleles[key] = &entry.first;
@@ -392,11 +390,9 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
       // multiple times.
       if (variant->start() >= range.start()) {
         Variant clean_variant;
-        FillVariant(variant->reference_name(),
-                    variant->start(),
-                    variant->reference_bases(),
-                    options_.sample_name(),
-                    AsVector<string>(variant->alternate_bases()),
+        FillVariant(variant->reference_name(), variant->start(),
+                    variant->reference_bases(), options_.sample_name(),
+                    AsVector<std::string>(variant->alternate_bases()),
                     &clean_variant);
         variants_in_region.push_back(clean_variant);
       }
@@ -479,7 +475,7 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
     return nullopt;
   }
   const string refbases = CalcRefBases(allele_count.ref_base(), alt_alleles);
-  std::vector<string> alternate_bases;
+  std::vector<std::string> alternate_bases;
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
   const AlleleMap allele_map = BuildAlleleMap(
@@ -515,7 +511,7 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
 }
 
 void VariantCaller::AddSupportingReads(
-    const ::google::protobuf::Map<string, Allele>& read_alleles,
+    const ::google::protobuf::Map<std::string, Allele>& read_alleles,
     const AlleleMap& allele_map, const string& refbases,
     DeepVariantCall* call) const {
   string suffix = "";

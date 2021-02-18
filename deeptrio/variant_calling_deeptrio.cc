@@ -352,7 +352,7 @@ bool VariantCaller::KeepReferenceSite() const {
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
-    const std::unordered_map<string,
+    const std::unordered_map<std::string,
                              std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
         allele_counts,
     const string& target_sample) const {

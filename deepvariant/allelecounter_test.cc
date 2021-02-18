@@ -120,7 +120,7 @@ class AlleleCounterTest : public ::testing::Test {
 
     // Add our reads to allele_counter and get a vector of our read names for
     // further testing.
-    std::vector<string> read_names;
+    std::vector<std::string> read_names;
     for (const auto& read : reads) {
       allele_counter->Add(read, "sample_id");
       read_names.push_back(allele_counter->ReadKey(read));
@@ -135,7 +135,7 @@ class AlleleCounterTest : public ::testing::Test {
       const std::vector<Allele> alleles_sum = SumAlleleCounts(allele_count);
 
       // All read alleles should have count of 1 in the allele_count.
-      std::vector<string> read_allele_read_names;
+      std::vector<std::string> read_allele_read_names;
       for (const auto& read_name_allele : allele_count.read_alleles()) {
         EXPECT_THAT(read_names, Contains(read_name_allele.first));
         const Allele& allele = read_name_allele.second;
@@ -190,7 +190,7 @@ class AlleleCounterTest : public ::testing::Test {
 
   // Creates a test Read with a unique read name.
   Read MakeRead(const string& chr, const int start, const string& bases,
-                const std::vector<string>& cigar_elements) {
+                const std::vector<std::string>& cigar_elements) {
     Read read = nucleus::MakeRead(chr, start, bases, cigar_elements);
     // Each read gets a unique name.
     read.set_fragment_name(StrCat("read_", ++read_name_counter_));
@@ -200,7 +200,7 @@ class AlleleCounterTest : public ::testing::Test {
   AlleleCount MakeAlleleCount(
       const nucleus::genomics::v1::Position& position, const string& ref_base,
       int32_t ref_supporting_read_count,
-      const std::unordered_map<string, Allele>& read_alleles) {
+      const std::unordered_map<std::string, Allele>& read_alleles) {
     AlleleCount allele_count;
     allele_count.mutable_position()->MergeFrom(position);
     allele_count.set_ref_base(ref_base);
@@ -261,15 +261,15 @@ TEST_F(AlleleCounterTest, TestSumAlleleCountsMultipleSamples) {
 
   std::vector<AlleleCount> allele_counts = {
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<string, Allele>(
+                      std::unordered_map<std::string, Allele>(
                           {{"parent1_read_1",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<string, Allele>(
+                      std::unordered_map<std::string, Allele>(
                           {{"child_read_2",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
-                      std::unordered_map<string, Allele>())};
+                      std::unordered_map<std::string, Allele>())};
 
   std::vector<Allele> allele_sum = SumAlleleCounts(allele_counts);
   EXPECT_THAT(allele_sum, UnorderedPointwise(EqualsProto(), expected_alleles));
@@ -280,15 +280,15 @@ TEST_F(AlleleCounterTest, TestSumAlleleCountsMultipleSamples) {
 TEST_F(AlleleCounterTest, TestTotalAlleleCounts) {
   std::vector<AlleleCount> allele_counts = {
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<string, Allele>(
+                      std::unordered_map<std::string, Allele>(
                           {{"parent1_read_1",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<string, Allele>(
+                      std::unordered_map<std::string, Allele>(
                           {{"child_read_2",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
-                      std::unordered_map<string, Allele>())};
+                      std::unordered_map<std::string, Allele>())};
 
   EXPECT_EQ(TotalAlleleCounts(allele_counts), 9);
 }

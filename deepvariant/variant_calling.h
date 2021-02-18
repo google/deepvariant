@@ -77,7 +77,7 @@ struct OrderAllele {
     }
   }
 };
-using AlleleMap = std::map<Allele, string, OrderAllele>;
+using AlleleMap = std::map<Allele, std::string, OrderAllele>;
 
 // A very simple but highly sensitive variant caller.
 //
@@ -189,9 +189,10 @@ class VariantCaller {
       const std::vector<AlleleCount>& allele_counts) const;
 
   // Adds supporting reads to the DeepVariantCall.
-  void AddSupportingReads(const ::google::protobuf::Map<string, Allele>& read_alleles,
-                          const AlleleMap& allele_map, const string& refbases,
-                          DeepVariantCall* call) const;
+  void AddSupportingReads(
+      const ::google::protobuf::Map<std::string, Allele>& read_alleles,
+      const AlleleMap& allele_map, const string& refbases,
+      DeepVariantCall* call) const;
 
  private:
   int min_count(const Allele& allele) const {

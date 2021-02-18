@@ -79,7 +79,7 @@ class PileupImageEncoderNative {
   std::unique_ptr<ImageRow> EncodeRead(
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,
       const string& ref_bases, const nucleus::genomics::v1::Read& read,
-      int image_start_pos, const std::vector<string>& alt_alleles);
+      int image_start_pos, const std::vector<std::string>& alt_alleles);
 
   // Simple wrapper around EncodeRead that allows us to efficiently pass large
   // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and
@@ -91,7 +91,7 @@ class PileupImageEncoderNative {
       const string& ref_bases,
       const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
           wrapped_read,
-      int image_start_pos, const std::vector<string>& alt_alleles) {
+      int image_start_pos, const std::vector<std::string>& alt_alleles) {
     return EncodeRead(*(wrapped_dv_call.p_), ref_bases, *(wrapped_read.p_),
                       image_start_pos, alt_alleles);
   }

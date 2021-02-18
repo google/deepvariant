@@ -389,8 +389,8 @@ string DeBruijnGraph::HaplotypeForPath(const Path& path) const {
   return haplotype.str();
 }
 
-std::vector<string> DeBruijnGraph::CandidateHaplotypes() const {
-  std::vector<string> haplotypes;
+std::vector<std::string> DeBruijnGraph::CandidateHaplotypes() const {
+  std::vector<std::string> haplotypes;
   for (const Path& path : CandidatePaths()) {
     haplotypes.push_back(HaplotypeForPath(path));
   }

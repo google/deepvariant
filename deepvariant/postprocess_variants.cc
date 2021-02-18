@@ -55,7 +55,7 @@ void SortSingleSiteCalls(
     return;
   }
   //   Create the mapping from from contig to pos_in_fasta.
-  std::map<string, int> contig_name_to_pos_in_fasta =
+  std::map<std::string, int> contig_name_to_pos_in_fasta =
       nucleus::MapContigNameToPosInFasta(contigs);
   std::stable_sort(calls->begin(), calls->end(),
             [&contig_name_to_pos_in_fasta](const CallVariantsOutput& a,
@@ -69,7 +69,7 @@ void SortSingleSiteCalls(
 
 void ProcessSingleSiteCallTfRecords(
     const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
-    const std::vector<string>& tfrecord_paths,
+    const std::vector<std::string>& tfrecord_paths,
     const string& output_tfrecord_path) {
   std::vector<CallVariantsOutput> single_site_calls;
   tensorflow::Env* env = tensorflow::Env::Default();

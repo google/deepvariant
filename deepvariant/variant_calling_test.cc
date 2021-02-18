@@ -743,9 +743,9 @@ TEST_F(VariantCallingTest, TestKitchenSink) {
 
 // Extracts the read_names from the map value of call.allele_support at key,
 // returning them as a vector of strings.
-std::vector<string> SupportingReadNames(const DeepVariantCall& call,
-                                   const string& key) {
-  std::vector<string> names;
+std::vector<std::string> SupportingReadNames(const DeepVariantCall& call,
+                                             const string& key) {
+  std::vector<std::string> names;
   for (const string& read_name : call.allele_support().at(key).read_names()) {
     names.push_back(read_name);
   }
@@ -787,7 +787,7 @@ TEST_F(VariantCallingTest, TestReadSupport) {
   // in the DeepVariantCall.allele_support map without doing any clever
   // calculations that are hard to do given the complex mapping between input
   // read alleles and output variant alleles.
-  std::vector<string> keys;
+  std::vector<std::string> keys;
   for (auto& entry : call.allele_support()) {
     keys.push_back(entry.first);
   }

@@ -64,7 +64,7 @@ namespace {
 // Does this read support ref, one of the alternative alleles, or an allele we
 // aren't considering?
 inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
-                           const std::vector<string>& alt_alleles) {
+                           const std::vector<std::string>& alt_alleles) {
   string key = (read.fragment_name() + "/" +
                 std::to_string(read.read_number()));
 
@@ -96,7 +96,7 @@ inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
 // Get the allele frequency of the alt allele that is carried by a read.
 inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
                                  const Read& read,
-                                 const std::vector<string>& alt_alleles) {
+                                 const std::vector<std::string>& alt_alleles) {
   string key = (read.fragment_name() + "/" +
                 std::to_string(read.read_number()));
 
@@ -297,12 +297,9 @@ int PileupImageEncoderNative::StrandColor(bool on_positive_strand) const {
           options_.negative_strand_color());
 }
 
-std::unique_ptr<ImageRow>
-PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
-                                     const string& ref_bases,
-                                     const Read& read,
-                                     int image_start_pos,
-                                     const vector<string>& alt_alleles) {
+std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
+    const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
+    int image_start_pos, const vector<std::string>& alt_alleles) {
   ImageRow img_row(ref_bases.size(),
                    options_.num_channels(),
                    options_.use_allele_frequency(),
@@ -464,7 +461,6 @@ PileupImageEncoderNative::EncodeRead(const DeepVariantCall& dv_call,
 
   return std::unique_ptr<ImageRow>(new ImageRow(img_row));
 }
-
 
 std::unique_ptr<ImageRow>
 PileupImageEncoderNative::EncodeReference(const string& ref_bases) {

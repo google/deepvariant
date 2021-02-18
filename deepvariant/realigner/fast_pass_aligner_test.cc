@@ -98,7 +98,7 @@ class FastPassAlignerTest : public ::testing::Test {
   }
 
   void LoadHaplotypesFromFile(const string& filename,
-                              std::vector<string>* haplotypes) {
+                              std::vector<std::string>* haplotypes) {
     string file_path = nucleus::GetTestData(filename,
         "deepvariant/testdata/input");
     std::ifstream haps_stream(file_path);
@@ -175,7 +175,7 @@ TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypeTest) {
   std::vector<ReadAlignment> read_scores(aligner_.get_reads().size());
 
   // Expected values
-  std::vector<string> aligner_reads = aligner_.get_reads();
+  std::vector<std::string> aligner_reads = aligner_.get_reads();
   int expected_hap_score =
       aligner_reads[2].length() * aligner_.get_match_score() +
       aligner_reads[0].length() * aligner_.get_match_score();
@@ -209,7 +209,7 @@ TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypePartialReadOverlapTest) {
   std::vector<ReadAlignment> read_scores(aligner_.get_reads().size());
 
   // Expected values
-  std::vector<string> aligner_reads = aligner_.get_reads();
+  std::vector<std::string> aligner_reads = aligner_.get_reads();
   int expected_hap_score =
       aligner_reads[0].length() * aligner_.get_match_score() +
       aligner_reads[2].length() * aligner_.get_match_score();
@@ -242,7 +242,7 @@ TEST_F(FastPassAlignerTest,
   std::vector<ReadAlignment> read_scores(aligner_.get_reads().size());
 
   // Expected values
-  std::vector<string> aligner_reads = aligner_.get_reads();
+  std::vector<std::string> aligner_reads = aligner_.get_reads();
   int expected_hap_score =
       (aligner_reads[2].length() - 1) * aligner_.get_match_score()
       - 1 * aligner_.get_mismatch_penalty()
@@ -284,7 +284,7 @@ TEST_F(FastPassAlignerTest,
   std::vector<ReadAlignment> read_scores(aligner_.get_reads().size());
 
   // Expected values
-  std::vector<string> aligner_reads = aligner_.get_reads();
+  std::vector<std::string> aligner_reads = aligner_.get_reads();
   int expected_hap_score =
       aligner_reads[0].length() * aligner_.get_match_score();
 
@@ -315,7 +315,7 @@ TEST_F(FastPassAlignerTest, AlignHaplotypesToReference_Test) {
   Filter filter;
   const string REF_SEQ = "AGAAGGTCCCTTTGCCGAAGTTAAACCCTTTCGCGC";
   aligner_.set_reference(REF_SEQ);
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       "GTCCCTTTGCCGAAGTTAAACCCTTT",  // equals to reference
       "GTCCCTTTGCCGAGTTAAACCCTTT",   // has deletion
       "GTCCCTATGCCGAAGTTAAACCCTTT"   // has mismatch
@@ -424,7 +424,7 @@ TEST_F(FastPassAlignerTest, SetPositionsMapWithInsAndDel_Test) {
 // not realign this read because it's score is lower than a threshold.
 TEST_F(FastPassAlignerTest, SswAlignReadsToHaplotypes_Test) {
   aligner_.InitSswLib();
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 del
       "AAGTGCCCAGGGCCAAATGTTTTGGGTTTTGCAGGACAAAGTATGGTT",
       // reference with 1 sub
@@ -448,7 +448,7 @@ TEST_F(FastPassAlignerTest, SswAlignReadsToHaplotypes_Test) {
   aligner_.set_haplotypes(haplotypes);
   aligner_.AlignHaplotypesToReference();
   aligner_.SswAlignReadsToHaplotypes(40);
-  std::vector<string> aligner_reads = aligner_.get_reads();
+  std::vector<std::string> aligner_reads = aligner_.get_reads();
   std::vector<ReadAlignment> expected_read_alignments_for_hap1(
       aligner_reads.size());
   std::vector<ReadAlignment> expected_read_alignments_for_hap2(
@@ -475,7 +475,7 @@ TEST_F(FastPassAlignerTest, SswAlignReadsToHaplotypes_Test) {
 // Haplotype to ref has one mismatch. Read matches haplotype exactly.
 TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MatchMismatch_Test) {
   aligner_.InitSswLib();
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 mismatch at position 5 (T->A).
       "TGTTTAGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
   // Reference is set in init.
@@ -508,7 +508,7 @@ TEST_F(FastPassAlignerTest,
   aligner_.set_reference(
       "nnnnnnnnnnnTGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 mismatch at position 5 (T->A).
       "GATCATGTTTAGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
 
@@ -542,7 +542,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_Dels_Test) {
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 del at 9.
       // haplotype to ref: 9=1D34=
       "CGGATCATGTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
@@ -585,7 +585,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MergedDels_Test) {
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 del at 9.
       // haplotype to ref: 9=1D34=
       "CGGATCATGTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
@@ -624,7 +624,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_Ins_Test) {
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 ins at 12 (AA).
       // haplotype to ref: 13=2I32=
       "CGGATCATGTTTTAAGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
@@ -668,7 +668,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MergedIns_Test) {
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 ins at 12 (AA).
       // haplotype to ref: 13=2I32=
       "CGGATCATGTTTTAAGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
@@ -708,7 +708,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_DelIns_Test) {
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 del at 9 (missing T).
       // haplotype to ref: 9=1D34=
       "CGGATCATGTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
@@ -751,7 +751,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_InsDel_Test) {
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
-  std::vector<string> haplotypes = {
+  std::vector<std::string> haplotypes = {
       // reference with 1 ins at 9 (AA).
       // haplotype to ref: 9=2I36=
       "CGGATCATGAATTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"};
@@ -884,7 +884,7 @@ TEST_F(FastPassAlignerTest, Integration_Test) {
       LoadReadProtosFromFile("realigned_reads.pbtxt");
   string reference;
   LoadReferenceFromFile("reference.pbtxt", &reference);
-  std::vector<string> haplotypes;
+  std::vector<std::string> haplotypes;
   LoadHaplotypesFromFile("haplotypes.pbtxt", &haplotypes);
 
   AlignerOptions aligner_options;
@@ -963,7 +963,7 @@ TEST_F(FastPassAlignerTest, HaplotypeHasZeroCoverageOutsideInterval_Test) {
   std::vector<ReadAlignment> read_scores(aligner_.get_reads().size());
 
   // Expected values
-  std::vector<string> aligner_reads = aligner_.get_reads();
+  std::vector<std::string> aligner_reads = aligner_.get_reads();
   int expected_hap_score = 350;
 
   std::vector<ReadAlignment> expected_read_scores(aligner_reads.size());

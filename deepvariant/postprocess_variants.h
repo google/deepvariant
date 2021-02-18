@@ -54,7 +54,7 @@ using tensorflow::StringPiece;
 // `output_tfrecord_path`.
 void ProcessSingleSiteCallTfRecords(
     const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
-    const std::vector<string>& tfrecord_paths,
+    const std::vector<std::string>& tfrecord_paths,
     const string& output_tfrecord_path);
 
 }  // namespace deepvariant
