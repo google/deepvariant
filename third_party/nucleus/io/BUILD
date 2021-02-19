@@ -1,5 +1,4 @@
 # Code for reading and writing genomics data.
-# load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
 package(
     default_visibility = [
@@ -55,6 +54,7 @@ py_test(
     srcs = ["genomics_reader_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":genomics_reader",
         "//third_party/nucleus/protos:gff_py_pb2",
@@ -93,6 +93,7 @@ py_test(
     srcs = ["vcf_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":vcf",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -125,6 +126,7 @@ py_test(
     srcs = ["sam_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":sam",
         ":tfrecord",
@@ -155,6 +157,7 @@ py_test(
     srcs = ["bed_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":bed",
         "//third_party/nucleus/protos:bed_py_pb2",
@@ -182,6 +185,7 @@ py_test(
     srcs = ["bedgraph_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":bedgraph",
         "//third_party/nucleus/protos:bedgraph_py_pb2",
@@ -208,6 +212,7 @@ py_test(
     srcs = ["fasta_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":fasta",
         "//third_party/nucleus/protos:struct_py_pb2",
@@ -236,6 +241,7 @@ py_test(
     srcs = ["fastq_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":fastq",
         "//third_party/nucleus/protos:fastq_py_pb2",
@@ -281,6 +287,7 @@ py_test(
     srcs = ["sharded_file_utils_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":sharded_file_utils",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -306,6 +313,7 @@ py_test(
     srcs = ["tfrecord_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":tfrecord",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -329,6 +337,7 @@ py_test(
     srcs = ["tabix_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":tabix",
         ":vcf",
@@ -1053,6 +1062,7 @@ py_test(
     size = "small",
     srcs = ["genomics_io_noplugin_test.py"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/testing:py_test_utils",
@@ -1132,6 +1142,7 @@ py_test(
     srcs = ["gff_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":gff",
         ":tfrecord",
@@ -1165,6 +1176,7 @@ py_test(
     srcs = ["converter_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":converter_lib",
         "//third_party/nucleus/testing:py_test_utils",
@@ -1185,6 +1197,7 @@ py_test(
     srcs = ["gfile_test.py"],
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":gfile",
         "//third_party/nucleus/testing:py_test_utils",

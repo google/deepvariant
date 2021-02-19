@@ -1,5 +1,4 @@
 load("//third_party:clif.bzl", "py_clif_cc")
-# load("//devtools/python/blaze:python3.bzl", "py2and3_test")
 
 package(
     default_visibility = [
@@ -23,6 +22,7 @@ py_test(
     size = "small",
     srcs = ["statusor_examples_test.py"],
     python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         ":statusor_examples",
         "@absl_py//absl/testing:absltest",
