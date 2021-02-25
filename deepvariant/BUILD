@@ -1144,7 +1144,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":py_testdata",
-        ":show_examples",
+        ":show_examples_lib",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/flags",
         "@absl_py//absl/testing:absltest",
