@@ -28,24 +28,40 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Shareable functionality for make_examples."""
 
+from typing import Sequence
 
+from third_party.nucleus.io import sam
+from deepvariant.protos import deepvariant_pb2
+
+
+# redacted
 class Sample(object):
   """Sample organizes sample-level properties and sam readers."""
-  name = None
-  sam_reader = None
-  in_memory_sam_reader = None
-  pileup_height = None  # None defaults to the PileupImageOptions height.
+  name: str = None
+  nickname: str = None
+  reads_filenames: Sequence[str] = None
+  sam_readers: Sequence[sam.SamReader] = None
+  in_memory_sam_reader: sam.InMemorySamReader = None
+  variant_caller_options: deepvariant_pb2.VariantCallerOptions = None
+  pileup_height: int = None
 
   def __init__(self,
-               sam_reader=None,
+               sam_readers=None,
                in_memory_sam_reader=None,
                name=None,
-               pileup_height=None):
-    self.sam_reader = sam_reader
+               nickname='default',
+               pileup_height=None,
+               reads_filenames=None,
+               variant_caller_options=None):
+    self.name = name
+    self.nickname = nickname
+    self.reads_filenames = reads_filenames
+    self.sam_readers = sam_readers
     self.in_memory_sam_reader = in_memory_sam_reader
-    if name is not None:
-      self.name = name
+    self.variant_caller_options = variant_caller_options
+
     if pileup_height is not None:
+      # Downstream, None defaults to the PileupImageOptions height.
       if isinstance(pileup_height, int):
         self.pileup_height = pileup_height
       else:

@@ -291,6 +291,7 @@ py_library(
         ":exclude_contigs",
         ":logging_level",
         ":make_examples_core",
+        ":make_examples_utils",
         ":pileup_image",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:allelecounter",
@@ -313,7 +314,6 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":allele_frequency",
-        ":make_examples_utils",
         ":pileup_image",
         ":resources_main_lib",
         ":tf_utils",
@@ -353,6 +353,7 @@ py_test(
         ":dv_constants",
         ":make_examples_core",
         ":make_examples_lib",
+        ":make_examples_utils",
         ":py_testdata",
         ":tf_utils",
         "//deepvariant/labeler:variant_labeler",
@@ -390,6 +391,10 @@ py_library(
     name = "make_examples_utils",
     srcs = ["make_examples_utils.py"],
     srcs_version = "PY3",
+    deps = [
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:sam",
+    ],
 )
 
 py_test(

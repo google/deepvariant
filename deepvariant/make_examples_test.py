@@ -202,7 +202,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
       options = make_examples.default_options(add_flags=True)
-      make_examples_core.make_examples_runner(options)
+      make_examples_core.make_examples_runner(
+          options, samples=make_examples.samples_from_options(options))
 
       # Check that our run_info proto contains the basic fields we'd expect:
       # (a) our options are written to the run_info.options field.
@@ -290,7 +291,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         'reference_name: "chr20" start: 9999999 end: 10000999\n'
         'The region chr20:10000000-10000999 does not exist in '
         '.*HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam.'):
-      make_examples_core.make_examples_runner(options)
+      make_examples_core.make_examples_runner(
+          options, samples=make_examples.samples_from_options(options))
 
   @flagsaver.flagsaver
   def test_make_examples_end2end_failed_on_cram(self):
@@ -310,7 +312,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     with six.assertRaisesRegex(self, ValueError,
                                'Failed to parse BAM/CRAM file.'):
-      make_examples_core.make_examples_runner(options)
+      make_examples_core.make_examples_runner(
+          options, samples=make_examples.samples_from_options(options))
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @flagsaver.flagsaver
@@ -330,7 +333,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF_WITH_TYPES
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     options = make_examples.default_options(add_flags=True)
-    make_examples_core.make_examples_runner(options)
+    make_examples_core.make_examples_runner(
+        options, samples=make_examples.samples_from_options(options))
     golden_file = _sharded(testdata.CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES)
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
@@ -366,7 +370,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES)
       FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     options = make_examples.default_options(add_flags=True)
-    make_examples_core.make_examples_runner(options)
+    make_examples_core.make_examples_runner(
+        options, samples=make_examples.samples_from_options(options))
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
         FLAGS.examples, None, options, verify_labels=mode == 'training')
@@ -401,7 +406,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.variant_caller = 'vcf_candidate_importer'
 
       options = make_examples.default_options(add_flags=True)
-      make_examples_core.make_examples_runner(options)
+      make_examples_core.make_examples_runner(
+          options, samples=make_examples.samples_from_options(options))
       # Verify that the variants in the examples are all good.
       examples = self.verify_examples(
           FLAGS.examples, None, options, verify_labels=False)
@@ -435,7 +441,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     options = make_examples.default_options(add_flags=True)
     # Run make_examples with the flags above.
-    make_examples_core.make_examples_runner(options)
+    make_examples_core.make_examples_runner(
+        options, samples=make_examples.samples_from_options(options))
 
     # Check the output for shape and against the golden file.
     if alt_align == 'rows':
@@ -469,7 +476,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.task = 2
     # Run make_examples with those FLAGS.
     options = make_examples.default_options(add_flags=True)
-    make_examples_core.make_examples_runner(options)
+    make_examples_core.make_examples_runner(
+        options, samples=make_examples.samples_from_options(options))
     # Sharded output ending in @4 becomes -00002-of-00004 for task 2.
     expected_output_path = output_prefix + '-0000{}-of-00004'.format(FLAGS.task)
     expected_columns = [
@@ -512,7 +520,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = 'calling'
 
     options = make_examples.default_options(add_flags=True)
-    make_examples_core.make_examples_runner(options)
+    make_examples_core.make_examples_runner(
+        options, samples=make_examples.samples_from_options(options))
 
     candidates = list(tfrecord.read_tfrecords(FLAGS.candidates))
     self.assertLen(candidates, expected_count)
@@ -538,7 +547,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       raise ValueError('Invalid mode for parameterized test.')
     options = make_examples.default_options(add_flags=True)
     # Run make_examples with the flags above.
-    make_examples_core.make_examples_runner(options)
+    make_examples_core.make_examples_runner(
+        options, samples=make_examples.samples_from_options(options))
 
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(

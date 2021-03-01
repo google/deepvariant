@@ -1046,17 +1046,17 @@ class RegionProcessor(object):
     # Keep each sample organized with its relevant info.
     child = make_examples_utils.Sample(
         name='child',
-        sam_reader=self.sam_reader,
+        sam_readers=self.sam_reader,
         in_memory_sam_reader=sam.InMemorySamReader([]),
         pileup_height=self.options.height_child)
     parent1 = make_examples_utils.Sample(
         name='parent1',
-        sam_reader=self.sam_reader_parent1,
+        sam_readers=self.sam_reader_parent1,
         in_memory_sam_reader=sam.InMemorySamReader([]),
         pileup_height=self.options.height_parent)
     parent2 = make_examples_utils.Sample(
         name='parent2',
-        sam_reader=self.sam_reader_parent2,
+        sam_readers=self.sam_reader_parent2,
         in_memory_sam_reader=sam.InMemorySamReader([]),
         pileup_height=self.options.height_parent)
 
@@ -1184,7 +1184,7 @@ class RegionProcessor(object):
     for sample in self.samples['child']:
       if sample.in_memory_sam_reader is not None:
         sample.in_memory_sam_reader.replace_reads(
-            self.region_reads(region, sample.sam_reader))
+            self.region_reads(region, sample.sam_readers))
 
     # Candidates are created using both parents and child
     candidates_dict, gvcfs_dict = self.candidates_in_region(region)
@@ -1707,7 +1707,7 @@ def make_examples_runner(options):
   writers_dict = {}
   if not in_training_mode(options):
     for sample in region_processor.samples['child']:
-      if sample.sam_reader is not None:
+      if sample.sam_readers is not None:
         # Only use suffix in calling mode
         suffix = None if in_training_mode(options) else sample.name
         writers_dict[sample.name] = OutputsWriter(options, suffix=suffix)

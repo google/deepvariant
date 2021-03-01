@@ -46,6 +46,7 @@ from absl import logging
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import make_examples_core
+from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.realigner import realigner
@@ -539,7 +540,81 @@ def default_options(add_flags=True, flags_obj=None):
   if flags_obj.parse_sam_aux_fields is not None:
     options.parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
 
+  options.main_sample_index = 0
   return options
+
+
+def check_options_are_valid(options):
+  """Check that DeepVariant options all fit together."""
+
+  # Check arguments that apply to any mode.
+  if not options.reference_filename:
+    errors.log_and_raise('ref argument is required.', errors.CommandLineError)
+  if not options.reads_filenames:
+    errors.log_and_raise('reads argument is required.', errors.CommandLineError)
+  if not options.examples_filename:
+    errors.log_and_raise('examples argument is required.',
+                         errors.CommandLineError)
+  if options.n_cores != 1:
+    errors.log_and_raise(
+        'Currently only supports n_cores == 1 but got {}.'.format(
+            options.n_cores), errors.CommandLineError)
+
+  # Check for argument issues specific to different modes.
+  if make_examples_core.in_training_mode(options):
+    if not options.truth_variants_filename:
+      errors.log_and_raise('truth_variants is required when in training mode.',
+                           errors.CommandLineError)
+    if not options.confident_regions_filename:
+      if options.variant_caller == \
+          deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
+        logging.info('Note: --confident_regions is optional with '
+                     'vcf_candidate_importer. '
+                     'You did not specify --confident_regions, which means '
+                     'examples will be generated for the whole region.')
+      else:
+        errors.log_and_raise(
+            'confident_regions is required when in training mode.',
+            errors.CommandLineError)
+    if options.gvcf_filename:
+      errors.log_and_raise('gvcf is not allowed in training mode.',
+                           errors.CommandLineError)
+    if (options.variant_caller == \
+        deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER and
+        options.proposed_variants_filename):
+      errors.log_and_raise(
+          '--proposed_variants should not be used with '
+          'vcf_candidate_importer in training mode. '
+          'Use --truth_variants to pass in the candidates '
+          'with correct labels for training.', errors.CommandLineError)
+  else:
+    # Check for argument issues specific to calling mode.
+    if options.truth_variants_filename:
+      errors.log_and_raise('Do not specify --truth_variants in calling mode.',
+                           errors.CommandLineError)
+    if options.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
+      errors.log_and_raise('sample_name must be specified in calling mode.',
+                           errors.CommandLineError)
+    if options.variant_caller_options.gq_resolution < 1:
+      errors.log_and_raise('gq_resolution must be a non-negative integer.',
+                           errors.CommandLineError)
+    if options.variant_caller == \
+        deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
+      if not options.proposed_variants_filename:
+        errors.log_and_raise(
+            '--proposed_variants is required with vcf_candidate_importer in '
+            'calling mode.', errors.CommandLineError)
+
+
+def samples_from_options(options):
+  """Create an array of one sample from the options given."""
+  return [
+      make_examples_utils.Sample(
+          name=options.variant_caller_options.sample_name,
+          nickname='main_sample',
+          reads_filenames=options.reads_filenames,
+          variant_caller_options=options.variant_caller_options)
+  ]
 
 
 def main(argv=()):
@@ -558,69 +633,13 @@ def main(argv=()):
 
     # Set up options; may do I/O.
     options = default_options(add_flags=True, flags_obj=FLAGS)
+    check_options_are_valid(options)
 
-    # Check arguments that apply to any mode.
-    if not options.reference_filename:
-      errors.log_and_raise('ref argument is required.', errors.CommandLineError)
-    if not options.reads_filenames:
-      errors.log_and_raise('reads argument is required.',
-                           errors.CommandLineError)
-    if not options.examples_filename:
-      errors.log_and_raise('examples argument is required.',
-                           errors.CommandLineError)
-    if options.n_cores != 1:
-      errors.log_and_raise(
-          'Currently only supports n_cores == 1 but got {}.'.format(
-              options.n_cores), errors.CommandLineError)
-
-    # Check for argument issues specific to different modes.
-    if make_examples_core.in_training_mode(options):
-      if not options.truth_variants_filename:
-        errors.log_and_raise(
-            'truth_variants is required when in training mode.',
-            errors.CommandLineError)
-      if not options.confident_regions_filename:
-        if options.variant_caller == \
-            deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
-          logging.info('Note: --confident_regions is optional with '
-                       'vcf_candidate_importer. '
-                       'You did not specify --confident_regions, which means '
-                       'examples will be generated for the whole region.')
-        else:
-          errors.log_and_raise(
-              'confident_regions is required when in training mode.',
-              errors.CommandLineError)
-      if options.gvcf_filename:
-        errors.log_and_raise('gvcf is not allowed in training mode.',
-                             errors.CommandLineError)
-      if (options.variant_caller == \
-          deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER and
-          options.proposed_variants_filename):
-        errors.log_and_raise(
-            '--proposed_variants should not be used with '
-            'vcf_candidate_importer in training mode. '
-            'Use --truth_variants to pass in the candidates '
-            'with correct labels for training.', errors.CommandLineError)
-    else:
-      # Check for argument issues specific to calling mode.
-      if options.truth_variants_filename:
-        errors.log_and_raise('Do not specify --truth_variants in calling mode.',
-                             errors.CommandLineError)
-      if options.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
-        errors.log_and_raise('sample_name must be specified in calling mode.',
-                             errors.CommandLineError)
-      if options.variant_caller_options.gq_resolution < 1:
-        errors.log_and_raise('gq_resolution must be a non-negative integer.',
-                             errors.CommandLineError)
-      if options.variant_caller == \
-          deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
-        if not options.proposed_variants_filename:
-          errors.log_and_raise(
-              '--proposed_variants is required with vcf_candidate_importer in '
-              'calling mode.', errors.CommandLineError)
+    # Define samples. This is an array of just the one sample for DeepVariant.
+    samples = samples_from_options(options)
 
     # Run!
-    make_examples_core.make_examples_runner(options)
+    make_examples_core.make_examples_runner(options, samples=samples)
 
 
 if __name__ == '__main__':

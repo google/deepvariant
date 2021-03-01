@@ -43,11 +43,11 @@ class MakeExamplesUtilsTest(parameterized.TestCase):
   def test_print(self):
     sample = make_examples_utils.Sample(
         name='test',
-        sam_reader='my sam reader',
+        sam_readers='my sam reader',
         in_memory_sam_reader='my in_memory_sam_reader',
         pileup_height=200)
     # print(sample) should yield:
-    # <Sample {'sam_reader': 'my sam reader',
+    # <Sample {'sam_readers': 'my sam reader',
     #     'in_memory_sam_reader': 'my in_memory_sam_reader',
     #     'name': 'test',
     #     'pileup_height': 200}>

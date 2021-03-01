@@ -43,7 +43,6 @@ import tensorflow as tf
 
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
-from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
@@ -585,23 +584,22 @@ class RegionProcessor(object):
       tf.Example protos.
   """
 
-  def __init__(self, options):
+  def __init__(self, options, samples):
     """Creates a new RegionProcess.
 
     Args:
       options: deepvariant.DeepVariantOptions proto used to specify our
         resources for calling (e.g., reference_filename).
+      samples: The list of samples (make_examples_utils.Sample).
     """
     self.options = options
+    self.samples = samples
     self.initialized = False
     self.ref_reader = None
-    self.sam_readers = None
-    self.in_memory_sam_reader = None
     self.realigner = None
     self.pic = None
     self.labeler = None
     self.variant_caller = None
-    self.samples = []
     self.population_vcf_readers = None
 
   def _make_allele_counter_for_region(self, region):
@@ -611,7 +609,7 @@ class RegionProcessor(object):
   def _encode_tensor(self, image_tensor):
     return image_tensor.tostring(), image_tensor.shape, 'raw'
 
-  def _make_sam_readers(self):
+  def _make_sam_readers(self, reads_filenames):
     """Creates a list of SamReaders from self.options.reads_filenames."""
     logging_with_options(
         self.options,
@@ -619,7 +617,7 @@ class RegionProcessor(object):
         'If you are using CRAM input, note that we will decode CRAM '
         'using the reference you passed in with --ref')
     readers = []
-    for reads_filename in self.options.reads_filenames:
+    for reads_filename in reads_filenames:
       readers.append(
           sam.SamReader(
               reads_filename,
@@ -641,8 +639,9 @@ class RegionProcessor(object):
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
 
-    self.sam_readers = self._make_sam_readers()
-    self.in_memory_sam_reader = sam.InMemorySamReader([])
+    for sample in self.samples:
+      sample.sam_readers = self._make_sam_readers(sample.reads_filenames)
+      sample.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.use_allele_frequency:
       population_vcf_readers = allele_frequency.make_population_vcf_readers(
@@ -657,12 +656,6 @@ class RegionProcessor(object):
           self.ref_reader,
           shared_header=input_bam_header)
 
-    # Organize sam readers into samples to enable generalizing to N samples.
-    sample = make_examples_utils.Sample(
-        sam_reader=self.sam_readers,
-        in_memory_sam_reader=self.in_memory_sam_reader)
-
-    self.samples = [sample]
     self.pic = pileup_image.PileupImageCreator(
         ref_reader=self.ref_reader,
         options=self.options.pic_options,
@@ -760,9 +753,12 @@ class RegionProcessor(object):
     if not self.initialized:
       self.initialize()
 
-    reads = self.region_reads(region)
-    runtimes['num reads'] = len(reads)
-    self.in_memory_sam_reader.replace_reads(reads)
+    runtimes['num reads'] = 0
+    for sample in self.samples:
+      if sample.in_memory_sam_reader is not None:
+        reads = self.region_reads(region, sample.sam_readers)
+        runtimes['num reads'] += len(reads)
+        sample.in_memory_sam_reader.replace_reads(reads)
 
     runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
     before_find_candidates = time.time()
@@ -808,8 +804,8 @@ class RegionProcessor(object):
     runtimes['num candidates'] = len(candidates)
     return candidates, examples, gvcfs, runtimes
 
-  def region_reads(self, region):
-    """Update in_memory_sam_reader with read alignments overlapping the region.
+  def region_reads(self, region, sam_readers):
+    """Gets read alignments overlapping the region and optionally realigns them.
 
     If self.options.realigner_enabled is set, uses realigned reads, otherwise
     original reads are returned.
@@ -817,13 +813,14 @@ class RegionProcessor(object):
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to realign reads.
+      sam_readers: An iterable of sam.SamReader to query from.
 
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
     """
     reads = []
-    if self.sam_readers is not None:
-      for sam_reader_index, sam_reader in enumerate(self.sam_readers):
+    if sam_readers is not None:
+      for sam_reader_index, sam_reader in enumerate(sam_readers):
         try:
           reads.extend(sam_reader.query(region))
         except ValueError as err:
@@ -892,18 +889,24 @@ class RegionProcessor(object):
       nucleus.genomics.v1.Variant protos containing gVCF information for all
       reference sites, if gvcf generation is enabled, otherwise returns [].
     """
-    reads = self.in_memory_sam_reader.query(region)
-    if not reads and not gvcf_output_enabled(self.options):
+    for sample in self.samples:
+      sample.reads = sample.in_memory_sam_reader.query(region)
+
+    main_sample = self.samples[self.options.main_sample_index]
+    if not main_sample.reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
       # we need to return the gVCF records calculated by the caller below.
       return [], []
 
-    allele_counter = self._make_allele_counter_for_region(region)
-    for read in reads:
-      allele_counter.add(read, self.options.variant_caller_options.sample_name)
+    for sample in self.samples:
+      if sample.reads_filenames:
+        sample.allele_counter = self._make_allele_counter_for_region(region)
+        for read in sample.reads:
+          sample.allele_counter.add(read, sample.name)
 
+    # redacted
     candidates, gvcfs = self.variant_caller.calls_and_gvcfs(
-        allele_counter, gvcf_output_enabled(self.options),
+        main_sample.allele_counter, gvcf_output_enabled(self.options),
         self.options.include_med_dp)
     return candidates, gvcfs
 
@@ -1000,6 +1003,7 @@ class RegionProcessor(object):
             dv_call.variant, sam_reader=sample.in_memory_sam_reader)
         for sample in self.samples
     ]
+
     logging.vlog(
         3, 'create_pileup_examples for variant: {}:{}_{}'.format(
             dv_call.variant.reference_name, dv_call.variant.start,
@@ -1271,7 +1275,7 @@ def get_example_counts(examples):
   return labels, types
 
 
-def make_examples_runner(options):
+def make_examples_runner(options, samples):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
   before_initializing_inputs = time.time()
@@ -1280,7 +1284,7 @@ def make_examples_runner(options):
   regions = processing_regions_from_options(options)
 
   # Create a processor to create candidates and examples for each region.
-  region_processor = RegionProcessor(options)
+  region_processor = RegionProcessor(options, samples=samples)
   region_processor.initialize()
 
   logging_with_options(options,

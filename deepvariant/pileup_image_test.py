@@ -1183,7 +1183,7 @@ class PileupImageCreatorTest(parameterized.TestCase):
 
     self.samples = [
         make_examples_utils.Sample(
-            sam_reader=self.mock_sam_reader,
+            sam_readers=self.mock_sam_reader,
             in_memory_sam_reader=self.mock_sam_reader)
     ]
 
