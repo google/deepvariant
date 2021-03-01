@@ -345,7 +345,7 @@ def py_clif_cc(
     native.py_library(
         name = name,
         srcs = [],
-        srcs_version = "PY2AND3",
+        srcs_version = "PY3",
         deps = pyclifs_to_pyproto_libs(pyclif_deps) + clif_deps + py_deps,
         data = [pyext_so],
         **kwargs
