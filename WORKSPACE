@@ -74,6 +74,17 @@ http_archive(
     ],
 )
 
+http_archive(
+    name = "com_google_glog",
+    sha256 = "1ee310e5d0a19b9d584a855000434bb724aa744745d5b8ab1855c85bff8a8e21",
+    strip_prefix = "glog-028d37889a1e80e8a07da1b8945ac706259e5fd8",
+    urls = [
+        "https://mirror.bazel.build/github.com/google/glog/archive/028d37889a1e80e8a07da1b8945ac706259e5fd8.tar.gz",
+        "https://github.com/google/glog/archive/028d37889a1e80e8a07da1b8945ac706259e5fd8.tar.gz",
+    ],
+)
+
+
 # bazel_skylib is now a required dependency of protobuf_archive.
 http_archive(
     name = "bazel_skylib",

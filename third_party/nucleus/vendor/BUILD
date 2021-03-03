@@ -60,6 +60,7 @@ cc_library(
     deps = [
         ":statusor",
         "@clif//:cpp_runtime",
+        "@com_google_absl//absl/strings:cord",
         "@local_config_python//:python_headers",
     ],
 )

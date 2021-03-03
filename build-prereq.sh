@@ -89,17 +89,18 @@ if [[ -e /usr/local/bin/pyclif ]];
 then
   echo "CLIF already installed."
 else
-  export DV_PLATFORM="ubuntu-18"
-
-  OSS_CLIF_CURL_ROOT="${DV_PACKAGE_CURL_PATH}/oss_clif_py3"
-  OSS_CLIF_PKG="oss_clif.${DV_PLATFORM}.latest.tgz"
-
-  if [[ ! -f "/tmp/${OSS_CLIF_PKG}" ]]; then
-    wget "${OSS_CLIF_CURL_ROOT}/${OSS_CLIF_PKG}" -O /tmp/${OSS_CLIF_PKG}
-  fi
-
-  (cd / && sudo tar xzf "/tmp/${OSS_CLIF_PKG}")
-  sudo ldconfig  # Reload shared libraries.
+  # Build clif binary from scratch. Might not be ideal because it installs a
+  # bunch of dependencies, but this works fine when we used this in a Dockerfile
+  # because we don't do build-prereq.sh in the final image.
+  time ./tools/build_clif.sh
+  # redacted
+  #                    we can do this better.
+  sudo mkdir -p /usr/clang/bin/
+  sudo ln -sf /usr/local/bin/clif-matcher /usr/clang/bin/clif-matcher
+  sudo mkdir -p /usr/local/clif/bin
+  sudo ln -sf /usr/local/bin/pyclif* /usr/local/clif/bin/
+  DIST_PACKAGES_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])")
+  sudo ln -sf "${DIST_PACKAGES_DIR}"/clif/python /usr/local/clif/
 fi
 
 ################################################################################

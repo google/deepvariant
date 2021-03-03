@@ -132,6 +132,7 @@ cc_library(
     srcs = ["math.cc"],
     hdrs = ["math.h"],
     deps = [
+        "@com_google_absl//absl/strings:cord",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -365,6 +366,7 @@ cc_library(
     deps = [
         ":proto_ptr",
         "@clif//:cpp_runtime",
+        "@com_google_absl//absl/strings:cord",
         "@com_google_protobuf//:proto_api",
         "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",

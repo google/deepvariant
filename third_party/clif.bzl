@@ -9,8 +9,8 @@ CLIF_PROTO = "@clif//:proto"
 # Label for our OSS CLIF C++ runtime headers and sources.
 CLIF_CPP_RUNTIME = "@clif//:cpp_runtime"
 
-# The CLIF generated code only compiles with C++11.
-EXTRA_CC_FLAGS = ["-std=c++11"]
+# The CLIF generated code only compiles with C++17.
+EXTRA_CC_FLAGS = ["-std=c++17"]
 
 _PROTO_LIBRARY_SUFFIX = "_pyclif"
 

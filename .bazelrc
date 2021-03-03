@@ -42,6 +42,9 @@ build --define=use_fast_cpp_protos=true
 build --copt="-Wno-maybe-uninitialized"
 build --copt="-Wno-unused-function"
 
+# Set c++ version.
+build --cxxopt="-std=c++17"
+
 # These are errors coming from the protobuf library itself. We'd like to see
 # them in our own build.
 # build --copt="-Wno-write-strings"

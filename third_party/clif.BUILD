@@ -19,6 +19,7 @@ cc_library(
     hdrs = glob(["clif/python/*.h"]),
     visibility = ["//visibility:public"],
     deps = [
+        "@com_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
         "@local_config_python//:python_headers",
     ],

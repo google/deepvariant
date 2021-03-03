@@ -108,6 +108,7 @@ cc_library(
     srcs = ["postprocess_variants.cc"],
     hdrs = ["postprocess_variants.h"],
     deps = [
+        "@com_google_absl//absl/strings:cord",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
