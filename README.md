@@ -19,7 +19,7 @@ DeepVariant supports germline variant-calling in diploid organisms.
 *   Hybrid PacBio HiFi + Illumina WGS, see the
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
 *   Oxford Nanopore long-read data by using
-    [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper/blob/master/docs/PEPPER_variant_calling.md).
+    [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper).
 *   GenapSys data, by using a
     [model retrained by GenapSys](https://github.com/GenapsysInc/genapsys_deepvariant/blob/master/docs/GenapSys_DeepVariant_WES_Model.md).
 
