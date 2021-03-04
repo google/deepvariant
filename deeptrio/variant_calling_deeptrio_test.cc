@@ -31,6 +31,7 @@
 
 #include "deeptrio/variant_calling_deeptrio.h"
 
+#include <cstdint>
 #include <memory>
 #include <numeric>
 #include <unordered_map>
@@ -67,7 +68,7 @@ using ::testing::UnorderedElementsAre;
 
 constexpr char kSampleName[] = "MySampleName";
 constexpr char kChr[] = "chr1";
-constexpr int64 kStart = 10;
+constexpr int64_t kStart = 10;
 
 // This function needs to return a pointer because it needs to be wrapped
 // into nucleus::ConstProtoPtr. variant_calling_deeptrio API is only used by
@@ -134,7 +135,7 @@ VariantCallerOptions MakeOptions(
 
 Variant MakeExpectedVariant(const std::string& ref,
                             const std::vector<std::string>& alts,
-                            const int64 start = kStart) {
+                            const int64_t start = kStart) {
   Variant variant;
   variant.set_reference_name(kChr);
   variant.set_start(start);
