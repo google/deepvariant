@@ -47,9 +47,19 @@ note_build_stage "Update package list"
 
 sudo -H apt-get -qq -y update
 
-note_build_stage "Install development packages"
+note_build_stage "build-prereq.sh: Install development packages"
 
-sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null
+# redacted
+retry=0
+until [[ $retry -ge 3 ]]
+do
+  sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null && break
+
+  echo "apt-get failed. Retrying."
+  retry=$(($retry+1))
+  sleep 10
+done
+
 
 ################################################################################
 # bazel

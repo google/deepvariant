@@ -67,10 +67,27 @@ note_build_stage "Update package list"
 
 sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
 
-note_build_stage "Install development packages"
+note_build_stage "run-prereq.sh: Install development packages"
 
-sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null
-sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
+# redacted
+retry=0
+until [[ $retry -ge 3 ]]
+do
+  sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null && break
+  echo "apt-get failed. Retrying."
+  retry=$(($retry+1))
+  sleep 10
+done
+
+# redacted
+retry=0
+until [[ $retry -ge 3 ]]
+do
+  sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null && break
+  echo "apt-get failed. Retrying."
+  retry=$(($retry+1))
+  sleep 10
+done
 
 note_build_stage "Install python3 packaging infrastructure"
 
