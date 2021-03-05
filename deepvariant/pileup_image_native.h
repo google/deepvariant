@@ -49,6 +49,12 @@ using tensorflow::string;
 constexpr int NUM_CHANNELS = 6;
 constexpr int NUM_SEQ_TYPE = PileupImageOptions::SequencingType_ARRAYSIZE;
 
+template <class T>
+std::vector<T> ToVector(const google::protobuf::RepeatedPtrField<T> container) {
+  return std::vector<T>(std::make_move_iterator(container.begin()),
+                        std::make_move_iterator(container.end()));
+}
+
 struct ImageRow {
   std::vector<unsigned char> base;
   std::vector<unsigned char> base_quality;
@@ -62,12 +68,12 @@ struct ImageRow {
   int num_channels;
   bool use_allele_frequency;
   bool add_hp_channel;
+  std::vector<string> channels;
+  std::vector<std::vector<unsigned char>> channel_data;
 
   int Width() const;
-  explicit ImageRow(int width,
-                    int num_channels,
-                    bool use_allele_frequency,
-                    bool add_hp_channel);
+  explicit ImageRow(int width, int num_channels, bool use_allele_frequency,
+                    bool add_hp_channel, const std::vector<string>& channels);
 };
 
 class PileupImageEncoderNative {

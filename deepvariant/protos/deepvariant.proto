@@ -359,7 +359,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how we construct pileup images.
-// Next ID: 39.
+// Next ID: 40.
 message PileupImageOptions {
   // redacted
   // The height, in pixels, of the pileup image we'll construct.
@@ -478,15 +478,18 @@ message PileupImageOptions {
   // Whether to consider allele frequencies.
   bool use_allele_frequency = 34;
 
-  // For assembly polishing, specifies the HP tag we're calling for.
-  int32 hp_tag_for_assembly_polishing = 38;
-
   // Which variant types to use alt-align on.
   string types_to_alt_align = 36;
 
   // If true, add an additional channel where the color information per-read
   // indicates the HP value.
   bool add_hp_channel = 37;
+
+  // For assembly polishing, specifies the HP tag we're calling for.
+  int32 hp_tag_for_assembly_polishing = 38;
+
+  // The set of channels to collect
+  repeated string channels = 39;
 
   // Deprecated fields.
   int32 sort_by_haplotypes_sample_hp_tag = 35 [deprecated = true];

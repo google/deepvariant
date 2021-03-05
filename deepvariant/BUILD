@@ -572,6 +572,7 @@ py_library(
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/util:py_utils",
         "//third_party/nucleus/util:ranges",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -601,6 +602,7 @@ cc_library(
     srcs = ["pileup_image_native.cc"],
     hdrs = ["pileup_image_native.h"],
     deps = [
+        ":pileup_channel_lib",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
@@ -608,6 +610,18 @@ cc_library(
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_library(
+    name = "pileup_channel_lib",
+    hdrs = ["pileup_channel_lib.h"],
+    deps = [
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

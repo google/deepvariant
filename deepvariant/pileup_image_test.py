@@ -58,6 +58,9 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
 
 
+MAX_PIXEL_FLOAT = 254.0
+
+
 def _supporting_reads(*names):
   return deepvariant_pb2.DeepVariantCall.SupportingReads(read_names=names)
 
@@ -91,6 +94,13 @@ def _make_encoder(read_requirements=None, **kwargs):
   """Make a PileupImageEncoderNative with overrideable default options."""
   options = pileup_image.default_options(read_requirements)
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
+  return pileup_image_native.PileupImageEncoderNative(options)
+
+
+def _make_encoder_with_channels(channel_set):
+  options = pileup_image.default_options()
+  for channel in channel_set:
+    options.channels.append(channel)
   return pileup_image_native.PileupImageEncoderNative(options)
 
 
@@ -1396,6 +1406,103 @@ class PileupImageCreatorTest(parameterized.TestCase):
     with self.assertRaises(ValueError):
       pileup_image._represent_alt_aligned_pileups(
           'rows', ref_image, [alt_image, alt_image, alt_image])
+
+
+class PileupCustomChannels(absltest.TestCase):
+
+  def get_encoded_read(self, channel_set, cigar='20M5D20M5S'):
+    start = 500
+    dv_call = _make_dv_call()
+    alt_allele = dv_call.variant.alternate_bases[0]
+
+    read = test_utils.make_read(
+        'TTTTATGACAAAAAAGATGCGACGGTTCCGTAACCCATAAGAAAGAACGT',
+        start=start,
+        cigar=cigar,
+        quals=range(1, 51),
+        name='read1')
+
+    return _make_encoder_with_channels(channel_set).encode_read(
+        dv_call, 'TTTTATGACAAAAAAGATGCGACGGTTCCGTAACCCATAAGAAAGAACGT', read,
+        start, alt_allele)
+
+  def test_read_mapping_percent(self):
+    result = self.get_encoded_read(['read_mapping_percent'])
+    ch7 = result[:, :, 6]
+    self.assertSetEqual(set(np.unique(ch7)), set([0, 203]))
+
+  def test_avg_mapping_quality(self):
+    result = self.get_encoded_read(['avg_base_quality'])
+    ch7 = result[:, :, 6]
+    self.assertSetEqual(set(np.unique(ch7)), set([0, 68]))
+
+  def test_identity(self):
+    result = self.get_encoded_read(['identity'], cigar='5M20D20M5S')
+    ch7 = result[:, :, 6]
+    self.assertSetEqual(set(np.unique(ch7)), set([0, 127]))
+
+  def test_gap_compressed_identity(self):
+    result = self.get_encoded_read(['gap_compressed_identity'],
+                                   cigar='5M20D20M5S')
+    ch7 = result[:, :, 6]
+    self.assertSetEqual(set(np.unique(ch7)), set([0, 243]))
+
+  def test_blank(self):
+    result = self.get_encoded_read(['blank'])
+    ch7 = result[:, :, 6]
+    self.assertSetEqual(set(np.unique(ch7)), set([0]))
+
+  def test_multi(self):
+    result = self.get_encoded_read(
+        ['read_mapping_percent', 'gap_compressed_identity', 'blank'])
+    self.assertEqual(result.shape, (1, 50, 9))
+
+
+class PileupCustomChannelsParam(parameterized.TestCase):
+
+  def make_pileup(self, seq, channels):
+    start = 500
+    dv_call = _make_dv_call()
+    alt_allele = dv_call.variant.alternate_bases[0]
+    read = test_utils.make_read(
+        seq,
+        start=start,
+        cigar=f'{len(seq)}M',
+        quals=range(1,
+                    len(seq) + 1),
+        name='read1')
+    result = _make_encoder_with_channels(channels).encode_read(
+        dv_call, seq, read, start, alt_allele)
+    return result
+
+  @parameterized.parameters(('GC', 1.0), ('GAC', 0.66), ('GGAA', 0.50),
+                            ('ATTCTGTTAA', 0.20), ('TTTTTTTTTT', 0.00))
+  def test_gc_content(self, seq, exp_gc_content):
+    result = self.make_pileup(seq, ['gc_content'])
+    ch7 = result[:, :, 6][0]
+    gc_content = ch7.max() / MAX_PIXEL_FLOAT
+    self.assertAlmostEqual(gc_content, exp_gc_content, 2)
+
+  @parameterized.parameters(
+      ('AAATTCCC', [1, 1, 1, 0, 0, 1, 1, 1]),
+      ('ATCGTTCCC', [0, 0, 0, 0, 0, 0, 1, 1, 1]),
+      ('ATTCCCTTA', [0, 0, 0, 1, 1, 1, 0, 0, 0]),
+      ('ATCG', [0, 0, 0, 0]),
+      ('AATTCCGG', [0, 0, 0, 0, 0, 0, 0, 0]),
+      ('AAAAAAAA', [1, 1, 1, 1, 1, 1, 1, 1]),
+  )
+  def test_is_homopolymer(self, seq, expected_result):
+    result = self.make_pileup(seq, ['is_homopolymer'])
+    ch7 = result[:, :, 6][0]
+    self.assertTrue((ch7 == expected_result).all())
+
+  @parameterized.parameters(('AAATTCCC', [3, 3, 3, 2, 2, 3, 3, 3]),
+                            ('ATCGTTCCC', [1, 1, 1, 1, 2, 2, 3, 3, 3]),
+                            ('ATTCCCTTA', [1, 2, 2, 3, 3, 3, 2, 2, 1]))
+  def test_weighted_homopolymer(self, seq, expected_result):
+    result = self.make_pileup(seq, ['homopolymer_weighted'])
+    ch7 = result[:, :, 6][0]
+    self.assertTrue((ch7 == expected_result).all())
 
 
 if __name__ == '__main__':

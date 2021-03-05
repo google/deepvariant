@@ -87,6 +87,12 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
     if (img_row->add_hp_channel) {
       *cur++ = img_row->hp_value[i];
     }
+    if (!img_row->channels.empty()) {
+      // Iterate over channels here and fill data...
+      for (int j = 0; j < img_row->channels.size(); j++) {
+        *cur++ = img_row->channel_data[j][i];
+      }
+    }
   }
   return PyArray_Return(res);
 }

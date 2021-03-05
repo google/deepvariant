@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/pileup_channel_lib.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -162,33 +163,11 @@ int GetHPValueForHPChannel(const Read& read,
   return hp_value;
 }
 
-// The maximum value a pixel can have as a float. We use the 254.0
-// value as originally set in DeepVariant v1. This means our pixel
-// values can go from 0 to 254. Which, when converted to an int,
-// gives us 255 or 256 possible pixel values.
-const float kMaxPixelValueAsFloat = 254.0;
-
-// Get allele frequency color for a read.
-// Convert a frequency value in float to color intensity (int) and normalize.
-uint8 HPValueColor(int hp_value) {
-  if (hp_value == 0) {
-    return 0;
-  } else if (hp_value == 1) {
-    return kMaxPixelValueAsFloat / 2;
-  } else if (hp_value == 2) {
-    return static_cast<int>(kMaxPixelValueAsFloat);
-  }
-  LOG(FATAL)
-      << "This function is currently used when --add_hp_channel is set. "
-      << "HP value has to be either 1, 2, or 0.";
-}
 
 }  // namespace
 
-ImageRow::ImageRow(int width,
-                   int num_channels,
-                   bool use_allele_frequency,
-                   bool add_hp_channel)
+ImageRow::ImageRow(int width, int num_channels, bool use_allele_frequency,
+                   bool add_hp_channel, const std::vector<string>& channels)
     : base(width, 0),
       base_quality(width, 0),
       mapping_quality(width, 0),
@@ -200,8 +179,8 @@ ImageRow::ImageRow(int width,
       hp_value(width, 0),
       num_channels(num_channels),
       use_allele_frequency(use_allele_frequency),
-      add_hp_channel(add_hp_channel)
-{}
+      add_hp_channel(add_hp_channel),
+      channels(channels) {}
 
 int ImageRow::Width() const {
   CHECK(base.size() == base_quality.size() &&
@@ -300,10 +279,13 @@ int PileupImageEncoderNative::StrandColor(bool on_positive_strand) const {
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
     int image_start_pos, const vector<std::string>& alt_alleles) {
-  ImageRow img_row(ref_bases.size(),
-                   options_.num_channels(),
-                   options_.use_allele_frequency(),
-                   options_.add_hp_channel());
+  // Recalculate num_channels by accounting for optional channels.
+  const int num_channels = options_.num_channels() + options_.channels().size();
+  ImageRow img_row(ref_bases.size(), num_channels,
+                   options_.use_allele_frequency(), options_.add_hp_channel(),
+                   ToVector(options_.channels()));
+
+  // Calculate base channels.
   const int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
   const int mapping_quality = read.alignment().mapping_quality();
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
@@ -314,6 +296,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   const int min_mapping_quality =
       options_.read_requirements().min_mapping_quality();
 
+  // Calculate AUX channels.
   const float allele_frequency = (options_.use_allele_frequency())?
       ReadAlleleFrequency(dv_call, read, alt_alleles) : 0;
   const uint8 allele_frequency_color = AlleleFrequencyColor(allele_frequency);
@@ -322,6 +305,11 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
                                  read, options_.hp_tag_for_assembly_polishing())
                            : 0;
 
+  // Calculate OptChannels.
+  OptChannels channel_set{};
+  channel_set.CalculateChannels(img_row.channels, read);
+  img_row.channel_data.resize(img_row.channels.size(),
+                              std::vector<unsigned char>(ref_bases.size(), 0));
   // Bail early if this read's mapping quality is too low.
   if (mapping_quality < min_mapping_quality) {
     return nullptr;
@@ -359,18 +347,25 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
       }
       bool matches_ref = (read_base == ref_bases[col]);
 
-      // Draw the pixel
+      // Fill Base channel set.
       img_row.base[col]               = BaseColor(read_base);
       img_row.base_quality[col]       = BaseQualityColor(base_quality);
       img_row.mapping_quality[col]    = mapping_color;
       img_row.on_positive_strand[col] = strand_color;
       img_row.supports_alt[col]       = alt_color;
       img_row.matches_ref[col]        = MatchesRefColor(matches_ref);
+
+      // Fill AUX channel set.
       if (img_row.use_allele_frequency) {
         img_row.allele_frequency[col] = allele_frequency_color;
       }
       if (img_row.add_hp_channel) {
-        img_row.hp_value[col] = HPValueColor(hp_value);
+        img_row.hp_value[col] = ScaleColor(hp_value, 2);
+      }
+      // Fill OptChannel set.
+      for (int j = 0; j < img_row.channels.size(); j++) {
+        img_row.channel_data[j][col] =
+            channel_set.GetChannelData(img_row.channels[j], read_i);
       }
     }
     return true;
@@ -473,22 +468,38 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
   uint8 ref_color = MatchesRefColor(true);
   uint8 allele_frequency_color = AlleleFrequencyColor(0);
 
-  ImageRow img_row(ref_bases.size(),
-                   options_.num_channels(),
-                   options_.use_allele_frequency(),
-                   options_.add_hp_channel());
-  for (size_t i = 0; i < ref_bases.size(); ++i) {
-    img_row.base[i]               = BaseColor(ref_bases[i]);
-    img_row.base_quality[i]       = base_quality_color;
-    img_row.mapping_quality[i]    = mapping_quality_color;
-    img_row.on_positive_strand[i] = strand_color;
-    img_row.supports_alt[i]       = alt_color;
-    img_row.matches_ref[i]        = ref_color;
+  // Recalculate num_channels by accounting for optional channels
+  const int num_channels = options_.num_channels() + options_.channels().size();
+
+  ImageRow img_row(ref_bases.size(), num_channels,
+                   options_.use_allele_frequency(), options_.add_hp_channel(),
+                   ToVector(options_.channels()));
+
+  // Initialize dynamic channels
+  img_row.channel_data.resize(img_row.channels.size(),
+                              std::vector<unsigned char>(ref_bases.size(), 0));
+
+  for (size_t col = 0; col < ref_bases.size(); ++col) {
+    img_row.base[col] = BaseColor(ref_bases[col]);
+    img_row.base_quality[col] = base_quality_color;
+    img_row.mapping_quality[col] = mapping_quality_color;
+    img_row.on_positive_strand[col] = strand_color;
+    img_row.supports_alt[col] = alt_color;
+    img_row.matches_ref[col] = ref_color;
     if (img_row.use_allele_frequency){
-      img_row.allele_frequency[i] = allele_frequency_color;
+      img_row.allele_frequency[col] = allele_frequency_color;
     }
     if (img_row.add_hp_channel) {
-      img_row.hp_value[i] = HPValueColor(0);
+      img_row.hp_value[col] = ScaleColor(0, 2);
+    }
+    // Get Channel and calculate values
+    OptChannels channel_set{};
+    channel_set.CalculateRefRows(img_row.channels);
+
+    // Optional channels
+    for (int j = 0; j < img_row.channels.size(); j++) {
+      img_row.channel_data[j][col] =
+          channel_set.GetRefRows(img_row.channels[j], col);
     }
   }
 
