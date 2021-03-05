@@ -98,6 +98,7 @@ flags.DEFINE_string(
     'column_labels', None, 'Comma-separated column labels to print on image. '
     'Defaults to the standard channel names of DeepVariant. '
     'Use --noannotation to remove them entirely.')
+flags.DEFINE_integer('scale', 1, 'Scale image outputs x times.')
 
 UPDATE_EVERY_N_EXAMPLES = 10000
 MAX_SIZE_TO_PRINT = 5
@@ -323,7 +324,7 @@ def run():
         vis.draw_deepvariant_pileup(
             channels=channels,
             path=channels_output,
-            scale=1,
+            scale=FLAGS.scale,
             show=False,
             annotated=FLAGS.annotation,
             labels=column_labels)
@@ -336,7 +337,7 @@ def run():
             channels=channels,
             composite_type='RGB',
             path=rgb_output,
-            scale=1,
+            scale=FLAGS.scale,
             show=False,
             annotated=FLAGS.annotation,
             labels=column_labels)
