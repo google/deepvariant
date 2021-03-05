@@ -65,8 +65,6 @@ flags.DEFINE_string(
     'to call. Should be aligned to a reference genome compatible with --ref.')
 flags.DEFINE_string('output_vcf', None,
                     'Required. Path where we should write VCF file.')
-flags.DEFINE_string('logging_dir', None,
-                    'Required. Directory where we should write log files.')
 # Optional flags.
 flags.DEFINE_boolean(
     'dry_run', False,
@@ -76,6 +74,13 @@ flags.DEFINE_string(
     'Optional. If specified, this should be an existing '
     'directory that is visible insider docker, and will be '
     'used to to store intermediate outputs.')
+flags.DEFINE_string(
+    'logging_dir', None, 'Optional. Directory where we should write log files '
+    'for each stage and optionally runtime reports.')
+flags.DEFINE_boolean(
+    'runtime_report', False, 'Output make_examples runtime metrics '
+    'and create a visual runtime report using runtime_by_region_vis. '
+    'Only works with --logging_dir.')
 flags.DEFINE_boolean(
     'version',
     None,
@@ -201,7 +206,12 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
   return kwargs
 
 
-def make_examples_command(ref, reads, examples, extra_args, **kwargs):
+def make_examples_command(ref,
+                          reads,
+                          examples,
+                          extra_args,
+                          runtime_by_region_path=None,
+                          **kwargs):
   """Returns a make_examples command for subprocess.check_call.
 
   Args:
@@ -209,6 +219,7 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
     reads: Input BAM file.
     examples: Output tfrecord file containing tensorflow.Example files.
     extra_args: Comma-separated list of flag_name=flag_value.
+    runtime_by_region_path: Output path for runtime by region metrics.
     **kwargs: Additional arguments to pass in for make_examples.
 
   Returns:
@@ -223,17 +234,9 @@ def make_examples_command(ref, reads, examples, extra_args, **kwargs):
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
 
-  if FLAGS.logging_dir is not None:
-    runtime_directory = os.path.join(FLAGS.logging_dir,
-                                     'make_examples_runtime_by_region')
-    if not os.path.isdir(runtime_directory):
-      logging.info('Creating a make_examples runtime by region directory in %s',
-                   runtime_directory)
-      os.makedirs(runtime_directory)
-    runtime_by_region = os.path.join(
-        runtime_directory,
-        'make_examples_runtime@{}.tsv'.format(FLAGS.num_shards))
-    command.extend(['--runtime_by_region', '"{}"'.format(runtime_by_region)])
+  if runtime_by_region_path is not None:
+    command.extend(
+        ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
 
   conflict_args = None
   if FLAGS.model_type == 'PACBIO':
@@ -314,6 +317,20 @@ def postprocess_variants_command(ref,
   return ' '.join(command)
 
 
+def runtime_by_region_vis_command(runtime_by_region_path: str):
+  """Returns a runtime_by_region_vis command for subprocess.check_call."""
+  runtime_report = os.path.join(FLAGS.logging_dir,
+                                'make_examples_runtime_by_region_report.html')
+
+  command = ['(', 'time', '/opt/deepvariant/bin/runtime_by_region_vis']
+  command.extend(['--input', '"{}"'.format(runtime_by_region_path)])
+  command.extend(['--title', '"{}"'.format('DeepVariant')])
+  command.extend(['--output', '"{}"'.format(runtime_report)])
+
+  command.extend([')'])
+  return ' '.join(command)
+
+
 def check_or_create_intermediate_results_dir(intermediate_results_dir):
   """Checks or creates the path to the directory for intermediate results."""
   if intermediate_results_dir is None:
@@ -364,12 +381,28 @@ def create_all_commands(intermediate_results_dir):
       intermediate_results_dir,
       'make_examples.tfrecord@{}.gz'.format(FLAGS.num_shards))
 
+  if FLAGS.logging_dir and FLAGS.runtime_report:
+    runtime_directory = os.path.join(FLAGS.logging_dir,
+                                     'make_examples_runtime_by_region')
+    if not os.path.isdir(runtime_directory):
+      logging.info('Creating a make_examples runtime by region directory in %s',
+                   runtime_directory)
+      os.makedirs(runtime_directory)
+    # The path to runtime metrics output is sharded just like the examples.
+    runtime_by_region_path = os.path.join(
+        runtime_directory,
+        'make_examples_runtime@{}.tsv'.format(FLAGS.num_shards))
+  else:
+    runtime_by_region_path = None
+
   commands.append(
       make_examples_command(
-          FLAGS.ref,
-          FLAGS.reads,
-          examples,
-          FLAGS.make_examples_extra_args,
+          ref=FLAGS.ref,
+          reads=FLAGS.reads,
+          examples=examples,
+          runtime_by_region_path=runtime_by_region_path,
+          extra_args=FLAGS.make_examples_extra_args,
+          # kwargs:
           gvcf=nonvariant_site_tfrecord_path,
           regions=FLAGS.regions,
           sample_name=FLAGS.sample_name))
@@ -394,6 +427,10 @@ def create_all_commands(intermediate_results_dir):
           gvcf_outfile=FLAGS.output_gvcf,
           vcf_stats_report=FLAGS.vcf_stats_report,
           sample_name=FLAGS.sample_name))
+
+  # runtime-by-region
+  if FLAGS.logging_dir and FLAGS.runtime_report:
+    commands.append(runtime_by_region_vis_command(runtime_by_region_path))
 
   return commands
 

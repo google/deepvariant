@@ -468,6 +468,7 @@ function run_deepvariant_with_docker() {
     --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards=${N_SHARDS} \
     --logging_dir="/output/logs" \
+    --runtime_report \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""
   echo
