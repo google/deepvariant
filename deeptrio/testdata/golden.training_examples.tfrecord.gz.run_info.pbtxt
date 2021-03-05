@@ -3423,7 +3423,7 @@ options {
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
-    vsc_allele_fraction_trio_coefficient: 0.6700000166893005
+    min_fraction_multiplier: 0.6700000166893005
   }
   pic_options {
     height: 300
@@ -3529,7 +3529,7 @@ options {
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
-    vsc_allele_fraction_trio_coefficient: 0.6700000166893005
+    min_fraction_multiplier: 0.6700000166893005
   }
   variant_caller_options_parent2 {
     min_count_snps: 2
@@ -3542,7 +3542,7 @@ options {
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
-    vsc_allele_fraction_trio_coefficient: 0.6700000166893005
+    min_fraction_multiplier: 0.6700000166893005
   }
 }
 labeling_metrics {

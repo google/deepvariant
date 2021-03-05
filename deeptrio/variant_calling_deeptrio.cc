@@ -182,9 +182,7 @@ VariantCaller::AlleleRejectionAcceptance VariantCaller::IsGoodAltAllele(
 
   if ((1.0 * allele.count()) / total_count <
       min_fraction(allele) *
-          (apply_trio_coefficient
-               ? options_.vsc_allele_fraction_trio_coefficient()
-               : 1.0)) {
+          (apply_trio_coefficient ? options_.min_fraction_multiplier() : 1.0)) {
     return AlleleRejectionAcceptance::REJECTED_LOW_RATIO;
   }
 

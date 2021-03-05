@@ -120,7 +120,7 @@ VariantCallerOptions MakeOptions(
   options.set_min_count_indels(min_count);
   options.set_min_fraction_snps(min_fraction);
   options.set_min_fraction_indels(min_fraction);
-  options.set_vsc_allele_fraction_trio_coefficient(1.0);
+  options.set_min_fraction_multiplier(1.0);
   options.set_sample_name(sample_name);
   if (fraction_reference_sites_to_emit > 0)
     options.set_fraction_reference_sites_to_emit(
@@ -494,7 +494,7 @@ TEST_F(VariantCallingTest, TestMinSNPIndelSeparately) {
   options.set_min_count_indels(10);
   options.set_min_fraction_snps(0.1);
   options.set_min_fraction_indels(0.5);
-  options.set_vsc_allele_fraction_trio_coefficient(1.0);
+  options.set_min_fraction_multiplier(1.0);
   options.set_sample_name(kSampleName);
   options.set_ploidy(2);
   VariantCaller caller(options);
@@ -921,20 +921,20 @@ TEST_F(VariantCallingTest,
           {"parent_2", {nucleus::ConstProtoPtr<AlleleCount>(
               MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
 
-  // When vsc_allele_fraction_trio_coefficient is set to 1.0 it doesn't affect
+  // When min_fraction_multiplier is set to 1.0 it doesn't affect
   // allele filter. We expect that candidate won't be created since allele
   // fraction is 0.225 is less than 0.226
   VariantCallerOptions options = MakeOptions(0, 0.226);
-  options.set_vsc_allele_fraction_trio_coefficient(1.0);
+  options.set_min_fraction_multiplier(1.0);
   const VariantCaller caller(options);
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counts, "parent_1");
   EXPECT_EQ(candidates.size(), 0);
 
-  // Now we set vsc_allele_fraction_trio_coefficient to 0.5 which should result
+  // Now we set min_fraction_multiplier to 0.5 which should result
   // in candidate to be created.
   VariantCallerOptions options2 = MakeOptions(0, 0.226);
-  options2.set_vsc_allele_fraction_trio_coefficient(0.5);
+  options2.set_min_fraction_multiplier(0.5);
   const VariantCaller caller2(options2);
   Variant variant = WithCounts(MakeExpectedVariant("A", {"T"}, 10), {18, 2});
 

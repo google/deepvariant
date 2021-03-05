@@ -268,9 +268,10 @@ flags.DEFINE_float(
     'counts in our AlleleCount will be advanced as '
     'candidates.')
 flags.DEFINE_float(
-    'vsc_allele_fraction_trio_coefficient', 0.67,
-    'Coefficient that is applied to vsc_min_fraction_snps and '
-    'vsc_min_fraction_indels for candidate generation for trio calling.')
+    'vsc_min_fraction_multiplier', 0.67,
+    'In candidate generation, this multiplier is applied to the minimum allele '
+    'fraction thresholds (vsc_min_fraction_snps and vsc_min_fraction_indels) '
+    'to adapt thresholds for multi-sample calling.')
 flags.DEFINE_float(
     'training_random_emit_ref_sites', NO_RANDOM_REF,
     'If > 0, emit extra random reference examples with this probability.')
@@ -435,8 +436,7 @@ def initialize_variant_caller(the_sample_name, flags_obj):
       min_count_indels=flags_obj.vsc_min_count_indels,
       min_fraction_snps=flags_obj.vsc_min_fraction_snps,
       min_fraction_indels=flags_obj.vsc_min_fraction_indels,
-      vsc_allele_fraction_trio_coefficient=flags_obj
-      .vsc_allele_fraction_trio_coefficient,
+      min_fraction_multiplier=flags_obj.vsc_min_fraction_multiplier,
       # Not specified by default: fraction_reference_sites_to_emit,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=1400605801,
@@ -1863,9 +1863,10 @@ def main(argv=()):
       errors.log_and_raise('--sample_name_to_call has to be one of the trio.',
                            errors.CommandLineError)
 
-    if FLAGS.vsc_allele_fraction_trio_coefficient <= 0 or FLAGS.vsc_allele_fraction_trio_coefficient > 1.0:
+    multiplier = FLAGS.vsc_min_fraction_multiplier
+    if multiplier <= 0 or multiplier > 1.0:
       errors.log_and_raise(
-          '--vsc_allele_fraction_trio_coefficient must within (0-1] internval.',
+          '--vsc_min_fraction_multiplier must be within (0-1] interval.',
           errors.CommandLineError)
     # Run!
     make_examples_runner(options)

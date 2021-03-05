@@ -318,9 +318,10 @@ message VariantCallerOptions {
   // AlleleCount are considered candidate variants.
   float min_fraction_snps = 3;
   float min_fraction_indels = 4;
-  // Coefficient that is applied to min_fraction_snps and min_fraction_indels
-  // for creating candidates in trio mode.
-  float vsc_allele_fraction_trio_coefficient = 12;
+  // In candidate generation, this multiplier is applied to the minimum allele
+  // fraction thresholds (vsc_min_fraction_snps and vsc_min_fraction_indels)
+  // to adapt thresholds for multi-sample calling.
+  float min_fraction_multiplier = 12;
 
   // If provided, we will emit "candidate" variant records at a random fraction
   // of otherwise non-candidate sites. Useful for training.

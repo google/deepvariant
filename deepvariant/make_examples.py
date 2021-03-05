@@ -222,6 +222,11 @@ flags.DEFINE_float(
     'Indel alleles occurring at least this fraction of all counts in our '
     'AlleleCount will be advanced as candidates.')
 flags.DEFINE_float(
+    'vsc_min_fraction_multiplier', 1.0,
+    'In candidate generation, this multiplier is applied to the minimum allele '
+    'fraction thresholds (vsc_min_fraction_snps and vsc_min_fraction_indels) '
+    'to adapt thresholds for multi-sample calling.')
+flags.DEFINE_float(
     'training_random_emit_ref_sites', NO_RANDOM_REF,
     'If > 0, emit extra random reference examples with this probability.')
 flags.DEFINE_integer(
@@ -357,6 +362,7 @@ def default_options(add_flags=True, flags_obj=None):
       min_count_indels=flags_obj.vsc_min_count_indels,
       min_fraction_snps=flags_obj.vsc_min_fraction_snps,
       min_fraction_indels=flags_obj.vsc_min_fraction_indels,
+      min_fraction_multiplier=flags_obj.vsc_min_fraction_multiplier,
       # Not specified by default: fraction_reference_sites_to_emit,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=1400605801,
