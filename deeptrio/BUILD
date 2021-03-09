@@ -19,13 +19,13 @@ filegroup(
 py_library(
     name = "dt_constants",
     srcs = ["dt_constants.py"],
-    srcs_version = "PY3",
+    srcs_version = "PY2AND3",
 )
 
 py_library(
     name = "variant_caller",
     srcs = ["variant_caller.py"],
-    srcs_version = "PY3",
+    srcs_version = "PY2AND3",
     deps = [
         "//deeptrio/python:variant_calling_deeptrio",
         "//third_party/nucleus/protos:variants_py_pb2",
@@ -55,7 +55,7 @@ py_test(
 py_library(
     name = "very_sensitive_caller",
     srcs = ["very_sensitive_caller.py"],
-    srcs_version = "PY3",
+    srcs_version = "PY2AND3",
     deps = [
         ":variant_caller",
     ],
@@ -119,7 +119,7 @@ py_library(
     name = "py_testdata",
     testonly = True,
     srcs = ["testdata.py"],
-    srcs_version = "PY3",
+    srcs_version = "PY2AND3",
     deps = [
         "//third_party/nucleus/testing:py_test_utils",
     ],
@@ -128,7 +128,7 @@ py_library(
 py_library(
     name = "make_examples_lib",
     srcs = ["make_examples.py"],
-    srcs_version = "PY3",
+    srcs_version = "PY2AND3",
     deps = [
         ":dt_constants",
         ":very_sensitive_caller",
@@ -183,7 +183,7 @@ py_test(
     data = [":testdata"],
     python_version = "PY3",
     shard_count = 2,
-    srcs_version = "PY3",
+    srcs_version = "PY2AND3",
     deps = [
         ":make_examples_lib",
         ":py_testdata",
