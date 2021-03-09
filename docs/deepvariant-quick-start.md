@@ -228,11 +228,11 @@ program from Illumina to evaluate the resulting 10 kilobase vcf file. This
 serves as a quick check to ensure the three DeepVariant commands ran correctly.
 
 ```bash
-sudo docker pull pkrusche/hap.py
+sudo docker pull jmcdani20/hap.py:v0.3.12
 sudo docker run -it \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /input/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz \
   /output/output.vcf.gz \
   -f "/input/test_nist.b37_chr20_100kbp_at_10mb.bed" \

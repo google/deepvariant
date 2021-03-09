@@ -486,7 +486,7 @@ function run_happy() {
   # shellcheck disable=SC2086
   run "zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}""
 
-  run "sudo docker pull pkrusche/hap.py"
+  run "sudo docker pull jmcdani20/hap.py:v0.3.12"
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2086
@@ -494,7 +494,7 @@ function run_happy() {
   run "( sudo docker run -i \
   -v "${INPUT_DIR}:${INPUT_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
     "${INPUT_DIR}/$(basename $TRUTH_VCF)" \
     "${OUTPUT_DIR}/${OUTPUT_VCF}" \
     -f "${INPUT_DIR}/$(basename $TRUTH_BED)" \

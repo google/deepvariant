@@ -485,15 +485,15 @@ function run_happy() {
   run "zcat <"${INPUT_DIR}/${REF_BASENAME}.gz" >"${INPUT_DIR}/${REF_BASENAME}""
 
   # Pulling twice in case the first one times out.
-  run "sudo docker pull pkrusche/hap.py || \
-    (sleep 5 ; sudo docker pull pkrusche/hap.py)"
+  run "sudo docker pull jmcdani20/hap.py:v0.3.12 || \
+    (sleep 5 ; sudo docker pull jmcdani20/hap.py:v0.3.12)"
   # shellcheck disable=SC2027
   # shellcheck disable=SC2086
   # shellcheck disable=SC2145
   run "sudo docker run -i \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
     "/input/${truth_vcf}" \
     "/output/${vcf_output}" \
     -f "/input/${truth_bed}" \

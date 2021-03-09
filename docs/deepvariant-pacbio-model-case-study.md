@@ -151,7 +151,7 @@ singularity exec --bind /usr/lib/locale/ \
 ```bash
 mkdir -p happy
 
-singularity exec docker://pkrusche/hap.py:latest \
+singularity exec docker://jmcdani20/hap.py:v0.3.12:latest \
     /opt/hap.py/bin/hap.py \
         --threads $(nproc) \
         -r reference/GRCh38_no_alt_analysis_set.fasta \
@@ -179,7 +179,7 @@ Benchmarking Summary:
 ```bash
 mkdir -p happy
 
-singularity exec docker://pkrusche/hap.py:latest \
+singularity exec docker://jmcdani20/hap.py:v0.3.12:latest \
     /opt/hap.py/bin/hap.py \
         --threads $(nproc) \
         -r reference/GRCh38_no_alt_analysis_set.fasta \

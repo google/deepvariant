@@ -428,12 +428,12 @@ format here: `${OUTPUT_DIR}/test_set.vcf.gz`. Next step is to run `hap.py` to
 complete the evaluation on chromosome 20:
 
 ```
-sudo docker pull pkrusche/hap.py
+sudo docker pull jmcdani20/hap.py:v0.3.12
 
 time sudo docker run -it \
 -v "${DATA_DIR}:${DATA_DIR}" \
 -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
-pkrusche/hap.py /opt/hap.py/bin/hap.py \
+jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   "${TRUTH_VCF}" \
   "${OUTPUT_DIR}/test_set.vcf.gz" \
   -f "${TRUTH_BED}" \

@@ -272,13 +272,13 @@ sample is compared against the corresponding truth set from GIAB.
 
 ```bash
 # Pull docker image locally
-sudo docker pull pkrusche/hap.py
+sudo docker pull jmcdani20/hap.py:v0.3.12
 
 # Evaluate HG002
 sudo docker run -it \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /input/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz \
   /output/HG002.output.vcf.gz \
   -f "/input/HG002_GRCh38_1_22_v4.2_benchmark.bed" \
@@ -291,7 +291,7 @@ sudo docker run -it \
 sudo docker run -it \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /input/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
   -f "/input/HG003_GRCh38_1_22_v4.2_benchmark.bed" \
@@ -304,7 +304,7 @@ sudo docker run -it \
 sudo docker run -it \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /input/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz \
   /output/HG004.output.vcf.gz \
   -f "/input/HG004_GRCh38_1_22_v4.2_benchmark.bed" \

@@ -234,7 +234,7 @@ Concordance HG002: F:143838/144142 (99.79%)  M:143867/144177 (99.78%)  F+M:14210
 ```bash
 mkdir -p happy
 
-sudo docker pull pkrusche/hap.py
+sudo docker pull jmcdani20/hap.py:v0.3.12
 
 sudo docker run \
   -v "${PWD}/benchmark":"/benchmark" \
@@ -242,7 +242,7 @@ sudo docker run \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz \
   /output/HG002.output.vcf.gz \
   -f /benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed \
@@ -257,7 +257,7 @@ sudo docker run \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
   -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
@@ -272,7 +272,7 @@ sudo docker run \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /benchmark/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz \
   /output/HG004.output.vcf.gz \
   -f /benchmark/HG004_GRCh38_1_22_v4.2_benchmark.bed \

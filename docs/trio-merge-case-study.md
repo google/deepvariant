@@ -397,14 +397,14 @@ Indel/SNP+MNP ratio          : 0.09 (3716/41873)
 ### Run hap.py to calculate the accuracy of DeepVariant generated call sets
 
 ```
-sudo docker pull pkrusche/hap.py
+sudo docker pull jmcdani20/hap.py:v0.3.12
 
 declare -a trio=(HG002 HG003 HG004)
 for SAMPLE in "${trio[@]}"
 do
   sudo docker run -i \
     -v "${DIR}":"/data" \
-    pkrusche/hap.py /opt/hap.py/bin/hap.py \
+    jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
     "/data/${SAMPLE}_truth.vcf.gz" \
     "/data/${SAMPLE}.vcf.gz" \
     -f "/data/${SAMPLE}_truth.bed" \

@@ -238,12 +238,12 @@ function run_happy() {
   zcat <"${REF}" >"${UNCOMPRESSED_REF}"
 
   # Pulling twice in case the first one times out.
-  sudo docker pull pkrusche/hap.py || \
-    (sleep 5 ; sudo docker pull pkrusche/hap.py)
+  sudo docker pull jmcdani20/hap.py:v0.3.12 || \
+    (sleep 5 ; sudo docker pull jmcdani20/hap.py:v0.3.12)
   sudo docker run -i \
   -v "${DATA_DIR}:${DATA_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
     "${truth_vcf}" \
     "${vcf_output}" \
     -f "${truth_bed}" \

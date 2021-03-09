@@ -161,7 +161,7 @@ sudo docker run \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
-  pkrusche/hap.py /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
   -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
