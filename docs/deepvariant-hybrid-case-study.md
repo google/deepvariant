@@ -67,17 +67,17 @@ curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > reference/G
 
 ### Download Genome in a Bottle Benchmarks
 
-We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
-variant benchmarks for HG003.
+We will benchmark our variant calls against v4.2.1 of the Genome in a Bottle
+small variant benchmarks for HG003.
 
 ```bash
 mkdir -p benchmark
 
-FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
+FTPDIR=ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG003_NA24149_father/NISTv4.2.1/GRCh38
 
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 ```
 
 ### Download HG003 chr20 BAM
@@ -123,7 +123,7 @@ sudo docker run \
   --output_vcf /output/HG003.output.vcf.gz \
   --output_gvcf /output/HG003.output.g.vcf.gz \
   --num_shards $(nproc) \
-  --regions chr20:10,000,000-10,100,000 \
+  --regions chr20 \
   --intermediate_results_dir /output/intermediate_results_dir
 ```
 
@@ -162,9 +162,9 @@ sudo docker run \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
-  -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
+  -f /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/happy.output \
   --engine=vcfeval \
@@ -175,11 +175,11 @@ Output:
 
 ```
 Benchmarking Summary:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10634     10601        33        22758        52      11573     16       0.996897          0.995351        0.508524         0.996123                     NaN                     NaN                   1.749861                   2.587958
- INDEL   PASS        10634     10601        33        22758        52      11573     16       0.996897          0.995351        0.508524         0.996123                     NaN                     NaN                   1.749861                   2.587958
-   SNP    ALL        70209     70186        23       101326        37      31088     13       0.999672          0.999473        0.306812         0.999573                2.297347                 1.84949                   1.884533                   2.081099
-   SNP   PASS        70209     70186        23       101326        37      31088     13       0.999672          0.999473        0.306812         0.999573                2.297347                 1.84949                   1.884533                   2.081099
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        10628     10597        31        22758        52      11577     16     36       0.997083          0.995349        0.508700         0.996215                     NaN                     NaN                   1.748961                   2.587958
+INDEL   PASS        10628     10597        31        22758        52      11577     16     36       0.997083          0.995349        0.508700         0.996215                     NaN                     NaN                   1.748961                   2.587958
+  SNP    ALL        70166     70143        23       101326        36      31132     13     17       0.999672          0.999487        0.307246         0.999580                2.296566                 1.84949                   1.883951                   2.081099
+  SNP   PASS        70166     70143        23       101326        36      31132     13     17       0.999672          0.999487        0.307246         0.999580                2.296566                 1.84949                   1.883951                   2.081099
 ```
 
 Notice that F1 scores are above 0.999 for SNPs and above 0.995 for indels!

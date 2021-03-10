@@ -26,17 +26,17 @@ curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > reference/G
 
 ### Download Genome in a Bottle Benchmarks
 
-We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
-variant benchmarks for HG003.
+We will benchmark our variant calls against v4.2.1 of the Genome in a Bottle
+small variant benchmarks for HG003.
 
 ```bash
 mkdir -p benchmark
 
-FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
+FTPDIR=ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG003_NA24149_father/NISTv4.2.1/GRCh38
 
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 ```
 
 ### Download HG003 BAM
@@ -116,9 +116,9 @@ sudo docker run \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
-  -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
+  -f /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
   -T /input/idt_capture_novogene.grch38.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/happy.output \
@@ -129,11 +129,11 @@ Output:
 
 ```
 Benchmarking Summary:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL         1053      1026        27         1519        23        450     10       0.974359          0.978485        0.296248         0.976417                     NaN                     NaN                   1.752717                   1.906796
- INDEL   PASS         1053      1026        27         1519        23        450     10       0.974359          0.978485        0.296248         0.976417                     NaN                     NaN                   1.752717                   1.906796
-   SNP    ALL        25324     25007       317        27947       167       2771     33       0.987482          0.993367        0.099152         0.990416                2.856273                2.759919                   1.625246                   1.665680
-   SNP   PASS        25324     25007       317        27947       167       2771     33       0.987482          0.993367        0.099152         0.990416                2.856273                2.759919                   1.625246                   1.665680
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL         1051      1022        29         1511        19        451      9      2       0.972407          0.982075        0.298478         0.977217                     NaN                     NaN                   1.747283                   1.908023
+INDEL   PASS         1051      1022        29         1511        19        451      9      2       0.972407          0.982075        0.298478         0.977217                     NaN                     NaN                   1.747283                   1.908023
+  SNP    ALL        25279     24964       315        27842       167       2709     40      8       0.987539          0.993355        0.097299         0.990439                2.854703                2.760227                   1.623027                   1.664943
+  SNP   PASS        25279     24964       315        27842       167       2709     40      8       0.987539          0.993355        0.097299         0.990439                2.854703                2.760227                   1.623027                   1.664943
 ```
 
 [case study on whole genome sequencing data]: deepvariant-case-study.md

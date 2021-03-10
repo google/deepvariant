@@ -28,23 +28,23 @@ curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > reference/G
 
 ### Download Genome in a Bottle Benchmarks
 
-We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
-variant benchmarks for HG003.
+We will benchmark our variant calls against v4.2.1 of the Genome in a Bottle
+small variant benchmarks for HG003.
 
 ```bash
 mkdir -p benchmark
 
-FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
+FTPDIR=ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG003_NA24149_father/NISTv4.2.1/GRCh38
 
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 ```
 
 ### Download HG003 chr20 BAM
 
 We'll use HG003 Illumina WGS reads publicly available from the
-[PrecisionFDA Truth v2 Challenge](https://precision.fda.gov/challenges/10).
+[PrecisionFDA Truth v2 Challenge](https://doi.org/10.1101/2020.11.13.380741).
 
 ```bash
 mkdir -p input
@@ -115,9 +115,9 @@ sudo docker run \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
-  -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
+  -f /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/happy.output \
   --engine=vcfeval \
@@ -128,10 +128,10 @@ Output:
 
 ```
 Benchmarking Summary:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10634     10576        58        21101        26      10040     22       0.994546          0.997649        0.475807         0.996095                     NaN                     NaN                   1.749861                   2.264070
- INDEL   PASS        10634     10576        58        21101        26      10040     22       0.994546          0.997649        0.475807         0.996095                     NaN                     NaN                   1.749861                   2.264070
-   SNP    ALL        70209     69943       266        86372        76      16323     17       0.996211          0.998915        0.188985         0.997561                2.297347                2.060724                   1.884533                   1.922491
-   SNP   PASS        70209     69943       266        86372        76      16323     17       0.996211          0.998915        0.188985         0.997561                2.297347                2.060724                   1.884533                   1.922491
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        10628     10576        52        21045        24       9987     19      5       0.995107          0.997830        0.474555         0.996467                     NaN                     NaN                   1.748961                   2.296457
+INDEL   PASS        10628     10576        52        21045        24       9987     19      5       0.995107          0.997830        0.474555         0.996467                     NaN                     NaN                   1.748961                   2.296457
+  SNP    ALL        70166     69904       262        85681        83      15664     14      4       0.996266          0.998815        0.182818         0.997539                2.296566                2.071024                   1.883951                   1.937783
+  SNP   PASS        70166     69904       262        85681        83      15664     14      4       0.996266          0.998815        0.182818         0.997539                2.296566                2.071024                   1.883951                   1.937783
 ```
 
