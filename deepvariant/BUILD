@@ -289,6 +289,7 @@ py_library(
     srcs = ["make_examples.py"],
     srcs_version = "PY3",
     deps = [
+        ":dv_constants",
         ":exclude_contigs",
         ":logging_level",
         ":make_examples_core",
@@ -385,6 +386,7 @@ py_binary(
         ":make_examples_lib",
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+        "@absl_py//absl:app",
     ],
 )
 
@@ -584,6 +586,7 @@ py_test(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
+        ":dv_constants",
         ":make_examples_utils",
         ":pileup_image",
         ":py_testdata",
@@ -623,6 +626,22 @@ cc_library(
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "pileup_channel_lib_test",
+    srcs = ["pileup_channel_lib_test.cc"],
+    deps = [
+        ":pileup_channel_lib",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
+        "//third_party/nucleus/util:cpp_utils",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
     ],
 )
 

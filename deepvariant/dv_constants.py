@@ -57,3 +57,10 @@ NUM_CLASSES = 3
 
 # Default sample name if no sample name is found from the BAM header.
 DEFAULT_SAMPLE_NAME = 'default'
+
+# Define available OptChannels (optional extra channels).
+OPT_CHANNELS = [
+    'read_mapping_percent', 'avg_base_quality', 'identity',
+    'gap_compressed_identity', 'gc_content', 'is_homopolymer',
+    'homopolymer_weighted', 'blank'
+]

@@ -43,6 +43,7 @@ from absl import app
 from absl import flags
 from absl import logging
 
+from deepvariant import dv_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import make_examples_core
@@ -78,7 +79,6 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # modify this default parameter without a systematic evaluation of the impact
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
-
 
 flags.DEFINE_string(
     'ref', None,
@@ -293,6 +293,9 @@ flags.DEFINE_integer(
 flags.DEFINE_bool(
     'add_hp_channel', False,
     'If true, add another channel to represent HP tags per read.')
+flags.DEFINE_string(
+    'channels', None, 'Comma-delimited list of optional channels to add. '
+    'Available channels: {}'.format(','.join(dv_constants.OPT_CHANNELS)))
 flags.DEFINE_bool(
     'add_supporting_other_alt_color', False,
     'If True, reads supporting an alt not represented in the '
@@ -414,6 +417,16 @@ def default_options(add_flags=True, flags_obj=None):
           flags_obj.sequencing_type)
     if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
       options.downsample_fraction = flags_obj.downsample_fraction
+
+    if flags_obj.channels:
+      channel_set = flags_obj.channels.split(',')
+      for channel in channel_set:
+        if channel and channel not in dv_constants.OPT_CHANNELS:
+          err_msg = 'Channel "{}" is not one of the available opt channels: {}'.format(
+              channel, ', '.join(dv_constants.OPT_CHANNELS))
+          errors.log_and_raise(err_msg, errors.CommandLineError)
+      options.pic_options.channels[:] = channel_set
+      options.pic_options.num_channels += len(channel_set)
 
     if flags_obj.multi_allelic_mode:
       multi_allelic_enum = {

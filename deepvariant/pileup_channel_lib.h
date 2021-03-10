@@ -70,8 +70,25 @@ const float kMaxPixelValueAsFloat = 254.0;
 
 // Scales an input value to pixel range 0-254.
 inline uint8 ScaleColor(int value, float max_val) {
+  if (static_cast<float>(value) > max_val) {
+    value = max_val;
+  }
   return static_cast<int>(kMaxPixelValueAsFloat *
                           (static_cast<float>(value) / max_val));
+}
+
+// Scales an input vector to pixel range 0-254
+inline std::vector<uint8> ScaleColorVector(std::vector<uint8>& channel_values,
+                                           float max_val) {
+  for (int i = 0; i < channel_values.size(); i++) {
+    int value = channel_values[i];
+    if (static_cast<float>(value) > max_val) {
+      value = max_val;
+    }
+    channel_values[i] = static_cast<int>(kMaxPixelValueAsFloat *
+                                         (static_cast<float>(value) / max_val));
+  }
+  return channel_values;
 }
 
 //-----------------------//
@@ -235,12 +252,12 @@ inline std::vector<uint8> HomoPolymerWeighted(const Read& read) {
 
 inline std::vector<uint8> Blank(const Read& read) {
   // Used to return a blank channel.
-  std::vector<uint8> blank(read.aligned_sequence().size());
+  std::vector<uint8> blank(read.aligned_sequence().size(), 0);
   return blank;
 }
 
-inline bool channel_exists(std::vector<string>& channels,
-                           const string& channel_name) {
+inline bool channel_exists(std::vector<std::string>& channels,
+                           const std::string& channel_name) {
   if (std::find(channels.begin(), channels.end(), channel_name) !=
       channels.end()) {
     return true;
@@ -258,15 +275,17 @@ const int MaxAvgBaseQuality = 93;
 const int MaxIdentity = 100;
 const int MaxGapCompressedIdentity = 100;
 const int MaxGcContent = 100;
+const int MaxIsHomoPolymer = 1;
+const int MaxHomoPolymerWeighted = 30;
 
 class OptChannels {
  public:
-  std::map<string, std::vector<unsigned char>> data_;
-  std::map<string, std::vector<unsigned char>> ref_data_;
-  void CalculateChannels(const std::vector<string>& channels,
+  std::map<std::string, std::vector<unsigned char>> data_;
+  std::map<std::string, std::vector<unsigned char>> ref_data_;
+  void CalculateChannels(const std::vector<std::string>& channels,
                          const Read& read) {
     // Calculates values for each channel
-    for (const string& channel : channels) {
+    for (const std::string& channel : channels) {
       if (channel == ch_read_mapping_percent) {
         data_[channel].assign(
             {ScaleColor(ReadMappingPercent(read), MaxMappingPercent)});
@@ -281,16 +300,19 @@ class OptChannels {
       } else if (channel == ch_gc_content) {
         data_[channel].assign({ScaleColor(GcContent(read), MaxGcContent)});
       } else if (channel == ch_is_homopolymer) {
-        data_[channel] = IsHomoPolymer(read);
+        std::vector<uint8> is_homopolymer = IsHomoPolymer(read);
+        data_[channel] = ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
       } else if (channel == ch_homopolymer_weighted) {
-        data_[channel] = HomoPolymerWeighted(read);
+        std::vector<uint8> homopolymer_weighted = HomoPolymerWeighted(read);
+        data_[channel] =
+            ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
       } else if (channel == ch_blank) {
         data_[channel] = Blank(read);
       }
     }
   }
 
-  uint8 GetChannelData(const string& channel, int pos) {
+  inline uint8 GetChannelData(const std::string& channel, int pos) {
     // Returns values for each channel
     if (data_[channel].size() == 1) {
       return data_[channel][0];
@@ -299,30 +321,40 @@ class OptChannels {
     }
   }
 
-  void CalculateRefRows(const std::vector<string>& channels) {
+  void CalculateRefRows(const std::vector<std::string>& channels,
+                        const std::string& ref_bases) {
     // Calculates reference row values for each channel
-    for (const string& channel : channels) {
+    // Create a fake read to represent reference bases.
+    Read refRead;
+    for (const std::string& channel : channels) {
       if (channel == ch_read_mapping_percent) {
-        ref_data_[channel].assign({0});
+        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_avg_base_quality) {
-        ref_data_[channel].assign({0});
+        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_identity) {
-        ref_data_[channel].assign({0});
+        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_gap_compressed_identity) {
-        ref_data_[channel].assign({0});
+        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_gc_content) {
-        ref_data_[channel].assign({0});
+        refRead.set_aligned_sequence(ref_bases);
+        ref_data_[channel].assign(
+            {ScaleColor(GcContent(refRead), MaxGcContent)});
       } else if (channel == ch_is_homopolymer) {
-        ref_data_[channel].assign({0});
+        refRead.set_aligned_sequence(ref_bases);
+        std::vector<uint8> is_homopolymer = IsHomoPolymer(refRead);
+        ref_data_[channel] = ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
       } else if (channel == ch_homopolymer_weighted) {
-        ref_data_[channel].assign({1});
-      } else if (channel == ch_blank) {
+        refRead.set_aligned_sequence(ref_bases);
+        std::vector<uint8> homopolymer_weighted = HomoPolymerWeighted(refRead);
+        ref_data_[channel] =
+            ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
+      } else {
         ref_data_[channel].assign({0});
       }
     }
   }
 
-  uint8 GetRefRows(const string& channel, int col) {
+  inline uint8 GetRefRows(const std::string& channel, int col) {
     // Returns first value if size 1 else return specific column.
     // Note that ref_data is indexed by col and not pos.
     if (ref_data_[channel].size() == 1) {

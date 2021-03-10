@@ -52,6 +52,7 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 
+from deepvariant import dv_constants
 from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant.protos import deepvariant_pb2
@@ -59,6 +60,7 @@ from deepvariant.python import pileup_image_native
 
 
 MAX_PIXEL_FLOAT = 254.0
+MAX_HOMOPOLYMER_WEIGHTED = 30
 
 
 def _supporting_reads(*names):
@@ -100,7 +102,9 @@ def _make_encoder(read_requirements=None, **kwargs):
 def _make_encoder_with_channels(channel_set):
   options = pileup_image.default_options()
   for channel in channel_set:
+    assert channel in dv_constants.OPT_CHANNELS
     options.channels.append(channel)
+    options.num_channels += 1
   return pileup_image_native.PileupImageEncoderNative(options)
 
 
@@ -1421,7 +1425,6 @@ class PileupCustomChannels(absltest.TestCase):
         cigar=cigar,
         quals=range(1, 51),
         name='read1')
-
     return _make_encoder_with_channels(channel_set).encode_read(
         dv_call, 'TTTTATGACAAAAAAGATGCGACGGTTCCGTAACCCATAAGAAAGAACGT', read,
         start, alt_allele)
@@ -1493,7 +1496,7 @@ class PileupCustomChannelsParam(parameterized.TestCase):
   )
   def test_is_homopolymer(self, seq, expected_result):
     result = self.make_pileup(seq, ['is_homopolymer'])
-    ch7 = result[:, :, 6][0]
+    ch7 = (result[:, :, 6][0] / MAX_PIXEL_FLOAT).astype(int)
     self.assertTrue((ch7 == expected_result).all())
 
   @parameterized.parameters(('AAATTCCC', [3, 3, 3, 2, 2, 3, 3, 3]),
@@ -1501,7 +1504,8 @@ class PileupCustomChannelsParam(parameterized.TestCase):
                             ('ATTCCCTTA', [1, 2, 2, 3, 3, 3, 2, 2, 1]))
   def test_weighted_homopolymer(self, seq, expected_result):
     result = self.make_pileup(seq, ['homopolymer_weighted'])
-    ch7 = result[:, :, 6][0]
+    ch7 = np.round((result[:, :, 6][0] / MAX_PIXEL_FLOAT) *
+                   MAX_HOMOPOLYMER_WEIGHTED).astype(int)
     self.assertTrue((ch7 == expected_result).all())
 
 
