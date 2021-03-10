@@ -53,6 +53,8 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 
 import gzip
+import os
+
 from absl import app
 from absl import flags
 from absl import logging
@@ -314,6 +316,12 @@ def run():
 
       output_prefix = '{}_'.format(
           FLAGS.output) if FLAGS.output is not None else ''
+
+      # Create directory for images if does not exist.
+      if output_prefix:
+        output_dir = os.path.dirname(output_prefix)
+        if not os.path.exists(output_dir):
+          os.makedirs(output_dir)
 
       # Create image with a grey-scale row of channels and save to file.
       if make_channels:
