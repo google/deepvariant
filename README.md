@@ -53,7 +53,7 @@ Please also note:
 
 *   All DeepTrio models were trained on human data.
 *   It is possible to use DeepTrio with only 2 samples (child, and one parent).
-*   External tool [GLNexus](https://github.com/dnanexus-rnd/GLnexus) is used to
+*   External tool [GLnexus](https://github.com/dnanexus-rnd/GLnexus) is used to
     merge output VCFs.
 
 ## How to run DeepVariant

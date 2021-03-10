@@ -47,7 +47,7 @@ The easiest and recommended way to run DeepTrio is using
 DeepTrio using docker.
 
 Merging VCFs can be done using
-[GLNexus](https://github.com/dnanexus-rnd/GLnexus) which has been optimized for
+[GLnexus](https://github.com/dnanexus-rnd/GLnexus) which has been optimized for
 use with DeepVariant gVCFs. The process is described in the DeepTrio case
 studies
 ([DeepTrio whole genome sequencing case study](deeptrio-wgs-case-study.md) and

@@ -72,8 +72,8 @@ curl ${HTTPDIR}/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam.bai > i
 ## Running DeepTrio with one command
 
 DeepTrio pipeline consists of 4 steps: `make_examples`, `call_variants`,
-`postprocess_variants` and `GLNexus merge`. It is possible to run DeepTrio with
-one command using the `run_deepvariant` script. GLNexus is run as a separate
+`postprocess_variants` and `GLnexus merge`. It is possible to run DeepTrio with
+one command using the `run_deepvariant` script. GLnexus is run as a separate
 command.
 
 ### Running on a CPU-only machine
@@ -133,10 +133,10 @@ make_examples_parent2.tfrecord-?????-of-?????.gz
 For running on GPU machines, or using Singularity instead of Docker, see
 [Quick Start](deepvariant-quick-start.md).
 
-## Merge VCFs using GLNexus
+## Merge VCFs using GLnexus
 
 At this step we take all 3 VCFs generated in the previous step and merge them
-using GLNexus.
+using GLnexus.
 
 ```bash
 # BCFTools are required:
@@ -154,7 +154,7 @@ sudo docker run \
   | bcftools view - | bgzip -c > output/HG002_trio_merged.vcf.gz
 ```
 
-After completion of GLNexus command we should have a new merged VCF file in the
+After completion of GLnexus command we should have a new merged VCF file in the
 output directory.
 
 ```
