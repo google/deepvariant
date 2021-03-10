@@ -28,25 +28,26 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """A VariantCaller producing DeepVariantCall and gVCF records."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import abc
 import collections
 import itertools
 import math
 import operator
 import statistics
-
+from typing import Dict, Sequence, Tuple
 
 import numpy as np
 
+from deeptrio.python import variant_calling_deeptrio
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import allelecounter
+from deepvariant.python import variant_calling
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
-from deepvariant.python import variant_calling
+
+# redacted
 
 # Reference bases with genotype calls must be one of these four values.
 CANONICAL_DNA_BASES = frozenset('ACGT')
@@ -107,14 +108,15 @@ def _quantize_gq(raw_gq, binsize):
     return bin_number * binsize + 1
 
 
-class VariantCaller(object):
+class VariantCaller(metaclass=abc.ABCMeta):
   """BaseClass for variant callers."""
-
-  __metaclass__ = abc.ABCMeta
 
   def __init__(self, options, use_cache_table, max_cache_coverage):
     self.options = options
-    self.cpp_variant_caller = variant_calling.VariantCaller(self.options)
+    self.cpp_variant_caller = variant_calling_deeptrio.VariantCaller(
+        self.options)
+    self.cpp_variant_caller_from_vcf = variant_calling.VariantCaller(
+        self.options)
 
     self.max_cache_coverage = max_cache_coverage
     # pylint: disable=g-complex-comprehension
@@ -344,32 +346,45 @@ class VariantCaller(object):
               end=elt.summary_counts.position + 1,
               calls=[call])
 
-  def calls_and_gvcfs(self,
-                      allele_counter,
-                      include_gvcfs,
-                      include_med_dp=False):
+  def calls_and_gvcfs(
+      self,
+      allele_counters: Dict[str, allelecounter.AlleleCounter],
+      target_sample: str,
+      include_gvcfs: bool = False,
+      include_med_dp: bool = False
+  ) -> Tuple[Sequence[deepvariant_pb2.DeepVariantCall],
+             Sequence[variants_pb2.Variant]]:
     """Gets variant calls and gvcf records for all sites in allele_counter.
 
     Args:
-      allele_counter: AlleleCounter object holding the allele counts we will use
-        to find candidate variants and create gvcf records.
+      allele_counters: Dictionary of AlleleCounter objects keyed by sample IDs
+        holding the allele counts we will use to find candidate variants and
+        create gvcf records.
+      target_sample: string. Sample ID of sample for which variants are called.
       include_gvcfs: boolean. If True, we will compute gVCF records for all of
         the AlleleCounts in AlleleCounter.
       include_med_dp: boolean. If True, in the gVCF records, we will include
-                      MED_DP.
+        MED_DP.
 
     Returns:
       Two values. The first is a list of DeepVariantCall protos containing our
       candidate variants. The second is a list of gVCF blocks in Variant proto
       format, if include_gvcfs is True. If False, an empty list is returned.
     """
-    candidates = self.get_candidates(allele_counter)
+
+    candidates = self.get_candidates(
+        allele_counters=allele_counters, sample_name=target_sample)
+
     gvcfs = []
     if include_gvcfs:
       gvcfs = list(
-          self.make_gvcfs(allele_counter.summary_counts(), include_med_dp))
+          self.make_gvcfs(
+              allele_counters[target_sample].summary_counts(),
+              include_med_dp=include_med_dp))
     return candidates, gvcfs
 
   @abc.abstractmethod
-  def get_candidates(self, allele_counter):
+  def get_candidates(self, allele_counters: Dict[str,
+                                                 allelecounter.AlleleCounter],
+                     sample_name: str):
     raise NotImplementedError

@@ -31,16 +31,13 @@
 This module provides a way to call variants with a proposed VCF that contains
 candidates to consider.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-from absl import flags
+from typing import Dict, List
 
-from third_party.nucleus.io import vcf
 from deepvariant import variant_caller
-
-FLAGS = flags.FLAGS
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import allelecounter
+from third_party.nucleus.io import vcf
 
 
 class VcfCandidateImporter(variant_caller.VariantCaller):
@@ -57,6 +54,8 @@ class VcfCandidateImporter(variant_caller.VariantCaller):
         max_cache_coverage=max_cache_coverage)
     self.vcf_reader = vcf.NativeVcfReader(candidates_vcf).c_reader
 
-  def get_candidates(self, allele_counter):
-    return self.cpp_variant_caller.calls_from_vcf(allele_counter,
-                                                  self.vcf_reader)
+  def get_candidates(self, allele_counters: Dict[str,
+                                                 allelecounter.AlleleCounter],
+                     sample_name: str) -> List[deepvariant_pb2.DeepVariantCall]:
+    return self.cpp_variant_caller_from_vcf.calls_from_vcf(
+        allele_counters[sample_name], self.vcf_reader)

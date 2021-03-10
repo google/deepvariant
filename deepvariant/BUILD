@@ -181,6 +181,9 @@ py_library(
     srcs = ["variant_caller.py"],
     srcs_version = "PY3",
     deps = [
+        "//deeptrio/python:variant_calling_deeptrio",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/python:allelecounter",
         "//deepvariant/python:variant_calling",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:genomics_math",
@@ -212,6 +215,8 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":variant_caller",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/python:allelecounter",
     ],
 )
 
@@ -236,6 +241,8 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":variant_caller",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/python:allelecounter",
         "//third_party/nucleus/io:vcf",
     ],
 )

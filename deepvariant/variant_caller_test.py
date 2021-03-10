@@ -83,7 +83,7 @@ class PlaceholderVariantCaller(variant_caller.VariantCaller):
         use_cache_table=use_cache_table,
         max_cache_coverage=max_cache_coverage)
 
-  def get_candidates(self, allele_counter):
+  def get_candidates(self, allele_counters, sample_name):
     return None
 
 
@@ -102,6 +102,7 @@ class VariantCallerTests(parameterized.TestCase):
         for i, (n_alt, n_ref, ref) in enumerate(counts)
     ]
     # pylint: enable=g-complex-comprehension
+    allele_counter.counts.return_value = counts
     return allele_counter
 
   # R code to produce the testdata expectation table.
@@ -440,7 +441,11 @@ class VariantCallerTests(parameterized.TestCase):
               (10, 10, 'T')]
     caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(10, counts)
-    _, gvcfs = caller.calls_and_gvcfs(allele_counter, include_gvcfs)
+    allele_counter_dict = {'SAMPLE_ID': allele_counter}
+    _, gvcfs = caller.calls_and_gvcfs(
+        allele_counters=allele_counter_dict,
+        target_sample='SAMPLE_ID',
+        include_gvcfs=include_gvcfs)
     # We expect our gvcfs to occur at the 10 position and that 12 and 13 have
     # been merged into a 2 bp block, if enabled. Otherwise should be empty.
     if include_gvcfs:

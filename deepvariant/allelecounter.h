@@ -291,7 +291,7 @@ class AlleleCounter {
   // negative (gets bases before the start of the interval) or offsets that are
   // longer than the interval. Will return the empty string if the actual
   // genomic coordinates implied by the offsets aren't all on the chromosome.
-  string RefBases(int64 rel_start, int64 rel_end);
+  string RefBases(int64 rel_start, int64 len);
 
   // Returns True if ref_offset (where 0 indicates the first position in the
   // interval, which could be base 1234 in genomic coordinates, for example), is

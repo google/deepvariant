@@ -107,6 +107,7 @@ class VcfCandidateImporterTests(parameterized.TestCase):
         (0, 0, 'G'),
         (10, 10, 'T'),
     ])
+    allele_counter_dict = {'SAMPLE_ID': allele_counter}
     fake_candidates = [
         deepvariant_pb2.DeepVariantCall(
             variant=test_utils.make_variant(alleles=['G', 'C'], start=11)),
@@ -115,9 +116,12 @@ class VcfCandidateImporterTests(parameterized.TestCase):
     ]
 
     caller = self.make_test_caller(0.01, 100)
-    with mock.patch.object(caller, 'cpp_variant_caller') as mock_cpp:
+    with mock.patch.object(caller, 'cpp_variant_caller_from_vcf') as mock_cpp:
       mock_cpp.calls_from_vcf.return_value = fake_candidates
-      candidates, _ = caller.calls_and_gvcfs(allele_counter, False)
+      candidates, _ = caller.calls_and_gvcfs(
+          allele_counters=allele_counter_dict,
+          target_sample='SAMPLE_ID',
+          include_gvcfs=False)
 
     mock_cpp.calls_from_vcf.assert_called_once_with(allele_counter,
                                                     caller.vcf_reader)

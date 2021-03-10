@@ -33,13 +33,11 @@ for the AlleleCounts in an AlleleCounter by wrapping the low-level C++ code and
 adding a nicer API and functions to compute gVCF records as well.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
+from typing import Dict, Sequence
 
 from deepvariant import variant_caller
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import allelecounter
 
 
 class VerySensitiveCaller(variant_caller.VariantCaller):
@@ -51,5 +49,14 @@ class VerySensitiveCaller(variant_caller.VariantCaller):
         use_cache_table=use_cache_table,
         max_cache_coverage=max_cache_coverage)
 
-  def get_candidates(self, allele_counter):
-    return self.cpp_variant_caller.calls_from_allele_counter(allele_counter)
+  def get_candidates(
+      self, allele_counters: Dict[str, allelecounter.AlleleCounter],
+      sample_name: str) -> Sequence[deepvariant_pb2.DeepVariantCall]:
+    # AlleleCounter doesn't have copy constructor therefore we pass
+    # allele counts only (which is a member of AlleleCounter).
+    allele_counts = {
+        sample_id: allele_counters[sample_id].counts()
+        for sample_id in allele_counters
+    }
+    return self.cpp_variant_caller.calls_from_allele_counts(
+        allele_counts, sample_name)

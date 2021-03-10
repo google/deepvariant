@@ -80,6 +80,7 @@ class VerySensitiveCallerTests(parameterized.TestCase):
         for i, (n_alt, n_ref, ref) in enumerate(counts)
     ]
     # pylint: enable=g-complex-comprehension
+    allele_counter.counts.return_value = counts
     return allele_counter
 
   def test_calls_from_allele_counts(self):
@@ -112,10 +113,19 @@ class VerySensitiveCallerTests(parameterized.TestCase):
 
     caller = self.make_test_caller(0.01, 100)
     with mock.patch.object(caller, 'cpp_variant_caller') as mock_cpp:
-      mock_cpp.calls_from_allele_counter.return_value = fake_candidates
-      candidates, _ = caller.calls_and_gvcfs(allele_counter, False)
+      mock_cpp.calls_from_allele_counts.return_value = fake_candidates
 
-    mock_cpp.calls_from_allele_counter.assert_called_once_with(allele_counter)
+      allele_counters = {'SAMPLE_ID': allele_counter}
+      candidates, _ = caller.calls_and_gvcfs(
+          allele_counters=allele_counters,
+          target_sample='SAMPLE_ID',
+          include_gvcfs=False)
+
+    expected_allele_counts_param = {
+        'SAMPLE_ID': allele_counter.counts.return_value
+    }
+    mock_cpp.calls_from_allele_counts.assert_called_once_with(
+        expected_allele_counts_param, 'SAMPLE_ID')
     self.assertEqual(candidates, fake_candidates)
 
 
