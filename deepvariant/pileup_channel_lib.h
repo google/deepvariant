@@ -102,10 +102,8 @@ inline int ReadMappingPercent(const Read& read) {
     const CigarUnit::Operation& op = cigar_elt.operation();
     int op_len = cigar_elt.operation_length();
     switch (op) {
-      case CigarUnit::ALIGNMENT_MATCH:
-        match_len += op_len;
-        break;
       case CigarUnit::SEQUENCE_MATCH:
+      case CigarUnit::ALIGNMENT_MATCH:
         match_len += op_len;
         break;
       default:
@@ -142,11 +140,11 @@ inline int Identity(const Read& read) {
     const CigarUnit::Operation& op = cigar_elt.operation();
     int op_len = cigar_elt.operation_length();
     switch (op) {
+      case CigarUnit::SEQUENCE_MATCH:
       case CigarUnit::ALIGNMENT_MATCH:
         match_len += op_len;
         total_len += op_len;
         break;
-      case CigarUnit::SEQUENCE_MATCH:
       case CigarUnit::SEQUENCE_MISMATCH:
         total_len += op_len;
         break;
@@ -175,6 +173,7 @@ inline int GapCompressedIdentity(const Read& read) {
     const CigarUnit::Operation& op = cigar_elt.operation();
     int op_len = cigar_elt.operation_length();
     switch (op) {
+      case CigarUnit::SEQUENCE_MATCH:
       case CigarUnit::ALIGNMENT_MATCH:
         match_len += op_len;
         gap_compressed_len += op_len;

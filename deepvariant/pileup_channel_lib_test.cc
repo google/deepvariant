@@ -107,6 +107,12 @@ TEST(IdentityTest, BasicCase) {
   EXPECT_EQ(id, 90);
 }
 
+TEST(IdentityTest, PacBioStyleCigar) {
+  Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"5=", "1X", "4="});
+  uint8 id = Identity(read);
+  EXPECT_EQ(id, 90);
+}
+
 TEST(GapCompressedIdentityTest, InsertionCase) {
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3M", "4I", "3M"});
   uint8 id = GapCompressedIdentity(read);
@@ -117,6 +123,13 @@ TEST(GapCompressedIdentityTest, DeletionCase) {
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3M", "4D", "3M"});
   uint8 id = GapCompressedIdentity(read);
   EXPECT_EQ(id, 85);
+}
+
+TEST(GapCompressedIdentityTest, PacBioStyleCigar) {
+  Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3=", "2X", "2I",
+                                                          "3="});
+  uint8 id = GapCompressedIdentity(read);
+  EXPECT_EQ(id, 66);
 }
 
 TEST(GcContestTest, AllGc) {
