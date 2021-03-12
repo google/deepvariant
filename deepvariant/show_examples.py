@@ -28,15 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Generate human-readable images from DeepVariant example pileups.
 
-# --examples can be one file or sharded using the following annotation:
-EXAMPLES=/path/to/make_examples.tfrecord@64.gz
-# --vcf will filter the output to only those variants in the vcf
-VCF=/path/to/variants_of_interest.vcf
+# Only --examples is required.
 
-# Only --examples is required
 show_examples
-  --examples $EXAMPLES
-  --vcf $VCF
+  --examples /path/to/make_examples.tfrecord@64.gz
+  --vcf /path/to/variants_of_interest.vcf
   --regions "4:10-100 5:400-500" # or the file name(s) of BED/BEDPE files
   --output /path/to/output_prefix
   --image_type both
@@ -54,13 +50,17 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 import gzip
 import os
+from typing import Any, Callable, Optional, Sequence, Set
 
 from absl import app
 from absl import flags
 from absl import logging
 
+import tensorflow as tf
+
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
+from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import vis
@@ -106,14 +106,14 @@ UPDATE_EVERY_N_EXAMPLES = 10000
 MAX_SIZE_TO_PRINT = 5
 
 
-def parse_vcf(vcf_path):
+def parse_vcf(vcf_path: str) -> Set[str]:
   """Parse VCF to extract a dict keyed by locus IDs.
 
   Args:
       vcf_path: string, a path to a VCF file, that is gzipped (.gz) or not.
 
   Returns:
-      a dict keyed by locus with values of
+      All locus IDs from the VCF, where each locus ID has form "chr:start_end".
   """
   # Read gzipped file or uncompressed file.
   if vcf_path.endswith('.gz'):
@@ -141,13 +141,13 @@ def parse_vcf(vcf_path):
   return ids_from_vcf
 
 
-def get_full_id(variant, indices):
+def get_full_id(variant: variants_pb2.Variant, indices: Sequence[int]) -> str:
   alt_genotype_string = '|'.join([variant.alternate_bases[i] for i in indices])
   return '{}:{}_{}->{}'.format(variant.reference_name, variant.start,
                                variant.reference_bases, alt_genotype_string)
 
 
-def get_short_id(variant, indices):
+def get_short_id(variant: variants_pb2.Variant, indices: Sequence[int]) -> str:
   """Prepare a locus ID, shortening ref and alt if necessary."""
 
   pos_prefix = '{}:{}'.format(variant.reference_name, variant.start)
@@ -182,7 +182,7 @@ def get_short_id(variant, indices):
     return '{}_{}->{}'.format(pos_prefix, ref_bases, '|'.join(alt_strings))
 
 
-def get_label(example):
+def get_label(example: tf.train.Example) -> Optional[int]:
   val = example.features.feature['label'].int64_list.value
   if val:
     return int(val[0])
@@ -190,7 +190,8 @@ def get_label(example):
     return None
 
 
-def create_region_filter(region_flag_string, verbose=False):
+def create_region_filter(region_flag_string: str,
+                         verbose: bool = False) -> Callable[[Any], Any]:
   """Create a function that acts as a regions filter.
 
   Args:

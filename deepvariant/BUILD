@@ -1173,6 +1173,7 @@ py_library(
     deps = [
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:vis",
