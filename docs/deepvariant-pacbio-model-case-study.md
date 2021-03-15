@@ -57,17 +57,17 @@ samtools faidx reference/GRCh38_no_alt_analysis_set.fasta
 
 ### Download Genome in a Bottle Benchmarks
 
-We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
-variant benchmarks for HG003.
+We will benchmark our variant calls against v4.2.1 of the Genome in a Bottle
+small variant benchmarks for HG003.
 
 ```bash
 mkdir -p benchmark
 
-FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
+FTPDIR=ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG003_NA24149_father/NISTv4.2.1/GRCh38
 
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 ```
 
 ### Download HG003 chr20 HiFi alignments
@@ -151,15 +151,15 @@ singularity exec --bind /usr/lib/locale/ \
 ```bash
 mkdir -p happy
 
-singularity exec docker://jmcdani20/hap.py:v0.3.12:latest \
+singularity exec docker://jmcdani20/hap.py:v0.3.12 \
     /opt/hap.py/bin/hap.py \
         --threads $(nproc) \
         -r reference/GRCh38_no_alt_analysis_set.fasta \
-        -f benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
+        -f benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
         -o happy/giab-comparison.v4.2.first_pass \
         --engine=vcfeval \
         -l chr20 \
-        benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+        benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
         deepvariant1/output.vcf.gz
 ```
 
@@ -167,11 +167,11 @@ First pass output:
 
 ```
 Benchmarking Summary:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10634     10499       135        21945       131      10883     77       0.987305          0.988158        0.495922         0.987731                     NaN                     NaN                   1.749861                   2.376968
- INDEL   PASS        10634     10499       135        21945       131      10883     77       0.987305          0.988158        0.495922         0.987731                     NaN                     NaN                   1.749861                   2.376968
-   SNP    ALL        70209     70187        22        96093        38      25802      7       0.999687          0.999459        0.268511         0.999573                2.297347                1.961428                   1.884533                   2.115808
-   SNP   PASS        70209     70187        22        96093        38      25802      7       0.999687          0.999459        0.268511         0.999573                2.297347                1.961428                   1.884533                   2.115808
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        10628     10493       135        21945       131      10889     77     30       0.987298          0.988151        0.496195         0.987724                     NaN                     NaN                   1.748961                   2.376968
+INDEL   PASS        10628     10493       135        21945       131      10889     77     30       0.987298          0.988151        0.496195         0.987724                     NaN                     NaN                   1.748961                   2.376968
+  SNP    ALL        70166     70144        22        96093        38      25845      7      1       0.999686          0.999459        0.268958         0.999573                2.296566                1.961428                   1.883951                   2.115808
+  SNP   PASS        70166     70144        22        96093        38      25845      7      1       0.999686          0.999459        0.268958         0.999573                2.296566                1.961428                   1.883951                   2.115808
 ```
 
 ## Benchmark Second Pass
@@ -179,15 +179,15 @@ Benchmarking Summary:
 ```bash
 mkdir -p happy
 
-singularity exec docker://jmcdani20/hap.py:v0.3.12:latest \
+singularity exec docker://jmcdani20/hap.py:v0.3.12 \
     /opt/hap.py/bin/hap.py \
         --threads $(nproc) \
         -r reference/GRCh38_no_alt_analysis_set.fasta \
-        -f benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
+        -f benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
         -o happy/giab-comparison.v4.2.second_pass \
         --engine=vcfeval \
         -l chr20 \
-        benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+        benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
         deepvariant2/output.vcf.gz
 ```
 
@@ -195,9 +195,9 @@ Second pass output:
 
 ```
 Benchmarking Summary:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10634     10562        72        22270        78      11192     48       0.993229          0.992959        0.502559         0.993094                     NaN                     NaN                   1.749861                   2.452495
- INDEL   PASS        10634     10562        72        22270        78      11192     48       0.993229          0.992959        0.502559         0.993094                     NaN                     NaN                   1.749861                   2.452495
-   SNP    ALL        70209     70187        22        96217        38      25928      6       0.999687          0.999459        0.269474         0.999573                2.297347                1.952486                   1.884533                   2.068213
-   SNP   PASS        70209     70187        22        96217        38      25928      6       0.999687          0.999459        0.269474         0.999573                2.297347                1.952486                   1.884533                   2.068213
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        10628     10556        72        22270        78      11198     48     23       0.993225          0.992955        0.502829         0.993090                     NaN                     NaN                   1.748961                   2.452495
+INDEL   PASS        10628     10556        72        22270        78      11198     48     23       0.993225          0.992955        0.502829         0.993090                     NaN                     NaN                   1.748961                   2.452495
+  SNP    ALL        70166     70144        22        96217        38      25971      6      3       0.999686          0.999459        0.269921         0.999573                2.296566                1.952486                   1.883951                   2.068213
+  SNP   PASS        70166     70144        22        96217        38      25971      6      3       0.999686          0.999459        0.269921         0.999573                2.296566                1.952486                   1.883951                   2.068213
 ```

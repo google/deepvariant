@@ -35,19 +35,19 @@ variant benchmarks for HG002, HG003, and HG004 trio.
 ```bash
 mkdir -p benchmark
 
-FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
+FTPDIR=ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio
 
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > benchmark/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_NA24149_father/NISTv4.2.1/GRCh38/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG003_NA24149_father/NISTv4.2.1/GRCh38/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_NA24149_father/NISTv4.2.1/GRCh38/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 
-curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.bed > benchmark/HG004_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz > benchmark/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > benchmark/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG004_NA24143_mother/NISTv4.2.1/GRCh38/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG004_NA24143_mother/NISTv4.2.1/GRCh38/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG004_NA24143_mother/NISTv4.2.1/GRCh38/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 ```
 
 ### Download HG002, HG003, and HG004 BAM files
@@ -82,13 +82,13 @@ command.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION=1.0.1rc
+BIN_VERSION=1.1.0
 
 time sudo docker run \
   -v "${PWD}/input":"/input"   \
   -v "${PWD}/output":"/output"  \
   -v "${PWD}/reference":"/reference" \
-  gcr.io/deepvariant-docker/deeptrio:"${BIN_VERSION}" \
+  google/deepvariant:deeptrio-"${BIN_VERSION}" \
   /opt/deepvariant/bin/deeptrio/run_deeptrio \
   --model_type WGS \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
@@ -225,9 +225,9 @@ sudo docker run \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /benchmark/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /benchmark/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG002.output.vcf.gz \
-  -f /benchmark/HG002_GRCh38_1_22_v4.2_benchmark.bed \
+  -f /benchmark/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/HG002.output \
   --engine=vcfeval \
@@ -240,9 +240,9 @@ sudo docker run \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
-  -f /benchmark/HG003_GRCh38_1_22_v4.2_benchmark.bed \
+  -f /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/HG003.output \
   --engine=vcfeval \
@@ -255,9 +255,9 @@ sudo docker run \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /benchmark/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG004.output.vcf.gz \
-  -f /benchmark/HG004_GRCh38_1_22_v4.2_benchmark.bed \
+  -f /benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/HG004.output \
   --engine=vcfeval \
@@ -266,23 +266,23 @@ sudo docker run \
 
 ```
 Benchmarking Summary for HG002:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11256     11208        48        21259        18       9601     11       0.995736          0.998456        0.451620         0.997094                     NaN                     NaN                   1.561710                   2.070802
- INDEL   PASS        11256     11208        48        21259        18       9601     11       0.995736          0.998456        0.451620         0.997094                     NaN                     NaN                   1.561710                   2.070802
-   SNP    ALL        71333     71064       269        87357        29      16213      4       0.996229          0.999592        0.185595         0.997908                2.314904                2.053626                   1.715978                   1.712794
-   SNP   PASS        71333     71064       269        87357        29      16213      4       0.996229          0.999592        0.185595         0.997908                2.314904                2.053626                   1.715978                   1.712794
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        11256     11208        48        21259        18       9601     11      6       0.995736          0.998456        0.451620         0.997094                     NaN                     NaN                   1.561710                   2.070802
+INDEL   PASS        11256     11208        48        21259        18       9601     11      6       0.995736          0.998456        0.451620         0.997094                     NaN                     NaN                   1.561710                   2.070802
+  SNP    ALL        71333     71064       269        87357        29      16213      4      4       0.996229          0.999592        0.185595         0.997908                2.314904                2.053626                   1.715978                   1.712794
+  SNP   PASS        71333     71064       269        87357        29      16213      4      4       0.996229          0.999592        0.185595         0.997908                2.314904                2.053626                   1.715978                   1.712794
 
 Benchmarking Summary for HG003:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10634     10582        52        21062        19       9999     14       0.995110          0.998283        0.474741         0.996694                     NaN                     NaN                   1.749861                   2.247423
- INDEL   PASS        10634     10582        52        21062        19       9999     14       0.995110          0.998283        0.474741         0.996694                     NaN                     NaN                   1.749861                   2.247423
-   SNP    ALL        70209     69972       237        85198        54      15147     18       0.996624          0.999229        0.177786         0.997925                2.297347                2.069257                   1.884533                   1.874380
-   SNP   PASS        70209     69972       237        85198        54      15147     18       0.996624          0.999229        0.177786         0.997925                2.297347                2.069257                   1.884533                   1.874380
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        10628     10579        49        21062        19      10002     14      5       0.995390          0.998282        0.474884         0.996834                     NaN                     NaN                   1.748961                   2.247423
+INDEL   PASS        10628     10579        49        21062        19      10002     14      5       0.995390          0.998282        0.474884         0.996834                     NaN                     NaN                   1.748961                   2.247423
+  SNP    ALL        70166     69929       237        85198        51      15193     18      7       0.996622          0.999271        0.178326         0.997945                2.296566                2.069257                   1.883951                   1.874380
+  SNP   PASS        70166     69929       237        85198        51      15193     18      7       0.996622          0.999271        0.178326         0.997945                2.296566                2.069257                   1.883951                   1.874380
 
 Benchmarking Summary for HG004:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        11036     10985        51        21471        27       9967     17       0.995379          0.997653        0.464208         0.996515                     NaN                     NaN                   1.791542                   2.318601
- INDEL   PASS        11036     10985        51        21471        27       9967     17       0.995379          0.997653        0.464208         0.996515                     NaN                     NaN                   1.791542                   2.318601
-   SNP    ALL        71933     71701       232        86303        53      14504     10       0.996775          0.999262        0.168059         0.998017                2.309582                2.071909                   1.878938                   1.772111
-   SNP   PASS        71933     71701       232        86303        53      14504     10       0.996775          0.999262        0.168059         0.998017                2.309582                2.071909                   1.878938                   1.772111
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        11000     10950        50        21471        25      10007     17      6       0.995455          0.997819        0.466071         0.996636                     NaN                     NaN                   1.792709                   2.318601
+INDEL   PASS        11000     10950        50        21471        25      10007     17      6       0.995455          0.997819        0.466071         0.996636                     NaN                     NaN                   1.792709                   2.318601
+  SNP    ALL        71659     71428       231        86303        45      14785     10      6       0.996776          0.999371        0.171315         0.998072                2.310073                2.071909                   1.878340                   1.772111
+  SNP   PASS        71659     71428       231        86303        45      14785     10      6       0.996776          0.999371        0.171315         0.998072                2.310073                2.071909                   1.878340                   1.772111
 ```

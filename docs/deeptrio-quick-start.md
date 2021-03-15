@@ -62,19 +62,19 @@ Download the test bundle:
 INPUT_DIR="${PWD}/quickstart-testdata"
 mkdir -p ${INPUT_DIR}
 
-FTPDIR=ftp://ftp.ncbi.nlm.nih.gov//giab/ftp/data/AshkenazimTrio/analysis/NIST_v4.2_SmallVariantDraftBenchmark_07092020
+FTPDIR=ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio
 
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.bed > "${INPUT_DIR}"/HG002_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz > "${INPUT_DIR}"/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > "${INPUT_DIR}"/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > "${INPUT_DIR}"/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > "${INPUT_DIR}"/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > "${INPUT_DIR}"/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.bed > "${INPUT_DIR}"/HG003_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz > "${INPUT_DIR}"/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > "${INPUT_DIR}"/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG003_NA24149_father/NISTv4.2.1/GRCh38/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > "${INPUT_DIR}"/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG003_NA24149_father/NISTv4.2.1/GRCh38/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > "${INPUT_DIR}"/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG003_NA24149_father/NISTv4.2.1/GRCh38/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > "${INPUT_DIR}"/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 
-curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.bed > "${INPUT_DIR}"/HG004_GRCh38_1_22_v4.2_benchmark.bed
-curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz > "${INPUT_DIR}"/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz
-curl ${FTPDIR}/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi > "${INPUT_DIR}"/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+curl ${FTPDIR}/HG004_NA24143_mother/NISTv4.2.1/GRCh38/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed > "${INPUT_DIR}"/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+curl ${FTPDIR}/HG004_NA24143_mother/NISTv4.2.1/GRCh38/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > "${INPUT_DIR}"/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+curl ${FTPDIR}/HG004_NA24143_mother/NISTv4.2.1/GRCh38/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > "${INPUT_DIR}"/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 
 HTTPDIR=https://storage.googleapis.com/deepvariant/quickstart-testdata
 
@@ -109,19 +109,19 @@ GRCh38_no_alt_analysis_set.fasta
 GRCh38_no_alt_analysis_set.fasta.fai
 HG002.chr20.10_10p1mb.bam
 HG002.chr20.10_10p1mb.bam.bai
-HG002_GRCh38_1_22_v4.2_benchmark.bed
-HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz
-HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
 HG003.chr20.10_10p1mb.bam
 HG003.chr20.10_10p1mb.bam.bai
-HG003_GRCh38_1_22_v4.2_benchmark.bed
-HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz
-HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
 HG004.chr20.10_10p1mb.bam
 HG004.chr20.10_10p1mb.bam.bai
-HG004_GRCh38_1_22_v4.2_benchmark.bed
-HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz
-HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz.tbi
+HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
 ```
 
 ## Run DeepTrio with one command
@@ -174,7 +174,6 @@ ls -1 ${OUTPUT_DIR}
 output:
 
 ```
-intermediate_results_dir
 HG002.g.vcf.gz
 HG002.g.vcf.gz.tbi
 HG002.output.vcf.gz
@@ -190,6 +189,7 @@ HG004.g.vcf.gz.tbi
 HG004.output.vcf.gz
 HG004.output.vcf.gz.tbi
 HG004.output.visual_report.html
+intermediate_results_dir
 ```
 
 The directory "intermediate_results_dir" exists because
@@ -279,9 +279,9 @@ sudo docker run -it \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /input/HG002_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /input/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG002.output.vcf.gz \
-  -f "/input/HG002_GRCh38_1_22_v4.2_benchmark.bed" \
+  -f "/input/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed" \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
   -o "/output/HG002.happy" \
   --engine=vcfeval \
@@ -292,9 +292,9 @@ sudo docker run -it \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /input/HG003_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /input/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
-  -f "/input/HG003_GRCh38_1_22_v4.2_benchmark.bed" \
+  -f "/input/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed" \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
   -o "/output/HG003.happy" \
   --engine=vcfeval \
@@ -305,9 +305,9 @@ sudo docker run -it \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-  /input/HG004_GRCh38_1_22_v4.2_benchmark.vcf.gz \
+  /input/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG004.output.vcf.gz \
-  -f "/input/HG004_GRCh38_1_22_v4.2_benchmark.bed" \
+  -f "/input/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed" \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
   -o "/output/HG004.happy" \
   --engine=vcfeval \
@@ -318,26 +318,26 @@ sudo docker run -it \
 You should see output similar to the following.
 
 ```
-Benchmarking Summary for HG002 sample:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL            3         3         0            4         0          0      0              1                 1               0                1                     NaN                     NaN                   1.000000                   3.000000
- INDEL   PASS            3         3         0            4         0          0      0              1                 1               0                1                     NaN                     NaN                   1.000000                   3.000000
-   SNP    ALL           19        19         0           19         0          0      0              1                 1               0                1                5.333333                5.333333                   2.166667                   2.166667
-   SNP   PASS           19        19         0           19         0          0      0              1                 1               0                1                5.333333                5.333333                   2.166667                   2.166667
+Benchmarking Summary:
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL            3         3         0            4         0          0      0      0            1.0               1.0             0.0              1.0                     NaN                     NaN                   1.000000                   3.000000
+INDEL   PASS            3         3         0            4         0          0      0      0            1.0               1.0             0.0              1.0                     NaN                     NaN                   1.000000                   3.000000
+  SNP    ALL           19        19         0           19         0          0      0      0            1.0               1.0             0.0              1.0                5.333333                5.333333                   2.166667                   2.166667
+  SNP   PASS           19        19         0           19         0          0      0      0            1.0               1.0             0.0              1.0                5.333333                5.333333                   2.166667                   2.166667
 
-Benchmarking Summary for HG003 sample:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL            3         3         0            3         0          0      0              1                 1               0                1                     NaN                     NaN                   0.500000                   0.500000
- INDEL   PASS            3         3         0            3         0          0      0              1                 1               0                1                     NaN                     NaN                   0.500000                   0.500000
-   SNP    ALL           21        21         0           21         0          0      0              1                 1               0                1                       6                       6                   1.333333                   1.333333
-   SNP   PASS           21        21         0           21         0          0      0              1                 1               0                1                       6                       6                   1.333333                   1.333333
+Benchmarking Summary:
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL            3         3         0            3         0          0      0      0            1.0               1.0             0.0              1.0                     NaN                     NaN                   0.500000                   0.500000
+INDEL   PASS            3         3         0            3         0          0      0      0            1.0               1.0             0.0              1.0                     NaN                     NaN                   0.500000                   0.500000
+  SNP    ALL           21        21         0           21         0          0      0      0            1.0               1.0             0.0              1.0                     6.0                     6.0                   1.333333                   1.333333
+  SNP   PASS           21        21         0           21         0          0      0      0            1.0               1.0             0.0              1.0                     6.0                     6.0                   1.333333                   1.333333
 
-Benchmarking Summary for HG004 sample:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL            2         2         0            2         0          0      0              1                 1               0                1                     NaN                     NaN                   1.000000                   1.000000
- INDEL   PASS            2         2         0            2         0          0      0              1                 1               0                1                     NaN                     NaN                   1.000000                   1.000000
-   SNP    ALL           10        10         0           10         0          0      0              1                 1               0                1                       4                       4                   2.333333                   2.333333
-   SNP   PASS           10        10         0           10         0          0      0              1                 1               0                1                       4                       4                   2.333333                   2.333333
+Benchmarking Summary:
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL            2         2         0            2         0          0      0      0            1.0               1.0             0.0              1.0                     NaN                     NaN                   1.000000                   1.000000
+INDEL   PASS            2         2         0            2         0          0      0      0            1.0               1.0             0.0              1.0                     NaN                     NaN                   1.000000                   1.000000
+  SNP    ALL           10        10         0           10         0          0      0      0            1.0               1.0             0.0              1.0                     4.0                     4.0                   2.333333                   2.333333
+  SNP   PASS           10        10         0           10         0          0      0      0            1.0               1.0             0.0              1.0                     4.0                     4.0                   2.333333                   2.333333
 
 ```
 
