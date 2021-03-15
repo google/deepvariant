@@ -29,8 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deeptrio/variant_calling_deeptrio.h"
-
 #include <cstdint>
 #include <memory>
 #include <numeric>
@@ -38,6 +36,7 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
+#include "deepvariant/variant_calling_multisample.h"
 #include "google/protobuf/repeated_field.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -54,7 +53,8 @@
 
 namespace learning {
 namespace genomics {
-namespace deeptrio {
+namespace deepvariant {
+namespace multi_sample {
 
 using nucleus::EqualsProto;
 using nucleus::MakePosition;
@@ -71,7 +71,7 @@ constexpr char kChr[] = "chr1";
 constexpr int64_t kStart = 10;
 
 // This function needs to return a pointer because it needs to be wrapped
-// into nucleus::ConstProtoPtr. variant_calling_deeptrio API is only used by
+// into nucleus::ConstProtoPtr. variant_calling_multisample API is only used by
 // Python, we don't call CallsFromAlleleCounts from C++.
 AlleleCount* MakeTestAlleleCount(
     int total_n, int alt_n, const std::string& sample_id,
@@ -1040,6 +1040,7 @@ TEST_F(VariantCallingTest,
   ReleaseAlleleCountPointers(allele_counts);
 }
 
-}  // namespace deeptrio
+}  // namespace multi_sample
+}  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

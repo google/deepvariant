@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deeptrio/variant_calling_deeptrio.h"
+#include "deepvariant/variant_calling_multisample.h"
 
 #include <algorithm>
 #include <numeric>
@@ -48,7 +48,8 @@
 
 namespace learning {
 namespace genomics {
-namespace deeptrio {
+namespace deepvariant {
+namespace multi_sample {
 
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
@@ -502,6 +503,7 @@ void VariantCaller::AddSupportingReads(
   }
 }
 
-}  // namespace deeptrio
+}  // namespace multi_sample
+}  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

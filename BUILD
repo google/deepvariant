@@ -55,11 +55,11 @@ cc_library(
     name = "all_extensions",
     srcs = [],
     deps = [
-        "//deeptrio/python:variant_calling_deeptrio_cclib",
         "//deepvariant/python:allelecounter_cclib",
         "//deepvariant/python:pileup_image_native_cclib",
         "//deepvariant/python:postprocess_variants_cclib",
         "//deepvariant/python:variant_calling_cclib",
+        "//deepvariant/python:variant_calling_multisample_cclib",
         "//deepvariant/realigner/python:debruijn_graph_cclib",
         "//deepvariant/realigner/python:fast_pass_aligner_cclib",
         "//deepvariant/realigner/python:ssw_cclib",

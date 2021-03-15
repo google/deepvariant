@@ -38,16 +38,15 @@ from typing import Dict, Sequence, Tuple
 
 import numpy as np
 
-from deeptrio.python import variant_calling_deeptrio
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.python import variant_calling
+from deepvariant.python import variant_calling_multisample
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
 
-# redacted
 
 # Reference bases with genotype calls must be one of these four values.
 CANONICAL_DNA_BASES = frozenset('ACGT')
@@ -113,7 +112,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
 
   def __init__(self, options, use_cache_table, max_cache_coverage):
     self.options = options
-    self.cpp_variant_caller = variant_calling_deeptrio.VariantCaller(
+    self.cpp_variant_caller = variant_calling_multisample.VariantCaller(
         self.options)
     self.cpp_variant_caller_from_vcf = variant_calling.VariantCaller(
         self.options)

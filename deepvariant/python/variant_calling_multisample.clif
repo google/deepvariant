@@ -32,8 +32,8 @@ from "deepvariant/python/allelecounter.h" import *
 from "third_party/nucleus/io/python/vcf_reader.h" import *
 from "third_party/nucleus/util/proto_clif_converter.h" import *
 
-from "deeptrio/variant_calling_deeptrio.h":
-  namespace `learning::genomics::deeptrio`:
+from "deepvariant/variant_calling_multisample.h":
+  namespace `learning::genomics::deepvariant::multi_sample`:
     class VariantCaller:
       def __init__(self, options: VariantCallerOptions)
       def `CallsFromAlleleCounts` as calls_from_allele_counts(

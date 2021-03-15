@@ -48,6 +48,7 @@ class VcfReader;
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+namespace vcf_candidate_importer {
 
 // The alternate allele string for the gVCF "any" alternate allele.
 extern const char *const kGVCFAltAllele;
@@ -216,7 +217,7 @@ class VariantCaller {
   mutable nucleus::FractionalSampler sampler_;
 };
 
-
+}  // namespace vcf_candidate_importer
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

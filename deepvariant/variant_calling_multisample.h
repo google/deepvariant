@@ -31,8 +31,8 @@
 
 // A very simple but highly sensitive variant caller.
 //
-#ifndef LEARNING_GENOMICS_DEEPTRIO_VARIANT_CALLING_DEEPTRIO_H_
-#define LEARNING_GENOMICS_DEEPTRIO_VARIANT_CALLING_DEEPTRIO_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 
 #include <vector>
 
@@ -48,11 +48,11 @@ class VcfReader;
 }
 namespace learning {
 namespace genomics {
-namespace deeptrio {
+namespace deepvariant {
+namespace multi_sample {
 
 using learning::genomics::deepvariant::Allele;
 using learning::genomics::deepvariant::AlleleCount;
-using learning::genomics::deepvariant::AlleleCounter;
 using learning::genomics::deepvariant::AlleleType;
 using learning::genomics::deepvariant::DeepVariantCall;
 using learning::genomics::deepvariant::VariantCallerOptions;
@@ -213,8 +213,9 @@ class VariantCaller {
   mutable nucleus::FractionalSampler sampler_;
 };
 
-}  // namespace deeptrio
+}  // namespace multi_sample
+}  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
 
-#endif  // LEARNING_GENOMICS_DEEPTRIO_VARIANT_CALLING_DEEPTRIO_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_

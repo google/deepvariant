@@ -95,9 +95,9 @@ py_clif_cc(
     name = "pileup_image_native",
     srcs = ["pileup_image_native.clif"],
     deps = [
+        ":clif_converters",
         "//deepvariant:pileup_image_native",
         "//deepvariant/protos:deepvariant_pyclif",
-        "//deepvariant/python:clif_converters",
         "//third_party/nucleus/protos:reads_pyclif",
         "//third_party/nucleus/util:proto_clif_converter",
     ],
@@ -113,5 +113,43 @@ cc_library(
         "@local_config_python//:numpy_headers",
         "@local_config_python//:python_headers",
         "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+py_clif_cc(
+    name = "variant_calling_multisample",
+    srcs = ["variant_calling_multisample.clif"],
+    clif_deps = [
+        ":allelecounter",
+        "//third_party/nucleus/io/python:reference",  # other py_clif_cc rules
+        "//third_party/nucleus/io/python:vcf_reader",
+    ],
+    pyclif_deps = [
+        "//deepvariant/protos:deepvariant_pyclif",
+    ],
+    deps = [
+        "//deepvariant:variant_calling_multisample",
+        "//third_party/nucleus/util:proto_clif_converter",
+    ],
+)
+
+py_test(
+    name = "variant_calling_multisample_wrap_test",
+    size = "small",
+    srcs = ["variant_calling_multisample_wrap_test.py"],
+    data = ["//deepvariant:testdata"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":allelecounter",
+        ":variant_calling_multisample",
+        "//deepvariant:py_testdata",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:sam",
+        "//third_party/nucleus/util:ranges",
+        "@absl_py//absl/testing:absltest",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )

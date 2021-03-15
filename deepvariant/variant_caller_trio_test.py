@@ -28,31 +28,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant .variant_caller."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import sys
-if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
-  del sys.modules['google']
-
-
-
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 import numpy as np
 import numpy.testing as npt
+import six
 
-from deeptrio import testdata
-from deeptrio import variant_caller
+from deepvariant import variant_caller
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-
-
-def setUpModule():
-  testdata.init()
 
 
 def _reference_model_options(p_error, max_gq, gq_resolution=1):
@@ -82,7 +68,7 @@ class PlaceholderVariantCaller(variant_caller.VariantCaller):
         use_cache_table=use_cache_table,
         max_cache_coverage=max_cache_coverage)
 
-  def get_candidates(self, allele_counter, target_sample):
+  def get_candidates(self, allele_counters, sample_name):
     return None
 
 
@@ -273,8 +259,8 @@ class VariantCallerTests(parameterized.TestCase):
   def test_gvcf_basic_raises_with_bad_ref_base(self, ref):
     caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
-    with self.assertRaisesRegexp(ValueError,
-                                 'Invalid reference base={}'.format(ref)):
+    with six.assertRaisesRegex(self, ValueError,
+                               'Invalid reference base={}'.format(ref)):
       list(caller.make_gvcfs(allele_counter.summary_counts()))
 
   def assertGVCF(self,
@@ -428,10 +414,11 @@ class VariantCallerTests(parameterized.TestCase):
               (10, 10, 'T')]
     caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(10, counts)
-    allele_counters = {}
-    allele_counters['sample_id'] = allele_counter
-    _, gvcfs = caller.calls_and_gvcfs(allele_counters, include_gvcfs,
-                                      'sample_id')
+    allele_counters = {'SAMPLE_ID': allele_counter}
+    _, gvcfs = caller.calls_and_gvcfs(
+        allele_counters=allele_counters,
+        target_sample='SAMPLE_ID',
+        include_gvcfs=include_gvcfs)
     # We expect our gvcfs to occur at the 10 position and that 12 and 13 have
     # been merged into a 2 bp block, if enabled. Otherwise should be empty.
     if include_gvcfs:

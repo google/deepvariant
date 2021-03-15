@@ -47,6 +47,7 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+namespace vcf_candidate_importer {
 
 using nucleus::EqualsProto;
 using nucleus::MakePosition;
@@ -1154,6 +1155,7 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
   QCHECK_EQ(it->second.read_names_size(), 4);
 }
 
+}  // namespace vcf_candidate_importer
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

@@ -49,6 +49,7 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+namespace vcf_candidate_importer {
 
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Variant;
@@ -540,6 +541,7 @@ void VariantCaller::AddSupportingReads(
   }
 }
 
+}  // namespace vcf_candidate_importer
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

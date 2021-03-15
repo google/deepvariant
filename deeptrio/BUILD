@@ -23,99 +23,6 @@ py_library(
 )
 
 py_library(
-    name = "variant_caller",
-    srcs = ["variant_caller.py"],
-    srcs_version = "PY2AND3",
-    deps = [
-        "//deeptrio/python:variant_calling_deeptrio",
-        "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/nucleus/util:genomics_math",
-        "//third_party/nucleus/util:variant_utils",
-        "//third_party/nucleus/util:variantcall_utils",
-        "//third_party/nucleus/util:vcf_constants",
-    ],
-)
-
-py_test(
-    name = "variant_caller_test",
-    size = "small",
-    srcs = ["variant_caller_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":py_testdata",
-        ":variant_caller",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//third_party/nucleus/util:variant_utils",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
-    name = "very_sensitive_caller",
-    srcs = ["very_sensitive_caller.py"],
-    srcs_version = "PY2AND3",
-    deps = [
-        ":variant_caller",
-    ],
-)
-
-py_test(
-    name = "very_sensitive_caller_test",
-    size = "small",
-    srcs = ["very_sensitive_caller_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":py_testdata",
-        ":very_sensitive_caller",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-cc_library(
-    name = "variant_calling_deeptrio",
-    srcs = ["variant_calling_deeptrio.cc"],
-    hdrs = ["variant_calling_deeptrio.h"],
-    deps = [
-        "//deepvariant:allelecounter",
-        "//deepvariant/protos:deepvariant_cc_pb2",
-        "//third_party/nucleus/io:vcf_reader",
-        "//third_party/nucleus/protos:range_cc_pb2",
-        "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/util:cpp_math",
-        "//third_party/nucleus/util:cpp_utils",
-        "//third_party/nucleus/util:samplers",
-        "@com_google_absl//absl/container:node_hash_map",
-        "@com_google_protobuf//:protobuf",
-        "@org_tensorflow//tensorflow/core:lib",
-    ],
-)
-
-cc_test(
-    name = "variant_calling_deeptrio_test",
-    size = "small",
-    srcs = ["variant_calling_deeptrio_test.cc"],
-    deps = [
-        ":variant_calling_deeptrio",
-        "//deepvariant:utils",
-        "//deepvariant/protos:deepvariant_cc_pb2",
-        "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/testing:cpp_test_utils",
-        "//third_party/nucleus/testing:gunit_extras",
-        "//third_party/nucleus/util:cpp_utils",
-        "@com_google_absl//absl/container:node_hash_map",
-        "@com_google_googletest//:gtest_main",
-        "@com_google_protobuf//:protobuf",
-        "@org_tensorflow//tensorflow/core:lib",
-        "@org_tensorflow//tensorflow/core:test",
-    ],
-)
-
-py_library(
     name = "py_testdata",
     testonly = True,
     srcs = ["testdata.py"],
@@ -131,7 +38,6 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         ":dt_constants",
-        ":very_sensitive_caller",
         "//deeptrio/protos:deeptrio_py_pb2",
         "//deepvariant:exclude_contigs",
         "//deepvariant:logging_level",
@@ -139,6 +45,7 @@ py_library(
         "//deepvariant:pileup_image",
         "//deepvariant:resources_main_lib",
         "//deepvariant:tf_utils",
+        "//deepvariant:very_sensitive_caller",
         "//deepvariant/labeler:customized_classes_labeler",
         "//deepvariant/labeler:haplotype_labeler",
         "//deepvariant/labeler:positional_labeler",

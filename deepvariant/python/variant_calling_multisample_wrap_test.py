@@ -39,10 +39,10 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 from absl.testing import absltest
 
-from deeptrio.python import variant_calling_deeptrio
 from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter as _allelecounter
+from deepvariant.python import variant_calling_multisample
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
 from third_party.nucleus.util import ranges
@@ -62,7 +62,7 @@ class WrapVariantCallingTest(absltest.TestCase):
     allele_counter = _allelecounter.AlleleCounter(
         ref.c_reader, region,
         deepvariant_pb2.AlleleCounterOptions(partition_size=size))
-    caller = variant_calling_deeptrio.VariantCaller(
+    caller = variant_calling_multisample.VariantCaller(
         deepvariant_pb2.VariantCallerOptions(
             min_count_snps=2,
             min_count_indels=2,

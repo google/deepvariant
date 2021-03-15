@@ -28,28 +28,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant .very_sensitive_caller."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import sys
-if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
-  del sys.modules['google']
-
-
-
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 
-from deeptrio import testdata
-from deeptrio import very_sensitive_caller
+from deepvariant import very_sensitive_caller
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.testing import test_utils
-
-
-def setUpModule():
-  testdata.init()
 
 
 def _reference_model_options(p_error, max_gq, gq_resolution=1):
@@ -116,16 +101,17 @@ class VerySensitiveCallerTests(parameterized.TestCase):
     with mock.patch.object(caller, 'cpp_variant_caller') as mock_cpp:
       mock_cpp.calls_from_allele_counts.return_value = fake_candidates
 
-      allele_counters = {}
-      allele_counters['sample_id'] = allele_counter
-      candidates, _ = caller.calls_and_gvcfs(allele_counters, False,
-                                             'sample_id')
+      allele_counters = {'SAMPLE_ID': allele_counter}
+      candidates, _ = caller.calls_and_gvcfs(
+          allele_counters=allele_counters,
+          target_sample='SAMPLE_ID',
+          include_gvcfs=False)
 
     expected_allele_counts_param = {}
     expected_allele_counts_param[
-        'sample_id'] = allele_counter.counts.return_value
+        'SAMPLE_ID'] = allele_counter.counts.return_value
     mock_cpp.calls_from_allele_counts.assert_called_once_with(
-        expected_allele_counts_param, 'sample_id')
+        expected_allele_counts_param, 'SAMPLE_ID')
     self.assertEqual(candidates, fake_candidates)
 
 

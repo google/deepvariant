@@ -38,6 +38,8 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 import os
 
+
+
 from absl import app
 from absl import flags
 from absl import logging
@@ -45,7 +47,6 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 
 from deeptrio import dt_constants
-from deeptrio import very_sensitive_caller
 from deeptrio.protos import deeptrio_pb2
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
@@ -53,6 +54,7 @@ from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
+from deepvariant import very_sensitive_caller
 from deepvariant.labeler import customized_classes_labeler
 from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import positional_labeler
@@ -1320,24 +1322,28 @@ class RegionProcessor(object):
     if in_training_mode(self.options):
       candidates[self.sample_to_train], gvcfs[self.sample_to_train] = (
           self.variant_caller_child.calls_and_gvcfs(
-              allele_counters, gvcf_output_enabled(self.options),
-              FLAGS.sample_name_to_call))
+              allele_counters=allele_counters,
+              target_sample=FLAGS.sample_name_to_call,
+              include_gvcfs=gvcf_output_enabled(self.options)))
       return candidates, gvcfs
 
     candidates['child'], gvcfs[
         'child'] = self.variant_caller_child.calls_and_gvcfs(
-            allele_counters, gvcf_output_enabled(self.options),
-            FLAGS.sample_name)
+            allele_counters=allele_counters,
+            target_sample=FLAGS.sample_name,
+            include_gvcfs=gvcf_output_enabled(self.options))
     if FLAGS.reads_parent1:
       candidates['parent1'], gvcfs['parent1'] = (
           self.variant_caller_parent1.calls_and_gvcfs(
-              allele_counters, gvcf_output_enabled(self.options),
-              FLAGS.sample_name_parent1))
+              allele_counters=allele_counters,
+              target_sample=FLAGS.sample_name_parent1,
+              include_gvcfs=gvcf_output_enabled(self.options)))
     if FLAGS.reads_parent2:
       candidates['parent2'], gvcfs['parent2'] = (
           self.variant_caller_parent2.calls_and_gvcfs(
-              allele_counters, gvcf_output_enabled(self.options),
-              FLAGS.sample_name_parent2))
+              allele_counters=allele_counters,
+              target_sample=FLAGS.sample_name_parent2,
+              include_gvcfs=gvcf_output_enabled(self.options)))
     return candidates, gvcfs
 
   def align_to_all_haplotypes(self, variant, reads):
