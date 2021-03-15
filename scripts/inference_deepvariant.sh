@@ -178,14 +178,18 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --help)
+      echo "$USAGE" >&2
+      exit 1
+      ;;
     -*|--*=) # other flags not supported
       echo "Error: unrecognized flag $1" >&2
-      echo "$USAGE" >&2
+      echo "Run with --help to see usage." >&2
       exit 1
       ;;
     *)
       echo "Error: unrecognized extra args $1" >&2
-      echo "$USAGE" >&2
+      echo "Run with --help to see usage." >&2
       exit 1
       ;;
   esac
