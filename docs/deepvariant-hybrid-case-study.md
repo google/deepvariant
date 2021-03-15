@@ -168,6 +168,7 @@ sudo docker run \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/happy.output \
   --engine=vcfeval \
+  --pass-only \
   -l chr20
 ```
 

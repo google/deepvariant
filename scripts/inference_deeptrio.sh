@@ -500,6 +500,7 @@ function run_happy() {
     -r "/input/${REF_BASENAME}" \
     -o "/output/happy.output-${vcf_output}" \
     --engine=vcfeval \
+    --pass-only \
     ${happy_args[@]-}"
   run echo "Done."
 }

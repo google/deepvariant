@@ -231,6 +231,7 @@ sudo docker run \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/HG002.output \
   --engine=vcfeval \
+  --pass-only \
   -l chr20
 
 sudo docker run \
@@ -246,6 +247,7 @@ sudo docker run \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/HG003.output \
   --engine=vcfeval \
+  --pass-only \
   -l chr20
 
 sudo docker run \
@@ -261,6 +263,7 @@ sudo docker run \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/HG004.output \
   --engine=vcfeval \
+  --pass-only \
   -l chr20
 ```
 

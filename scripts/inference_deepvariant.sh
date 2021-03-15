@@ -501,6 +501,7 @@ function run_happy() {
     -r "${UNCOMPRESSED_REF}" \
     -o "${OUTPUT_DIR}/happy.output" \
     --engine=vcfeval \
+    --pass-only \
     ${happy_args[@]-} \
   ) 2>&1 | tee "${LOG_DIR}/happy.log""
   run echo "Done."

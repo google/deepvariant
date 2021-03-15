@@ -122,7 +122,8 @@ sudo docker run \
   -T /input/idt_capture_novogene.grch38.bed \
   -r /reference/GRCh38_no_alt_analysis_set.fasta \
   -o /happy/happy.output \
-  --engine=vcfeval
+  --engine=vcfeval \
+  --pass-only
 ```
 
 Output:

@@ -239,6 +239,7 @@ sudo docker run -it \
   -r "/input/ucsc.hg19.chr20.unittest.fasta" \
   -o "/output/happy.output" \
   --engine=vcfeval \
+  --pass-only \
   -l chr20:10000000-10010000
 ```
 

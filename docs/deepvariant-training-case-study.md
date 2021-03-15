@@ -440,7 +440,8 @@ jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   -r "${REF}" \
   -o "${OUTPUT_DIR}/chr20-calling.happy.output" \
   -l chr20 \
-  --engine=vcfeval
+  --engine=vcfeval \
+  --pass-only
 ```
 
 The output of `hap.py` is here:
@@ -453,11 +454,11 @@ The output of `hap.py` is here:
 [I] Total VCF records:         133028
 [I] Non-reference VCF records: 97629
 Benchmarking Summary:
-  Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
- INDEL    ALL        10023      9805       218        19550       165       9181    120       0.978250          0.984087        0.469616         0.981160                     NaN                     NaN                   1.547658                   2.094355
- INDEL   PASS        10023      9805       218        19550       165       9181    120       0.978250          0.984087        0.469616         0.981160                     NaN                     NaN                   1.547658                   2.094355
-   SNP    ALL        66237     66170        67        79110        66      12836     14       0.998988          0.999004        0.162255         0.998996                2.284397                2.190363                   1.700387                   1.812224
-   SNP   PASS        66237     66170        67        79110        66      12836     14       0.998988          0.999004        0.162255         0.998996                2.284397                2.190363                   1.700387                   1.812224
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL        10023      9805       218        19550       165       9181    120     25       0.978250          0.984087        0.469616         0.981160                     NaN                     NaN                   1.547658                   2.094355
+INDEL   PASS        10023      9805       218        19550       165       9181    120     25       0.978250          0.984087        0.469616         0.981160                     NaN                     NaN                   1.547658                   2.094355
+  SNP    ALL        66237     66170        67        79110        66      12836     14      2       0.998988          0.999004        0.162255         0.998996                2.284397                2.190363                   1.700387                   1.812224
+  SNP   PASS        66237     66170        67        79110        66      12836     14      2       0.998988          0.999004        0.162255         0.998996                2.284397                2.190363                   1.700387                   1.812224
 ```
 
 To summarize, the accuracy is:

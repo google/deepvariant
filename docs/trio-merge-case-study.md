@@ -407,7 +407,8 @@ do
     -T "/data/${CAPTURE_BED}" \
     -r "/data/hs37d5.fa" \
     -o "/data/${SAMPLE}.happy.output" \
-    --engine=vcfeval > ${DIR}/${SAMPLE}.stdout
+    --engine=vcfeval \
+    --pass-only > ${DIR}/${SAMPLE}.stdout
 done
 ```
 

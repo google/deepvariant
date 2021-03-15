@@ -285,6 +285,7 @@ sudo docker run -it \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
   -o "/output/HG002.happy" \
   --engine=vcfeval \
+  --pass-only \
   -l chr20:10000000-10010000
 
 # Evaluate HG003
@@ -298,6 +299,7 @@ sudo docker run -it \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
   -o "/output/HG003.happy" \
   --engine=vcfeval \
+  --pass-only \
   -l chr20:10000000-10010000
 
 # Evaluate HG004
@@ -311,6 +313,7 @@ sudo docker run -it \
   -r "/input/GRCh38_no_alt_analysis_set.fasta" \
   -o "/output/HG004.happy" \
   --engine=vcfeval \
+  --pass-only \
   -l chr20:10000000-10010000
 
 ```

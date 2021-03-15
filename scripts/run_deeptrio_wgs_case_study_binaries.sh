@@ -249,7 +249,8 @@ function run_happy() {
     -f "${truth_bed}" \
     -r "${UNCOMPRESSED_REF}" \
     -o "${OUTPUT_DIR}/happy.output" \
-    --engine=vcfeval
+    --engine=vcfeval \
+    --pass-only
   echo "Done."
 }
 

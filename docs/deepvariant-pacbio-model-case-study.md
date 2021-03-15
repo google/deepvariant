@@ -158,6 +158,7 @@ singularity exec docker://jmcdani20/hap.py:v0.3.12 \
         -f benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
         -o happy/giab-comparison.v4.2.first_pass \
         --engine=vcfeval \
+        --pass-only \
         -l chr20 \
         benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
         deepvariant1/output.vcf.gz
@@ -186,6 +187,7 @@ singularity exec docker://jmcdani20/hap.py:v0.3.12 \
         -f benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
         -o happy/giab-comparison.v4.2.second_pass \
         --engine=vcfeval \
+        --pass-only \
         -l chr20 \
         benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
         deepvariant2/output.vcf.gz
