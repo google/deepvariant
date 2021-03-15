@@ -29,8 +29,8 @@ curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > reference/G
 
 ### Download Genome in a Bottle Benchmarks
 
-We will benchmark our variant calls against v4.2 of the Genome in a Bottle small
-variant benchmarks for HG002, HG003, and HG004 trio.
+We will benchmark our variant calls against v4.2.1 of the Genome in a Bottle
+small variant benchmarks for HG002, HG003, and HG004 trio.
 
 ```bash
 mkdir -p benchmark
@@ -211,7 +211,7 @@ Concordance HG002: F:133992/134497 (99.62%)  M:134059/134588 (99.61%)  F+M:13267
 1058/136009 (0.78%) records contained a violation of Mendelian constraints
 ```
 
-### Perform analysis with hap.py against 4.2 truth set
+### Perform analysis with hap.py against 4.2.1 truth set
 
 ```bash
 mkdir -p happy
