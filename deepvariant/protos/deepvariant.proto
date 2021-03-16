@@ -307,7 +307,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 14
+// Next ID: 13
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
