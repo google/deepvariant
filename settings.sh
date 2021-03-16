@@ -117,3 +117,18 @@ export DV_COPT_FLAGS="--copt=-march=corei7 --copt=-Wno-sign-compare --copt=-Wno-
 function note_build_stage {
   echo "========== [$(date)] Stage '${1}' starting"
 }
+
+function wait_for_dpkg_lock {
+  # Wait for at most 5 minutes.
+  max_wait=300
+  i=0
+  while fuser /var/lib/dpkg/{lock,lock-frontend} >/dev/null 2>&1 ; do
+    echo "Waiting to obtain dpkg lock.."
+    sleep 10
+    ((i=i+10))
+    if (( i > max_wait )); then
+      echo "ERROR: Waited for dpkg lock for 5 minutes."
+      exit 1
+    fi
+  done
+}

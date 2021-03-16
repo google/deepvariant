@@ -49,16 +49,9 @@ sudo -H apt-get -qq -y update
 
 note_build_stage "build-prereq.sh: Install development packages"
 
-# redacted
-retry=0
-until [[ $retry -ge 3 ]]
-do
-  sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null && break
-
-  echo "apt-get failed. Retrying."
-  retry=$(($retry+1))
-  sleep 10
-done
+# Need to wait for dpkg lock (see internal)
+wait_for_dpkg_lock
+sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null
 
 
 ################################################################################

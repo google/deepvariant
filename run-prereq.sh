@@ -69,25 +69,11 @@ sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
 
 note_build_stage "run-prereq.sh: Install development packages"
 
-# redacted
-retry=0
-until [[ $retry -ge 3 ]]
-do
-  sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null && break
-  echo "apt-get failed. Retrying."
-  retry=$(($retry+1))
-  sleep 10
-done
+# Need to wait for dpkg lock (see internal)
+wait_for_dpkg_lock
 
-# redacted
-retry=0
-until [[ $retry -ge 3 ]]
-do
-  sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null && break
-  echo "apt-get failed. Retrying."
-  retry=$(($retry+1))
-  sleep 10
-done
+sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null
+sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
 
