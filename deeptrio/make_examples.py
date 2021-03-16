@@ -73,6 +73,7 @@ from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
 
@@ -628,6 +629,12 @@ def default_options(add_flags=True, flags_obj=None):
         flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF):
       options.variant_caller_options_child.fraction_reference_sites_to_emit = (
           flags_obj.training_random_emit_ref_sites)
+
+    options.bam_fname = os.path.basename(
+        flags_obj.reads) + '|' + (os.path.basename(flags_obj.reads_parent1) if
+                                  flags_obj.reads_parent1 else 'None') + '|' + (
+                                      os.path.basename(flags_obj.reads_parent2)
+                                      if flags_obj.reads_parent2 else 'None')
 
   return options
 
@@ -1504,6 +1511,11 @@ class RegionProcessor(object):
       candidates that could be assigned a label. Candidates that couldn't be
       labeled will not be returned.
     """
+    # Set BAM filename (used for training stats).
+    for candidate in candidates:
+      struct_utils.set_string_field(candidate.variant.info, 'BAM_FNAME',
+                                    self.options.bam_fname)
+
     # Get our list of labels for each candidate variant.
     labels = self.labeler.label_variants(
         [candidate.variant for candidate in candidates], region)

@@ -202,6 +202,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
       options = make_examples.default_options(add_flags=True)
+      # We need to overwrite bam_fname for USE_CRAM test since Golden Set
+      # generated from BAM file. BAM filename is stored in candidates. If we
+      # don't overwrite default_options variants won't match and test fail.
+      options.bam_fname = 'NA12878_S1.chr20.10_10p1mb.bam'
       make_examples_core.make_examples_runner(
           options, samples=make_examples.samples_from_options(options))
 

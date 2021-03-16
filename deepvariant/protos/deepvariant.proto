@@ -307,7 +307,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 13
+// Next ID: 14
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -498,7 +498,7 @@ message PileupImageOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 45.
+// Next ID: 46.
 // redacted
 message DeepVariantOptions {
   // A list of contig names we never want to call variants on. For example,
@@ -667,6 +667,9 @@ message DeepVariantOptions {
 
   // The index of the sample to focus on within the list of samples.
   int32 main_sample_index = 44;
+
+  // per-sample statistics for training examples.
+  string bam_fname = 45;
 }
 
 // Config describe information needed for a dataset that can be used for

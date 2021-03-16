@@ -205,6 +205,12 @@ def get_min_dp(variant_call):
       variant_call.info, 'MIN_DP', is_single_field=True)
 
 
+def set_bam_fname(variant_call, bam_fname):
+  """Sets 'BAM_FNAME' field of the VariantCall."""
+  return struct_utils.set_string_field(variant_call.info, 'BAM_FNAME',
+                                       bam_fname)
+
+
 def has_genotypes(variant_call):
   """Returns True iff the VariantCall has one or more called genotypes.
 

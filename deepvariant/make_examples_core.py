@@ -61,6 +61,7 @@ from third_party.nucleus.io import sam
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
 
@@ -1077,6 +1078,12 @@ class RegionProcessor(object):
       candidates that could be assigned a label. Candidates that couldn't be
       labeled will not be returned.
     """
+
+    # Set BAM filename (used for training stats).
+    for candidate in candidates:
+      struct_utils.set_string_field(candidate.variant.info, 'BAM_FNAME',
+                                    self.options.bam_fname)
+
     # Get our list of labels for each candidate variant.
     labels = self.labeler.label_variants(
         [candidate.variant for candidate in candidates], region)

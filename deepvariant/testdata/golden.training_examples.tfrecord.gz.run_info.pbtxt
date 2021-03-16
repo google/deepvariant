@@ -3423,6 +3423,7 @@ options {
     max_gq: 50
     gq_resolution: 5
     ploidy: 2
+    min_fraction_multiplier: 1.0
   }
   pic_options {
     height: 100
@@ -3516,6 +3517,7 @@ options {
   parse_sam_aux_fields: true
   hts_block_size: 134217728
   logging_every_n_candidates: 100
+  bam_fname: "NA12878_S1.chr20.10_10p1mb.bam"
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3534,13 +3536,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1381.10875
+  cpu_frequency_mhz: 1238.3445833333333
   total_memory_mb: 63978
-  wall_time_seconds: 0.9366035461425781
-  cpu_user_time_seconds: 6.188393
-  cpu_system_time_seconds: 3.104449
-  memory_peak_rss_mb: 378
-  read_bytes: 864567296
+  wall_time_seconds: 0.968017578125
+  cpu_user_time_seconds: 6.176288
+  cpu_system_time_seconds: 0.9833299999999999
+  memory_peak_rss_mb: 370
+  read_bytes: 282091520
   write_bytes: 20480
 }
 stats {

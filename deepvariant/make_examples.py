@@ -36,6 +36,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
   del sys.modules['google']
 
 
+import os
 import re
 
 
@@ -555,6 +556,7 @@ def default_options(add_flags=True, flags_obj=None):
   options.logging_every_n_candidates = flags_obj.logging_every_n_candidates
   options.customized_classes_labeler_classes_list = flags_obj.customized_classes_labeler_classes_list
   options.customized_classes_labeler_info_field_name = flags_obj.customized_classes_labeler_info_field_name
+  options.bam_fname = os.path.basename(flags_obj.reads)
 
   if flags_obj.parse_sam_aux_fields is not None:
     options.parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
