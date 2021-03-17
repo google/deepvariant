@@ -397,6 +397,10 @@ function get_docker_image() {
         (sleep 5 ; sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1)"
       run echo "Done building Docker image ${IMAGE}."
     fi
+
+    # redacted
+    # move to `docker run` command during the next release.
+    extra_args+=( --runtime_report )
   else
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
@@ -472,7 +476,6 @@ function run_deepvariant_with_docker() {
     --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards=${N_SHARDS} \
     --logging_dir="/output/logs" \
-    --runtime_report \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""
   echo
