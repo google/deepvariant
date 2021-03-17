@@ -9,19 +9,19 @@ Runtime is on HG003 (all chromosomes).
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
 make_examples                    | 97m
-call_variants                    | 216m (180m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+call_variants                    | 249m (211m with OpenVINO<sup>[*](#vfootnote1)</sup>)
 postprocess_variants (with gVCF) | 88m
-total                            | 401m = 6.7 hours
+total                            | 434m = 7.2 hours
 
 ### Accuracy
 
-hap.py results on HG003 (all chromosomes, using NIST v4.2 truth), which was held
-out while training.
+hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
+held out while training.
 
 Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ----- | ---- | -------- | --------- | --------
-Indel |  501841 |  3069 | 1389 | 0.993922 | 0.997351  | 0.995634
-SNP   | 3310730 | 20760 | 6202 | 0.993769 | 0.998131  | 0.995945
+Indel |  501470 |  3031 | 1380 | 0.993992 | 0.997367  | 0.995677
+SNP   | 3306945 | 20551 | 6042 | 0.993824 | 0.998177  | 0.995996
 
 ## WES (Illumina)
 
@@ -38,13 +38,13 @@ total                            | 11m
 
 ### Accuracy
 
-hap.py results on HG003 (all chromosomes, using NIST v4.2 truth), which was held
-out while training.
+hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
+held out while training.
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 1025    | 28   | 19   | 0.973409 | 0.982126  | 0.977748
-SNP   | 25005   | 319  | 169  | 0.987403 | 0.993287  | 0.990337
+Indel | 1022    | 29   | 19   | 0.972407 | 0.982075  | 0.977217
+SNP   | 24964   | 315  | 167  | 0.987539 | 0.993355  | 0.990439
 
 
 ## PacBio (HiFi)
@@ -55,23 +55,23 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 112m
-call_variants                    | 228m (166m with OpenVINO<sup>[*](#vfootnote1)</sup>)
-postprocess_variants (with gVCF) | 72m
-total                            | 412m = 6.8 hours
+make_examples                    | 115m
+call_variants                    | 206m (175m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+postprocess_variants (with gVCF) | 71m
+total                            | 392m = 6.5 hours
 
 ### Accuracy
 
-hap.py results on HG003 (all chromosomes, using NIST v4.2 truth), which was held
-out while training.
+hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
+held out while training.
 
 (The input BAM is phased already and DeepVariant was run with
 `--use_hp_information=true`.)
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel |  501912 | 2998 | 2845 | 0.994062 | 0.994586  | 0.994324
-SNP   | 3327712 | 3778 | 2274 | 0.998866 | 0.999318  | 0.999092
+Indel |  501517 | 2984 | 2837 | 0.994085 | 0.994597  | 0.994341
+SNP   | 3323836 | 3659 | 2146 | 0.998900 | 0.999355  | 0.999128
 
 ## Hybrid (Illumina + PacBio HiFi)
 
@@ -81,20 +81,20 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 146m
-call_variants                    | 230m (185m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+make_examples                    | 153m
+call_variants                    | 252m (201m with OpenVINO<sup>[*](#vfootnote1)</sup>)
 postprocess_variants (with gVCF) | 62m
-total                            | 438 m = 7.3 hours
+total                            | 467 m = 7.8 hours
 
 ### Accuracy
 
-Evaluating on HG003 (all chromosomes, using NIST v4.2 truth), which was held out
-while training the hybrid model.
+Evaluating on HG003 (all chromosomes, using NIST v4.2.1 truth), which was held
+out while training the hybrid model.
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 503570  | 1340 | 2149 | 0.997346 | 0.995953  | 0.996649
-SNP   | 3327590 | 3900 | 1934 | 0.998829 | 0.999419  | 0.999124
+Indel | 504501  | 1330 | 2144 | 0.997364 | 0.995959  | 0.996661
+SNP   | 3327495 | 3841 | 1904 | 0.998846 | 0.999428  | 0.999137
 
 ## How to reproduce the metrics on this page
 
@@ -110,19 +110,19 @@ Download and run any of the following case study scripts:
 redacted
 
 ```
-# WGS (should take about 7 hours)
+# WGS
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_wgs.sh
 bash inference_wgs.sh
 
-# WES (should take less than 20 minutes)
+# WES
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_wes.sh
 bash inference_wes.sh
 
-# PacBio (should take about 7 hours)
+# PacBio
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_pacbio.sh
 bash inference_pacbio.sh
 
-# Hybrid (should take about 7 hours)
+# Hybrid
 curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_hybrid_pacbio_illumina.sh
 bash inference_hybrid_pacbio_illumina.sh
 ```
