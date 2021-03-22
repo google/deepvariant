@@ -6,40 +6,40 @@
 
 Runtime is on HG002/HG003/HG004 (all chromosomes).
 
-Stage                            | Time (minutes)
+Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~440m
-call_variants for HG002          | ~500m
-call_variants for HG003          | ~500m
-call_variants for HG004          | ~500m
-postprocess_variants (with gVCF) | ~110m
-total                            | ~2050m ~ 34 hours
+make_examples                    | ~460m
+call_variants for HG002-4        | ~475m
+call_variants for HG003          | ~475m
+call_variants for HG004          | ~475m
+postprocess_variants (parallel)  | ~110m
+total                            | ~1995m = 33.3 hours
 
 ### Accuracy
 
-hap.py results on HG002/HG003/HG004 trio (all chromosomes, using NIST v4.2
+hap.py results on HG002/HG003/HG004 trio (all chromosomes, using NIST v4.2.1
 truth), which was held out while training.
 
 #### HG002:
 
 Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ----- | ---- | -------- | --------- | --------
-Indel | 523008  | 2458  | 840  | 0.995322 | 0.998462  | 0.996890
-SNP   | 3348025 | 17315 | 3054 | 0.994855 | 0.999089  | 0.996968
+Indel | 523006  | 2463  | 839  | 0.995313 | 0.998464  | 0.996886
+SNP   | 3347854 | 17273 | 3057 | 0.994867 | 0.999088  | 0.996973
 
 #### HG003:
 
 Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ----- | ---- | -------- | --------- | --------
-Indel | 502068  | 2842  | 1236 | 0.994371 | 0.997644  | 0.996005
-SNP   | 3312429 | 19061 | 3449 | 0.994279 | 0.998960  | 0.996614
+Indel | 501697  | 2804  | 1234 | 0.994442 | 0.997646  | 0.996041
+SNP   | 3308641 | 18855 | 3373 | 0.994334 | 0.998982  | 0.996652
 
 #### HG004:
 
 Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ----- | ---- | -------- | --------- | --------
-Indel | 508628  | 2898  | 1198 | 0.994335 | 0.997748  | 0.996038
-SNP   | 3335516 | 20082 | 3340 | 0.994015 | 0.999000  | 0.996502
+Indel | 507681  | 2838  | 1182 | 0.994441 | 0.997774  | 0.996104
+SNP   | 3326961 | 19649 | 3232 | 0.994129 | 0.999030  | 0.996573
 
 ## PacBio (HiFi)
 
@@ -47,18 +47,18 @@ SNP   | 3335516 | 20082 | 3340 | 0.994015 | 0.999000  | 0.996502
 
 Runtime is on HG002/HG003/HG004 (all chromosomes).
 
-Stage                            | Time (minutes)
+Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
 make_examples                    | ~840m
 call_variants for HG002          | ~400m
 call_variants for HG003          | ~400m
 call_variants for HG004          | ~400m
-postprocess_variants (with gVCF) | ~84m
-total                            | ~2124m = 35.4 hours
+postprocess_variants (parallel)  | ~80m
+total                            | ~2120m = 35.3 hours
 
 ### Accuracy
 
-hap.py results on HG002/HG003/HG004 trio (all chromosomes, using NIST v4.2
+hap.py results on HG002/HG003/HG004 trio (all chromosomes, using NIST v4.2.1
 truth). HG002/HG003/HG004 trio is used for training a PacBio model, only chr20,
 chr21, and chr22 are held out. Accuracy metrics are reported for the whole
 genome for consistency.
@@ -67,22 +67,22 @@ genome for consistency.
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 524061  | 1405 | 1864 | 0.997326 | 0.996612  | 0.996969
-SNP   | 3361815 | 3525 | 969  | 0.998953 | 0.999712  | 0.999332
+Indel | 524058  | 1411 | 1865 | 0.997315 | 0.99661   | 0.996962
+SNP   | 3361591 | 3536 | 980  | 0.998949 | 0.999709  | 0.999329
 
 #### HG003:
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 502884  | 2026 | 2330 | 0.995987 | 0.995587  | 0.995787
-SNP   | 3327628 | 3862 | 1522 | 0.998841 | 0.999543  | 0.999192
+Indel | 502477  | 2024 | 2333 | 0.995988 | 0.995578  | 0.995783
+SNP   | 3323668 | 3827 | 1509 | 0.998850 | 0.999547  | 0.999198
 
 #### HG004:
 
 Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 509342  | 2184 | 2483 | 0.995730 | 0.995361  | 0.995546
-SNP   | 3351890 | 3708 | 1389 | 0.998895 | 0.999586  | 0.999240
+Indel | 508346  | 2173 | 2471 | 0.995744 | 0.995375  | 0.995559
+SNP   | 3342956 | 3654 | 1351 | 0.998908 | 0.999596  | 0.999252
 
 ## Whole Exome Sequencing (Illumina)
 
@@ -90,18 +90,18 @@ SNP   | 3351890 | 3708 | 1389 | 0.998895 | 0.999586  | 0.999240
 
 Runtime is on HG002/HG003/HG004 (all chromosomes).
 
-Stage                            | Time (minutes)
+Stage                            | Wall time (minutes)
 -------------------------------- | --------------
 make_examples                    | ~18m
-call_variants for HG002          | ~6m
-call_variants for HG003          | ~6m
-call_variants for HG004          | ~6m
-postprocess_variants (with gVCF) | ~2m
-total                            | ~38m
+call_variants for HG002          | ~7m
+call_variants for HG003          | ~7m
+call_variants for HG004          | ~7m
+postprocess_variants (parallel)  | ~2m
+total                            | ~41m
 
 ### Accuracy
 
-hap.py results on HG002/HG003/HG004 trio (all chromosomes, using NIST v4.2
+hap.py results on HG002/HG003/HG004 trio (all chromosomes, using NIST v4.2.1
 truth).
 
 #### HG002:
@@ -109,21 +109,23 @@ truth).
 Type  | # TP  | # FN | # FP | Recall  | Precision | F1_Score
 ----- | ----- | ---- | ---- | ------- | --------- | --------
 Indel | 1059  | 31   | 12   | 0.97156 | 0.989011  | 0.980208
-SNP   | 25179 | 251  | 31   | 0.99013 | 0.998770  | 0.994431
+SNP   | 25165 | 249  | 31   | 0.990202| 0.998770  | 0.994468
 
 #### HG003:
 
 Type  | # TP  | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ----- | ---- | ---- | -------- | --------- | --------
-Indel | 1025  | 28   | 11   | 0.973409 | 0.989593  | 0.981435
-SNP   | 25079 | 245  | 28   | 0.990325 | 0.998885  | 0.994587
+Indel | 1022  | 29   | 11   | 0.972407 | 0.989564  | 0.980910
+SNP   | 25038 | 241  | 28   | 0.990466 | 0.998883  | 0.994657
+
 
 #### HG004:
 
 Type  | # TP  | # FN | # FP | Recall   | Precision | F1_Score
 ----- | ----- | ---- | ---- | -------- | --------- | --------
-Indel | 1061  | 25   | 20   | 0.976980 | 0.982047  | 0.979507
-SNP   | 25008 | 241  | 17   | 0.990455 | 0.999321  | 0.994868
+Indel | 1057  | 25   | 20   | 0.976895 | 0.981982  | 0.979432
+SNP   | 24945 | 232  | 17   | 0.990785 | 0.999319  | 0.995034
+
 
 ## How to reproduce the metrics on this page
 
