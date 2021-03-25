@@ -222,7 +222,7 @@ elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   MODEL_TYPE="WES"
-  BASE="${HOME}/exome-case-study"
+  BASE="${HOME}/wes-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
   BAM="${BAM:=${GCS_DATA_DIR}/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam}"
