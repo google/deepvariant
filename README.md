@@ -74,7 +74,7 @@ docker run \
   --output_gvcf=/output/YOUR_OUTPUT_GVCF \
   --call_variants_extra_args="use_openvino=true" \ **Optional. Setting this will use OpenVINO on Intel CPUs, which empirically reduces call_variants runtime by 15%-25%.
   --num_shards=$(nproc) \ **This will use all your cores to run make_examples. Feel free to change.**
-  --logging_dir=/output/logs **Optional. This saves the log output for each stage separately and enables runtime profiling.
+  --logging_dir=/output/logs **Optional. This saves the log output for each stage separately.
   --dry_run=false \ **Default is false. If set to true, commands will be printed out but not executed.
 ```
 

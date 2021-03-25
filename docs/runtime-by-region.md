@@ -22,25 +22,29 @@ Example reports for typical runs:
 
 ## How to enable runtime profiling during a DeepVariant run
 
+### Using the run_deepvariant script
+
 When using the one-step `run_deepvariant` script, supply a `--logging_dir`
-directory. For example, when following the
-[quick start](deepvariant-quick-start.md), including
-`--logging_dir=/output/logs` would produce the following runtime profiling
-output file:
+directory and set `--runtime_report`. For example, when following the
+[quick start](deepvariant-quick-start.md), including `--runtime_report
+--logging_dir=/output/logs` would produce the following runtime profiling output
+file and visual report:
 
 ```
 /output/logs/make_examples_runtime_by_region/make_examples_runtime-00000-of-00001.tsv
+/output/logs/make_examples_runtime_by_region_report.html
 ```
+
+### Running stages individually
 
 If you are using make_examples itself without the run_deepvariant script, supply
 make_examples with `--runtime_by_region=` a filename (.tsv). If the examples are
 sharded then the runtime profile should be sharded into the same number of
 shards, e.g. when using `examples@64` then runtimes could be `runtimes@64.tsv`.
 
-## Creating the visual runtime report
-
-Use the `runtime_by_region_vis` script to create a visual report of the
-make_examples runtime by region data.
+Then use the `runtime_by_region_vis` script to create a visual report of the
+make_examples runtime by region data. Continuing from the quick start, it looks
+like this:
 
 ```bash
 BIN_VERSION="1.1.0" # Only available in v1.1+.
