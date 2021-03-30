@@ -331,13 +331,7 @@ function copy_data() {
   copy_gs_or_http_file "${TRUTH_VCF}" "${INPUT_DIR}"
   copy_gs_or_http_file "${TRUTH_VCF}.tbi" "${INPUT_DIR}"
   copy_gs_or_http_file "${BAM}" "${INPUT_DIR}"
-  # This replaces the ending "am" with *ai. For example this makes:
-  # xyz.bam --> xyz.b*ai
-  # xyz.cram --> xyz.cr*ai
-  # A cleaner solution would be to check the file suffixes. But, the solution
-  # below is just one line. And, once the index file is downloaded, DeepVariant
-  # has the logic to find the right index file.
-  copy_gs_or_http_file "${BAM/%am/*ai}" "${INPUT_DIR}"
+  copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gz" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gz.fai" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gz.gzi" "${INPUT_DIR}"
