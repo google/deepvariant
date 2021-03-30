@@ -417,6 +417,15 @@ function get_docker_image() {
         (sleep 5 ; sudo docker pull "${IMAGE}")"
     fi
   fi
+  if [[ "${USE_GPU}" = true ]]; then
+    sudo docker run --gpus 1 "${IMAGE}" \
+      python3 -c 'import tensorflow as tf; \
+      print("is_gpu_available=" + str(tf.test.is_gpu_available()))'
+    sudo docker run --gpus 1 "${IMAGE}" \
+      python3 -c 'import tensorflow as tf; \
+      tf.test.is_gpu_available() or exit(1)' \
+      2> /dev/null || exit 1
+  fi
 }
 
 function setup_args() {
