@@ -7,6 +7,6 @@ assignees: ''
 
 ---
 
-
+**Have you checked the FAQ? https://github.com/google/deepvariant/blob/r1.1/docs/FAQ.md**:
 
 
