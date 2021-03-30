@@ -98,6 +98,7 @@ For more information, also see:
     the input and output file formats and how to work with them.
 *   [Best practices for multi-sample variant calling with DeepVariant](docs/trio-merge-case-study.md)
 *   [(Advanced) Training tutorial](docs/deepvariant-training-case-study.md)
+*   [DeepVariant's Frequently Asked Questions, FAQ](docs/FAQ.md)
 
 ## How to cite
 
