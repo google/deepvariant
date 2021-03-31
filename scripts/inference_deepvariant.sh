@@ -326,12 +326,26 @@ function copy_gs_or_http_file() {
   fi
 }
 
+function copy_correct_index_file() {
+  BAM="$1"
+  INPUT_DIR="$2"
+  # Index files have two acceptable naming patterns. We explicitly check for
+  # both since we cannot use wildcard paths with http files.
+  if [[ "${BAM}" == *".cram" ]]; then
+    copy_gs_or_http_file "${BAM%.cram}.crai" "${INPUT_DIR}" || \
+      copy_gs_or_http_file "${BAM}.crai" "${INPUT_DIR}"
+  else
+    copy_gs_or_http_file "${BAM%.bam}.bai" "${INPUT_DIR}" || \
+      copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
+  fi
+}
+
 function copy_data() {
   copy_gs_or_http_file "${TRUTH_BED}" "${INPUT_DIR}"
   copy_gs_or_http_file "${TRUTH_VCF}" "${INPUT_DIR}"
   copy_gs_or_http_file "${TRUTH_VCF}.tbi" "${INPUT_DIR}"
   copy_gs_or_http_file "${BAM}" "${INPUT_DIR}"
-  copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
+  copy_correct_index_file "${BAM}" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gz" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gz.fai" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gz.gzi" "${INPUT_DIR}"
