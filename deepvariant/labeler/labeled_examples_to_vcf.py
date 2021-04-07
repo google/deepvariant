@@ -65,6 +65,9 @@ from deepvariant import tf_utils
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_bool(
+    'allow_unlabeled_examples', None,
+    'If True, allow unlabeled examples as input and output ./. as the GT.')
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference. Used to get the reference contigs for the '
@@ -121,10 +124,14 @@ def examples_to_variants(examples_path, max_records=None):
                                     variant_utils.variant_range_tuple):
     variant = next(group)
     if not variantcall_utils.has_genotypes(variant_utils.only_call(variant)):
-      raise ValueError(
-          ('Variant {} does not have any genotypes. This tool only works with '
-           'variants that have been labeled.').format(
-               variant_utils.variant_key(variant)))
+      if FLAGS.allow_unlabeled_examples:
+        call = variant.calls[0] if variant.calls else variant.calls.add()
+        variantcall_utils.set_gt(call, (-1, -1))
+      else:
+        raise ValueError(
+            ('Variant {} does not have any genotypes. This tool only works '
+             'with variants that have been labeled.').format(
+                 variant_utils.variant_key(variant)))
     yield variant
 
 
