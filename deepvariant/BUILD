@@ -1296,6 +1296,24 @@ py_library(
     deps = [":attention_module"],
 )
 
+py_library(
+    name = "dashboard_utils",
+    srcs = ["dashboard_utils.py"],
+    srcs_version = "PY3",
+)
+
+py_test(
+    name = "dashboard_utils_test",
+    srcs = ["dashboard_utils_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":dashboard_utils",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
 py_binary(
     name = "runtime_by_region_vis",
     srcs = ["runtime_by_region_vis.py"],
@@ -1312,6 +1330,7 @@ py_library(
     srcs = ["runtime_by_region_vis.py"],
     srcs_version = "PY3",
     deps = [
+        ":dashboard_utils",
         "//third_party/nucleus/io:sharded_file_utils",
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
