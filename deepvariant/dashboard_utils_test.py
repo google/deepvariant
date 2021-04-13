@@ -60,6 +60,7 @@ class DashboardUtilsTest(parameterized.TestCase):
         'my fancy title', html, msg='The title is missing from the HTML.')
     self.assertIn(
         'my fancy subtitle', html, msg='The subtitle is missing from the HTML.')
+    self.assertIn('_blank', html, msg='Embed options missing.')
 
 
 if __name__ == '__main__':

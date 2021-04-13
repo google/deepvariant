@@ -101,7 +101,13 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
     chart_id = chart['id']
     chart_json = chart['chart'].to_json()
     download_filename = '{}_{}'.format(title.replace(' ', '_'), chart['id'])
-    embed_options = {'mode': 'vega-lite', 'downloadFileName': download_filename}
+    embed_options = {
+        'mode': 'vega-lite',
+        'downloadFileName': download_filename,
+        'loader': {
+            'target': '_blank'
+        }
+    }
     html_string += (
         f'var spec_{chart_id} = {chart_json};\n'
         f'vegaEmbed("#vis_{chart_id}", spec_{chart_id}, {embed_options})\n')
