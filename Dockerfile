@@ -152,10 +152,6 @@ RUN apt-get -y update && \
 
 ENV PATH="/opt/deepvariant/bin:${PATH}"
 
-# Setup OpenVINO environment.
-ENV LD_LIBRARY_PATH=/opt/intel/openvino/inference_engine/lib/intel64/:/opt/intel/openvino/inference_engine/external/tbb/lib/:/opt/intel/openvino/deployment_tools/ngraph/lib/:$LD_LIBRARY_PATH \
-    PYTHONPATH=/opt/intel/openvino/python/python3.6/:/opt/intel/openvino/deployment_tools/model_optimizer/:$PYTHONPATH
-
 WORKDIR /opt/deepvariant
 
 CMD ["/opt/deepvariant/bin/run_deepvariant", "--help"]
