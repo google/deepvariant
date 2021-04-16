@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """An estimator that uses OpenVINO."""
 import os
+import sys
 import subprocess
 from absl import logging
 import tensorflow as tf
@@ -88,7 +89,7 @@ class OpenVINOEstimator(object):
     tensor_shape = input_fn.tensor_shape
     freeze_graph(model, checkpoint_path, tensor_shape)
     subprocess.run([
-        mo_tf.__file__, '--input_model=model.pb', '--scale=128',
+        sys.executable, mo_tf.__file__, '--input_model=model.pb', '--scale=128',
         '--mean_values', '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
     ],
                    check=True)
