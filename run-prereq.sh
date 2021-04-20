@@ -99,7 +99,7 @@ echo "$(pip3 --version)"
 note_build_stage "Install python3 packages"
 
 pip3 install "${PIP_ARGS[@]}" contextlib2
-pip3 install "${PIP_ARGS[@]}" enum34
+pip3 install "${PIP_ARGS[@]}" 'enum34==1.1.8'
 pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
 pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
@@ -233,15 +233,8 @@ fi
 # OpenVINO
 ################################################################################
 if [[ "${DV_OPENVINO_BUILD}" = "1" ]]; then
-  sudo -H apt-get install "${APT_ARGS[@]}" apt-transport-https > /dev/null
-  curl -o GPG-PUB-KEY-INTEL-OPENVINO-2021 https://apt.repos.intel.com/openvino/2021/GPG-PUB-KEY-INTEL-OPENVINO-2021
-  sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2021
-  sudo echo "deb https://apt.repos.intel.com/openvino/2021 all main" | sudo tee /etc/apt/sources.list.d/intel-openvino-2021.list
-  sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-  sudo apt-get install "${APT_ARGS[@]}" --no-install-recommends intel-openvino-dev-ubuntu18-2021.1.110 > /dev/null
-  sudo ln -s /opt/intel/openvino_2021 /opt/intel/openvino
-  rm -f GPG-PUB-KEY-INTEL-OPENVINO-2021
-  pip3 install "${PIP_ARGS[@]}" networkx defusedxml test-generator==0.1.1
+  pip3 install "${PIP_ARGS[@]}" git+https://github.com/openvinotoolkit/openvino.git@releases/2021/3#subdirectory=model-optimizer
+  pip3 install "${PIP_ARGS[@]}" openvino==2021.3
 fi
 
 ################################################################################

@@ -29,6 +29,7 @@
 """An estimator that uses OpenVINO."""
 import os
 import subprocess
+import sys
 from absl import logging
 import tensorflow as tf
 import tf_slim as slim
@@ -90,8 +91,9 @@ class OpenVINOEstimator(object):
     openvino_model_pb = os.path.join(openvino_model_dir, 'model.pb')
     freeze_graph(model, checkpoint_path, tensor_shape, openvino_model_pb)
     mo_tf_args = [
-        mo_tf.__file__, '--input_model=' + openvino_model_pb, '--scale=128',
-        '--mean_values', '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
+        sys.executable, mo_tf.__file__, '--input_model=' + openvino_model_pb,
+        '--scale=128', '--mean_values',
+        '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
     ]
     if openvino_model_dir:
       mo_tf_args.append('--output_dir=' + openvino_model_dir)
