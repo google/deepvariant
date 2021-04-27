@@ -86,6 +86,10 @@ int TotalAlleleCounts(const AlleleCount& allele_count,
 int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
                       bool include_low_quality = false);
 
+// Binary search for allele index by position.
+int AlleleIndex(const std::vector<AlleleCount>& allele_counts,
+                 int64 pos);
+
 // Represents an Allele observed in a read at a specific position in our
 // interval. Supports the concept that the site should be skipped but still
 // needs to be represented in a data processing chain. ReadAlleles marked as

@@ -1351,7 +1351,6 @@ def make_examples_runner(options, samples):
         writer.write_runtime(stats_dict=runtimes)
 
       # Output timing for every N candidates.
-      # redacted
       if (int(n_candidates / options.logging_every_n_candidates) > last_reported
           or n_regions == 1):
         last_reported = int(n_candidates / options.logging_every_n_candidates)

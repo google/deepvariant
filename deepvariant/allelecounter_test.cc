@@ -920,6 +920,34 @@ TEST_F(AlleleCounterTest, TestCountSummaries) {
   EXPECT_EQ(summaries[2].total_read_count(), 11);
 }
 
+
+TEST_F(AlleleCounterTest, TestAlleleIndex) {
+  std::unique_ptr<AlleleCounter> allele_counter = MakeCounter("chr1", 1, 4);
+  AddNReads(1, 1, "C", allele_counter.get());
+  AddNReads(1, 2, "T", allele_counter.get());
+  AddNReads(2, 3, "C", allele_counter.get());
+  AddNReads(2, 4, "T", allele_counter.get());
+  AddNReads(3, 5, "A", allele_counter.get());
+  AddNReads(3, 6, "T", allele_counter.get());
+  AddNReads(4, 7, "A", allele_counter.get());
+  AddNReads(4, 8, "T", allele_counter.get());
+  AddNReads(5, 9, "A", allele_counter.get());
+  AddNReads(5, 10, "T", allele_counter.get());
+
+  const std::vector<AlleleCount>& allele_count = allele_counter->Counts();
+  // Check middle position
+  int pos_3 = AlleleIndex(allele_count, 3);
+  EXPECT_EQ(pos_3, 2);
+  EXPECT_EQ(allele_count[pos_3].position().position(), 3);
+  EXPECT_EQ(allele_count[pos_3].ref_supporting_read_count(), 5);
+  EXPECT_EQ(allele_count[pos_3].ref_base(), "A");
+  EXPECT_EQ(allele_count[pos_3].sample_alleles_size(), 1);
+
+  int pos_6 = AlleleIndex(allele_count, 6);
+  EXPECT_EQ(pos_6, -1);
+}
+
+
 //
 
 TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_read_per_sample) {

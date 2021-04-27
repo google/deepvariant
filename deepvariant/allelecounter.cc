@@ -182,6 +182,25 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
   return true;
 }
 
+
+bool allele_pos_cmp(const AlleleCount& allele_count, int64 pos) {
+  return allele_count.position().position() < pos;
+}
+
+// Return the allele index by base position in allele_counts vector.
+int AlleleIndex(const std::vector<AlleleCount>& allele_counts,
+                int64 pos)  {
+  auto idx = std::lower_bound(allele_counts.begin(),
+                              allele_counts.end(),
+                              pos,
+                              allele_pos_cmp);
+  if (idx == allele_counts.end() || idx->position().position() != pos) {
+    return -1;
+  }
+  return std::distance(allele_counts.begin(), idx);
+}
+
+
 AlleleCounter::AlleleCounter(const GenomeReference* const ref,
                              const Range& range,
                              const AlleleCounterOptions& options)

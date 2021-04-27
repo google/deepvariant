@@ -435,17 +435,18 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
   Variant* m_variant = call.mutable_variant();
   AlleleCount allele_count_match;
 
-  for (const AlleleCount& allele_count : allele_counts) {
-    if (allele_count.position().position() == variant.start()) {
-      if (!nucleus::AreCanonicalBases(allele_count.ref_base())) {
-        // We don't emit calls at any site in the genome that isn't one of the
-        // canonical DNA bases (one of A, C, G, or T).
-        return nullopt;
-      }
-      allele_count_match = allele_count;
-      break;
+  int idx = AlleleIndex(allele_counts, variant.start());
+  if (idx != -1) {
+    allele_count_match = allele_counts[idx];
+    if (!nucleus::AreCanonicalBases(allele_count_match.ref_base())) {
+      // We don't emit calls at any site in the genome that isn't one of the
+      // canonical DNA bases (one of A, C, G, or T).
+      return nullopt;
     }
   }
+  // If idx=-1 and no allele count matches we proceed with
+  // an empty allele_count_match object which is used to help return
+  // a missing genotype with no observed evidence.
 
   std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count_match);
   string refbases = CalcRefBases(allele_count_match.ref_base(),
