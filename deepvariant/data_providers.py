@@ -300,18 +300,14 @@ class DeepVariantInput(object):
         self.initial_shuffle_buffer_size > 0):
       dataset = dataset.shuffle(self.initial_shuffle_buffer_size)
 
-    if self.mode == tf.estimator.ModeKeys.EVAL:
-      # When EVAL, avoid parallel reads for the sake of reproducibility.
-      dataset = dataset.interleave(
-          load_dataset, cycle_length=self.input_read_threads, block_length=1)
-    else:
-      dataset = dataset.apply(
-          # parallel_interleave requires tf 1.5 or later; this is
-          # necessary for good performance.
-          tf.data.experimental.parallel_interleave(
-              load_dataset,
-              cycle_length=self.input_read_threads,
-              sloppy=self.sloppy))
+    # For both TRAIN and EVAL, use the following to speed up.
+    dataset = dataset.apply(
+        # parallel_interleave requires tf 1.5 or later; this is
+        # necessary for good performance.
+        tf.data.experimental.parallel_interleave(
+            load_dataset,
+            cycle_length=self.input_read_threads,
+            sloppy=self.sloppy))
 
     if self.max_examples is not None:
       dataset = dataset.take(self.max_examples)
