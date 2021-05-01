@@ -424,6 +424,19 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           num_shards=num_shards)
 
   @parameterized.parameters(
+      # Fetch all positions
+      (['chr20:1-20000000'], 221),
+      # Fetch subset of positions
+      (['chr20:1-10003021'], 20),
+  )
+  def test_fetch_vcf_positions(self, calling_regions, expected_count):
+    contigs = _make_contigs([('chr20', 20000000)])
+    calling_regions = _from_literals(calling_regions)
+    variant_positions = make_examples_core.fetch_vcf_positions(
+        testdata.TRUTH_VARIANTS_VCF, contigs, calling_regions)
+    self.assertLen(variant_positions, expected_count)
+
+  @parameterized.parameters(
       # One variant in region.
       (['x:100-200'], ['x:150-151'], [0]),
       # Different chromosomes.

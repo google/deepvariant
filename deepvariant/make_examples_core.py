@@ -467,6 +467,34 @@ def regions_to_process(contigs,
     return partitioned
 
 
+def fetch_vcf_positions(vcf_path, contigs, calling_regions):
+  """Fetches variants present in calling_regions.
+
+  Args:
+    vcf_path: Path to VCF from which to fetch positions.
+    contigs: Sequence of ContigInfo protos. Used to determine the initial ranges
+      to process (i.e., all bases of these contigs) and the order of returned
+      ranges.
+    calling_regions: A list of acceptable calling regions.
+
+  Returns:
+    Variant positions present in calling_regions.
+
+  """
+  # Fetch the set of regions being queried.
+  regions = ranges.RangeSet.from_contigs(contigs)
+  if calling_regions:
+    regions = regions.intersection(calling_regions)
+
+  variant_positions = []
+  with vcf.VcfReader(vcf_path) as vcf_reader:
+    for region in regions:
+      for variant in vcf_reader.query(region):
+        variant_positions.append(variant_utils.variant_position(variant))
+
+  return variant_positions
+
+
 def filter_regions_by_vcf(regions, variant_positions):
   """Filter a list of regions to only those that contain variants.
 
@@ -1179,17 +1207,13 @@ def processing_regions_from_options(options):
   # candidates as long as gVCF output is not needed. There is a tradeoff
   # though because it takes time to read the VCF, which is only worth it if
   # there are enough regions.
-  if options.proposed_variants_filename and len(
-      region_list) > 10000 and not gvcf_output_enabled(options):
+  if options.proposed_variants_filename and not gvcf_output_enabled(options):
     logging_with_options(
         options, 'Reading VCF to skip processing some regions without '
         'variants in the --proposed_variants VCF.')
     before = time.time()
-    variant_positions = []
-    with vcf.VcfReader(options.proposed_variants_filename) as vcf_reader:
-      for variant in vcf_reader:
-        variant_positions.append(variant_utils.variant_position(variant))
-
+    variant_positions = fetch_vcf_positions(options.proposed_variants_filename,
+                                            contigs, calling_regions)
     filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
     time_elapsed = time.time() - before
     logging_with_options(
