@@ -539,6 +539,108 @@ class RealignerTest(parameterized.TestCase):
         ref_start=1)
     self.assertEqual(aligned_reads, [])
 
+  @parameterized.parameters(
+      dict(
+          # No change.
+          read_seq='AAGGAAGTGCTAAAATCAGAATGAGAACCA',
+          cigar='30M',
+          expected_cigars=['30M'],
+          expected_sequences=['AAGGAAGTGCTAAAATCAGAATGAGAACCA'],
+          expected_positions=[1]),
+      dict(
+          # Basic split.
+          read_seq='AAGGAAGTGCTAAAATCAGAATGAGAACCA',
+          cigar='15M5000N15M',
+          expected_cigars=['15M', '15M'],
+          expected_sequences=['AAGGAAGTGCTAAAA', 'TCAGAATGAGAACCA'],
+          expected_positions=[1, 5016]),
+      dict(
+          # Split with 15bp filter.
+          read_seq='AAGGAAGTGCTAAAATCAGAATGAGAACCA',
+          cigar='10M10N20M',
+          expected_cigars=['20M'],
+          expected_sequences=['TAAAATCAGAATGAGAACCA'],
+          expected_positions=[21]),
+      dict(
+          # Many small splits filtered out.
+          read_seq='AAGGAAGTGCTAAAATCAGAATGAGAACCA',
+          cigar='5M5N5M5N5M5N5M5N5M5N5M',
+          expected_cigars=[],
+          expected_sequences=[],
+          expected_positions=[]),
+      dict(
+          # Large split.
+          read_seq='AAGGAAGTGCTAAAATCAGAATGAGAACCA',
+          cigar='2M5000N28M',
+          expected_cigars=['28M'],
+          expected_sequences=['GGAAGTGCTAAAATCAGAATGAGAACCA'],
+          expected_positions=[5003]),
+      dict(
+          # Insertion.
+          read_seq='AAGGAAGTGCTAATTTTTAATCAGAATGAGAACCA',
+          cigar='15M5I15M',
+          expected_cigars=['15M5I15M'],
+          expected_sequences=['AAGGAAGTGCTAATTTTTAATCAGAATGAGAACCA'],
+          expected_positions=[1]),
+      dict(
+          # Insertion + Split.
+          read_seq='AAGGAAGTGCTAAAAGGGGGTCAGAATGAGAACCA',
+          cigar='15M5I50N15M',
+          expected_cigars=['15M5I', '15M'],
+          expected_sequences=['AAGGAAGTGCTAAAAGGGGG', 'TCAGAATGAGAACCA'],
+          expected_positions=[1, 66]),
+      dict(
+          # Deletion.
+          read_seq='AAGGAAGTGCTAATTTTTAATCAGAATGAGAACCA',
+          cigar='15M5D15M',
+          expected_cigars=['15M5D15M'],
+          expected_sequences=['AAGGAAGTGCTAATTTTTAATCAGAATGAGAACCA'],
+          expected_positions=[1]),
+      dict(
+          # Deletion + Split.
+          read_seq='AAGGAAGTGCTAATTTCAGAATGAGAACCA',
+          cigar='15M5D50N15M',
+          expected_cigars=['15M5D', '15M'],
+          expected_sequences=['AAGGAAGTGCTAATT', 'TCAGAATGAGAACCA'],
+          expected_positions=[1, 71]),
+      dict(
+          # Sequence Match/Mismatch + Split.
+          read_seq='CCCCGGACACTTCTAGTTTGTCGGAGCGAGTC',
+          cigar='15=1X1=20N15=',
+          expected_cigars=['15=1X1=', '15='],
+          expected_sequences=['CCCCGGACACTTCTAGT', 'TTGTCGGAGCGAGTC'],
+          expected_positions=[1, 38]),
+      dict(
+          # Soft Clip + Split.
+          read_seq='TGAGCTAGTAGAATTTAGGGAGAAAGATTAATGCG',
+          cigar='15S5M50N15M',
+          expected_cigars=['15S5M', '15M'],
+          expected_sequences=['TGAGCTAGTAGAATTTAGGG', 'AGAAAGATTAATGCG'],
+          expected_positions=[1, 56]),
+      dict(
+          # Hard Clip + Split.
+          read_seq='ATCCCGGCCACGTTAATCCCGGCCACGTTA',
+          cigar='15H15M50N15M15H',
+          expected_cigars=['15H15M', '15M15H'],
+          expected_sequences=['ATCCCGGCCACGTTA', 'ATCCCGGCCACGTTA'],
+          expected_positions=[1, 66]),
+  )
+  def test_split_reads(self, read_seq, cigar, expected_cigars,
+                       expected_sequences, expected_positions):
+    test_read = test_utils.make_read(read_seq, cigar=cigar, start=1)
+    reads = realigner.split_reads([test_read])
+    for i in range(len(reads)):
+      # Check sequences
+      self.assertEqual(reads[i].aligned_sequence, expected_sequences[i])
+      # Check cigars
+      self.assertEqual(
+          cigar_utils.format_cigar_units(reads[i].alignment.cigar),
+          expected_cigars[i])
+      # Check reference positions
+      self.assertEqual(reads[i].alignment.position.position,
+                       expected_positions[i])
+    self.assertLen(reads, len(expected_sequences))
+
 
 class RealignerIntegrationTest(absltest.TestCase):
 

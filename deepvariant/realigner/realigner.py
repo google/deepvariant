@@ -41,6 +41,8 @@ import csv
 import os
 import os.path
 
+
+
 from absl import flags
 import tensorflow as tf
 
@@ -56,6 +58,8 @@ from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import cigar as cigar_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
+from third_party.nucleus.util.cigar import READ_ADVANCING_OPS
+from third_party.nucleus.util.cigar import REF_ADVANCING_OPS
 
 _UNSET_WS_INT_FLAG = -1
 
@@ -145,6 +149,11 @@ flags.DEFINE_float(
     'realignment_similarity_threshold', 0.16934,
     'Similarity threshold used in realigner in Smith-Waterman'
     'alignment.')
+flags.DEFINE_bool(
+    'split_skip_reads', False,
+    'If True, splits reads with large SKIP cigar operations'
+    'into individual reads. Resulting read parts that are less than '
+    '15 bp are filtered out.')
 flags.DEFINE_integer('kmer_size', 32,
                      'K-mer size for fast pass alinger reads index.')
 
@@ -164,6 +173,9 @@ _ALLELE_COUNT_LINEAR_MODEL_DEFAULT = realigner_pb2.WindowSelectorModel(
         coeff_deletion=1.795914,
         coeff_reference=-0.059787,
         decision_boundary=3))
+
+# Minimum length of read to retain following splitting with --split_skip_reads.
+_MIN_SPLIT_LEN = 15
 
 # ---------------------------------------------------------------------------
 # Set configuration settings.
@@ -283,7 +295,8 @@ def realigner_config(flags_obj):
       ws_config=ws_config,
       dbg_config=dbg_config,
       aln_config=aln_config,
-      diagnostics=diagnostics)
+      diagnostics=diagnostics,
+      split_skip_reads=flags_obj.split_skip_reads)
 
 
 class DiagnosticLogger(object):
@@ -436,6 +449,72 @@ def assign_reads_to_assembled_regions(assembled_regions, reads):
   return unassigned_reads
 
 
+def copy_read(read, part):
+  """Copies a read proto to create a new read part."""
+  new_read = reads_pb2.Read()
+  new_read.CopyFrom(read)
+
+  # Reset alignment information.
+  # Note: If long reads will be used here, convert
+  # to approach used for read trimming.
+  new_read.alignment.Clear()
+  new_read.aligned_quality[:] = []
+  new_read.aligned_sequence = ''
+  new_read.alignment.position.reference_name = read.alignment.position.reference_name
+  new_read.alignment.position.reverse_strand = read.alignment.position.reverse_strand
+  new_read.alignment.mapping_quality = read.alignment.mapping_quality
+  new_read.fragment_name = f'{new_read.fragment_name}_p{part}'
+  return new_read
+
+
+def split_reads(reads):
+  """Splits reads containing SKIP cigar operations into multiple parts."""
+
+  read_split = []
+  for read in reads:
+    # Check for SKIP operations within the Cigar String
+    if not any([
+        c.operation == cigar_pb2.CigarUnit.SKIP for c in read.alignment.cigar
+    ]):
+      read_split.append(read)
+      continue
+    part = 0
+    new_read = copy_read(read, part)
+    # Get alignment position
+    read_start = 0
+    read_offset = 0
+    reference_offset = 0
+
+    for n, cigar in enumerate(read.alignment.cigar):
+      on_last_operation = (n + 1 == len(read.alignment.cigar))
+
+      if cigar.operation in REF_ADVANCING_OPS:
+        # Set position where the first ref op encountered.
+        if not new_read.alignment.position.position:
+          new_read.alignment.position.position = read.alignment.position.position + reference_offset
+        reference_offset += cigar.operation_length
+
+      if cigar.operation in READ_ADVANCING_OPS:
+        read_offset += cigar.operation_length
+
+      if cigar.operation != cigar_pb2.CigarUnit.SKIP:
+        new_read.alignment.cigar.append(cigar)
+
+      if cigar.operation == cigar_pb2.CigarUnit.SKIP or on_last_operation:
+        new_read.aligned_sequence = read.aligned_sequence[
+            read_start:read_offset]
+        new_read.aligned_quality.extend(
+            read.aligned_quality[read_start:read_offset])
+        if len(new_read.aligned_sequence) >= _MIN_SPLIT_LEN:
+          read_split.append(new_read)
+        if not on_last_operation:
+          read_start = read_offset
+          part += 1
+          new_read = copy_read(read, part)
+
+  return read_split
+
+
 class Realigner(object):
   """Realign reads in regions to assembled haplotypes.
 
@@ -573,6 +652,11 @@ class Realigner(object):
         reads for the region. NOTE THESE READS MAY NO LONGER BE IN THE SAME
         ORDER AS BEFORE.
     """
+
+    # Split reads containing SKIP operations.
+    if self.config.split_skip_reads:
+      reads = split_reads(reads)
+
     # Compute the windows where we need to assemble in the region.
     candidate_windows = window_selector.select_windows(self.config.ws_config,
                                                        self.ref_reader, reads,

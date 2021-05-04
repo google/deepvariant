@@ -233,4 +233,7 @@ message RealignerOptions {
 
   // Diagnostics options.
   Diagnostics diagnostics = 4;
+
+  // Split reads with large SKIP regions (i.e. RNA-seq)
+  bool split_skip_reads = 5;
 }
