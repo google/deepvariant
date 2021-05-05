@@ -1730,7 +1730,8 @@ def make_examples_runner(options):
         suffix = None if in_training_mode(options) else sample.name
         writers_dict[sample.name] = OutputsWriter(options, suffix=suffix)
   else:
-    writers_dict['child'] = OutputsWriter(options, suffix=None)
+    writers_dict[region_processor.sample_to_train] = OutputsWriter(
+        options, suffix=None)
 
   for region in regions:
     candidates_dict, examples_dict, gvcfs_dict = region_processor.process(
