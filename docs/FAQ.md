@@ -224,3 +224,19 @@ Note that this is meant for debugging and produces a bam file for every
 candidate variant, which can result in millions of tiny bam files, so when using
 this, narrow down the DeepVariant run using `--regions` to just the variants you
 want to inspect more closely.
+
+## How are `AD` and `DP` values calculated?
+
+In order to efficiently perform variant calling, DeepVariant partitions the
+genome into chunks (set by `--partition_size`), and will read in a max number of
+reads into each partition (set by `--max_reads_per_partition`). By default,
+`--partition_size` is set to 1000 and `--max_reads_per_partition` is set to
+1500. The `AD` and `DP` values are based on the read depths constrained by
+`--max_reads_per_partition`.
+
+For example, if you have a depth of 2000x at a given site, DeepVariant will
+subsample 1500 reads, and `DP` or `AD` will be capped at 1500. If you want to
+calculate the true `AD` and `DP` values at high-depth regions, you can set
+`--max_reads_per_partition=0` to calculate `AD` and `DP` using all reads. In
+practice, capping reads per partition reduces runtimes with little/no impact on
+accuracy.
