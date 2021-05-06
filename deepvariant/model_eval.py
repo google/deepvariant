@@ -107,7 +107,7 @@ flags.DEFINE_integer('min_eval_interval_s', 180,
                      'Minimum seconds between evaluations.')
 
 flags.DEFINE_integer(
-    'eval_timeout', 10000,
+    'eval_timeout', 20000,
     'Maximum seconds between checkpoints before evaluation '
     'terminates.')
 
