@@ -950,7 +950,7 @@ class RegionProcessorTest(parameterized.TestCase):
   @parameterized.parameters(
       ('add_hp_channel', True, None),
       ('add_hp_channel', False,
-       'WARGNING! --{} is set but --parse_sam_aux_fields is not set.'),
+       'Note that --{} is set but --parse_sam_aux_fields is not set.'),
       ('add_hp_channel', None,
        'Because --{}=true, --parse_sam_aux_fields is set to true to enable '
        'reading auxiliary fields from reads.'),
@@ -967,14 +967,15 @@ class RegionProcessorTest(parameterized.TestCase):
 
     with self.assertLogs() as logs:
       make_examples.default_options(add_flags=True)
-    warning_messages = [x for x in logs.output if x.startswith('WARNING')]
-    if expected_message:
-      self.assertLen(warning_messages, 1)
+    aux_fields_log_messages = [
+        x for x in logs.output if '--parse_sam_aux_fields' in x
+    ]
+    if aux_fields_log_messages:
       self.assertRegex(
-          warning_messages[0],
+          aux_fields_log_messages[0],
           expected_message.format(flag_optionally_needs_sam_aux_fields))
     else:
-      self.assertEmpty(warning_messages)
+      self.assertEmpty(aux_fields_log_messages)
 
   @parameterized.parameters(
       [

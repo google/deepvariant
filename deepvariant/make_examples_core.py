@@ -142,7 +142,7 @@ def parse_proto_enum_flag(proto_enum_pb2,
 def set_parse_sam_aux_fields(flags_obj, flag_names):
   for flag_name in flag_names:
     if flags_obj[flag_name].value:
-      logging.warning(
+      logging.info(
           'Because --%s=true, --parse_sam_aux_fields is set to '
           'true to enable reading auxiliary fields from reads.', flag_name)
     return True

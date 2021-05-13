@@ -495,12 +495,11 @@ def default_options(add_flags=True, flags_obj=None):
     for flag_optionally_needs_sam_aux_fields in ['add_hp_channel']:
       if (flags_obj[flag_optionally_needs_sam_aux_fields].value and
           not flags_obj.parse_sam_aux_fields):
-        logging.warning(
-            'WARGNING! --%s is set but --parse_sam_aux_fields is not '
-            'set. This will cause aux fields to not be read in. The relevant '
-            'values might be zero. For example, for --add_hp_channel, '
-            'resulting in an empty HP channel. If this is not what you '
-            'intended, please stop and enable --parse_sam_aux_fields.',
+        logging.info(
+            'Note that --%s is set but --parse_sam_aux_fields is not '
+            'set. This is fine unless you are expecting to use aux fields from '
+            'the alignments file, such as haplotype tags from phasing. '
+            'If you do need to use aux fields, enable --parse_sam_aux_fields.',
             flag_optionally_needs_sam_aux_fields)
     if flags_obj.add_hp_channel:
       options.pic_options.num_channels += 1
