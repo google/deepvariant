@@ -35,6 +35,7 @@ set -eux -o pipefail
 
 echo ========== This script is only maintained for Ubuntu 18.04.
 echo ========== See https://github.com/google/clif for how to build on different Unix distributions.
+echo ========== Run this script in root mode.
 
 UBUNTU_VERSION=18.04
 ABSL_VERSION=20200923
@@ -47,8 +48,8 @@ APT_ARGS=(
 )
 
 
-sudo apt-get update  "${APT_ARGS[@]}"
-sudo apt-get install "${APT_ARGS[@]}" --no-install-recommends \
+apt-get update  "${APT_ARGS[@]}"
+apt-get install "${APT_ARGS[@]}" --no-install-recommends \
     autoconf \
     automake \
     cmake \
@@ -63,12 +64,12 @@ sudo apt-get install "${APT_ARGS[@]}" --no-install-recommends \
     unzip
 
 # Configure LLVM 11 apt repository
-wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
- sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-11 main"
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key |  apt-key add - && \
+  add-apt-repository "deb http://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-11 main"
 
 # Install CLIF dependencies
-sudo apt-get update "${APT_ARGS[@]}"
-sudo apt-get install  "${APT_ARGS[@]}" \
+apt-get update "${APT_ARGS[@]}"
+apt-get install  "${APT_ARGS[@]}" \
     clang-11 \
     libclang-11-dev \
     libgoogle-glog-dev \
@@ -81,8 +82,8 @@ sudo apt-get install  "${APT_ARGS[@]}" \
 
 # Configure deadsnakes PPA with the more recent versions of python packaged for
 # Ubuntu. See https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
-sudo apt-get update "${APT_ARGS[@]}" && \
-    sudo apt-get install "${APT_ARGS[@]}" \
+apt-get update "${APT_ARGS[@]}" && \
+  apt-get install "${APT_ARGS[@]}" \
     "python$PYTHON_VERSION-dev" \
     "python$PYTHON_VERSION-distutils"
 
@@ -97,7 +98,7 @@ wget "https://github.com/abseil/abseil-cpp/archive/$ABSL_VERSION.tar.gz" && \
     mkdir "abseil-cpp-$ABSL_VERSION/build" && \
     cd "abseil-cpp-$ABSL_VERSION/build" && \
     cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=true && \
-    sudo make install && \
+    make install && \
     rm -rf "/abseil-cpp-$ABSL_VERSION" "/$ABSL_VERSION.tar.gz"
 
 # Compile and install protobuf from source
@@ -108,14 +109,14 @@ wget "https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_V
     ./autogen.sh && \
     ./configure && \
     make -j"$(nproc)" && \
-    sudo make install && \
-    sudo ldconfig && \
+    make install && \
+    ldconfig && \
     rm -rf "/protobuf-$PROTOBUF_VERSION" "/protobuf-cpp-$PROTOBUF_VERSION.tar.gz"
 
 # Install googletest
-cd /usr/src/gtest && \
-    sudo cmake . && \
-    sudo make install
+cd /usr/src/googletest && \
+    cmake . && \
+    make install
 
 # Install python runtime and test dependencies
 "python$PYTHON_VERSION" -m pip install \
@@ -123,13 +124,12 @@ cd /usr/src/gtest && \
     parameterized \
     protobuf=="$PROTOBUF_VERSION"
 
-sudo "python$PYTHON_VERSION" -m pip uninstall -y pyparsing && \
+"python$PYTHON_VERSION" -m pip uninstall -y pyparsing && \
   "python$PYTHON_VERSION" -m pip install -Iv 'pyparsing==2.2.0'
-
 DV_PLATFORM="ubuntu-${UBUNTU_VERSION}"
 
-sudo ln -sf /usr/bin/python\$PYTHON_VERSION /usr/local/bin/python3
+ln -sf /usr/bin/python$PYTHON_VERSION /usr/local/bin/python3
 
 cd && rm -rf clif && git clone https://github.com/google/clif.git && \
   cd clif && \
-  sudo ./INSTALL.sh
+  ./INSTALL.sh

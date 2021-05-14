@@ -95,9 +95,13 @@ else
   # Build clif binary from scratch. Might not be ideal because it installs a
   # bunch of dependencies, but this works fine when we used this in a Dockerfile
   # because we don't do build-prereq.sh in the final image.
-  time ./tools/build_clif.sh
+  time sudo ./tools/build_clif.sh
+  # clif needs an older version of pyparsing to run.
+  export PATH="$HOME/.local/bin":$PATH
+  pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
   # redacted
-  #                    we can do this better.
+  # Figure out why these symbolic links are needed and see if
+  # we can do this better.
   sudo mkdir -p /usr/clang/bin/
   sudo ln -sf /usr/local/bin/clif-matcher /usr/clang/bin/clif-matcher
   sudo mkdir -p /usr/local/clif/bin
@@ -117,8 +121,7 @@ if [[ ! -d ../tensorflow ]]; then
   (cd .. && git clone https://github.com/tensorflow/tensorflow)
 fi
 
-export PYTHON_BIN_PATH=$(which python3.6)
-export PYTHON_LIB_PATH='/usr/local/lib/python3.6/dist-packages'
+# PYTHON_BIN_PATH and PYTHON_LIB_PATH are set in settings.sh.
 (cd ../tensorflow &&
  git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
  echo | ./configure)
