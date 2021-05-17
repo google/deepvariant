@@ -539,7 +539,9 @@ function run_happy() {
     --pass-only \
     ${happy_args[@]-} \
   ) 2>&1 | tee "${LOG_DIR}/happy.log""
-  echo "${HAPPY_VERSION}" > "${LOG_DIR}/happy_version.log"
+  if [[ "${DRY_RUN}" != "true" ]]; then
+    echo "${HAPPY_VERSION}" > "${LOG_DIR}/happy_version.log"
+  fi
   run echo "Done."
 }
 
