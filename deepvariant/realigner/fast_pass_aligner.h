@@ -312,11 +312,9 @@ class FastPassAligner {
   // 1. Extracts a portion of haplotype to reference cigar that overlaps
   //    positions of read to haplotype alignment.
   // 2. Iterates through each cigar operation for both alignments, merging 2
-  //    operations of the same length at a time.
+  //    operations of length 1 at a time.
   // 3. Different logic is implemented for each type of merges: =:=, DEL:=,
-  //    =:DEL, INS:=, =:INS, DEL:DEL, INS:INS
-  // redacted
-  // worth to think about an alternative implementation.
+  //    =:DEL, INS:=, =:INS, DEL:DEL, INS:INS, DEL:INS
   void CalculateReadToRefAlignment(
       size_t read_index,
       const ReadAlignment& read_to_haplotype_alignment,
