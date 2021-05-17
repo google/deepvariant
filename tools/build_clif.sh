@@ -29,18 +29,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 #
-# This script is only maintained for Ubuntu 18.04.
 
 set -eux -o pipefail
 
-echo ========== This script is only maintained for Ubuntu 18.04.
+echo ========== This script has been tested on Ubuntu18.04 and Ubuntu20.04.
 echo ========== See https://github.com/google/clif for how to build on different Unix distributions.
 echo ========== Run this script in root mode.
 
-UBUNTU_VERSION=18.04
+CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-18.04}"
 ABSL_VERSION=20200923
 PROTOBUF_VERSION=3.13.0
-PYTHON_VERSION=3.6
+CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.6}"
 
 APT_ARGS=(
 "-qq"
@@ -84,12 +83,12 @@ apt-get install  "${APT_ARGS[@]}" \
 # Ubuntu. See https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
 apt-get update "${APT_ARGS[@]}" && \
   apt-get install "${APT_ARGS[@]}" \
-    "python$PYTHON_VERSION-dev" \
-    "python$PYTHON_VERSION-distutils"
+    "python$CLIF_PYTHON_VERSION-dev" \
+    "python$CLIF_PYTHON_VERSION-distutils"
 
 # Install latest version of pip since the version on ubuntu could be outdated
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    "python$PYTHON_VERSION" get-pip.py && \
+    "python$CLIF_PYTHON_VERSION" get-pip.py && \
     rm get-pip.py
 
 # Compile and install absl-cpp from source
@@ -119,16 +118,16 @@ cd /usr/src/googletest && \
     make install
 
 # Install python runtime and test dependencies
-"python$PYTHON_VERSION" -m pip install \
+"python$CLIF_PYTHON_VERSION" -m pip install \
     absl-py \
     parameterized \
     protobuf=="$PROTOBUF_VERSION"
 
-"python$PYTHON_VERSION" -m pip uninstall -y pyparsing && \
-  "python$PYTHON_VERSION" -m pip install -Iv 'pyparsing==2.2.0'
-DV_PLATFORM="ubuntu-${UBUNTU_VERSION}"
+"python$CLIF_PYTHON_VERSION" -m pip uninstall -y pyparsing && \
+  "python$CLIF_PYTHON_VERSION" -m pip install -Iv 'pyparsing==2.2.0'
+DV_PLATFORM="ubuntu-${CLIF_UBUNTU_VERSION}"
 
-ln -sf /usr/bin/python$PYTHON_VERSION /usr/local/bin/python3
+ln -sf /usr/bin/python$CLIF_PYTHON_VERSION /usr/local/bin/python3
 
 cd && rm -rf clif && git clone https://github.com/google/clif.git && \
   cd clif && \
