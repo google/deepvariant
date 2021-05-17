@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Shareable functionality for make_examples."""
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 from third_party.nucleus.io import sam
 from deepvariant.protos import deepvariant_pb2
@@ -36,29 +36,54 @@ from deepvariant.protos import deepvariant_pb2
 
 # redacted
 class Sample(object):
-  """Sample organizes sample-level properties and sam readers."""
-  name: str = None
-  nickname: str = None
-  reads_filenames: Sequence[str] = None
-  sam_readers: Sequence[sam.SamReader] = None
-  in_memory_sam_reader: sam.InMemorySamReader = None
-  variant_caller_options: deepvariant_pb2.VariantCallerOptions = None
-  pileup_height: int = None
+  """Sample organizes sample-level properties and sam readers.
+
+  name: This is the same name as set by --sample_name in make_examples.
+  role: A string to identify the role of this sample in the analysis, e.g. in
+      trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
+      not be checked inside make_examples_core.py. For example, instead of
+      checking whether sample.role == "child" to set pileup height, instead add
+      the pileup height to the sample, adding new properties to this class as
+      needed. This keeps make_examples_core.py functioning for multiple samples
+      without having to reason about sample roles that belong to each
+      application.
+  reads_filenames: Filenames of the bam files corresponding to this sample. A
+      list of just one is most common, but multiple are supported.
+  sam_readers: SamReader objects with handles on the `reads_filenames`.
+  in_memory_sam_reader: InMemorySamReader for this sample, which stores the
+      alignments for this sample that have been read into memory from the
+      sam_readers.
+  variant_caller_options: Options for variant-calling on this sample.
+  pileup_height: Integer height of the pileup image desired for this sample.
+  order: List of integers indicating the order in which samples should be shown
+      in the pileup image when calling on this sample. The indices refer to the
+      list of samples in the regionprocessor.
+  """
+  name: Optional[str] = None
+  role: Optional[str] = None
+  reads_filenames: Optional[Sequence[str]] = None
+  sam_readers: Optional[Sequence[sam.SamReader]] = None
+  in_memory_sam_reader: Optional[sam.InMemorySamReader] = None
+  variant_caller_options: Optional[deepvariant_pb2.VariantCallerOptions] = None
+  pileup_height: Optional[int] = None
+  order: Optional[Sequence[int]] = None
 
   def __init__(self,
+               name=None,
+               role='default_role',
+               reads_filenames=None,
                sam_readers=None,
                in_memory_sam_reader=None,
-               name=None,
-               nickname='default',
+               variant_caller_options=None,
                pileup_height=None,
-               reads_filenames=None,
-               variant_caller_options=None):
+               order=None):
     self.name = name
-    self.nickname = nickname
+    self.role = role
     self.reads_filenames = reads_filenames
     self.sam_readers = sam_readers
     self.in_memory_sam_reader = in_memory_sam_reader
     self.variant_caller_options = variant_caller_options
+    self.order = order
 
     if pileup_height is not None:
       # Downstream, None defaults to the PileupImageOptions height.

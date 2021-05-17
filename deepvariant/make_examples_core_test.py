@@ -587,7 +587,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.samples = [
         make_examples_utils.Sample(
             name=self.options.variant_caller_options.sample_name,
-            nickname='main_sample',
+            role='main_sample',
             reads_filenames=self.options.reads_filenames,
             variant_caller_options=self.options.variant_caller_options)
     ]

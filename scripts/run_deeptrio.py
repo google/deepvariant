@@ -440,7 +440,7 @@ def get_model_ckpt(model_type, customized_model):
 
 def generate_call_variants_command(sample, model_ckpt,
                                    intermediate_results_dir):
-  """Helper fuction generate call_variants command line."""
+  """Helper function to generate call_variants command line."""
   return call_variants_command(
       CALL_VARIANTS_OUTPUT_PATTERN.format(
           call_variants_output_common_prefix(intermediate_results_dir), sample,
@@ -453,7 +453,7 @@ def generate_call_variants_command(sample, model_ckpt,
 
 def generate_postprocess_variants_command(sample, intermediate_results_dir,
                                           output_vcf, output_gvcf):
-  """Helper fuction generate post_process command line."""
+  """Helper function to generate post_process command line."""
   return postprocess_variants_command(
       FLAGS.ref,
       CALL_VARIANTS_OUTPUT_PATTERN.format(

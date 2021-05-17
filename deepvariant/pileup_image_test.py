@@ -1180,6 +1180,59 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.assertImageMatches(image, 'ref', 'ref', 'read2_parent1', 'ref', 'ref',
                             'read2', 'read4', 'ref', 'ref', 'read2_parent2')
 
+  @parameterized.parameters([
+      dict(
+          sample_order=None,
+          image_rows=[
+              'ref', 'read1_parent1', 'ref', 'read1', 'ref', 'read1_parent2'
+          ]),
+      dict(
+          sample_order=[0, 1, 2],
+          image_rows=[
+              'ref', 'read1_parent1', 'ref', 'read1', 'ref', 'read1_parent2'
+          ]),
+      dict(
+          sample_order=[2, 1, 0],
+          image_rows=[
+              'ref', 'read1_parent2', 'ref', 'read1', 'ref', 'read1_parent1'
+          ]),
+      dict(
+          sample_order=[2, 2, 2],
+          image_rows=[
+              'ref',
+              'read1_parent2',
+              'ref',
+              'read1_parent2',
+              'ref',
+              'read1_parent2',
+          ]),
+      dict(sample_order=[1], image_rows=['ref', 'read1']),
+  ])
+  def test_image_ordering(self, sample_order, image_rows):
+    # Order of pileup images in build_pileup can be controlled by sample_order.
+    samples = [
+        make_examples_utils.Sample(name='parent1', pileup_height=2),
+        make_examples_utils.Sample(name='child', pileup_height=2),
+        make_examples_utils.Sample(name='parent2', pileup_height=2)
+    ]
+    self.custom_pic = _make_image_creator(
+        ref_reader=None,
+        samples=samples,
+        width=3,
+        reference_band_height=1,
+        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO)
+    self.custom_pic._encoder = self.pic._encoder
+
+    image = self.custom_pic.build_pileup(
+        dv_call=self.dv_call,
+        refbases=self.ref,
+        reads_for_samples=[[self.read1_parent1], [self.read1],
+                           [self.read1_parent2]],
+        alt_alleles={self.alt_allele},
+        sample_order=sample_order)
+
+    self.assertImageMatches(image, *image_rows)
+
 
 class PileupImageCreatorTest(parameterized.TestCase):
 
@@ -1282,7 +1335,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
             dv_call=self.dv_call,
             refbases=self.mock_ref_reader.query.return_value,
             reads_for_samples=[self.mock_sam_reader.query.return_value],
-            alt_alleles=alts)
+            alt_alleles=alts,
+            sample_order=None)
 
       self.assertEqual(mock_encoder.call_count, 3)
       mock_encoder.assert_has_calls([
@@ -1323,7 +1377,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
             dv_call=self.dv_call,
             refbases=self.mock_ref_reader.query.return_value,
             reads_for_samples=[self.mock_sam_reader.query.return_value],
-            alt_alleles=alts)
+            alt_alleles=alts,
+            sample_order=None)
 
       def _expected_alt_based_call(alts, refbases, reads):
         return mock.call(
@@ -1331,7 +1386,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
             refbases=refbases,
             reads_for_samples=[reads],
             alt_alleles=alts,
-            custom_ref=True)
+            custom_ref=True,
+            sample_order=None)
 
       self.assertEqual(mock_encoder.call_count, 7)
       mock_encoder.assert_has_calls(

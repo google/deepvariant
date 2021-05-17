@@ -291,6 +291,7 @@ class PileupImageCreator(object):
                    refbases,
                    reads_for_samples,
                    alt_alleles,
+                   sample_order=None,
                    custom_ref=False):
     """Creates a pileup tensor for dv_call.
 
@@ -309,6 +310,10 @@ class PileupImageCreator(object):
         we are treating as "alt" when constructing this pileup image. A read
         will be considered supporting the "alt" allele if it occurs in the
         support list for any alt_allele in this collection.
+      sample_order: A list of indices representing the order in which samples
+        should be represented in the pileup image. Example: [1,0,2] to swap the
+        first two samples out of three. This is None by default which puts the
+        samples in order.
       custom_ref: True if refbases should not be checked for matching against
         variant's reference_bases.
 
@@ -412,7 +417,10 @@ class PileupImageCreator(object):
       return rows
 
     sample_sections = []
-    for i, sample in enumerate(self._samples):
+    if sample_order is None:
+      sample_order = range(len(self._samples))
+    for i in sample_order:
+      sample = self._samples[i]
       sample_sections.extend(
           build_pileup_for_one_sample(reads_for_samples[i], sample))
 
@@ -427,6 +435,7 @@ class PileupImageCreator(object):
   def create_pileup_images(self,
                            dv_call,
                            reads_for_samples,
+                           sample_order=None,
                            haplotype_alignments_for_samples=None,
                            haplotype_sequences=None):
     """Creates a DeepVariant TF.Example for the DeepVariant call dv_call.
@@ -437,6 +446,10 @@ class PileupImageCreator(object):
       dv_call: A learning.genomics.deepvariant.DeepVariantCall proto that we
         want to create a TF.Example pileup image of.
       reads_for_samples: list of read generators, one for each sample.
+      sample_order: A list of indices representing the order in which samples
+        should be represented in the pileup image. Example: [1,0,2] to swap the
+        first two samples out of three. This is None by default which puts the
+        samples in order.
       haplotype_alignments_for_samples: list with a dict for each sample of read
         alignments keyed by haplotype.
       haplotype_sequences: dict of sequences keyed by haplotype.
@@ -464,7 +477,8 @@ class PileupImageCreator(object):
           dv_call=dv_call,
           refbases=ref_bases,
           reads_for_samples=reads_for_samples,
-          alt_alleles=alt_alleles)
+          alt_alleles=alt_alleles,
+          sample_order=sample_order)
       # Optionally also create pileup images with reads aligned to alts.
       if alt_aligned_representation != 'none':
         if haplotype_alignments_for_samples is None or haplotype_sequences is None:
@@ -494,6 +508,7 @@ class PileupImageCreator(object):
                     sample[alt] for sample in haplotype_alignments_for_samples
                 ],
                 alt_alleles=alt_alleles,
+                sample_order=sample_order,
                 custom_ref=True)
             alt_images.append(alt_image)
         composite_image = _represent_alt_aligned_pileups(

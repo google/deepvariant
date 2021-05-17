@@ -631,7 +631,7 @@ def samples_from_options(options):
   return [
       make_examples_utils.Sample(
           name=options.variant_caller_options.sample_name,
-          nickname='main_sample',
+          role='main_sample',
           reads_filenames=options.reads_filenames,
           variant_caller_options=options.variant_caller_options)
   ]
