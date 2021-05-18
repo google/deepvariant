@@ -269,7 +269,7 @@ more consistently.
 ```shell
 gcloud compute instances create "${USER}-cpu"  \
   --scopes "compute-rw,storage-full,cloud-platform" \
-  --image-family "ubuntu-2004-lts" \
+  --image-family "ubuntu-1804-lts" \
   --image-project "ubuntu-os-cloud" \
   --machine-type "custom-64-131072" \
   --boot-disk-size "300" \
@@ -284,7 +284,7 @@ gcloud compute instances create "${USER}-gpu" \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --maintenance-policy "TERMINATE" \
   --accelerator=type=nvidia-tesla-p100,count=1 \
-  --image-family "ubuntu-2004-lts" \
+  --image-family "ubuntu-1804-lts" \
   --image-project "ubuntu-os-cloud" \
   --machine-type "n1-standard-16" \
   --boot-disk-size "300" \

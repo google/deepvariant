@@ -60,8 +60,6 @@ std::once_flag import_array_flag;
 // https://github.com/kornerc/brisk/issues/3#issuecomment-237107324
 int call_import_array() {
   import_array();
-  // https://github.com/ros-perception/vision_opencv/pull/292#issue-322425968
-  return NULL;
 }
 
 PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,

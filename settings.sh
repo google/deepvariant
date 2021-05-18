@@ -102,10 +102,9 @@ export DV_TF_NUMPY_VERSION="1.18.5"  # To match GCP_OPTIMIZED_TF_WHL_FILENAME
 # Docker image, it shouldn't be necessary.
 export DV_INSTALL_GPU_DRIVERS="${DV_INSTALL_GPU_DRIVERS:-0}"
 
-export PYTHON_VERSION=3.8
 # shellcheck disable=SC2155
-export PYTHON_BIN_PATH="$(which python${PYTHON_VERSION})"
-export PYTHON_LIB_PATH="/usr/local/lib/python${PYTHON_VERSION}/dist-packages"
+export PYTHON_BIN_PATH=$(which python3.6)
+export PYTHON_LIB_PATH='/usr/local/lib/python3.6/dist-packages'
 export USE_DEFAULT_PYTHON_LIB_PATH=1
 # N.B. The --experimental_build_setting_api had to be added on protobuf
 # upgrade to 3.9.2 to avoid error in bazel_skylib:

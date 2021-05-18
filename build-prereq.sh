@@ -30,7 +30,7 @@ set -euo pipefail
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-echo ========== This script is only maintained for Ubuntu 20.04.
+echo ========== This script is only maintained for Ubuntu 18.04.
 echo ========== Load config settings.
 
 source settings.sh
@@ -95,8 +95,10 @@ else
   # Build clif binary from scratch. Might not be ideal because it installs a
   # bunch of dependencies, but this works fine when we used this in a Dockerfile
   # because we don't do build-prereq.sh in the final image.
-  note_build_stage "Build CLIF."
-  time sudo CLIF_UBUNTU_VERSION=20.04 CLIF_PYTHON_VERSION=3.8 ./tools/build_clif.sh
+  time sudo ./tools/build_clif.sh
+  # clif needs an older version of pyparsing to run.
+  export PATH="$HOME/.local/bin":$PATH
+  pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
   # redacted
   # Figure out why these symbolic links are needed and see if
   # we can do this better.
@@ -130,9 +132,5 @@ fi
 # unless we also include that BUILD file.
 mkdir -p third_party/toolchains/java
 cp ../tensorflow/third_party/toolchains/java/BUILD third_party/toolchains/java/
-
-note_build_stage "Set pyparsing to 2.2.0 for CLIF."
-export PATH="$HOME/.local/bin":$PATH
-pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
 
 note_build_stage "build-prereq.sh complete"
