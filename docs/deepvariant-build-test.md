@@ -1,6 +1,6 @@
 ## Building DeepVariant from sources
 
-DeepVariant comes with scripts to build it on Ubuntu 18.04. It can likely be
+DeepVariant comes with scripts to build it on Ubuntu 20.04. It can likely be
 built and run on other unix-based systems with some minimal modifications to
 these scripts. One way to get access to a machine running Ubuntu is through a
 cloud computing platform like Google Cloud Engine.
