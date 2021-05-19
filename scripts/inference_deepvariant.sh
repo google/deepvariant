@@ -315,11 +315,22 @@ function run() {
 }
 
 function copy_gs_or_http_file() {
-  run echo "Copying from \"$1\" to \"$2\""
   if [[ "$1" == http* ]]; then
-    run aria2c -c -x10 -s10 "$1" -d "$2"
+    if curl --output /dev/null --silent --head --fail "$1"; then
+      run echo "Copying from \"$1\" to \"$2\""
+      run aria2c -c -x10 -s10 "$1" -d "$2"
+    else
+      run echo "File $1 does not exist. Skip copying."
+    fi
   elif [[ "$1" == gs://* ]]; then
-    run gsutil -m cp "$1" "$2"
+    status=0
+    gsutil -q stat "$1" || status=1
+    if [[ $status == 0 ]]; then
+      run echo "Copying from \"$1\" to \"$2\""
+      run gsutil -m cp "$1" "$2"
+    else
+      run echo "File $1 does not exist. Skip copying."
+    fi
   else
     echo "Unrecognized file format: $1" >&2
     exit 1
