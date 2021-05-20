@@ -42,6 +42,7 @@ DEEP_VARIANT_VERSION = '1.1.0'
 DEEP_VARIANT_PASS = 'PASS'
 DEEP_VARIANT_REF_FILTER = 'RefCall'
 DEEP_VARIANT_QUAL_FILTER = 'LowQual'
+DEEP_VARIANT_NO_CALL = 'NoCall'
 
 # FORMAT field IDs.
 DEEP_VARIANT_MIN_DP_FORMAT = 'MIN_DP'
@@ -123,6 +124,9 @@ def deepvariant_header(contigs,
               id=DEEP_VARIANT_QUAL_FILTER,
               description='Confidence in this variant being real is below '
               'calling threshold.'),
+          variants_pb2.VcfFilterInfo(
+              id=DEEP_VARIANT_NO_CALL,
+              description='Site has depth=0 resulting in no call.'),
       ],
       infos=info_fields,
       formats=formats,

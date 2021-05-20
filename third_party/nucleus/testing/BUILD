@@ -89,6 +89,7 @@ py_library(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:cigar",
         "@absl_py//absl/flags",
+        "@absl_py//absl/testing:absltest",
     ],
 )
 

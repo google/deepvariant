@@ -750,6 +750,7 @@ py_library(
         "//third_party/nucleus/util:genomics_math",
         "//third_party/nucleus/util:proto_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:struct_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
         "//third_party/nucleus/util:vcf_constants",
@@ -768,6 +769,7 @@ py_binary(
     deps = [
         ":postprocess_variants_py_lib",
         "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
@@ -794,7 +796,9 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:genomics_math",
+        "//third_party/nucleus/util:struct_utils",
         "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
         "//third_party/nucleus/util:vcf_constants",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",

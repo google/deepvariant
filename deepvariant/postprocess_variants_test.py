@@ -46,6 +46,7 @@ import shutil
 import sys
 
 
+
 from absl import flags
 from absl import logging
 from absl.testing import absltest
@@ -56,6 +57,11 @@ import numpy as np
 import six
 import tensorflow as tf
 
+from deepvariant import dv_constants
+from deepvariant import dv_vcf_constants
+from deepvariant import postprocess_variants
+from deepvariant import testdata
+from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
@@ -65,13 +71,9 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
 from third_party.nucleus.util.struct_utils import get_string_field
-from deepvariant import dv_constants
-from deepvariant import dv_vcf_constants
-from deepvariant import postprocess_variants
-from deepvariant import testdata
-from deepvariant.protos import deepvariant_pb2
 
 FLAGS = flags.FLAGS
 
@@ -108,8 +110,16 @@ class MockVcfWriter(object):
     self.variants_written.append(copy.deepcopy(proto))
 
 
-def _create_variant(ref_name, start, ref_base, alt_bases, qual, filter_field,
-                    genotype, gq, likelihoods):
+def _create_variant(ref_name,
+                    start,
+                    ref_base,
+                    alt_bases,
+                    qual,
+                    filter_field,
+                    genotype,
+                    gq,
+                    likelihoods,
+                    ad=None):
   """Creates a Variant record for testing.
 
   Args:
@@ -122,6 +132,7 @@ def _create_variant(ref_name, start, ref_base, alt_bases, qual, filter_field,
     genotype: list of integers corresponding to the called genotype
     gq: PHRED scaled genotype quality
     likelihoods: genotype likelihoods for this variant
+    ad: list of integers corresponding to allelic depths.
 
   Returns:
     A Variant record created with the specified arguments.
@@ -135,7 +146,8 @@ def _create_variant(ref_name, start, ref_base, alt_bases, qual, filter_field,
       gt=genotype,
       gq=gq,
       gls=likelihoods,
-      sample_name=_DEFAULT_SAMPLE_NAME)
+      sample_name=_DEFAULT_SAMPLE_NAME,
+      ad=ad)
 
 
 def _create_variant_with_alleles(ref=None, alts=None, start=0):
@@ -393,7 +405,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
               alleles=['A', 'T'],
               sample_name='vcf_sample_name',
               gt=[0, 1],
-              gls=[-.001, -5, -10])
+              gls=[-.001, -5, -10],
+              ad=[0, 1, 2])
       ], [], 'flag_sample_name', 'vcf_sample_name'),
       ([], [
           test_utils.make_variant(
@@ -403,7 +416,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
               alleles=['A', vcf_constants.GVCF_ALT_ALLELE],
               sample_name='gvcf_sample_name',
               gt=[0, 0],
-              gls=[-.001, -5, -10])
+              gls=[-.001, -5, -10],
+              ad=[0, 1, 2])
       ], 'flag_sample_name', 'gvcf_sample_name'),
       # flag_sample_name only used when no CVOs or nonvariant TFRecords present.
       ([], [], 'flag_sample_name', 'flag_sample_name'),
@@ -870,25 +884,35 @@ class PostprocessVariantsTest(parameterized.TestCase):
       postprocess_variants.merge_predictions(inputs)
 
   @parameterized.parameters(
-      (_create_variant('1', 1, 'A', ['C'], 20.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 15,
-                       [-2.0, -9.90308995105826, -0.0043648054]), [1, 1]),
-      (_create_variant('GL000220.1', 10000210, 'C', ['T'], 20.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
-                       [-2.0, -9.90308995105826, -0.0043648054]), [1, 1]),
-      (_create_variant('20', 10000210, 'C', ['CT'], 30.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 1], 30,
-                       [-3.0, -0.00043451177, -9.90308995105826]), [0, 1]),
       (_create_variant(
-          'X', 10000210, 'CACA', ['C'], 0.04364805402,
-          dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 19,
-          [-0.0043648054, -2.30102999566, -2.30102999566]), [-1, -1]),
+          '1', 1, 'A', ['C'], 20.0, dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1],
+          15, [-2.0, -9.90308995105826, -0.0043648054], [10, 10]), [1, 1]),
+      (_create_variant('GL000220.1', 10000210, 'C', ['T'], 50.0,
+                       dv_vcf_constants.DEEP_VARIANT_NO_CALL, [1, 1], 25,
+                       [-2.0, -9.90308995105826, -0.0043648054],
+                       [0, 0]), [-1, -1]),
+      (_create_variant('GL000220.1', 10000210, 'C', ['T'], 5.0,
+                       dv_vcf_constants.DEEP_VARIANT_NO_CALL, [1, 1], 25,
+                       [-2.0, -9.90308995105826, -0.0043648054],
+                       [0, 0]), [-1, -1]),
+  )
+  def test_uncall_gt_if_no_ad(self, variant, expected_gt):
+    postprocess_variants.uncall_gt_if_no_ad(variant)
+    self.assertEqual(variant.calls[0].genotype, expected_gt)
+
+  @parameterized.parameters(
+      (_create_variant('X', 10000210, 'CACA', ['C'], 0.04364805402,
+                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 19,
+                       [-0.0043648054, -2.30102999566, -2.30102999566],
+                       [1, 0]), [-1, -1]),
       (_create_variant('chrY', 10000210, 'C', ['T'], 0.00043431619,
                        dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 20,
-                       [-0.00004343161, -4.0, -9.90308995105826]), [0, 0]),
+                       [-0.00004343161, -4.0, -9.90308995105826],
+                       [0, 1]), [0, 0]),
       (_create_variant('X', 10000210, 'CACA', ['C', 'A'], 0.0217691925,
                        dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 13,
-                       [-0.00217691925, -3, -3, -3, -3, -3]), [-1, -1]),
+                       [-0.00217691925, -3, -3, -3, -3, -3],
+                       [1, 1, 1]), [-1, -1]),
   )
   def test_uncall_homref_gt_if_lowqual(self, variant, expected_gt):
     postprocess_variants.uncall_homref_gt_if_lowqual(variant, 20)
@@ -898,11 +922,11 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ([0.01, 0.0, 0.99],
        _create_variant('GL000220.1', 1, 'A', ['.'], 20.0,
                        dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
-                       [-2.0, -9.90308995105826, -0.0043648054])),
+                       [-2.0, -9.90308995105826, -0.0043648054], [1, 0])),
       ([0.01, 0.0, 0.99],
        _create_variant('GL000220.1', 10000210, 'C', ['T'], 20.0,
                        dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
-                       [-2.0, -9.90308995105826, -0.0043648054])),
+                       [-2.0, -9.90308995105826, -0.0043648054], [0, 2])),
       ([0.001, 0.999, 0.0],
        _create_variant('20', 10000210, 'C', ['CT'], 30.0,
                        dv_vcf_constants.DEEP_VARIANT_PASS, [0, 1], 30,
@@ -941,6 +965,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         start=expected.start,
         end=expected.end,
         calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)])
+    variantcall_utils.set_ad(raw_variant.calls[0], [1, 1])
     variant = postprocess_variants.add_call_to_variant(
         variant=raw_variant,
         predictions=probs,
@@ -996,6 +1021,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     probs = [0.001] * 6
     assert 0 <= highest_prob_position <= len(probs)
     probs[highest_prob_position] = 0.995
+    variantcall_utils.set_ad(raw_variant.calls[0], [1, 1, 1])
     variant = postprocess_variants.add_call_to_variant(
         variant=raw_variant,
         predictions=probs,
@@ -1078,18 +1104,18 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_compute_filter_fields(self):
     # This generates too many tests as a parameterized test.
     for qual, min_qual in itertools.product(range(100), range(100)):
-      # First test with no call and filter threshold
+      # First test with no alleleic depth.
       variant = variants_pb2.Variant()
       variant.quality = qual
       expected = []
-      expected.append(dv_vcf_constants.DEEP_VARIANT_PASS if qual >= min_qual
-                      else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER)
+      expected.append(dv_vcf_constants.DEEP_VARIANT_NO_CALL)
       self.assertEqual(
           postprocess_variants.compute_filter_fields(variant, min_qual),
           expected)
-      # Now add hom ref genotype --> qual shouldn't affect filter field
+      # Now add hom ref genotype and AD --> qual shouldn't affect filter field
       del variant.filter[:]
       variant.calls.add(genotype=[0, 0])
+      variantcall_utils.set_ad(variant.calls[0], [1, 1])
       expected = []
       expected.append(dv_vcf_constants.DEEP_VARIANT_REF_FILTER)
       self.assertEqual(
@@ -1099,6 +1125,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       del variant.filter[:]
       del variant.calls[:]
       variant.calls.add(genotype=[0, 1])
+      variantcall_utils.set_ad(variant.calls[0], [1, 1])
       expected = []
       expected.append(dv_vcf_constants.DEEP_VARIANT_PASS if qual >= min_qual
                       else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER)

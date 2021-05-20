@@ -191,6 +191,8 @@ def compute_filter_fields(variant, min_quality):
   Returns:
     Filter field strings to be added to the variant.
   """
+  if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.no_call:
+    return [dv_vcf_constants.DEEP_VARIANT_NO_CALL]
   if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.hom_ref:
     return [dv_vcf_constants.DEEP_VARIANT_REF_FILTER]
   elif variant.quality < min_quality:
@@ -282,6 +284,16 @@ def most_likely_genotype(predictions, ploidy=2, n_alleles=2):
   raise ValueError('No corresponding GenotypeType for predictions', predictions)
 
 
+def uncall_gt_if_no_ad(variant):
+  """Converts genotype to "./." if sum(AD)=0."""
+  vcall = variant_utils.only_call(variant)
+  if sum(variantcall_utils.get_ad(vcall)) == 0:
+    # Set GT to ./.; GL=None; GQ=0
+    vcall.genotype[:] = [-1, -1]
+    vcall.genotype_likelihood[:] = []
+    variantcall_utils.set_gq(vcall, 0)
+
+
 def uncall_homref_gt_if_lowqual(variant, min_homref_gq):
   """Converts genotype to "./." if variant is CNN RefCall and has low GQ.
 
@@ -333,6 +345,7 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   variantcall_utils.set_gq(call, gq)
   gls = [genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions]
   variantcall_utils.set_gl(call, gls)
+  uncall_gt_if_no_ad(variant)
   variant.filter[:] = compute_filter_fields(variant, qual_filter)
   uncall_homref_gt_if_lowqual(variant, FLAGS.cnn_homref_call_min_gq)
   return variant

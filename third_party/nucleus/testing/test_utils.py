@@ -147,7 +147,8 @@ def make_variant(chrom='chr1',
                  gq=None,
                  sample_name=None,
                  gls=None,
-                 is_phased=None):
+                 is_phased=None,
+                 ad=None):
   """Creates a new Variant proto from args.
 
   Args:
@@ -174,6 +175,7 @@ def make_variant(chrom='chr1',
     gls: array-list of float, or None. If not None and gt is not None, sets the
       genotype_likelihoods of our VariantCall to this value.
     is_phased: bool. Indicates whether a VariantCall should be phased.
+    ad: list of allelic depths.
 
   Returns:
     nucleus.genomics.v1.Variant proto.
@@ -189,7 +191,8 @@ def make_variant(chrom='chr1',
       gqs=None if gq is None else [gq],
       sample_names=None if sample_name is None else [sample_name],
       glss=None if gls is None else [gls],
-      is_phased=None if is_phased is None else [is_phased])
+      is_phased=None if is_phased is None else [is_phased],
+      ad=None if ad is None else [ad])
 
 
 def make_variant_multiple_calls(chrom='chr1',
@@ -202,7 +205,8 @@ def make_variant_multiple_calls(chrom='chr1',
                                 gqs=None,
                                 sample_names=None,
                                 glss=None,
-                                is_phased=None):
+                                is_phased=None,
+                                ad=None):
   """Creates a new Variant proto from args that contains multi-sample calls.
 
   Args:
@@ -229,6 +233,7 @@ def make_variant_multiple_calls(chrom='chr1',
       specified. Sets the genotype_likelihoods of the corresponding VariantCall.
     is_phased: list of bools. Must match the gts arg if specified. Indicates
       whether the corresponding VariantCall should be phased.
+    ad: list of allelic depths. These are added together to calculate DP.
 
   Returns:
     nucleus.genomics.v1.Variant proto.
@@ -268,6 +273,10 @@ def make_variant_multiple_calls(chrom='chr1',
 
       if is_phased and is_phased[i] is not None:
         call.is_phased = is_phased[i]
+
+      if ad and ad[i] is not None:
+        set_list_values(call.info['AD'], ad[i])
+        set_list_values(call.info['DP'], [sum(ad[i])])
 
   return variant
 
