@@ -343,11 +343,11 @@ function copy_correct_index_file() {
   # Index files have two acceptable naming patterns. We explicitly check for
   # both since we cannot use wildcard paths with http files.
   if [[ "${BAM}" == *".cram" ]]; then
-    copy_gs_or_http_file "${BAM%.cram}.crai" "${INPUT_DIR}" || \
-      copy_gs_or_http_file "${BAM}.crai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM%.cram}.crai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM}.crai" "${INPUT_DIR}"
   else
-    copy_gs_or_http_file "${BAM%.bam}.bai" "${INPUT_DIR}" || \
-      copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM%.bam}.bai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
   fi
 }
 
