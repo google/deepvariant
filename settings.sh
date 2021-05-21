@@ -121,6 +121,7 @@ function note_build_stage {
 
 function wait_for_dpkg_lock {
   # Wait for at most 5 minutes.
+  echo "Calling wait_for_dpkg_lock."
   max_wait=300
   i=0
   while fuser /var/lib/dpkg/{lock,lock-frontend} >/dev/null 2>&1 ; do
