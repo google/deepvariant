@@ -565,7 +565,7 @@ def default_options(add_flags=True, flags_obj=None):
 
 
 def check_options_are_valid(options):
-  """Check that DeepVariant options all fit together."""
+  """Checks that all the options chosen make sense together."""
 
   # Check arguments that apply to any mode.
   if not options.reference_filename:
@@ -627,7 +627,7 @@ def check_options_are_valid(options):
 
 
 def samples_from_options(options):
-  """Create an array of one sample from the options given."""
+  """Creates an array of one sample from the options given."""
   return [
       make_examples_utils.Sample(
           name=options.variant_caller_options.sample_name,

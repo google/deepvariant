@@ -37,6 +37,7 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 
 import os
+from typing import Optional, Sequence, List
 
 
 
@@ -410,6 +411,15 @@ def parse_regions_flag(regions_flag_value):
   return regions_flag_value
 
 
+def logging_with_options(options, message):
+  """If options contain multiple shards, log with task/shard prefix."""
+  if options.num_shards > 1:
+    prefix = 'Task {}/{}: '.format(options.task_id, options.num_shards)
+  else:
+    prefix = ''
+  logging.info('%s%s', prefix, message)
+
+
 def assign_sample_name(sample_name_flag, reads):
   """Returns sample name derived from either sample_name flag or input BAM.
 
@@ -477,7 +487,7 @@ def default_options(add_flags=True, flags_obj=None):
       min_mapping_quality=flags_obj.min_mapping_quality,
       min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
 
-  logging.info('ReadRequirements are: %s', read_reqs)
+  logging.vlog(3, 'ReadRequirements are: %s', read_reqs)
 
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
@@ -624,6 +634,9 @@ def default_options(add_flags=True, flags_obj=None):
       options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
     options.max_reads_per_partition = flags_obj.max_reads_per_partition
+    options.use_ref_for_cram = flags_obj.use_ref_for_cram
+    options.hts_block_size = flags_obj.hts_block_size
+    options.logging_every_n_candidates = flags_obj.logging_every_n_candidates
 
     if (options.mode == deeptrio_pb2.DeepTrioOptions.TRAINING and
         flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF):
@@ -636,6 +649,8 @@ def default_options(add_flags=True, flags_obj=None):
                                       os.path.basename(flags_obj.reads_parent2)
                                       if flags_obj.reads_parent2 else 'None')
 
+    if flags_obj.parse_sam_aux_fields is not None:
+      options.parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
   return options
 
 
@@ -990,23 +1005,22 @@ class RegionProcessor(object):
       tf.Example protos.
   """
 
-  def __init__(self, options):
+  def __init__(self, options, samples):
     """Creates a new RegionProcess.
 
     Args:
       options: deepvariant.DeepTrioOptions proto used to specify our resources
         for calling (e.g., reference_filename).
+      samples: The list of samples (make_examples_utils.Sample).
     """
     self.options = options
+    self.samples = samples
     self.initialized = False
     self.ref_reader = None
-    self.sam_reader = None
-    self.in_memory_sam_reader = None
     self.realigner = None
     self.pic = None
     self.labeler = None
     self.variant_caller = None
-    self.samples = []
     self.sample_to_train = None
 
   def _make_allele_counter_for_region(self, region):
@@ -1016,19 +1030,43 @@ class RegionProcessor(object):
   def _encode_tensor(self, image_tensor):
     return image_tensor.tostring(), image_tensor.shape, 'raw'
 
-  def _make_sam_reader(self,
-                       reads_filename,
-                       downsample_fraction_param=NO_DOWNSAMPLING):
-    return sam.SamReader(
-        reads_filename,
-        ref_path=FLAGS.ref if FLAGS.use_ref_for_cram else None,
-        read_requirements=self.options.read_requirements,
-        parse_aux_fields=FLAGS.parse_sam_aux_fields,
-        hts_block_size=FLAGS.hts_block_size,
-        downsample_fraction=downsample_fraction_param,
-        random_seed=self.options.random_seed,
-        use_original_base_quality_scores=self.options
-        .use_original_quality_scores)
+  def _make_sam_readers(
+      self, reads_filenames: Sequence[str],
+      downsample_fraction: float) -> Optional[List[sam.SamReader]]:
+    """Creates a list of SamReaders, one from each filename.
+
+    Args:
+      reads_filenames: A list of string read filenames (e.g. for BAM/CRAM
+        files). The list may contain empty strings or None, which will be
+        skipped.
+      downsample_fraction: Fraction by which to downsample. This applies to each
+        file in reads_filenames separately.
+
+    Returns:
+      A list of sam readers with handles to the files. This may be shorter than
+      the input reads_filenames if any of the filenames were empty.
+    """
+    logging_with_options(
+        self.options,
+        'Starting from v0.9.0, --use_ref_for_cram is default to true. '
+        'If you are using CRAM input, note that we will decode CRAM '
+        'using the reference you passed in with --ref')
+    readers = []
+    for reads_filename in reads_filenames:
+      if reads_filename:
+        readers.append(
+            sam.SamReader(
+                reads_filename,
+                ref_path=self.options.reference_filename
+                if self.options.use_ref_for_cram else None,
+                read_requirements=self.options.read_requirements,
+                parse_aux_fields=self.options.parse_sam_aux_fields,
+                hts_block_size=self.options.hts_block_size,
+                downsample_fraction=downsample_fraction,
+                random_seed=self.options.random_seed,
+                use_original_base_quality_scores=self.options
+                .use_original_quality_scores))
+    return readers
 
   def _initialize(self):
     """Initialize the resources needed for this work in the current env."""
@@ -1037,47 +1075,11 @@ class RegionProcessor(object):
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
 
-    self.sam_reader = self._make_sam_reader(
-        self.options.reads_filename, self.options.downsample_fraction_child)
-    if self.options.reads_parent1_filename:
-      self.sam_reader_parent1 = self._make_sam_reader(
-          self.options.reads_parent1_filename,
-          self.options.downsample_fraction_parents)
-    else:
-      self.sam_reader_parent1 = None
-    if self.options.reads_parent2_filename:
-      self.sam_reader_parent2 = self._make_sam_reader(
-          self.options.reads_parent2_filename,
-          self.options.downsample_fraction_parents)
-    else:
-      self.sam_reader_parent2 = None
-
-    # Keep each sample organized with its relevant info.
-    child = make_examples_utils.Sample(
-        name=FLAGS.sample_name,
-        role='child',
-        sam_readers=self.sam_reader,
-        in_memory_sam_reader=sam.InMemorySamReader([]),
-        pileup_height=self.options.height_child,
-        order=[0, 1, 2])
-    parent1 = make_examples_utils.Sample(
-        name=FLAGS.sample_name_parent1,
-        role='parent1',
-        sam_readers=self.sam_reader_parent1,
-        in_memory_sam_reader=sam.InMemorySamReader([]),
-        pileup_height=self.options.height_parent,
-        order=[0, 1, 2])
-    parent2 = make_examples_utils.Sample(
-        name=FLAGS.sample_name_parent2,
-        role='parent2',
-        sam_readers=self.sam_reader_parent2,
-        in_memory_sam_reader=sam.InMemorySamReader([]),
-        pileup_height=self.options.height_parent,
-        order=[2, 1, 0])  # Swap the two parents when calling on parent2.
-
-    # Ordering here determines the default order of samples, and when a sample
-    # above has a custom .order, then this is the list those indices refer to.
-    self.samples = [parent1, child, parent2]
+    for sample in self.samples:
+      sample.sam_readers = self._make_sam_readers(
+          reads_filenames=sample.reads_filenames,
+          downsample_fraction=sample.downsample_fraction)
+      sample.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup != 'none':
       input_bam_header = sam.SamReader(self.options.reads_filename).header
@@ -1188,7 +1190,7 @@ class RegionProcessor(object):
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
         sample.in_memory_sam_reader.replace_reads(
-            self.region_reads(region, sample.sam_readers))
+            self.region_reads(region=region, sam_readers=sample.sam_readers))
 
     # Candidates are created using both parents and child
     candidates_dict, gvcfs_dict = self.candidates_in_region(region)
@@ -1223,8 +1225,8 @@ class RegionProcessor(object):
           region_timer.Stop())
     return candidates_dict, examples_dict, gvcfs_dict
 
-  def region_reads(self, region, sam_reader):
-    """Update in_memory_sam_reader with read alignments overlapping the region.
+  def region_reads(self, region, sam_readers):
+    """Gets read alignments overlapping the region and optionally realigns them.
 
     If self.options.realigner_enabled is set, uses realigned reads, otherwise
     original reads are returned.
@@ -1232,14 +1234,41 @@ class RegionProcessor(object):
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to realign reads.
-      sam_reader: sam.SamReader class for querying reads from SAM/BAM.
+      sam_readers: An iterable of sam.SamReader to query from.
 
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
     """
-    if sam_reader is None:
+    if sam_readers is None:
       return []
-    reads = sam_reader.query(region)
+
+    reads = []
+    for sam_reader_index, sam_reader in enumerate(sam_readers):
+      try:
+        reads.extend(sam_reader.query(region))
+      except ValueError as err:
+        error_message = str(err)
+        if error_message.startswith('Data loss:'):
+          raise ValueError(error_message + '\nFailed to parse BAM/CRAM file. '
+                           'This is often caused by:\n'
+                           '(1) When using a CRAM file, and setting '
+                           '--use_ref_for_cram to false (which means you want '
+                           'to use the embedded ref instead of a ref file), '
+                           'this error could be because of inability to find '
+                           'the embedded ref file.\n'
+                           '(2) Your BAM/CRAM file could be corrupted. Please '
+                           'check its md5.\n'
+                           'If you cannot find out the reason why this error '
+                           'is occurring, please report to '
+                           'https://github.com/google/deepvariant/issues')
+        elif error_message.startswith('Not found: Unknown reference_name '):
+          raise ValueError('{}\nThe region {} does not exist in {}.'.format(
+              error_message, ranges.to_literal(region),
+              self.options.reads_filenames[sam_reader_index]))
+        else:
+          # By default, raise the ValueError as is for now.
+          raise err
+
     if self.options.max_reads_per_partition > 0:
       random_for_region = np.random.RandomState(self.options.random_seed)
       reads = utils.reservoir_sample(reads,
@@ -1704,14 +1733,14 @@ def get_example_counts(examples):
   return labels, types
 
 
-def make_examples_runner(options):
+def make_examples_runner(options, samples):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
   logging.info('Preparing inputs')
   regions = processing_regions_from_options(options)
 
   # Create a processor to create candidates and examples for each region.
-  region_processor = RegionProcessor(options)
+  region_processor = RegionProcessor(options, samples=samples)
   region_processor.initialize()
 
   logging.info('Writing examples to %s', options.examples_filename)
@@ -1808,6 +1837,105 @@ def make_examples_runner(options):
   logging.info('Created %s examples', n_examples)
 
 
+def check_options_are_valid(options):
+  """Checks that all the options chosen make sense together."""
+
+  # Check arguments that apply to any mode.
+  if not options.reference_filename:
+    errors.log_and_raise('ref argument is required.', errors.CommandLineError)
+  if not options.reads_filename:
+    errors.log_and_raise('reads argument is required.', errors.CommandLineError)
+  if not options.examples_filename:
+    errors.log_and_raise('examples argument is required.',
+                         errors.CommandLineError)
+  if options.n_cores != 1:
+    errors.log_and_raise(
+        'Currently only supports n_cores == 1 but got {}.'.format(
+            options.n_cores), errors.CommandLineError)
+
+  if in_training_mode(options):
+    if not options.truth_variants_filename:
+      errors.log_and_raise('truth_variants is required when in training mode.',
+                           errors.CommandLineError)
+    if not options.confident_regions_filename:
+      errors.log_and_raise(
+          'confident_regions is required when in training mode.',
+          errors.CommandLineError)
+    if options.gvcf_filename:
+      errors.log_and_raise('gvcf is not allowed in training mode.',
+                           errors.CommandLineError)
+  else:
+    # Check for argument issues specific to calling mode.
+    if (options.variant_caller_options_child.sample_name == _UNKNOWN_SAMPLE or
+        (FLAGS.sample_name_parent1 and
+         options.variant_caller_options_parent1.sample_name == _UNKNOWN_SAMPLE)
+        or (FLAGS.sample_name_parent2 and
+            options.variant_caller_options_parent2.sample_name
+            == _UNKNOWN_SAMPLE)):
+      errors.log_and_raise(
+          'sample_name must be specified for all samples in calling mode.',
+          errors.CommandLineError)
+    if options.variant_caller_options_child.gq_resolution < 1:
+      errors.log_and_raise('gq_resolution must be a non-negative integer.',
+                           errors.CommandLineError)
+
+  # Sanity check the sample_names.
+  if (options.variant_caller_options_child.sample_name
+      == FLAGS.sample_name_parent1 or
+      options.variant_caller_options_child.sample_name
+      == FLAGS.sample_name_parent2):
+    errors.log_and_raise(
+        'The sample_name of the child is the same as one of '
+        'the parents.', errors.CommandLineError)
+  # If --sample_name_to_call is not set, use the child's sample_name.
+  # This is for backward compatibility.
+  if FLAGS.sample_name_to_call is None:
+    FLAGS.sample_name_to_call = options.variant_caller_options_child.sample_name
+  if FLAGS.sample_name_to_call not in [
+      options.variant_caller_options_child.sample_name,
+      FLAGS.sample_name_parent1, FLAGS.sample_name_parent2
+  ]:
+    errors.log_and_raise('--sample_name_to_call has to be one of the trio.',
+                         errors.CommandLineError)
+
+  multiplier = FLAGS.vsc_min_fraction_multiplier
+  if multiplier <= 0 or multiplier > 1.0:
+    errors.log_and_raise(
+        '--vsc_min_fraction_multiplier must be within (0-1] interval.',
+        errors.CommandLineError)
+
+
+def samples_from_options(options):
+  """Create an array of three samples from the options given."""
+
+  # Keep each sample organized with its relevant info.
+  child = make_examples_utils.Sample(
+      name=FLAGS.sample_name,
+      role='child',
+      reads_filenames=[options.reads_filename],
+      pileup_height=options.height_child,
+      order=[0, 1, 2],
+      downsample_fraction=options.downsample_fraction_child)
+  parent1 = make_examples_utils.Sample(
+      name=FLAGS.sample_name_parent1,
+      role='parent1',
+      reads_filenames=[options.reads_parent1_filename],
+      pileup_height=options.height_parent,
+      order=[0, 1, 2],
+      downsample_fraction=options.downsample_fraction_parents)
+  parent2 = make_examples_utils.Sample(
+      name=FLAGS.sample_name_parent2,
+      role='parent2',
+      reads_filenames=[options.reads_parent2_filename],
+      pileup_height=options.height_parent,
+      order=[2, 1, 0],  # Swap the two parents when calling on parent2.
+      downsample_fraction=options.downsample_fraction_parents)
+
+  # Ordering here determines the default order of samples, and when a sample
+  # above has a custom .order, then this is the list those indices refer to.
+  return [parent1, child, parent2]
+
+
 def main(argv=()):
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
@@ -1824,75 +1952,13 @@ def main(argv=()):
 
     # Set up options; may do I/O.
     options = default_options(add_flags=True, flags_obj=FLAGS)
+    check_options_are_valid(options)
 
-    # Check arguments that apply to any mode.
-    if not options.reference_filename:
-      errors.log_and_raise('ref argument is required.', errors.CommandLineError)
-    if not options.reads_filename:
-      errors.log_and_raise('reads argument is required.',
-                           errors.CommandLineError)
-    if not options.examples_filename:
-      errors.log_and_raise('examples argument is required.',
-                           errors.CommandLineError)
-    if options.n_cores != 1:
-      errors.log_and_raise(
-          'Currently only supports n_cores == 1 but got {}.'.format(
-              options.n_cores), errors.CommandLineError)
+    # Define samples. This is an array of three samples in DeepTrio.
+    samples = samples_from_options(options)
 
-    if in_training_mode(options):
-      if not options.truth_variants_filename:
-        errors.log_and_raise(
-            'truth_variants is required when in training mode.',
-            errors.CommandLineError)
-      if not options.confident_regions_filename:
-        errors.log_and_raise(
-            'confident_regions is required when in training mode.',
-            errors.CommandLineError)
-      if options.gvcf_filename:
-        errors.log_and_raise('gvcf is not allowed in training mode.',
-                             errors.CommandLineError)
-    else:
-      # Check for argument issues specific to calling mode.
-      if (options.variant_caller_options_child.sample_name == _UNKNOWN_SAMPLE or
-          (FLAGS.sample_name_parent1 and
-           options.variant_caller_options_parent1.sample_name == _UNKNOWN_SAMPLE
-          ) or
-          (FLAGS.sample_name_parent2 and
-           options.variant_caller_options_parent2.sample_name == _UNKNOWN_SAMPLE
-          )):
-        errors.log_and_raise(
-            'sample_name must be specified for all samples in calling mode.',
-            errors.CommandLineError)
-      if options.variant_caller_options_child.gq_resolution < 1:
-        errors.log_and_raise('gq_resolution must be a non-negative integer.',
-                             errors.CommandLineError)
-
-    # Sanity check the sample_names.
-    if (options.variant_caller_options_child.sample_name ==
-        FLAGS.sample_name_parent1 or
-        options.variant_caller_options_child.sample_name ==
-        FLAGS.sample_name_parent2):
-      errors.log_and_raise(
-          'The sample_name of the child is the same as one of '
-          'the parents.', errors.CommandLineError)
-    # If --sample_name_to_call is not set, use the child's sample_name.
-    # This is for backward compatibility.
-    if FLAGS.sample_name_to_call is None:
-      FLAGS.sample_name_to_call = options.variant_caller_options_child.sample_name
-    if FLAGS.sample_name_to_call not in [
-        options.variant_caller_options_child.sample_name,
-        FLAGS.sample_name_parent1, FLAGS.sample_name_parent2
-    ]:
-      errors.log_and_raise('--sample_name_to_call has to be one of the trio.',
-                           errors.CommandLineError)
-
-    multiplier = FLAGS.vsc_min_fraction_multiplier
-    if multiplier <= 0 or multiplier > 1.0:
-      errors.log_and_raise(
-          '--vsc_min_fraction_multiplier must be within (0-1] interval.',
-          errors.CommandLineError)
     # Run!
-    make_examples_runner(options)
+    make_examples_runner(options, samples=samples)
 
 
 if __name__ == '__main__':

@@ -653,12 +653,16 @@ message DeepVariantOptions {
   // Path to output optional runtime profiling by region.
   string runtime_by_region = 36;
 
+  // Use --ref argument as the reference file for the CRAM.
   bool use_ref_for_cram = 37;
 
+  // Parse aux fields from BAM -- needed for some features like using HP tags.
   bool parse_sam_aux_fields = 38;
 
+  // Size of blocks to read from BAM.
   int32 hts_block_size = 39;
 
+  // How often to show log messages.
   int32 logging_every_n_candidates = 40;
 
   string customized_classes_labeler_classes_list = 41;

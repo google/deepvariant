@@ -38,7 +38,7 @@ import "third_party/nucleus/protos/reads.proto";
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepTrio end-to-end.
-// Next ID: 40.
+// Next ID: 44.
 message DeepTrioOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -197,6 +197,18 @@ message DeepTrioOptions {
 
   // per-sample statistics for training examples.
   string bam_fname = 39;
+
+  // Use --ref argument as the reference file for the CRAM.
+  bool use_ref_for_cram = 40;
+
+  // Parse aux fields from BAM -- needed for some features like using HP tags.
+  bool parse_sam_aux_fields = 41;
+
+  // Size of blocks to read from BAM.
+  int32 hts_block_size = 42;
+
+  // How often to show log messages.
+  int32 logging_every_n_candidates = 43;
 }
 
 // Next ID: 18.

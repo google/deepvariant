@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import collections
 import time
+from typing import Optional, Sequence, List
 
 
 
@@ -638,8 +639,22 @@ class RegionProcessor(object):
   def _encode_tensor(self, image_tensor):
     return image_tensor.tostring(), image_tensor.shape, 'raw'
 
-  def _make_sam_readers(self, reads_filenames):
-    """Creates a list of SamReaders from self.options.reads_filenames."""
+  def _make_sam_readers(
+      self, reads_filenames: Sequence[str],
+      downsample_fraction: float) -> Optional[List[sam.SamReader]]:
+    """Creates a list of SamReaders, one from each filename.
+
+    Args:
+      reads_filenames: A list of string read filenames (e.g. for BAM/CRAM
+        files). The list may contain empty strings or None, which will be
+        skipped.
+      downsample_fraction: Fraction by which to downsample. This applies to each
+        file in reads_filenames separately.
+
+    Returns:
+      A list of sam readers with handles to the files. This may be shorter than
+      the input reads_filenames if any of the filenames were empty.
+    """
     logging_with_options(
         self.options,
         'Starting from v0.9.0, --use_ref_for_cram is default to true. '
@@ -647,18 +662,19 @@ class RegionProcessor(object):
         'using the reference you passed in with --ref')
     readers = []
     for reads_filename in reads_filenames:
-      readers.append(
-          sam.SamReader(
-              reads_filename,
-              ref_path=self.options.reference_filename
-              if self.options.use_ref_for_cram else None,
-              read_requirements=self.options.read_requirements,
-              parse_aux_fields=self.options.parse_sam_aux_fields,
-              hts_block_size=self.options.hts_block_size,
-              downsample_fraction=self.options.downsample_fraction,
-              random_seed=self.options.random_seed,
-              use_original_base_quality_scores=self.options
-              .use_original_quality_scores))
+      if reads_filename:
+        readers.append(
+            sam.SamReader(
+                reads_filename,
+                ref_path=self.options.reference_filename
+                if self.options.use_ref_for_cram else None,
+                read_requirements=self.options.read_requirements,
+                parse_aux_fields=self.options.parse_sam_aux_fields,
+                hts_block_size=self.options.hts_block_size,
+                downsample_fraction=downsample_fraction,
+                random_seed=self.options.random_seed,
+                use_original_base_quality_scores=self.options
+                .use_original_quality_scores))
     return readers
 
   def initialize(self):
@@ -669,7 +685,9 @@ class RegionProcessor(object):
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
 
     for sample in self.samples:
-      sample.sam_readers = self._make_sam_readers(sample.reads_filenames)
+      sample.sam_readers = self._make_sam_readers(
+          reads_filenames=sample.reads_filenames,
+          downsample_fraction=self.options.downsample_fraction)
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.use_allele_frequency:
@@ -847,34 +865,35 @@ class RegionProcessor(object):
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
     """
+    if sam_readers is None:
+      return []
+
     reads = []
-    if sam_readers is not None:
-      for sam_reader_index, sam_reader in enumerate(sam_readers):
-        try:
-          reads.extend(sam_reader.query(region))
-        except ValueError as err:
-          error_message = str(err)
-          if error_message.startswith('Data loss:'):
-            raise ValueError(
-                error_message + '\nFailed to parse BAM/CRAM file. '
-                'This is often caused by:\n'
-                '(1) When using a CRAM file, and setting '
-                '--use_ref_for_cram to false (which means you want '
-                'to use the embedded ref instead of a ref file), '
-                'this error could be because of inability to find '
-                'the embedded ref file.\n'
-                '(2) Your BAM/CRAM file could be corrupted. Please '
-                'check its md5.\n'
-                'If you cannot find out the reason why this error '
-                'is occurring, please report to '
-                'https://github.com/google/deepvariant/issues')
-          elif error_message.startswith('Not found: Unknown reference_name '):
-            raise ValueError('{}\nThe region {} does not exist in {}.'.format(
-                error_message, ranges.to_literal(region),
-                self.options.reads_filenames[sam_reader_index]))
-          else:
-            # By default, raise the ValueError as is for now.
-            raise err
+    for sam_reader_index, sam_reader in enumerate(sam_readers):
+      try:
+        reads.extend(sam_reader.query(region))
+      except ValueError as err:
+        error_message = str(err)
+        if error_message.startswith('Data loss:'):
+          raise ValueError(error_message + '\nFailed to parse BAM/CRAM file. '
+                           'This is often caused by:\n'
+                           '(1) When using a CRAM file, and setting '
+                           '--use_ref_for_cram to false (which means you want '
+                           'to use the embedded ref instead of a ref file), '
+                           'this error could be because of inability to find '
+                           'the embedded ref file.\n'
+                           '(2) Your BAM/CRAM file could be corrupted. Please '
+                           'check its md5.\n'
+                           'If you cannot find out the reason why this error '
+                           'is occurring, please report to '
+                           'https://github.com/google/deepvariant/issues')
+        elif error_message.startswith('Not found: Unknown reference_name '):
+          raise ValueError('{}\nThe region {} does not exist in {}.'.format(
+              error_message, ranges.to_literal(region),
+              self.options.reads_filenames[sam_reader_index]))
+        else:
+          # By default, raise the ValueError as is for now.
+          raise err
 
     if self.options.max_reads_per_partition > 0:
       random_for_region = np.random.RandomState(self.options.random_seed)

@@ -58,6 +58,7 @@ class Sample(object):
   order: List of integers indicating the order in which samples should be shown
       in the pileup image when calling on this sample. The indices refer to the
       list of samples in the regionprocessor.
+  downsample_fraction: Fraction by which to downsample the reads.
   """
   name: Optional[str] = None
   role: Optional[str] = None
@@ -67,6 +68,7 @@ class Sample(object):
   variant_caller_options: Optional[deepvariant_pb2.VariantCallerOptions] = None
   pileup_height: Optional[int] = None
   order: Optional[Sequence[int]] = None
+  downsample_fraction: Optional[float] = None
 
   def __init__(self,
                name=None,
@@ -76,7 +78,8 @@ class Sample(object):
                in_memory_sam_reader=None,
                variant_caller_options=None,
                pileup_height=None,
-               order=None):
+               order=None,
+               downsample_fraction=None):
     self.name = name
     self.role = role
     self.reads_filenames = reads_filenames
@@ -84,6 +87,7 @@ class Sample(object):
     self.in_memory_sam_reader = in_memory_sam_reader
     self.variant_caller_options = variant_caller_options
     self.order = order
+    self.downsample_fraction = downsample_fraction
 
     if pileup_height is not None:
       # Downstream, None defaults to the PileupImageOptions height.
