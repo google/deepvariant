@@ -163,6 +163,7 @@ def _extra_args_to_dict(extra_args):
     return args_dict
   for extra_arg in extra_args.split(','):
     (flag_name, flag_value) = extra_arg.split('=')
+    flag_name = flag_name.strip('-')
     # Check for boolean values.
     if flag_value.lower() == 'true':
       flag_value = True
