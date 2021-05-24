@@ -213,7 +213,7 @@ def make_examples_command(ref,
                           extra_args,
                           runtime_by_region_path=None,
                           **kwargs):
-  """Returns a make_examples command for subprocess.check_call.
+  """Returns a make_examples (command, logfile) for subprocess.
 
   Args:
     ref: Input FASTA file.
@@ -224,10 +224,10 @@ def make_examples_command(ref,
     **kwargs: Additional arguments to pass in for make_examples.
 
   Returns:
-    (string) A command to run.
+    (string, string) A command to run, and a log file to output to.
   """
   command = [
-      '(', 'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
+      'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
       'parallel -q --halt 2 --line-buffer', '/opt/deepvariant/bin/make_examples'
   ]
   command.extend(['--mode', 'calling'])
@@ -255,17 +255,17 @@ def make_examples_command(ref,
                                        conflict_args)
   command = _extend_command_by_args_dict(command, kwargs)
 
-  command.extend(['--task {}', ')'])
+  command.extend(['--task {}'])
+  logfile = None
   if FLAGS.logging_dir:
-    command.extend(
-        ['2>&1 | tee {}/make_examples.log'.format(FLAGS.logging_dir)])
-  return ' '.join(command)
+    logfile = '{}/make_examples.log'.format(FLAGS.logging_dir)
+  return (' '.join(command), logfile)
 
 
 def call_variants_command(outfile, examples, model_ckpt,
                           intermediate_results_dir, extra_args):
-  """Returns a call_variants command for subprocess.check_call."""
-  command = ['(', 'time', '/opt/deepvariant/bin/call_variants']
+  """Returns a call_variants (command, logfile) for subprocess."""
+  command = ['time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
@@ -277,11 +277,10 @@ def call_variants_command(outfile, examples, model_ckpt,
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
-  command.extend([')'])
+  logfile = None
   if FLAGS.logging_dir:
-    command.extend(
-        ['2>&1 | tee {}/call_variants.log'.format(FLAGS.logging_dir)])
-  return ' '.join(command)
+    logfile = '{}/call_variants.log'.format(FLAGS.logging_dir)
+  return (' '.join(command), logfile)
 
 
 def postprocess_variants_command(ref,
@@ -292,8 +291,8 @@ def postprocess_variants_command(ref,
                                  gvcf_outfile=None,
                                  vcf_stats_report=True,
                                  sample_name=None):
-  """Returns a postprocess_variants command for subprocess.check_call."""
-  command = ['(', 'time', '/opt/deepvariant/bin/postprocess_variants']
+  """Returns a postprocess_variants (command, logfile) for subprocess."""
+  command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
@@ -311,25 +310,23 @@ def postprocess_variants_command(ref,
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
-  command.extend([')'])
+  logfile = None
   if FLAGS.logging_dir:
-    command.extend(
-        ['2>&1 | tee {}/postprocess_variants.log'.format(FLAGS.logging_dir)])
-  return ' '.join(command)
+    logfile = '{}/postprocess_variants.log'.format(FLAGS.logging_dir)
+  return (' '.join(command), logfile)
 
 
 def runtime_by_region_vis_command(runtime_by_region_path: str):
-  """Returns a runtime_by_region_vis command for subprocess.check_call."""
+  """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
   runtime_report = os.path.join(FLAGS.logging_dir,
                                 'make_examples_runtime_by_region_report.html')
 
-  command = ['(', 'time', '/opt/deepvariant/bin/runtime_by_region_vis']
+  command = ['time', '/opt/deepvariant/bin/runtime_by_region_vis']
   command.extend(['--input', '"{}"'.format(runtime_by_region_path)])
   command.extend(['--title', '"{}"'.format('DeepVariant')])
   command.extend(['--output', '"{}"'.format(runtime_report)])
 
-  command.extend([')'])
-  return ' '.join(command)
+  return (' '.join(command), None)
 
 
 def check_or_create_intermediate_results_dir(intermediate_results_dir):
@@ -367,8 +364,8 @@ def get_model_ckpt(model_type, customized_model):
     return MODEL_TYPE_MAP[model_type]
 
 
-def create_all_commands(intermediate_results_dir):
-  """Creates 3 commands to be executed later."""
+def create_all_commands_and_logfiles(intermediate_results_dir):
+  """Creates 3 (command, logfile) to be executed later."""
   check_flags()
   commands = []
   # make_examples
@@ -454,17 +451,29 @@ def main(_):
     logging.info('Creating a directory for logs in %s', FLAGS.logging_dir)
     os.makedirs(FLAGS.logging_dir)
 
-  commands = create_all_commands(intermediate_results_dir)
+  commands_logfiles = create_all_commands_and_logfiles(intermediate_results_dir)
   print('\n***** Intermediate results will be written to {} '
         'in docker. ****\n'.format(intermediate_results_dir))
-  for command in commands:
+  for command, logfile in commands_logfiles:
     print('\n***** Running the command:*****\n{}\n'.format(command))
     if not FLAGS.dry_run:
-      try:
-        subprocess.check_call(command, shell=True, executable='/bin/bash')
-      except subprocess.CalledProcessError as e:
-        logging.info(e.output)
-        raise
+      fp = open(logfile, 'w') if logfile is not None else None
+      with subprocess.Popen(
+          command,
+          stdout=subprocess.PIPE,
+          stderr=subprocess.STDOUT,
+          bufsize=1,
+          shell=True,
+          executable='/bin/bash',
+          universal_newlines=True) as proc:
+        for line in proc.stdout:
+          print(line, end='')
+          if fp is not None:
+            print(line, end='', file=fp)
+      if fp is not None:
+        fp.close()
+      if proc.returncode != 0:
+        sys.exit(proc.returncode)
 
 
 if __name__ == '__main__':
