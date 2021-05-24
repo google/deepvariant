@@ -8,20 +8,20 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 97m
-call_variants                    | 249m (211m with OpenVINO<sup>[*](#vfootnote1)</sup>)
-postprocess_variants (with gVCF) | 88m
-total                            | 434m = 7.2 hours
+make_examples                    | 110m
+call_variants                    | 239m (181m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+postprocess_variants (with gVCF) | 77m
+total                            | 426m = 7.1 hours
 
 ### Accuracy
 
 hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
 held out while training.
 
-Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
------ | ------- | ----- | ---- | -------- | --------- | --------
-Indel |  501470 |  3031 | 1380 | 0.993992 | 0.997367  | 0.995677
-SNP   | 3306945 | 20551 | 6042 | 0.993824 | 0.998177  | 0.995996
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 501474   | 3027     | 1361     | 0.994000      | 0.997403         | 0.995698        |
+| SNP   | 3306946  | 20550    | 6079     | 0.993824      | 0.998166         | 0.995990        |
 
 ## WES (Illumina)
 
@@ -41,10 +41,10 @@ total                            | 11m
 hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
 held out while training.
 
-Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
------ | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 1022    | 29   | 19   | 0.972407 | 0.982075  | 0.977217
-SNP   | 24964   | 315  | 167  | 0.987539 | 0.993355  | 0.990439
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 1021     | 30       | 20       | 0.971456      | 0.981132         | 0.976270        |
+| SNP   | 24964    | 315      | 167      | 0.987539      | 0.993355         | 0.990439        |
 
 
 ## PacBio (HiFi)
@@ -55,10 +55,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 115m
-call_variants                    | 206m (175m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+make_examples                    | 120m
+call_variants                    | 216m (178m with OpenVINO<sup>[*](#vfootnote1)</sup>)
 postprocess_variants (with gVCF) | 71m
-total                            | 392m = 6.5 hours
+total                            | 407m = 6.8 hours
 
 ### Accuracy
 
@@ -68,10 +68,10 @@ held out while training.
 (The input BAM is phased already and DeepVariant was run with
 `--use_hp_information=true`.)
 
-Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
------ | ------- | ---- | ---- | -------- | --------- | --------
-Indel |  501517 | 2984 | 2837 | 0.994085 | 0.994597  | 0.994341
-SNP   | 3323836 | 3659 | 2146 | 0.998900 | 0.999355  | 0.999128
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 501999   | 2502     | 2718     | 0.995041      | 0.994828         | 0.994934        |
+| SNP   | 3323838  | 3657     | 2143     | 0.998901      | 0.999356         | 0.999129        |
 
 ## Hybrid (Illumina + PacBio HiFi)
 
@@ -81,20 +81,20 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 153m
-call_variants                    | 252m (201m with OpenVINO<sup>[*](#vfootnote1)</sup>)
-postprocess_variants (with gVCF) | 62m
-total                            | 467 m = 7.8 hours
+make_examples                    | 160m
+call_variants                    | 244m (204m with OpenVINO<sup>[*](#vfootnote1)</sup>)
+postprocess_variants (with gVCF) | 56m
+total                            | 460 m = 7.7 hours
 
 ### Accuracy
 
 Evaluating on HG003 (all chromosomes, using NIST v4.2.1 truth), which was held
 out while training the hybrid model.
 
-Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
------ | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 504501  | 1330 | 2144 | 0.997364 | 0.995959  | 0.996661
-SNP   | 3327495 | 3841 | 1904 | 0.998846 | 0.999428  | 0.999137
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 503179   | 1322     | 2144     | 0.99738       | 0.995959         | 0.996669        |
+| SNP   | 3323669  | 3826     | 1928     | 0.99885       | 0.999421         | 0.999135        |
 
 ## How to reproduce the metrics on this page
 
