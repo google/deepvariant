@@ -350,7 +350,10 @@ class DiagnosticLogger(object):
     if self.enabled and self.config.emit_realigned_reads and shared_header is not None:
       path = self._file_for_region(region, self.realigned_reads_filename)
       with sam.SamWriter(path, header=shared_header) as writer:
-        for read in reads:
+        # For realigned reads, sorting by just looking at starting position is
+        # enough.
+        for read in sorted(
+            reads, key=lambda read: read.alignment.position.position):
           writer.write(read)
 
   def log_graph_metrics(self, region, graph, candidate_haplotypes,
