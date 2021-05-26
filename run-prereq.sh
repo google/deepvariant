@@ -35,7 +35,7 @@
 
 set -euo pipefail
 
-echo ========== This script is only maintained for Ubuntu 18.04.
+echo ========== This script is only maintained for Ubuntu 20.04.
 echo ========== Load config settings.
 
 source settings.sh
@@ -72,17 +72,18 @@ note_build_stage "run-prereq.sh: Install development packages"
 # Need to wait for dpkg lock (see internal)
 wait_for_dpkg_lock
 
-sudo -H apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null
+# See https://askubuntu.com/questions/909277.
+sudo -H DEBIAN_FRONTEND=noninteractive apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null
 sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
 
-sudo -H apt-get install "${APT_ARGS[@]}" python3.6-dev
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 0
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.6 0
+sudo -H apt-get install "${APT_ARGS[@]}" "python${PYTHON_VERSION}-dev"
+sudo update-alternatives --install /usr/bin/python3 python3 "/usr/bin/python${PYTHON_VERSION}" 0
+sudo update-alternatives --install /usr/bin/python python "/usr/bin/python${PYTHON_VERSION}" 0
 # If we install python3-pip directly, the pip3 version points to:
 #   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
-# Use the following lines to ensure 3.6.
+# Use the following lines to ensure correct Python version.
 curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
 python3 get-pip.py --force-reinstall --user
 rm -f get-pip.py
@@ -126,7 +127,7 @@ pip3 install "${PIP_ARGS[@]}" 'six>=1.11.0'
 pip3 install "${PIP_ARGS[@]}" joblib
 pip3 install "${PIP_ARGS[@]}" psutil
 pip3 install "${PIP_ARGS[@]}" --upgrade google-api-python-client
-pip3 install "${PIP_ARGS[@]}" 'pandas==0.24.1'
+pip3 install "${PIP_ARGS[@]}" 'pandas==1.2.4'
 pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 pip3 install "${PIP_ARGS[@]}" 'Pillow>=5.4.1'
 pip3 install "${PIP_ARGS[@]}" 'ipython>=7.9.0'

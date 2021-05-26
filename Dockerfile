@@ -11,7 +11,9 @@
 # $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
 
 
-ARG FROM_IMAGE=ubuntu:18.04
+ARG FROM_IMAGE=ubuntu:20.04
+# PYTHON_VERSION is also set in settings.sh.
+ARG PYTHON_VERSION=3.8
 ARG DV_GPU_BUILD=0
 ARG DV_OPENVINO_BUILD=0
 ARG VERSION=1.1.0
@@ -43,9 +45,11 @@ FROM ${FROM_IMAGE}
 ARG DV_GPU_BUILD
 ARG DV_OPENVINO_BUILD
 ARG VERSION
+ARG PYTHON_VERSION
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ENV DV_OPENVINO_BUILD=${DV_OPENVINO_BUILD}
 ENV VERSION ${VERSION}
+ENV PYTHON_VERSION ${PYTHON_VERSION}
 
 RUN echo "Acquire::http::proxy \"$http_proxy\";\n" \
          "Acquire::https::proxy \"$https_proxy\";" > "/etc/apt/apt.conf"
@@ -69,9 +73,8 @@ COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
 
 RUN ./run-prereq.sh
 
-# Make python3.6 default.
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 0 && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.6 0
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 0 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 0
 
 # Create shell wrappers for python zip files for easier use.
 RUN \
@@ -154,7 +157,7 @@ RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
 RUN apt-get -y update && \
   apt-get install -y parallel python3-pip samtools && \
-  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.8.1 && \
+  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.9.0 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \
   rm -rf /var/lib/apt/lists/*
