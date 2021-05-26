@@ -52,6 +52,7 @@ import mock
 import numpy as np
 import six
 
+from deepvariant import dv_constants
 from deepvariant import make_examples
 from deepvariant import make_examples_core
 from deepvariant import testdata
@@ -381,7 +382,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, None, options, verify_labels=mode == 'training')
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
-    self.assertEqual(decode_example(examples[0])['image/shape'], [100, 221, 6])
+    self.assertEqual(
+        decode_example(examples[0])['image/shape'],
+        [100, 221, dv_constants.PILEUP_NUM_CHANNELS])
 
   @flagsaver.flagsaver
   def test_make_examples_training_vcf_candidate_importer_regions(self):
@@ -425,8 +428,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @parameterized.parameters(
-      dict(alt_align='rows', expected_shape=[300, 221, 6]),
-      dict(alt_align='diff_channels', expected_shape=[100, 221, 8]),
+      dict(
+          alt_align='rows',
+          expected_shape=[300, 221, dv_constants.PILEUP_NUM_CHANNELS]),
+      dict(
+          alt_align='diff_channels',
+          expected_shape=[100, 221, dv_constants.PILEUP_NUM_CHANNELS + 2]),
   )
   @flagsaver.flagsaver
   def test_make_examples_training_end2end_with_alt_aligned_pileup(
@@ -559,7 +566,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, region, options, verify_labels=False)
 
     # Pileup images should have one extra channel.
-    self.assertEqual([100, 221, 7], decode_example(examples[0])['image/shape'])
+    self.assertEqual([100, 221, dv_constants.PILEUP_NUM_CHANNELS + 1],
+                     decode_example(examples[0])['image/shape'])
 
     # Test there is something in the added channel.
     # Values capture whether each loci has been seen in the observed examples.
@@ -574,11 +582,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       if locus_id in population_matched_loci.keys():
         channels = vis.channels_from_example(example)
         self.assertGreater(
-            np.sum(channels[6]),
+            np.sum(channels[dv_constants.PILEUP_NUM_CHANNELS]),
             0,
             msg='There should be '
-            'something in the 7th channel for variant '
-            '%s' % locus_id)
+            'something in the %s-th channel for variant '
+            '%s' % (dv_constants.PILEUP_NUM_CHANNELS + 1, locus_id))
         population_matched_loci[locus_id] = True
     self.assertTrue(
         all(population_matched_loci.values()),
