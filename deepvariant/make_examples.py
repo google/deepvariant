@@ -374,7 +374,8 @@ def default_options(add_flags=True, flags_obj=None):
       p_error=0.001,
       max_gq=50,
       gq_resolution=flags_obj.gvcf_gq_binsize,
-      ploidy=2)
+      ploidy=2,
+      skip_uncalled_genotypes=flags_obj.mode == 'training')
 
   options = deepvariant_pb2.DeepVariantOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,

@@ -307,7 +307,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 13
+// Next ID: 14
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -352,6 +352,11 @@ message VariantCallerOptions {
   // caller to handle other ploidy values we don't have to update all of those
   // constants.
   int32 ploidy = 11;
+
+  // Skip uncalled genotypes. This is used with the VCF Candidate Importer
+  // during training so that uncalled ./. genotypes are not used to generate
+  // and label examples.
+  bool skip_uncalled_genotypes = 13;
 }
 
 // Options to control how we label variant calls.

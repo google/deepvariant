@@ -374,6 +374,17 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
   return variants;
 }
 
+bool is_uncalled_genotype(const Variant& variant) {
+  if (variant.calls_size() >= 1) {
+    VariantCall call = variant.calls().Get(0);
+    if (call.genotype().size() >= 2) {
+      return call.genotype().Get(0) == -1 &&
+             call.genotype().Get(1) == -1;
+    }
+  }
+  return false;
+}
+
 std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
     const std::vector<AlleleCount>& allele_counts,
     const Range& range,
@@ -383,6 +394,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
       vcf_reader_ptr->Query(range);
   if (status.ok()) {
     std::shared_ptr<nucleus::VariantIterable> variants = status.ValueOrDie();
+    bool warn_missing = false;
     for (const auto& v : variants) {
       const Variant* variant = v.ValueOrDie();
       // This ensures we only keep variants that start in this region.
@@ -390,6 +402,15 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
       // region, which can incorrectly cause the same variant to be processed
       // multiple times.
       if (variant->start() >= range.start()) {
+        if (options_.skip_uncalled_genotypes() &&
+            is_uncalled_genotype(*variant)) {
+          if (!warn_missing) {
+            LOG(WARNING) <<
+                "Uncalled genotypes (./.) present in VCF. These are skipped.";
+            warn_missing = true;
+          }
+          continue;
+        }
         Variant clean_variant;
         FillVariant(variant->reference_name(), variant->start(),
                     variant->reference_bases(), options_.sample_name(),

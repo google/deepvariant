@@ -987,6 +987,36 @@ TEST_F(VariantCallingTest, TestCallsFromVcfDetails) {
       "values { number_value: 0.2 }");
 }
 
+
+TEST_F(VariantCallingTest, TestTrainUncalledGenotypes) {
+  // For human readability, here is the content of the VCF:
+  /*
+  $ zcat learning/genomics/deepvariant/testdata/input/test_calls_from_vcf.vcf.gz
+  ##fileformat=VCFv4.2
+  ##contig=<ID=contigInHeaderWithCandidates,length=10>
+  ##contig=<ID=contigInHeaderNoCandidates,length=10>
+  #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  default
+  contigInHeaderWithCandidates    3       .       T       G       60      PASS    .       GT      ./.
+  contigNotInHeaderWithCandidates 1       .       A       G       60      PASS    .       GT      ./.
+  */
+  VariantCallerOptions options = MakeOptions();
+  options.set_skip_uncalled_genotypes(true);
+  const VariantCaller caller(options);
+  std::unique_ptr<nucleus::VcfReader> reader = std::move(
+      nucleus::VcfReader::FromFile(
+          nucleus::GetTestData("test_calls_from_vcf.vcf.gz",
+                               "deepvariant/testdata/input"),
+          nucleus::genomics::v1::VcfReaderOptions())
+          .ValueOrDie());
+  std::vector<AlleleCount> allele_count_not_used = {AlleleCount()};
+
+  // Querying in contigInHeaderWithCandidates returns 0 candidates.
+  std::vector<DeepVariantCall> candidates1 = caller.CallsFromVcf(
+      allele_count_not_used, MakeRange("contigInHeaderWithCandidates", 0, 5),
+      reader.get());
+  EXPECT_EQ(candidates1.size(), 0);
+}
+
 TEST_F(VariantCallingTest, TestCallsFromVariantsInRegion) {
   // Our test AlleleCounts are 5 positions:
   //
