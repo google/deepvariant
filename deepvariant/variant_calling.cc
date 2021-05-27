@@ -419,6 +419,9 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
         variants_in_region.push_back(clean_variant);
       }
     }
+  } else if (status.error_message() == "Cannot query without an index") {
+    LOG(FATAL) << "Error in VariantCaller::CallsFromVcf: "
+        << status.error_message();
   } else {
     LOG(WARNING) << nucleus::MakeIntervalStr(range)
         << " cannot be found in proposed VCF header. Skip this region.";
