@@ -211,7 +211,7 @@ message DeepTrioOptions {
   int32 logging_every_n_candidates = 43;
 }
 
-// Next ID: 18.
+// Next ID: 20.
 message DeepTrioInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
   message Dataset {
@@ -251,6 +251,10 @@ message DeepTrioInputDatasets {
     // Optional. Can be set to the sequencing type of the input BAM file: 'WGS'
     // or 'WES'.
     string sequencing_type = 10;
+
+    // Optional. Used in PacBio training.
+    bool sort_by_haplotypes = 18;
+    bool parse_sam_aux_fields = 19;
   }
   repeated Dataset datasets = 1;
   string group_name = 2;
