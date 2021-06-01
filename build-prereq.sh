@@ -120,16 +120,16 @@ if [[ ! -d ../tensorflow ]]; then
 fi
 
 # PYTHON_BIN_PATH and PYTHON_LIB_PATH are set in settings.sh.
+# I had to remove this line in tensorflow v2.5.0 because I got an ERROR:
+# rule() got unexpected keyword argument 'incompatible_use_toolchain_transition'.
 (cd ../tensorflow &&
  git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
+ sed -i -e 's/incompatible_use_toolchain_transition = True,//g' tensorflow/core/kernels/mlir_generated/build_defs.bzl &&
  echo | ./configure)
 
-# We use TensorFlow's .bazelrc as part of DeepVariant's. In it they use a java
-# toolchain flag based on a definition in a BUILD file in the TF repo. This
-# causes that flag's usage to raise build errors when building DeepVariant
-# unless we also include that BUILD file.
-mkdir -p third_party/toolchains/java
-cp ../tensorflow/third_party/toolchains/java/BUILD third_party/toolchains/java/
+note_build_stage "Set pyparsing to 2.2.0 for CLIF."
+export PATH="$HOME/.local/bin":$PATH
+pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
 
 note_build_stage "Set pyparsing to 2.2.0 for CLIF."
 export PATH="$HOME/.local/bin":$PATH

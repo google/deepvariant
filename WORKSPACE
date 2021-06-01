@@ -96,9 +96,22 @@ http_archive(
 )
 
 # Import all of the tensorflow dependencies.
-load("@org_tensorflow//tensorflow:workspace.bzl", "tf_workspace")
+# Copied from tensorflow/WORKSPACE. Updated in v2.5.0:
+load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
 
-tf_workspace(tf_repo_name = "org_tensorflow")
+tf_workspace3()
+
+load("@org_tensorflow//tensorflow:workspace2.bzl", "tf_workspace2")
+
+tf_workspace2()
+
+load("@org_tensorflow//tensorflow:workspace1.bzl", "tf_workspace1")
+
+tf_workspace1()
+
+load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
+
+tf_workspace0()
 
 new_local_repository(
     name = "clif",

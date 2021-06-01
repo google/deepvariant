@@ -411,7 +411,7 @@ function get_docker_image() {
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="deepvariant_gpu:latest"
       run "sudo docker build \
-        --build-arg=FROM_IMAGE=nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04 \
+        --build-arg=FROM_IMAGE=nvidia/cuda:11.3.0-cudnn8-devel-ubuntu20.04 \
         --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu ."
       run echo "Done building GPU Docker image ${IMAGE}."
       docker_args+=( --gpus 1 )

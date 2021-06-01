@@ -181,44 +181,32 @@ fi
 # See https://www.tensorflow.org/install/source#gpu for versions required.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   if [[ "${DV_INSTALL_GPU_DRIVERS}" = "1" ]]; then
-    # This script is only maintained for Ubuntu 18.04.
-    UBUNTU_VERSION="1804"
-    # https://www.tensorflow.org/install/gpu?hl=en#ubuntu_1804_cuda_101
+    # This script is only maintained for Ubuntu 20.04.
+    UBUNTU_VERSION="2004"
+    # https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_local
     echo "Checking for CUDA..."
-    if ! dpkg-query -W cuda-10-1; then
+    if ! dpkg-query -W cuda-11-3; then
       echo "Installing CUDA..."
-      CUDA_DEB="cuda-repo-ubuntu${UBUNTU_VERSION}_10.1.243-1_amd64.deb"
-      curl -O "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/${CUDA_DEB}"
+      CUDA_DEB="cuda-repo-ubuntu${UBUNTU_VERSION}-11-3-local_11.3.0-465.19.01-1_amd64.deb"
+      curl -O "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/cuda-ubuntu2004.pin"
+      sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
+      curl -O https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/"${CUDA_DEB}"
       sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
       sudo -H dpkg -i "./${CUDA_DEB}"
+      sudo apt-key add /var/cuda-repo-ubuntu2004-11-3-local/7fa2af80.pub
       sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-      ML_DEB="nvidia-machine-learning-repo-ubuntu${UBUNTU_VERSION}_1.0.0-1_amd64.deb"
-      curl -O "http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu${UBUNTU_VERSION}/x86_64/${ML_DEB}"
-      sudo -H apt-get install "${APT_ARGS[@]}" "./${ML_DEB}"
-      sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-      # Install development and runtime libraries (~4GB)
-      sudo -H apt-get install --no-install-recommends "${APT_ARGS[@]}" \
-          cuda-10-1 \
-          libcudnn7=7.6.5.32-1+cuda10.1  \
-          libcudnn7-dev=7.6.5.32-1+cuda10.1
-
-      # Install TensorRT. Requires that libcudnn7 is installed above.
-      sudo -H apt-get install --no-install-recommends "${APT_ARGS[@]}" \
-          libnvinfer6=6.0.1-1+cuda10.1 \
-          libnvinfer-dev=6.0.1-1+cuda10.1 \
-          libnvinfer-plugin6=6.0.1-1+cuda10.1
-      rm -f "./${CUDA_DEB}" "./${ML_DEB}"
+      sudo -H apt-get install "${APT_ARGS[@]}" cuda
     fi
     echo "Checking for CUDNN..."
-    if [[ ! -e /usr/local/cuda-10.1/include/cudnn.h ]]; then
+    if [[ ! -e /usr/local/cuda-11/include/cudnn.h ]]; then
       echo "Installing CUDNN..."
-      CUDNN_TAR_FILE="cudnn-10.1-linux-x64-v7.6.5.32.tgz"
-      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v7.6.5/${CUDNN_TAR_FILE}
+      CUDNN_TAR_FILE="cudnn-11.3-linux-x64-v8.2.0.53.tgz"
+      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v8.2.0/${CUDNN_TAR_FILE}
       tar -xzvf ${CUDNN_TAR_FILE}
-      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-10.1/include
-      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.1/lib64/
-      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-10.1/lib64/
-      sudo chmod a+r /usr/local/cuda-10.1/lib64/libcudnn*
+      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-11/include
+      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-11/lib64/
+      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-11/lib64/
+      sudo chmod a+r /usr/local/cuda-11/lib64/libcudnn*
       sudo ldconfig
     fi
     # Tensorflow says to do this.
