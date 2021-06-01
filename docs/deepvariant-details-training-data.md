@@ -26,6 +26,7 @@ v0.9    | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfo
 v0.10   | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
 v1.0    | 32 HG001<br>9 HG002<br>6 HG003<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(7)](#vfootnote7)</sup> | 10,716,281
 v1.1    | 41 HG001<br>9 HG002<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<br><sup>[(9)](#vfootnote9)</sup> | 13,450,688
+
 ### PACBIO models
 
 version | Replicates                  | #examples
@@ -35,6 +36,13 @@ v0.9    | 49 HG002 <sup>[(6)](#vfootnote6)</sup> | 357,507,235
 v0.10   | 49 HG002, 2 HG003, 2 HG004, 1 HG002 (amplified) <sup>[(6)](#vfootnote6)</sup> | 472,711,858
 v1.0    | 1 HG001<br>2 HG002<br>2 HG003<br>2 HG004<br>1 HG005 <sup>[(8)](#vfootnote8)</sup>  | 302,331,948
 v1.1    | 1 HG001<br>9 HG002<br>2 HG004<br>1 HG005<br><sup>[(9)](#vfootnote9)</sup> | 569,225,616
+
+### HYBRID models
+
+version | Replicates                                               | #examples
+------- | -------------------------------------------------------- | -----------
+v1.0    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 193,076,623
+v1.1    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 193,076,623
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
