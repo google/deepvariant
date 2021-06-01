@@ -422,6 +422,8 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
         SswSetReference(haplotypes_[hap_alignment.haplotype_index]);
         Alignment alignment = SswAlign(reads_[i]);
         if (alignment.sw_score > 0) {
+          // redacted
+          // not used.
           if (alignment.sw_score >= score_threshold ||
               (force_alignment_ && hap_alignment.is_reference)) {
             hap_alignment.read_alignment_scores[i].score = alignment.sw_score;
@@ -628,7 +630,9 @@ int AlignedLength(const std::list<CigarOp>& cigar) {
   return len;
 }
 
-// Merge cigar op to the end of the cigar.
+// Merge cigar op to the end of the output cigar.
+// <op> input parameter is always a one base operation to be merged.
+// <cigar> input/output parameter is our merged output cigar.
 // - If op.operation is the same as the last one in the cigar then the length
 //   of the last operation is increased by op.length.
 // - If op.operation is not the same then new operation is added to the cigar.
@@ -653,12 +657,37 @@ void MergeCigarOp(const CigarOp& op, int read_len, std::list<CigarOp>* cigar) {
   }
 
   // Special processing is used when merging INS and DEL. Going one base at a
-  // time INS and DEL annihilate each other.
+  // time INS and DEL cancel each other. In addition we need to add new
+  // match operations in place of removed INS and DEL. New Match operation is
+  // added right before the trailing INDEL operation.
   if ((op.operation == nucleus::genomics::v1::CigarUnit::INSERT
       && last_cigar_op == nucleus::genomics::v1::CigarUnit::DELETE)
       ||
      (op.operation == nucleus::genomics::v1::CigarUnit::DELETE
      && last_cigar_op == nucleus::genomics::v1::CigarUnit::INSERT)) {
+    // Determine the last element in the current cigar list.
+    std::list<CigarOp>::iterator last_element = cigar->end();
+    if (!cigar->empty()) {
+      last_element--;
+    }
+
+    // Determine one before last element in cigar list.
+    std::list<CigarOp>::iterator one_before_last = cigar->end();
+    if (cigar->size() > 1) {
+      one_before_last = std::prev(one_before_last, 2);
+    } else {
+      one_before_last = std::prev(one_before_last, 1);
+    }
+    if (one_before_last->operation !=
+        nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH) {
+      cigar->insert(last_element,
+          CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1));
+    } else {
+      one_before_last->length += 1;
+    }
+
+    // Reduce the size of the last operation. If last operation's length was 1
+    // then it is removed.
     if (cigar->back().length == 1) {
       cigar->pop_back();
     } else {
@@ -784,9 +813,9 @@ inline void MergeOneBaseOperations(
       nucleus::genomics::v1::CigarUnit::DELETE}));
 
     std::vector<CigarUnit::Operation> operations{
+        nucleus::genomics::v1::CigarUnit::CLIP_SOFT,
         nucleus::genomics::v1::CigarUnit::DELETE,
         nucleus::genomics::v1::CigarUnit::INSERT,
-        nucleus::genomics::v1::CigarUnit::CLIP_SOFT,
         nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH
         };
     for (auto op : operations) {
@@ -868,43 +897,43 @@ void FastPassAligner::CalculateReadToRefAlignment(
     }
 
     while (cur_read_to_hap_op.length > 0 && cur_hap_to_ref_op.length > 0) {
-        if ((cur_read_to_hap_op.operation
-                == nucleus::genomics::v1::CigarUnit::DELETE &&
-            cur_hap_to_ref_op.operation
-                == nucleus::genomics::v1::CigarUnit::INSERT)
-             ||
-            (cur_read_to_hap_op.operation
-                == nucleus::genomics::v1::CigarUnit::INSERT &&
-            cur_hap_to_ref_op.operation
-                == nucleus::genomics::v1::CigarUnit::DELETE)) {
-          cur_hap_to_ref_op.length--;
-          cur_read_to_hap_op.length--;
-          // When hap_to_ref deletion is consumed by read_to_hap insertion we
-          // need to convert the deletion to match.
-          if (cur_hap_to_ref_op.operation ==
+      if ((cur_read_to_hap_op.operation
+              == nucleus::genomics::v1::CigarUnit::DELETE &&
+          cur_hap_to_ref_op.operation
+              == nucleus::genomics::v1::CigarUnit::INSERT)
+           ||
+          (cur_read_to_hap_op.operation
+              == nucleus::genomics::v1::CigarUnit::INSERT &&
+          cur_hap_to_ref_op.operation
+              == nucleus::genomics::v1::CigarUnit::DELETE)) {
+        cur_hap_to_ref_op.length--;
+        cur_read_to_hap_op.length--;
+        // When hap_to_ref deletion is consumed by read_to_hap insertion we
+        // need to convert the deletion to match.
+        if (cur_hap_to_ref_op.operation ==
+            nucleus::genomics::v1::CigarUnit::DELETE) {
+          haplotype_to_ref_cigar_ops.push_front(
+              CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1));
+          read_to_haplotype_cigar_ops.push_front(
+              CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1));
+        }
+        continue;
+      }
+
+      MergeOneBaseOperations(cur_read_to_hap_op, cur_hap_to_ref_op,
+                             read_len, read_to_ref_cigar_ops);
+
+      // If read_to_hap is INS or DEL then we consume these operations first.
+      if (cur_read_to_hap_op.operation ==
+              nucleus::genomics::v1::CigarUnit::INSERT) {
+        cur_read_to_hap_op.length--;
+      } else if (cur_hap_to_ref_op.operation ==
               nucleus::genomics::v1::CigarUnit::DELETE) {
-            haplotype_to_ref_cigar_ops.push_front(
-                CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1));
-            read_to_haplotype_cigar_ops.push_front(
-                CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1));
-          }
-          continue;
-        }
-
-        MergeOneBaseOperations(cur_read_to_hap_op, cur_hap_to_ref_op,
-                               read_len, read_to_ref_cigar_ops);
-
-        // If read_to_hap is INS or DEL then we consume these operations first.
-        if (cur_read_to_hap_op.operation ==
-                nucleus::genomics::v1::CigarUnit::INSERT) {
-          cur_read_to_hap_op.length--;
-        } else if (cur_hap_to_ref_op.operation ==
-                nucleus::genomics::v1::CigarUnit::DELETE) {
-          cur_hap_to_ref_op.length--;
-        } else {
-          cur_hap_to_ref_op.length--;
-          cur_read_to_hap_op.length--;
-        }
+        cur_hap_to_ref_op.length--;
+      } else {
+        cur_hap_to_ref_op.length--;
+        cur_read_to_hap_op.length--;
+      }
     }  // while
   }  // while
 }

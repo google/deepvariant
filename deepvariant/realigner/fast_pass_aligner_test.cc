@@ -632,7 +632,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignmentCommonTest) {
 
     // This test verifies a correct merging of DEL and INS at the same position.
     {
-      "del_ins_merge",
+      "del_ins_merge2",
       {"CGGATCATGTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=3D8=1D24=
       {"GATCATGTTTGGGTTTTCAGGACAAA"},  // "7=2I17="
       ReadAlignment(2, "7=2I17=", kSomeScore),
@@ -689,6 +689,26 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignmentCommonTest) {
       }
     },
 
+    {
+      "1ins_1del_consecutive",
+      {"CGGATCATGTTTTGGGTTTTTTGCAGGACAAAGTATGGTTGAAACTG"},  // 16=2I29=
+      {"GATCATGTTTTGGGTTTTGCAGGACAAA"},  // "16=2D12="
+      ReadAlignment(2, "16=2D12=", kSomeScore),
+      {
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)
+      }
+    },
+
+    {
+      "1del_1ins_consecutive2",
+      {"CGGATCATGTTTTGGGTTTTGCGCAGGACAAAGTATGGTTGAAACTG"},  // 20=2I25=
+      {"GATCATGTTTTGGGTTGCGCAGGACAAA"},  // "16=2D12="
+      ReadAlignment(2, "16=2D12=", kSomeScore),
+      {
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)
+      }
+    },
+
     // Haplotype alignment to ref has one del.
     // Read alignment to haplotype has one del.
     {
@@ -714,6 +734,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignmentCommonTest) {
     const auto& haplotype_alignments = aligner_.GetReadToHaplotypeAlignments();
     aligner_.set_reads(test_case.reads);
     std::list<CigarOp> read_to_ref_cigar_ops;
+    std::cout << "-----------------------------------------------" << std::endl;
     std::cout << "Testing " << test_case.test_case_name << " case" << std::endl;
     aligner_.CalculateReadToRefAlignment(
         0, test_case.read_alignment,
