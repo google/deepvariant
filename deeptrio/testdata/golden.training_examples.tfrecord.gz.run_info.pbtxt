@@ -1,3 +1,5 @@
+# proto-file: learning/genomics/deepvariant/protos/deepvariant.proto
+# proto-message: MakeExamplesRunInfo
 options {
   exclude_contigs: "GL000207.1"
   exclude_contigs: "GL000226.1"
@@ -3412,19 +3414,6 @@ options {
       min_base_quality_mode: ENFORCED_BY_CLIENT
     }
   }
-  variant_caller_options_child {
-    min_count_snps: 2
-    min_count_indels: 2
-    min_fraction_snps: 0.11999999731779099
-    min_fraction_indels: 0.05999999865889549
-    random_seed: 1400605801
-    sample_name: "child"
-    p_error: 0.0010000000474974513
-    max_gq: 50
-    gq_resolution: 5
-    ploidy: 2
-    min_fraction_multiplier: 0.6700000166893005
-  }
   pic_options {
     height: 300
     width: 221
@@ -3464,7 +3453,6 @@ options {
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
   reference_filename: "deeptrio/testdata/input/hs37d5.chr20.fa.gz"
-  reads_filename: "deeptrio/testdata/input/HG001.chr20.10_10p1mb_sorted.bam"
   examples_filename: "deeptrio/testdata/golden.training_examples.tfrecord.gz"
   confident_regions_filename: "deeptrio/testdata/input/test_giab.b37_chr20_100kbp_at_10mb.bed"
   truth_variants_filename: "deeptrio/testdata/input/test_hg001_giab_grch37_chr20_100kbp_at_10mb.vcf.gz"
@@ -3513,38 +3501,65 @@ options {
   max_reads_per_partition: 1500
   labeler_algorithm: HAPLOTYPE_LABELER
   run_info_filename: "deeptrio/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
-  reads_parent1_filename: "deeptrio/testdata/input/NA12891.chr20.10_10p1mb_sorted.bam"
-  reads_parent2_filename: "deeptrio/testdata/input/NA12892.chr20.10_10p1mb_sorted.bam"
   variant_caller: VERY_SENSITIVE_CALLER
-  height_parent: 100
-  height_child: 100
-  variant_caller_options_parent1 {
-    min_count_snps: 2
-    min_count_indels: 2
-    min_fraction_snps: 0.11999999731779099
-    min_fraction_indels: 0.05999999865889549
-    random_seed: 1400605801
-    sample_name: "parent1"
-    p_error: 0.0010000000474974513
-    max_gq: 50
-    gq_resolution: 5
-    ploidy: 2
-    min_fraction_multiplier: 0.6700000166893005
-  }
-  variant_caller_options_parent2 {
-    min_count_snps: 2
-    min_count_indels: 2
-    min_fraction_snps: 0.11999999731779099
-    min_fraction_indels: 0.05999999865889549
-    random_seed: 1400605801
-    sample_name: "parent2"
-    p_error: 0.0010000000474974513
-    max_gq: 50
-    gq_resolution: 5
-    ploidy: 2
-    min_fraction_multiplier: 0.6700000166893005
-  }
+  hts_block_size: 134217728
+  logging_every_n_candidates: 100
+  main_sample_index: 1
   bam_fname: "HG001.chr20.10_10p1mb_sorted.bam|NA12891.chr20.10_10p1mb_sorted.bam|NA12892.chr20.10_10p1mb_sorted.bam"
+  sample_options {
+    reads_filenames: "deeptrio/testdata/input/NA12891.chr20.10_10p1mb_sorted.bam"
+    variant_caller_options {
+      min_count_snps: 2
+      min_count_indels: 2
+      min_fraction_snps: 0.11999999731779099
+      min_fraction_indels: 0.05999999865889549
+      random_seed: 1400605801
+      sample_name: "parent1"
+      p_error: 0.0010000000474974513
+      max_gq: 50
+      gq_resolution: 5
+      ploidy: 2
+      min_fraction_multiplier: 0.6700000166893005
+      skip_uncalled_genotypes: true
+    }
+    pileup_height: 100
+  }
+  sample_options {
+    reads_filenames: "deeptrio/testdata/input/HG001.chr20.10_10p1mb_sorted.bam"
+    variant_caller_options {
+      min_count_snps: 2
+      min_count_indels: 2
+      min_fraction_snps: 0.11999999731779099
+      min_fraction_indels: 0.05999999865889549
+      random_seed: 1400605801
+      sample_name: "child"
+      p_error: 0.0010000000474974513
+      max_gq: 50
+      gq_resolution: 5
+      ploidy: 2
+      min_fraction_multiplier: 0.6700000166893005
+      skip_uncalled_genotypes: true
+    }
+    pileup_height: 100
+  }
+  sample_options {
+    reads_filenames: "deeptrio/testdata/input/NA12892.chr20.10_10p1mb_sorted.bam"
+    variant_caller_options {
+      min_count_snps: 2
+      min_count_indels: 2
+      min_fraction_snps: 0.11999999731779099
+      min_fraction_indels: 0.05999999865889549
+      random_seed: 1400605801
+      sample_name: "parent2"
+      p_error: 0.0010000000474974513
+      max_gq: 50
+      gq_resolution: 5
+      ploidy: 2
+      min_fraction_multiplier: 0.6700000166893005
+      skip_uncalled_genotypes: true
+    }
+    pileup_height: 100
+  }
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3563,13 +3578,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1645.2365
+  cpu_frequency_mhz: 1542.4155833333334
   total_memory_mb: 63910
-  wall_time_seconds: 1.8895723819732666
-  cpu_user_time_seconds: 9.69775
-  cpu_system_time_seconds: 4.77884
-  memory_peak_rss_mb: 430
-  write_bytes: 20480
+  wall_time_seconds: 2.0499448776245117
+  cpu_user_time_seconds: 6.27174
+  cpu_system_time_seconds: 2.776083
+  memory_peak_rss_mb: 377
+  write_bytes: 24576
 }
 stats {
   num_examples: 50

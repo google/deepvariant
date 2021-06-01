@@ -52,7 +52,6 @@ from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.realigner import realigner
-from third_party.nucleus.io import sam
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io.python import hts_verbose
 from third_party.nucleus.protos import reads_pb2
@@ -119,7 +118,7 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'variant_caller', 'very_sensitive_caller',
     'The caller to use to make examples. Must be one of the VariantCaller enum '
-    'values in the DeepVariantOptions proto.')
+    'values in the MakeExamplesOptions proto.')
 flags.DEFINE_string(
     'gvcf', '',
     'Optional. Path where we should write gVCF records in TFRecord of Variant '
@@ -239,7 +238,7 @@ flags.DEFINE_integer(
 flags.DEFINE_string(
     'labeler_algorithm', 'haplotype_labeler',
     'Algorithm to use to label examples in training mode. Must be one of the '
-    'LabelerAlgorithm enum values in the DeepVariantOptions proto.')
+    'LabelerAlgorithm enum values in the MakeExamplesOptions proto.')
 flags.DEFINE_string(
     'customized_classes_labeler_classes_list', '',
     'A comma-separated list of strings that defines customized class labels '
@@ -318,7 +317,7 @@ flags.DEFINE_string(
 
 
 def default_options(add_flags=True, flags_obj=None):
-  """Creates a DeepVariantOptions proto populated with reasonable defaults.
+  """Creates a MakeExamplesOptions proto populated with reasonable defaults.
 
   Args:
     add_flags: bool. defaults to True. If True, we will push the value of
@@ -328,7 +327,7 @@ def default_options(add_flags=True, flags_obj=None):
       FLAGS.
 
   Returns:
-    deepvariant_pb2.DeepVariantOptions protobuf.
+    deepvariant_pb2.MakeExamplesOptions protobuf.
 
   Raises:
     ValueError: If we observe invalid flag values.
@@ -351,62 +350,46 @@ def default_options(add_flags=True, flags_obj=None):
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
       partition_size=flags_obj.partition_size, read_requirements=read_reqs)
 
-  if flags_obj.sample_name:
-    sample_name = flags_obj.sample_name
-  elif flags_obj.reads:
-    # If there are multiple BAM files, use the sample name from the first one.
-    with sam.SamReader(flags_obj.reads.split(',')[0]) as sam_reader:
-      sample_name = make_examples_core.extract_sample_name_from_sam_reader(
-          sam_reader)
-  else:
-    sample_name = _UNKNOWN_SAMPLE
+  # Sample-specific options.
+  sample_name = make_examples_core.assign_sample_name(
+      sample_name_flag=flags_obj.sample_name, reads_filenames=flags_obj.reads)
+  sample_options = deepvariant_pb2.SampleOptions(
+      variant_caller_options=make_examples_core.make_vc_options(
+          sample_name=sample_name, flags_obj=flags_obj))
+  if flags_obj.reads:
+    sample_options.reads_filenames.extend(flags_obj.reads.split(','))
+  if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
+    sample_options.downsample_fraction = flags_obj.downsample_fraction
 
-  variant_caller_options = deepvariant_pb2.VariantCallerOptions(
-      min_count_snps=flags_obj.vsc_min_count_snps,
-      min_count_indels=flags_obj.vsc_min_count_indels,
-      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
-      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
-      min_fraction_multiplier=flags_obj.vsc_min_fraction_multiplier,
-      # Not specified by default: fraction_reference_sites_to_emit,
-      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
-      random_seed=1400605801,
-      sample_name=sample_name,
-      p_error=0.001,
-      max_gq=50,
-      gq_resolution=flags_obj.gvcf_gq_binsize,
-      ploidy=2,
-      skip_uncalled_genotypes=flags_obj.mode == 'training')
-
-  options = deepvariant_pb2.DeepVariantOptions(
+  options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=609314161,
       # # Not specified by default: calling_regions = 3;
       read_requirements=read_reqs,
       allele_counter_options=allele_counter_options,
-      variant_caller_options=variant_caller_options,
       pic_options=pic_options,
       n_cores=1,
       task_id=0,
       num_shards=0,
-      min_shared_contigs_basepairs=0.9)
+      min_shared_contigs_basepairs=0.9,
+      sample_options=[sample_options],
+      main_sample_index=0)
 
   if add_flags:
     options.mode = make_examples_core.parse_proto_enum_flag(
-        deepvariant_pb2.DeepVariantOptions.Mode, flags_obj.mode.upper())
+        deepvariant_pb2.MakeExamplesOptions.Mode, flags_obj.mode.upper())
 
     options.labeler_algorithm = make_examples_core.parse_proto_enum_flag(
-        deepvariant_pb2.DeepVariantOptions.LabelerAlgorithm,
+        deepvariant_pb2.MakeExamplesOptions.LabelerAlgorithm,
         flags_obj.labeler_algorithm.upper())
 
     options.variant_caller = make_examples_core.parse_proto_enum_flag(
-        deepvariant_pb2.DeepVariantOptions.VariantCaller,
+        deepvariant_pb2.MakeExamplesOptions.VariantCaller,
         flags_obj.variant_caller.upper())
 
     if flags_obj.ref:
       options.reference_filename = flags_obj.ref
-    if flags_obj.reads:
-      options.reads_filenames.extend(flags_obj.reads.split(','))
     if flags_obj.confident_regions:
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
@@ -417,8 +400,6 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.sequencing_type = make_examples_core.parse_proto_enum_flag(
           deepvariant_pb2.PileupImageOptions.SequencingType,
           flags_obj.sequencing_type)
-    if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
-      options.downsample_fraction = flags_obj.downsample_fraction
 
     if flags_obj.channels:
       channel_set = flags_obj.channels.split(',')
@@ -533,10 +514,11 @@ def default_options(add_flags=True, flags_obj=None):
     options.realigner_enabled = flags_obj.realign_reads
     options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
-    if (options.mode == deepvariant_pb2.DeepVariantOptions.TRAINING and
+    if (options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING and
         flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF):
-      options.variant_caller_options.fraction_reference_sites_to_emit = (
-          flags_obj.training_random_emit_ref_sites)
+      options.sample_options[
+          0].variant_caller_options.fraction_reference_sites_to_emit = (
+              flags_obj.training_random_emit_ref_sites)
 
     if (flags_obj.use_allele_frequency and not flags_obj.population_vcfs):
       errors.log_and_raise(
@@ -561,7 +543,6 @@ def default_options(add_flags=True, flags_obj=None):
   if flags_obj.parse_sam_aux_fields is not None:
     options.parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
 
-  options.main_sample_index = 0
   return options
 
 
@@ -571,8 +552,7 @@ def check_options_are_valid(options):
   # Check arguments that apply to any mode.
   if not options.reference_filename:
     errors.log_and_raise('ref argument is required.', errors.CommandLineError)
-  if not options.reads_filenames:
-    errors.log_and_raise('reads argument is required.', errors.CommandLineError)
+
   if not options.examples_filename:
     errors.log_and_raise('examples argument is required.',
                          errors.CommandLineError)
@@ -581,14 +561,17 @@ def check_options_are_valid(options):
         'Currently only supports n_cores == 1 but got {}.'.format(
             options.n_cores), errors.CommandLineError)
 
+  main_sample = options.sample_options[0]
+  if not main_sample.reads_filenames:
+    errors.log_and_raise('reads argument is required.', errors.CommandLineError)
   # Check for argument issues specific to different modes.
   if make_examples_core.in_training_mode(options):
     if not options.truth_variants_filename:
       errors.log_and_raise('truth_variants is required when in training mode.',
                            errors.CommandLineError)
     if not options.confident_regions_filename:
-      if options.variant_caller == \
-          deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
+      if (options.variant_caller ==
+          deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
         logging.info('Note: --confident_regions is optional with '
                      'vcf_candidate_importer. '
                      'You did not specify --confident_regions, which means '
@@ -600,8 +583,8 @@ def check_options_are_valid(options):
     if options.gvcf_filename:
       errors.log_and_raise('gvcf is not allowed in training mode.',
                            errors.CommandLineError)
-    if (options.variant_caller == \
-        deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER and
+    if (options.variant_caller
+        == deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER and
         options.proposed_variants_filename):
       errors.log_and_raise(
           '--proposed_variants should not be used with '
@@ -613,14 +596,14 @@ def check_options_are_valid(options):
     if options.truth_variants_filename:
       errors.log_and_raise('Do not specify --truth_variants in calling mode.',
                            errors.CommandLineError)
-    if options.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
+    if main_sample.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
       errors.log_and_raise('sample_name must be specified in calling mode.',
                            errors.CommandLineError)
-    if options.variant_caller_options.gq_resolution < 1:
+    if main_sample.variant_caller_options.gq_resolution < 1:
       errors.log_and_raise('gq_resolution must be a non-negative integer.',
                            errors.CommandLineError)
-    if options.variant_caller == \
-        deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER:
+    if (options.variant_caller ==
+        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
       if not options.proposed_variants_filename:
         errors.log_and_raise(
             '--proposed_variants is required with vcf_candidate_importer in '
@@ -629,12 +612,13 @@ def check_options_are_valid(options):
 
 def samples_from_options(options):
   """Creates an array of one sample from the options given."""
+  main_sample = options.sample_options[0]
   return [
       make_examples_utils.Sample(
-          name=options.variant_caller_options.sample_name,
+          name=main_sample.variant_caller_options.sample_name,
           role='main_sample',
-          reads_filenames=options.reads_filenames,
-          variant_caller_options=options.variant_caller_options)
+          reads_filenames=main_sample.reads_filenames,
+          variant_caller_options=main_sample.variant_caller_options)
   ]
 
 

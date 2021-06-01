@@ -45,12 +45,11 @@ from absl import app
 from absl import flags
 from absl import logging
 import numpy as np
-import tensorflow.compat.v1 as tf
 
 from deeptrio import dt_constants
-from deeptrio.protos import deeptrio_pb2
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
+from deepvariant import make_examples_core
 from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant import resources
@@ -63,7 +62,6 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.realigner import realigner
 from deepvariant.vendor import timer
-from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import sharded_file_utils
@@ -114,18 +112,20 @@ flags.DEFINE_string(
     'This is the sample that we call variants on.')
 flags.DEFINE_string(
     'reads', None,
-    'Required. Aligned, sorted, indexed BAM file containing the reads we want '
-    'to call. Should be aligned to a reference genome compatible with --ref.')
+    'Required. Aligned, sorted, indexed BAM file containing reads from the '
+    'child of the trio. '
+    'Should be aligned to a reference genome compatible with --ref. '
+    'Can provide multiple BAMs (comma-separated).')
 flags.DEFINE_string(
     'reads_parent1', None,
-    'Required. Aligned, sorted, indexed BAM file containing parent 1 reads of '
-    'the person we want to call. Should be aligned to a reference genome '
-    'compatible with --ref.')
+    'Required. Aligned, sorted, indexed BAM file containing reads from parent '
+    '1 of the trio. Should be aligned to a reference genome compatible with '
+    '--ref. Can provide multiple BAMs (comma-separated).')
 flags.DEFINE_string(
     'reads_parent2', None,
-    'Aligned, sorted, indexed BAM file containing parent 2 reads of '
-    'the person we want to call. Should be aligned to a reference genome '
-    'compatible with --ref.')
+    'Aligned, sorted, indexed BAM file containing reads from parent 2 of the '
+    'trio. Should be aligned to a reference genome compatible with --ref. '
+    'Can provide multiple BAMs (comma-separated).')
 flags.DEFINE_bool(
     'use_ref_for_cram', False,
     'If true, use the --ref argument as the reference file for the CRAM '
@@ -155,7 +155,7 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'variant_caller', 'very_sensitive_caller',
     'The caller to use to make examples. Must be one of the VariantCaller enum '
-    'values in the DeepTrioOptions proto.')
+    'values in the MakeExamplesOptions proto.')
 flags.DEFINE_string(
     'gvcf', '',
     'Optional. Path where we should write gVCF records in TFRecord of Variant '
@@ -291,7 +291,7 @@ flags.DEFINE_integer(
 flags.DEFINE_string(
     'labeler_algorithm', 'haplotype_labeler',
     'Algorithm to use to label examples in training mode. Must be one of the '
-    'LabelerAlgorithm enum values in the DeepTrioOptions proto.')
+    'LabelerAlgorithm enum values in the MakeExamplesOptions proto.')
 flags.DEFINE_string(
     'customized_classes_labeler_classes_list', '',
     'A comma-separated list of strings that defines customized class labels '
@@ -379,8 +379,8 @@ def parse_proto_enum_flag(proto_enum_pb2,
   Args:
     proto_enum_pb2: a enum_type_wrapper.EnumTypeWrapper type containing a proto
       enum definition. For example, this would be
-      deeptrio_pb2.DeepTrioOptions.Mode to get the DeepTrioOptions Mode
-      enum. See:
+      deepvariant_pb2.MakeExamplesOptions.Mode to get the MakeExamplesOptions
+      Mode enum. See:
       https://developers.google.com/protocol-buffers/docs/reference/python-generated#enum
         for more information.
     flag_value: str. The name of the proto enum option from the command line we
@@ -420,48 +420,8 @@ def logging_with_options(options, message):
   logging.info('%s%s', prefix, message)
 
 
-def assign_sample_name(sample_name_flag, reads):
-  """Returns sample name derived from either sample_name flag or input BAM.
-
-  Function derives sample_name from the flag. If flag is not set then
-  sample_name is derived from input BAM.
-
-  Args:
-    sample_name_flag: string. sample_name flag value.
-    reads: Iterator of nucleus.genomics.v1.Read reads.
-
-  Returns:
-    string. Derived sample name.
-  """
-  if sample_name_flag:
-    sample_name = sample_name_flag
-  elif reads and reads is not None:
-    with sam.SamReader(reads) as sam_reader:
-      sample_name = extract_sample_name_from_sam_reader(sam_reader)
-  else:
-    sample_name = _UNKNOWN_SAMPLE
-  return sample_name
-
-
-def initialize_variant_caller(the_sample_name, flags_obj):
-  return deepvariant_pb2.VariantCallerOptions(
-      min_count_snps=flags_obj.vsc_min_count_snps,
-      min_count_indels=flags_obj.vsc_min_count_indels,
-      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
-      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
-      min_fraction_multiplier=flags_obj.vsc_min_fraction_multiplier,
-      # Not specified by default: fraction_reference_sites_to_emit,
-      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
-      random_seed=1400605801,
-      sample_name=the_sample_name,
-      p_error=0.001,
-      max_gq=50,
-      gq_resolution=flags_obj.gvcf_gq_binsize,
-      ploidy=2)
-
-
 def default_options(add_flags=True, flags_obj=None):
-  """Creates a DeepTrioOptions proto populated with reasonable defaults.
+  """Creates a MakeExamplesOptions proto populated with reasonable defaults.
 
   Args:
     add_flags: bool. defaults to True. If True, we will push the value of
@@ -471,7 +431,7 @@ def default_options(add_flags=True, flags_obj=None):
       FLAGS.
 
   Returns:
-    deeptrio_pb2.DeepTrioOptions protobuf.
+    deepvariant_pb2.MakeExamplesOptions protobuf.
 
   Raises:
     ValueError: If we observe invalid flag values.
@@ -498,56 +458,77 @@ def default_options(add_flags=True, flags_obj=None):
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
       partition_size=flags_obj.partition_size, read_requirements=read_reqs)
 
-  sample_name = assign_sample_name(flags_obj.sample_name, flags_obj.reads)
-  sample_name_parent1 = assign_sample_name(flags_obj.sample_name_parent1,
-                                           flags_obj.reads_parent1)
-  sample_name_parent2 = assign_sample_name(flags_obj.sample_name_parent2,
-                                           flags_obj.reads_parent2)
+  # Sample-specific options.
+  child_sample_name = make_examples_core.assign_sample_name(
+      sample_name_flag=flags_obj.sample_name, reads_filenames=flags_obj.reads)
 
-  variant_caller_options_child = initialize_variant_caller(
-      sample_name, flags_obj)
-  variant_caller_options_parent1 = initialize_variant_caller(
-      sample_name_parent1, flags_obj)
-  variant_caller_options_parent2 = initialize_variant_caller(
-      sample_name_parent2, flags_obj)
+  parent1_sample_name = make_examples_core.assign_sample_name(
+      sample_name_flag=flags_obj.sample_name_parent1,
+      reads_filenames=flags_obj.reads_parent1)
 
-  options = deeptrio_pb2.DeepTrioOptions(
+  parent2_sample_name = make_examples_core.assign_sample_name(
+      sample_name_flag=flags_obj.sample_name_parent2,
+      reads_filenames=flags_obj.reads_parent2)
+
+  child_options = deepvariant_pb2.SampleOptions(
+      variant_caller_options=make_examples_core.make_vc_options(
+          sample_name=child_sample_name, flags_obj=flags_obj))
+  parent1_options = deepvariant_pb2.SampleOptions(
+      variant_caller_options=make_examples_core.make_vc_options(
+          sample_name=parent1_sample_name, flags_obj=flags_obj))
+  parent2_options = deepvariant_pb2.SampleOptions(
+      variant_caller_options=make_examples_core.make_vc_options(
+          sample_name=parent2_sample_name, flags_obj=flags_obj))
+
+  if flags_obj.reads:
+    child_options.reads_filenames.extend(flags_obj.reads.split(','))
+  if flags_obj.reads_parent1:
+    parent1_options.reads_filenames.extend(flags_obj.reads_parent1.split(','))
+  if flags_obj.reads_parent2:
+    parent2_options.reads_filenames.extend(flags_obj.reads_parent2.split(','))
+
+  if flags_obj.downsample_fraction_child != NO_DOWNSAMPLING:
+    child_options.downsample_fraction = flags_obj.downsample_fraction_child
+  if flags_obj.downsample_fraction_parents != NO_DOWNSAMPLING:
+    parent1_options.downsample_fraction = flags_obj.downsample_fraction_parents
+    parent2_options.downsample_fraction = flags_obj.downsample_fraction_parents
+
+  child_options.pileup_height = (
+      flags_obj.pileup_image_height_child or
+      dt_constants.PILEUP_DEFAULT_HEIGHT_CHILD)
+  parent1_options.pileup_height = parent2_options.pileup_height = (
+      flags_obj.pileup_image_height_parent or
+      dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT)
+
+  options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=609314161,
       # # Not specified by default: calling_regions = 3;
       read_requirements=read_reqs,
       allele_counter_options=allele_counter_options,
-      variant_caller_options_child=variant_caller_options_child,
-      variant_caller_options_parent1=variant_caller_options_parent1,
-      variant_caller_options_parent2=variant_caller_options_parent2,
       pic_options=pic_options,
       n_cores=1,
       task_id=0,
       num_shards=0,
       min_shared_contigs_basepairs=0.9,
-  )
+      sample_options=[parent1_options, child_options, parent2_options],
+      main_sample_index=1)
 
   if add_flags:
-    options.mode = parse_proto_enum_flag(deeptrio_pb2.DeepTrioOptions.Mode,
-                                         flags_obj.mode.upper())
+    options.mode = parse_proto_enum_flag(
+        deepvariant_pb2.MakeExamplesOptions.Mode, flags_obj.mode.upper())
 
     options.labeler_algorithm = parse_proto_enum_flag(
-        deeptrio_pb2.DeepTrioOptions.LabelerAlgorithm,
+        deepvariant_pb2.MakeExamplesOptions.LabelerAlgorithm,
         flags_obj.labeler_algorithm.upper())
 
     options.variant_caller = parse_proto_enum_flag(
-        deeptrio_pb2.DeepTrioOptions.VariantCaller,
+        deepvariant_pb2.MakeExamplesOptions.VariantCaller,
         flags_obj.variant_caller.upper())
 
     if flags_obj.ref:
       options.reference_filename = flags_obj.ref
-    if flags_obj.reads:
-      options.reads_filename = flags_obj.reads
-    if flags_obj.reads_parent1:
-      options.reads_parent1_filename = flags_obj.reads_parent1
-    if flags_obj.reads_parent2:
-      options.reads_parent2_filename = flags_obj.reads_parent2
     if flags_obj.confident_regions:
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
@@ -556,10 +537,6 @@ def default_options(add_flags=True, flags_obj=None):
       options.pic_options.sequencing_type = parse_proto_enum_flag(
           deepvariant_pb2.PileupImageOptions.SequencingType,
           flags_obj.sequencing_type)
-    if flags_obj.downsample_fraction_child != NO_DOWNSAMPLING:
-      options.downsample_fraction_child = flags_obj.downsample_fraction_child
-    if flags_obj.downsample_fraction_parents != NO_DOWNSAMPLING:
-      options.downsample_fraction_parents = flags_obj.downsample_fraction_parents
 
     if flags_obj.multi_allelic_mode:
       multi_allelic_enum = {
@@ -569,21 +546,6 @@ def default_options(add_flags=True, flags_obj=None):
               deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES,
       }[flags_obj.multi_allelic_mode]
       options.pic_options.multi_allelic_mode = multi_allelic_enum
-
-    # Pileup heights are assigned to samples later when they are created.
-    if flags_obj.pileup_image_height_parent:
-      options.height_parent = flags_obj.pileup_image_height_parent
-    else:
-      options.height_parent = dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT
-
-    if flags_obj.pileup_image_height_child:
-      options.height_child = flags_obj.pileup_image_height_child
-    else:
-      options.height_child = dt_constants.PILEUP_DEFAULT_HEIGHT_CHILD
-
-    if (options.height_parent > 100 or options.height_parent < 10 or
-        options.height_child > 100 or options.height_child < 10):
-      errors.log_and_raise('Pileup image heights must be between 10 and 100.')
 
     if flags_obj.pileup_image_width:
       options.pic_options.width = flags_obj.pileup_image_width
@@ -638,11 +600,11 @@ def default_options(add_flags=True, flags_obj=None):
     options.hts_block_size = flags_obj.hts_block_size
     options.logging_every_n_candidates = flags_obj.logging_every_n_candidates
 
-    if (options.mode == deeptrio_pb2.DeepTrioOptions.TRAINING and
+    if (options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING and
         flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF):
-      options.variant_caller_options_child.fraction_reference_sites_to_emit = (
-          flags_obj.training_random_emit_ref_sites)
-
+      options.sample_options[
+          1].variant_caller_options.fraction_reference_sites_to_emit = (
+              flags_obj.training_random_emit_ref_sites)
     options.bam_fname = os.path.basename(
         flags_obj.reads) + '|' + (os.path.basename(flags_obj.reads_parent1) if
                                   flags_obj.reads_parent1 else 'None') + '|' + (
@@ -651,6 +613,7 @@ def default_options(add_flags=True, flags_obj=None):
 
     if flags_obj.parse_sam_aux_fields is not None:
       options.parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
+
   return options
 
 
@@ -660,7 +623,7 @@ def default_options(add_flags=True, flags_obj=None):
 
 
 def in_training_mode(options):
-  return options.mode == deeptrio_pb2.DeepTrioOptions.TRAINING
+  return options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING
 
 
 def gvcf_output_enabled(options):
@@ -699,24 +662,6 @@ def extract_sample_name_from_sam_reader(sam_reader):
         'only call variants from a BAM file containing a single sample.'.format(
             ', '.join(sorted(samples))))
   return next(iter(samples))
-
-
-# ---------------------------------------------------------------------------
-# Utilities for working with labeling metrics
-#
-# ---------------------------------------------------------------------------
-
-
-def read_make_examples_run_info(path):
-  """Reads a MakeExamplesRunInfo proto in text_format from path."""
-  with tf.io.gfile.GFile(path) as f:
-    return text_format.Parse(f.read(), deeptrio_pb2.MakeExamplesRunInfo())
-
-
-def write_make_examples_run_info(run_info_proto, path):
-  """Writes a MakeExamplesRunInfo proto in text_format to path."""
-  with tf.io.gfile.GFile(path, mode='w') as writer:
-    writer.write(text_format.MessageToString(run_info_proto, float_format=''))
 
 
 # ---------------------------------------------------------------------------
@@ -1009,8 +954,8 @@ class RegionProcessor(object):
     """Creates a new RegionProcess.
 
     Args:
-      options: deepvariant.DeepTrioOptions proto used to specify our resources
-        for calling (e.g., reference_filename).
+      options: deepvariant.MakeExamplesOptions proto used to specify our
+        resources for calling (e.g., reference_filename).
       samples: The list of samples (make_examples_utils.Sample).
     """
     self.options = options
@@ -1082,7 +1027,8 @@ class RegionProcessor(object):
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup != 'none':
-      input_bam_header = sam.SamReader(self.options.reads_filename).header
+      main_sample = self.samples[self.options.main_sample_index]
+      input_bam_header = sam.SamReader(main_sample.reads_filenames[0]).header
       self.realigner = realigner.Realigner(
           self.options.realigner_options,
           self.ref_reader,
@@ -1108,11 +1054,12 @@ class RegionProcessor(object):
       )
 
     self.variant_caller_child = self._make_variant_caller_from_options(
-        self.options.variant_caller_options_child)
+        self.options.sample_options[1].variant_caller_options)
     self.variant_caller_parent1 = self._make_variant_caller_from_options(
-        self.options.variant_caller_options_parent1)
+        self.options.sample_options[0].variant_caller_options)
     self.variant_caller_parent2 = self._make_variant_caller_from_options(
-        self.options.variant_caller_options_parent2)
+        self.options.sample_options[2].variant_caller_options)
+
     self.initialized = True
 
   def _make_labeler_from_options(self):
@@ -1123,18 +1070,18 @@ class RegionProcessor(object):
     confident_regions = read_confident_regions(self.options)
 
     if (self.options.labeler_algorithm ==
-        deeptrio_pb2.DeepTrioOptions.POSITIONAL_LABELER):
+        deepvariant_pb2.MakeExamplesOptions.POSITIONAL_LABELER):
       return positional_labeler.PositionalVariantLabeler(
           truth_vcf_reader=truth_vcf_reader,
           confident_regions=confident_regions)
     elif (self.options.labeler_algorithm ==
-          deeptrio_pb2.DeepTrioOptions.HAPLOTYPE_LABELER):
+          deepvariant_pb2.MakeExamplesOptions.HAPLOTYPE_LABELER):
       return haplotype_labeler.HaplotypeLabeler(
           truth_vcf_reader=truth_vcf_reader,
           ref_reader=self.ref_reader,
           confident_regions=confident_regions)
     elif (self.options.labeler_algorithm ==
-          deeptrio_pb2.DeepTrioOptions.CUSTOMIZED_CLASSES_LABELER):
+          deepvariant_pb2.MakeExamplesOptions.CUSTOMIZED_CLASSES_LABELER):
       if (not FLAGS.customized_classes_labeler_classes_list or
           not FLAGS.customized_classes_labeler_info_field_name):
         raise ValueError('For -labeler_algorithm=customized_classes_labeler, '
@@ -1153,7 +1100,7 @@ class RegionProcessor(object):
   def _make_variant_caller_from_options(self, variant_caller_options):
     """Creates the variant_caller from options."""
     if (self.options.variant_caller ==
-        deeptrio_pb2.DeepTrioOptions.VERY_SENSITIVE_CALLER):
+        deepvariant_pb2.MakeExamplesOptions.VERY_SENSITIVE_CALLER):
       return very_sensitive_caller.VerySensitiveCaller(variant_caller_options)
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
@@ -1190,7 +1137,10 @@ class RegionProcessor(object):
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
         sample.in_memory_sam_reader.replace_reads(
-            self.region_reads(region=region, sam_readers=sample.sam_readers))
+            self.region_reads(
+                region=region,
+                sam_readers=sample.sam_readers,
+                reads_filenames=sample.reads_filenames))
 
     # Candidates are created using both parents and child
     candidates_dict, gvcfs_dict = self.candidates_in_region(region)
@@ -1225,7 +1175,7 @@ class RegionProcessor(object):
           region_timer.Stop())
     return candidates_dict, examples_dict, gvcfs_dict
 
-  def region_reads(self, region, sam_readers):
+  def region_reads(self, region, sam_readers, reads_filenames):
     """Gets read alignments overlapping the region and optionally realigns them.
 
     If self.options.realigner_enabled is set, uses realigned reads, otherwise
@@ -1235,6 +1185,8 @@ class RegionProcessor(object):
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to realign reads.
       sam_readers: An iterable of sam.SamReader to query from.
+      reads_filenames: Filenames matching sam_readers. This is only used for
+        throwing more informative error messages.
 
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
@@ -1264,7 +1216,7 @@ class RegionProcessor(object):
         elif error_message.startswith('Not found: Unknown reference_name '):
           raise ValueError('{}\nThe region {} does not exist in {}.'.format(
               error_message, ranges.to_literal(region),
-              self.options.reads_filenames[sam_reader_index]))
+              reads_filenames[sam_reader_index]))
         else:
           # By default, raise the ValueError as is for now.
           raise err
@@ -1323,16 +1275,16 @@ class RegionProcessor(object):
       return {}, {}
 
     allele_counters = {}
+    sample_name_child = self.options.sample_options[
+        self.options.main_sample_index].variant_caller_options.sample_name
 
     # Instantiate allele counter for child sample
-    allele_counters[self.options.variant_caller_options_child
-                    .sample_name] = self._make_allele_counter_for_region(region)
+    allele_counters[sample_name_child] = self._make_allele_counter_for_region(
+        region)
 
     # Add target sample reads to allele counter
     for read in reads:
-      allele_counters[
-          self.options.variant_caller_options_child.sample_name].add(
-              read, self.options.variant_caller_options_child.sample_name)
+      allele_counters[sample_name_child].add(read, sample_name_child)
 
     # If parent1 is specified create allele counter and populate it with reads
     if FLAGS.reads_parent1:
@@ -1594,8 +1546,8 @@ def processing_regions_from_options(options):
   over. It also computes the confident regions needed to label variants.
 
   Args:
-    options: deepvariant.DeepTrioOptions proto containing information about our
-      input data sources.
+    options: deepvariant.MakeExamplesOptions proto containing information about
+      our input data sources.
 
   Raises:
     ValueError: if the regions to call is empty.
@@ -1607,12 +1559,18 @@ def processing_regions_from_options(options):
   """
   ref_contigs = fasta.IndexedFastaReader(
       options.reference_filename).header.contigs
-  sam_contigs = sam.SamReader(options.reads_filename).header.contigs
 
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None
   if in_training_mode(options):
     vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
+
+  main_sample = options.sample_options[options.main_sample_index]
+  all_sam_contigs = [
+      sam.SamReader(reads_file).header.contigs
+      for reads_file in main_sample.reads_filenames
+  ]
+  sam_contigs = common_contigs(only_true(*all_sam_contigs))
 
   contigs = _ensure_consistent_contigs(ref_contigs, sam_contigs, vcf_contigs,
                                        options.exclude_contigs,
@@ -1818,7 +1776,7 @@ def make_examples_runner(options, samples):
         num_class_0=n_class_0,
         num_class_1=n_class_1,
         num_class_2=n_class_2)
-    run_info = deeptrio_pb2.MakeExamplesRunInfo(
+    run_info = deepvariant_pb2.MakeExamplesRunInfo(
         options=options,
         resource_metrics=resource_monitor.metrics(),
         stats=make_examples_stats)
@@ -1831,7 +1789,8 @@ def make_examples_runner(options, samples):
             'algorithm %s does not collect metrics; skipping.',
             options.labeler_algorithm)
     logging.info('Writing MakeExamplesRunInfo to %s', options.run_info_filename)
-    write_make_examples_run_info(run_info, path=options.run_info_filename)
+    make_examples_core.write_make_examples_run_info(
+        run_info, path=options.run_info_filename)
 
   logging.info('Found %s candidate variants', n_candidates)
   logging.info('Created %s examples', n_examples)
@@ -1843,8 +1802,6 @@ def check_options_are_valid(options):
   # Check arguments that apply to any mode.
   if not options.reference_filename:
     errors.log_and_raise('ref argument is required.', errors.CommandLineError)
-  if not options.reads_filename:
-    errors.log_and_raise('reads argument is required.', errors.CommandLineError)
   if not options.examples_filename:
     errors.log_and_raise('examples argument is required.',
                          errors.CommandLineError)
@@ -1852,6 +1809,8 @@ def check_options_are_valid(options):
     errors.log_and_raise(
         'Currently only supports n_cores == 1 but got {}.'.format(
             options.n_cores), errors.CommandLineError)
+
+  child = options.sample_options[1]
 
   if in_training_mode(options):
     if not options.truth_variants_filename:
@@ -1866,37 +1825,37 @@ def check_options_are_valid(options):
                            errors.CommandLineError)
   else:
     # Check for argument issues specific to calling mode.
-    if (options.variant_caller_options_child.sample_name == _UNKNOWN_SAMPLE or
-        (FLAGS.sample_name_parent1 and
-         options.variant_caller_options_parent1.sample_name == _UNKNOWN_SAMPLE)
-        or (FLAGS.sample_name_parent2 and
-            options.variant_caller_options_parent2.sample_name
-            == _UNKNOWN_SAMPLE)):
-      errors.log_and_raise(
-          'sample_name must be specified for all samples in calling mode.',
-          errors.CommandLineError)
-    if options.variant_caller_options_child.gq_resolution < 1:
+    for sample in options.sample_options:
+      # If there are reads, there must be a sample name too.
+      if sample.reads_filenames:
+        if sample.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
+          errors.log_and_raise(
+              'sample_name must be specified for all samples in calling mode.',
+              errors.CommandLineError)
+    if child.variant_caller_options.gq_resolution < 1:
       errors.log_and_raise('gq_resolution must be a non-negative integer.',
                            errors.CommandLineError)
 
+  if not child.reads_filenames:
+    errors.log_and_raise('reads argument is required.', errors.CommandLineError)
   # Sanity check the sample_names.
-  if (options.variant_caller_options_child.sample_name
-      == FLAGS.sample_name_parent1 or
-      options.variant_caller_options_child.sample_name
-      == FLAGS.sample_name_parent2):
+  if (child.variant_caller_options.sample_name == FLAGS.sample_name_parent1 or
+      child.variant_caller_options.sample_name == FLAGS.sample_name_parent2):
     errors.log_and_raise(
         'The sample_name of the child is the same as one of '
         'the parents.', errors.CommandLineError)
+
   # If --sample_name_to_call is not set, use the child's sample_name.
   # This is for backward compatibility.
   if FLAGS.sample_name_to_call is None:
-    FLAGS.sample_name_to_call = options.variant_caller_options_child.sample_name
+    FLAGS.sample_name_to_call = child.variant_caller_options.sample_name
   if FLAGS.sample_name_to_call not in [
-      options.variant_caller_options_child.sample_name,
-      FLAGS.sample_name_parent1, FLAGS.sample_name_parent2
+      child.variant_caller_options.sample_name, FLAGS.sample_name_parent1,
+      FLAGS.sample_name_parent2
   ]:
-    errors.log_and_raise('--sample_name_to_call has to be one of the trio.',
-                         errors.CommandLineError)
+    errors.log_and_raise(
+        '--sample_name_to_call has to match one of the sample '
+        'names of the trio.', errors.CommandLineError)
 
   multiplier = FLAGS.vsc_min_fraction_multiplier
   if multiplier <= 0 or multiplier > 1.0:
@@ -1904,32 +1863,40 @@ def check_options_are_valid(options):
         '--vsc_min_fraction_multiplier must be within (0-1] interval.',
         errors.CommandLineError)
 
+  for sample in options.sample_options:
+    if sample.pileup_height < 10 or sample.pileup_height > 100:
+      errors.log_and_raise('Pileup image heights must be between 10 and 100.')
+
 
 def samples_from_options(options):
   """Create an array of three samples from the options given."""
 
+  # redacted
+  parent1_options = options.sample_options[0]
+  child_options = options.sample_options[1]
+  parent2_options = options.sample_options[2]
   # Keep each sample organized with its relevant info.
   child = make_examples_utils.Sample(
       name=FLAGS.sample_name,
       role='child',
-      reads_filenames=[options.reads_filename],
-      pileup_height=options.height_child,
+      reads_filenames=child_options.reads_filenames,
+      pileup_height=child_options.pileup_height,
       order=[0, 1, 2],
-      downsample_fraction=options.downsample_fraction_child)
+      downsample_fraction=child_options.downsample_fraction)
   parent1 = make_examples_utils.Sample(
       name=FLAGS.sample_name_parent1,
       role='parent1',
-      reads_filenames=[options.reads_parent1_filename],
-      pileup_height=options.height_parent,
+      reads_filenames=parent1_options.reads_filenames,
+      pileup_height=parent1_options.pileup_height,
       order=[0, 1, 2],
-      downsample_fraction=options.downsample_fraction_parents)
+      downsample_fraction=parent1_options.downsample_fraction)
   parent2 = make_examples_utils.Sample(
       name=FLAGS.sample_name_parent2,
       role='parent2',
-      reads_filenames=[options.reads_parent2_filename],
-      pileup_height=options.height_parent,
+      reads_filenames=parent2_options.reads_filenames,
+      pileup_height=parent2_options.pileup_height,
       order=[2, 1, 0],  # Swap the two parents when calling on parent2.
-      downsample_fraction=options.downsample_fraction_parents)
+      downsample_fraction=parent2_options.downsample_fraction)
 
   # Ordering here determines the default order of samples, and when a sample
   # above has a custom .order, then this is the list those indices refer to.

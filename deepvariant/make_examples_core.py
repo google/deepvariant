@@ -71,6 +71,9 @@ RUNTIME_BY_REGION_COLUMNS = ('region', 'get reads', 'find candidates',
                              'make pileup images', 'write outputs', 'num reads',
                              'num candidates', 'num examples')
 
+# The name used for a sample if one is not specified or present in the reads.
+_UNKNOWN_SAMPLE = 'UNKNOWN'
+
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
 # ---------------------------------------------------------------------------
@@ -106,6 +109,48 @@ VARIANT_TYPE_SELECTORS = {
 # ---------------------------------------------------------------------------
 
 
+def assign_sample_name(sample_name_flag, reads_filenames):
+  """Returns sample name derived from either sample_name flag or input BAM.
+
+  Function derives sample_name from the flag. If flag is not set then
+  sample_name is derived from input BAM.
+
+  Args:
+    sample_name_flag: string. sample_name flag value.
+    reads_filenames: A list of filenames of an alignments file, e.g. BAM. The
+      first of these will be used. May be empty.
+
+  Returns:
+    string. Derived sample name.
+  """
+  if sample_name_flag:
+    sample_name = sample_name_flag
+  elif reads_filenames:
+    with sam.SamReader(reads_filenames.split(',')[0]) as sam_reader:
+      sample_name = extract_sample_name_from_sam_reader(sam_reader)
+  else:
+    sample_name = _UNKNOWN_SAMPLE
+  return sample_name
+
+
+def make_vc_options(sample_name, flags_obj):
+  return deepvariant_pb2.VariantCallerOptions(
+      min_count_snps=flags_obj.vsc_min_count_snps,
+      min_count_indels=flags_obj.vsc_min_count_indels,
+      min_fraction_snps=flags_obj.vsc_min_fraction_snps,
+      min_fraction_indels=flags_obj.vsc_min_fraction_indels,
+      min_fraction_multiplier=flags_obj.vsc_min_fraction_multiplier,
+      # Not specified by default: fraction_reference_sites_to_emit,
+      # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
+      random_seed=1400605801,
+      sample_name=sample_name,
+      p_error=0.001,
+      max_gq=50,
+      gq_resolution=flags_obj.gvcf_gq_binsize,
+      ploidy=2,
+      skip_uncalled_genotypes=flags_obj.mode == 'training')
+
+
 def parse_proto_enum_flag(proto_enum_pb2,
                           flag_value,
                           skip_unspecified_option=True):
@@ -114,8 +159,8 @@ def parse_proto_enum_flag(proto_enum_pb2,
   Args:
     proto_enum_pb2: a enum_type_wrapper.EnumTypeWrapper type containing a proto
       enum definition. For example, this would be
-      deepvariant_pb2.DeepVariantOptions.Mode to get the DeepVariantOptions Mode
-      enum. See:
+      deepvariant_pb2.MakeExamplesOptions.Mode to get the MakeExamplesOptions
+      Mode enum. See:
       https://developers.google.com/protocol-buffers/docs/reference/python-generated#enum
         for more information.
     flag_value: str. The name of the proto enum option from the command line we
@@ -171,7 +216,7 @@ def logging_with_options(options, message):
 
 
 def in_training_mode(options):
-  return options.mode == deepvariant_pb2.DeepVariantOptions.TRAINING
+  return options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING
 
 
 def gvcf_output_enabled(options):
@@ -238,6 +283,9 @@ def read_make_examples_run_info(path):
 def write_make_examples_run_info(run_info_proto, path):
   """Writes a MakeExamplesRunInfo proto in text_format to path."""
   with tf.io.gfile.GFile(path, mode='w') as writer:
+    writer.write(
+        '# proto-file: learning/genomics/deepvariant/protos/deepvariant.proto\n'
+        '# proto-message: MakeExamplesRunInfo\n')
     writer.write(text_format.MessageToString(run_info_proto, float_format=''))
 
 
@@ -618,7 +666,7 @@ class RegionProcessor(object):
     """Creates a new RegionProcess.
 
     Args:
-      options: deepvariant.DeepVariantOptions proto used to specify our
+      options: deepvariant.MakeExamplesOptions proto used to specify our
         resources for calling (e.g., reference_filename).
       samples: The list of samples (make_examples_utils.Sample).
     """
@@ -687,7 +735,7 @@ class RegionProcessor(object):
     for sample in self.samples:
       sample.sam_readers = self._make_sam_readers(
           reads_filenames=sample.reads_filenames,
-          downsample_fraction=self.options.downsample_fraction)
+          downsample_fraction=sample.downsample_fraction)
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.use_allele_frequency:
@@ -695,9 +743,10 @@ class RegionProcessor(object):
           self.options.population_vcf_filenames)
       self.population_vcf_readers = population_vcf_readers
 
-    if self.options.realigner_enabled or \
-        self.options.pic_options.alt_aligned_pileup != 'none':
-      input_bam_header = sam.SamReader(self.options.reads_filenames[0]).header
+    if (self.options.realigner_enabled or
+        self.options.pic_options.alt_aligned_pileup != 'none'):
+      main_sample = self.samples[self.options.main_sample_index]
+      input_bam_header = sam.SamReader(main_sample.reads_filenames[0]).header
       self.realigner = realigner.Realigner(
           self.options.realigner_options,
           self.ref_reader,
@@ -722,7 +771,7 @@ class RegionProcessor(object):
     confident_regions = read_confident_regions(self.options)
 
     if (self.options.variant_caller ==
-        deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER):
+        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
       logging.info('For --variant_caller=vcf_candidate_importer, we '
                    'default the labeler_algorithm to positional_labler.')
       return positional_labeler.PositionalVariantLabeler(
@@ -730,18 +779,18 @@ class RegionProcessor(object):
           confident_regions=confident_regions)
 
     if (self.options.labeler_algorithm ==
-        deepvariant_pb2.DeepVariantOptions.POSITIONAL_LABELER):
+        deepvariant_pb2.MakeExamplesOptions.POSITIONAL_LABELER):
       return positional_labeler.PositionalVariantLabeler(
           truth_vcf_reader=truth_vcf_reader,
           confident_regions=confident_regions)
     elif (self.options.labeler_algorithm ==
-          deepvariant_pb2.DeepVariantOptions.HAPLOTYPE_LABELER):
+          deepvariant_pb2.MakeExamplesOptions.HAPLOTYPE_LABELER):
       return haplotype_labeler.HaplotypeLabeler(
           truth_vcf_reader=truth_vcf_reader,
           ref_reader=self.ref_reader,
           confident_regions=confident_regions)
     elif (self.options.labeler_algorithm ==
-          deepvariant_pb2.DeepVariantOptions.CUSTOMIZED_CLASSES_LABELER):
+          deepvariant_pb2.MakeExamplesOptions.CUSTOMIZED_CLASSES_LABELER):
       if (not self.options.customized_classes_labeler_classes_list or
           not self.options.customized_classes_labeler_info_field_name):
         raise ValueError('For -labeler_algorithm=customized_classes_labeler, '
@@ -760,18 +809,19 @@ class RegionProcessor(object):
 
   def _make_variant_caller_from_options(self):
     """Creates the variant_caller from options."""
+    main_sample = self.options.sample_options[0]
     if (self.options.variant_caller ==
-        deepvariant_pb2.DeepVariantOptions.VCF_CANDIDATE_IMPORTER):
+        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
       if in_training_mode(self.options):
         candidates_vcf = self.options.truth_variants_filename
       else:
         candidates_vcf = self.options.proposed_variants_filename
       return vcf_candidate_importer.VcfCandidateImporter(
-          self.options.variant_caller_options, candidates_vcf)
+          main_sample.variant_caller_options, candidates_vcf)
     elif (self.options.variant_caller ==
-          deepvariant_pb2.DeepVariantOptions.VERY_SENSITIVE_CALLER):
+          deepvariant_pb2.MakeExamplesOptions.VERY_SENSITIVE_CALLER):
       return very_sensitive_caller.VerySensitiveCaller(
-          self.options.variant_caller_options)
+          main_sample.variant_caller_options)
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
 
@@ -803,7 +853,10 @@ class RegionProcessor(object):
     runtimes['num reads'] = 0
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
-        reads = self.region_reads(region, sample.sam_readers)
+        reads = self.region_reads(
+            region=region,
+            sam_readers=sample.sam_readers,
+            reads_filenames=sample.reads_filenames)
         runtimes['num reads'] += len(reads)
         sample.in_memory_sam_reader.replace_reads(reads)
 
@@ -851,7 +904,7 @@ class RegionProcessor(object):
     runtimes['num candidates'] = len(candidates)
     return candidates, examples, gvcfs, runtimes
 
-  def region_reads(self, region, sam_readers):
+  def region_reads(self, region, sam_readers, reads_filenames):
     """Gets read alignments overlapping the region and optionally realigns them.
 
     If self.options.realigner_enabled is set, uses realigned reads, otherwise
@@ -861,6 +914,8 @@ class RegionProcessor(object):
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to realign reads.
       sam_readers: An iterable of sam.SamReader to query from.
+      reads_filenames: Filenames matching sam_readers. This is only used for
+        throwing more informative error messages.
 
     Returns:
       [genomics.deepvariant.core.genomics.Read], reads overlapping the region.
@@ -890,7 +945,7 @@ class RegionProcessor(object):
         elif error_message.startswith('Not found: Unknown reference_name '):
           raise ValueError('{}\nThe region {} does not exist in {}.'.format(
               error_message, ranges.to_literal(region),
-              self.options.reads_filenames[sam_reader_index]))
+              reads_filenames[sam_reader_index]))
         else:
           # By default, raise the ValueError as is for now.
           raise err
@@ -1176,7 +1231,7 @@ def processing_regions_from_options(options):
   over. It also computes the confident regions needed to label variants.
 
   Args:
-    options: deepvariant.DeepVariantOptions proto containing information about
+    options: deepvariant.MakeExamplesOptions proto containing information about
       our input data sources.
 
   Raises:
@@ -1195,9 +1250,10 @@ def processing_regions_from_options(options):
   if in_training_mode(options):
     vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
 
+  main_sample = options.sample_options[options.main_sample_index]
   all_sam_contigs = [
       sam.SamReader(reads_file).header.contigs
-      for reads_file in options.reads_filenames
+      for reads_file in main_sample.reads_filenames
   ]
   sam_contigs = common_contigs(only_true(*all_sam_contigs))
 

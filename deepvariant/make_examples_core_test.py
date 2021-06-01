@@ -135,15 +135,15 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           flag_value='CALLING',
-          expected=deepvariant_pb2.DeepVariantOptions.CALLING,
+          expected=deepvariant_pb2.MakeExamplesOptions.CALLING,
       ),
       dict(
           flag_value='TRAINING',
-          expected=deepvariant_pb2.DeepVariantOptions.TRAINING,
+          expected=deepvariant_pb2.MakeExamplesOptions.TRAINING,
       ),
   )
   def test_parse_proto_enum_flag(self, flag_value, expected):
-    enum_pb2 = deepvariant_pb2.DeepVariantOptions.Mode
+    enum_pb2 = deepvariant_pb2.MakeExamplesOptions.Mode
     self.assertEqual(
         make_examples_core.parse_proto_enum_flag(enum_pb2, flag_value),
         expected)
@@ -153,7 +153,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
         self, ValueError,
         'Unknown enum option "foo". Allowed options are CALLING,TRAINING'):
       make_examples_core.parse_proto_enum_flag(
-          deepvariant_pb2.DeepVariantOptions.Mode, 'foo')
+          deepvariant_pb2.MakeExamplesOptions.Mode, 'foo')
 
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()
@@ -579,17 +579,18 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.reads = ''
     self.options = make_examples.default_options(add_flags=False)
     self.options.reference_filename = testdata.CHR20_FASTA
-    if not self.options.reads_filenames:
-      self.options.reads_filenames.append(testdata.CHR20_BAM)
+    main_sample = self.options.sample_options[0]
+    if not main_sample.reads_filenames:
+      main_sample.reads_filenames.append(testdata.CHR20_BAM)
     self.options.truth_variants_filename = testdata.TRUTH_VARIANTS_VCF
-    self.options.mode = deepvariant_pb2.DeepVariantOptions.TRAINING
-    self.options.variant_caller_options.sample_name = 'sample_id'
+    self.options.mode = deepvariant_pb2.MakeExamplesOptions.TRAINING
+    main_sample.variant_caller_options.sample_name = 'sample_id'
     self.samples = [
         make_examples_utils.Sample(
-            name=self.options.variant_caller_options.sample_name,
+            name=main_sample.variant_caller_options.sample_name,
             role='main_sample',
-            reads_filenames=self.options.reads_filenames,
-            variant_caller_options=self.options.variant_caller_options)
+            reads_filenames=main_sample.reads_filenames,
+            variant_caller_options=main_sample.variant_caller_options)
     ]
 
     self.processor = make_examples_core.RegionProcessor(
@@ -620,7 +621,10 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_lc = self.add_mock('label_candidates', retval=[])
     self.processor.process(self.region)
     test_utils.assert_called_once_workaround(self.mock_init)
-    mock_rr.assert_called_once_with(self.region, None)
+    mock_rr.assert_called_once_with(
+        region=self.region,
+        sam_readers=None,
+        reads_filenames=main_sample.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
     mock_lc.assert_called_once_with(candidates, self.region)
@@ -635,7 +639,10 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_lc = self.add_mock('label_candidates', retval=[])
     self.processor.process(self.region)
     test_utils.assert_not_called_workaround(self.mock_init)
-    mock_rr.assert_called_once_with(self.region, None)
+    mock_rr.assert_called_once_with(
+        region=self.region,
+        sam_readers=None,
+        reads_filenames=main_sample.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
     test_utils.assert_called_once_workaround(mock_lc)
@@ -652,15 +659,18 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertEmpty(examples)
     self.assertEmpty(gvcfs)
     self.assertIsInstance(runtimes, dict)
-    mock_rr.assert_called_once_with(self.region, None)
+    mock_rr.assert_called_once_with(
+        region=self.region,
+        sam_readers=None,
+        reads_filenames=main_sample.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
     test_utils.assert_not_called_workaround(mock_cpe)
     mock_lc.assert_called_once_with([], self.region)
 
   @parameterized.parameters([
-      deepvariant_pb2.DeepVariantOptions.TRAINING,
-      deepvariant_pb2.DeepVariantOptions.CALLING
+      deepvariant_pb2.MakeExamplesOptions.TRAINING,
+      deepvariant_pb2.MakeExamplesOptions.CALLING
   ])
   def test_process_calls_with_candidates(self, mode):
     self.processor.options.mode = mode
@@ -683,13 +693,16 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertEqual(examples, [mock_example])
     self.assertEmpty(gvcfs)
     self.assertIsInstance(runtimes, dict)
-    mock_rr.assert_called_once_with(self.region, None)
+    mock_rr.assert_called_once_with(
+        region=self.region,
+        sam_readers=None,
+        reads_filenames=main_sample.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [mock_read])
     mock_cir.assert_called_once_with(self.region)
     mock_cpe.assert_called_once_with(mock_candidate)
 
-    if mode == deepvariant_pb2.DeepVariantOptions.TRAINING:
+    if mode == deepvariant_pb2.MakeExamplesOptions.TRAINING:
       mock_lc.assert_called_once_with([mock_candidate], self.region)
       mock_alte.assert_called_once_with(mock_example, mock_label)
     else:
@@ -698,8 +711,8 @@ class RegionProcessorTest(parameterized.TestCase):
       test_utils.assert_not_called_workaround(mock_alte)
 
   @parameterized.parameters([
-      deepvariant_pb2.DeepVariantOptions.TRAINING,
-      deepvariant_pb2.DeepVariantOptions.CALLING
+      deepvariant_pb2.MakeExamplesOptions.TRAINING,
+      deepvariant_pb2.MakeExamplesOptions.CALLING
   ])
   def test_process_keeps_ordering_of_candidates_and_examples(self, mode):
     self.processor.options.mode = mode
@@ -726,7 +739,7 @@ class RegionProcessorTest(parameterized.TestCase):
     # We don't try to label variants when in calling mode.
     self.assertEqual([mock.call(c1), mock.call(c2)], mock_cpe.call_args_list)
 
-    if mode == deepvariant_pb2.DeepVariantOptions.CALLING:
+    if mode == deepvariant_pb2.MakeExamplesOptions.CALLING:
       # In calling mode, we never try to label.
       test_utils.assert_not_called_workaround(mock_lc)
       test_utils.assert_not_called_workaround(mock_alte)
@@ -739,7 +752,7 @@ class RegionProcessorTest(parameterized.TestCase):
       ], mock_alte.call_args_list)
 
   def test_process_with_realigner(self):
-    self.processor.options.mode = deepvariant_pb2.DeepVariantOptions.CALLING
+    self.processor.options.mode = deepvariant_pb2.MakeExamplesOptions.CALLING
     self.processor.options.realigner_enabled = True
     self.processor.options.realigner_options.CopyFrom(
         realigner_pb2.RealignerOptions())

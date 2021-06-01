@@ -1,3 +1,5 @@
+# proto-file: learning/genomics/deepvariant/protos/deepvariant.proto
+# proto-message: MakeExamplesRunInfo
 options {
   exclude_contigs: "GL000207.1"
   exclude_contigs: "GL000226.1"
@@ -3412,19 +3414,6 @@ options {
       min_base_quality_mode: ENFORCED_BY_CLIENT
     }
   }
-  variant_caller_options {
-    min_count_snps: 2
-    min_count_indels: 2
-    min_fraction_snps: 0.11999999731779099
-    min_fraction_indels: 0.05999999865889549
-    random_seed: 1400605801
-    sample_name: "NA12878"
-    p_error: 0.0010000000474974513
-    max_gq: 50
-    gq_resolution: 5
-    ploidy: 2
-    min_fraction_multiplier: 1.0
-  }
   pic_options {
     height: 100
     width: 221
@@ -3512,12 +3501,28 @@ options {
   labeler_algorithm: HAPLOTYPE_LABELER
   run_info_filename: "deepvariant/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
   variant_caller: VERY_SENSITIVE_CALLER
-  reads_filenames: "deepvariant/testdata/input/NA12878_S1.chr20.10_10p1mb.bam"
   use_ref_for_cram: true
   parse_sam_aux_fields: true
   hts_block_size: 134217728
   logging_every_n_candidates: 100
   bam_fname: "NA12878_S1.chr20.10_10p1mb.bam"
+  sample_options {
+    reads_filenames: "deepvariant/testdata/input/NA12878_S1.chr20.10_10p1mb.bam"
+    variant_caller_options {
+      min_count_snps: 2
+      min_count_indels: 2
+      min_fraction_snps: 0.11999999731779099
+      min_fraction_indels: 0.05999999865889549
+      random_seed: 1400605801
+      sample_name: "NA12878"
+      p_error: 0.0010000000474974513
+      max_gq: 50
+      gq_resolution: 5
+      ploidy: 2
+      min_fraction_multiplier: 1.0
+      skip_uncalled_genotypes: true
+    }
+  }
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3536,13 +3541,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1261.87925
+  cpu_frequency_mhz: 1295.5467499999997
   total_memory_mb: 63910
-  wall_time_seconds: 1.0076758861541748
-  cpu_user_time_seconds: 5.442451
-  cpu_system_time_seconds: 0.8981889999999999
-  memory_peak_rss_mb: 361
-  write_bytes: 24576
+  wall_time_seconds: 1.023639440536499
+  cpu_user_time_seconds: 5.365979
+  cpu_system_time_seconds: 2.739644
+  memory_peak_rss_mb: 368
+  write_bytes: 20480
 }
 stats {
   num_examples: 49

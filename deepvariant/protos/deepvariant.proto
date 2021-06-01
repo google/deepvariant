@@ -367,7 +367,6 @@ message VariantLabelerOptions {
 // Options to control how we construct pileup images.
 // Next ID: 40.
 message PileupImageOptions {
-  // redacted
   // The height, in pixels, of the pileup image we'll construct.
   int32 height = 1;
 
@@ -501,11 +500,28 @@ message PileupImageOptions {
   int32 sort_by_haplotypes_sample_hp_tag = 35 [deprecated = true];
 }
 
+// Options that may differ by sample.
+message SampleOptions {
+  // Paths to files with read alignments, e.g. BAM or CRAM files.
+  repeated string reads_filenames = 1;
+
+  // Should we downsample our reads and if so, by how much? If == 0.0 (default),
+  // no downsampling occurs. But if set, must be between 0.0 and 1.0 and
+  // indicates the probability that a read will be kept (randomly) when read
+  // from the input. This option makes it easy to simulate lower coverage data.
+  float downsample_fraction = 2;
+
+  // Options for finding candidate variants.
+  VariantCallerOptions variant_caller_options = 3;
+
+  // Height of the pileup image for this sample.
+  int32 pileup_height = 4;
+}
+
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 46.
-// redacted
-message DeepVariantOptions {
+// Next ID: 47.
+message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
   // call variants on that genome.
@@ -524,8 +540,8 @@ message DeepVariantOptions {
   // Options to control how we run the AlleleCounter.
   AlleleCounterOptions allele_counter_options = 5;
 
-  // Options to control how we call candidate variants.
-  VariantCallerOptions variant_caller_options = 6;
+  // Deprecated. Use sample_options instead.
+  VariantCallerOptions deprecated_variant_caller_options = 6;
 
   // Options to control how we generate pileup images.
   PileupImageOptions pic_options = 7;
@@ -541,8 +557,9 @@ message DeepVariantOptions {
   // Options to control out input data sources and output data sinks.
   // Path to our genome reference.
   string reference_filename = 10;
-  // Path to our source of NGS reads.
-  repeated string reads_filenames = 32;
+
+  // Deprecated. Use sample_options instead.
+  repeated string deprecated_reads_filenames = 32;
   // Deprecated.
   string deprecated_reads_filename = 11;
 
@@ -601,11 +618,8 @@ message DeepVariantOptions {
   // processing such as sampling and realigner.
   int32 max_reads_per_partition = 24;
 
-  // Should we downsample our reads and if so, by how much? If == 0.0 (default),
-  // no downsampling occurs. But if set, must be between 0.0 and 1.0 and
-  // indicates the probability that a read will be kept (randomly) when read
-  // from the input. This option makes it easy to simulate lower coverage data.
-  float downsample_fraction = 25;
+  // Deprecated. Use sample_options instead.
+  float deprecated_downsample_fraction = 25;
 
   // List of regions where we DON'T want to call variants. If missing, no
   // regions will be excluded from calling.
@@ -679,6 +693,9 @@ message DeepVariantOptions {
 
   // per-sample statistics for training examples.
   string bam_fname = 45;
+
+  // Samples, e.g. a list of 3 for DeepTrio, list of 1 for DeepVariant.
+  repeated SampleOptions sample_options = 46;
 }
 
 // Config describe information needed for a dataset that can be used for
@@ -936,7 +953,7 @@ message MakeExamplesStats {
 // DeepVariant.
 // Next ID: 5.
 message MakeExamplesRunInfo {
-  DeepVariantOptions options = 1;
+  MakeExamplesOptions options = 1;
   LabelingMetrics labeling_metrics = 2;
   ResourceMetrics resource_metrics = 3;
   MakeExamplesStats stats = 4;

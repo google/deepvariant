@@ -55,7 +55,7 @@ import six
 
 from deeptrio import make_examples
 from deeptrio import testdata
-from deeptrio.protos import deeptrio_pb2
+from deepvariant import make_examples_core
 from deepvariant import make_examples_utils
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
@@ -226,7 +226,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
       # Check that our run_info proto contains the basic fields we'd expect:
       # (a) our options are written to the run_info.options field.
-      run_info = make_examples.read_make_examples_run_info(
+      run_info = make_examples_core.read_make_examples_run_info(
           options.run_info_filename)
       self.assertEqual(run_info.options, options)
       # (b) run_info.resource_metrics is present and contains our hostname.
@@ -288,7 +288,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       # The positional labeler doesn't track metrics, so don't try to read them
       # in when that's the mode.
       self.assertEqual(
-          make_examples.read_make_examples_run_info(
+          make_examples_core.read_make_examples_run_info(
               testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO).labeling_metrics,
           run_info.labeling_metrics)
 
@@ -466,8 +466,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       self.assertEqual(len(variant.calls), 1)
 
       call = variant_utils.only_call(variant)
-      self.assertEqual(call.call_set_name,
-                       options.variant_caller_options_child.sample_name)
+      self.assertEqual(
+          call.call_set_name,
+          options.sample_options[1].variant_caller_options.sample_name)
       if is_gvcf:
         # GVCF records should have 0/0 or ./. (un-called) genotypes as they are
         # reference sites, have genotype likelihoods and a GQ value.
@@ -515,7 +516,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         self.assertIn(alt_allele, list(call.allele_support))
         self.assertGreaterEqual(
             len(call.allele_support[alt_allele].read_names),
-            options.variant_caller_options_child.min_count_snps)
+            options.sample_options[1].variant_caller_options.min_count_snps)
 
   def verify_examples(self, examples_filename, region, options, verify_labels):
     # Do some simple structural checks on the tf.Examples in the file.
@@ -548,7 +549,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       with open(path) as fin:
         return list(fin.readlines())
 
-    golden_actual = make_examples.read_make_examples_run_info(
+    golden_actual = make_examples_core.read_make_examples_run_info(
         testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO)
     # We don't really want to inject too much knowledge about the golden right
     # here, so we only use a minimal test that (a) the run_info_filename is
@@ -562,7 +563,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
 
     # Check that reading + writing the data produces the same lines:
     tmp_output = test_utils.test_tmpfile('written_run_info.pbtxt')
-    make_examples.write_make_examples_run_info(golden_actual, tmp_output)
+    make_examples_core.write_make_examples_run_info(golden_actual, tmp_output)
     self.assertEqual(
         _read_lines(testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO),
         _read_lines(tmp_output))
@@ -570,15 +571,15 @@ class MakeExamplesUnitTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           flag_value='CALLING',
-          expected=deeptrio_pb2.DeepTrioOptions.CALLING,
+          expected=deepvariant_pb2.MakeExamplesOptions.CALLING,
       ),
       dict(
           flag_value='TRAINING',
-          expected=deeptrio_pb2.DeepTrioOptions.TRAINING,
+          expected=deepvariant_pb2.MakeExamplesOptions.TRAINING,
       ),
   )
   def test_parse_proto_enum_flag(self, flag_value, expected):
-    enum_pb2 = deeptrio_pb2.DeepTrioOptions.Mode
+    enum_pb2 = deepvariant_pb2.MakeExamplesOptions.Mode
     self.assertEqual(
         make_examples.parse_proto_enum_flag(enum_pb2, flag_value), expected)
 
@@ -586,8 +587,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     with six.assertRaisesRegex(
         self, ValueError,
         'Unknown enum option "foo". Allowed options are CALLING,TRAINING'):
-      make_examples.parse_proto_enum_flag(deeptrio_pb2.DeepTrioOptions.Mode,
-                                          'foo')
+      make_examples.parse_proto_enum_flag(
+          deepvariant_pb2.MakeExamplesOptions.Mode, 'foo')
 
   @flagsaver.flagsaver
   def test_keep_duplicates(self):
@@ -702,8 +703,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.training_random_emit_ref_sites = 0.3
     options = make_examples.default_options(add_flags=True)
     self.assertAlmostEqual(
-        options.variant_caller_options_child.fraction_reference_sites_to_emit,
-        0.3)
+        options.sample_options[1].variant_caller_options
+        .fraction_reference_sites_to_emit, 0.3)
 
   @flagsaver.flagsaver
   def test_default_options_without_training_random_emit_ref_sites(self):
@@ -725,8 +726,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     # redacted
     # As an approximation, we directly check that the value should be exactly 0.
     self.assertEqual(
-        options.variant_caller_options_child.fraction_reference_sites_to_emit,
-        0.0)
+        options.sample_options[1].variant_caller_options
+        .fraction_reference_sites_to_emit, 0.0)
 
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()
@@ -1221,11 +1222,8 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.reads = ''
     self.options = make_examples.default_options(add_flags=False)
     self.options.reference_filename = testdata.CHR20_FASTA
-    self.options.reads_filename = testdata.HG001_CHR20_BAM
-    self.options.reads_parent1_filename = testdata.NA12891_CHR20_BAM
-    self.options.reads_parent2_filename = testdata.NA12892_CHR20_BAM
     self.options.truth_variants_filename = testdata.TRUTH_VARIANTS_VCF
-    self.options.mode = deeptrio_pb2.DeepTrioOptions.TRAINING
+    self.options.mode = deepvariant_pb2.MakeExamplesOptions.TRAINING
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
     self.default_shape = [5, 5, 7]
@@ -1252,8 +1250,8 @@ class RegionProcessorTest(parameterized.TestCase):
     return mocked
 
   @parameterized.parameters([
-      deeptrio_pb2.DeepTrioOptions.TRAINING,
-      deeptrio_pb2.DeepTrioOptions.CALLING
+      deepvariant_pb2.MakeExamplesOptions.TRAINING,
+      deepvariant_pb2.MakeExamplesOptions.CALLING
   ])
   def test_process_keeps_ordering_of_candidates_and_examples(self, mode):
     self.processor.options.mode = mode
@@ -1284,7 +1282,7 @@ class RegionProcessorTest(parameterized.TestCase):
         mock.call(c2, sample_order=sample_order_for_child)
     ], mock_cpe.call_args_list)
 
-    if mode == deeptrio_pb2.DeepTrioOptions.CALLING:
+    if mode == deepvariant_pb2.MakeExamplesOptions.CALLING:
       # In calling mode, we never try to label.
       test_utils.assert_not_called_workaround(mock_lc)
       test_utils.assert_not_called_workaround(mock_alte)
@@ -1434,9 +1432,10 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.examples = 'examples.tfrecord'
 
+    options = make_examples.default_options(add_flags=True)
     with self.assertRaisesRegex(
         Exception, 'Pileup image heights must be between 10 and 100.'):
-      make_examples.default_options(add_flags=True)
+      make_examples.check_options_are_valid(options)
 
   @parameterized.parameters(
       [

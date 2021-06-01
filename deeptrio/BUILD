@@ -41,6 +41,7 @@ py_library(
         "//deeptrio/protos:deeptrio_py_pb2",
         "//deepvariant:exclude_contigs",
         "//deepvariant:logging_level",
+        "//deepvariant:make_examples_core",
         "//deepvariant:make_examples_utils",
         "//deepvariant:pileup_image",
         "//deepvariant:resources_main_lib",
