@@ -288,9 +288,9 @@ def uncall_gt_if_no_ad(variant):
   """Converts genotype to "./." if sum(AD)=0."""
   vcall = variant_utils.only_call(variant)
   if sum(variantcall_utils.get_ad(vcall)) == 0:
-    # Set GT to ./.; GL=None; GQ=0
+    # Set GT to ./.; GLs set to 0; GQ=0
     vcall.genotype[:] = [-1, -1]
-    vcall.genotype_likelihood[:] = []
+    vcall.genotype_likelihood[:] = [0, 0]
     variantcall_utils.set_gq(vcall, 0)
 
 
