@@ -50,7 +50,6 @@ from deeptrio import dt_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import make_examples_core
-from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
@@ -470,35 +469,51 @@ def default_options(add_flags=True, flags_obj=None):
       sample_name_flag=flags_obj.sample_name_parent2,
       reads_filenames=flags_obj.reads_parent2)
 
-  child_options = deepvariant_pb2.SampleOptions(
-      variant_caller_options=make_examples_core.make_vc_options(
-          sample_name=child_sample_name, flags_obj=flags_obj))
   parent1_options = deepvariant_pb2.SampleOptions(
+      role='parent1',
+      name=parent1_sample_name,
       variant_caller_options=make_examples_core.make_vc_options(
-          sample_name=parent1_sample_name, flags_obj=flags_obj))
+          sample_name=parent1_sample_name, flags_obj=flags_obj),
+      order=[0, 1, 2],
+      pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT)
+  child_options = deepvariant_pb2.SampleOptions(
+      role='child',
+      name=child_sample_name,
+      variant_caller_options=make_examples_core.make_vc_options(
+          sample_name=child_sample_name, flags_obj=flags_obj),
+      order=[0, 1, 2],
+      pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_CHILD)
   parent2_options = deepvariant_pb2.SampleOptions(
+      role='parent2',
+      name=parent2_sample_name,
       variant_caller_options=make_examples_core.make_vc_options(
-          sample_name=parent2_sample_name, flags_obj=flags_obj))
+          sample_name=parent2_sample_name, flags_obj=flags_obj),
+      # Swap the two parents when calling on parent2.
+      order=[2, 1, 0],
+      pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT)
 
-  if flags_obj.reads:
-    child_options.reads_filenames.extend(flags_obj.reads.split(','))
-  if flags_obj.reads_parent1:
-    parent1_options.reads_filenames.extend(flags_obj.reads_parent1.split(','))
-  if flags_obj.reads_parent2:
-    parent2_options.reads_filenames.extend(flags_obj.reads_parent2.split(','))
+  if add_flags:
+    if flags_obj.reads:
+      child_options.reads_filenames.extend(flags_obj.reads.split(','))
+    if flags_obj.reads_parent1:
+      parent1_options.reads_filenames.extend(flags_obj.reads_parent1.split(','))
+    if flags_obj.reads_parent2:
+      parent2_options.reads_filenames.extend(flags_obj.reads_parent2.split(','))
 
-  if flags_obj.downsample_fraction_child != NO_DOWNSAMPLING:
-    child_options.downsample_fraction = flags_obj.downsample_fraction_child
-  if flags_obj.downsample_fraction_parents != NO_DOWNSAMPLING:
-    parent1_options.downsample_fraction = flags_obj.downsample_fraction_parents
-    parent2_options.downsample_fraction = flags_obj.downsample_fraction_parents
+    if flags_obj.downsample_fraction_child != NO_DOWNSAMPLING:
+      child_options.downsample_fraction = flags_obj.downsample_fraction_child
+    if flags_obj.downsample_fraction_parents != NO_DOWNSAMPLING:
+      parent1_options.downsample_fraction = flags_obj.downsample_fraction_parents
+      parent2_options.downsample_fraction = flags_obj.downsample_fraction_parents
 
-  child_options.pileup_height = (
-      flags_obj.pileup_image_height_child or
-      dt_constants.PILEUP_DEFAULT_HEIGHT_CHILD)
-  parent1_options.pileup_height = parent2_options.pileup_height = (
-      flags_obj.pileup_image_height_parent or
-      dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT)
+    if flags_obj.pileup_image_height_child:
+      child_options.pileup_height = flags_obj.pileup_image_height_child
+    if flags_obj.pileup_image_height_parent:
+      parent1_options.pileup_height = parent2_options.pileup_height = flags_obj.pileup_image_height_parent
+
+  # Ordering here determines the default order of samples, and when a sample
+  # above has a custom .order, then this is the list those indices refer to.
+  samples_in_order = [parent1_options, child_options, parent2_options]
 
   options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,
@@ -512,7 +527,7 @@ def default_options(add_flags=True, flags_obj=None):
       task_id=0,
       num_shards=0,
       min_shared_contigs_basepairs=0.9,
-      sample_options=[parent1_options, child_options, parent2_options],
+      sample_options=samples_in_order,
       main_sample_index=1)
 
   if add_flags:
@@ -950,16 +965,18 @@ class RegionProcessor(object):
       tf.Example protos.
   """
 
-  def __init__(self, options, samples):
+  def __init__(self, options):
     """Creates a new RegionProcess.
 
     Args:
       options: deepvariant.MakeExamplesOptions proto used to specify our
         resources for calling (e.g., reference_filename).
-      samples: The list of samples (make_examples_utils.Sample).
     """
     self.options = options
-    self.samples = samples
+    self.samples = [
+        make_examples_core.Sample(options=x)
+        for x in self.options.sample_options
+    ]
     self.initialized = False
     self.ref_reader = None
     self.realigner = None
@@ -1022,13 +1039,14 @@ class RegionProcessor(object):
 
     for sample in self.samples:
       sample.sam_readers = self._make_sam_readers(
-          reads_filenames=sample.reads_filenames,
-          downsample_fraction=sample.downsample_fraction)
+          reads_filenames=sample.options.reads_filenames,
+          downsample_fraction=sample.options.downsample_fraction)
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
 
     if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup != 'none':
       main_sample = self.samples[self.options.main_sample_index]
-      input_bam_header = sam.SamReader(main_sample.reads_filenames[0]).header
+      input_bam_header = sam.SamReader(
+          main_sample.options.reads_filenames[0]).header
       self.realigner = realigner.Realigner(
           self.options.realigner_options,
           self.ref_reader,
@@ -1140,16 +1158,17 @@ class RegionProcessor(object):
             self.region_reads(
                 region=region,
                 sam_readers=sample.sam_readers,
-                reads_filenames=sample.reads_filenames))
+                reads_filenames=sample.options.reads_filenames))
 
     # Candidates are created using both parents and child
     candidates_dict, gvcfs_dict = self.candidates_in_region(region)
     examples_dict = {}
     for sample in self.samples:
-      if sample.role not in candidates_dict:
+      role = sample.options.role
+      if role not in candidates_dict:
         continue
-      candidates = candidates_dict[sample.role]
-      examples_dict[sample.role] = []
+      candidates = candidates_dict[role]
+      examples_dict[role] = []
 
       if self.options.select_variant_types:
         candidates = list(
@@ -1158,20 +1177,20 @@ class RegionProcessor(object):
       if in_training_mode(self.options):
         for candidate, label in self.label_candidates(candidates, region):
           for example in self.create_pileup_examples(
-              candidate, sample_order=sample.order):
+              candidate, sample_order=sample.options.order):
             self.add_label_to_example(example, label)
-            examples_dict[sample.role].append(example)
+            examples_dict[role].append(example)
       else:
         for candidate in candidates:
           for example in self.create_pileup_examples(
-              candidate, sample_order=sample.order):
-            examples_dict[sample.role].append(example)
+              candidate, sample_order=sample.options.order):
+            examples_dict[role].append(example)
 
-      candidates_dict[sample.role] = candidates
+      candidates_dict[role] = candidates
       logging.vlog(
           2, 'Found %s candidates in %s [%d bp, sample %s] '
-          '[%0.2fs elapsed]', len(examples_dict[sample.role]),
-          ranges.to_literal(region), ranges.length(region), sample.role,
+          '[%0.2fs elapsed]', len(examples_dict[role]),
+          ranges.to_literal(region), ranges.length(region), role,
           region_timer.Stop())
     return candidates_dict, examples_dict, gvcfs_dict
 
@@ -1691,14 +1710,14 @@ def get_example_counts(examples):
   return labels, types
 
 
-def make_examples_runner(options, samples):
+def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
   logging.info('Preparing inputs')
   regions = processing_regions_from_options(options)
 
   # Create a processor to create candidates and examples for each region.
-  region_processor = RegionProcessor(options, samples=samples)
+  region_processor = RegionProcessor(options)
   region_processor.initialize()
 
   logging.info('Writing examples to %s', options.examples_filename)
@@ -1718,8 +1737,9 @@ def make_examples_runner(options, samples):
     for sample in region_processor.samples:
       if sample.sam_readers is not None:
         # Only use suffix in calling mode
-        suffix = None if in_training_mode(options) else sample.role
-        writers_dict[sample.role] = OutputsWriter(options, suffix=suffix)
+        suffix = None if in_training_mode(options) else sample.options.role
+        writers_dict[sample.options.role] = OutputsWriter(
+            options, suffix=suffix)
   else:
     writers_dict[region_processor.sample_to_train] = OutputsWriter(
         options, suffix=None)
@@ -1868,41 +1888,6 @@ def check_options_are_valid(options):
       errors.log_and_raise('Pileup image heights must be between 10 and 100.')
 
 
-def samples_from_options(options):
-  """Create an array of three samples from the options given."""
-
-  # redacted
-  parent1_options = options.sample_options[0]
-  child_options = options.sample_options[1]
-  parent2_options = options.sample_options[2]
-  # Keep each sample organized with its relevant info.
-  child = make_examples_utils.Sample(
-      name=FLAGS.sample_name,
-      role='child',
-      reads_filenames=child_options.reads_filenames,
-      pileup_height=child_options.pileup_height,
-      order=[0, 1, 2],
-      downsample_fraction=child_options.downsample_fraction)
-  parent1 = make_examples_utils.Sample(
-      name=FLAGS.sample_name_parent1,
-      role='parent1',
-      reads_filenames=parent1_options.reads_filenames,
-      pileup_height=parent1_options.pileup_height,
-      order=[0, 1, 2],
-      downsample_fraction=parent1_options.downsample_fraction)
-  parent2 = make_examples_utils.Sample(
-      name=FLAGS.sample_name_parent2,
-      role='parent2',
-      reads_filenames=parent2_options.reads_filenames,
-      pileup_height=parent2_options.pileup_height,
-      order=[2, 1, 0],  # Swap the two parents when calling on parent2.
-      downsample_fraction=parent2_options.downsample_fraction)
-
-  # Ordering here determines the default order of samples, and when a sample
-  # above has a custom .order, then this is the list those indices refer to.
-  return [parent1, child, parent2]
-
-
 def main(argv=()):
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
@@ -1921,11 +1906,8 @@ def main(argv=()):
     options = default_options(add_flags=True, flags_obj=FLAGS)
     check_options_are_valid(options)
 
-    # Define samples. This is an array of three samples in DeepTrio.
-    samples = samples_from_options(options)
-
     # Run!
-    make_examples_runner(options, samples=samples)
+    make_examples_runner(options)
 
 
 if __name__ == '__main__':

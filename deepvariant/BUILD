@@ -370,7 +370,6 @@ py_library(
         ":exclude_contigs",
         ":logging_level",
         ":make_examples_core",
-        ":make_examples_utils",
         ":pileup_image",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:allelecounter",
@@ -432,7 +431,6 @@ py_test(
         ":dv_constants",
         ":make_examples_core",
         ":make_examples_lib",
-        ":make_examples_utils",
         ":py_testdata",
         ":tf_utils",
         "//deepvariant/labeler:variant_labeler",
@@ -464,27 +462,6 @@ py_binary(
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
-    ],
-)
-
-py_library(
-    name = "make_examples_utils",
-    srcs = ["make_examples_utils.py"],
-    srcs_version = "PY3",
-    deps = [
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//third_party/nucleus/io:sam",
-    ],
-)
-
-py_test(
-    name = "make_examples_utils_test",
-    srcs = ["make_examples_utils_test.py"],
-    python_version = "PY3",
-    deps = [
-        ":make_examples_utils",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -664,7 +641,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":dv_constants",
-        ":make_examples_utils",
+        ":make_examples_core",
         ":pileup_image",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",

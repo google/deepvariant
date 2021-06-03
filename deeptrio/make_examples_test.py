@@ -56,7 +56,6 @@ import six
 from deeptrio import make_examples
 from deeptrio import testdata
 from deepvariant import make_examples_core
-from deepvariant import make_examples_utils
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
@@ -221,8 +220,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
       options = make_examples.default_options(add_flags=True)
-      samples = make_examples.samples_from_options(options)
-      make_examples.make_examples_runner(options, samples=samples)
+      make_examples.make_examples_runner(options)
 
       # Check that our run_info proto contains the basic fields we'd expect:
       # (a) our options are written to the run_info.options field.
@@ -316,8 +314,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF_WITH_TYPES
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     options = make_examples.default_options(add_flags=True)
-    samples = make_examples.samples_from_options(options)
-    make_examples.make_examples_runner(options, samples=samples)
+    make_examples.make_examples_runner(options)
     golden_file = _sharded(testdata.CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES)
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
@@ -352,8 +349,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     options = make_examples.default_options(add_flags=True)
-    samples = make_examples.samples_from_options(options)
-    make_examples.make_examples_runner(options, samples=samples)
+    make_examples.make_examples_runner(options)
     golden_file = _sharded(testdata.ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES)
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
@@ -394,8 +390,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = 'calling'
 
     options = make_examples.default_options(add_flags=True)
-    samples = make_examples.samples_from_options(options)
-    make_examples.make_examples_runner(options, samples=samples)
+    make_examples.make_examples_runner(options)
 
     candidates = list(tfrecord.read_tfrecords(child_candidates))
     self.assertEqual(len(candidates), expected_count)
@@ -1228,16 +1223,10 @@ class RegionProcessorTest(parameterized.TestCase):
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
-    parent1 = make_examples_utils.Sample(
-        role='parent1', in_memory_sam_reader=mock.Mock(), order=[0, 1, 2])
-    child = make_examples_utils.Sample(
-        role='child', in_memory_sam_reader=mock.Mock(), order=[0, 1, 2])
-    parent2 = make_examples_utils.Sample(
-        role='parent2', in_memory_sam_reader=mock.Mock(), order=[2, 1, 0])
-
-    self.processor = make_examples.RegionProcessor(
-        self.options, samples=[parent1, child, parent2])
+    self.processor = make_examples.RegionProcessor(self.options)
     self.mock_init = self.add_mock('_initialize')
+    for sample in self.processor.samples:
+      sample.in_memory_sam_reader = mock.Mock()
 
   def add_mock(self, name, retval='dontadd', side_effect='dontadd'):
     patcher = mock.patch.object(self.processor, name, autospec=True)

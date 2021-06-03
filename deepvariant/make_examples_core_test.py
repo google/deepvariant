@@ -57,7 +57,6 @@ from third_party.nucleus.util import variant_utils
 from deepvariant import dv_constants
 from deepvariant import make_examples
 from deepvariant import make_examples_core
-from deepvariant import make_examples_utils
 from deepvariant import testdata
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
@@ -582,21 +581,15 @@ class RegionProcessorTest(parameterized.TestCase):
     main_sample = self.options.sample_options[0]
     if not main_sample.reads_filenames:
       main_sample.reads_filenames.append(testdata.CHR20_BAM)
+    main_sample.variant_caller_options.sample_name = 'sample_id'
+    main_sample.name = 'sample_id'
     self.options.truth_variants_filename = testdata.TRUTH_VARIANTS_VCF
     self.options.mode = deepvariant_pb2.MakeExamplesOptions.TRAINING
-    main_sample.variant_caller_options.sample_name = 'sample_id'
-    self.samples = [
-        make_examples_utils.Sample(
-            name=main_sample.variant_caller_options.sample_name,
-            role='main_sample',
-            reads_filenames=main_sample.reads_filenames,
-            variant_caller_options=main_sample.variant_caller_options)
-    ]
-
-    self.processor = make_examples_core.RegionProcessor(
-        self.options, samples=self.samples)
+    self.processor = make_examples_core.RegionProcessor(self.options)
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
     self.mock_init = self.add_mock('initialize')
+    for sample in self.processor.samples:
+      sample.in_memory_sam_reader = mock.Mock()
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
 
@@ -614,7 +607,6 @@ class RegionProcessorTest(parameterized.TestCase):
     candidates = ['Candidates']
     self.assertFalse(self.processor.initialized)
     main_sample = self.processor.samples[0]
-    main_sample.in_memory_sam_reader = mock.Mock()
 
     mock_rr = self.add_mock('region_reads', retval=[])
     mock_cir = self.add_mock('candidates_in_region', retval=(candidates, []))
@@ -624,7 +616,7 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
     mock_lc.assert_called_once_with(candidates, self.region)
@@ -633,7 +625,6 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.initialized = True
     self.assertTrue(self.processor.initialized)
     main_sample = self.processor.samples[0]
-    main_sample.in_memory_sam_reader = mock.Mock()
     mock_rr = self.add_mock('region_reads', retval=[])
     mock_cir = self.add_mock('candidates_in_region', retval=([], []))
     mock_lc = self.add_mock('label_candidates', retval=[])
@@ -642,14 +633,13 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
     test_utils.assert_called_once_workaround(mock_lc)
 
   def test_process_calls_no_candidates(self):
     main_sample = self.processor.samples[0]
-    main_sample.in_memory_sam_reader = mock.Mock()
     mock_rr = self.add_mock('region_reads', retval=[])
     mock_cir = self.add_mock('candidates_in_region', retval=([], []))
     mock_cpe = self.add_mock('create_pileup_examples', retval=[])
@@ -662,7 +652,7 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
     test_utils.assert_not_called_workaround(mock_cpe)
@@ -676,7 +666,6 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.options.mode = mode
 
     main_sample = self.processor.samples[0]
-    main_sample.in_memory_sam_reader = mock.Mock()
     mock_read = mock.MagicMock()
     mock_candidate = mock.MagicMock()
     mock_example = mock.MagicMock()
@@ -696,7 +685,7 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [mock_read])
     mock_cir.assert_called_once_with(self.region)
@@ -722,7 +711,6 @@ class RegionProcessorTest(parameterized.TestCase):
     l1, l2 = mock.Mock(), mock.Mock()
     e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
     main_sample = self.processor.samples[0]
-    main_sample.in_memory_sam_reader = mock.Mock()
     self.add_mock('region_reads', retval=[r1, r2])
     self.add_mock('candidates_in_region', retval=([c1, c2], []))
     mock_cpe = self.add_mock(
@@ -762,7 +750,6 @@ class RegionProcessorTest(parameterized.TestCase):
     main_sample = self.processor.samples[0]
     main_sample.sam_readers = [mock.Mock()]
     main_sample.sam_readers[0].query.return_value = []
-    main_sample.in_memory_sam_reader = mock.Mock()
 
     c1, c2 = mock.Mock(), mock.Mock()
     e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
@@ -785,7 +772,6 @@ class RegionProcessorTest(parameterized.TestCase):
 
   def test_candidates_in_region_no_reads(self):
     main_sample = self.processor.samples[0]
-    main_sample.in_memory_sam_reader = mock.Mock()
     main_sample.in_memory_sam_reader.query.return_value = []
     mock_ac = self.add_mock('_make_allele_counter_for_region')
 
@@ -799,7 +785,6 @@ class RegionProcessorTest(parameterized.TestCase):
   def test_candidates_in_region(self, include_gvcfs):
     self.options.gvcf_filename = 'foo.vcf' if include_gvcfs else ''
     main_sample = self.processor.samples[0]
-    main_sample.in_memory_sam_reader = mock.Mock()
     reads = ['read1', 'read2']
     main_sample.in_memory_sam_reader.query.return_value = reads
 

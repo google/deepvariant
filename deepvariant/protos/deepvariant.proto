@@ -502,6 +502,21 @@ message PileupImageOptions {
 
 // Options that may differ by sample.
 message SampleOptions {
+  // A string to identify the role of this sample in the analysis, e.g. in
+  // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
+  // not be checked inside make_examples_core.py. For example, instead of
+  // checking whether sample.role == "child" to set pileup height, instead add
+  // the pileup height to the sample, adding new properties to this proto if
+  // needed. This keeps make_examples_core.py functioning for multiple samples
+  // without it having to reason about sample roles that belong to each
+  // application. This role is used to keep track of sample identities
+  // throughout the analysis, and for debugging.
+  string role = 6;
+
+  // Sample name, e.g. HG002. Often given by a --sample_name flag or inferred
+  // from input files.
+  string name = 7;
+
   // Paths to files with read alignments, e.g. BAM or CRAM files.
   repeated string reads_filenames = 1;
 
@@ -516,6 +531,11 @@ message SampleOptions {
 
   // Height of the pileup image for this sample.
   int32 pileup_height = 4;
+
+  // A list of integers indicating the order in which samples should be shown
+  // in the pileup image when calling on this sample. The indices refer to the
+  // list of samples in the regionprocessor.
+  repeated int32 order = 5;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

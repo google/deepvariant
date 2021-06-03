@@ -395,8 +395,8 @@ class PileupImageCreator(object):
       random_for_image = np.random.RandomState(self._options.random_seed)
 
       # Use sample height or default to pic height.
-      if sample.pileup_height is not None:
-        pileup_height = sample.pileup_height
+      if sample.options.pileup_height != 0:
+        pileup_height = sample.options.pileup_height
       else:
         pileup_height = self.height
 
@@ -483,7 +483,9 @@ class PileupImageCreator(object):
       if alt_aligned_representation != 'none':
         if haplotype_alignments_for_samples is None or haplotype_sequences is None:
           # Use sample height or default to pic height.
-          sample_heights = [sample.pileup_height for sample in self._samples]
+          sample_heights = [
+              sample.options.pileup_height for sample in self._samples
+          ]
           if None not in sample_heights:
             pileup_height = sum(sample_heights)
           else:

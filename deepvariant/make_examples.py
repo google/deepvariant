@@ -48,7 +48,6 @@ from deepvariant import dv_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import make_examples_core
-from deepvariant import make_examples_utils
 from deepvariant import pileup_image
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.realigner import realigner
@@ -354,12 +353,20 @@ def default_options(add_flags=True, flags_obj=None):
   sample_name = make_examples_core.assign_sample_name(
       sample_name_flag=flags_obj.sample_name, reads_filenames=flags_obj.reads)
   sample_options = deepvariant_pb2.SampleOptions(
+      role='main_sample',
+      name=sample_name,
       variant_caller_options=make_examples_core.make_vc_options(
-          sample_name=sample_name, flags_obj=flags_obj))
-  if flags_obj.reads:
-    sample_options.reads_filenames.extend(flags_obj.reads.split(','))
-  if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
-    sample_options.downsample_fraction = flags_obj.downsample_fraction
+          sample_name=sample_name, flags_obj=flags_obj),
+      order=[0],
+      pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT)
+
+  if add_flags:
+    if flags_obj.reads:
+      sample_options.reads_filenames.extend(flags_obj.reads.split(','))
+    if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
+      sample_options.downsample_fraction = flags_obj.downsample_fraction
+    if flags_obj.pileup_image_height:
+      sample_options.pileup_height = flags_obj.pileup_image_height
 
   options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,
@@ -420,8 +427,6 @@ def default_options(add_flags=True, flags_obj=None):
       }[flags_obj.multi_allelic_mode]
       options.pic_options.multi_allelic_mode = multi_allelic_enum
 
-    if flags_obj.pileup_image_height:
-      options.pic_options.height = flags_obj.pileup_image_height
     if flags_obj.pileup_image_width:
       options.pic_options.width = flags_obj.pileup_image_width
 
@@ -596,7 +601,7 @@ def check_options_are_valid(options):
     if options.truth_variants_filename:
       errors.log_and_raise('Do not specify --truth_variants in calling mode.',
                            errors.CommandLineError)
-    if main_sample.variant_caller_options.sample_name == _UNKNOWN_SAMPLE:
+    if main_sample.name == _UNKNOWN_SAMPLE:
       errors.log_and_raise('sample_name must be specified in calling mode.',
                            errors.CommandLineError)
     if main_sample.variant_caller_options.gq_resolution < 1:
@@ -608,18 +613,6 @@ def check_options_are_valid(options):
         errors.log_and_raise(
             '--proposed_variants is required with vcf_candidate_importer in '
             'calling mode.', errors.CommandLineError)
-
-
-def samples_from_options(options):
-  """Creates an array of one sample from the options given."""
-  main_sample = options.sample_options[0]
-  return [
-      make_examples_utils.Sample(
-          name=main_sample.variant_caller_options.sample_name,
-          role='main_sample',
-          reads_filenames=main_sample.reads_filenames,
-          variant_caller_options=main_sample.variant_caller_options)
-  ]
 
 
 def main(argv=()):
@@ -640,11 +633,8 @@ def main(argv=()):
     options = default_options(add_flags=True, flags_obj=FLAGS)
     check_options_are_valid(options)
 
-    # Define samples. This is an array of just the one sample for DeepVariant.
-    samples = samples_from_options(options)
-
     # Run!
-    make_examples_core.make_examples_runner(options, samples=samples)
+    make_examples_core.make_examples_runner(options)
 
 
 if __name__ == '__main__':
