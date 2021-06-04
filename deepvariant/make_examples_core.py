@@ -240,9 +240,6 @@ def extract_sample_name_from_sam_reader(sam_reader):
 
   Returns:
     The sample ID annotated in the read group.
-
-  Raises:
-    ValueError: There is not exactly one unique sample name in the SAM/BAM.
   """
   samples_list = [
       rg.sample_id for rg in sam_reader.header.read_groups if rg.sample_id
@@ -1399,9 +1396,9 @@ class OutputsWriter(object):
         writer.write(proto)
 
 
-def get_example_counts(examples):
+def get_example_counts(examples, num_classes):
   """Returns a breakdown of examples by categories (label and type)."""
-  labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
+  labels = {i: 0 for i in range(0, num_classes)}
   types = {
       tf_utils.EncodedVariantType.SNP: 0,
       tf_utils.EncodedVariantType.INDEL: 0,
@@ -1457,7 +1454,8 @@ def make_examples_runner(options):
       n_regions += 1
 
       if in_training_mode(options) and options.run_info_filename:
-        labels, types = get_example_counts(examples)
+        labels, types = get_example_counts(
+            examples, num_classes=dv_constants.NUM_CLASSES)
         n_class_0 += labels[0]
         n_class_1 += labels[1]
         n_class_2 += labels[2]

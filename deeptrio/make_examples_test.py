@@ -62,7 +62,6 @@ from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
-from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
@@ -563,28 +562,6 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         _read_lines(testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO),
         _read_lines(tmp_output))
 
-  @parameterized.parameters(
-      dict(
-          flag_value='CALLING',
-          expected=deepvariant_pb2.MakeExamplesOptions.CALLING,
-      ),
-      dict(
-          flag_value='TRAINING',
-          expected=deepvariant_pb2.MakeExamplesOptions.TRAINING,
-      ),
-  )
-  def test_parse_proto_enum_flag(self, flag_value, expected):
-    enum_pb2 = deepvariant_pb2.MakeExamplesOptions.Mode
-    self.assertEqual(
-        make_examples.parse_proto_enum_flag(enum_pb2, flag_value), expected)
-
-  def test_parse_proto_enum_flag_error_handling(self):
-    with six.assertRaisesRegex(
-        self, ValueError,
-        'Unknown enum option "foo". Allowed options are CALLING,TRAINING'):
-      make_examples.parse_proto_enum_flag(
-          deepvariant_pb2.MakeExamplesOptions.Mode, 'foo')
-
   @flagsaver.flagsaver
   def test_keep_duplicates(self):
     FLAGS.keep_duplicates = True
@@ -724,43 +701,6 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         options.sample_options[1].variant_caller_options
         .fraction_reference_sites_to_emit, 0.0)
 
-  def test_extract_sample_name_from_reads_single_sample(self):
-    mock_sample_reader = mock.Mock()
-    mock_sample_reader.header = reads_pb2.SamHeader(
-        read_groups=[reads_pb2.ReadGroup(sample_id='sample_name')])
-    self.assertEqual(
-        make_examples.extract_sample_name_from_sam_reader(mock_sample_reader),
-        'sample_name')
-
-  @parameterized.parameters(
-      # No samples could be found in the reads.
-      dict(
-          samples=[],
-          expected_error_message='No non-empty sample name found in the input '
-          'reads. Please provide the name of the sample with the --sample_name '
-          'argument.'),
-      # Check that we detect an empty sample name and raise an exception.
-      dict(
-          samples=[''],
-          expected_error_message='No non-empty sample name found in the input '
-          'reads. Please provide the name of the sample '
-          'with the --sample_name argument.'),
-      # We have more than one sample in the reads.
-      dict(
-          samples=['sample1', 'sample2'],
-          expected_error_message=r'Multiple samples \(sample1, sample2\) were found in the input '
-          'reads. DeepVariant can only call variants from a BAM file '
-          'containing a single sample.'),
-  )
-  def test_extract_sample_name_from_reads_detects_bad_samples(
-      self, samples, expected_error_message):
-    mock_sample_reader = mock.Mock()
-    mock_sample_reader.header = reads_pb2.SamHeader(read_groups=[
-        reads_pb2.ReadGroup(sample_id=sample) for sample in samples
-    ])
-    with six.assertRaisesRegex(self, ValueError, expected_error_message):
-      make_examples.extract_sample_name_from_sam_reader(mock_sample_reader)
-
   @flagsaver.flagsaver
   def test_confident_regions(self):
     FLAGS.ref = testdata.CHR20_FASTA
@@ -777,7 +717,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.examples = ''
 
     options = make_examples.default_options(add_flags=True)
-    confident_regions = make_examples.read_confident_regions(options)
+    confident_regions = make_examples_core.read_confident_regions(options)
 
     # Our expected intervals, inlined from CONFIDENT_REGIONS_BED.
     expected = _from_literals_list([
@@ -858,202 +798,6 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     self.assertTrue(make_examples.gvcf_output_enabled(options))
 
-  def test_validate_ref_contig_coverage(self):
-    ref_contigs = _make_contigs([('1', 100), ('2', 100)])
-
-    # Fully covered reference contigs don't trigger an error.
-    for threshold in [0.5, 0.9, 1.0]:
-      self.assertIsNone(
-          make_examples.validate_reference_contig_coverage(
-              ref_contigs, ref_contigs, threshold))
-
-    # No common contigs always blows up.
-    for threshold in [0.0, 0.1, 0.5, 0.9, 1.0]:
-      with six.assertRaisesRegex(self, ValueError, 'span 200'):
-        make_examples.validate_reference_contig_coverage(
-            ref_contigs, [], threshold)
-
-    # Dropping either contig brings up below our 0.9 threshold.
-    with six.assertRaisesRegex(self, ValueError, 'span 200'):
-      make_examples.validate_reference_contig_coverage(
-          ref_contigs, _make_contigs([('1', 100)]), 0.9)
-
-    with six.assertRaisesRegex(self, ValueError, 'span 200'):
-      make_examples.validate_reference_contig_coverage(
-          ref_contigs, _make_contigs([('2', 100)]), 0.9)
-
-    # Our actual overlap is 50%, so check that we raise when appropriate.
-    with six.assertRaisesRegex(self, ValueError, 'span 200'):
-      make_examples.validate_reference_contig_coverage(
-          ref_contigs, _make_contigs([('2', 100)]), 0.6)
-    self.assertIsNone(
-        make_examples.validate_reference_contig_coverage(
-            ref_contigs, _make_contigs([('2', 100)]), 0.4))
-
-  @parameterized.parameters(
-      # all intervals are shared.
-      ([[('chrM', 10)], [('chrM', 10)]], [('chrM', 10)]),
-      # No common intervals.
-      ([[('chrM', 10)], [('chr1', 10)]], []),
-      # The names are the same but sizes are different, so not common.
-      ([[('chrM', 10)], [('chrM', 20)]], []),
-      # One common interval and one not.
-      ([[('chrM', 10), ('chr1', 20)], [('chrM', 10),
-                                       ('chr2', 30)]], [('chrM', 10)]),
-      # Check that the order doesn't matter.
-      ([[('chr1', 20), ('chrM', 10)], [('chrM', 10),
-                                       ('chr2', 30)]], [('chrM', 10, 1)]),
-      # Three-way merges.
-      ([
-          [('chr1', 20), ('chrM', 10)],
-          [('chrM', 10), ('chr2', 30)],
-          [('chr2', 30), ('chr3', 30)],
-      ], []),
-  )
-  def test_common_contigs(self, contigs_list, expected):
-    self.assertEqual(
-        _make_contigs(expected),
-        make_examples.common_contigs(
-            [_make_contigs(contigs) for contigs in contigs_list]))
-
-  @parameterized.parameters(
-      # Note that these tests aren't so comprehensive as we are trusting that
-      # the intersection code logic itself is good and well-tested elsewhere.
-      # Here we are focusing on some basic tests and handling of missing
-      # calling_region and confident_region data.
-      (['1:1-10'], ['1:1-10']),
-      (['1:1-100'], ['1:1-100']),
-      (['1:50-150'], ['1:50-100']),
-      (None, ['1:1-100', '2:1-200']),
-      (['1:20-50'], ['1:20-50']),
-      # Chr3 isn't part of our contigs; make sure we tolerate it.
-      (['1:20-30', '1:40-60', '3:10-50'], ['1:20-30', '1:40-60']),
-      # Check that we handle overlapping calling or confident regions.
-      (['1:25-30', '1:20-40'], ['1:20-40']),
-  )
-  def test_regions_to_process(self, calling_regions, expected):
-    contigs = _make_contigs([('1', 100), ('2', 200)])
-    self.assertCountEqual(
-        _from_literals_list(expected),
-        make_examples.regions_to_process(
-            contigs, 1000, calling_regions=_from_literals(calling_regions)))
-
-  @parameterized.parameters(
-      (50, None, [
-          '1:1-50', '1:51-100', '2:1-50', '2:51-76', '3:1-50', '3:51-100',
-          '3:101-121'
-      ]),
-      (120, None, ['1:1-100', '2:1-76', '3:1-120', '3:121']),
-      (500, None, ['1:1-100', '2:1-76', '3:1-121']),
-      (10, ['1:1-20', '1:30-35'], ['1:1-10', '1:11-20', '1:30-35']),
-      (8, ['1:1-20', '1:30-35'], ['1:1-8', '1:9-16', '1:17-20', '1:30-35']),
-  )
-  def test_regions_to_process_partition(self, max_size, calling_regions,
-                                        expected):
-    contigs = _make_contigs([('1', 100), ('2', 76), ('3', 121)])
-    self.assertCountEqual(
-        _from_literals_list(expected),
-        make_examples.regions_to_process(
-            contigs, max_size, calling_regions=_from_literals(calling_regions)))
-
-  @parameterized.parameters(
-      dict(includes=[], excludes=[], expected=['1:1-100', '2:1-200']),
-      dict(includes=['1'], excludes=[], expected=['1:1-100']),
-      # Check that excludes work as expected.
-      dict(includes=[], excludes=['1'], expected=['2:1-200']),
-      dict(includes=[], excludes=['2'], expected=['1:1-100']),
-      dict(includes=[], excludes=['1', '2'], expected=[]),
-      # Check that excluding pieces works. The main checks on taking the
-      # difference between two RangeSets live in ranges.py so here we are just
-      # making sure some basic logic works.
-      dict(includes=['1'], excludes=['1:1-10'], expected=['1:11-100']),
-      # Check that includes and excludes work together.
-      dict(
-          includes=['1', '2'],
-          excludes=['1:5-10', '1:20-50', '2:10-20'],
-          expected=['1:1-4', '1:11-19', '1:51-100', '2:1-9', '2:21-200']),
-      dict(
-          includes=['1'],
-          excludes=['1:5-10', '1:20-50', '2:10-20'],
-          expected=['1:1-4', '1:11-19', '1:51-100']),
-      dict(
-          includes=['2'],
-          excludes=['1:5-10', '1:20-50', '2:10-20'],
-          expected=['2:1-9', '2:21-200']),
-      # A complex example of including and excluding.
-      dict(
-          includes=['1:10-20', '2:50-60', '2:70-80'],
-          excludes=['1:1-13', '1:19-50', '2:10-65'],
-          expected=['1:14-18', '2:70-80']),
-  )
-  def test_build_calling_regions(self, includes, excludes, expected):
-    contigs = _make_contigs([('1', 100), ('2', 200)])
-    actual = make_examples.build_calling_regions(contigs, includes, excludes)
-    self.assertCountEqual(actual, _from_literals_list(expected))
-
-  def test_regions_to_process_sorted_within_contig(self):
-    # These regions are out of order but within a single contig.
-    contigs = _make_contigs([('z', 100)])
-    in_regions = _from_literals(['z:15', 'z:20', 'z:6', 'z:25-30', 'z:3-4'])
-    sorted_regions = _from_literals_list(
-        ['z:3-4', 'z:6', 'z:15', 'z:20', 'z:25-30'])
-    actual_regions = list(
-        make_examples.regions_to_process(
-            contigs, 100, calling_regions=in_regions))
-    # The assertEqual here is checking the order is exactly what we expect.
-    self.assertEqual(sorted_regions, actual_regions)
-
-  def test_regions_to_process_sorted_contigs(self):
-    # These contig names are out of order lexicographically.
-    contigs = _make_contigs([('z', 100), ('a', 100), ('n', 100)])
-    in_regions = _from_literals(['a:10', 'n:1', 'z:20', 'z:5'])
-    sorted_regions = _from_literals_list(['z:5', 'z:20', 'a:10', 'n:1'])
-    actual_regions = list(
-        make_examples.regions_to_process(
-            contigs, 100, calling_regions=in_regions))
-    # The assertEqual here is checking the order is exactly what we expect.
-    self.assertEqual(sorted_regions, actual_regions)
-
-  @parameterized.parameters([2, 3, 4, 5, 50])
-  def test_regions_to_process_sharding(self, num_shards):
-    """Makes sure we deterministically split up regions."""
-
-    def get_regions(task_id, num_shards):
-      return make_examples.regions_to_process(
-          contigs=_make_contigs([('z', 100), ('a', 100), ('n', 100)]),
-          partition_size=5,
-          task_id=task_id,
-          num_shards=num_shards)
-
-    # Check that the regions are the same unsharded vs. sharded.
-    unsharded_regions = get_regions(0, 0)
-    sharded_regions = []
-    for task_id in range(num_shards):
-      task_regions = get_regions(task_id, num_shards)
-      sharded_regions.extend(task_regions)
-    self.assertCountEqual(unsharded_regions, sharded_regions)
-
-  @parameterized.parameters(
-      # Providing one of task id and num_shards but not the other is bad.
-      (None, 0),
-      (None, 2),
-      (2, None),
-      (0, None),
-      # Negative values are illegal.
-      (-1, 2),
-      (0, -2),
-      # task_id >= num_shards is bad.
-      (2, 2),
-      (3, 2),
-  )
-  def test_regions_to_process_fails_with_bad_shard_args(self, task, num_shards):
-    with self.assertRaises(ValueError):
-      make_examples.regions_to_process(
-          contigs=_make_contigs([('z', 100), ('a', 100), ('n', 100)]),
-          partition_size=10,
-          task_id=task,
-          num_shards=num_shards)
-
   def test_catches_bad_argv(self):
     with mock.patch.object(logging, 'error') as mock_logging,\
         mock.patch.object(sys, 'exit') as mock_exit:
@@ -1092,80 +836,8 @@ class MakeExamplesUnitTest(parameterized.TestCase):
         'confident_regions is required when in training mode.')
     mock_exit.assert_called_once_with(errno.ENOENT)
 
-  @parameterized.parameters(
-      dict(
-          ref_names=['1', '2', '3'],
-          sam_names=['1', '2', '3'],
-          vcf_names=None,
-          names_to_exclude=[],
-          min_coverage_fraction=1.0,
-          expected_names=['1', '2', '3']),
-      dict(
-          ref_names=['1', '2', '3'],
-          sam_names=['1', '2'],
-          vcf_names=None,
-          names_to_exclude=[],
-          min_coverage_fraction=0.66,
-          expected_names=['1', '2']),
-      dict(
-          ref_names=['1', '2', '3'],
-          sam_names=['1', '2'],
-          vcf_names=['1', '3'],
-          names_to_exclude=[],
-          min_coverage_fraction=0.33,
-          expected_names=['1']),
-      dict(
-          ref_names=['1', '2', '3', '4', '5'],
-          sam_names=['1', '2', '3'],
-          vcf_names=None,
-          names_to_exclude=['4', '5'],
-          min_coverage_fraction=1.0,
-          expected_names=['1', '2', '3']),
-  )
-  def test_ensure_consistent_contigs(self, ref_names, sam_names, vcf_names,
-                                     names_to_exclude, min_coverage_fraction,
-                                     expected_names):
-    ref_contigs = _make_contigs([(name, 100) for name in ref_names])
-    sam_contigs = _make_contigs([(name, 100) for name in sam_names])
-    if vcf_names is not None:
-      vcf_contigs = _make_contigs([(name, 100) for name in vcf_names])
-    else:
-      vcf_contigs = None
-    actual = make_examples._ensure_consistent_contigs(ref_contigs, sam_contigs,
-                                                      vcf_contigs,
-                                                      names_to_exclude,
-                                                      min_coverage_fraction)
-    self.assertEqual([a.name for a in actual], expected_names)
-
-  @parameterized.parameters(
-      dict(
-          ref_names=['1', '2', '3'],
-          sam_names=['1', '2'],
-          vcf_names=None,
-          names_to_exclude=[],
-          min_coverage_fraction=0.67),
-      dict(
-          ref_names=['1', '2', '3'],
-          sam_names=['1', '2'],
-          vcf_names=['1', '3'],
-          names_to_exclude=[],
-          min_coverage_fraction=0.34),
-  )
-  def test_ensure_inconsistent_contigs(self, ref_names, sam_names, vcf_names,
-                                       names_to_exclude, min_coverage_fraction):
-    ref_contigs = _make_contigs([(name, 100) for name in ref_names])
-    sam_contigs = _make_contigs([(name, 100) for name in sam_names])
-    if vcf_names is not None:
-      vcf_contigs = _make_contigs([(name, 100) for name in vcf_names])
-    else:
-      vcf_contigs = None
-    with six.assertRaisesRegex(self, ValueError, 'Reference contigs span'):
-      make_examples._ensure_consistent_contigs(ref_contigs, sam_contigs,
-                                               vcf_contigs, names_to_exclude,
-                                               min_coverage_fraction)
-
   @flagsaver.flagsaver
-  def test_regions_and_exclude_regions_flags(self):
+  def test_regions_and_exclude_regions_flags_with_trio_options(self):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.HG001_CHR20_BAM
@@ -1183,12 +855,12 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     self.assertCountEqual(
         list(
             ranges.RangeSet(
-                make_examples.processing_regions_from_options(options))),
+                make_examples_core.processing_regions_from_options(options))),
         _from_literals_list(
             ['20:10,000,000-10,009,999', '20:10,100,001-11,000,000']))
 
   @flagsaver.flagsaver
-  def test_incorrect_empty_regions(self):
+  def test_incorrect_empty_regions_with_trio_options(self):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.HG001_CHR20_BAM
@@ -1205,7 +877,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     with six.assertRaisesRegex(self, ValueError,
                                'The regions to call is empty.'):
-      make_examples.processing_regions_from_options(options)
+      make_examples_core.processing_regions_from_options(options)
 
 
 class RegionProcessorTest(parameterized.TestCase):

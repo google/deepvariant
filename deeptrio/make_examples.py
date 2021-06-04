@@ -97,6 +97,8 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
+VARIANT_TYPE_SELECTORS = make_examples_core.VARIANT_TYPE_SELECTORS
+
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
@@ -335,88 +337,13 @@ flags.DEFINE_bool(
     'If True, reads are sorted by haplotypes (using HP tag), '
     'parse_sam_aux_fields has to be set for this to work.')
 
-# ---------------------------------------------------------------------------
-# Selecting variants of specific types (e.g., SNPs)
-# ---------------------------------------------------------------------------
-
-
-def _select_biallelic_snps(v):
-  return variant_utils.is_snp(v) and variant_utils.is_biallelic(v)
-
-
-def _select_biallelic_indels(v):
-  return variant_utils.is_indel(v) and variant_utils.is_biallelic(v)
-
-
-def _select_biallelic_insertions(v):
-  return variant_utils.has_insertion(v) and variant_utils.is_biallelic(v)
-
-
-def _select_biallelic_deletions(v):
-  return variant_utils.has_deletion(v) and variant_utils.is_biallelic(v)
-
-
-_VARIANT_TYPE_SELECTORS = {
-    'snps': _select_biallelic_snps,
-    'indels': _select_biallelic_indels,
-    'insertions': _select_biallelic_insertions,
-    'deletions': _select_biallelic_deletions,
-    'multi-allelics': variant_utils.is_multiallelic,
-    'all': lambda v: True,
-}
 
 # ---------------------------------------------------------------------------
 # Option handling
 # ---------------------------------------------------------------------------
 
-
-def parse_proto_enum_flag(proto_enum_pb2,
-                          flag_value,
-                          skip_unspecified_option=True):
-  """Parses a command line flag string value into a protobuf Enum value.
-
-  Args:
-    proto_enum_pb2: a enum_type_wrapper.EnumTypeWrapper type containing a proto
-      enum definition. For example, this would be
-      deepvariant_pb2.MakeExamplesOptions.Mode to get the MakeExamplesOptions
-      Mode enum. See:
-      https://developers.google.com/protocol-buffers/docs/reference/python-generated#enum
-        for more information.
-    flag_value: str. The name of the proto enum option from the command line we
-      want to convert into the enum value.
-    skip_unspecified_option: bool. If True, any enum options that include the
-      string 'unspecified' (in any case) will be excluded from the list of
-      allowed options in the ValueError raised if flag_value isn't valid.
-
-  Returns:
-    The enum value for flag_value in proto_enum_pb2
-
-  Raises:
-    ValueError: if flag_value isn't a valid enum name in proto_enum_pb2.
-  """
-  try:
-    return proto_enum_pb2.Value(flag_value)
-  except ValueError:
-    options = proto_enum_pb2.keys()
-    if skip_unspecified_option:
-      options = [o for o in options if 'unspecified' not in o.lower()]
-    raise ValueError('Unknown enum option "{}". Allowed options are {}'.format(
-        flag_value, ','.join(sorted(options))))
-
-
-def parse_regions_flag(regions_flag_value):
-  if isinstance(regions_flag_value, str):
-    regions_flag_value = regions_flag_value.split()
-  return regions_flag_value
-
-
-def logging_with_options(options, message):
-  """If options contain multiple shards, log with task/shard prefix."""
-  if options.num_shards > 1:
-    prefix = 'Task {}/{}: '.format(options.task_id, options.num_shards)
-  else:
-    prefix = ''
-  logging.info('%s%s', prefix, message)
+# Create a nickname because logging is used often.
+logging_with_options = make_examples_core.logging_with_options
 
 
 def default_options(add_flags=True, flags_obj=None):
@@ -531,14 +458,14 @@ def default_options(add_flags=True, flags_obj=None):
       main_sample_index=1)
 
   if add_flags:
-    options.mode = parse_proto_enum_flag(
+    options.mode = make_examples_core.parse_proto_enum_flag(
         deepvariant_pb2.MakeExamplesOptions.Mode, flags_obj.mode.upper())
 
-    options.labeler_algorithm = parse_proto_enum_flag(
+    options.labeler_algorithm = make_examples_core.parse_proto_enum_flag(
         deepvariant_pb2.MakeExamplesOptions.LabelerAlgorithm,
         flags_obj.labeler_algorithm.upper())
 
-    options.variant_caller = parse_proto_enum_flag(
+    options.variant_caller = make_examples_core.parse_proto_enum_flag(
         deepvariant_pb2.MakeExamplesOptions.VariantCaller,
         flags_obj.variant_caller.upper())
 
@@ -549,7 +476,7 @@ def default_options(add_flags=True, flags_obj=None):
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
     if flags_obj.sequencing_type:
-      options.pic_options.sequencing_type = parse_proto_enum_flag(
+      options.pic_options.sequencing_type = make_examples_core.parse_proto_enum_flag(
           deepvariant_pb2.PileupImageOptions.SequencingType,
           flags_obj.sequencing_type)
 
@@ -571,10 +498,10 @@ def default_options(add_flags=True, flags_obj=None):
     if flags_obj.select_variant_types:
       options.select_variant_types[:] = flags_obj.select_variant_types.split()
       for svt in options.select_variant_types:
-        if svt not in _VARIANT_TYPE_SELECTORS:
+        if svt not in VARIANT_TYPE_SELECTORS:
           errors.log_and_raise(
               'Select variant type {} not recognized. Allowed values are {}'
-              .format(svt, ', '.join(_VARIANT_TYPE_SELECTORS)),
+              .format(svt, ', '.join(VARIANT_TYPE_SELECTORS)),
               errors.CommandLineError)
 
     num_shards, examples, candidates, gvcf = (
@@ -602,9 +529,10 @@ def default_options(add_flags=True, flags_obj=None):
     if flags_obj.write_run_info:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
 
-    options.calling_regions.extend(parse_regions_flag(flags_obj.regions))
+    options.calling_regions.extend(
+        make_examples_core.parse_regions_flag(flags_obj.regions))
     options.exclude_calling_regions.extend(
-        parse_regions_flag(flags_obj.exclude_regions))
+        make_examples_core.parse_regions_flag(flags_obj.exclude_regions))
 
     options.realigner_enabled = flags_obj.realign_reads
     if options.realigner_enabled:
@@ -651,297 +579,9 @@ def only_true(*elts):
   return [elt for elt in elts if elt]
 
 
-def extract_sample_name_from_sam_reader(sam_reader):
-  """Returns the sample name as derived from the BAM file of reads.
-
-  Args:
-    sam_reader: Already opened sam_reader to use to extract the sample names
-      from. This sam_reader will not be closed after this function returns.
-
-  Returns:
-    The sample ID annotated in the read group.
-
-  Raises:
-    ValueError: There is not exactly one unique sample name in the SAM/BAM.
-  """
-  samples = {
-      rg.sample_id for rg in sam_reader.header.read_groups if rg.sample_id
-  }
-  if not samples:
-    raise ValueError(
-        'No non-empty sample name found in the input reads. Please provide the '
-        'name of the sample with the --sample_name argument.')
-  elif len(samples) > 1:
-    raise ValueError(
-        'Multiple samples ({}) were found in the input reads. DeepVariant can '
-        'only call variants from a BAM file containing a single sample.'.format(
-            ', '.join(sorted(samples))))
-  return next(iter(samples))
-
-
-# ---------------------------------------------------------------------------
-# Region processing
-# ---------------------------------------------------------------------------
-
-
-def _ensure_consistent_contigs(ref_contigs,
-                               sam_contigs,
-                               vcf_contigs,
-                               exclude_contig_names=None,
-                               min_coverage_fraction=1.0):
-  """Returns the common contigs after ensuring 'enough' overlap.
-
-  Args:
-    ref_contigs: list of reference_pb2.ContigInfo protos in the reference
-      genome.
-    sam_contigs: list of reference_pb2.ContigInfo protos in the SAM/BAM file.
-    vcf_contigs: list of reference_pb2.ContigInfo protos in the VCF if in
-      training mode, or None otherwise.
-    exclude_contig_names: list of strings of contig names to exclude from
-      overlap consideration.
-    min_coverage_fraction: The fraction of the reference contigs that must be
-      shared with all inputs.
-
-  Returns:
-    The list of contigs common between all input sources.
-
-  Raises:
-    ValueError: The contigs are not sufficiently similar across input sources.
-  """
-  # Remove any excluded contigs from the ref_contigs, as we want to use the
-  # selected contigs for our overlap comparison.
-  if exclude_contig_names:
-    ref_contigs = [c for c in ref_contigs if c.name not in exclude_contig_names]
-
-  # Compute the common contigs among our inputs, and check that the contigs are
-  # sufficiently consistent among each other.
-  contigs = common_contigs(only_true(ref_contigs, sam_contigs, vcf_contigs))
-  validate_reference_contig_coverage(ref_contigs, contigs,
-                                     min_coverage_fraction)
-  return contigs
-
-
-def common_contigs(contigs_list):
-  """Gets a list of contigs found in all contigs in contigs_list.
-
-  A common contig is considered one where the name and length in basepairs are
-  the same.
-
-  Args:
-    contigs_list: A sequence of lists of ContigInfo protos.
-
-  Returns:
-    A list of ContigInfo protos. Note that the individual protos found in this
-    returned list are shared with the ContigInfo protos found in contigs_list,
-    so should not be modified.
-  """
-
-  def common2(contigs1, contigs2):
-    """Computes the common contigs between contigs1 and contigs2."""
-    map2 = ranges.contigs_dict(contigs2)
-
-    def is_common(contig1):
-      contig2 = map2.get(contig1.name, None)
-      return contig2 and contig1.n_bases == contig2.n_bases
-
-    return [c for c in contigs1 if is_common(c)]
-
-  # Compute the common contigs by recursively getting common contigs of our
-  # master set of contigs (contigs) and each contig in other_contigs.
-  common = contigs_list[0]
-  for other_contigs in contigs_list[1:]:
-    common = common2(common, other_contigs)
-
-  return common
-
-
-def validate_reference_contig_coverage(ref_contigs, shared_contigs,
-                                       min_coverage_fraction):
-  """Validates that shared_contigs spans a sufficient amount of ref_contigs.
-
-  Args:
-    ref_contigs: List of ContigInfo protos. All of the contigs from our
-      reference genome.
-    shared_contigs: The subset of ref_contigs that we found in common with
-      ref_contigs and all other genomics data sources.
-    min_coverage_fraction: The minimum fraction of basepairs of ref_contigs that
-      should be found among the shared_contigs.
-
-  Raises:
-    ValueError: If the fraction of covered bases is less than
-      min_coverage_fraction.
-  """
-
-  def format_contig_matches():
-    pieces = []
-    common_map = ranges.contigs_dict(shared_contigs)
-    for ref_contig in ref_contigs:
-      status = 'matched' if ref_contig.name in common_map else 'IS MISSING'
-      pieces.append('"{}" is {} bp and {}'.format(ref_contig.name,
-                                                  ref_contig.n_bases, status))
-    return ', '.join(pieces)
-
-  ref_bp = ranges.contigs_n_bases(ref_contigs)
-  common_bp = ranges.contigs_n_bases(shared_contigs)
-  coverage = common_bp / (1. * ref_bp)
-  if not shared_contigs or coverage < min_coverage_fraction:
-    raise ValueError('Reference contigs span {} bases but only {} bases '
-                     '({:.2%}) were found in common among our input files. '
-                     'Check that the sources were created on a common genome '
-                     'reference build. Contig matches were: {}'.format(
-                         ref_bp, common_bp, coverage, format_contig_matches()))
-
-
-def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
-  """Builds a RangeSet containing the regions we should call variants in.
-
-  This function intersects the Ranges spanning all of the contigs with those
-  from regions_to_include, if not empty, and removes all of the regions in
-  regions_to_exclude.
-
-  Args:
-    contigs: Sequence of ContigInfo protos. Used to determine the initial ranges
-      to process (i.e., all bases of these contigs).
-    regions_to_include: RangeSet or iterable that can be converted to a
-      RangeSet.
-    regions_to_exclude: RangeSet or iterable that can be converted to a
-      RangeSet.
-
-  Returns:
-    A RangeSet.
-  """
-  # Initially we are going to call everything in the reference.
-  regions = ranges.RangeSet.from_contigs(contigs)
-
-  # If we provided a regions to include, intersect it with all of the regions,
-  # producing a common set of regions between the reference and the provided
-  # calling regions.
-  contig_dict = ranges.contigs_dict(contigs)
-  if regions_to_include:
-    regions = regions.intersection(
-        ranges.RangeSet.from_regions(regions_to_include, contig_dict))
-
-  # If we provided regions to exclude, intersect those with the existing calling
-  # regions to further refine our set of contigs to process.
-  if regions_to_exclude:
-    # exclude_regions mutates regions.
-    regions.exclude_regions(
-        ranges.RangeSet.from_regions(regions_to_exclude, contig_dict))
-
-  return regions
-
-
-def regions_to_process(contigs,
-                       partition_size,
-                       calling_regions=None,
-                       task_id=None,
-                       num_shards=None):
-  """Determines the regions to process and partitions them into pieces.
-
-  This function divides the genomes into regions we should process by
-  intersecting the Ranges spanning all of the contigs with those from
-  calling_regions, if provided. These intersected regions are then partitioned
-  into pieces no bigger than partition_size bp in length.
-
-  By construction we ensure that the regions are in genomic order, first w.r.t.
-  the contigs and then within each contig by start and end of each region.
-
-  This function can further subdivide these regions into a subset appropriate
-  for a single task (task_id) among N tasks (num_shards) to process. The
-  function ensures that:
-
-    set(all_regions) = union(regions(task_0), ..., regions(task_n))
-
-  when called with task_ids 0 ... N for num_shards = N.
-
-  Args:
-    contigs: Sequence of ContigInfo protos. Used to determine the initial ranges
-      to process (i.e., all bases of these contigs) and the order of returned
-      ranges.
-    partition_size: The maximum size to make any region when partitioning.
-    calling_regions: None or RangeSet. If provided, we will intersect the
-      regions to process so that only those that overlap a region in this set
-      are included.
-    task_id: int >= 0 or None. The task_id of this job, which will be used to
-      subdivide the total set of regions to process into just those that should
-      be processed by this job. Must be < num_shards.
-    num_shards: int >= 0 or None. The number of shards (i.e., the total number
-      of tasks) we are running in parallel. Together with task_id determines the
-      subset of regions we want to process.
-
-  Returns:
-    An iterable of nucleus.genomics.v1.Range objects.
-
-  Raises:
-    ValueError: if task_id and num_shards are bad or inconsistent.
-  """
-  if (task_id is None) != (num_shards is None):
-    raise ValueError('Both task_id and num_shards must be present if either is',
-                     task_id, num_shards)
-  if num_shards:
-    if num_shards < 0:
-      raise ValueError('num_shards={} must be >= 0'.format(num_shards))
-    if task_id < 0 or task_id >= num_shards:
-      raise ValueError('task_id={} should be >= 0 and < num_shards={}'.format(
-          task_id, num_shards))
-
-  regions = ranges.RangeSet.from_contigs(contigs)
-  if calling_regions:
-    regions = regions.intersection(calling_regions)
-  partitioned = regions.partition(partition_size)
-
-  if num_shards:
-    return (r for i, r in enumerate(partitioned) if i % num_shards == task_id)
-  else:
-    return partitioned
-
-
 # ---------------------------------------------------------------------------
 # Region processor
 # ---------------------------------------------------------------------------
-
-
-def read_confident_regions(options):
-  if options.confident_regions_filename:
-    return ranges.RangeSet.from_bed(options.confident_regions_filename)
-  else:
-    return None
-
-
-def filter_candidates(candidates, select_variant_types):
-  """Yields the candidate variants whose type is one of select_variant_types.
-
-  This function iterates through candidates and yield each candidate in order
-  if it satisfies any of the type constraints implied by select_variant_types.
-  For example, if select_variant_types = ['snps'] this function will yield
-  candidates that are bi-allelic SNPs only. Multiple select types are treated
-  as OR'd together, so ['snps', 'indels'] yields candidates that are bi-allelic
-  SNPs or indels.
-
-  Args:
-    candidates: Iterable of Variant protos. The candidates we want to select
-      from.
-    select_variant_types: List of str. The names of the variant type selectors
-      we want to use to keep/remove variants. Each string must be part of
-      _VARIANT_TYPE_SELECTORS or an error will be raised.
-
-  Raises:
-    ValueError: if any str in select_variant_types isn't present in
-      _VARIANT_TYPE_SELECTORS.
-
-  Yields:
-    Candidates in order.
-  """
-  if not all(s in _VARIANT_TYPE_SELECTORS for s in select_variant_types):
-    raise ValueError('Unexpected select variant type', select_variant_types)
-
-  for candidate in candidates:
-    v = candidate.variant
-    for select_type in select_variant_types:
-      selector = _VARIANT_TYPE_SELECTORS[select_type]
-      if selector(v):
-        yield candidate
-        break
 
 
 class RegionProcessor(object):
@@ -1085,7 +725,7 @@ class RegionProcessor(object):
     truth_vcf_reader = vcf.VcfReader(
         self.options.truth_variants_filename,
         excluded_format_fields=['GL', 'GQ', 'PL'])
-    confident_regions = read_confident_regions(self.options)
+    confident_regions = make_examples_core.read_confident_regions(self.options)
 
     if (self.options.labeler_algorithm ==
         deepvariant_pb2.MakeExamplesOptions.POSITIONAL_LABELER):
@@ -1172,7 +812,8 @@ class RegionProcessor(object):
 
       if self.options.select_variant_types:
         candidates = list(
-            filter_candidates(candidates, self.options.select_variant_types))
+            make_examples_core.filter_candidates(
+                candidates, self.options.select_variant_types))
 
       if in_training_mode(self.options):
         for candidate, label in self.label_candidates(candidates, region):
@@ -1557,63 +1198,6 @@ class RegionProcessor(object):
     return example
 
 
-def processing_regions_from_options(options):
-  """Computes the calling regions from our options.
-
-  This function does all of the work needed to read our input files and region
-  specifications to determine the list of regions we should generate examples
-  over. It also computes the confident regions needed to label variants.
-
-  Args:
-    options: deepvariant.MakeExamplesOptions proto containing information about
-      our input data sources.
-
-  Raises:
-    ValueError: if the regions to call is empty.
-
-  Returns:
-    Two values. The first is a list of nucleus.genomics.v1.Range protos of the
-    regions we should process. The second is a RangeSet containing the confident
-    regions for labeling, or None if we are running in training mode.
-  """
-  ref_contigs = fasta.IndexedFastaReader(
-      options.reference_filename).header.contigs
-
-  # Add in confident regions and vcf_contigs if in training mode.
-  vcf_contigs = None
-  if in_training_mode(options):
-    vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
-
-  main_sample = options.sample_options[options.main_sample_index]
-  all_sam_contigs = [
-      sam.SamReader(reads_file).header.contigs
-      for reads_file in main_sample.reads_filenames
-  ]
-  sam_contigs = common_contigs(only_true(*all_sam_contigs))
-
-  contigs = _ensure_consistent_contigs(ref_contigs, sam_contigs, vcf_contigs,
-                                       options.exclude_contigs,
-                                       options.min_shared_contigs_basepairs)
-  logging.info('Common contigs are %s', [c.name for c in contigs])
-  calling_regions = build_calling_regions(ref_contigs, options.calling_regions,
-                                          options.exclude_calling_regions)
-  if not calling_regions:
-    raise ValueError('The regions to call is empty. Check your --regions and '
-                     '--exclude_regions flags to make sure they are not '
-                     'resulting in set of empty region to process. This also '
-                     'happens if you use "chr20" for a BAM where contig names '
-                     'don\'t have "chr"s (or vice versa).')
-  regions = regions_to_process(
-      contigs=contigs,
-      partition_size=options.allele_counter_options.partition_size,
-      calling_regions=calling_regions,
-      task_id=options.task_id,
-      num_shards=options.num_shards)
-
-  return regions
-
-
-# redacted
 class OutputsWriter(object):
   """Manages all of the outputs of make_examples in a single place."""
 
@@ -1692,29 +1276,11 @@ class OutputsWriter(object):
         writer.write(proto)
 
 
-def get_example_counts(examples):
-  """Returns a breakdown of examples by categories (label and type)."""
-  labels = {0: 0, 1: 0, 2: 0}
-  types = {
-      tf_utils.EncodedVariantType.SNP: 0,
-      tf_utils.EncodedVariantType.INDEL: 0,
-      tf_utils.EncodedVariantType.UNKNOWN: 0
-  }
-
-  for example in examples:
-    example_label = tf_utils.example_label(example)
-    example_type = tf_utils.encoded_variant_type(
-        tf_utils.example_variant(example))
-    labels[example_label] += 1
-    types[example_type] += 1
-  return labels, types
-
-
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
   logging.info('Preparing inputs')
-  regions = processing_regions_from_options(options)
+  regions = make_examples_core.processing_regions_from_options(options)
 
   # Create a processor to create candidates and examples for each region.
   region_processor = RegionProcessor(options)
@@ -1759,7 +1325,8 @@ def make_examples_runner(options):
       n_regions += 1
 
       if in_training_mode(options) and options.run_info_filename:
-        labels, types = get_example_counts(examples)
+        labels, types = make_examples_core.get_example_counts(
+            examples, num_classes=dt_constants.NUM_CLASSES)
         n_class_0 += labels[0]
         n_class_1 += labels[1]
         n_class_2 += labels[2]
