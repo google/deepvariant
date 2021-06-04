@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~460m
-call_variants for HG002-4        | ~475m
-call_variants for HG003          | ~475m
-call_variants for HG004          | ~475m
-postprocess_variants (parallel)  | ~110m
-total                            | ~1995m = 33.3 hours
+make_examples                    | ~450m
+call_variants for HG002          | ~365m
+call_variants for HG003          | ~365m
+call_variants for HG004          | ~365m
+postprocess_variants (parallel)  | ~85m
+total                            | ~1630m = 27.2 hours
 
 ### Accuracy
 
@@ -22,24 +22,24 @@ truth), which was held out while training.
 
 #### HG002:
 
-Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
------ | ------- | ----- | ---- | -------- | --------- | --------
-Indel | 523006  | 2463  | 839  | 0.995313 | 0.998464  | 0.996886
-SNP   | 3347854 | 17273 | 3057 | 0.994867 | 0.999088  | 0.996973
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 523008   | 2461     | 808      | 0.995317      | 0.99852          | 0.996916        |
+| SNP   | 3347844  | 17283    | 3088     | 0.994864      | 0.999079         | 0.996967        |
 
 #### HG003:
 
-Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
------ | ------- | ----- | ---- | -------- | --------- | --------
-Indel | 501697  | 2804  | 1234 | 0.994442 | 0.997646  | 0.996041
-SNP   | 3308641 | 18855 | 3373 | 0.994334 | 0.998982  | 0.996652
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 501723   | 2778     | 1218     | 0.994494      | 0.997676         | 0.996082        |
+| SNP   | 3308633  | 18863    | 3376     | 0.994331      | 0.998981         | 0.996651        |
 
 #### HG004:
 
-Type  | # TP    | # FN  | # FP | Recall   | Precision | F1_Score
------ | ------- | ----- | ---- | -------- | --------- | --------
-Indel | 507681  | 2838  | 1182 | 0.994441 | 0.997774  | 0.996104
-SNP   | 3326961 | 19649 | 3232 | 0.994129 | 0.999030  | 0.996573
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 507730   | 2789     | 1130     | 0.994537      | 0.997871         | 0.996201        |
+| SNP   | 3326956  | 19654    | 3229     | 0.994127      | 0.999031         | 0.996573        |
 
 ## PacBio (HiFi)
 
@@ -50,11 +50,11 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
 make_examples                    | ~840m
-call_variants for HG002          | ~400m
-call_variants for HG003          | ~400m
-call_variants for HG004          | ~400m
+call_variants for HG002          | ~325m
+call_variants for HG003          | ~325m
+call_variants for HG004          | ~325m
 postprocess_variants (parallel)  | ~80m
-total                            | ~2120m = 35.3 hours
+total                            | ~1895m = 31.6 hours
 
 ### Accuracy
 
@@ -65,24 +65,24 @@ genome for consistency.
 
 #### HG002:
 
-Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
------ | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 524058  | 1411 | 1865 | 0.997315 | 0.99661   | 0.996962
-SNP   | 3361591 | 3536 | 980  | 0.998949 | 0.999709  | 0.999329
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 524046   | 1423     | 1929     | 0.997292      | 0.996494         | 0.996893        |
+| SNP   | 3361595  | 3532     | 1044     | 0.99895       | 0.99969          | 0.99932         |
 
 #### HG003:
 
-Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
------ | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 502477  | 2024 | 2333 | 0.995988 | 0.995578  | 0.995783
-SNP   | 3323668 | 3827 | 1509 | 0.998850 | 0.999547  | 0.999198
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 502625   | 1876     | 2343     | 0.996281      | 0.99556          | 0.995921        |
+| SNP   | 3323671  | 3824     | 1522     | 0.998851      | 0.999543         | 0.999197        |
 
 #### HG004:
 
-Type  | # TP    | # FN | # FP | Recall   | Precision | F1_Score
------ | ------- | ---- | ---- | -------- | --------- | --------
-Indel | 508346  | 2173 | 2471 | 0.995744 | 0.995375  | 0.995559
-SNP   | 3342956 | 3654 | 1351 | 0.998908 | 0.999596  | 0.999252
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 508515   | 2004     | 2470     | 0.996075      | 0.995379         | 0.995727        |
+| SNP   | 3342962  | 3648     | 1368     | 0.99891       | 0.999591         | 0.99925         |
 
 ## Whole Exome Sequencing (Illumina)
 
@@ -93,11 +93,11 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
 make_examples                    | ~18m
-call_variants for HG002          | ~7m
-call_variants for HG003          | ~7m
-call_variants for HG004          | ~7m
-postprocess_variants (parallel)  | ~2m
-total                            | ~41m
+call_variants for HG002          | ~6m
+call_variants for HG003          | ~6m
+call_variants for HG004          | ~6m
+postprocess_variants (parallel)  | ~1m
+total                            | ~37m
 
 ### Accuracy
 
@@ -106,25 +106,25 @@ truth).
 
 #### HG002:
 
-Type  | # TP  | # FN | # FP | Recall  | Precision | F1_Score
------ | ----- | ---- | ---- | ------- | --------- | --------
-Indel | 1059  | 31   | 12   | 0.97156 | 0.989011  | 0.980208
-SNP   | 25165 | 249  | 31   | 0.990202| 0.998770  | 0.994468
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 1058     | 32       | 13       | 0.970642      | 0.988095         | 0.979291        |
+| SNP   | 25165    | 249      | 28       | 0.990202      | 0.998889         | 0.994526        |
 
 #### HG003:
 
-Type  | # TP  | # FN | # FP | Recall   | Precision | F1_Score
------ | ----- | ---- | ---- | -------- | --------- | --------
-Indel | 1022  | 29   | 11   | 0.972407 | 0.989564  | 0.980910
-SNP   | 25038 | 241  | 28   | 0.990466 | 0.998883  | 0.994657
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 1020     | 31       | 12       | 0.970504      | 0.988615         | 0.979476        |
+| SNP   | 25036    | 243      | 28       | 0.990387      | 0.998883         | 0.994617        |
 
 
 #### HG004:
 
-Type  | # TP  | # FN | # FP | Recall   | Precision | F1_Score
------ | ----- | ---- | ---- | -------- | --------- | --------
-Indel | 1057  | 25   | 20   | 0.976895 | 0.981982  | 0.979432
-SNP   | 24945 | 232  | 17   | 0.990785 | 0.999319  | 0.995034
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 1056     | 26       | 19       | 0.97597       | 0.982852         | 0.979399        |
+| SNP   | 24945    | 232      | 17       | 0.990785      | 0.999319         | 0.995034        |
 
 
 ## How to reproduce the metrics on this page
