@@ -39,6 +39,7 @@ from typing import List, Optional, Sequence
 
 
 from absl import logging
+import dataclasses
 import numpy as np
 import tensorflow as tf
 
@@ -599,7 +600,7 @@ def filter_regions_by_vcf(regions, variant_positions):
 # ---------------------------------------------------------------------------
 
 
-# redacted
+@dataclasses.dataclass
 class Sample(object):
   """Sample organizes sample-level properties and sam readers.
 
@@ -613,16 +614,11 @@ class Sample(object):
   reads: A list of reads queried from the sam readers.
   allele_counter: allelecounter.AlleleCounter
   """
-  options: Optional[deepvariant_pb2.SampleOptions] = None
+  options: deepvariant_pb2.SampleOptions
   sam_readers: Optional[Sequence[sam.SamReader]] = None
   in_memory_sam_reader: Optional[sam.InMemorySamReader] = None
   reads: Optional[List[reads_pb2.Read]] = None
   allele_counter: Optional[allelecounter.AlleleCounter] = None
-
-  def __init__(self, options=None, sam_readers=None, in_memory_sam_reader=None):
-    self.options = options
-    self.sam_readers = sam_readers
-    self.in_memory_sam_reader = in_memory_sam_reader
 
   def __repr__(self):
     return '<Sample {}>'.format(str(self.__dict__))
