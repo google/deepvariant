@@ -343,6 +343,28 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertDeepVariantExamplesEqual(
         examples, list(tfrecord.read_tfrecords(golden_file)))
 
+  @flagsaver.flagsaver
+  def test_make_examples_end2end_confirm_downsample_fraction_used(self):
+
+    def _get_examples(downsample_fraction=None):
+      if downsample_fraction is not None:
+        FLAGS.downsample_fraction = downsample_fraction
+      options = make_examples.default_options(add_flags=True)
+      make_examples_core.make_examples_runner(options)
+      examples = self.verify_examples(
+          FLAGS.examples, region, options, verify_labels=False)
+      return examples
+
+    region = ranges.parse_literal('chr20:10,000,000-10,004,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.mode = 'calling'
+    examples1 = _get_examples()
+    examples2 = _get_examples(0.01)
+    self.assertLess(len(examples2), len(examples1))
+
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @parameterized.parameters(
       dict(mode='calling'),
