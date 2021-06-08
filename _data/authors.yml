@@ -55,3 +55,7 @@ danielecook:
         name: Daniel Cook
         link: https://scholar.google.com/citations?user=xPDZ2w4AAAAJ&hl=en
         img: /deepvariant/assets/images/authors/dan.jpg
+
+howdy:
+        name: Howard Yang
+        img: /deepvariant/assets/images/authors/howdy.png
