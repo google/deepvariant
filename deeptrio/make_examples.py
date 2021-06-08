@@ -64,7 +64,6 @@ from deepvariant.vendor import timer
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import sharded_file_utils
-from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import hts_verbose
 from third_party.nucleus.protos import reads_pb2
@@ -1198,84 +1197,6 @@ class RegionProcessor(object):
     return example
 
 
-class OutputsWriter(object):
-  """Manages all of the outputs of make_examples in a single place."""
-
-  def __init__(self, options, suffix=None):
-    self._writers = {k: None for k in ['candidates', 'examples', 'gvcfs']}
-
-    if options.candidates_filename:
-      self._add_writer(
-          'candidates',
-          tfrecord.Writer(
-              self._add_suffix(options.candidates_filename, suffix)))
-
-    if options.examples_filename:
-      self._add_writer(
-          'examples',
-          tfrecord.Writer(self._add_suffix(options.examples_filename, suffix)))
-
-    if options.gvcf_filename:
-      self._add_writer(
-          'gvcfs',
-          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)))
-
-  def close_all(self):
-    for writer in self._writers.values():
-      if writer is not None:
-        writer.close()
-
-  def _add_suffix(self, file_path, suffix):
-    """Adds suffix to file name."""
-    if not suffix:
-      return file_path
-
-    file_dir, file_base = os.path.split(file_path)
-
-    file_split = file_base.split('.')
-    file_split[0] = '%s_%s' % (file_split[0], suffix)
-    new_file_base = ('.').join(file_split)
-
-    new_file = os.path.join(file_dir, new_file_base)
-    return new_file
-
-  def write_examples(self, *examples):
-    self._write('examples', *examples)
-
-  def write_gvcfs(self, *gvcfs):
-    self._write('gvcfs', *gvcfs)
-
-  def write_candidates(self, *candidates):
-    self._write('candidates', *candidates)
-
-  def _add_writer(self, name, writer):
-    if name not in self._writers:
-      raise ValueError(
-          'Expected writer {} to have a None binding in writers.'.format(name))
-    if self._writers[name] is not None:
-      raise ValueError('Expected writer {} to be bound to None in writers but '
-                       'saw {} instead'.format(name, self._writers[name]))
-    self._writers[name] = writer
-
-  def __enter__(self):
-    """API function to support with syntax."""
-    for writer in self._writers.values():
-      if writer is not None:
-        writer.__enter__()
-    return self
-
-  def __exit__(self, exception_type, exception_value, traceback):
-    for writer in self._writers.values():
-      if writer is not None:
-        writer.__exit__(exception_type, exception_value, traceback)
-
-  def _write(self, writer_name, *protos):
-    writer = self._writers[writer_name]
-    if writer:
-      for proto in protos:
-        writer.write(proto)
-
-
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
@@ -1304,11 +1225,12 @@ def make_examples_runner(options):
       if sample.sam_readers is not None:
         # Only use suffix in calling mode
         suffix = None if in_training_mode(options) else sample.options.role
-        writers_dict[sample.options.role] = OutputsWriter(
+        writers_dict[sample.options.role] = make_examples_core.OutputsWriter(
             options, suffix=suffix)
   else:
-    writers_dict[region_processor.sample_to_train] = OutputsWriter(
-        options, suffix=None)
+    writers_dict[
+        region_processor.sample_to_train] = make_examples_core.OutputsWriter(
+            options, suffix=None)
 
   for region in regions:
     candidates_dict, examples_dict, gvcfs_dict = region_processor.process(

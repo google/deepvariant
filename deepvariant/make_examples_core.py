@@ -33,6 +33,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import os
 import time
 from typing import List, Optional, Sequence
 
@@ -1332,20 +1333,26 @@ def processing_regions_from_options(options):
 class OutputsWriter(object):
   """Manages all of the outputs of make_examples in a single place."""
 
-  def __init__(self, options):
+  def __init__(self, options, suffix=None):
     self._writers = {
         k: None for k in ['candidates', 'examples', 'gvcfs', 'runtime']
     }
 
     if options.candidates_filename:
-      self._add_writer('candidates',
-                       tfrecord.Writer(options.candidates_filename))
+      self._add_writer(
+          'candidates',
+          tfrecord.Writer(
+              self._add_suffix(options.candidates_filename, suffix)))
 
     if options.examples_filename:
-      self._add_writer('examples', tfrecord.Writer(options.examples_filename))
+      self._add_writer(
+          'examples',
+          tfrecord.Writer(self._add_suffix(options.examples_filename, suffix)))
 
     if options.gvcf_filename:
-      self._add_writer('gvcfs', tfrecord.Writer(options.gvcf_filename))
+      self._add_writer(
+          'gvcfs',
+          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)))
 
     if options.runtime_by_region:
       self._add_writer('runtime',
@@ -1353,6 +1360,20 @@ class OutputsWriter(object):
       writer = self._writers['runtime']
       writer.__enter__()
       writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
+
+  def _add_suffix(self, file_path, suffix):
+    """Adds suffix to file name if a suffix is given."""
+    if not suffix:
+      return file_path
+
+    file_dir, file_base = os.path.split(file_path)
+
+    file_split = file_base.split('.')
+    file_split[0] = f'{file_split[0]}_{suffix}'
+    new_file_base = ('.').join(file_split)
+
+    new_file = os.path.join(file_dir, new_file_base)
+    return new_file
 
   def write_examples(self, *examples):
     self._write('examples', *examples)
@@ -1394,6 +1415,11 @@ class OutputsWriter(object):
     if writer:
       for proto in protos:
         writer.write(proto)
+
+  def close_all(self):
+    for writer in self._writers.values():
+      if writer is not None:
+        writer.close()
 
 
 def get_example_counts(examples, num_classes):
