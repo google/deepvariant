@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright 2019 Google LLC.
-# This script is used to install `singularity` 3.7.0 on Ubutun 18.04.
+# This script is used to install `singularity` 3.7.0.
+# It has been tested on Ubutun 20.04.
 # For different Linux distributions and versions, modifications might be needed.
 # Installation instructions are from: https://sylabs.io/docs/
 
@@ -26,7 +27,7 @@ sudo tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz
 rm go$VERSION.$OS-$ARCH.tar.gz
 
 export VERSION=3.7.0
-wget https://github.com/sylabs/singularity/releases/download/v${VERSION}/singularity-${VERSION}.tar.gz
+wget https://github.com/hpcng/singularity/releases/download/v${VERSION}/singularity-${VERSION}.tar.gz
 tar -xzf singularity-${VERSION}.tar.gz
 pushd singularity
 export PATH=/usr/local/go/bin:$PATH
