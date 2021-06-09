@@ -278,15 +278,20 @@ def write_variant_call(writer, prediction, use_tpu):
 
   # Write it out.
   true_labels = prediction['label'] if FLAGS.debugging_true_label_mode else None
-  cvo = _create_cvo_proto(encoded_variant, rounded_gls,
-                          encoded_alt_allele_indices, true_labels)
+  cvo = _create_cvo_proto(
+      encoded_variant,
+      rounded_gls,
+      encoded_alt_allele_indices,
+      true_labels,
+      logits=prediction.get('logits'))
   return writer.write(cvo)
 
 
 def _create_cvo_proto(encoded_variant,
                       gls,
                       encoded_alt_allele_indices,
-                      true_labels=None):
+                      true_labels=None,
+                      logits=None):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
   alt_allele_indices = (
@@ -300,7 +305,7 @@ def _create_cvo_proto(encoded_variant,
         is_snp=variant_utils.is_snp(variant),
         predicted_label=np.argmax(gls),
         true_label=true_labels,
-    )
+        logits=logits)
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
       alt_allele_indices=alt_allele_indices,

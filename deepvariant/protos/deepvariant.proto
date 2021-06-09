@@ -302,6 +302,7 @@ message CallVariantsOutput {
     bool has_deletion = 3;
     bool is_snp = 4;
     int32 true_label = 5;
+    repeated double logits = 6;
   }
   DebugInfo debug_info = 4;
 }

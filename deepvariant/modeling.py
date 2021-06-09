@@ -1010,6 +1010,7 @@ class DeepVariantSlimModel(DeepVariantModel):
     predictions = {
         # We don't actually use classes downstream right now.
         # 'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
+        'logits': logits,
         'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
         # DV2 call_variants wants these passed through.
         'variant': features['variant'],
