@@ -303,6 +303,7 @@ message CallVariantsOutput {
     bool is_snp = 4;
     int32 true_label = 5;
     repeated double logits = 6;
+    repeated double prelogits = 7;
   }
   DebugInfo debug_info = 4;
 }

@@ -283,7 +283,8 @@ def write_variant_call(writer, prediction, use_tpu):
       rounded_gls,
       encoded_alt_allele_indices,
       true_labels,
-      logits=prediction.get('logits'))
+      logits=prediction.get('logits'),
+      prelogits=prediction.get('prelogits'))
   return writer.write(cvo)
 
 
@@ -291,7 +292,8 @@ def _create_cvo_proto(encoded_variant,
                       gls,
                       encoded_alt_allele_indices,
                       true_labels=None,
-                      logits=None):
+                      logits=None,
+                      prelogits=None):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
   alt_allele_indices = (
@@ -299,13 +301,17 @@ def _create_cvo_proto(encoded_variant,
           encoded_alt_allele_indices))
   debug_info = None
   if FLAGS.include_debug_info or FLAGS.debugging_true_label_mode:
+    if prelogits is not None:
+      assert prelogits.shape == (1, 1, 2048)
+      prelogits = prelogits[0][0]
     debug_info = deepvariant_pb2.CallVariantsOutput.DebugInfo(
         has_insertion=variant_utils.has_insertion(variant),
         has_deletion=variant_utils.has_deletion(variant),
         is_snp=variant_utils.is_snp(variant),
         predicted_label=np.argmax(gls),
         true_label=true_labels,
-        logits=logits)
+        logits=logits,
+        prelogits=prelogits)
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
       alt_allele_indices=alt_allele_indices,
@@ -427,7 +433,7 @@ def call_variants(examples_filename,
         master=master,
         use_tpu=use_tpu,
         session_config=config,
-    )
+        include_debug_info=FLAGS.include_debug_info)
 
     # Instantiate the prediction "stream", and select the EMA values from
     # the model.

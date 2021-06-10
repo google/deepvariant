@@ -583,7 +583,8 @@ class DeepVariantModel(object):
                      master='',
                      use_tpu=False,
                      start_from_checkpoint=None,
-                     session_config=None):
+                     session_config=None,
+                     include_debug_info=False):
     """Returns a new tf.estimator.Estimator object for training or prediction.
 
     The estimator needs to know batch_size. We use the same value for all
@@ -612,6 +613,8 @@ class DeepVariantModel(object):
         only be used in training. The inference checkpoint is loaded in a
         different place.
       session_config: a tf.ConfigProto to pass to RunConfig, if not use_tpu.
+      include_debug_info: from call_variants. If True, PREDICT mode will
+        include extra info such as logits and prelogits.
 
     Returns:
       an object implementing the tf.estimator.Estimator interface (will be a
@@ -619,6 +622,8 @@ class DeepVariantModel(object):
     """
     if use_tpu is not None:
       self.use_tpu = use_tpu
+
+    self.include_debug_info = include_debug_info
 
     # Set the model dir of this class to the model_dir passed in here. It's not
     # so clean but it appears to be necessary due to the way estimators are
@@ -928,9 +933,9 @@ class DeepVariantSlimModel(DeepVariantModel):
         'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
         'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
     })
-
+    prelogits = endpoints['PreLogits'] if self.include_debug_info else None
     if mode == tf.estimator.ModeKeys.PREDICT:
-      return self._model_fn_predict(mode, features, logits)
+      return self._model_fn_predict(mode, features, logits, prelogits=prelogits)
 
     # Compute loss.
     one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)
@@ -1004,18 +1009,22 @@ class DeepVariantSlimModel(DeepVariantModel):
     else:
       return spec.as_estimator_spec()
 
-  def _model_fn_predict(self, mode, features, logits):
+  def _model_fn_predict(self, mode, features, logits, prelogits=None):
     """This is the PREDICT part of model_fn."""
     assert mode == tf.estimator.ModeKeys.PREDICT
     predictions = {
         # We don't actually use classes downstream right now.
         # 'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
-        'logits': logits,
         'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
         # DV2 call_variants wants these passed through.
         'variant': features['variant'],
         'alt_allele_indices': features['alt_allele_indices'],
     }
+    if self.include_debug_info:
+      if logits is not None:
+        predictions.update({'logits': logits})
+      if prelogits is not None:
+        predictions.update({'prelogits': prelogits})
     if 'label' in features:
       predictions['label'] = features['label']
     if 'locus' in features:
@@ -1265,8 +1274,9 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
         'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
     })
 
+    prelogits = endpoints['PreLogits'] if self.include_debug_info else None
     if mode == tf.estimator.ModeKeys.PREDICT:
-      return self._model_fn_predict(mode, features, logits)
+      return self._model_fn_predict(mode, features, logits, prelogits=prelogits)
 
     # Compute loss.
     one_hot_labels = tf.one_hot(labels, num_classes, dtype=tf.int32)

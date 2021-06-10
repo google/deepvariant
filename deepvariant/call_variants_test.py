@@ -291,6 +291,7 @@ class CallVariantsEndToEndTests(
         self.assertEqual(cvo.debug_info.predicted_label,
                          np.argmax(cvo.genotype_probabilities))
         self.assertEqual(len(cvo.debug_info.logits), 3)
+        self.assertEqual(len(cvo.debug_info.prelogits), 2048)
 
     def example_matches_call_variants_output(example, call_variants_output):
       return (tf_utils.example_variant(example) == call_variants_output.variant
