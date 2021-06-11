@@ -609,7 +609,13 @@ class RegionProcessorTest(parameterized.TestCase):
     main_sample = self.processor.samples[0]
 
     mock_rr = self.add_mock('region_reads', retval=[])
-    mock_cir = self.add_mock('candidates_in_region', retval=(candidates, []))
+    mock_cir = self.add_mock(
+        'candidates_in_region',
+        retval=({
+            'main_sample': candidates
+        }, {
+            'main_sample': []
+        }))
     mock_lc = self.add_mock('label_candidates', retval=[])
     self.processor.process(self.region)
     test_utils.assert_called_once_workaround(self.mock_init)
@@ -626,7 +632,13 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertTrue(self.processor.initialized)
     main_sample = self.processor.samples[0]
     mock_rr = self.add_mock('region_reads', retval=[])
-    mock_cir = self.add_mock('candidates_in_region', retval=([], []))
+    mock_cir = self.add_mock(
+        'candidates_in_region',
+        retval=({
+            'main_sample': []
+        }, {
+            'main_sample': []
+        }))
     mock_lc = self.add_mock('label_candidates', retval=[])
     self.processor.process(self.region)
     test_utils.assert_not_called_workaround(self.mock_init)
@@ -641,13 +653,19 @@ class RegionProcessorTest(parameterized.TestCase):
   def test_process_calls_no_candidates(self):
     main_sample = self.processor.samples[0]
     mock_rr = self.add_mock('region_reads', retval=[])
-    mock_cir = self.add_mock('candidates_in_region', retval=([], []))
+    mock_cir = self.add_mock(
+        'candidates_in_region',
+        retval=({
+            'main_sample': []
+        }, {
+            'main_sample': []
+        }))
     mock_cpe = self.add_mock('create_pileup_examples', retval=[])
     mock_lc = self.add_mock('label_candidates')
     candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
-    self.assertEmpty(candidates)
-    self.assertEmpty(examples)
-    self.assertEmpty(gvcfs)
+    self.assertEmpty(candidates['main_sample'])
+    self.assertEmpty(examples['main_sample'])
+    self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
     mock_rr.assert_called_once_with(
         region=self.region,
@@ -672,15 +690,20 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_label = mock.MagicMock()
     mock_rr = self.add_mock('region_reads', retval=[mock_read])
     mock_cir = self.add_mock(
-        'candidates_in_region', retval=([mock_candidate], []))
+        'candidates_in_region',
+        retval=({
+            'main_sample': [mock_candidate]
+        }, {
+            'main_sample': []
+        }))
     mock_cpe = self.add_mock('create_pileup_examples', retval=[mock_example])
     mock_lc = self.add_mock(
         'label_candidates', retval=[(mock_candidate, mock_label)])
     mock_alte = self.add_mock('add_label_to_example', retval=mock_example)
     candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
-    self.assertEqual(candidates, [mock_candidate])
-    self.assertEqual(examples, [mock_example])
-    self.assertEmpty(gvcfs)
+    self.assertEqual(candidates['main_sample'], [mock_candidate])
+    self.assertEqual(examples['main_sample'], [mock_example])
+    self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
     mock_rr.assert_called_once_with(
         region=self.region,
@@ -689,7 +712,7 @@ class RegionProcessorTest(parameterized.TestCase):
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [mock_read])
     mock_cir.assert_called_once_with(self.region)
-    mock_cpe.assert_called_once_with(mock_candidate)
+    mock_cpe.assert_called_once_with(mock_candidate, sample_order=[0])
 
     if mode == deepvariant_pb2.MakeExamplesOptions.TRAINING:
       mock_lc.assert_called_once_with([mock_candidate], self.region)
@@ -712,20 +735,28 @@ class RegionProcessorTest(parameterized.TestCase):
     e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
     main_sample = self.processor.samples[0]
     self.add_mock('region_reads', retval=[r1, r2])
-    self.add_mock('candidates_in_region', retval=([c1, c2], []))
+    self.add_mock(
+        'candidates_in_region',
+        retval=({
+            'main_sample': [c1, c2]
+        }, {
+            'main_sample': []
+        }))
     mock_cpe = self.add_mock(
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
     mock_lc = self.add_mock('label_candidates', retval=[(c1, l1), (c2, l2)])
     mock_alte = self.add_mock('add_label_to_example', side_effect=[e1, e2, e3])
     candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
-    self.assertEqual(candidates, [c1, c2])
-    self.assertEqual(examples, [e1, e2, e3])
-    self.assertEmpty(gvcfs)
+    self.assertEqual(candidates['main_sample'], [c1, c2])
+    self.assertEqual(examples['main_sample'], [e1, e2, e3])
+    self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [r1, r2])
     # We don't try to label variants when in calling mode.
-    self.assertEqual([mock.call(c1), mock.call(c2)], mock_cpe.call_args_list)
+    self.assertEqual(
+        [mock.call(c1, sample_order=[0]),
+         mock.call(c2, sample_order=[0])], mock_cpe.call_args_list)
 
     if mode == deepvariant_pb2.MakeExamplesOptions.CALLING:
       # In calling mode, we never try to label.
@@ -753,21 +784,29 @@ class RegionProcessorTest(parameterized.TestCase):
 
     c1, c2 = mock.Mock(), mock.Mock()
     e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
-    self.add_mock('candidates_in_region', retval=([c1, c2], []))
+    self.add_mock(
+        'candidates_in_region',
+        retval=({
+            'main_sample': [c1, c2]
+        }, {
+            'main_sample': []
+        }))
     mock_cpe = self.add_mock(
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
     mock_lc = self.add_mock('label_candidates')
 
     candidates, examples, gvcfs, runtimes = self.processor.process(self.region)
-    self.assertEqual(candidates, [c1, c2])
-    self.assertEqual(examples, [e1, e2, e3])
-    self.assertEmpty(gvcfs)
+    self.assertEqual(candidates['main_sample'], [c1, c2])
+    self.assertEqual(examples['main_sample'], [e1, e2, e3])
+    self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
     main_sample.sam_readers[0].query.assert_called_once_with(self.region)
     self.processor.realigner.realign_reads.assert_called_once_with([],
                                                                    self.region)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
-    self.assertEqual([mock.call(c1), mock.call(c2)], mock_cpe.call_args_list)
+    self.assertEqual(
+        [mock.call(c1, sample_order=[0]),
+         mock.call(c2, sample_order=[0])], mock_cpe.call_args_list)
     test_utils.assert_not_called_workaround(mock_lc)
 
   def test_candidates_in_region_no_reads(self):
@@ -775,7 +814,7 @@ class RegionProcessorTest(parameterized.TestCase):
     main_sample.in_memory_sam_reader.query.return_value = []
     mock_ac = self.add_mock('_make_allele_counter_for_region')
 
-    self.assertEqual(([], []), self.processor.candidates_in_region(self.region))
+    self.assertEqual(({}, {}), self.processor.candidates_in_region(self.region))
 
     main_sample.in_memory_sam_reader.query.assert_called_once_with(self.region)
     # A region with no reads should return out without making an AlleleCounter.
@@ -794,9 +833,9 @@ class RegionProcessorTest(parameterized.TestCase):
         '_make_allele_counter_for_region', retval=mock_ac)
     # Setup our make_variant_caller and downstream mocks.
     mock_vc = mock.Mock()
-    expected_calls = (['variant'], ['gvcf'] if include_gvcfs else [])
-    mock_vc.calls_and_gvcfs.return_value = expected_calls
-    self.processor.variant_caller = mock_vc
+    mock_vc.calls_and_gvcfs.return_value = (['variant'],
+                                            ['gvcf'] if include_gvcfs else [])
+    main_sample.variant_caller = mock_vc
 
     actual = self.processor.candidates_in_region(self.region)
 
@@ -819,8 +858,13 @@ class RegionProcessorTest(parameterized.TestCase):
         include_med_dp=include_med_dp)
 
     # Finally, our actual result should be the single 'variant' and potentially
-    # the gvcf records.
-    self.assertEqual(expected_calls, actual)
+    # the gvcf records, each organized by sample.
+    expected_output = ({
+        'main_sample': ['variant']
+    }, {
+        'main_sample': ['gvcf'] if include_gvcfs else []
+    })
+    self.assertEqual(expected_output, actual)
 
   def test_create_pileup_examples_handles_none(self):
     self.processor.pic = mock.Mock()
@@ -832,7 +876,8 @@ class RegionProcessorTest(parameterized.TestCase):
         dv_call=dv_call,
         reads_for_samples=[[]],
         haplotype_alignments_for_samples=None,
-        haplotype_sequences=None)
+        haplotype_sequences=None,
+        sample_order=None)
 
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
@@ -857,7 +902,8 @@ class RegionProcessorTest(parameterized.TestCase):
         dv_call=dv_call,
         reads_for_samples=[[]],
         haplotype_alignments_for_samples=None,
-        haplotype_sequences=None)
+        haplotype_sequences=None,
+        sample_order=None)
 
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),

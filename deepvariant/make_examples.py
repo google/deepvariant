@@ -381,7 +381,8 @@ def default_options(add_flags=True, flags_obj=None):
       num_shards=0,
       min_shared_contigs_basepairs=0.9,
       sample_options=[sample_options],
-      main_sample_index=0)
+      main_sample_index=0,
+      sample_role_to_train=sample_options.role)
 
   if add_flags:
     options.mode = make_examples_core.parse_proto_enum_flag(

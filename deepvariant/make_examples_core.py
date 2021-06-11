@@ -35,7 +35,7 @@ from __future__ import print_function
 import collections
 import os
 import time
-from typing import List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 
 
@@ -49,6 +49,7 @@ from deepvariant import dv_constants
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
+from deepvariant import variant_caller as vc_base
 from deepvariant import vcf_candidate_importer
 from deepvariant import very_sensitive_caller
 from deepvariant.labeler import customized_classes_labeler
@@ -64,6 +65,7 @@ from third_party.nucleus.io import sam
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
@@ -600,7 +602,7 @@ def filter_regions_by_vcf(regions, variant_positions):
 
 @dataclasses.dataclass
 class Sample(object):
-  """Sample organizes sample-level properties and sam readers.
+  """Organizes sample-level properties.
 
   options: A SampleOptions proto containing instructions for how to treat the
       sample, most of which will be set from flags.
@@ -610,13 +612,16 @@ class Sample(object):
       alignments for this sample that have been read into memory from the
       sam_readers.
   reads: A list of reads queried from the sam readers.
-  allele_counter: allelecounter.AlleleCounter
+  allele_counter: An allele counter object for the sample.
+  variant_caller: A variant caller for the sample, should be instantiated using
+      the options.variant_caller_options.
   """
   options: deepvariant_pb2.SampleOptions
   sam_readers: Optional[Sequence[sam.SamReader]] = None
   in_memory_sam_reader: Optional[sam.InMemorySamReader] = None
   reads: Optional[List[reads_pb2.Read]] = None
   allele_counter: Optional[allelecounter.AlleleCounter] = None
+  variant_caller: Optional[vc_base.VariantCaller] = None
 
   def __repr__(self):
     return '<Sample {}>'.format(str(self.__dict__))
@@ -705,7 +710,6 @@ class RegionProcessor(object):
     self.realigner = None
     self.pic = None
     self.labeler = None
-    self.variant_caller = None
     self.population_vcf_readers = None
 
   def _make_allele_counter_for_region(self, region):
@@ -753,7 +757,7 @@ class RegionProcessor(object):
                 .use_original_quality_scores))
     return readers
 
-  def initialize(self):
+  def _initialize(self):
     """Initialize the resources needed for this work in the current env."""
     if self.initialized:
       raise ValueError('Cannot initialize this object twice')
@@ -765,6 +769,8 @@ class RegionProcessor(object):
           reads_filenames=sample.options.reads_filenames,
           downsample_fraction=sample.options.downsample_fraction)
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
+      sample.variant_caller = self._make_variant_caller_from_options(
+          sample.options.variant_caller_options)
 
     if self.options.use_allele_frequency:
       population_vcf_readers = allele_frequency.make_population_vcf_readers(
@@ -789,8 +795,11 @@ class RegionProcessor(object):
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
 
-    self.variant_caller = self._make_variant_caller_from_options()
     self.initialized = True
+
+  def initialize(self):
+    if not self.initialized:
+      self._initialize()
 
   def _make_labeler_from_options(self):
     """Creates the labeler from options."""
@@ -836,9 +845,8 @@ class RegionProcessor(object):
       raise ValueError('Unexpected labeler_algorithm',
                        self.options.labeler_algorithm)
 
-  def _make_variant_caller_from_options(self):
+  def _make_variant_caller_from_options(self, variant_caller_options):
     """Creates the variant_caller from options."""
-    main_sample = self.options.sample_options[0]
     if (self.options.variant_caller ==
         deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
       if in_training_mode(self.options):
@@ -846,11 +854,10 @@ class RegionProcessor(object):
       else:
         candidates_vcf = self.options.proposed_variants_filename
       return vcf_candidate_importer.VcfCandidateImporter(
-          main_sample.variant_caller_options, candidates_vcf)
+          variant_caller_options, candidates_vcf)
     elif (self.options.variant_caller ==
           deepvariant_pb2.MakeExamplesOptions.VERY_SENSITIVE_CALLER):
-      return very_sensitive_caller.VerySensitiveCaller(
-          main_sample.variant_caller_options)
+      return very_sensitive_caller.VerySensitiveCaller(variant_caller_options)
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
 
@@ -862,23 +869,26 @@ class RegionProcessor(object):
         genome we should process.
 
     Returns:
-      Four values. First is a list of the found candidates, which are
-      deepvariant.DeepVariantCall objects. The second value is a list of filled
+      (candidates_by_sample, examples_by_sample, gvcfs_by_sample, runtimes)
+      1. candidates_by_sample: A dict keyed by sample role, each a list of
+      candidates found, which are deepvariant.DeepVariantCall objects.
+      2. examples_by_sample: A dict keyed by sample, each a list of filled
       in tf.Example protos. For example, these will include the candidate
       variant, the pileup image, and, if in training mode, the truth variants
-      and labels needed for training. The third value is a list of
+      and labels needed for training.
+      3. gvcfs_by_sample: A dict keyed by sample, each a list of
       nucleus.genomics.v1.Variant protos containing gVCF information for all
-      reference sites, if gvcf generation is enabled, otherwise returns [].
-      Fourth is a dict of runtimes in seconds keyed by stage.
+      reference sites, if gvcf generation is enabled, otherwise this value is
+      [].
+      4. runtimes: A dict of runtimes in seconds keyed by stage.
     """
     region_timer = timer.TimerStart()
-
     runtimes = {}
 
-    before_get_reads = time.time()
     if not self.initialized:
       self.initialize()
 
+    before_get_reads = time.time()
     runtimes['num reads'] = 0
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
@@ -891,47 +901,58 @@ class RegionProcessor(object):
 
     runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
     before_find_candidates = time.time()
-    candidates, gvcfs = self.candidates_in_region(region)
+    candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(region)
 
-    if self.options.select_variant_types:
-      candidates = list(
-          filter_candidates(candidates, self.options.select_variant_types))
+    examples_by_sample = {}
+    for sample in self.samples:
+      role = sample.options.role
+      if role not in candidates_by_sample:
+        continue
+      candidates = candidates_by_sample[role]
+      examples_by_sample[role] = []
 
-    runtimes['find candidates'] = trim_runtime(time.time() -
-                                               before_find_candidates)
-    before_make_pileup_images = time.time()
+      if self.options.select_variant_types:
+        candidates = list(
+            filter_candidates(candidates, self.options.select_variant_types))
+      runtimes['find candidates'] = trim_runtime(time.time() -
+                                                 before_find_candidates)
+      before_make_pileup_images = time.time()
 
-    # Get allele frequencies for candidates.
-    if self.options.use_allele_frequency:
-      candidates = list(
-          allele_frequency.add_allele_frequencies_to_candidates(
-              candidates=candidates,
-              population_vcf_reader=self.population_vcf_readers[
-                  region.reference_name],
-              ref_reader=self.ref_reader))
+      # Get allele frequencies for candidates.
+      if self.options.use_allele_frequency:
+        candidates = list(
+            allele_frequency.add_allele_frequencies_to_candidates(
+                candidates=candidates,
+                population_vcf_reader=self.population_vcf_readers[
+                    region.reference_name],
+                ref_reader=self.ref_reader))
 
-    # pylint: disable=g-complex-comprehension
-    if in_training_mode(self.options):
-      examples = [
-          self.add_label_to_example(example, label)
-          for candidate, label in self.label_candidates(candidates, region)
-          for example in self.create_pileup_examples(candidate)
-      ]
-    else:
-      examples = [
-          example for candidate in candidates
-          for example in self.create_pileup_examples(candidate)
-      ]
-    # pylint: enable=g-complex-comprehension
-    logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
-                 len(examples), ranges.to_literal(region),
-                 ranges.length(region), region_timer.Stop())
+      if in_training_mode(self.options):
+        for candidate, label in self.label_candidates(candidates, region):
+          for example in self.create_pileup_examples(
+              candidate, sample_order=sample.options.order):
+            self.add_label_to_example(example, label)
+            examples_by_sample[role].append(example)
+      else:
+        for candidate in candidates:
+          for example in self.create_pileup_examples(
+              candidate, sample_order=sample.options.order):
+            examples_by_sample[role].append(example)
 
-    runtimes['make pileup images'] = trim_runtime(time.time() -
-                                                  before_make_pileup_images)
-    runtimes['num examples'] = len(examples)
-    runtimes['num candidates'] = len(candidates)
-    return candidates, examples, gvcfs, runtimes
+      # After any filtering and other changes above, set candidates for sample.
+      candidates_by_sample[role] = candidates
+
+      logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
+                   len(examples_by_sample[role]), ranges.to_literal(region),
+                   ranges.length(region), region_timer.Stop())
+
+      runtimes['make pileup images'] = trim_runtime(time.time() -
+                                                    before_make_pileup_images)
+    runtimes['num examples'] = sum(
+        [len(x) for x in examples_by_sample.values()])
+    runtimes['num candidates'] = sum(
+        [len(x) for x in candidates_by_sample.values()])
+    return candidates_by_sample, examples_by_sample, gvcfs_by_sample, runtimes
 
   def region_reads(self, region, sam_readers, reads_filenames):
     """Gets read alignments overlapping the region and optionally realigns them.
@@ -1008,18 +1029,25 @@ class RegionProcessor(object):
       _, reads = self.realigner.realign_reads(reads, region)
     return reads
 
-  def candidates_in_region(self, region):
-    """Finds candidate DeepVariantCall protos in region.
+  def candidates_in_region(
+      self, region
+  ) -> Tuple[Dict[str, deepvariant_pb2.DeepVariantCall], Dict[
+      str, variants_pb2.Variant]]:
+    """Finds candidates in the region using the designated variant caller.
 
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to get candidates for.
 
     Returns:
-      A 2-tuple. The first value is a list of deepvariant_pb2.DeepVariantCalls
-      objects, in coordidate order. The second value is a list of
-      nucleus.genomics.v1.Variant protos containing gVCF information for all
-      reference sites, if gvcf generation is enabled, otherwise returns [].
+      A 2-tuple of (candidates, gvcfs).
+      The first value, candidates, is a dict keyed by sample role, where each
+      item is a list of deepvariant_pb2.DeepVariantCalls objects, in
+      coordidate order.
+      The second value, gvcfs, is a dict keyed by sample role, where
+      each item is a list of nucleus.genomics.v1.Variant protos containing gVCF
+      information for all reference sites, if gvcf generation is enabled,
+      otherwise the gvcfs value is [].
     """
     for sample in self.samples:
       sample.reads = sample.in_memory_sam_reader.query(region)
@@ -1028,7 +1056,7 @@ class RegionProcessor(object):
     if not main_sample.reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
       # we need to return the gVCF records calculated by the caller below.
-      return [], []
+      return {}, {}
 
     for sample in self.samples:
       if sample.options.reads_filenames:
@@ -1040,11 +1068,21 @@ class RegionProcessor(object):
         sample.options.name: sample.allele_counter for sample in self.samples
     }
 
-    candidates, gvcfs = self.variant_caller.calls_and_gvcfs(
-        allele_counters=allele_counters,
-        target_sample=main_sample.options.name,
-        include_gvcfs=gvcf_output_enabled(self.options),
-        include_med_dp=self.options.include_med_dp)
+    candidates = {}
+    gvcfs = {}
+    for sample in self.samples:
+      role = sample.options.role
+      if in_training_mode(
+          self.options) and self.options.sample_role_to_train != role:
+        continue
+      if not sample.options.reads_filenames:
+        continue
+      candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(
+          allele_counters=allele_counters,
+          target_sample=sample.options.name,
+          include_gvcfs=gvcf_output_enabled(self.options),
+          include_med_dp=self.options.include_med_dp)
+
     return candidates, gvcfs
 
   def align_to_all_haplotypes(self, variant, reads):
@@ -1121,7 +1159,7 @@ class RegionProcessor(object):
         'alt_sequences': sequences_by_haplotype
     }
 
-  def create_pileup_examples(self, dv_call):
+  def create_pileup_examples(self, dv_call, sample_order=None):
     """Creates a tf.Example for DeepVariantCall.
 
     This function calls PileupImageCreator.create_pileup_images on dv_call to
@@ -1130,7 +1168,11 @@ class RegionProcessor(object):
     as a tf.Example via a call to tf_utils.make_example.
 
     Args:
-      dv_call: A DeepVariantCall proto.
+      dv_call: A DeepVariantCall.
+      sample_order: A list of indices representing the order in which samples
+        should be represented in the pileup image. Example: [1,0,2] to swap the
+        first and second samples. This is None by default which puts the
+        samples in order.
 
     Returns:
       A list of tf.Example protos.
@@ -1173,6 +1215,7 @@ class RegionProcessor(object):
     pileup_images = self.pic.create_pileup_images(
         dv_call=dv_call,
         reads_for_samples=reads_for_samples,
+        sample_order=sample_order,
         haplotype_alignments_for_samples=haplotype_alignments_for_samples,
         haplotype_sequences=haplotype_sequences)
 
@@ -1209,7 +1252,6 @@ class RegionProcessor(object):
       candidates that could be assigned a label. Candidates that couldn't be
       labeled will not be returned.
     """
-
     # Set BAM filename (used for training stats).
     for candidate in candidates:
       struct_utils.set_string_field(candidate.variant.info, 'BAM_FNAME',
@@ -1467,14 +1509,32 @@ def make_examples_runner(options):
   n_class_0, n_class_1, n_class_2 = 0, 0, 0
   n_snps, n_indels = 0, 0
   last_reported = 0
-  with OutputsWriter(options) as writer:
-    logging_with_options(
-        options, 'Overhead for preparing inputs: %d seconds' %
-        (time.time() - before_initializing_inputs))
 
-    running_timer = timer.TimerStart()
-    for region in regions:
-      candidates, examples, gvcfs, runtimes = region_processor.process(region)
+  writers_dict = {}
+  if in_training_mode(options) or len(options.sample_options) == 1:
+    writers_dict[options.sample_role_to_train] = OutputsWriter(
+        options, suffix=None)
+  else:
+    for sample in region_processor.samples:
+      if sample.sam_readers is not None:
+        writers_dict[sample.options.role] = OutputsWriter(
+            options, suffix=sample.options.role)
+
+  logging_with_options(
+      options, 'Overhead for preparing inputs: %d seconds' %
+      (time.time() - before_initializing_inputs))
+
+  running_timer = timer.TimerStart()
+  for region in regions:
+    (candidates_by_sample, examples_by_sample, gvcfs_by_sample,
+     runtimes) = region_processor.process(region)
+    for sample in candidates_by_sample:
+      candidates = candidates_by_sample[sample]
+      examples = examples_by_sample[sample]
+      gvcfs = gvcfs_by_sample[sample]
+
+      writer = writers_dict[sample]
+
       n_candidates += len(candidates)
       n_examples += len(examples)
       n_regions += 1
@@ -1498,6 +1558,7 @@ def make_examples_runner(options):
       if gvcfs:
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
+
       if options.runtime_by_region:
         runtimes['write outputs'] = trim_runtime(time.time() -
                                                  before_write_outputs)
@@ -1512,6 +1573,9 @@ def make_examples_runner(options):
             options, '%s candidates (%s examples) [%0.2fs elapsed]' %
             (n_candidates, n_examples, running_timer.Stop()))
         running_timer = timer.TimerStart()
+
+  for writer in writers_dict.values():
+    writer.close_all()
 
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:

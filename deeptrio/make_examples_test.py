@@ -927,11 +927,12 @@ class RegionProcessorTest(parameterized.TestCase):
         'create_pileup_examples', side_effect=[[e1], [e2, e3]])
     mock_lc = self.add_mock('label_candidates', retval=[(c1, l1), (c2, l2)])
     mock_alte = self.add_mock('add_label_to_example', side_effect=[e1, e2, e3])
-    candidates_dict, examples_dict, gvcfs_dict = self.processor.process(
+    candidates_dict, examples_dict, gvcfs_dict, runtimes = self.processor.process(
         self.region)
     self.assertEqual({'child': [c1, c2]}, candidates_dict)
     self.assertEqual({'child': [e1, e2, e3]}, examples_dict)
     self.assertEqual({}, gvcfs_dict)
+    self.assertIsInstance(runtimes, dict)
 
     in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
     in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])

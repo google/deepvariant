@@ -37,7 +37,8 @@ if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
 
 
 import os
-from typing import Optional, Sequence, List
+import time
+from typing import Dict, List, Optional, Sequence, Tuple
 
 
 
@@ -47,12 +48,14 @@ from absl import logging
 import numpy as np
 
 from deeptrio import dt_constants
+from deepvariant import allele_frequency
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import make_examples_core
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
+from deepvariant import vcf_candidate_importer
 from deepvariant import very_sensitive_caller
 from deepvariant.labeler import customized_classes_labeler
 from deepvariant.labeler import haplotype_labeler
@@ -67,6 +70,7 @@ from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import hts_verbose
 from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
@@ -106,10 +110,11 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'sample_name_to_call', None,
     'Optional - if not set, default to the value in '
-    '--sample_name. The default is set to be backward '
+    '--sample_name, i.e. the child. The default is set to be backward '
     'compatible. If set, it has to match one of --sample_name, '
     '--sample_name_parent1, or --sample_name_parent2. '
-    'This is the sample that we call variants on.')
+    'Only used for training. When run in calling mode, this is unused because '
+    'examples are generated for all 3 samples together.')
 flags.DEFINE_string(
     'reads', None,
     'Required. Aligned, sorted, indexed BAM file containing reads from the '
@@ -341,8 +346,9 @@ flags.DEFINE_bool(
 # Option handling
 # ---------------------------------------------------------------------------
 
-# Create a nickname because logging is used often.
+# Create nicknames for some commonly used imported functions.
 logging_with_options = make_examples_core.logging_with_options
+trim_runtime = make_examples_core.trim_runtime
 
 
 def default_options(add_flags=True, flags_obj=None):
@@ -377,6 +383,7 @@ def default_options(add_flags=True, flags_obj=None):
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
   # Set DeepTrio-specific pileup constants.
+  pic_options.sequencing_type = deepvariant_pb2.PileupImageOptions.TRIO
   pic_options.height = dt_constants.PILEUP_DEFAULT_HEIGHT
   pic_options.width = dt_constants.PILEUP_DEFAULT_WIDTH
 
@@ -418,6 +425,10 @@ def default_options(add_flags=True, flags_obj=None):
       order=[2, 1, 0],
       pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT)
 
+  # If --sample_name_to_call is not set, train on the child.
+  # This is for backward compatibility.
+  sample_role_to_train = 'child'
+
   if add_flags:
     if flags_obj.reads:
       child_options.reads_filenames.extend(flags_obj.reads.split(','))
@@ -437,6 +448,17 @@ def default_options(add_flags=True, flags_obj=None):
     if flags_obj.pileup_image_height_parent:
       parent1_options.pileup_height = parent2_options.pileup_height = flags_obj.pileup_image_height_parent
 
+    if flags_obj.sample_name_to_call:
+      if flags_obj.sample_name_to_call == flags_obj.sample_name:
+        sample_role_to_train = child_options.role
+      elif flags_obj.sample_name_to_call == flags_obj.sample_name_parent1:
+        sample_role_to_train = parent1_options.role
+      else:
+        errors.log_and_raise(
+            '--sample_name_to_call must match either --sample_name or '
+            '--sample_name_parent1, or it can be unset to default to '
+            '--sample_name.', errors.CommandLineError)
+
   # Ordering here determines the default order of samples, and when a sample
   # above has a custom .order, then this is the list those indices refer to.
   samples_in_order = [parent1_options, child_options, parent2_options]
@@ -454,7 +476,8 @@ def default_options(add_flags=True, flags_obj=None):
       num_shards=0,
       min_shared_contigs_basepairs=0.9,
       sample_options=samples_in_order,
-      main_sample_index=1)
+      main_sample_index=1,
+      sample_role_to_train=sample_role_to_train)
 
   if add_flags:
     options.mode = make_examples_core.parse_proto_enum_flag(
@@ -541,6 +564,8 @@ def default_options(add_flags=True, flags_obj=None):
     options.use_ref_for_cram = flags_obj.use_ref_for_cram
     options.hts_block_size = flags_obj.hts_block_size
     options.logging_every_n_candidates = flags_obj.logging_every_n_candidates
+    options.customized_classes_labeler_classes_list = flags_obj.customized_classes_labeler_classes_list
+    options.customized_classes_labeler_info_field_name = flags_obj.customized_classes_labeler_info_field_name
 
     if (options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING and
         flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF):
@@ -621,8 +646,7 @@ class RegionProcessor(object):
     self.realigner = None
     self.pic = None
     self.labeler = None
-    self.variant_caller = None
-    self.sample_to_train = None
+    self.population_vcf_readers = None
 
   def _make_allele_counter_for_region(self, region):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
@@ -681,8 +705,16 @@ class RegionProcessor(object):
           reads_filenames=sample.options.reads_filenames,
           downsample_fraction=sample.options.downsample_fraction)
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
+      sample.variant_caller = self._make_variant_caller_from_options(
+          sample.options.variant_caller_options)
 
-    if self.options.realigner_enabled or self.options.pic_options.alt_aligned_pileup != 'none':
+    if self.options.use_allele_frequency:
+      population_vcf_readers = allele_frequency.make_population_vcf_readers(
+          self.options.population_vcf_filenames)
+      self.population_vcf_readers = population_vcf_readers
+
+    if (self.options.realigner_enabled or
+        self.options.pic_options.alt_aligned_pileup != 'none'):
       main_sample = self.samples[self.options.main_sample_index]
       input_bam_header = sam.SamReader(
           main_sample.options.reads_filenames[0]).header
@@ -690,8 +722,6 @@ class RegionProcessor(object):
           self.options.realigner_options,
           self.ref_reader,
           shared_header=input_bam_header)
-
-    self.options.pic_options.sequencing_type = deepvariant_pb2.PileupImageOptions.TRIO
 
     self.pic = pileup_image.PileupImageCreator(
         ref_reader=self.ref_reader,
@@ -701,22 +731,6 @@ class RegionProcessor(object):
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
 
-    if FLAGS.sample_name_to_call == FLAGS.sample_name:
-      self.sample_to_train = 'child'
-    elif FLAGS.sample_name_to_call == FLAGS.sample_name_parent1:
-      self.sample_to_train = 'parent1'
-    else:
-      raise ValueError(
-          'sample_name_to_call must match either sample_name or sample_name_parent1 '
-      )
-
-    self.variant_caller_child = self._make_variant_caller_from_options(
-        self.options.sample_options[1].variant_caller_options)
-    self.variant_caller_parent1 = self._make_variant_caller_from_options(
-        self.options.sample_options[0].variant_caller_options)
-    self.variant_caller_parent2 = self._make_variant_caller_from_options(
-        self.options.sample_options[2].variant_caller_options)
-
     self.initialized = True
 
   def _make_labeler_from_options(self):
@@ -725,6 +739,14 @@ class RegionProcessor(object):
         self.options.truth_variants_filename,
         excluded_format_fields=['GL', 'GQ', 'PL'])
     confident_regions = make_examples_core.read_confident_regions(self.options)
+
+    if (self.options.variant_caller ==
+        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
+      logging.info('For --variant_caller=vcf_candidate_importer, we '
+                   'default the labeler_algorithm to positional_labler.')
+      return positional_labeler.PositionalVariantLabeler(
+          truth_vcf_reader=truth_vcf_reader,
+          confident_regions=confident_regions)
 
     if (self.options.labeler_algorithm ==
         deepvariant_pb2.MakeExamplesOptions.POSITIONAL_LABELER):
@@ -739,8 +761,8 @@ class RegionProcessor(object):
           confident_regions=confident_regions)
     elif (self.options.labeler_algorithm ==
           deepvariant_pb2.MakeExamplesOptions.CUSTOMIZED_CLASSES_LABELER):
-      if (not FLAGS.customized_classes_labeler_classes_list or
-          not FLAGS.customized_classes_labeler_info_field_name):
+      if (not self.options.customized_classes_labeler_classes_list or
+          not self.options.customized_classes_labeler_info_field_name):
         raise ValueError('For -labeler_algorithm=customized_classes_labeler, '
                          'you need to set '
                          '-customized_classes_labeler_classes_list and '
@@ -748,8 +770,9 @@ class RegionProcessor(object):
       return customized_classes_labeler.CustomizedClassesVariantLabeler(
           truth_vcf_reader=truth_vcf_reader,
           confident_regions=confident_regions,
-          classes_list=FLAGS.customized_classes_labeler_classes_list,
-          info_field_name=FLAGS.customized_classes_labeler_info_field_name)
+          classes_list=self.options.customized_classes_labeler_classes_list,
+          info_field_name=self.options
+          .customized_classes_labeler_info_field_name)
     else:
       raise ValueError('Unexpected labeler_algorithm',
                        self.options.labeler_algorithm)
@@ -757,7 +780,15 @@ class RegionProcessor(object):
   def _make_variant_caller_from_options(self, variant_caller_options):
     """Creates the variant_caller from options."""
     if (self.options.variant_caller ==
-        deepvariant_pb2.MakeExamplesOptions.VERY_SENSITIVE_CALLER):
+        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
+      if in_training_mode(self.options):
+        candidates_vcf = self.options.truth_variants_filename
+      else:
+        candidates_vcf = self.options.proposed_variants_filename
+      return vcf_candidate_importer.VcfCandidateImporter(
+          variant_caller_options, candidates_vcf)
+    elif (self.options.variant_caller ==
+          deepvariant_pb2.MakeExamplesOptions.VERY_SENSITIVE_CALLER):
       return very_sensitive_caller.VerySensitiveCaller(variant_caller_options)
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
@@ -774,65 +805,91 @@ class RegionProcessor(object):
         genome we should process.
 
     Returns:
-      Three values. First is a dict of the found candidates, which are
-      deepvariant.DeepVariantCall objects. The second value is a dict of filled
+      (candidates_by_sample, examples_by_sample, gvcfs_by_sample, runtimes)
+      1. candidates_by_sample: A dict keyed by sample role, each a list of
+      candidates found, which are deepvariant.DeepVariantCall objects.
+      2. examples_by_sample: A dict keyed by sample, each a list of filled
       in tf.Example protos. For example, these will include the candidate
       variant, the pileup image, and, if in training mode, the truth variants
-      and labels needed for training. The third value is a dict of
+      and labels needed for training.
+      3. gvcfs_by_sample: A dict keyed by sample, each a list of
       nucleus.genomics.v1.Variant protos containing gVCF information for all
-      reference sites, if gvcf generation is enabled, otherwise returns []. Each
-      dict is keyed by sample.
+      reference sites, if gvcf generation is enabled, otherwise this value is
+      [].
+      4. runtimes: A dict of runtimes in seconds keyed by stage.
     """
     region_timer = timer.TimerStart()
+    runtimes = {}
 
-    # Print some basic information about what we are doing.
     if not self.initialized:
       self._initialize()
 
-    # Get reads in the region for each sample into its in-memory sam reader,
-    # optionally realigning reads.
+    before_get_reads = time.time()
+    runtimes['num reads'] = 0
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
-        sample.in_memory_sam_reader.replace_reads(
-            self.region_reads(
-                region=region,
-                sam_readers=sample.sam_readers,
-                reads_filenames=sample.options.reads_filenames))
+        reads = self.region_reads(
+            region=region,
+            sam_readers=sample.sam_readers,
+            reads_filenames=sample.options.reads_filenames)
+        runtimes['num reads'] += len(reads)
+        sample.in_memory_sam_reader.replace_reads(reads)
 
-    # Candidates are created using both parents and child
-    candidates_dict, gvcfs_dict = self.candidates_in_region(region)
-    examples_dict = {}
+    runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
+    before_find_candidates = time.time()
+    candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(region)
+
+    examples_by_sample = {}
     for sample in self.samples:
       role = sample.options.role
-      if role not in candidates_dict:
+      if role not in candidates_by_sample:
         continue
-      candidates = candidates_dict[role]
-      examples_dict[role] = []
+      candidates = candidates_by_sample[role]
+      examples_by_sample[role] = []
 
       if self.options.select_variant_types:
         candidates = list(
             make_examples_core.filter_candidates(
                 candidates, self.options.select_variant_types))
+      runtimes['find candidates'] = trim_runtime(time.time() -
+                                                 before_find_candidates)
+      before_make_pileup_images = time.time()
+
+      # Get allele frequencies for candidates.
+      if self.options.use_allele_frequency:
+        candidates = list(
+            allele_frequency.add_allele_frequencies_to_candidates(
+                candidates=candidates,
+                population_vcf_reader=self.population_vcf_readers[
+                    region.reference_name],
+                ref_reader=self.ref_reader))
 
       if in_training_mode(self.options):
         for candidate, label in self.label_candidates(candidates, region):
           for example in self.create_pileup_examples(
               candidate, sample_order=sample.options.order):
             self.add_label_to_example(example, label)
-            examples_dict[role].append(example)
+            examples_by_sample[role].append(example)
       else:
         for candidate in candidates:
           for example in self.create_pileup_examples(
               candidate, sample_order=sample.options.order):
-            examples_dict[role].append(example)
+            examples_by_sample[role].append(example)
 
-      candidates_dict[role] = candidates
-      logging.vlog(
-          2, 'Found %s candidates in %s [%d bp, sample %s] '
-          '[%0.2fs elapsed]', len(examples_dict[role]),
-          ranges.to_literal(region), ranges.length(region), role,
-          region_timer.Stop())
-    return candidates_dict, examples_dict, gvcfs_dict
+      # After any filtering and other changes above, set candidates for sample.
+      candidates_by_sample[role] = candidates
+
+      logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
+                   len(examples_by_sample[role]), ranges.to_literal(region),
+                   ranges.length(region), region_timer.Stop())
+
+      runtimes['make pileup images'] = trim_runtime(time.time() -
+                                                    before_make_pileup_images)
+    runtimes['num examples'] = sum(
+        [len(x) for x in examples_by_sample.values()])
+    runtimes['num candidates'] = sum(
+        [len(x) for x in candidates_by_sample.values()])
+    return candidates_by_sample, examples_by_sample, gvcfs_by_sample, runtimes
 
   def region_reads(self, region, sam_readers, reads_filenames):
     """Gets read alignments overlapping the region and optionally realigns them.
@@ -909,88 +966,60 @@ class RegionProcessor(object):
       _, reads = self.realigner.realign_reads(reads, region)
     return reads
 
-  def candidates_in_region(self, region):
-    """Finds candidate DeepVariantCall protos in region.
+  def candidates_in_region(
+      self, region
+  ) -> Tuple[Dict[str, deepvariant_pb2.DeepVariantCall], Dict[
+      str, variants_pb2.Variant]]:
+    """Finds candidates in the region using the designated variant caller.
 
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to get candidates for.
 
     Returns:
-      A 2-tuple. The first value is a dict of deeptrio_pb2.DeepVariantCalls
-      objects, in coordidate order. The second value is a dict of
-      nucleus.genomics.v1.Variant protos containing gVCF information for all
-      reference sites, if gvcf generation is enabled, otherwise returns [].
+      A 2-tuple of (candidates, gvcfs).
+      The first value, candidates, is a dict keyed by sample role, where each
+      item is a list of deepvariant_pb2.DeepVariantCalls objects, in
+      coordidate order.
+      The second value, gvcfs, is a dict keyed by sample role, where
+      each item is a list of nucleus.genomics.v1.Variant protos containing gVCF
+      information for all reference sites, if gvcf generation is enabled,
+      otherwise the gvcfs value is [].
     """
+    for sample in self.samples:
+      sample.reads = sample.in_memory_sam_reader.query(region)
 
-    # Child is in the middle in self.samples.
-    reads_parent1 = self.samples[0].in_memory_sam_reader.query(region)
-    reads = self.samples[1].in_memory_sam_reader.query(region)
-    reads_parent2 = self.samples[2].in_memory_sam_reader.query(region)
-
-    if not reads and not gvcf_output_enabled(self.options):
+    main_sample = self.samples[self.options.main_sample_index]
+    if not main_sample.reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
       # we need to return the gVCF records calculated by the caller below.
       return {}, {}
 
-    allele_counters = {}
-    sample_name_child = self.options.sample_options[
-        self.options.main_sample_index].variant_caller_options.sample_name
+    for sample in self.samples:
+      if sample.options.reads_filenames:
+        sample.allele_counter = self._make_allele_counter_for_region(region)
+        for read in sample.reads:
+          sample.allele_counter.add(read, sample.options.name)
 
-    # Instantiate allele counter for child sample
-    allele_counters[sample_name_child] = self._make_allele_counter_for_region(
-        region)
-
-    # Add target sample reads to allele counter
-    for read in reads:
-      allele_counters[sample_name_child].add(read, sample_name_child)
-
-    # If parent1 is specified create allele counter and populate it with reads
-    if FLAGS.reads_parent1:
-      allele_counters[
-          FLAGS.sample_name_parent1] = self._make_allele_counter_for_region(
-              region)
-      for read in reads_parent1:
-        allele_counters[FLAGS.sample_name_parent1].add(
-            read, FLAGS.sample_name_parent1)
-
-    # If parent2 is specified create allele counter and populate it with reads
-    if FLAGS.reads_parent2:
-      allele_counters[
-          FLAGS.sample_name_parent2] = self._make_allele_counter_for_region(
-              region)
-      for read in reads_parent2:
-        allele_counters[FLAGS.sample_name_parent2].add(
-            read, FLAGS.sample_name_parent2)
+    allele_counters = {
+        sample.options.name: sample.allele_counter for sample in self.samples
+    }
 
     candidates = {}
     gvcfs = {}
+    for sample in self.samples:
+      role = sample.options.role
+      if in_training_mode(
+          self.options) and self.options.sample_role_to_train != role:
+        continue
+      if not sample.options.reads_filenames:
+        continue
+      candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(
+          allele_counters=allele_counters,
+          target_sample=sample.options.name,
+          include_gvcfs=gvcf_output_enabled(self.options),
+          include_med_dp=self.options.include_med_dp)
 
-    if in_training_mode(self.options):
-      candidates[self.sample_to_train], gvcfs[self.sample_to_train] = (
-          self.variant_caller_child.calls_and_gvcfs(
-              allele_counters=allele_counters,
-              target_sample=FLAGS.sample_name_to_call,
-              include_gvcfs=gvcf_output_enabled(self.options)))
-      return candidates, gvcfs
-
-    candidates['child'], gvcfs[
-        'child'] = self.variant_caller_child.calls_and_gvcfs(
-            allele_counters=allele_counters,
-            target_sample=FLAGS.sample_name,
-            include_gvcfs=gvcf_output_enabled(self.options))
-    if FLAGS.reads_parent1:
-      candidates['parent1'], gvcfs['parent1'] = (
-          self.variant_caller_parent1.calls_and_gvcfs(
-              allele_counters=allele_counters,
-              target_sample=FLAGS.sample_name_parent1,
-              include_gvcfs=gvcf_output_enabled(self.options)))
-    if FLAGS.reads_parent2:
-      candidates['parent2'], gvcfs['parent2'] = (
-          self.variant_caller_parent2.calls_and_gvcfs(
-              allele_counters=allele_counters,
-              target_sample=FLAGS.sample_name_parent2,
-              include_gvcfs=gvcf_output_enabled(self.options)))
     return candidates, gvcfs
 
   def align_to_all_haplotypes(self, variant, reads):
@@ -1090,6 +1119,12 @@ class RegionProcessor(object):
             dv_call.variant, sam_reader=sample.in_memory_sam_reader)
         for sample in self.samples
     ]
+
+    logging.vlog(
+        3, 'create_pileup_examples for variant: {}:{}_{}'.format(
+            dv_call.variant.reference_name, dv_call.variant.start,
+            dv_call.variant.reference_bases))
+
     # Decide whether each candidate needs ALT-alignment.
     alt_align_this_variant = False
     if self.options.pic_options.alt_aligned_pileup != 'none':
@@ -1138,7 +1173,7 @@ class RegionProcessor(object):
               encoded_tensor,
               shape=shape,
               image_format=tensor_format,
-              sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO))
+              sequencing_type=self.options.pic_options.sequencing_type))
     return examples
 
   def label_candidates(self, candidates, region):
@@ -1200,45 +1235,54 @@ class RegionProcessor(object):
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
-  logging.info('Preparing inputs')
+  before_initializing_inputs = time.time()
+
+  logging_with_options(options, 'Preparing inputs')
   regions = make_examples_core.processing_regions_from_options(options)
 
   # Create a processor to create candidates and examples for each region.
   region_processor = RegionProcessor(options)
   region_processor.initialize()
 
-  logging.info('Writing examples to %s', options.examples_filename)
+  logging_with_options(options,
+                       'Writing examples to %s' % options.examples_filename)
   if options.candidates_filename:
-    logging.info('Writing candidates to %s', options.candidates_filename)
+    logging_with_options(
+        options, 'Writing candidates to %s' % options.candidates_filename)
   if options.gvcf_filename:
-    logging.info('Writing gvcf records to %s', options.gvcf_filename)
+    logging_with_options(options,
+                         'Writing gvcf records to %s' % options.gvcf_filename)
 
   n_regions, n_candidates, n_examples = 0, 0, 0
+  # Ideally this would use dv_constants.NUM_CLASSES, which requires generalizing
+  # deepvariant_pb2.MakeExamplesStats to use an array for the class counts.
   n_class_0, n_class_1, n_class_2 = 0, 0, 0
   n_snps, n_indels = 0, 0
   last_reported = 0
-  running_timer = timer.TimerStart()
 
   writers_dict = {}
-  if not in_training_mode(options):
+  if in_training_mode(options) or len(options.sample_options) == 1:
+    writers_dict[
+        options.sample_role_to_train] = make_examples_core.OutputsWriter(
+            options, suffix=None)
+  else:
     for sample in region_processor.samples:
       if sample.sam_readers is not None:
-        # Only use suffix in calling mode
-        suffix = None if in_training_mode(options) else sample.options.role
         writers_dict[sample.options.role] = make_examples_core.OutputsWriter(
-            options, suffix=suffix)
-  else:
-    writers_dict[
-        region_processor.sample_to_train] = make_examples_core.OutputsWriter(
-            options, suffix=None)
+            options, suffix=sample.options.role)
 
+  logging_with_options(
+      options, 'Overhead for preparing inputs: %d seconds' %
+      (time.time() - before_initializing_inputs))
+
+  running_timer = timer.TimerStart()
   for region in regions:
-    candidates_dict, examples_dict, gvcfs_dict = region_processor.process(
-        region)
-    for sample in candidates_dict:
-      candidates = candidates_dict[sample]
-      examples = examples_dict[sample]
-      gvcfs = gvcfs_dict[sample]
+    (candidates_by_sample, examples_by_sample, gvcfs_by_sample,
+     runtimes) = region_processor.process(region)
+    for sample in candidates_by_sample:
+      candidates = candidates_by_sample[sample]
+      examples = examples_by_sample[sample]
+      gvcfs = gvcfs_by_sample[sample]
 
       writer = writers_dict[sample]
 
@@ -1255,6 +1299,7 @@ def make_examples_runner(options):
         n_snps += types[tf_utils.EncodedVariantType.SNP]
         n_indels += types[tf_utils.EncodedVariantType.INDEL]
 
+      before_write_outputs = time.time()
       writer.write_candidates(*candidates)
 
       # If we have any gvcf records, write them out. This if also serves to
@@ -1265,12 +1310,19 @@ def make_examples_runner(options):
         writer.write_gvcfs(*gvcfs)
       writer.write_examples(*examples)
 
-      if (int(n_candidates / FLAGS.logging_every_n_candidates) > last_reported
+      if options.runtime_by_region:
+        runtimes['write outputs'] = trim_runtime(time.time() -
+                                                 before_write_outputs)
+        runtimes['region'] = ranges.to_literal(region)
+        writer.write_runtime(stats_dict=runtimes)
+
+      # Output timing for every N candidates.
+      if (int(n_candidates / options.logging_every_n_candidates) > last_reported
           or n_regions == 1):
-        last_reported = int(n_candidates / FLAGS.logging_every_n_candidates)
-        logging.info('Task %s: %s candidates (%s examples) [%0.2fs elapsed]',
-                     options.task_id, n_candidates, n_examples,
-                     running_timer.Stop())
+        last_reported = int(n_candidates / options.logging_every_n_candidates)
+        logging_with_options(
+            options, '%s candidates (%s examples) [%0.2fs elapsed]' %
+            (n_candidates, n_examples, running_timer.Stop()))
         running_timer = timer.TimerStart()
 
   for writer in writers_dict.values():
@@ -1297,12 +1349,14 @@ def make_examples_runner(options):
             'Labeling metrics requested but the selected labeling '
             'algorithm %s does not collect metrics; skipping.',
             options.labeler_algorithm)
-    logging.info('Writing MakeExamplesRunInfo to %s', options.run_info_filename)
+    logging_with_options(
+        options,
+        'Writing MakeExamplesRunInfo to %s' % options.run_info_filename)
     make_examples_core.write_make_examples_run_info(
         run_info, path=options.run_info_filename)
 
-  logging.info('Found %s candidate variants', n_candidates)
-  logging.info('Created %s examples', n_examples)
+  logging_with_options(options, 'Found %s candidate variants' % n_candidates)
+  logging_with_options(options, 'Created %s examples' % n_examples)
 
 
 def check_options_are_valid(options):
@@ -1353,18 +1407,6 @@ def check_options_are_valid(options):
     errors.log_and_raise(
         'The sample_name of the child is the same as one of '
         'the parents.', errors.CommandLineError)
-
-  # If --sample_name_to_call is not set, use the child's sample_name.
-  # This is for backward compatibility.
-  if FLAGS.sample_name_to_call is None:
-    FLAGS.sample_name_to_call = child.variant_caller_options.sample_name
-  if FLAGS.sample_name_to_call not in [
-      child.variant_caller_options.sample_name, FLAGS.sample_name_parent1,
-      FLAGS.sample_name_parent2
-  ]:
-    errors.log_and_raise(
-        '--sample_name_to_call has to match one of the sample '
-        'names of the trio.', errors.CommandLineError)
 
   multiplier = FLAGS.vsc_min_fraction_multiplier
   if multiplier <= 0 or multiplier > 1.0:
