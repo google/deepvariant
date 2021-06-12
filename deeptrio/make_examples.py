@@ -77,7 +77,7 @@ flags.DEFINE_string(
     'well. Supports text or gzipped references. Should match the reference '
     'used to align the BAM file provided to --reads.')
 flags.DEFINE_string(
-    'sample_name_to_call', None,
+    'sample_name_to_train', None,
     'Optional - if not set, default to the value in '
     '--sample_name, i.e. the child. The default is set to be backward '
     'compatible. If set, it has to match one of --sample_name, '
@@ -385,7 +385,7 @@ def default_options(add_flags=True, flags_obj=None):
       order=[2, 1, 0],
       pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT)
 
-  # If --sample_name_to_call is not set, train on the child.
+  # If --sample_name_to_train is not set, train on the child.
   # This is for backward compatibility.
   sample_role_to_train = 'child'
 
@@ -408,14 +408,14 @@ def default_options(add_flags=True, flags_obj=None):
     if flags_obj.pileup_image_height_parent:
       parent1_options.pileup_height = parent2_options.pileup_height = flags_obj.pileup_image_height_parent
 
-    if flags_obj.sample_name_to_call:
-      if flags_obj.sample_name_to_call == flags_obj.sample_name:
+    if flags_obj.sample_name_to_train:
+      if flags_obj.sample_name_to_train == flags_obj.sample_name:
         sample_role_to_train = child_options.role
-      elif flags_obj.sample_name_to_call == flags_obj.sample_name_parent1:
+      elif flags_obj.sample_name_to_train == flags_obj.sample_name_parent1:
         sample_role_to_train = parent1_options.role
       else:
         errors.log_and_raise(
-            '--sample_name_to_call must match either --sample_name or '
+            '--sample_name_to_train must match either --sample_name or '
             '--sample_name_parent1, or it can be unset to default to '
             '--sample_name.', errors.CommandLineError)
 

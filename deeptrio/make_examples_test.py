@@ -175,7 +175,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(
@@ -291,7 +291,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
@@ -320,7 +320,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
@@ -368,7 +368,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
@@ -559,7 +559,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -578,7 +578,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -598,7 +598,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -617,7 +617,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -635,7 +635,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -653,7 +653,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -674,7 +674,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -697,7 +697,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
@@ -786,7 +786,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile('vsc.tfrecord')
@@ -813,7 +813,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.regions = '20:10,000,000-11,000,000'
@@ -836,7 +836,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     # Deliberately incorrect contig name.
@@ -1030,7 +1030,7 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.examples = 'examples.tfrecord'
@@ -1058,7 +1058,7 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
     FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
     FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_call = 'child'
+    FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.examples = 'examples.tfrecord'

@@ -44,7 +44,7 @@ message DeepTrioInputDatasets {
     string sample_name_parent1 = 12;
     string reads_parent2 = 13;
     string sample_name_parent2 = 14;
-    string sample_name_to_call = 15;
+    string sample_name_to_train = 15;
     // Path to a FASTA file that contains the reference genome.
     string ref = 3;
     // Path to a VCF file that contains the truth variants information.
