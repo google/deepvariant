@@ -40,14 +40,6 @@ show_examples
   --verbose
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import sys
-if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
-  del sys.modules['google']
-
-
 import gzip
 import os
 from typing import Any, Callable, Optional, Sequence, Set

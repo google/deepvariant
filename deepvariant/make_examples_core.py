@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Core functionality for step one of DeepVariant: Making examples."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
 import os
 import time

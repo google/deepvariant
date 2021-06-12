@@ -28,14 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 r"""Creates a visual HTML report about the variants from a VCF file."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import sys
-if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
-  del sys.modules['google']
-
-
 import itertools
 from absl import flags
 import tensorflow as tf

@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Encodes reference and read data into a PileupImage for DeepVariant."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import itertools
 
 

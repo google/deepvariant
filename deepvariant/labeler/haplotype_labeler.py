@@ -51,13 +51,9 @@ returned value is a HaplotypeMatch object describing the genotype assignments
 for candidates and truth.
 
 HaplotypeLabeler implements the variant_labeler.VariantLabeler API by calling
-our find_best_matching_haplotypes function to get teh HaplotypeMatch objects and
+our find_best_matching_haplotypes function to get the HaplotypeMatch objects and
 returning variant_labeler.VariantLabel objects for each candidate variant.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import copy

@@ -33,10 +33,6 @@ to not waste processing time. Important to note that we only include the
 common canonical references for human sequencing here.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 # pyformat: disable
 EXCLUDED_HUMAN_CONTIGS = [
     # From hs37d5.

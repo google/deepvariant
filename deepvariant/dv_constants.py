@@ -33,10 +33,6 @@ accessed in a variety of places, often in live code as well as throughout the
 code in tests.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 # Default width [in basepairs] for our DeepVariant data tensor.
 PILEUP_DEFAULT_WIDTH = 221
 

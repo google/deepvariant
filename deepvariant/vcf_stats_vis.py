@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Create a visual report from a VCF file."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import io
 import json
 import os

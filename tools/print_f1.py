@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 r"""Parse and extract metrics from *.metrics files."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import argparse
 import json
 import logging

@@ -36,10 +36,6 @@ instead of stderr, if it thinks it is interactive.
 There's no flag to override that.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging
 
 from absl import flags

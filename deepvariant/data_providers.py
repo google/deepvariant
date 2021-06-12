@@ -32,10 +32,6 @@ tf.data.Dataset and data providers for standard DeepVariant datasets for
 training and evaluating germline calling accuracy.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 
 
 from absl import logging

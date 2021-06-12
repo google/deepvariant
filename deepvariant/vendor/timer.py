@@ -27,9 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """This module implements classes useful for timing how long an action took."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import time
 

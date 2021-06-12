@@ -33,10 +33,6 @@ This network is experimental and only used in DeepVariantAttentionInceptionV3.
 This file is branched from tensorflow_models/slim/nets/inception_v3.py.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow.compat.v1 as tf
 import tf_slim as slim
 

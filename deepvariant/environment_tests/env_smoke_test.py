@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Smoke tests for the genomics environment."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 # We use unittest and not TF Test because the point of this test is to be
 # able to test our environment without having to build TensorFlow.
 import unittest

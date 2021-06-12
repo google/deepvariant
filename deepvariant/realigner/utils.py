@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Utility functions for realigner."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.protos import cigar_pb2
 
 CIGAR_ALIGN_OPS = [

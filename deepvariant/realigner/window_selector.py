@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Determine genomic ranges to perform local assembly."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import ranges
 from deepvariant.protos import deepvariant_pb2

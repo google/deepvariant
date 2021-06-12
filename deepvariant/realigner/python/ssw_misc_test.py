@@ -26,13 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import sys
-if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
-  del sys.modules['google']
-
 
 from absl.testing import absltest
 import six

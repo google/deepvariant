@@ -68,10 +68,6 @@ https://cloud.google.com/dataflow/pipelines/dataflow-command-line-intf
 """
 # pylint: enable=line-too-long
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import argparse
 import hashlib
 import logging

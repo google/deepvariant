@@ -33,10 +33,6 @@ potential variations, and determining the mostly likely X haplotypes (where X is
 the ploidy).
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import csv
 import os
 import os.path

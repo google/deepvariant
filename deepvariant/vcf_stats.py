@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 r"""Library to produce variant statistics from a VCF file."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
 import itertools
 import math

@@ -28,14 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for learning.genomics.deepvariant.resources."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import sys
-if 'google' in sys.modules and 'google.protobuf' not in sys.modules:
-  del sys.modules['google']
-
-
 import resource
 from absl.testing import absltest
 # https://stackoverflow.com/questions/34630393/python2-7-contextlib-exitstack-equivalent
