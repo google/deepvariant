@@ -313,8 +313,8 @@ def run():
       # Create directory for images if does not exist.
       if output_prefix:
         output_dir = os.path.dirname(output_prefix)
-        if not os.path.exists(output_dir):
-          os.makedirs(output_dir)
+        if not tf.io.gfile.exists(output_dir):
+          tf.io.gfile.makedirs(output_dir)
 
       # Create image with a grey-scale row of channels and save to file.
       if make_channels:
