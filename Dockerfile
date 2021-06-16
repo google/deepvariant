@@ -18,7 +18,17 @@ ARG DV_GPU_BUILD=0
 ARG DV_OPENVINO_BUILD=0
 ARG VERSION=1.1.0
 
+FROM continuumio/miniconda3 as conda_setup
+RUN conda config --add channels defaults && \
+    conda config --add channels bioconda && \
+    conda config --add channels conda-forge
+RUN conda create -n bio \
+                    bioconda::bcftools=1.10 \
+                    bioconda::samtools=1.10 \
+    && conda clean -a
+
 FROM ${FROM_IMAGE} as builder
+COPY --from=conda_setup /opt/conda /opt/conda
 LABEL maintainer="https://github.com/google/deepvariant/issues"
 
 ARG DV_GPU_BUILD
@@ -58,6 +68,7 @@ WORKDIR /opt/
 COPY --from=builder /opt/deepvariant/bazel-bin/licenses.zip .
 
 WORKDIR /opt/deepvariant/bin/
+COPY --from=builder /opt/conda /opt/conda
 COPY --from=builder /opt/deepvariant/run-prereq.sh .
 COPY --from=builder /opt/deepvariant/settings.sh .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples.zip  .
@@ -155,14 +166,14 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.meta .
 RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
+ENV PATH=/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin:"${PATH}"
+
 RUN apt-get -y update && \
-  apt-get install -y parallel python3-pip samtools && \
-  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.9.0 && \
+  apt-get install -y parallel python3-pip && \
+  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.13.0 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \
   rm -rf /var/lib/apt/lists/*
-
-ENV PATH="/opt/deepvariant/bin:${PATH}"
 
 WORKDIR /opt/deepvariant
 

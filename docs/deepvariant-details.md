@@ -226,31 +226,22 @@ Runtime was measured on
 [n1-standard-64](https://cloud.google.com/compute/docs/machine-types#n1_machine_types)
 machines.
 
-## Starting from v1.2.0, `samtools` is included.
+## Starting from v1.2.0, we include `samtools` and `bcftools`.
 
 Based on user feedback ([GitHub issue #414](https://github.com/google/deepvariant/issues/414)),
-we added samtools in our Docker image.
-
-Example usage:
+we added samtools and bcftools in our Docker image:
 
 ```bash
-gsutil -m cp gs://deepvariant/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.chr20.cram* .
-gsutil -m cp gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna{.gz,.fai} .
-gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
-
-docker run \
-  -v "${PWD}":"/data" \
-  google/deepvariant:"${BIN_VERSION}" \
-  /usr/bin/samtools view --threads $(nproc) \
-    -bT /data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
-    -o /data/output.bam \
-    /data/HG002.pfda_challenge.grch38.phased.chr20.cram
-
-docker run \
-  -v "${PWD}":"/data" \
-  google/deepvariant:"${BIN_VERSION}" \
-  /usr/bin/samtools index -@ $(nproc) /data/output.bam
+docker run google/deepvariant:"${BIN_VERSION}" samtools
 ```
+
+and
+
+```bash
+docker run google/deepvariant:"${BIN_VERSION}" bcftools
+```
+
+You can read more about samtools and bcftools here: http://www.htslib.org/doc/.
 
 ## Commands for requesting machines used in case studies
 
