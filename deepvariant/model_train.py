@@ -290,6 +290,9 @@ def main(_):
       # Retry on an InternalError.
       logging.error('Caught InternalError %s; will retry.', e)
 
+  # Final run without exception handling to ensure failure is propagated.
+  parse_and_run()
+
 
 if __name__ == '__main__':
   tf.compat.v1.app.run()
