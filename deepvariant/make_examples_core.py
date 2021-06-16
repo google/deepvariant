@@ -186,14 +186,41 @@ def parse_proto_enum_flag(proto_enum_pb2,
         flag_value, ','.join(sorted(options))))
 
 
-def set_parse_sam_aux_fields(flags_obj, flag_names):
-  for flag_name in flag_names:
-    if flags_obj[flag_name].value:
-      logging.info(
-          'Because --%s=true, --parse_sam_aux_fields is set to '
-          'true to enable reading auxiliary fields from reads.', flag_name)
-    return True
-  return False
+def resolve_sam_aux_fields(flags_obj):
+  """Decide value of parse_sam_aux_fields based on other flags."""
+  flags_requiring_sam_aux_fields = [
+      'sort_by_haplotypes', 'use_original_quality_scores'
+  ]
+  flags_using_sam_aux_fields_optionally = ['add_hp_channel']
+
+  parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
+  if parse_sam_aux_fields is None:
+    # User didn't set the 'parse_sam_aux_fields' flag, so default to False
+    # unless a flag is on that would use it.
+    parse_sam_aux_fields = False
+    for flag_name in (flags_requiring_sam_aux_fields +
+                      flags_using_sam_aux_fields_optionally):
+      if flags_obj[flag_name].value:
+        logging.info(
+            'Because --%s=true, --parse_sam_aux_fields is set to '
+            'true to enable reading auxiliary fields from reads.', flag_name)
+      parse_sam_aux_fields = True
+
+  if not parse_sam_aux_fields:
+    for flag_name in flags_requiring_sam_aux_fields:
+      if flags_obj[flag_name].value:
+        raise ValueError(f'If --{flag_name} is '
+                         'set then --parse_sam_aux_fields must be set too.')
+
+    for flag_name in flags_using_sam_aux_fields_optionally:
+      if flags_obj[flag_name].value:
+        logging.info(
+            'Note that --%s is set but --parse_sam_aux_fields is not '
+            'set. This is fine unless you are expecting to use aux fields from '
+            'the alignments file, such as haplotype tags from phasing. '
+            'If you do need to use aux fields, enable --parse_sam_aux_fields.',
+            flag_name)
+  return parse_sam_aux_fields
 
 
 def parse_regions_flag(regions_flag_value):

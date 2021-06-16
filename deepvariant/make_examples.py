@@ -452,35 +452,11 @@ def default_options(add_flags=True, flags_obj=None):
     options.num_shards = num_shards
     options.runtime_by_region = runtime_by_region
 
-    # First, if parse_sam_aux_fields is still None (which means the users didn't
-    # set it. We added some logic to decide its value.
-    if flags_obj.parse_sam_aux_fields is None:
-      flags_that_needs_sam_aux_fields = [
-          'add_hp_channel', 'sort_by_haplotypes', 'use_original_quality_scores'
-      ]
-      flags_obj.parse_sam_aux_fields = make_examples_core.set_parse_sam_aux_fields(
-          flags_obj, flags_that_needs_sam_aux_fields)
+    options.parse_sam_aux_fields = make_examples_core.resolve_sam_aux_fields(
+        flags_obj=flags_obj)
 
-    for flags_strictly_needs_sam_aux_fields in [
-        'sort_by_haplotypes', 'use_original_quality_scores'
-    ]:
-      if (flags_obj[flags_strictly_needs_sam_aux_fields].value and
-          not flags_obj.parse_sam_aux_fields):
-        errors.log_and_raise(
-            'If --{} is set then parse_sam_aux_fields '
-            'must be set too.'.format(flags_strictly_needs_sam_aux_fields),
-            errors.CommandLineError)
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
 
-    for flag_optionally_needs_sam_aux_fields in ['add_hp_channel']:
-      if (flags_obj[flag_optionally_needs_sam_aux_fields].value and
-          not flags_obj.parse_sam_aux_fields):
-        logging.info(
-            'Note that --%s is set but --parse_sam_aux_fields is not '
-            'set. This is fine unless you are expecting to use aux fields from '
-            'the alignments file, such as haplotype tags from phasing. '
-            'If you do need to use aux fields, enable --parse_sam_aux_fields.',
-            flag_optionally_needs_sam_aux_fields)
     if flags_obj.add_hp_channel:
       options.pic_options.num_channels += 1
       options.pic_options.add_hp_channel = True
@@ -494,10 +470,7 @@ def default_options(add_flags=True, flags_obj=None):
       errors.log_and_raise(
           '--hp_tag_for_assembly_polishing requires --sort_by_haplotypes to be '
           'set ', errors.CommandLineError)
-    if flags_obj.sort_by_haplotypes and not flags_obj.parse_sam_aux_fields:
-      errors.log_and_raise(
-          '--sort_by_haplotypes requires --parse_sam_aux_fields to be set ',
-          errors.CommandLineError)
+
     options.pic_options.sort_by_haplotypes = flags_obj.sort_by_haplotypes
     options.pic_options.hp_tag_for_assembly_polishing = flags_obj.hp_tag_for_assembly_polishing
 
@@ -537,9 +510,6 @@ def default_options(add_flags=True, flags_obj=None):
   options.customized_classes_labeler_classes_list = flags_obj.customized_classes_labeler_classes_list
   options.customized_classes_labeler_info_field_name = flags_obj.customized_classes_labeler_info_field_name
   options.bam_fname = os.path.basename(flags_obj.reads)
-
-  if flags_obj.parse_sam_aux_fields is not None:
-    options.parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
 
   return options
 

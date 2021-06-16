@@ -979,7 +979,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     with six.assertRaisesRegex(
         self, Exception,
-        'If --{} is set then parse_sam_aux_fields must be set too.'.format(
+        'If --{} is set then --parse_sam_aux_fields must be set too.'.format(
             flags_strictly_needs_sam_aux_fields)):
       make_examples.default_options(add_flags=True)
 

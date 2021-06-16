@@ -383,6 +383,55 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     candidates = list(tfrecord.read_tfrecords(child_candidates))
     self.assertLen(candidates, expected_count)
 
+  @parameterized.parameters(
+      dict(mode='calling'),
+      dict(mode='training'),
+  )
+  @flagsaver.flagsaver
+  def test_make_examples_end2end_vcf_candidate_importer(self, mode):
+    FLAGS.variant_caller = 'vcf_candidate_importer'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.HG001_CHR20_BAM
+    FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
+    FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
+    FLAGS.sample_name = 'child'
+    FLAGS.sample_name_parent1 = 'parent1'
+    FLAGS.sample_name_parent2 = 'parent2'
+    FLAGS.pileup_image_height_parent = 40
+    FLAGS.pileup_image_height_child = 60
+    FLAGS.candidates = test_utils.test_tmpfile(
+        _sharded('vcf_candidate_importer.candidates.{}.tfrecord'.format(mode)))
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('vcf_candidate_importer.examples.{}.tfrecord'.format(mode)))
+    FLAGS.mode = mode
+    FLAGS.regions = '20:10,000,000-10,010,000'
+
+    if mode == 'calling':
+      golden_file = _sharded(
+          testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES_CHILD)
+      path_to_output_examples = test_utils.test_tmpfile(
+          _sharded(
+              'vcf_candidate_importer_child.examples.{}.tfrecord'.format(mode)))
+      FLAGS.proposed_variants = testdata.TRUTH_VARIANTS_VCF
+    else:
+      golden_file = _sharded(
+          testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES)
+      path_to_output_examples = test_utils.test_tmpfile(
+          _sharded('vcf_candidate_importer.examples.{}.tfrecord'.format(mode)))
+      FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+      FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+    # Verify that the variants in the examples are all good.
+    output_examples_to_compare = self.verify_examples(
+        path_to_output_examples,
+        None,
+        options,
+        verify_labels=mode == 'training')
+    self.assertDeepVariantExamplesEqual(
+        output_examples_to_compare, list(tfrecord.read_tfrecords(golden_file)))
+
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call almost all of the real variants (according to NIST's
     # Genome in a Bottle callset for NA12878) in our candidate callset.
@@ -1035,11 +1084,11 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.examples = 'examples.tfrecord'
     FLAGS.use_original_quality_scores = True
+    FLAGS.parse_sam_aux_fields = False
 
     with six.assertRaisesRegex(
-        self, Exception,
-        'If use_original_quality_scores is set then parse_sam_aux_fields must be set too.'
-    ):
+        self, Exception, 'If --use_original_quality_scores is set then '
+        '--parse_sam_aux_fields must be set too.'):
       make_examples.default_options(add_flags=True)
 
   @parameterized.parameters(

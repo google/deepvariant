@@ -80,11 +80,10 @@ WS_VARIANT_READS_THRESHOLD_MODEL = None
 N_GOLDEN_TRAINING_EXAMPLES = 50
 N_GOLDEN_CALLING_EXAMPLES = 103
 
-# For CustomizedClassesVariantLabeler
 CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES = None
-
-# For alt-aligned pileups
 ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = None
+GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = None
+GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES_CHILD = None
 
 
 def init():
@@ -109,6 +108,8 @@ def init():
   global WS_ALLELE_COUNT_LINEAR_MODEL
   global WS_ALLELE_COUNT_LINEAR_MODEL_PCKL
   global WS_VARIANT_READS_THRESHOLD_MODEL
+  global GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES
+  global GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES_CHILD
 
   CHR20_FASTA = deeptrio_testdata('input/hs37d5.chr20.fa.gz')
   HG001_CHR20_BAM = deeptrio_testdata('input/HG001.chr20.10_10p1mb_sorted.bam')
@@ -158,3 +159,8 @@ def init():
   global ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES
   ALT_ALIGNED_PILEUP_GOLDEN_TRAINING_EXAMPLES = deeptrio_testdata(
       'alt_aligned_pileup.golden.training_examples.tfrecord.gz')
+
+  GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES = deeptrio_testdata(
+      'golden.vcf_candidate_importer.training_examples.tfrecord.gz')
+  GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES_CHILD = deeptrio_testdata(
+      'golden_child.vcf_candidate_importer.calling_examples.tfrecord.gz')

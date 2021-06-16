@@ -29,12 +29,14 @@
 """Step one of DeepTrio: creates tf.Example protos for training/calling."""
 
 import os
+import re
 
 from absl import app
 from absl import flags
 from absl import logging
 
 from deeptrio import dt_constants
+from deepvariant import dv_constants
 from deepvariant import exclude_contigs
 from deepvariant import logging_level
 from deepvariant import make_examples_core
@@ -69,8 +71,6 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
-VARIANT_TYPE_SELECTORS = make_examples_core.VARIANT_TYPE_SELECTORS
-
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
@@ -101,10 +101,11 @@ flags.DEFINE_string(
     'trio. Should be aligned to a reference genome compatible with --ref. '
     'Can provide multiple BAMs (comma-separated).')
 flags.DEFINE_bool(
-    'use_ref_for_cram', False,
+    'use_ref_for_cram', True,
     'If true, use the --ref argument as the reference file for the CRAM '
     'file passed to --reads.  In this case, it is required that the reference '
-    'file be located on a local POSIX filesystem.')
+    'file be located on a local POSIX filesystem. To disable, specify '
+    '--nouse_ref_for_cram.')
 flags.DEFINE_string(
     'examples', None,
     'Required. Path to write tf.Example protos in TFRecord format. This is the '
@@ -138,6 +139,8 @@ flags.DEFINE_integer(
     'gvcf_gq_binsize', 5,
     'Bin size in which to quantize gVCF genotype qualities. Larger bin size '
     'reduces the number of gVCF records at a loss of quality granularity.')
+flags.DEFINE_bool('include_med_dp', False,
+                  'If true, include MED_DP in the output gVCF records.')
 flags.DEFINE_string(
     'confident_regions', '',
     'Regions that we are confident are hom-ref or a variant in BED format. In '
@@ -147,6 +150,11 @@ flags.DEFINE_string(
     'truth_variants', '',
     'Tabix-indexed VCF file containing the truth variant calls for this labels '
     'which we use to label our examples.')
+flags.DEFINE_string(
+    'proposed_variants', '',
+    '(Only used when --variant_caller=vcf_candidate_importer.) '
+    'Tabix-indexed VCF file containing the proposed positions and alts for '
+    '`vcf_candidate_importer`. The GTs will be ignored.')
 flags.DEFINE_integer('task', 0, 'Task ID of this task')
 flags.DEFINE_integer(
     'partition_size', 1000,
@@ -181,7 +189,6 @@ flags.DEFINE_enum(
     'align to the alt alleles only for indels or for all variant types '
     'including SNPs. Ignored if --alt_aligned_pileup is "none". This flag is '
     'experimental and is not compatible with the pre-trained release models.')
-
 flags.DEFINE_float(
     'downsample_fraction_child', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
@@ -224,9 +231,8 @@ flags.DEFINE_integer(
     'min_base_quality.')
 flags.DEFINE_integer(
     'min_mapping_quality', 5,
-    'By default, reads with any mapping quality are kept. Setting this field '
-    'to a positive integer i will only keep reads that have a MAPQ >= i. Note '
-    'this only applies to aligned reads.')
+    'Setting this field to a positive integer i will only keep reads that'
+    'have a MAPQ >= i. Note this only applies to aligned reads.')
 flags.DEFINE_integer(
     'vsc_min_count_snps', 2,
     'SNP alleles occurring at least this many times in our '
@@ -286,8 +292,12 @@ flags.DEFINE_bool('keep_supplementary_alignments', False,
 flags.DEFINE_bool('keep_secondary_alignments', False,
                   'If True, keep reads marked as secondary alignments.')
 flags.DEFINE_bool(
-    'parse_sam_aux_fields', False,
-    'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed.')
+    'parse_sam_aux_fields', None,
+    'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed. '
+    'By default this flag is None. This flag will be automatically turned on '
+    'if other flags need it (e.g., sort_by_haplotypes). '
+    'If it is explicitly set by the user (either True or False), the '
+    'user-specified value will be used.')
 flags.DEFINE_bool('use_original_quality_scores', False,
                   'If True, base quality scores are read from OQ tag.')
 flags.DEFINE_string(
@@ -309,6 +319,34 @@ flags.DEFINE_bool(
     'sort_by_haplotypes', False,
     'If True, reads are sorted by haplotypes (using HP tag), '
     'parse_sam_aux_fields has to be set for this to work.')
+flags.DEFINE_integer(
+    'hp_tag_for_assembly_polishing', 0,
+    'If set to > 0, reads with this HP tag will be sorted on top. '
+    'sort_by_haplotypes has to be set to True for this to work.')
+flags.DEFINE_bool(
+    'add_hp_channel', False,
+    'If true, add another channel to represent HP tags per read.')
+flags.DEFINE_string(
+    'channels', None, 'Comma-delimited list of optional channels to add. '
+    'Available channels: {}'.format(','.join(dv_constants.OPT_CHANNELS)))
+flags.DEFINE_bool(
+    'add_supporting_other_alt_color', False,
+    'If True, reads supporting an alt not represented in the '
+    'pileup image are colored differently for multiallelics.')
+flags.DEFINE_string(
+    'population_vcfs', None,
+    'Optional. Tabix-indexed VCF file (or list of VCFs broken by chromosome),'
+    ' separated by comma or space, '
+    'containing population allele frequencies.')
+flags.DEFINE_bool(
+    'use_allele_frequency', False,
+    'If True, add another channel for pileup images to represent allele '
+    'frequency information gathered from population callsets.')
+flags.DEFINE_string(
+    'runtime_by_region', None,
+    '[optional] Output filename for a TSV file of runtimes and '
+    'other stats by region. If examples are sharded, this should be sharded '
+    'into the same number of shards as the examples.')
 
 
 def default_options(add_flags=True, flags_obj=None):
@@ -457,10 +495,22 @@ def default_options(add_flags=True, flags_obj=None):
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
+    if flags_obj.proposed_variants:
+      options.proposed_variants_filename = flags_obj.proposed_variants
     if flags_obj.sequencing_type:
       options.pic_options.sequencing_type = make_examples_core.parse_proto_enum_flag(
           deepvariant_pb2.PileupImageOptions.SequencingType,
           flags_obj.sequencing_type)
+
+    if flags_obj.channels:
+      channel_set = flags_obj.channels.split(',')
+      for channel in channel_set:
+        if channel and channel not in dv_constants.OPT_CHANNELS:
+          err_msg = 'Channel "{}" is not one of the available opt channels: {}'.format(
+              channel, ', '.join(dv_constants.OPT_CHANNELS))
+          errors.log_and_raise(err_msg, errors.CommandLineError)
+      options.pic_options.channels[:] = channel_set
+      options.pic_options.num_channels += len(channel_set)
 
     if flags_obj.multi_allelic_mode:
       multi_allelic_enum = {
@@ -476,37 +526,54 @@ def default_options(add_flags=True, flags_obj=None):
 
     options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
     options.pic_options.types_to_alt_align = flags_obj.types_to_alt_align
+    if flags_obj.add_supporting_other_alt_color:
+      options.pic_options.other_allele_supporting_read_alpha = 0.3
 
     if flags_obj.select_variant_types:
       options.select_variant_types[:] = flags_obj.select_variant_types.split()
       for svt in options.select_variant_types:
-        if svt not in VARIANT_TYPE_SELECTORS:
+        if svt not in make_examples_core.VARIANT_TYPE_SELECTORS:
           errors.log_and_raise(
               'Select variant type {} not recognized. Allowed values are {}'
-              .format(svt, ', '.join(VARIANT_TYPE_SELECTORS)),
+              .format(svt,
+                      ', '.join(make_examples_core.VARIANT_TYPE_SELECTORS)),
               errors.CommandLineError)
 
-    num_shards, examples, candidates, gvcf = (
+    num_shards, examples, candidates, gvcf, runtime_by_region = (
         sharded_file_utils.resolve_filespecs(flags_obj.task,
                                              flags_obj.examples or '',
                                              flags_obj.candidates or '',
-                                             flags_obj.gvcf or ''))
+                                             flags_obj.gvcf or '',
+                                             flags_obj.runtime_by_region or ''))
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
+    options.include_med_dp = flags_obj.include_med_dp
     options.task_id = flags_obj.task
     options.num_shards = num_shards
-    if flags_obj.use_original_quality_scores and not flags_obj.parse_sam_aux_fields:
-      errors.log_and_raise(
-          'If use_original_quality_scores is set then parse_sam_aux_fields '
-          'must be set too.', errors.CommandLineError)
+    options.runtime_by_region = runtime_by_region
+
+    options.parse_sam_aux_fields = make_examples_core.resolve_sam_aux_fields(
+        flags_obj=flags_obj)
+
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
 
-    if flags_obj.sort_by_haplotypes and not flags_obj.parse_sam_aux_fields:
+    if flags_obj.add_hp_channel:
+      options.pic_options.num_channels += 1
+      options.pic_options.add_hp_channel = True
+
+    if flags_obj.hp_tag_for_assembly_polishing < 0:
       errors.log_and_raise(
-          '--sort_by_haplotypes requires --parse_sam_aux_fields to be set ',
+          '--hp_tag_for_assembly_polishing has to be set to a positive int.',
           errors.CommandLineError)
+    if (flags_obj.hp_tag_for_assembly_polishing > 0 and
+        not flags_obj.sort_by_haplotypes):
+      errors.log_and_raise(
+          '--hp_tag_for_assembly_polishing requires --sort_by_haplotypes to be '
+          'set ', errors.CommandLineError)
+
     options.pic_options.sort_by_haplotypes = flags_obj.sort_by_haplotypes
+    options.pic_options.hp_tag_for_assembly_polishing = flags_obj.hp_tag_for_assembly_polishing
 
     if flags_obj.write_run_info:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
@@ -517,8 +584,7 @@ def default_options(add_flags=True, flags_obj=None):
         make_examples_core.parse_regions_flag(flags_obj.exclude_regions))
 
     options.realigner_enabled = flags_obj.realign_reads
-    if options.realigner_enabled:
-      options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
+    options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
     options.max_reads_per_partition = flags_obj.max_reads_per_partition
     options.use_ref_for_cram = flags_obj.use_ref_for_cram
@@ -532,14 +598,24 @@ def default_options(add_flags=True, flags_obj=None):
       options.sample_options[
           1].variant_caller_options.fraction_reference_sites_to_emit = (
               flags_obj.training_random_emit_ref_sites)
+
+    if (flags_obj.use_allele_frequency and not flags_obj.population_vcfs):
+      errors.log_and_raise(
+          'If use_allele_frequency is set then population_vcfs '
+          'must be provided.', errors.CommandLineError)
+    if flags_obj.use_allele_frequency:
+      options.use_allele_frequency = flags_obj.use_allele_frequency
+      options.pic_options.num_channels += 1
+      options.pic_options.use_allele_frequency = True
+    if flags_obj.population_vcfs:
+      options.population_vcf_filenames.extend(
+          re.split(',| ', flags_obj.population_vcfs))
+
     options.bam_fname = os.path.basename(
         flags_obj.reads) + '|' + (os.path.basename(flags_obj.reads_parent1) if
                                   flags_obj.reads_parent1 else 'None') + '|' + (
                                       os.path.basename(flags_obj.reads_parent2)
                                       if flags_obj.reads_parent2 else 'None')
-
-    if flags_obj.parse_sam_aux_fields is not None:
-      options.parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
 
   return options
 
@@ -550,6 +626,7 @@ def check_options_are_valid(options):
   # Check arguments that apply to any mode.
   if not options.reference_filename:
     errors.log_and_raise('ref argument is required.', errors.CommandLineError)
+
   if not options.examples_filename:
     errors.log_and_raise('examples argument is required.',
                          errors.CommandLineError)
@@ -565,12 +642,27 @@ def check_options_are_valid(options):
       errors.log_and_raise('truth_variants is required when in training mode.',
                            errors.CommandLineError)
     if not options.confident_regions_filename:
-      errors.log_and_raise(
-          'confident_regions is required when in training mode.',
-          errors.CommandLineError)
+      if (options.variant_caller ==
+          deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
+        logging.info('Note: --confident_regions is optional with '
+                     'vcf_candidate_importer. '
+                     'You did not specify --confident_regions, which means '
+                     'examples will be generated for the whole region.')
+      else:
+        errors.log_and_raise(
+            'confident_regions is required when in training mode.',
+            errors.CommandLineError)
     if options.gvcf_filename:
       errors.log_and_raise('gvcf is not allowed in training mode.',
                            errors.CommandLineError)
+    if (options.variant_caller
+        == deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER and
+        options.proposed_variants_filename):
+      errors.log_and_raise(
+          '--proposed_variants should not be used with '
+          'vcf_candidate_importer in training mode. '
+          'Use --truth_variants to pass in the candidates '
+          'with correct labels for training.', errors.CommandLineError)
   else:
     # Check for argument issues specific to calling mode.
     for sample in options.sample_options:
@@ -583,6 +675,17 @@ def check_options_are_valid(options):
     if child.variant_caller_options.gq_resolution < 1:
       errors.log_and_raise('gq_resolution must be a non-negative integer.',
                            errors.CommandLineError)
+
+    if options.truth_variants_filename:
+      errors.log_and_raise('Do not specify --truth_variants in calling mode.',
+                           errors.CommandLineError)
+
+    if (options.variant_caller ==
+        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
+      if not options.proposed_variants_filename:
+        errors.log_and_raise(
+            '--proposed_variants is required with vcf_candidate_importer in '
+            'calling mode.', errors.CommandLineError)
 
   if not child.reads_filenames:
     errors.log_and_raise('reads argument is required.', errors.CommandLineError)
