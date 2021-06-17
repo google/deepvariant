@@ -38,14 +38,11 @@ py_library(
     srcs_version = "PY2AND3",
     deps = [
         ":dt_constants",
-        "//deepvariant:exclude_contigs",
         "//deepvariant:logging_level",
         "//deepvariant:make_examples_core",
-        "//deepvariant:pileup_image",
+        "//deepvariant:make_examples_options",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:allelecounter",
-        "//deepvariant/realigner",
-        "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io/python:hts_verbose",
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
@@ -53,7 +50,6 @@ py_library(
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
     ],
 )
 
@@ -65,9 +61,18 @@ py_binary(
     main = "make_examples.py",
     python_version = "PY3",
     deps = [
-        ":make_examples_lib",
+        ":dt_constants",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant:logging_level",
+        "//deepvariant:make_examples_core",
+        "//deepvariant:make_examples_options",
+        "//third_party/nucleus/io/python:hts_verbose",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:proto_utils",
+        "@absl_py//absl/flags",
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+        "@absl_py//absl:app",
     ],
 )
 
