@@ -1402,6 +1402,7 @@ class OutputsWriter(object):
     self._writers = {
         k: None for k in ['candidates', 'examples', 'gvcfs', 'runtime']
     }
+    self.examples_filename = None
 
     if options.candidates_filename:
       self._add_writer(
@@ -1410,9 +1411,9 @@ class OutputsWriter(object):
               self._add_suffix(options.candidates_filename, suffix)))
 
     if options.examples_filename:
-      self._add_writer(
-          'examples',
-          tfrecord.Writer(self._add_suffix(options.examples_filename, suffix)))
+      self.examples_filename = self._add_suffix(options.examples_filename,
+                                                suffix)
+      self._add_writer('examples', tfrecord.Writer(self.examples_filename))
 
     if options.gvcf_filename:
       self._add_writer(
@@ -1517,8 +1518,6 @@ def make_examples_runner(options):
   region_processor = RegionProcessor(options)
   region_processor.initialize()
 
-  logging_with_options(options,
-                       'Writing examples to %s' % options.examples_filename)
   if options.candidates_filename:
     logging_with_options(
         options, 'Writing candidates to %s' % options.candidates_filename)
@@ -1542,6 +1541,12 @@ def make_examples_runner(options):
       if sample.sam_readers is not None:
         writers_dict[sample.options.role] = OutputsWriter(
             options, suffix=sample.options.role)
+
+  print('writers_dict:',
+        [writer.examples_filename for writer in writers_dict.values()])
+  logging_with_options(
+      options, 'Writing examples to %s' %
+      ', '.join([writer.examples_filename for writer in writers_dict.values()]))
 
   logging_with_options(
       options, 'Overhead for preparing inputs: %d seconds' %
