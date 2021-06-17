@@ -250,7 +250,7 @@ def check_options_are_valid(options):
         'The sample_name of the child is the same as one of '
         'the parents.', errors.CommandLineError)
 
-  if options.alt_aligned_pileup == 'rows':
+  if options.pic_options.alt_aligned_pileup == 'rows':
     errors.log_and_raise('--alt_aligned_pileup="rows" cannot be used with '
                          'DeepTrio because the pileup images would become '
                          'too tall for InceptionV3.')
