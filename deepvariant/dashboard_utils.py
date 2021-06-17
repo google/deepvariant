@@ -104,7 +104,7 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
     html_string += (f'<a name="a_{chart_id}"></a>\n')
     html_string += (f'<div class="chart-container" {chart_div_style} '
                     f'id="vis_{chart_id}"></div>\n')
-  # End the chart container and star the JavaScript section.
+  # End the chart container and start the JavaScript section.
   html_string += ('</div>' '<script>\n')
 
   # Add JSON vega specs and hook them up to the divs with VegaEmbed.
