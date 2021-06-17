@@ -54,7 +54,8 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
                        html_output: Any,
                        title: str = '',
                        subtitle: str = '',
-                       charts_on_separate_lines: bool = False) -> None:
+                       charts_on_separate_lines: bool = False,
+                       include_outline: bool = False) -> None:
   """Makes the html report with all the charts inserted.
 
   Args:
@@ -65,6 +66,7 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
     charts_on_separate_lines: Put charts on separate lines. If false, charts
       will set next to each other as space allows and flow to the next line,
       similar to text wrapping.
+    include_outline: If true, an outline with chart IDs will be added on top.
 
   Returns:
       None. Writes into the html_output file object.
@@ -89,8 +91,17 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
       f'<h2>{subtitle}</h2>\n'
       # Make a div containing all the charts.
       '<div>')
+  if include_outline:
+    html_string += ('<h3>Outline</h3>\n')
+    html_string += ('<ul>\n')
+    for chart in charts:
+      chart_id = chart['id']
+      html_string += (f'  <li><a href="#a_{chart_id}">{chart_id}</a></li>\n')
+    html_string += ('</ul>\n')
+
   for chart in charts:
     chart_id = chart['id']
+    html_string += (f'<a name="a_{chart_id}"></a>\n')
     html_string += (f'<div class="chart-container" {chart_div_style} '
                     f'id="vis_{chart_id}"></div>\n')
   # End the chart container and star the JavaScript section.

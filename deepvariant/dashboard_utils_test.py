@@ -50,7 +50,8 @@ class DashboardUtilsTest(parameterized.TestCase):
         charts,
         html_output=html_output,
         title='my fancy title',
-        subtitle='my fancy subtitle')
+        subtitle='my fancy subtitle',
+        include_outline=True)
 
     html = html_output.getvalue()
     self.assertIn(
