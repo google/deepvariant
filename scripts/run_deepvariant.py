@@ -346,9 +346,17 @@ def check_or_create_intermediate_results_dir(intermediate_results_dir):
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if FLAGS.customized_model is not None:
+    if (not os.path.exists(FLAGS.customized_model + '.data-00000-of-00001') or
+        not os.path.exists(FLAGS.customized_model + '.index') or
+        not os.path.exists(FLAGS.customized_model + '.meta')):
+      raise RuntimeError('The model files {}* do not exist. Potentially '
+                         'relevant issue: '
+                         'https://github.com/google/deepvariant/blob/r1.1/docs/'
+                         'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
+                         'could-not-open'.format(FLAGS.customized_model))
     logging.info(
         'You set --customized_model. Instead of using the default '
-        'model for %s, `call_variants` step will load %s '
+        'model for %s, `call_variants` step will load %s* '
         'instead.', FLAGS.model_type, FLAGS.customized_model)
 
   if FLAGS.use_hp_information and FLAGS.model_type != 'PACBIO':
