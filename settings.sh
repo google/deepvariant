@@ -126,7 +126,7 @@ function wait_for_dpkg_lock {
   echo "Calling wait_for_dpkg_lock."
   max_wait=300
   i=0
-  while fuser /var/lib/dpkg/{lock,lock-frontend} >/dev/null 2>&1 ; do
+  while sudo fuser /var/lib/dpkg/{lock,lock-frontend} >/dev/null 2>&1 ; do
     echo "Waiting to obtain dpkg lock.."
     sleep 10
     ((i=i+10))
