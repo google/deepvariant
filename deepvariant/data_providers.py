@@ -297,13 +297,14 @@ class DeepVariantInput(object):
       dataset = dataset.shuffle(self.initial_shuffle_buffer_size)
 
     # For both TRAIN and EVAL, use the following to speed up.
-    dataset = dataset.apply(
-        # parallel_interleave requires tf 1.5 or later; this is
-        # necessary for good performance.
-        tf.data.experimental.parallel_interleave(
-            load_dataset,
-            cycle_length=self.input_read_threads,
-            sloppy=self.sloppy))
+    if self.sloppy:
+      options = tf.data.Options()
+      options.experimental_deterministic = False
+      dataset = dataset.with_options(options)
+    dataset = dataset.interleave(
+        load_dataset,
+        cycle_length=self.input_read_threads,
+        num_parallel_calls=tf.data.AUTOTUNE)
 
     if self.max_examples is not None:
       dataset = dataset.take(self.max_examples)
@@ -323,7 +324,7 @@ class DeepVariantInput(object):
             num_parallel_batches=_PREFETCH_BATCHES,
             drop_remainder=True))
 
-    dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+    dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
     return dataset
 
@@ -353,25 +354,28 @@ class DeepVariantInput(object):
 
     batch_size = params['batch_size']
     compression_type = tf_utils.compression_type_of_files(self.input_files)
-    files = tf.data.Dataset.list_files(
+    dataset = tf.data.Dataset.list_files(
         sharded_file_utils.normalize_to_sharded_file_pattern(
             self.input_file_spec),
         shuffle=False,
     )
     logging.vlog(3,
                  'self.input_read_threads={}'.format(self.input_read_threads))
-    dataset = files.apply(
-        tf.data.experimental.parallel_interleave(
-            load_dataset,
-            cycle_length=self.input_read_threads,
-            sloppy=self.sloppy))
+    if self.sloppy:
+      options = tf.data.Options()
+      options.experimental_deterministic = False
+      dataset = dataset.with_options(options)
+    dataset = dataset.interleave(
+        load_dataset,
+        cycle_length=self.input_read_threads,
+        num_parallel_calls=tf.data.AUTOTUNE)
     logging.vlog(3, 'self.input_map_threads={}'.format(self.input_map_threads))
     dataset = dataset.apply(
         tf.data.experimental.map_and_batch(
             self.parse_tfexample,
             batch_size=batch_size,
             num_parallel_batches=self.input_map_threads))
-    dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+    dataset = dataset.prefetch(tf.data.AUTOTUNE)
     return dataset
 
   def __str__(self):
