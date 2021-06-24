@@ -166,7 +166,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.meta .
 RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
 
-ENV PATH=/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin:"${PATH}"
+ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin
 
 RUN apt-get -y update && \
   apt-get install -y parallel python3-pip && \
