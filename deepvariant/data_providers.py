@@ -48,12 +48,9 @@ from deepvariant.protos import deepvariant_pb2
 # busy.
 # These are settable in the constructor.
 _DEFAULT_INPUT_READ_THREADS = 32
-_DEFAULT_INPUT_MAP_THREADS = 48
 _DEFAULT_SHUFFLE_BUFFER_ELEMENTS = 100
 _DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS = 1024
 _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
-# This one doesn't seem useful to adjust at runtime.
-_PREFETCH_BATCHES = 4
 
 
 class DeepVariantInput(object):
@@ -77,7 +74,6 @@ class DeepVariantInput(object):
       name=None,
       use_tpu=False,
       input_read_threads=_DEFAULT_INPUT_READ_THREADS,
-      input_map_threads=_DEFAULT_INPUT_MAP_THREADS,
       shuffle_buffer_size=_DEFAULT_SHUFFLE_BUFFER_ELEMENTS,
       initial_shuffle_buffer_size=_DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS,
       prefetch_dataset_buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
@@ -104,7 +100,6 @@ class DeepVariantInput(object):
       use_tpu: use code paths tuned for TPU, in particular protobuf encoding.
         Default False.
       input_read_threads: number of threads for reading data.  Default 32.
-      input_map_threads: number of threads for mapping data.  Default 48.
       shuffle_buffer_size: size of the final shuffle buffer, in elements.
         Default 100.
       initial_shuffle_buffer_size: int; the size of the dataset.shuffle buffer
@@ -131,7 +126,6 @@ class DeepVariantInput(object):
     self.sloppy = sloppy
     self.list_files_shuffle = list_files_shuffle
     self.input_read_threads = input_read_threads
-    self.input_map_threads = input_map_threads
     self.shuffle_buffer_size = shuffle_buffer_size
     self.initial_shuffle_buffer_size = initial_shuffle_buffer_size
     self.prefetch_dataset_buffer_size = prefetch_dataset_buffer_size
@@ -317,13 +311,9 @@ class DeepVariantInput(object):
       if self.shuffle_buffer_size > 0:
         dataset = dataset.shuffle(self.shuffle_buffer_size)
 
-    dataset = dataset.apply(
-        tf.data.experimental.map_and_batch(
-            map_func=self.parse_tfexample,
-            batch_size=batch_size,
-            num_parallel_batches=_PREFETCH_BATCHES,
-            drop_remainder=True))
-
+    dataset = dataset.map(
+        map_func=self.parse_tfexample, num_parallel_calls=tf.data.AUTOTUNE)
+    dataset = dataset.batch(batch_size=batch_size, drop_remainder=True)
     dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
     return dataset
@@ -369,12 +359,9 @@ class DeepVariantInput(object):
         load_dataset,
         cycle_length=self.input_read_threads,
         num_parallel_calls=tf.data.AUTOTUNE)
-    logging.vlog(3, 'self.input_map_threads={}'.format(self.input_map_threads))
-    dataset = dataset.apply(
-        tf.data.experimental.map_and_batch(
-            self.parse_tfexample,
-            batch_size=batch_size,
-            num_parallel_batches=self.input_map_threads))
+    dataset = dataset.map(
+        map_func=self.parse_tfexample, num_parallel_calls=tf.data.AUTOTUNE)
+    dataset = dataset.batch(batch_size=batch_size)
     dataset = dataset.prefetch(tf.data.AUTOTUNE)
     return dataset
 

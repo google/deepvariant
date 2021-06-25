@@ -93,8 +93,6 @@ flags.DEFINE_integer('max_batches', None,
                      'Max. batches to evaluate. Defaults to all.')
 flags.DEFINE_integer('num_readers', 8,
                      'Number of parallel readers to create for examples.')
-flags.DEFINE_integer('num_mappers', 48,
-                     'Number of parallel mappers to create for examples.')
 flags.DEFINE_string('model_name', 'inception_v3',
                     'The name of the model architecture of --checkpoint.')
 flags.DEFINE_boolean('include_debug_info', False,
@@ -165,10 +163,7 @@ class ExecutionHardwareError(Exception):
   pass
 
 
-def prepare_inputs(source_path,
-                   use_tpu=False,
-                   num_readers=None,
-                   num_mappers=None):
+def prepare_inputs(source_path, use_tpu=False, num_readers=None):
   """Return a tf.data input_fn from the source_path.
 
   Args:
@@ -177,8 +172,6 @@ def prepare_inputs(source_path,
     use_tpu: boolean.  Use the tpu code path.
     num_readers: int > 0 or None. Number of parallel readers to use to read
       examples from source_path. If None, uses FLAGS.num_readers instead.
-    num_mappers: int > 0 or None. Number of parallel mappers to use to transform
-      examples from source_path. If None, uses FLAGS.num_mappers instead.
 
   Returns:
     A tf input_fn yielding batches of image, encoded_variant,
@@ -194,15 +187,12 @@ def prepare_inputs(source_path,
   """
   if not num_readers:
     num_readers = FLAGS.num_readers
-  if not num_mappers:
-    num_mappers = FLAGS.num_mappers
 
   return data_providers.get_input_fn_from_filespec(
       input_file_spec=source_path,
       mode=tf.estimator.ModeKeys.PREDICT,
       use_tpu=use_tpu,
       input_read_threads=num_readers,
-      input_map_threads=num_mappers,
       debugging_true_label_mode=FLAGS.debugging_true_label_mode,
   )
 
