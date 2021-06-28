@@ -288,6 +288,11 @@ flags.DEFINE_string(
     '[optional] Output filename for a TSV file of runtimes and '
     'other stats by region. If examples are sharded, this should be sharded '
     'into the same number of shards as the examples.')
+flags.DEFINE_bool(
+    'track_ref_reads', False,
+    'If True, allele counter keeps track of ref supporting reads.'
+    'By default allele counter keeps a simple count of number of reads '
+    'supporting ref.')
 
 
 def shared_flags_to_options(
@@ -307,7 +312,9 @@ def shared_flags_to_options(
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
-      partition_size=flags_obj.partition_size, read_requirements=read_reqs)
+      partition_size=flags_obj.partition_size,
+      read_requirements=read_reqs,
+      track_ref_reads=flags_obj.track_ref_reads)
 
   options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,

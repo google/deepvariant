@@ -43,6 +43,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/memory/memory.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
@@ -104,8 +105,8 @@ class AlleleCounterTest : public ::testing::Test {
     Range range = MakeRange(chr, start, end);
     // redacted
     // tensorflow/compiler/xla/ptr_util.h.
-    return std::unique_ptr<AlleleCounter>(
-        new AlleleCounter(ref_.get(), range, options_));
+    return absl::make_unique<AlleleCounter>(
+        ref_.get(), range, std::vector<int>(), options_);
   }
 
   // Add reads to allele_count and check that the resulting AlleleCounts are
@@ -675,7 +676,7 @@ TEST_F(AlleleCounterTest, TestLowMapqReadsAreIgnored) {
   Range range = MakeRange("chr1", 0, 4);
   AlleleCounterOptions options;
   options.mutable_read_requirements()->set_min_mapping_quality(10);
-  AlleleCounter allele_counter(ref_.get(), range, options);
+  AlleleCounter allele_counter(ref_.get(), range, std::vector<int>(), options);
   auto read = MakeRead("chr1", 0, "ACGT", {"4M"});
   read.mutable_alignment()->set_mapping_quality(0);
   allele_counter.Add(read, "sample_id");

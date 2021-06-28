@@ -735,8 +735,9 @@ class RegionProcessor(object):
     self.labeler = None
     self.population_vcf_readers = None
 
-  def _make_allele_counter_for_region(self, region):
+  def _make_allele_counter_for_region(self, region, candidate_positions):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
+                                       candidate_positions,
                                        self.options.allele_counter_options)
 
   def _encode_tensor(self, image_tensor):
@@ -801,7 +802,8 @@ class RegionProcessor(object):
       self.population_vcf_readers = population_vcf_readers
 
     if (self.options.realigner_enabled or
-        self.options.pic_options.alt_aligned_pileup != 'none'):
+        self.options.pic_options.alt_aligned_pileup != 'none' or
+        self.options.allele_counter_options.track_ref_reads):
       main_sample = self.samples[self.options.main_sample_index]
       input_bam_header = sam.SamReader(
           main_sample.options.reads_filenames[0]).header
@@ -1083,7 +1085,16 @@ class RegionProcessor(object):
 
     for sample in self.samples:
       if sample.options.reads_filenames:
-        sample.allele_counter = self._make_allele_counter_for_region(region)
+        # Calculate potential candidate positions from allele counts
+        candidate_positions = []
+        if self.options.allele_counter_options.track_ref_reads:
+          candidate_positions = self.realigner.get_candidate_positions(
+              sample.reads, region)
+          sample.reads = sample.in_memory_sam_reader.query(region)
+
+        # Final allele counts calculation.
+        sample.allele_counter = self._make_allele_counter_for_region(
+            region, candidate_positions)
         for read in sample.reads:
           sample.allele_counter.add(read, sample.options.name)
 

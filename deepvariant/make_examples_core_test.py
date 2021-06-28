@@ -836,7 +836,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # Make sure we're creating an AlleleCounter once and adding each of our
     # reads to it.
-    mock_make_ac.assert_called_once_with(self.region)
+    mock_make_ac.assert_called_once_with(self.region, [])
     self.assertEqual([mock.call(r, 'sample_id') for r in reads],
                      mock_ac.add.call_args_list)
 

@@ -79,13 +79,18 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
                                    entry.first.second, entry.second));
   }
 
+  // redacted
+  // where ref alleles are filtered out. The code below is redundant.
+  // Verify that there are no other usages of ref alleles and remove this code.
+  //
   // Creates a synthetic reference Allele if we saw any reference containing
   // alleles, whose count is tracked (for performance reasons) as an integer
   // in the AlleleCount.ref_supporting_read_count field of the proto. This
   // synthetic allele allows us to provide the same API from this function: a
   // vector of the Alleles observed in allele_count without having to track the
   // read names for reference containing reads, which is very memory-intensive.
-  if (allele_count.ref_supporting_read_count() > 0) {
+  if (allele_count.ref_supporting_read_count() > 0 &&
+      !allele_count.track_ref_reads()) {
     to_return.push_back(MakeAllele(allele_count.ref_base(),
                                    AlleleType::REFERENCE,
                                    allele_count.ref_supporting_read_count()));
@@ -113,6 +118,10 @@ std::vector<Allele> SumAlleleCounts(
                                    entry.first.second, entry.second));
   }
 
+  // redacted
+  // where ref alleles are filtered out. The code below is redundant.
+  // Verify that there are no other usages of ref alleles and remove this code.
+  //
   // Creates a synthetic reference Allele if we saw any reference containing
   // alleles, whose count is tracked (for performance reasons) as an integer
   // in the AlleleCount.ref_supporting_read_count field of the proto. This
@@ -123,7 +132,8 @@ std::vector<Allele> SumAlleleCounts(
   for (const AlleleCount& allele_count : allele_counts) {
     ref_support_for_all_samples += allele_count.ref_supporting_read_count();
   }
-  if (ref_support_for_all_samples > 0 && !allele_counts.empty()) {
+  if (ref_support_for_all_samples > 0 && !allele_counts.empty() &&
+      !allele_counts[0].track_ref_reads()) {
     to_return.push_back(MakeAllele(allele_counts[0].ref_base(),
                                    AlleleType::REFERENCE,
                                    ref_support_for_all_samples));
@@ -134,16 +144,26 @@ std::vector<Allele> SumAlleleCounts(
 
 // redacted
 // functionality is identical.
+// Allele counter tracks reads supporting alt alleles. Simple counter is used
+// for ref supporting reads. If track_ref_reads flag is set then ref supporting
+// reads are tracked as well but only for positions marked as potential
+// candidates.
 int TotalAlleleCounts(const AlleleCount& allele_count,
                       bool include_low_quality) {
-  return std::count_if(
-      allele_count.read_alleles().begin(),
-      allele_count.read_alleles().end(),
-         [include_low_quality](google::protobuf::Map<string, Allele>::value_type e) {
-           return !e.second.is_low_quality() || include_low_quality;
-         }) + allele_count.ref_supporting_read_count();
+  int total_allele_counts = std::count_if(
+      allele_count.read_alleles().begin(), allele_count.read_alleles().end(),
+      [include_low_quality](google::protobuf::Map<string, Allele>::value_type e) {
+        return (!e.second.is_low_quality() || include_low_quality) &&
+               e.second.type() != AlleleType::REFERENCE;
+      });
+  total_allele_counts += allele_count.ref_supporting_read_count();
+  return total_allele_counts;
 }
 
+// Allele counter tracks reads supporting alt alleles. Simple counter is used
+// for ref supporting reads. If track_ref_reads flag is set then ref supporting
+// reads are tracked as well but only for positions marked as potential
+// candidates.
 int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
                       bool include_low_quality) {
   int total_allele_count = 0;
@@ -151,7 +171,8 @@ int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
     total_allele_count += std::count_if(
         allele_count.read_alleles().begin(), allele_count.read_alleles().end(),
         [include_low_quality](google::protobuf::Map<string, Allele>::value_type e) {
-          return !e.second.is_low_quality() || include_low_quality;
+          return (!e.second.is_low_quality() || include_low_quality) &&
+                 e.second.type() != AlleleType::REFERENCE;
         });
     total_allele_count += allele_count.ref_supporting_read_count();
   }
@@ -200,24 +221,30 @@ int AlleleIndex(const std::vector<AlleleCount>& allele_counts,
   return std::distance(allele_counts.begin(), idx);
 }
 
-
 AlleleCounter::AlleleCounter(const GenomeReference* const ref,
                              const Range& range,
+                             const std::vector<int>& candidate_positions,
                              const AlleleCounterOptions& options)
     : ref_(ref),
       interval_(range),
+      candidate_positions_(candidate_positions),
       options_(options),
       ref_bases_(ref_->GetBases(range).ValueOrDie()) {
   // Initialize our counts vector of AlleleCounts with proper position and
   // reference base information. Initially the alleles repeated field is empty.
   const int64 len = IntervalLength();
   counts_.reserve(len);
+  // Set candidate positions relative to the interval.
+  for (auto& candidate_position : candidate_positions_) {
+    candidate_position -= interval_.start();
+  }
   for (int i = 0; i < len; ++i) {
     AlleleCount allele_count;
     const int64 pos = range.start() + i;
     *(allele_count.mutable_position()) =
         nucleus::MakePosition(range.reference_name(), pos);
     allele_count.set_ref_base(ref_bases_.substr(i, 1));
+    allele_count.set_track_ref_reads(options.track_ref_reads());
     counts_.push_back(allele_count);
   }
 }
@@ -350,7 +377,15 @@ void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
         const int prev_count = allele_count.ref_supporting_read_count();
         allele_count.set_ref_supporting_read_count(prev_count + 1);
       }
-    } else {
+    }
+
+    // Always create non reference alleles.
+    // Reference alleles are created only when the track_ref_reads flag is set
+    // and we know that this position contains a potential candidate.
+    if (to_add_i.type() != AlleleType::REFERENCE ||
+        (options_.track_ref_reads() &&
+         std::binary_search(candidate_positions_.begin(),
+                            candidate_positions_.end(), to_add_i.position()))) {
       auto* read_alleles = allele_count.mutable_read_alleles();
       auto* sample_alleles = allele_count.mutable_sample_alleles();
       const string key = ReadKey(read);

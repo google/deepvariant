@@ -235,11 +235,14 @@ class AlleleCounter {
   // The counter will track AlleleCounts over the interval range, using ref to
   // get reference data in that interval, using the options to determine which
   // reads and bases are counted.
+  // Candidate_positions parameter is optional. When it is present allele
+  // counter saves ref alleles for positions found in this vector.
   //
   // The GenomeReference must be available throughout the lifetime of this
   // AlleleCounter object.
   AlleleCounter(const nucleus::GenomeReference* const ref,
                 const ::nucleus::genomics::v1::Range& range,
+                const std::vector<int>& candidate_positions,
                 const AlleleCounterOptions& options);
 
   // Adds the alleles from read to our AlleleCounts.
@@ -335,6 +338,11 @@ class AlleleCounter {
   // exclusive) describing where we are counting on the genome. We will produce
   // one AlleleCount for each base in interval, from start to end (exclusive).
   const ::nucleus::genomics::v1::Range interval_;
+
+  // Vector of potential candidate positions. Ref alleles are stored only for
+  // positions found in this vector. This functionality is optional and
+  // governed by track_ref_reads flag.
+  std::vector<int> candidate_positions_;
 
   // The options that are controlling how we count reads.
   const AlleleCounterOptions options_;

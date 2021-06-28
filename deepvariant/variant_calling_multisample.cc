@@ -498,6 +498,18 @@ void VariantCaller::AddSupportingReads(
         DeepVariantCall::SupportingReads& supports =
             (*call->mutable_allele_support())[supported_allele];
         supports.add_read_names(read_name);
+        DeepVariantCall_SupportingReadsExt& support_infos =
+            (*call->mutable_allele_support_ext())[supported_allele];
+        DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
+        read_info->set_read_name(read_name);
+        read_info->set_is_low_quality(allele.is_low_quality());
+      } else {
+        call->add_ref_support(read_name);
+        DeepVariantCall_SupportingReadsExt& support_infos =
+            (*call->mutable_ref_support_ext());
+        DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
+        read_info->set_read_name(read_name);
+        read_info->set_is_low_quality(allele.is_low_quality());
       }
     }
   }

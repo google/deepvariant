@@ -686,6 +686,10 @@ class Realigner(object):
 
     return candidate_haplotypes, realigned_reads
 
+  def get_candidate_positions(self, reads, region):
+    return window_selector.find_candidates(self.config.ws_config,
+                                           self.ref_reader, reads, region)
+
   def align_to_haplotype(self, this_haplotype, haplotypes, prefix, suffix,
                          reads, contig, ref_start):
     """Align reads to a given haplotype, not necessarily the reference.

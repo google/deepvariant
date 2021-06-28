@@ -222,6 +222,9 @@ message AlleleCount {
     repeated Allele alleles = 1;
   }
   map<string, Alleles> sample_alleles = 6;
+
+  // If true reads supporting ref are tracked (read ids are saved).
+  bool track_ref_reads = 7;
 }
 
 // A lighter-weight version of AlleleCount.
@@ -262,6 +265,25 @@ message DeepVariantCall {
   }
   map<string, SupportingReads> allele_support = 2;
   map<string, float> allele_frequency = 3;
+
+  // List of Read keys supporting red allele.
+  repeated string ref_support = 4;
+
+  message ReadSupport {
+    string read_name = 1;
+    bool is_low_quality = 2;
+  }
+  // A map from alt allele in Variant to ReadSupport structure. This structrue
+  // is to replace SupportingReads but for back a backward compatibility old
+  // one is kept.
+  message SupportingReadsExt {
+    repeated ReadSupport read_infos = 1;
+  }
+
+  // This is to replace allele_support.
+  map<string, SupportingReadsExt> allele_support_ext = 5;
+
+  SupportingReadsExt ref_support_ext = 6;
 }
 
 // Options to control how our AlleleCounter code works.
@@ -277,6 +299,11 @@ message AlleleCounterOptions {
 
   // The requirements for reads to be used when counting alleles.
   nucleus.genomics.v1.ReadRequirements read_requirements = 2;
+
+  // Determains how allele counter keeps track of ref reads. If True then
+  // allele_counter stores reads IDs of ref reads, otherwise just a counter is
+  // used for ref reads. Default value is False.
+  bool track_ref_reads = 3;
 }
 
 // Variant call for a single site, in a pseudo-biallelic manner. This is an
@@ -309,7 +336,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 14
+// Next ID: 15
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -359,6 +386,8 @@ message VariantCallerOptions {
   // during training so that uncalled ./. genotypes are not used to generate
   // and label examples.
   bool skip_uncalled_genotypes = 13;
+
+  bool track_ref_reads = 14;
 }
 
 // Options to control how we label variant calls.
