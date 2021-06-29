@@ -41,11 +41,28 @@ img {
   vertical-align: top;
 }
 
+
 .post-description {
   display: inline-block;
   width: 49%;
   padding-left: 10px;
 }
+.post-image {
+  width: 49%;
+  display: inline-block;
+}
+
+@include media-query($on-laptop) {
+  .post-description {
+    display: inline-block;
+    width: 100%;
+    padding-left: 10px;
+  }
+  .post-image {
+    width: 100%;
+  }
+}
+
 
 .post-content {
   margin-bottom: $spacing-unit;
