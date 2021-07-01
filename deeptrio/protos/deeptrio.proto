@@ -31,7 +31,7 @@ syntax = "proto3";
 
 package learning.genomics.deeptrio;
 
-// Next ID: 20.
+// Next ID: 21.
 message DeepTrioInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
   message Dataset {
@@ -75,6 +75,7 @@ message DeepTrioInputDatasets {
     // Optional. Used in PacBio training.
     bool sort_by_haplotypes = 18;
     bool parse_sam_aux_fields = 19;
+    bool add_hp_channel = 20;
   }
   repeated Dataset datasets = 1;
   string group_name = 2;
