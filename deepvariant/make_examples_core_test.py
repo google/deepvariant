@@ -565,6 +565,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
   def setUp(self):
     super(RegionProcessorTest, self).setUp()
+    self._saved_flags = flagsaver.save_flag_values()
     self.region = ranges.parse_literal('chr20:10,000,000-10,000,100')
 
     FLAGS.reads = ''
@@ -584,6 +585,10 @@ class RegionProcessorTest(parameterized.TestCase):
       sample.in_memory_sam_reader = mock.Mock()
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
+
+  def tearDown(self):
+    super(RegionProcessorTest, self).tearDown()
+    flagsaver.restore_flag_values(self._saved_flags)
 
   def add_mock(self, name, retval='dontadd', side_effect='dontadd'):
     patcher = mock.patch.object(self.processor, name, autospec=True)
