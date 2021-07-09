@@ -418,8 +418,8 @@ function get_docker_image() {
     else
       IMAGE="deepvariant:latest"
       # Building twice in case the first one times out.
-      run "sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1 || \
-        (sleep 5 ; sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1)"
+      run "sudo docker build -t deepvariant . || \
+        (sleep 5 ; sudo docker build -t deepvariant .)"
       run echo "Done building Docker image ${IMAGE}."
     fi
 
