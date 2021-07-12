@@ -139,7 +139,7 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'postprocess_variants_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for calpostprocess_variants.py. If the flag_value is boolean, '
+    'valid flags for postprocess_variants.py. If the flag_value is boolean, '
     'it has to be flag_name=true or flag_name=false.')
 
 # Optional flags for postprocess_variants.
@@ -232,6 +232,7 @@ def _extra_args_to_dict(extra_args):
     return args_dict
   for extra_arg in extra_args.split(','):
     (flag_name, flag_value) = extra_arg.split('=')
+    flag_name = flag_name.strip('-')
     # Check for boolean values.
     if flag_value.lower() == 'true':
       flag_value = True
@@ -325,6 +326,7 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['add_hp_channel'] = True
     special_args['sort_by_haplotypes'] = special_args[
         'parse_sam_aux_fields'] = bool(FLAGS.use_hp_information)
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
@@ -420,9 +422,17 @@ def check_or_create_intermediate_results_dir(intermediate_results_dir):
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if FLAGS.customized_model is not None:
+    if (not os.path.exists(FLAGS.customized_model + '.data-00000-of-00001') or
+        not os.path.exists(FLAGS.customized_model + '.index') or
+        not os.path.exists(FLAGS.customized_model + '.meta')):
+      raise RuntimeError('The model files {}* do not exist. Potentially '
+                         'relevant issue: '
+                         'https://github.com/google/deepvariant/blob/r1.1/docs/'
+                         'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
+                         'could-not-open'.format(FLAGS.customized_model))
     logging.info(
         'You set --customized_model. Instead of using the default '
-        'model for %s, `call_variants` step will load %s '
+        'model for %s, `call_variants` step will load %s* '
         'instead.', FLAGS.model_type, FLAGS.customized_model)
 
   if FLAGS.use_hp_information and FLAGS.model_type != 'PACBIO':

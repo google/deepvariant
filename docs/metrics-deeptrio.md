@@ -24,7 +24,7 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 523008   | 2461     | 808      | 0.995317      | 0.99852          | 0.996916        |
+| INDEL | 523008   | 2461     | 808      | 0.995317      | 0.998520         | 0.996916        |
 | SNP   | 3347844  | 17283    | 3088     | 0.994864      | 0.999079         | 0.996967        |
 
 #### HG003:
@@ -49,12 +49,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~840m
-call_variants for HG002          | ~325m
-call_variants for HG003          | ~325m
-call_variants for HG004          | ~325m
-postprocess_variants (parallel)  | ~80m
-total                            | ~1895m = 31.6 hours
+make_examples                    | ~850m
+call_variants for HG002          | ~320m
+call_variants for HG003          | ~320m
+call_variants for HG004          | ~320m
+postprocess_variants (parallel)  | ~70m
+total                            | ~1880m = 31.3 hours
 
 ### Accuracy
 
@@ -67,22 +67,22 @@ genome for consistency.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 524046   | 1423     | 1929     | 0.997292      | 0.996494         | 0.996893        |
-| SNP   | 3361595  | 3532     | 1044     | 0.99895       | 0.99969          | 0.99932         |
+| INDEL | 524382   | 1087     | 1518     | 0.997931      | 0.997243         | 0.997587        |
+| SNP   | 3361791  | 3336     | 719      | 0.999009      | 0.999786         | 0.999397        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502625   | 1876     | 2343     | 0.996281      | 0.99556          | 0.995921        |
-| SNP   | 3323671  | 3824     | 1522     | 0.998851      | 0.999543         | 0.999197        |
+| INDEL | 502854   | 1647     | 2205     | 0.996735      | 0.995824         | 0.996279        |
+| SNP   | 3323866  | 3629     | 1205     | 0.998909      | 0.999638         | 0.999273        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 508515   | 2004     | 2470     | 0.996075      | 0.995379         | 0.995727        |
-| SNP   | 3342962  | 3648     | 1368     | 0.99891       | 0.999591         | 0.99925         |
+| INDEL | 508752   | 1767     | 2290     | 0.996539      | 0.995717         | 0.996128        |
+| SNP   | 3343130  | 3480     | 1104     | 0.998960      | 0.999670         | 0.999315        |
 
 ## Whole Exome Sequencing (Illumina)
 

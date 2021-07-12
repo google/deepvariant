@@ -188,7 +188,8 @@ class RunDeeptrioTest(parameterized.TestCase):
       ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
        '--pileup_image_height_child "100" '
        '--pileup_image_height_parent "100" '),
-      ('PACBIO', '--alt_aligned_pileup "diff_channels" '
+      ('PACBIO', '--add_hp_channel '
+       '--alt_aligned_pileup "diff_channels" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
        '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
@@ -239,7 +240,8 @@ class RunDeeptrioTest(parameterized.TestCase):
       ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
        '--pileup_image_height_child "100" '
        '--pileup_image_height_parent "100" '),
-      ('PACBIO', '--alt_aligned_pileup "diff_channels" '
+      ('PACBIO', '--add_hp_channel '
+       '--alt_aligned_pileup "diff_channels" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
        '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
@@ -278,7 +280,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--task {}' % extra_args_plus_gvcf)
 
   @parameterized.parameters(
-      (None, '--alt_aligned_pileup "diff_channels" '
+      (None, '--add_hp_channel '
+       '--alt_aligned_pileup "diff_channels" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
        '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
@@ -287,6 +290,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.12" ', None),
       ('alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
+       '--add_hp_channel '
        '--alt_aligned_pileup "rows" '
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
        '--noparse_sam_aux_fields '
