@@ -1354,6 +1354,12 @@ def processing_regions_from_options(options):
   vcf_contigs = None
   if in_training_mode(options):
     vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
+    if all([x.n_bases == 0 for x in vcf_contigs]):
+      logging.info(
+          '%s header does not contain contig lengths. Will skip contig '
+          'consistency checking for this file.',
+          options.truth_variants_filename)
+      vcf_contigs = None
 
   main_sample = options.sample_options[options.main_sample_index]
   all_sam_contigs = [
