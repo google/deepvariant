@@ -222,8 +222,8 @@ fi
 # OpenVINO
 ################################################################################
 if [[ "${DV_OPENVINO_BUILD}" = "1" ]]; then
-  pip3 install "${PIP_ARGS[@]}" git+https://github.com/openvinotoolkit/openvino.git@releases/2021/3#subdirectory=model-optimizer
-  pip3 install "${PIP_ARGS[@]}" openvino==2021.3
+  pip3 install "${PIP_ARGS[@]}" git+https://github.com/openvinotoolkit/openvino.git@releases/2021/4#subdirectory=model-optimizer
+  pip3 install "${PIP_ARGS[@]}" openvino==2021.4
 fi
 
 ################################################################################
