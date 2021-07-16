@@ -12,7 +12,8 @@ v0.8    | 12 HG001 PCR-free<br>2 HG005 PCR-free<br>4 HG001 PCR+<br>(and, more `d
 v0.9    | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>2 HG006 PCR-free<br>2 HG007 PCR-free<br>5 HG001 PCR+     | 325,202,093
 v0.10   | 10 HG001 PCR-free<br>2 HG005 PCR-free<br>2 HG006 PCR-free<br>2 HG007 PCR-free<br>5 HG001 PCR+     | 339,410,078
 v1.0    | 11 HG001<br>2 HG005-HG007<br>2 HG002-HG004<sup>[(7)](#vfootnote7)</sup>     | 317,486,837
-v1.1    | 12 HG001<br>3 HG002<br>3 HG004<br>3 HG005<br>3 HG006<br>3 HG007<br><sup>[(9)](#vfootnote9)</sup> | 388,337,190
+v1.1    | 12 HG001<br>3 HG002<br>3 HG004<br>3 HG005<br>3 HG006<br>3 HG007<sup>[(9)](#vfootnote9)</sup> | 388,337,190
+v1.2    | 12 HG001<br>6 HG002<sup>[(12)](#vfootnote12)</sup><br>6 HG004<sup>[(12)](#vfootnote12)</sup><br>3 HG005<br>3 HG006<br>3 HG007 | 518,709,296
 
 ### WES models
 
@@ -25,7 +26,8 @@ v0.8    | 78 HG001<br>1 HG005<sup>[(3)](#vfootnote3)</sup> | 18,683,247
 v0.9    | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
 v0.10   | 81 HG001<br>1 HG005<sup>[(3)](#vfootnote3)[(4)](#vfootnote4)[(5)](#vfootnote5)</sup> | 61,953,965
 v1.0    | 32 HG001<br>9 HG002<br>6 HG003<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(7)](#vfootnote7)</sup> | 10,716,281
-v1.1    | 41 HG001<br>9 HG002<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<br><sup>[(9)](#vfootnote9)</sup> | 13,450,688
+v1.1    | 41 HG001<br>9 HG002<br>6 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(9)](#vfootnote9)</sup> | 13,450,688
+v1.2    | 41 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(11)](#vfootnote11)</sup> | 22,288,064
 
 ### PACBIO models
 
@@ -35,7 +37,8 @@ v0.8    | 16 HG002 | 160,025,931
 v0.9    | 49 HG002 <sup>[(6)](#vfootnote6)</sup> | 357,507,235
 v0.10   | 49 HG002, 2 HG003, 2 HG004, 1 HG002 (amplified) <sup>[(6)](#vfootnote6)</sup> | 472,711,858
 v1.0    | 1 HG001<br>2 HG002<br>2 HG003<br>2 HG004<br>1 HG005 <sup>[(8)](#vfootnote8)</sup>  | 302,331,948
-v1.1    | 1 HG001<br>9 HG002<br>2 HG004<br>1 HG005<br><sup>[(9)](#vfootnote9)</sup> | 569,225,616
+v1.1    | 1 HG001<br>9 HG002<br>2 HG004<br>1 HG005<sup>[(9)](#vfootnote9)</sup> | 569,225,616
+v1.2    | 1 HG001<br>19 HG002<br>2 HG004<br>1 HG005<sup>[(10)](#vfootnote10)</sup> | 1,036,056,726
 
 ### HYBRID models
 
@@ -43,6 +46,7 @@ version | Replicates                                               | #examples
 ------- | -------------------------------------------------------- | -----------
 v1.0    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 193,076,623
 v1.1    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 193,076,623
+v1.2    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 214,302,681
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
@@ -78,36 +82,19 @@ examples with haplotag sorted images and unsorted images.
 use all NIST truth confident regions for HG001-HG007 (except for HG003) for
 training. We've always excluded chr20-22 from training.
 
-## WGS training data:
+<a name="vfootnote10">(10)</a>: In v1.2, we include new training data from the
+new PacBio chemistry.
 
-Here are 6 of WGS BAM files from public sources:
+<a name="vfootnote11">(11)</a>: Between v1.1 and v1.2, we fixed an issue where
+make_examples can generate fewer class 0 (REF) training examples than before.
+This is the reason for more training examples in v1.2 when number of samples
+didn't increase.
 
-BAM file (`--reads`)                                                                                                                                     | PCR-free? | FASTA file (`--ref`)                                                                                                         | Truth VCF (`--truth_variants`)                                                                          | BED file (`--confident_regions`)
--------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------
-[HG001-NA12878-pFDA.merged.sorted.bam](https://console.cloud.google.com/storage/browser/deepvariant/public-training-data)<sup>[(1)](#myfootnote1)</sup>  | Yes      | [GRCh38_Verily_v1.genome.fa](https://console.cloud.google.com/storage/browser/genomics-public-data/references/GRCh38_Verily) | [NISTv3.3.2/GRCh38](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh38/) | [NISTv3.3.2/GRCh38](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh38/)
-[NA12878D_HiSeqX_R1.deduplicated.bam](https://console.cloud.google.com/storage/browser/deepvariant/public-training-data)<sup>[(2)](#myfootnote2)</sup>   | No       | [hs37d5.fa](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence)                 | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/) | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/)
-[NA12878J_HiSeqX_R1.deduplicated.bam](https://console.cloud.google.com/storage/browser/deepvariant/public-training-data)<sup>[(2)](#myfootnote2)</sup>   | No       | [hs37d5.fa](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence)                 | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/) | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/)
-[NA12878-Rep01_S1_L001_001_markdup.bam](https://console.cloud.google.com/storage/browser/deepvariant/public-training-data)<sup>[(2)](#myfootnote2)</sup> | No       | [hs37d5.fa](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence)                 | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/) | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/)
-N3C9-2plex1-L1-171212B-NA12878-1_S1_L001_001_markdup.bam<sup>[(3)](#myfootnote3)</sup>                                                                   | Yes      | [hs37d5.fa](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence)                 | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/) | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/)
-NexteraFlex-2plex1-L1-NA12878-1_S1_L001_001_markdup.bam<sup>[(4)](#myfootnote4)</sup>                                                                    | No       | [hs37d5.fa](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence)                 | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/) | [NISTv3.3.2/GRCh37](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/)
+<a name="vfootnote12">(12)</a>: In v1.2, we created BAM files with 100bp reads
+and 125bp reads by trimming to augment the training data.
 
-<a name="myfootnote1">(1)</a>: FASTQ files from
-[Precision FDA Truth Challenge](https://precision.fda.gov/challenges/truth).
+## Training data:
 
-<a name="myfootnote2">(2)</a>: BAM files provided by
-[DNAnexus](https://www.dnanexus.com/).
-
-<a name="myfootnote3">(3)</a>: FASTQ files from
-[BaseSpace public data](https://basespace.illumina.com/datacentral): `NovaSeq S1
-Xp: TruSeq Nano 350 (Replicates of
-NA12878)/Samples/N3C9_2plex1_L1_171212B_NA12878-1/Files/N3C9-2plex1-L1-171212B-NA12878-1_S1_L001_R1_001.fastq.gz`
-and `N3C9-2plex1-L1-171212B-NA12878-1_S1_L001_R2_001.fastq.gz`
-
-<a name="myfootnote4">(4)</a>: FASTQ files from
-[BaseSpace public data](https://basespace.illumina.com/datacentral): `NovaSeq S1
-Xp: Nextera DNA Flex (Replicates of
-NA12878)/Samples/NexteraFlex_2plex1_L1_NA12878-1/Files/NexteraFlex-2plex1-L1-NA12878-1_S1_L001_R1_001.fastq.gz`
-and `NexteraFlex-2plex1-L1-NA12878-1_S1_L001_R2_001.fastq.gz`
-
-We generated our own BAM files using BWA-MEM to map the reads to the reference,
-and sorts the output. We also mark duplicated reads.
+See "[An Extensive Sequence Dataset of Gold-Standard Samples for Benchmarking and Development](https://doi.org/10.1101/2020.12.11.422022)"
+for a publicly available set of data we released. Data download information can
+be found in the supplementary material.
