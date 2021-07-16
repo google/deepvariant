@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:20.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.8
 ARG DV_GPU_BUILD=0
-ARG VERSION_DEEPTRIO=1.1.0
+ARG VERSION_DEEPTRIO=1.2.0
 
 FROM continuumio/miniconda3 as conda_setup
 RUN conda config --add channels defaults && \
@@ -103,15 +103,15 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRI
 RUN chmod +r /opt/models/deeptrio/wgs/parent/model.ckpt*
 
 WORKDIR /opt/models/deeptrio/pacbio/child
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/1.2.0/DeepTrio-inception_v3-1.2.0-rc1+data-pacbio_child_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/1.2.0/DeepTrio-inception_v3-1.2.0-rc1+data-pacbio_child_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/1.2.0/DeepTrio-inception_v3-1.2.0-rc1+data-pacbio_child_standard/model.ckpt.meta .
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${VERSION_DEEPTRIO}-rc1+data-pacbio_child_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${VERSION_DEEPTRIO}-rc1+data-pacbio_child_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${VERSION_DEEPTRIO}-rc1+data-pacbio_child_standard/model.ckpt.meta .
 RUN chmod +r /opt/models/deeptrio/pacbio/child/model.ckpt*
 
 WORKDIR /opt/models/deeptrio/pacbio/parent
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/1.2.0/DeepTrio-inception_v3-1.2.0-rc1+data-pacbio_parent_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/1.2.0/DeepTrio-inception_v3-1.2.0-rc1+data-pacbio_parent_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/1.2.0/DeepTrio-inception_v3-1.2.0-rc1+data-pacbio_parent_standard/model.ckpt.meta .
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${VERSION_DEEPTRIO}-rc1+data-pacbio_parent_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${VERSION_DEEPTRIO}-rc1+data-pacbio_parent_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/DeepTrio-inception_v3-${VERSION_DEEPTRIO}-rc1+data-pacbio_parent_standard/model.ckpt.meta .
 RUN chmod +r /opt/models/deeptrio/pacbio/parent/model.ckpt*
 
 WORKDIR /opt/models/deeptrio/wes/child
