@@ -146,6 +146,19 @@ singularity exec --bind /usr/lib/locale/ \
     --regions chr20
 ```
 
+## Clarification of the `--use_hp_information` flag
+
+In order to allow DeepVariant to take advantage of the haplotype (HP) tags in
+haplotagged BAMs, three flags must be passed to
+`/opt/deepvariant/bin/make_examples`:
+
+```bash
+--sort_by_haplotypes --parse_sam_aux_fields --add_hp_channel
+```
+
+For the convenient one-step command `/opt/deepvariant/bin/run_deepvariant`, the
+`--use_hp_information` flag will provide these three flags to make_examples.
+
 ## Benchmark First Pass
 
 ```bash
