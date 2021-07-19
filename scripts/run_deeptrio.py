@@ -42,6 +42,7 @@ import tempfile
 from absl import app
 from absl import flags
 from absl import logging
+import tensorflow as tf
 
 FLAGS = flags.FLAGS
 
@@ -422,9 +423,10 @@ def check_or_create_intermediate_results_dir(intermediate_results_dir):
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if FLAGS.customized_model is not None:
-    if (not os.path.exists(FLAGS.customized_model + '.data-00000-of-00001') or
-        not os.path.exists(FLAGS.customized_model + '.index') or
-        not os.path.exists(FLAGS.customized_model + '.meta')):
+    if (not tf.compat.v1.gfile.Exists(FLAGS.customized_model +
+                                      '.data-00000-of-00001') or
+        not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.index') or
+        not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
                          'https://github.com/google/deepvariant/blob/r1.1/docs/'
