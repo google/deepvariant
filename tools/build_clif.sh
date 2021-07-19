@@ -79,6 +79,9 @@ apt-get install  "${APT_ARGS[@]}" \
     python3-pyparsing \
     zlib1g-dev
 
+# Uninstall an older version of libclang so that cmake uses the correct one.
+apt-get remove "${APT_ARGS[@]}" libclang-common-9-dev
+
 # Configure deadsnakes PPA with the more recent versions of python packaged for
 # Ubuntu. See https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
 apt-get update "${APT_ARGS[@]}" && \
