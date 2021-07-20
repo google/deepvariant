@@ -66,6 +66,12 @@ flags.DEFINE_string(
 flags.DEFINE_integer(
     'pileup_image_height', 0,
     'Height for the pileup image. If 0, uses the default height')
+flags.DEFINE_float(
+    'downsample_fraction', NO_DOWNSAMPLING,
+    f'If not {NO_DOWNSAMPLING} must be a value between 0.0 and 1.0. '
+    'Reads will be kept (randomly) with a probability of downsample_fraction '
+    'from the input BAM. This argument makes it easy to create examples as '
+    'though the input BAM had less coverage.')
 
 
 def one_sample_from_flags(add_flags=True, flags_obj=None):

@@ -157,12 +157,6 @@ flags.DEFINE_enum(
     'align to the alt alleles only for indels or for all variant types '
     'including SNPs. Ignored if --alt_aligned_pileup is "none". This flag is '
     'experimental and is not compatible with the pre-trained release models.')
-flags.DEFINE_float(
-    'downsample_fraction', NO_DOWNSAMPLING,
-    'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
-    'Reads will be kept (randomly) with a probability of downsample_fraction '
-    'from the input BAM. This argument makes it easy to create examples as '
-    'though the input BAM had less coverage.')
 flags.DEFINE_string('hts_logging_level',
                     hts_verbose.htsLogLevel.HTS_LOG_WARNING.name,
                     'Sets the htslib logging threshold.')

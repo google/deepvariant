@@ -12,6 +12,7 @@ filegroup(
         "make_examples",
         "model_eval",
         "model_train",
+        "multisample_make_examples",
         "postprocess_variants",
         "runtime_by_region_vis",
         "show_examples",
@@ -1373,5 +1374,27 @@ py_binary(
         "@absl_py//absl/logging",
         # redacted
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_binary(
+    name = "multisample_make_examples",
+    srcs = [
+        "multisample_make_examples.py",
+    ],
+    main = "multisample_make_examples.py",
+    python_version = "PY3",
+    deps = [
+        ":logging_level",
+        ":make_examples_core",
+        ":make_examples_options",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io/python:hts_verbose",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:proto_utils",
+        "@absl_py//absl/flags",
+        # redacted
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+        "@absl_py//absl:app",
     ],
 )
