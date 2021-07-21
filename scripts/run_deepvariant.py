@@ -52,9 +52,10 @@ FLAGS = flags.FLAGS
 # Required flags.
 flags.DEFINE_enum(
     'model_type', None, ['WGS', 'WES', 'PACBIO', 'HYBRID_PACBIO_ILLUMINA'],
-    'Required. Type of model to use for variant calling. Each '
-    'model_type has an associated default model, which can be '
-    'overridden by the --customized_model flag.')
+    'Required. Type of model to use for variant calling. Set this flag '
+    'to use the default model associated with each type, and it will set '
+    'necessary flags corresponding to each model. If you want to use a '
+    'customized model, add --customized_model flag in addition to this flag.')
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
