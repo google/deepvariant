@@ -263,13 +263,14 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
   for k, v in extra_args.items():
     if k in kwargs:
       if conflict_args is not None and k in conflict_args and kwargs[k] != v:
-        raise ValueError('The extra_args "{}" conflicts with other flags. '
-                         'Please fix and try again. '
-                         'Starting in v1.1.0, if you are running with '
-                         'PACBIO and want to use HP tags, please use the new '
-                         '--use_hp_information flag instead of using '
-                         '`--make_examples_extra_args="sort_by_haplotypes=true,'
-                         'parse_sam_aux_fields=true"`'.format(k))
+        raise ValueError(
+            'The extra_args "{}" might have conflicts with other flags. '
+            'See '
+            'https://github.com/google/deepvariant/blob/r1.2/docs/'
+            'deepvariant-pacbio-model-case-study.md#clarification-'
+            'of-the---use_hp_information-flag '
+            'for an explanation, or report this issue on '
+            'https://github.com/google/deepvariant/issues.'.format(k))
       if kwargs[k] != v:
         print('\nWarning: --{} is previously set to {}, now to {}.'.format(
             k, kwargs[k], v))
