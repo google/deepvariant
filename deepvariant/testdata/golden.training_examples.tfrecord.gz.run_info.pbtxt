@@ -3522,7 +3522,12 @@ options {
       min_fraction_multiplier: 1.0
       skip_uncalled_genotypes: true
     }
+    pileup_height: 100
+    order: 0
+    role: "main_sample"
+    name: "NA12878"
   }
+  sample_role_to_train: "main_sample"
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3541,13 +3546,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 3646.7726666666663
+  cpu_frequency_mhz: 1618.7644166666666
   total_memory_mb: 63910
-  wall_time_seconds: 1.4523379802703857
-  cpu_user_time_seconds: 6.249429
-  cpu_system_time_seconds: 2.799808
-  memory_peak_rss_mb: 385
-  read_bytes: 167936
+  wall_time_seconds: 1.2838478088378906
+  cpu_user_time_seconds: 7.086042
+  cpu_system_time_seconds: 1.159684
+  memory_peak_rss_mb: 441
   write_bytes: 20480
 }
 stats {

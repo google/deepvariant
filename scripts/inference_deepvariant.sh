@@ -42,7 +42,7 @@ USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly
 SAVE_INTERMEDIATE_RESULTS=false
 # Strings; sorted alphabetically.
 BAM=""
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""

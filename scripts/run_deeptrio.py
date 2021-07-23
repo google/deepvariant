@@ -171,7 +171,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
-DEEP_TRIO_VERSION = '1.1.0'
+DEEP_TRIO_VERSION = '1.2.0'
 GLNEXUS_VERSION = 'v1.2.7'
 
 DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
@@ -429,7 +429,7 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.1/docs/'
+                         'https://github.com/google/deepvariant/blob/r1.2/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
                          'could-not-open'.format(FLAGS.customized_model))
     logging.info(

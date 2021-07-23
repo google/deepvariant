@@ -30,7 +30,7 @@ DRY_RUN=false
 USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 # Strings; sorted alphabetically.
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 CALL_VARIANTS_ARGS=""
 CUSTOMIZED_MODEL=""
 MAKE_EXAMPLES_ARGS=""
