@@ -7,3 +7,4 @@ six
 protobuf
 Pillow
 ipython
+apache-beam
