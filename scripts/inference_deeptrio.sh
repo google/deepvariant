@@ -446,6 +446,9 @@ function setup_args() {
     extra_args+=( --regions "${REGIONS}")
     happy_args+=( -l "${REGIONS}")
   fi
+  if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" == "1.2.0" ]]; then
+    extra_args+=( --runtime_report )
+  fi
 }
 
 function run_deeptrio() {

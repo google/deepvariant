@@ -96,6 +96,10 @@ flags.DEFINE_boolean(
     allow_hide_cpp=True)
 flags.DEFINE_string('logging_dir', None,
                     'Required. Directory where we should write log files.')
+flags.DEFINE_boolean(
+    'runtime_report', False, 'Output make_examples runtime metrics '
+    'and create a visual runtime report using runtime_by_region_vis. '
+    'Only works with --logging_dir.')
 # Optional flags for call_variants.
 flags.DEFINE_string(
     'customized_model', None,
@@ -280,7 +284,8 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
 
 def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
                           examples, sample_name_child, sample_name_parent1,
-                          sample_name_parent2, extra_args, **kwargs):
+                          sample_name_parent2, runtime_by_region_path,
+                          extra_args, **kwargs):
   """Returns a make_examples command for subprocess.check_call.
 
   Args:
@@ -292,6 +297,7 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
     sample_name_child: Sample name to use for child.
     sample_name_parent1: Sample name for parent1.
     sample_name_parent2: Sample name for parent2.
+    runtime_by_region_path: Path for runtime statistics output.
     extra_args: Comma-separated list of flag_name=flag_value.
     **kwargs: Additional arguments to pass in for make_examples.
 
@@ -322,6 +328,10 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
   special_args['pileup_image_height_child'] = DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD
   special_args[
       'pileup_image_height_parent'] = DEEP_TRIO_WGS_PILEUP_HEIGHT_PARENT
+
+  if runtime_by_region_path is not None:
+    command.extend(
+        ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
 
   conflict_args = None
   if FLAGS.model_type == 'PACBIO':
@@ -403,6 +413,19 @@ def postprocess_variants_command(ref,
         '2>&1 | tee {}/postprocess_variants_{}.log'.format(
             FLAGS.logging_dir, sample)
     ])
+
+  return ' '.join(command)
+
+
+def runtime_by_region_vis_command(runtime_by_region_path: str):
+  """Returns a runtime_by_region_vis command for subprocess."""
+  runtime_report = os.path.join(FLAGS.logging_dir,
+                                'make_examples_runtime_by_region_report.html')
+
+  command = ['time', '/opt/deepvariant/bin/runtime_by_region_vis']
+  command.extend(['--input', '"{}"'.format(runtime_by_region_path)])
+  command.extend(['--title', '"{}"'.format('DeepTrio')])
+  command.extend(['--output', '"{}"'.format(runtime_report)])
 
   return ' '.join(command)
 
@@ -495,6 +518,20 @@ def create_all_commands(intermediate_results_dir):
         nonvariant_site_tfrecord_common_suffix(intermediate_results_dir),
         examples_common_suffix(FLAGS.num_shards))
 
+  if FLAGS.logging_dir and FLAGS.runtime_report:
+    runtime_directory = os.path.join(FLAGS.logging_dir,
+                                     'make_examples_runtime_by_region')
+    if not os.path.isdir(runtime_directory):
+      logging.info('Creating a make_examples runtime by region directory in %s',
+                   runtime_directory)
+      os.makedirs(runtime_directory)
+    # The path to runtime metrics output is sharded just like the examples.
+    runtime_by_region_path = os.path.join(
+        runtime_directory,
+        'make_examples_runtime@{}.tsv'.format(FLAGS.num_shards))
+  else:
+    runtime_by_region_path = None
+
   commands.append(
       make_examples_command(
           FLAGS.ref,
@@ -505,7 +542,9 @@ def create_all_commands(intermediate_results_dir):
           FLAGS.sample_name_child,
           FLAGS.sample_name_parent1,
           FLAGS.sample_name_parent2,
-          FLAGS.make_examples_extra_args,
+          runtime_by_region_path=runtime_by_region_path,
+          extra_args=FLAGS.make_examples_extra_args,
+          # kwargs:
           gvcf=nonvariant_site_tfrecord_path,
           regions=FLAGS.regions))
 
@@ -545,6 +584,10 @@ def create_all_commands(intermediate_results_dir):
         generate_postprocess_variants_command(PARENT2, intermediate_results_dir,
                                               FLAGS.output_vcf_parent2,
                                               FLAGS.output_gvcf_parent2))
+
+  # runtime-by-region
+  if FLAGS.logging_dir and FLAGS.runtime_report:
+    commands.append(runtime_by_region_vis_command(runtime_by_region_path))
 
   return commands, post_process_commands
 

@@ -423,9 +423,6 @@ function get_docker_image() {
       run echo "Done building Docker image ${IMAGE}."
     fi
 
-    # redacted
-    # move to `docker run` command during the next release.
-    extra_args+=( --runtime_report )
   else
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
@@ -490,6 +487,9 @@ function setup_args() {
   if [[ -n "${REGIONS}" ]]; then
     extra_args+=( --regions "${REGIONS}")
     happy_args+=( -l "${REGIONS}")
+  fi
+  if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" == "1.2.0" ]]; then
+    extra_args+=( --runtime_report )
   fi
 }
 

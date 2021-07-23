@@ -58,6 +58,7 @@ COPY --from=builder /opt/deepvariant/run-prereq.sh .
 COPY --from=builder /opt/deepvariant/settings.sh .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/call_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/postprocess_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deeptrio.py ./deeptrio/
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deeptrio/make_examples.zip  ./deeptrio/
 RUN ./run-prereq.sh
@@ -82,11 +83,16 @@ RUN \
     /opt/deepvariant/bin/postprocess_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/runtime_by_region_vis.zip "$@"' > \
+    /opt/deepvariant/bin/runtime_by_region_vis && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
     'python3 -u /opt/deepvariant/bin/deeptrio/run_deeptrio.py "$@"' > \
     /opt/deepvariant/bin/deeptrio/run_deeptrio && \
   chmod +x /opt/deepvariant/bin/deeptrio/make_examples \
     /opt/deepvariant/bin/call_variants \
     /opt/deepvariant/bin/postprocess_variants \
+    /opt/deepvariant/bin/runtime_by_region_vis \
     /opt/deepvariant/bin/deeptrio/run_deeptrio
 
 # Copy models
