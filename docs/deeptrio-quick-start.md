@@ -35,7 +35,7 @@ For production use cases on larger datasets, we recommend looking into the
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -315,7 +315,6 @@ sudo docker run -it \
   --engine=vcfeval \
   --pass-only \
   -l chr20:10000000-10010000
-
 ```
 
 You should see output similar to the following.
@@ -341,13 +340,12 @@ INDEL    ALL            2         2         0            2         0          0 
 INDEL   PASS            2         2         0            2         0          0      0      0            1.0               1.0             0.0              1.0                     NaN                     NaN                   1.000000                   1.000000
   SNP    ALL           10        10         0           10         0          0      0      0            1.0               1.0             0.0              1.0                     4.0                     4.0                   2.333333                   2.333333
   SNP   PASS           10        10         0           10         0          0      0      0            1.0               1.0             0.0              1.0                     4.0                     4.0                   2.333333                   2.333333
-
 ```
 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.1/Dockerfile.deeptrio
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.2/Dockerfile.deeptrio
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf

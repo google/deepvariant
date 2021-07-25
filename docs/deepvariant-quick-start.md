@@ -36,7 +36,7 @@ the [External Solutions] section.
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
