@@ -85,7 +85,7 @@ is run as a separate command.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -153,12 +153,10 @@ At this step we take all 3 VCFs generated in the previous step and merge them
 using GLnexus.
 
 ```bash
-# BCFTools are required:
-sudo apt-get -y install bcftools
-sudo apt-get -y install tabix
-
 sudo docker pull quay.io/mlin/glnexus:v1.2.7
 
+# bcftools and bgzip are now included in our docker images.
+# You can also install them separately.
 sudo docker run \
   -v "${PWD}/output":"/output" \
   quay.io/mlin/glnexus:v1.2.7 \
@@ -167,7 +165,10 @@ sudo docker run \
   /output/HG002.g.vcf.gz \
   /output/HG003.g.vcf.gz \
   /output/HG004.g.vcf.gz \
-  | bcftools view - | bgzip -c > output/HG002_trio_merged.vcf.gz
+  | sudo docker run -i google/deepvariant:deeptrio-"${BIN_VERSION}" \
+    bcftools view - \
+  | sudo docker run -i google/deepvariant:deeptrio-"${BIN_VERSION}" \
+    bgzip -c > output/HG002_trio_merged.vcf.gz
 ```
 
 After completion of GLnexus command we should have a new merged VCF file in the
@@ -221,12 +222,12 @@ As a result we should get the following output:
 ```bash
 Checking: /output/HG002_trio_merged.vcf.gz
 Family: [HG003 + HG004] -> [HG002]
-45 non-pass records were skipped
-Concordance HG002: F:143838/144142 (99.79%)  M:143867/144177 (99.78%)  F+M:142108/142800 (99.52%)
-0/148910 (0.00%) records did not conform to expected call ploidy
-146501/148910 (98.38%) records were variant in at least 1 family member and checked for Mendelian constraints
-3317/146501 (2.26%) records had indeterminate consistency status due to incomplete calls
-748/146501 (0.51%) records contained a violation of Mendelian constraints
+60 non-pass records were skipped
+Concordance HG002: F:144522/144978 (99.69%)  M:144761/145071 (99.79%)  F+M:142296/143248 (99.34%)
+0/150234 (0.00%) records did not conform to expected call ploidy
+149071/150234 (99.23%) records were variant in at least 1 family member and checked for Mendelian constraints
+5239/149071 (3.51%) records had indeterminate consistency status due to incomplete calls
+1135/149071 (0.76%) records contained a violation of Mendelian constraints
 ```
 
 ### Benchmark variant calls against 4.2.1 truth set with hap.py
@@ -288,22 +289,22 @@ sudo docker run \
 ```
 Benchmarking Summary for HG002:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        11256     11214        42        22325        73      10571     24     43       0.996269          0.993789        0.473505         0.995027                     NaN                     NaN                   1.561710                   2.282047
-INDEL   PASS        11256     11214        42        22325        73      10571     24     43       0.996269          0.993789        0.473505         0.995027                     NaN                     NaN                   1.561710                   2.282047
-  SNP    ALL        71333     71273        60        94297        20      22929     16      4       0.999159          0.999720        0.243157         0.999439                2.314904                2.023814                   1.715978                   2.001115
-  SNP   PASS        71333     71273        60        94297        20      22929     16      4       0.999159          0.999720        0.243157         0.999439                2.314904                2.023814                   1.715978                   2.001115
+INDEL    ALL        11256     11228        28        23098        66      11328     16     47       0.997512          0.994393        0.490432         0.995950                     NaN                     NaN                   1.561710                   2.296831
+INDEL   PASS        11256     11228        28        23098        66      11328     16     47       0.997512          0.994393        0.490432         0.995950                     NaN                     NaN                   1.561710                   2.296831
+  SNP    ALL        71333     71270        63        98167        25      26797     21      4       0.999117          0.999650        0.272974         0.999383                2.314904                1.960488                   1.715978                   2.007482
+  SNP   PASS        71333     71270        63        98167        25      26797     21      4       0.999117          0.999650        0.272974         0.999383                2.314904                1.960488                   1.715978                   2.007482
 
 Benchmarking Summary for HG003:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10578        50        22122        72      10980     34     35       0.995295          0.993538        0.496338         0.994416                     NaN                     NaN                   1.748961                   2.498041
-INDEL   PASS        10628     10578        50        22122        72      10980     34     35       0.995295          0.993538        0.496338         0.994416                     NaN                     NaN                   1.748961                   2.498041
-  SNP    ALL        70166     70143        23        94386        29      24161     15      4       0.999672          0.999587        0.255981         0.999630                2.296566                1.977766                   1.883951                   2.173085
-  SNP   PASS        70166     70143        23        94386        29      24161     15      4       0.999672          0.999587        0.255981         0.999630                2.296566                1.977766                   1.883951                   2.173085
+INDEL    ALL        10628     10597        31        22160        58      11011     20     36       0.997083          0.994798        0.496886         0.995939                     NaN                     NaN                   1.748961                   2.514173
+INDEL   PASS        10628     10597        31        22160        58      11011     20     36       0.997083          0.994798        0.496886         0.995939                     NaN                     NaN                   1.748961                   2.514173
+  SNP    ALL        70166     70143        23        92524        21      22304     12      3       0.999672          0.999701        0.241062         0.999687                2.296566                1.999125                   1.883951                   2.079418
+  SNP   PASS        70166     70143        23        92524        21      22304     12      3       0.999672          0.999701        0.241062         0.999687                2.296566                1.999125                   1.883951                   2.079418
 
 Benchmarking Summary for HG004:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        11000     10948        52        22518        75      10990     31     40       0.995273          0.993494        0.488054         0.994383                     NaN                     NaN                   1.792709                   2.507959
-INDEL   PASS        11000     10948        52        22518        75      10990     31     40       0.995273          0.993494        0.488054         0.994383                     NaN                     NaN                   1.792709                   2.507959
-  SNP    ALL        71659     71587        72        95483        30      23782     11     10       0.998995          0.999582        0.249071         0.999288                2.310073                1.995672                   1.878340                   2.019747
-  SNP   PASS        71659     71587        72        95483        30      23782     11     10       0.998995          0.999582        0.249071         0.999288                2.310073                1.995672                   1.878340                   2.019747
+INDEL    ALL        11000     10957        43        22500        59      10974     21     37       0.996091          0.994881        0.487733         0.995486                     NaN                     NaN                   1.792709                   2.520783
+INDEL   PASS        11000     10957        43        22500        59      10974     21     37       0.996091          0.994881        0.487733         0.995486                     NaN                     NaN                   1.792709                   2.520783
+  SNP    ALL        71659     71587        72        93846        34      22141     11     12       0.998995          0.999526        0.235929         0.999260                2.310073                2.018713                   1.878340                   1.972145
+  SNP   PASS        71659     71587        72        93846        34      22141     11     12       0.998995          0.999526        0.235929         0.999260                2.310073                2.018713                   1.878340                   1.972145
 ```
