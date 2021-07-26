@@ -384,6 +384,58 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertLen(candidates, expected_count)
 
   @parameterized.parameters(
+      dict(
+          mode='calling', which_parent='parent1', sample_name_to_train='child'),
+      dict(
+          mode='calling', which_parent='parent2', sample_name_to_train='child'),
+      dict(
+          mode='training', which_parent='parent1',
+          sample_name_to_train='child'),
+      dict(
+          mode='training', which_parent='parent2',
+          sample_name_to_train='child'),
+      dict(
+          mode='calling',
+          which_parent='parent1',
+          sample_name_to_train='parent1'),
+      dict(
+          mode='training',
+          which_parent='parent1',
+          sample_name_to_train='parent1'),
+      # Training on parent2 in a duo is not supported (with a clear error
+      # message).
+  )
+  @flagsaver.flagsaver
+  def test_make_examples_training_end2end_duos(self, mode, which_parent,
+                                               sample_name_to_train):
+    region = ranges.parse_literal('20:10,000,000-10,010,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.HG001_CHR20_BAM
+    FLAGS.sample_name = 'child'
+    FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.partition_size = 1000
+
+    FLAGS.mode = mode
+    if mode == 'training':
+      FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+      FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+
+    if which_parent == 'parent1':
+      FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
+      FLAGS.sample_name_parent1 = 'parent1'
+    elif which_parent == 'parent2':
+      FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
+      FLAGS.sample_name_parent2 = 'parent2'
+    else:
+      raise ValueError('Invalid `which_parent` value in test case.')
+    FLAGS.sample_name_to_train = sample_name_to_train
+
+    # This is only a simple test that it runs without errors.
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+
+  @parameterized.parameters(
       dict(mode='calling'),
       dict(mode='training'),
   )

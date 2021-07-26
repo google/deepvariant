@@ -1081,9 +1081,10 @@ class RegionProcessor(object):
       # we need to return the gVCF records calculated by the caller below.
       return {}, {}
 
+    allele_counters = {}
     for sample in self.samples:
       if sample.options.reads_filenames:
-        # Calculate potential candidate positions from allele counts
+        # Calculate potential candidate positions from allele counts.
         candidate_positions = []
         if self.options.allele_counter_options.track_ref_reads:
           candidate_positions = self.realigner.get_candidate_positions(
@@ -1095,10 +1096,7 @@ class RegionProcessor(object):
             region, candidate_positions)
         for read in sample.reads:
           sample.allele_counter.add(read, sample.options.name)
-
-    allele_counters = {
-        sample.options.name: sample.allele_counter for sample in self.samples
-    }
+        allele_counters[sample.options.name] = sample.allele_counter
 
     candidates = {}
     gvcfs = {}
