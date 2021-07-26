@@ -303,7 +303,7 @@ docker run google/deepvariant:"${BIN_VERSION}" \
 An example usage:
 
 ```bash
-gsutil -m cp gs://deepvariant/models/DeepVariant/1.1.0/DeepVariant-inception_v3-1.1.0+data-wgs_standard/model.ckpt* .
+gsutil -m cp gs://deepvariant/models/DeepVariant/1.2.0/DeepVariant-inception_v3-1.2.0+data-wgs_standard/model.ckpt* .
 
 sudo docker run \
   -v $PWD:/input \
@@ -314,7 +314,7 @@ sudo docker run \
   --output /output/model.pb
 ```
 
-After this command, the output is in the `model.pb` file
+After this command, the output is in the `model.pb` file.
 
 [exome case study]: deepvariant-exome-case-study.md
 [whole genome case study]: deepvariant-case-study.md

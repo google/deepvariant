@@ -9,14 +9,8 @@ First install the [Google Cloud SDK](https://cloud.google.com/sdk/downloads),
 because we will need to use its `gsutil` command to fetch some dependencies.
 
 The `build-prereq.sh` command below will install a number of system packages to
-fulfill DeepVariant's prerequisites (using apt-get and pip, invoked via sudo),
-and will fetch some precompiled binaries (for Tensorflow and CLIF) from our
-Google Cloud Storage bucket (using gsutil).
-
-You could build Tensorflow and CLIF from source if you prefer; see their
-respective source distributions for details. Update the prereq script to use
-your installed versions if you do that, since we expect them to wind up in
-standard locations.
+fulfill DeepVariant's prerequisites (using apt-get and pip, invoked via sudo).
+This commands also downloads and builds TensorFlow and CLIF from source.
 
 Run the following commands to install prerequisites, build the DeepVariant
 programs, and then run tests.

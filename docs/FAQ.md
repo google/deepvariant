@@ -143,7 +143,7 @@ container, you can `ls` inside the container. For example, using the setup shown
 in the README and looking inside the `/input` volume:
 
 ```
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 docker run \
   -v "YOUR_INPUT_DIR":"/input" \
   -v "YOUR_OUTPUT_DIR:/output" \
@@ -158,7 +158,7 @@ and outside the Docker container.
 ```
 echo $HOME # see what your home directory is first.
 ls $HOME
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 sudo docker run \
   -v "${HOME}":"${HOME}" \
   google/deepvariant:"${BIN_VERSION}" \

@@ -82,8 +82,8 @@ examples with haplotag sorted images and unsorted images.
 use all NIST truth confident regions for HG001-HG007 (except for HG003) for
 training. We've always excluded chr20-22 from training.
 
-<a name="vfootnote10">(10)</a>: In v1.2, we include new training data from the
-new PacBio chemistry.
+<a name="vfootnote10">(10)</a>: In v1.2, we include new PacBio training data
+from Sequel II, Chemistry 2.2.
 
 <a name="vfootnote11">(11)</a>: Between v1.1 and v1.2, we fixed an issue where
 make_examples can generate fewer class 0 (REF) training examples than before.
