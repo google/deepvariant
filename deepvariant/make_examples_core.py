@@ -29,14 +29,12 @@
 """Core functionality for step one of DeepVariant: Making examples."""
 
 import collections
+import dataclasses
 import os
 import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
-
-
 from absl import logging
-import dataclasses
 import numpy as np
 import tensorflow as tf
 
@@ -1559,8 +1557,6 @@ def make_examples_runner(options):
         writers_dict[sample.options.role] = OutputsWriter(
             options, suffix=sample.options.role)
 
-  print('writers_dict:',
-        [writer.examples_filename for writer in writers_dict.values()])
   logging_with_options(
       options, 'Writing examples to %s' %
       ', '.join([writer.examples_filename for writer in writers_dict.values()]))
@@ -1605,10 +1601,9 @@ def make_examples_runner(options):
       writer.write_examples(*examples)
 
       if options.runtime_by_region:
-        runtimes['write outputs'] = trim_runtime(time.time() -
-                                                 before_write_outputs)
+        runtimes['write outputs'] = runtimes.get('write outputs', 0) + (
+            trim_runtime(time.time() - before_write_outputs))
         runtimes['region'] = ranges.to_literal(region)
-        writer.write_runtime(stats_dict=runtimes)
 
       # Output timing for every N candidates.
       if (int(n_candidates / options.logging_every_n_candidates) > last_reported
@@ -1618,6 +1613,10 @@ def make_examples_runner(options):
             options, '%s candidates (%s examples) [%0.2fs elapsed]' %
             (n_candidates, n_examples, running_timer.Stop()))
         running_timer = timer.TimerStart()
+    if options.runtime_by_region:
+      # Runtimes are for all samples, so write this only once.
+      writers_dict[options.sample_role_to_train].write_runtime(
+          stats_dict=runtimes)
 
   for writer in writers_dict.values():
     writer.close_all()
