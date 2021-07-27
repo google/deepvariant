@@ -155,5 +155,28 @@ single-threaded `postprocess_variants` program is more adversely affected, with
 observed runtimes increasing on the [WGS case study] from ~25 minutes to 5-7
 hours depending on genome coverage.
 
+### New option to include MED_DP
+
+Starting in v1.2.0, we added a flag to enable adding MED_DP (median read
+coverage seen in the block) in addition to the default MIN_DP (minimum read
+coverage seen in the block).
+
+To test it, you can follow the steps in [Quick Start], and in the step where
+you run the one-step script `/opt/deepvariant/bin/run_deepvariant`, add this
+flag:
+
+```bash
+--make_examples_extra_args="include_med_dp=true"
+```
+
+Then, if you look at your output gVCF, you'll see the additional MED_DP
+information, like:
+
+```
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  NA12878
+chr20   10000000        .       T       <*>     0       .       END=10000116    GT:GQ:MIN_DP:MED_DP:PL  0/0:50:45:58:0,135,1349
+```
+
 [VCF format]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
 [WGS case study]: deepvariant-case-study.md
+[Quick Start]: deepvariant-quick-start.md
