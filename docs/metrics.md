@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 94m
-call_variants                    | 166m
-postprocess_variants (with gVCF) | 70m
-total                            | 330m = 5.5 hours
+make_examples                    | ~110m
+call_variants                    | ~185m
+postprocess_variants (with gVCF) | ~80m
+total                            | ~375m = ~6.3 hours
 
 ### Accuracy
 
@@ -31,10 +31,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 6m
-call_variants                    | 2m
-postprocess_variants (with gVCF) | 1m
-total                            | 9m
+make_examples                    | ~10m
+call_variants                    | ~2m
+postprocess_variants (with gVCF) | ~1m
+total                            | ~13m
 
 ### Accuracy
 
@@ -55,10 +55,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 110m
-call_variants                    | 153m
-postprocess_variants (with gVCF) | 62m
-total                            | 325m = 5.42 hours
+make_examples                    | ~125m
+call_variants                    | ~170m
+postprocess_variants (with gVCF) | ~75m
+total                            | ~370m = ~6.2 hours
 
 ### Accuracy
 
@@ -81,10 +81,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 154m
-call_variants                    | 180m
-postprocess_variants (with gVCF) | 56m
-total                            | 390m = 6.5 hours
+make_examples                    | ~155m
+call_variants                    | ~170m
+postprocess_variants (with gVCF) | ~55m
+total                            | ~380m = ~6.3 hours
 
 ### Accuracy
 
@@ -107,24 +107,21 @@ Use `gcloud compute ssh` to log in to the newly created instance.
 
 Download and run any of the following case study scripts:
 
-redacted
-
 ```
+# Get the script.
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.2/scripts/inference_deepvariant.sh
+
 # WGS
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_wgs.sh
-bash inference_wgs.sh
+bash inference_deepvariant.sh --model_preset WGS
 
 # WES
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_wes.sh
-bash inference_wes.sh
+bash inference_deepvariant.sh --model_preset WES
 
 # PacBio
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_pacbio.sh
-bash inference_pacbio.sh
+bash inference_deepvariant.sh --model_preset PACBIO
 
 # Hybrid
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_hybrid_pacbio_illumina.sh
-bash inference_hybrid_pacbio_illumina.sh
+bash inference_deepvariant.sh --model_preset HYBRID_PACBIO_ILLUMINA
 ```
 
 Runtime metrics are taken from the resulting log after each stage of
