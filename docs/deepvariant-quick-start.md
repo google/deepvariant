@@ -257,7 +257,7 @@ INDEL   PASS            4         4         0           14         0         10 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.0/Dockerfile
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.2/Dockerfile
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
