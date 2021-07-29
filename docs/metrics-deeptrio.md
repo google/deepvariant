@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~450m
-call_variants for HG002          | ~365m
-call_variants for HG003          | ~365m
-call_variants for HG004          | ~365m
+make_examples                    | ~415m
+call_variants for HG002          | ~350m
+call_variants for HG003          | ~350m
+call_variants for HG004          | ~350m
 postprocess_variants (parallel)  | ~85m
-total                            | ~1630m = 27.2 hours
+total                            | ~1550m = ~25.8 hours
 
 ### Accuracy
 
@@ -49,12 +49,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~850m
+make_examples                    | ~780m
 call_variants for HG002          | ~320m
 call_variants for HG003          | ~320m
 call_variants for HG004          | ~320m
-postprocess_variants (parallel)  | ~70m
-total                            | ~1880m = 31.3 hours
+postprocess_variants (parallel)  | ~65m
+total                            | ~1805m = ~30.0 hours
 
 ### Accuracy
 
@@ -123,7 +123,7 @@ truth).
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 1056     | 26       | 19       | 0.97597       | 0.982852         | 0.979399        |
+| INDEL | 1056     | 26       | 19       | 0.975970      | 0.982852         | 0.979399        |
 | SNP   | 24945    | 232      | 17       | 0.990785      | 0.999319         | 0.995034        |
 
 
@@ -140,7 +140,7 @@ Use `gcloud compute ssh` to log in to the newly created instance.
 Download and run any of the following case study scripts:
 
 ```
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.1/scripts/inference_deeptrio.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.2/scripts/inference_deeptrio.sh
 
 # WGS
 bash inference_deeptrio.sh --model_preset WGS
