@@ -121,7 +121,7 @@ doi: https://doi.org/10.1093/bioinformatics/btaa1081
 ## Why Use DeepVariant?
 
 *   **High accuracy** - DeepVariant won 2020
-    [PrecisionFDA Truth Challenge V2](https://precision.fda.gov/challenges/10/view/results)
+    [PrecisionFDA Truth Challenge V2](https://precision.fda.gov/challenges/10/results)
     for All Benchmark Regions for ONT, PacBio, and Multiple Technologies
     categories, and 2016
     [PrecisionFDA Truth Challenge](https://precision.fda.gov/challenges/truth/results)
