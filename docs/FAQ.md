@@ -171,7 +171,7 @@ Since the DeepVariant v0.9 release, we recommend
 "[Best practices for multi-sample variant calling with DeepVariant](https://github.com/google/deepvariant/blob/r0.9/docs/trio-merge-case-study.md)".
 
 For specifically calling on duos or trios, we introduced
-[DeepTrio](https://github.com/google/deepvariant/blob/r1.1/docs/deeptrio-details.md)
+[DeepTrio](https://github.com/google/deepvariant/blob/r1.2/docs/deeptrio-details.md)
 in v1.1.
 
 ## Can call_variants be run on multiple GPUs?

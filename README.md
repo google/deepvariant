@@ -1,6 +1,6 @@
 # DeepVariant
 
-[![release](https://img.shields.io/badge/release-v1.1.0-green?logo=github)](https://github.com/google/deepvariant/releases)
+[![release](https://img.shields.io/badge/release-v1.2.0-green?logo=github)](https://github.com/google/deepvariant/releases)
 [![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
 [![blog](https://img.shields.io/badge/blog-orange)](https://goo.gl/deepvariant)
 
@@ -61,7 +61,7 @@ Please also note:
 We recommend using our Docker solution. The command will look like this:
 
 ```
-BIN_VERSION="1.1.0"
+BIN_VERSION="1.2.0"
 docker run \
   -v "YOUR_INPUT_DIR":"/input" \
   -v "YOUR_OUTPUT_DIR:/output" \
