@@ -45,7 +45,9 @@ class StatusorClifWrapTest(absltest.TestCase):
     self.assertEqual(statusor_examples.MakeIntOK(), 42)
 
   def test_make_int_fail(self):
-    with self.assertRaisesRegexp(ValueError, 'Invalid argument: MakeIntFail'):
+    # redacted
+    # with self.assertRaisesRegexp(ValueError, 'INVALID_ARGUMENT: MakeIntFail'):
+    with self.assertRaisesRegexp(ValueError, 'MakeIntFail'):
       statusor_examples.MakeIntFail()
 
   def test_make_str_ok(self):
@@ -56,31 +58,39 @@ class StatusorClifWrapTest(absltest.TestCase):
   #   self.assertEqual(statusor_examples.MakeStrOKStrippedType(), 'hello')
 
   def test_make_str_fail(self):
-    with self.assertRaisesRegexp(ValueError, 'Invalid argument: MakeStrFail'):
+    # redacted
+    # with self.assertRaisesRegexp(ValueError, 'INVALID_ARGUMENT: MakeStrFail'):
+    with self.assertRaisesRegexp(ValueError, 'MakeStrFail'):
       statusor_examples.MakeStrFail()
 
   def test_make_int_unique_ptr_ok(self):
     self.assertEqual(statusor_examples.MakeIntUniquePtrOK(), 421)
 
   def test_make_int_unique_ptr_fail(self):
-    with self.assertRaisesRegexp(ValueError,
-                                 'Invalid argument: MakeIntUniquePtrFail'):
+    # redacted
+    # with self.assertRaisesRegexp(ValueError,
+    #                              'INVALID_ARGUMENT: MakeIntUniquePtrFail'):
+    with self.assertRaisesRegexp(ValueError, 'MakeIntUniquePtrFail'):
       statusor_examples.MakeIntUniquePtrFail()
 
   def test_make_int_vector_ok(self):
     self.assertEqual(statusor_examples.MakeIntVectorOK(), [1, 2, 42])
 
   def test_make_int_vector_fail(self):
-    with self.assertRaisesRegexp(ValueError,
-                                 'Invalid argument: MakeIntVectorFail'):
+    # redacted
+    # with self.assertRaisesRegexp(ValueError,
+    #                              'INVALID_ARGUMENT: MakeIntVectorFail'):
+    with self.assertRaisesRegexp(ValueError, 'MakeIntVectorFail'):
       statusor_examples.MakeIntVectorFail()
 
   def test_returning_status_ok_returns_none(self):
     self.assertEqual(statusor_examples.FuncReturningStatusOK(), None)
 
   def test_returning_status_fail_raises(self):
-    with self.assertRaisesRegexp(ValueError,
-                                 'Invalid argument: FuncReturningStatusFail'):
+    # redacted
+    # with self.assertRaisesRegexp(ValueError,
+    #                              'INVALID_ARGUMENT: FuncReturningStatusFail'):
+    with self.assertRaisesRegexp(ValueError,'FuncReturningStatusFail'):
       statusor_examples.FuncReturningStatusFail()
 
 

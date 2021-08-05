@@ -149,8 +149,11 @@ class SamReaderTest(parameterized.TestCase):
         self.assertIsInstance(query_iterable2, clif_postproc.WrappedCppIterable)
 
   def test_from_file_raises_with_missing_bam(self):
+    # redacted
+    # with self.assertRaisesRegex(ValueError,
+    #                             'NOT_FOUND: Could not open missing.bam'):
     with self.assertRaisesRegex(ValueError,
-                                'Not found: Could not open missing.bam'):
+                                'Could not open missing.bam'):
       sam_reader.SamReader.from_file(
           reads_path='missing.bam', ref_path='', options=self.options)
 

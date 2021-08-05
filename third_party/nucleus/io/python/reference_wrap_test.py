@@ -48,10 +48,8 @@ from third_party.nucleus.util import ranges
 class WrapReferenceTest(parameterized.TestCase):
 
   @parameterized.parameters(
-      ('test.fasta', False, 'TAACC'),
-      ('test.fasta', True, 'TaaCC'),
-      ('test.fasta.gz', False, 'TAACC'),
-      ('test.fasta.gz', True, 'TaaCC'))
+      ('test.fasta', False, 'TAACC'), ('test.fasta', True, 'TaaCC'),
+      ('test.fasta.gz', False, 'TAACC'), ('test.fasta.gz', True, 'TaaCC'))
   def test_wrap(self, fasta_filename, keep_true_case, expected_bases):
     chr_names = ['chrM', 'chr1', 'chr2']
     chr_lengths = [100, 76, 121]
@@ -60,8 +58,8 @@ class WrapReferenceTest(parameterized.TestCase):
     options = fasta_pb2.FastaReaderOptions(keep_true_case=keep_true_case)
     with reference.IndexedFastaReader.from_file(fasta, fai, options) as ref:
       self.assertEqual(ref.contig_names, chr_names)
-      self.assertEqual(ref.bases(ranges.make_range('chrM', 22, 27)),
-                       expected_bases)
+      self.assertEqual(
+          ref.bases(ranges.make_range('chrM', 22, 27)), expected_bases)
 
       self.assertTrue(ref.is_valid_interval(ranges.make_range('chrM', 1, 10)))
       self.assertFalse(
@@ -87,9 +85,13 @@ class WrapReferenceTest(parameterized.TestCase):
                                                 fai_filename):
     fasta = test_utils.genomics_core_testdata(fasta_filename)
     fai = test_utils.genomics_core_testdata(fai_filename)
+    # redacted
+    # with self.assertRaisesRegexp(
+    #     ValueError,
+    #     'NOT_FOUND: could not load fasta and/or fai for fasta ' + fasta):
     with self.assertRaisesRegexp(
         ValueError,
-        'Not found: could not load fasta and/or fai for fasta ' + fasta):
+        'could not load fasta and/or fai for fasta ' + fasta):
       reference.IndexedFastaReader.from_file(fasta, fai,
                                              fasta_pb2.FastaReaderOptions())
 

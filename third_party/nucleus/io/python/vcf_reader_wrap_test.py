@@ -78,73 +78,59 @@ expected_samples_filters = [
     variants_pb2.VcfFilterInfo(id='LowQual', description='Low	quality'),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL95.00to96.00',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.9364	<=	x	<	1.0415'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.9364	<=	x	<	1.0415'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL96.00to97.00',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.8135	<=	x	<	0.9364'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.8135	<=	x	<	0.9364'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL97.00to99.00',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.323	<=	x	<	0.8135'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	0.323	<=	x	<	0.8135'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.00to99.50',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-0.1071	<=	x	<	0.323'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-0.1071	<=	x	<	0.323'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.50to99.90',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-1.845	<=	x	<	-0.1071'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-1.845	<=	x	<	-0.1071'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.90to99.95',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-3.2441	<=	x	<	-1.845'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-3.2441	<=	x	<	-1.845'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.95to100.00+',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod	<	-57172.0693'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod	<	-57172.0693'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheINDEL99.95to100.00',
-        description=
-        'Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-57172.0693	<=	x	<	-3.2441'
+        description='Truth	sensitivity	tranche	level	for	INDEL	model	at	VQS	Lod:	-57172.0693	<=	x	<	-3.2441'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.50to99.60',
-        description=
-        'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-0.751	<=	x	<	-0.6681'
+        description='Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-0.751	<=	x	<	-0.6681'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.60to99.80',
-        description=
-        'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-1.0839	<=	x	<	-0.751'
+        description='Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-1.0839	<=	x	<	-0.751'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.80to99.90',
-        description=
-        'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-1.7082	<=	x	<	-1.0839'
+        description='Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-1.7082	<=	x	<	-1.0839'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.90to99.95',
-        description=
-        'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-3.0342	<=	x	<	-1.7082'
+        description='Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-3.0342	<=	x	<	-1.7082'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.95to100.00+',
-        description=
-        'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod	<	-40235.9641'
+        description='Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod	<	-40235.9641'
     ),
     variants_pb2.VcfFilterInfo(
         id='VQSRTrancheSNP99.95to100.00',
-        description=
-        'Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-40235.9641	<=	x	<	-3.0342'
+        description='Truth	sensitivity	tranche	level	for	SNP	model	at	VQS	Lod:	-40235.9641	<=	x	<	-3.0342'
     )
 ]
 
@@ -224,8 +210,11 @@ class WrapVcfReaderTests(absltest.TestCase):
       self.samples_reader.from_string('BAD NOT A VCF RECORD\n;;')
 
   def test_from_file_raises_with_missing_source(self):
+    # redacted
+    # with self.assertRaisesRegexp(ValueError,
+    #                              'NOT_FOUND: Could not open missing.vcf'):
     with self.assertRaisesRegexp(ValueError,
-                                 'Not found: Could not open missing.vcf'):
+                               'Could not open missing.vcf'):
       vcf_reader.VcfReader.from_file('missing.vcf', self.options)
 
   def test_ops_on_closed_reader_raise(self):

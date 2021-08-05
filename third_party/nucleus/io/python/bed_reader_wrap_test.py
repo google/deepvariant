@@ -74,9 +74,8 @@ class BedReaderTest(parameterized.TestCase):
       self.assertLen(actual, 2)
       self.assertEqual(actual[0], self.first)
 
-    zreader = bed_reader.BedReader.from_file(
-        self.zipped_bed,
-        bed_pb2.BedReaderOptions())
+    zreader = bed_reader.BedReader.from_file(self.zipped_bed,
+                                             bed_pb2.BedReaderOptions())
     self.assertEqual(zreader.header.num_fields, 12)
     with zreader:
       ziterable = zreader.iterate()
@@ -86,8 +85,11 @@ class BedReaderTest(parameterized.TestCase):
       self.assertEqual(zactual[0], self.first)
 
   def test_from_file_raises_with_missing_bed(self):
+    # redacted
+    # with self.assertRaisesRegexp(ValueError,
+    #                              'NOT_FOUND: Could not open missing.bed'):
     with self.assertRaisesRegexp(ValueError,
-                                 'Not found: Could not open missing.bed'):
+                                   'Could not open missing.bed'):
       bed_reader.BedReader.from_file('missing.bed', self.options)
 
   def test_ops_on_closed_reader_raise(self):
