@@ -133,11 +133,11 @@ class CallVariantsEndToEndTests(
     # Check that we have the right number of output protos.
     self.assertEqual(len(call_variants_outputs), num_examples)
 
-  def assertCallVariantsEmitsNRecordsForRandomGuess(self, filename,
-                                                    num_examples):
+  def assertCallVariantsEmitsNRecordsForConstantModel(self, filename,
+                                                      num_examples):
     checkpoint_path = _LEAVE_MODEL_UNINITIALIZED
     outfile = test_utils.test_tmpfile('call_variants.tfrecord')
-    model = modeling.get_model('random_guess')
+    model = modeling.get_model('constant')
     call_variants.call_variants(
         examples_filename=filename,
         checkpoint_path=checkpoint_path,
@@ -160,8 +160,8 @@ class CallVariantsEndToEndTests(
     # Write to 15 shards, which means there will be multiple empty shards.
     source_path = test_utils.test_tmpfile('sharded@{}'.format(15))
     tfrecord.write_tfrecords(examples, source_path)
-    self.assertCallVariantsEmitsNRecordsForRandomGuess(source_path,
-                                                       len(examples))
+    self.assertCallVariantsEmitsNRecordsForConstantModel(
+        source_path, len(examples))
 
   def test_call_end2end_empty_first_shard(self):
     # Get only up to 10 examples.
@@ -172,7 +172,7 @@ class CallVariantsEndToEndTests(
     tfrecord.write_tfrecords([], empty_first_file)
     second_file = test_utils.test_tmpfile('empty_1st_shard-00001-of-00002')
     tfrecord.write_tfrecords(examples, second_file)
-    self.assertCallVariantsEmitsNRecordsForRandomGuess(
+    self.assertCallVariantsEmitsNRecordsForConstantModel(
         test_utils.test_tmpfile('empty_1st_shard@2'), len(examples))
 
   def test_call_end2end_zero_record_file_for_inception_v3(self):
@@ -198,8 +198,8 @@ class CallVariantsEndToEndTests(
     else:
       batch_size = 4
 
-    if model.name == 'random_guess':
-      # For the random guess model we can run everything.
+    if model.name == 'constant':
+      # For the constant model we can run everything.
       max_batches = None
     else:
       # For all other models we only run a single batch for inference.
@@ -358,7 +358,7 @@ class CallVariantsEndToEndTests(
     tfrecord.write_tfrecords([], source_path)
     # Make sure that prepare_inputs don't crash on empty input.
     ds = call_variants.prepare_inputs(source_path)
-    m = modeling.get_model('random_guess')
+    m = modeling.get_model('constant')
 
     # The API specifies that OutOfRangeError is thrown in this case.
     batches = list(_get_infer_batches(ds, model=m, batch_size=1))
@@ -379,7 +379,7 @@ class CallVariantsUnitTests(
     cls.examples = list(
         tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
     cls.variants = [tf_utils.example_variant(ex) for ex in cls.examples]
-    cls.model = modeling.get_model('random_guess')
+    cls.model = modeling.get_model('constant')
 
   @parameterized.parameters(
       ('not_sharded', 'not_sharded'),

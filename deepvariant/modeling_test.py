@@ -365,21 +365,5 @@ class InceptionV3AttentionModelTest(
       self.assertEqual(endpoints[endpoint].shape, endpoints[se_endpoint].shape)
 
 
-class RandomGuessModelTest(tf.test.TestCase):
-
-  def test_deterministic_predictions_for_fixed_seed(self):
-
-    def predictions(seed):
-      with self.test_session() as sess:
-        model = modeling.DeepVariantRandomGuessModel(seed=seed)
-        images = tf.compat.v1.placeholder(tf.float32, (4, 10, 10, 3))
-        predictions = sess.run(model.create(images, 3, False)['Predictions'])
-        return predictions
-
-    # Note we do not use assertAllClose here as there's no assertNotAllClose().
-    self.assertTrue((predictions(seed=123) == predictions(seed=123)).all())
-    self.assertFalse((predictions(seed=123) == predictions(seed=456)).all())
-
-
 if __name__ == '__main__':
   absltest.main()

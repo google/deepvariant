@@ -1349,79 +1349,6 @@ class DeepVariantPlaceholderModel(DeepVariantModel):
     return False
 
 
-class DeepVariantRandomGuessModel(DeepVariantPlaceholderModel):
-  """Assigns a random probability to each class.
-
-  This model is mostly useful for testing of DeepVariant, as the evaluation of
-  this model is essentially free.
-  """
-
-  def __init__(self, seed=1268458594):
-    """Creates a RandomGuessing model.
-
-    Args:
-      seed: int. The random number seed to use for our tf.random_uniform op.
-    """
-    super(DeepVariantRandomGuessModel, self).__init__(name='random_guess')
-    self.seed = seed
-
-  def _create(self, images, num_classes, is_training):
-    """The Random model emits a random uniform probability for each class."""
-    batch_size = tf.shape(input=images)[0]
-    rand_probs = tf.random.uniform(
-        shape=(batch_size, num_classes), seed=self.seed)
-    return {'Predictions': tf.nn.softmax(rand_probs)}
-
-  def model_fn(self, features, labels, mode, params):
-    """A model_fn for the random model."""
-    # redacted
-    num_classes = dv_constants.NUM_CLASSES
-
-    # In predict-mode the last batch may be smaller; so use the measured
-    # batch size.
-    encoded_variants = features['variant']
-
-    tf.compat.v1.set_random_seed(self.seed)
-    rand_probs = tf.map_fn(
-        fn=lambda _: tf.random.uniform([num_classes]),
-        elems=features['image'],
-        dtype=tf.float32,
-    )
-
-    # In a normal model we'd call create to get the endpoints,
-    # but it's inconvenient to pass batch size in this case.
-    endpoints = {'Predictions': tf.nn.softmax(rand_probs)}
-
-    predictions = endpoints
-
-    if mode == tf.estimator.ModeKeys.PREDICT:
-      predictions = {
-          'probabilities': endpoints['Predictions'],
-          'variant': encoded_variants,
-          'alt_allele_indices': features['alt_allele_indices'],
-      }
-
-    if mode == tf.estimator.ModeKeys.EVAL:
-      eval_metrics = (eval_metric_fn, [
-          labels, endpoints['Predictions'], endpoints['variant_type']
-      ])
-    else:
-      eval_metrics = None
-
-    loss = tf.constant(0.0)
-    train_op = None
-    spec = tpu_estimator.TPUEstimatorSpec(
-        mode=mode,
-        loss=loss,
-        train_op=train_op,
-        eval_metrics=eval_metrics,
-        predictions=predictions)
-    if self.use_tpu:
-      return spec
-    else:
-      return spec.as_estimator_spec()
-
-
 class DeepVariantConstantModel(DeepVariantPlaceholderModel):
   """Returns a constant probability distribution for each example."""
 
@@ -1620,9 +1547,8 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
 
 # Our list of pre-defined model classes.
 _MODEL_CLASSES = [
-    DeepVariantSmallModel, DeepVariantInceptionV3, DeepVariantRandomGuessModel,
-    DeepVariantConstantModel, DeepVariantInceptionV3Embedding,
-    DeepVariantAttentionInceptionV3
+    DeepVariantSmallModel, DeepVariantInceptionV3, DeepVariantConstantModel,
+    DeepVariantInceptionV3Embedding, DeepVariantAttentionInceptionV3
 ]
 
 
