@@ -37,9 +37,13 @@ echo ========== See https://github.com/google/clif for how to build on different
 echo ========== Run this script in root mode.
 
 CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-20.04}"
-ABSL_VERSION=20200923
+ABSL_VERSION=20210324.2
 PROTOBUF_VERSION=3.13.0
 CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
+# CLIF_PIN can be set to a specific commit hash on
+# https://github.com/google/clif/commits/main.
+# If not set, the default is to checkout the latest commit.
+CLIF_PIN="${CLIF_PIN-}"
 
 APT_ARGS=(
 "-qq"
@@ -132,6 +136,9 @@ DV_PLATFORM="ubuntu-${CLIF_UBUNTU_VERSION}"
 
 ln -sf /usr/bin/python$CLIF_PYTHON_VERSION /usr/local/bin/python3
 
-cd && rm -rf clif && git clone https://github.com/google/clif.git && \
-  cd clif && \
-  ./INSTALL.sh
+cd && rm -rf clif && git clone https://github.com/google/clif.git && cd clif
+
+if [[ ! -z ${CLIF_PIN} ]]; then
+  git checkout "${CLIF_PIN}"
+fi
+./INSTALL.sh
