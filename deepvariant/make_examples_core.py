@@ -616,6 +616,7 @@ def filter_regions_by_vcf(regions, variant_positions):
 
   return filtered_regions
 
+
 # ---------------------------------------------------------------------------
 # Working with samples
 # ---------------------------------------------------------------------------
@@ -1002,7 +1003,10 @@ class RegionProcessor(object):
         reads.extend(sam_reader.query(region))
       except ValueError as err:
         error_message = str(err)
-        if error_message.startswith('Data loss:'):
+        # redacted
+        # if error_message.startswith('DATA_LOSS:'):
+        if error_message.startswith('DATA_LOSS:') or error_message.startswith(
+            'Data loss:'):
           raise ValueError(error_message + '\nFailed to parse BAM/CRAM file. '
                            'This is often caused by:\n'
                            '(1) When using a CRAM file, and setting '
@@ -1201,8 +1205,8 @@ class RegionProcessor(object):
       dv_call: A DeepVariantCall.
       sample_order: A list of indices representing the order in which samples
         should be represented in the pileup image. Example: [1,0,2] to swap the
-        first and second samples. This is None by default which puts the
-        samples in order.
+          first and second samples. This is None by default which puts the
+          samples in order.
 
     Returns:
       A list of tf.Example protos.

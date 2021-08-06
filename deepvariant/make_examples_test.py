@@ -282,11 +282,13 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.gvcf_gq_binsize = 5
     options = make_examples.default_options(add_flags=True)
     # This shows an example of what the error message looks like:
+    # redacted
+    # with six.assertRaisesRegex(
+    #     self, ValueError, 'NOT_FOUND: Unknown reference_name '
+    #     'reference_name: "chr20" start: 9999999 end: 10000999'):
     with six.assertRaisesRegex(
-        self, ValueError, 'Not found: Unknown reference_name '
-        'reference_name: "chr20" start: 9999999 end: 10000999\n'
-        'The region chr20:10000000-10000999 does not exist in '
-        '.*HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam.'):
+        self, ValueError, 'Unknown reference_name '
+        'reference_name: "chr20" start: 9999999 end: 10000999'):
       make_examples_core.make_examples_runner(options)
 
   @flagsaver.flagsaver
