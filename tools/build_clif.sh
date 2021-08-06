@@ -36,10 +36,10 @@ echo ========== This script has been tested on Ubuntu18.04 and Ubuntu20.04.
 echo ========== See https://github.com/google/clif for how to build on different Unix distributions.
 echo ========== Run this script in root mode.
 
-CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-18.04}"
+CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-20.04}"
 ABSL_VERSION=20200923
 PROTOBUF_VERSION=3.13.0
-CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.6}"
+CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
 
 APT_ARGS=(
 "-qq"
