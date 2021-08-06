@@ -161,7 +161,7 @@ sudo docker run \
   -v "${PWD}/output":"/output" \
   quay.io/mlin/glnexus:v1.2.7 \
   /usr/local/bin/glnexus_cli \
-  --config DeepVariantWGS \
+  --config DeepVariant_unfiltered \
   /output/HG002.g.vcf.gz \
   /output/HG003.g.vcf.gz \
   /output/HG004.g.vcf.gz \
@@ -222,12 +222,13 @@ As a result we should get the following output:
 ```bash
 Checking: /output/HG002_trio_merged.vcf.gz
 Family: [HG003 + HG004] -> [HG002]
-60 non-pass records were skipped
-Concordance HG002: F:144522/144978 (99.69%)  M:144761/145071 (99.79%)  F+M:142296/143248 (99.34%)
-0/150234 (0.00%) records did not conform to expected call ploidy
-149071/150234 (99.23%) records were variant in at least 1 family member and checked for Mendelian constraints
-5239/149071 (3.51%) records had indeterminate consistency status due to incomplete calls
-1135/149071 (0.76%) records contained a violation of Mendelian constraints
+122 non-pass records were skipped
+Concordance HG002: F:147733/148927 (99.20%)  M:148440/149072 (99.58%)  F+M:144203/146434 (98.48%)
+Sample HG002 has less than 99.0 concordance with both parents. Check for incorrect pedigree or sample mislabelling.
+0/157768 (0.00%) records did not conform to expected call ploidy
+155055/157768 (98.28%) records were variant in at least 1 family member and checked for Mendelian constraints
+7942/155055 (5.12%) records had indeterminate consistency status due to incomplete calls
+2646/155055 (1.71%) records contained a violation of Mendelian constraints
 ```
 
 ### Benchmark variant calls against 4.2.1 truth set with hap.py
