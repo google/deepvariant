@@ -216,7 +216,7 @@ message AlleleCount {
   // whose alignment to the reference genome isn't 100% certain.
   int32 ref_nonconfident_read_count = 5;
 
-  // A map where key is a sample name and vlaue is a list of alt alleles that
+  // A map where key is a sample name and value is a list of alt alleles that
   // are supported by reads from this sample.
   message Alleles {
     repeated Allele alleles = 1;
@@ -336,7 +336,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 15
+// Next ID: 16
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -382,9 +382,8 @@ message VariantCallerOptions {
   // constants.
   int32 ploidy = 11;
 
-  // Skip uncalled genotypes. This is used with the VCF Candidate Importer
-  // during training so that uncalled ./. genotypes are not used to generate
-  // and label examples.
+  // Skip uncalled genotypes. This is used during training so that
+  // uncalled ./. genotypes are not used to generate and label examples.
   bool skip_uncalled_genotypes = 13;
 
   bool track_ref_reads = 14;

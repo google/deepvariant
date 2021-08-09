@@ -431,10 +431,12 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         _test_variant(start=20),
         _test_variant(start=30),
         _test_variant(start=31),
+        _test_variant(start=42),
     ]
     truths = [
         _test_variant(start=10, gt=(0, 1)),
         _test_variant(start=30, gt=(1, 1)),
+        _test_variant(start=42, gt=(0, 0)),
     ]
 
     labeler = _make_labeler(
@@ -450,6 +452,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         20: (0, 0),
         30: (1, 1),
         31: (0, 0),
+        42: (0, 0),
     }
     self.assertEqual(len(result), len(variants))
     for variant, label in zip(variants, result):

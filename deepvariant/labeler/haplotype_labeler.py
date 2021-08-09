@@ -57,18 +57,18 @@ returning variant_labeler.VariantLabel objects for each candidate variant.
 
 import collections
 import copy
+import enum
 import heapq
 import itertools
 
 from absl import logging
-import enum
 
+from deepvariant.labeler import variant_labeler
+from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-from deepvariant.labeler import variant_labeler
-from deepvariant.protos import deepvariant_pb2
 
 VariantAndGenotypes = collections.namedtuple('VariantAndGenotype',
                                              ['variant', 'genotypes'])
@@ -132,9 +132,17 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     # Grab our truth variants and group up variants + truth into small enough
     # chunks that we can safely send them into our find_best_matching_haplotypes
     # function.
+    truths = list(self._get_truth_variants(region))
+    if truths:
+      # Filter out homozygous reference labels.
+      truths = [
+          y for x, y in zip(
+              map(lambda x: sum(x) > 0, _variant_genotypes(truths)), truths)
+          if x
+      ]
     grouped = group_variants(
         candidates=list(variants),
-        truths=list(self._get_truth_variants(region)),
+        truths=truths,
         max_group_size=self.max_group_size,
         max_separation=self.max_separation,
         max_gt_options_product=self.max_gt_options_product)
@@ -846,8 +854,6 @@ class HaplotypeMatch(object):
     if len(truths) != len(truth_genotypes):
       raise ValueError(('truths and truth_genotypes should have the same '
                         'length'))
-    if any(sum(gt) == 0 for gt in _variant_genotypes(truths)):
-      raise ValueError('No truth genotypes should be hom-ref')
 
     self.haplotypes = sorted(haplotypes)
     self.candidates = candidates

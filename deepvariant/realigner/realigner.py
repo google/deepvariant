@@ -147,7 +147,7 @@ flags.DEFINE_float(
     'alignment.')
 flags.DEFINE_bool(
     'split_skip_reads', False,
-    'If True, splits reads with large SKIP cigar operations'
+    'If True, splits reads with large SKIP cigar operations '
     'into individual reads. Resulting read parts that are less than '
     '15 bp are filtered out.')
 flags.DEFINE_integer('kmer_size', 32,
