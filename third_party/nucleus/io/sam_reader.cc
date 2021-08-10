@@ -80,6 +80,9 @@ using tensorflow::WARNING;
 using google::protobuf::RepeatedField;
 
 namespace {
+
+inline constexpr absl::string_view kOQ = "OQ";
+
 bool FileTypeIsIndexable(htsFormat format) {
   return format.format == bam || format.format == cram;
 }
@@ -302,6 +305,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
   if (options.aux_field_handling() != SamReaderOptions::PARSE_ALL_AUX_FIELDS) {
     return tf::Status::OK();
   }
+  const auto& aux_fields_to_keep = options.aux_fields_to_keep();
 
   uint8_t* s = bam_get_aux(b);
   const uint8_t* end = b->data + b->l_data;
@@ -310,6 +314,10 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
     // [tag char 1, tag char 2, type byte, ...]
     // where the ... contents depends on the 2-character tag and type.
     const string tag = string(reinterpret_cast<char*>(s), 2);
+    bool include_tag = (aux_fields_to_keep.empty() ||
+                        std::find(aux_fields_to_keep.begin(),
+                                  aux_fields_to_keep.end(), tag)
+                        != aux_fields_to_keep.end());
     s += 2;
     const uint8_t type = *s++;
     switch (type) {
@@ -317,7 +325,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
       case 'A': {
         // Safe since we know s is at least 4 bytes from the end.
         const string value = string(reinterpret_cast<char*>(s), 1);
-        SetInfoField(tag, value, read_message);
+        if (include_tag) SetInfoField(tag, value, read_message);
         s += 1;
       } break;
       // These are all different byte-sized integers.
@@ -329,14 +337,14 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
         const int value = bam_aux2i(s - 1);
         if (value == 0 && errno == EINVAL)
           return tf::errors::DataLoss("Malformed tag " + tag);
-        SetInfoField(tag, value, read_message);
+        if (include_tag) SetInfoField(tag, value, read_message);
         s += size;
       } break;
       // A 4-byte floating point.
       case 'f': {
         if (end - s < 4) return tf::errors::DataLoss("Malformed tag " + tag);
         const float value = le_to_float(s);
-        SetInfoField(tag, value, read_message);
+        if (include_tag) SetInfoField(tag, value, read_message);
         s += 4;
       } break;
       // Z and H are null-terminated strings.
@@ -348,7 +356,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
         // The H hex tag is not really used and likely deprecated (see:
         // https://sourceforge.net/p/samtools/mailman/message/28274509/
         // so we are explicitly skipping them here.
-        if (type == 'Z') SetInfoField(tag, value, read_message);
+        if (type == 'Z' && include_tag) SetInfoField(tag, value, read_message);
       } break;
       // B is an array of atomic types (strings, ints, floats).
       case 'B': {
@@ -371,7 +379,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
             all_values.push_back(value);
             s += element_size;
           }
-          SetInfoField(tag, all_values, read_message);
+          if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'C') {
           std::vector<uint8_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -379,7 +387,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
             all_values.push_back(value);
             s += element_size;
           }
-          SetInfoField(tag, all_values, read_message);
+          if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 's') {
           std::vector<int16_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -387,7 +395,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
             all_values.push_back(value);
             s += element_size;
           }
-          SetInfoField(tag, all_values, read_message);
+          if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'S') {
           std::vector<uint16_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -395,7 +403,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
             all_values.push_back(value);
             s += element_size;
           }
-          SetInfoField(tag, all_values, read_message);
+          if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'i') {
           std::vector<int32_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -403,7 +411,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
             all_values.push_back(value);
             s += element_size;
           }
-          SetInfoField(tag, all_values, read_message);
+          if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'I') {
           std::vector<uint32_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -411,7 +419,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
             all_values.push_back(value);
             s += element_size;
           }
-          SetInfoField(tag, all_values, read_message);
+          if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'f') {
           std::vector<float> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -419,7 +427,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
             all_values.push_back(value);
             s += element_size;
           }
-          SetInfoField(tag, all_values, read_message);
+          if (include_tag) SetInfoField(tag, all_values, read_message);
         } else {
           return tf::errors::DataLoss("Unknown subtype " +
                                       std::to_string(sub_type));
@@ -444,7 +452,7 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
   // Use optional "OQ" tag.
   if (options.use_original_base_quality_scores()) {
     const auto& info = read_message->info();
-    auto info_it = info.find("OQ");
+    auto info_it = info.find(kOQ);
     if (info_it != read_message->info().end() &&
         !info_it->second.values().empty()) {
       RepeatedField<int32>* quality = read_message->mutable_aligned_quality();
@@ -644,6 +652,15 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
         || !options.use_original_base_quality_scores())
       << "aux_field_handling must be true if use_original_quality_scores is "
          "set to true";
+  bool oq_is_included = (
+      options.aux_fields_to_keep().empty() ||
+      std::find(options.aux_fields_to_keep().begin(),
+                options.aux_fields_to_keep().end(), kOQ)
+      != options.aux_fields_to_keep().end());
+  CHECK(oq_is_included
+        || !options.use_original_base_quality_scores())
+      << "aux_fields_to_keep must contain OQ or be empty (which means "
+      << "including everything) if use_original_quality_scores is set to true.";
 
   const std::vector<string> header_lines_split =
       absl::StrSplit(header_->text, '\n');

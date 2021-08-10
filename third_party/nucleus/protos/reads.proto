@@ -365,6 +365,7 @@ message Program {
 // It enables reads to be omitted from parsing based on their attributes, as
 // well as more fine-grained handling of particular fields within the SAM
 // records.
+// Next ID: 12.
 message SamReaderOptions {
   // Read requirements that must be satisfied before our reader will return
   // a read to use.
@@ -402,6 +403,11 @@ message SamReaderOptions {
   // By default aligned_quality field is read from QUAL in SAM. If flag is set,
   // aligned_quality field is read from OQ tag in SAM.
   bool use_original_base_quality_scores = 10;
+
+  // By default, this field is empty. If empty, we keep all aux fields if they
+  // are parsed. If set, we only keep the aux fields with the names in this
+  // list.
+  repeated string aux_fields_to_keep = 11;
 }
 
 // Describes requirements for a read for it to be returned by a SamReader.

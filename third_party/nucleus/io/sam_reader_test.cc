@@ -60,8 +60,10 @@ using nucleus::proto::IgnoringFieldPaths;
 using nucleus::proto::Partially;
 using std::vector;
 using ::testing::IsEmpty;
+using ::testing::Key;
 using ::testing::Pointwise;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 
 // Constants for all filenames used in this test file.
 constexpr char kSamTestFilename[] = "test.sam";
@@ -152,6 +154,46 @@ TEST(SamReaderTest, TestFailIfParseAuxFieldsIsNotSetWithUseOriginalOqualities) {
       SamReader::FromFile(GetTestData(kSamTestFilename), samReaderOptions),
       "aux_field_handling must be true if use_original_quality_scores is set "
       "to true");
+}
+
+TEST(SamReaderTest, TestEmptyAuxFieldsToKeepReadsEverything) {
+  SamReaderOptions samReaderOptions;
+  samReaderOptions.set_aux_field_handling(
+      SamReaderOptions::PARSE_ALL_AUX_FIELDS);
+  std::unique_ptr<SamReader> reader = std::move(
+      SamReader::FromFile(GetTestData(kSamTestFilename), samReaderOptions)
+          .ValueOrDie());
+  auto reads = as_vector(reader->Iterate());
+  EXPECT_THAT(reads[0].info(),
+              UnorderedElementsAre(Key("NM"), Key("MD"), Key("AS"), Key("XS"),
+                                   Key("RG")));
+}
+
+TEST(SamReaderTest, TestSetAuxFieldsToKeep) {
+  SamReaderOptions samReaderOptions;
+  samReaderOptions.set_aux_field_handling(
+      SamReaderOptions::PARSE_ALL_AUX_FIELDS);
+  samReaderOptions.add_aux_fields_to_keep("NM");  // This exists in the read.
+  samReaderOptions.add_aux_fields_to_keep("FOO");  // This doesn't exist.
+  std::unique_ptr<SamReader> reader = std::move(
+      SamReader::FromFile(GetTestData(kSamTestFilename), samReaderOptions)
+          .ValueOrDie());
+  auto reads = as_vector(reader->Iterate());
+  EXPECT_THAT(reads[0].info(), UnorderedElementsAre(Key("NM")));
+}
+
+// Test that assert is raised if aux_fields_to_keep doesn't contain OQ when
+// use_original_base_quality_scores.
+TEST(SamReaderTest, TestFailAuxFieldsToKeepIsNotSetWithUseOriginalOqualities) {
+  SamReaderOptions samReaderOptions;
+  samReaderOptions.set_use_original_base_quality_scores(true);
+  samReaderOptions.set_aux_field_handling(
+      SamReaderOptions::PARSE_ALL_AUX_FIELDS);
+  // aux_fields_to_keep is not empty, but doesn't contain OQ.
+  samReaderOptions.add_aux_fields_to_keep("HP");
+  ASSERT_DEATH(
+      SamReader::FromFile(GetTestData(kSamTestFilename), samReaderOptions),
+      "aux_fields_to_keep must contain OQ or be empty");
 }
 
 TEST(SamReaderTest, TestIterationRespectsReadRequirements) {
