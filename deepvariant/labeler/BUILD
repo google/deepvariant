@@ -159,6 +159,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":haplotype_labeler",
+        "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/protos:reference_py_pb2",
