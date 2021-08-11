@@ -75,13 +75,11 @@ using nucleus::genomics::v1::SamHeader;
 using nucleus::genomics::v1::SamReaderOptions;
 using std::vector;
 
-using tensorflow::WARNING;
-
 using google::protobuf::RepeatedField;
 
 namespace {
 
-inline constexpr absl::string_view kOQ = "OQ";
+inline constexpr char kOQ[] = "OQ";
 
 bool FileTypeIsIndexable(htsFormat format) {
   return format.format == bam || format.format == cram;
