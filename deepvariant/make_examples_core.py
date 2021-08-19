@@ -1001,12 +1001,10 @@ class RegionProcessor(object):
     for sam_reader_index, sam_reader in enumerate(sam_readers):
       try:
         reads.extend(sam_reader.query(region))
+      # redacted
       except ValueError as err:
         error_message = str(err)
-        # redacted
-        # if error_message.startswith('DATA_LOSS:'):
-        if error_message.startswith('DATA_LOSS:') or error_message.startswith(
-            'Data loss:'):
+        if error_message.startswith('DATA_LOSS:'):
           raise ValueError(error_message + '\nFailed to parse BAM/CRAM file. '
                            'This is often caused by:\n'
                            '(1) When using a CRAM file, and setting '
@@ -1019,7 +1017,7 @@ class RegionProcessor(object):
                            'If you cannot find out the reason why this error '
                            'is occurring, please report to '
                            'https://github.com/google/deepvariant/issues')
-        elif error_message.startswith('Not found: Unknown reference_name '):
+        elif error_message.startswith('NOT_FOUND: Unknown reference_name '):
           raise ValueError('{}\nThe region {} does not exist in {}.'.format(
               error_message, ranges.to_literal(region),
               reads_filenames[sam_reader_index]))

@@ -283,11 +283,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     # This shows an example of what the error message looks like:
     # redacted
-    # with six.assertRaisesRegex(
-    #     self, ValueError, 'NOT_FOUND: Unknown reference_name '
-    #     'reference_name: "chr20" start: 9999999 end: 10000999'):
     with six.assertRaisesRegex(
-        self, ValueError, 'Unknown reference_name '
+        self, ValueError, 'NOT_FOUND: Unknown reference_name '
         'reference_name: "chr20" start: 9999999 end: 10000999'):
       make_examples_core.make_examples_runner(options)
 
