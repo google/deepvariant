@@ -62,10 +62,7 @@ class FastqReaderTest(parameterized.TestCase):
 
   def test_from_file_raises_with_missing_fastq(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError,
-    #                              'NOT_FOUND: Could not open missing.fastq'):
-    with self.assertRaisesRegexp(ValueError,
-                                 'Could not open missing.fastq'):
+    with self.assertRaisesRegexp(ValueError, 'Could not open missing.fastq'):
       fastq_reader.FastqReader.from_file('missing.fastq', self.options)
 
   def test_ops_on_closed_reader_raise(self):

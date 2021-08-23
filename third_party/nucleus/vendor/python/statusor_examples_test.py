@@ -46,7 +46,6 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_make_int_fail(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError, 'INVALID_ARGUMENT: MakeIntFail'):
     with self.assertRaisesRegexp(ValueError, 'MakeIntFail'):
       statusor_examples.MakeIntFail()
 
@@ -59,7 +58,6 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_make_str_fail(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError, 'INVALID_ARGUMENT: MakeStrFail'):
     with self.assertRaisesRegexp(ValueError, 'MakeStrFail'):
       statusor_examples.MakeStrFail()
 
@@ -68,8 +66,6 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_make_int_unique_ptr_fail(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError,
-    #                              'INVALID_ARGUMENT: MakeIntUniquePtrFail'):
     with self.assertRaisesRegexp(ValueError, 'MakeIntUniquePtrFail'):
       statusor_examples.MakeIntUniquePtrFail()
 
@@ -78,8 +74,6 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_make_int_vector_fail(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError,
-    #                              'INVALID_ARGUMENT: MakeIntVectorFail'):
     with self.assertRaisesRegexp(ValueError, 'MakeIntVectorFail'):
       statusor_examples.MakeIntVectorFail()
 
@@ -88,9 +82,7 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_returning_status_fail_raises(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError,
-    #                              'INVALID_ARGUMENT: FuncReturningStatusFail'):
-    with self.assertRaisesRegexp(ValueError,'FuncReturningStatusFail'):
+    with self.assertRaisesRegexp(ValueError, 'FuncReturningStatusFail'):
       statusor_examples.FuncReturningStatusFail()
 
 

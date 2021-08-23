@@ -81,10 +81,7 @@ class GffReaderTest(parameterized.TestCase):
 
   def test_from_file_raises_with_missing_gff(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError,
-    #                              'NOT_FOUND: Could not open missing.gff'):
-    with self.assertRaisesRegexp(ValueError,
-                                 'Could not open missing.gff'):
+    with self.assertRaisesRegexp(ValueError, 'Could not open missing.gff'):
       gff_reader.GffReader.from_file('missing.gff', self.options)
 
   def test_ops_on_closed_reader_raise(self):

@@ -86,10 +86,7 @@ class BedReaderTest(parameterized.TestCase):
 
   def test_from_file_raises_with_missing_bed(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError,
-    #                              'NOT_FOUND: Could not open missing.bed'):
-    with self.assertRaisesRegexp(ValueError,
-                                   'Could not open missing.bed'):
+    with self.assertRaisesRegexp(ValueError, 'Could not open missing.bed'):
       bed_reader.BedReader.from_file('missing.bed', self.options)
 
   def test_ops_on_closed_reader_raise(self):

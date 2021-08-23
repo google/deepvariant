@@ -211,10 +211,7 @@ class WrapVcfReaderTests(absltest.TestCase):
 
   def test_from_file_raises_with_missing_source(self):
     # redacted
-    # with self.assertRaisesRegexp(ValueError,
-    #                              'NOT_FOUND: Could not open missing.vcf'):
-    with self.assertRaisesRegexp(ValueError,
-                               'Could not open missing.vcf'):
+    with self.assertRaisesRegexp(ValueError, 'Could not open missing.vcf'):
       vcf_reader.VcfReader.from_file('missing.vcf', self.options)
 
   def test_ops_on_closed_reader_raise(self):
