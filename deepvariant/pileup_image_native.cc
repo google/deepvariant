@@ -48,8 +48,8 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "tensorflow/core/platform/logging.h"
 
-using nucleus::genomics::v1::Read;
 using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::Read;
 using std::vector;
 
 using learning::genomics::deepvariant::DeepVariantCall;
@@ -66,8 +66,8 @@ namespace {
 // aren't considering?
 inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
                            const std::vector<std::string>& alt_alleles) {
-  string key = (read.fragment_name() + "/" +
-                std::to_string(read.read_number()));
+  string key =
+      (read.fragment_name() + "/" + std::to_string(read.read_number()));
 
   // Iterate over all alts, not just alt_alleles.
   for (const string& alt_allele : dv_call.variant().alternate_bases()) {
@@ -98,20 +98,20 @@ inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
 inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
                                  const Read& read,
                                  const std::vector<std::string>& alt_alleles) {
-  string key = (read.fragment_name() + "/" +
-                std::to_string(read.read_number()));
+  string key =
+      (read.fragment_name() + "/" + std::to_string(read.read_number()));
 
   // Iterate over all alts, not just alt_alleles.
   for (const string& alt_allele : dv_call.variant().alternate_bases()) {
     const auto& allele_support = dv_call.allele_support();
     auto it_read = allele_support.find(alt_allele);
 
-    if (it_read != allele_support.end()){
+    if (it_read != allele_support.end()) {
       const auto& supp_read_names = it_read->second.read_names();
       for (const string& read_name : supp_read_names) {
         const bool alt_in_alt_alleles =
-              std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
-              alt_alleles.end();
+            std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
+            alt_alleles.end();
         // If the read supports an alt we are currently considering, return the
         // associated allele frequency.
         if (read_name == key && alt_in_alt_alleles) {
@@ -163,7 +163,6 @@ int GetHPValueForHPChannel(const Read& read,
   return hp_value;
 }
 
-
 }  // namespace
 
 ImageRow::ImageRow(int width, int num_channels, bool use_allele_frequency,
@@ -183,39 +182,42 @@ ImageRow::ImageRow(int width, int num_channels, bool use_allele_frequency,
       channels(channels) {}
 
 int ImageRow::Width() const {
-  CHECK(base.size() == base_quality.size() &&
-        base.size() == mapping_quality.size() &&
-        base.size() == on_positive_strand.size() &&
-        base.size() == supports_alt.size() &&
-        base.size() == matches_ref.size() &&
-        base.size() == sequencing_type.size() &&
-        base.size() == allele_frequency.size() &&
-        base.size() == hp_value.size());
+  CHECK(
+      base.size() == base_quality.size() &&
+      base.size() == mapping_quality.size() &&
+      base.size() == on_positive_strand.size() &&
+      base.size() == supports_alt.size() && base.size() == matches_ref.size() &&
+      base.size() == sequencing_type.size() &&
+      base.size() == allele_frequency.size() && base.size() == hp_value.size());
   return base.size();
 }
 
 PileupImageEncoderNative::PileupImageEncoderNative(
     const PileupImageOptions& options)
     : options_(options) {
-    CHECK((options_.width() % 2 == 1) && options_.width() >= 3)
-        << "Width must be odd; found " << options_.width();
+  CHECK((options_.width() % 2 == 1) && options_.width() >= 3)
+      << "Width must be odd; found " << options_.width();
 }
 
 // Gets the pixel color (int) for a base.
 int PileupImageEncoderNative::BaseColor(char base) const {
   switch (base) {
-    case 'A': return (options_.base_color_offset_a_and_g() +
-                      options_.base_color_stride() * 3);
-    case 'G': return (options_.base_color_offset_a_and_g() +
-                      options_.base_color_stride() * 2);
-    case 'T': return (options_.base_color_offset_t_and_c() +
-                      options_.base_color_stride() * 1);
-    case 'C': return (options_.base_color_offset_t_and_c() +
-                      options_.base_color_stride() * 0);
-    default: return 0;
+    case 'A':
+      return (options_.base_color_offset_a_and_g() +
+              options_.base_color_stride() * 3);
+    case 'G':
+      return (options_.base_color_offset_a_and_g() +
+              options_.base_color_stride() * 2);
+    case 'T':
+      return (options_.base_color_offset_t_and_c() +
+              options_.base_color_stride() * 1);
+    case 'C':
+      return (options_.base_color_offset_t_and_c() +
+              options_.base_color_stride() * 0);
+    default:
+      return 0;
   }
 }
-
 
 int PileupImageEncoderNative::BaseColor(const string& base) const {
   CHECK_EQ(base.size(), 1) << "'base' string should be a single character";
@@ -223,23 +225,23 @@ int PileupImageEncoderNative::BaseColor(const string& base) const {
 }
 
 int PileupImageEncoderNative::MatchesRefColor(bool base_matches_ref) const {
-  float alpha = (base_matches_ref ?
-                 options_.reference_matching_read_alpha() :
-                 options_.reference_mismatching_read_alpha());
+  float alpha =
+      (base_matches_ref ? options_.reference_matching_read_alpha()
+                        : options_.reference_mismatching_read_alpha());
   return static_cast<int>(kMaxPixelValueAsFloat * alpha);
 }
 
 // Get allele frequency color for a read.
 // Convert a frequency value in float to color intensity (int) and normalize.
-int PileupImageEncoderNative::AlleleFrequencyColor(float allele_frequency)
-    const {
+int PileupImageEncoderNative::AlleleFrequencyColor(
+    float allele_frequency) const {
   if (allele_frequency <= options_.min_non_zero_allele_frequency()) {
     return 0;
   } else {
     float log10_af = log10(allele_frequency);
     float log10_min = log10(options_.min_non_zero_allele_frequency());
     return ((log10_min - log10_af) / log10_min) *
-        static_cast<int>(kMaxPixelValueAsFloat);
+           static_cast<int>(kMaxPixelValueAsFloat);
   }
 }
 
@@ -257,8 +259,8 @@ int PileupImageEncoderNative::SupportsAltColor(int read_supports_alt) const {
 }
 
 int PileupImageEncoderNative::BaseQualityColor(int base_qual) const {
-  float capped = static_cast<float>(
-      std::min(options_.base_quality_cap(), base_qual));
+  float capped =
+      static_cast<float>(std::min(options_.base_quality_cap(), base_qual));
   return static_cast<int>(kMaxPixelValueAsFloat *
                           (capped / options_.base_quality_cap()));
 }
@@ -271,9 +273,8 @@ int PileupImageEncoderNative::MappingQualityColor(int mapping_qual) const {
 }
 
 int PileupImageEncoderNative::StrandColor(bool on_positive_strand) const {
-  return (on_positive_strand ?
-          options_.positive_strand_color() :
-          options_.negative_strand_color());
+  return (on_positive_strand ? options_.positive_strand_color()
+                             : options_.negative_strand_color());
 }
 
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
@@ -299,8 +300,10 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   const int min_base_quality = options_.read_requirements().min_base_quality();
 
   // Calculate AUX channels.
-  const float allele_frequency = (options_.use_allele_frequency())?
-      ReadAlleleFrequency(dv_call, read, alt_alleles) : 0;
+  const float allele_frequency =
+      (options_.use_allele_frequency())
+          ? ReadAlleleFrequency(dv_call, read, alt_alleles)
+          : 0;
   const uint8 allele_frequency_color = AlleleFrequencyColor(allele_frequency);
   const int hp_value = (options_.add_hp_channel())
                            ? GetHPValueForHPChannel(
@@ -320,54 +323,53 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   // have a low quality base at the call position (in which case we
   // should return null) from EncodeRead.
   std::function<bool(int, int, const CigarUnit::Operation&)>
-  action_per_cigar_unit = [&](int ref_i,
-                              int read_i,
-                              const CigarUnit::Operation& cigar_op) {
-    char read_base = 0;
-    if (cigar_op == CigarUnit::INSERT) {
-      // redacted
-      read_base = options_.indel_anchoring_base_char()[0];
-    } else if (cigar_op == CigarUnit::DELETE) {
-      ref_i -= 1;  // Adjust anchor base on reference
-      read_base = options_.indel_anchoring_base_char()[0];
-    } else if (cigar_op == CigarUnit::ALIGNMENT_MATCH ||
-               cigar_op == CigarUnit::SEQUENCE_MATCH  ||
-               cigar_op == CigarUnit::SEQUENCE_MISMATCH) {
-      read_base = read.aligned_sequence()[read_i];
-    }
+      action_per_cigar_unit =
+          [&](int ref_i, int read_i, const CigarUnit::Operation& cigar_op) {
+            char read_base = 0;
+            if (cigar_op == CigarUnit::INSERT) {
+              // redacted
+              read_base = options_.indel_anchoring_base_char()[0];
+            } else if (cigar_op == CigarUnit::DELETE) {
+              ref_i -= 1;  // Adjust anchor base on reference
+              read_base = options_.indel_anchoring_base_char()[0];
+            } else if (cigar_op == CigarUnit::ALIGNMENT_MATCH ||
+                       cigar_op == CigarUnit::SEQUENCE_MATCH ||
+                       cigar_op == CigarUnit::SEQUENCE_MISMATCH) {
+              read_base = read.aligned_sequence()[read_i];
+            }
 
-    size_t col = ref_i - image_start_pos;
-    if (read_base && 0 <= col && col < ref_bases.size()) {
-      int base_quality = read.aligned_quality(read_i);
-      if (ref_i == dv_call.variant().start() &&
-          base_quality < min_base_quality) {
-        return false;
-      }
-      bool matches_ref = (read_base == ref_bases[col]);
+            size_t col = ref_i - image_start_pos;
+            if (read_base && 0 <= col && col < ref_bases.size()) {
+              int base_quality = read.aligned_quality(read_i);
+              if (ref_i == dv_call.variant().start() &&
+                  base_quality < min_base_quality) {
+                return false;
+              }
+              bool matches_ref = (read_base == ref_bases[col]);
 
-      // Fill Base channel set.
-      img_row.base[col]               = BaseColor(read_base);
-      img_row.base_quality[col]       = BaseQualityColor(base_quality);
-      img_row.mapping_quality[col]    = mapping_color;
-      img_row.on_positive_strand[col] = strand_color;
-      img_row.supports_alt[col]       = alt_color;
-      img_row.matches_ref[col]        = MatchesRefColor(matches_ref);
+              // Fill Base channel set.
+              img_row.base[col] = BaseColor(read_base);
+              img_row.base_quality[col] = BaseQualityColor(base_quality);
+              img_row.mapping_quality[col] = mapping_color;
+              img_row.on_positive_strand[col] = strand_color;
+              img_row.supports_alt[col] = alt_color;
+              img_row.matches_ref[col] = MatchesRefColor(matches_ref);
 
-      // Fill AUX channel set.
-      if (img_row.use_allele_frequency) {
-        img_row.allele_frequency[col] = allele_frequency_color;
-      }
-      if (img_row.add_hp_channel) {
-        img_row.hp_value[col] = ScaleColor(hp_value, 2);
-      }
-      // Fill OptChannel set.
-      for (int j = 0; j < img_row.channels.size(); j++) {
-        img_row.channel_data[j][col] =
-            channel_set.GetChannelData(img_row.channels[j], read_i);
-      }
-    }
-    return true;
-  };
+              // Fill AUX channel set.
+              if (img_row.use_allele_frequency) {
+                img_row.allele_frequency[col] = allele_frequency_color;
+              }
+              if (img_row.add_hp_channel) {
+                img_row.hp_value[col] = ScaleColor(hp_value, 2);
+              }
+              // Fill OptChannel set.
+              for (int j = 0; j < img_row.channels.size(); j++) {
+                img_row.channel_data[j][col] =
+                    channel_set.GetChannelData(img_row.channels[j], read_i);
+              }
+            }
+            return true;
+          };
 
   // In the following, we iterate over alignment information for each
   // base of read, invoking action_per_cigar_unit for every segment of
@@ -455,8 +457,8 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   return std::unique_ptr<ImageRow>(new ImageRow(img_row));
 }
 
-std::unique_ptr<ImageRow>
-PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
+std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
+    const string& ref_bases) {
   int ref_qual = options_.reference_base_quality();
   uint8 base_quality_color = BaseQualityColor(ref_qual);
   uint8 mapping_quality_color = MappingQualityColor(ref_qual);
@@ -486,7 +488,7 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
     img_row.on_positive_strand[col] = strand_color;
     img_row.supports_alt[col] = alt_color;
     img_row.matches_ref[col] = ref_color;
-    if (img_row.use_allele_frequency){
+    if (img_row.use_allele_frequency) {
       img_row.allele_frequency[col] = allele_frequency_color;
     }
     if (img_row.add_hp_channel) {
@@ -502,7 +504,6 @@ PileupImageEncoderNative::EncodeReference(const string& ref_bases) {
 
   return std::unique_ptr<ImageRow>(new ImageRow(img_row));
 }
-
 
 }  // namespace deepvariant
 }  // namespace genomics

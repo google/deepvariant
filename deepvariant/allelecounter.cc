@@ -53,13 +53,12 @@ static constexpr char kFragmentNameReadNumberSeparator[] = "/";
 
 using absl::string_view;
 
+using absl::StrCat;
 using nucleus::GenomeReference;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
-using absl::StrCat;
-
 
 // redacted
 // functionality is identical.
@@ -100,8 +99,7 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
 }
 
 std::vector<Allele> SumAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts,
-    bool include_low_quality) {
+    const std::vector<AlleleCount>& allele_counts, bool include_low_quality) {
   std::map<std::pair<string_view, AlleleType>, int> allele_sums;
   for (const AlleleCount& allele_count : allele_counts) {
     for (const auto& entry : allele_count.read_alleles()) {
@@ -203,17 +201,13 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
   return true;
 }
 
-
 bool allele_pos_cmp(const AlleleCount& allele_count, int64 pos) {
   return allele_count.position().position() < pos;
 }
 
 // Return the allele index by base position in allele_counts vector.
-int AlleleIndex(const std::vector<AlleleCount>& allele_counts,
-                int64 pos)  {
-  auto idx = std::lower_bound(allele_counts.begin(),
-                              allele_counts.end(),
-                              pos,
+int AlleleIndex(const std::vector<AlleleCount>& allele_counts, int64 pos) {
+  auto idx = std::lower_bound(allele_counts.begin(), allele_counts.end(), pos,
                               allele_pos_cmp);
   if (idx == allele_counts.end() || idx->position().position() != pos) {
     return -1;
@@ -315,11 +309,10 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
         // know that, and the read's cigar reflect true differences of the read
         // to the alignment at the start of the contig.  Nasty, I know.
         VLOG(2) << "Deletion spans off the chromosome for read: "
-            << read.ShortDebugString()
-            << " at cigar " << cigar.ShortDebugString()
-            << " with interval " << Interval().ShortDebugString()
-            << " with interval_offset " << interval_offset
-            << " and read_offset " << read_offset;
+                << read.ShortDebugString() << " at cigar "
+                << cigar.ShortDebugString() << " with interval "
+                << Interval().ShortDebugString() << " with interval_offset "
+                << interval_offset << " and read_offset " << read_offset;
         return ReadAllele();
       }
 
@@ -401,7 +394,7 @@ void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
         static int counter = 0;
         if (counter++ < 1) {
           VLOG(2) << "Found duplicate read: " << key << " at "
-              << allele_count.position().ShortDebugString();
+                  << allele_count.position().ShortDebugString();
         }
       }
 
@@ -448,7 +441,7 @@ void AlleleCounter::Add(const Read& read, const string& sample) {
                     : AlleleType::SUBSTITUTION;
             to_add.emplace_back(ref_offset,
                                 string(read_seq.substr(base_offset, 1)), type,
-                               is_low_quality_read_allele);
+                                is_low_quality_read_allele);
           }
         }
         read_offset += op_len;

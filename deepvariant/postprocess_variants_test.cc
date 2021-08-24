@@ -31,16 +31,15 @@
 
 #include "deepvariant/postprocess_variants.h"
 
-#include "third_party/nucleus/protos/reference.pb.h"
-#include "third_party/nucleus/protos/variants.pb.h"
-#include "third_party/nucleus/testing/test_utils.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
-
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
+#include "tensorflow/core/lib/core/stringpiece.h"
 
 namespace learning {
 namespace genomics {
@@ -64,8 +63,8 @@ CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
 
 CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
                                          int end, double quality) {
-  CallVariantsOutput single_site_call = CreateSingleSiteCalls(reference_name,
-                                                              start, end);
+  CallVariantsOutput single_site_call =
+      CreateSingleSiteCalls(reference_name, start, end);
   single_site_call.mutable_variant()->set_quality(quality);
   return single_site_call;
 }

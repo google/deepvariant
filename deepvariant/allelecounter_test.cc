@@ -105,8 +105,8 @@ class AlleleCounterTest : public ::testing::Test {
     Range range = MakeRange(chr, start, end);
     // redacted
     // tensorflow/compiler/xla/ptr_util.h.
-    return absl::make_unique<AlleleCounter>(
-        ref_.get(), range, std::vector<int>(), options_);
+    return absl::make_unique<AlleleCounter>(ref_.get(), range,
+                                            std::vector<int>(), options_);
   }
 
   // Add reads to allele_count and check that the resulting AlleleCounts are
@@ -486,11 +486,14 @@ TEST_F(AlleleCounterTest, TestDeletionSize3) {
 }
 
 TEST_F(AlleleCounterTest, TestDeletionSize4) {
-  AddAndCheckReads(
-      MakeRead(chr_, start_, "T", {"1M", "4D"}),
-      {
-          {MakeAllele("TCCGT", AlleleType::DELETION, 1)}, {}, {}, {}, {},
-      });
+  AddAndCheckReads(MakeRead(chr_, start_, "T", {"1M", "4D"}),
+                   {
+                       {MakeAllele("TCCGT", AlleleType::DELETION, 1)},
+                       {},
+                       {},
+                       {},
+                       {},
+                   });
 }
 
 TEST_F(AlleleCounterTest, TestStartingDeletions) {
@@ -713,11 +716,7 @@ TEST_F(AlleleCounterTest, TestMinBaseQualInsertion) {
       // Now our vector is [REF(C)]
       // It is very confusing to not have REF(T) in our vector. But, if we keep
       // it there we would overcount ref alleles  while analyzing the insertion.
-      {},
-      {MakeAllele("C", AlleleType::REFERENCE, 1)},
-      {},
-      {},
-      {},
+      {}, {MakeAllele("C", AlleleType::REFERENCE, 1)}, {}, {}, {},
   };
 
   for (const int bad_pos : {1, 2, 3}) {
@@ -921,7 +920,6 @@ TEST_F(AlleleCounterTest, TestCountSummaries) {
   EXPECT_EQ(summaries[2].total_read_count(), 11);
 }
 
-
 TEST_F(AlleleCounterTest, TestAlleleIndex) {
   std::unique_ptr<AlleleCounter> allele_counter = MakeCounter("chr1", 1, 4);
   AddNReads(1, 1, "C", allele_counter.get());
@@ -947,7 +945,6 @@ TEST_F(AlleleCounterTest, TestAlleleIndex) {
   int pos_6 = AlleleIndex(allele_count, 6);
   EXPECT_EQ(pos_6, -1);
 }
-
 
 //
 

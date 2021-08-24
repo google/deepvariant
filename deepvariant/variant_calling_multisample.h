@@ -58,7 +58,7 @@ using learning::genomics::deepvariant::DeepVariantCall;
 using learning::genomics::deepvariant::VariantCallerOptions;
 
 // The alternate allele string for the gVCF "any" alternate allele.
-extern const char *const kGVCFAltAllele;
+extern const char* const kGVCFAltAllele;
 
 // In a DeepVariantCall, reads can support an allele that didn't pass our
 // calling thresholds, an so don't appear in the Variant's alternate_bases()
@@ -69,9 +69,9 @@ extern const char* const kSupportingUncalledAllele;
 
 // Constants for the AD (depth by allele), DP (total depth), and VAF (variant
 // allele fraction) format fields.
-extern const char *const kDPFormatField;
-extern const char *const kADFormatField;
-extern const char *const kVAFFormatField;
+extern const char* const kDPFormatField;
+extern const char* const kADFormatField;
+extern const char* const kVAFFormatField;
 
 // Implements the less functionality needed to use an Allele as an key in a map.
 struct OrderAllele {

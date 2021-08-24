@@ -73,10 +73,11 @@ constexpr int64_t kStart = 10;
 // This function needs to return a pointer because it needs to be wrapped
 // into nucleus::ConstProtoPtr. variant_calling_multisample API is only used by
 // Python, we don't call CallsFromAlleleCounts from C++.
-AlleleCount* MakeTestAlleleCount(
-    int total_n, int alt_n, const std::string& sample_id,
-    const std::string& ref = "A", const std::string& alt = "C",
-    int start = 100) {
+AlleleCount* MakeTestAlleleCount(int total_n, int alt_n,
+                                 const std::string& sample_id,
+                                 const std::string& ref = "A",
+                                 const std::string& alt = "C",
+                                 int start = 100) {
   CHECK_GE(total_n, alt_n) << "Total number of reads must be >= n alt reads";
   AlleleCount* allele_count = new AlleleCount();
   *(allele_count->mutable_position()) = nucleus::MakePosition("chr1", start);
@@ -97,7 +98,8 @@ AlleleCount* MakeTestAlleleCount(
 
 void ReleaseAlleleCountPointers(
     const std::unordered_map<std::string,
-           std::vector<nucleus::ConstProtoPtr<AlleleCount>>> allele_counts) {
+                             std::vector<nucleus::ConstProtoPtr<AlleleCount>>>
+        allele_counts) {
   for (const auto& allele_count_entry : allele_counts) {
     for (auto ac : allele_count_entry.second) {
       delete ac.p_;
@@ -289,7 +291,6 @@ TEST_F(VariantCallingTest, TestNoVariant) {
   }
 }
 
-
 TEST_F(VariantCallingTest, TestNoVariantFromSoftclips) {
   for (const int count : {0, 1, 10, 100}) {
     const Allele allele = MakeAllele("ACCCCC", AlleleType::SOFT_CLIP, count);
@@ -297,7 +298,6 @@ TEST_F(VariantCallingTest, TestNoVariantFromSoftclips) {
               NoVariant());
   }
 }
-
 
 TEST_F(VariantCallingTest, TestSNP) {
   for (const int count : {10, 100}) {
@@ -352,7 +352,6 @@ TEST_F(VariantCallingTest, TestMinCount1) {
   CheckCall(ref, 1, count - 1, {alt_allele}, ExpectedVariant::kVariantExpected,
             variant);
 }
-
 
 TEST_F(VariantCallingTest, TestMinCount2) {
   const int count = 10;
@@ -479,7 +478,6 @@ TEST_F(VariantCallingTest, TestMinFractionMultiAllelic) {
             ExpectedVariant::kNoVariantExpected, NoVariant());
 }
 
-
 TEST_F(VariantCallingTest, TestMinSNPIndelSeparately) {
   const std::string ref = "A";
   const std::string snp_alt = "C";
@@ -600,7 +598,6 @@ TEST_F(VariantCallingTest, TestBiAllelicDeletion) {
   }
 }
 
-
 TEST_F(VariantCallingTest, TestBiAllelicInsertion) {
   for (const std::string& alt_bases : {"AC", "ACCC", "ACCCCCCCCC"}) {
     const int count = 10;
@@ -612,7 +609,6 @@ TEST_F(VariantCallingTest, TestBiAllelicInsertion) {
   }
 }
 
-
 TEST_F(VariantCallingTest, TestDeletionInsertion) {
   const int count = 10;
   const Allele alt1 = MakeAllele("ACCC", AlleleType::INSERTION, count);
@@ -621,7 +617,6 @@ TEST_F(VariantCallingTest, TestDeletionInsertion) {
   CheckCall("A", 4, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count + 1, count}));
 }
-
 
 TEST_F(VariantCallingTest, TestTwoDeletions) {
   const int count = 10;
@@ -632,7 +627,6 @@ TEST_F(VariantCallingTest, TestTwoDeletions) {
             WithCounts(variant, {0, count + 1, count}));
 }
 
-
 TEST_F(VariantCallingTest, TestTwoInsertions) {
   const int count = 10;
   const Allele alt1 = MakeAllele("AT", AlleleType::INSERTION, count);
@@ -641,7 +635,6 @@ TEST_F(VariantCallingTest, TestTwoInsertions) {
   CheckCall("A", 1, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count, count + 1}));
 }
-
 
 TEST_F(VariantCallingTest, TestSNPDeletion) {
   const int count = 10;
@@ -692,7 +685,6 @@ TEST_F(VariantCallingTest, TestSNPInsertion) {
             WithCounts(variant, {0, count + 1, count}));
 }
 
-
 TEST_F(VariantCallingTest, TestKitchenSink) {
   const int count = 10;
   const Allele alt1 = MakeAllele("C", AlleleType::SUBSTITUTION, count);
@@ -703,7 +695,11 @@ TEST_F(VariantCallingTest, TestKitchenSink) {
   const Variant variant = MakeExpectedVariant(
       "ATGC", {
                   // order changed due to sorting of alt alleles
-                  "A", "AATGC", "ACACTGC", "AGC", "CTGC",
+                  "A",
+                  "AATGC",
+                  "ACACTGC",
+                  "AGC",
+                  "CTGC",
               });
   CheckCall("A", 4, count, {alt1, alt2, alt3, alt4, alt5},
             ExpectedVariant::kVariantExpected,
@@ -834,7 +830,7 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
       allele_counts = {
           {"sample_id",
            {nucleus::ConstProtoPtr<AlleleCount>(
-               MakeTestAlleleCount(0, 0, "sample_id", "A", "C", 10)),
+                MakeTestAlleleCount(0, 0, "sample_id", "A", "C", 10)),
             nucleus::ConstProtoPtr<AlleleCount>(
                 MakeTestAlleleCount(10, 10, "sample_id", "G", "C", 11)),
             nucleus::ConstProtoPtr<AlleleCount>(
@@ -877,12 +873,15 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCountsUnevenCoverage) {
   const std::unordered_map<std::string,
                            std::vector<nucleus::ConstProtoPtr<AlleleCount>>>
       allele_counts = {
-          {"parent_1", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(4, 2, "parent_1", "A", "T", 10))}},
-          {"child", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(3, 0, "child", "A", "A", 10))}},
-          {"parent_2", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(3, 0, "parent_2", "A", "A", 10))}}};
+          {"parent_1",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(4, 2, "parent_1", "A", "T", 10))}},
+          {"child",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(3, 0, "child", "A", "A", 10))}},
+          {"parent_2",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(3, 0, "parent_2", "A", "A", 10))}}};
 
   const VariantCaller caller(MakeOptions(0, 0.2));
   std::vector<DeepVariantCall> candidates =
@@ -914,12 +913,15 @@ TEST_F(VariantCallingTest,
   const std::unordered_map<std::string,
                            std::vector<nucleus::ConstProtoPtr<AlleleCount>>>
       allele_counts = {
-          {"parent_1", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(20, 2, "parent_1", "A", "T", 10))}},
-          {"child", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(10, 7, "child", "A", "T", 10))}},
-          {"parent_2", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
+          {"parent_1",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(20, 2, "parent_1", "A", "T", 10))}},
+          {"child",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(10, 7, "child", "A", "T", 10))}},
+          {"parent_2",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
 
   // When min_fraction_multiplier is set to 1.0 it doesn't affect
   // allele filter. We expect that candidate won't be created since allele
@@ -943,7 +945,6 @@ TEST_F(VariantCallingTest,
   EXPECT_EQ(candidates2.size(), 1);
   EXPECT_THAT(candidates2[0].variant(), EqualsProto(variant));
 
-
   ReleaseAlleleCountPointers(allele_counts);
 }
 
@@ -965,12 +966,15 @@ TEST_F(VariantCallingTest,
   const std::unordered_map<std::string,
                            std::vector<nucleus::ConstProtoPtr<AlleleCount>>>
       allele_counts = {
-          {"parent_1", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(20, 2, "parent_1", "A", "T", 10))}},
-          {"child", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(10, 7, "child", "A", "T", 10))}},
-          {"parent_2", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
+          {"parent_1",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(20, 2, "parent_1", "A", "T", 10))}},
+          {"child",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(10, 7, "child", "A", "T", 10))}},
+          {"parent_2",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
 
   const VariantCaller caller(MakeOptions(0, 0.1999));
   std::vector<DeepVariantCall> candidates =
@@ -1017,16 +1021,17 @@ TEST_F(VariantCallingTest,
       allele_counts = {
           {"parent_1",
            {nucleus::ConstProtoPtr<AlleleCount>(
-               MakeTestAlleleCount(20, 2, "parent_1", "A", "T", 10)),
+                MakeTestAlleleCount(20, 2, "parent_1", "A", "T", 10)),
             nucleus::ConstProtoPtr<AlleleCount>(
                 MakeTestAlleleCount(3, 0, "parent_1", "A", "A", 11))}},
           {"child",
            {nucleus::ConstProtoPtr<AlleleCount>(
-               MakeTestAlleleCount(10, 7, "child", "A", "T", 10)),
+                MakeTestAlleleCount(10, 7, "child", "A", "T", 10)),
             nucleus::ConstProtoPtr<AlleleCount>(
                 MakeTestAlleleCount(3, 0, "child", "A", "A", 11))}},
-          {"parent_2", {nucleus::ConstProtoPtr<AlleleCount>(
-              MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
+          {"parent_2",
+           {nucleus::ConstProtoPtr<AlleleCount>(
+               MakeTestAlleleCount(10, 0, "parent_2", "A", "A", 10))}}};
 
   const VariantCaller caller(MakeOptions(0, 0.1999));
   std::vector<DeepVariantCall> candidates =

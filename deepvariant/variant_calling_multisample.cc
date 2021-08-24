@@ -62,9 +62,9 @@ using tensorflow::strings::StrCat;
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
 const char* const kSupportingUncalledAllele = "UNCALLED_ALLELE";
-const char *const kDPFormatField = "DP";
-const char *const kADFormatField = "AD";
-const char *const kVAFFormatField = "VAF";
+const char* const kDPFormatField = "DP";
+const char* const kADFormatField = "AD";
+const char* const kVAFFormatField = "VAF";
 
 // The VCF/Variant allele string to use when you don't have any alt alleles.
 const char* const kNoAltAllele = ".";
@@ -72,11 +72,9 @@ const char* const kNoAltAllele = ".";
 namespace {
 // Used for sorting RepeatedPtrField below.
 struct StringPtrLessThan {
-    bool operator() (const string* x, const string* y) const {
-          return *x < *y;
-    }
+  bool operator()(const string* x, const string* y) const { return *x < *y; }
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -100,8 +98,8 @@ int DeletionSize(const Allele& allele) {
 // AlleleCount. But if one of the alt_alleles is a deletion, we need to
 // use those bases as our reference.  And if there are multiple deletions
 // at a site, we need to use the longest deletion allele.
-string CalcRefBases(const string &ref_bases,
-                    const std::vector<Allele> &alt_alleles) {
+string CalcRefBases(const string& ref_bases,
+                    const std::vector<Allele>& alt_alleles) {
   if (alt_alleles.empty()) {
     // We don't have any alternate alleles, so used the provided ref_bases.
     return ref_bases;
@@ -154,11 +152,10 @@ string CalcRefBases(const string &ref_bases,
 //   "ATTT" [INS] => "ATTT" + "CGT" => "ATTTCGT", putting back deleted bases
 //   "ACGT" [DEL] => "A" + "" (from >= "ACGT".length()) => "A"
 //
-string MakeAltAllele(const string& prefix,
-                     const string& variant_ref,
+string MakeAltAllele(const string& prefix, const string& variant_ref,
                      const uint32_t from) {
-  const auto postfix = from >= variant_ref.length()
-                       ? "" : variant_ref.substr(from);
+  const auto postfix =
+      from >= variant_ref.length() ? "" : variant_ref.substr(from);
   return StrCat(prefix, postfix);
 }
 
@@ -191,8 +188,8 @@ VariantCaller::AlleleRejectionAcceptance VariantCaller::IsGoodAltAllele(
 }
 
 bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
-  return (allele1.bases() == allele2.bases()
-          && allele1.type() == allele2.type());
+  return (allele1.bases() == allele2.bases() &&
+          allele1.type() == allele2.type());
 }
 
 // Select the subset of GoodAltAlleles from the alleles of allele_count.
@@ -232,8 +229,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
       continue;
     }
     if (allele_acceptance == AlleleRejectionAcceptance::REJECTED_LOW_RATIO ||
-        allele_acceptance ==
-            AlleleRejectionAcceptance::REJECTED_LOW_SUPPORT) {
+        allele_acceptance == AlleleRejectionAcceptance::REJECTED_LOW_SUPPORT) {
       for (const auto& all_samples_allele : all_sample_alleles) {
         if (IsAllelesTheSame(allele, all_samples_allele) &&
             AlleleRejectionAcceptance::ACCEPTED ==
@@ -251,8 +247,8 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
 
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
 // "GQ" key of info with a numerical value of gq, if provided) to variant.
-void AddGenotypes(const string& sample_name,
-                  const std::vector<int>& genotypes, Variant* variant) {
+void AddGenotypes(const string& sample_name, const std::vector<int>& genotypes,
+                  Variant* variant) {
   CHECK(variant != nullptr);
 
   VariantCall* call = variant->add_calls();

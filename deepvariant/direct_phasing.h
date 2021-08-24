@@ -73,7 +73,7 @@ struct EdgeInfo {
   float weight;
 };
 
-struct AlleleSupport{
+struct AlleleSupport {
   Vertex vertex;
   bool is_low_quality;
 };
@@ -92,12 +92,12 @@ class DirectPhasing {
   using VertexIndexMap =
       boost::const_associative_property_map<RawVertexIndexMap>;
 
-  using BoostGraph = boost::adjacency_list<
-    boost::setS,            // Out edge list type.
-    boost::listS,           // Vertex list type.
-    boost::bidirectionalS,  // Directed graph.
-    VertexInfo,             // Vertex label.
-    EdgeInfo>;              // Edge label.
+  using BoostGraph =
+      boost::adjacency_list<boost::setS,            // Out edge list type.
+                            boost::listS,           // Vertex list type.
+                            boost::bidirectionalS,  // Directed graph.
+                            VertexInfo,             // Vertex label.
+                            EdgeInfo>;              // Edge label.
 
   using VertexIterator = boost::graph_traits<BoostGraph>::vertex_iterator;
   using EdgeIterator = boost::graph_traits<BoostGraph>::edge_iterator;
@@ -109,8 +109,7 @@ class DirectPhasing {
   std::vector<int> PhaseReads(
       const std::vector<DeepVariantCall>& candidates,
       const std::vector<
-          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads
-      );
+          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
 
   // Helper function to output graph into graphviz for debugging. This function
   // is exported to Python.
@@ -132,8 +131,7 @@ class DirectPhasing {
   // by position. This map allows to quickly query all alleles that a read
   // supports. Boolean variable designates if read to allele support is
   // low_quality. If true then read supports the allele with low quality.
-  absl::flat_hash_map<std::string, std::vector<AlleleSupport>>
-      read_to_alleles_;
+  absl::flat_hash_map<std::string, std::vector<AlleleSupport>> read_to_alleles_;
   // Map read name to read id.
   absl::flat_hash_map<std::string, ReadIndex> read_to_index;
 };

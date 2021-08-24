@@ -55,7 +55,8 @@ string SimplifyRefAlt(const string& ref, const string& alt) {
   }
   int common_suffix_len = 0;
   for (int suffix_idx = 1; suffix_idx < shortest_allele_len; ++suffix_idx) {
-    if (ref.at(ref.length()-suffix_idx) != alt.at(alt.length()-suffix_idx)) {
+    if (ref.at(ref.length() - suffix_idx) !=
+        alt.at(alt.length() - suffix_idx)) {
       break;
     }
     common_suffix_len = suffix_idx;
@@ -64,13 +65,10 @@ string SimplifyRefAlt(const string& ref, const string& alt) {
   if (common_suffix_len == 0) {
     return absl::StrCat(ref, "->", alt);
   } else {
-    return absl::StrCat(ref.substr(0, ref.length()-common_suffix_len),
-                        "->",
-                        alt.substr(0, alt.length()-common_suffix_len));
+    return absl::StrCat(ref.substr(0, ref.length() - common_suffix_len), "->",
+                        alt.substr(0, alt.length() - common_suffix_len));
   }
 }
-
-
 
 }  // namespace deepvariant
 }  // namespace genomics

@@ -51,7 +51,7 @@ namespace deepvariant {
 namespace vcf_candidate_importer {
 
 // The alternate allele string for the gVCF "any" alternate allele.
-extern const char *const kGVCFAltAllele;
+extern const char* const kGVCFAltAllele;
 
 // In a DeepVariantCall, reads can support an allele that didn't pass our
 // calling thresholds, an so don't appear in the Variant's alternate_bases()
@@ -62,9 +62,9 @@ extern const char* const kSupportingUncalledAllele;
 
 // Constants for the AD (depth by allele), DP (total depth), and VAF (variant
 // allele fraction) format fields.
-extern const char *const kDPFormatField;
-extern const char *const kADFormatField;
-extern const char *const kVAFFormatField;
+extern const char* const kDPFormatField;
+extern const char* const kADFormatField;
+extern const char* const kVAFFormatField;
 
 // Implements the less functionality needed to use an Allele as an key in a map.
 struct OrderAllele {
@@ -146,7 +146,7 @@ class VariantCaller {
   std::vector<DeepVariantCall> CallsFromAlleleCounter(
       const AlleleCounter& allele_counter) const;
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts) const;
+      const std::vector<AlleleCount>& allele_counts) const;
 
   // High-level API for calling variants in a region given an input VCF.
   //
@@ -159,8 +159,8 @@ class VariantCaller {
       const AlleleCounter& allele_counter,
       nucleus::VcfReader* vcf_reader_ptr) const;
   std::vector<DeepVariantCall> CallsFromVcf(
-    const std::vector<AlleleCount>& allele_counts,
-    const nucleus::genomics::v1::Range& range,
+      const std::vector<AlleleCount>& allele_counts,
+      const nucleus::genomics::v1::Range& range,
       nucleus::VcfReader* vcf_reader_ptr) const;
   std::vector<DeepVariantCall> CallsFromVariantsInRegion(
       const std::vector<AlleleCount>& allele_counts,

@@ -63,9 +63,9 @@ using tensorflow::strings::StrCat;
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
 const char* const kSupportingUncalledAllele = "UNCALLED_ALLELE";
-const char *const kDPFormatField = "DP";
-const char *const kADFormatField = "AD";
-const char *const kVAFFormatField = "VAF";
+const char* const kDPFormatField = "DP";
+const char* const kADFormatField = "AD";
+const char* const kVAFFormatField = "VAF";
 
 // The VCF/Variant allele string to use when you don't have any alt alleles.
 const char* const kNoAltAllele = ".";
@@ -79,8 +79,8 @@ std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) 
 
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
 // "GQ" key of info with a numerical value of gq, if provided) to variant.
-void AddGenotypes(const string& sample_name,
-                  const std::vector<int>& genotypes, Variant* variant) {
+void AddGenotypes(const string& sample_name, const std::vector<int>& genotypes,
+                  Variant* variant) {
   CHECK(variant != nullptr);
 
   VariantCall* call = variant->add_calls();
@@ -105,9 +105,9 @@ void FillVariant(const string& reference_name, int variant_start,
   }
 }
 
-void MakeVariantConsistentWithRefAndAlts(
-    const string& refbases, const std::vector<Allele>& alt_alleles,
-    Variant* variant_to_fix) {
+void MakeVariantConsistentWithRefAndAlts(const string& refbases,
+                                         const std::vector<Allele>& alt_alleles,
+                                         Variant* variant_to_fix) {
   if (variant_to_fix->reference_bases() == refbases) {
     // No fix needed if the reference bases are identical.
     return;
@@ -165,8 +165,8 @@ int DeletionSize(const Allele& allele) {
 // AlleleCount. But if one of the alt_alleles is a deletion, we need to
 // use those bases as our reference.  And if there are multiple deletions
 // at a site, we need to use the longest deletion allele.
-string CalcRefBases(const string &ref_bases,
-                    const std::vector<Allele> &alt_alleles) {
+string CalcRefBases(const string& ref_bases,
+                    const std::vector<Allele>& alt_alleles) {
   if (alt_alleles.empty()) {
     // We don't have any alternate alleles, so used the provided ref_bases.
     return ref_bases;
@@ -219,11 +219,10 @@ string CalcRefBases(const string &ref_bases,
 //   "ATTT" [INS] => "ATTT" + "CGT" => "ATTTCGT", putting back deleted bases
 //   "ACGT" [DEL] => "A" + "" (from >= "ACGT".length()) => "A"
 //
-string MakeAltAllele(const string& prefix,
-                     const string& variant_ref,
+string MakeAltAllele(const string& prefix, const string& variant_ref,
                      const uint32_t from) {
-  const auto postfix = from >= variant_ref.length()
-                       ? "" : variant_ref.substr(from);
+  const auto postfix =
+      from >= variant_ref.length() ? "" : variant_ref.substr(from);
   return StrCat(prefix, postfix);
 }
 
@@ -302,8 +301,7 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
 // allele_map is needed to map between the Variant reference and alternate_bases
 // and the Alleles used in allele_count.
 void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
-                   const string& allele_map_refbases,
-                   Variant* variant) {
+                   const string& allele_map_refbases, Variant* variant) {
   // Set the DP to the total good reads seen at this position.
   VariantCall* call = variant->mutable_calls(0);
   nucleus::SetInfoField(kDPFormatField, TotalAlleleCounts(allele_count), call);
@@ -328,8 +326,8 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     CHECK(alt_to_alleles.size() == allele_map.size())
         << "Non-unique alternative alleles!";
     for (const string& alt : variant->alternate_bases()) {
-      const string simplified_ref_alt = SimplifyRefAlt(
-          variant->reference_bases(), alt);
+      const string simplified_ref_alt =
+          SimplifyRefAlt(variant->reference_bases(), alt);
       int count_of_allele = 0;
       auto found = alt_to_alleles.find(simplified_ref_alt);
       if (found != alt_to_alleles.end()) {
@@ -378,16 +376,14 @@ bool is_uncalled_genotype(const Variant& variant) {
   if (variant.calls_size() >= 1) {
     VariantCall call = variant.calls().Get(0);
     if (call.genotype().size() >= 2) {
-      return call.genotype().Get(0) == -1 &&
-             call.genotype().Get(1) == -1;
+      return call.genotype().Get(0) == -1 && call.genotype().Get(1) == -1;
     }
   }
   return false;
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
-    const std::vector<AlleleCount>& allele_counts,
-    const Range& range,
+    const std::vector<AlleleCount>& allele_counts, const Range& range,
     nucleus::VcfReader* vcf_reader_ptr) const {
   std::vector<Variant> variants_in_region;
   nucleus::StatusOr<std::shared_ptr<nucleus::VariantIterable>> status =
@@ -405,8 +401,8 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
         if (options_.skip_uncalled_genotypes() &&
             is_uncalled_genotype(*variant)) {
           if (!warn_missing) {
-            LOG(WARNING) <<
-                "Uncalled genotypes (./.) present in VCF. These are skipped.";
+            LOG(WARNING) << "Uncalled genotypes (./.) present in VCF. These "
+                            "are skipped.";
             warn_missing = true;
           }
           continue;
@@ -421,9 +417,10 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
     }
   } else if (status.error_message() == "Cannot query without an index") {
     LOG(FATAL) << "Error in VariantCaller::CallsFromVcf: "
-        << status.error_message();
+               << status.error_message();
   } else {
-    LOG(WARNING) << nucleus::MakeIntervalStr(range)
+    LOG(WARNING)
+        << nucleus::MakeIntervalStr(range)
         << " cannot be found in proposed VCF header. Skip this region.";
   }
   return CallsFromVariantsInRegion(allele_counts, variants_in_region);
@@ -473,8 +470,7 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
   // a missing genotype with no observed evidence.
 
   std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count_match);
-  string refbases = CalcRefBases(allele_count_match.ref_base(),
-                                 alt_alleles);
+  string refbases = CalcRefBases(allele_count_match.ref_base(), alt_alleles);
   MakeVariantConsistentWithRefAndAlts(refbases, alt_alleles, m_variant);
 
   // Compute the map from read alleles to the alleles we'll use in our Variant.
@@ -504,8 +500,8 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
   std::vector<std::string> alternate_bases;
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
-  const AlleleMap allele_map = BuildAlleleMap(
-      allele_count, alt_alleles, refbases);
+  const AlleleMap allele_map =
+      BuildAlleleMap(allele_count, alt_alleles, refbases);
   for (const auto& elt : allele_map) {
     alternate_bases.push_back(elt.second);
   }
@@ -526,11 +522,8 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
   // calculated based on the alt_alleles, which are also set appropriately for
   // the variant. For convenience, the alt_alleles are sorted.
   FillVariant(allele_count.position().reference_name(),
-              allele_count.position().position(),
-              refbases,
-              sample_name,
-              alternate_bases,
-              variant);
+              allele_count.position().position(), refbases, sample_name,
+              alternate_bases, variant);
   AddReadDepths(allele_count, allele_map, refbases, variant);
   AddSupportingReads(allele_count.read_alleles(), allele_map, refbases, &call);
   return make_optional(call);
@@ -542,8 +535,8 @@ void VariantCaller::AddSupportingReads(
     DeepVariantCall* call) const {
   string suffix = "";
   if (call->variant().reference_bases().length() > refbases.length()) {
-    suffix = GetSuffixFromTwoAlleles(refbases,
-                                     call->variant().reference_bases());
+    suffix =
+        GetSuffixFromTwoAlleles(refbases, call->variant().reference_bases());
   }
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.
@@ -556,9 +549,9 @@ void VariantCaller::AddSupportingReads(
     // supporting reads for alternate alleles.
     if (allele.type() != AlleleType::REFERENCE) {
       auto it = allele_map.find(allele);
-      const string supported_allele =
-          it == allele_map.end() ? unknown_allele : absl::StrCat(it->second,
-                                                                 suffix);
+      const string supported_allele = it == allele_map.end()
+                                          ? unknown_allele
+                                          : absl::StrCat(it->second, suffix);
       DeepVariantCall_SupportingReads& supports =
           (*call->mutable_allele_support())[supported_allele];
       supports.add_read_names(read_name);

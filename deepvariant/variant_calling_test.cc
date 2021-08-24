@@ -190,8 +190,8 @@ class VariantCallingTest : public ::testing::Test {
                  const std::vector<Allele>& alleles,
                  const ExpectedVariant expect_variant,
                  const Variant& partial_expected_variant) {
-    CheckCall(ref, VariantCaller(MakeOptions(min_alt_count)),
-              alleles, expect_variant, partial_expected_variant);
+    CheckCall(ref, VariantCaller(MakeOptions(min_alt_count)), alleles,
+              expect_variant, partial_expected_variant);
   }
 
   // redacted
@@ -210,14 +210,12 @@ class VariantCallingTest : public ::testing::Test {
   }
 
   void CheckCallFromComputeVariantWithSameProposedVariant(
-      const string& ref,
-      const int min_alt_count,
-      const std::vector<Allele>& alleles,
-      const ExpectedVariant expect_variant,
+      const string& ref, const int min_alt_count,
+      const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& partial_expected_variant) {
     CheckCallFromComputeVariantWithSameProposedVariant(
-        ref, VariantCaller(MakeOptions(min_alt_count)), alleles,
-        expect_variant, partial_expected_variant);
+        ref, VariantCaller(MakeOptions(min_alt_count)), alleles, expect_variant,
+        partial_expected_variant);
   }
 
   // Checks the result of CallVariant on an AlleleCount with the requested
@@ -240,11 +238,9 @@ class VariantCallingTest : public ::testing::Test {
   // DeepVariantCall produced by ComputeVariants for further testing in the
   // callee.
   optional<DeepVariantCall> CheckCallFromComputeVariant(
-      const VariantCaller& caller,
-      const Variant& proposed_variant,
+      const VariantCaller& caller, const Variant& proposed_variant,
       const std::vector<AlleleCount>& allele_counts,
-      const ExpectedVariant expect_variant,
-      const Variant& expected_variant) {
+      const ExpectedVariant expect_variant, const Variant& expected_variant) {
     const optional<DeepVariantCall> optional_variant =
         caller.ComputeVariant(proposed_variant, allele_counts);
     CheckVariant(optional_variant, expect_variant, expected_variant);
@@ -317,7 +313,6 @@ TEST_F(VariantCallingTest, TestNoVariant) {
   }
 }
 
-
 TEST_F(VariantCallingTest, TestNoVariantFromSoftclips) {
   for (const int count : {0, 1, 10, 100}) {
     const Allele allele = MakeAllele("ACCCCC", AlleleType::SOFT_CLIP, count);
@@ -325,7 +320,6 @@ TEST_F(VariantCallingTest, TestNoVariantFromSoftclips) {
               NoVariant());
   }
 }
-
 
 TEST_F(VariantCallingTest, TestSNP) {
   for (const int count : {10, 100}) {
@@ -375,14 +369,13 @@ TEST_F(VariantCallingTest, TestMinCount1) {
       WithCounts(MakeExpectedVariant(ref, {alt}), {0, count});
 
   const Allele alt_allele = MakeAllele(alt, AlleleType::SUBSTITUTION, count);
-  CheckCall(ref, count + 1, {alt_allele},
-            ExpectedVariant::kNoVariantExpected, NoVariant());
+  CheckCall(ref, count + 1, {alt_allele}, ExpectedVariant::kNoVariantExpected,
+            NoVariant());
   CheckCall(ref, count, {alt_allele}, ExpectedVariant::kVariantExpected,
             variant);
   CheckCall(ref, count - 1, {alt_allele}, ExpectedVariant::kVariantExpected,
             variant);
 }
-
 
 TEST_F(VariantCallingTest, TestMinCount2) {
   const int count = 10;
@@ -509,7 +502,6 @@ TEST_F(VariantCallingTest, TestMinFractionMultiAllelic) {
             ExpectedVariant::kNoVariantExpected, NoVariant());
 }
 
-
 TEST_F(VariantCallingTest, TestMinSNPIndelSeparately) {
   const string ref = "A";
   const string snp_alt = "C";
@@ -624,12 +616,10 @@ TEST_F(VariantCallingTest, TestBiAllelicDeletion) {
     const Allele alt =
         MakeAllele(std::string(alt_bases), AlleleType::DELETION, count);
     const Variant variant = MakeExpectedVariant(alt.bases(), {ref});
-    CheckCall(ref, count, {alt},
-              ExpectedVariant::kVariantExpected,
+    CheckCall(ref, count, {alt}, ExpectedVariant::kVariantExpected,
               WithCounts(variant, {0, count}));
   }
 }
-
 
 TEST_F(VariantCallingTest, TestBiAllelicInsertion) {
   for (const absl::string_view alt_bases : {"AC", "ACCC", "ACCCCCCCCC"}) {
@@ -643,7 +633,6 @@ TEST_F(VariantCallingTest, TestBiAllelicInsertion) {
   }
 }
 
-
 TEST_F(VariantCallingTest, TestDeletionInsertion) {
   const int count = 10;
   const Allele alt1 = MakeAllele("ACCC", AlleleType::INSERTION, count);
@@ -652,7 +641,6 @@ TEST_F(VariantCallingTest, TestDeletionInsertion) {
   CheckCall("A", count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count + 1, count}));
 }
-
 
 TEST_F(VariantCallingTest, TestTwoDeletions) {
   const int count = 10;
@@ -663,7 +651,6 @@ TEST_F(VariantCallingTest, TestTwoDeletions) {
             WithCounts(variant, {0, count + 1, count}));
 }
 
-
 TEST_F(VariantCallingTest, TestTwoInsertions) {
   const int count = 10;
   const Allele alt1 = MakeAllele("AT", AlleleType::INSERTION, count);
@@ -672,7 +659,6 @@ TEST_F(VariantCallingTest, TestTwoInsertions) {
   CheckCall("A", count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count, count + 1}));
 }
-
 
 TEST_F(VariantCallingTest, TestSNPDeletion) {
   const int count = 10;
@@ -723,7 +709,6 @@ TEST_F(VariantCallingTest, TestSNPInsertion) {
             WithCounts(variant, {0, count + 1, count}));
 }
 
-
 TEST_F(VariantCallingTest, TestKitchenSink) {
   const int count = 10;
   const Allele alt1 = MakeAllele("C", AlleleType::SUBSTITUTION, count);
@@ -734,7 +719,11 @@ TEST_F(VariantCallingTest, TestKitchenSink) {
   const Variant variant = MakeExpectedVariant(
       "ATGC", {
                   // order changed due to sorting of alt alleles
-                  "A", "AATGC", "ACACTGC", "AGC", "CTGC",
+                  "A",
+                  "AATGC",
+                  "ACACTGC",
+                  "AGC",
+                  "CTGC",
               });
   CheckCall("A", count, {alt1, alt2, alt3, alt4, alt5},
             ExpectedVariant::kVariantExpected,
@@ -838,9 +827,9 @@ TEST_F(VariantCallingTest, TestRefSitesFraction) {
   const int tries = 10000;
   int successes = 0;
   for (int i = 0; i < tries; ++i) {
-    const optional<DeepVariantCall> optional_call = CheckCall(
-        ref, caller, {MakeAllele(ref, AlleleType::REFERENCE, count)},
-        ExpectedVariant::kMaybeExpected, variant);
+    const optional<DeepVariantCall> optional_call =
+        CheckCall(ref, caller, {MakeAllele(ref, AlleleType::REFERENCE, count)},
+                  ExpectedVariant::kMaybeExpected, variant);
     if (optional_call) {
       ++successes;
     }
@@ -860,12 +849,9 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
   // 5: T/C variant
   //
   std::vector<AlleleCount> allele_counts = {
-    MakeTestAlleleCount(0, 0, "A", 10),
-    MakeTestAlleleCount(10, 10, "G", 11),
-    MakeTestAlleleCount(0, 0, "G", 12),
-    MakeTestAlleleCount(0, 0, "G", 13),
-    MakeTestAlleleCount(11, 9, "T", 14)
-  };
+      MakeTestAlleleCount(0, 0, "A", 10), MakeTestAlleleCount(10, 10, "G", 11),
+      MakeTestAlleleCount(0, 0, "G", 12), MakeTestAlleleCount(0, 0, "G", 13),
+      MakeTestAlleleCount(11, 9, "T", 14)};
 
   const VariantCaller caller(MakeOptions());
   std::vector<DeepVariantCall> candidates =
@@ -914,8 +900,7 @@ TEST_F(VariantCallingTest, TestCallsFromVcfQueryingVcf) {
 
   // Querying contigNotInVcf returns empty results.
   std::vector<DeepVariantCall> candidates3 = caller.CallsFromVcf(
-      allele_count_not_used, MakeRange("contigNotInVcf", 0, 5),
-      reader.get());
+      allele_count_not_used, MakeRange("contigNotInVcf", 0, 5), reader.get());
   EXPECT_EQ(candidates3.size(), 0);
 }
 
@@ -986,7 +971,6 @@ TEST_F(VariantCallingTest, TestCallsFromVcfDetails) {
       candidates[0].variant().calls(0).info().at("VAF").ShortDebugString(),
       "values { number_value: 0.2 }");
 }
-
 
 TEST_F(VariantCallingTest, TestTrainUncalledGenotypes) {
   // For human readability, here is the content of the VCF:
@@ -1080,8 +1064,8 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
           MakeAllele(alt2, AlleleType::SUBSTITUTION, count),
       },
       ExpectedVariant::kVariantExpected,
-      WithCounts(MakeExpectedVariant(ref, {alt1}),
-                 {0, count * 100}, count * 101));
+      WithCounts(MakeExpectedVariant(ref, {alt1}), {0, count * 100},
+                 count * 101));
 
   // Checking the symmetric case : alt2 is very frequent.
   CheckCallFromComputeVariantWithSameProposedVariant(
@@ -1091,8 +1075,8 @@ TEST_F(VariantCallingTest, TestComputeVariantMultiAllelic) {
           MakeAllele(alt2, AlleleType::SUBSTITUTION, count * 100),
       },
       ExpectedVariant::kVariantExpected,
-      WithCounts(MakeExpectedVariant(ref, {alt2}),
-                 {0, count * 100}, count * 101));
+      WithCounts(MakeExpectedVariant(ref, {alt2}), {0, count * 100},
+                 count * 101));
 
   // Finally, ref is very frequent but alt1 and alt2 are still included.
   CheckCallFromComputeVariantWithSameProposedVariant(
@@ -1132,9 +1116,7 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs) {
 
   Variant proposed_variant = MakeExpectedVariant("CA", {"C"}, 92457968);
   CheckCallFromComputeVariant(
-      caller,
-      proposed_variant,
-      {allele_count},
+      caller, proposed_variant, {allele_count},
       ExpectedVariant::kVariantExpected,
       WithCounts(MakeExpectedVariant("CAA", {"CA"}, 92457968),
                  {ref_supporting_read_count, 6},
@@ -1159,12 +1141,10 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
                       "T",       // ref_base
                       ref_supporting_read_count, read_alleles);
 
-  Variant proposed_variant = MakeExpectedVariant("TACACACACAC",
-                                                 {"TACACAC", "T"}, 66618315);
+  Variant proposed_variant =
+      MakeExpectedVariant("TACACACACAC", {"TACACAC", "T"}, 66618315);
   optional<DeepVariantCall> dv_call = CheckCallFromComputeVariant(
-      caller,
-      proposed_variant,
-      {allele_count},
+      caller, proposed_variant, {allele_count},
       ExpectedVariant::kVariantExpected,
       // Now, the 4 "TACAC" DELELTIONs above are correctly counted under
       // TACACACACAC->TACACAC.

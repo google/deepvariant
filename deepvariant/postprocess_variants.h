@@ -44,9 +44,9 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::uint64;
 using tensorflow::string;
 using tensorflow::StringPiece;
+using tensorflow::uint64;
 
 // Reads TFRecord of CallVariantsOutput protos, sort them based
 // on the mapping of chromosome names to positions in FASTA in `contigs`,

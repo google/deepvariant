@@ -52,8 +52,8 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::string;
 using tensorflow::int64;
+using tensorflow::string;
 
 // Summarizes the counts of all of the distinct alleles present in allele_count.
 //
@@ -87,8 +87,7 @@ int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
                       bool include_low_quality = false);
 
 // Binary search for allele index by position.
-int AlleleIndex(const std::vector<AlleleCount>& allele_counts,
-                 int64 pos);
+int AlleleIndex(const std::vector<AlleleCount>& allele_counts, int64 pos);
 
 // Represents an Allele observed in a read at a specific position in our
 // interval. Supports the concept that the site should be skipped but still
@@ -311,8 +310,8 @@ class AlleleCounter {
   // Gets the base before read_offset in read, or if that would be before the
   // start of the read (i.e., read_offset == 0) then return the previous base on
   // the reference genome (at interval_offset - 1).
-  string GetPrevBase(const ::nucleus::genomics::v1::Read& read,
-                     int read_offset, int interval_offset);
+  string GetPrevBase(const ::nucleus::genomics::v1::Read& read, int read_offset,
+                     int interval_offset);
 
   // Creates a ReadAllele for an indel (type based on cigar) from read starting
   // at read_offset position in the read to the AlleleCount at interval_offset.

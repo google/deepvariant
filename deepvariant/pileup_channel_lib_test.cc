@@ -126,8 +126,8 @@ TEST(GapCompressedIdentityTest, DeletionCase) {
 }
 
 TEST(GapCompressedIdentityTest, PacBioStyleCigar) {
-  Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3=", "2X", "2I",
-                                                          "3="});
+  Read read =
+      nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3=", "2X", "2I", "3="});
   uint8 id = GapCompressedIdentity(read);
   EXPECT_EQ(id, 66);
 }
@@ -195,13 +195,13 @@ TEST(HomoPolymerWeightedTest, WeightedHomoPolymerMax) {
 TEST(GetChannelDataTest, ReadData) {
   OptChannels channel_set{};
   std::vector<std::string> channels{ch_read_mapping_percent,
-                               ch_avg_base_quality,
-                               ch_identity,
-                               ch_gap_compressed_identity,
-                               ch_gc_content,
-                               ch_is_homopolymer,
-                               ch_homopolymer_weighted,
-                               ch_blank};
+                                    ch_avg_base_quality,
+                                    ch_identity,
+                                    ch_gap_compressed_identity,
+                                    ch_gc_content,
+                                    ch_is_homopolymer,
+                                    ch_homopolymer_weighted,
+                                    ch_blank};
   Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"});
   const int base_quality = 33;
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
@@ -225,13 +225,13 @@ TEST(GetChannelDataTest, ReadData) {
 TEST(GetRefChannelDataTest, ReadData) {
   OptChannels channel_set{};
   std::vector<std::string> channels{ch_read_mapping_percent,
-                               ch_avg_base_quality,
-                               ch_identity,
-                               ch_gap_compressed_identity,
-                               ch_gc_content,
-                               ch_is_homopolymer,
-                               ch_homopolymer_weighted,
-                               ch_blank};
+                                    ch_avg_base_quality,
+                                    ch_identity,
+                                    ch_gap_compressed_identity,
+                                    ch_gc_content,
+                                    ch_is_homopolymer,
+                                    ch_homopolymer_weighted,
+                                    ch_blank};
   Read ref_read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"});
   const int base_quality = 33;
   for (size_t i = 0; i < ref_read.aligned_sequence().size(); ++i) {
