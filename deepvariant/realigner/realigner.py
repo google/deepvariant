@@ -136,7 +136,7 @@ flags.DEFINE_bool(
     'also enabled.')
 flags.DEFINE_bool(
     'use_fast_pass_aligner', True,
-    'If True, fast_pass_aligner (improved performance) implementation is used ')
+    'This flag should always be True. The old implementation is deprecated.')
 flags.DEFINE_integer(
     'max_num_mismatches', 2,
     'Num of maximum allowed mismatches for quick read to '
@@ -670,15 +670,13 @@ class Realigner(object):
     realigned_reads = assign_reads_to_assembled_regions(assembled_regions,
                                                         reads)
 
+    if not flags.FLAGS.use_fast_pass_aligner:
+      raise ValueError('--use_fast_pass_aligner is always true. '
+                       'The older implementation is deprecated and removed.')
     # Walk over each region and align the reads in that region, adding them to
     # our realigned_reads.
     for assembled_region in assembled_regions:
-      if flags.FLAGS.use_fast_pass_aligner:
-        realigned_reads_copy = self.call_fast_pass_aligner(assembled_region)
-      else:
-        raise ValueError('--use_fast_pass_aligner is always true. '
-                         'The older implementation is deprecated and removed.')
-
+      realigned_reads_copy = self.call_fast_pass_aligner(assembled_region)
       realigned_reads.extend(realigned_reads_copy)
 
     self.diagnostic_logger.log_realigned_reads(region, realigned_reads,
