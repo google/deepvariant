@@ -412,6 +412,7 @@ py_library(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:py_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:struct_utils",
         "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/logging",
         "@com_google_protobuf//:protobuf_python",

@@ -375,6 +375,8 @@ def shared_flags_to_options(
 
     options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
     options.pic_options.types_to_alt_align = flags_obj.types_to_alt_align
+
+
     if flags_obj.add_supporting_other_alt_color:
       options.pic_options.other_allele_supporting_read_alpha = 0.3
 

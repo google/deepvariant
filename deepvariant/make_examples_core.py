@@ -34,6 +34,8 @@ import os
 import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
+
+
 from absl import logging
 import numpy as np
 import tensorflow as tf
@@ -800,9 +802,12 @@ class RegionProcessor(object):
           self.options.population_vcf_filenames)
       self.population_vcf_readers = population_vcf_readers
 
-    if (self.options.realigner_enabled or
+    initialize_raligner = (
+        self.options.realigner_enabled or
         self.options.pic_options.alt_aligned_pileup != 'none' or
-        self.options.allele_counter_options.track_ref_reads):
+        self.options.allele_counter_options.track_ref_reads)
+
+    if initialize_raligner:
       main_sample = self.samples[self.options.main_sample_index]
       input_bam_header = sam.SamReader(
           main_sample.options.reads_filenames[0]).header
@@ -1243,6 +1248,7 @@ class RegionProcessor(object):
       ]
       # All samples share the same alt sequences, so select the first one.
       haplotype_sequences = alt_info_for_samples[0]['alt_sequences']
+
 
     pileup_images = self.pic.create_pileup_images(
         dv_call=dv_call,
