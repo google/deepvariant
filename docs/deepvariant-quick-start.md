@@ -133,7 +133,7 @@ sudo docker run \
   --output_vcf=/output/output.vcf.gz \
   --output_gvcf=/output/output.g.vcf.gz \
   --intermediate_results_dir /output/intermediate_results_dir \ **This flag is optional. Set to keep the intermediate results.
-  --num_shards=1 \ **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
+  --num_shards=1 **How many cores the `make_examples` step uses. Change it to the number of CPU cores you have.**
 ```
 
 NOTE: If you want to look at all the commands being run, you can add
