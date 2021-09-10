@@ -601,6 +601,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     examples_from_golden = list(tfrecord.read_tfrecords(golden_file))
     self.assertDeepVariantExamplesEqual(examples_from_golden, examples)
 
+
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call almost all of the real variants (according to NIST's
     # Genome in a Bottle callset for NA12878) in our candidate callset.

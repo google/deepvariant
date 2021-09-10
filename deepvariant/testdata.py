@@ -109,6 +109,7 @@ GRCH38_CHR20_AND_21_BAM = None
 GOLDEN_ALLELE_FREQUENCY_EXAMPLES = None
 
 
+
 def init():
   """Initialize global variables from flag values."""
   global CHR20_FASTA
@@ -261,3 +262,4 @@ def init():
       'input/grch38_1k_subset_chr20_and_chr21.bam')
   GOLDEN_ALLELE_FREQUENCY_EXAMPLES = deepvariant_testdata(
       'golden.allele_frequency_examples.tfrecord.gz')
+
