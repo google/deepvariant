@@ -1061,8 +1061,8 @@ class RegionProcessor(object):
 
   def candidates_in_region(
       self, region
-  ) -> Tuple[Dict[str, deepvariant_pb2.DeepVariantCall], Dict[
-      str, variants_pb2.Variant]]:
+  ) -> Tuple[Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]], Dict[
+      str, Sequence[variants_pb2.Variant]]]:
     """Finds candidates in the region using the designated variant caller.
 
     Args:
@@ -1445,8 +1445,9 @@ class OutputsWriter(object):
       self._add_writer('runtime',
                        tf.io.gfile.GFile(options.runtime_by_region, mode='w'))
       writer = self._writers['runtime']
-      writer.__enter__()
-      writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
+      if writer is not None:
+        writer.__enter__()
+        writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
 
   def _add_suffix(self, file_path, suffix):
     """Adds suffix to file name if a suffix is given."""
@@ -1641,7 +1642,8 @@ def make_examples_runner(options):
         resource_metrics=resource_monitor.metrics(),
         stats=make_examples_stats)
     if in_training_mode(options):
-      if region_processor.labeler.metrics is not None:
+      if (region_processor.labeler is not None and
+          region_processor.labeler.metrics is not None):
         run_info.labeling_metrics.CopyFrom(region_processor.labeler.metrics)
       else:
         logging.warning(
