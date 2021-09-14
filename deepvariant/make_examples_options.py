@@ -233,6 +233,12 @@ flags.DEFINE_bool(
     'if other flags need it (e.g., sort_by_haplotypes). '
     'If it is explicitly set by the user (either True or False), the '
     'user-specified value will be used.')
+flags.DEFINE_string(
+    'aux_fields_to_keep', 'HP,OQ',
+    'Comma-delimited list of auxiliary BAM fields to keep. '
+    'This flag is used only when --parse_sam_aux_fields is '
+    'set to true. If set to an empty string, all auxiliary '
+    'fields will be kept.')
 flags.DEFINE_bool('use_original_quality_scores', False,
                   'If True, base quality scores are read from OQ tag.')
 flags.DEFINE_string(
@@ -406,7 +412,10 @@ def shared_flags_to_options(
 
     options.parse_sam_aux_fields = make_examples_core.resolve_sam_aux_fields(
         flags_obj=flags_obj)
-
+    if flags_obj.aux_fields_to_keep:
+      options.aux_fields_to_keep[:] = flags_obj.aux_fields_to_keep.split(',')
+    else:
+      options.aux_fields_to_keep = None
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
 
     if flags_obj.add_hp_channel:

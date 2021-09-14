@@ -153,7 +153,8 @@ class NativeSamReader(genomics_reader.GenomicsReader):
                hts_block_size=None,
                downsample_fraction=None,
                random_seed=None,
-               use_original_base_quality_scores=False):
+               use_original_base_quality_scores=False,
+               aux_fields_to_keep=None):
     """Initializes a NativeSamReader.
 
     Args:
@@ -184,6 +185,9 @@ class NativeSamReader(genomics_reader.GenomicsReader):
         needed. If None, a fixed random value will be assigned.
       use_original_base_quality_scores: optional bool, defaulting to False. If
         True, quality scores are read from OQ tag.
+      aux_fields_to_keep: None or list[str]. If None, we keep all aux fields if
+        they are parsed. If set, we only keep the aux fields with the names in
+        this list.
 
     Raises:
       ValueError: If downsample_fraction is not None and not in the interval
@@ -226,6 +230,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
           reads_pb2.SamReaderOptions(
               read_requirements=read_requirements,
               aux_field_handling=aux_field_handling,
+              aux_fields_to_keep=aux_fields_to_keep,
               hts_block_size=(hts_block_size or 0),
               downsample_fraction=downsample_fraction,
               random_seed=random_seed,

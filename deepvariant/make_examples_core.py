@@ -775,6 +775,7 @@ class RegionProcessor(object):
                 if self.options.use_ref_for_cram else None,
                 read_requirements=self.options.read_requirements,
                 parse_aux_fields=self.options.parse_sam_aux_fields,
+                aux_fields_to_keep=self.options.aux_fields_to_keep,
                 hts_block_size=self.options.hts_block_size,
                 downsample_fraction=downsample_fraction,
                 random_seed=self.options.random_seed,

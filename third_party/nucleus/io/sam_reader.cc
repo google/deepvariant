@@ -321,9 +321,11 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
     switch (type) {
       // An 'A' is just a single character string.
       case 'A': {
-        // Safe since we know s is at least 4 bytes from the end.
-        const string value = string(reinterpret_cast<char*>(s), 1);
-        if (include_tag) SetInfoField(tag, value, read_message);
+        if (include_tag) {
+          // Safe since we know s is at least 4 bytes from the end.
+          const string value = string(reinterpret_cast<char*>(s), 1);
+          SetInfoField(tag, value, read_message);
+        }
         s += 1;
       } break;
       // These are all different byte-sized integers.
@@ -373,56 +375,70 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
         if (sub_type == 'c') {
           std::vector<int8_t> all_values;
           for (int i = 0; i < n_elements; i++) {
-            int8_t value = le_to_i8(s);
-            all_values.push_back(value);
+            if (include_tag) {
+              int8_t value = le_to_i8(s);
+              all_values.push_back(value);
+            }
             s += element_size;
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'C') {
           std::vector<uint8_t> all_values;
           for (int i = 0; i < n_elements; i++) {
-            uint8_t value = reinterpret_cast<uint8_t>(*s);
-            all_values.push_back(value);
+            if (include_tag) {
+              uint8_t value = reinterpret_cast<uint8_t>(*s);
+              all_values.push_back(value);
+            }
             s += element_size;
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 's') {
           std::vector<int16_t> all_values;
           for (int i = 0; i < n_elements; i++) {
-            int16_t value = le_to_i16(s);
-            all_values.push_back(value);
+            if (include_tag) {
+              int16_t value = le_to_i16(s);
+              all_values.push_back(value);
+            }
             s += element_size;
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'S') {
           std::vector<uint16_t> all_values;
           for (int i = 0; i < n_elements; i++) {
-            uint16_t value = le_to_u16(s);
-            all_values.push_back(value);
+            if (include_tag) {
+              uint16_t value = le_to_u16(s);
+              all_values.push_back(value);
+            }
             s += element_size;
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'i') {
           std::vector<int32_t> all_values;
           for (int i = 0; i < n_elements; i++) {
-            int32_t value = le_to_i32(s);
-            all_values.push_back(value);
+            if (include_tag) {
+              int32_t value = le_to_i32(s);
+              all_values.push_back(value);
+            }
             s += element_size;
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'I') {
           std::vector<uint32_t> all_values;
           for (int i = 0; i < n_elements; i++) {
-            uint32_t value = le_to_u32(s);
-            all_values.push_back(value);
+            if (include_tag) {
+              uint32_t value = le_to_u32(s);
+              all_values.push_back(value);
+            }
             s += element_size;
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
         } else if (sub_type == 'f') {
           std::vector<float> all_values;
           for (int i = 0; i < n_elements; i++) {
-            float value = le_to_float(s);
-            all_values.push_back(value);
+            if (include_tag) {
+              float value = le_to_float(s);
+              all_values.push_back(value);
+            }
             s += element_size;
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
