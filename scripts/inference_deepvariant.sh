@@ -21,6 +21,8 @@ Flags:
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WES, PACBIO, or HYBRID_PACBIO_ILLUMINA.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
+--save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
+
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepVariant model to run (WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA)
@@ -258,7 +260,6 @@ if [[ "${USE_HP_INFORMATION}" == "unset" ]] && [[ "${MODEL_TYPE}" == "PACBIO" ]]
   USE_HP_INFORMATION="true"
 fi
 
-N_SHARDS="64"
 INPUT_DIR="${BASE}/input/data"
 OUTPUT_DIR="${BASE}/output"
 OUTPUT_VCF="deepvariant.output.vcf.gz"
@@ -512,7 +513,7 @@ function run_deepvariant_with_docker() {
     --reads="/input/$(basename $BAM)" \
     --output_vcf="/output/${OUTPUT_VCF}" \
     --output_gvcf="/output/${OUTPUT_GVCF}" \
-    --num_shards=${N_SHARDS} \
+    --num_shards "$(nproc)" \
     --logging_dir="/output/logs" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""
@@ -532,7 +533,9 @@ function run_happy() {
   run "zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}""
 
   HAPPY_VERSION="v0.3.12"
-  run "sudo docker pull jmcdani20/hap.py:${HAPPY_VERSION}"
+  # Pulling twice in case the first one times out.
+  run "sudo docker pull jmcdani20/hap.py:${HAPPY_VERSION} || \
+    (sleep 5 ; sudo docker pull jmcdani20/hap.py:${HAPPY_VERSION})"
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2086

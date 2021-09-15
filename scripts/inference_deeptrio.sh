@@ -3,9 +3,14 @@
 
 set -euo pipefail
 
+
 USAGE=$'
 Example usage:
 inference_deeptrio.sh --model_preset "WGS" --docker_build true --use_gpu true
+
+The only trio supported is: child=HG002, parents=HG003,HG004.
+
+This is because otherwise there are too many flags needed to set VCFs and BEDs for 3 samples.
 
 Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
@@ -19,8 +24,19 @@ Flags:
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WGS_CHR20, WES, PACBIO, or PACBIO_CHR20.
+--proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
+--save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 
-Currently, model_preset has to be set for inference_deeptrio.sh.
+
+If model_preset is not specified, the below flags are required:
+--model_type Type of DeepTrio model to run (WGS, WES, PACBIO)
+--bam_child Path to bam for HG002 on GCP.
+--bam_parent1 Path to bam for HG003 on GCP.
+--bam_parent2 Path to bam for HG004 on GCP.
+
+--capture_bed Path to GCP bucket containing captured file (only needed for WES model_type)
+
+Note: All paths to dataset must be of the form "gs://..."
 '
 
 # Specify default values.
@@ -29,13 +45,20 @@ BUILD_DOCKER=false
 DRY_RUN=false
 USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
+SAVE_INTERMEDIATE_RESULTS=false
 # Strings; sorted alphabetically.
+BAM=""
+BAM_PARENT1=""
+BAM_PARENT2=""
 BIN_VERSION="1.2.0"
 CALL_VARIANTS_ARGS=""
+CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
+MODEL_TYPE=""
 POSTPROCESS_VARIANTS_ARGS=""
+PROPOSED_VARIANTS=""
 REGIONS=""
 
 while (( "$#" )); do
@@ -80,13 +103,18 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --regions)
-      REGIONS="$2"
+    --save_intermediate_results)
+      SAVE_INTERMEDIATE_RESULTS="$2"
+      if [[ "${SAVE_INTERMEDIATE_RESULTS}" != "true" ]] && [[ "${SAVE_INTERMEDIATE_RESULTS}" != "false" ]]; then
+        echo "Error: --save_intermediate_results needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --bin_version)
-      BIN_VERSION="$2"
+    --regions)
+      REGIONS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -115,14 +143,53 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --model_type)
+      MODEL_TYPE="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --bin_version)
+      BIN_VERSION="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --bam_child)
+      BAM_CHILD="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --bam_parent1)
+      BAM_PARENT1="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --bam_parent2)
+      BAM_PARENT2="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --capture_bed)
+      CAPTURE_BED="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --proposed_variants)
+      PROPOSED_VARIANTS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --help)
+      echo "$USAGE" >&2
+      exit 1
+      ;;
     -*|--*=) # other flags not supported
       echo "Error: unrecognized flag $1" >&2
-      echo "$USAGE" >&2
+      echo "Run with --help to see usage." >&2
       exit 1
       ;;
     *)
       echo "Error: unrecognized extra args $1" >&2
-      echo "$USAGE" >&2
+      echo "Run with --help to see usage." >&2
       exit 1
       ;;
   esac
@@ -184,8 +251,10 @@ elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   BAM_PARENT2="${GCS_DATA_DIR}/exome-case-study-testdata/HG004.novaseq.wes_idt.100x.dedup.bam"
   CAPTURE_BED="${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed"
 else
-  echo "Error: --model_preset must be one of WGS, WES, or PACBIO." >&2
-  exit 1
+  if [[ -n "${MODEL_PRESET}" ]]; then
+    echo "Error: --model_preset must be one of WGS, WGS_CHR20, WES, PACBIO, PACBIO_CHR20." >&2
+    exit 1
+  fi
 fi
 
 ## Flag consistency sanity checks.
@@ -202,9 +271,7 @@ if [[ "${USE_HP_INFORMATION}" == "unset" ]] && [[ "${MODEL_TYPE}" == "PACBIO" ]]
 fi
 
 N_SHARDS="64"
-
-INPUT_DIR="${BASE}/input"
-
+INPUT_DIR="${BASE}/input/data"
 OUTPUT_DIR="${BASE}/output"
 MODELS_DIR="${INPUT_DIR}/models"
 CHILD_MODEL_DIR="${MODELS_DIR}/child"
@@ -246,11 +313,15 @@ LOG_DIR="${OUTPUT_DIR}/logs"
 
 if [[ "${MODEL_TYPE}" = "WES" ]]; then
   if [[ -n "${REGIONS}" ]]; then
-    echo "Error: --regions is not used with model_type WES." >&2
+    echo "Error: --regions is not used with model_type WES. Please use --capture_bed." >&2
     exit 1
   fi
-  extra_args+=( --regions="/input/$(basename $CAPTURE_BED)")
-  happy_args+=( -T "/input/$(basename $CAPTURE_BED)")
+  extra_args+=( --regions "/input/$(basename $CAPTURE_BED)")
+  happy_args+=( -T "${INPUT_DIR}/$(basename $CAPTURE_BED)")
+fi
+
+if [[ "${SAVE_INTERMEDIATE_RESULTS}" == "true" ]]; then
+  extra_args+=( --intermediate_results_dir "/output/intermediate_results_dir")
 fi
 
 echo "========================="
@@ -259,13 +330,21 @@ echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "USE_HP_INFORMATION: ${USE_HP_INFORMATION}"
+echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "# Strings; sorted alphabetically."
+echo "BAM_CHILD: ${BAM_CHILD}"
+echo "BAM_PARENT1: ${BAM_PARENT1}"
+echo "BAM_PARENT2: ${BAM_PARENT2}"
 echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
+echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
+echo "MODEL_TYPE: ${MODEL_TYPE}"
 echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
+echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
+echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
 echo "========================="
 
@@ -282,11 +361,22 @@ function run() {
 }
 
 function copy_gs_or_http_file() {
-  run echo "Copying from \"$1\" to \"$2\""
   if [[ "$1" == http* ]]; then
-    run aria2c -c -x10 -s10 "$1" -d "$2"
+    if curl --output /dev/null --silent --head --fail "$1"; then
+      run echo "Copying from \"$1\" to \"$2\""
+      run aria2c -c -x10 -s10 "$1" -d "$2"
+    else
+      run echo "File $1 does not exist. Skip copying."
+    fi
   elif [[ "$1" == gs://* ]]; then
-    run gsutil -m cp "$1" "$2"
+    status=0
+    gsutil -q stat "$1" || status=1
+    if [[ $status == 0 ]]; then
+      run echo "Copying from \"$1\" to \"$2\""
+      run gsutil -m cp "$1" "$2"
+    else
+      run echo "File $1 does not exist. Skip copying."
+    fi
   else
     echo "Unrecognized file format: $1" >&2
     exit 1
@@ -299,11 +389,11 @@ function copy_correct_index_file() {
   # Index files have two acceptable naming patterns. We explicitly check for
   # both since we cannot use wildcard paths with http files.
   if [[ "${BAM}" == *".cram" ]]; then
-    copy_gs_or_http_file "${BAM%.cram}.crai" "${INPUT_DIR}" || \
-      copy_gs_or_http_file "${BAM}.crai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM%.cram}.crai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM}.crai" "${INPUT_DIR}"
   else
-    copy_gs_or_http_file "${BAM%.bam}.bai" "${INPUT_DIR}" || \
-      copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM%.bam}.bai" "${INPUT_DIR}"
+    copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
   fi
 }
 
@@ -334,6 +424,10 @@ function copy_data() {
   if [[ "${MODEL_TYPE}" = "WES" ]]; then
     copy_gs_or_http_file "${CAPTURE_BED}" "${INPUT_DIR}"
   fi
+  if [[ -n "${PROPOSED_VARIANTS}" ]]; then
+    copy_gs_or_http_file "${PROPOSED_VARIANTS}" "${INPUT_DIR}"
+    copy_gs_or_http_file "${PROPOSED_VARIANTS}.tbi" "${INPUT_DIR}"
+  fi
 }
 
 function setup_test() {
@@ -343,12 +437,14 @@ function setup_test() {
 
   ## Create local directory structure
   mkdir -p "${OUTPUT_DIR}"
+  mkdir -p "${INPUT_DIR}"
   mkdir -p "${MODELS_DIR}"
   mkdir -p "${CHILD_MODEL_DIR}"
   mkdir -p "${PARENT_MODEL_DIR}"
   mkdir -p "${LOG_DIR}"
 
   ## Download extra packages
+  # Install aria2 to download data files.
   sudo apt-get -qq -y update
   sudo apt-get -qq -y install aria2
   sudo apt-get -qq -y install bcftools
@@ -407,13 +503,30 @@ function get_docker_image() {
         (sleep 5 ; sudo docker pull "${IMAGE}")"
     fi
   fi
+  if [[ "${USE_GPU}" = true ]]; then
+    # shellcheck disable=SC2027
+    # shellcheck disable=SC2086
+    run "sudo docker run --gpus 1 "${IMAGE}" \
+      python3 -c 'import tensorflow as tf; \
+      print(\"is_gpu_available=\" + str(tf.test.is_gpu_available()))'"
+    # shellcheck disable=SC2027
+    # shellcheck disable=SC2086
+    run "sudo docker run --gpus 1 "${IMAGE}" \
+      python3 -c 'import tensorflow as tf; \
+      tf.test.is_gpu_available() or exit(1)' \
+      2> /dev/null || exit 1"
+  fi
 }
 
 function setup_args() {
-  if [[ -n $CUSTOMIZED_MODEL ]]
-  then
+  if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
     # redacted
-    run echo "No custom model specified."
+    run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
+    run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
+    run gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
+    run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
+    extra_args+=( --customized_model "/input/model.ckpt")
+    # redacted
     # echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
     # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.data-00000-of-00001 "${INPUT_DIR}/child/"
     # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.index "${INPUT_DIR}child/"
@@ -429,6 +542,9 @@ function setup_args() {
     # In order to use proposed variants, we have to pass vcf_candidate_importer
     # to make_examples_extra_args, so we know that we will enter this if
     # statement.
+    if [[ -n "${PROPOSED_VARIANTS}" ]]; then
+      MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},proposed_variants=/input/$(basename "$PROPOSED_VARIANTS")"
+    fi
     extra_args+=( --make_examples_extra_args "${MAKE_EXAMPLES_ARGS}")
   fi
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
@@ -459,7 +575,7 @@ function run_deeptrio() {
   # shellcheck disable=SC2068
   # shellcheck disable=SC2086
   # shellcheck disable=SC2145
-  run "(time ( sudo docker run \
+  run "(time (sudo docker run \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
     ${docker_args[@]-} \
@@ -482,43 +598,48 @@ function run_deeptrio() {
     --output_gvcf_parent1 "/output/${OUTPUT_GVCF_PARENT1}" \
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
     --logging_dir="/output/logs" \
-    "${extra_args[@]-}"  && \
+    "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deeptrio_runtime.log""
   echo
 }
 
 
 function run_happy() {
+  ## Evaluation: run hap.py
   local -r truth_vcf=$(basename "${1}")
   local -r truth_bed=$(basename "${2}")
   local -r vcf_output=$(basename "${3}")
-
   run echo "Start evaluation with hap.py..."
-
-  REF_BASENAME=$(basename ${REF})
+  UNCOMPRESSED_REF=${INPUT_DIR}/$(basename $REF)
   # hap.py cannot read the compressed fa, so uncompress
   # into a writable directory. Index file was downloaded earlier.
-  # shellcheck disable=SC2086
-  run "zcat <"${INPUT_DIR}/${REF_BASENAME}.gz" >"${INPUT_DIR}/${REF_BASENAME}""
-
-  # Pulling twice in case the first one times out.
-  run "sudo docker pull jmcdani20/hap.py:v0.3.12 || \
-    (sleep 5 ; sudo docker pull jmcdani20/hap.py:v0.3.12)"
   # shellcheck disable=SC2027
+  # shellcheck disable=SC2046
+  # shellcheck disable=SC2086
+  run "zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}""
+
+  HAPPY_VERSION="v0.3.12"
+  # Pulling twice in case the first one times out.
+  run "sudo docker pull jmcdani20/hap.py:${HAPPY_VERSION} || \
+    (sleep 5 ; sudo docker pull jmcdani20/hap.py:${HAPPY_VERSION})"
   # shellcheck disable=SC2086
   # shellcheck disable=SC2145
-  run "sudo docker run -i \
-    -v "${INPUT_DIR}":"/input" \
-    -v "${OUTPUT_DIR}:/output" \
-  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-    "/input/${truth_vcf}" \
-    "/output/${vcf_output}" \
-    -f "/input/${truth_bed}" \
-    -r "/input/${REF_BASENAME}" \
-    -o "/output/happy.output-${vcf_output}" \
+  run "( sudo docker run -i \
+  -v "${INPUT_DIR}:${INPUT_DIR}" \
+  -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
+  jmcdani20/hap.py:${HAPPY_VERSION} /opt/hap.py/bin/hap.py \
+    "${INPUT_DIR}/${truth_vcf}" \
+    "${OUTPUT_DIR}/${vcf_output}" \
+    -f "${INPUT_DIR}/${truth_bed}" \
+    -r ${UNCOMPRESSED_REF} \
+    -o "${OUTPUT_DIR}/happy.output-${vcf_output}" \
     --engine=vcfeval \
     --pass-only \
-    ${happy_args[@]-}"
+    ${happy_args[@]-} \
+  ) 2>&1 | tee "${LOG_DIR}/happy-${vcf_output}.log""
+  if [[ "${DRY_RUN}" != "true" ]]; then
+    echo "${HAPPY_VERSION}" > "${LOG_DIR}/happy_version.log"
+  fi
   run echo "Done."
 }
 
@@ -572,8 +693,8 @@ function main() {
 
   setup_test
   copy_data
-  setup_args
   get_docker_image
+  setup_args
   run_deeptrio
   run_glnexus
   extract_samples
