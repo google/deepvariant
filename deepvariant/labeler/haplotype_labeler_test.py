@@ -29,10 +29,10 @@
 """Tests for deepvariant.haplotype_labeler."""
 
 import itertools
+from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import mock
 import six
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import vcf

@@ -32,6 +32,7 @@ import copy
 import errno
 import platform
 import sys
+from unittest import mock
 
 
 from absl import flags
@@ -39,7 +40,6 @@ from absl import logging
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
-import mock
 import six
 
 from deeptrio import make_examples
