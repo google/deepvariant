@@ -36,6 +36,7 @@ import itertools
 import os
 import shutil
 import sys
+from unittest import mock
 
 
 
@@ -44,7 +45,6 @@ from absl import logging
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
-import mock
 import numpy as np
 import six
 import tensorflow as tf

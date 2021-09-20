@@ -29,10 +29,10 @@
 """Tests for learning.genomics.deepvariant.resources."""
 
 import resource
+from unittest import mock
 from absl.testing import absltest
 # https://stackoverflow.com/questions/34630393/python2-7-contextlib-exitstack-equivalent
 import contextlib2
-import mock
 
 from deepvariant import resources
 

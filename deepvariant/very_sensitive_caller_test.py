@@ -28,11 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant .very_sensitive_caller."""
 
+from unittest import mock
+
 
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import mock
 from third_party.nucleus.testing import test_utils
 from deepvariant import testdata
 from deepvariant import very_sensitive_caller

@@ -28,11 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant.tf_utils."""
 
+from unittest import mock
+
 
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import mock
 import six
 import tensorflow as tf
 

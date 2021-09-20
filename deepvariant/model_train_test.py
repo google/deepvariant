@@ -29,6 +29,7 @@
 """Tests for deepvariant .model_train."""
 
 import json
+from unittest import mock
 import uuid
 
 
@@ -37,7 +38,6 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
-import mock
 import six
 import tensorflow as tf
 

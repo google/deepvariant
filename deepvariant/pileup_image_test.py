@@ -29,12 +29,12 @@
 """Tests for deepvariant.pileup_image."""
 
 import itertools
+from unittest import mock
 
 
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import mock
 import numpy as np
 import numpy.testing as npt
 
