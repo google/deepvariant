@@ -43,13 +43,19 @@
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "absl/status/statusor.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using uint16_t ReadIndex;
+
+inline constexpr absl::string_view kUncalledAllele = "UNCALLED_ALLELE";
+
+// redacted
+using ReadIndex = uint16_t;
 
 // Data type storing read id and mapping quality. It is used in AlleleInfo.
 struct ReadSupportInfo {
@@ -60,9 +66,9 @@ struct ReadSupportInfo {
 // Data type associated with graph nodes. It uniquely defines an allele by its
 // type and bases along with the vector of supporting read ids.
 struct AlleleInfo {
-  int position_ = 0;
-  std::string bases_ = "";
-  std::vector<ReadSupportInfo> read_support_;
+  int position = 0;
+  std::string bases = "";
+  std::vector<ReadSupportInfo> read_support;
 };
 
 struct VertexInfo {
@@ -72,6 +78,23 @@ struct VertexInfo {
 struct EdgeInfo {
   float weight;
 };
+
+using BoostGraph =
+    boost::adjacency_list<boost::setS,            // Out edge list type.
+                          boost::listS,           // Vertex list type.
+                          boost::bidirectionalS,  // Directed graph.
+                          VertexInfo,             // Vertex label.
+                          EdgeInfo>;              // Edge label.
+
+using Vertex = boost::graph_traits<BoostGraph>::vertex_descriptor;
+using Edge = boost::graph_traits<BoostGraph>::edge_descriptor;
+using RawVertexIndexMap = absl::flat_hash_map<Vertex, int>;
+using VertexIndexMap =
+    boost::const_associative_property_map<RawVertexIndexMap>;
+
+using VertexIterator = boost::graph_traits<BoostGraph>::vertex_iterator;
+using EdgeIterator = boost::graph_traits<BoostGraph>::edge_iterator;
+using AdjacencyIterator = boost::graph_traits<BoostGraph>::adjacency_iterator;
 
 struct AlleleSupport {
   Vertex vertex;
@@ -86,27 +109,10 @@ struct AlleleSupport {
 //              purposes.
 class DirectPhasing {
  public:
-  using Vertex = boost::graph_traits<BoostGraph>::vertex_descriptor;
-  using Edge = boost::graph_traits<BoostGraph>::edge_descriptor;
-  using RawVertexIndexMap = absl::flat_hash_map<Vertex, int>;
-  using VertexIndexMap =
-      boost::const_associative_property_map<RawVertexIndexMap>;
-
-  using BoostGraph =
-      boost::adjacency_list<boost::setS,            // Out edge list type.
-                            boost::listS,           // Vertex list type.
-                            boost::bidirectionalS,  // Directed graph.
-                            VertexInfo,             // Vertex label.
-                            EdgeInfo>;              // Edge label.
-
-  using VertexIterator = boost::graph_traits<BoostGraph>::vertex_iterator;
-  using EdgeIterator = boost::graph_traits<BoostGraph>::edge_iterator;
-  using AdjacencyIterator = boost::graph_traits<BoostGraph>::adjacency_iterator;
-
   // Function returns read phases for each read in the input reads preserving
   // the order. Python wrapper will be used to add phases to read protos in
   // order to avoid copying gigabytes of memory.
-  std::vector<int> PhaseReads(
+  absl::StatusOr<std::vector<int>> PhaseReads(
       const std::vector<DeepVariantCall>& candidates,
       const std::vector<
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
@@ -131,10 +137,28 @@ class DirectPhasing {
   // by position. This map allows to quickly query all alleles that a read
   // supports. Boolean variable designates if read to allele support is
   // low_quality. If true then read supports the allele with low quality.
-  absl::flat_hash_map<std::string, std::vector<AlleleSupport>> read_to_alleles_;
+  absl::flat_hash_map<std::string, std::vector<AlleleSupport>>
+      read_to_alleles_;
   // Map read name to read id.
-  absl::flat_hash_map<std::string, ReadIndex> read_to_index;
+  absl::flat_hash_map<std::string, ReadIndex> read_to_index_;
 };
+
+// Helper functions.
+
+// Calculate AlleleType by comparing alt allele size and candidate interval.
+AlleleType AlleleTypeFromCandidate(
+    std::string_view bases,
+    const DeepVariantCall& candidate);
+
+// Calculate number of alt alleles that are SUBs.
+int NumOfSubstitutionAlleles(const DeepVariantCall& candidate);
+
+// Calculate number of alt alleles that are INDELs.
+int NumOfIndelAlleles(const DeepVariantCall& candidate);
+
+// Calculate the depth of all SUB alt alleles. This is done by enumerating all
+// supporting reads for all SUB alleles.
+int SubstitutionAllelesDepth(const DeepVariantCall& candidate);
 
 }  // namespace deepvariant
 }  // namespace genomics

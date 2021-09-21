@@ -383,6 +383,35 @@ py_library(
     ],
 )
 
+cc_library(
+    name = "direct_phasing",
+    srcs = ["direct_phasing.cc"],
+    hdrs = ["direct_phasing.h"],
+    deps = [
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "direct_phasing_test",
+    size = "small",
+    srcs = ["direct_phasing_test.cc"],
+    deps = [
+        ":direct_phasing",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
 py_library(
     name = "make_examples_core",
     srcs = ["make_examples_core.py"],
