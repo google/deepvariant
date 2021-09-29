@@ -1032,45 +1032,6 @@ TEST_F(FastPassAlignerTest, MergeCigarOp_alignedLengthOverflow2_Test) {
            CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 5)}));
 }
 
-// This test runs on a real data. Expected realinments are vrified manually.
-// Library: HG002_NIST_150bp_50x.bam
-// Window 20:38091701-38091800
-// Reference: hs37d5.fa.gz
-// ***
-// Read alignments can be verified using BAM files or human readable text files
-// located at https://drive.google.com/drive/folders/14c8xnivuTfDqtCBReHid1b9vHxNbeJux?usp=sharing
-// ***
-// Read protos are loaded from reads.pbtxt files.
-// Haplotypes are loaded from haplotypes.pbtxt
-// Reference interval is loaded from reference.pbtxt
-// Expected read protos are loaded from realigned_reads.pbtxt.
-// redacted
-// steps on how to generate golden data.
-TEST_F(FastPassAlignerTest, Integration_Test) {
-  std::vector<nucleus::genomics::v1::Read> reads =
-      LoadReadProtosFromFile("reads.pbtxt");
-  std::vector<nucleus::genomics::v1::Read> expected_realigned_reads =
-      LoadReadProtosFromFile("realigned_reads.pbtxt");
-  string reference;
-  LoadReferenceFromFile("reference.pbtxt", &reference);
-  std::vector<std::string> haplotypes;
-  LoadHaplotypesFromFile("haplotypes.pbtxt", &haplotypes);
-
-  AlignerOptions aligner_options;
-  aligner_options.set_read_size(148);
-  aligner_options.set_kmer_size(32);
-  aligner_options.set_realignment_similarity_threshold(0.85);
-  aligner_options.set_max_num_of_mismatches(3);
-  aligner_.set_options(aligner_options);
-  aligner_.set_reference(reference);
-  aligner_.set_haplotypes(haplotypes);
-  aligner_.set_ref_start("20", 38091533);
-  std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads =
-      aligner_.AlignReads(reads);
-  EXPECT_THAT(*realigned_reads, testing::Pointwise(::nucleus::EqualsProto(),
-                                                   expected_realigned_reads));
-}
-
 // Test that ssw_alignment_score_threshold does not go negative if similarity
 // threshold is less than 0.5.
 TEST_F(FastPassAlignerTest, CalculateSswAlignmentScoreThreshold_Test) {
@@ -1207,6 +1168,69 @@ TEST_F(FastPassAlignerTest, HaplotypeHasZeroCoverageInsideInterval_Test) {
   EXPECT_EQ(expected_hap_score, haplotype_score);
   EXPECT_THAT(read_scores,
               testing::UnorderedElementsAreArray(expected_read_scores));
+}
+
+TEST_F(FastPassAlignerTest, IsAlignmentNormalized_Match) {
+  aligner_.set_reference("ATGCTGCACTCTCTCTCAGCTGTCACC");
+  EXPECT_TRUE(aligner_.IsAlignmentNormalized(
+      /*cigar=*/{
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 14)
+      },
+      /*ref_offset=*/7,
+      /*read_sequence=*/"ACTCTCTCTCAGCT"
+      ));
+}
+
+TEST_F(FastPassAlignerTest, IsAlignmentNormalized_Del_Not_Norm) {
+  aligner_.set_reference("ATGCTGCACTCTCTCTCAGCTGTCACC");
+  EXPECT_FALSE(aligner_.IsAlignmentNormalized(
+      /*cigar=*/{
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 4),
+        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 2),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 10),
+      },
+      /*ref_offset=*/7,
+      /*read_sequence=*/"ACTCTCTCAGCTGT"
+      ));
+}
+
+TEST_F(FastPassAlignerTest, IsAlignmentNormalized_Del_Norm) {
+  aligner_.set_reference("ATGCTGCACTCTCTCTCAGCTGTCACC");
+  EXPECT_TRUE(aligner_.IsAlignmentNormalized(
+      /*cigar=*/{
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 2),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 13),
+      },
+      /*ref_offset=*/7,
+      /*read_sequence=*/"ACTCTCTCAGCTGT"
+      ));
+}
+
+TEST_F(FastPassAlignerTest, IsAlignmentNormalized_Ins_Not_Norm) {
+  aligner_.set_reference("ATGCTGCACTCTCTCTCAGCTGTCACC");
+  EXPECT_FALSE(aligner_.IsAlignmentNormalized(
+      /*cigar=*/{
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 4),
+        CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 8),
+      },
+      /*ref_offset=*/7,
+      /*read_sequence=*/"ACTCTCTCTCTCAGCTGT"
+      ));
+}
+
+TEST_F(FastPassAlignerTest, IsAlignmentNormalized_Ins_Norm) {
+  aligner_.set_reference("ATGCTGCACTCTCTCTCAGCTGTCACC");
+  EXPECT_TRUE(aligner_.IsAlignmentNormalized(
+      /*cigar=*/{
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 10),
+      },
+      /*ref_offset=*/7,
+      /*read_sequence=*/"ACTCTCTCTCTCAGCTGT"
+      ));
 }
 
 }  // namespace deepvariant

@@ -40,6 +40,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "tensorflow/core/lib/strings/str_util.h"
@@ -441,6 +442,67 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
   }  // for all reads
 }
 
+// Each operation except MATCH is checked in the input cigar.
+// If reference base preceding operation is the same as the last base of the
+// operation alt bases then alignment is not normalized.
+// Example:
+// Reference: GATCGAGAGAGAGATC
+// Read.    : GATCGA--GAGAGATC
+// This alignment is not normalized because last base in deletion 'GA' is the
+// same as the base preceding the deletion in the read.
+// The reason we sometimes see these non-normalized alignments is because reads
+// are aligned to the haplotype first. Continuing the example above, the
+// haplotype could be the following:
+// Reference: GATCGAGAGAGAGATC
+// Haplotype: GATCGT--GAGAGATC
+// Read.    : GATCGA--GAGAGATC
+// In this case haplotype to the reference alignment is normalized (cannot be
+// shifted left), read to haplotype alignment is also normalized, but read to
+// reference alignment is not normalized.
+// Normalizing the alignment could be done but it is not easy. If we shift
+// cigar operation to the left we may need to deal with merging it with other
+// operations that may exist.
+bool FastPassAligner::IsAlignmentNormalized(
+    const std::list<CigarOp>& cigar,
+    int ref_offset,
+    const absl::string_view read_sequence) const {
+  int cur_ref_offset = ref_offset;
+  int cur_read_offset = 0;
+  for (const auto& op : cigar) {
+    if (op.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT) {
+      cur_read_offset += op.length;
+      continue;
+    }
+    if (op.operation != nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH) {
+      std::string op_sequence;
+      if  (op.operation == nucleus::genomics::v1::CigarUnit::DELETE) {
+        if (cur_ref_offset + op.length > reference_.size()) {
+          return false;
+        }
+        CHECK(cur_ref_offset + op.length <= reference_.size());
+        op_sequence = reference_.substr(cur_ref_offset, op.length);
+      } else {
+        CHECK(cur_read_offset + op.length <= read_sequence.size());
+        op_sequence =  read_sequence.substr(cur_read_offset, op.length);
+      }
+      if ((op.operation == nucleus::genomics::v1::CigarUnit::INSERT
+          && op_sequence.back() == reference_[cur_ref_offset - 1]) ||
+         (cur_read_offset > 0 &&
+          op.operation == nucleus::genomics::v1::CigarUnit::DELETE
+          && op_sequence.back() == read_sequence[cur_read_offset - 1])) {
+        return false;
+      }
+    }
+    if (op.operation != nucleus::genomics::v1::CigarUnit::INSERT) {
+      cur_ref_offset += op.length;
+    }
+    if (op.operation != nucleus::genomics::v1::CigarUnit::DELETE) {
+      cur_read_offset += op.length;
+    }
+  }
+  return true;
+}
+
 void FastPassAligner::RealignReadsToReference(
     const std::vector<nucleus::genomics::v1::Read>& reads,
     std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>*
@@ -467,14 +529,15 @@ void FastPassAligner::RealignReadsToReference(
           .position;
       CHECK(read_to_hap_pos < bestHaplotypeAlignments
           .hap_to_ref_positions_map.size());
+      int hap_to_ref_position = bestHaplotypeAlignments
+          .hap_to_ref_positions_map[read_to_hap_pos];
       // We only change position of original read alignment and don't change
       // chromosome, it shouldn't change anyway!
       new_position->set_position(
           region_position_in_chr_
               + bestHaplotypeAlignments.ref_pos
               + read_to_hap_pos
-              + bestHaplotypeAlignments
-                  .hap_to_ref_positions_map[read_to_hap_pos]);
+              + hap_to_ref_position);
       new_alignment->set_allocated_position(new_position.release());
       std::list<CigarOp> readToRefCigarOps;
       // Calculate new cigar by merging read to haplotype and haplotype to ref
@@ -482,6 +545,20 @@ void FastPassAligner::RealignReadsToReference(
       CalculateReadToRefAlignment(
           read_index, bestHaplotypeAlignments.read_alignment_scores[read_index],
           bestHaplotypeAlignments.cigar_ops, &readToRefCigarOps);
+
+      // If read is not normalized (any cigar operation can be shifter left)
+      // we discard the alignment.
+      if (!IsAlignmentNormalized(
+          readToRefCigarOps,
+          bestHaplotypeAlignments.ref_pos
+              + read_to_hap_pos
+              + hap_to_ref_position,
+          reads_[read_index])) {
+          LOG(INFO) << "Realignment is non-normalized and will be discarded for"
+              << "read_id:" << read_index
+              << ", read name: " << read.fragment_name();
+          readToRefCigarOps.clear();
+      }
 
       for (auto& op : readToRefCigarOps) {
         CigarUnit* cu = new_alignment->add_cigar();

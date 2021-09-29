@@ -3528,13 +3528,16 @@ options {
     name: "NA12878"
   }
   sample_role_to_train: "main_sample"
+  min_length_for_sv: 25
+  aux_fields_to_keep: "HP"
+  aux_fields_to_keep: "OQ"
 }
 labeling_metrics {
   n_truth_variant_sites: 48
   n_truth_variant_alleles: 48
   n_candidate_variant_sites: 49
   n_candidate_variant_alleles: 49
-  n_non_confident_candidate_variant_sites: 28
+  n_non_confident_candidate_variant_sites: 29
   n_true_positive_sites: 48
   n_true_positive_alleles: 84
   n_false_positive_sites: 1
@@ -3546,13 +3549,14 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1618.7644166666666
+  cpu_frequency_mhz: 1245.8641666666667
   total_memory_mb: 63910
-  wall_time_seconds: 1.2838478088378906
-  cpu_user_time_seconds: 7.086042
-  cpu_system_time_seconds: 1.159684
-  memory_peak_rss_mb: 441
-  write_bytes: 20480
+  wall_time_seconds: 0.9147427082061768
+  cpu_user_time_seconds: 8.409836
+  cpu_system_time_seconds: 3.70098
+  memory_peak_rss_mb: 444
+  read_bytes: 20480
+  write_bytes: 16384
 }
 stats {
   num_examples: 49

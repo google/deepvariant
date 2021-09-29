@@ -2,6 +2,7 @@
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FILTER=<ID=RefCall,Description="Genotyping model thinks this site is reference.">
 ##FILTER=<ID=LowQual,Description="Confidence in this variant being real is below calling threshold.">
+##FILTER=<ID=NoCall,Description="Site has depth=0 resulting in no call.">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position (for use with symbolic alleles)">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Conditional genotype quality">
@@ -11,7 +12,7 @@
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods rounded to the closest integer">
 ##FORMAT=<ID=MED_DP,Number=1,Type=Integer,Description="Median DP observed within the GVCF block rounded to the nearest integer.">
-##DeepVariant_version=1.1.0
+##DeepVariant_version=1.2.0
 ##contig=<ID=20,length=63025520>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	child
 20	10001019	.	T	G	0	.	.	GT:DP:AD:VAF	0/1:16:10,6:0.375

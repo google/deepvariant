@@ -321,6 +321,11 @@ class FastPassAligner {
       const std::list<CigarOp>& haplotype_to_ref_cigar_ops_input,
       std::list<CigarOp>* read_to_ref_cigar_ops) const;
 
+  bool IsAlignmentNormalized(
+    const std::list<CigarOp>& cigar,
+    int ref_offset,
+    absl::string_view read_sequence) const;
+
   // Replace each read alignment with the better one (if available), otherwise
   // an original alignment is preserved.
   // realigned_reads param is eventually passed to Python wrapped in unique_ptr

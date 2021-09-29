@@ -3502,6 +3502,8 @@ options {
   labeler_algorithm: HAPLOTYPE_LABELER
   run_info_filename: "deeptrio/testdata/golden.training_examples.tfrecord.gz.run_info.pbtxt"
   variant_caller: VERY_SENSITIVE_CALLER
+  use_ref_for_cram: true
+  parse_sam_aux_fields: true
   hts_block_size: 134217728
   logging_every_n_candidates: 100
   main_sample_index: 1
@@ -3523,6 +3525,11 @@ options {
       skip_uncalled_genotypes: true
     }
     pileup_height: 100
+    order: 0
+    order: 1
+    order: 2
+    role: "parent1"
+    name: "parent1"
   }
   sample_options {
     reads_filenames: "deeptrio/testdata/input/HG001.chr20.10_10p1mb_sorted.bam"
@@ -3541,6 +3548,11 @@ options {
       skip_uncalled_genotypes: true
     }
     pileup_height: 100
+    order: 0
+    order: 1
+    order: 2
+    role: "child"
+    name: "child"
   }
   sample_options {
     reads_filenames: "deeptrio/testdata/input/NA12892.chr20.10_10p1mb_sorted.bam"
@@ -3559,7 +3571,16 @@ options {
       skip_uncalled_genotypes: true
     }
     pileup_height: 100
+    order: 2
+    order: 1
+    order: 0
+    role: "parent2"
+    name: "parent2"
   }
+  sample_role_to_train: "child"
+  min_length_for_sv: 25
+  aux_fields_to_keep: "HP"
+  aux_fields_to_keep: "OQ"
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3578,13 +3599,14 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1542.4155833333334
+  cpu_frequency_mhz: 1256.4627500000001
   total_memory_mb: 63910
-  wall_time_seconds: 2.0499448776245117
-  cpu_user_time_seconds: 6.27174
-  cpu_system_time_seconds: 2.776083
-  memory_peak_rss_mb: 377
-  write_bytes: 24576
+  wall_time_seconds: 1.9636366367340088
+  cpu_user_time_seconds: 7.821773
+  cpu_system_time_seconds: 3.129523
+  memory_peak_rss_mb: 465
+  read_bytes: 12288
+  write_bytes: 20480
 }
 stats {
   num_examples: 50
