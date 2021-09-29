@@ -817,6 +817,7 @@ py_test(
     data = [":testdata"],
     python_version = "PY3",
     srcs_version = "PY3",
+    tags = ["requires-net:external"],
     deps = [
         ":dv_constants",
         ":dv_vcf_constants",
