@@ -541,11 +541,11 @@ def regions_to_process(contigs,
     return partitioned
 
 
-def fetch_vcf_positions(vcf_path, contigs, calling_regions):
+def fetch_vcf_positions(vcf_paths, contigs, calling_regions):
   """Fetches variants present in calling_regions.
 
   Args:
-    vcf_path: Path to VCF from which to fetch positions.
+    vcf_paths: List of paths to VCFs from which to fetch positions.
     contigs: Sequence of ContigInfo protos. Used to determine the initial ranges
       to process (i.e., all bases of these contigs) and the order of returned
       ranges.
@@ -561,10 +561,11 @@ def fetch_vcf_positions(vcf_path, contigs, calling_regions):
     regions = regions.intersection(calling_regions)
 
   variant_positions = []
-  with vcf.VcfReader(vcf_path) as vcf_reader:
-    for region in regions:
-      for variant in vcf_reader.query(region):
-        variant_positions.append(variant_utils.variant_position(variant))
+  for vcf_path in vcf_paths:
+    with vcf.VcfReader(vcf_path) as vcf_reader:
+      for region in regions:
+        for variant in vcf_reader.query(region):
+          variant_positions.append(variant_utils.variant_position(variant))
 
   return variant_positions
 
@@ -796,7 +797,8 @@ class RegionProcessor(object):
           downsample_fraction=sample.options.downsample_fraction)
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
       sample.variant_caller = self._make_variant_caller_from_options(
-          sample.options.variant_caller_options)
+          sample.options.variant_caller_options,
+          sample.options.proposed_variants_filename)
 
     if self.options.use_allele_frequency:
       population_vcf_readers = allele_frequency.make_population_vcf_readers(
@@ -875,14 +877,15 @@ class RegionProcessor(object):
       raise ValueError('Unexpected labeler_algorithm',
                        self.options.labeler_algorithm)
 
-  def _make_variant_caller_from_options(self, variant_caller_options):
+  def _make_variant_caller_from_options(self, variant_caller_options,
+                                        proposed_variants_filename):
     """Creates the variant_caller from options."""
     if (self.options.variant_caller ==
         deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
       if in_training_mode(self.options):
         candidates_vcf = self.options.truth_variants_filename
       else:
-        candidates_vcf = self.options.proposed_variants_filename
+        candidates_vcf = proposed_variants_filename
       return vcf_candidate_importer.VcfCandidateImporter(
           variant_caller_options, candidates_vcf)
     elif (self.options.variant_caller ==
@@ -1398,13 +1401,16 @@ def processing_regions_from_options(options):
   # candidates as long as gVCF output is not needed. There is a tradeoff
   # though because it takes time to read the VCF, which is only worth it if
   # there are enough regions.
-  if options.proposed_variants_filename and not gvcf_output_enabled(options):
+  if (main_sample.proposed_variants_filename and
+      not gvcf_output_enabled(options)):
     logging_with_options(
         options, 'Reading VCF to skip processing some regions without '
         'variants in the --proposed_variants VCF.')
     before = time.time()
-    variant_positions = fetch_vcf_positions(options.proposed_variants_filename,
-                                            contigs, calling_regions)
+    variant_positions = fetch_vcf_positions([
+        sample_option.proposed_variants_filename
+        for sample_option in options.sample_options
+    ], contigs, calling_regions)
     filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
     time_elapsed = time.time() - before
     logging_with_options(

@@ -110,6 +110,21 @@ flags.DEFINE_integer(
 flags.DEFINE_integer(
     'pileup_image_height_child', 0,
     'Height for the child pileup image. If 0, uses the default height')
+flags.DEFINE_string(
+    'proposed_variants_child', None,
+    '(Only used when --variant_caller=vcf_candidate_importer.) '
+    'Tabix-indexed VCF file containing the proposed positions and alts for '
+    '`vcf_candidate_importer` for the child. The GTs will be ignored.')
+flags.DEFINE_string(
+    'proposed_variants_parent1', None,
+    '(Only used when --variant_caller=vcf_candidate_importer.) '
+    'Tabix-indexed VCF file containing the proposed positions and alts for '
+    '`vcf_candidate_importer` for the parent 1. The GTs will be ignored.')
+flags.DEFINE_string(
+    'proposed_variants_parent2', None,
+    '(Only used when --variant_caller=vcf_candidate_importer.) '
+    'Tabix-indexed VCF file containing the proposed positions and alts for '
+    '`vcf_candidate_importer` for the parent 2. The GTs will be ignored.')
 
 # Change any flag defaults that differ for DeepTrio.
 FLAGS.set_default('vsc_min_fraction_multiplier', 0.67)
@@ -163,6 +178,13 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
       parent1_options.reads_filenames.extend(flags_obj.reads_parent1.split(','))
     if flags_obj.reads_parent2:
       parent2_options.reads_filenames.extend(flags_obj.reads_parent2.split(','))
+
+    if flags_obj.proposed_variants_child:
+      child_options.proposed_variants_filename = flags_obj.proposed_variants_child
+    if flags_obj.proposed_variants_parent1:
+      parent1_options.proposed_variants_filename = flags_obj.proposed_variants_parent1
+    if flags_obj.proposed_variants_parent2:
+      parent2_options.proposed_variants_filename = flags_obj.proposed_variants_parent2
 
     if flags_obj.downsample_fraction_child != NO_DOWNSAMPLING:
       child_options.downsample_fraction = flags_obj.downsample_fraction_child

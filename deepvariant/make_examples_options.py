@@ -119,11 +119,6 @@ flags.DEFINE_string(
     'truth_variants', '',
     'Tabix-indexed VCF file containing the truth variant calls for this labels '
     'which we use to label our examples.')
-flags.DEFINE_string(
-    'proposed_variants', '',
-    '(Only used when --variant_caller=vcf_candidate_importer.) '
-    'Tabix-indexed VCF file containing the proposed positions and alts for '
-    '`vcf_candidate_importer`. The GTs will be ignored.')
 flags.DEFINE_integer('task', 0, 'Task ID of this task')
 flags.DEFINE_integer(
     'partition_size', 1000,
@@ -350,8 +345,6 @@ def shared_flags_to_options(
       options.confident_regions_filename = flags_obj.confident_regions
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
-    if flags_obj.proposed_variants:
-      options.proposed_variants_filename = flags_obj.proposed_variants
     if flags_obj.sequencing_type:
       options.pic_options.sequencing_type = make_examples_core.parse_proto_enum_flag(
           deepvariant_pb2.PileupImageOptions.SequencingType,
@@ -513,9 +506,9 @@ def check_options_are_valid(options: deepvariant_pb2.MakeExamplesOptions,
                            errors.CommandLineError)
     if (options.variant_caller
         == deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER and
-        options.proposed_variants_filename):
+        main_sample.proposed_variants_filename):
       errors.log_and_raise(
-          '--proposed_variants should not be used with '
+          '--proposed_variants* should not be used with '
           'vcf_candidate_importer in training mode. '
           'Use --truth_variants to pass in the candidates '
           'with correct labels for training.', errors.CommandLineError)
@@ -538,9 +531,10 @@ def check_options_are_valid(options: deepvariant_pb2.MakeExamplesOptions,
 
     if (options.variant_caller ==
         deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
-      if not options.proposed_variants_filename:
+      if any(
+          o.proposed_variants_filename is None for o in options.sample_options):
         errors.log_and_raise(
-            '--proposed_variants is required with vcf_candidate_importer in '
+            '--proposed_variants* is required with vcf_candidate_importer in '
             'calling mode.', errors.CommandLineError)
 
   multiplier = FLAGS.vsc_min_fraction_multiplier

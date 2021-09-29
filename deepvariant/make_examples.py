@@ -72,6 +72,11 @@ flags.DEFINE_float(
     'Reads will be kept (randomly) with a probability of downsample_fraction '
     'from the input BAM. This argument makes it easy to create examples as '
     'though the input BAM had less coverage.')
+flags.DEFINE_string(
+    'proposed_variants', '',
+    '(Only used when --variant_caller=vcf_candidate_importer.) '
+    'Tabix-indexed VCF file containing the proposed positions and alts for '
+    '`vcf_candidate_importer`. The GTs will be ignored.')
 
 
 def one_sample_from_flags(add_flags=True, flags_obj=None):
@@ -94,6 +99,8 @@ def one_sample_from_flags(add_flags=True, flags_obj=None):
       sample_options.downsample_fraction = flags_obj.downsample_fraction
     if flags_obj.pileup_image_height:
       sample_options.pileup_height = flags_obj.pileup_image_height
+    if flags_obj.proposed_variants:
+      sample_options.proposed_variants_filename = flags_obj.proposed_variants
   samples_in_order = [sample_options]
   sample_role_to_train = sample_options.role
   return samples_in_order, sample_role_to_train

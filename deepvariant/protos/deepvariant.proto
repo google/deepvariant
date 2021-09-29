@@ -531,6 +531,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
+// Next ID: 9.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -566,6 +567,9 @@ message SampleOptions {
   // in the pileup image when calling on this sample. The indices refer to the
   // list of samples in the regionprocessor.
   repeated int32 order = 5;
+
+  // Path to the variants for vcf_candidate_importer.
+  string proposed_variants_filename = 8;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
@@ -623,7 +627,7 @@ message MakeExamplesOptions {
   // Path to the truth variants, for use in labeling our examples.
   string truth_variants_filename = 15;
   // Path to the variants for vcf_candidate_importer.
-  string proposed_variants_filename = 33;
+  string deprecated_proposed_variants_filename = 33 [deprecated = true];
   // Path where we should put our gVCF records.
   string gvcf_filename = 16;
   // Whether to generate MED_DP in gVCF records or not.

@@ -464,7 +464,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       path_to_output_examples = test_utils.test_tmpfile(
           _sharded(
               'vcf_candidate_importer_child.examples.{}.tfrecord'.format(mode)))
-      FLAGS.proposed_variants = testdata.TRUTH_VARIANTS_VCF
+      FLAGS.proposed_variants_child = testdata.TRUTH_VARIANTS_VCF
+      FLAGS.proposed_variants_parent1 = testdata.TRUTH_VARIANTS_VCF
+      FLAGS.proposed_variants_parent2 = testdata.TRUTH_VARIANTS_VCF
     else:
       golden_file = _sharded(
           testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES)

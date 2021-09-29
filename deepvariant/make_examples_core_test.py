@@ -424,7 +424,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     contigs = _make_contigs([('chr20', 20000000)])
     calling_regions = _from_literals(calling_regions)
     variant_positions = make_examples_core.fetch_vcf_positions(
-        testdata.TRUTH_VARIANTS_VCF, contigs, calling_regions)
+        [testdata.TRUTH_VARIANTS_VCF], contigs, calling_regions)
     self.assertLen(variant_positions, expected_count)
 
   @parameterized.parameters(
