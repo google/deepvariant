@@ -671,10 +671,13 @@ TEST_F(VariantCallingTest, TestDeletionWithNonRefAnchor2) {
   const int count = 10;
   const Allele alt1 = MakeAllele("AA", AlleleType::DELETION, count);
   const Allele alt2 = MakeAllele("TA", AlleleType::DELETION, count + 1);
-  const Variant variant = MakeExpectedVariant("TA", {"A", "T"});
-  CheckCall("T", 4, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
-            WithCounts(variant, {0, count, count + 1}));
+  const Variant variant = MakeExpectedVariant("TA", {"T"});
+  CheckCall("T", 4, count + 1, {alt2}, ExpectedVariant::kVariantExpected,
+            WithCounts(variant, {0, count + 1}));
 }
+
+// Following tests are not exported to the open source because I couldn't find
+// an OSS replacement for util::tuple::testing::FieldPairsAre.
 
 TEST_F(VariantCallingTest, TestSNPInsertion) {
   const int count = 10;

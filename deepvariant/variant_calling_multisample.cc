@@ -34,10 +34,13 @@
 #include <algorithm>
 #include <numeric>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/node_hash_map.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -296,6 +299,52 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
   return allele_map;
 }
 
+AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
+                            const string& ref_bases) {
+  AlleleMap allele_map_mod;
+  absl::btree_map<Allele, int, OrderAllele> read_counts;
+  int num_of_dels = 0;
+  bool has_deletetion_adjacent_to_snp = false;
+
+  // Search for deletions and check if there is a deletion with the preceding
+  // SNP. SNP is followed by deletion if deletion's alt base is different from
+  // the ref.
+  // In addition, read count is stored for each deletion.
+  for (const auto& elt : allele_map) {
+    if (elt.first.type() == AlleleType::DELETION) {
+      read_counts[elt.first] += elt.first.count();
+      num_of_dels++;
+      if (elt.second[0] != ref_bases[0]) {
+        has_deletetion_adjacent_to_snp = true;
+      }
+    }
+  }
+
+  // If more than 1 DELs and their alt bases are different we need to keep just
+  // one. The one with higher read support is kept.
+  if (num_of_dels > 1 && has_deletetion_adjacent_to_snp) {
+    Allele max_allele =
+        std::max_element(read_counts.begin(), read_counts.end(),
+                         [](const std::pair<const Allele, int>& element1,
+                            const std::pair<const Allele, int>& element2) {
+                           return element1.second < element2.second;
+                         })
+            ->first;
+
+    if (!max_allele.bases().empty()) {
+      for (const auto& elt : allele_map) {
+        if ((elt.first.type() == AlleleType::DELETION &&
+             elt.second == allele_map.at(max_allele)) ||
+            elt.first.type() != AlleleType::DELETION) {
+          allele_map_mod[elt.first] = elt.second;
+        }
+      }
+      return allele_map_mod;
+    }
+  }
+  return allele_map;
+}
+
 // Adds the DP, AD, and VAF VCF fields to the first VariantCall of Variant.
 // DP: the total number of observed reads at the site.
 // AD: the number of reads supporting each of our ref and alt alleles.
@@ -445,8 +494,9 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
 
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
-  const AlleleMap allele_map =
-      BuildAlleleMap(target_sample_allele_count, alt_alleles, refbases);
+  const AlleleMap allele_map = RemoveInvalidDels(
+      BuildAlleleMap(target_sample_allele_count, alt_alleles, refbases),
+      target_sample_allele_count.ref_base());
   for (const auto& elt : allele_map) {
     variant->add_alternate_bases(elt.second);
   }

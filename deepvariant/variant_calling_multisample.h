@@ -213,6 +213,14 @@ class VariantCaller {
   mutable nucleus::FractionalSampler sampler_;
 };
 
+// Helper function
+// If there are multiple deletions with different anchors at the same location
+// this functions determines the deletions with the highest reads support and
+// deletes all other deletions from the allele_map. In all other cases
+// allele_map is not modified.
+AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
+                            const string& ref_bases);
+
 }  // namespace multi_sample
 }  // namespace deepvariant
 }  // namespace genomics
