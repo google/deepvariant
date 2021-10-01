@@ -41,7 +41,6 @@ class EnvironmentSmokeTest(unittest.TestCase):
     # pylint: disable=unused-variable
     # pylint: disable=g-import-not-at-top
     import enum
-    import mock
     import intervaltree
     import contextlib2
     # pylint: enable=unused-variable
