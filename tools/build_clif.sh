@@ -43,7 +43,7 @@ CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
 # CLIF_PIN can be set to a specific commit hash on
 # https://github.com/google/clif/commits/main.
 # If not set, the default is to checkout the latest commit.
-CLIF_PIN="${CLIF_PIN-fbc9fcf2d5094d45e5958ff7de051cadf9f39ede}"
+CLIF_PIN="${CLIF_PIN-}"
 
 APT_ARGS=(
 "-qq"
