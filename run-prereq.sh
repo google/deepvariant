@@ -128,6 +128,7 @@ pip3 install "${PIP_ARGS[@]}" joblib
 pip3 install "${PIP_ARGS[@]}" psutil
 pip3 install "${PIP_ARGS[@]}" --upgrade google-api-python-client
 pip3 install "${PIP_ARGS[@]}" 'pandas==1.2.4'
+pip3 install "${PIP_ARGS[@]}" 'jsonschema==3.2.0'
 pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 pip3 install "${PIP_ARGS[@]}" 'Pillow>=5.4.1'
 pip3 install "${PIP_ARGS[@]}" 'ipython>=7.9.0'
