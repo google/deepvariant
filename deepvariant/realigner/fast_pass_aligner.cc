@@ -466,6 +466,10 @@ bool FastPassAligner::IsAlignmentNormalized(
     const std::list<CigarOp>& cigar,
     int ref_offset,
     const absl::string_view read_sequence) const {
+  if (ref_offset < 0) {
+    LOG(WARNING) << "Ref offset is negative";
+    return true;
+  }
   int cur_ref_offset = ref_offset;
   int cur_read_offset = 0;
   for (const auto& op : cigar) {
@@ -555,7 +559,7 @@ void FastPassAligner::RealignReadsToReference(
               + hap_to_ref_position,
           reads_[read_index])) {
           LOG(INFO) << "Realignment is non-normalized and will be discarded for"
-              << "read_id:" << read_index
+              << " read_id:" << read_index
               << ", read name: " << read.fragment_name();
           readToRefCigarOps.clear();
       }
