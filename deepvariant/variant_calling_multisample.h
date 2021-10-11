@@ -34,6 +34,7 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 
+#include <string>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
@@ -41,7 +42,6 @@
 #include "absl/container/node_hash_map.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
-#include "tensorflow/core/lib/gtl/optional.h"
 
 namespace nucleus {
 class VcfReader;
@@ -159,6 +159,27 @@ class VariantCaller {
           allele_counts_wrapper,
       const std::string& target_sample) const;
 
+  // High-level API for calculating potential variant position in a region.
+  // This function is almost identical to CallsFromAlleleCounts except it
+  // only calculates candidate positions.
+  std::vector<int> CallPositionsFromAlleleCounts(
+      const std::unordered_map<
+          std::string, std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
+          allele_counts,
+      const std::string& target_sample) const;
+
+  // Iterates allele_counts for all samples and calls specified function F for
+  // each candidate. Currently there are 2 use case: generate candidates,
+  // generate candidate positions.
+  template <class T>
+  std::vector<T> AlleleCountsGenerator(
+      const std::unordered_map<
+          std::string, std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
+          allele_counts,
+      const std::string& target_sample,
+      std::optional<T> (VariantCaller::*F)(
+          const absl::node_hash_map<std::string, AlleleCount>&,
+          const std::string&) const) const;
   // Primary interface function for calling variants.
   //
   // Looks at the alleles in the provided AlleleCount proto and returns
@@ -169,7 +190,7 @@ class VariantCaller {
   // alternate_bases set based on the alleles in allele_count, along with an
   // appropriate end. The genotypes of the VariantCall will be set to -1 and -1
   // (diploid no-call).
-  tensorflow::gtl::optional<DeepVariantCall> CallVariant(
+  std::optional<DeepVariantCall> CallVariant(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const std::string& target_sample) const;
 
@@ -207,6 +228,13 @@ class VariantCaller {
       const bool apply_trio_coefficient) const;
   bool KeepReferenceSite() const;
 
+  // This function duplicates functionality of CallVariant() to determine if
+  // a position contains a candidate. If candidate conditions are met then
+  // function returns a position of the candidate.
+  std::optional<int> CallVariantPosition(
+      const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
+      const std::string& target_sample) const;
+
   const VariantCallerOptions options_;
 
   // Fraction of non-variant sites to emit as DeepVariantCalls.
@@ -219,7 +247,7 @@ class VariantCaller {
 // deletes all other deletions from the allele_map. In all other cases
 // allele_map is not modified.
 AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
-                            const string& ref_bases);
+                            const std::string& ref_bases);
 
 }  // namespace multi_sample
 }  // namespace deepvariant

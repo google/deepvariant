@@ -1093,16 +1093,28 @@ class RegionProcessor(object):
       return {}, {}
 
     allele_counters = {}
+    candidate_positions = []
+    if self.options.allele_counter_options.track_ref_reads:
+      # Calculate potential candidate positions from allele counts.
+      for sample in self.samples:
+        if sample.options.reads_filenames:
+          # Calculate potential candidate positions from allele counts
+          sample.allele_counter = self._make_allele_counter_for_region(
+              region, [])
+          for read in sample.reads:
+            sample.allele_counter.add(read, sample.options.name)
+        # Reads iterator needs to be reset since it used in the code below.
+        sample.reads = sample.in_memory_sam_reader.query(region)
+
+      allele_counters = {
+          sample.options.name: sample.allele_counter for sample in self.samples
+      }
+      candidate_positions = sample.variant_caller.get_candidate_positions(
+          allele_counters=allele_counters, sample_name=sample.options.name)
+
     for sample in self.samples:
       if sample.options.reads_filenames:
-        # Calculate potential candidate positions from allele counts.
-        candidate_positions = []
-        if self.options.allele_counter_options.track_ref_reads:
-          candidate_positions = self.realigner.get_candidate_positions(
-              sample.reads, region)
-          sample.reads = sample.in_memory_sam_reader.query(region)
 
-        # Final allele counts calculation.
         sample.allele_counter = self._make_allele_counter_for_region(
             region, candidate_positions)
         for read in sample.reads:

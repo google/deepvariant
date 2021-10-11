@@ -79,6 +79,9 @@ class PlaceholderVariantCaller(variant_caller.VariantCaller):
   def get_candidates(self, allele_counters, sample_name):
     return None
 
+  def get_candidate_positions(self, allele_counters, sample_name: str):
+    return None
+
 
 class VariantCallerTests(parameterized.TestCase):
 

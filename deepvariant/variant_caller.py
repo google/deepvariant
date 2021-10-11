@@ -387,3 +387,9 @@ class VariantCaller(metaclass=abc.ABCMeta):
                                                  allelecounter.AlleleCounter],
                      sample_name: str):
     raise NotImplementedError
+
+  @abc.abstractmethod
+  def get_candidate_positions(
+      self, allele_counters: Dict[str, allelecounter.AlleleCounter],
+      sample_name: str):
+    raise NotImplementedError

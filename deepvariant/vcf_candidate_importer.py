@@ -59,3 +59,8 @@ class VcfCandidateImporter(variant_caller.VariantCaller):
                      sample_name: str) -> List[deepvariant_pb2.DeepVariantCall]:
     return self.cpp_variant_caller_from_vcf.calls_from_vcf(
         allele_counters[sample_name], self.vcf_reader)
+
+  def get_candidate_positions(
+      self, allele_counters: Dict[str, allelecounter.AlleleCounter],
+      sample_name: str):
+    raise NotImplementedError

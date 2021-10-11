@@ -232,11 +232,3 @@ def select_windows(config, ref_reader, reads, region):
 
   candidates = _candidates_from_reads(config, ref_reader, reads, region)
   return _candidates_to_windows(config, candidates, region.reference_name)
-
-
-def find_candidates(config, ref_reader, reads, region):
-  """Returns potential candidates for the specific region."""
-  if not reads:
-    return []
-
-  return _candidates_from_reads(config, ref_reader, reads, region)
