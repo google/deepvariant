@@ -46,7 +46,6 @@ CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
 CLIF_PIN="${CLIF_PIN-}"
 
 APT_ARGS=(
-"-qq"
 "-y"
 )
 
@@ -65,10 +64,6 @@ apt-get install "${APT_ARGS[@]}" --no-install-recommends \
     software-properties-common \
     wget \
     unzip
-
-# Configure LLVM 11 apt repository
-wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key |  apt-key add - && \
-  add-apt-repository "deb http://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-11 main"
 
 # Install CLIF dependencies
 apt-get update "${APT_ARGS[@]}"
@@ -141,4 +136,6 @@ cd && rm -rf clif && git clone https://github.com/google/clif.git && cd clif
 if [[ ! -z ${CLIF_PIN} ]]; then
   git checkout "${CLIF_PIN}"
 fi
+
+sed -i -e 's/LLVM 11.1.0/LLVM 11/g' clif/cmake/modules/CLIFUtils.cmake
 ./INSTALL.sh
