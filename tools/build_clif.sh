@@ -65,6 +65,10 @@ apt-get install "${APT_ARGS[@]}" --no-install-recommends \
     wget \
     unzip
 
+# Configure LLVM 11 apt repository
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key |  apt-key add - && \
+  add-apt-repository "deb http://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-11 main"
+
 # Install CLIF dependencies
 apt-get update "${APT_ARGS[@]}"
 apt-get install  "${APT_ARGS[@]}" \
@@ -73,9 +77,10 @@ apt-get install  "${APT_ARGS[@]}" \
     libgoogle-glog-dev \
     libgtest-dev \
     libllvm11 \
+    llvm-11 \
     llvm-11-dev \
+    llvm-11-linker-tools \
     python3-dev \
-    python3-pyparsing \
     zlib1g-dev
 
 # Uninstall an older version of libclang so that cmake uses the correct one.
@@ -123,10 +128,9 @@ cd /usr/src/googletest && \
 "python$CLIF_PYTHON_VERSION" -m pip install \
     absl-py \
     parameterized \
-    protobuf=="$PROTOBUF_VERSION"
+    protobuf=="$PROTOBUF_VERSION" \
+    pyparsing==2.2.0
 
-"python$CLIF_PYTHON_VERSION" -m pip uninstall -y pyparsing && \
-  "python$CLIF_PYTHON_VERSION" -m pip install -Iv 'pyparsing==2.2.0'
 DV_PLATFORM="ubuntu-${CLIF_UBUNTU_VERSION}"
 
 ln -sf /usr/bin/python$CLIF_PYTHON_VERSION /usr/local/bin/python3
@@ -137,5 +141,4 @@ if [[ ! -z ${CLIF_PIN} ]]; then
   git checkout "${CLIF_PIN}"
 fi
 
-sed -i -e 's/LLVM 11.1.0/LLVM 11/g' clif/cmake/modules/CLIFUtils.cmake
 ./INSTALL.sh
