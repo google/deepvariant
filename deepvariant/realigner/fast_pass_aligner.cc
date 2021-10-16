@@ -434,8 +434,6 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
                 alignment.ref_begin;
           }
         } else if (force_alignment_ && hap_alignment.is_reference) {
-          LOG(WARNING) << "Force alignment will fail because the SSW "
-                       << "alignment had a score of 0.";
         }
       }
     }
@@ -558,9 +556,6 @@ void FastPassAligner::RealignReadsToReference(
               + read_to_hap_pos
               + hap_to_ref_position,
           reads_[read_index])) {
-          LOG(INFO) << "Realignment is non-normalized and will be discarded for"
-              << " read_id:" << read_index
-              << ", read name: " << read.fragment_name();
           readToRefCigarOps.clear();
       }
 
@@ -573,20 +568,10 @@ void FastPassAligner::RealignReadsToReference(
       if (!readToRefCigarOps.empty()) {
         realigned_read.set_allocated_alignment(new_alignment.release());
       } else if (force_alignment_) {
-        LOG(WARNING) << "Force alignment failed. Could not merge cigars "
-                     << "from read-hap and hap-ref alignments. "
-                     << "Keeping the original alignment.";
       }
       (*realigned_reads)->push_back(realigned_read);
     } else {  // Could not find a new alignment.
       if (force_alignment_) {
-        LOG(WARNING) << "Force alignment failed. "
-                     << "Leaving out the read previously aligned at position "
-                     << read.alignment().position().reference_name() << ":"
-                     << read.alignment().position().position()
-                     << " from alt-aligned section of pileup image.";
-        // By not adding it to the realigned_reads array, this read will be
-        // left out of the pileup image.
       } else {
         // Keep the original alignment.
         VLOG(3) << "Keeping original alignment (force_alignment is off)";
