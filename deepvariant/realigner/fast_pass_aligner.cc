@@ -465,7 +465,9 @@ bool FastPassAligner::IsAlignmentNormalized(
     int ref_offset,
     const absl::string_view read_sequence) const {
   if (ref_offset < 0) {
+    // BEGIN_PUBLIC
     LOG(WARNING) << "Ref offset is negative";
+    // END_PUBLIC
     return true;
   }
   int cur_ref_offset = ref_offset;
