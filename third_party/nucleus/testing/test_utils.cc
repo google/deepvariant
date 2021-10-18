@@ -32,10 +32,11 @@
 
 #include "third_party/nucleus/testing/test_utils.h"
 
-#include "third_party/nucleus/protos/cigar.pb.h"
-#include "third_party/nucleus/util/utils.h"
+#include <vector>
 
 #include "absl/strings/str_join.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace nucleus {
 
@@ -135,6 +136,20 @@ Read MakeRead(const string& chr, const int start, const string& bases,
   }
 
   return read;
+}
+
+std::vector<CigarUnit> MakeCigar(
+    const std::vector<std::string>& cigar_elements) {
+  std::vector<CigarUnit> cigar;
+  for (const auto& cigar_str : cigar_elements) {
+    CigarUnit cigar_unit = CigarUnit();
+    cigar_unit.set_operation(parse_cigar_op_str(cigar_str.back()));
+    const string& cigar_len_str = cigar_str.substr(0, cigar_str.length() - 1);
+    int value = atoi(cigar_len_str.c_str());  // NOLINT: safe here.
+    cigar_unit.set_operation_length(value);
+    cigar.push_back(cigar_unit);
+  }
+  return cigar;
 }
 
 bool IsGzipped(absl::string_view file_contents) {

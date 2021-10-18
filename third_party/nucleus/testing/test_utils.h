@@ -148,6 +148,14 @@ std::vector<Record> as_vector(const std::shared_ptr<Iterable<Record>>& it) {
     const string& chr, int start, const string& bases,
     const std::vector<string>& cigar_elements);
 
+// Creates a test Cigar as a vector of CigarUnit.
+//
+// The Cigar elements are parsed from cigar_elements, which is vector of
+// standard CIGAR element string values like {"5M", "2I", "3M"} which is 5 bp
+// matches, 2 bp insertion, and 3 bp matches.
+std::vector<::nucleus::genomics::v1::CigarUnit> MakeCigar(
+    const std::vector<std::string>& cigar_elements);
+
 // Determines whether file content represents GZIP'd data, based on file magic.
 bool IsGzipped(absl::string_view file_contents);
 
