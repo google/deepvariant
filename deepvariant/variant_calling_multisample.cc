@@ -534,9 +534,8 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
 
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
-  const AlleleMap allele_map = RemoveInvalidDels(
-      BuildAlleleMap(target_sample_allele_count, alt_alleles, refbases),
-      target_sample_allele_count.ref_base());
+  const AlleleMap allele_map =
+      BuildAlleleMap(target_sample_allele_count, alt_alleles, refbases);
   for (const auto& elt : allele_map) {
     variant->add_alternate_bases(elt.second);
   }
