@@ -228,6 +228,15 @@ message Read {
   // A map of additional read alignment information. This must be of the form
   // map<string, string[]> (string key mapping to a list of string values).
   map<string, ListValue> info = 17;
+
+  // This field caches the end position of this read. The end position of a
+  // read should usually be calculated by considering the start position as well
+  // as all the CIGAR operations. However, sometimes during multiple queries of
+  // the same set of reads, it can be desirable to cache the end position for
+  // later use.
+  // Use this field with caution because it might be out of sync
+  // with the rest of the read.
+  int64 cached_end = 18;
 }
 
 // The SamHeader message represents the metadata present in the header of a

@@ -142,12 +142,13 @@ Range MakeRange(const Read& read) {
 void ReadRangePython(
     const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
         read_wrapped,
-    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped) {
+    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped,
+    bool use_cached_read_end) {
   const Read& read = *read_wrapped.p_;
   Range* range = range_wrapped.p_;
   range->set_reference_name(read.alignment().position().reference_name());
   range->set_start(ReadStart(read));
-  range->set_end(ReadEnd(read));
+  range->set_end(ReadEnd(read, use_cached_read_end));
 }
 
 bool RangeContains(const Range& haystack, const Range& needle) {
@@ -157,7 +158,8 @@ bool RangeContains(const Range& haystack, const Range& needle) {
 }
 
 bool ReadOverlapsRegion(const ::nucleus::genomics::v1::Read& read,
-                        const ::nucleus::genomics::v1::Range& range) {
+                        const ::nucleus::genomics::v1::Range& range,
+                        bool use_cached_read_end) {
   // Equivalent code in python from ranges.py:
   //
   // return (i1.reference_name == i2.reference_name and i1.end > i2.start and
@@ -169,7 +171,7 @@ bool ReadOverlapsRegion(const ::nucleus::genomics::v1::Read& read,
       range.end() > ReadStart(read) &&
       // Next we check read end, which is slightly more expensive as we need to
       // compute the end from the cigar.
-      range.start() < ReadEnd(read) &&
+      range.start() < ReadEnd(read, use_cached_read_end) &&
       // Finally we compute if the reference_names are the same.
       range.reference_name() == AlignedContig(read);
 }
@@ -206,7 +208,8 @@ int64 ReadStart(const Read& read) {
   return read.alignment().position().position();
 }
 
-int64 ReadEnd(const Read& read) {
+int64 ReadEnd(const Read& read, bool use_cached_read_end) {
+  if (use_cached_read_end && read.cached_end() > 0) return read.cached_end();
   int64 position = ReadStart(read);
   for (const auto& cigar : read.alignment().cigar()) {
     switch (cigar.operation()) {

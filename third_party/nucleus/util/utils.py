@@ -38,7 +38,7 @@ from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.util.python import utils as utils_cpp
 
 
-def read_overlaps_region(read, region):
+def read_overlaps_region(read, region, use_cached_read_end=False):
   """Returns True if read overlaps read.
 
   This function is equivalent to calling:
@@ -50,31 +50,35 @@ def read_overlaps_region(read, region):
   Args:
     read: nucleus.genomics.v1.Read.
     region: nucleus.genomics.v1.Range.
+    use_cached_read_end: If True, use the `cached_end` stored in Read instead of
+                         recalculating.
 
   Returns:
     True if read and region overlap (i.e, have the same reference_name and their
     start/ends overlap at least one basepair).
   """
-  return utils_cpp.read_overlaps_region(read, region)
+  return utils_cpp.read_overlaps_region(read, region, use_cached_read_end)
 
 
-def read_range(read):
+def read_range(read, use_cached_read_end=True):
   """Creates a Range proto from the alignment of Read.
 
   Args:
     read: nucleus.genomics.v1.Read. The read to calculate the range for.
+    use_cached_read_end: If True, use the `cached_end` stored in Read instead of
+                         recalculating.
 
   Returns:
     A nucleus.genomics.v1.Range for read.
   """
   range_pb = range_pb2.Range()
-  utils_cpp.read_range(read, range_pb)
+  utils_cpp.read_range(read, range_pb, use_cached_read_end=use_cached_read_end)
   return range_pb
 
 
-def read_end(read):
+def read_end(read, use_cached_read_end=True):
   """Returns the read start + alignment length for Read read."""
-  return read_range(read).end
+  return utils_cpp.read_end(read, use_cached_read_end)
 
 
 def reservoir_sample(iterable, k, random=None):

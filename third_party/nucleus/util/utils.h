@@ -134,15 +134,16 @@ int64 ReadStart(const nucleus::genomics::v1::Read& read);
 // end must be computed by examining the cigar elements of Read. Implements
 // getReferenceLength (excludes padding) as found at:
 // http://grepcode.com/file/repo1.maven.org/maven2/org.seqdoop/htsjdk/1.118/htsjdk/samtools/Cigar.java#Cigar.getReferenceLength%28%29
-int64 ReadEnd(const nucleus::genomics::v1::Read& read);
+int64 ReadEnd(const nucleus::genomics::v1::Read& read,
+              bool use_cached_read_end = false);
 
 // Simple wrapper around ReadEnd that allows us to efficiently pass large
 // protobufs in from Python. Simply unwraps the ConstProtoPtr read and calls
 // ReadEnd().
 inline int64 ReadEndPython(
     const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
-        wrapped) {
-  return ReadEnd(*(wrapped.p_));
+        wrapped, bool use_cached_read_end = false) {
+  return ReadEnd(*(wrapped.p_), use_cached_read_end);
 }
 
 // Fills into the range information (reference_name, start, end) of
@@ -150,7 +151,8 @@ inline int64 ReadEndPython(
 void ReadRangePython(
     const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
         read_wrapped,
-    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped);
+    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped,
+    bool use_cached_read_end = false);
 
 // Fills into the range information (reference_name, start, end) of
 // range_wrapped with the alignment reference_name, start, and ReadEnd of read.
@@ -160,8 +162,11 @@ void ReadRangePython(
 //    nucleus::EmptyProtoPtr<::nucleus::genomics::v1::Range> range_wrapped);
 
 // Returns true if the alignment span of read overlaps with range.
+// If use_cached_read_end is true and if the read.cached_end is set, directly
+// use it instead of recalculating the end position.
 bool ReadOverlapsRegion(const ::nucleus::genomics::v1::Read& read,
-                        const ::nucleus::genomics::v1::Range& range);
+                        const ::nucleus::genomics::v1::Range& range,
+                        bool use_cached_read_end = false);
 
 // Simple wrapper around ReadOverlapsRegion that allows us to efficiently pass
 // large protobufs in from Python. Simply unwraps the ConstProtoPtr read and
@@ -170,8 +175,10 @@ inline bool ReadOverlapsRegionPython(
     const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
         read_wrapped,
     const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Range>
-        range_wrapped) {
-  return ReadOverlapsRegion(*(read_wrapped.p_), *(range_wrapped.p_));
+        range_wrapped,
+    bool use_cached_read_end = false) {
+  return ReadOverlapsRegion(*(read_wrapped.p_), *(range_wrapped.p_),
+                            use_cached_read_end);
 }
 
 // Returns true if the read is properly placed. We define properly placed as
