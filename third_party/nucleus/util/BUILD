@@ -230,7 +230,6 @@ py_library(
         ":vcf_constants",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/py/enum",
     ],
 )
 
