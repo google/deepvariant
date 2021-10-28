@@ -778,9 +778,8 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         alt_alleles={self.alt_allele})
     self.mock_enc_ref.assert_called_once_with(self.ref)
     self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
     ])
     self.assertImageMatches(image, 'ref', 'ref', 'read2', 'read4')
 
@@ -793,9 +792,9 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         alt_alleles={self.alt_allele})
     self.mock_enc_ref.assert_called_once_with(self.ref)
     self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
     ])
     self.assertImageMatches(image, 'ref', 'ref', 'read1', 'read2')
 
@@ -810,10 +809,8 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         alt_alleles={self.alt_allele})
     self.mock_enc_ref.assert_called_once_with(self.ref)
     self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
     ])
     self.assertImageMatches(image, 'ref', 'ref', 'read1', 'read4')
 
@@ -1028,20 +1025,15 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
+        mock.call(self.dv_call, self.ref, self.read4_parent1, 9,
                   {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read2_parent1, 9,
                   {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
+        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read4_parent2, 9,
                   {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read2_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4_parent2, 9,
                   {self.alt_allele}),
     ])
     self.assertImageMatches(image, 'ref', 'ref', 'read2_parent1',
@@ -1063,20 +1055,20 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
+        mock.call(self.dv_call, self.ref, self.read2_parent1, 9,
                   {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read3_parent1, 9,
                   {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent1, 9,
+        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
                   {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
+        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read2_parent2, 9,
                   {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read3_parent2, 9,
                   {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent2, 9,
+        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
                   {self.alt_allele}),
     ])
     self.assertImageMatches(image, 'ref', 'ref', 'read1_parent1',
@@ -1103,25 +1095,15 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read2_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3_parent1, 9,
+        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
                   {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read4_parent1, 9,
                   {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3_parent2, 9,
+        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
                   {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read4_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
                   {self.alt_allele}),
     ])
     self.assertImageMatches(image, 'ref', 'ref', 'read1_parent1',
@@ -1165,24 +1147,15 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent1, 9,
-                  {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read4_parent1, 9,
                   {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent2, 9,
-                  {self.alt_allele}),
+        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
         mock.call(self.dv_call, self.ref, self.read4_parent2, 9,
                   {self.alt_allele}),
     ])
-    self.assertImageMatches(image, 'ref', 'ref', 'read2_parent1', 'ref', 'ref',
-                            'read2', 'read4', 'ref', 'ref', 'read2_parent2')
+    self.assertImageMatches(image, 'ref', 'ref', 'read4_parent1', 'ref', 'ref',
+                            'read2', 'read4', 'ref', 'ref', 'read4_parent2')
 
   @parameterized.parameters([
       dict(

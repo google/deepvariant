@@ -36,7 +36,6 @@ import numpy as np
 
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import ranges
-from third_party.nucleus.util import utils
 from deepvariant import dv_constants
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
@@ -369,21 +368,20 @@ class PileupImageCreator(object):
         else:
           return hp_value
 
-      # A generator that yields tuples of the form (haplotype, position, row),
+      # Returns tuples of the form (haplotype, position, row),
       # if the read can be encoded as a valid row to be used in the pileup
       # image.
-      def _row_generator():
-        """A generator that yields tuples of (haplotype, position, row)."""
-        for read in reads:
-          read_row = self._encoder.encode_read(dv_call, refbases, read,
-                                               image_start_pos, alt_alleles)
-          if read_row is None:
-            continue
-          hap_idx = 0  # By default, reads with no HP is set to 0.
-          if self._options.sort_by_haplotypes:
-            hap_idx = _update_hap_index(
-                read, self._options.hp_tag_for_assembly_polishing)
-          yield hap_idx, read.alignment.position.position, read_row
+      def _row_helper(read):
+        """A function that returns tuples of (haplotype, position, row)."""
+        read_row = self._encoder.encode_read(dv_call, refbases, read,
+                                             image_start_pos, alt_alleles)
+        if read_row is None:
+          return None
+        hap_idx = 0  # By default, reads with no HP is set to 0.
+        if self._options.sort_by_haplotypes:
+          hap_idx = _update_hap_index(
+              read, self._options.hp_tag_for_assembly_polishing)
+        return hap_idx, read.alignment.position.position, read_row
 
       # We add a row for each read in order, down-sampling if the number of
       # reads is greater than the max reads for each sample. Sort the reads by
@@ -397,10 +395,17 @@ class PileupImageCreator(object):
         pileup_height = self.height
 
       max_reads = pileup_height - self.reference_band_height
-      pileup_of_reads = sorted(
-          utils.reservoir_sample(
-              _row_generator(), max_reads, random=random_for_image),
-          key=lambda x: (x[0], x[1]))
+      if len(reads) > max_reads:
+        random_for_image.shuffle(reads)
+      pileup_of_reads = []
+      for read in reads:
+        if len(pileup_of_reads) == max_reads:
+          break
+        row = _row_helper(read)
+        if row is None:
+          continue
+        pileup_of_reads.append(row)
+      pileup_of_reads = sorted(pileup_of_reads, key=lambda x: (x[0], x[1]))
 
       rows += [read_row for _, _, read_row in pileup_of_reads]
 
