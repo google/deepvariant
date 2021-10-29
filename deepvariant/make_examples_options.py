@@ -107,7 +107,8 @@ flags.DEFINE_string(
 flags.DEFINE_integer(
     'gvcf_gq_binsize', 5,
     'Bin size in which to quantize gVCF genotype qualities. Larger bin size '
-    'reduces the number of gVCF records at a loss of quality granularity.')
+    'reduces the number of gVCF records at a loss of quality granularity. Must '
+    'be a positive integer.')
 flags.DEFINE_bool('include_med_dp', False,
                   'If true, include MED_DP in the output gVCF records.')
 flags.DEFINE_string(
@@ -522,7 +523,7 @@ def check_options_are_valid(options: deepvariant_pb2.MakeExamplesOptions,
               'sample_name must be specified for all samples in calling mode.',
               errors.CommandLineError)
     if main_sample.variant_caller_options.gq_resolution < 1:
-      errors.log_and_raise('gq_resolution must be a non-negative integer.',
+      errors.log_and_raise('gq_resolution must be a positive integer.',
                            errors.CommandLineError)
 
     if options.truth_variants_filename:
