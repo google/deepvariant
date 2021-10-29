@@ -43,7 +43,9 @@ CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
 # CLIF_PIN can be set to a specific commit hash on
 # https://github.com/google/clif/commits/main.
 # If not set, the default is to checkout the latest commit.
-CLIF_PIN="${CLIF_PIN-}"
+CLIF_PIN="8c0bbbde1b0cb21ff5efae50065aa716e8c32924"
+# To unpin,
+# CLIF_PIN="${CLIF_PIN-}"
 
 APT_ARGS=(
 "-y"
