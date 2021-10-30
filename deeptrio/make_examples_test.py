@@ -329,10 +329,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
 
-    # The following 3 lines are added.
+    # The following 4 lines are added.
     FLAGS.alt_aligned_pileup = 'diff_channels'
     FLAGS.pileup_image_height_child = 60
     FLAGS.pileup_image_height_parent = 40
+    FLAGS.pileup_image_width = 199
 
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
