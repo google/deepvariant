@@ -609,7 +609,14 @@ function run_happy() {
   local -r truth_vcf=$(basename "${1}")
   local -r truth_bed=$(basename "${2}")
   local -r vcf_output=$(basename "${3}")
+  local -r optional_chr="${4-}"
+
   run echo "Start evaluation with hap.py..."
+  declare -a optional_chr_args
+  if [[ -n ${optional_chr} ]]; then
+    optional_chr_args+=(-l "${optional_chr}")
+    run echo "... evaluating on ${optional_chr}"
+  fi
   UNCOMPRESSED_REF=${INPUT_DIR}/$(basename $REF)
   # hap.py cannot read the compressed fa, so uncompress
   # into a writable directory. Index file was downloaded earlier.
@@ -632,32 +639,35 @@ function run_happy() {
     "${OUTPUT_DIR}/${vcf_output}" \
     -f "${INPUT_DIR}/${truth_bed}" \
     -r ${UNCOMPRESSED_REF} \
-    -o "${OUTPUT_DIR}/happy.output-${vcf_output}" \
+    -o "${OUTPUT_DIR}/happy.output${optional_chr}-${vcf_output}" \
     --engine=vcfeval \
     --pass-only \
     ${happy_args[@]-} \
-  ) 2>&1 | tee "${LOG_DIR}/happy-${vcf_output}.log""
+    ${optional_chr_args[@]-} \
+  ) 2>&1 | tee "${LOG_DIR}/happy.output${optional_chr}-${vcf_output}.log""
   if [[ "${DRY_RUN}" != "true" ]]; then
     echo "${HAPPY_VERSION}" > "${LOG_DIR}/happy_version.log"
   fi
   run echo "Done."
 }
 
-function run_all_happy_reports() {
+function run_happy_reports() {
+  local -r optional_chr="${1-}"
+
   if [[ ${DRY_RUN} == "true" ]]; then
-    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}"
-    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}"
-    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}"
-    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf"
-    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf"
-    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf"
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" "${optional_chr}"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" "${optional_chr}"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" "${optional_chr}"
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf" "${optional_chr}"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf" "${optional_chr}"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf" "${optional_chr}"
   else
-    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" 2>&1 | tee "${LOG_DIR}/happy_child.log"
-    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
-    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" 2>&1 | tee "${LOG_DIR}/happy_parent2.log"
-    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_child_split.log"
-    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent1_split.log"
-    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf" 2>&1 | tee "${LOG_DIR}/happy_parent2_split.log"
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "${OUTPUT_VCF_CHILD}" "${optional_chr}" 2>&1 | tee "${LOG_DIR}/happy_child.log"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "${OUTPUT_VCF_PARENT1}" "${optional_chr}" 2>&1 | tee "${LOG_DIR}/happy_parent1.log"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "${OUTPUT_VCF_PARENT2}" "${optional_chr}" 2>&1 | tee "${LOG_DIR}/happy_parent2.log"
+    run_happy "${TRUTH_VCF_CHILD}" "${TRUTH_BED_CHILD}" "HG002_split.vcf" "${optional_chr}" 2>&1 | tee "${LOG_DIR}/happy_child_split.log"
+    run_happy "${TRUTH_VCF_PARENT1}" "${TRUTH_BED_PARENT1}" "HG003_split.vcf" "${optional_chr}" 2>&1 | tee "${LOG_DIR}/happy_parent1_split.log"
+    run_happy "${TRUTH_VCF_PARENT2}" "${TRUTH_BED_PARENT2}" "HG004_split.vcf" "${optional_chr}" 2>&1 | tee "${LOG_DIR}/happy_parent2_split.log"
   fi
 }
 
@@ -698,7 +708,10 @@ function main() {
   run_deeptrio
   run_glnexus
   extract_samples
-  run_all_happy_reports
+  run_happy_reports
+  if [[ -z "${REGIONS}" ]]; then
+    run_happy_reports "chr20"
+  fi
 }
 
 main "$@"
