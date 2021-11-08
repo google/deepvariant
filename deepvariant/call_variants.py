@@ -347,29 +347,19 @@ def call_variants(examples_filename,
                        'should match, but the checkpoint has {} channels while '
                        'the examples have {}.'.format(
                            num_channels_in_checkpoint_model, example_shape[2]))
-    # The model checkpoint includes information on the number of channels but
-    # unfortunately not the width or height.
-    if example_shape[0] not in [100, 300]:
-      logging.warning('The height of the input image is not 100 (standard in '
-                      'DeepVariant) or 300 (standard in DeepTrio). '
-                      'Please double-check that the model is trained with the '
-                      'same parameters and version of DeepVariant as you '
-                      'generated the examples with. An error will not appear '
-                      'when these are mismatched because of how InceptionV3 '
-                      'works. Note that if you set --pileup_image_height in '
-                      'DeepVariant, then you must use a model trained with '
-                      'that same parameter.')
-
-    if example_shape[1] != 221:
-      logging.warning('The width of the input image is not 221 (standard in '
-                      'DeepVariant). '
-                      'Please double-check that the model is trained with the '
-                      'same parameters and version of DeepVariant as you '
-                      'generated the examples with. An error will not appear '
-                      'when these are mismatched because of how InceptionV3 '
-                      'works. Note that if you set --pileup_image_width in '
-                      'DeepVariant, then you must use a model trained with '
-                      'that same parameter.')
+    input_shape_file = checkpoint_path + '.input_shape'
+    if tf.io.gfile.exists(input_shape_file):
+      with tf.io.gfile.GFile(input_shape_file) as f:
+        model_input_shape = list(map(int, f.read().split()))
+        if len(model_input_shape) != 3:
+          raise ValueError(
+              f'The file {input_shape_file} should contain 3 integers')
+        if model_input_shape != example_shape:
+          raise ValueError('The shape of examples is not the same as the model '
+                           '*.input_shape file: '
+                           f'{example_shape} != {model_input_shape}')
+      logging.info('%s has the correct shape: %s.', input_shape_file,
+                   model_input_shape)
 
   # Check accelerator status.
   if execution_hardware not in _ALLOW_EXECUTION_HARDWARE:
