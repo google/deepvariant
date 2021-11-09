@@ -98,6 +98,7 @@ def decode_example(example):
 
 
 def setUpModule():
+  logging.set_verbosity(logging.FATAL)
   testdata.init()
 
 
