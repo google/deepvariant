@@ -454,3 +454,8 @@ pyclif_proto_library(
     name = "variants_pyclif",
     proto_lib = ":variants_proto",  # NO COPYBARA
 )
+
+pyclif_proto_library(
+    name = "cigar_pyclif",  # NO COPYBARA
+    proto_lib = ":cigar_proto",
+)
