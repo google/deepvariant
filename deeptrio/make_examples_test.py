@@ -348,7 +348,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         examples, list(tfrecord.read_tfrecords(golden_file)))
     # Pileup image should now have 8 channels.
     # Height should be 60 + 40 * 2 = 140.
-    self.assertEqual(decode_example(examples[0])['image/shape'], [140, 221, 8])
+    self.assertEqual(decode_example(examples[0])['image/shape'], [140, 199, 8])
 
   @parameterized.parameters(
       dict(select_types=None, expected_count=79),

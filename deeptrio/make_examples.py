@@ -250,8 +250,10 @@ def default_options(add_flags=True, flags_obj=None):
                                       os.path.basename(flags_obj.reads_parent2)
                                       if flags_obj.reads_parent2 else 'None')
     options.pic_options.sequencing_type = deepvariant_pb2.PileupImageOptions.TRIO
-    options.pic_options.height = dt_constants.PILEUP_DEFAULT_HEIGHT
-    options.pic_options.width = dt_constants.PILEUP_DEFAULT_WIDTH
+    if not options.pic_options.height:
+      options.pic_options.height = dt_constants.PILEUP_DEFAULT_HEIGHT
+    if not options.pic_options.width:
+      options.pic_options.width = dt_constants.PILEUP_DEFAULT_WIDTH
 
   return options
 

@@ -3415,7 +3415,7 @@ options {
     }
   }
   pic_options {
-    height: 300
+    height: 100
     width: 221
     reference_band_height: 5
     base_color_offset_a_and_g: 40
@@ -3599,13 +3599,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1265.6563333333334
+  cpu_frequency_mhz: 1309.4415
   total_memory_mb: 63910
-  wall_time_seconds: 2.075122117996216
-  cpu_user_time_seconds: 8.514291
-  cpu_system_time_seconds: 3.602821
+  wall_time_seconds: 2.0632779598236084
+  cpu_user_time_seconds: 8.041132
+  cpu_system_time_seconds: 3.486251
   memory_peak_rss_mb: 456
-  read_bytes: 98304
+  read_bytes: 24576
   write_bytes: 24576
 }
 stats {
