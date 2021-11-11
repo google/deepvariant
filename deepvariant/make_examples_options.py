@@ -214,7 +214,7 @@ flags.DEFINE_string(
     'class labels from. This is only set when labeler_algorithm is '
     'customized_classes_labeler.')
 flags.DEFINE_integer(
-    'logging_every_n_candidates', 100,
+    'logging_every_n_candidates', 2000,
     'Print out the log every n candidates. The smaller the number, the more '
     'frequent the logging information emits.')
 flags.DEFINE_bool('keep_duplicates', False, 'If True, keep duplicate reads.')

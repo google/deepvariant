@@ -65,9 +65,9 @@ _ALLOW_EXECUTION_HARDWARE = [
 _GL_PRECISION = 10
 
 # This number is estimated by the following logic:
-# CPU run is roughly 0.2 sec per 100.
-# 15000 examples will take about 30secs to print each line.
-_LOG_EVERY_N = 15000
+# For a sample with 10,000,000 examples, if we log every 50,000 examples,
+# there will be 200 lines per sample.
+_LOG_EVERY_N = 50000
 
 FLAGS = flags.FLAGS
 
