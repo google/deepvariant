@@ -34,7 +34,7 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 
 For more details, see:
-https://github.com/google/deepvariant/blob/r1.2/docs/deepvariant-quick-start.md
+https://github.com/google/deepvariant/blob/r1.3/docs/deepvariant-quick-start.md
 """
 
 import os
@@ -141,7 +141,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
-DEEP_VARIANT_VERSION = '1.2.0'
+DEEP_VARIANT_VERSION = '1.3.0'
 
 
 def _is_quoted(value):
@@ -198,7 +198,7 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
         raise ValueError(
             'The extra_args "{}" might have conflicts with other flags. '
             'See '
-            'https://github.com/google/deepvariant/blob/r1.2/docs/'
+            'https://github.com/google/deepvariant/blob/r1.3/docs/'
             'deepvariant-pacbio-model-case-study.md#clarification-'
             'of-the---use_hp_information-flag '
             'for an explanation, or report this issue on '
@@ -245,6 +245,7 @@ def make_examples_command(ref,
   conflict_args = None
   if FLAGS.model_type == 'PACBIO':
     special_args = {}
+    special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
@@ -355,7 +356,7 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.2/docs/'
+                         'https://github.com/google/deepvariant/blob/r1.3/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
                          'could-not-open'.format(FLAGS.customized_model))
     logging.info(
