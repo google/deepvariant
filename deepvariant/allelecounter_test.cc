@@ -43,6 +43,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -201,7 +202,7 @@ class AlleleCounterTest : public ::testing::Test {
   AlleleCount MakeAlleleCount(
       const nucleus::genomics::v1::Position& position, const string& ref_base,
       int32_t ref_supporting_read_count,
-      const std::unordered_map<std::string, Allele>& read_alleles) {
+      const absl::node_hash_map<std::string, Allele>& read_alleles) {
     AlleleCount allele_count;
     allele_count.mutable_position()->MergeFrom(position);
     allele_count.set_ref_base(ref_base);
@@ -262,15 +263,15 @@ TEST_F(AlleleCounterTest, TestSumAlleleCountsMultipleSamples) {
 
   std::vector<AlleleCount> allele_counts = {
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<std::string, Allele>(
+                      absl::node_hash_map<std::string, Allele>(
                           {{"parent1_read_1",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<std::string, Allele>(
+                      absl::node_hash_map<std::string, Allele>(
                           {{"child_read_2",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
-                      std::unordered_map<std::string, Allele>())};
+                      absl::node_hash_map<std::string, Allele>())};
 
   std::vector<Allele> allele_sum = SumAlleleCounts(allele_counts);
   EXPECT_THAT(allele_sum, UnorderedPointwise(EqualsProto(), expected_alleles));
@@ -281,15 +282,15 @@ TEST_F(AlleleCounterTest, TestSumAlleleCountsMultipleSamples) {
 TEST_F(AlleleCounterTest, TestTotalAlleleCounts) {
   std::vector<AlleleCount> allele_counts = {
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<std::string, Allele>(
+                      absl::node_hash_map<std::string, Allele>(
                           {{"parent1_read_1",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 2,
-                      std::unordered_map<std::string, Allele>(
+                      absl::node_hash_map<std::string, Allele>(
                           {{"child_read_2",
                             MakeAllele("T", AlleleType::SUBSTITUTION, 1)}})),
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
-                      std::unordered_map<std::string, Allele>())};
+                      absl::node_hash_map<std::string, Allele>())};
 
   EXPECT_EQ(TotalAlleleCounts(allele_counts), 9);
 }
