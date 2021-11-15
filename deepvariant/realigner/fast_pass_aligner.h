@@ -40,6 +40,7 @@
 
 #include "deepvariant/protos/realigner.pb.h"
 #include "deepvariant/realigner/ssw.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -216,7 +217,7 @@ void SetPositionsMap(size_t haplotype_size,
 void MergeCigarOp(const CigarOp& op, int read_len, std::list<CigarOp>* cigar);
 
 using KmerIndexType =
-    absl::node_hash_map<tensorflow::StringPiece, std::vector<KmerOccurrence>,
+    absl::flat_hash_map<tensorflow::StringPiece, std::vector<KmerOccurrence>,
                         tensorflow::StringPieceHasher>;
 
 // Align a set of reads to a target sequence.

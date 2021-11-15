@@ -39,6 +39,8 @@
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/node_hash_set.h"
 #include "absl/strings/ascii.h"
 #include "boost/graph/adjacency_list.hpp"
@@ -210,7 +212,7 @@ KBounds KMinMaxFromReference(const string_view ref,
 
   for (int k = options.min_k(); k <= bounds.max_k; k += options.step_k()) {
     bool has_cycle = false;
-    std::set<string_view> kmers;
+    absl::btree_set<string_view> kmers;
 
     for (int i = 0; i < ref.size() - k + 1; i++) {
       string_view kmer = ref.substr(i, k);
@@ -423,7 +425,7 @@ void DeBruijnGraph::Prune() {
   // Remove vertices not reachable forward from src or backward from sink.
   VertexIterator vbegin, vend;
   std::tie(vbegin, vend) = boost::vertices(g_);
-  absl::node_hash_set<Vertex> all_vertices(vbegin, vend);
+  absl::flat_hash_set<Vertex> all_vertices(vbegin, vend);
 
   std::set<Vertex> fwd_reachable_vertices, rev_reachable_vertices;
   fwd_reachable_vertices = VerticesReachableFrom(
@@ -431,7 +433,7 @@ void DeBruijnGraph::Prune() {
   rev_reachable_vertices = VerticesReachableFrom(
       sink_, boost::make_reverse_graph(g_), IndexMap());
 
-  absl::node_hash_set<Vertex> reachable_vertices;
+  absl::flat_hash_set<Vertex> reachable_vertices;
   std::set_intersection(
       fwd_reachable_vertices.begin(), fwd_reachable_vertices.end(),
       rev_reachable_vertices.begin(), rev_reachable_vertices.end(),
