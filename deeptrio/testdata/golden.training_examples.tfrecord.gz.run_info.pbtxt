@@ -3505,7 +3505,7 @@ options {
   use_ref_for_cram: true
   parse_sam_aux_fields: true
   hts_block_size: 134217728
-  logging_every_n_candidates: 100
+  logging_every_n_candidates: 2000
   main_sample_index: 1
   bam_fname: "HG001.chr20.10_10p1mb_sorted.bam|NA12891.chr20.10_10p1mb_sorted.bam|NA12892.chr20.10_10p1mb_sorted.bam"
   sample_options {
@@ -3599,13 +3599,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1309.4415
-  total_memory_mb: 63910
-  wall_time_seconds: 2.0632779598236084
-  cpu_user_time_seconds: 8.041132
-  cpu_system_time_seconds: 3.486251
-  memory_peak_rss_mb: 456
-  read_bytes: 24576
+  cpu_frequency_mhz: 1577.7164166666669
+  total_memory_mb: 63909
+  wall_time_seconds: 1.9769508838653564
+  cpu_user_time_seconds: 10.590837
+  cpu_system_time_seconds: 3.811403
+  memory_peak_rss_mb: 461
   write_bytes: 24576
 }
 stats {

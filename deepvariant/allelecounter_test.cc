@@ -33,6 +33,7 @@
 #include "deepvariant/allelecounter.h"
 
 #include <cstdint>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -46,10 +47,13 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 #include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -61,9 +65,11 @@ using nucleus::EqualsProto;
 using nucleus::GenomeReference;
 using nucleus::MakePosition;
 using nucleus::MakeRange;
-using nucleus::genomics::v1::LinearAlignment;
+using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::ContigInfo;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
+using nucleus::genomics::v1::ReferenceSequence;
 using tensorflow::strings::StrCat;
 using ::testing::Contains;
 using ::testing::Eq;
@@ -101,13 +107,26 @@ class AlleleCounterTest : public ::testing::Test {
 
   // Creates a new AlleleCount on specified chr from start to end.
   std::unique_ptr<AlleleCounter> MakeCounter(const string& chr,
-                                             const int64 start,
-                                             const int64 end) {
+                                             const int64_t start,
+                                             const int64_t end) {
     Range range = MakeRange(chr, start, end);
     // redacted
     // tensorflow/compiler/xla/ptr_util.h.
     return absl::make_unique<AlleleCounter>(ref_.get(), range,
                                             std::vector<int>(), options_);
+  }
+
+  // Creates a new AlleleCount with custom Reference and on specified chr from
+  // start to end.
+  std::unique_ptr<AlleleCounter> MakeCounter(
+      const nucleus::GenomeReference* ref,
+      const string& chr,
+      const int64_t start,
+      const int64_t end) {
+    Range range = MakeRange(chr, start, end);
+    // tensorflow/compiler/xla/ptr_util.h.
+    return absl::make_unique<AlleleCounter>(ref, range, std::vector<int>(),
+                                            options_);
   }
 
   // Add reads to allele_count and check that the resulting AlleleCounts are
@@ -614,7 +633,7 @@ TEST_F(AlleleCounterTest, TestSoftClips4) {
 }
 
 TEST_F(AlleleCounterTest, TestInsertionAtChrStart) {
-  const int64 chr_start = 0;
+  const int64_t chr_start = 0;
   for (const auto op : {"2S", "2I"}) {
     AddAndCheckReads(MakeRead(chr_, chr_start, "AAAC", {op, "2M"}),
                      {
@@ -629,8 +648,8 @@ TEST_F(AlleleCounterTest, TestAtChrEnd1) {
   // Our test are built to operate when start is 2 before the last base in the
   // genome on kChr. Load the reference and set chr_start and chr_end
   // appropriately.
-  const int64 chr_end = ref_->Contig(chr_).ValueOrDie()->n_bases();
-  const int64 chr_start = chr_end - 2;
+  const int64_t chr_end = ref_->Contig(chr_).ValueOrDie()->n_bases();
+  const int64_t chr_start = chr_end - 2;
 
   for (const auto op : {"2S", "2I"}) {
     auto type =
@@ -664,7 +683,7 @@ TEST_F(AlleleCounterTest, TestAtChrEnd1) {
 }
 
 TEST_F(AlleleCounterTest, TestDeletionAtChrStart) {
-  const int64 chr_start = 0;
+  const int64_t chr_start = 0;
   // Deletion at the start of the chrom.
   AddAndCheckReads(MakeRead(chr_, chr_start, "CA", {"2D", "2M"}),
                    {
@@ -1035,6 +1054,305 @@ TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_sample_three_reads) {
         alleles.alleles(),
         UnorderedPointwise(EqualsProto(), expected_alleles->second.alleles()));
   }
+}
+
+// Helper method to create a test sequence.
+void CreateTestSeq(
+    const string& name,
+    const int pos_in_fasta, const int range_start,
+    const int range_end, const string& bases,
+    std::vector<ContigInfo>* contigs,
+    std::vector<ReferenceSequence>* seqs) {
+  CHECK(pos_in_fasta >= 0 && pos_in_fasta < contigs->size());
+  ContigInfo* contig = &contigs->at(pos_in_fasta);
+  contig->set_name(name);
+  contig->set_pos_in_fasta(pos_in_fasta);
+  contig->set_n_bases(range_end - range_start);
+  ReferenceSequence* seq = &seqs->at(pos_in_fasta);
+  seq->mutable_region()->set_reference_name(name);
+  seq->mutable_region()->set_start(range_start);
+  seq->mutable_region()->set_end(range_end);
+  seq->set_bases(bases);
+}
+
+// Normal case of non-normalized DEL surrounded by REFs. Read has 12 bases
+// deletion in the middle. After normalization DEL has to be moved to the left.
+// REF preceding the DEL has to be reduced in length, REF following the DEL has
+// to be increased in length.
+TEST_F(AlleleCounterTest, NormalizeCigarDel) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 151,
+                "GTCAAAGGGTGTTGCATCTGCTTAAACTCACACATCTCGAAGGTTGCTGTGAAGGTAAACAG"
+                "AAAGCAACGTAAGGCACGGATGTTGATTCGTGTGTCGTGTGTGTGTGTGTGTGTGTGTGTGT"
+                "GCGAAATTTGTACAGCAGTACCTGCAT", &contigs, &seqs);
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 151);
+
+  // Read is made by taking substring of a reference and removing 12 bases to
+  // create a deletion. Deletion is deliberately created non left aligned.
+  auto read = MakeRead(
+      "chr1", 82, "TGTTGATTCGTGTGTCGTGTGTGTGTGTGTGCGAAATTTGTACAGCAGTACCTGCAT",
+      {"31M", "12D", "26M"});
+
+  // After shifting the deletion to the left we should get the following cigar.
+  // Note that extra REF is added following the deletion to fill the sampe after
+  // the deletion.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"16M", "12D", "41M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), 0 + 82, norm_cigar,
+                                read_shift);
+
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+// Normal case of non-normalized INS surrounded by REFs. Read has 2 bases
+// insertion in the middle. After normalization INS has to be moved to the left.
+// REF preceding the INS has to be reduced in length, REF following the INS has
+// to be increased in length.
+TEST_F(AlleleCounterTest, NormalizeCigarIns) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 151,
+                "GTCAAAGGGTGTTGCATCTGCTTAAACTCACACATCTCGAAGGTTGCTGTGAAGGTAAACAG"
+                "AAAGCAACGTAAGGCACGGATGTTGATTCGTGTGTCGTGTGTGTGTGTGTGTGTGTGTGTGT"
+                "GCGAAATTTGTACAGCAGTACCTGCAT", &contigs, &seqs);
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 151);
+
+  // Read is made by taking substring of a reference and removing 12 bases to
+  // create a deletion. Deletion is deliberately created non left aligned.
+  auto read = MakeRead(
+      "chr1", 82,
+      "TGTTGATTCGTGTGTGTCGTGTGTGTGTGTGTGTGTGTGTGTGTGCGAAATTTGTACAGCAGTACCTGCAT",
+      {"13M", "2I", "56M"});
+
+  // After shifting the deletion to the left we should get the following cigar.
+  // Note that extra REF is added following the deletion to fill the sampe after
+  // the deletion.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"9M", "2I", "60M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), 0 + 82, norm_cigar,
+                                read_shift);
+
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+TEST_F(AlleleCounterTest, NormalizeCigarInsDel) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 19, "AGTGGGGGGGGGATGGGGG", &contigs, &seqs);
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 19);
+
+  // Read is made by taking substring of a reference and removing 12 bases to
+  // create a deletion. Deletion is deliberately created non left aligned.
+  auto read = MakeRead("chr1", 0, "AGTGGGGGGGGGGATGGGG",
+                       {"7M", "1I", "10M", "1D", "1M"});
+
+  // After shifting the deletion to the left we should get the following cigar.
+  // Note that extra REF is added following the deletion to fill the sampe after
+  // the deletion.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"3M", "1I", "11M", "1D", "4M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), 0, norm_cigar,
+                                read_shift);
+
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+TEST_F(AlleleCounterTest, NormalizeCigarInsertAtTheEnd) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 19, "AGTGGGGGGGGGATGGGGG", &contigs, &seqs);
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 19);
+
+  // Read is made by taking substring of a reference and inserting "GG" at the
+  // end. INS is deliberately created non left aligned.
+  auto read = MakeRead("chr1", 0, "AGTGGGGGGGGGGG", {"12M", "2I"});
+
+  // After shifting the INS to the left we should get the following cigar.
+  // Note that extra REF is added following the INS to fill the cigar after
+  // after the INS.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"3M", "2I", "9M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), 0, norm_cigar,
+                                read_shift);
+
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+TEST_F(AlleleCounterTest, NormalizeCigarTwoDelsMerged) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 26,
+                "ATAGACAGATAGATAGATCGATAGAT", &contigs, &seqs);  // AGAT-repeat
+                                                                 // separated by
+                                                                 // "C"
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 22);
+
+  // Read is made by taking substring of a reference and removing 12 bases to
+  // create a deletion. Deletion is deliberately created non left aligned.
+  int interval_offset = 5;
+  auto read = MakeRead("chr1", interval_offset, "CAGATAGA",
+                       // Ref:  CAGA TAGATAGAT C GAT AGA
+                       // Read: CAGA _________ T ___ AGA. This is an example
+                       // taken from HG003 chr1:8,089,255
+                       {"4M", "9D", "1M", "3D", "3M"});
+
+  // Most right DEL is shifted to the left and become ajacent to the DEL on the
+  // left. Two DELs should be merged. The resulting DEL should be normalized
+  // again.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"2M", "12D", "6M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), interval_offset,
+                                norm_cigar, read_shift);
+
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+TEST_F(AlleleCounterTest, NormalizeCigarDelInsMerged) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 34,
+      "ATGTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT", &contigs, &seqs);  // sequence
+                                                             // of TTCC-repeat.
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 34);
+
+  // Read is made by taking substring of a reference and removing 12 bases to
+  // create a deletion. Deletion is deliberately created non left aligned.
+  int interval_offset = 4;
+  auto read =
+      MakeRead("chr1", interval_offset, "TCCTTCCTTCCTCCTTCCTTCCTTCCTTCCTTCCA",
+               // Ref:  TCCTTCCTTCC T TCCT ________ TCCTTCCTTCCA
+               // Read: TCCTTCCTTCC _ TCCT TCCTTCCT TCCTTCCTTCCA.
+               {"11M", "1D", "4M", "8I", "12M"});
+
+  // Most right INS is shifted to the left and become ajacent to the DEL
+  // 1D and 8I should be merged into 1M and 7I. The resulting 7 bases INS is
+  // shifted again to position 4.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"4M", "7I", "24M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), interval_offset,
+                                norm_cigar, read_shift);
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedToEdge) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 34,
+      "ATGTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT", &contigs, &seqs);  // sequence
+                                                              // of TTCC-repeats
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 34);
+
+  // Read is made by taking substring of a reference and inserting 4 bases
+  // at 8th position.
+  int interval_offset = 8;
+  auto read = MakeRead("chr1", interval_offset,
+                       "TCCTTCCTTCCTTCCTTCCTTCCTTCCACT", {"4M", "4I", "22M"});
+
+  // INS at the beginning has to be replaced to M and position is shifted by 3.
+  std::vector<CigarUnit> expected_cigar = nucleus::MakeCigar({"30M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), interval_offset,
+                                norm_cigar, read_shift);
+
+  EXPECT_EQ(read_shift, -4);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
 }
 
 }  // namespace deepvariant

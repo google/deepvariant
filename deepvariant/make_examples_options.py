@@ -289,6 +289,8 @@ flags.DEFINE_bool(
     'If True, allele counter keeps track of ref supporting reads.'
     'By default allele counter keeps a simple count of number of reads '
     'supporting ref.')
+flags.DEFINE_bool('normalize_reads', False,
+                  'If True, allele counter left align INDELs for each read.')
 
 
 def shared_flags_to_options(
@@ -310,7 +312,8 @@ def shared_flags_to_options(
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
       partition_size=flags_obj.partition_size,
       read_requirements=read_reqs,
-      track_ref_reads=flags_obj.track_ref_reads)
+      track_ref_reads=flags_obj.track_ref_reads,
+      normalize_reads=flags_obj.normalize_reads)
 
   options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,

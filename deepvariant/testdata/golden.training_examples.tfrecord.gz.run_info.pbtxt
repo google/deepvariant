@@ -3537,7 +3537,7 @@ labeling_metrics {
   n_truth_variant_alleles: 48
   n_candidate_variant_sites: 49
   n_candidate_variant_alleles: 49
-  n_non_confident_candidate_variant_sites: 29
+  n_non_confident_candidate_variant_sites: 28
   n_true_positive_sites: 48
   n_true_positive_alleles: 84
   n_false_positive_sites: 1
@@ -3549,13 +3549,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1431.9502499999999
-  total_memory_mb: 63910
-  wall_time_seconds: 1.0100834369659424
-  cpu_user_time_seconds: 8.339033
-  cpu_system_time_seconds: 3.653136
-  memory_peak_rss_mb: 448
-  read_bytes: 3530752
+  cpu_frequency_mhz: 1200.9808333333333
+  total_memory_mb: 63909
+  wall_time_seconds: 0.9029791355133057
+  cpu_user_time_seconds: 9.522786
+  cpu_system_time_seconds: 1.5001639999999998
+  memory_peak_rss_mb: 436
   write_bytes: 20480
 }
 stats {

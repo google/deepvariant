@@ -35,6 +35,11 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_ALLELECOUNTER_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_ALLELECOUNTER_H_
 
+#ifndef FRIEND_TEST
+#define FRIEND_TEST(test_case_name, test_name)\
+friend class test_case_name##_##test_name##_Test
+#endif
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -52,7 +57,6 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::int64;
 using tensorflow::string;
 
 // Summarizes the counts of all of the distinct alleles present in allele_count.
@@ -87,7 +91,7 @@ int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
                       bool include_low_quality = false);
 
 // Binary search for allele index by position.
-int AlleleIndex(const std::vector<AlleleCount>& allele_counts, int64 pos);
+int AlleleIndex(const std::vector<AlleleCount>& allele_counts, int64_t pos);
 
 // Represents an Allele observed in a read at a specific position in our
 // interval. Supports the concept that the site should be skipped but still
@@ -240,30 +244,76 @@ class AlleleCounter {
   // The GenomeReference must be available throughout the lifetime of this
   // AlleleCounter object.
   AlleleCounter(const nucleus::GenomeReference* const ref,
-                const ::nucleus::genomics::v1::Range& range,
+                const nucleus::genomics::v1::Range& range,
                 const std::vector<int>& candidate_positions,
                 const AlleleCounterOptions& options);
 
-  // Adds the alleles from read to our AlleleCounts.
-  void Add(const ::nucleus::genomics::v1::Read& read, const string& sample);
+  // An alternative constructor that allows to use a wider reference region for
+  // allele counter. This is needed for read normalization for those reads that
+  // only partially overlap allele counter region.
+  AlleleCounter(const nucleus::GenomeReference* const ref,
+                const nucleus::genomics::v1::Range& range,
+                const nucleus::genomics::v1::Range& full_range,
+                const std::vector<int>& candidate_positions,
+                const AlleleCounterOptions& options);
+
+  // Adds the alleles from read to our AlleleCounts. This method is also called
+  // by NormalizeAndAdd. In that case allele counts are created using a
+  // normalized cigar and update read alignment position passed as an optional
+  // parameter.
+  void Add(const nucleus::genomics::v1::Read& read, const string& sample,
+           const std::vector<nucleus::genomics::v1::CigarUnit>* cigar_to_use =
+               nullptr,
+           int read_shift = 0);
+
+  // Wrapper around Add() that normalize the input read first and then calls
+  // Add().
+  void NormalizeAndAdd(
+      const nucleus::genomics::v1::Read& read, const string& sample,
+      std::unique_ptr<std::vector<nucleus::genomics::v1::CigarUnit>>&
+          norm_cigar,
+      int& read_shift);
+
+  // Python wrapper around NormalizeAndAdd. It allows to avoid serialization of
+  // protos when calling from Python.
+  std::unique_ptr<std::vector<nucleus::genomics::v1::CigarUnit>>
+  NormalizeAndAddPython(const nucleus::ConstProtoPtr<
+                            const nucleus::genomics::v1::Read>& wrapped,
+                        const string& sample, int* read_shift) {
+    auto norm_cigar =
+        std::make_unique<std::vector<nucleus::genomics::v1::CigarUnit>>(
+            std::vector<nucleus::genomics::v1::CigarUnit>());
+    NormalizeAndAdd(*(wrapped.p_), sample, norm_cigar, *read_shift);
+    return norm_cigar;
+  }
 
   // Simple wrapper around Add() that allows us to efficiently pass large
   // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and
   // calls Add(read).
   void AddPython(const nucleus::ConstProtoPtr<
-                     const ::nucleus::genomics::v1::Read>& wrapped,
+                     const nucleus::genomics::v1::Read>& wrapped,
                  const string& sample) {
-    Add(*(wrapped.p_), sample);
+    Add(*(wrapped.p_), sample, nullptr);
   }
 
   // Gets the options in use by this AlleleCounter
   const AlleleCounterOptions& Options() const { return options_; }
 
   // Gets the interval we are counting alleles over.
-  const ::nucleus::genomics::v1::Range& Interval() const { return interval_; }
+  const nucleus::genomics::v1::Range& Interval() const { return interval_; }
+
+  // Gets the interval overlapping all the reads.
+  const nucleus::genomics::v1::Range& ReadsInterval() const {
+    return reads_interval_;
+  }
 
   // Returns the number of basepairs in our interval.
-  int64 IntervalLength() const { return interval_.end() - interval_.start(); }
+  int64_t IntervalLength() const { return interval_.end() - interval_.start(); }
+
+  // Return the number of basepairs of the interval overlapping all the reads.
+  int64_t ReadsIntervalLength() const {
+    return reads_interval_.end() - reads_interval_.start();
+  }
 
   // Gets the completed AlleleCounts over this counter's interval.
   //
@@ -287,9 +337,12 @@ class AlleleCounter {
 
   // Constructs a unique string key for this read. The key is the concatenation
   // of fragment_name, "/", and read_number.
-  string ReadKey(const ::nucleus::genomics::v1::Read& read);
+  string ReadKey(const nucleus::genomics::v1::Read& read);
 
  private:
+  // Initialize allele counter.
+  void Init();
+
   // Helper function to get the reference bases between offsets rel_start
   // (inclusive) and rel_end (exclusive). The offsets are both relative to our
   // interval, so rel_start = 0 means the first base in our interval.  Because
@@ -297,20 +350,25 @@ class AlleleCounter {
   // negative (gets bases before the start of the interval) or offsets that are
   // longer than the interval. Will return the empty string if the actual
   // genomic coordinates implied by the offsets aren't all on the chromosome.
-  string RefBases(int64 rel_start, int64 len);
+  string RefBases(int64_t rel_start, int64_t len);
 
   // Returns True if ref_offset (where 0 indicates the first position in the
   // interval, which could be base 1234 in genomic coordinates, for example), is
   // within our interval. This means that ref_offset >= 0 and ref_offset <
   // IntervalLength().
   bool IsValidRefOffset(int ref_offset) {
-    return ref_offset >= 0 && ref_offset < IntervalLength();
+    return ref_offset >= 0 && ref_offset < ReadsIntervalLength();
+  }
+
+  // Returns True if interval_offset is within our allele counter interval.
+  bool IsValidIntervalOffset(int interval_offset) {
+    return interval_offset >= 0 && interval_offset < IntervalLength();
   }
 
   // Gets the base before read_offset in read, or if that would be before the
   // start of the read (i.e., read_offset == 0) then return the previous base on
   // the reference genome (at interval_offset - 1).
-  string GetPrevBase(const ::nucleus::genomics::v1::Read& read, int read_offset,
+  string GetPrevBase(const nucleus::genomics::v1::Read& read, int read_offset,
                      int interval_offset);
 
   // Creates a ReadAllele for an indel (type based on cigar) from read starting
@@ -321,13 +379,41 @@ class AlleleCounter {
   // implied allele isn't valid for some reason (e.g., bases are too low
   // quality).
   ReadAllele MakeIndelReadAllele(
-      const ::nucleus::genomics::v1::Read& read, int interval_offset,
-      int read_offset, const ::nucleus::genomics::v1::CigarUnit& cigar);
+      const nucleus::genomics::v1::Read& read, int interval_offset,
+      int ref_offset, int read_offset,
+      const nucleus::genomics::v1::CigarUnit& cigar);
 
   // Adds the ReadAlleles in to_add to our AlleleCounts.
-  void AddReadAlleles(const ::nucleus::genomics::v1::Read& read,
+  void AddReadAlleles(const nucleus::genomics::v1::Read& read,
                       const string& sample,
                       const std::vector<ReadAllele>& to_add);
+
+  // Nomralize cigar by shifting INDELs in the middle of a repeat all the way
+  // to the left. As a result of shifting two INDELs may become merged. Merged
+  // INDEL may become non-normalized so the process is repeated up to 10 times.
+  // If INDEL is shifted all the way to the beginning of the read then this
+  // INDEL is removed and read alignment position has to be shifted.
+  bool NormalizeCigar(const absl::string_view read_seq, int interval_offset,
+                      std::vector<nucleus::genomics::v1::CigarUnit>& cigar,
+                      int& read_shift) const;
+
+  // Helper function used in NormalizeCigar function. Returns true if deletion
+  // operation can be shifted left preserving the alignment.
+  bool CanDelBeShifted(
+      const absl::string_view read_seq,
+      std::vector<nucleus::genomics::v1::CigarUnit>::const_iterator cigar_elt,
+      int read_offset,
+      int interval_offset,
+      int op_len) const;
+
+  // Helper function used in NormalizeCigar function. Returns true if insertion
+  // operation can be shifted left preserving the alignment.
+  bool CanInsBeShifted(
+      const absl::string_view read_seq,
+      std::vector<nucleus::genomics::v1::CigarUnit>::const_iterator cigar_elt,
+      int read_offset,
+      int interval_offset,
+      int op_len) const;
 
   // Our GenomeReference, which we use to get information about the reference
   // bases in our interval.
@@ -336,7 +422,14 @@ class AlleleCounter {
   // The interval chr from start (0-based, inclusive) to end (0-based,
   // exclusive) describing where we are counting on the genome. We will produce
   // one AlleleCount for each base in interval, from start to end (exclusive).
-  const ::nucleus::genomics::v1::Range interval_;
+  const nucleus::genomics::v1::Range interval_;
+
+  // The interval chr from start (0-based, inclusive) to end (0-based,
+  // exclusive) of the available ref bases. By default this interval is equal to
+  // to the interval_. If read normalization is needed then reads_interval_ may
+  // be an etentsion of interval_. reads_interval_ spans from the first position
+  // of the very first read to the last position of the last read.
+  const nucleus::genomics::v1::Range reads_interval_;
 
   // Vector of potential candidate positions. Ref alleles are stored only for
   // positions found in this vector. This functionality is optional and
@@ -354,6 +447,15 @@ class AlleleCounter {
 
   // The reference bases covering our interval;
   const string ref_bases_;
+
+  // Following tests call protected method NormalizeCigar.
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarDel);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarIns);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsDel);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsertAtTheEnd);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarTwoDelsMerged);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarDelInsMerged);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsShiftedToEdge);
 };
 
 }  // namespace deepvariant

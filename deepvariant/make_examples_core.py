@@ -60,6 +60,7 @@ from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
+from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
@@ -700,6 +701,35 @@ def filter_candidates(candidates, select_variant_types):
         break
 
 
+class DiagnosticLogger(object):
+  """Writes diagnostic information about the assembler."""
+
+  def __init__(self,
+               output_root,
+               normalized_reads_filename='normalized_reads.bam'):
+    self.normalized_reads_filename = normalized_reads_filename
+    self.output_root = output_root
+
+  def _root_join(self, path, makedirs=True):
+    fullpath = os.path.join(self.output_root, path)
+    subdir = os.path.dirname(fullpath)
+    if makedirs and subdir:
+      tf.io.gfile.makedirs(subdir)
+    return fullpath
+
+  def _file_for_region(self, region, basename):
+    """Returns the path to a file in a region-specific subdirectory."""
+    return self._root_join(os.path.join(ranges.to_literal(region), basename))
+
+  def log_realigned_reads(self, region, reads, shared_header=None):
+    """Logs, if enabled, the realigned reads for region."""
+    path = self._file_for_region(region, self.normalized_reads_filename)
+    logging.warning('writing %d normalized reads to %s', len(reads), path)
+    with sam.SamWriter(path, header=shared_header) as writer:
+      for read in reads:
+        writer.write(read)
+
+
 class RegionProcessor(object):
   """Creates DeepVariant example protos for a single region on the genome.
 
@@ -741,6 +771,12 @@ class RegionProcessor(object):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
                                        candidate_positions,
                                        self.options.allele_counter_options)
+
+  def _make_allele_counter_for_read_overlap_region(self, region, full_region,
+                                                   candidate_positions):
+    return allelecounter.AlleleCounter.Default(
+        self.ref_reader.c_reader, region, full_region, candidate_positions,
+        self.options.allele_counter_options)
 
   def _encode_tensor(self, image_tensor):
     return image_tensor.tostring(), image_tensor.shape, 'raw'
@@ -925,6 +961,7 @@ class RegionProcessor(object):
     runtimes['num reads'] = 0
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
+        # Realigner is called in region_reads()
         reads = self.region_reads(
             region=region,
             sam_readers=sample.sam_readers,
@@ -1114,11 +1151,44 @@ class RegionProcessor(object):
 
     for sample in self.samples:
       if sample.options.reads_filenames:
+        if self.options.allele_counter_options.normalize_reads:
+          reads_start = region.start
+          reads_end = region.end
+          for read in sample.reads:
+            read_last_pos = min(
+                self.ref_reader.contig(region.reference_name).n_bases - 1,
+                read.alignment.position.position + len(read.aligned_sequence))
+            if read.alignment.position.position < reads_start:
+              reads_start = read.alignment.position.position
+            if read_last_pos > reads_end:
+              reads_end = read_last_pos
+          full_range = range_pb2.Range(
+              reference_name=region.reference_name,
+              start=reads_start,
+              end=reads_end)
+          sample.reads = sample.in_memory_sam_reader.query(region)
 
-        sample.allele_counter = self._make_allele_counter_for_region(
-            region, candidate_positions)
+          sample.allele_counter = self._make_allele_counter_for_read_overlap_region(
+              region, full_range, candidate_positions)
+        else:
+          sample.allele_counter = self._make_allele_counter_for_region(
+              region, candidate_positions)
+
         for read in sample.reads:
-          sample.allele_counter.add(read, sample.options.name)
+          if self.options.allele_counter_options.normalize_reads:
+            cigar, read_shift = sample.allele_counter.normalize_and_add(
+                read, sample.options.name)
+            if cigar:
+              if read_shift != 0:
+                read.alignment.position.position += read_shift
+              del read.alignment.cigar[:]
+              for el in cigar:
+                read.alignment.cigar.add(
+                    operation=el.operation,
+                    operation_length=el.operation_length)
+          else:
+            sample.allele_counter.add(read, sample.options.name)
+
         allele_counters[sample.options.name] = sample.allele_counter
 
     candidates = {}

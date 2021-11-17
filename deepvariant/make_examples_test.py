@@ -515,12 +515,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       self.assertGreater(int(one_row[7]), 0, msg='num examples > 0')
 
   @parameterized.parameters(
-      dict(select_types=None, expected_count=78),
-      dict(select_types='all', expected_count=78),
-      dict(select_types='snps', expected_count=64),
+      dict(select_types=None, expected_count=77),
+      dict(select_types='all', expected_count=77),
+      dict(select_types='snps', expected_count=62),
       dict(select_types='indels', expected_count=11),
-      dict(select_types='snps indels', expected_count=75),
-      dict(select_types='multi-allelics', expected_count=3),
+      dict(select_types='snps indels', expected_count=73),
+      dict(select_types='multi-allelics', expected_count=4),
   )
   @flagsaver.flagsaver
   def test_make_examples_with_variant_selection(self, select_types,

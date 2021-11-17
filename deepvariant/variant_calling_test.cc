@@ -63,7 +63,7 @@ using ::testing::UnorderedElementsAre;
 
 constexpr char kSampleName[] = "MySampleName";
 constexpr char kChr[] = "chr1";
-constexpr int64 kStart = 10;
+constexpr int64_t kStart = 10;
 
 AlleleCount MakeAlleleCount(const absl::string_view chr_name, int start,
                             const absl::string_view ref_base,
@@ -122,7 +122,7 @@ VariantCallerOptions MakeOptions(
 
 Variant MakeExpectedVariant(const absl::string_view ref,
                             const std::vector<absl::string_view>& alts,
-                            const int64 start = kStart) {
+                            const int64_t start = kStart) {
   Variant variant;
   variant.set_reference_name(kChr);
   variant.set_start(start);

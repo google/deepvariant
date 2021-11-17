@@ -15,6 +15,7 @@ py_clif_cc(
     pyclif_deps = [
         "//third_party/nucleus/protos:reads_pyclif",
         "//third_party/nucleus/protos:range_pyclif",
+        "//third_party/nucleus/protos:cigar_pyclif",
         "//deepvariant/protos:deepvariant_pyclif",
     ],
     deps = [

@@ -304,6 +304,9 @@ message AlleleCounterOptions {
   // allele_counter stores reads IDs of ref reads, otherwise just a counter is
   // used for ref reads. Default value is False.
   bool track_ref_reads = 3;
+
+  // Option to left align INDELs for each read.
+  bool normalize_reads = 4;
 }
 
 // Variant call for a single site, in a pseudo-biallelic manner. This is an
