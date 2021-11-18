@@ -287,12 +287,22 @@ def realigner_config(flags_obj):
       output_root=flags_obj.realigner_diagnostics,
       emit_realigned_reads=flags_obj.emit_realigned_reads)
 
+  # The normalize_reads flag could came from the `flags_obj` arg, passed in
+  # from make_examples_options.py. It is already part of AlleleCounterOptions in
+  # MakeExamplesOptions. Here, we need to set it in RealignerOptions as well
+  # because an if statement in fast_pass_aligner.cc needs it to decide whether
+  # to run a specific logic.
+  # This is not ideal. If there's a way to improve this, please do.
+  normalize_reads = False
+  if 'normalize_reads' in flags_obj:
+    normalize_reads = flags_obj.normalize_reads
   return realigner_pb2.RealignerOptions(
       ws_config=ws_config,
       dbg_config=dbg_config,
       aln_config=aln_config,
       diagnostics=diagnostics,
-      split_skip_reads=flags_obj.split_skip_reads)
+      split_skip_reads=flags_obj.split_skip_reads,
+      normalize_reads=normalize_reads)
 
 
 class DiagnosticLogger(object):
@@ -612,6 +622,7 @@ class Realigner(object):
     self.config.aln_config.read_size = len(
         assembled_region.reads[0].aligned_sequence)
     self.config.aln_config.force_alignment = False
+    fast_pass_realigner.set_normalize_reads(self.config.normalize_reads)
     fast_pass_realigner.set_options(self.config.aln_config)
     fast_pass_realigner.set_reference(ref_seq)
     fast_pass_realigner.set_ref_start(contig, ref_start)

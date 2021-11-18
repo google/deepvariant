@@ -547,6 +547,22 @@ void FastPassAligner::RealignReadsToReference(
           read_index, bestHaplotypeAlignments.read_alignment_scores[read_index],
           bestHaplotypeAlignments.cigar_ops, &readToRefCigarOps);
 
+      // The following block is only executed if normalize_reads flag is not
+      // set. This is because if --normalize_reads is true, they will be
+      // normalize later on.
+      if (!normalize_reads_) {
+        // If read is not normalized (any cigar operation can be shifter left)
+        // we discard the alignment.
+        if (!IsAlignmentNormalized(
+            readToRefCigarOps,
+            bestHaplotypeAlignments.ref_pos
+                + read_to_hap_pos
+                + hap_to_ref_position,
+            reads_[read_index])) {
+            readToRefCigarOps.clear();
+        }
+      }
+
       for (auto& op : readToRefCigarOps) {
         CigarUnit* cu = new_alignment->add_cigar();
         cu->set_operation(op.operation);

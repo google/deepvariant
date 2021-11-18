@@ -236,4 +236,9 @@ message RealignerOptions {
 
   // Split reads with large SKIP regions (i.e. RNA-seq)
   bool split_skip_reads = 5;
+
+  // This value should be the same as the one in AlleleCounterOptions, both come
+  // from --normalize_reads flag.
+  // Realigner might act differently based on whether normalize_reads is set.
+  bool normalize_reads = 6;
 }

@@ -3504,7 +3504,7 @@ options {
   use_ref_for_cram: true
   parse_sam_aux_fields: true
   hts_block_size: 134217728
-  logging_every_n_candidates: 100
+  logging_every_n_candidates: 2000
   bam_fname: "NA12878_S1.chr20.10_10p1mb.bam"
   sample_options {
     reads_filenames: "deepvariant/testdata/input/NA12878_S1.chr20.10_10p1mb.bam"
@@ -3537,7 +3537,7 @@ labeling_metrics {
   n_truth_variant_alleles: 48
   n_candidate_variant_sites: 49
   n_candidate_variant_alleles: 49
-  n_non_confident_candidate_variant_sites: 28
+  n_non_confident_candidate_variant_sites: 29
   n_true_positive_sites: 48
   n_true_positive_alleles: 84
   n_false_positive_sites: 1
@@ -3549,12 +3549,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 1200.9808333333333
-  total_memory_mb: 63909
-  wall_time_seconds: 0.9029791355133057
-  cpu_user_time_seconds: 9.522786
-  cpu_system_time_seconds: 1.5001639999999998
-  memory_peak_rss_mb: 436
+  cpu_frequency_mhz: 1915.98975
+  total_memory_mb: 63910
+  wall_time_seconds: 1.2794020175933838
+  cpu_user_time_seconds: 7.140973
+  cpu_system_time_seconds: 3.368535
+  memory_peak_rss_mb: 442
   write_bytes: 20480
 }
 stats {
