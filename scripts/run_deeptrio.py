@@ -176,7 +176,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
-DEEP_TRIO_VERSION = '1.2.0'
+DEEP_TRIO_VERSION = '1.3.0'
 GLNEXUS_VERSION = 'v1.2.7'
 
 DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
@@ -271,7 +271,7 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
         raise ValueError(
             'The extra_args "{}" might have conflicts with other flags. '
             'See '
-            'https://github.com/google/deepvariant/blob/r1.2/docs/'
+            'https://github.com/google/deepvariant/blob/r1.3/docs/'
             'deepvariant-pacbio-model-case-study.md#clarification-'
             'of-the---use_hp_information-flag '
             'for an explanation, or report this issue on '
@@ -336,6 +336,7 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
 
   conflict_args = None
   if FLAGS.model_type == 'PACBIO':
+    special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'

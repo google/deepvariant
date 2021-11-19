@@ -49,12 +49,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~690m
-call_variants for HG002          | ~300m
-call_variants for HG003          | ~300m
-call_variants for HG004          | ~300m
-postprocess_variants (parallel)  | ~70m
-total                            | ~1660m = ~27.67 hours
+make_examples                    | ~775m
+call_variants for HG002          | ~290m
+call_variants for HG003          | ~290m
+call_variants for HG004          | ~290m
+postprocess_variants (parallel)  | ~90m
+total                            | ~1735m = ~28.92 hours
 
 ### Accuracy
 
@@ -65,22 +65,22 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11229    | 27       | 64       | 0.997601      | 0.994562         | 0.996079        |
-| SNP   | 71270    | 63       | 25       | 0.999117      | 0.99965          | 0.999383        |
+| INDEL | 11233    | 23       | 62       | 0.997957      | 0.994734         | 0.996343        |
+| SNP   | 71272    | 61       | 22       | 0.999145      | 0.999692         | 0.999418        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10598    | 30       | 57       | 0.997177      | 0.994887         | 0.996031        |
-| SNP   | 70144    | 22       | 20       | 0.999686      | 0.999715         | 0.999701        |
+| INDEL | 10595    | 33       | 54       | 0.996895      | 0.995155         | 0.996024        |
+| SNP   | 70144    | 22       | 19       | 0.999686      | 0.999729         | 0.999708        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10960    | 40       | 57       | 0.996364      | 0.995056         | 0.995709        |
-| SNP   | 71587    | 72       | 35       | 0.998995      | 0.999512         | 0.999253        |
+| INDEL | 10967    | 33       | 53       | 0.997         | 0.995403         | 0.996201        |
+| SNP   | 71594    | 65       | 38       | 0.999093      | 0.99947          | 0.999281        |
 
 ## Whole Exome Sequencing (Illumina)
 

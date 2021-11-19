@@ -194,6 +194,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
+       '--pileup_image_width "199" '
        '--norealign_reads '
        '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.12" '))
@@ -246,6 +247,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
+       '--pileup_image_width "199" '
        '--norealign_reads '
        '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.12" '))
@@ -286,6 +288,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
+       '--pileup_image_width "199" '
        '--norealign_reads '
        '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.12" ', None),
@@ -296,6 +299,7 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--noparse_sam_aux_fields '
        '--pileup_image_height_child "60" '
        '--pileup_image_height_parent "40" '
+       '--pileup_image_width "199" '
        '--norealign_reads '
        '--nosort_by_haplotypes '
        '--vsc_min_fraction_indels "0.03" ',
