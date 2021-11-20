@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~95m
-call_variants                    | ~165m
-postprocess_variants (with gVCF) | ~70m
-total                            | ~330m = ~5.5 hours
+make_examples                    | ~107m
+call_variants                    | ~184m
+postprocess_variants (with gVCF) | ~77m
+total                            | ~368m = ~6.13 hours
 
 ### Accuracy
 
