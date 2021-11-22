@@ -943,7 +943,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
     // This can happen if read was aligned to hyplotype partially. In this case
     // The tail (or head) of read to haplotype alignment would be soft-clipped.
     if (!read_to_haplotype_cigar_ops.empty() &&
-        haplotype_to_ref_cigar_ops.empty()) {
+        haplotype_to_ref_cigar_ops.empty() && cur_hap_to_ref_op.length == 0) {
       MergeCigarOp(read_to_haplotype_cigar_ops.front(), read_len,
                    read_to_ref_cigar_ops);
       read_to_haplotype_cigar_ops.pop_front();
