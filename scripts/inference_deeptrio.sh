@@ -525,7 +525,7 @@ function setup_args() {
     run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
     run gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
     run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
-    run gsutil cp "${CUSTOMIZED_MODEL}".input_shape "${INPUT_DIR}/model.ckpt.input_shape"
+    run "gsutil cp ${CUSTOMIZED_MODEL}.input_shape ${INPUT_DIR}/model.ckpt.input_shape || echo 'skip input_shape'"
     extra_args+=( --customized_model "/input/model.ckpt")
     # redacted
     # echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
