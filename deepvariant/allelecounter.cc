@@ -511,9 +511,14 @@ bool IsOperationMatch(const nucleus::genomics::v1::CigarUnit& op) {
 // DEL is removed and alignment position is shifted to the right.
 // INS is converted into a REF and alignment position is shifted to the left.
 int HandleHeadingIndel(
+    std::vector<nucleus::genomics::v1::CigarUnit>::iterator it,
     std::vector<nucleus::genomics::v1::CigarUnit>& norm_cigar) {
   int read_alignment_shift = 0;
-  auto it = norm_cigar.begin();
+  // it must be a first operation or the first op following soft clip.
+  CHECK(it == norm_cigar.begin() ||
+        (!norm_cigar.empty() &&
+         norm_cigar.begin()->operation() == CigarUnit::CLIP_SOFT &&
+         it == norm_cigar.begin() + 1));
   if (it->operation() == CigarUnit::DELETE) {
     read_alignment_shift = it->operation_length();
     norm_cigar.erase(it);
@@ -523,7 +528,6 @@ int HandleHeadingIndel(
   }
   return read_alignment_shift;
 }
-
 // Shift cigar operation according to the shift parameter. Only INDELs are
 // shifted and only to the left. It is expected that operation to the left is
 // REF or SOFT_CLIP or there is no operation. Operation to the left is decreased
@@ -535,14 +539,27 @@ int ShiftOperation(int shift,
   // If previous operation is ref or soft clip then it is reduced in length.
   // If it is the first operation then read alignment is shifted. In this case
   // it is removed if it is del or turned into ref if it is ins.
+  int read_alignment_shift = 0;
   if (it == norm_cigar.begin()) {
-    return HandleHeadingIndel(norm_cigar);
+    return HandleHeadingIndel(it, norm_cigar);
   } else {
     auto prev_op = it - 1;
     if (IsOperationMatch(*prev_op) ||
         prev_op->operation() == CigarUnit::CLIP_SOFT) {
       CHECK(shift <= prev_op->operation_length());
       prev_op->set_operation_length(prev_op->operation_length() - shift);
+      if (prev_op == norm_cigar.begin() &&
+          prev_op->operation() == CigarUnit::CLIP_SOFT) {
+        // If soft clip bases were consumed then we need to shit read alignment.
+        read_alignment_shift -= shift;
+      }
+    }
+    if (prev_op == norm_cigar.begin() &&
+        prev_op->operation() == CigarUnit::CLIP_SOFT) {
+      // Account for a heading indel. Heading indel is removed and read
+      // alignment is shifted: to the left if it is INS, to the right if it is
+      // DEL.
+      read_alignment_shift += HandleHeadingIndel(it, norm_cigar);
     }
   }
 
@@ -556,7 +573,7 @@ int ShiftOperation(int shift,
   } else {
     post_op->set_operation_length(post_op->operation_length() + shift);
   }
-  return 0;
+  return read_alignment_shift;
 }
 
 // Iterate cigar operations and attempt merging adjacent operations of the same
@@ -651,7 +668,7 @@ bool AlleleCounter::NormalizeCigar(
   int iteration = 0;  // while loop will run up to 10 times.
   while (iteration++ < 10) {
     int read_offset = 0;
-    int cur_interval_offset = interval_offset;
+    int cur_interval_offset = interval_offset + read_shift;
     // Iterate cigar operations and shift indels if possible
     // If shift occurred break the loop and recalculate
     int prev_op_len = norm_cigar.front().operation_length();
@@ -695,7 +712,7 @@ bool AlleleCounter::NormalizeCigar(
     }
   }  // while (iteration < 10)
   // Call shift to deal with an indel at the beginning of cigar.
-  read_shift += HandleHeadingIndel(norm_cigar);
+  read_shift += HandleHeadingIndel(norm_cigar.begin(), norm_cigar);
   return is_modified;
 }
 

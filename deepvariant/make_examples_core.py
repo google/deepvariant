@@ -1157,7 +1157,7 @@ class RegionProcessor(object):
           for read in sample.reads:
             read_last_pos = min(
                 self.ref_reader.contig(region.reference_name).n_bases - 1,
-                read.alignment.position.position + len(read.aligned_sequence))
+                utils.read_end(read))
             if read.alignment.position.position < reads_start:
               reads_start = read.alignment.position.position
             if read_last_pos > reads_end:
