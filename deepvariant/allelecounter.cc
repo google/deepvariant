@@ -540,26 +540,20 @@ int ShiftOperation(int shift,
   // If it is the first operation then read alignment is shifted. In this case
   // it is removed if it is del or turned into ref if it is ins.
   int read_alignment_shift = 0;
-  if (it == norm_cigar.begin()) {
+  // If indel is first operation or second after a soft clip then indel is
+  // treated specially.
+  if (it == norm_cigar.begin() ||
+      (!norm_cigar.empty() && it == norm_cigar.begin() + 1 &&
+       norm_cigar.begin()->operation() == CigarUnit::CLIP_SOFT)) {
     return HandleHeadingIndel(it, norm_cigar);
   } else {
     auto prev_op = it - 1;
-    if (IsOperationMatch(*prev_op) ||
-        prev_op->operation() == CigarUnit::CLIP_SOFT) {
+    // Previous operation should not be a soft clip. Soft clip in the middle of
+    // cigar is an error in alignment. It should not happen.
+    CHECK(prev_op->operation() != CigarUnit::CLIP_SOFT);
+    if (IsOperationMatch(*prev_op)) {
       CHECK(shift <= prev_op->operation_length());
       prev_op->set_operation_length(prev_op->operation_length() - shift);
-      if (prev_op == norm_cigar.begin() &&
-          prev_op->operation() == CigarUnit::CLIP_SOFT) {
-        // If soft clip bases were consumed then we need to shit read alignment.
-        read_alignment_shift -= shift;
-      }
-    }
-    if (prev_op == norm_cigar.begin() &&
-        prev_op->operation() == CigarUnit::CLIP_SOFT) {
-      // Account for a heading indel. Heading indel is removed and read
-      // alignment is shifted: to the left if it is INS, to the right if it is
-      // DEL.
-      read_alignment_shift += HandleHeadingIndel(it, norm_cigar);
     }
   }
 

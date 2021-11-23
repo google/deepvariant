@@ -1341,8 +1341,47 @@ TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedToEdge) {
   auto read = MakeRead("chr1", interval_offset,
                        "TCCTTCCTTCCTTCCTTCCTTCCTTCCACT", {"4M", "4I", "22M"});
 
-  // INS at the beginning has to be replaced to M and position is shifted by 3.
+  // INS at the beginning has to be replaced to M and position is shifted by 4.
   std::vector<CigarUnit> expected_cigar = nucleus::MakeCigar({"30M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), interval_offset,
+                                norm_cigar, read_shift);
+
+  EXPECT_EQ(read_shift, -4);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedAllTheWayToSoftClip) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 34, "ATGTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT",
+                &contigs, &seqs);  // sequence
+                                   // of TTCC-repeats
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 34);
+
+  // Read is made by taking substring of a reference and inserting 4 bases so
+  // that the insertion is not normalized. In addition there are 3 soft clip
+  // bases. Read is aligned starting from 4th base (first 3 bases are clipped).
+  int interval_offset = 8;
+  auto read =
+      MakeRead("chr1", interval_offset, "GGGTCCTTCCTTCCTTCCTTCCTTCCTTCCACT",
+               {"3S", "4M", "4I", "22M"});
+
+  // INS is shifted to the beginning of the read. INS at the beginning is
+  // converted to reference and read alignment is shifted by -4.
+  std::vector<CigarUnit> expected_cigar = nucleus::MakeCigar({"3S", "30M"});
 
   // Initialize input/output norm_cigar with the original alignment.
   std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),

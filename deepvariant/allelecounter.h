@@ -456,6 +456,7 @@ class AlleleCounter {
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarTwoDelsMerged);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarDelInsMerged);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsShiftedToEdge);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsShiftedAllTheWayToSoftClip);
 };
 
 }  // namespace deepvariant
