@@ -9,9 +9,9 @@ Runtime is on HG003 (all chromosomes).
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
 make_examples                    | ~107m
-call_variants                    | ~184m
-postprocess_variants (with gVCF) | ~77m
-total                            | ~368m = ~6.13 hours
+call_variants                    | ~177m
+postprocess_variants (with gVCF) | ~73m
+total                            | ~357m = ~5.95 hours
 
 ### Accuracy
 
@@ -20,7 +20,7 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501538   | 2963     | 1201     | 0.994127      | 0.997708         | 0.995914        |
+| INDEL | 501537   | 2964     | 1201     | 0.994125      | 0.997708         | 0.995913        |
 | SNP   | 3306401  | 21095    | 4556     | 0.99366       | 0.998625         | 0.996136        |
 
 ## WES (Illumina)
@@ -31,10 +31,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~6m
+make_examples                    | ~7m
 call_variants                    | ~2m
 postprocess_variants (with gVCF) | ~1m
-total                            | ~9m
+total                            | ~10m
 
 ### Accuracy
 
@@ -54,9 +54,9 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~117m
-call_variants                    | ~148m
-postprocess_variants (with gVCF) | ~67m
+make_examples                    | ~115m
+call_variants                    | ~153m
+postprocess_variants (with gVCF) | ~64m
 total                            | ~332m = ~5.53 hours
 
 ### Accuracy
@@ -69,8 +69,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501872   | 2629     | 2682     | 0.994789      | 0.994896         | 0.994843        |
-| SNP   | 3323707  | 3788     | 1607     | 0.998862      | 0.999517         | 0.999189        |
+| INDEL | 501870   | 2631     | 2684     | 0.994785      | 0.994892         | 0.994839        |
+| SNP   | 3323707  | 3788     | 1612     | 0.998862      | 0.999516         | 0.999189        |
 
 ## Hybrid (Illumina + PacBio HiFi)
 
@@ -80,10 +80,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~145m
-call_variants                    | ~175m
+make_examples                    | ~160m
+call_variants                    | ~185m
 postprocess_variants (with gVCF) | ~55m
-total                            | ~375m = ~6.3 hours
+total                            | ~400m = ~6.66 hours
 
 ### Accuracy
 
@@ -92,7 +92,7 @@ out while training the hybrid model.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 503240   | 1261     | 1985     | 0.997501      | 0.996259         | 0.996879        |
+| INDEL | 503240   | 1261     | 1984     | 0.997501      | 0.996261         | 0.99688         |
 | SNP   | 3323691  | 3804     | 1709     | 0.998857      | 0.999486         | 0.999171        |
 
 ## How to reproduce the metrics on this page
