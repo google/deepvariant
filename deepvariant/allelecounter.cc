@@ -434,6 +434,14 @@ void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
   }
 }
 
+// Convenience function to check if operations is match. Note, that we treat
+// SEQUENCE_MISMATCH as ALIGNMENT_MATCH.
+bool IsOperationMatch(const nucleus::genomics::v1::CigarUnit& op) {
+  return (op.operation() == CigarUnit::ALIGNMENT_MATCH ||
+          op.operation() == CigarUnit::SEQUENCE_MATCH ||
+          op.operation() == CigarUnit::SEQUENCE_MISMATCH);
+}
+
 // Merge two operations. If operations are the same type then first operation's
 // length is icreased and second operation length's is set to zero. If
 // operations are different types then M operation of length MIN(op1, op2) is
@@ -442,7 +450,11 @@ void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
 // Function returns true if operations are merged.
 bool MergeOperations(nucleus::genomics::v1::CigarUnit& op1,
                      nucleus::genomics::v1::CigarUnit& op2) {
-  if (op1.operation() == op2.operation()) {
+  // Simple merge if operations are of the same type. There are three different
+  // types of "match" operation therefore it is not enough to just compare
+  // operation types.
+  if (op1.operation() == op2.operation() ||
+      (IsOperationMatch(op1) && IsOperationMatch(op2))) {
     op1.set_operation_length(op1.operation_length() + op2.operation_length());
     op2.set_operation_length(0);
   } else if ((op1.operation() == CigarUnit::DELETE ||
@@ -499,14 +511,6 @@ void AdvanceReadReferencePointers(
   }
 }
 
-// Convenience function to check if operations is match. Note, that we treat
-// SEQUENCE_MISMATCH as ALIGNMENT_MATCH.
-bool IsOperationMatch(const nucleus::genomics::v1::CigarUnit& op) {
-  return (op.operation() == CigarUnit::ALIGNMENT_MATCH ||
-          op.operation() == CigarUnit::SEQUENCE_MATCH ||
-          op.operation() == CigarUnit::SEQUENCE_MISMATCH);
-}
-
 // Handle the case when INDEL is at the head of a cigar.
 // DEL is removed and alignment position is shifted to the right.
 // INS is converted into a REF and alignment position is shifted to the left.
@@ -554,6 +558,9 @@ int ShiftOperation(int shift,
     if (IsOperationMatch(*prev_op)) {
       CHECK(shift <= prev_op->operation_length());
       prev_op->set_operation_length(prev_op->operation_length() - shift);
+    } else {
+      // Do nothing if prev operation is not REF.
+      return read_alignment_shift;
     }
   }
 
