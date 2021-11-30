@@ -75,9 +75,6 @@ std::vector<Allele> SumAlleleCounts(
     const std::vector<AlleleCount>& allele_counts,
     bool include_low_quality);
 
-int TotalRefCounts(const AlleleCount& allele_count,
-                   bool include_low_quality = false);
-
 // Gets the total count of observed alleles in this allele_count, which is the
 // sum of the observed non-reference alleles in read_alleles + the total number
 // of reference supporting reads.
