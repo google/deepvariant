@@ -810,49 +810,6 @@ std::list<CigarOp> LeftTrimHaplotypeToRefAlignment(
   return haplotype_to_ref_cigar_ops;
 }
 
-inline bool BothOpsAreMatch(const CigarOp& op1, const CigarOp& op2) {
-  return (op1.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
-          op1.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT) &&
-         (op2.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
-          op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT);
-}
-
-inline bool OneOfOpsIsSoftClip(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT ||
-         op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT;
-}
-
-inline bool DelAndMatch(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation == nucleus::genomics::v1::CigarUnit::DELETE &&
-         (op2.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
-          op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT);
-}
-
-inline bool BothOpsAreDel(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation == nucleus::genomics::v1::CigarUnit::DELETE &&
-         op2.operation == nucleus::genomics::v1::CigarUnit::DELETE;
-}
-
-inline bool InsAndMatch(const CigarOp& op1, const CigarOp& op2) {
-  return op1.operation == nucleus::genomics::v1::CigarUnit::INSERT &&
-         (op2.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH ||
-          op2.operation == nucleus::genomics::v1::CigarUnit::CLIP_SOFT);
-}
-
-inline bool BothOpsAreIns(const CigarOp& op1, const CigarOp& op2) {
-  return (op1.operation == nucleus::genomics::v1::CigarUnit::INSERT &&
-          op2.operation == nucleus::genomics::v1::CigarUnit::INSERT);
-}
-
-inline void PushFrontIfNotEmpty(const CigarOp& op, std::list<CigarOp>* cigar) {
-  if (cigar == nullptr) {
-    return;
-  }
-  if (op.length > 0) {
-    cigar->push_front(op);
-  }
-}
-
 // Merging one base operations.
 // This function handles all possible combinations of one base merges except
 // INS+DEL and DEL+INS. Below is the list of all possible combinations of
