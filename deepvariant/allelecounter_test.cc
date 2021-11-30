@@ -153,7 +153,8 @@ class AlleleCounterTest : public ::testing::Test {
     // test that all AlleleCount objects are initialized properly.
     for (int i = 0; i < allele_counter->IntervalLength(); ++i) {
       const AlleleCount& allele_count = allele_counter->Counts()[i];
-      const std::vector<Allele> alleles_sum = SumAlleleCounts(allele_count);
+      const std::vector<Allele> alleles_sum = SumAlleleCounts(allele_count,
+                                                              false);
 
       // All read alleles should have count of 1 in the allele_count.
       std::vector<std::string> read_allele_read_names;
@@ -292,7 +293,7 @@ TEST_F(AlleleCounterTest, TestSumAlleleCountsMultipleSamples) {
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
                       absl::node_hash_map<std::string, Allele>())};
 
-  std::vector<Allele> allele_sum = SumAlleleCounts(allele_counts);
+  std::vector<Allele> allele_sum = SumAlleleCounts(allele_counts, false);
   EXPECT_THAT(allele_sum, UnorderedPointwise(EqualsProto(), expected_alleles));
 }
 
