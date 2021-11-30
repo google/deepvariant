@@ -243,10 +243,11 @@ bool VariantCaller::IsGoodAltAllele(const Allele& allele,
 // Returns the vector of allele objects from allele_count that satisfy
 // IsGoodAltAllele().
 std::vector<Allele> VariantCaller::SelectAltAlleles(
-    const AlleleCount& allele_count, bool include_low_quality) const {
-  const std::vector<Allele> alleles = SumAlleleCounts(allele_count,
-                                                      include_low_quality);
-  const int total_count = TotalAlleleCounts(allele_count, include_low_quality);
+    const AlleleCount& allele_count) const {
+  const std::vector<Allele> alleles = SumAlleleCounts(
+      allele_count, options_.include_legacy_low_quality_indels());
+  const int total_count = TotalAlleleCounts(
+      allele_count, options_.include_legacy_low_quality_indels());
   std::vector<Allele> alt_alleles;
   for (const auto& allele : alleles) {
     if (IsGoodAltAllele(allele, total_count)) {
