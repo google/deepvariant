@@ -207,7 +207,8 @@ class VariantCaller {
                : options_.min_fraction_indels();
   }
 
-  std::vector<Allele> SelectAltAlleles(const AlleleCount& allele_count) const;
+  std::vector<Allele> SelectAltAlleles(const AlleleCount& allele_count,
+                                       bool include_low_quality = false) const;
   bool IsGoodAltAllele(const Allele& allele, const int total_count) const;
   bool KeepReferenceSite() const;
 

@@ -390,8 +390,6 @@ message VariantCallerOptions {
   bool skip_uncalled_genotypes = 13;
 
   bool track_ref_reads = 14;
-
-  bool include_legacy_low_quality_indels = 15;
 }
 
 // Options to control how we label variant calls.
