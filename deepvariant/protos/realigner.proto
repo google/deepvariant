@@ -91,6 +91,7 @@ message WindowSelectorModel {
 }
 
 // Config parameters for "window selector (ws)" phase.
+// Next ID: 10.
 message WindowSelectorOptions {
   // Minimum number of supporting reads to call a reference position for
   // local assembly.
@@ -130,6 +131,10 @@ message WindowSelectorOptions {
 
   // Config for the '_candidates_from_reads' phase.
   WindowSelectorModel window_selector_model = 8;
+
+  // If True, the behavior in this commit is reverted:
+  // https://github.com/google/deepvariant/commit/fbde0674639a28cb9e8004c7a01bbe25240c7d46
+  bool keep_legacy_behavior = 9;
 }
 
 // Config parameters for "de-Bruijn graph (dbg)" phase.

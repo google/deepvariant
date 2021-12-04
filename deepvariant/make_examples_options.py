@@ -291,6 +291,12 @@ flags.DEFINE_bool(
     'supporting ref.')
 flags.DEFINE_bool('normalize_reads', False,
                   'If True, allele counter left align INDELs for each read.')
+flags.DEFINE_bool(
+    'keep_legacy_allele_counter_behavior', False,
+    'If True, the behavior in this commit is reverted: '
+    'https://github.com/google/deepvariant/commit/'
+    'fbde0674639a28cb9e8004c7a01bbe25240c7d46. '
+    'We do not recommend setting this flag to True.')
 
 
 def shared_flags_to_options(
@@ -313,7 +319,8 @@ def shared_flags_to_options(
       partition_size=flags_obj.partition_size,
       read_requirements=read_reqs,
       track_ref_reads=flags_obj.track_ref_reads,
-      normalize_reads=flags_obj.normalize_reads)
+      normalize_reads=flags_obj.normalize_reads,
+      keep_legacy_behavior=flags_obj.keep_legacy_allele_counter_behavior)
 
   options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,

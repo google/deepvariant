@@ -183,10 +183,15 @@ int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
   return total_allele_count;
 }
 
-// Returns true if all the bases in read from offset to offset + len pass
+// Returns false if any of the bases from offset to offset+len are canonical
+// bases.
+// If `keep_legacy_behavior` is set to true, this function will also return
+// false when any of the bases in read from offset to offset + len is below
+// the quality threshold.
+//
+// There is a separate bool output `is_low_quality`, which will be set to
+// true if all the bases in read from offset to offset+len is lower than
 // the quality threshold to be used for generating alleles for our counts.
-// offset + len must be less than or equal to the length of the aligned
-// sequence of read or a CHECK will fail.
 bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
                     int len, const AlleleCounterOptions& options,
                     bool& is_low_quality) {
@@ -196,13 +201,19 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
   int indel_base_quality = 0;
   for (int i = 0; i < len; i++) {
     indel_base_quality += read.aligned_quality(offset + i);
+    if (read.aligned_quality(offset + i) < min_base_quality &&
+        options.keep_legacy_behavior()) {
+      return false;
+    }
     if (!nucleus::IsCanonicalBase(read.aligned_sequence()[offset + i])) {
       return false;
     }
   }
   is_low_quality = false;
-  if (indel_base_quality < min_base_quality * len) {
-    is_low_quality = true;
+  if (!options.keep_legacy_behavior()) {
+    if (indel_base_quality < min_base_quality * len) {
+      is_low_quality = true;
+    }
   }
   return true;
 }

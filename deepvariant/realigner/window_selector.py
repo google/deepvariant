@@ -57,8 +57,8 @@ def _candidates_from_reads(config, ref_reader, reads, region):
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
       read_requirements=reads_pb2.ReadRequirements(
           min_mapping_quality=config.min_mapq,
-          min_base_quality=config.min_base_quality))
-
+          min_base_quality=config.min_base_quality),
+      keep_legacy_behavior=config.keep_legacy_behavior)
   expanded_region = ranges.expand(
       region,
       config.region_expansion_in_bp,

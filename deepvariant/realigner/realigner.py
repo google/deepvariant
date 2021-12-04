@@ -235,13 +235,17 @@ def window_selector_config(flags_obj):
       raise ValueError('ws_min_supporting_reads should be smaller than '
                        'ws_max_supporting_reads.')
 
+  keep_legacy_behavior = False
+  if 'keep_legacy_allele_counter_behavior' in flags_obj:
+    keep_legacy_behavior = flags_obj.keep_legacy_allele_counter_behavior
   ws_config = realigner_pb2.WindowSelectorOptions(
       min_mapq=flags_obj.ws_min_mapq,
       min_base_quality=flags_obj.ws_min_base_quality,
       min_windows_distance=flags_obj.ws_min_windows_distance,
       max_window_size=flags_obj.ws_max_window_size,
       region_expansion_in_bp=flags_obj.ws_region_expansion_in_bp,
-      window_selector_model=window_selector_model)
+      window_selector_model=window_selector_model,
+      keep_legacy_behavior=keep_legacy_behavior)
 
   return ws_config
 

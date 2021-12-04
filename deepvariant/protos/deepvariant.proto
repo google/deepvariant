@@ -307,6 +307,10 @@ message AlleleCounterOptions {
 
   // Option to left align INDELs for each read.
   bool normalize_reads = 4;
+
+  // If True, the behavior in this commit is reverted:
+  // https://github.com/google/deepvariant/commit/fbde0674639a28cb9e8004c7a01bbe25240c7d46
+  bool keep_legacy_behavior = 5;
 }
 
 // Variant call for a single site, in a pseudo-biallelic manner. This is an

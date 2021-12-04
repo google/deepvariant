@@ -521,10 +521,24 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(select_types='indels', expected_count=11),
       dict(select_types='snps indels', expected_count=75),
       dict(select_types='multi-allelics', expected_count=3),
+      dict(select_types=None, keep_legacy_behavior=True, expected_count=78),
+      dict(select_types='all', keep_legacy_behavior=True, expected_count=78),
+      dict(select_types='snps', keep_legacy_behavior=True, expected_count=64),
+      dict(select_types='indels', keep_legacy_behavior=True, expected_count=11),
+      dict(
+          select_types='snps indels',
+          keep_legacy_behavior=True,
+          expected_count=75),
+      dict(
+          select_types='multi-allelics',
+          keep_legacy_behavior=True,
+          expected_count=3),
   )
   @flagsaver.flagsaver
-  def test_make_examples_with_variant_selection(self, select_types,
-                                                expected_count):
+  def test_make_examples_with_variant_selection(self,
+                                                select_types,
+                                                expected_count,
+                                                keep_legacy_behavior=False):
     if select_types is not None:
       FLAGS.select_variant_types = select_types
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
@@ -535,7 +549,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
     FLAGS.partition_size = 1000
     FLAGS.mode = 'calling'
-
+    FLAGS.keep_legacy_allele_counter_behavior = keep_legacy_behavior
     options = make_examples.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
 
