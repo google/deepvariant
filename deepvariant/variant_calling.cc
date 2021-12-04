@@ -246,7 +246,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
     const AlleleCount& allele_count, bool include_low_quality) const {
   const std::vector<Allele> alleles = SumAlleleCounts(allele_count,
                                                       include_low_quality);
-  const int total_count = TotalAlleleCounts(allele_count, include_low_quality);
+  const int total_count = TotalAlleleCounts(allele_count);
   std::vector<Allele> alt_alleles;
   for (const auto& allele : alleles) {
     if (IsGoodAltAllele(allele, total_count)) {
@@ -302,12 +302,10 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
 // allele_map is needed to map between the Variant reference and alternate_bases
 // and the Alleles used in allele_count.
 void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
-                   const string& allele_map_refbases, Variant* variant,
-                   bool include_low_quality = false) {
+                   const string& allele_map_refbases, Variant* variant) {
   // Set the DP to the total good reads seen at this position.
   VariantCall* call = variant->mutable_calls(0);
-  nucleus::SetInfoField(kDPFormatField, TotalAlleleCounts(
-      allele_count, include_low_quality), call);
+  nucleus::SetInfoField(kDPFormatField, TotalAlleleCounts(allele_count), call);
 
   if (variant->alternate_bases_size() == 1 &&
       (variant->alternate_bases(0) == kNoAltAllele ||
@@ -315,7 +313,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     // Variant has no alts or is a a gVCF record so only DP is meaningful.
     return;
   } else {
-    int dp = TotalAlleleCounts(allele_count, include_low_quality);
+    int dp = TotalAlleleCounts(allele_count);
     // Build up AD and VAF.
     std::vector<int> ad;
     std::vector<double> vaf;

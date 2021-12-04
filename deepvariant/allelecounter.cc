@@ -849,8 +849,7 @@ string AlleleCounter::ReadKey(const Read& read) {
                 read.read_number());
 }
 
-std::vector<AlleleCountSummary> AlleleCounter::SummaryCounts(
-    bool include_low_quality) const {
+std::vector<AlleleCountSummary> AlleleCounter::SummaryCounts() const {
   std::vector<AlleleCountSummary> summaries;
   summaries.reserve(counts_.size());
   for (const AlleleCount& allele_count : counts_) {
@@ -860,8 +859,7 @@ std::vector<AlleleCountSummary> AlleleCounter::SummaryCounts(
     summary.set_ref_base(allele_count.ref_base());
     summary.set_ref_supporting_read_count(
         allele_count.ref_supporting_read_count());
-    summary.set_total_read_count(TotalAlleleCounts(allele_count,
-                                                   include_low_quality));
+    summary.set_total_read_count(TotalAlleleCounts(allele_count));
     summary.set_ref_nonconfident_read_count(
         allele_count.ref_nonconfident_read_count());
     summaries.push_back(summary);

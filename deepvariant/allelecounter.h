@@ -79,13 +79,13 @@ std::vector<Allele> SumAlleleCounts(
 // sum of the observed non-reference alleles in read_alleles + the total number
 // of reference supporting reads.
 int TotalAlleleCounts(const AlleleCount& allele_count,
-                      bool include_low_quality);
+                      bool include_low_quality = false);
 
 // Gets the total count of observed alleles in allele_count from all DeepTrio
 // samples, which is the sum of the observed non-reference alleles in
 // read_alleles + the total number of reference supporting reads.
 int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
-                      bool include_low_quality);
+                      bool include_low_quality = false);
 
 // Binary search for allele index by position.
 int AlleleIndex(const std::vector<AlleleCount>& allele_counts, int64_t pos);
@@ -327,8 +327,7 @@ class AlleleCounter {
   // This function has all of the behavior of calling Counts() but instead of
   // returning the heavy-weight AlleleCount proto this returns a simpler proto.
   // See the proto description for more information about the proto fields.
-  std::vector<AlleleCountSummary> SummaryCounts(
-      bool include_low_quality = false) const;
+  std::vector<AlleleCountSummary> SummaryCounts() const;
 
   // How many reads have been added to this counter?
   int NCountedReads() const { return n_reads_counted_; }

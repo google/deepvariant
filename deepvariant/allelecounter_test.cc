@@ -178,7 +178,7 @@ class AlleleCounterTest : public ::testing::Test {
                             else
                               return total;
                           });
-      EXPECT_THAT(act_total, Eq(TotalAlleleCounts(allele_count, false)));
+      EXPECT_THAT(act_total, Eq(TotalAlleleCounts(allele_count)));
     }
   }
 
@@ -312,7 +312,7 @@ TEST_F(AlleleCounterTest, TestTotalAlleleCounts) {
       MakeAlleleCount(MakePosition("chr1", 1001), "A", 3,
                       absl::node_hash_map<std::string, Allele>())};
 
-  EXPECT_EQ(TotalAlleleCounts(allele_counts, false), 9);
+  EXPECT_EQ(TotalAlleleCounts(allele_counts), 9);
 }
 
 TEST_F(AlleleCounterTest, TestAddSimpleRead) {
@@ -707,7 +707,7 @@ TEST_F(AlleleCounterTest, TestLowMapqReadsAreIgnored) {
 
   // Since the read has a mapping quality below our minimum, we have no counts.
   for (int i = 0; i < 4; i++) {
-    EXPECT_THAT(TotalAlleleCounts(allele_counter.Counts()[i], false), Eq(0));
+    EXPECT_THAT(TotalAlleleCounts(allele_counter.Counts()[i]), Eq(0));
   }
 }
 
