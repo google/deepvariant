@@ -199,7 +199,7 @@ bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
 // IsGoodAltAllele().
 std::vector<Allele> VariantCaller::SelectAltAlleles(
     const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const std::string& target_sample, bool include_low_quality) const {
+    const std::string& target_sample) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
@@ -211,9 +211,9 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   }
 
   const std::vector<Allele> target_sample_alleles =
-      SumAlleleCounts(target_sample_allele_count, include_low_quality);
+      SumAlleleCounts(target_sample_allele_count);
   const std::vector<Allele> all_sample_alleles =
-      SumAlleleCounts(all_samples_allele_counts, include_low_quality);
+      SumAlleleCounts(all_samples_allele_counts);
 
   const int target_samples_total_count =
       TotalAlleleCounts(target_sample_allele_count);

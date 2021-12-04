@@ -65,7 +65,7 @@ using tensorflow::string;
 // across all reads in allele_count. Each allele in the vector has its count
 // field set to the number of reads that carried that allele.
 std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
-                                    bool include_low_quality);
+                                    bool include_low_quality = false);
 
 // Summarizes the counts of all of the distinct alleles present in allele_count
 // for one position combined for all DeepTrio samples. Effectively this function
@@ -73,7 +73,7 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
 // This function is similar to SumAlleleCounts(const AlleleCount& allele_count)
 std::vector<Allele> SumAlleleCounts(
     const std::vector<AlleleCount>& allele_counts,
-    bool include_low_quality);
+    bool include_low_quality = false);
 
 // Gets the total count of observed alleles in this allele_count, which is the
 // sum of the observed non-reference alleles in read_alleles + the total number
