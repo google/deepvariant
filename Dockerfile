@@ -16,7 +16,7 @@ ARG FROM_IMAGE=ubuntu:20.04
 ARG PYTHON_VERSION=3.8
 ARG DV_GPU_BUILD=0
 ARG DV_OPENVINO_BUILD=0
-ARG VERSION=1.2.0
+ARG VERSION=1.3.0
 
 FROM continuumio/miniconda3 as conda_setup
 RUN conda config --add channels defaults && \
@@ -163,10 +163,10 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/Dee
 RUN chmod +r /opt/models/wes/model.ckpt*
 
 WORKDIR /opt/models/pacbio
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.3.0/DeepVariant-inception_v3-1.3.0-rc1+data-pacbio_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.3.0/DeepVariant-inception_v3-1.3.0-rc1+data-pacbio_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.3.0/DeepVariant-inception_v3-1.3.0-rc1+data-pacbio_standard/model.ckpt.meta .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.3.0/DeepVariant-inception_v3-1.3.0-rc1+data-pacbio_standard/model.ckpt.input_shape .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.meta .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.input_shape .
 RUN chmod +r /opt/models/pacbio/model.ckpt*
 
 WORKDIR /opt/models/hybrid_pacbio_illumina

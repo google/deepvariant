@@ -455,7 +455,7 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.2/docs/'
+                         'https://github.com/google/deepvariant/blob/r1.3/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
                          'could-not-open'.format(FLAGS.customized_model))
     logging.info(

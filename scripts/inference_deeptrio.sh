@@ -50,7 +50,7 @@ SAVE_INTERMEDIATE_RESULTS=false
 BAM=""
 BAM_PARENT1=""
 BAM_PARENT2=""
-BIN_VERSION="1.2.0"
+BIN_VERSION="1.3.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
@@ -563,7 +563,7 @@ function setup_args() {
     extra_args+=( --regions "${REGIONS}")
     happy_args+=( -l "${REGIONS}")
   fi
-  if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" == "1.2.0" ]]; then
+  if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.0$ ]]; then
     extra_args+=( --runtime_report )
   fi
 }
