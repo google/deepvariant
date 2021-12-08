@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~107m
+make_examples                    | ~105m
 call_variants                    | ~177m
-postprocess_variants (with gVCF) | ~73m
-total                            | ~357m = ~5.95 hours
+postprocess_variants (with gVCF) | ~78m
+total                            | ~360m = ~6 hours
 
 ### Accuracy
 
@@ -54,10 +54,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~115m
+make_examples                    | ~114m
 call_variants                    | ~153m
-postprocess_variants (with gVCF) | ~64m
-total                            | ~332m = ~5.53 hours
+postprocess_variants (with gVCF) | ~68m
+total                            | ~335m = ~5.58 hours
 
 ### Accuracy
 
@@ -80,10 +80,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~160m
-call_variants                    | ~185m
+make_examples                    | ~161m
+call_variants                    | ~188m
 postprocess_variants (with gVCF) | ~55m
-total                            | ~400m = ~6.66 hours
+total                            | ~404m = ~6.73 hours
 
 ### Accuracy
 
@@ -124,8 +124,8 @@ bash inference_deepvariant.sh --model_preset HYBRID_PACBIO_ILLUMINA
 ```
 
 Runtime metrics are taken from the resulting log after each stage of
-DeepVariant, and the accuracy metrics come from the hap.py summary.csv output
-file.
+DeepVariant. The runtime numbers reported above are the average of 5 runs each.
+The accuracy metrics come from the hap.py summary.csv output file.
 
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [CPU instance with 64 CPUs]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
