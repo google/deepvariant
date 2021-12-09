@@ -45,12 +45,12 @@ Once you have a make_examples output tfrecord file, then you can run
 INPUT_DIR="${PWD}/quickstart-testdata"
 OUTPUT_DIR="${PWD}/quickstart-output"
 
-BIN_VERSION="1.2.0"  # show_examples is available only in version 1.0.0 and later.
+BIN_VERSION="1.3.0"  # show_examples is available only in version 1.0.0 and later.
 sudo docker run \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}":"/output" \
   google/deepvariant:"${BIN_VERSION}" /opt/deepvariant/bin/show_examples \
-  --examples=/output/make_examples.tfrecord-00000-of-00001.gz \
+  --examples=/output/intermediate_results_dir/make_examples.tfrecord-00000-of-00001.gz \
   --output=/output/pileup --num_records=20
 
 # And then your images are here:

@@ -119,7 +119,7 @@ serially is not the most effective approach.
 ```
 N_SHARDS=$(nproc)  # Or change to the number of cores you want to use
 CAPTURE_BED=agilent_sureselect_human_all_exon_v5_b37_targets.bed
-VERSION=1.2.0
+VERSION=1.3.0
 
 declare -a trio=(HG002 HG003 HG004)
 for SAMPLE in "${trio[@]}"
@@ -227,16 +227,16 @@ The output is:
 ```
 Checking: /data/deepvariant.cohort.vcf.gz
 Family: [Sample_Diag-excap51-HG003-EEogPU + Sample_Diag-excap51-HG004-EEogPU] -> [Sample_Diag-excap51-HG002-EEogPU]
-Concordance Sample_Diag-excap51-HG002-EEogPU: F:56568/57063 (99.13%)  M:56963/57085 (99.79%)  F+M:56331/56958 (98.90%)
+Concordance Sample_Diag-excap51-HG002-EEogPU: F:56629/57124 (99.13%)  M:57014/57138 (99.78%)  F+M:56384/57014 (98.90%)
 Sample Sample_Diag-excap51-HG002-EEogPU has less than 99.0 concordance with both parents. Check for incorrect pedigree or sample mislabelling.
-821/57304 (1.43%) records did not conform to expected call ploidy
-57213/57304 (99.84%) records were variant in at least 1 family member and checked for Mendelian constraints
-199/57213 (0.35%) records had indeterminate consistency status due to incomplete calls
-636/57213 (1.11%) records contained a violation of Mendelian constraints
+815/57369 (1.42%) records did not conform to expected call ploidy
+57271/57369 (99.83%) records were variant in at least 1 family member and checked for Mendelian constraints
+210/57271 (0.37%) records had indeterminate consistency status due to incomplete calls
+636/57271 (1.11%) records contained a violation of Mendelian constraints
 ```
 
-From this report, we know that there is a 1.13% Mendelian violation rate, and
-0.34% of the records had incomplete calls (with `.`) so RTG couldn't determine
+From this report, we know that there is a 1.11% Mendelian violation rate, and
+0.37% of the records had incomplete calls (with `.`) so RTG couldn't determine
 whether there is violation or not.
 
 ## Single sample quality metrics
@@ -265,9 +265,9 @@ done
 
 | Sample | [3]ts | [4]tv | [5]ts/tv | [6]ts (1st ALT) | [7]tv (1st ALT) | [8]ts/tv (1st ALT) |
 | ------ | ----- | ----- | -------- | --------------- | --------------- | ------------------ |
-| HG002  | 29817 | 11626 | 2.56     | 29805           | 11608           | 2.57               |
-| HG003  | 29694 | 11675 | 2.54     | 29684           | 11653           | 2.55               |
-| HG004  | 29912 | 11803 | 2.53     | 29902           | 11785           | 2.54               |
+| HG002  | 29819 | 11626 | 2.56     | 29809           | 11606           | 2.57               |
+| HG003  | 29686 | 11670 | 2.54     | 29677           | 11649           | 2.55               |
+| HG004  | 29920 | 11801 | 2.54     | 29906           | 11783           | 2.54               |
 
 If you want to restrict to the truth BED files, use this command:
 
@@ -289,9 +289,9 @@ Which resulted in this table:
 
 | Sample | [3]ts | [4]tv | [5]ts/tv | [6]ts (1st ALT) | [7]tv (1st ALT) | [8]ts/tv (1st ALT) |
 | ------ | ----- | ----- | -------- | --------------- | --------------- | ------------------ |
-| HG002  | 27688 | 10538 | 2.63     | 27680           | 10524           | 2.63               |
-| HG003  | 27331 | 10504 | 2.60     | 27326           | 10492           | 2.60               |
-| HG004  | 27470 | 10596 | 2.59     | 27463           | 10584           | 2.59               |
+| HG002  | 27688 | 10533 | 2.63     | 27680           | 10520           | 2.63               |
+| HG003  | 27324 | 10502 | 2.60     | 27319           | 10491           | 2.60               |
+| HG004  | 27474 | 10592 | 2.59     | 27467           | 10580           | 2.60               |
 
 
 ### Rtg vcfstats
@@ -314,69 +314,69 @@ HG002:
 
 ```
 Location                     : /data/HG002.vcf.gz
-Failed Filters               : 14785
-Passed Filters               : 45073
-SNPs                         : 41413
+Failed Filters               : 14776
+Passed Filters               : 45080
+SNPs                         : 41414
 MNPs                         : 0
-Insertions                   : 1859
-Deletions                    : 1781
-Indels                       : 18
-Same as reference            : 2
-SNP Transitions/Transversions: 2.56 (41695/16270)
-Total Het/Hom ratio          : 1.49 (26942/18129)
-SNP Het/Hom ratio            : 1.51 (24882/16531)
+Insertions                   : 1866
+Deletions                    : 1777
+Indels                       : 19
+Same as reference            : 4
+SNP Transitions/Transversions: 2.56 (41696/16271)
+Total Het/Hom ratio          : 1.49 (26956/18120)
+SNP Het/Hom ratio            : 1.51 (24883/16531)
 MNP Het/Hom ratio            : - (0/0)
-Insertion Het/Hom ratio      : 1.09 (969/890)
-Deletion Het/Hom ratio       : 1.52 (1073/708)
-Indel Het/Hom ratio          : - (18/0)
-Insertion/Deletion ratio     : 1.04 (1859/1781)
-Indel/SNP+MNP ratio          : 0.09 (3658/41413)
+Insertion Het/Hom ratio      : 1.11 (981/885)
+Deletion Het/Hom ratio       : 1.52 (1073/704)
+Indel Het/Hom ratio          : - (19/0)
+Insertion/Deletion ratio     : 1.05 (1866/1777)
+Indel/SNP+MNP ratio          : 0.09 (3662/41414)
 ```
 
 HG003:
 
 ```
 Location                     : /data/HG003.vcf.gz
-Failed Filters               : 15645
-Passed Filters               : 44937
-SNPs                         : 41332
+Failed Filters               : 15654
+Passed Filters               : 44919
+SNPs                         : 41321
 MNPs                         : 0
-Insertions                   : 1852
-Deletions                    : 1733
+Insertions                   : 1850
+Deletions                    : 1729
 Indels                       : 18
-Same as reference            : 2
-SNP Transitions/Transversions: 2.52 (41499/16451)
-Total Het/Hom ratio          : 1.48 (26788/18147)
-SNP Het/Hom ratio            : 1.49 (24738/16594)
+Same as reference            : 1
+SNP Transitions/Transversions: 2.52 (41489/16448)
+Total Het/Hom ratio          : 1.48 (26775/18143)
+SNP Het/Hom ratio            : 1.49 (24728/16593)
 MNP Het/Hom ratio            : - (0/0)
-Insertion Het/Hom ratio      : 1.14 (987/865)
-Deletion Het/Hom ratio       : 1.52 (1045/688)
+Insertion Het/Hom ratio      : 1.15 (988/862)
+Deletion Het/Hom ratio       : 1.51 (1041/688)
 Indel Het/Hom ratio          : - (18/0)
-Insertion/Deletion ratio     : 1.07 (1852/1733)
-Indel/SNP+MNP ratio          : 0.09 (3603/41332)
+Insertion/Deletion ratio     : 1.07 (1850/1729)
+Indel/SNP+MNP ratio          : 0.09 (3597/41321)
 ```
 
 HG004:
 
 ```
 Location                     : /data/HG004.vcf.gz
-Failed Filters               : 15379
-Passed Filters               : 45317
-SNPs                         : 41684
+Failed Filters               : 15365
+Passed Filters               : 45316
+SNPs                         : 41686
 MNPs                         : 0
-Insertions                   : 1863
-Deletions                    : 1751
+Insertions                   : 1860
+Deletions                    : 1750
 Indels                       : 19
-Same as reference            : 0
-SNP Transitions/Transversions: 2.55 (41510/16309)
-Total Het/Hom ratio          : 1.56 (27649/17668)
-SNP Het/Hom ratio            : 1.59 (25567/16117)
+Same as reference            : 1
+SNP Transitions/Transversions: 2.55 (41517/16304)
+Total Het/Hom ratio          : 1.57 (27656/17659)
+SNP Het/Hom ratio            : 1.59 (25573/16113)
 MNP Het/Hom ratio            : - (0/0)
-Insertion Het/Hom ratio      : 1.12 (986/877)
-Deletion Het/Hom ratio       : 1.60 (1077/674)
+Insertion Het/Hom ratio      : 1.13 (986/874)
+Deletion Het/Hom ratio       : 1.60 (1078/672)
 Indel Het/Hom ratio          : - (19/0)
-Insertion/Deletion ratio     : 1.06 (1863/1751)
-Indel/SNP+MNP ratio          : 0.09 (3633/41684)
+Insertion/Deletion ratio     : 1.06 (1860/1750)
+Indel/SNP+MNP ratio          : 0.09 (3629/41686)
 ```
 
 ### Run hap.py to calculate the accuracy of DeepVariant generated call sets
@@ -405,6 +405,6 @@ Accuracy F1 scores:
 
 Sample | Indel    | SNP
 ------ | -------- | --------
-HG002  | 0.970051 | 0.993609
-HG003  | 0.967020 | 0.992973
-HG004  | 0.973377 | 0.993597
+HG002  | 0.971084 | 0.993661
+HG003  | 0.965795 | 0.993012
+HG004  | 0.972641 | 0.993467
