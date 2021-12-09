@@ -112,10 +112,12 @@ std::vector<nucleus::genomics::v1::ContigInfo> CreateContigInfos(
   return contigs;
 }
 
-Read MakeRead(const string& chr, const int start, const string& bases,
-              const std::vector<string>& cigar_elements) {
+Read MakeRead(const string& chr,
+              const int start, const string& bases,
+              const std::vector<string>& cigar_elements,
+              const string& read_name) {
   Read read;
-  read.set_fragment_name("test read");
+  read.set_fragment_name(read_name);
   read.set_aligned_sequence(bases);
   read.set_number_reads(2);
   read.set_proper_placement(true);

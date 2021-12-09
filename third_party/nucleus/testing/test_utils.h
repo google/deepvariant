@@ -146,7 +146,8 @@ std::vector<Record> as_vector(const std::shared_ptr<Iterable<Record>>& it) {
 // a mapping quality of 90.
 ::nucleus::genomics::v1::Read MakeRead(
     const string& chr, int start, const string& bases,
-    const std::vector<string>& cigar_elements);
+    const std::vector<string>& cigar_elements,
+    const string& read_name = "test read");
 
 // Creates a test Cigar as a vector of CigarUnit.
 //
