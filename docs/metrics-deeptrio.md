@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~445m
-call_variants for HG002          | ~353m
-call_variants for HG003          | ~356m
-call_variants for HG004          | ~357m
-postprocess_variants (parallel)  | ~86m
-total                            | ~1597m = ~26.62 hours
+make_examples                    | ~470m
+call_variants for HG002          | ~369m
+call_variants for HG003          | ~372m
+call_variants for HG004          | ~364m
+postprocess_variants (parallel)  | ~90m
+total                            | ~1665m = ~27.75 hours
 
 ### Accuracy
 
@@ -49,12 +49,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~768m
-call_variants for HG002          | ~284m
-call_variants for HG003          | ~285m
-call_variants for HG004          | ~286m
-postprocess_variants (parallel)  | ~100m
-total                            | ~1723m = ~28.72 hours
+make_examples                    | ~737m
+call_variants for HG002          | ~270m
+call_variants for HG003          | ~271m
+call_variants for HG004          | ~272m
+postprocess_variants (parallel)  | ~90m
+total                            | ~1640m = ~27.33 hours
 
 ### Accuracy
 
@@ -151,8 +151,10 @@ bash inference_deeptrio.sh --model_preset PACBIO
 
 ```
 
-Runtime metrics are taken from the resulting log after each stage of DeepTrio,
-and the accuracy metrics come from the hap.py summary.csv output file.
+Runtime metrics are taken from the resulting log after each stage of
+DeepTrio. The runtime numbers reported above are the average of 5 runs each.
+The accuracy metrics come from the hap.py summary.csv output file.
+The runs are deterministic so all 5 runs produced the same output.
 
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [CPU instance with 64 CPUs]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform

@@ -126,6 +126,7 @@ bash inference_deepvariant.sh --model_preset HYBRID_PACBIO_ILLUMINA
 Runtime metrics are taken from the resulting log after each stage of
 DeepVariant. The runtime numbers reported above are the average of 5 runs each.
 The accuracy metrics come from the hap.py summary.csv output file.
+The runs are deterministic so all 5 runs produced the same output.
 
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [CPU instance with 64 CPUs]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
