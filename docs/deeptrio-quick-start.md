@@ -35,7 +35,7 @@ For production use cases on larger datasets, we recommend looking into the
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.2.0"
+BIN_VERSION="1.3.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -92,7 +92,6 @@ FTPDIR=ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_G
 
 curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz | gunzip > "${INPUT_DIR}"/GRCh38_no_alt_analysis_set.fasta
 curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > "${INPUT_DIR}"/GRCh38_no_alt_analysis_set.fasta.fai
-
 ```
 
 This should create a subdirectory in the current directory containing the actual
@@ -230,22 +229,22 @@ singularity run -B /usr/lib/locale/:/usr/lib/locale/ \
   docker://google/deepvariant:deeptrio-"${BIN_VERSION}" \
   /opt/deepvariant/bin/deeptrio/run_deeptrio \
   --model_type=WGS \
-  --ref=/input/GRCh38_no_alt_analysis_set.fasta \
-  --reads_child=/input/HG002.chr20.10_10p1mb.bam \
-  --reads_parent1=/input/HG003.chr20.10_10p1mb.bam \
-  --reads_parent2=/input/HG004.chr20.10_10p1mb.bam \
-  --output_vcf_child /output/HG002.output.vcf.gz \
-  --output_vcf_parent1 /output/HG003.output.vcf.gz \
-  --output_vcf_parent2 /output/HG004.output.vcf.gz \
+  --ref="${INPUT_DIR}"/GRCh38_no_alt_analysis_set.fasta \
+  --reads_child="${INPUT_DIR}"/HG002.chr20.10_10p1mb.bam \
+  --reads_parent1="${INPUT_DIR}"/HG003.chr20.10_10p1mb.bam \
+  --reads_parent2="${INPUT_DIR}"/HG004.chr20.10_10p1mb.bam \
+  --output_vcf_child "${OUTPUT_DIR}"/HG002.output.vcf.gz \
+  --output_vcf_parent1 "${OUTPUT_DIR}"/HG003.output.vcf.gz \
+  --output_vcf_parent2 "${OUTPUT_DIR}"/HG004.output.vcf.gz \
   --sample_name_child 'HG002' \
   --sample_name_parent1 'HG003' \
   --sample_name_parent2 'HG004' \
   --num_shards $(nproc)  \
   --regions "chr20:10,000,000-10,010,000" \
-  --intermediate_results_dir /output/intermediate_results_dir \
-  --output_gvcf_child /output/HG002.g.vcf.gz \
-  --output_gvcf_parent1 /output/HG003.g.vcf.gz \
-  --output_gvcf_parent2 /output/HG004.g.vcf.gz
+  --intermediate_results_dir "${OUTPUT_DIR}"/intermediate_results_dir \
+  --output_gvcf_child "${OUTPUT_DIR}"/HG002.g.vcf.gz \
+  --output_gvcf_parent1 "${OUTPUT_DIR}"/HG003.g.vcf.gz \
+  --output_gvcf_parent2 "${OUTPUT_DIR}"/HG004.g.vcf.gz
 ```
 
 ### GPU version
@@ -345,7 +344,7 @@ INDEL   PASS            2         2         0            2         0          0 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.2/Dockerfile.deeptrio
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.3/Dockerfile.deeptrio
 [External Solutions]: https://github.com/google/deepvariant#external-solutions
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf

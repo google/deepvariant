@@ -109,7 +109,7 @@ you can run this case study within about half an hour (tested on 64 CPUs).
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.2.0"
+BIN_VERSION="1.3.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -177,10 +177,10 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10613        15        22611        40      11431      5     35       0.998589          0.996422        0.505550         0.997504                     NaN                     NaN                   1.748961                   2.563353
-INDEL   PASS        10628     10613        15        22611        40      11431      5     35       0.998589          0.996422        0.505550         0.997504                     NaN                     NaN                   1.748961                   2.563353
-  SNP    ALL        70166     70138        28        98489        27      28293     12      9       0.999601          0.999615        0.287271         0.999608                2.296566                1.884407                   1.883951                   2.060960
-  SNP   PASS        70166     70138        28        98489        27      28293     12      9       0.999601          0.999615        0.287271         0.999608                2.296566                1.884407                   1.883951                   2.060960
+INDEL    ALL        10628     10613        15        22611        38      11431      5     33       0.998589          0.996601         0.50555         0.997594                     NaN                     NaN                   1.748961                   2.563749
+INDEL   PASS        10628     10613        15        22611        38      11431      5     33       0.998589          0.996601         0.50555         0.997594                     NaN                     NaN                   1.748961                   2.563749
+  SNP    ALL        70166     70138        28        98278        27      28082     12      9       0.999601          0.999615         0.28574         0.999608                2.296566                 1.88612                   1.883951                   2.052690
+  SNP   PASS        70166     70138        28        98278        27      28082     12      9       0.999601          0.999615         0.28574         0.999608                2.296566                 1.88612                   1.883951                   2.052690
 ```
 
 Notice that F1 scores are above 0.999 for SNPs and above 0.995 for indels!

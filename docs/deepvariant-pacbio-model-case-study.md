@@ -86,7 +86,7 @@ curl ${HTTPDIR}/HG003.GRCh38.chr20.pFDA_truthv2.bam.bai > input/HG003.GRCh38.chr
 
 ```bash
 ulimit -u 10000 # https://stackoverflow.com/questions/52026652/openblas-blas-thread-init-pthread-create-resource-temporarily-unavailable/54746150#54746150
-BIN_VERSION="1.2.0"
+BIN_VERSION="1.3.0"
 mkdir -p deepvariant1
 
 singularity exec --bind /usr/lib/locale/ \
@@ -131,7 +131,7 @@ samtools index whatshap/HG003.GRCh38.chr20.haplotagged.bam
 
 ```bash
 ulimit -u 10000 # https://stackoverflow.com/questions/52026652/openblas-blas-thread-init-pthread-create-resource-temporarily-unavailable/54746150#54746150
-BIN_VERSION="1.2.0"
+BIN_VERSION="1.3.0"
 mkdir -p deepvariant2
 
 singularity exec --bind /usr/lib/locale/ \
@@ -182,10 +182,10 @@ First pass output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10474       154        21919       134      10874     81     39       0.985510          0.987868        0.496099         0.986687                     NaN                     NaN                   1.748961                   2.411423
-INDEL   PASS        10628     10474       154        21919       134      10874     81     39       0.985510          0.987868        0.496099         0.986687                     NaN                     NaN                   1.748961                   2.411423
-  SNP    ALL        70166     70143        23        95142        44      24897      7      8       0.999672          0.999374        0.261683         0.999523                2.296566                1.963876                   1.883951                   2.048990
-  SNP   PASS        70166     70143        23        95142        44      24897      7      8       0.999672          0.999374        0.261683         0.999523                2.296566                1.963876                   1.883951                   2.048990
+INDEL    ALL        10628     10490       138        22070       124      11018     75     37       0.987015          0.988780         0.49923         0.987897                     NaN                     NaN                   1.748961                   2.390675
+INDEL   PASS        10628     10490       138        22070       124      11018     75     37       0.987015          0.988780         0.49923         0.987897                     NaN                     NaN                   1.748961                   2.390675
+  SNP    ALL        70166     70145        21        95509        43      25265      5      9       0.999701          0.999388         0.26453         0.999544                2.296566                1.963982                   1.883951                   2.046397
+  SNP   PASS        70166     70145        21        95509        43      25265      5      9       0.999701          0.999388         0.26453         0.999544                2.296566                1.963982                   1.883951                   2.046397
 ```
 
 ## Benchmark Second Pass
@@ -211,8 +211,8 @@ Second pass output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10562        66        22343        68      11272     37     30       0.993790          0.993858        0.504498         0.993824                     NaN                     NaN                   1.748961                   2.475310
-INDEL   PASS        10628     10562        66        22343        68      11272     37     30       0.993790          0.993858        0.504498         0.993824                     NaN                     NaN                   1.748961                   2.475310
-  SNP    ALL        70166     70141        25        95598        17      25377      6      4       0.999644          0.999758        0.265455         0.999701                2.296566                1.952947                   1.883951                   2.057639
-  SNP   PASS        70166     70141        25        95598        17      25377      6      4       0.999644          0.999758        0.265455         0.999701                2.296566                1.952947                   1.883951                   2.057639
+INDEL    ALL        10628     10559        69        22583        79      11503     38     38       0.993508          0.992870        0.509365         0.993189                     NaN                     NaN                   1.748961                   2.490262
+INDEL   PASS        10628     10559        69        22583        79      11503     38     38       0.993508          0.992870        0.509365         0.993189                     NaN                     NaN                   1.748961                   2.490262
+  SNP    ALL        70166     70142        24        97353        21      27131      5      6       0.999658          0.999701        0.278687         0.999679                2.296566                1.938156                   1.883951                   2.049364
+  SNP   PASS        70166     70142        24        97353        21      27131      5      6       0.999658          0.999701        0.278687         0.999679                2.296566                1.938156                   1.883951                   2.049364
 ```
