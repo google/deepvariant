@@ -60,6 +60,11 @@ automates all DeepTrio steps and thus greatly simplifies the inference pipeline.
 The details of using this script can be found in the section below as well as in
 the DeepTrio case studies.
 
+Also please note: for the non-PAR regions of the sex chromosomes (X and Y), we
+recommend running these providing only the parent who contributed the child's
+chromosome (e.g. for chromosomeX, only the mother and son samples and for
+chromosomeY only the father and son samples).
+
 If needed, DeepTrio can be built from source. For more details please refer to
 [Building DeeepTrio](deeptrio-build-test.md).
 
