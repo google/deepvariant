@@ -3,7 +3,7 @@
 DeepVariant is an analysis pipeline that uses a deep neural network to call
 genetic variants from next-generation DNA sequencing (NGS) data. While
 DeepVariant is highly accurate for [many types of NGS
-data](https://doi.org/10.1101/092890), some users may be interested in training
+data](https://rdcu.be/7Dhl), some users may be interested in training
 custom deep learning models that have been optimized for very specific data.
 
 This case study describes one way to train such a custom model using a GPU, in
@@ -19,8 +19,8 @@ the greatest achievable accuracy for BGISEQ-500 data.
 We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
 accuracy comparing to the WGS model as a baseline:
-Indel F1 94.5217% --> 98.1381%;
-SNP F1: 99.8831% --> 99.9064%.
+Indel F1 94.4848% --> 98.0316%;
+SNP F1: 99.8831% --> 99.8981%.
 
 Training for 50,000 steps took about 1.5 hours on 1 GPU. Currently we cannot
 train on multiple GPUs.
@@ -39,7 +39,7 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-BIN_VERSION="1.2.0"
+BIN_VERSION="1.3.0"
 
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}+data-wgs_standard"
 GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
@@ -67,7 +67,7 @@ TRUTH_BED="${DATA_DIR}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOL
 N_SHARDS=16
 ```
 
-## Download binaries, models, and data
+## Download binaries and data
 
 ### Create directories:
 
@@ -93,7 +93,7 @@ gunzip "${DATA_DIR}/ucsc_hg19.fa.gz"
 ```
 sudo apt -y update
 sudo apt -y install parallel
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.2/scripts/install_nvidia_docker.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.3/scripts/install_nvidia_docker.sh
 bash -x install_nvidia_docker.sh
 ```
 
@@ -145,9 +145,6 @@ sudo docker pull google/deepvariant:"${BIN_VERSION}-gpu"
 ) 2>&1 | tee "${LOG_DIR}/training_set.with_label.make_examples.log"
 ```
 
-Output from each individual parallel run can be found in
-`${LOG_DIR}/*/*/`.
-
 This took about 20min. We will want to shuffle this on Dataflow later, so we
 copy the data to GCS bucket first:
 
@@ -176,7 +173,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz \
 ) 2>&1 | tee "${LOG_DIR}/validation_set.with_label.make_examples.log"
 ```
 
-This took: ~6min.
+This took: ~5min.
 
 Copy to GCS bucket:
 
@@ -214,7 +211,7 @@ Then, get the code that shuffles:
 
 ```
 mkdir -p ${SHUFFLE_SCRIPT_DIR}
-wget https://raw.githubusercontent.com/google/deepvariant/r1.2/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
+wget https://raw.githubusercontent.com/google/deepvariant/r1.3/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
 ```
 
 Next, we shuffle the data using DataflowRunner. Before that, please make sure
@@ -269,13 +266,13 @@ In the output, the `tfrecord_path` should be valid paths in gs://.
 # --input_pattern_list=OUTPUT_BUCKET/training_set.with_label.tfrecord-?????-of-00016.gz
 # --output_pattern_prefix=OUTPUT_BUCKET/training_set.with_label.shuffled
 #
-# class2: 124616
-# class1: 173761
-# class0: 44707
+# class2: 124564
+# class1: 173668
+# class0: 44526
 
 name: "HG001"
 tfrecord_path: "OUTPUT_GCS_BUCKET/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-num_examples: 343084
+num_examples: 342758
 ```
 
 We can shuffle the validation set locally using
@@ -307,13 +304,13 @@ cat "${OUTPUT_DIR}/validation_set.dataset_config.pbtxt"
 # --input_pattern_list=OUTPUT_DIR/validation_set.with_label.tfrecord-?????-of-00016.gz
 # --output_pattern_prefix=OUTPUT_DIR/validation_set.with_label.shuffled
 #
-# class1: 31865
-# class0: 5612
-# class2: 21959
+# class2: 21954
+# class1: 31852
+# class0: 5595
 
 name: "HG001"
 tfrecord_path: "OUTPUT_DIR/validation_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-num_examples: 59436
+num_examples: 59401
 ```
 
 ### Start `model_train` and `model_eval`
@@ -409,7 +406,7 @@ gsutil cat "${TRAINING_DIR}"/best_checkpoint.txt
 ```
 
 In my run, this showed that the model checkpoint that performs the best on the
-validation set was `${TRAINING_DIR}/model.ckpt-36165`.
+validation set was `${TRAINING_DIR}/model.ckpt-35666`.
 
 
 Let's use this model to do the final evaluation on the test set and see how we
@@ -421,7 +418,7 @@ sudo docker run --gpus 1 \
   google/deepvariant:"${BIN_VERSION}-gpu" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
-  --customized_model "${TRAINING_DIR}/model.ckpt-36165" \
+  --customized_model "${TRAINING_DIR}/model.ckpt-35666" \
   --ref "${REF}" \
   --reads "${BAM_CHR20}" \
   --regions "chr20" \
@@ -455,22 +452,22 @@ The output of `hap.py` is here:
 ```
 [I] Total VCF records:         3775119
 [I] Non-reference VCF records: 3775119
-[I] Total VCF records:         132918
-[I] Non-reference VCF records: 96453
+[I] Total VCF records:         132914
+[I] Non-reference VCF records: 96179
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10023      9801       222        19232       156       8876    110     29       0.977851          0.984936        0.461522         0.981381                     NaN                     NaN                   1.547658                   2.065684
-INDEL   PASS        10023      9801       222        19232       156       8876    110     29       0.977851          0.984936        0.461522         0.981381                     NaN                     NaN                   1.547658                   2.065684
-  SNP    ALL        66237     66167        70        78220        54      11963     13      3       0.998943          0.999185        0.152940         0.999064                2.284397                  2.2033                   1.700387                   1.797389
-  SNP   PASS        66237     66167        70        78220        54      11963     13      3       0.998943          0.999185        0.152940         0.999064                2.284397                  2.2033                   1.700387                   1.797389
+INDEL    ALL        10023      9795       228        19205       172       8844    120     33       0.977252          0.983399        0.460505         0.980316                     NaN                     NaN                   1.547658                   2.053440
+INDEL   PASS        10023      9795       228        19205       172       8844    120     33       0.977252          0.983399        0.460505         0.980316                     NaN                     NaN                   1.547658                   2.053440
+  SNP    ALL        66237     66166        71        77973        64      11706     16      5       0.998928          0.999034        0.150129         0.998981                2.284397                2.203023                   1.700387                   1.790222
+  SNP   PASS        66237     66166        71        77973        64      11706     16      5       0.998928          0.999034        0.150129         0.998981                2.284397                2.203023                   1.700387                   1.790222
 ```
 
 To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 222  | 156  | 0.977851 | 0.984936  | 0.981381
-SNP   | 70   | 54   | 0.998943 | 0.999185  | 0.999064
+INDEL | 228  | 172  | 0.977252 | 0.983399  | 0.980316
+SNP   | 71   | 64   | 0.998928 | 0.999034  | 0.998981
 
 The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
@@ -492,7 +489,7 @@ Baseline:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 366  | 785  | 0.963484 | 0.927630  | 0.945217
+INDEL | 368  | 791  | 0.963284 | 0.927103  | 0.944848
 SNP   |  67  | 88   | 0.998988 | 0.998673  | 0.998831
 
 ### Additional things to try
