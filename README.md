@@ -82,8 +82,7 @@ google/deepvariant:"${BIN_VERSION}"`
 
 If you're using GPUs, or want to use Singularity instead, see
 [Quick Start](docs/deepvariant-quick-start.md) for more details or see all the
-[setup options](#deepvariant_setup) available including solutions on external
-platforms.
+[setup options](#deepvariant_setup) available.
 
 For more information, also see:
 
@@ -108,8 +107,8 @@ cite:
 
 [Accurate, scalable cohort variant calls using DeepVariant and GLnexus.
 _Bioinformatics_ (2021).](https://doi.org/10.1093/bioinformatics/btaa1081)<br/>
-Taedong Yun, Helen Li, Pi-Chuan Chang, Michael F. Lin, Andrew Carroll, and Cory Y.
-McLean.<br/>
+Taedong Yun, Helen Li, Pi-Chuan Chang, Michael F. Lin, Andrew Carroll, and Cory
+Y. McLean.<br/>
 doi: https://doi.org/10.1093/bioinformatics/btaa1081
 
 ## Why Use DeepVariant?
@@ -141,8 +140,7 @@ doi: https://doi.org/10.1093/bioinformatics/btaa1081
     30x whole genome and $0.21 for whole exome (not considering preemption).
 *   **Speed** - See [metrics](docs/metrics.md) for the runtime of all supported
     datatypes on a 64-core CPU-only machine</sup>. Multiple options for
-    acceleration exist, taking the WGS pipeline to as fast as 40 minutes
-    (see [external solutions](#external-solutions)).
+    acceleration exist.
 *   **Usage options** - DeepVariant can be run via Docker or binaries, using
     both on-premise hardware or in the cloud, with support for hardware
     accelerators like GPUs and TPUs.
@@ -182,21 +180,6 @@ Name                                                                            
 [Docker](docs/deepvariant-quick-start.md)           | This is the recommended method.
 [Build from source](docs/deepvariant-build-test.md) | DeepVariant comes with scripts to build it on Ubuntu 20.04. To build and run on other Unix-based systems, you will need to modify these scripts.
 Prebuilt Binaries                                                                                   | Available at [`gs://deepvariant/`](https://console.cloud.google.com/storage/browser/deepvariant). These are compiled to use SSE4 and AVX instructions, so you will need a CPU (such as Intel Sandy Bridge) that supports them. You can check the `/proc/cpuinfo` file on your computer, which lists these features under "flags".
-
-### External Solutions
-
-The following pipelines are not created or maintained by the
-[Genomics team in Google Health](https://health.google/health-research/).
-Please contact the relevant teams if you have any questions or concerns.
-
-Name                                                                                                                                                                                                                                                                                                                                                                                                                     | Description
-:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | -----------
-[Running DeepVariant on Google Cloud Platform](https://cloud.google.com/genomics/docs/tutorials/deepvariant)                                                                                                                                                                                                                                                                                                             | Docker-based pipelines optimized for cost and speed. Code can be found [here](https://github.com/googlegenomics/gcp-deepvariant-runner).
-[DeepVariant-on-spark from ATGENOMIX](https://github.com/atgenomix/deepvariant-on-spark)                                                                                                                                                                                                                                                                                                                                 | A germline short variant calling pipeline that runs DeepVariant on Apache Spark at scale with support for multi-GPU clusters (e.g. NVIDIA DGX-1).
-[NVIDIA Clara Parabricks](https://www.nvidia.com/en-us/docs/parabricks/variant-callers/deepvariant/)                                                                                                                                                                                                                                                                                                                     | An accelerated DeepVariant pipeline with multi-GPU support that runs our WGS pipeline in just 40 minutes, at a cost of $2-$3 per sample. This provides a 7.5x speedup over a 64-core CPU-only machine at lower cost.
-[DNAnexus DeepVariant App](https://platform.dnanexus.com/app/deepvariant_germline)                                                                                                                                                                                                                                                                                                                                       | Offers parallelized execution with a GUI interface (requires platform account).
-[Nextflow Pipeline](https://github.com/nf-core/deepvariant)                                                                                                                                                                                                                                                                                                                                                              | Offers parallel processing of multiple BAMs and Docker support.
-[DNAstack Pipeline](https://app.dnastack.com/auth/realms/DNAstack/protocol/openid-connect/auth?client_id=dnastack-client&redirect_uri=https%3A%2F%2Fapp.dnastack.com%2F%3Fredirect_fragment%3D%252Forg%252F473079%252Fproj%252F473096%252Fapp%252Fworkflow%252F425685%252Frun&state=42231553-9fbc-4d71-a10e-d6ce42415c01&nonce=daf2568d-4fe7-48e2-ab60-858937244a87&response_mode=query&response_type=code&scope=openid) | Cost-optimized DeepVariant pipeline (requires platform account).
 
 ## Contribution Guidelines
 
