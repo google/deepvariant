@@ -73,8 +73,8 @@ docker run \
   --output_vcf=/output/YOUR_OUTPUT_VCF \
   --output_gvcf=/output/YOUR_OUTPUT_GVCF \
   --num_shards=$(nproc) \ **This will use all your cores to run make_examples. Feel free to change.**
-  --logging_dir=/output/logs **Optional. This saves the log output for each stage separately.
-  --dry_run=false \ **Default is false. If set to true, commands will be printed out but not executed.
+  --logging_dir=/output/logs \ **Optional. This saves the log output for each stage separately.
+  --dry_run=false **Default is false. If set to true, commands will be printed out but not executed.
 ```
 
 To see all flags you can use, run: `docker run
