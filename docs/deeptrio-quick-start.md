@@ -27,9 +27,6 @@ If you want to compile the binaries for yourself, we also have a [Dockerfile]
 that you can use to build your own Docker image. You can read the [docker build]
 documentation on how to build.
 
-For production use cases on larger datasets, we recommend looking into the
-[External Solutions] section.
-
 ## Get Docker image, models, and test data
 
 ### Get Docker image
@@ -345,7 +342,6 @@ INDEL   PASS            2         2         0            2         0          0 
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
 [Dockerfile]: https://github.com/google/deepvariant/blob/r1.3/Dockerfile.deeptrio
-[External Solutions]: https://github.com/google/deepvariant#external-solutions
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
 [run_deeptrio.py]: ../scripts/run_deeptrio.py

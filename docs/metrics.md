@@ -99,8 +99,7 @@ out while training the hybrid model.
 
 For simplicity and consistency, we report runtime with a
 [CPU instance with 64 CPUs](deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform)
-This is NOT the fastest or cheapest configuration. For more scalable execution
-of DeepVariant see the [External Solutions] section.
+This is NOT the fastest or cheapest configuration.
 
 Use `gcloud compute ssh` to log in to the newly created instance.
 
@@ -128,5 +127,4 @@ DeepVariant. The runtime numbers reported above are the average of 5 runs each.
 The accuracy metrics come from the hap.py summary.csv output file.
 The runs are deterministic so all 5 runs produced the same output.
 
-[External Solutions]: https://github.com/google/deepvariant#external-solutions
 [CPU instance with 64 CPUs]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform

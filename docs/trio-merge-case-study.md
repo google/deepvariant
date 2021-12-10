@@ -25,10 +25,6 @@ See this workflow:
 
 A few things to note before we start:
 
-*   If you are looking for ways to run DeepVariant in larger batches, please
-    refer to the
-    [third party solutions](https://github.com/google/deepvariant#external-solutions)
-    section.
 *   It is recommended to use BAM files with original quality scores. In the case
     that BAM files went through recalibration, optional DV flags can be used in
     order to use original scores: `--parse_sam_aux_fields`,

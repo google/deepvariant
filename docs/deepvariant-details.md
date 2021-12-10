@@ -248,8 +248,7 @@ You can read more about samtools and bcftools here: http://www.htslib.org/doc/.
 We report runtime in our case studies documentation. In order to make sure the
 results we report are reproducible without too much variation, we provide the
 commands we used here to show you what kind of machines we ran the case studies
-on. This is NOT the fastest or cheapest configuration. For more scalable
-execution of DeepVariant see the [External Solutions] section.
+on. This is NOT the fastest or cheapest configuration.
 
 ### Command for a CPU-only machine on Google Cloud Platform.
 
