@@ -32,6 +32,11 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_DIRECT_PHASING_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_DIRECT_PHASING_H_
 
+#ifndef FRIEND_TEST
+#define FRIEND_TEST(test_case_name, test_name)\
+friend class test_case_name##_##test_name##_Test
+#endif
+
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -39,13 +44,14 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
-#include "absl/status/statusor.h"
 
 namespace learning {
 namespace genomics {
@@ -61,15 +67,25 @@ using ReadIndex = uint16_t;
 struct ReadSupportInfo {
   ReadIndex read_index;
   bool is_low_quality;
+  bool is_first_allele;
+  bool operator==(const ReadSupportInfo& rs) const {
+    return rs.read_index == read_index && rs.is_low_quality == is_low_quality;
+  }
 };
 
 // Data type associated with graph nodes. It uniquely defines an allele by its
 // type and bases along with the vector of supporting read ids.
 struct AlleleInfo {
-  int position = 0;
+  AlleleType type;
+  int64_t position = 0;
   std::string bases = "";
   std::vector<ReadSupportInfo> read_support;
 };
+
+inline bool operator==(const AlleleInfo& lhs, const AlleleInfo& rhs) {
+  return lhs.type == rhs.type && lhs.position == rhs.position &&
+         lhs.bases == rhs.bases && lhs.read_support == rhs.read_support;
+}
 
 struct VertexInfo {
   AlleleInfo allele_info;
@@ -97,8 +113,9 @@ using EdgeIterator = boost::graph_traits<BoostGraph>::edge_iterator;
 using AdjacencyIterator = boost::graph_traits<BoostGraph>::adjacency_iterator;
 
 struct AlleleSupport {
+  bool is_set = false;
   Vertex vertex;
-  bool is_low_quality;
+  ReadSupportInfo read_support;
 };
 
 // Class that implements Direct Phasing algorithm. This class is only used by
@@ -122,25 +139,81 @@ class DirectPhasing {
   std::string GraphViz() const;
 
  private:
+  // Convert Read protos to ReadSupportInfo, filtering low quality reads.
+  std::vector<ReadSupportInfo> ReadSupportFromProto(
+      const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>&
+          read_support) const;
+
   // Build graph from candidates.
   void Build(
       const std::vector<DeepVariantCall>& candidates,
       const std::vector<
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
 
+  void Build(const std::vector<DeepVariantCall>& candidates,
+             const std::vector<nucleus::genomics::v1::Read>& reads);
+
+  // Add nodes to the graph for each allele of the candidate. Fill auxiliary
+  // data structures.
+  void AddCandidate(const DeepVariantCall& candidate);
+
+  void InitializeReadMaps(
+      const std::vector<
+          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
+
+  Vertex AddVertex(
+      int64_t position, AlleleType allele_type, absl::string_view bases,
+      const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& reads);
+
+  // Add edge to the graph using the provided weight.
+  Edge AddEdge(const std::pair<Vertex, bool>& in_vertex,
+               const std::pair<Vertex, bool>& out_vertex, float weight);
+
+  // Add edge to the graph. The weight is calculated from read support for
+  // starting and ending vertices.
+  Edge AddEdge(const std::pair<Vertex, bool>& in_vertex,
+               const std::pair<Vertex, bool>& out_vertex);
+
+  void Prune();
+
+  void RebuildIndexMap();
+
+  void UpdateReadToAllelesMap(const Vertex& v);
+
+ private:
   BoostGraph graph_;
   Vertex source_;
   Vertex sink_;
   RawVertexIndexMap vertex_index_map_;  // This is needed for GraphViz.
+  absl::flat_hash_set<int> hom_positions_;
+  // Ordered candidate positions
+  std::vector<int> positions_;
 
   // Allele support for each read. Map is keyed by read id. Alleles are sorted
   // by position. This map allows to quickly query all alleles that a read
   // supports. Boolean variable designates if read to allele support is
   // low_quality. If true then read supports the allele with low quality.
-  absl::flat_hash_map<std::string, std::vector<AlleleSupport>>
-      read_to_alleles_;
+  absl::flat_hash_map<ReadIndex, std::vector<AlleleSupport>> read_to_alleles_;
   // Map read name to read id.
   absl::flat_hash_map<std::string, ReadIndex> read_to_index_;
+
+  // Graph Vizualization
+  VertexIndexMap IndexMap() const;
+
+  // Unit test helper functions.
+  struct ReadFields {
+    std::string read_name;
+    ReadIndex read_index;
+  };
+  void PopulateReadsTest(const std::vector<ReadFields>& reads) {
+    for (const auto& read : reads) {
+      read_to_index_.insert(std::pair(read.read_name, read.read_index));
+    }
+  }
+
+  FRIEND_TEST(DirectPhasingTest, ReadSupportFromProtoSimple);
+  FRIEND_TEST(DirectPhasingTest, ReadSupportFromProtoLQReads);
+  FRIEND_TEST(DirectPhasingTest, BuildGraphSimple);
 };
 
 // Helper functions.
@@ -159,7 +232,6 @@ int NumOfIndelAlleles(const DeepVariantCall& candidate);
 // Calculate the depth of all SUB alt alleles. This is done by enumerating all
 // supporting reads for all SUB alleles.
 int SubstitutionAllelesDepth(const DeepVariantCall& candidate);
-
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
