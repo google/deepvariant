@@ -91,12 +91,8 @@ apt-get remove "${APT_ARGS[@]}" libclang-common-9-dev
 apt-get update "${APT_ARGS[@]}" && \
   apt-get install "${APT_ARGS[@]}" \
     "python$CLIF_PYTHON_VERSION-dev" \
-    "python$CLIF_PYTHON_VERSION-distutils"
-
-# Install latest version of pip since the version on ubuntu could be outdated
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    "python$CLIF_PYTHON_VERSION" get-pip.py && \
-    rm get-pip.py
+    "python$CLIF_PYTHON_VERSION-distutils" \
+    "python3-pip"
 
 # Compile and install absl-cpp from source
 wget "https://github.com/abseil/abseil-cpp/archive/$ABSL_VERSION.tar.gz" && \
@@ -125,7 +121,7 @@ cd /usr/src/googletest && \
     make install
 
 # Install python runtime and test dependencies
-"python$CLIF_PYTHON_VERSION" -m pip install \
+pip3 install \
     absl-py \
     parameterized \
     protobuf=="$PROTOBUF_VERSION" \
