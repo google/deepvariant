@@ -44,6 +44,14 @@ FLAGS = flags.FLAGS
 # pylint: disable=line-too-long
 class RunDeeptrioTest(parameterized.TestCase):
 
+  def setUp(self):
+    super().setUp()
+    self._saved_flags = flagsaver.save_flag_values()
+
+  def tearDown(self):
+    super().tearDown()
+    flagsaver.restore_flag_values(self._saved_flags)
+
   def _create_all_commands_and_check_stdout(self, expected_stdout=None):
     with mock.patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
       commands, postprocess_cmds = run_deeptrio.create_all_commands(
