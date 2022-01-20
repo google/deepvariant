@@ -118,6 +118,14 @@ struct AlleleSupport {
   ReadSupportInfo read_support;
 };
 
+struct Score {
+  int score = 0;
+  // Source vertices are needed for back tracking.
+  Vertex from[2];  // Phase 1: Vertex[0], Phase 2: Vertex[1].
+  absl::flat_hash_set<ReadIndex> read_support[2];  // Read support for phase 1
+                                                   // and phase 2.
+};
+
 // Class that implements Direct Phasing algorithm. This class is only used by
 // make_examples.py. There are two exported methods:
 // * PhaseReads - called for each region and returns read phases calculated from
@@ -139,6 +147,9 @@ class DirectPhasing {
   std::string GraphViz() const;
 
  private:
+  // Dynamic score for the partition. This score defines the best phasing up to
+  // a certain position.
+
   // Convert Read protos to ReadSupportInfo, filtering low quality reads.
   std::vector<ReadSupportInfo> ReadSupportFromProto(
       const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>&
@@ -180,20 +191,40 @@ class DirectPhasing {
 
   void UpdateReadToAllelesMap(const Vertex& v);
 
+  // Find all reads supporting starting_score partition and <vertex>.
+  // Reads that start at <vertex> are also counted.
+  absl::flat_hash_set<ReadIndex> FindSupportingReads(
+      const Vertex& vertex, const Score& starting_score, int phase) const;
+
+  // Calculate phasing score for pair of vertices that end <edge1> and <edge2>
+  // The score is calculated by adding a number of reads that support this path
+  // to the preceding score.
+  Score CalculateScore(const Edge& edge1, const Edge& edge2) const;
+
+  // Calculate phasing score for all pairs of verts when there are no incoming
+  // edges to any of the vers.
+  void UpdateStartingScore(const std::vector<Vertex>& verts);
+
  private:
   BoostGraph graph_;
   Vertex source_;
   Vertex sink_;
   RawVertexIndexMap vertex_index_map_;  // This is needed for GraphViz.
   absl::flat_hash_set<int> hom_positions_;
+
   // Ordered candidate positions
   std::vector<int> positions_;
+
+  // Pair of vertices define a partition (phasing) for a candidate.
+  // scores_ allows to keep track of the current best score for each partition.
+  absl::flat_hash_map<std::pair<Vertex, Vertex>, Score> scores_;
 
   // Allele support for each read. Map is keyed by read id. Alleles are sorted
   // by position. This map allows to quickly query all alleles that a read
   // supports. Boolean variable designates if read to allele support is
   // low_quality. If true then read supports the allele with low quality.
   absl::flat_hash_map<ReadIndex, std::vector<AlleleSupport>> read_to_alleles_;
+
   // Map read name to read id.
   absl::flat_hash_map<std::string, ReadIndex> read_to_index_;
 
@@ -214,6 +245,8 @@ class DirectPhasing {
   FRIEND_TEST(DirectPhasingTest, ReadSupportFromProtoSimple);
   FRIEND_TEST(DirectPhasingTest, ReadSupportFromProtoLQReads);
   FRIEND_TEST(DirectPhasingTest, BuildGraphSimple);
+  FRIEND_TEST(DirectPhasingTest, CalculateScoreFirstIteration);
+  FRIEND_TEST(DirectPhasingTest, CalculateScoreWirhPreviousScore);
 };
 
 // Helper functions.

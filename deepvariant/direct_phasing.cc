@@ -35,6 +35,7 @@
 #include <string>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "boost/graph/graphviz.hpp"
@@ -48,6 +49,7 @@ namespace deepvariant {
 const int kMinRefAlleleDepth = 3;
 const float kMinEdgeWeight = 2.0;
 constexpr absl::string_view kRef = "REF";
+const int kNumOfPhases = 2;
 
 absl::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
     const std::vector<DeepVariantCall>& candidates,
@@ -68,6 +70,84 @@ void DirectPhasing::InitializeReadMaps(
   for (const auto& read : reads) {
     read_to_index_[ReadKey(*read.p_)] = index;
     index++;
+  }
+}
+
+// From <starting_score> we know the originating vertex. We need to find all the
+// reads that support a connection between originating vertex in
+// <starting_score> and a new <vertex>. In addition we count reads that start
+// at <vertex>.
+absl::flat_hash_set<ReadIndex> DirectPhasing::FindSupportingReads(
+    const Vertex& vertex, const Score& starting_score, int phase) const {
+  CHECK_GE(phase, 0);
+  CHECK_LT(phase, kNumOfPhases);
+  // Find all reads supporting <vertex> vertex
+  absl::flat_hash_set<ReadIndex> reads;
+  for (const ReadSupportInfo& rs : graph_[vertex].allele_info.read_support) {
+    if (rs.is_first_allele ||
+        starting_score.read_support[phase].contains(rs.read_index)) {
+      reads.insert(rs.read_index);
+    }
+  }
+  return reads;
+}
+
+Score DirectPhasing::CalculateScore(
+    const Edge& edge1, const Edge& edge2) const {
+  Vertex from_vertices[2] = {edge1.m_source, edge2.m_source};
+  Vertex to_vertices[2] = {edge1.m_target, edge2.m_target};
+
+  // The function should not be called if preceding score does not exist.
+  // redacted
+  if (!scores_.contains({from_vertices[0], from_vertices[1]})) {
+    return Score();
+  }
+
+  // Getting a preceding score.
+  const Score& prev_score = scores_.at({from_vertices[0], from_vertices[1]});
+
+  // Get all reads that support a given path.
+  absl::flat_hash_set<ReadIndex> supporting_reads_by_phase[kNumOfPhases];
+  for (int phase = 0; phase < kNumOfPhases; phase++) {
+    supporting_reads_by_phase[phase] =
+        FindSupportingReads(to_vertices[phase], prev_score, phase);
+  }
+
+  absl::flat_hash_set<ReadIndex> all_reads;
+  for (int phase = 0; phase < kNumOfPhases; phase++) {
+    all_reads.insert(supporting_reads_by_phase[phase].begin(),
+                     supporting_reads_by_phase[phase].end());
+  }
+
+  // New score is old score + number of all supporting reads.
+  return
+      Score{
+        .score = static_cast<int>(prev_score.score + all_reads.size()),
+        .from = {from_vertices[0], from_vertices[1]},
+        .read_support = {supporting_reads_by_phase[0],
+                         supporting_reads_by_phase[1]}
+      };
+}
+
+void DirectPhasing::UpdateStartingScore(const std::vector<Vertex>& verts) {
+  // Iterate all pairs of vertices.
+  for (int i = 0; i < verts.size(); i++) {
+    for (int j = i; j < verts.size(); j++) {
+      const auto& v1 = verts[i];
+      const auto& v2 = verts[j];
+      absl::flat_hash_set<ReadIndex> cur1_support;
+      for (auto rs : graph_[v1].allele_info.read_support) {
+        cur1_support.insert(rs.read_index);
+      }
+      absl::flat_hash_set<ReadIndex> cur2_support;
+      for (auto rs : graph_[v2].allele_info.read_support) {
+        cur2_support.insert(rs.read_index);
+      }
+      scores_[std::pair(v1, v2)] =
+          Score{.score = 0,
+                .from = {Vertex(), Vertex()},
+                .read_support = {cur1_support, cur2_support}};
+    }
   }
 }
 

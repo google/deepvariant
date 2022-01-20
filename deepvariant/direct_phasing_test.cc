@@ -318,6 +318,173 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
   }
 }
 
+VertexIterator FindVertex(const BoostGraph& graph, const AlleleInfo& ai) {
+  VertexIterator vi, vi_end;
+  for (std::tie(vi, vi_end) = vertices(graph); vi != vi_end; ++vi) {
+    if (graph[*vi].allele_info.position == ai.position &&
+        graph[*vi].allele_info.bases == ai.bases)
+      return vi;
+  }
+  return vi_end;
+}
+
+bool operator==(const Score& score1, const Score& score2)  {
+      return score1.score == score2.score
+              && std::equal(std::begin(score1.from), std::end(score1.from),
+                            std::begin(score2.from))
+              && std::equal(std::begin(score1.read_support),
+                            std::end(score1.read_support),
+                            std::begin(score2.read_support));
+  }
+
+TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
+  DirectPhasing direct_phasing;
+
+  // Create test candidates.
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 101,
+                    {{"A", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"C", {"read4/0", "read5/0"}}}             // SUB allele
+                    ),
+      MakeCandidate(105, 106,
+                    {{"C", {"read1/0", "read2/0", "read4/0", "read5/0"}}}),
+      MakeCandidate(110, 111,
+                    {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"G", {"read4/0", "read5/0"}}}             // SUB allele
+                    )};
+
+  // Create test reads.
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads({
+          {"read1", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read2", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read3", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read4", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read5", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+      });
+
+  direct_phasing.Build(candidates, reads);
+  Vertex v_100_a = *FindVertex(direct_phasing.graph_,
+                                 {AlleleType::SUBSTITUTION, 100, "A", {}});
+  Vertex v_100_c = *FindVertex(direct_phasing.graph_,
+                  {AlleleType::SUBSTITUTION, 100, "C", {}});
+  Vertex v_105_c = *FindVertex(direct_phasing.graph_,
+                  {AlleleType::SUBSTITUTION, 105, "C", {}});
+  direct_phasing.UpdateStartingScore({v_100_a, v_100_c});
+  Edge edge1, edge2;
+  bool found = false;
+  tie(edge1, found) = boost::edge(v_100_a, v_105_c, direct_phasing.graph_);
+  EXPECT_TRUE(found);
+  tie(edge2, found) = boost::edge(v_100_c, v_105_c, direct_phasing.graph_);
+  EXPECT_TRUE(found);
+
+  Score calculated_score = direct_phasing.CalculateScore(
+      edge1, edge2);
+  EXPECT_EQ(calculated_score,
+             Score({
+               .score = 4,
+               .from = {v_100_a, v_100_c},
+               .read_support = {{0, 1}, {3, 4}}
+             }));
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
+TEST(DirectPhasingTest, CalculateScoreWirhPreviousScore) {
+  DirectPhasing direct_phasing;
+
+  // Create test candidates.
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 101,
+                    {{"A", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"C", {"read4/0", "read5/0"}}}             // SUB allele
+                    ),
+      MakeCandidate(105, 106,
+                    {{"C", {"read1/0", "read2/0", "read4/0", "read5/0"}}}),
+      MakeCandidate(110, 111,
+                    {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"G", {"read4/0", "read5/0"}}}             // SUB allele
+                    )};
+
+  // Create test reads.
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads({
+          {"read1", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read2", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read3", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read4", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read5", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+      });
+
+  // Build graph
+  direct_phasing.Build(candidates, reads);
+
+  // Find all vertices.
+  Vertex v_100_a = *FindVertex(direct_phasing.graph_,
+                   {AlleleType::SUBSTITUTION, 100, "A", {}});
+  Vertex v_100_c = *FindVertex(direct_phasing.graph_,
+                  {AlleleType::SUBSTITUTION, 100, "C", {}});
+  Vertex v_105_c = *FindVertex(direct_phasing.graph_,
+                  {AlleleType::SUBSTITUTION, 105, "C", {}});
+  Vertex v_110_t = *FindVertex(direct_phasing.graph_,
+                  {AlleleType::SUBSTITUTION, 110, "T", {}});
+  Vertex v_110_g = *FindVertex(direct_phasing.graph_,
+                  {AlleleType::SUBSTITUTION, 110, "G", {}});
+
+  // Update starting score.
+  direct_phasing.UpdateStartingScore({v_100_a, v_100_c});
+  Edge edge1, edge2;
+  bool found = false;
+
+  // Update the score for {edge1, edge2}
+  tie(edge1, found) = boost::edge(v_100_a, v_105_c, direct_phasing.graph_);
+  EXPECT_TRUE(found);
+  tie(edge2, found) = boost::edge(v_100_c, v_105_c, direct_phasing.graph_);
+  EXPECT_TRUE(found);
+  direct_phasing.scores_[{v_105_c, v_105_c}] = direct_phasing.CalculateScore(
+      edge1, edge2);
+
+  // Verify scores for all combination of edge1, and edge2 (edge1, edge2
+  // variables are reused).
+  tie(edge1, found) = boost::edge(v_105_c, v_110_t, direct_phasing.graph_);
+  EXPECT_TRUE(found);
+  tie(edge2, found) = boost::edge(v_105_c, v_110_g, direct_phasing.graph_);
+  EXPECT_TRUE(found);
+
+  EXPECT_EQ(direct_phasing.CalculateScore(edge1, edge1),
+            Score({
+              .score = 4 + 2,
+              .from = {v_105_c, v_105_c},
+              .read_support = {{0, 1}, {}}
+            }));
+  EXPECT_EQ(direct_phasing.CalculateScore(edge2, edge2),
+             Score({
+              .score = 4 + 2,
+              .from = {v_105_c, v_105_c},
+              .read_support = {{}, {3, 4}}
+            }));
+  EXPECT_EQ(direct_phasing.CalculateScore(edge1, edge2),
+           Score({
+              .score = 4 + 4,
+              .from = {v_105_c, v_105_c},
+              .read_support = {{0, 1}, {3, 4}}
+            }));
+  EXPECT_EQ(direct_phasing.CalculateScore(edge2, edge1),
+            Score({
+              .score = 4 + 0,
+              .from = {v_105_c, v_105_c},
+              .read_support = {{}, {}}
+            }));
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
