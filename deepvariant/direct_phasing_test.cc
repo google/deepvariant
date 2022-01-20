@@ -240,6 +240,9 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
 
 
   // Create test reads.
+  // NOTE: The read content "ACGTTGACTTGC" here isn't actually used in the logic
+  // for this test, because the `candidates` are already created. You can ignore
+  // "ACGTTGACTTGC" when reading this test.
   std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
       CreateTestReads({
           {"read1", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
@@ -354,6 +357,9 @@ TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
                     )};
 
   // Create test reads.
+  // NOTE: The read content "ACGTTGACTTGC" here isn't actually used in the logic
+  // for this test, because the `candidates` are already created. You can ignore
+  // "ACGTTGACTTGC" when reading this test.
   std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
       CreateTestReads({
           {"read1", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
@@ -410,6 +416,9 @@ TEST(DirectPhasingTest, CalculateScoreWirhPreviousScore) {
                     )};
 
   // Create test reads.
+  // NOTE: The read content "ACGTTGACTTGC" here isn't actually used in the logic
+  // for this test, because the `candidates` are already created. You can ignore
+  // "ACGTTGACTTGC" when reading this test.
   std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
       CreateTestReads({
           {"read1", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
