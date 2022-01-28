@@ -91,8 +91,15 @@ apt-get remove "${APT_ARGS[@]}" libclang-common-9-dev
 apt-get update "${APT_ARGS[@]}" && \
   apt-get install "${APT_ARGS[@]}" \
     "python$CLIF_PYTHON_VERSION-dev" \
-    "python$CLIF_PYTHON_VERSION-distutils" \
-    "python3-pip"
+    "python$CLIF_PYTHON_VERSION-distutils"
+
+# Install latest version of pip since the version on ubuntu could be outdated.
+# Uninstall setuptools before installation of pip according to this suggestion:
+# https://github.com/google/deepvariant/commit/5469fec47e57febba751c30f1eb587cbffea8d89#commitcomment-64556350
+curl -Ss -o get-pip.py https://bootstrap.pypa.io/get-pip.py && \
+    pip uninstall -y setuptools &&
+    "python$CLIF_PYTHON_VERSION" get-pip.py --force-reinstall && \
+    rm get-pip.py
 
 # Compile and install absl-cpp from source
 wget "https://github.com/abseil/abseil-cpp/archive/$ABSL_VERSION.tar.gz" && \
@@ -121,7 +128,7 @@ cd /usr/src/googletest && \
     make install
 
 # Install python runtime and test dependencies
-pip3 install \
+"python$CLIF_PYTHON_VERSION" -m pip install \
     absl-py \
     parameterized \
     protobuf=="$PROTOBUF_VERSION" \
