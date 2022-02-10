@@ -35,11 +35,12 @@
 #include <string>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace learning {
@@ -51,16 +52,139 @@ const float kMinEdgeWeight = 2.0;
 constexpr absl::string_view kRef = "REF";
 const int kNumOfPhases = 2;
 
-absl::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
+std::string ReadKey(const nucleus::genomics::v1::Read& read) {
+  return absl::StrCat(read.fragment_name(), "/", read.read_number());
+}
+
+nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
     const std::vector<DeepVariantCall>& candidates,
     const std::vector<
         nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads) {
-  // Not Implemented.
-  return absl::Status(absl::StatusCode::kUnimplemented, "Not Implemented");
+  // Build graph from candidates.
+  Build(candidates, reads);
+  // Iterate positions in order. Calculate the score for each combination of
+  // allele pairs.
+  for (int i = 0; i < positions_.size(); i++) {
+    // redacted
+    // position to the next position. This happens with bad data where reads
+    // are mismapped. Good example is chr1:143175001-143200000.
+    // In this case we can break the graph and treat each piece as separate
+    // graphs. This redacted
+    // and DeepVariant will reject these candidates in most of the cases.
+    if (i == 0) {
+      UpdateStartingScore(vertices_by_position_[positions_[i]]);
+      continue;
+    }
+
+    // If any of the vertices have no incoming edges we create zero-weighted
+    // edges connecting to all vertices in the previous position. This is
+    // needed so that we can consider a "broken" path.
+    // Example:
+    // ... ------- A -------- C   ------ G ------ ...
+    // ... --------C        [ T ] ------ A ------ ...
+    // This is a simplified example showing how a broken path may still
+    // need to be considered. In this case we will create extra edges
+    // connecting T with A and T with C.
+    std::vector<Edge> incoming_edges;
+    for (const auto& v : vertices_by_position_[positions_[i]]) {
+      auto [start, end] = boost::in_edges(v, graph_);
+
+      // If there are no incoming edges for the vertex create zero weight
+      // edges to all previous vertices to connect the graph.
+      if (start == end && i > 0) {
+        for (const auto& prev_v : vertices_by_position_[positions_[i - 1]]) {
+          incoming_edges.push_back(AddEdge(prev_v, v, 0));
+        }
+      }
+      incoming_edges.insert(incoming_edges.end(), start, end);
+    }
+
+    // Enumerate all edge pairs
+    for (const auto& edge_1 : incoming_edges) {
+      for (const auto& edge_2 : incoming_edges) {
+        const Vertex& to_1 = edge_1.m_target;
+        const Vertex& to_2 = edge_2.m_target;
+        Score score = CalculateScore(edge_1, edge_2);
+        // If the score for the given vertices already exists then we update
+        // it if the new score is higher.
+        auto stored = scores_[{to_1, to_2}];
+        if (stored.score < score.score) {
+          scores_[{to_1, to_2}] = score;
+        }
+      }  // for j
+    }    // for i
+  }
+  // Backtrack from the last position. For each position where best partition is
+  // not homozygous assign phases to vertices (alleles).
+  AssignPhasesToVertices();
+
+  // Phases are assigned to reads based on a set of alleles the read overlap.
+  // If read overlaps more alleles of phase 1 then it is assigned a phase 1.
+  // There 3 possible assignments: 0, 1, 2 where 0 is "phase unassigned".
+  return AssignPhasesToReads(reads);
 }
 
-std::string ReadKey(const nucleus::genomics::v1::Read& read) {
-  return absl::StrCat(read.fragment_name(), "/", read.read_number());
+void DirectPhasing::AssignPhasesToVertices() {
+  // Assigning a random valid score. The max_score should be at least no less
+  // then this.
+  auto max_score_it = scores_.begin();
+  // Find the best score for the last position.
+  for (const Vertex& v1 : vertices_by_position_[positions_.back()]) {
+    for (const Vertex& v2 : vertices_by_position_[positions_.back()]) {
+      auto scores_it = scores_.find({v1, v2});
+      if (scores_it != scores_.end() &&
+          scores_it->second.score > max_score_it->second.score) {
+        max_score_it = scores_it;
+      }
+    }
+  }
+
+  while (max_score_it != scores_.end()) {
+    if (max_score_it->first.phase_1_vertex !=
+        max_score_it->first.phase_2_vertex) {
+      graph_[max_score_it->first.phase_1_vertex].allele_info.phase = 1;
+      graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 2;
+    }
+    // Go to the next score.
+    max_score_it = scores_.find(
+        {max_score_it->second.from[0], max_score_it->second.from[1]});
+  }
+}
+
+std::vector<int> DirectPhasing::AssignPhasesToReads(
+    const std::vector<
+        nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads)
+    const {
+  // Assign phase reads
+  // 1. For each read find all allele the read overlaps.
+  // 2. Assign the phase to the read based on the majority phase of all
+  // overlapped alleles.
+  // Each read is assigned a phase (1,2) or 0 if phase cannot be determined.
+  std::vector<int> phases(reads.size(), 0);
+  for (int i = 0; i < reads.size(); i++) {
+    ReadIndex read_index = read_to_index_.at(ReadKey(*reads[i].p_));
+
+    // Calculate the number of alleles of each phase the read overlaps.
+    if (read_to_alleles_.contains(read_index)) {
+      std::array<int, 3> read_phases = {0};
+
+      for (auto allele_support : read_to_alleles_.at(read_index)) {
+        const Vertex& v = allele_support.vertex;
+        read_phases[graph_[v].allele_info.phase]++;
+      }
+
+      if (read_phases[1] > read_phases[2]) {
+        phases[i] = 1;
+      } else if (read_phases[2] > read_phases[1]) {
+        phases[i] = 2;
+      } else {
+        phases[i] = 0;
+      }
+    } else {
+      phases[i] = 0;
+    }
+  }
+  return phases;
 }
 
 void DirectPhasing::InitializeReadMaps(
@@ -92,8 +216,8 @@ absl::flat_hash_set<ReadIndex> DirectPhasing::FindSupportingReads(
   return reads;
 }
 
-Score DirectPhasing::CalculateScore(
-    const Edge& edge1, const Edge& edge2) const {
+Score DirectPhasing::CalculateScore(const Edge& edge1,
+                                    const Edge& edge2) const {
   Vertex from_vertices[2] = {edge1.m_source, edge2.m_source};
   Vertex to_vertices[2] = {edge1.m_target, edge2.m_target};
 
@@ -120,13 +244,10 @@ Score DirectPhasing::CalculateScore(
   }
 
   // New score is old score + number of all supporting reads.
-  return
-      Score{
-        .score = static_cast<int>(prev_score.score + all_reads.size()),
-        .from = {from_vertices[0], from_vertices[1]},
-        .read_support = {supporting_reads_by_phase[0],
-                         supporting_reads_by_phase[1]}
-      };
+  return Score{.score = static_cast<int>(prev_score.score + all_reads.size()),
+               .from = {from_vertices[0], from_vertices[1]},
+               .read_support = {supporting_reads_by_phase[0],
+                                supporting_reads_by_phase[1]}};
 }
 
 void DirectPhasing::UpdateStartingScore(const std::vector<Vertex>& verts) {
@@ -143,10 +264,17 @@ void DirectPhasing::UpdateStartingScore(const std::vector<Vertex>& verts) {
       for (auto rs : graph_[v2].allele_info.read_support) {
         cur2_support.insert(rs.read_index);
       }
-      scores_[std::pair(v1, v2)] =
-          Score{.score = 0,
-                .from = {Vertex(), Vertex()},
-                .read_support = {cur1_support, cur2_support}};
+      // Score equals the total number of unique supporting reads. If candidate
+      // is heterozygous then supporting reads are disjoint sets. If candidate
+      // is homozygous then supporting reads are equal sets. With that in mind
+      // we can optimzie the union of supporting reads with the following
+      // expression.
+      int score = (cur1_support == cur2_support)
+                      ? cur1_support.size()
+                      : cur1_support.size() + cur2_support.size();
+      scores_[{v1, v2}] = Score{.score = score,
+                                .from = {Vertex(), Vertex()},
+                                .read_support = {cur1_support, cur2_support}};
     }
   }
 }
@@ -179,30 +307,30 @@ Vertex DirectPhasing::AddVertex(
   return v;
 }
 
-Edge DirectPhasing::AddEdge(const std::pair<Vertex, bool>& in_vertex,
-                            const std::pair<Vertex, bool>& out_vertex,
+Edge DirectPhasing::AddEdge(const Vertex& in_vertex, const Vertex& out_vertex,
                             float weight) {
   bool was_present;
   Edge edge;
-  std::tie(edge, was_present) =
-      boost::edge(in_vertex.first, out_vertex.first, graph_);
+  std::tie(edge, was_present) = boost::edge(in_vertex, out_vertex, graph_);
   if (!was_present) {
     std::tie(edge, std::ignore) =
-        boost::add_edge(in_vertex.first, out_vertex.first, EdgeInfo{0}, graph_);
+        boost::add_edge(in_vertex, out_vertex, EdgeInfo{0}, graph_);
   }
   EdgeInfo& ei = graph_[edge];
   ei.weight += weight;
   return edge;
 }
 
-Edge DirectPhasing::AddEdge(const std::pair<Vertex, bool>& in_vertex,
-                            const std::pair<Vertex, bool>& out_vertex) {
+Edge DirectPhasing::AddEdge(const Vertex& in_vertex, bool is_low_quality_in,
+                            const Vertex& out_vertex, bool is_low_quality_out) {
   float edge_weight =
-      (in_vertex.second ? 0.25 : 0.5) + (out_vertex.second ? 0.25 : 0.5);
+      (is_low_quality_in ? 0.25 : 0.5) + (is_low_quality_out ? 0.25 : 0.5);
   return AddEdge(in_vertex, out_vertex, edge_weight);
 }
 
 void DirectPhasing::UpdateReadToAllelesMap(const Vertex& v) {
+  vertices_by_position_[graph_[v].allele_info.position].push_back(v);
+
   for (auto& read_support_info : graph_[v].allele_info.read_support) {
     bool is_first = (read_to_alleles_.find(read_support_info.read_index) ==
                      read_to_alleles_.end());
@@ -225,15 +353,27 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
   // Add REF allele.
   if (ref_reads.size() >= kMinRefAlleleDepth) {
     UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
-                                  AlleleType::REFERENCE, kRef, ref_reads));
+                                     AlleleType::REFERENCE, kRef, ref_reads));
   }
 
   // Add alt alleles.
-  for (const auto& allele : candidate.allele_support_ext()) {
-    UpdateReadToAllelesMap(
-        AddVertex(candidate.variant().start(),
-                  AlleleTypeFromCandidate(allele.first, candidate),
-                  allele.first, allele.second.read_infos()));
+  using AlleleSupportItem =
+      std::pair<std::string, DeepVariantCall_SupportingReadsExt>;
+  // We need alleles sorted in order to make the algorithm deterministic.
+  // Without it alleles order (and therefore phase assignment)
+  // is random, but phasing is still correct.
+  std::vector<AlleleSupportItem> alleles(candidate.allele_support_ext().begin(),
+                                         candidate.allele_support_ext().end());
+
+  std::sort(
+      alleles.begin(), alleles.end(),
+      [](const AlleleSupportItem& allele1, const AlleleSupportItem& allele2) {
+        return allele1.first < allele2.first;
+      });
+  for (const auto& [allele, read_support] : alleles) {
+    UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
+                                     AlleleTypeFromCandidate(allele, candidate),
+                                     allele, read_support.read_infos()));
   }
 }
 
@@ -250,17 +390,22 @@ void DirectPhasing::Build(
     const std::vector<DeepVariantCall>& candidates,
     const std::vector<
         nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads) {
+  // redacted
+  // DirectPhasing class or implement a Clear() that resets the state.
   InitializeReadMaps(reads);
 
   // Iterate all candidates and create graph nodes.
-  for (const auto& candidate : candidates) {
+  // It is assumed that candidates are processed in the position order.
+  for (int i = 0; i < candidates.size(); i++) {
+    const auto& candidate = candidates[i];
+    if (i > 0) {
+      CHECK_LT(candidates[i - 1].variant().start(),
+               candidate.variant().start());
+    }
     if (CandidateFilter(candidate)) {
       AddCandidate(candidate);
       // Keep an ordered vector of positions.
-      if (positions_.empty() ||
-          positions_.back() != candidate.variant().start()) {
-        positions_.push_back(candidate.variant().start());
-      }
+      positions_.push_back(candidate.variant().start());
     }
   }  // for candidates
 
@@ -284,16 +429,18 @@ void DirectPhasing::Build(
       int prev_allele_pos =
           graph_[prev_allele_support.vertex].allele_info.position;
       if (pos_it == positions_.begin() || prev_pos == prev_allele_pos) {
-        AddEdge(std::pair(prev_allele_support.vertex,
-                          prev_allele_support.read_support.is_low_quality),
-                std::pair(allele_support.vertex,
-                          allele_support.read_support.is_low_quality));
+        AddEdge(prev_allele_support.vertex,
+                prev_allele_support.read_support.is_low_quality,
+                allele_support.vertex,
+                allele_support.read_support.is_low_quality);
       }
       prev_allele_support = allele_support;
     }
   }
 
-  Prune();
+  // redacted
+  // Also, investigate if it helps the algorithm.
+  //  Prune();
   RebuildIndexMap();
 }
 
@@ -317,9 +464,8 @@ void DirectPhasing::RebuildIndexMap() {
 }
 
 // Helper functions.
-AlleleType AlleleTypeFromCandidate(
-    std::string_view bases,
-    const DeepVariantCall& candidate) {
+AlleleType AlleleTypeFromCandidate(std::string_view bases,
+                                   const DeepVariantCall& candidate) {
   if (bases.size() > candidate.variant().end() - candidate.variant().start()) {
     return AlleleType::INSERTION;
   }
@@ -329,39 +475,41 @@ AlleleType AlleleTypeFromCandidate(
   if (bases.size() == candidate.variant().end() - candidate.variant().start()) {
     return AlleleType::SUBSTITUTION;
   }
-  return  AlleleType::UNSPECIFIED;
+  return AlleleType::UNSPECIFIED;
 }
 
 int NumOfSubstitutionAlleles(const DeepVariantCall& candidate) {
-  return std::count_if(candidate.allele_support_ext().begin(),
-         candidate.allele_support_ext().end(),
-         [candidate](std::pair<std::string,
-                                     DeepVariantCall_SupportingReadsExt> it) {
-           return (it.first != kUncalledAllele &&
-               AlleleTypeFromCandidate(it.first, candidate) ==
-                   AlleleType::SUBSTITUTION);
-         });
+  return std::count_if(
+      candidate.allele_support_ext().begin(),
+      candidate.allele_support_ext().end(),
+      [candidate](
+          std::pair<std::string, DeepVariantCall_SupportingReadsExt> it) {
+        return (it.first != kUncalledAllele &&
+                AlleleTypeFromCandidate(it.first, candidate) ==
+                    AlleleType::SUBSTITUTION);
+      });
 }
 
 int NumOfIndelAlleles(const DeepVariantCall& candidate) {
-  return std::count_if(candidate.allele_support_ext().begin(),
-         candidate.allele_support_ext().end(),
-         [candidate](std::pair<std::string,
-                                     DeepVariantCall_SupportingReadsExt> it) {
-           return (it.first != kUncalledAllele &&
-               (AlleleTypeFromCandidate(it.first, candidate) ==
-                   AlleleType::DELETION
-                   || AlleleTypeFromCandidate(it.first, candidate) ==
-                  AlleleType::INSERTION));
-         });
+  return std::count_if(
+      candidate.allele_support_ext().begin(),
+      candidate.allele_support_ext().end(),
+      [candidate](
+          std::pair<std::string, DeepVariantCall_SupportingReadsExt> it) {
+        return (it.first != kUncalledAllele &&
+                (AlleleTypeFromCandidate(it.first, candidate) ==
+                     AlleleType::DELETION ||
+                 AlleleTypeFromCandidate(it.first, candidate) ==
+                     AlleleType::INSERTION));
+      });
 }
 
 int SubstitutionAllelesDepth(const DeepVariantCall& candidate) {
   int count = 0;
   for (const auto& allele_info_it : candidate.allele_support_ext()) {
-    if (allele_info_it.first != kUncalledAllele
-        && AlleleTypeFromCandidate(allele_info_it.first, candidate) ==
-        AlleleType::SUBSTITUTION) {
+    if (allele_info_it.first != kUncalledAllele &&
+        AlleleTypeFromCandidate(allele_info_it.first, candidate) ==
+            AlleleType::SUBSTITUTION) {
       // redacted
       count += allele_info_it.second.read_infos_size();
     }
