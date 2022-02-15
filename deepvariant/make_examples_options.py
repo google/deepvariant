@@ -39,6 +39,7 @@ from deepvariant import make_examples_core
 from deepvariant import pileup_image
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.realigner import realigner
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io.python import hts_verbose
 from third_party.nucleus.protos import reads_pb2
@@ -272,9 +273,9 @@ flags.DEFINE_bool(
     'pileup image are colored differently for multiallelics.')
 flags.DEFINE_string(
     'population_vcfs', None,
-    'Optional. Tabix-indexed VCF file (or list of VCFs broken by chromosome),'
-    ' separated by comma or space, '
-    'containing population allele frequencies.')
+    'Optional. Tabix-indexed VCF file (or list of VCFs broken by chromosome), '
+    'separated by comma or space, containing population allele frequencies. '
+    'Each of the item can be a file path, or a wildcard pattern.')
 flags.DEFINE_bool(
     'use_allele_frequency', False,
     'If True, add another channel for pileup images to represent allele '
@@ -465,8 +466,8 @@ def shared_flags_to_options(
       options.pic_options.num_channels += 1
       options.pic_options.use_allele_frequency = True
     if flags_obj.population_vcfs:
-      options.population_vcf_filenames.extend(
-          re.split(',| ', flags_obj.population_vcfs))
+      for path in re.split(',| ', flags_obj.population_vcfs):
+        options.population_vcf_filenames.extend(gfile.Glob(path))
     options.max_reads_per_partition = flags_obj.max_reads_per_partition
     options.use_ref_for_cram = flags_obj.use_ref_for_cram
     options.hts_block_size = flags_obj.hts_block_size

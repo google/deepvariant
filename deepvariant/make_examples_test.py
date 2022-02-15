@@ -556,7 +556,28 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     candidates = list(tfrecord.read_tfrecords(FLAGS.candidates))
     self.assertLen(candidates, expected_count)
 
-  @parameterized.parameters(dict(mode='one vcf'), dict(mode='two vcfs'))
+  @flagsaver.flagsaver
+  def test_make_examples_with_allele_frequency_error_dup_chr(self):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.GRCH38_FASTA
+    FLAGS.reads = testdata.GRCH38_CHR20_AND_21_BAM
+    num_shards = 1
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('examples.tfrecord', num_shards))
+    region = ranges.parse_literal('chr20:61001-62000')
+    FLAGS.use_allele_frequency = True
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.population_vcfs = ' '.join(
+        [testdata.AF_VCF_CHR20_21_WILDCARD, testdata.AF_VCF_CHR20])
+    options = make_examples.default_options(add_flags=True)
+    with six.assertRaisesRegex(
+        self, ValueError, 'Variants on chr20 are included in multiple VCFs'):
+      # Run make_examples with the flags above.
+      make_examples_core.make_examples_runner(options)
+
+  @parameterized.parameters(
+      dict(mode='one vcf'), dict(mode='two vcfs'),
+      dict(mode='two vcfs with wildcard'))
   @flagsaver.flagsaver
   def test_make_examples_with_allele_frequency(self, mode):
     FLAGS.mode = 'calling'
@@ -573,6 +594,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     elif mode == 'two vcfs':
       FLAGS.population_vcfs = ' '.join(
           [testdata.AF_VCF_CHR20, testdata.AF_VCF_CHR21])
+    elif mode == 'two vcfs with wildcard':
+      FLAGS.population_vcfs = testdata.AF_VCF_CHR20_21_WILDCARD
     else:
       raise ValueError('Invalid mode for parameterized test.')
     options = make_examples.default_options(add_flags=True)
@@ -610,8 +633,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         all(population_matched_loci.values()),
         msg='Check that all '
         '3 sample loci appeared in the examples.')
-
-    # Check against the golden file (same for both modes).
+    # Check against the golden file (same for all modes).
     golden_file = _sharded(testdata.GOLDEN_ALLELE_FREQUENCY_EXAMPLES)
     examples_from_golden = list(tfrecord.read_tfrecords(golden_file))
     self.assertDeepVariantExamplesEqual(examples_from_golden, examples)

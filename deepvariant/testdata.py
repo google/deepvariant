@@ -104,6 +104,7 @@ VCF_WITH_ALLELE_FREQUENCIES = None
 GRCH38_FASTA = None
 AF_VCF_CHR20 = None
 AF_VCF_CHR21 = None
+AF_VCF_CHR20_21_WILDCARD = None
 AF_VCF_CHR20_AND_21 = None
 GRCH38_CHR20_AND_21_BAM = None
 GOLDEN_ALLELE_FREQUENCY_EXAMPLES = None
@@ -241,6 +242,7 @@ def init():
   global GRCH38_FASTA
   global AF_VCF_CHR20
   global AF_VCF_CHR21
+  global AF_VCF_CHR20_21_WILDCARD
   global AF_VCF_CHR20_AND_21
   global GRCH38_CHR20_AND_21_BAM
   global GOLDEN_ALLELE_FREQUENCY_EXAMPLES
@@ -254,6 +256,8 @@ def init():
   AF_VCF_CHR21 = deepvariant_testdata('input/cohort-chr21_100k.vcf.gz')
   AF_VCF_CHR20_AND_21 = deepvariant_testdata(
       'input/cohort-chr20_and_chr21_100k.vcf.gz')
+  AF_VCF_CHR20_21_WILDCARD = deepvariant_testdata(
+      'input/cohort-chr2?_100k.vcf.gz')
   # This bam filtered to regions: chr20:61001-62000 and chr21:5114000-5114999
   # and header is edited with the following to match the GRCH38_FASTA:
   # @SQ     SN:chr20        LN:10000000
