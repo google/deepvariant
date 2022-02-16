@@ -184,6 +184,9 @@ class DirectPhasing {
   // data structures.
   void AddCandidate(const DeepVariantCall& candidate);
 
+  // Initializes all members of the class.
+  void Clear();
+
   void InitializeReadMaps(
       const std::vector<
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
@@ -283,6 +286,8 @@ class DirectPhasing {
   FRIEND_TEST(DirectPhasingTest, CalculateScoreFirstIteration);
   FRIEND_TEST(DirectPhasingTest, CalculateScoreWithPreviousScore);
   FRIEND_TEST(DirectPhasingTest, PhaseReadBrokenPath);
+  FRIEND_TEST(DirectPhasingTest, FilterOneAlleleCandidate);
+  FRIEND_TEST(DirectPhasingTest, FilterCandidateWithIndel);
 };
 
 // Helper functions.

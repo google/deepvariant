@@ -34,6 +34,8 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <sstream>
+#include <string>
 #include <string_view>
 
 #include "deepvariant/protos/deepvariant.pb.h"
@@ -54,10 +56,12 @@ using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAreArray;
 using AlleleSupportMap =
     absl::flat_hash_map<std::string, std::vector<std::string>>;
+using RefSupport = std::vector<std::string>;
 
 DeepVariantCall MakeCandidate(
     int64_t start, int64_t end,
-    AlleleSupportMap allele_support = AlleleSupportMap()) {
+    const AlleleSupportMap& allele_support = AlleleSupportMap(),
+    const RefSupport& ref_support = RefSupport()) {
   DeepVariantCall candidate;
   Variant* variant = candidate.mutable_variant();
   variant->set_start(start);
@@ -71,6 +75,14 @@ DeepVariantCall MakeCandidate(
         read_info->set_read_name(read_name);
         read_info->set_is_low_quality(false);
       }
+    }
+  }
+  if (!ref_support.empty()) {
+    auto ref_support_field = candidate.mutable_ref_support_ext();
+    for (const auto& ref_support_read : ref_support) {
+      auto* read_info = ref_support_field->add_read_infos();
+      read_info->set_read_name(ref_support_read);
+      read_info->set_is_low_quality(false);
     }
   }
   return candidate;
@@ -228,11 +240,12 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
   std::vector<DeepVariantCall> candidates = {
       MakeCandidate(100, 101,
                     {{"A", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
-                     {"C", {"read4/0", "read5/0"}}}             // SUB allele
+                     {"C", {"read4/0", "read5/0", "read6/0"}}}  // SUB allele
                     ),
       MakeCandidate(105, 106,
                     {
-                     {"C", {"read1/0" , "read2/0", "read4/0", "read5/0"}}}
+                     {"C", {"read1/0" , "read2/0", "read3/0"}}},
+                     {"read4/0", "read5/0", "read6/0"}
                     ),
       MakeCandidate(110, 111,
                     {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
@@ -251,6 +264,7 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
           {"read3", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
           {"read4", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
           {"read5", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read6", "chr1", 109, "ACGTTGACTTGC", {"12M"}}
       });
 
   // Manually define an expected vertices.
@@ -260,18 +274,21 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
                  .bases = "A",
                  .read_support = {{0, false}, {1, false}, {2, false}}},
       AlleleInfo{.type = AlleleType::SUBSTITUTION,
-                 .position = 110,
-                 .bases = "T",
-                 .read_support = {{0, false}, {1, false}, {2, false}}},
+                 .position = 100,
+                 .bases = "C",
+                 .read_support = {{3, false}, {4, false}, {5, false}}},
       AlleleInfo{.type = AlleleType::SUBSTITUTION,
                  .position = 105,
                  .bases = "C",
-                 .read_support = {{0, false}, {1, false}, {3, false},
-                                  {4, false}}},
+                 .read_support = {{0, false}, {1, false}, {2, false}}},
+      AlleleInfo{.type = AlleleType::REFERENCE,
+                 .position = 105,
+                 .bases = "REF",
+                 .read_support = {{3, false}, {4, false}, {5, false}}},
       AlleleInfo{.type = AlleleType::SUBSTITUTION,
-                 .position = 100,
-                 .bases = "C",
-                 .read_support = {{3, false}, {4, false}}},
+                 .position = 110,
+                 .bases = "T",
+                 .read_support = {{0, false}, {1, false}, {2, false}}},
       AlleleInfo{.type = AlleleType::SUBSTITUTION,
                  .position = 110,
                  .bases = "G",
@@ -280,9 +297,9 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
   // Manually define expected edges.
   std::vector<std::pair<AlleleInfo, AlleleInfo>> expected_edges_list = {
       {expected_vertices_list[0], expected_vertices_list[2]},
-      {expected_vertices_list[3], expected_vertices_list[2]},
-      {expected_vertices_list[2], expected_vertices_list[1]},
-      {expected_vertices_list[2], expected_vertices_list[4]}
+      {expected_vertices_list[1], expected_vertices_list[3]},
+      {expected_vertices_list[2], expected_vertices_list[4]},
+      {expected_vertices_list[3], expected_vertices_list[5]},
   };
 
   direct_phasing.Build(candidates, reads);
@@ -307,6 +324,17 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
   VertexIterator vi, vend;
   std::tie(vi, vend) = boost::vertices(direct_phasing.graph_);
   for (; vi != vend; ++vi) {
+    // gtest comparator does not output per field differences. If test fails
+    // it is easier to debug if vertices are printed here.
+    // std::ostringstream ss;
+    // for (auto read_info :
+    //          direct_phasing.graph_[*vi].allele_info.read_support) {
+    //   ss << read_info.read_index << ",";
+    // }
+    // LOG(WARNING) << "Vertex: "
+    //     << direct_phasing.graph_[*vi].allele_info.position << " "
+    //     << direct_phasing.graph_[*vi].allele_info.bases << " "
+    //     << ss.str();
     graph_vertices.push_back(direct_phasing.graph_[*vi].allele_info);
     // gtest comparator does not output per field differences. If test fails
     // it is easier to debug if edges are printed here.
@@ -351,7 +379,8 @@ TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
                      {"C", {"read4/0", "read5/0"}}}             // SUB allele
                     ),
       MakeCandidate(105, 106,
-                    {{"C", {"read1/0", "read2/0", "read4/0", "read5/0"}}}),
+                    {{"C", {"read1/0", "read2/0", "read4/0", "read5/0"}}},
+                    {"read6/0", "read7/0", "read8/0"}),
       MakeCandidate(110, 111,
                     {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
                      {"G", {"read4/0", "read5/0"}}}             // SUB allele
@@ -368,6 +397,9 @@ TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
           {"read3", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
           {"read4", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
           {"read5", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read6", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read7", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read8", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
       });
 
   direct_phasing.Build(candidates, reads);
@@ -407,7 +439,8 @@ TEST(DirectPhasingTest, CalculateScoreWithPreviousScore) {
                      {"C", {"read4/0", "read5/0"}}}             // SUB allele
                     ),
       MakeCandidate(105, 106,
-                    {{"C", {"read1/0", "read2/0", "read4/0", "read5/0"}}}),
+                    {{"C", {"read1/0", "read2/0", "read4/0", "read5/0"}}},
+                    {"read6/0", "read7/0", "read8/0"}),
       MakeCandidate(110, 111,
                     {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
                      {"G", {"read4/0", "read5/0"}}}             // SUB allele
@@ -424,6 +457,9 @@ TEST(DirectPhasingTest, CalculateScoreWithPreviousScore) {
           {"read3", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
           {"read4", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
           {"read5", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read6", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read7", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read8", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
       });
 
   // Build graph
@@ -689,7 +725,7 @@ TEST(DirectPhasingTest, PhaseReadBrokenPath) {
   nucleus::StatusOr<std::vector<int>> phases =
       direct_phasing.PhaseReads(candidates, reads);
   EXPECT_TRUE(phases.ok());
-  EXPECT_THAT(phases.ValueOrDie(), ElementsAreArray({1, 1, 1, 2, 2, 1, 1}));
+  EXPECT_THAT(phases.ValueOrDie(), ElementsAreArray({0, 0, 0, 2, 2, 1, 1}));
   Vertex v_105_g = *FindVertex(direct_phasing.graph_,
                   {AlleleType::SUBSTITUTION, 105, "G", {}});
   Vertex v_105_c = *FindVertex(direct_phasing.graph_,
@@ -839,6 +875,144 @@ TEST(DirectPhasingTest, PhaseReadCandidateOutOfOrderInTheMiddle) {
       });
 
   EXPECT_DEATH(direct_phasing.PhaseReads(candidates, reads), "");
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
+// Test verifies that candidate that has only one allele and less than 3 reads
+// supporting reference is filtered out.
+TEST(DirectPhasingTest, FilterOneAlleleCandidate) {
+  DirectPhasing direct_phasing;
+
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 101,
+                    {
+                     {"C", {"read4/0", "read5/0", "read6/0"}}},  // SUB allele
+                     {"read7/0"}  // One read supporting REF
+                    ),
+      MakeCandidate(110, 111,
+                    {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"G", {"read4/0", "read5/0", "read6/0"}}}  // SUB allele
+  )};
+
+  // Create test reads.
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads({
+          {"read1", "chr1", 89, "ACGTTGACTTGC", {"12M"}},
+          {"read2", "chr1", 89, "ACGTTGACTTGC", {"12M"}},
+          {"read3", "chr1", 89, "ACGTTGACTTGC", {"12M"}},
+          {"read4", "chr1", 79, "ACGTTGACTTGC", {"12M"}},
+          {"read5", "chr1", 79, "ACGTTGACTTGC", {"12M"}},
+          {"read6", "chr1", 103, "ACGTTGACTTGC", {"12M"}},
+          {"read7", "chr1", 103, "ACGTTGACTTGC", {"12M"}},
+      });
+
+  AlleleInfo v_100_c = {AlleleType::SUBSTITUTION, 100, "C", {}};
+
+  direct_phasing.Build(candidates, reads);
+
+  // We expect that vertex at position 100 is not created.
+  VertexIterator vi = FindVertex(direct_phasing.graph_, v_100_c);
+  EXPECT_EQ(vi, direct_phasing.graph_.m_vertices.cend());
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
+// Test verifies that candidate containing INDEL is filtered out.
+TEST(DirectPhasingTest, FilterCandidateWithIndel) {
+  DirectPhasing direct_phasing;
+
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 102,
+                     {
+                      {"CC", {"read4/0", "read5/0", "read6/0"}},  // SUB allele
+                      {"A", {"read1/0", "read2/0"}},  // INDEL allele
+                     },
+                     {"read7/0"}  // One read supporting REF
+                    ),
+      MakeCandidate(110, 111,
+                    {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"G", {"read4/0", "read5/0", "read6/0"}}}  // SUB allele
+  )};
+
+  // Create test reads.
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads({
+          {"read1", "chr1", 89, "ACGTTGACTTGC", {"12M"}},
+          {"read2", "chr1", 89, "ACGTTGACTTGC", {"12M"}},
+          {"read3", "chr1", 89, "ACGTTGACTTGC", {"12M"}},
+          {"read4", "chr1", 79, "ACGTTGACTTGC", {"12M"}},
+          {"read5", "chr1", 79, "ACGTTGACTTGC", {"12M"}},
+          {"read6", "chr1", 103, "ACGTTGACTTGC", {"12M"}},
+          {"read7", "chr1", 103, "ACGTTGACTTGC", {"12M"}},
+      });
+
+  AlleleInfo v_100_c = {AlleleType::SUBSTITUTION, 100, "C", {}};
+
+  direct_phasing.Build(candidates, reads);
+
+  // We expect that vertex at positopm 100 is not created.
+  VertexIterator vi = FindVertex(direct_phasing.graph_, v_100_c);
+  EXPECT_EQ(vi, direct_phasing.graph_.m_vertices.cend());
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
+TEST(DirectPhasingTest, DirectPhasingReuseObject) {
+  DirectPhasing direct_phasing;
+
+  // Create test candidates.
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 101,
+                    {{"A", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"C", {"read4/0", "read5/0"}}}             // SUB allele
+                    ),
+      MakeCandidate(105, 106,
+                    {{"C", {"read1/0", "read2/0", "read4/0", "read5/0"}}}),
+      MakeCandidate(110, 111,
+                    {{"T", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"G", {"read4/0", "read5/0"}}}             // SUB allele
+                    )};
+
+  // Create test reads.
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads({
+          {"read1", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read2", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read3", "chr1", 99, "ACGTTGACTTGC", {"12M"}},
+          {"read4", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+          {"read5", "chr1", 109, "ACGTTGACTTGC", {"12M"}},
+      });
+
+  nucleus::StatusOr<std::vector<int>> phases =
+      direct_phasing.PhaseReads(candidates, reads);
+  EXPECT_TRUE(phases.ok());
+  EXPECT_THAT(phases.ValueOrDie(), ElementsAreArray({1, 1, 1, 2, 2}));
+
+  std::vector<DeepVariantCall> candidates2 = {
+      MakeCandidate(120, 121,
+                    {{"G", {"read1/0", "read2/0", "read3/0"}},
+                     {"A", {"read4/0", "read5/0"}}}
+                    ),
+      MakeCandidate(130, 131,
+                    {
+                      {"T", {"read1/0", "read2/0", "read3/0",
+                             "read4/0", "read5/0"}}
+                    })};
+
+  nucleus::StatusOr<std::vector<int>> phases2 =
+      direct_phasing.PhaseReads(candidates2, reads);
+  EXPECT_TRUE(phases2.ok());
+  EXPECT_THAT(phases2.ValueOrDie(), ElementsAreArray({0, 0, 0, 0, 0}));
 
   // Release memory.
   for (auto read : reads) {

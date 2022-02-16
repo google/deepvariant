@@ -48,6 +48,7 @@ namespace genomics {
 namespace deepvariant {
 
 const int kMinRefAlleleDepth = 3;
+const int kMinAllelesToPhase = 2;
 const float kMinEdgeWeight = 2.0;
 constexpr absl::string_view kRef = "REF";
 const int kNumOfPhases = 2;
@@ -173,9 +174,11 @@ std::vector<int> DirectPhasing::AssignPhasesToReads(
         read_phases[graph_[v].allele_info.phase]++;
       }
 
-      if (read_phases[1] > read_phases[2]) {
+      if (read_phases[1] > read_phases[2] &&
+          read_phases[1] >= kMinAllelesToPhase) {
         phases[i] = 1;
-      } else if (read_phases[2] > read_phases[1]) {
+      } else if (read_phases[2] > read_phases[1] &&
+                 read_phases[2] >= kMinAllelesToPhase) {
         phases[i] = 2;
       } else {
         phases[i] = 0;
@@ -377,10 +380,32 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
   }
 }
 
-// Filter out all homozygious and low quality candidates. The graph should be
-// built with only heteragious candidates.
-// redacted
-bool CandidateFilter(const DeepVariantCall& candidate) { return true; }
+// Filters out all homozygious candidates and candidates containing indels.
+bool CandidateFilter(const DeepVariantCall& candidate)  {
+  // If there is only one allele and not enough support for the ref then
+  // empirically we can consider this candidate homozygous.
+  if (candidate.allele_support_ext().size() <= 1 &&
+       candidate.ref_support_ext().read_infos_size() < kMinRefAlleleDepth) {
+    return false;
+  }
+  // The test filters out all candidates containing indels.
+  for (const auto& [allele, read_support] : candidate.allele_support_ext()) {
+    if (allele.size() !=
+        candidate.variant().end() - candidate.variant().start()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void DirectPhasing::Clear() {
+  hom_positions_.clear();
+  positions_.clear();
+  vertices_by_position_.clear();
+  scores_.clear();
+  read_to_alleles_.clear();
+  read_to_index_.clear();
+}
 
 // Iterate through all candidates in the region. For each potentially
 // heterozygious SNP candidate create a graph vertex coressponding to each
@@ -390,8 +415,7 @@ void DirectPhasing::Build(
     const std::vector<DeepVariantCall>& candidates,
     const std::vector<
         nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads) {
-  // redacted
-  // DirectPhasing class or implement a Clear() that resets the state.
+  Clear();
   InitializeReadMaps(reads);
 
   // Iterate all candidates and create graph nodes.
