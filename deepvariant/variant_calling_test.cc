@@ -963,13 +963,19 @@ TEST_F(VariantCallingTest, TestCallsFromVcfDetails) {
   EXPECT_EQ(candidates[0].variant().alternate_bases(0), "G");
   EXPECT_EQ(candidates[0].variant().calls_size(), 1);
   EXPECT_EQ(candidates[0].variant().calls(0).info_size(), 3);
-  EXPECT_EQ(candidates[0].variant().calls(0).info().at("AD").ShortDebugString(),
-            "values { int_value: 5 } values { int_value: 2 }");
-  EXPECT_EQ(candidates[0].variant().calls(0).info().at("DP").ShortDebugString(),
-            "values { int_value: 10 }");
-  EXPECT_EQ(
-      candidates[0].variant().calls(0).info().at("VAF").ShortDebugString(),
-      "values { number_value: 0.2 }");
+  nucleus::genomics::v1::ListValue expected_list_value;
+  google::protobuf::TextFormat::ParseFromString(
+      "values { int_value: 5 } values { int_value: 2 }", &expected_list_value);
+  EXPECT_THAT(candidates[0].variant().calls(0).info().at("AD"),
+              EqualsProto(expected_list_value));
+  google::protobuf::TextFormat::ParseFromString("values { int_value: 10 }",
+                                      &expected_list_value);
+  EXPECT_THAT(candidates[0].variant().calls(0).info().at("DP"),
+              EqualsProto(expected_list_value));
+  google::protobuf::TextFormat::ParseFromString("values { number_value: 0.2 }",
+                                      &expected_list_value);
+  EXPECT_THAT(candidates[0].variant().calls(0).info().at("VAF"),
+              EqualsProto(expected_list_value));
 }
 
 TEST_F(VariantCallingTest, TestTrainUncalledGenotypes) {
