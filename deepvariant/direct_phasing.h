@@ -158,6 +158,16 @@ class DirectPhasing {
       const std::vector<
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
 
+  // PhaseReads wrapper for Python clif interface.
+  // redacted
+  // wrapper. See if it makes sense to do here as well.
+  std::vector<int> PhaseReadsPython(
+      const std::vector<DeepVariantCall>& candidates,
+      const std::vector<
+          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads) {
+    return PhaseReads(candidates, reads).ValueOrDie();
+  }
+
   // Helper function to output graph into graphviz for debugging. This function
   // is exported to Python.
   std::string GraphViz() const;
