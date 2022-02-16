@@ -298,6 +298,13 @@ flags.DEFINE_bool(
     'https://github.com/google/deepvariant/commit/'
     'fbde0674639a28cb9e8004c7a01bbe25240c7d46. '
     'We do not recommend setting this flag to True.')
+flags.DEFINE_bool('phase_reads', False,
+                  'Calculate phases and add HP tag to all reads on a fly.')
+flags.DEFINE_integer(
+    'phase_reads_region_padding', 0,
+    'This flag is used in combination with phase_reads. It allows to extend'
+    'region and calculate candidates in extended region. Output examples are'
+    'not affected by this flag.')
 
 
 def shared_flags_to_options(
@@ -383,6 +390,12 @@ def shared_flags_to_options(
 
     if flags_obj.pileup_image_width:
       options.pic_options.width = flags_obj.pileup_image_width
+
+    # DirectPhasing related flags.
+    if flags_obj.phase_reads:
+      options.phase_reads = flags_obj.phase_reads
+    if flags_obj.phase_reads_region_padding:
+      options.phase_reads_region_padding = flags_obj.phase_reads_region_padding
 
     options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
     options.pic_options.types_to_alt_align = flags_obj.types_to_alt_align
