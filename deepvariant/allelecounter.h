@@ -327,7 +327,8 @@ class AlleleCounter {
   // This function has all of the behavior of calling Counts() but instead of
   // returning the heavy-weight AlleleCount proto this returns a simpler proto.
   // See the proto description for more information about the proto fields.
-  std::vector<AlleleCountSummary> SummaryCounts() const;
+  std::vector<AlleleCountSummary> SummaryCounts(
+      int phase_reads_region_padding = 0) const;
 
   // How many reads have been added to this counter?
   int NCountedReads() const { return n_reads_counted_; }

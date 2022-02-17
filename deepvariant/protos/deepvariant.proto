@@ -394,6 +394,8 @@ message VariantCallerOptions {
   bool skip_uncalled_genotypes = 13;
 
   bool track_ref_reads = 14;
+
+  int32 phase_reads_region_padding = 15;
 }
 
 // Options to control how we label variant calls.

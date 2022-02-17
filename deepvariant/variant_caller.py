@@ -378,7 +378,8 @@ class VariantCaller(metaclass=abc.ABCMeta):
     if include_gvcfs:
       gvcfs = list(
           self.make_gvcfs(
-              allele_counters[target_sample].summary_counts(),
+              allele_counters[target_sample].summary_counts(
+                  self.options.phase_reads_region_padding),
               include_med_dp=include_med_dp))
     return candidates, gvcfs
 
