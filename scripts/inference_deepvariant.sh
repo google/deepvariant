@@ -20,6 +20,7 @@ Flags:
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WES, PACBIO, or HYBRID_PACBIO_ILLUMINA.
+--population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 
@@ -51,6 +52,7 @@ CUSTOMIZED_MODEL=""
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
+POPULATION_VCFS=""
 POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
 REF=""
@@ -175,6 +177,11 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --population_vcfs)
+      POPULATION_VCFS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --proposed_variants)
       PROPOSED_VARIANTS="$2"
       shift # Remove argument name from processing
@@ -295,6 +302,7 @@ echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
+echo "POPULATION_VCFS: ${POPULATION_VCFS}"
 echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
@@ -369,6 +377,10 @@ function copy_data() {
   if [[ -n "${PROPOSED_VARIANTS}" ]]; then
     copy_gs_or_http_file "${PROPOSED_VARIANTS}" "${INPUT_DIR}"
     copy_gs_or_http_file "${PROPOSED_VARIANTS}.tbi" "${INPUT_DIR}"
+  fi
+  if [[ -n "${POPULATION_VCFS}" ]]; then
+    copy_gs_or_http_file "${POPULATION_VCFS}" "${INPUT_DIR}"
+    copy_gs_or_http_file "${POPULATION_VCFS}.tbi" "${INPUT_DIR}"
   fi
 }
 
@@ -472,6 +484,11 @@ function setup_args() {
     # statement.
     if [[ -n "${PROPOSED_VARIANTS}" ]]; then
       MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},proposed_variants=/input/$(basename "$PROPOSED_VARIANTS")"
+    fi
+    # In order to use population_vcfs, use_allele_frequency has to be set,
+    # so it's also ok to put this if statement inside.
+    if [[ -n "${POPULATION_VCFS}" ]]; then
+      MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},population_vcfs=/input/$(basename "$POPULATION_VCFS")"
     fi
     extra_args+=( --make_examples_extra_args "${MAKE_EXAMPLES_ARGS}")
   fi
