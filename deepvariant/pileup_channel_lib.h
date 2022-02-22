@@ -57,6 +57,7 @@ static const auto& ch_gc_content = "gc_content";
 static const auto& ch_is_homopolymer = "is_homopolymer";
 static const auto& ch_homopolymer_weighted = "homopolymer_weighted";
 static const auto& ch_blank = "blank";
+static const auto& ch_insert_size = "insert_size";
 
 //-------//
 // Utils //
@@ -67,6 +68,9 @@ static const auto& ch_blank = "blank";
 // values can go from 0 to 254. Which, when converted to an int,
 // gives us 255 or 256 possible pixel values.
 const float kMaxPixelValueAsFloat = 254.0;
+// The maximum value that we will consider for fragment length.
+// redacted
+const float MaxFragmentLength = 1000;
 
 // Scales an input value to pixel range 0-254.
 inline uint8 ScaleColor(int value, float max_val) {
@@ -264,6 +268,24 @@ inline bool channel_exists(std::vector<std::string>& channels,
   return false;
 }
 
+// normalizes a Read's `fragment_length` to a pixel value
+inline int normalizeFragmentLength(const Read& read) {
+  int fragment_length = std::abs(read.fragment_length());
+  if (static_cast<float>(fragment_length) > MaxFragmentLength) {
+    fragment_length = static_cast<int>(MaxFragmentLength);
+  }
+  return static_cast<int>(kMaxPixelValueAsFloat *
+    (static_cast<float>(fragment_length) / MaxFragmentLength));
+}
+
+inline std::vector<uint8> ReadInsertSize(
+    const Read& read) {
+  // Generates a vector reflecting the fragment length of the read
+  std::vector<uint8> reads_with_insert_size(
+      read.aligned_sequence().size(), normalizeFragmentLength(read));
+  return reads_with_insert_size;
+}
+
 //-------------------//
 // Channels Accessor //
 //-------------------//
@@ -307,6 +329,8 @@ class OptChannels {
             ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
       } else if (channel == ch_blank) {
         data_[channel] = Blank(read);
+      } else if (channel == ch_insert_size) {
+        data_[channel] = ReadInsertSize(read);
       }
     }
   }
@@ -333,6 +357,8 @@ class OptChannels {
       } else if (channel == ch_identity) {
         ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_gap_compressed_identity) {
+        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
+      } else if (channel == ch_insert_size) {
         ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_gc_content) {
         refRead.set_aligned_sequence(ref_bases);

@@ -192,6 +192,38 @@ TEST(HomoPolymerWeightedTest, WeightedHomoPolymerMax) {
   EXPECT_EQ(w_homopolymer, expected);
 }
 
+TEST(ReadInsertSizeTest, BasicCase) {
+  Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
+  read.set_fragment_length(22);
+  std::vector<uint8> w_insert_size = ReadInsertSize(read);
+  std::vector<uint8> expected{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
+  EXPECT_EQ(w_insert_size, expected);
+}
+
+TEST(ReadInsertSizeTest, NegativeValueCase) {
+  Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
+  read.set_fragment_length(-22);
+  std::vector<uint8> w_insert_size = ReadInsertSize(read);
+  std::vector<uint8> expected{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
+  EXPECT_EQ(w_insert_size, expected);
+}
+
+TEST(ReadInsertSizeTest, ExceedsLimit) {
+  Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
+  read.set_fragment_length(1001);
+  std::vector<uint8> w_insert_size = ReadInsertSize(read);
+  std::vector<uint8> expected{254, 254, 254, 254, 254, 254, 254, 254,
+                              254, 254, 254, 254, 254, 254, 254, 254};
+  EXPECT_EQ(w_insert_size, expected);
+}
+
+TEST(ReadInsertSizeTest, NoValue) {
+  Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
+  std::vector<uint8> w_insert_size = ReadInsertSize(read);
+  std::vector<uint8> expected{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  EXPECT_EQ(w_insert_size, expected);
+}
+
 TEST(GetChannelDataTest, ReadData) {
   OptChannels channel_set{};
   std::vector<std::string> channels{ch_read_mapping_percent,

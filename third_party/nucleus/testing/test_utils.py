@@ -287,7 +287,8 @@ def make_read(bases,
               cigar=None,
               mapq=50,
               chrom='chr1',
-              name=None):
+              name=None,
+              fragment_length=None):
   """Makes a nucleus.genomics.v1.Read for testing."""
   if quals and len(bases) != len(quals):
     raise ValueError('Incompatable bases and quals', bases, quals)
@@ -298,6 +299,7 @@ def make_read(bases,
       number_reads=2,
       aligned_sequence=bases,
       aligned_quality=quals,
+      fragment_length=fragment_length,
       alignment=reads_pb2.LinearAlignment(
           position=position_pb2.Position(reference_name=chrom, position=start),
           mapping_quality=mapq,

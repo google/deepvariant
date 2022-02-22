@@ -58,5 +58,5 @@ DEFAULT_SAMPLE_NAME = 'default'
 OPT_CHANNELS = [
     'read_mapping_percent', 'avg_base_quality', 'identity',
     'gap_compressed_identity', 'gc_content', 'is_homopolymer',
-    'homopolymer_weighted', 'blank'
+    'homopolymer_weighted', 'blank', 'insert_size'
 ]

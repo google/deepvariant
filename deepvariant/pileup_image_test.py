@@ -1454,7 +1454,10 @@ class PileupImageCreatorTest(parameterized.TestCase):
 
 class PileupCustomChannels(absltest.TestCase):
 
-  def get_encoded_read(self, channel_set, cigar='20M5D20M5S'):
+  def get_encoded_read(self,
+                       channel_set,
+                       cigar='20M5D20M5S',
+                       fragment_length=10):
     start = 500
     dv_call = _make_dv_call()
     alt_allele = dv_call.variant.alternate_bases[0]
@@ -1464,7 +1467,8 @@ class PileupCustomChannels(absltest.TestCase):
         start=start,
         cigar=cigar,
         quals=range(1, 51),
-        name='read1')
+        name='read1',
+        fragment_length=fragment_length)
     return _make_encoder_with_channels(channel_set).encode_read(
         dv_call, 'TTTTATGACAAAAAAGATGCGACGGTTCCGTAACCCATAAGAAAGAACGT', read,
         start, alt_allele)
@@ -1499,6 +1503,11 @@ class PileupCustomChannels(absltest.TestCase):
     result = self.get_encoded_read(
         ['read_mapping_percent', 'gap_compressed_identity', 'blank'])
     self.assertEqual(result.shape, (1, 50, 9))
+
+  def test_insert_size(self):
+    result = self.get_encoded_read(['insert_size'], fragment_length=22)
+    ch7 = result[:, :, 6]
+    self.assertSetEqual(set(np.unique(ch7)), set([0, 5]))
 
 
 class PileupCustomChannelsParam(parameterized.TestCase):
