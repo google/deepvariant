@@ -66,7 +66,7 @@ function ensure_wanted_bazel_version {
   mkdir ~/bazel
 
   if
-    v=$(bazel --bazelrc=/dev/null --nomaster_bazelrc version) &&
+    v=$(bazel --bazelrc=/dev/null --ignore_all_rc_files version) &&
     echo "$v" | awk -v b="$wanted_bazel_version" '/Build label/ { exit ($3 != b)}'
   then
     echo "Bazel ${wanted_bazel_version} already installed on the machine, not reinstalling"
