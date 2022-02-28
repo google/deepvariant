@@ -53,6 +53,7 @@ from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import positional_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
+from deepvariant.python import direct_phasing
 from deepvariant.realigner import realigner
 from deepvariant.vendor import timer
 from google.protobuf import text_format
@@ -767,6 +768,12 @@ class RegionProcessor(object):
     self.pic = None
     self.labeler = None
     self.population_vcf_readers = None
+    if self.options.phase_reads:
+      # One instance of DirectPhasing per lifetime of make_examples.
+      self.direct_phasing_cpp = self._make_direct_phasing_obj()
+
+  def _make_direct_phasing_obj(self):
+    return direct_phasing.DirectPhasing()
 
   def _make_allele_counter_for_region(self, region, candidate_positions):
     return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
@@ -972,7 +979,20 @@ class RegionProcessor(object):
 
     runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
     before_find_candidates = time.time()
-    candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(region)
+
+    # Region is expanded by region_padding number of bases. This functionality
+    # is only needed when phase_reads flag is on.
+    if self.options.phase_reads_region_padding > 0:
+      contig_dict = ranges.contigs_dict(
+          fasta.IndexedFastaReader(
+              self.options.reference_filename).header.contigs)
+      region_expanded = ranges.expand(region,
+                                      self.options.phase_reads_region_padding,
+                                      contig_dict)
+      candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
+          region, region_expanded)
+    else:
+      candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(region)
 
     examples_by_sample = {}
     for sample in self.samples:
@@ -1101,8 +1121,19 @@ class RegionProcessor(object):
       _, reads = self.realigner.realign_reads(reads, region)
     return reads
 
+  def filter_candidates_by_region(
+      self, candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      region: range_pb2.Range) -> Sequence[deepvariant_pb2.DeepVariantCall]:
+    return [
+        candidate for candidate in candidates
+        if candidate.variant.start >= region.start and
+        candidate.variant.end < region.end
+    ]
+
   def candidates_in_region(
-      self, region
+      self,
+      region: range_pb2.Range,
+      padded_region: Optional[range_pb2.Range] = None
   ) -> Tuple[Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]], Dict[
       str, Sequence[variants_pb2.Variant]]]:
     """Finds candidates in the region using the designated variant caller.
@@ -1110,6 +1141,8 @@ class RegionProcessor(object):
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to get candidates for.
+      padded_region: A nucleus.genomics.v1.Range object specifying the padded
+        region.
 
     Returns:
       A 2-tuple of (candidates, gvcfs).
@@ -1130,6 +1163,12 @@ class RegionProcessor(object):
       # we need to return the gVCF records calculated by the caller below.
       return {}, {}
 
+    left_padding = 0
+    right_padding = 0
+    if padded_region is not None:
+      left_padding = region.start - padded_region.start
+      right_padding = padded_region.end - region.end
+
     allele_counters = {}
     candidate_positions = []
     if self.options.allele_counter_options.track_ref_reads:
@@ -1137,8 +1176,13 @@ class RegionProcessor(object):
       for sample in self.samples:
         if sample.options.reads_filenames:
           # Calculate potential candidate positions from allele counts
-          sample.allele_counter = self._make_allele_counter_for_region(
-              region, [])
+          if padded_region is not None:
+            sample.allele_counter = self._make_allele_counter_for_region(
+                padded_region, [])
+          else:
+            sample.allele_counter = self._make_allele_counter_for_region(
+                region, [])
+
           for read in sample.reads:
             sample.allele_counter.add(read, sample.options.name)
         # Reads iterator needs to be reset since it used in the code below.
@@ -1172,8 +1216,12 @@ class RegionProcessor(object):
           sample.allele_counter = self._make_allele_counter_for_read_overlap_region(
               region, full_range, candidate_positions)
         else:
-          sample.allele_counter = self._make_allele_counter_for_region(
-              region, candidate_positions)
+          if padded_region is not None:
+            sample.allele_counter = self._make_allele_counter_for_region(
+                padded_region, candidate_positions)
+          else:
+            sample.allele_counter = self._make_allele_counter_for_region(
+                region, candidate_positions)
 
         for read in sample.reads:
           if self.options.allele_counter_options.normalize_reads:
@@ -1205,7 +1253,26 @@ class RegionProcessor(object):
           allele_counters=allele_counters,
           target_sample=sample.options.name,
           include_gvcfs=gvcf_output_enabled(self.options),
-          include_med_dp=self.options.include_med_dp)
+          include_med_dp=self.options.include_med_dp,
+          left_padding=left_padding,
+          right_padding=right_padding)
+
+      if self.options.phase_reads:
+        reads_to_phase = list(sample.in_memory_sam_reader.query(padded_region))
+        # redacted
+        # of the phasing part.
+        read_phases = self.direct_phasing_cpp.phase(candidates[role],
+                                                    reads_to_phase)
+
+        # Assign phase tag to reads.
+        for read_phase, read in zip(read_phases, reads_to_phase):
+          # Remove existing values
+          del read.info['HP'].values[:]
+          read.info['HP'].values.add(int_value=read_phase)
+
+      if padded_region is not None:
+        candidates[role] = self.filter_candidates_by_region(
+            candidates[role], region)
 
     return candidates, gvcfs
 

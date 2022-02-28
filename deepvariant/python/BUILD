@@ -95,15 +95,10 @@ py_test(
 py_clif_cc(
     name = "direct_phasing",
     srcs = ["direct_phasing.clif"],
-    clif_deps = [
-        "//third_party/nucleus/io/python:reference",
-    ],
-    pyclif_deps = [
-        "//deepvariant/protos:deepvariant_pyclif",
-        "//third_party/nucleus/protos:reads_pyclif",
-    ],
     deps = [
         "//deepvariant:direct_phasing",
+        "//deepvariant/protos:deepvariant_pyclif",
+        "//third_party/nucleus/protos:reads_pyclif",
         "//third_party/nucleus/util:proto_clif_converter",
     ],
 )

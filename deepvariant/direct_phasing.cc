@@ -128,6 +128,9 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
 void DirectPhasing::AssignPhasesToVertices() {
   // Assigning a random valid score. The max_score should be at least no less
   // then this.
+  if (scores_.empty()) {
+    return;
+  }
   auto max_score_it = scores_.begin();
   // Find the best score for the last position.
   for (const Vertex& v1 : vertices_by_position_[positions_.back()]) {

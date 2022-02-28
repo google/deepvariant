@@ -52,4 +52,4 @@ from "deepvariant/allelecounter.h":
       def `AddPython` as add(self, read: ConstProtoPtr<Read>, sample: str)
       def `NormalizeAndAddPython` as normalize_and_add(self, read: ConstProtoPtr<Read>, sample: str) -> (cigar: list<CigarUnit>, shift: int)
       def `Counts` as counts(self) -> list<AlleleCount>
-      def `SummaryCounts` as summary_counts(self, phase_reads_region_padding: int = default) -> list<AlleleCountSummary>
+      def `SummaryCounts` as summary_counts(self, left_padding: int = default, right_padding: int = default) -> list<AlleleCountSummary>

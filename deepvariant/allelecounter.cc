@@ -850,13 +850,13 @@ string AlleleCounter::ReadKey(const Read& read) {
 }
 
 std::vector<AlleleCountSummary> AlleleCounter::SummaryCounts(
-    int phase_reads_region_padding) const {
+    int left_padding, int right_padding) const {
   std::vector<AlleleCountSummary> summaries;
-  CHECK_GE(phase_reads_region_padding, 0);
-  CHECK_LT(phase_reads_region_padding * 2, counts_.size());
-  summaries.reserve(counts_.size() - phase_reads_region_padding * 2);
-  for (int i = phase_reads_region_padding;
-    i < counts_.size() - phase_reads_region_padding; i++) {
+  CHECK_GE(left_padding, 0);
+  CHECK_GE(right_padding, 0);
+  CHECK_LT(left_padding + right_padding, counts_.size());
+  summaries.reserve(counts_.size() - left_padding - right_padding);
+  for (int i = left_padding; i < counts_.size() - right_padding; i++) {
     const AlleleCount& allele_count = counts_[i];
     AlleleCountSummary summary;
     summary.set_reference_name(allele_count.position().reference_name());

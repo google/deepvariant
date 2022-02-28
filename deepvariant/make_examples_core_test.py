@@ -852,7 +852,9 @@ class RegionProcessorTest(parameterized.TestCase):
         allele_counters={'sample_id': mock_ac},
         target_sample='sample_id',
         include_gvcfs=include_gvcfs,
-        include_med_dp=include_med_dp)
+        include_med_dp=include_med_dp,
+        left_padding=0,
+        right_padding=0)
 
     # Finally, our actual result should be the single 'variant' and potentially
     # the gvcf records, each organized by sample.

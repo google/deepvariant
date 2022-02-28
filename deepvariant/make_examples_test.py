@@ -120,6 +120,14 @@ class TestConditions(enum.Enum):
 
 class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
+  def setUp(self):
+    super().setUp()
+    self._saved_flags = flagsaver.save_flag_values()
+
+  def tearDown(self):
+    super().tearDown()
+    flagsaver.restore_flag_values(self._saved_flags)
+
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @parameterized.parameters(
       # All tests are run with fast_pass_aligner enabled. There are no
@@ -136,6 +144,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(
           mode='training', num_shards=3,
           labeler_algorithm='positional_labeler'),
+      # test phase_reads_region_padding
+      dict(mode='calling', num_shards=0, phase_reads_region_padding=500),
       # The following tests are for CRAM input:
       dict(
           mode='calling', num_shards=0, test_condition=TestConditions.USE_CRAM),
@@ -161,7 +171,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                                  num_shards,
                                  test_condition=TestConditions.USE_BAM,
                                  labeler_algorithm=None,
-                                 use_fast_pass_aligner=True):
+                                 use_fast_pass_aligner=True,
+                                 phase_reads_region_padding=None):
     self.assertIn(mode, {'calling', 'training'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.write_run_info = True
@@ -183,6 +194,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = mode
     FLAGS.gvcf_gq_binsize = 5
     FLAGS.use_fast_pass_aligner = use_fast_pass_aligner
+    if phase_reads_region_padding is not None:
+      FLAGS.phase_reads_region_padding = phase_reads_region_padding
     if labeler_algorithm is not None:
       FLAGS.labeler_algorithm = labeler_algorithm
 

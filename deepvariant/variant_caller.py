@@ -350,7 +350,9 @@ class VariantCaller(metaclass=abc.ABCMeta):
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       target_sample: str,
       include_gvcfs: bool = False,
-      include_med_dp: bool = False
+      include_med_dp: bool = False,
+      left_padding: int = 0,
+      right_padding: int = 0
   ) -> Tuple[Sequence[deepvariant_pb2.DeepVariantCall],
              Sequence[variants_pb2.Variant]]:
     """Gets variant calls and gvcf records for all sites in allele_counter.
@@ -364,6 +366,10 @@ class VariantCaller(metaclass=abc.ABCMeta):
         the AlleleCounts in AlleleCounter.
       include_med_dp: boolean. If True, in the gVCF records, we will include
         MED_DP.
+      left_padding: int. Left padding that is added to the region and needs to
+      be discarded for candidates and gvcf calculation.
+      right_padding: int. Right padding that is added to the region and needs to
+      be discarded for candidates and gvcf calculation.
 
     Returns:
       Two values. The first is a list of DeepVariantCall protos containing our
@@ -371,6 +377,8 @@ class VariantCaller(metaclass=abc.ABCMeta):
       format, if include_gvcfs is True. If False, an empty list is returned.
     """
 
+    # redacted
+    # that we didn't waiste runtime on calculating candidates beoynd the region.
     candidates = self.get_candidates(
         allele_counters=allele_counters, sample_name=target_sample)
 
@@ -379,7 +387,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
       gvcfs = list(
           self.make_gvcfs(
               allele_counters[target_sample].summary_counts(
-                  self.options.phase_reads_region_padding),
+                  left_padding, right_padding),
               include_med_dp=include_med_dp))
     return candidates, gvcfs
 
