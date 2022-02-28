@@ -11,6 +11,10 @@
 import %workspace%/../tensorflow/.bazelrc
 import %workspace%/../tensorflow/.tf_configure.bazelrc
 
+# In tensorflow/.bazelrc v2.7.0, setting this to false broke our build.
+# So, setting it back to true.
+build:linux --distinct_host_configuration=true
+
 # Use 128 jobs to build. Unfortunately there doesn't seem to be any way to set
 # the number of jobs to the number of actual cores on the machine (e.g., by
 # looking at cpuinfo. See https://github.com/bazelbuild/bazel/issues/3814.
