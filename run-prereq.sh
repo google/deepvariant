@@ -228,8 +228,8 @@ fi
 # OpenVINO
 ################################################################################
 if [[ "${DV_OPENVINO_BUILD}" = "1" ]]; then
-  pip3 install "${PIP_ARGS[@]}" git+https://github.com/openvinotoolkit/openvino.git@releases/2021/4#subdirectory=model-optimizer
-  pip3 install "${PIP_ARGS[@]}" openvino==2021.4
+  pip3 install "${PIP_ARGS[@]}" --no-deps networkx defusedxml openvino-dev~=2022.1.0.dev
+  pip3 install "${PIP_ARGS[@]}" openvino~=2022.1.0.dev
 fi
 
 ################################################################################
