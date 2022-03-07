@@ -503,6 +503,7 @@ py_library(
         ":pileup_image",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:allelecounter",
+        "//deepvariant/python:direct_phasing",
         "//deepvariant/realigner",
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io/python:hts_verbose",
