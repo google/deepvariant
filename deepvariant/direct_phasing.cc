@@ -222,8 +222,8 @@ absl::flat_hash_set<ReadIndex> DirectPhasing::FindSupportingReads(
   return reads;
 }
 
-Score DirectPhasing::CalculateScore(const Edge& edge1,
-                                    const Edge& edge2) const {
+DirectPhasing::Score DirectPhasing::CalculateScore(const Edge& edge1,
+                                                   const Edge& edge2) const {
   Vertex from_vertices[2] = {edge1.m_source, edge2.m_source};
   Vertex to_vertices[2] = {edge1.m_target, edge2.m_target};
 
@@ -301,7 +301,7 @@ std::vector<ReadSupportInfo> DirectPhasing::ReadSupportFromProto(
   return read_support_infos;
 }
 
-Vertex DirectPhasing::AddVertex(
+DirectPhasing::Vertex DirectPhasing::AddVertex(
     int64_t position, AlleleType allele_type, absl::string_view bases,
     const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& reads) {
   Vertex v = boost::add_vertex(
@@ -313,8 +313,9 @@ Vertex DirectPhasing::AddVertex(
   return v;
 }
 
-Edge DirectPhasing::AddEdge(const Vertex& in_vertex, const Vertex& out_vertex,
-                            float weight) {
+DirectPhasing::Edge DirectPhasing::AddEdge(const Vertex& in_vertex,
+                                           const Vertex& out_vertex,
+                                           float weight) {
   bool was_present;
   Edge edge;
   std::tie(edge, was_present) = boost::edge(in_vertex, out_vertex, graph_);
@@ -327,8 +328,10 @@ Edge DirectPhasing::AddEdge(const Vertex& in_vertex, const Vertex& out_vertex,
   return edge;
 }
 
-Edge DirectPhasing::AddEdge(const Vertex& in_vertex, bool is_low_quality_in,
-                            const Vertex& out_vertex, bool is_low_quality_out) {
+DirectPhasing::Edge DirectPhasing::AddEdge(const Vertex& in_vertex,
+                                           bool is_low_quality_in,
+                                           const Vertex& out_vertex,
+                                           bool is_low_quality_out) {
   float edge_weight =
       (is_low_quality_in ? 0.25 : 0.5) + (is_low_quality_out ? 0.25 : 0.5);
   return AddEdge(in_vertex, out_vertex, edge_weight);

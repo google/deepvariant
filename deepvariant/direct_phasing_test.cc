@@ -306,7 +306,7 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
 
   // Populate a list of edges that can be used by test comparator.
   std::vector<std::pair<AlleleInfo, AlleleInfo>> graph_edges;
-  EdgeIterator ei, eend;
+  DirectPhasing::EdgeIterator ei, eend;
   std::tie(ei, eend) = boost::edges(direct_phasing.graph_);
   for (; ei != eend; ei++) {
     graph_edges.push_back(
@@ -321,7 +321,7 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
     //     << direct_phasing.graph_[ei->m_target].allele_info.bases;
   }
   std::vector<AlleleInfo> graph_vertices;
-  VertexIterator vi, vend;
+  DirectPhasing::VertexIterator vi, vend;
   std::tie(vi, vend) = boost::vertices(direct_phasing.graph_);
   for (; vi != vend; ++vi) {
     // gtest comparator does not output per field differences. If test fails
@@ -350,8 +350,9 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
   }
 }
 
-VertexIterator FindVertex(const BoostGraph& graph, const AlleleInfo& ai) {
-  VertexIterator vi, vi_end;
+DirectPhasing::VertexIterator FindVertex(const DirectPhasing::BoostGraph& graph,
+                                         const AlleleInfo& ai) {
+  DirectPhasing::VertexIterator vi, vi_end;
   for (std::tie(vi, vi_end) = vertices(graph); vi != vi_end; ++vi) {
     if (graph[*vi].allele_info.position == ai.position &&
         graph[*vi].allele_info.bases == ai.bases)
@@ -360,14 +361,15 @@ VertexIterator FindVertex(const BoostGraph& graph, const AlleleInfo& ai) {
   return vi_end;
 }
 
-bool operator==(const Score& score1, const Score& score2)  {
-      return score1.score == score2.score
-              && std::equal(std::begin(score1.from), std::end(score1.from),
-                            std::begin(score2.from))
-              && std::equal(std::begin(score1.read_support),
-                            std::end(score1.read_support),
-                            std::begin(score2.read_support));
-  }
+bool operator==(const DirectPhasing::Score& score1,
+                const DirectPhasing::Score& score2) {
+  return score1.score == score2.score &&
+         std::equal(std::begin(score1.from), std::end(score1.from),
+                    std::begin(score2.from)) &&
+         std::equal(std::begin(score1.read_support),
+                    std::end(score1.read_support),
+                    std::begin(score2.read_support));
+}
 
 TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
   DirectPhasing direct_phasing;
@@ -403,25 +405,26 @@ TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
       });
 
   direct_phasing.Build(candidates, reads);
-  Vertex v_100_a = *FindVertex(direct_phasing.graph_,
-                                 {AlleleType::SUBSTITUTION, 100, "A", {}});
-  Vertex v_100_c = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 100, "C", {}});
-  Vertex v_105_c = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 105, "C", {}});
+  DirectPhasing::Vertex v_100_a = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 100, "A", {}});
+  DirectPhasing::Vertex v_100_c = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 100, "C", {}});
+  DirectPhasing::Vertex v_105_c = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 105, "C", {}});
   direct_phasing.UpdateStartingScore({v_100_a, v_100_c});
-  Edge edge1, edge2;
+  DirectPhasing::Edge edge1, edge2;
   bool found = false;
   tie(edge1, found) = boost::edge(v_100_a, v_105_c, direct_phasing.graph_);
   EXPECT_TRUE(found);
   tie(edge2, found) = boost::edge(v_100_c, v_105_c, direct_phasing.graph_);
   EXPECT_TRUE(found);
 
-  Score calculated_score = direct_phasing.CalculateScore(
-      edge1, edge2);
-  EXPECT_EQ(calculated_score, (Score{.score = 5 + 4,
-                                     .from = {v_100_a, v_100_c},
-                                     .read_support = {{0, 1}, {3, 4}}}));
+  DirectPhasing::Score calculated_score =
+      direct_phasing.CalculateScore(edge1, edge2);
+  EXPECT_EQ(calculated_score,
+            (DirectPhasing::Score{.score = 5 + 4,
+                                  .from = {v_100_a, v_100_c},
+                                  .read_support = {{0, 1}, {3, 4}}}));
 
   // Release memory.
   for (auto read : reads) {
@@ -466,20 +469,20 @@ TEST(DirectPhasingTest, CalculateScoreWithPreviousScore) {
   direct_phasing.Build(candidates, reads);
 
   // Find all vertices.
-  Vertex v_100_a = *FindVertex(direct_phasing.graph_,
-                   {AlleleType::SUBSTITUTION, 100, "A", {}});
-  Vertex v_100_c = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 100, "C", {}});
-  Vertex v_105_c = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 105, "C", {}});
-  Vertex v_110_t = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 110, "T", {}});
-  Vertex v_110_g = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 110, "G", {}});
+  DirectPhasing::Vertex v_100_a = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 100, "A", {}});
+  DirectPhasing::Vertex v_100_c = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 100, "C", {}});
+  DirectPhasing::Vertex v_105_c = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 105, "C", {}});
+  DirectPhasing::Vertex v_110_t = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 110, "T", {}});
+  DirectPhasing::Vertex v_110_g = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 110, "G", {}});
 
   // Update starting score.
   direct_phasing.UpdateStartingScore({v_100_a, v_100_c});
-  Edge edge1, edge2;
+  DirectPhasing::Edge edge1, edge2;
   bool found = false;
 
   // Update the score for {edge1, edge2}
@@ -497,21 +500,21 @@ TEST(DirectPhasingTest, CalculateScoreWithPreviousScore) {
   EXPECT_TRUE(found);
 
   EXPECT_EQ(direct_phasing.CalculateScore(edge1, edge1),
-            (Score{.score = 5 + 4 + 2,
-                   .from = {v_105_c, v_105_c},
-                   .read_support = {{0, 1}, {}}}));
+            (DirectPhasing::Score{.score = 5 + 4 + 2,
+                                  .from = {v_105_c, v_105_c},
+                                  .read_support = {{0, 1}, {}}}));
   EXPECT_EQ(direct_phasing.CalculateScore(edge2, edge2),
-            (Score{.score = 5 + 4 + 2,
-                   .from = {v_105_c, v_105_c},
-                   .read_support = {{}, {3, 4}}}));
+            (DirectPhasing::Score{.score = 5 + 4 + 2,
+                                  .from = {v_105_c, v_105_c},
+                                  .read_support = {{}, {3, 4}}}));
   EXPECT_EQ(direct_phasing.CalculateScore(edge1, edge2),
-            (Score{.score = 5 + 4 + 4,
-                   .from = {v_105_c, v_105_c},
-                   .read_support = {{0, 1}, {3, 4}}}));
+            (DirectPhasing::Score{.score = 5 + 4 + 4,
+                                  .from = {v_105_c, v_105_c},
+                                  .read_support = {{0, 1}, {3, 4}}}));
   EXPECT_EQ(direct_phasing.CalculateScore(edge2, edge1),
-            (Score{.score = 5 + 4 + 0,
-                   .from = {v_105_c, v_105_c},
-                   .read_support = {{}, {}}}));
+            (DirectPhasing::Score{.score = 5 + 4 + 0,
+                                  .from = {v_105_c, v_105_c},
+                                  .read_support = {{}, {}}}));
 
   // Release memory.
   for (auto read : reads) {
@@ -726,10 +729,10 @@ TEST(DirectPhasingTest, PhaseReadBrokenPath) {
       direct_phasing.PhaseReads(candidates, reads);
   EXPECT_TRUE(phases.ok());
   EXPECT_THAT(phases.ValueOrDie(), ElementsAreArray({0, 0, 0, 2, 2, 1, 1}));
-  Vertex v_105_g = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 105, "G", {}});
-  Vertex v_105_c = *FindVertex(direct_phasing.graph_,
-                  {AlleleType::SUBSTITUTION, 105, "C", {}});
+  DirectPhasing::Vertex v_105_g = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 105, "G", {}});
+  DirectPhasing::Vertex v_105_c = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 105, "C", {}});
 
   EXPECT_THAT(direct_phasing.graph_[v_105_g].allele_info.read_support,
               UnorderedElementsAreArray(
@@ -915,7 +918,7 @@ TEST(DirectPhasingTest, FilterOneAlleleCandidate) {
   direct_phasing.Build(candidates, reads);
 
   // We expect that vertex at position 100 is not created.
-  VertexIterator vi = FindVertex(direct_phasing.graph_, v_100_c);
+  DirectPhasing::VertexIterator vi = FindVertex(direct_phasing.graph_, v_100_c);
   EXPECT_EQ(vi, direct_phasing.graph_.m_vertices.cend());
 
   // Release memory.
@@ -958,7 +961,7 @@ TEST(DirectPhasingTest, FilterCandidateWithIndel) {
   direct_phasing.Build(candidates, reads);
 
   // We expect that vertex at positopm 100 is not created.
-  VertexIterator vi = FindVertex(direct_phasing.graph_, v_100_c);
+  DirectPhasing::VertexIterator vi = FindVertex(direct_phasing.graph_, v_100_c);
   EXPECT_EQ(vi, direct_phasing.graph_.m_vertices.cend());
 
   // Release memory.

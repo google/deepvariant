@@ -87,61 +87,6 @@ inline bool operator==(const AlleleInfo& lhs, const AlleleInfo& rhs) {
          lhs.bases == rhs.bases && lhs.read_support == rhs.read_support;
 }
 
-struct VertexInfo {
-  AlleleInfo allele_info;
-};
-
-struct EdgeInfo {
-  float weight;
-};
-
-using BoostGraph =
-    boost::adjacency_list<boost::setS,            // Out edge list type.
-                          boost::listS,           // Vertex list type.
-                          boost::bidirectionalS,  // Directed graph.
-                          VertexInfo,             // Vertex label.
-                          EdgeInfo>;              // Edge label.
-
-using Vertex = boost::graph_traits<BoostGraph>::vertex_descriptor;
-using Edge = boost::graph_traits<BoostGraph>::edge_descriptor;
-using RawVertexIndexMap = absl::flat_hash_map<Vertex, int>;
-using VertexIndexMap = boost::const_associative_property_map<RawVertexIndexMap>;
-
-using VertexIterator = boost::graph_traits<BoostGraph>::vertex_iterator;
-using EdgeIterator = boost::graph_traits<BoostGraph>::edge_iterator;
-using InEdgeIterator = boost::graph_traits<BoostGraph>::in_edge_iterator;
-using AdjacencyIterator = boost::graph_traits<BoostGraph>::adjacency_iterator;
-
-struct AlleleSupport {
-  bool is_set = false;
-  Vertex vertex;
-  ReadSupportInfo read_support;
-};
-
-struct VertexPair {
-  Vertex phase_1_vertex;
-  Vertex phase_2_vertex;
-
-  template <typename H>
-  friend H AbslHashValue(H h, const VertexPair& vertex_pair) {
-    return H::combine(std::move(h), vertex_pair.phase_1_vertex,
-                      vertex_pair.phase_2_vertex);
-  }
-
-  bool operator==(const VertexPair& vert_pair) const {
-    return this->phase_1_vertex == vert_pair.phase_1_vertex &&
-           this->phase_2_vertex == vert_pair.phase_2_vertex;
-  }
-};
-
-struct Score {
-  int score = 0;
-  // Source vertices are needed for back tracking.
-  Vertex from[2];  // Phase 1: Vertex[0], Phase 2: Vertex[1].
-  absl::flat_hash_set<ReadIndex> read_support[2];  // Read support for phase 1
-                                                   // and phase 2.
-};
-
 // Class that implements Direct Phasing algorithm. This class is only used by
 // make_examples.py. There are two exported methods:
 // * PhaseReads - called for each region and returns read phases calculated from
@@ -150,6 +95,62 @@ struct Score {
 //              purposes.
 class DirectPhasing {
  public:
+  struct VertexInfo {
+    AlleleInfo allele_info;
+  };
+
+  struct EdgeInfo {
+    float weight;
+  };
+
+  using BoostGraph =
+      boost::adjacency_list<boost::setS,            // Out edge list type.
+                            boost::listS,           // Vertex list type.
+                            boost::bidirectionalS,  // Directed graph.
+                            VertexInfo,             // Vertex label.
+                            EdgeInfo>;              // Edge label.
+
+  using Vertex = boost::graph_traits<BoostGraph>::vertex_descriptor;
+  using Edge = boost::graph_traits<BoostGraph>::edge_descriptor;
+  using RawVertexIndexMap = absl::flat_hash_map<Vertex, int>;
+  using VertexIndexMap =
+      boost::const_associative_property_map<RawVertexIndexMap>;
+
+  using VertexIterator = boost::graph_traits<BoostGraph>::vertex_iterator;
+  using EdgeIterator = boost::graph_traits<BoostGraph>::edge_iterator;
+  using InEdgeIterator = boost::graph_traits<BoostGraph>::in_edge_iterator;
+  using AdjacencyIterator = boost::graph_traits<BoostGraph>::adjacency_iterator;
+
+  struct AlleleSupport {
+    bool is_set = false;
+    Vertex vertex;
+    ReadSupportInfo read_support;
+  };
+
+  struct VertexPair {
+    Vertex phase_1_vertex;
+    Vertex phase_2_vertex;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const VertexPair& vertex_pair) {
+      return H::combine(std::move(h), vertex_pair.phase_1_vertex,
+                        vertex_pair.phase_2_vertex);
+    }
+
+    bool operator==(const VertexPair& vert_pair) const {
+      return this->phase_1_vertex == vert_pair.phase_1_vertex &&
+             this->phase_2_vertex == vert_pair.phase_2_vertex;
+    }
+  };
+
+  struct Score {
+    int score = 0;
+    // Source vertices are needed for back tracking.
+    Vertex from[2];  // Phase 1: Vertex[0], Phase 2: Vertex[1].
+    absl::flat_hash_set<ReadIndex> read_support[2];  // Read support for phase 1
+                                                     // and phase 2.
+  };
+
   // Function returns read phases for each read in the input reads preserving
   // the order. Python wrapper will be used to add phases to read protos in
   // order to avoid copying gigabytes of memory.
