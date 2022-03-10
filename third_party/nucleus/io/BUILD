@@ -369,6 +369,7 @@ cc_library(
         ":gfile_cc",
         ":hts_path",
         ":hts_verbose",
+        ":merge_variants",
         ":reader_base",
         ":reference",
         ":sam_reader",
@@ -1207,6 +1208,44 @@ py_test(
         ":gfile",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
+    ],
+)
+
+cc_library(
+    name = "merge_variants",
+    srcs = ["merge_variants.cc"],
+    hdrs = ["merge_variants.h"],
+    deps = [
+        ":reader_base",
+        ":reference",
+        ":variant_reader",
+        ":vcf_writer",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:optional",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "merge_variants_test",
+    srcs = ["merge_variants_test.cc"],
+    deps = [
+        ":merge_variants",
+        ":reference",
+        "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
     ],
 )
 
