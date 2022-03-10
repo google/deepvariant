@@ -35,6 +35,7 @@
 
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/variant_reader.h"
+#include "third_party/nucleus/io/vcf_writer.h"
 namespace nucleus {
 
 using nucleus::genomics::v1::Variant;
@@ -55,6 +56,18 @@ void TransfromToGvcf(Variant* variant);
 // integer format scaled so the most likely genotype has value 0. This function
 // modifies the input variant to mimic this transformation of GL -> PL -> GL.
 void ZeroScaleGl(Variant* variant);
+
+void MergeAndWriteVariantsAndNonVariants(
+    bool only_keep_pass, const std::string& variant_file_path,
+    const std::vector<std::string>& non_variant_file_paths,
+    const std::string& fasta_path, const std::string& vcf_out_path,
+    const std::string& gvcf_out_path,
+    const nucleus::genomics::v1::VcfHeader& header);
+
+void MergeAndWriteVariantsAndNonVariants(
+    bool only_keep_pass, VariantReader* variant_reader,
+    ShardedVariantReader* non_variant_reader, VcfWriter* vcf_writer,
+    VcfWriter* gvcf_writer, const GenomeReference& ref);
 
 }  // namespace nucleus
 

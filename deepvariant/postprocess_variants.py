@@ -46,7 +46,7 @@ from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tabix
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
-from third_party.nucleus.protos import struct_pb2
+from third_party.nucleus.io.python import merge_variants
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import genomics_math
@@ -54,7 +54,6 @@ from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-from third_party.nucleus.util import vcf_constants
 from third_party.nucleus.util.struct_utils import add_string_field
 from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
@@ -123,7 +122,6 @@ flags.DEFINE_enum(
     'ALT-mode is incompatible with the multiallelic caller.')
 flags.DEFINE_boolean('only_keep_pass', False, 'If True, only keep PASS calls.')
 
-
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
 # listed here will be have its values cleaned up if we've removed any alt
@@ -133,8 +131,6 @@ _ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([('AD', True), ('VAF', False)])
 
 # The number of places past the decimal point to round QUAL estimates to.
 _QUAL_PRECISION = 7
-# The genotype likelihood of the gVCF alternate allele for variant calls.
-_GVCF_ALT_ALLELE_GL = -99
 
 # FASTA cache size. Span 300 Mb so that we query each chromosome at most once.
 _FASTA_CACHE_SIZE = 300000000
@@ -784,27 +780,6 @@ def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
                             count)
 
 
-def _zero_scale_gl(variant):
-  """Zero-scales GL to mimic write-then-read.
-
-  When writing variants using VcfWriter, GLs are converted to PLs, which is an
-  integer format scaled so the most likely genotype has value 0. This function
-  modifies the input variant to mimic this transformation of GL -> PL -> GL.
-
-  Args:
-    variant: Variant proto. The variant to scale.
-
-  Returns:
-    variant: Variant proto. The input variant with its GLs modified.
-  """
-  call = variant_utils.only_call(variant)
-  max_gl = max(call.genotype_likelihood)
-  call.genotype_likelihood[:] = [
-      (gl - max_gl) for gl in call.genotype_likelihood
-  ]
-  return variant
-
-
 def _sort_grouped_variants(group):
   return sorted(group, key=lambda x: sorted(x.alt_allele_indices.indices))
 
@@ -883,39 +858,6 @@ def _get_contig_based_variant_sort_keyfn(contigs):
   return keyfn
 
 
-def _get_contig_based_lessthan(contigs):
-  """Returns a callable that compares variants on genomic position.
-
-  The returned function takes two arguments, both of which should be Variant
-  protos or None. The function returns True if and only if the first Variant is
-  strictly less than the second, which occurs if the first variant is on a
-  previous chromosome or is on the same chromosome and its entire span lies
-  before the start position of the second variant. `None` is treated as a
-  sentinel value that does not compare less than any valid Variant.
-
-  Args:
-    contigs: list(ContigInfo). The list of contigs in the desired sort order.
-
-  Returns:
-    A callable that takes two Variant protos as input and returns True iff the
-    first is strictly less than the second. Note that if the variant has a
-    contig not represented in the list of contigs this will raise IndexError.
-  """
-  contig_index = {contig.name: i for i, contig in enumerate(contigs)}
-
-  def lessthanfn(variant1, variant2):
-    if variant1 is None:
-      return False
-    if variant2 is None:
-      return True
-    contig1 = contig_index[variant1.reference_name]
-    contig2 = contig_index[variant2.reference_name]
-    return (contig1 < contig2 or
-            (contig1 == contig2 and variant1.end <= variant2.start))
-
-  return lessthanfn
-
-
 def _create_record_from_template(template, start, end, fasta_reader):
   """Returns a copy of the template variant with the new start and end.
 
@@ -942,96 +884,10 @@ def _create_record_from_template(template, start, end, fasta_reader):
   return retval
 
 
-def _transform_to_gvcf_record(variant):
-  """Modifies a variant to include gVCF allele and associated likelihoods.
-
-  Args:
-    variant: third_party.nucleus.protos.Variant. The Variant to modify.
-
-  Returns:
-    The variant after applying the modification to its alleles and
-    allele-related FORMAT fields.
-  """
-  if vcf_constants.GVCF_ALT_ALLELE not in variant.alternate_bases:
-    variant.alternate_bases.append(vcf_constants.GVCF_ALT_ALLELE)
-    # Add one new GL for het allele/gVCF for each of the other alleles, plus one
-    # for the homozygous gVCF allele.
-    num_new_gls = len(variant.alternate_bases) + 1
-    call = variant_utils.only_call(variant)
-    call.genotype_likelihood.extend([_GVCF_ALT_ALLELE_GL] * num_new_gls)
-    if call.info and 'AD' in call.info:
-      call.info['AD'].values.extend([struct_pb2.Value(int_value=0)])
-    if call.info and 'VAF' in call.info:
-      call.info['VAF'].values.extend([struct_pb2.Value(number_value=0)])
-
-  return variant
-
-
-def merge_and_write_variants_and_nonvariants(variant_iterable,
-                                             nonvariant_iterable, lessthan,
-                                             fasta_reader, vcf_writer,
-                                             gvcf_writer):
-  """Writes records consisting of the merging of variant and non-variant sites.
-
-  The merging strategy used for single-sample records is to emit variants
-  without modification. Any non-variant sites that overlap a variant are
-  truncated to only report on regions not affected by the variant. Note that
-  Variants are represented using zero-based half-open coordinates, so a VCF
-  record of `chr1  10  A  T` would have `start=9` and `end=10`.
-
-  Args:
-    variant_iterable: Iterable of Variant protos. A sorted iterable of the
-      variants to merge.
-    nonvariant_iterable: Iterable of Variant protos. A sorted iterable of the
-      non-variant sites to merge.
-    lessthan: Callable. A function that takes two Variant protos as input and
-      returns True iff the first argument is located "before" the second and the
-      variants do not overlap.
-    fasta_reader: GenomeReferenceFai object. The reference genome reader used to
-      ensure gVCF records have the correct reference base.
-    vcf_writer: VcfWriter. Writes variants to VCF.
-    gvcf_writer: VcfWriter. Writes merged variants and nonvariants to gVCF.
-  """
-
-  def next_or_none(iterable):
-    try:
-      return next(iterable)
-    except StopIteration:
-      return None
-
-  variant = next_or_none(variant_iterable)
-  nonvariant = next_or_none(nonvariant_iterable)
-
-  while variant is not None or nonvariant is not None:
-    if lessthan(variant, nonvariant):
-      if (not FLAGS.only_keep_pass or
-          variant.filter == [dv_vcf_constants.DEEP_VARIANT_PASS]):
-        vcf_writer.write(variant)
-      gvcf_variant = _transform_to_gvcf_record(_zero_scale_gl(variant))
-      gvcf_writer.write(gvcf_variant)
-      variant = next_or_none(variant_iterable)
-      continue
-    elif lessthan(nonvariant, variant):
-      gvcf_writer.write(nonvariant)
-      nonvariant = next_or_none(nonvariant_iterable)
-      continue
-    else:
-      # The variant and non-variant are on the same contig and overlap.
-      assert max(variant.start, nonvariant.start) < min(
-          variant.end, nonvariant.end), '{} and {}'.format(variant, nonvariant)
-      if nonvariant.start < variant.start:
-        # Write a non-variant region up to the start of the variant.
-        v = _create_record_from_template(nonvariant, nonvariant.start,
-                                         variant.start, fasta_reader)
-        gvcf_writer.write(v)
-      if nonvariant.end > variant.end:
-        # There is an overhang of the non-variant site after the variant is
-        # finished, so update the non-variant to point to that.
-        nonvariant = _create_record_from_template(nonvariant, variant.end,
-                                                  nonvariant.end, fasta_reader)
-      else:
-        # This non-variant site is subsumed by a Variant. Ignore it.
-        nonvariant = next_or_none(nonvariant_iterable)
+def dump_variants_to_temp_file(variant_protos):
+  temp = tempfile.NamedTemporaryFile()
+  tfrecord.write_tfrecords(variant_protos, temp.name)
+  return temp
 
 
 def _get_base_path(input_vcf):
@@ -1211,21 +1067,24 @@ def main(argv=()):
       logging.info('VCF creation took %s minutes',
                    (time.time() - start_time) / 60)
     else:
-      logging.info('Merging and writing variants to VCF and gVCF.')
-      lessthanfn = _get_contig_based_lessthan(contigs)
-      with vcf.VcfWriter(
-          FLAGS.outfile, header=header, round_qualities=True) as vcf_writer, \
-          vcf.VcfWriter(
-              FLAGS.gvcf_outfile, header=header, round_qualities=True) \
-          as gvcf_writer:
-        nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
-            FLAGS.nonvariant_site_tfrecord_path,
-            key=_get_contig_based_variant_sort_keyfn(contigs),
-            proto=variants_pb2.Variant)
-        merge_and_write_variants_and_nonvariants(variant_generator,
-                                                 nonvariant_generator,
-                                                 lessthanfn, fasta_reader,
-                                                 vcf_writer, gvcf_writer)
+      # Dump all processed variants to the disk so that the C++
+      # merge_and_write_variants_and_nonvariants logic can access them.
+      # Note: This takes a really long time, but not because of the writing to
+      # the disk, but rather because it runs all the transformations on the
+      # variants at this point and not later on.
+      # That is fine, and there is no need to blame this part of the code when
+      # noticing how long it takes.
+      start_time = time.time()
+      tmp_variant_file = dump_variants_to_temp_file(variant_generator)
+      logging.info(
+          'Processing variants (and writing to temporary file) took %s minutes',
+          (time.time() - start_time) / 60)
+      start_time = time.time()
+      merge_variants.merge_and_write_variants_and_nonvariants(
+          FLAGS.only_keep_pass, tmp_variant_file.name,
+          tfrecord.expanded_paths_if_sharded(
+              FLAGS.nonvariant_site_tfrecord_path), FLAGS.ref, FLAGS.outfile,
+          FLAGS.gvcf_outfile, header)
       if FLAGS.outfile.endswith('.gz'):
         build_index(FLAGS.outfile, use_csi)
       if FLAGS.gvcf_outfile.endswith('.gz'):
@@ -1233,6 +1092,7 @@ def main(argv=()):
       logging.info('Finished writing VCF and gVCF in %s minutes.',
                    (time.time() - start_time) / 60)
     if FLAGS.vcf_stats_report:
+      start_time = time.time()
       outfile_base = _get_base_path(FLAGS.outfile)
       with vcf.VcfReader(FLAGS.outfile) as reader:
         vcf_stats.create_vcf_report(
@@ -1240,6 +1100,8 @@ def main(argv=()):
             output_basename=outfile_base,
             sample_name=sample_name,
             vcf_reader=reader)
+      logging.info('Generating VCF stats took %s minutes.',
+                   (time.time() - start_time) / 60)
     if cvo_record:
       temp.close()
 

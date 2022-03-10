@@ -37,6 +37,7 @@ py_library(
         ":tfrecord",
         ":vcf",
         "//third_party/nucleus/io/python:hts_verbose",
+        "//third_party/nucleus/io/python:merge_variants",
     ],
 )
 

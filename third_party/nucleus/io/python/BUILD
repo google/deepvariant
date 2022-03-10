@@ -430,3 +430,14 @@ py_clif_cc(
         "//third_party/nucleus/io:gfile_cc",
     ],
 )
+
+py_clif_cc(
+    name = "merge_variants",
+    srcs = ["merge_variants.clif"],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:variants_pyclif",
+    ],
+    deps = [
+        "//third_party/nucleus/io:merge_variants",
+    ],
+)

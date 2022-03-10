@@ -75,6 +75,7 @@ cc_library(
         "//third_party/nucleus/io/python:gff_writer_cclib",
         "//third_party/nucleus/io/python:gfile_cclib",
         "//third_party/nucleus/io/python:hts_verbose_cclib",
+        "//third_party/nucleus/io/python:merge_variants_cclib",
         "//third_party/nucleus/io/python:reference_cclib",
         "//third_party/nucleus/io/python:sam_reader_cclib",
         "//third_party/nucleus/io/python:sam_writer_cclib",

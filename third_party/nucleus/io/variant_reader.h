@@ -82,6 +82,8 @@ class VariantReader {
       const std::string& filename, std::string_view compression_type,
       absl::flat_hash_map<std::string, uint32_t>& contig_index_map);
 
+  IndexedVariant GetAndReadNext();
+
   // Reads the next record if available.
   bool GetNext();
 

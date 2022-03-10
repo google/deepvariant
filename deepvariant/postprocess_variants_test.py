@@ -58,7 +58,6 @@ from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reference_pb2
-from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
@@ -70,6 +69,8 @@ from third_party.nucleus.util.struct_utils import get_string_field
 FLAGS = flags.FLAGS
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
+
+_GVCF_ALT_ALLELE_GL = -99
 
 # Test contigs for gVCF merging code.
 _CONTIGS = [
@@ -193,7 +194,7 @@ def _simple_gv(ref_name, start, ref_base):
   The genotypes of a _simple_gv variant are identical to those of a
   _simple_variant variant. The alleles include the <*> allele, since it is a
   gVCF record, and the genotype likelihoods are zero-scaled and have the <*>
-  allele likelihood set to postprocess_variants._GVCF_ALT_ALLELE_GL.
+  allele likelihood set to _GVCF_ALT_ALLELE_GL.
 
   Args:
     ref_name: str. Reference name for this variant.
@@ -212,7 +213,7 @@ def _simple_gv(ref_name, start, ref_base):
           vcf_constants.GVCF_ALT_ALLELE
       ],
       gt=[0, 1],
-      gls=[-2.99, 0, -0.99] + [postprocess_variants._GVCF_ALT_ALLELE_GL] * 3)
+      gls=[-2.99, 0, -0.99] + [_GVCF_ALT_ALLELE_GL] * 3)
 
 
 def _read_contents(path, decompress=False):
@@ -1355,31 +1356,6 @@ class PostprocessVariantsTest(parameterized.TestCase):
 class MergeVcfAndGvcfTest(parameterized.TestCase):
 
   @parameterized.parameters(
-      # Smaller chromosome should return less than.
-      (('1', 10, 20), ('2', 1, 2), True),
-      (('2', 10, 20), ('10', 1, 2), True),
-      # Larger chromosome should not return less than.
-      (('2', 1, 2), ('1', 10, 20), False),
-      (('10', 1, 2), ('2', 10, 20), False),
-      # Same chromosome, smaller.
-      (('1', 1, 2), ('1', 3, 4), True),
-      (('1', 1, 3), ('1', 3, 4), True),
-      # Same chromosome, overlapping.
-      (('1', 1, 4), ('1', 3, 6), False),
-      (('1', 1, 9), ('1', 3, 6), False),
-      (('1', 4, 9), ('1', 3, 6), False),
-      # Same chromosome, larger.
-      (('1', 6, 9), ('1', 3, 4), False),
-  )
-  def test_lessthan_comparison(self, v1, v2, expected):
-    variant1 = _create_nonvariant(*v1, ref_base='A')
-    variant2 = _create_nonvariant(*v2, ref_base='C')
-    lessthan = postprocess_variants._get_contig_based_lessthan(_CONTIGS)
-    self.assertEqual(lessthan(variant1, variant2), expected)
-    self.assertEqual(lessthan(variant1, None), True)
-    self.assertEqual(lessthan(None, variant1), False)
-
-  @parameterized.parameters(
       (_create_nonvariant('1', 10, 15,
                           'G'), 10, 12, _create_nonvariant('1', 10, 12, 'G')),
       (_create_nonvariant('2', 1, 9,
@@ -1399,147 +1375,6 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
   def test_get_base_path(self, input_vcf, expected_base_path):
     path = postprocess_variants._get_base_path(input_vcf)
     self.assertEqual(path, expected_base_path)
-
-  @parameterized.parameters(
-      # One alt, with het GLs.
-      (['C'], [-2.0457574905606752, -0.004364805402450088, -3.0], [0.75]),
-      # Multi alts.
-      (['G', 'C'], [
-          -1.1368906918484387, -0.5279124552610386, -0.5923808731731073,
-          -0.8155431286425007, -0.8415961054266092, -1.108308924501657
-      ], [0.5, 0.1]),
-      (['G', 'C', 'T'], [
-          -0.7956722868920258, -0.663917423732382, -1.493986734511771,
-          -0.8202531343562444, -0.9377869397242453, -1.0415699718993066,
-          -1.4176189291054515, -1.5795151893394743, -1.8101482990393198,
-          -0.8139951558313916
-      ], [0.5, 0.1, 0.05]),
-  )
-  def test_transform_to_gvcf_add_allele(self, prior_alts, prior_gls, prior_vaf):
-    variant = _create_variant(
-        ref_name='chr1',
-        start=10,
-        ref_base='A',
-        alt_bases=prior_alts,
-        qual=40,
-        filter_field='PASS',
-        genotype=[0, 1],
-        gq=None,
-        likelihoods=prior_gls)
-    prior_vaf_values = [struct_pb2.Value(number_value=v) for v in prior_vaf]
-    variant.calls[0].info['VAF'].values.extend(prior_vaf_values)
-    expected = _create_variant(
-        ref_name='chr1',
-        start=10,
-        ref_base='A',
-        alt_bases=prior_alts + [vcf_constants.GVCF_ALT_ALLELE],
-        qual=40,
-        filter_field='PASS',
-        genotype=[0, 1],
-        gq=None,
-        likelihoods=prior_gls + ([postprocess_variants._GVCF_ALT_ALLELE_GL] *
-                                 (len(prior_alts) + 2)))
-    expected.calls[0].info['VAF'].values.extend(
-        prior_vaf_values + [struct_pb2.Value(number_value=0)])
-    actual = postprocess_variants._transform_to_gvcf_record(variant)
-    self.assertEqual(actual, expected)
-
-  @parameterized.parameters(
-      # One alt, with het GLs.
-      ([vcf_constants.GVCF_ALT_ALLELE
-       ], [-2.0457574905606752, -0.004364805402450088, -3.0], [0.5]),
-      # Multi alts.
-      (['G', vcf_constants.GVCF_ALT_ALLELE], [
-          -1.1368906918484387, -0.5279124552610386, -0.5923808731731073,
-          -0.8155431286425007, -0.8415961054266092, -1.108308924501657
-      ], [0.5, 0.1]),
-      (['G', 'C', vcf_constants.GVCF_ALT_ALLELE], [
-          -0.7956722868920258, -0.663917423732382, -1.493986734511771,
-          -0.8202531343562444, -0.9377869397242453, -1.0415699718993066,
-          -1.4176189291054515, -1.5795151893394743, -1.8101482990393198,
-          -0.8139951558313916
-      ], [0, 0.5, 0.1]),
-  )
-  def test_transform_to_gvcf_no_allele_addition(self, alts, gls, vaf):
-    variant = _create_variant(
-        ref_name='chr1',
-        start=10,
-        ref_base='A',
-        alt_bases=alts,
-        qual=40,
-        filter_field='PASS',
-        genotype=[0, 1],
-        gq=None,
-        likelihoods=gls)
-    vaf_values = [struct_pb2.Value(number_value=v) for v in vaf]
-    variant.calls[0].info['VAF'].values.extend(vaf_values)
-    expected = variants_pb2.Variant()
-    expected.CopyFrom(variant)
-    actual = postprocess_variants._transform_to_gvcf_record(variant)
-    self.assertEqual(actual, expected)
-
-  @parameterized.parameters(
-      # Simple inputs.
-      # Empty.
-      ([], [], []),
-      # Non-overlapping records.
-      ([('1', 1, 'A')], [], [_simple_gv('1', 1, 'A')]),
-      ([('1', 3, 'C'), ('1', 7, 'T'),
-        ('2', 6, 'A')], [('2', 3, 6, 'G'), ('2', 7, 9, 'C')], [
-            _simple_gv('1', 3, 'C'),
-            _simple_gv('1', 7, 'T'),
-            _create_nonvariant('2', 3, 6, 'G'),
-            _simple_gv('2', 6, 'A'),
-            _create_nonvariant('2', 7, 9, 'C')
-        ]),
-      # Non-variant record overlaps a variant from the left.
-      ([('1', 5, 'GTTACG')], [('1', 2, 8, 'C')],
-       [_create_nonvariant('1', 2, 5, 'C'),
-        _simple_gv('1', 5, 'GTTACG')]),
-      # Non-variant record overlaps a variant from the right.
-      ([('1', 5, 'GTTACG')], [('1', 8, 15, 'A')],
-       [_simple_gv('1', 5, 'GTTACG'),
-        _create_nonvariant('1', 11, 15, 'T')]),
-      # Non-variant record is subsumed by a variant.
-      ([('1', 5, 'GTTACG')], [('1', 5, 11, 'G')
-                             ], [_simple_gv('1', 5, 'GTTACG')]),
-      # Non-variant record subsumes a variant.
-      ([('1', 5, 'GTTACG')], [('1', 4, 12, 'G')], [
-          _create_nonvariant('1', 4, 5, 'G'),
-          _simple_gv('1', 5, 'GTTACG'),
-          _create_nonvariant('1', 11, 12, 'T')
-      ]),
-      # Non-variant record subsumes multiple overlapping variants.
-      ([('1', 3, 'CGGTTAC'), ('1', 5, 'G')], [('1', 1, 15, 'A')], [
-          _create_nonvariant('1', 1, 3, 'A'),
-          _simple_gv('1', 3, 'CGGTTAC'),
-          _simple_gv('1', 5, 'G'),
-          _create_nonvariant('1', 10, 15, 'G')
-      ]),
-      ([('1', 3, 'CGGTTAC'), ('1', 5, 'GTTACGT')], [('1', 1, 15, 'A')], [
-          _create_nonvariant('1', 1, 3, 'A'),
-          _simple_gv('1', 3, 'CGGTTAC'),
-          _simple_gv('1', 5, 'GTTACGT'),
-          _create_nonvariant('1', 12, 15, 'T')
-      ]),
-  )
-  def test_merge_variants_and_nonvariants(self, variants, nonvariants,
-                                          expected):
-    viter = (_simple_variant(*v) for v in variants)
-    nonviter = (_create_nonvariant(*nv) for nv in nonvariants)
-    lessthan = postprocess_variants._get_contig_based_lessthan(_CONTIGS)
-    reader = placeholder_reference_reader()
-
-    mock_vcf_writer = MockVcfWriter()
-    mock_gvcf_writer = MockVcfWriter()
-
-    postprocess_variants.merge_and_write_variants_and_nonvariants(
-        viter, nonviter, lessthan, reader, mock_vcf_writer, mock_gvcf_writer)
-
-    vcf_expected = [_simple_variant(*v) for v in variants]
-
-    self.assertEqual(mock_vcf_writer.variants_written, vcf_expected)
-    self.assertEqual(mock_gvcf_writer.variants_written, expected)
 
   # redacted
   def test_sort_grouped_variants(self):

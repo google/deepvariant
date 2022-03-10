@@ -32,6 +32,8 @@
 
 #include "third_party/nucleus/io/merge_variants.h"
 
+#include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/io/variant_reader.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 
 namespace nucleus {
@@ -41,6 +43,8 @@ constexpr std::string_view GVCF_ALT_ALLELE = "<*>";
 
 // The genotype likelihood of the gVCF alternate allele for variant calls.
 constexpr int _GVCF_ALT_ALLELE_GL = -99;
+
+constexpr std::string_view DEEP_VARIANT_PASS = "PASS";
 
 std::unique_ptr<Variant> CreateRecordFromTemplate(const Variant& t, int start,
                                                   int end,
@@ -92,6 +96,109 @@ void ZeroScaleGl(Variant* variant) {
     double* gl = call->mutable_genotype_likelihood()->Mutable(i);
     *gl -= max_gl;
   }
+}
+
+constexpr int kCacheSize = 300000000;
+
+void MergeAndWriteVariantsAndNonVariants(
+    bool only_keep_pass, const std::string& variant_file_path,
+    const std::vector<std::string>& non_variant_file_paths,
+    const std::string& fasta_path, const std::string& vcf_out_path,
+    const std::string& gvcf_out_path,
+    const nucleus::genomics::v1::VcfHeader& header) {
+  // Create VCF and gVCF writers
+  nucleus::genomics::v1::VcfWriterOptions writer_options;
+  writer_options.set_round_qual_values(true);
+  auto writer_or_status =
+      nucleus::VcfWriter::ToFile(vcf_out_path, header, writer_options);
+  if (!writer_or_status.ok()) {
+    LOG(ERROR) << "opening writer failed" << writer_or_status.error_message();
+  }
+  std::unique_ptr<VcfWriter> vcf_writer =
+      std::move(writer_or_status.ValueOrDie());
+
+  writer_or_status =
+      nucleus::VcfWriter::ToFile(gvcf_out_path, header, writer_options);
+  if (!writer_or_status.ok()) {
+    LOG(ERROR) << "opening writer failed" << writer_or_status.error_message();
+  }
+  std::unique_ptr<VcfWriter> gvcf_writer =
+      std::move(writer_or_status.ValueOrDie());
+
+  // Create fasta reader
+  std::unique_ptr<IndexedFastaReader> fasta_reader =
+      std::move(IndexedFastaReader::FromFile(
+                    fasta_path, absl::StrCat(fasta_path, ".fai"), kCacheSize)
+                    .ValueOrDie());
+  const std::vector<genomics::v1::ContigInfo> contigs = fasta_reader->Contigs();
+
+  absl::flat_hash_map<std::string, uint32_t> contig_index_map;
+  for (uint32_t i = 0; i < contigs.size(); i++) {
+    contig_index_map[contigs[i].name()] = i;
+  }
+
+  // Create reader for variants
+  std::unique_ptr<VariantReader> variant_reader =
+      VariantReader::Open(variant_file_path, "", contig_index_map);
+
+  // Create reader for non_variants
+  std::unique_ptr<ShardedVariantReader> non_variant_reader =
+      ShardedVariantReader::Open(non_variant_file_paths, contig_index_map);
+
+  MergeAndWriteVariantsAndNonVariants(
+      only_keep_pass, variant_reader.get(), non_variant_reader.get(),
+      vcf_writer.get(), gvcf_writer.get(), *fasta_reader);
+}
+
+void MergeAndWriteVariantsAndNonVariants(
+    bool only_keep_pass, VariantReader* variant_reader,
+    ShardedVariantReader* non_variant_reader, VcfWriter* vcf_writer,
+    VcfWriter* gvcf_writer, const GenomeReference& ref) {
+  IndexedVariant variant = variant_reader->GetAndReadNext();
+
+  IndexedVariant nonvariant = non_variant_reader->GetAndReadNext();
+
+  while (variant.variant != nullptr || nonvariant.variant != nullptr) {
+    if (variant.contig_map_index < nonvariant.contig_map_index ||
+        (variant.contig_map_index == nonvariant.contig_map_index &&
+         variant.variant->end() <= nonvariant.variant->start())) {
+      if (!only_keep_pass ||
+          (variant.variant->filter().size() == 1 &&
+           variant.variant->filter(0) == DEEP_VARIANT_PASS)) {
+        TF_QCHECK_OK(vcf_writer->Write(*variant.variant));
+      }
+      ZeroScaleGl(variant.variant.get());
+      TransfromToGvcf(variant.variant.get());
+      TF_QCHECK_OK(gvcf_writer->Write(*variant.variant));
+
+      variant = variant_reader->GetAndReadNext();
+    } else if (nonvariant.contig_map_index < variant.contig_map_index ||
+               (nonvariant.contig_map_index == variant.contig_map_index &&
+                nonvariant.variant->end() <= variant.variant->start())) {
+      TF_QCHECK_OK(gvcf_writer->Write(*nonvariant.variant));
+
+      nonvariant = non_variant_reader->GetAndReadNext();
+    } else {
+      if (nonvariant.variant->start() < variant.variant->start()) {
+        std::unique_ptr<Variant> v = CreateRecordFromTemplate(
+            *nonvariant.variant, nonvariant.variant->start(),
+            variant.variant->start(), ref);
+        TF_QCHECK_OK(gvcf_writer->Write(*v));
+      }
+      if (nonvariant.variant->end() > variant.variant->end()) {
+        nonvariant = {.variant = CreateRecordFromTemplate(
+                          *nonvariant.variant, variant.variant->end(),
+                          nonvariant.variant->end(), ref),
+                      .contig_map_index = nonvariant.contig_map_index};
+      } else {
+        // This non-variant site is subsumed by a Variant. Ignore it.
+        nonvariant = non_variant_reader->GetAndReadNext();
+      }
+    }
+  }
+
+  TF_QCHECK_OK(vcf_writer->Close());
+  TF_QCHECK_OK(gvcf_writer->Close());
 }
 
 }  // namespace nucleus

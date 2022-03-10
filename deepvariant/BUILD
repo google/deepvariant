@@ -64,6 +64,7 @@ py_library(
         "//deepvariant/python:direct_phasing",
         "//deepvariant/python:variant_calling",
         "//deepvariant/realigner",
+        "//third_party/nucleus/io/python:merge_variants",
     ],
 )
 
@@ -793,6 +794,7 @@ py_library(
         "//third_party/nucleus/io:tabix",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/io/python:merge_variants",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:errors",

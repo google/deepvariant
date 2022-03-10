@@ -98,6 +98,13 @@ IndexedVariant VariantReader::ReadRecord() {
   return {.variant = std::move(proto), .contig_map_index = contig_index};
 }
 
+IndexedVariant VariantReader::GetAndReadNext() {
+  if (GetNext()) {
+    return ReadRecord();
+  }
+  return EmptyIndexedVariant();
+}
+
 ShardedVariantReader::ShardedVariantReader(
     std::vector<std::unique_ptr<VariantReader>> shard_readers)
     : shard_readers_(std::move(shard_readers)) {
