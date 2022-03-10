@@ -62,8 +62,9 @@ def Reader(path, proto=None, compression_type=None):
 
 def Writer(path, compression_type=None):
   """A convenience wrapper around genomics_writer.TFRecordWriter."""
-  return genomics_writer.TFRecordWriter(
-      path, compression_type=compression_type)
+  return genomics_writer.TFRecordWriter(path, compression_type=compression_type)
+
+
 # pylint: enable=invalid-name
 
 
@@ -102,6 +103,21 @@ def read_tfrecords(path, proto=None, max_records=None, compression_type=None):
         yield record
 
 
+def expanded_paths_if_sharded(path):
+  """Returns all file paths for the given (optionally sharded) tfrecord path.
+
+  Args:
+      path: String. Path to the (optionally sharded) TFRecords.  Returns a lits
+        with the original path if the tfrecord file is not sharded, or a list of
+        paths to all shards if it is.
+  """
+  if sharded_file_utils.is_sharded_file_spec(path):
+    paths = sharded_file_utils.generate_sharded_filenames(path)
+  else:
+    paths = [path]
+  return paths
+
+
 def read_shard_sorted_tfrecords(path,
                                 key,
                                 proto=None,
@@ -129,10 +145,7 @@ def read_shard_sorted_tfrecords(path,
   Yields:
     proto.FromString() values on each record in path in sorted order.
   """
-  if sharded_file_utils.is_sharded_file_spec(path):
-    paths = sharded_file_utils.generate_sharded_filenames(path)
-  else:
-    paths = [path]
+  paths = expanded_paths_if_sharded(path)
 
   keyed_iterables = []
   for path in paths:
@@ -166,9 +179,9 @@ def write_tfrecords(protos, output_path, compression_type=None):
       _, n_shards, _ = sharded_file_utils.parse_sharded_file_spec(output_path)
       writers = [
           stack.enter_context(
-              Writer(sharded_file_utils.sharded_filename(
-                  output_path, i), compression_type=compression_type))
-          for i in range(n_shards)
+              Writer(
+                  sharded_file_utils.sharded_filename(output_path, i),
+                  compression_type=compression_type)) for i in range(n_shards)
       ]
       for i, proto in enumerate(protos):
         writers[i % n_shards].write(proto)
