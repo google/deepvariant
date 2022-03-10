@@ -774,6 +774,7 @@ cc_test(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/vendor:status_matchers",
         "@com_google_googletest//:gtest_main",
@@ -1206,5 +1207,48 @@ py_test(
         ":gfile",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
+    ],
+)
+
+cc_library(
+    name = "variant_reader",
+    srcs = ["variant_reader.cc"],
+    hdrs = ["variant_reader.h"],
+    deps = [
+        ":reader_base",
+        ":reference",
+        ":tfrecord_reader",
+        ":vcf_writer",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:optional",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_test(
+    name = "variant_reader_test",
+    size = "medium",
+    srcs = ["variant_reader_test.cc"],
+    deps = [
+        ":tfrecord_writer",
+        ":variant_reader",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status_matchers",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+        "@com_google_protobuf//:protobuf",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
     ],
 )
