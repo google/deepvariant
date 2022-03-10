@@ -423,7 +423,7 @@ def _resolve_overlapping_variants(overlapping_variants):
         'configuration with the most likely joint likelihood is different from '
         'that using the scaled marginal likelihoods: %s',
         overlapping_variants[0])
-    # redacted
+    # TODO: Do something better than just punting.
     for variant in overlapping_variants:
       yield variant
 

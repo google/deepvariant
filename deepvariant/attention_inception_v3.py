@@ -36,7 +36,7 @@ This file is branched from tensorflow_models/slim/nets/inception_v3.py.
 import tensorflow.compat.v1 as tf
 import tf_slim as slim
 
-# redacted
+# TODO
 # from tensorflow_models.slim.nets import inception_utils
 from deepvariant import attention_module as att
 
@@ -678,7 +678,7 @@ def _reduced_kernel_size_for_small_input(input_tensor, kernel_size):
   Returns:
     a tensor with the kernel size.
 
-  redacted
+  TODO: Make this function work with unknown shapes. Theoretically, this
   can be done with the code below. Problems are two-fold: (1) If the shape was
   known, it will be lost. (2) inception.slim.ops._two_element_tuple cannot
   handle tensors that define the kernel size.
@@ -695,7 +695,7 @@ def _reduced_kernel_size_for_small_input(input_tensor, kernel_size):
                        min(shape[2], kernel_size[1])]
   return kernel_size_out
 
-# redacted
+# TODO
 # inception_v3_arg_scope = inception_utils.inception_arg_scope
 
 

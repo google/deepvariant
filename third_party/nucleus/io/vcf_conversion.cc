@@ -214,7 +214,7 @@ std::vector<std::vector<string>> ReadFormatValues(const bcf_hdr_t* h,
   std::vector<std::vector<string>> values(v->n_sample);
   if (bcf_get_format_string(h, const_cast<bcf1_t*>(v), tag, &dst, &n_dst) > 0) {
     for (int i = 0; i < bcf_hdr_nsamples(h); i++) {
-      // redacted
+      // TODO: (1) validate the length of this list is as declared in
       // the header, and figure out what to do when declared length is smaller
       // than the actual length of the list.
 
@@ -391,7 +391,7 @@ std::vector<string> ReadInfoValue(const bcf_hdr_t* h,
   int n_dst = 0;
   char* dst = nullptr;
   if (bcf_get_info_string(h, const_cast<bcf1_t*>(v), tag, &dst, &n_dst) < 0) {
-    // redacted
+    // TODO: cleanup error handling.
     LOG(FATAL) << "Failure to get INFO string";
   }
   std::string string_value(dst);
@@ -411,7 +411,7 @@ std::vector<bool> ReadInfoValue(const bcf_hdr_t* h,
   } else if (rc == 0) {
     return {false};
   } else {
-    // redacted
+    // TODO: cleanup error handling.
     LOG(FATAL) << "Failure to get INFO flag.";
   }
 }
@@ -498,7 +498,7 @@ void AddContigInfo(const bcf_idpair_t& idPair,
       if (string(hrec0->keys[j]) != "ID" &&
           string(hrec0->keys[j]) != "length" &&
           string(hrec0->keys[j]) != "IDX") {
-        // redacted
+        // TODO: remove string conversion.
         (*contig->mutable_extra())[hrec0->keys[j]] =
             string(Unquote(hrec0->vals[j]));
       }
@@ -513,7 +513,7 @@ void AddFilterInfo(const bcf_hrec_t* hrec,
       string(hrec->keys[1]) == "Description") {
     filter->set_id(hrec->vals[0]);
     // "Unquote" the description identifier.
-    // redacted
+    // TODO: remove string conversion
     filter->set_description(string(Unquote(hrec->vals[1])));
   } else {
     LOG(WARNING) << "Malformed FILTER field detected in header, leaving this "
@@ -529,7 +529,7 @@ void AddInfo(const bcf_hrec_t* hrec, nucleus::genomics::v1::VcfInfo* info) {
     info->set_id(hrec->vals[0]);
     info->set_number(hrec->vals[1]);
     info->set_type(hrec->vals[2]);
-    // redacted
+    // TODO: remove string conversions below.
     info->set_description(string(Unquote(hrec->vals[3])));
     for (int i = 4; i < hrec->nkeys; i++) {
       if (string(hrec->keys[i]) == "Source") {
@@ -556,7 +556,7 @@ void AddFormatInfo(const bcf_hrec_t* hrec,
     } else if (string(hrec->keys[i]) == "Type") {
       type = hrec->vals[i];
     } else if (string(hrec->keys[i]) == "Description") {
-      // redacted
+      // TODO: remove string conversions below.
       description = string(Unquote(hrec->vals[i]));
     }
   }
@@ -582,7 +582,7 @@ void AddStructuredExtra(const bcf_hrec_t* hrec,
   for (int i = 0; i < hrec->nkeys; i++) {
     nucleus::genomics::v1::VcfExtra& toAdd = *extra->mutable_fields()->Add();
     toAdd.set_key(hrec->keys[i]);
-    // redacted
+    // TODO: remove string conversion.
     toAdd.set_value(string(Unquote(hrec->vals[i])));
   }
 }
@@ -621,7 +621,7 @@ tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
   return tensorflow::Status::OK();
 }
 
-// redacted
+// TODO: consider eliminating this templated function by making
 // the intermediate vectors contain variant objects (Value).
 template <class T> tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
     const nucleus::genomics::v1::Variant& variant,
@@ -815,7 +815,7 @@ VcfRecordConverter::VcfRecordConverter(
       if (!gl_and_pl_in_info_map) continue;
     }
 
-    // redacted
+    // TODO: how do we really want to encode the type here?
     int vcf_type;
     if (type == "Integer") {
       vcf_type = BCF_HT_INT;

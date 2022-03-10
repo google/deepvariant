@@ -76,7 +76,7 @@ CigarUnit_Operation parse_cigar_op_str(const char op) {
   }
 }
 
-// redacted
+// TODO: only supports UNIX paths.
 template<class T>
 string JoinPaths(std::initializer_list<T> paths) {
   return absl::StrJoin(paths, "/");

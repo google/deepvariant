@@ -123,7 +123,7 @@ cc_library(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "@org_tensorflow//tensorflow/core:lib",
-        # redacted
+        # TODO: remove when GCS build directive OSS bug is fixed.
         "@org_tensorflow//tensorflow/core/platform/cloud:gcs_file_system",
     ],
 )
@@ -532,7 +532,7 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],
@@ -628,7 +628,7 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":call_variants_main_lib",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -821,7 +821,7 @@ py_binary(
         ":postprocess_variants_py_lib",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1002,7 +1002,7 @@ py_binary(
     srcs_version = "PY3",
     deps = [
         ":model_train_main_lib",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1063,7 +1063,7 @@ py_binary(
     srcs_version = "PY3",
     deps = [
         ":model_eval_main_lib",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1217,7 +1217,7 @@ py_binary(
     deps = [
         ":vcf_stats_report_lib",
         "@absl_py//absl/flags",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1276,7 +1276,7 @@ py_test(
         ":vcf_stats_vis",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1287,7 +1287,7 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":show_examples_lib",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1376,7 +1376,7 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":runtime_by_region_vis_lib",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1419,7 +1419,7 @@ py_binary(
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1440,7 +1440,7 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],

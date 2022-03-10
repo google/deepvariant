@@ -385,7 +385,7 @@ def call_variants(examples_filename,
         raise ExecutionHardwareError(
             'execution_hardware is set to accelerator, but no accelerator '
             'was found')
-    # redacted
+    # TODO. Sort out auto-detection of TPU. Just calling
     # sess.list_devices here doesn't return the correct answer. That can only
     # work later, after the device (on the other VM) has been initialized,
     # which is generally not yet.

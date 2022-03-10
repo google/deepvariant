@@ -1376,7 +1376,7 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     path = postprocess_variants._get_base_path(input_vcf)
     self.assertEqual(path, expected_base_path)
 
-  # redacted
+  # TODO use itertools.permutations to improve the test.
   def test_sort_grouped_variants(self):
     group = [
         _create_call_variants_output(

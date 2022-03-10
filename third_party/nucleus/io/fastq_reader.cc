@@ -65,7 +65,7 @@ constexpr char SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL = '+';
 
 namespace {
 
-// redacted
+// TODO: get rid of pessimizing string_view -> string conversions
 // once our OSS dependencies are updated.
 tf::Status ConvertToPb(const string_view header,
                        const string_view sequence,

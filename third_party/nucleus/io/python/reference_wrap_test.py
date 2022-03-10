@@ -85,7 +85,7 @@ class WrapReferenceTest(parameterized.TestCase):
                                                 fai_filename):
     fasta = test_utils.genomics_core_testdata(fasta_filename)
     fai = test_utils.genomics_core_testdata(fai_filename)
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(
         ValueError, 'could not load fasta and/or fai for fasta ' + fasta):
       reference.IndexedFastaReader.from_file(fasta, fai,

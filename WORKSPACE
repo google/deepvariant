@@ -9,7 +9,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 # provided by TensorFlow.
 
 # CCTZ (Time-zone framework).
-# redacted
+# TODO: transitive WORKSPACE dependency resolution doesn't
 # work in bazel, so we need to include this to enable nucleus's use of
 # //absl/{time,synchronization}
 http_archive(

@@ -61,7 +61,7 @@ class FastqReaderTest(parameterized.TestCase):
       self.assertEqual(test_utils.iterable_len(iterable), 4)
 
   def test_from_file_raises_with_missing_fastq(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'Could not open missing.fastq'):
       fastq_reader.FastqReader.from_file('missing.fastq', self.options)
 

@@ -42,7 +42,7 @@ py_test(
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -87,7 +87,7 @@ py_test(
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -161,7 +161,7 @@ py_test(
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )

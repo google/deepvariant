@@ -169,7 +169,7 @@ class ModelEvalTest(
         'FPs/All': 1.0,
         # We call everything as het, so the recall has to be 1.
         'Recall/All': 1.0,
-        # redacted
+        # TODO: include this metric when we upgrade to TF 1.5.
         # # We don't call anything but hets, so TNs has to be 0.
         # 'TNs/All': 0,
         # We find 47 positives, so this has to be 47.

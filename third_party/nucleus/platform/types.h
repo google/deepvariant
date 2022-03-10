@@ -43,7 +43,7 @@ namespace nucleus {
 using std::string;
 
 // Adapted from tensorflow/core/platform/default/integral_types.h
-// redacted
+// TODO: replace this with inclusion of integral_types.h from absl,
 // when it arrives.
 typedef signed char int8;
 typedef short int16;

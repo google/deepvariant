@@ -110,7 +110,7 @@ class AlleleCounterTest : public ::testing::Test {
                                              const int64_t start,
                                              const int64_t end) {
     Range range = MakeRange(chr, start, end);
-    // redacted
+    // TODO: Use MakeUnique here. There is already a copy in
     // tensorflow/compiler/xla/ptr_util.h.
     return absl::make_unique<AlleleCounter>(ref_.get(), range,
                                             std::vector<int>(), options_);

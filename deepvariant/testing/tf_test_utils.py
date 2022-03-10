@@ -104,7 +104,7 @@ def check_file_exists(name, eval_name=None):
   return tf.io.gfile.exists(file_name)
 
 
-# redacted
+# TODO: Consider a slightly more general version: What about
 # taking a required_variables_regexps and have a function that looks like:
 # return all(any(re.match(var, pat) for var in var_to_shape_map.keys()
 #   for pat in required_variable_regexps))

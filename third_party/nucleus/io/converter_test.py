@@ -82,7 +82,7 @@ class ConvertGenomicsFileTest(parameterized.TestCase):
     # Test conversion from native format to tfrecord.
     self._convert(input_path, tfrecord_output_path)
 
-    # redacted
+    # TODO: remove this when SAM writer is implemented.
     if native_output_path.endswith(".sam"):
       raise unittest.SkipTest("SAM writing not yet supported")
 

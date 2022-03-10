@@ -108,7 +108,7 @@ echo $(date) : "=== Building tar file ${TAR_NAME}"
 tar cvzf "${TAR_NAME}" "${PACKAGE_NAME}"
 
 # ls the tarfile to see how large it is.
-# redacted
+# TODO: Set up monitoring for the pip package size.  It isn't
 # allowed to be over 100M, and it's usually a sign of other trouble when
 # it is over that size.
 ls -lh "${TAR_NAME}"

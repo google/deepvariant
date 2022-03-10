@@ -67,7 +67,7 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
     The `alt_alleles_indices` being passed in is from the candidates (not
     truth), so they could still have multiple alts. If any of the alt alleles
     matches the truth, we'll return the label of the truth.
-    redacted
+    TODO: Fix multi-allelic cases. Add corresponding unit test cases.
     Note that this function currently doesn't handle multi-allelic cases
     correctly. For example it assumes `truth_alt` is the first one.
 

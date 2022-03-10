@@ -70,7 +70,7 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # redacted
+        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],

@@ -101,7 +101,7 @@ flags.DEFINE_boolean(
     'and create a visual runtime report using runtime_by_region_vis. '
     'Only works with --logging_dir.')
 # Optional flags for call_variants.
-# redacted
+# TODO: Support different child/parent models.
 flags.DEFINE_string(
     'customized_model', None,
     'Optional. A path to a model checkpoint to load for the `call_variants` '

@@ -149,14 +149,14 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileHelper(
     // Call bcf_hdr_read to verify that this is a headerless VCF file.
     bcf_hdr_t* null_h = bcf_hdr_read(fp);
     if (null_h != nullptr) {
-      // redacted
+      // TODO: We need RAII wrappers for these raw htslib pointers.
       hts_close(fp);
       bcf_hdr_destroy(null_h);
       bcf_hdr_destroy(h);
       return tf::errors::Unknown("Unexpected header in", vcf_filepath);
     }
     // Without the header, htslib fails to parse the format. Default to vcf.
-    // redacted
+    // TODO: support bcf files with no header.
     fp->format.format = htsExactFormat::vcf;
   }
 

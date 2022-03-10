@@ -423,7 +423,7 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
         SswSetReference(haplotypes_[hap_alignment.haplotype_index]);
         Alignment alignment = SswAlign(reads_[i]);
         if (alignment.sw_score > 0) {
-          // redacted
+          // TODO Remove score_threshold condition. It is effectively
           // not used.
           if (alignment.sw_score >= score_threshold ||
               (force_alignment_ && hap_alignment.is_reference)) {
@@ -896,7 +896,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
   while ((!read_to_haplotype_cigar_ops.empty() ||
           !haplotype_to_ref_cigar_ops.empty()) &&
          AlignedLength(*read_to_ref_cigar_ops) < read_len) {
-    // redacted
+    // TODO Need to verify this logic.
     // This can happen if read was aligned to hyplotype partially. In this case
     // The tail (or head) of read to haplotype alignment would be soft-clipped.
     if (!read_to_haplotype_cigar_ops.empty() &&

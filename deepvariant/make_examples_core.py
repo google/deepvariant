@@ -1068,7 +1068,7 @@ class RegionProcessor(object):
     for sam_reader_index, sam_reader in enumerate(sam_readers):
       try:
         reads.extend(sam_reader.query(region))
-      # redacted
+      # TODO: OpError exception not propagated.
       except ValueError as err:
         error_message = str(err)
         if error_message.startswith('DATA_LOSS:'):
@@ -1259,7 +1259,7 @@ class RegionProcessor(object):
 
       if self.options.phase_reads:
         reads_to_phase = list(sample.in_memory_sam_reader.query(padded_region))
-        # redacted
+        # TODO Here we call phasing. We may want to output the runtime
         # of the phasing part.
         read_phases = self.direct_phasing_cpp.phase(candidates[role],
                                                     reads_to_phase)

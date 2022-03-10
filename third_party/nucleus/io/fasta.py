@@ -63,7 +63,7 @@ from third_party.nucleus.protos import fasta_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.util import ranges
 
-# redacted
+# TODO: Replace this with a real protocol buffer definition.
 RefFastaHeader = collections.namedtuple(
     'RefFastaHeader', ['contigs'])
 
@@ -108,7 +108,7 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
       self._reader = reference.IndexedFastaReader.from_file(
           fasta_path, fai_path, options, cache_size)
 
-    # redacted
+    # TODO: Define a RefFastaHeader proto, and use it instead of this.
     self.header = RefFastaHeader(contigs=self._reader.contigs)
 
   def iterate(self):

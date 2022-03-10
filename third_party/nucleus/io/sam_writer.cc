@@ -105,7 +105,7 @@ class AuxBuilder {
     uint8_t* data_array_ptr = data;
     for (const auto& entry : read_.info()) {
       if (entry.second.values_size() != 1) {
-        // redacted
+        // TODO: Support writing byte-array field.
         LOG(WARNING) << "SamWriter currently doesn't support writing info "
                         "fields of size "
                      << entry.second.values_size();
@@ -162,7 +162,7 @@ class AuxBuilder {
                                    entry.first);
       }
       if (entry.second.values_size() != 1) {
-        // redacted
+        // TODO: Support writing byte-array field.
         LOG(WARNING) << "SamWriter currently doesn't support writing info "
                         "fields of size "
                      << entry.second.values_size();

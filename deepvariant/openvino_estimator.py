@@ -38,7 +38,7 @@ try:
   from openvino.inference_engine import IECore  # pylint: disable=g-import-not-at-top
   from openvino.inference_engine import StatusCode  # pylint: disable=g-import-not-at-top
   import mo_tf  # pylint: disable=g-import-not-at-top
-  # redacted
+  # TODO:
   # For now, including this in the try/except block as well.
   # Fix this with a correct dep and also add unit test
   from tensorflow.python.tools import optimize_for_inference_lib  # pylint: disable=g-import-not-at-top

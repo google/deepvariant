@@ -136,7 +136,7 @@ tf::Status ConvertToPb(const string& line, const int desiredNumFields,
 
 // Peeks into the path to the first BED record and returns the number of fields
 // in the record.
-// redacted
+// TODO: this is quite heavyweight. Reading upon initialization and
 // then rewinding the stream to 0 would be a nicer solution.
 tf::Status GetNumFields(const string& path, int* numFields) {
   CHECK(numFields != nullptr);

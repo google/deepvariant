@@ -327,7 +327,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
           [&](int ref_i, int read_i, const CigarUnit::Operation& cigar_op) {
             char read_base = 0;
             if (cigar_op == CigarUnit::INSERT) {
-              // redacted
+              // TODO: fix this to be a char in the proto
               read_base = options_.indel_anchoring_base_char()[0];
             } else if (cigar_op == CigarUnit::DELETE) {
               ref_i -= 1;  // Adjust anchor base on reference

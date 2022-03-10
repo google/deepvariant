@@ -155,7 +155,7 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
       logging.info(
           'Multiple matches detected; no good match found. Fall back '
           'to first. variant: %s: matches: %s', variant, matches)
-      # redacted
+      # TODO: The behavior of falling back to the first match is
       # likely not the best. Think about what to do for different use cases.
       best_match = matches[0]
     return best_match

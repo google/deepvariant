@@ -46,7 +46,7 @@ from "deepvariant/realigner/ssw.h":
       cigar_string: bytes     # Cigar string of the best alignment
 
 
-    # redacted
+    # TODO: make use of score_filter.
     class Filter:
       report_begin_position: bool  # Give ref_begin and query_begin.
                                    #   If it is not set, ref_begin and

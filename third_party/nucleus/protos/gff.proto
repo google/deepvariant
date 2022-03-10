@@ -36,7 +36,7 @@ import "third_party/nucleus/protos/range.proto";
 // https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
 // for details on the file format; that document is quoted below.
 //
-// redacted
+// TODO: deal with %-encoding.
 message GffRecord {
   // `range` field, reflecting the genomic location of the feature.
   // NOTE: this is a 0-based, end-exclusive interval, in contrast to the 1-based
@@ -74,7 +74,7 @@ message GffRecord {
   // Missingness of this field is encoded by -infinity.
   double score = 4;
 
-  // redacted
+  // TODO: factor this out (here and BED, at least)
   enum Strand {
     // The strand is unspecified, unknown, or not meaningful.
     UNSPECIFIED_STRAND = 0;

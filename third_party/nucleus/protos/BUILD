@@ -124,7 +124,7 @@ proto_library(
 # cc_proto_library's
 # ----------------------------------------------------------------------
 
-# redacted
+# TODO: Consider definining some new .bzl rules to reduce the
 # boilerplate in these cc_proto_library rules and in this file in general.
 
 cc_proto_library(

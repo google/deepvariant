@@ -250,12 +250,12 @@ def most_likely_genotype(predictions, ploidy=2, n_alleles=2):
     ValueError: If we cannot determine the genotype given prediction, n_alts,
       and ploidy.
   """
-  # redacted
+  # TODO: This can be memoized for efficiency.
   if ploidy != 2:
     raise NotImplementedError('Ploidy != 2 not yet implemented.')
   if n_alleles < 2:
     raise ValueError('n_alleles must be >= 2 but got', n_alleles)
-  # redacted
+  # TODO: would be nice to add test that predictions has the right
   # number of elements. But that would involve calculating the binomial
   # coefficient of n_alleles and ploidy, which would be expensive. Probably
   # need to memoize the whole function if we are going to add this.
@@ -365,7 +365,7 @@ def compute_quals(predictions, prediction_index):
           genomics_math.ptrue_to_bounded_phred(predictions[prediction_index])))
   # QUAL is prob(variant genotype) / prob(all genotypes)
   # Taking the min to avoid minor numerical issues than can push sum > 1.0.
-  # redacted
+  # TODO: this is equivalent to the likely better implementation:
   #   genomics_math.perror_to_phred(max(predictions[0], min_ref_confidence))
   # where min_ref_confidence is roughly 1.25e-10 (producing a qual of 99).
   qual = genomics_math.ptrue_to_bounded_phred(min(sum(predictions[1:]), 1.0))
@@ -525,11 +525,11 @@ def get_alt_alleles_to_remove(call_variants_outputs, qual_filter):
   # If all alt alleles are below `qual_filter`, keep at least one.
   if len(alt_alleles_to_remove) == len(canonical_variant.alternate_bases):
     alt_alleles_to_remove -= set([max_qual_allele])
-  # redacted
+  # TODO: return AlleleRemapper here.
   return alt_alleles_to_remove
 
 
-# redacted
+# TODO: code throughout would benefit from using AlleleRemapper.
 class AlleleRemapper(object):
   """Facilitates removing alt alleles from a Variant.
 
@@ -539,7 +539,7 @@ class AlleleRemapper(object):
   indices (integers) should be retained or eliminated.
   """
 
-  # redacted
+  # TODO: implement full range of functionality specified above.
 
   def __init__(self, original_alt_alleles, alleles_to_remove):
     self.original_alts = list(original_alt_alleles)

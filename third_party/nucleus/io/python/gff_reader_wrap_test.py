@@ -80,7 +80,7 @@ class GffReaderTest(parameterized.TestCase):
       self.assertEqual(actual[1], self.second)
 
   def test_from_file_raises_with_missing_gff(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'Could not open missing.gff'):
       gff_reader.GffReader.from_file('missing.gff', self.options)
 

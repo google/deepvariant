@@ -68,7 +68,7 @@ def Writer(path, compression_type=None):
 # pylint: enable=invalid-name
 
 
-# redacted
+# TODO: Refactor all of the following (internal).
 def read_tfrecords(path, proto=None, max_records=None, compression_type=None):
   """Yields the parsed records in a TFRecord file path.
 

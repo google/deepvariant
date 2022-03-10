@@ -58,7 +58,7 @@ using nucleus::genomics::v1::GffRecord;
 namespace nucleus {
 
 // Constants
-// redacted
+// TODO: share these with the writer
 constexpr char kGffCommentPrefix[] = "#";
 constexpr char kGffMissingField[] = ".";
 constexpr double kGffMissingDouble = -std::numeric_limits<double>::infinity();
@@ -68,7 +68,7 @@ namespace {
 
 tf::Status ParseGffHeaderLine(const string& line, GffHeader* header) {
   if (absl::StartsWith(line, "##gff-version")) {
-    // redacted
+    // TODO: get rid of pessimizing string_view -> string
     // conversions
     header->set_gff_version(string(absl::StripPrefix(line, "##")));
   } else if (absl::StartsWith(line, "##sequence-region")) {
@@ -95,14 +95,14 @@ tf::Status ParseGffHeaderLine(const string& line, GffHeader* header) {
     sequence_region->set_start(start);
     sequence_region->set_end(end);
   } else {
-    // redacted
+    // TODO: other directives currently ignored.
   }
 
   return tf::Status::OK();
 }
 
 // Peeks into the GFF file to extract the header.
-// redacted
+// TODO: refactor header reading
 tf::Status ReadGffHeader(const string& path, GffHeader* header) {
   CHECK(header != nullptr);
   header->Clear();
@@ -157,7 +157,7 @@ tf::Status ParseGffAttributes(const string& attributes_string,
     if (tokens.size() != 2) {
       return tf::errors::Unknown("Cannot parse GFF attributes string");
     }
-    // redacted
+    // TODO: get rid of pessimizing string_view -> string
     // conversions
     string lhs = string(tokens[0]);
     string rhs = string(tokens[1]);
@@ -194,7 +194,7 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
     return tf::errors::Unknown("Cannot parse GFF record `end`");
   }
   // Convert to zero-based end-exclusive coordinate system.
-  // redacted
+  // TODO: consider factoring this out.
   int64 start = start1 - 1;
   int64 end = end1;
 

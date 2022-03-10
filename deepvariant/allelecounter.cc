@@ -66,7 +66,7 @@ using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
 
-// redacted
+// TODO Consolidate SumAlleleCounts functions into one since the
 // functionality is identical.
 std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
                                     bool include_low_quality) {
@@ -84,7 +84,7 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
                                    entry.first.second, entry.second));
   }
 
-  // redacted
+  // TODO SumAlleleCounts is only used in one place in variant_calling.cc
   // where ref alleles are filtered out. The code below is redundant.
   // Verify that there are no other usages of ref alleles and remove this code.
   //
@@ -122,7 +122,7 @@ std::vector<Allele> SumAlleleCounts(
                                    entry.first.second, entry.second));
   }
 
-  // redacted
+  // TODO SumAlleleCounts is only used in one place in variant_calling.cc
   // where ref alleles are filtered out. The code below is redundant.
   // Verify that there are no other usages of ref alleles and remove this code.
   //
@@ -146,7 +146,7 @@ std::vector<Allele> SumAlleleCounts(
   return to_return;
 }
 
-// redacted
+// TODO Consolidate TotalAlleleCounts functions into one since the
 // functionality is identical.
 // Allele counter tracks reads supporting alt alleles. Simple counter is used
 // for ref supporting reads. If track_ref_reads flag is set then ref supporting

@@ -102,7 +102,7 @@ void AddHeaderLineToHeader(const string& line, SamHeader& header) {
 
   for (const string_view& token : absl::StrSplit(line, '\t')) {
     if (token == kSamHeaderTag) continue;
-    // redacted
+    // TODO: remove string conversions.
     const string tag = string(token.substr(0, tagLen));
     const string value = string(token.substr(tagLen));
     if (tag == kVNTag) {
@@ -139,7 +139,7 @@ void AddReadGroupToHeader(const string& line,
   int tagLen = 3;
   for (const string_view token : absl::StrSplit(line, '\t')) {
     if (token == kSamReadGroupTag) continue;
-    // redacted
+    // TODO: remove string conversions.
     const string tag = string(token.substr(0, tagLen));
     const string value = string(token.substr(tagLen));
     if (tag == kIDTag) {
@@ -182,7 +182,7 @@ void AddProgramToHeader(const string& line,
   int tagLen = 3;
   for (const string_view token : absl::StrSplit(line, '\t')) {
     if (token == kSamProgramTag) continue;
-    // redacted
+    // TODO: remove string conversions.
     const string tag = string(token.substr(0, tagLen));
     const string value = string(token.substr(tagLen));
     if (tag == kIDTag) {
@@ -481,7 +481,7 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
     if (c->l_qseq) {
       uint8_t* quals = bam_get_qual(b);
       if (quals[0] != 0xff) {  // Not missing
-        // redacted
+        // TODO: Is there a more efficient way to do this?
         RepeatedField<int32>* quality = read_message->mutable_aligned_quality();
         quality->Reserve(c->l_qseq);
         for (int i = 0; i < c->l_qseq; ++i) {
@@ -751,7 +751,7 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
 
   hts_idx_t* idx = nullptr;
   if (FileTypeIsIndexable(fp->format)) {
-    // redacted
+    // TODO: use hts_idx_load after htslib upgrade.
     // This call may return null, which we will look for at Query time.
     idx = sam_index_load(fp, fp->fn);
   }

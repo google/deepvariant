@@ -230,7 +230,7 @@ class RangeSet(object):
 
     # Iteratively intersect each of our *other RangeSets with this RangeSet.
     # Sort by size so we do the smallest number of element merge first.
-    # redacted
+    # TODO: Note we could optimize this code by computing the set of
     # common contigs upfront across all others and only looping over those.
     intersected = self
     for other in sorted(others, key=len):

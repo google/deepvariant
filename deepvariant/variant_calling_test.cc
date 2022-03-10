@@ -136,7 +136,7 @@ Variant MakeExpectedVariant(const absl::string_view ref,
     // determined). Note that these are simple, baseline tests for any site
     // that doesn't have a variant call. Detailed testing of the proper gVCF
     // statistical calculations will come when those calculations appear.
-    // redacted
+    // TODO: Revise this test in full gVCF calculations CL.
     variant.set_end(variant.start() + 1);
     variant.add_alternate_bases(kGVCFAltAllele);
     CHECK(google::protobuf::TextFormat::ParseFromString(
@@ -194,7 +194,7 @@ class VariantCallingTest : public ::testing::Test {
               expect_variant, partial_expected_variant);
   }
 
-  // redacted
+  // TODO: The CheckCallFromComputeVariantWithSameProposedVariant
   // functions below should be cleaned up. And, the assumption that the
   // proposed variant is the same as the expected variant should also be
   // re-examined.
@@ -866,7 +866,7 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
 }
 
 TEST_F(VariantCallingTest, TestCallsFromVcfQueryingVcf) {
-  // redacted
+  // TODO
   // For human readability, here is the content of the VCF:
   /*
   $ zcat learning/genomics/deepvariant/testdata/input/test_calls_from_vcf.vcf.gz
@@ -905,7 +905,7 @@ TEST_F(VariantCallingTest, TestCallsFromVcfQueryingVcf) {
 }
 
 TEST_F(VariantCallingTest, TestCallsFromVcfDetails) {
-  // redacted
+  // TODO
   // For human readability, here is the content of the VCF:
   /*
   $ zcat learning/genomics/deepvariant/testdata/input/test_calls_from_vcf.vcf.gz

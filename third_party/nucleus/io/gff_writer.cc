@@ -58,7 +58,7 @@ using genomics::v1::GffWriterOptions;
 using genomics::v1::Range;
 
 // Constants
-// redacted
+// TODO: share these with the reader.
 constexpr char kGffCommentPrefix[] = "#";
 constexpr char kGffMissingField[] = ".";
 constexpr double kGffMissingDouble = -std::numeric_limits<double>::infinity();
@@ -74,7 +74,7 @@ tf::Status WriteGffHeader(const GffHeader& header, TextWriter* text_writer) {
         absl::Substitute("##sequence-region $0 $1 $2\n", range.reference_name(),
                          range.start() + 1, range.end())));
   }
-  // redacted
+  // TODO: write ontology headers.
   return tf::Status::OK();
 }
 

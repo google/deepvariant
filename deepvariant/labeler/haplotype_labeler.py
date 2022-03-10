@@ -993,7 +993,7 @@ def deduplicate_haplotypes(haplotypes_to_genotypes_dict):
   return retval
 
 
-# redacted
+# TODO: Create a comparison engine that accepts an iterable of
 # variants and truths, and yields information about each variant and
 # truth variant sequentially. This should be the primary API. Refactor
 # label_examples to use this new API. Then create a new implementation that does
@@ -1087,7 +1087,7 @@ def select_best_haplotype_match(all_matches):
       f for f in all_matches if f.match_metrics == best.match_metrics
   ]
 
-  # redacted
+  # TODO: Why is this triggering so much?
   if len(equivalents) > 1:
     for i, f in enumerate(equivalents):
       extra_info = 'best' if i == 0 else i

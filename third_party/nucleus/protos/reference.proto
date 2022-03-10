@@ -69,7 +69,7 @@ message ContigInfo {
 
   // The position of this contig in the src_fasta file. The first contig would
   // have position 0.
-  // redacted
+  // TODO: rename to something more generic.
   int32 pos_in_fasta = 4;
 }
 

@@ -520,14 +520,14 @@ function get_docker_image() {
 
 function setup_args() {
   if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
-    # redacted
+    # TODO: Support different child/parent models.
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
     run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
     run gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
     run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
     run "gsutil cp ${CUSTOMIZED_MODEL}.input_shape ${INPUT_DIR}/model.ckpt.input_shape || echo 'skip input_shape'"
     extra_args+=( --customized_model "/input/model.ckpt")
-    # redacted
+    # TODO Add support for DeepTrio custom models.
     # echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
     # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.data-00000-of-00001 "${INPUT_DIR}/child/"
     # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.index "${INPUT_DIR}child/"

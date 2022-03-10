@@ -1612,7 +1612,7 @@ class LabelExamplesTest(parameterized.TestCase):
             [0, 2],
         ])
 
-  # redacted
+  # TODO: retarget this test to a higher-level version of the API
   # that accepts a whole region of variants so we make sure it divides up the
   # problem into more fine-grained pieces that run quickly. The current call is
   # to a lower-level API that doesn't do variant chunking.

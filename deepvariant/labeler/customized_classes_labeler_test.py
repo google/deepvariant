@@ -96,7 +96,7 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
       test_utils.make_variant(start=40, filters='FAILED', gt=[0, 1]),
       class_status='class1')
 
-  # redacted
+  # TODO: check the following cases:
   # no_class_status
   # invalid_class_status
   # (Value error should be produced in both cases)
@@ -155,14 +155,14 @@ class CustomizedClassesVariantLabelerTest(parameterized.TestCase):
       # These variant start at our SNP but has a different allele. We are
       # confident and we get back the true snp variant.
       # However, we are on a different allele, so its status is unknown.
-      # redacted
+      # TODO: Confirm this case.
       dict(
           candidate=test_utils.make_variant(
               start=snp_class1.start, alleles=['A', 'G']),
           expected_confident=True,
           expected_label=0,
           expected_truth=snp_class1),
-      # redacted
+      # TODO: checking this assumption is correct:
       # If the alleles don't match, return class 0?
       dict(
           candidate=test_utils.make_variant(

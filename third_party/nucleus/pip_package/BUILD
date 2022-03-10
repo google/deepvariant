@@ -13,7 +13,7 @@ filegroup(
         "@htslib//:LICENSE",
         # The following dependencies contain LICENSE files, but
         # don't define proper BUILD files and/or don't export the LICENSE files.
-        # redacted
+        # TODO: Copy these LICENSES to third_party, or
         # write pull requests for exporting them.
         # "@com_google_absl_py//:LICENSE",
         # "@com_google_googletest//:LICENSE",

@@ -130,7 +130,7 @@ bazel build  -c opt \
 # Bazel understandably doesn't like it when its output files are edited, so
 # make sure all the builds are done before we fix things.
 
-# redacted
+# TODO: Replace this hand-made list with a find command.
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deeptrio/make_examples"

@@ -232,7 +232,7 @@ cc_library(
 # This provides just the header files for use in projects that need to build
 # shared libraries for dynamic loading. This target is available until Bazel
 # adds native support for such use cases.
-# redacted
+# TODO: Remove this target once the support gets added to Bazel.
 cc_library(
     name = "protobuf_headers",
     hdrs = glob([
@@ -908,7 +908,7 @@ internal_copied_filegroup(
     strip_prefix = "src",
 )
 
-# redacted
+# TODO: Remove this once py_proto_library can have labels in srcs, in
 # which case we can simply add :protos_python in srcs.
 COPIED_WELL_KNOWN_PROTOS = ["python/" + s for s in RELATIVE_WELL_KNOWN_PROTOS]
 
@@ -946,7 +946,7 @@ internal_copied_filegroup(
     strip_prefix = "src",
 )
 
-# redacted
+# TODO: Remove this once py_proto_library can have labels in srcs, in
 # which case we can simply add :protos_python_test in srcs.
 COPIED_LITE_TEST_PROTOS = ["python/" + s for s in RELATIVE_LITE_TEST_PROTOS]
 

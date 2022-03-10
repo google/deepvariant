@@ -49,7 +49,7 @@ if [[ "${DV_GPU_BUILD:-0}" = "1" ]]; then
   # GPU tests are commented out for now.
   # Because they seem to be all filtered out, and as a result causing an error.
   # See internal#comment5.
-  # redacted
+  # TODO: Uncomment this once it's resolved.
   # bazel test -c opt --local_test_jobs=1 ${DV_COPT_FLAGS} "$@" \
   #   deepvariant:gpu_tests
 else

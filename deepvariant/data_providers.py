@@ -184,7 +184,7 @@ class DeepVariantInput(object):
       If mode is PREDICT,
         features ...
     """
-    # redacted
+    # TODO: Add tests for parse_tf_example function
     with tf.compat.v1.name_scope('input'):
       parsed = tf.io.parse_single_example(
           serialized=tf_example, features=self.feature_extraction_spec)
@@ -285,7 +285,7 @@ class DeepVariantInput(object):
       dataset = dataset.concatenate(one_dataset) if dataset else one_dataset
 
     # This shuffle applies to the set of files.
-    # redacted
+    # TODO: why would we shuffle the files?
     if (self.mode == tf.estimator.ModeKeys.TRAIN and
         self.initial_shuffle_buffer_size > 0):
       dataset = dataset.shuffle(self.initial_shuffle_buffer_size)
@@ -476,7 +476,7 @@ def read_dataset_config(dataset_config_filename):
     raise ValueError('The dataset in the config {} does not have a '
                      'tfrecord_path.'.format(dataset_config_filename))
 
-  # redacted
+  # TODO: remove this check once we're able to deal with absence
   # of num_examples.
   if not dataset_config.num_examples:
     raise ValueError('The dataset in the config {} does not have a '

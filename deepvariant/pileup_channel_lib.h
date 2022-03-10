@@ -69,7 +69,7 @@ static const auto& ch_insert_size = "insert_size";
 // gives us 255 or 256 possible pixel values.
 const float kMaxPixelValueAsFloat = 254.0;
 // The maximum value that we will consider for fragment length.
-// redacted
+// TODO: make this value configurable as a flag
 const float MaxFragmentLength = 1000;
 
 // Scales an input value to pixel range 0-254.

@@ -173,13 +173,13 @@ def is_sharded_file_spec(spec):
   return m is not None
 
 
-# redacted
+# TODO: retire when GenerateShardedFilename is added to library.
 def sharded_filename(spec, i):
   """Gets a path appropriate for writing the ith file of a sharded spec."""
   return generate_sharded_filenames(spec)[i]
 
 
-# redacted
+# TODO: Improve the return value (instead of using tuple). It hurts
 # readability when there are multiple input filespecs.
 def resolve_filespecs(shard, *filespecs):
   """Transforms potentially sharded filespecs into their paths for single shard.

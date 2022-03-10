@@ -85,7 +85,7 @@ class BedReaderTest(parameterized.TestCase):
       self.assertEqual(zactual[0], self.first)
 
   def test_from_file_raises_with_missing_bed(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'Could not open missing.bed'):
       bed_reader.BedReader.from_file('missing.bed', self.options)
 

@@ -35,7 +35,7 @@ filegroup(
     name = "licenses",
     srcs = [
         ":LICENSE",
-        "//third_party:abseil_cpp.LICENSE",  # redacted
+        "//third_party:abseil_cpp.LICENSE",  # TODO
         "//third_party:boost.LICENSE",
         "@com_google_protobuf//:LICENSE",
         "@com_googlesource_code_re2//:LICENSE",

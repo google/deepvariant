@@ -113,7 +113,7 @@ bool AreCanonicalBases(string_view bases, const CanonicalBases canon,
 Position MakePosition(string_view chr, const int64 pos,
                       const bool reverse_strand) {
   Position position;
-  position.set_reference_name(string(chr));  // redacted
+  position.set_reference_name(string(chr));  // TODO
   position.set_position(pos);
   position.set_reverse_strand(reverse_strand);
   return position;
@@ -125,7 +125,7 @@ Position MakePosition(const Variant& variant) {
 
 Range MakeRange(string_view chr, const int64 start, const int64 end) {
   Range range;
-  range.set_reference_name(string(chr));  // redacted
+  range.set_reference_name(string(chr));  // TODO
   range.set_start(start);
   range.set_end(end);
   return range;
@@ -181,10 +181,10 @@ string MakeIntervalStr(string_view chr, const int64 start, const int64 end,
                        bool base_zero) {
   int offset = base_zero ? 1 : 0;
   if (start == end) {
-    // redacted
+    // TODO: remove string conversion
     return Substitute("$0:$1", string(chr), start + offset);
   } else {
-    // redacted
+    // TODO: remove string conversion
     return Substitute("$0:$1-$2", string(chr), start + offset, end + offset);
   }
 }
@@ -237,7 +237,7 @@ int ComparePositions(const Position& pos1, const Position& pos2) {
   return result;
 }
 
-// redacted
+// TODO: should compare ranges, implement compare range
 int ComparePositions(const Variant& variant1, const Variant& variant2) {
   return ComparePositions(MakePosition(variant1), MakePosition(variant2));
 }

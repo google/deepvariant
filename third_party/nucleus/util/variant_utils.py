@@ -851,7 +851,7 @@ def allele_indices_for_genotype_likelihood_index(gl_index, ploidy=2):
   if ploidy == 1:
     return gl_index
   elif ploidy == 2:
-    # redacted
+    # TODO: Implement using algorithm described at
     # https://genome.sph.umich.edu/wiki/Relationship_between_Ploidy,_Alleles_and_Genotypes
     # rather than creating all genotypes explicitly.
     num_alts = 1

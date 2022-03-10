@@ -60,7 +60,7 @@ using nucleus::genomics::v1::Position;
 
 using tensorflow::StringPieceHasher;
 
-// redacted
+// TODO Add ChromosomePosition type instead of uint64_t
 
 struct Kmer {
   string sequence;
@@ -107,7 +107,7 @@ struct KmerOccurrence {
 };
 
 // Store read alignment to haplotype
-// redacted
+// TODO position could be of type KmerOffset, but then it needs to be
 // renamed. That would be better because default position = 0 is a valid
 // position.
 struct ReadAlignment {
@@ -149,7 +149,7 @@ struct CigarOp {
   int length;
 };
 
-// redacted
+// TODO HaplotypeReadsAlignment is not a good name for this structure.
 // It contains not only read alignments to haplotype but also haplotype to
 // reference alignment.
 // Stores alignment scores for all reads to one haplotype.
@@ -308,7 +308,7 @@ class FastPassAligner {
   }
 
   // Finds the best alignment by iterating all haplotype alignments.
-  // redacted
+  // TODO Can be optimized if we store the best alignment with the read.
   bool GetBestReadAlignment(size_t readId, int* best_hap_index) const;
 
   // Calculate a read alignment by merging read to haplotype and haplotype to

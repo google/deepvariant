@@ -45,7 +45,7 @@ class StatusorClifWrapTest(absltest.TestCase):
     self.assertEqual(statusor_examples.MakeIntOK(), 42)
 
   def test_make_int_fail(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'MakeIntFail'):
       statusor_examples.MakeIntFail()
 
@@ -57,7 +57,7 @@ class StatusorClifWrapTest(absltest.TestCase):
   #   self.assertEqual(statusor_examples.MakeStrOKStrippedType(), 'hello')
 
   def test_make_str_fail(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'MakeStrFail'):
       statusor_examples.MakeStrFail()
 
@@ -65,7 +65,7 @@ class StatusorClifWrapTest(absltest.TestCase):
     self.assertEqual(statusor_examples.MakeIntUniquePtrOK(), 421)
 
   def test_make_int_unique_ptr_fail(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'MakeIntUniquePtrFail'):
       statusor_examples.MakeIntUniquePtrFail()
 
@@ -73,7 +73,7 @@ class StatusorClifWrapTest(absltest.TestCase):
     self.assertEqual(statusor_examples.MakeIntVectorOK(), [1, 2, 42])
 
   def test_make_int_vector_fail(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'MakeIntVectorFail'):
       statusor_examples.MakeIntVectorFail()
 
@@ -81,7 +81,7 @@ class StatusorClifWrapTest(absltest.TestCase):
     self.assertEqual(statusor_examples.FuncReturningStatusOK(), None)
 
   def test_returning_status_fail_raises(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'FuncReturningStatusFail'):
       statusor_examples.FuncReturningStatusFail()
 

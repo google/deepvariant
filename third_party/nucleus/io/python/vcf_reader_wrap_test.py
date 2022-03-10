@@ -210,7 +210,7 @@ class WrapVcfReaderTests(absltest.TestCase):
       self.samples_reader.from_string('BAD NOT A VCF RECORD\n;;')
 
   def test_from_file_raises_with_missing_source(self):
-    # redacted
+    # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'Could not open missing.vcf'):
       vcf_reader.VcfReader.from_file('missing.vcf', self.options)
 

@@ -296,7 +296,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.gvcf_gq_binsize = 5
     options = make_examples.default_options(add_flags=True)
     # This shows an example of what the error message looks like:
-    # redacted
+    # TODO: OpError exception not propagated.
     with six.assertRaisesRegex(
         self, ValueError, 'NOT_FOUND: Unknown reference_name '
         'reference_name:[ \t]*"chr20" start: 9999999 end: 10000999'):

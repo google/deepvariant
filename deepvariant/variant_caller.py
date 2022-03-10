@@ -377,7 +377,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
       format, if include_gvcfs is True. If False, an empty list is returned.
     """
 
-    # redacted
+    # TODO Consider passing left and right padding to get_candidates so
     # that we didn't waiste runtime on calculating candidates beoynd the region.
     candidates = self.get_candidates(
         allele_counters=allele_counters, sample_name=target_sample)

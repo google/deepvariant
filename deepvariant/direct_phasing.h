@@ -59,7 +59,7 @@ namespace deepvariant {
 
 inline constexpr absl::string_view kUncalledAllele = "UNCALLED_ALLELE";
 
-// redacted
+// TODO Add an overflow check when read indices are generated.
 using ReadIndex = uint16_t;
 
 // Data type storing read id and mapping quality. It is used in AlleleInfo.
@@ -160,7 +160,7 @@ class DirectPhasing {
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
 
   // PhaseReads wrapper for Python clif interface.
-  // redacted
+  // TODO In other similar wrappers ConstProtoPtr is unwrapped in the
   // wrapper. See if it makes sense to do here as well.
   std::vector<int> PhaseReadsPython(
       const std::vector<DeepVariantCall>& candidates,

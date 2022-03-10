@@ -110,7 +110,7 @@ TEST(GffReaderTest, ReadsExampleFile) {
   EXPECT_THAT(gff_records[1], EqualsProto(kExpectedGffRecord2));
 }
 
-// redacted
+// TODO: Add more comprehensive tests
 
 }  // namespace
 

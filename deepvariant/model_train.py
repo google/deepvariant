@@ -211,7 +211,7 @@ def parse_and_run():
           'Either the flag --%s or the environment variable TF_CONFIG can be'
           ' set but not both.' % name)
 
-  # redacted
+  # TODO: use new mechanisms to set TF_CONFIG automatically.
   #
   # If TF_CONFIG is not available we are either running locally in Cloud
   # or distributed inside Google. On Cloud the default values of

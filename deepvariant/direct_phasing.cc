@@ -66,11 +66,11 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
   // Iterate positions in order. Calculate the score for each combination of
   // allele pairs.
   for (int i = 0; i < positions_.size(); i++) {
-    // redacted
+    // TODO Call UpdateStartingScore if score cannot be improved from
     // position to the next position. This happens with bad data where reads
     // are mismapped. Good example is chr1:143175001-143200000.
     // In this case we can break the graph and treat each piece as separate
-    // graphs. This redacted
+    // graphs. This TODO has a lower impact because it happens with "bad" data
     // and DeepVariant will reject these candidates in most of the cases.
     if (i == 0) {
       UpdateStartingScore(vertices_by_position_[positions_[i]]);
@@ -228,7 +228,7 @@ DirectPhasing::Score DirectPhasing::CalculateScore(const Edge& edge1,
   Vertex to_vertices[2] = {edge1.m_target, edge2.m_target};
 
   // The function should not be called if preceding score does not exist.
-  // redacted
+  // TODO Replace with assert.
   if (!scores_.contains({from_vertices[0], from_vertices[1]})) {
     return Score();
   }
@@ -468,7 +468,7 @@ void DirectPhasing::Build(
     }
   }
 
-  // redacted
+  // TODO Control Pruning with parameter. It should be off for testing.
   // Also, investigate if it helps the algorithm.
   //  Prune();
   RebuildIndexMap();
@@ -540,7 +540,7 @@ int SubstitutionAllelesDepth(const DeepVariantCall& candidate) {
     if (allele_info_it.first != kUncalledAllele &&
         AlleleTypeFromCandidate(allele_info_it.first, candidate) ==
             AlleleType::SUBSTITUTION) {
-      // redacted
+      // TODO Low quality reads are included here. To be verified.
       count += allele_info_it.second.read_infos_size();
     }
   }

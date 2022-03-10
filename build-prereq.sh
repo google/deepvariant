@@ -97,7 +97,7 @@ else
   # because we don't do build-prereq.sh in the final image.
   note_build_stage "Build CLIF."
   time sudo ./tools/build_clif.sh
-  # redacted
+  # TODO:
   # Figure out why these symbolic links are needed and see if
   # we can do this better.
   sudo mkdir -p /usr/clang/bin/

@@ -171,7 +171,7 @@ def get_class_precision(labels, predicted_class, target_class):
   return tf.compat.v1.metrics.precision(labels_binary, predicted_class_binary)
 
 
-# redacted
+# TODO: Verify this F1 score is correct.
 def get_f1_score(labels, predictions, target_class=None):
   """Compute F1 score of predictions with respect to the labels.
 
@@ -654,7 +654,7 @@ class DeepVariantModel(object):
           use_tpu=self.use_tpu,
           model_fn=self.model_fn,
           config=config,
-          # redacted
+          # TODO: enable setting these independently.
           train_batch_size=batch_size,
           eval_batch_size=batch_size,
           predict_batch_size=batch_size,
@@ -790,7 +790,7 @@ class DeepVariantModel(object):
     """Returns True if this model can be trained."""
     return True
 
-  # redacted
+  # TODO: Add export to save representation suitable for inference.
 
   def __str__(self):
     return 'DeepVariantModel(name={})'.format(self.name)
@@ -911,7 +911,7 @@ class DeepVariantSlimModel(DeepVariantModel):
     # NB. The basic structure of this started from
     # //third_party/cloud_tpu/models/inception/inception_v3.py
 
-    # redacted
+    # TODO: get this from the model.
     num_classes = dv_constants.NUM_CLASSES
 
     images = features['image']
@@ -1187,7 +1187,7 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
         hidden_size = net.shape[1].value // 2
 
       net = slim.fully_connected(net, hidden_size, activation_fn=None)
-      # redacted
+      # TODO: Explore using ReLU before norm
       net = slim.layer_norm(net, scale=False, activation_fn=tf.nn.relu)
       net = slim.dropout(net, self.dropout_keep_prob, is_training=is_training)
       net = slim.fully_connected(net, num_classes, activation_fn=None)
@@ -1244,7 +1244,7 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     # NB. The basic structure of this started from
     # //third_party/cloud_tpu/models/inception/inception_v3.py
 
-    # redacted
+    # TODO: get this from the model.
     num_classes = dv_constants.NUM_CLASSES
 
     if FLAGS.seq_type_embedding_size <= 0:
@@ -1483,7 +1483,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
     # NB. The basic structure of this started from
     # //third_party/cloud_tpu/models/inception/inception_v3.py
 
-    # redacted
+    # TODO: get this from the model.
     num_classes = dv_constants.NUM_CLASSES
 
     images = features['image']

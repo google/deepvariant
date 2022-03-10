@@ -180,12 +180,12 @@ message AlignerOptions {
   int32 gap_extend = 4;
 
   // k-mer size used to index target sequence.
-  // redacted
+  // TODO This parameter is not used fast_pass_aligner. Since we no
   // longer use python realigner this parameter is obsolete.
   int32 k = 5;
 
   // Estimated sequencing error rate.
-  // redacted
+  // TODO This parameter is not used in fast_pass_aligner. We need to
   // remove it.
   float error_rate = 6;
 
