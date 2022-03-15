@@ -193,15 +193,14 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
     echo "Checking for CUDA..."
     if ! dpkg-query -W cuda-11-3; then
       echo "Installing CUDA..."
-      CUDA_DEB="cuda-repo-ubuntu${UBUNTU_VERSION}-11-3-local_11.3.0-465.19.01-1_amd64.deb"
-      curl -O "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/cuda-ubuntu2004.pin"
+      UBUNTU_VERSION="2004"
+      curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
       sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
-      curl -O https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/"${CUDA_DEB}"
       sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
-      sudo -H dpkg -i "./${CUDA_DEB}"
-      sudo apt-key add /var/cuda-repo-ubuntu2004-11-3-local/7fa2af80.pub
+      sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
       sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-      sudo -H apt-get install "${APT_ARGS[@]}" cuda
+      sudo -H apt-get full-upgrade "${APT_ARGS[@]}" > /dev/null
+      sudo -H apt-get install "${APT_ARGS[@]}" cuda-11-3
     fi
     echo "Checking for CUDNN..."
     if [[ ! -e /usr/local/cuda-11/include/cudnn.h ]]; then

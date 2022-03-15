@@ -12,28 +12,25 @@ APT_ARGS=(
 
 # Installing nvidia docker to use deepvariant_gpu Docker image.
 # (1) Install nvidia driver:
-# https://github.com/NVIDIA/nvidia-docker/wiki/Frequently-Asked-Questions#how-do-i-install-the-nvidia-driver
+# https://linuxhint.com/install-cuda-ubuntu/
 sudo apt-get "${APT_ARGS[@]}" update
-# From: https://docs.docker.com/install/linux/docker-ce/ubuntu/#set-up-the-repository
 sudo apt-get "${APT_ARGS[@]}" install \
-  apt-transport-https \
-  ca-certificates \
+  build-essential \
   curl \
-  gnupg-agent \
-  software-properties-common
+  "linux-headers-$(uname -r)" \
+  nvidia-cuda-toolkit
 
 # See https://www.tensorflow.org/install/source#gpu for versions required.
 if ! dpkg-query -W cuda-11-3; then
   echo "Installing CUDA..."
   UBUNTU_VERSION="2004"
-  CUDA_DEB="cuda-repo-ubuntu${UBUNTU_VERSION}-11-3-local_11.3.0-465.19.01-1_amd64.deb"
   curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
   sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
-  curl -O https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/"${CUDA_DEB}"
   sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
-  sudo -H dpkg -i "./${CUDA_DEB}"
+  sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
   sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-  sudo -H apt-get install "${APT_ARGS[@]}" cuda
+  sudo -H apt-get full-upgrade "${APT_ARGS[@]}" > /dev/null
+  sudo -H apt-get install "${APT_ARGS[@]}" cuda-11-3
 fi
 
 echo "Checking for CUDNN..."
