@@ -81,6 +81,11 @@ note_build_stage "Install python3 packaging infrastructure"
 sudo -H apt-get install "${APT_ARGS[@]}" "python${PYTHON_VERSION}-dev"
 sudo update-alternatives --install /usr/bin/python3 python3 "/usr/bin/python${PYTHON_VERSION}" 0
 sudo update-alternatives --install /usr/bin/python python "/usr/bin/python${PYTHON_VERSION}" 0
+
+# Avoid issue with pip's dependency resolver not accounting for all installed
+# packages.
+sudo -H apt-get install "${APT_ARGS[@]}" "python3-testresources"
+
 # If we install python3-pip directly, the pip3 version points to:
 #   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
 # Use the following lines to ensure correct Python version.
