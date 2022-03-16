@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~470m
-call_variants for HG002          | ~369m
-call_variants for HG003          | ~372m
-call_variants for HG004          | ~364m
-postprocess_variants (parallel)  | ~90m
-total                            | ~1665m = ~27.75 hours
+make_examples                    | ~444m
+call_variants for HG002          | ~332m
+call_variants for HG003          | ~336m
+call_variants for HG004          | ~334m
+postprocess_variants (parallel)  | ~64m
+total                            | ~1510m = ~25.17 hours
 
 ### Accuracy
 
@@ -49,12 +49,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~737m
-call_variants for HG002          | ~270m
-call_variants for HG003          | ~271m
-call_variants for HG004          | ~272m
-postprocess_variants (parallel)  | ~90m
-total                            | ~1640m = ~27.33 hours
+make_examples                    | ~798m
+call_variants for HG002          | ~261m
+call_variants for HG003          | ~264m
+call_variants for HG004          | ~263m
+postprocess_variants (parallel)  | ~78m
+total                            | ~1664m = ~27.73 hours
 
 ### Accuracy
 
@@ -90,12 +90,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
-make_examples                    | ~17m
-call_variants for HG002          | ~6m
-call_variants for HG003          | ~6m
-call_variants for HG004          | ~6m
+make_examples                    | ~15m
+call_variants for HG002          | ~5m
+call_variants for HG003          | ~5m
+call_variants for HG004          | ~5m
 postprocess_variants (parallel)  | ~1m
-total                            | ~36m
+total                            | ~31m
 
 ### Accuracy
 
