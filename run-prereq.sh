@@ -202,9 +202,9 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
       sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
       sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
-      sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
-      sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
-      sudo -H apt-get full-upgrade "${APT_ARGS[@]}" > /dev/null
+      sudo add-apt-repository -y "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+      sudo -H apt-get update "${APT_ARGS[@]}"
+      sudo -H apt-get full-upgrade "${APT_ARGS[@]}"
       sudo -H apt-get install "${APT_ARGS[@]}" cuda-11-3
     fi
     echo "Checking for CUDNN..."
