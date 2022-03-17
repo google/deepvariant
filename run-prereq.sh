@@ -204,7 +204,12 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
       sudo add-apt-repository -y "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
       sudo -H apt-get update "${APT_ARGS[@]}"
-      sudo -H apt-get full-upgrade "${APT_ARGS[@]}"
+      # From: https://superuser.com/a/1638789
+      sudo -H DEBIAN_FRONTEND=noninteractive apt-get \
+        -o Dpkg::Options::=--force-confold \
+        -o Dpkg::Options::=--force-confdef \
+        -y --allow-downgrades --allow-remove-essential --allow-change-held-packages \
+        full-upgrade
       sudo -H apt-get install "${APT_ARGS[@]}" cuda-11-3
     fi
     echo "Checking for CUDNN..."
