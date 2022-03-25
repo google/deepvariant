@@ -240,3 +240,26 @@ calculate the true `AD` and `DP` values at high-depth regions, you can set
 `--max_reads_per_partition=0` to calculate `AD` and `DP` using all reads. In
 practice, capping reads per partition reduces runtimes with little/no impact on
 accuracy.
+
+## Singularity related questions:
+
+### `TMPDIR`
+
+If you have issues with `TMPDIR` when running with Singularity, try adding this
+to your command:
+
+```bash
+export TMPDIR="$PWD/tmp_dir"
+```
+
+See https://github.com/google/deepvariant/issues/524#issuecomment-1067597987.
+
+### Issues with `/mnt/`
+
+User reported that sometimes their setup uses `/mnt/`, which exists in our
+Docker image, and it has caused an issue in Singularity.
+
+You can use `-B` in Singularity to avoid this issue. See:
+https://github.com/google/deepvariant/issues/530#issuecomment-1076923302 for
+more details.
+
