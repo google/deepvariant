@@ -1268,6 +1268,9 @@ class RegionProcessor(object):
         for read_phase, read in zip(read_phases, reads_to_phase):
           # Remove existing values
           del read.info['HP'].values[:]
+          if self.options.pic_options.reverse_haplotypes:
+            if read_phase in [1, 2]:
+              read_phase = 1 + (read_phase % 2)
           read.info['HP'].values.add(int_value=read_phase)
 
       if padded_region is not None:

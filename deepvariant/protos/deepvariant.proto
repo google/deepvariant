@@ -404,7 +404,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how we construct pileup images.
-// Next ID: 40.
+// Next ID: 41.
 message PileupImageOptions {
   // The height, in pixels, of the pileup image we'll construct.
   int32 height = 1;
@@ -514,6 +514,8 @@ message PileupImageOptions {
   // If set reads are sorted by haplotype tag (HP tag) and then by alignment
   // position.
   bool sort_by_haplotypes = 31;
+
+  bool reverse_haplotypes = 40;
 
   // Minimal non-zero allele frequency. This is used when normalizing color
   // intensities for the allele frequency channel.
@@ -793,7 +795,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 17.
+  // Next ID: 21.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -834,6 +836,10 @@ message DeepVariantInputDatasets {
     bool sort_by_haplotypes = 14;
     bool parse_sam_aux_fields = 15;
     bool add_hp_channel = 16;
+    bool reverse_haplotypes = 17;
+    bool phase_reads = 18;
+    int32 phase_reads_region_padding = 19;
+    int32 partition_size = 20;
 
     // Deprecated fields.
     int32 sort_by_haplotypes_sample_hp_tag = 12 [deprecated = true];

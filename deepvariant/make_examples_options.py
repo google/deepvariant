@@ -257,6 +257,10 @@ flags.DEFINE_bool(
     'sort_by_haplotypes', False,
     'If True, reads are sorted by haplotypes (using HP tag), '
     'parse_sam_aux_fields has to be set for this to work.')
+flags.DEFINE_bool(
+    'reverse_haplotypes', False,
+    'If True, reads are sorted by haplotypes (using HP tag) in reverse order, '
+    'parse_sam_aux_fields has to be set for this to work.')
 flags.DEFINE_integer(
     'hp_tag_for_assembly_polishing', 0,
     'If set to > 0, reads with this HP tag will be sorted on top. '
@@ -451,6 +455,7 @@ def shared_flags_to_options(
           'set ', errors.CommandLineError)
 
     options.pic_options.sort_by_haplotypes = flags_obj.sort_by_haplotypes
+    options.pic_options.reverse_haplotypes = flags_obj.reverse_haplotypes
     options.pic_options.hp_tag_for_assembly_polishing = flags_obj.hp_tag_for_assembly_polishing
 
     if flags_obj.write_run_info:
