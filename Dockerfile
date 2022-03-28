@@ -5,7 +5,7 @@
 # Example command:
 # $ git clone https://github.com/google/deepvariant.git
 # $ cd deepvariant
-# $ sudo docker build -t deepvariant . --build-arg DV_OPENVINO_BUILD=1
+# $ sudo docker build -t deepvariant .
 #
 # To build for GPU, use a command like:
 # $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:11.3.0-cudnn8-devel-ubuntu20.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
