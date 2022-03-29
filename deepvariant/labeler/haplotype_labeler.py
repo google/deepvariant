@@ -480,10 +480,10 @@ def with_false_negative_genotypes(gt):
     gt: iterable[int]: A genotype for a Variant, such as [0, 1] or [1, 1].
 
   Returns:
-    A set of tuples containing diploid genotypes.
+    A sorted list of tuples containing diploid genotypes.
   """
   alts = set(gt) - {0}
-  return {(0, 0), tuple(gt)} | {(0, alt) for alt in alts}
+  return sorted(list({(0, 0), tuple(gt)} | {(0, alt) for alt in alts}))
 
 
 class ImpossibleHaplotype(Exception):

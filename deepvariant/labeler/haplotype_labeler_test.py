@@ -883,12 +883,12 @@ class LabelExamplesTest(parameterized.TestCase):
         [tuple(x) for x in expected_genotypes])
 
   @parameterized.parameters(
-      dict(genotype=[0, 0], expected={(0, 0)}),
-      dict(genotype=[0, 1], expected={(0, 0), (0, 1)}),
-      dict(genotype=[1, 1], expected={(0, 0), (0, 1), (1, 1)}),
-      dict(genotype=[0, 2], expected={(0, 0), (0, 2)}),
-      dict(genotype=[2, 2], expected={(0, 0), (0, 2), (2, 2)}),
-      dict(genotype=[1, 2], expected={(0, 0), (0, 2), (0, 1), (1, 2)}),
+      dict(genotype=[0, 0], expected=[(0, 0)]),
+      dict(genotype=[0, 1], expected=[(0, 0), (0, 1)]),
+      dict(genotype=[1, 1], expected=[(0, 0), (0, 1), (1, 1)]),
+      dict(genotype=[0, 2], expected=[(0, 0), (0, 2)]),
+      dict(genotype=[2, 2], expected=[(0, 0), (0, 2), (2, 2)]),
+      dict(genotype=[1, 2], expected=[(0, 0), (0, 1), (0, 2), (1, 2)]),
   )
   def test_with_false_negative_genotypes(self, genotype, expected):
     self.assertEqual(
@@ -1299,40 +1299,40 @@ class LabelExamplesTest(parameterized.TestCase):
     # Bi-allelic cases.
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
-            [_test_variant(1, gt=(0, 0))], enum_type), [{(0, 0)}])
+            [_test_variant(1, gt=(0, 0))], enum_type), [[(0, 0)]])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
-            [_test_variant(1, gt=(0, 1))], enum_type), [{(0, 0), (0, 1)}])
+            [_test_variant(1, gt=(0, 1))], enum_type), [[(0, 0), (0, 1)]])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
-            [_test_variant(1, gt=(1, 1))], enum_type), [{(0, 0), (0, 1),
-                                                         (1, 1)}])
+            [_test_variant(1, gt=(1, 1))], enum_type), [[(0, 0), (0, 1),
+                                                         (1, 1)]])
 
     # Multi-allelic cases.
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1, alleles=('A', 'C', 'G'), gt=(0, 0))], enum_type),
-        [{(0, 0)}])
+        [[(0, 0)]])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1, alleles=('A', 'C', 'G'), gt=(0, 1))], enum_type),
-        [{(0, 0), (0, 1)}])
+        [[(0, 0), (0, 1)]])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1, alleles=('A', 'C', 'G'), gt=(1, 1))], enum_type),
-        [{(0, 0), (0, 1), (1, 1)}])
+        [[(0, 0), (0, 1), (1, 1)]])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1, alleles=('A', 'C', 'G'), gt=(0, 2))], enum_type),
-        [{(0, 0), (0, 2)}])
+        [[(0, 0), (0, 2)]])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1, alleles=('A', 'C', 'G'), gt=(2, 2))], enum_type),
-        [{(0, 0), (0, 2), (2, 2)}])
+        [[(0, 0), (0, 2), (2, 2)]])
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1, alleles=('A', 'C', 'G'), gt=(1, 2))], enum_type),
-        [{(0, 0), (0, 1), (0, 2), (1, 2)}])
+        [[(0, 0), (0, 1), (0, 2), (1, 2)]])
 
   def test_genotype_options_for_variants_candidates_enum(self):
     # Check all configurations for the CANDIDATES enumeration:
