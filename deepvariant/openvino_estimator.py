@@ -29,15 +29,13 @@
 """An estimator that uses OpenVINO."""
 import os
 import subprocess
-import sys
 from absl import logging
 import tensorflow as tf
 import tf_slim as slim
 
 try:
-  from openvino.inference_engine import IECore  # pylint: disable=g-import-not-at-top
-  from openvino.inference_engine import StatusCode  # pylint: disable=g-import-not-at-top
-  import mo_tf  # pylint: disable=g-import-not-at-top
+  from openvino.runtime import Core, AsyncInferQueue, Type  # pylint: disable=g-import-not-at-top,g-multiple-import
+  from openvino.preprocess import PrePostProcessor  # pylint: disable=g-import-not-at-top
   # TODO:
   # For now, including this in the try/except block as well.
   # Fix this with a correct dep and also add unit test
@@ -91,29 +89,36 @@ class OpenVINOEstimator(object):
     openvino_model_pb = os.path.join(openvino_model_dir, 'model.pb')
     freeze_graph(model, checkpoint_path, tensor_shape, openvino_model_pb)
     mo_tf_args = [
-        sys.executable, mo_tf.__file__, '--input_model=' + openvino_model_pb,
-        '--scale=128', '--mean_values',
-        '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
+        'mo', '--input_model=' + openvino_model_pb, '--scale=128',
+        '--mean_values', '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
     ]
     if openvino_model_dir:
       mo_tf_args.append('--output_dir=' + openvino_model_dir)
     subprocess.run(mo_tf_args, check=True)
     os.remove(openvino_model_pb)
 
-    self.ie = IECore()
-    net = self.ie.read_network(
+    self.ie = Core()
+    self.ie.set_property('CPU', {
+        'CPU_THROUGHPUT_STREAMS': 'CPU_THROUGHPUT_AUTO',
+        'CPU_BIND_THREAD': 'YES'
+    })
+    net = self.ie.read_model(
         os.path.join(openvino_model_dir, 'model.xml'),
         os.path.join(openvino_model_dir, 'model.bin'))
-    net.input_info['input'].precision = 'U8'
-    self.exec_net = self.ie.load_network(
-        net,
-        'CPU',
-        config={'CPU_THROUGHPUT_STREAMS': 'CPU_THROUGHPUT_AUTO'},
-        num_requests=0)
+    self.input_name = net.inputs[0].get_any_name()
+
+    p = PrePostProcessor(net)
+    p.input().tensor().set_element_type(Type.u8)
+    net = p.build()
+
+    compiled_model = self.ie.compile_model(net, 'CPU')
+    num_requests = compiled_model.get_property(
+        'OPTIMAL_NUMBER_OF_INFER_REQUESTS')
+    logging.info('OpenVINO uses %d inference requests.', num_requests)
+    self.infer_queue = AsyncInferQueue(compiled_model, num_requests)
     self.tf_sess = tf.compat.v1.Session()
     self.input_fn = input_fn
     self.model = model
-    self.outputs = []
 
   def __iter__(self):
     """Read input data."""
@@ -123,11 +128,20 @@ class OpenVINOEstimator(object):
     self.variant = features['variant']
     self.alt_allele_indices = features['alt_allele_indices']
     self.iter_id = 0
+    self.outputs = []
     logging.info('Using OpenVINO in call_variants.')
     try:
-      # List that maps infer requests to index of processed input.
-      # -1 means that request has not been started yet.
-      infer_request_input_id = [-1] * len(self.exec_net.requests)
+
+      def completion_callback(request, inp_id):
+        logging.log_every_n(
+            logging.INFO,
+            ('Processed %s examples in call_variants (using OpenVINO)'),
+            _LOG_EVERY_N, inp_id)
+
+        output = next(iter(request.results.values()))
+        self.outputs[inp_id - 1]['probabilities'] = output.reshape(-1)
+
+      self.infer_queue.set_callback(completion_callback)
 
       inp_id = 0
       while True:
@@ -136,49 +150,18 @@ class OpenVINOEstimator(object):
             [self.images, self.variant, self.alt_allele_indices])
 
         for i in range(inp.shape[0]):
-          # Get idle infer request
-          infer_request_id = self.exec_net.get_idle_request_id()
-          if infer_request_id < 0:
-            status = self.exec_net.wait(num_requests=1)
-            if status != StatusCode.OK:
-              raise Exception('Wait for idle request failed!')
-            infer_request_id = self.exec_net.get_idle_request_id()
-            if infer_request_id < 0:
-              raise Exception('Invalid request id!')
-
-          out_id = infer_request_input_id[infer_request_id]
-          request = self.exec_net.requests[infer_request_id]
-
-          # Copy output prediction
-          if out_id != -1:
-            self.outputs[out_id]['probabilities'] = request.output_blobs[
-                'InceptionV3/Predictions/Softmax'].buffer.reshape(-1)
-
           # Start this request on new data
-          infer_request_input_id[infer_request_id] = inp_id
           inp_id += 1
-          logging.log_every_n(
-              logging.INFO,
-              ('Processed %s examples in call_variants (using OpenVINO)'),
-              _LOG_EVERY_N, inp_id)
           self.outputs.append({
               'probabilities': None,
               'variant': variant[i],
               'alt_allele_indices': alt_allele_indices[i]
           })
-
-          request.async_infer({'input': inp[i:i + 1].transpose(0, 3, 1, 2)})
+          self.infer_queue.start_async({self.input_name: inp[i:i + 1]}, inp_id)
 
     except (StopIteration, tf.errors.OutOfRangeError):
-      # Copy rest of outputs
-      status = self.exec_net.wait()
-      if status != StatusCode.OK:
-        raise Exception('Wait for idle request failed!')
-      for infer_request_id, out_id in enumerate(infer_request_input_id):
-        if not self.outputs[out_id]['probabilities']:
-          request = self.exec_net.requests[infer_request_id]
-          self.outputs[out_id]['probabilities'] = request.output_blobs[
-              'InceptionV3/Predictions/Softmax'].buffer.reshape(-1)
+      self.infer_queue.wait_all()
+
     return self
 
   def __next__(self):
