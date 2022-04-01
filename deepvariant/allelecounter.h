@@ -45,6 +45,7 @@ friend class test_case_name##_##test_name##_Test
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -106,7 +107,7 @@ class ReadAllele {
   ReadAllele() = default;
 
   // Creates a ReadAllele with position, bases, and type.
-  ReadAllele(int position, const string& bases, const AlleleType& type,
+  ReadAllele(int position, absl::string_view bases, const AlleleType& type,
              bool is_low_quality = false)
       : position_(position),
         bases_(bases),
@@ -383,7 +384,7 @@ class AlleleCounter {
 
   // Adds the ReadAlleles in to_add to our AlleleCounts.
   void AddReadAlleles(const nucleus::genomics::v1::Read& read,
-                      const string& sample,
+                      absl::string_view sample,
                       const std::vector<ReadAllele>& to_add);
 
   // Nomralize cigar by shifting INDELs in the middle of a repeat all the way

@@ -36,6 +36,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "google/protobuf/repeated_field.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
@@ -101,7 +102,7 @@ enum class ExpectedVariant {
 
 VariantCallerOptions MakeOptions(
     const int min_count = 0, const double min_fraction = 0.0,
-    const string& sample_name = kSampleName,
+    absl::string_view sample_name = kSampleName,
     const double fraction_reference_sites_to_emit = -1.0) {
   VariantCallerOptions options;
   options.set_min_count_snps(min_count);
@@ -247,7 +248,7 @@ class VariantCallingTest : public ::testing::Test {
     return optional_variant;
   }
 
-  AlleleCount ConstructAlleleCount(const string& ref,
+  AlleleCount ConstructAlleleCount(absl::string_view ref,
                                    const std::vector<Allele>& alleles) {
     // Construct the synthetic AlleleCount we'll use to call.
     AlleleCount allele_count;
@@ -734,7 +735,7 @@ TEST_F(VariantCallingTest, TestKitchenSink) {
 // Extracts the read_names from the map value of call.allele_support at key,
 // returning them as a vector of strings.
 std::vector<std::string> SupportingReadNames(const DeepVariantCall& call,
-                                             const string& key) {
+                                             absl::string_view key) {
   std::vector<std::string> names;
   for (const string& read_name : call.allele_support().at(key).read_names()) {
     names.push_back(read_name);

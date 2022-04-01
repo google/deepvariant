@@ -378,7 +378,7 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
                     is_low_quality_read_allele);
 }
 
-void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
+void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
                                    const std::vector<ReadAllele>& to_add) {
   for (size_t i = 0; i < to_add.size(); ++i) {
     const ReadAllele& to_add_i = to_add[i];
@@ -439,7 +439,7 @@ void AlleleCounter::AddReadAlleles(const Read& read, const string& sample,
       (*read_alleles)[key] = allele;
       // Update sample to allele map. This may allows us to determine set of
       // samples that support each allele.
-      Allele* new_allele = (*sample_alleles)[sample].add_alleles();
+      Allele* new_allele = (*sample_alleles)[std::string(sample)].add_alleles();
       *new_allele = allele;
     }
   }
