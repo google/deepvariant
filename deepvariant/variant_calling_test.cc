@@ -32,6 +32,7 @@
 #include "deepvariant/variant_calling.h"
 
 #include <numeric>
+#include <string>
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
@@ -109,7 +110,7 @@ VariantCallerOptions MakeOptions(
   options.set_min_count_indels(min_count);
   options.set_min_fraction_snps(min_fraction);
   options.set_min_fraction_indels(min_fraction);
-  options.set_sample_name(sample_name);
+  options.set_sample_name(std::string(sample_name));
   if (fraction_reference_sites_to_emit > 0)
     options.set_fraction_reference_sites_to_emit(
         fraction_reference_sites_to_emit);
@@ -203,7 +204,7 @@ class VariantCallingTest : public ::testing::Test {
       const string& ref, const VariantCaller& caller,
       const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& expected_variant) {
-    AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
+    AlleleCount allele_count = ConstructAlleleCount(std::string(ref), alleles);
     std::vector<AlleleCount> allele_counts = {allele_count};
     const Variant& proposed_variant = expected_variant;
     return CheckCallFromComputeVariant(caller, proposed_variant, allele_counts,
@@ -253,7 +254,7 @@ class VariantCallingTest : public ::testing::Test {
     // Construct the synthetic AlleleCount we'll use to call.
     AlleleCount allele_count;
     *allele_count.mutable_position() = MakePosition(kChr, kStart);
-    allele_count.set_ref_base(ref);
+    allele_count.set_ref_base(std::string(ref));
     int read_counter = 0;
     for (const Allele& allele : alleles) {
       if (allele.type() == AlleleType::REFERENCE) {
@@ -737,7 +738,8 @@ TEST_F(VariantCallingTest, TestKitchenSink) {
 std::vector<std::string> SupportingReadNames(const DeepVariantCall& call,
                                              absl::string_view key) {
   std::vector<std::string> names;
-  for (const string& read_name : call.allele_support().at(key).read_names()) {
+  for (const string& read_name :
+       call.allele_support().at(std::string(key)).read_names()) {
     names.push_back(read_name);
   }
   return names;
