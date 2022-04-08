@@ -100,6 +100,18 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
       incoming_edges.insert(incoming_edges.end(), start, end);
     }
 
+    // Sort incoming edges to keep the algorithm deterministic.
+    std::sort(incoming_edges.begin(), incoming_edges.end(),
+              [this](const Edge& e1, const Edge& e2) {
+                if (graph_[e1.m_source].allele_info.bases >
+                    graph_[e2.m_source].allele_info.bases) {
+                  return true;
+                } else {
+                  return graph_[e1.m_target].allele_info.bases >
+                         graph_[e2.m_target].allele_info.bases;
+                }
+              });
+
     // Enumerate all edge pairs
     for (const auto& edge_1 : incoming_edges) {
       for (const auto& edge_2 : incoming_edges) {
