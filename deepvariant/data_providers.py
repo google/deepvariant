@@ -36,6 +36,7 @@ training and evaluating germline calling accuracy.
 
 from absl import logging
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from google.protobuf import text_format
 from third_party.nucleus.io import sharded_file_utils
@@ -131,10 +132,10 @@ class DeepVariantInput(object):
     self.prefetch_dataset_buffer_size = prefetch_dataset_buffer_size
     self.debugging_true_label_mode = debugging_true_label_mode
     self.feature_extraction_spec = self.features_extraction_spec_for_mode(
-        mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL) or
+        mode in (tf_estimator.ModeKeys.TRAIN, tf_estimator.ModeKeys.EVAL) or
         debugging_true_label_mode)
 
-    if num_examples is None and mode != tf.estimator.ModeKeys.PREDICT:
+    if num_examples is None and mode != tf_estimator.ModeKeys.PREDICT:
       raise ValueError('num_examples argument required for DeepVariantInput'
                        'in TRAIN/EVAL modes.')
 
@@ -213,7 +214,7 @@ class DeepVariantInput(object):
           'sequencing_type': parsed['sequencing_type'],
       }
 
-      if (self.mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL)
+      if (self.mode in (tf_estimator.ModeKeys.TRAIN, tf_estimator.ModeKeys.EVAL)
           or self.debugging_true_label_mode):
         if self.use_tpu:
           features['locus'] = tf_utils.string_to_int_tensor(parsed['locus'])
@@ -223,8 +224,8 @@ class DeepVariantInput(object):
         # Add variant_type to our features if are in TRAIN or EVAL mode.
         features['variant_type'] = parsed['variant_type']
 
-        if self.mode in (tf.estimator.ModeKeys.TRAIN,
-                         tf.estimator.ModeKeys.EVAL):
+        if self.mode in (tf_estimator.ModeKeys.TRAIN,
+                         tf_estimator.ModeKeys.EVAL):
           label = parsed['label']
           return features, label
         features['label'] = parsed['label']
@@ -258,7 +259,7 @@ class DeepVariantInput(object):
     # for some background on tuning this on TPU.
 
     # TPU optimized implementation for prediction mode
-    if self.mode == tf.estimator.ModeKeys.PREDICT:
+    if self.mode == tf_estimator.ModeKeys.PREDICT:
       return self.prediction_input_fn(params)
 
     # Optimized following:
@@ -281,12 +282,12 @@ class DeepVariantInput(object):
     for pattern in self.input_file_spec.split(','):
       one_dataset = tf.data.Dataset.list_files(
           sharded_file_utils.normalize_to_sharded_file_pattern(pattern),
-          shuffle=self.mode == tf.estimator.ModeKeys.TRAIN)
+          shuffle=self.mode == tf_estimator.ModeKeys.TRAIN)
       dataset = dataset.concatenate(one_dataset) if dataset else one_dataset
 
     # This shuffle applies to the set of files.
     # TODO: why would we shuffle the files?
-    if (self.mode == tf.estimator.ModeKeys.TRAIN and
+    if (self.mode == tf_estimator.ModeKeys.TRAIN and
         self.initial_shuffle_buffer_size > 0):
       dataset = dataset.shuffle(self.initial_shuffle_buffer_size)
 
@@ -303,11 +304,11 @@ class DeepVariantInput(object):
     if self.max_examples is not None:
       dataset = dataset.take(self.max_examples)
 
-    if self.mode == tf.estimator.ModeKeys.TRAIN:
+    if self.mode == tf_estimator.ModeKeys.TRAIN:
       dataset = dataset.repeat()
 
     # This shuffle applies to the set of records.
-    if self.mode == tf.estimator.ModeKeys.TRAIN:
+    if self.mode == tf_estimator.ModeKeys.TRAIN:
       if self.shuffle_buffer_size > 0:
         dataset = dataset.shuffle(self.shuffle_buffer_size)
 
@@ -435,8 +436,8 @@ def get_batches(tf_dataset, model, batch_size):
   Raises:
     ValueError: if the dataset has the wrong mode.
   """
-  if tf_dataset.mode not in (tf.estimator.ModeKeys.TRAIN,
-                             tf.estimator.ModeKeys.EVAL):
+  if tf_dataset.mode not in (tf_estimator.ModeKeys.TRAIN,
+                             tf_estimator.ModeKeys.EVAL):
     raise ValueError(
         'tf_dataset.mode is {} but must be one of TRAIN or EVAL.'.format(
             tf_dataset.mode))

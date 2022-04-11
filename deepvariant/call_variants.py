@@ -38,6 +38,7 @@ from absl import logging
 import numpy as np
 import six
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -190,7 +191,7 @@ def prepare_inputs(source_path, use_tpu=False, num_readers=None):
 
   return data_providers.get_input_fn_from_filespec(
       input_file_spec=source_path,
-      mode=tf.estimator.ModeKeys.PREDICT,
+      mode=tf_estimator.ModeKeys.PREDICT,
       use_tpu=use_tpu,
       input_read_threads=num_readers,
       debugging_true_label_mode=FLAGS.debugging_true_label_mode,

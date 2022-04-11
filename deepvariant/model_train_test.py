@@ -40,6 +40,7 @@ from absl.testing import flagsaver
 from absl.testing import parameterized
 import six
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from deepvariant import data_providers_test
 from deepvariant import dv_constants
@@ -80,7 +81,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
       # We have a checkpoint after training.
       mock_get_input_fn_from_dataset.assert_called_once_with(
           dataset_config_filename=FLAGS.dataset_config_pbtxt,
-          mode=tf.estimator.ModeKeys.TRAIN,
+          mode=tf_estimator.ModeKeys.TRAIN,
           use_tpu=mock.ANY,
           max_examples=None,
       )

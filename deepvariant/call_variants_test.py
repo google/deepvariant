@@ -43,6 +43,7 @@ from absl.testing import parameterized
 import numpy as np
 import six
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
@@ -90,7 +91,7 @@ def _get_infer_batches(tf_dataset, model, batch_size):
   Raises:
     ValueError: if the dataset has the wrong mode.
   """
-  if tf_dataset.mode != tf.estimator.ModeKeys.PREDICT:
+  if tf_dataset.mode != tf_estimator.ModeKeys.PREDICT:
     raise ValueError('tf_dataset.mode is {} but must be PREDICT.'.format(
         tf_dataset.mode))
 

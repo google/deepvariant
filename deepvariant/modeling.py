@@ -43,6 +43,8 @@ import math
 
 from absl import flags
 from absl import logging
+from tensorflow import estimator as tf_estimator
+from tensorflow.compat.v1 import estimator as tf_compat_v1_estimator
 import tensorflow as tf
 import tf_slim
 from tf_slim.nets import inception_v3
@@ -369,7 +371,7 @@ def eval_metric_fn(labels, predictions, variant_types):
 # mechanism might be better.
 
 
-class LoadEMAHook(tf.estimator.SessionRunHook):
+class LoadEMAHook(tf_estimator.SessionRunHook):
   """Hook to load EMA into their corresponding variables.
 
   This looks for the latest checkpoint in the model dir.
@@ -393,7 +395,7 @@ class LoadEMAHook(tf.estimator.SessionRunHook):
     self._load_ema(sess)
 
 
-class PredictEMAHook(tf.estimator.SessionRunHook):
+class PredictEMAHook(tf_estimator.SessionRunHook):
   """Hook to load EMA into their corresponding variables.
 
   This reads the specified checkpoint.
@@ -561,7 +563,7 @@ class DeepVariantModel(object):
                      'If this is in training, we will include everything for '
                      'warm starting....')
         vars_to_include = var_to_shape_map.keys()
-      return tf.estimator.WarmStartSettings(
+      return tf_estimator.WarmStartSettings(
           ckpt_to_initialize_from=start_from_checkpoint,
           vars_to_warm_start='|'.join(vars_to_include))
     else:
@@ -662,7 +664,7 @@ class DeepVariantModel(object):
           warm_start_from=warm_start_from,
       )
     else:
-      config = tf.estimator.RunConfig(
+      config = tf_estimator.RunConfig(
           model_dir=model_dir,
           log_step_count_steps=iterations_per_loop,
           keep_checkpoint_max=max_checkpoints_to_keep,
@@ -677,7 +679,7 @@ class DeepVariantModel(object):
       params_with_batch_size = {'batch_size': batch_size}
       params_with_batch_size.update(params)
 
-      classifier = tf.estimator.Estimator(
+      classifier = tf_estimator.Estimator(
           model_fn=self.model_fn,
           config=config,
           params=params_with_batch_size,
@@ -920,7 +922,7 @@ class DeepVariantSlimModel(DeepVariantModel):
     endpoints = self.create(
         images=images,
         num_classes=num_classes,
-        is_training=mode == tf.estimator.ModeKeys.TRAIN)
+        is_training=mode == tf_estimator.ModeKeys.TRAIN)
 
     logits = endpoints['Logits']
 
@@ -930,7 +932,7 @@ class DeepVariantSlimModel(DeepVariantModel):
         'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
     })
     prelogits = endpoints['PreLogits'] if self.include_debug_info else None
-    if mode == tf.estimator.ModeKeys.PREDICT:
+    if mode == tf_estimator.ModeKeys.PREDICT:
       return self._model_fn_predict(mode, features, logits, prelogits=prelogits)
 
     # Compute loss.
@@ -1007,7 +1009,7 @@ class DeepVariantSlimModel(DeepVariantModel):
 
   def _model_fn_predict(self, mode, features, logits, prelogits=None):
     """This is the PREDICT part of model_fn."""
-    assert mode == tf.estimator.ModeKeys.PREDICT
+    assert mode == tf_estimator.ModeKeys.PREDICT
     predictions = {
         # We don't actually use classes downstream right now.
         # 'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
@@ -1028,12 +1030,12 @@ class DeepVariantSlimModel(DeepVariantModel):
     if self.use_tpu:
       return tpu_estimator.TPUEstimatorSpec(mode=mode, predictions=predictions)
     else:
-      return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+      return tf_estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
   def _model_fn_eval(self, mode, features, labels, endpoints, logits,
                      use_logits):
     """This is the EVAL part of model_fn."""
-    if mode != tf.estimator.ModeKeys.EVAL:
+    if mode != tf_estimator.ModeKeys.EVAL:
       return None
     if use_logits:
       eval_predictions = logits
@@ -1051,7 +1053,7 @@ class DeepVariantSlimModel(DeepVariantModel):
                       learning_rate_decay_factor, rmsprop_decay,
                       rmsprop_momentum, rmsprop_epsilon, moving_average_decay):
     """This is the TRAIN part of model_fn."""
-    if mode != tf.estimator.ModeKeys.TRAIN:
+    if mode != tf_estimator.ModeKeys.TRAIN:
       return None, None
 
     # Configure the learning rate using an exponetial decay.
@@ -1260,7 +1262,7 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     endpoints = self.create(
         images=(images, sequencing_type),
         num_classes=num_classes,
-        is_training=mode == tf.estimator.ModeKeys.TRAIN)
+        is_training=mode == tf_estimator.ModeKeys.TRAIN)
 
     logits = endpoints['Logits']
 
@@ -1271,7 +1273,7 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     })
 
     prelogits = endpoints['PreLogits'] if self.include_debug_info else None
-    if mode == tf.estimator.ModeKeys.PREDICT:
+    if mode == tf_estimator.ModeKeys.PREDICT:
       return self._model_fn_predict(mode, features, logits, prelogits=prelogits)
 
     # Compute loss.
@@ -1391,7 +1393,7 @@ class DeepVariantConstantModel(DeepVariantPlaceholderModel):
 
   def model_fn(self, features, labels, mode, params):
     """A model_fn for the constant model."""
-    if mode == tf.estimator.ModeKeys.PREDICT:
+    if mode == tf_estimator.ModeKeys.PREDICT:
       batch_size = tf.shape(input=features['image'])[0]
       logging.info('actual_batch_size %s', batch_size)
     else:
@@ -1407,7 +1409,7 @@ class DeepVariantConstantModel(DeepVariantPlaceholderModel):
     # variant_types = endpoints['variant_type']    # Fails.
     variant_types = tf.zeros(shape=(batch_size,), dtype=tf.int64)
 
-    if mode == tf.estimator.ModeKeys.PREDICT:
+    if mode == tf_estimator.ModeKeys.PREDICT:
       predictions = {
           'probabilities': endpoints['Predictions'],
           'variant': encoded_variants,
@@ -1415,7 +1417,7 @@ class DeepVariantConstantModel(DeepVariantPlaceholderModel):
       }
       endpoints.update(predictions)
 
-    if mode == tf.estimator.ModeKeys.EVAL:
+    if mode == tf_estimator.ModeKeys.EVAL:
       eval_metrics = (eval_metric_fn,
                       [labels, endpoints['Predictions'], variant_types])
     else:
@@ -1492,7 +1494,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
     endpoints = self.create(
         images=images,
         num_classes=num_classes,
-        is_training=mode == tf.estimator.ModeKeys.TRAIN)
+        is_training=mode == tf_estimator.ModeKeys.TRAIN)
 
     if self.representation_layer not in endpoints.keys():
       raise ValueError('Layer {} is not found Inception endpoints.'
@@ -1521,7 +1523,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
         'Predictions': slim.softmax(logits)
     })
 
-    if mode == tf.estimator.ModeKeys.PREDICT:
+    if mode == tf_estimator.ModeKeys.PREDICT:
       return self._model_fn_predict(mode, features, logits)
 
     # Compute loss.

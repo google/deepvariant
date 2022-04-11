@@ -38,6 +38,7 @@ from absl.testing import flagsaver
 from absl.testing import parameterized
 import six
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from deepvariant import data_providers_test
 from deepvariant import model_eval
@@ -91,7 +92,7 @@ class ModelEvalTest(
     model_eval.main(0)
     mock_get_input_fn_from_dataset.assert_called_once_with(
         dataset_config_filename=FLAGS.dataset_config_pbtxt,
-        mode=tf.estimator.ModeKeys.EVAL,
+        mode=tf_estimator.ModeKeys.EVAL,
         use_tpu=FLAGS.use_tpu)
     self.assertTrue(
         tf_test_utils.check_file_exists(
@@ -144,7 +145,7 @@ class ModelEvalTest(
         mock.call(
             use_tpu=FLAGS.use_tpu,
             dataset_config_filename=FLAGS.dataset_config_pbtxt,
-            mode=tf.estimator.ModeKeys.EVAL)
+            mode=tf_estimator.ModeKeys.EVAL)
     ])
 
     metrics = [

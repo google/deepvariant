@@ -37,6 +37,7 @@ from absl.testing import parameterized
 import numpy as np
 import six
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
@@ -56,7 +57,7 @@ def setUpModule():
 # Return a DeepVariantInput attached to the golden training data.
 # Run with shuffling off, and in eval mode.
 def make_golden_dataset(compressed_inputs=False,
-                        mode=tf.estimator.ModeKeys.EVAL,
+                        mode=tf_estimator.ModeKeys.EVAL,
                         use_tpu=False):
   if compressed_inputs:
     source_path = test_utils.test_tmpfile('make_golden_dataset.tfrecord.gz')
@@ -92,7 +93,7 @@ class DataProviderTest(parameterized.TestCase):
         num_examples=1000)
     ds = data_providers.get_input_fn_from_dataset(
         dataset_config_pbtext_filename,
-        mode=tf.estimator.ModeKeys.EVAL,
+        mode=tf_estimator.ModeKeys.EVAL,
         tensor_shape=[3, 4, dv_constants.PILEUP_NUM_CHANNELS])
 
     self.assertEqual('some_dataset_name', ds.name)
@@ -106,7 +107,7 @@ class DataProviderTest(parameterized.TestCase):
     with six.assertRaisesRegex(self, ValueError,
                                'dataset_config needs to have a name'):
       data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
+          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL)
 
   def test_get_dataset_raises_error_for_empty_data_split(self):
     dataset_config_pbtext_filename = _test_dataset_config(
@@ -117,7 +118,7 @@ class DataProviderTest(parameterized.TestCase):
         'have a tfrecord_path.'.format(dataset_config_pbtext_filename))
     with six.assertRaisesRegex(self, ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
+          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL)
 
   def test_get_dataset_raises_error_for_empty_num_examples(self):
     dataset_config_pbtext_filename = _test_dataset_config(
@@ -129,11 +130,11 @@ class DataProviderTest(parameterized.TestCase):
         'a num_examples.'.format(dataset_config_pbtext_filename))
     with six.assertRaisesRegex(self, ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf.estimator.ModeKeys.EVAL)
+          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL)
 
   def test_dataset_definition(self):
     ds = data_providers.DeepVariantInput(
-        mode=tf.estimator.ModeKeys.PREDICT,
+        mode=tf_estimator.ModeKeys.PREDICT,
         name='name',
         input_file_spec='test.tfrecord',
         num_examples=10,
@@ -236,7 +237,7 @@ class DataProviderTest(parameterized.TestCase):
 
     self.assertTfDataSetExamplesMatchExpected(
         data_providers.get_input_fn_from_dataset(
-            config_file, mode=tf.estimator.ModeKeys.EVAL),
+            config_file, mode=tf_estimator.ModeKeys.EVAL),
         golden_dataset,
         # workaround_list_files is needed because wildcards, and so sharded
         # files, are nondeterministicly ordered (for now).
@@ -249,8 +250,8 @@ class DataProviderTest(parameterized.TestCase):
       for mode in ['TRAIN', 'EVAL'])
   def test_get_batches(self, compressed_inputs, mode, use_tpu):
     mode = (
-        tf.estimator.ModeKeys.EVAL
-        if mode == 'EVAL' else tf.estimator.ModeKeys.TRAIN)
+        tf_estimator.ModeKeys.EVAL
+        if mode == 'EVAL' else tf_estimator.ModeKeys.TRAIN)
     input_fn = make_golden_dataset(
         compressed_inputs, mode=mode, use_tpu=use_tpu)
     batch_size = 16
@@ -299,7 +300,7 @@ class DataProviderTest(parameterized.TestCase):
     output_file = test_utils.test_tmpfile(file_name_to_write)
     tfrecord.write_tfrecords([example], output_file)
     ds = data_providers.DeepVariantInput(
-        mode=tf.estimator.ModeKeys.PREDICT,
+        mode=tf_estimator.ModeKeys.PREDICT,
         name='test_shape',
         input_file_spec=test_utils.test_tmpfile(tfrecord_path_to_match),
         num_examples=1)
@@ -308,7 +309,7 @@ class DataProviderTest(parameterized.TestCase):
   def test_get_shape_from_examples_path_invalid_path(self):
     with six.assertRaisesRegex(self, Exception, '/this/path/does/not'):
       data_providers.DeepVariantInput(
-          mode=tf.estimator.ModeKeys.PREDICT,
+          mode=tf_estimator.ModeKeys.PREDICT,
           name='test_invalid_path',
           input_file_spec='/this/path/does/not/exist',
           num_examples=1)
@@ -325,7 +326,7 @@ class DataProviderTest(parameterized.TestCase):
         num_examples=testdata.N_GOLDEN_TRAINING_EXAMPLES,
         name='labeled_golden',
         max_examples=max_examples,
-        mode=tf.estimator.ModeKeys.TRAIN)
+        mode=tf_estimator.ModeKeys.TRAIN)
 
     n_batches_to_read = 100
     with tf.compat.v1.Session() as sess:
@@ -366,7 +367,7 @@ class DataProviderTest(parameterized.TestCase):
                                                expected):
     dataset = data_providers.DeepVariantInput(
         # Use predict mode so we can have num_examples == None.
-        mode=tf.estimator.ModeKeys.PREDICT,
+        mode=tf_estimator.ModeKeys.PREDICT,
         input_file_spec=testdata.GOLDEN_TRAINING_EXAMPLES,
         num_examples=num_examples,
         max_examples=max_examples)
@@ -403,7 +404,7 @@ class InputTest(
     # This is an input_fn reading test_utils.N_GOLDEN_CALLING_EXAMPLES records.
     # Use PREDICT mode so we get finite input.
     dvi = data_providers.DeepVariantInput(
-        mode=tf.estimator.ModeKeys.PREDICT,
+        mode=tf_estimator.ModeKeys.PREDICT,
         input_file_spec=testdata.GOLDEN_CALLING_EXAMPLES,
         num_examples=testdata.N_GOLDEN_CALLING_EXAMPLES,
         tensor_shape=None,

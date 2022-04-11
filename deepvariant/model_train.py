@@ -36,6 +36,7 @@ import os
 from absl import flags
 from absl import logging
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from third_party.nucleus.util import proto_utils
 from deepvariant import data_providers
@@ -169,7 +170,7 @@ def run(target, unused_is_chief, device_fn, use_tpu):
 
       tf_dataset = data_providers.get_input_fn_from_dataset(
           dataset_config_filename=FLAGS.dataset_config_pbtxt,
-          mode=tf.estimator.ModeKeys.TRAIN,
+          mode=tf_estimator.ModeKeys.TRAIN,
           max_examples=FLAGS.max_examples,
           use_tpu=use_tpu)
       model = modeling.get_model(FLAGS.model_name)

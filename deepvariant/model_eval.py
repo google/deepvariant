@@ -36,6 +36,7 @@ import os
 from absl import flags
 from absl import logging
 import tensorflow as tf
+from tensorflow import estimator as tf_estimator
 
 from third_party.nucleus.util import proto_utils
 from tensorflow.python.framework.errors_impl import NotFoundError
@@ -192,7 +193,7 @@ def eval_loop(master,
 
   tf_dataset = data_providers.get_input_fn_from_dataset(
       dataset_config_filename=dataset_config_pbtxt,
-      mode=tf.estimator.ModeKeys.EVAL,
+      mode=tf_estimator.ModeKeys.EVAL,
       use_tpu=use_tpu,
   )
 
