@@ -37,6 +37,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/btree_set.h"
 #include "absl/status/status.h"
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -72,6 +73,7 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
     // In this case we can break the graph and treat each piece as separate
     // graphs. This TODO has a lower impact because it happens with "bad" data
     // and DeepVariant will reject these candidates in most of the cases.
+    // The work is tracked in internal
     if (i == 0) {
       UpdateStartingScore(vertices_by_position_[positions_[i]]);
       continue;
@@ -86,7 +88,7 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
     // This is a simplified example showing how a broken path may still
     // need to be considered. In this case we will create extra edges
     // connecting T with A and T with C.
-    std::vector<Edge> incoming_edges;
+    absl::btree_set<Edge> incoming_edges;
     for (const auto& v : vertices_by_position_[positions_[i]]) {
       auto [start, end] = boost::in_edges(v, graph_);
 
@@ -94,23 +96,11 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
       // edges to all previous vertices to connect the graph.
       if (start == end && i > 0) {
         for (const auto& prev_v : vertices_by_position_[positions_[i - 1]]) {
-          incoming_edges.push_back(AddEdge(prev_v, v, 0));
+          incoming_edges.insert(AddEdge(prev_v, v, 0));
         }
       }
-      incoming_edges.insert(incoming_edges.end(), start, end);
+      incoming_edges.insert(start, end);
     }
-
-    // Sort incoming edges to keep the algorithm deterministic.
-    std::sort(incoming_edges.begin(), incoming_edges.end(),
-              [this](const Edge& e1, const Edge& e2) {
-                if (graph_[e1.m_source].allele_info.bases >
-                    graph_[e2.m_source].allele_info.bases) {
-                  return true;
-                } else {
-                  return graph_[e1.m_target].allele_info.bases >
-                         graph_[e2.m_target].allele_info.bases;
-                }
-              });
 
     // Enumerate all edge pairs
     for (const auto& edge_1 : incoming_edges) {
@@ -144,13 +134,15 @@ void DirectPhasing::AssignPhasesToVertices() {
     return;
   }
   auto max_score_it = scores_.begin();
+  int max_score = 0;
   // Find the best score for the last position.
   for (const Vertex& v1 : vertices_by_position_[positions_.back()]) {
     for (const Vertex& v2 : vertices_by_position_[positions_.back()]) {
       auto scores_it = scores_.find({v1, v2});
       if (scores_it != scores_.end() &&
-          scores_it->second.score > max_score_it->second.score) {
+          scores_it->second.score > max_score) {
         max_score_it = scores_it;
+        max_score = scores_it->second.score;
       }
     }
   }
@@ -399,7 +391,7 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
 }
 
 // Filters out all homozygious candidates and candidates containing indels.
-bool CandidateFilter(const DeepVariantCall& candidate)  {
+bool CandidateFilter(const DeepVariantCall& candidate, uint32_t* indel_end)  {
   // If there is only one allele and not enough support for the ref then
   // empirically we can consider this candidate homozygous.
   if (candidate.allele_support_ext().size() <= 1 &&
@@ -408,8 +400,12 @@ bool CandidateFilter(const DeepVariantCall& candidate)  {
   }
   // The test filters out all candidates containing indels.
   for (const auto& [allele, read_support] : candidate.allele_support_ext()) {
-    if (allele.size() !=
+    // Allele must not be overlapped by an INDEL and allele has to be a SNP.
+    if (candidate.variant().end() <= *indel_end || allele.size() !=
         candidate.variant().end() - candidate.variant().start()) {
+      if (*indel_end < candidate.variant().end()) {
+        *indel_end = candidate.variant().end();
+      }
       return false;
     }
   }
@@ -438,13 +434,14 @@ void DirectPhasing::Build(
 
   // Iterate all candidates and create graph nodes.
   // It is assumed that candidates are processed in the position order.
+  uint32_t indel_end = 0;
   for (int i = 0; i < candidates.size(); i++) {
     const auto& candidate = candidates[i];
     if (i > 0) {
       CHECK_LT(candidates[i - 1].variant().start(),
                candidate.variant().start());
     }
-    if (CandidateFilter(candidate)) {
+    if (CandidateFilter(candidate, &indel_end)) {
       AddCandidate(candidate);
       // Keep an ordered vector of positions.
       positions_.push_back(candidate.variant().start());
