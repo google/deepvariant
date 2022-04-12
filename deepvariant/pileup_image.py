@@ -199,6 +199,8 @@ class PileupImageCreator(object):
   def __init__(self, options, ref_reader, samples):
     self._options = options
     self._encoder = pileup_image_native.PileupImageEncoderNative(self._options)
+    self._channels_enum = self._encoder.all_channels_enum(
+        options.alt_aligned_pileup)
     self._ref_reader = ref_reader
     self._samples = samples
 
@@ -209,6 +211,9 @@ class PileupImageCreator(object):
   @property
   def half_width(self):
     return _compute_half_width(self._options.width)
+
+  def get_channels(self):
+    return self._channels_enum
 
   def get_reads(self, variant, sam_reader):
     """Gets the reads used to construct the pileup image around variant.

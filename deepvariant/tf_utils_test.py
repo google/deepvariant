@@ -38,6 +38,7 @@ import six
 import tensorflow as tf
 
 from deepvariant import tf_utils
+from deepvariant.protos import deepvariant_pb2
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -58,6 +59,11 @@ class TFUtilsTest(parameterized.TestCase):
     self.encoded_image = six.b('encoded_image_data')
     self.default_shape = [5, 5, 7]
     self.default_format = 'raw'
+    self.default_channel = [
+        deepvariant_pb2.DeepVariantChannelEnum.CH_READ_BASE,
+        deepvariant_pb2.DeepVariantChannelEnum.CH_BASE_QUALITY,
+        deepvariant_pb2.DeepVariantChannelEnum.CH_MAPPING_QUALITY
+    ]
 
   def testModelShapes(self):
     # Builds a graph.
@@ -115,8 +121,13 @@ class TFUtilsTest(parameterized.TestCase):
                        tf_utils.model_num_classes(None, class_variable_name))
 
   def testMakeExample(self):
-    example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
-                                    self.default_shape, self.default_format)
+    example = tf_utils.make_example(
+        self.variant,
+        self.alts,
+        self.encoded_image,
+        self.default_shape,
+        self.default_format,
+        channels_enum=self.default_channel)
 
     self.assertEqual(self.encoded_image,
                      tf_utils.example_encoded_image(example))
@@ -129,6 +140,9 @@ class TFUtilsTest(parameterized.TestCase):
     self.assertEqual('1:11:C->A', tf_utils.example_key(example))
     self.assertEqual(tf_utils.EncodedVariantType.SNP.value,
                      tf_utils.example_variant_type(example))
+    self.assertEqual(self.default_channel,
+                     tf_utils.example_channels_enum(example))
+    pass
 
   def testMakeExampleMultiAllelic(self):
     alts = ['AA', 'CC', 'GG']

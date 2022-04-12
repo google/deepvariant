@@ -67,25 +67,28 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
     with mock.patch(
         'deepvariant.data_providers.'
         'get_input_fn_from_dataset') as mock_get_input_fn_from_dataset:
-      mock_get_input_fn_from_dataset.return_value = dataset
-      FLAGS.train_dir = tf_test_utils.test_tmpdir(uuid.uuid4().hex)
-      FLAGS.batch_size = 2
-      FLAGS.model_name = model_name
-      FLAGS.save_interval_secs = -1
-      FLAGS.save_interval_steps = 1
-      FLAGS.number_of_steps = 1
-      FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
-      FLAGS.start_from_checkpoint = warm_start_from
-      FLAGS.master = ''
-      model_train.parse_and_run()
-      # We have a checkpoint after training.
-      mock_get_input_fn_from_dataset.assert_called_once_with(
-          dataset_config_filename=FLAGS.dataset_config_pbtxt,
-          mode=tf_estimator.ModeKeys.TRAIN,
-          use_tpu=mock.ANY,
-          max_examples=None,
-      )
-      self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
+      with mock.patch('deepvariant.model_train.'
+                      'get_shape_and_channels') as mock_get_shape_and_channels:
+        mock_get_input_fn_from_dataset.return_value = dataset
+        mock_get_shape_and_channels.return_value = [100, 221, 3], [1, 2, 3]
+        FLAGS.train_dir = tf_test_utils.test_tmpdir(uuid.uuid4().hex)
+        FLAGS.batch_size = 2
+        FLAGS.model_name = model_name
+        FLAGS.save_interval_secs = -1
+        FLAGS.save_interval_steps = 1
+        FLAGS.number_of_steps = 1
+        FLAGS.dataset_config_pbtxt = '/path/to/mock.pbtxt'
+        FLAGS.start_from_checkpoint = warm_start_from
+        FLAGS.master = ''
+        model_train.parse_and_run()
+        # We have a checkpoint after training.
+        mock_get_input_fn_from_dataset.assert_called_once_with(
+            dataset_config_filename=FLAGS.dataset_config_pbtxt,
+            mode=tf_estimator.ModeKeys.TRAIN,
+            use_tpu=mock.ANY,
+            max_examples=None,
+        )
+        self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
 
   @mock.patch('deepvariant'
               '.modeling.tf.compat.v1.losses.softmax_cross_entropy')

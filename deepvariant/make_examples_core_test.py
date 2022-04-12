@@ -881,6 +881,7 @@ class RegionProcessorTest(parameterized.TestCase):
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
     self.processor.pic.get_reads.return_value = []
+    self.processor.pic.get_channels.return_value = None
     self.add_mock(
         '_encode_tensor',
         side_effect=[

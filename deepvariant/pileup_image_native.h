@@ -33,6 +33,7 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_PILEUP_IMAGE_NATIVE_H_
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
@@ -81,6 +82,9 @@ class PileupImageEncoderNative {
   // Essential API methods.
   explicit PileupImageEncoderNative(const PileupImageOptions& options);
 
+  // Return all the channels in this image, as a list of enums.
+  std::vector<DeepVariantChannelEnum> AllChannelsEnum(
+      const std::string& alt_aligned_representation);
   // Encode one read into a row of pixels for our image.
   std::unique_ptr<ImageRow> EncodeRead(
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,

@@ -38,6 +38,9 @@ from "deepvariant/pileup_image_native.h":
 
       def __init__(self, options: PileupImageOptions)
 
+      def `AllChannelsEnum` as all_channels_enum(
+          self, alt_aligned_pileup: str) -> list<DeepVariantChannelEnum>
+
       def `EncodeReadPython` as encode_read(
           self,
           dv_call: ConstProtoPtr<DeepVariantCall>,

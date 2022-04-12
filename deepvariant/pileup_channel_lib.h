@@ -31,6 +31,7 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -285,6 +286,28 @@ inline std::vector<uint8> ReadInsertSize(
       read.aligned_sequence().size(), normalizeFragmentLength(read));
   return reads_with_insert_size;
 }
+
+
+inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
+  if (channel == ch_read_mapping_percent)
+    return DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT;
+  if (channel == ch_avg_base_quality)
+    return DeepVariantChannelEnum::CH_AVG_BASE_QUALITY;
+  if (channel == ch_identity) return DeepVariantChannelEnum::CH_IDENTITY;
+  if (channel == ch_gap_compressed_identity)
+    return DeepVariantChannelEnum::CH_GAP_COMPRESSED_IDENTITY;
+  if (channel == ch_gc_content) return DeepVariantChannelEnum::CH_GC_CONTENT;
+  if (channel == ch_is_homopolymer)
+    return DeepVariantChannelEnum::CH_IS_HOMEOPOLYMER;
+  if (channel == ch_homopolymer_weighted)
+    return DeepVariantChannelEnum::CH_HOMEOPOLYMER_WEIGHTED;
+  if (channel == ch_blank) return DeepVariantChannelEnum::CH_BLANK;
+  if (channel == ch_insert_size)
+    return DeepVariantChannelEnum::CH_INSERT_SIZE;
+  CHECK(false) << "Channel '" << channel << "' should have a corresponding "
+      << "enum in DeepVariantChannelEnum.";
+}
+
 
 //-------------------//
 // Channels Accessor //

@@ -1041,3 +1041,45 @@ message MakeExamplesRunInfo {
   ResourceMetrics resource_metrics = 3;
   MakeExamplesStats stats = 4;
 }
+
+// Next ID: 22.
+enum DeepVariantChannelEnum {
+  // Default should be unspecified.
+  CH_UNSPECIFIED = 0;
+
+  // 6 channels that exist in all DeepVariant production models.
+  CH_READ_BASE = 1;
+  CH_BASE_QUALITY = 2;
+  CH_MAPPING_QUALITY = 3;
+  CH_STRAND = 4;
+  CH_READ_SUPPORTS_VARIANT = 5;
+  CH_BASE_DIFFERS_FROM_REF = 6;
+
+  // "Improving Variant Calling using Haplotype Information"
+  // https://google.github.io/deepvariant/posts/2021-02-08-the-haplotype-channel/
+  CH_HAPLOTYPE_TAG = 7;
+
+  // "Improving variant calling using population data and deep learning"
+  // https://doi.org/10.1101/2021.01.06.425550
+  CH_ALLELE_FREQUENCY = 8;
+
+  // Two extra channels for diff_channels:
+  CH_DIFF_CHANNELS_ALTERNATE_ALLELE_1 = 9;
+  CH_DIFF_CHANNELS_ALTERNATE_ALLELE_2 = 10;
+
+  // Two extra channels for base_channels:
+  CH_BASE_CHANNELS_ALTERNATE_ALLELE_1 = 20;
+  CH_BASE_CHANNELS_ALTERNATE_ALLELE_2 = 21;
+
+  // The following channels correspond to the "Opt Channels" defined in
+  // deepvariant/pileup_channel_lib.h:
+  CH_READ_MAPPING_PERCENT = 11;
+  CH_AVG_BASE_QUALITY = 12;
+  CH_IDENTITY = 13;
+  CH_GAP_COMPRESSED_IDENTITY = 14;
+  CH_GC_CONTENT = 15;
+  CH_IS_HOMEOPOLYMER = 16;
+  CH_HOMEOPOLYMER_WEIGHTED = 17;
+  CH_BLANK = 18;
+  CH_INSERT_SIZE = 19;
+}

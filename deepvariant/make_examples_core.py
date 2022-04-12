@@ -1421,6 +1421,8 @@ class RegionProcessor(object):
       return []
 
     examples = []
+    # All the example would have the same list of channels based on `self.pic`.
+    channels_enum = self.pic.get_channels()
     for alt_alleles, image_tensor in pileup_images:
       encoded_tensor, shape, tensor_format = self._encode_tensor(image_tensor)
       examples.append(
@@ -1430,7 +1432,8 @@ class RegionProcessor(object):
               encoded_tensor,
               shape=shape,
               image_format=tensor_format,
-              sequencing_type=self.options.pic_options.sequencing_type))
+              sequencing_type=self.options.pic_options.sequencing_type,
+              channels_enum=channels_enum))
     return examples
 
   def label_candidates(self, candidates, region):

@@ -72,6 +72,7 @@ _EXAMPLE_DECODERS = {
     'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
     'sequencing_type': tf_utils.example_sequencing_type,
+    'channels_enum': tf_utils.example_channels_enum,
 }
 
 
@@ -1055,6 +1056,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
+    self.processor.pic.get_channels.return_value = None
     self.add_mock(
         '_encode_tensor',
         side_effect=[

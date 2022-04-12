@@ -277,6 +277,44 @@ int PileupImageEncoderNative::StrandColor(bool on_positive_strand) const {
                              : options_.negative_strand_color());
 }
 
+vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
+    const std::string& alt_aligned_representation) {
+  std::vector<DeepVariantChannelEnum> channels_list;
+  // The list here corresponds to the order in EncodeRead.
+  channels_list.push_back(DeepVariantChannelEnum::CH_READ_BASE);
+  channels_list.push_back(DeepVariantChannelEnum::CH_BASE_QUALITY);
+  channels_list.push_back(DeepVariantChannelEnum::CH_MAPPING_QUALITY);
+  channels_list.push_back(DeepVariantChannelEnum::CH_STRAND);
+  channels_list.push_back(DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT);
+  channels_list.push_back(DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF);
+  if (options_.use_allele_frequency()) {
+    channels_list.push_back(DeepVariantChannelEnum::CH_ALLELE_FREQUENCY);
+  }
+  if (options_.add_hp_channel()) {
+    channels_list.push_back(DeepVariantChannelEnum::CH_HAPLOTYPE_TAG);
+  }
+  // Fill OptChannel set.
+  const std::vector<std::string> opt_channels = ToVector(options_.channels());
+  for (int j = 0; j < opt_channels.size(); j++) {
+    channels_list.push_back(ChannelStrToEnum(opt_channels[j]));
+  }
+  // Then, in pileup_image.py, _represent_alt_aligned_pileups can potentially
+  // add two more channels.
+  if (alt_aligned_representation == "diff_channels") {
+    channels_list.push_back(
+        DeepVariantChannelEnum::CH_DIFF_CHANNELS_ALTERNATE_ALLELE_1);
+    channels_list.push_back(
+        DeepVariantChannelEnum::CH_DIFF_CHANNELS_ALTERNATE_ALLELE_2);
+  } else if (alt_aligned_representation == "base_channels") {
+    channels_list.push_back(
+        DeepVariantChannelEnum::CH_BASE_CHANNELS_ALTERNATE_ALLELE_1);
+    channels_list.push_back(
+        DeepVariantChannelEnum::CH_BASE_CHANNELS_ALTERNATE_ALLELE_2);
+  }
+  return channels_list;
+}
+
+
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
     int image_start_pos, const vector<std::string>& alt_alleles) {
