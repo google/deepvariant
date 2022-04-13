@@ -37,6 +37,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/status/status.h"
 #include "boost/graph/graphviz.hpp"
@@ -102,12 +103,19 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
       incoming_edges.insert(start, end);
     }
 
+    absl::btree_map<std::pair<std::string, std::string>, Edge> keyed_edges;
+    for (const auto& edge : incoming_edges) {
+      std::string edge_source = graph_[edge.m_source].allele_info.bases;
+      std::string edge_target = graph_[edge.m_target].allele_info.bases;
+      keyed_edges[{edge_source, edge_target}] = edge;
+    }
+
     // Enumerate all edge pairs
-    for (const auto& edge_1 : incoming_edges) {
-      for (const auto& edge_2 : incoming_edges) {
-        const Vertex& to_1 = edge_1.m_target;
-        const Vertex& to_2 = edge_2.m_target;
-        Score score = CalculateScore(edge_1, edge_2);
+    for (const auto& edge_1 : keyed_edges) {
+      for (const auto& edge_2 : keyed_edges) {
+        const Vertex& to_1 = edge_1.second.m_target;
+        const Vertex& to_2 = edge_2.second.m_target;
+        Score score = CalculateScore(edge_1.second, edge_2.second);
         // If the score for the given vertices already exists then we update
         // it if the new score is higher.
         auto stored = scores_[{to_1, to_2}];
@@ -135,16 +143,37 @@ void DirectPhasing::AssignPhasesToVertices() {
   }
   auto max_score_it = scores_.begin();
   int max_score = 0;
-  // Find the best score for the last position.
-  for (const Vertex& v1 : vertices_by_position_[positions_.back()]) {
-    for (const Vertex& v2 : vertices_by_position_[positions_.back()]) {
-      auto scores_it = scores_.find({v1, v2});
-      if (scores_it != scores_.end() &&
-          scores_it->second.score > max_score) {
-        max_score_it = scores_it;
-        max_score = scores_it->second.score;
+  bool non_unique_max_score = true;
+  int i = positions_.size()-1;
+  while (non_unique_max_score && i >= 0) {
+    max_score = 0;
+    non_unique_max_score = false;
+    // Iterate all scores at positions_[i] and the maximum.
+    for (const Vertex& v1 : vertices_by_position_[positions_[i]]) {
+      for (const Vertex& v2 : vertices_by_position_[positions_[i]]) {
+        auto scores_it = scores_.find({v1, v2});
+        if (scores_it != scores_.end() &&
+            scores_it->second.score > max_score) {
+          max_score_it = scores_it;
+          max_score = scores_it->second.score;
+        }
       }
     }
+
+    // Check that max score is unique. If not, then move to previous position.
+    for (const Vertex& v1 : vertices_by_position_[positions_[i]]) {
+      for (const Vertex& v2 : vertices_by_position_[positions_[i]]) {
+        auto scores_it = scores_.find({v1, v2});
+        if (scores_it != scores_.end()
+            && scores_it->second.score == max_score
+            && (max_score_it->first.phase_1_vertex != v1
+            || max_score_it->first.phase_2_vertex != v2)) {
+          non_unique_max_score = true;
+        }
+      }
+    }
+
+    i--;
   }
 
   while (max_score_it != scores_.end()) {
