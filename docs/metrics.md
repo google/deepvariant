@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~102m
-call_variants                    | ~165m
-postprocess_variants (with gVCF) | ~51m
-total                            | ~318m = ~5.3 hours
+make_examples                    | ~109m
+call_variants                    | ~170m
+postprocess_variants (with gVCF) | ~49m
+total                            | ~328m = ~5.47 hours
 
 ### Accuracy
 
@@ -20,8 +20,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501537   | 2964     | 1201     | 0.994125      | 0.997708         | 0.995913        |
-| SNP   | 3306401  | 21095    | 4556     | 0.99366       | 0.998625         | 0.996136        |
+| INDEL | 501761   | 2740     | 1249     | 0.994569      | 0.997617         | 0.996091        |
+| SNP   | 3306728  | 20768    | 4244     | 0.993759      | 0.998719         | 0.996233        |
 
 ## WES (Illumina)
 

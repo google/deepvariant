@@ -243,7 +243,11 @@ def make_examples_command(ref,
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
 
   conflict_args = None
-  if FLAGS.model_type == 'PACBIO':
+  if FLAGS.model_type == 'WGS':  # TODO: add WES.
+    special_args = {}
+    special_args['channels'] = 'insert_size'
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif FLAGS.model_type == 'PACBIO':
     special_args = {}
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
