@@ -190,21 +190,18 @@ class RunDeeptrioTest(parameterized.TestCase):
     self.assertLen(postprocess_cmds, 2)
 
   @parameterized.parameters(
-      ('WGS', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--pileup_image_height_child "60" '
+      ('WGS', '--channels "insert_size" ' +
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+       '--pileup_image_height_child "60" ' +
        '--pileup_image_height_parent "40" '),
-      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--pileup_image_height_child "100" '
+      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+       '--pileup_image_height_child "100" ' +
        '--pileup_image_height_parent "100" '),
-      ('PACBIO', '--add_hp_channel '
-       '--alt_aligned_pileup "diff_channels" '
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--noparse_sam_aux_fields '
-       '--pileup_image_height_child "60" '
-       '--pileup_image_height_parent "40" '
-       '--pileup_image_width "199" '
-       '--norealign_reads '
-       '--nosort_by_haplotypes '
+      ('PACBIO', '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+       '--noparse_sam_aux_fields --pileup_image_height_child "60" ' +
+       '--pileup_image_height_parent "40" --pileup_image_width "199" ' +
+       '--norealign_reads --nosort_by_haplotypes ' +
        '--vsc_min_fraction_indels "0.12" '))
   @flagsaver.flagsaver
   def test_make_examples_commands_with_types(self, model_type,
@@ -243,21 +240,18 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--task {}' % extra_args_plus_gvcf)
 
   @parameterized.parameters(
-      ('WGS', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--pileup_image_height_child "60" '
+      ('WGS', '--channels "insert_size" ' +
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+       '--pileup_image_height_child "60" ' +
        '--pileup_image_height_parent "40" '),
-      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--pileup_image_height_child "100" '
+      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+       '--pileup_image_height_child "100" ' +
        '--pileup_image_height_parent "100" '),
-      ('PACBIO', '--add_hp_channel '
-       '--alt_aligned_pileup "diff_channels" '
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--noparse_sam_aux_fields '
-       '--pileup_image_height_child "60" '
-       '--pileup_image_height_parent "40" '
-       '--pileup_image_width "199" '
-       '--norealign_reads '
-       '--nosort_by_haplotypes '
+      ('PACBIO', '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+       '--noparse_sam_aux_fields --pileup_image_height_child "60" ' +
+       '--pileup_image_height_parent "40" --pileup_image_width "199" ' +
+       '--norealign_reads --nosort_by_haplotypes ' +
        '--vsc_min_fraction_indels "0.12" '))
   @flagsaver.flagsaver
   def test_duo_make_examples_commands_with_types(self, model_type,
@@ -412,14 +406,14 @@ class RunDeeptrioTest(parameterized.TestCase):
       run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
 
   @parameterized.parameters(
-      ('chr1:20-30', '--pileup_image_height_child "60" '
-       '--pileup_image_height_parent "40" '
-       '--regions "chr1:20-30"'),
-      ('chr1:20-30 chr2:100-200', '--pileup_image_height_child "60" '
-       '--pileup_image_height_parent "40" '
+      ('chr1:20-30',
+       '--channels "insert_size" --pileup_image_height_child "60" ' +
+       '--pileup_image_height_parent "40" ' + '--regions "chr1:20-30"'),
+      ('chr1:20-30 chr2:100-200', '--channels "insert_size" ' +
+       '--pileup_image_height_child "60" --pileup_image_height_parent "40" ' +
        '--regions "chr1:20-30 chr2:100-200"'),
-      ("'chr1:20-30 chr2:100-200'", '--pileup_image_height_child "60" '
-       '--pileup_image_height_parent "40" '
+      ("'chr1:20-30 chr2:100-200'", '--channels "insert_size" ' +
+       '--pileup_image_height_child "60" --pileup_image_height_parent "40" ' +
        "--regions 'chr1:20-30 chr2:100-200'"),
   )
   def test_make_examples_regions(self, regions, expected_args):
