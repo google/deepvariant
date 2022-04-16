@@ -183,10 +183,6 @@ def example_sequencing_type(example):
   return example.features.feature['sequencing_type'].int64_list.value[0]
 
 
-def example_channels_enum(example):
-  return example.features.feature['channels_enum'].int64_list.value
-
-
 def get_one_example_from_examples_path(source, proto=None):
   """Get the first record from `source`.
 
@@ -256,8 +252,7 @@ def make_example(variant,
                  shape,
                  image_format,
                  second_image=None,
-                 sequencing_type=0,
-                 channels_enum=None):
+                 sequencing_type=0):
   """Creates a new tf.Example suitable for use with DeepVariant.
 
   Args:
@@ -274,7 +269,6 @@ def make_example(variant,
       encodes read data from another DNA sample. Must satisfy the same
       requirements as encoded_image.
     sequencing_type: int. The sequencing type of the input image.
-    channels_enum: list<DeepVariantChannelEnum> or None. The list of channels.
   Returns:
     A tf.Example proto containing the standard DeepVariant features.
   """
@@ -305,8 +299,6 @@ def make_example(variant,
         six.b(image_format))
     features.feature['second_image/shape'].int64_list.value.extend(shape)
   features.feature['sequencing_type'].int64_list.value.append(sequencing_type)
-  if channels_enum:
-    features.feature['channels_enum'].int64_list.value.extend(channels_enum)
   return example
 
 

@@ -148,14 +148,18 @@ def loss(logits, one_hot_labels, label_smoothing):
   return tf.compat.v1.losses.get_total_loss()
 
 
-def get_shape_and_channels(dataset_config_pbtxt):
+def copy_over_example_info_json(dataset_config_pbtxt):
+  """Copies example_info.json from examples dir to model output dir."""
   dataset_config = data_providers.read_dataset_config(dataset_config_pbtxt)
-  first_example = tf_utils.get_one_example_from_examples_path(
-      dataset_config.tfrecord_path)
-  assert first_example is not None
-  example_shape = tf_utils.example_image_shape(first_example)
-  example_channels = tf_utils.example_channels_enum(first_example)
-  return example_shape, example_channels
+  json_file = os.path.join(
+      os.path.dirname(dataset_config.tfrecord_path), 'example_info.json')
+  target_file = os.path.join(FLAGS.train_dir, 'model.ckpt.example_info.json')
+  if tf.io.gfile.exists(json_file):
+    logging.info('Copy %s to %s.', json_file, target_file)
+    tf.io.gfile.copy(json_file, target_file)
+  else:
+    logging.info('%s does not exist. '
+                 'Skip copying to model.ckpt.example_info.json.')
 
 
 def run(target, unused_is_chief, device_fn, use_tpu):
@@ -171,22 +175,9 @@ def run(target, unused_is_chief, device_fn, use_tpu):
     logging.error('Need to specify --dataset_config_pbtxt')
     return
 
-  # Before starting to train, write the information of the examples to a
-  # model.ckpt.input_info file. The input_info file will have:
-  # 1. Shape information: This will be 3 integers.
-  # 2. Channel information: This will be N integers, each of which corresponds
-  #    to a DeepVariantChannelEnum.
-  example_shape, example_channels = get_shape_and_channels(
-      FLAGS.dataset_config_pbtxt)
-  if example_shape is not None and example_channels is not None:
-    logging.info('example_shape = %s', str(example_shape))
-    logging.info('example_channels = %s', str(example_channels))
-    with tf.io.gfile.GFile(
-        os.path.join(FLAGS.train_dir, 'model.ckpt.input_info'), 'w') as fout:
-      fout.write('# Shape information: height width #channel:\n')
-      fout.write(' '.join(map(str, example_shape)) + '\n')
-      fout.write('# Channel information: list of DeepVariantChannelEnum:\n')
-      fout.write(' '.join(map(str, example_channels)) + '\n')
+  # Before starting to train, check whether the `example_info.json` file exist
+  # for the dataset path.
+  copy_over_example_info_json(FLAGS.dataset_config_pbtxt)
   g = tf.Graph()
   with g.as_default():
     with tf.device(device_fn):

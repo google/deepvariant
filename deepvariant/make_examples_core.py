@@ -30,6 +30,7 @@
 
 import collections
 import dataclasses
+import json
 import os
 import time
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -1421,8 +1422,6 @@ class RegionProcessor(object):
       return []
 
     examples = []
-    # All the example would have the same list of channels based on `self.pic`.
-    channels_enum = self.pic.get_channels()
     for alt_alleles, image_tensor in pileup_images:
       encoded_tensor, shape, tensor_format = self._encode_tensor(image_tensor)
       examples.append(
@@ -1432,9 +1431,12 @@ class RegionProcessor(object):
               encoded_tensor,
               shape=shape,
               image_format=tensor_format,
-              sequencing_type=self.options.pic_options.sequencing_type,
-              channels_enum=channels_enum))
+              sequencing_type=self.options.pic_options.sequencing_type))
     return examples
+
+  def get_channels(self) -> List[int]:
+    # All the example would have the same list of channels based on `self.pic`.
+    return self.pic.get_channels()
 
   def label_candidates(self, candidates, region):
     """Gets label information for each candidate.
@@ -1735,6 +1737,7 @@ def make_examples_runner(options):
       options, 'Overhead for preparing inputs: %d seconds' %
       (time.time() - before_initializing_inputs))
 
+  example_shape = None
   running_timer = timer.TimerStart()
   for region in regions:
     (candidates_by_sample, examples_by_sample, gvcfs_by_sample,
@@ -1750,6 +1753,8 @@ def make_examples_runner(options):
       n_examples += len(examples)
       n_regions += 1
 
+      if example_shape is None and examples:
+        example_shape = tf_utils.example_image_shape(examples[0])
       if in_training_mode(options) and options.run_info_filename:
         labels, types = get_example_counts(
             examples, num_classes=dv_constants.NUM_CLASSES)
@@ -1817,6 +1822,27 @@ def make_examples_runner(options):
         options,
         'Writing MakeExamplesRunInfo to %s' % options.run_info_filename)
     write_make_examples_run_info(run_info, path=options.run_info_filename)
+
+  # Currently, even in multi-sample scenario, no matter what the suffix is,
+  # this code always writes to the `example_info.json` file under the same
+  # directory where the output examples will be. This is because
+  # even for multi-sample cases, we assume all the images will have the
+  # same shape and number of channels. Current code also assumes the file
+  # containing this information is always called `example_info.json`.
+  example_info_filename = os.path.join(
+      os.path.dirname(options.examples_filename), 'example_info.json')
+  if tf.io.gfile.exists(example_info_filename):
+    logging_with_options(options,
+                         'Skip writing example info because file exists.')
+  else:
+    logging_with_options(options,
+                         'Writing example info to %s' % example_info_filename)
+    example_channels = region_processor.get_channels()
+    # example_shape was filled in during the loop above.
+    logging.info('example_shape = %s', str(example_shape))
+    logging.info('example_channels = %s', str(example_channels))
+    with tf.io.gfile.GFile(example_info_filename, mode='w') as fout:
+      json.dump({'shape': example_shape, 'channels': example_channels}, fout)
 
   logging_with_options(options, 'Found %s candidate variants' % n_candidates)
   logging_with_options(options, 'Created %s examples' % n_examples)

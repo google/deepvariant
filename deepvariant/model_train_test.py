@@ -68,9 +68,8 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         'deepvariant.data_providers.'
         'get_input_fn_from_dataset') as mock_get_input_fn_from_dataset:
       with mock.patch('deepvariant.model_train.'
-                      'get_shape_and_channels') as mock_get_shape_and_channels:
+                      'copy_over_example_info_json') as _:
         mock_get_input_fn_from_dataset.return_value = dataset
-        mock_get_shape_and_channels.return_value = [100, 221, 3], [1, 2, 3]
         FLAGS.train_dir = tf_test_utils.test_tmpdir(uuid.uuid4().hex)
         FLAGS.batch_size = 2
         FLAGS.model_name = model_name

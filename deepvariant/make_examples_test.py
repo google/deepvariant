@@ -74,7 +74,6 @@ _EXAMPLE_DECODERS = {
     'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
     'sequencing_type': tf_utils.example_sequencing_type,
-    'channels_enum': tf_utils.example_channels_enum,
 }
 
 
@@ -791,10 +790,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         self.assertIn(label_feature, example.features.feature)
       # pylint: disable=g-explicit-length-test
       self.assertNotEmpty(tf_utils.example_alt_alleles_indices(example))
-      # Check the number of channels is the same as the list of channels.
-      self.assertLen(
-          tf_utils.example_channels_enum(example),
-          tf_utils.example_image_shape(example)[2])
     # Check that the variants in the examples are good.
     variants = [tf_utils.example_variant(x) for x in examples]
     self.verify_variants(variants, region, options, is_gvcf=False)

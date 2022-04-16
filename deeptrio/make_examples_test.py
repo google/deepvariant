@@ -72,7 +72,6 @@ _EXAMPLE_DECODERS = {
     'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
     'sequencing_type': tf_utils.example_sequencing_type,
-    'channels_enum': tf_utils.example_channels_enum,
 }
 
 
