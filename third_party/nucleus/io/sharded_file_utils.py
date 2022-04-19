@@ -52,6 +52,7 @@ import six
 from tensorflow.python.platform import gfile
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
+SHARD_FILE_PATTERN = re.compile(R'(.*)-(\d+)-of-(\d*[1-9]\d*)([^/]+)?$')
 
 
 class ShardError(Exception):
@@ -167,6 +168,12 @@ def normalize_to_sharded_file_pattern(spec_or_pattern):
   return generate_sharded_file_pattern(basename, num_shards, suffix)
 
 
+def is_sharded_filename(filename):
+  """Returns True if filename is a sharded filename."""
+  m = SHARD_FILE_PATTERN.match(filename)
+  return m is not None
+
+
 def is_sharded_file_spec(spec):
   """Returns True if spec is a sharded file specification."""
   m = SHARD_SPEC_PATTERN.match(spec)
@@ -271,3 +278,27 @@ def maybe_generate_sharded_filenames(filespec):
     return generate_sharded_filenames(filespec)
   else:
     return [filespec]
+
+
+def parse_sharded_filename(filename):
+  """Parse a sharded name specification.
+
+  Args:
+    filename: str. The sharded filename. A sharded filename is one like
+      'gs://some/file-00000-of-00200.txt'.
+
+  Returns:
+    basename: str. The first part before the -ddddd-of-ddddd part.
+    shard_index: str: The first part of -ddddd-of-ddddd
+    num_shards: str: The number of shards. (Second part after "of")
+    suffix: str. Any string after the -ddddd-of-ddddd part.
+  Raises:
+    ShardError: If the spec is not a valid sharded specification.
+  """
+  m = SHARD_FILE_PATTERN.match(filename)
+  if not m:
+    raise ShardError(('The file specification {0} is not a sharded file '
+                      'specification because it did not match the regex '
+                      '{1}').format(filename, SHARD_FILE_PATTERN.pattern))
+  suffix = '' if m.group(4) is None else m.group(4)
+  return m.group(1), m.group(2), m.group(3), suffix

@@ -190,8 +190,23 @@ class ShardsTest(parameterized.TestCase):
   def testIsShardedFileSpec(self, spec, expected):
     actual = io.is_sharded_file_spec(spec)
     self.assertEqual(actual, expected,
-                      'io.IshShardedFileSpec({0}) is {1} expected {2}'.format(
-                          spec, actual, expected))
+                     'io.IshShardedFileSpec({0}) is {1} expected {2}'.format(
+                         spec, actual, expected))
+
+  @parameterized.named_parameters(
+      ('basic', '/dir/foo/bar-00001-of-00003', True),
+      ('suffix', '/dir/foo/bar-00001-of-00003,txt', True),
+      ('many_shards', '/dir/foo/bar-00000-of-12345', True),
+      ('invalid_spec', '/dir/foo/bar-00000-of-00000', False),
+      ('not_spec', '/dir/foo/bar', False),
+      ('directory_not_match', '/dir/foo/bar-00001-of-10000/baz.txt', False),
+      ('file_match', '/dir/foo/bar-00001-of-10000.baz.txt', True),
+  )
+  def testIsShardedFilename(self, filename, expected):
+    actual = io.is_sharded_filename(filename)
+    self.assertEqual(actual, expected,
+                     'io.is_sharded_filename({0}) is {1} expected {2}'.format(
+                         filename, actual, expected))
 
   @parameterized.named_parameters(
       ('no_suffix', '/dir/foo/bar', 3, '', '/dir/foo/bar-?????-of-00003'),
@@ -238,6 +253,24 @@ class ShardsTest(parameterized.TestCase):
         [test_utils.test_tmpfile(spec) for spec in specs.split(',')])
     self.assertEqual(sorted(set(expected_full_files)),
                      io.glob_list_sharded_file_patterns(full_specs))
+
+  @parameterized.parameters(
+      ('name3-00000-of-00001', 'name3', 0, 1, ''),
+      ('name4-12-of-20.foo.bar', 'name4', 12, 20, '.foo.bar'),
+      ('name5-123456-of-999999.baz', 'name5', 123456, 999999, '.baz'),
+      ('dir/name6.xxx-01111-of-02222.yyy', 'dir/name6.xxx', 1111, 2222, '.yyy'),
+      ('/dir/foo/bar-00001-of-10000.baz.txt', '/dir/foo/bar', 1, 10000,
+       '.baz.txt'),
+  )
+  def testParseShardedFilename(self, filename, expected_basename,
+                               expected_shard, expected_num_shards,
+                               expected_suffix):
+    (basename, shard, num_shards,
+     suffix) = io.parse_sharded_filename(filename)
+    self.assertEqual(expected_basename, basename)
+    self.assertEqual(expected_shard, int(shard))
+    self.assertEqual(expected_num_shards, int(num_shards))
+    self.assertEqual(expected_suffix, suffix)
 
 if __name__ == '__main__':
   absltest.main()
