@@ -30,6 +30,7 @@
 
 import enum
 import errno
+import json
 import platform
 import sys
 from unittest import mock
@@ -775,6 +776,17 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
             len(call.allele_support[alt_allele].read_names),
             options.sample_options[0].variant_caller_options.min_count_snps)
 
+  def sanity_check_example_info_json(self, example, examples_filename):
+    """Checks `example_info.json` w/ examples_filename has the right info."""
+    example_info_json = make_examples_core.get_example_info_json_filename(
+        examples_filename)
+    example_info = json.load(gfile.GFile(example_info_json, 'r'))
+    self.assertIn('shape', example_info)
+    self.assertEqual(example_info['shape'],
+                     tf_utils.example_image_shape(example))
+    self.assertIn('channels', example_info)
+    self.assertLen(example_info['channels'], example_info['shape'][2])
+
   def verify_examples(self, examples_filename, region, options, verify_labels):
     # Do some simple structural checks on the tf.Examples in the file.
     expected_features = [
@@ -793,6 +805,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # Check that the variants in the examples are good.
     variants = [tf_utils.example_variant(x) for x in examples]
     self.verify_variants(variants, region, options, is_gvcf=False)
+
+    if examples:
+      self.sanity_check_example_info_json(examples[0], examples_filename)
 
     return examples
 

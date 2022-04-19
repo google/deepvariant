@@ -30,6 +30,7 @@
 
 import copy
 import errno
+import json
 import platform
 import sys
 from unittest import mock
@@ -48,6 +49,7 @@ from deepvariant import make_examples_core
 from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
@@ -235,7 +237,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # Verify that the variants in the examples are all good.
     if mode == 'calling':
       examples = self.verify_examples(
-          child_examples, region, options, verify_labels=False)
+          child_examples,
+          region,
+          options,
+          verify_labels=False,
+          examples_filename=FLAGS.examples)
     else:
       examples = self.verify_examples(
           FLAGS.examples, region, options, verify_labels=True)
@@ -499,7 +505,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         path_to_output_examples,
         None,
         options,
-        verify_labels=mode == 'training')
+        verify_labels=mode == 'training',
+        examples_filename=FLAGS.examples)
     self.assertDeepVariantExamplesEqual(
         output_examples_to_compare, list(tfrecord.read_tfrecords(golden_file)))
 
@@ -621,7 +628,23 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
             len(call.allele_support[alt_allele].read_names),
             options.sample_options[1].variant_caller_options.min_count_snps)
 
-  def verify_examples(self, examples_filename, region, options, verify_labels):
+  def sanity_check_example_info_json(self, example, examples_filename):
+    """Checks `example_info.json` w/ examples_filename has the right info."""
+    example_info_json = make_examples_core.get_example_info_json_filename(
+        examples_filename)
+    example_info = json.load(gfile.GFile(example_info_json, 'r'))
+    self.assertIn('shape', example_info)
+    self.assertEqual(example_info['shape'],
+                     tf_utils.example_image_shape(example))
+    self.assertIn('channels', example_info)
+    self.assertLen(example_info['channels'], example_info['shape'][2])
+
+  def verify_examples(self,
+                      path_to_output_examples,
+                      region,
+                      options,
+                      verify_labels,
+                      examples_filename=None):
     # Do some simple structural checks on the tf.Examples in the file.
     expected_features = [
         'variant/encoded', 'locus', 'image/format', 'image/encoded',
@@ -630,7 +653,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     if verify_labels:
       expected_features += ['label']
 
-    examples = list(tfrecord.read_tfrecords(examples_filename))
+    examples = list(tfrecord.read_tfrecords(path_to_output_examples))
     for example in examples:
       for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)
@@ -641,6 +664,14 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     variants = [tf_utils.example_variant(x) for x in examples]
     self.verify_variants(variants, region, options, is_gvcf=False)
 
+    # In DeepTrio, path_to_output_examples can be pointing to the ones with
+    # the suffixes (such as _child). In that case, we pass in the original
+    # examples path to the `examples_filename` arg.
+    # If `examples_filename` arg, directly use `path_to_output_examples`.
+    if examples:
+      if examples_filename is None:
+        examples_filename = path_to_output_examples
+      self.sanity_check_example_info_json(examples[0], examples_filename)
     return examples
 
 

@@ -60,6 +60,7 @@ from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
+from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import range_pb2
@@ -1693,6 +1694,22 @@ def get_example_counts(examples, num_classes):
   return labels, types
 
 
+def get_example_info_json_filename(examples_filename: str) -> str:
+  """Returns corresponding example_info.json filename for examples_filename."""
+  if sharded_file_utils.is_sharded_file_spec(examples_filename):
+    # If examples_filename has the @shards representation, resolve it into
+    # the first shard. We only writes .example_info.json to the first shard.
+    _, examples_filename = sharded_file_utils.resolve_filespecs(
+        0, examples_filename)
+  example_info_prefix = examples_filename
+  if sharded_file_utils.is_sharded_filename(examples_filename):
+    prefix, i, num_shards, suffix = sharded_file_utils.parse_sharded_filename(
+        examples_filename)
+    example_info_prefix = prefix + '-{}-of-{}'.format('0' * len(i),
+                                                      num_shards) + suffix
+  return example_info_prefix + '.example_info.json'
+
+
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
@@ -1823,26 +1840,21 @@ def make_examples_runner(options):
         'Writing MakeExamplesRunInfo to %s' % options.run_info_filename)
     write_make_examples_run_info(run_info, path=options.run_info_filename)
 
-  # Currently, even in multi-sample scenario, no matter what the suffix is,
-  # this code always writes to the `example_info.json` file under the same
-  # directory where the output examples will be. This is because
-  # even for multi-sample cases, we assume all the images will have the
-  # same shape and number of channels. Current code also assumes the file
-  # containing this information is always called `example_info.json`.
-  example_info_filename = os.path.join(
-      os.path.dirname(options.examples_filename), 'example_info.json')
-  if tf.io.gfile.exists(example_info_filename):
-    logging_with_options(options,
-                         'Skip writing example info because file exists.')
-  else:
-    logging_with_options(options,
-                         'Writing example info to %s' % example_info_filename)
-    example_channels = region_processor.get_channels()
-    # example_shape was filled in during the loop above.
-    logging.info('example_shape = %s', str(example_shape))
-    logging.info('example_channels = %s', str(example_channels))
-    with tf.io.gfile.GFile(example_info_filename, mode='w') as fout:
-      json.dump({'shape': example_shape, 'channels': example_channels}, fout)
+  # Write to .example_info file. Here we use the examples_filename as prefix.
+  # If the examples_filename is sharded, we only write to the first shard.
+  # Currently, even in multi-sample scenario, the suffix is not used here
+  # because currently all the multiple-sample output will have the same shape
+  # and list of channels.
+  example_info_filename = get_example_info_json_filename(
+      options.examples_filename)
+  logging_with_options(options,
+                       'Writing example info to %s' % example_info_filename)
+  example_channels = region_processor.get_channels()
+  # example_shape was filled in during the loop above.
+  logging.info('example_shape = %s', str(example_shape))
+  logging.info('example_channels = %s', str(example_channels))
+  with tf.io.gfile.GFile(example_info_filename, mode='w') as fout:
+    json.dump({'shape': example_shape, 'channels': example_channels}, fout)
 
   logging_with_options(options, 'Found %s candidate variants' % n_candidates)
   logging_with_options(options, 'Created %s examples' % n_examples)
