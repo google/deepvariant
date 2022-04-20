@@ -243,7 +243,7 @@ def make_examples_command(ref,
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
 
   conflict_args = None
-  if FLAGS.model_type == 'WGS':  # TODO: add WES.
+  if FLAGS.model_type == 'WGS' or FLAGS.model_type == 'WES':
     special_args = {}
     special_args['channels'] = 'insert_size'
     kwargs = _update_kwargs_with_warning(kwargs, special_args)

@@ -152,14 +152,14 @@ WORKDIR /opt/models/wgs
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0-rc0+data-wgs_standard/model.ckpt.data-00000-of-00001 .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0-rc0+data-wgs_standard/model.ckpt.index .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0-rc0+data-wgs_standard/model.ckpt.meta .
-# ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0-rc0+data-wgs_standard/model.ckpt.input_shape .
+# TODO: Add example_info.json here.
 RUN chmod +r /opt/models/wgs/model.ckpt*
 
 WORKDIR /opt/models/wes
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.input_shape .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0-rc0+data-wes_standard/model.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0-rc0+data-wes_standard/model.ckpt.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0-rc0+data-wes_standard/model.ckpt.meta .
+# TODO: Add example_info.json here.
 RUN chmod +r /opt/models/wes/model.ckpt*
 
 WORKDIR /opt/models/pacbio
