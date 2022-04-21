@@ -27,7 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Lint as: python3
 """Tests for third_party.nucleus.util.vis."""
 
 from __future__ import absolute_import
