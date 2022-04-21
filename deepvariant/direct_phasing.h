@@ -250,6 +250,9 @@ class DirectPhasing {
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads)
       const;
 
+  bool CompareVertexPairByBases(const Vertex& v1_1, const Vertex& v1_2,
+    const Vertex& v2_1, const Vertex& v2_2) const;
+
  private:
   BoostGraph graph_;
   Vertex source_;

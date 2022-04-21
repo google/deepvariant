@@ -135,6 +135,13 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
   return AssignPhasesToReads(reads);
 }
 
+bool DirectPhasing::CompareVertexPairByBases(
+    const Vertex& v1_1, const Vertex& v1_2,
+    const Vertex& v2_1, const Vertex& v2_2) const {
+  return graph_[v1_1].allele_info.bases + graph_[v1_2].allele_info.bases >
+      graph_[v2_1].allele_info.bases + graph_[v2_2].allele_info.bases;
+}
+
 void DirectPhasing::AssignPhasesToVertices() {
   // Assigning a random valid score. The max_score should be at least no less
   // then this.
@@ -143,32 +150,49 @@ void DirectPhasing::AssignPhasesToVertices() {
   }
   auto max_score_it = scores_.begin();
   int max_score = 0;
-  bool non_unique_max_score = true;
+  bool all_scores_equal = true;
   int i = positions_.size()-1;
-  while (non_unique_max_score && i >= 0) {
+  while (all_scores_equal && i >= 0) {
     max_score = 0;
-    non_unique_max_score = false;
+    all_scores_equal = false;
     // Iterate all scores at positions_[i] and the maximum.
     for (const Vertex& v1 : vertices_by_position_[positions_[i]]) {
       for (const Vertex& v2 : vertices_by_position_[positions_[i]]) {
         auto scores_it = scores_.find({v1, v2});
-        if (scores_it != scores_.end() &&
-            scores_it->second.score > max_score) {
+        if (scores_it == scores_.end()) {
+          continue;
+        }
+        // TODO Add unit test for checking case where all scores are
+        // equal for the candidate. This used to cause the non deterministic
+        // behaviour and was fixed by adding allele bases comparison.
+        if (scores_it->second.score > max_score) {
           max_score_it = scores_it;
           max_score = scores_it->second.score;
+        } else if (scores_it->second.score == max_score) {
+          // If scores are equal we will try to distinguish them by allele bases
+          if (CompareVertexPairByBases(
+                  scores_it->first.phase_1_vertex,
+                  scores_it->first.phase_2_vertex,
+                  max_score_it->first.phase_1_vertex,
+                  max_score_it->first.phase_2_vertex)) {
+            max_score_it = scores_it;
+            max_score = scores_it->second.score;
+          }
         }
       }
     }
 
-    // Check that max score is unique. If not, then move to previous position.
+    // If all the scores are the same at this position that means we couldn't
+    // phase, move to the previous position.
+    all_scores_equal = true;
     for (const Vertex& v1 : vertices_by_position_[positions_[i]]) {
       for (const Vertex& v2 : vertices_by_position_[positions_[i]]) {
         auto scores_it = scores_.find({v1, v2});
-        if (scores_it != scores_.end()
-            && scores_it->second.score == max_score
-            && (max_score_it->first.phase_1_vertex != v1
-            || max_score_it->first.phase_2_vertex != v2)) {
-          non_unique_max_score = true;
+        if (scores_it != scores_.end()) {
+          if (scores_it->second.score != max_score) {
+            all_scores_equal = false;
+            break;
+          }
         }
       }
     }
