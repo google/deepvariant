@@ -1694,19 +1694,19 @@ def get_example_counts(examples, num_classes):
   return labels, types
 
 
-def get_example_info_json_filename(examples_filename: str) -> str:
+def get_example_info_json_filename(examples_filename: str,
+                                   task_id: Optional[int]) -> str:
   """Returns corresponding example_info.json filename for examples_filename."""
   if sharded_file_utils.is_sharded_file_spec(examples_filename):
+    assert task_id is not None
     # If examples_filename has the @shards representation, resolve it into
     # the first shard. We only writes .example_info.json to the first shard.
-    _, examples_filename = sharded_file_utils.resolve_filespecs(
-        0, examples_filename)
-  example_info_prefix = examples_filename
-  if sharded_file_utils.is_sharded_filename(examples_filename):
-    prefix, i, num_shards, suffix = sharded_file_utils.parse_sharded_filename(
-        examples_filename)
-    example_info_prefix = prefix + '-{}-of-{}'.format('0' * len(i),
-                                                      num_shards) + suffix
+    example_info_prefix = sharded_file_utils.sharded_filename(
+        examples_filename, task_id)
+  else:
+    # In all other cases, including non-sharded files,
+    # or sharded filenames with -ddddd-of-ddddd, just append.
+    example_info_prefix = examples_filename
   return example_info_prefix + '.example_info.json'
 
 
@@ -1846,15 +1846,16 @@ def make_examples_runner(options):
   # because currently all the multiple-sample output will have the same shape
   # and list of channels.
   example_info_filename = get_example_info_json_filename(
-      options.examples_filename)
-  logging_with_options(options,
-                       'Writing example info to %s' % example_info_filename)
-  example_channels = region_processor.get_channels()
-  # example_shape was filled in during the loop above.
-  logging.info('example_shape = %s', str(example_shape))
-  logging.info('example_channels = %s', str(example_channels))
-  with tf.io.gfile.GFile(example_info_filename, mode='w') as fout:
-    json.dump({'shape': example_shape, 'channels': example_channels}, fout)
+      options.examples_filename, options.task_id)
+  if example_info_filename is not None:
+    logging_with_options(options,
+                         'Writing example info to %s' % example_info_filename)
+    example_channels = region_processor.get_channels()
+    # example_shape was filled in during the loop above.
+    logging.info('example_shape = %s', str(example_shape))
+    logging.info('example_channels = %s', str(example_channels))
+    with tf.io.gfile.GFile(example_info_filename, mode='w') as fout:
+      json.dump({'shape': example_shape, 'channels': example_channels}, fout)
 
   logging_with_options(options, 'Found %s candidate variants' % n_candidates)
   logging_with_options(options, 'Created %s examples' % n_examples)

@@ -776,10 +776,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
             len(call.allele_support[alt_allele].read_names),
             options.sample_options[0].variant_caller_options.min_count_snps)
 
-  def sanity_check_example_info_json(self, example, examples_filename):
+  def sanity_check_example_info_json(self, example, examples_filename, task_id):
     """Checks `example_info.json` w/ examples_filename has the right info."""
     example_info_json = make_examples_core.get_example_info_json_filename(
-        examples_filename)
+        examples_filename, task_id)
     example_info = json.load(gfile.GFile(example_info_json, 'r'))
     self.assertIn('shape', example_info)
     self.assertEqual(example_info['shape'],
@@ -807,7 +807,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.verify_variants(variants, region, options, is_gvcf=False)
 
     if examples:
-      self.sanity_check_example_info_json(examples[0], examples_filename)
+      self.sanity_check_example_info_json(examples[0], examples_filename,
+                                          options.task_id)
 
     return examples
 
