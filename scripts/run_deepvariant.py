@@ -106,7 +106,7 @@ flags.DEFINE_string(
     '(SM tag in the header). This flag is used for both make_examples and '
     'postprocess_variants.')
 flags.DEFINE_boolean(
-    'use_hp_information', None,
+    'use_hp_information', None, '(Deprecated in v1.4.0) '
     'Optional. If True, corresponding flags will be set to properly use the HP '
     'information present in the BAM input.')
 flags.DEFINE_string(
@@ -190,19 +190,10 @@ def _extend_command_by_args_dict(command, extra_args):
   return command
 
 
-def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
-  """Updates `kwargs` with `extra_args`; crashes if `conflict_args` changed."""
+def _update_kwargs_with_warning(kwargs, extra_args):
+  """Updates `kwargs` with `extra_args`; gives a warning if values changed."""
   for k, v in extra_args.items():
     if k in kwargs:
-      if conflict_args is not None and k in conflict_args and kwargs[k] != v:
-        raise ValueError(
-            'The extra_args "{}" might have conflicts with other flags. '
-            'See '
-            'https://github.com/google/deepvariant/blob/r1.3/docs/'
-            'deepvariant-pacbio-model-case-study.md#clarification-'
-            'of-the---use_hp_information-flag '
-            'for an explanation, or report this issue on '
-            'https://github.com/google/deepvariant/issues.'.format(k))
       if kwargs[k] != v:
         print('\nWarning: --{} is previously set to {}, now to {}.'.format(
             k, kwargs[k], v))
@@ -242,25 +233,27 @@ def make_examples_command(ref,
     command.extend(
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
 
-  conflict_args = None
   if FLAGS.model_type == 'WGS' or FLAGS.model_type == 'WES':
     special_args = {}
     special_args['channels'] = 'insert_size'
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif FLAGS.model_type == 'PACBIO':
     special_args = {}
+    special_args['add_hp_channel'] = True
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['min_mapping_quality'] = 1
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads_region_padding'] = 5000
+    special_args['phase_reads'] = True
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
     special_args['vsc_min_fraction_indels'] = 0.12
-    special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['add_hp_channel'] = True
-    special_args['sort_by_haplotypes'] = special_args[
-        'parse_sam_aux_fields'] = bool(FLAGS.use_hp_information)
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
-    conflict_args = ['sort_by_haplotypes', 'parse_sam_aux_fields']
   # Extend the command with all items in kwargs and extra_args.
-  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args),
-                                       conflict_args)
+  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
@@ -368,10 +361,6 @@ def check_flags():
         'model for %s, `call_variants` step will load %s* '
         'instead.', FLAGS.model_type, FLAGS.customized_model)
 
-  if FLAGS.use_hp_information and FLAGS.model_type != 'PACBIO':
-    raise ValueError('--use_hp_information can only be used with '
-                     '--model_type="PACBIO"')
-
 
 def get_model_ckpt(model_type, customized_model):
   """Return the path to the model checkpoint based on the input args."""
@@ -451,6 +440,10 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
 
 
 def main(_):
+  if FLAGS.use_hp_information:
+    raise NotImplementedError('The --use_hp_information flag has been '
+                              'deprecated. DeepVariant now phases internally '
+                              'for PacBio mode.')
   if FLAGS.version:
     print('DeepVariant version {}'.format(DEEP_VARIANT_VERSION))
     return
