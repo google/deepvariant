@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~444m
-call_variants for HG002          | ~332m
-call_variants for HG003          | ~336m
-call_variants for HG004          | ~334m
-postprocess_variants (parallel)  | ~64m
-total                            | ~1510m = ~25.17 hours
+make_examples                    | ~529m
+call_variants for HG002          | ~356m
+call_variants for HG003          | ~357m
+call_variants for HG004          | ~353m
+postprocess_variants (parallel)  | ~65m
+total                            | ~1660m = ~27.67 hours
 
 ### Accuracy
 
@@ -24,22 +24,22 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11205    | 51       | 17       | 0.995469      | 0.998541         | 0.997003        |
-| SNP   | 71065    | 268      | 26       | 0.996243      | 0.999635         | 0.997936        |
+| INDEL | 11204    | 52       | 18       | 0.99538       | 0.998455         | 0.996915        |
+| SNP   | 71074    | 259      | 23       | 0.996369      | 0.999677         | 0.99802         |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10587    | 41       | 23       | 0.996142      | 0.997922         | 0.997031        |
-| SNP   | 69990    | 176      | 66       | 0.997492      | 0.999058         | 0.998274        |
+| INDEL | 10591    | 37       | 15       | 0.996519      | 0.998644         | 0.99758         |
+| SNP   | 69988    | 178      | 66       | 0.997463      | 0.999058         | 0.99826         |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10954    | 46       | 25       | 0.995818      | 0.99782          | 0.996818        |
-| SNP   | 71448    | 211      | 54       | 0.997055      | 0.999245         | 0.998149        |
+| INDEL | 10951    | 49       | 23       | 0.995545      | 0.997993         | 0.996768        |
+| SNP   | 71446    | 213      | 63       | 0.997028      | 0.99912          | 0.998072        |
 
 ## PacBio (HiFi)
 
