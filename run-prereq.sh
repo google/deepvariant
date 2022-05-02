@@ -189,6 +189,8 @@ fi
 # CUDA
 ################################################################################
 
+note_build_stage "Install CUDA"
+
 # See https://www.tensorflow.org/install/source#gpu for versions required.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   if [[ "${DV_INSTALL_GPU_DRIVERS}" = "1" ]]; then
@@ -201,7 +203,8 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       UBUNTU_VERSION="2004"
       curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
       sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
-      sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
+      # From https://forums.developer.nvidia.com/t/notice-cuda-linux-repository-key-rotation/212772
+      sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/3bf863cc.pub"
       sudo add-apt-repository -y "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
       sudo -H apt-get update "${APT_ARGS[@]}"
       # From: https://superuser.com/a/1638789
