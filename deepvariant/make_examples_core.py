@@ -43,6 +43,7 @@ import tensorflow as tf
 
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
+from deepvariant import dv_vcf_constants
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import tf_utils
@@ -1855,7 +1856,12 @@ def make_examples_runner(options):
     logging.info('example_shape = %s', str(example_shape))
     logging.info('example_channels = %s', str(example_channels))
     with tf.io.gfile.GFile(example_info_filename, mode='w') as fout:
-      json.dump({'shape': example_shape, 'channels': example_channels}, fout)
+      json.dump(
+          {
+              'version': dv_vcf_constants.DEEP_VARIANT_VERSION,
+              'shape': example_shape,
+              'channels': example_channels
+          }, fout)
 
   logging_with_options(options, 'Found %s candidate variants' % n_candidates)
   logging_with_options(options, 'Created %s examples' % n_examples)
