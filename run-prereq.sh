@@ -52,6 +52,10 @@ APT_ARGS=(
 )
 
 if [[ "$EUID" = "0" ]]; then
+  # Just in case:
+  # https://github.com/NVIDIA/nvidia-docker/issues/1632#issuecomment-1112667716
+  rm -f /etc/apt/sources.list.d/cuda.list
+  rm -f /etc/apt/sources.list.d/nvidia-ml.list
   # Ensure sudo exists, even if we don't need it.
   apt-get update "${APT_ARGS[@]}" > /dev/null
   apt-get install "${APT_ARGS[@]}" sudo > /dev/null

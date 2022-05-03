@@ -26,7 +26,8 @@ if ! dpkg-query -W cuda-11-3; then
   UBUNTU_VERSION="2004"
   curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
   sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
-  sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
+  # From https://forums.developer.nvidia.com/t/notice-cuda-linux-repository-key-rotation/212772
+  sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/3bf863cc.pub"
   sudo add-apt-repository -y "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
   sudo -H apt-get update "${APT_ARGS[@]}" > /dev/null
   sudo -H apt-get full-upgrade "${APT_ARGS[@]}" > /dev/null
