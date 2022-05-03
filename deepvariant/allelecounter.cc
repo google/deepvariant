@@ -755,7 +755,7 @@ void AlleleCounter::NormalizeAndAdd(
 }
 
 void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
-                        const string& sample,
+                        absl::string_view sample,
                         const std::vector<CigarUnit>* cigar_to_use,
                         int read_shift) {
   // Make sure our incoming read has a mapping quality above our min. threshold.

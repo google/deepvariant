@@ -259,7 +259,7 @@ class AlleleCounter {
   // by NormalizeAndAdd. In that case allele counts are created using a
   // normalized cigar and update read alignment position passed as an optional
   // parameter.
-  void Add(const nucleus::genomics::v1::Read& read, const string& sample,
+  void Add(const nucleus::genomics::v1::Read& read, absl::string_view sample,
            const std::vector<nucleus::genomics::v1::CigarUnit>* cigar_to_use =
                nullptr,
            int read_shift = 0);

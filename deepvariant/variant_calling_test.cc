@@ -201,7 +201,7 @@ class VariantCallingTest : public ::testing::Test {
   // proposed variant is the same as the expected variant should also be
   // re-examined.
   optional<DeepVariantCall> CheckCallFromComputeVariantWithSameProposedVariant(
-      const string& ref, const VariantCaller& caller,
+      absl::string_view ref, const VariantCaller& caller,
       const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& expected_variant) {
     AlleleCount allele_count = ConstructAlleleCount(std::string(ref), alleles);
