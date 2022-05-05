@@ -307,12 +307,10 @@ class InMemorySamReader(object):
   Attributes:
     reads: list[nucleus.genomics.v1.Read]. The list of in-memory reads.
     is_sorted: bool, True if reads are sorted.
-    use_cached_read_end: bool. If True, will try to use read.cached_end.
   """
 
-  def __init__(self, reads, is_sorted=False, use_cached_read_end=False):
+  def __init__(self, reads, is_sorted=False):
     self.replace_reads(reads, is_sorted=is_sorted)
-    self.use_cached_read_end = use_cached_read_end
 
   def replace_reads(self, reads, is_sorted=False):
     """Replace the reads stored by this reader."""
@@ -327,9 +325,6 @@ class InMemorySamReader(object):
     """
     return self.reads
 
-  def set_use_cached_read_end(self, use_cached_read_end):
-    self.use_cached_read_end = use_cached_read_end
-
   def query(self, region):
     """Returns an iterator for going through the reads in the region.
 
@@ -339,6 +334,6 @@ class InMemorySamReader(object):
     Returns:
       An iterator over nucleus.genomics.v1.Read protos.
     """
+    # TODO: Add a faster query version for sorted reads.
     return (
-        read for read in self.reads if utils.read_overlaps_region(
-            read, region, self.use_cached_read_end))
+        read for read in self.reads if utils.read_overlaps_region(read, region))

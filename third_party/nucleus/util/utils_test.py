@@ -51,8 +51,7 @@ from third_party.nucleus.util import utils
 
 class UtilsTest(parameterized.TestCase):
 
-  @parameterized.parameters(False, True)
-  def test_read_range(self, update_cached_read_end_first):
+  def test_read_range(self):
     """Tests reads have their ranges calculated correctly."""
     start = 10000001
     read = test_utils.make_read(
@@ -62,9 +61,6 @@ class UtilsTest(parameterized.TestCase):
         cigar='2M1I3M',
         quals=range(10, 16),
         name='read1')
-    if update_cached_read_end_first:
-      # Explicitly update cached_end.
-      read.cached_end = utils.read_end(read, use_cached_read_end=False)
     self.assertEqual(
         ranges.make_range('chrX', start, start + 5), utils.read_range(read))
     read = test_utils.make_read(
@@ -74,15 +70,11 @@ class UtilsTest(parameterized.TestCase):
         cigar='2M16D3M',
         quals=range(10, 16),
         name='read1')
-    if update_cached_read_end_first:
-      # Explicitly update cached_end.
-      read.cached_end = utils.read_end(read, use_cached_read_end=False)
     self.assertEqual(
         ranges.make_range('chrX', start, start + 5 + 16),
         utils.read_range(read))
 
-  @parameterized.parameters(False, True)
-  def test_read_end(self, update_cached_read_end_first):
+  def test_read_end(self):
     """Tests reads have their ends calculated correctly."""
     start = 10000001
     read = test_utils.make_read(
@@ -92,11 +84,6 @@ class UtilsTest(parameterized.TestCase):
         cigar='2M1I3M',
         quals=range(10, 16),
         name='read1')
-    if update_cached_read_end_first:
-      # Explicitly update cached_end.
-      read.cached_end = utils.read_end(read, use_cached_read_end=False)
-      self.assertEqual(
-          start + 5, read.cached_end)
     self.assertEqual(
         start + 5, utils.read_end(read))
     read = test_utils.make_read(
@@ -106,11 +93,6 @@ class UtilsTest(parameterized.TestCase):
         cigar='2M16D3M',
         quals=range(10, 16),
         name='read1')
-    if update_cached_read_end_first:
-      # Explicitly update cached_end.
-      read.cached_end = utils.read_end(read, use_cached_read_end=False)
-      self.assertEqual(
-          start + 5 + 16, read.cached_end)
     self.assertEqual(
         start + 5 + 16,
         utils.read_end(read))
