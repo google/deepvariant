@@ -54,10 +54,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~175m
+make_examples                    | ~173m
 call_variants                    | ~184m
 postprocess_variants (with gVCF) | ~62m
-total                            | ~421m = ~7.02 hours
+total                            | ~419m = ~6.98 hours
 
 ### Accuracy
 
@@ -69,8 +69,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501573   | 2928     | 2833     | 0.994196      | 0.994606         | 0.994401        |
-| SNP   | 3324482  | 3013     | 1929     | 0.999095      | 0.999421         | 0.999258        |
+| INDEL | 501573   | 2928     | 2910     | 0.994196      | 0.994461         | 0.994328        |
+| SNP   | 3324470  | 3025     | 1905     | 0.999091      | 0.999428         | 0.999259        |
 
 ## Hybrid (Illumina + PacBio HiFi)
 
@@ -80,10 +80,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~156m
-call_variants                    | ~167m
-postprocess_variants (with gVCF) | ~41m
-total                            | ~364m = ~6.07 hours
+make_examples                    | ~162m
+call_variants                    | ~172m
+postprocess_variants (with gVCF) | ~46m
+total                            | ~380m = ~6.33 hours
 
 ### Accuracy
 
@@ -92,8 +92,8 @@ out while training the hybrid model.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 503240   | 1261     | 1984     | 0.997501      | 0.996261         | 0.99688         |
-| SNP   | 3323691  | 3804     | 1709     | 0.998857      | 0.999486         | 0.999171        |
+| INDEL | 503355   | 1146     | 1939     | 0.997728      | 0.996346         | 0.997037        |
+| SNP   | 3323945  | 3551     | 1581     | 0.998933      | 0.999525         | 0.999229        |
 
 ## How to reproduce the metrics on this page
 
