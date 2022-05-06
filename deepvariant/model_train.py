@@ -154,12 +154,12 @@ def copy_over_example_info_json(dataset_config_pbtxt):
   json_file = os.path.join(
       os.path.dirname(dataset_config.tfrecord_path), 'example_info.json')
   target_file = os.path.join(FLAGS.train_dir, 'model.ckpt.example_info.json')
-  if tf.io.gfile.exists(json_file):
+  if tf.io.gfile.exists(json_file) and not tf.io.gfile.exists(target_file):
+    tf.io.gfile.makedirs(FLAGS.train_dir)  # Create the directory.
     logging.info('Copy %s to %s.', json_file, target_file)
     tf.io.gfile.copy(json_file, target_file)
   else:
-    logging.info('%s does not exist. '
-                 'Skip copying to model.ckpt.example_info.json.')
+    logging.info('Skip copying to model.ckpt.example_info.json.')
 
 
 def run(target, unused_is_chief, device_fn, use_tpu):
