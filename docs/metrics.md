@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~109m
-call_variants                    | ~170m
-postprocess_variants (with gVCF) | ~49m
-total                            | ~328m = ~5.47 hours
+make_examples                    | ~108m
+call_variants                    | ~167m
+postprocess_variants (with gVCF) | ~52m
+total                            | ~327m = ~5.45 hours
 
 ### Accuracy
 
@@ -32,9 +32,9 @@ Runtime is on HG003 (all chromosomes).
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
 make_examples                    | ~7m
-call_variants                    | ~2m
+call_variants                    | ~1m
 postprocess_variants (with gVCF) | ~1m
-total                            | ~10m
+total                            | ~9m
 
 ### Accuracy
 
@@ -55,17 +55,17 @@ Runtime is on HG003 (all chromosomes).
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
 make_examples                    | ~173m
-call_variants                    | ~184m
-postprocess_variants (with gVCF) | ~62m
-total                            | ~419m = ~6.98 hours
+call_variants                    | ~183m
+postprocess_variants (with gVCF) | ~65m
+total                            | ~420m = ~7 hours
 
 ### Accuracy
 
 hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
 held out while training.
 
-(The input BAM is phased already and DeepVariant was run with
-`--use_hp_information=true`.)
+Starting from v1.4.0, users don't need to phase the BAMs first, and only need
+to run DeepVariant once.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
@@ -80,10 +80,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~162m
-call_variants                    | ~172m
-postprocess_variants (with gVCF) | ~46m
-total                            | ~380m = ~6.33 hours
+make_examples                    | ~160m
+call_variants                    | ~166m
+postprocess_variants (with gVCF) | ~42m
+total                            | ~368m = ~6.13 hours
 
 ### Accuracy
 
@@ -107,7 +107,7 @@ Download and run any of the following case study scripts:
 
 ```
 # Get the script.
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.3/scripts/inference_deepvariant.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.4/scripts/inference_deepvariant.sh
 
 # WGS
 bash inference_deepvariant.sh --model_preset WGS
