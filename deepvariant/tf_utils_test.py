@@ -57,7 +57,6 @@ class TFUtilsTest(parameterized.TestCase):
         alternate_bases=self.alts)
     self.encoded_image = six.b('encoded_image_data')
     self.default_shape = [5, 5, 7]
-    self.default_format = 'raw'
 
   def testModelShapes(self):
     # Builds a graph.
@@ -116,13 +115,10 @@ class TFUtilsTest(parameterized.TestCase):
 
   def testMakeExample(self):
     example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
-                                    self.default_shape, self.default_format)
+                                    self.default_shape)
 
     self.assertEqual(self.encoded_image,
                      tf_utils.example_encoded_image(example))
-    self.assertEqual(
-        six.b('raw'),
-        example.features.feature['image/format'].bytes_list.value[0])
     self.assertEqual(self.variant, tf_utils.example_variant(example))
     self.assertEqual(six.b('1:11-11'), tf_utils.example_locus(example))
     self.assertEqual([0], tf_utils.example_alt_alleles_indices(example))
@@ -136,7 +132,7 @@ class TFUtilsTest(parameterized.TestCase):
     self.variant.alternate_bases[:] = alts
     # Providing GG, AA checks that we're sorting the indices.
     example = tf_utils.make_example(self.variant, ['GG', 'AA'], six.b('foo'),
-                                    self.default_shape, self.default_format)
+                                    self.default_shape)
     self.assertEqual([0, 2], tf_utils.example_alt_alleles_indices(example))
     self.assertEqual(['AA', 'GG'], tf_utils.example_alt_alleles(example))
     self.assertEqual('1:11:C->AA/GG', tf_utils.example_key(example))
@@ -146,7 +142,7 @@ class TFUtilsTest(parameterized.TestCase):
   def testAltAllelesWithVariant(self):
     alts = list(self.variant.alternate_bases)
     example = tf_utils.make_example(self.variant, alts, six.b('foo'),
-                                    self.default_shape, self.default_format)
+                                    self.default_shape)
     self.assertEqual([0], tf_utils.example_alt_alleles_indices(example))
     with mock.patch(
         'deepvariant.tf_utils.example_variant'
@@ -166,7 +162,7 @@ class TFUtilsTest(parameterized.TestCase):
 
   def testExampleSetLabel(self):
     example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
-                                    self.default_shape, self.default_format)
+                                    self.default_shape)
 
     self.assertIsNotAFeature('label', example)
     for label in [0, 1, 2]:
@@ -175,7 +171,7 @@ class TFUtilsTest(parameterized.TestCase):
 
   def testExampleImageShape(self):
     example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
-                                    self.default_shape, self.default_format)
+                                    self.default_shape)
     self.assertEqual(self.default_shape, tf_utils.example_image_shape(example))
 
   def testFailedExampleImageShape(self):

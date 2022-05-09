@@ -133,11 +133,6 @@ def example_label(example):
   return int(example.features.feature['label'].int64_list.value[0])
 
 
-def example_image_format(example):
-  """Gets the image format field from example as a string."""
-  return example.features.feature['image/format'].bytes_list.value[0]
-
-
 def example_image_shape(example):
   """Gets the image shape field from example as a list of int64."""
   if len(example.features.feature['image/shape'].int64_list.value) != 3:
@@ -217,14 +212,6 @@ def get_shape_from_examples_path(source):
   return None
 
 
-def get_format_from_examples_path(source):
-  """Reads one record from source to determine the format for all."""
-  one_example = get_one_example_from_examples_path(source)
-  if one_example:
-    return example_image_format(one_example)
-  return None
-
-
 def _simplify_variant(variant):
   """Returns a new Variant with only the basic fields of variant."""
 
@@ -250,7 +237,6 @@ def make_example(variant,
                  alt_alleles,
                  encoded_image,
                  shape,
-                 image_format,
                  second_image=None,
                  sequencing_type=0):
   """Creates a new tf.Example suitable for use with DeepVariant.
@@ -264,7 +250,6 @@ def make_example(variant,
       the reference and read data supporting variant. The encoding should be
       consistent with the image_format argument.
     shape: a list of (width, height, channel).
-    image_format: string. The scheme used to encode our image.
     second_image: a Tensor of type tf.string or None. Contains second image that
       encodes read data from another DNA sample. Must satisfy the same
       requirements as encoded_image.
@@ -290,13 +275,10 @@ def make_example(variant,
           indices=alt_indices).SerializeToString())
 
   features.feature['image/encoded'].bytes_list.value.append(encoded_image)
-  features.feature['image/format'].bytes_list.value.append(six.b(image_format))
   features.feature['image/shape'].int64_list.value.extend(shape)
   if second_image is not None:
     features.feature['second_image/encoded'].bytes_list.value.append(
         six.b(second_image))
-    features.feature['second_image/format'].bytes_list.value.append(
-        six.b(image_format))
     features.feature['second_image/shape'].int64_list.value.extend(shape)
   features.feature['sequencing_type'].int64_list.value.append(sequencing_type)
   return example

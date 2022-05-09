@@ -72,7 +72,6 @@ _EXAMPLE_DECODERS = {
     'variant/encoded': tf_utils.example_variant,
     'variant_type': tf_utils.example_variant_type,
     'label': tf_utils.example_label,
-    'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
     'sequencing_type': tf_utils.example_sequencing_type,
 }
@@ -790,7 +789,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   def verify_examples(self, examples_filename, region, options, verify_labels):
     # Do some simple structural checks on the tf.Examples in the file.
     expected_features = [
-        'variant/encoded', 'locus', 'image/format', 'image/encoded',
+        'variant/encoded', 'locus', 'image/encoded',
         'alt_allele_indices/encoded'
     ]
     if verify_labels:

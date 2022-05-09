@@ -584,7 +584,6 @@ class RegionProcessorTest(parameterized.TestCase):
     for sample in self.processor.samples:
       sample.in_memory_sam_reader = mock.Mock()
     self.default_shape = [5, 5, 7]
-    self.default_format = 'raw'
 
   def tearDown(self):
     super(RegionProcessorTest, self).tearDown()
@@ -884,10 +883,8 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic.get_channels.return_value = None
     self.add_mock(
         '_encode_tensor',
-        side_effect=[
-            (six.b('tensor1'), self.default_shape, self.default_format),
-            (six.b('tensor2'), self.default_shape, self.default_format)
-        ])
+        side_effect=[(six.b('tensor1'), self.default_shape),
+                     (six.b('tensor2'), self.default_shape)])
     dv_call = mock.Mock()
     dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
     ex = mock.Mock()
@@ -912,8 +909,6 @@ class RegionProcessorTest(parameterized.TestCase):
       self.assertEqual(tf_utils.example_variant(ex), dv_call.variant)
       self.assertEqual(tf_utils.example_encoded_image(ex), img)
       self.assertEqual(tf_utils.example_image_shape(ex), self.default_shape)
-      self.assertEqual(
-          tf_utils.example_image_format(ex), six.b(self.default_format))
 
   @parameterized.parameters(
       # Test that a het variant gets a label value of 1 assigned to the example.
@@ -972,8 +967,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
   def _example_for_variant(self, variant):
     return tf_utils.make_example(variant, list(variant.alternate_bases),
-                                 six.b('foo'), self.default_shape,
-                                 self.default_format)
+                                 six.b('foo'), self.default_shape)
 
   @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')
   def test_flags_strictly_needs_sam_aux_fields(

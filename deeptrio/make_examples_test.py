@@ -71,7 +71,6 @@ _EXAMPLE_DECODERS = {
     'variant/encoded': tf_utils.example_variant,
     'variant_type': tf_utils.example_variant_type,
     'label': tf_utils.example_label,
-    'image/format': tf_utils.example_image_format,
     'image/shape': tf_utils.example_image_shape,
     'sequencing_type': tf_utils.example_sequencing_type,
 }
@@ -647,7 +646,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                       examples_filename=None):
     # Do some simple structural checks on the tf.Examples in the file.
     expected_features = [
-        'variant/encoded', 'locus', 'image/format', 'image/encoded',
+        'variant/encoded', 'locus', 'image/encoded',
         'alt_allele_indices/encoded'
     ]
     if verify_labels:
@@ -1015,7 +1014,6 @@ class RegionProcessorTest(parameterized.TestCase):
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
     self.default_shape = [5, 5, 7]
-    self.default_format = 'raw'
     self.processor = make_examples_core.RegionProcessor(self.options)
     self.mock_init = self.add_mock('_initialize')
     for sample in self.processor.samples:
@@ -1090,10 +1088,8 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic.get_channels.return_value = None
     self.add_mock(
         '_encode_tensor',
-        side_effect=[
-            (six.b('tensor1'), self.default_shape, self.default_format),
-            (six.b('tensor2'), self.default_shape, self.default_format)
-        ])
+        side_effect=[(six.b('tensor1'), self.default_shape),
+                     (six.b('tensor2'), self.default_shape)])
     dv_call = mock.Mock()
     dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
     ex = mock.Mock()
@@ -1113,8 +1109,6 @@ class RegionProcessorTest(parameterized.TestCase):
       self.assertEqual(tf_utils.example_variant(ex), dv_call.variant)
       self.assertEqual(tf_utils.example_encoded_image(ex), img)
       self.assertEqual(tf_utils.example_image_shape(ex), self.default_shape)
-      self.assertEqual(
-          tf_utils.example_image_format(ex), six.b(self.default_format))
 
   @parameterized.parameters(
       # Test that a het variant gets a label value of 1 assigned to the example.
@@ -1173,8 +1167,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
   def _example_for_variant(self, variant):
     return tf_utils.make_example(variant, list(variant.alternate_bases),
-                                 six.b('foo'), self.default_shape,
-                                 self.default_format)
+                                 six.b('foo'), self.default_shape)
 
   def test_use_original_quality_scores_without_parse_sam_aux_fields(self):
     FLAGS.mode = 'calling'

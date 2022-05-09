@@ -36,7 +36,6 @@ import time
 from absl import flags
 from absl import logging
 import numpy as np
-import six
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
@@ -327,13 +326,7 @@ def call_variants(examples_filename,
     tfrecord.write_tfrecords([], output_file)
     return
 
-  example_format = tf_utils.example_image_format(first_example)
   example_shape = tf_utils.example_image_shape(first_example)
-  if example_format != six.b('raw'):
-    raise ValueError('The TF examples in {} has image/format \'{}\' '
-                     '(expected \'raw\') which means you might need to rerun '
-                     'make_examples to generate the examples again.'.format(
-                         examples_filename, example_format))
   logging.info('Shape of input examples: %s', str(example_shape))
 
   if checkpoint_path is not None:

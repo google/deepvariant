@@ -790,7 +790,7 @@ class RegionProcessor(object):
         self.options.allele_counter_options)
 
   def _encode_tensor(self, image_tensor):
-    return image_tensor.tostring(), image_tensor.shape, 'raw'
+    return image_tensor.tostring(), image_tensor.shape
 
   def _make_sam_readers(
       self, reads_filenames: Sequence[str],
@@ -1425,14 +1425,13 @@ class RegionProcessor(object):
 
     examples = []
     for alt_alleles, image_tensor in pileup_images:
-      encoded_tensor, shape, tensor_format = self._encode_tensor(image_tensor)
+      encoded_tensor, shape = self._encode_tensor(image_tensor)
       examples.append(
           tf_utils.make_example(
               dv_call.variant,
               alt_alleles,
               encoded_tensor,
               shape=shape,
-              image_format=tensor_format,
               sequencing_type=self.options.pic_options.sequencing_type))
     return examples
 
