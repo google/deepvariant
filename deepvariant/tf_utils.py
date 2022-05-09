@@ -26,10 +26,10 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Utility functions for working with TensorFlow in DeepVariant.
+"""Utility functions for DeepVariant.
 
-A collection of utilities for working with the TF models and evaluations we use
-in DeepVariant.
+Started with a collection of utilities for working with the TF models. Now this
+file includes broader utilities we use in DeepVariant.
 """
 
 
@@ -45,6 +45,7 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from tensorflow.core.example import example_pb2
+from typing import Optional
 
 # Convert strings up to this length, then clip.  We picked a number that
 # was less than 1K, with a bit of extra space for the length element,
@@ -370,3 +371,19 @@ def resolve_master(master, tpu_name, tpu_zone, gcp_project):
     # For k8s TPU we do not have/need tpu_name. See
     # https://cloud.google.com/tpu/docs/kubernetes-engine-setup#tensorflow-code
     return tf.distribute.cluster_resolver.TPUClusterResolver().get_master()
+
+
+def get_example_info_json_filename(examples_filename: str,
+                                   task_id: Optional[int]) -> str:
+  """Returns corresponding example_info.json filename for examples_filename."""
+  if sharded_file_utils.is_sharded_file_spec(examples_filename):
+    assert task_id is not None
+    # If examples_filename has the @shards representation, resolve it into
+    # the first shard. We only write .example_info.json to the first shard.
+    example_info_prefix = sharded_file_utils.sharded_filename(
+        examples_filename, task_id)
+  else:
+    # In all other cases, including non-sharded files,
+    # or sharded filenames with -ddddd-of-ddddd, just append.
+    example_info_prefix = examples_filename
+  return example_info_prefix + '.example_info.json'

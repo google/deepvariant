@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Code for calling variants with a trained DeepVariant model."""
 
+import json
 import os
 import time
 
@@ -302,6 +303,25 @@ def _create_cvo_proto(encoded_variant,
   return call_variants_output
 
 
+def get_shape_and_channels_from_json(example_info_json):
+  """Returns the shape and channels list from the input json."""
+  if not tf.io.gfile.exists(example_info_json):
+    logging.warning(
+        'Starting from v1.4.0, we expect %s to '
+        'include information for shape and channels.', example_info_json)
+    return None, None
+  with tf.io.gfile.GFile(example_info_json) as f:
+    example_info = json.load(f)
+  example_shape = example_info['shape']
+  example_channels_enum = example_info['channels']
+  logging.info(
+      'From %s: '
+      'Shape of input examples: %s, '
+      'Channels of input examples: %s.', example_info_json, str(example_shape),
+      str(example_channels_enum))
+  return example_shape, example_channels_enum
+
+
 def call_variants(examples_filename,
                   checkpoint_path,
                   model,
@@ -326,10 +346,13 @@ def call_variants(examples_filename,
     tfrecord.write_tfrecords([], output_file)
     return
 
-  example_shape = tf_utils.example_image_shape(first_example)
-  logging.info('Shape of input examples: %s', str(example_shape))
+  example_info_json = tf_utils.get_example_info_json_filename(
+      examples_filename, 0)
+  example_shape, example_channels_enum = get_shape_and_channels_from_json(
+      example_info_json)
 
-  if checkpoint_path is not None:
+  # Check if the checkpoint_path has the same shape.
+  if checkpoint_path is not None and example_shape is not None:
     reader = tf.compat.v1.train.NewCheckpointReader(checkpoint_path)
     shape_map_for_layers = reader.get_variable_to_shape_map()
     first_layer = 'InceptionV3/Conv2d_1a_3x3/weights'
@@ -341,19 +364,22 @@ def call_variants(examples_filename,
                        'should match, but the checkpoint has {} channels while '
                        'the examples have {}.'.format(
                            num_channels_in_checkpoint_model, example_shape[2]))
-    input_shape_file = checkpoint_path + '.input_shape'
-    if tf.io.gfile.exists(input_shape_file):
-      with tf.io.gfile.GFile(input_shape_file) as f:
-        model_input_shape = list(map(int, f.read().split()))
-        if len(model_input_shape) != 3:
-          raise ValueError(
-              f'The file {input_shape_file} should contain 3 integers')
-        if model_input_shape != example_shape:
-          raise ValueError('The shape of examples is not the same as the model '
-                           '*.input_shape file: '
-                           f'{example_shape} != {model_input_shape}')
-      logging.info('%s has the correct shape: %s.', input_shape_file,
-                   model_input_shape)
+    input_info_file = os.path.join(
+        os.path.dirname(checkpoint_path), 'model.ckpt.example_info.json')
+    ckpt_shape, ckpt_channels_enum = get_shape_and_channels_from_json(
+        input_info_file)
+
+    if ckpt_shape is not None and ckpt_channels_enum is not None:
+      if example_shape != ckpt_shape:
+        raise ValueError(f'Shape mismatch in {example_info_json} and '
+                         f'{input_info_file}.')
+      if example_channels_enum != ckpt_channels_enum:
+        raise ValueError(f'Channels mismatch in {example_info_json} and '
+                         f'{input_info_file}.')
+    else:
+      # We can consider more strictly enforcing this.
+      logging.warning('Starting from v1.4.0, we recommend having a '
+                      'model.ckpt.example_info.json file with your model.')
 
   # Check accelerator status.
   if execution_hardware not in _ALLOW_EXECUTION_HARDWARE:

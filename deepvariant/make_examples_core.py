@@ -61,7 +61,6 @@ from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
-from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import range_pb2
@@ -1694,22 +1693,6 @@ def get_example_counts(examples, num_classes):
   return labels, types
 
 
-def get_example_info_json_filename(examples_filename: str,
-                                   task_id: Optional[int]) -> str:
-  """Returns corresponding example_info.json filename for examples_filename."""
-  if sharded_file_utils.is_sharded_file_spec(examples_filename):
-    assert task_id is not None
-    # If examples_filename has the @shards representation, resolve it into
-    # the first shard. We only writes .example_info.json to the first shard.
-    example_info_prefix = sharded_file_utils.sharded_filename(
-        examples_filename, task_id)
-  else:
-    # In all other cases, including non-sharded files,
-    # or sharded filenames with -ddddd-of-ddddd, just append.
-    example_info_prefix = examples_filename
-  return example_info_prefix + '.example_info.json'
-
-
 def make_examples_runner(options):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
@@ -1845,7 +1828,7 @@ def make_examples_runner(options):
   # Currently, even in multi-sample scenario, the suffix is not used here
   # because currently all the multiple-sample output will have the same shape
   # and list of channels.
-  example_info_filename = get_example_info_json_filename(
+  example_info_filename = tf_utils.get_example_info_json_filename(
       options.examples_filename, options.task_id)
   if example_info_filename is not None:
     logging_with_options(options,

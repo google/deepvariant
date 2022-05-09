@@ -629,7 +629,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   def sanity_check_example_info_json(self, example, examples_filename, task_id):
     """Checks `example_info.json` w/ examples_filename has the right info."""
-    example_info_json = make_examples_core.get_example_info_json_filename(
+    example_info_json = tf_utils.get_example_info_json_filename(
         examples_filename, task_id)
     example_info = json.load(gfile.GFile(example_info_json, 'r'))
     self.assertIn('shape', example_info)
