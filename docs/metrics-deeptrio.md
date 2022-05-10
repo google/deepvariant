@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~529m
-call_variants for HG002          | ~356m
-call_variants for HG003          | ~357m
-call_variants for HG004          | ~353m
-postprocess_variants (parallel)  | ~65m
-total                            | ~1660m = ~27.67 hours
+make_examples                    | ~501m
+call_variants for HG002          | ~348m
+call_variants for HG003          | ~344m
+call_variants for HG004          | ~344m
+postprocess_variants (parallel)  | ~67m
+total                            | ~1604m = ~26.73 hours
 
 ### Accuracy
 
@@ -24,22 +24,22 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11204    | 52       | 18       | 0.99538       | 0.998455         | 0.996915        |
-| SNP   | 71074    | 259      | 23       | 0.996369      | 0.999677         | 0.99802         |
+| INDEL | 11205    | 51       | 14       | 0.995469      | 0.998798         | 0.997131        |
+| SNP   | 71076    | 257      | 26       | 0.996397      | 0.999635         | 0.998013        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10591    | 37       | 15       | 0.996519      | 0.998644         | 0.99758         |
-| SNP   | 69988    | 178      | 66       | 0.997463      | 0.999058         | 0.99826         |
+| INDEL | 10589    | 39       | 20       | 0.99633       | 0.998193         | 0.997261        |
+| SNP   | 69985    | 181      | 69       | 0.99742       | 0.999016         | 0.998217        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10951    | 49       | 23       | 0.995545      | 0.997993         | 0.996768        |
-| SNP   | 71446    | 213      | 63       | 0.997028      | 0.99912          | 0.998072        |
+| INDEL | 10954    | 46       | 22       | 0.995818      | 0.998081         | 0.996948        |
+| SNP   | 71456    | 203      | 62       | 0.997167      | 0.999134         | 0.998149        |
 
 ## PacBio (HiFi)
 
@@ -90,12 +90,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
-make_examples                    | ~15m
+make_examples                    | ~17m
 call_variants for HG002          | ~5m
 call_variants for HG003          | ~5m
 call_variants for HG004          | ~5m
 postprocess_variants (parallel)  | ~1m
-total                            | ~31m
+total                            | ~33m
 
 ### Accuracy
 

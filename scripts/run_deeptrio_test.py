@@ -194,7 +194,8 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
        '--pileup_image_height_child "60" ' +
        '--pileup_image_height_parent "40" '),
-      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+      ('WES', '--channels "insert_size" ' +
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
        '--pileup_image_height_child "100" ' +
        '--pileup_image_height_parent "100" '),
       ('PACBIO', '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
@@ -244,7 +245,8 @@ class RunDeeptrioTest(parameterized.TestCase):
        '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
        '--pileup_image_height_child "60" ' +
        '--pileup_image_height_parent "40" '),
-      ('WES', '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
+      ('WES', '--channels "insert_size" ' +
+       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
        '--pileup_image_height_child "100" ' +
        '--pileup_image_height_parent "100" '),
       ('PACBIO', '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +

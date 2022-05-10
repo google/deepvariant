@@ -351,7 +351,7 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
         'pileup_image_height_child'] = DEEP_TRIO_WES_PILEUP_HEIGHT_CHILD
     special_args[
         'pileup_image_height_parent'] = DEEP_TRIO_WES_PILEUP_HEIGHT_PARENT
-    # special_args['channels'] = 'insert_size'
+    special_args['channels'] = 'insert_size'
 
   if FLAGS.model_type == 'WGS':
     special_args['channels'] = 'insert_size'
