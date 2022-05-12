@@ -19,8 +19,9 @@ the greatest achievable accuracy for BGISEQ-500 data.
 We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
 accuracy comparing to the WGS model as a baseline:
-Indel F1 94.4848% --> 98.0316%;
-SNP F1: 99.8831% --> 99.8981%.
+
+* Indel F1 :93.4908% --> 98.0862%;
+*   SNP F1: 99.8838% --> 99.8943%.
 
 Training for 50,000 steps took about 1.5 hours on 1 GPU. Currently we cannot
 train on multiple GPUs.
@@ -142,14 +143,26 @@ sudo docker pull google/deepvariant:"${BIN_VERSION}-gpu"
       --confident_regions "${TRUTH_BED}" \
       --task {} \
       --regions "'chr1'" \
+      --channels "insert_size" \
 ) 2>&1 | tee "${LOG_DIR}/training_set.with_label.make_examples.log"
 ```
 
-This took about 20min. We will want to shuffle this on Dataflow later, so we
-copy the data to GCS bucket first:
+This took about 22min.
+
+Starting in v1.4.0, we added an extra channel in our WGS setting using the
+`--channels "insert_size"` flag. And, the make_examples step creates
+`*.example_info.json` files. For example, you can see it here:
 
 ```
-gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz \
+$ cat "${OUTPUT_DIR}/training_set.with_label.tfrecord-00000-of-00016.gz.example_info.json"
+{"version": "1.3.0", "shape": [100, 221, 7], "channels": [1, 2, 3, 4, 5, 6, 19]}
+````
+
+We will want to shuffle this on Dataflow later, so we copy the data to GCS
+bucket first:
+
+```
+gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -160,7 +173,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz \
   parallel --halt 2 --line-buffer \
     sudo docker run \
       -v /home/${USER}:/home/${USER} \
-      google/deepvariant:"${BIN_VERSION}-gpu" \
+      google/deepvariant:"${BIN_VERSION}" \
       /opt/deepvariant/bin/make_examples \
       --mode training \
       --ref "${REF}" \
@@ -170,6 +183,7 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz \
       --confident_regions "${TRUTH_BED}" \
       --task {} \
       --regions "'chr21'" \
+      --channels "insert_size" \
 ) 2>&1 | tee "${LOG_DIR}/validation_set.with_label.make_examples.log"
 ```
 
@@ -178,7 +192,7 @@ This took: ~5min.
 Copy to GCS bucket:
 
 ```
-gsutil -m cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-00016.gz \
+gsutil -m cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-00016.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -196,6 +210,7 @@ gsutil -m rm -f "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-????
 gsutil rm -f "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
 gsutil -m rm -f "${OUTPUT_BUCKET}/validation_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
 gsutil rm -f "${OUTPUT_BUCKET}/validation_set.dataset_config.pbtxt"
+gsutil rm -f "${OUTPUT_BUCKET}/example_info.json"
 ```
 
 Here we provide examples for running on [Cloud Dataflow
@@ -406,10 +421,10 @@ gsutil cat "${TRAINING_DIR}"/best_checkpoint.txt
 ```
 
 In my run, this showed that the model checkpoint that performs the best on the
-validation set was `${TRAINING_DIR}/model.ckpt-35666`.
+validation set was `${TRAINING_DIR}/model.ckpt-50000`.
 
-
-Let's use this model to do the final evaluation on the test set and see how we
+It's possible that training more steps can result in better accuracy. For now
+let's use this model to do the final evaluation on the test set and see how we
 do. We can use the one-step command to call:
 
 ```
@@ -418,13 +433,17 @@ sudo docker run --gpus 1 \
   google/deepvariant:"${BIN_VERSION}-gpu" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
-  --customized_model "${TRAINING_DIR}/model.ckpt-35666" \
+  --customized_model "${TRAINING_DIR}/model.ckpt-50000" \
   --ref "${REF}" \
   --reads "${BAM_CHR20}" \
   --regions "chr20" \
   --output_vcf "${OUTPUT_DIR}/test_set.vcf.gz" \
   --num_shards=${N_SHARDS}
 ```
+
+Note that in v1.4.0, by using `--model_type WGS`, it will automatically add
+`insert_size` as an extra channel. So we don't need to add it in
+`--make_examples_extra_args`.
 
 Once this is done, we have the final callset in VCF
 format here: `${OUTPUT_DIR}/test_set.vcf.gz`. Next step is to run `hap.py` to
@@ -452,22 +471,24 @@ The output of `hap.py` is here:
 ```
 [I] Total VCF records:         3775119
 [I] Non-reference VCF records: 3775119
+[W] overlapping records at chr20:11311221 for sample 0
+[W] Variants that overlap on the reference allele: 1
 [I] Total VCF records:         132914
-[I] Non-reference VCF records: 96179
+[I] Non-reference VCF records: 96625
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10023      9795       228        19205       172       8844    120     33       0.977252          0.983399        0.460505         0.980316                     NaN                     NaN                   1.547658                   2.053440
-INDEL   PASS        10023      9795       228        19205       172       8844    120     33       0.977252          0.983399        0.460505         0.980316                     NaN                     NaN                   1.547658                   2.053440
-  SNP    ALL        66237     66166        71        77973        64      11706     16      5       0.998928          0.999034        0.150129         0.998981                2.284397                2.203023                   1.700387                   1.790222
-  SNP   PASS        66237     66166        71        77973        64      11706     16      5       0.998928          0.999034        0.150129         0.998981                2.284397                2.203023                   1.700387                   1.790222
+INDEL    ALL        10023      9801       222        19307       167       8940    109     34       0.977851          0.983891        0.463044         0.980862                     NaN                     NaN                   1.547658                   2.058546
+INDEL   PASS        10023      9801       222        19307       167       8940    109     34       0.977851          0.983891        0.463044         0.980862                     NaN                     NaN                   1.547658                   2.058546
+  SNP    ALL        66237     66156        81        78318        59      12065     16      2       0.998777          0.999109        0.154051         0.998943                2.284397                2.199583                   1.700387                   1.797428
+  SNP   PASS        66237     66156        81        78318        59      12065     16      2       0.998777          0.999109        0.154051         0.998943                2.284397                2.199583                   1.700387                   1.797428
 ```
 
 To summarize, the accuracy is:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 228  | 172  | 0.977252 | 0.983399  | 0.980316
-SNP   | 71   | 64   | 0.998928 | 0.999034  | 0.998981
+INDEL | 222  | 167  | 0.977851 | 0.983891  | 0.980862
+SNP   | 81   | 59   | 0.998777 | 0.999109  | 0.998943
 
 The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
@@ -489,8 +510,8 @@ Baseline:
 
 Type  | # FN | # FP | Recall   | Precision | F1\_Score
 ----- | ---- | ---- | -------- | --------- | ---------
-INDEL | 368  | 791  | 0.963284 | 0.927103  | 0.944848
-SNP   |  67  | 88   | 0.998988 | 0.998673  | 0.998831
+INDEL | 457  | 912  | 0.954405 | 0.916192  | 0.934908
+SNP   |  69  | 85   | 0.998958 | 0.998718  | 0.998838
 
 ### Additional things to try
 

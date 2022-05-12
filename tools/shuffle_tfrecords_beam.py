@@ -71,6 +71,7 @@ https://cloud.google.com/dataflow/pipelines/dataflow-command-line-intf
 import argparse
 import hashlib
 import logging
+import os
 import textwrap
 
 import apache_beam as beam
@@ -221,6 +222,18 @@ def write_summary_string_to_file(pipeline, output_examples, input_pattern_list,
 def main(argv=None):
   """Main entry point; defines and runs the pipeline."""
   known_args, pipeline_args = parse_cmdline(argv)
+  # Copy over the example_info.json file before the pipeline starts.
+  example_info_json = '{}*example_info.json'.format(
+      known_args.input_pattern_list.split(',')[0])
+  example_info_json_list = tf.io.gfile.glob(example_info_json)
+  if example_info_json_list and tf.io.gfile.exists(example_info_json_list[0]):
+    training_dir = os.path.dirname(known_args.output_pattern_prefix)
+    if not tf.io.gfile.exists(training_dir):
+      tf.io.gfile.makedirs(training_dir)
+    output_example_info_json = os.path.join(training_dir, 'example_info.json')
+    if not tf.io.gfile.exists(output_example_info_json):
+      tf.io.gfile.copy(example_info_json_list[0], output_example_info_json)
+
   pipeline_options = PipelineOptions(pipeline_args)
   with beam.Pipeline(options=pipeline_options) as p:
     input_examples = read_from_tfrecords_files(
