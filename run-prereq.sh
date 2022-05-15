@@ -260,4 +260,7 @@ sudo -H apt-get install "${APT_ARGS[@]}" libssl-dev libcurl4-openssl-dev liblz-d
 # for the debruijn graph
 sudo -H apt-get install "${APT_ARGS[@]}" libboost-graph-dev > /dev/null
 
+# Just being safe, pin protobuf's version one more time.
+pip3 install "${PIP_ARGS[@]}" 'protobuf==3.13.0'
+
 note_build_stage "run-prereq.sh complete"

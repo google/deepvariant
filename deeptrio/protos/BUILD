@@ -1,5 +1,5 @@
 load("//third_party:clif.bzl", "pyclif_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
 
 package(
     default_visibility = [
@@ -19,6 +19,20 @@ proto_library(
         "//deepvariant/protos:realigner_proto",  # NO COPYBARA
         "//deepvariant/protos:resources_proto",  # NO COPYBARA
         "//third_party/nucleus/protos:reads_proto",  # NO COPYBARA
+    ],
+)
+
+cc_proto_library(
+    name = "deeptrio_cc_pb2",
+    srcs = ["deeptrio.proto"],
+    default_runtime = "@com_google_protobuf//:protobuf",
+    protoc = "@com_google_protobuf//:protoc",
+    deps = [
+        "//deepvariant/protos:realigner_cc_pb2",
+        "//deepvariant/protos:resources_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
     ],
 )
 
