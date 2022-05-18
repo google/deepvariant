@@ -1189,14 +1189,12 @@ class RegionProcessor(object):
             sample.allele_counter.add(read, sample.options.name)
         # Reads iterator needs to be reset since it used in the code below.
         sample.reads = sample.in_memory_sam_reader.query(region)
-
-      allele_counters = {
-          sample.options.name: sample.allele_counter for sample in self.samples
-      }
-      candidate_positions = sample.variant_caller.get_candidate_positions(
-          allele_counters=allele_counters, sample_name=sample.options.name)
+      allele_counters = {s.options.name: s.allele_counter for s in self.samples}
 
     for sample in self.samples:
+      if self.options.allele_counter_options.track_ref_reads:
+        candidate_positions = sample.variant_caller.get_candidate_positions(
+            allele_counters=allele_counters, sample_name=sample.options.name)
       if sample.options.reads_filenames:
         if self.options.allele_counter_options.normalize_reads:
           reads_start = region.start
