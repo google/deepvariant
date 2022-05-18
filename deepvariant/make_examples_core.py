@@ -1259,19 +1259,27 @@ class RegionProcessor(object):
 
       if self.options.phase_reads:
         reads_to_phase = list(sample.in_memory_sam_reader.query(padded_region))
-        # TODO Here we call phasing. We may want to output the runtime
-        # of the phasing part.
-        read_phases = self.direct_phasing_cpp.phase(candidates[role],
-                                                    reads_to_phase)
-
-        # Assign phase tag to reads.
-        for read_phase, read in zip(read_phases, reads_to_phase):
+        for read in reads_to_phase:
           # Remove existing values
           del read.info['HP'].values[:]
-          if self.options.pic_options.reverse_haplotypes:
-            if read_phase in [1, 2]:
-              read_phase = 1 + (read_phase % 2)
-          read.info['HP'].values.add(int_value=read_phase)
+        # Skip phasing if number of candidates is over the phase_max_candidates.
+        if (self.options.phase_max_candidates and
+            len(candidates[role]) > self.options.phase_max_candidates):
+          logging_with_options(
+              self.options, 'Skip phasing: len(candidates[%s]) is %s.' %
+              (role, len(candidates[role])))
+        else:
+          read_phases = self.direct_phasing_cpp.phase(candidates[role],
+                                                      reads_to_phase)
+          # Assign phase tag to reads.
+          for read_phase, read in zip(read_phases, reads_to_phase):
+            # Remove existing values
+            del read.info['HP'].values[:]
+            if self.options.pic_options.reverse_haplotypes:
+              if read_phase in [1, 2]:
+                read_phase = 1 + (read_phase % 2)
+            read.info['HP'].values.add(int_value=read_phase)
+        reads_to_phase = None
 
       if padded_region is not None:
         candidates[role] = self.filter_candidates_by_region(

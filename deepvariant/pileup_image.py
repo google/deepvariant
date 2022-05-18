@@ -357,7 +357,7 @@ class PileupImageCreator(object):
 
       def _update_hap_index(read, hp_tag_for_assembly_polishing):
         default_hap_idx = 0  # By default, reads with no HP is set to 0.
-        if 'HP' not in read.info:
+        if 'HP' not in read.info or not read.info.get('HP').values:
           return default_hap_idx
         hp_field = next(iter(read.info.get('HP').values))
         if not hp_field.HasField('int_value'):

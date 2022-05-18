@@ -310,6 +310,11 @@ flags.DEFINE_integer(
     'region and calculate candidates in extended region. Output examples are'
     'not affected by this flag.')
 
+flags.DEFINE_integer(
+    'phase_max_candidates', None,
+    'Limits the number of candidates for phasing. If number of candidates '
+    'exceeds the maximum then phasing is not performed for the window.')
+
 
 def shared_flags_to_options(
     add_flags, flags_obj, samples_in_order, sample_role_to_train,
@@ -400,6 +405,8 @@ def shared_flags_to_options(
       options.phase_reads = flags_obj.phase_reads
     if flags_obj.phase_reads_region_padding:
       options.phase_reads_region_padding = flags_obj.phase_reads_region_padding
+    if flags_obj.phase_max_candidates:
+      options.phase_max_candidates = flags_obj.phase_max_candidates
 
     options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
     options.pic_options.types_to_alt_align = flags_obj.types_to_alt_align

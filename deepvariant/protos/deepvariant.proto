@@ -585,7 +585,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 53.
+// Next ID: 54.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -775,6 +775,8 @@ message MakeExamplesOptions {
   // DirectPhasing related options.
   bool phase_reads = 51;
   int32 phase_reads_region_padding = 52;
+
+  int32 phase_max_candidates = 53;
 }
 
 // Config describe information needed for a dataset that can be used for
