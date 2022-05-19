@@ -519,7 +519,7 @@ def make_report(input_path: str, title: str,
 
   # Write the HTML report with all the charts.
   dashboard_utils.create_html_report(
-      charts=charts, html_output=html_output, title=title, subtitle=subtitle)
+      specs=charts, html_output=html_output, title=title, subtitle=subtitle)
 
 
 def main(argv: Sequence[str]):

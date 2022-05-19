@@ -38,16 +38,26 @@ import pandas as pd
 from deepvariant import dashboard_utils
 
 
+def sample_chart():
+  df = pd.DataFrame({'A': [1, 2], 'B': [10, 20]})
+  return alt.Chart(df).mark_point().encode(x='A', y='B')
+
+
 class DashboardUtilsTest(parameterized.TestCase):
 
   def test_create_html_report(self):
-    df = pd.DataFrame({'A': [1, 2], 'B': [10, 20]})
-    chart = alt.Chart(df).mark_point().encode(x='A', y='B')
-    charts = [{'id': 'my_chart_name', 'chart': chart}]
+
+    specs = [{
+        'id': 'my_chart_name',
+        'chart': sample_chart()
+    }, {
+        'id': 'some_html',
+        'html': '<h2>SOME HTML</h2>'
+    }]
 
     html_output = io.StringIO()
     dashboard_utils.create_html_report(
-        charts,
+        specs=specs,
         html_output=html_output,
         title='my fancy title',
         subtitle='my fancy subtitle',
@@ -62,6 +72,20 @@ class DashboardUtilsTest(parameterized.TestCase):
     self.assertIn(
         'my fancy subtitle', html, msg='The subtitle is missing from the HTML.')
     self.assertIn('_blank', html, msg='Embed options missing.')
+    self.assertIn('<h2>SOME HTML</h2>', html, msg='Custom html is missing.')
+
+  def test_throws_error_on_wrong_input_format(self):
+    with self.assertRaisesRegex(
+        ValueError, 'item #1 in specs list does not have an "id" key'):
+      specs = [{'chart': sample_chart()}]
+      html_output = io.StringIO()
+      dashboard_utils.create_html_report(specs, html_output=html_output)
+
+    with self.assertRaisesRegex(ValueError,
+                                'item #1 in specs list is not a dictionary.'):
+      specs = [sample_chart()]
+      html_output = io.StringIO()
+      dashboard_utils.create_html_report(specs, html_output=html_output)
 
 
 if __name__ == '__main__':

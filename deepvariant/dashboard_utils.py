@@ -46,11 +46,31 @@ CSS_STYLES = """
     .chart-container {
       padding: 30px;
     }
+    .dataframe {
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
+    .dataframe tr:nth-child(even){background-color: #ddd;}
+    .dataframe td,th {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    .dataframe tr:hover {background-color: #a8a8a8;}
+    .dataframe th {
+      text-align: left;
+      background-color: #4c78a8;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      color: white;
+    }
+    .chart-container {
+      padding: 30px;
+    }
 </style>
 """
 
 
-def create_html_report(charts: List[Dict[Text, alt.Chart]],
+def create_html_report(specs: List[Dict[Text, alt.Chart]],
                        html_output: Any,
                        title: str = '',
                        subtitle: str = '',
@@ -59,7 +79,9 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
   """Makes the html report with all the charts inserted.
 
   Args:
-    charts: A list of altair chart objects.
+    specs: A list of dictionaries with keys "id" (unique name) and either
+        "chart" (should be an Altair chart object) or "html" (a string to be
+        inserted as html into the report).
     html_output: A writable file object.
     title: The title to show at the top of the report.
     subtitle: The subtitle to show just below the title on the report.
@@ -71,6 +93,12 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
   Returns:
       None. Writes into the html_output file object.
   """
+  # First sanity check input specs list.
+  for i, spec in enumerate(specs):
+    if not isinstance(spec, dict):
+      raise ValueError(f'item #{i+1} in specs list is not a dictionary.')
+    elif 'id' not in spec:
+      raise ValueError(f'item #{i+1} in specs list does not have an "id" key.')
 
   chart_div_style = 'style="display:block"' if charts_on_separate_lines else ''
 
@@ -94,34 +122,38 @@ def create_html_report(charts: List[Dict[Text, alt.Chart]],
   if include_outline:
     html_string += ('<h3>Outline</h3>\n')
     html_string += ('<ul>\n')
-    for chart in charts:
-      chart_id = chart['id']
+    for spec in specs:
+      chart_id = spec['id']
       html_string += (f'  <li><a href="#a_{chart_id}">{chart_id}</a></li>\n')
     html_string += ('</ul>\n')
 
-  for chart in charts:
-    chart_id = chart['id']
-    html_string += (f'<a name="a_{chart_id}"></a>\n')
-    html_string += (f'<div class="chart-container" {chart_div_style} '
-                    f'id="vis_{chart_id}"></div>\n')
+  for spec in specs:
+    chart_id = spec['id']
+    if 'chart' in spec:
+      html_string += (f'<a name="a_{chart_id}"></a>\n')
+      html_string += (f'<div class="chart-container" {chart_div_style} '
+                      f'id="vis_{chart_id}"></div>\n')
+    elif 'html' in spec:
+      html_string += (spec['html'])
   # End the chart container and start the JavaScript section.
   html_string += ('</div>' '<script>\n')
 
   # Add JSON vega specs and hook them up to the divs with VegaEmbed.
-  for chart in charts:
-    chart_id = chart['id']
-    chart_json = chart['chart'].to_json()
-    download_filename = '{}_{}'.format(title.replace(' ', '_'), chart['id'])
-    embed_options = {
-        'mode': 'vega-lite',
-        'downloadFileName': download_filename,
-        'loader': {
-            'target': '_blank'
-        }
-    }
-    html_string += (
-        f'var spec_{chart_id} = {chart_json};\n'
-        f'vegaEmbed("#vis_{chart_id}", spec_{chart_id}, {embed_options})\n')
+  for spec in specs:
+    chart_id = spec['id']
+    if 'chart' in spec:
+      chart_json = spec['chart'].to_json()
+      download_filename = '{}_{}'.format(title.replace(' ', '_'), spec['id'])
+      embed_options = {
+          'mode': 'vega-lite',
+          'downloadFileName': download_filename,
+          'loader': {
+              'target': '_blank'
+          }
+      }
+      html_string += (
+          f'var spec_{chart_id} = {chart_json};\n'
+          f'vegaEmbed("#vis_{chart_id}", spec_{chart_id}, {embed_options})\n')
   html_string += (
       '</script>\n'
       # Close HTML document.
