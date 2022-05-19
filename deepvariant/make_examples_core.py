@@ -948,18 +948,14 @@ class RegionProcessor(object):
         genome we should process.
 
     Returns:
-      (candidates_by_sample, examples_by_sample, gvcfs_by_sample, runtimes)
+      (candidates_by_sample, gvcfs_by_sample, runtimes)
       1. candidates_by_sample: A dict keyed by sample role, each a list of
       candidates found, which are deepvariant.DeepVariantCall objects.
-      2. examples_by_sample: A dict keyed by sample, each a list of filled
-      in tf.Example protos. For example, these will include the candidate
-      variant, the pileup image, and, if in training mode, the truth variants
-      and labels needed for training.
-      3. gvcfs_by_sample: A dict keyed by sample, each a list of
+      2. gvcfs_by_sample: A dict keyed by sample, each a list of
       nucleus.genomics.v1.Variant protos containing gVCF information for all
       reference sites, if gvcf generation is enabled, otherwise this value is
       [].
-      4. runtimes: A dict of runtimes in seconds keyed by stage.
+      3. runtimes: A dict of runtimes in seconds keyed by stage.
     """
     region_timer = timer.TimerStart()
     runtimes = {}
@@ -1020,18 +1016,6 @@ class RegionProcessor(object):
                     region.reference_name],
                 ref_reader=self.ref_reader))
 
-      if in_training_mode(self.options):
-        for candidate, label in self.label_candidates(candidates, region):
-          for example in self.create_pileup_examples(
-              candidate, sample_order=sample.options.order):
-            self.add_label_to_example(example, label)
-            examples_by_sample[role].append(example)
-      else:
-        for candidate in candidates:
-          for example in self.create_pileup_examples(
-              candidate, sample_order=sample.options.order):
-            examples_by_sample[role].append(example)
-
       # After any filtering and other changes above, set candidates for sample.
       candidates_by_sample[role] = candidates
 
@@ -1041,11 +1025,9 @@ class RegionProcessor(object):
 
       runtimes['make pileup images'] = trim_runtime(time.time() -
                                                     before_make_pileup_images)
-    runtimes['num examples'] = sum(
-        [len(x) for x in examples_by_sample.values()])
     runtimes['num candidates'] = sum(
         [len(x) for x in candidates_by_sample.values()])
-    return candidates_by_sample, examples_by_sample, gvcfs_by_sample, runtimes
+    return candidates_by_sample, gvcfs_by_sample, runtimes
 
   def region_reads(self, region, sam_readers, reads_filenames):
     """Gets read alignments overlapping the region and optionally realigns them.
@@ -1680,22 +1662,23 @@ class OutputsWriter(object):
         writer.close()
 
 
-def get_example_counts(examples, num_classes):
-  """Returns a breakdown of examples by categories (label and type)."""
-  labels = {i: 0 for i in range(0, num_classes)}
-  types = {
-      tf_utils.EncodedVariantType.SNP: 0,
-      tf_utils.EncodedVariantType.INDEL: 0,
-      tf_utils.EncodedVariantType.UNKNOWN: 0
-  }
-
-  for example in examples:
+def _write_example_and_update_stats(example,
+                                    writer,
+                                    runtimes,
+                                    labels=None,
+                                    types=None):
+  """Writes out the example using writer; updates labels and types as needed."""
+  writer.write_examples(example)
+  if runtimes:
+    if 'num examples' not in runtimes:
+      runtimes['num examples'] = 0
+    runtimes['num examples'] += 1
+  if labels is not None and types is not None:
     example_label = tf_utils.example_label(example)
     example_type = tf_utils.encoded_variant_type(
         tf_utils.example_variant(example))
     labels[example_label] += 1
     types[example_type] += 1
-  return labels, types
 
 
 def make_examples_runner(options):
@@ -1745,29 +1728,57 @@ def make_examples_runner(options):
   example_shape = None
   running_timer = timer.TimerStart()
   for region in regions:
-    (candidates_by_sample, examples_by_sample, gvcfs_by_sample,
+    (candidates_by_sample, gvcfs_by_sample,
      runtimes) = region_processor.process(region)
-    for sample in candidates_by_sample:
-      candidates = candidates_by_sample[sample]
-      examples = examples_by_sample[sample]
-      gvcfs = gvcfs_by_sample[sample]
+    for sample in region_processor.samples:
+      role = sample.options.role
+      if role not in candidates_by_sample:
+        continue
+      candidates = candidates_by_sample[role]
+      writer = writers_dict[role]
+      before_make_pileup_images = time.time()
+      # Create A tf.Example proto, which includes the candidate variant, the
+      # pileup image, and, if in training mode, the truth variants and labels
+      # needed for training.
+      if in_training_mode(options):
+        # Initialize labels and types to be updated in the for loop below.
+        labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
+        types = {
+            tf_utils.EncodedVariantType.SNP: 0,
+            tf_utils.EncodedVariantType.INDEL: 0,
+            tf_utils.EncodedVariantType.UNKNOWN: 0
+        }
+        for candidate, label in region_processor.label_candidates(
+            candidates, region):
+          for example in region_processor.create_pileup_examples(
+              candidate, sample_order=sample.options.order):
+            region_processor.add_label_to_example(example, label)
+            _write_example_and_update_stats(example, writer, runtimes, labels,
+                                            types)
+            n_examples += 1
+            if example_shape is None:
+              example_shape = tf_utils.example_image_shape(example)
+        if options.run_info_filename:
+          n_class_0 += labels[0]
+          n_class_1 += labels[1]
+          n_class_2 += labels[2]
+          n_snps += types[tf_utils.EncodedVariantType.SNP]
+          n_indels += types[tf_utils.EncodedVariantType.INDEL]
+      else:
+        for candidate in candidates:
+          for example in region_processor.create_pileup_examples(
+              candidate, sample_order=sample.options.order):
+            _write_example_and_update_stats(example, writer, runtimes)
+            n_examples += 1
+            if example_shape is None:
+              example_shape = tf_utils.example_image_shape(example)
 
-      writer = writers_dict[sample]
+      runtimes['make pileup images'] = trim_runtime(time.time() -
+                                                    before_make_pileup_images)
+      gvcfs = gvcfs_by_sample[role]
 
       n_candidates += len(candidates)
-      n_examples += len(examples)
       n_regions += 1
-
-      if example_shape is None and examples:
-        example_shape = tf_utils.example_image_shape(examples[0])
-      if in_training_mode(options) and options.run_info_filename:
-        labels, types = get_example_counts(
-            examples, num_classes=dv_constants.NUM_CLASSES)
-        n_class_0 += labels[0]
-        n_class_1 += labels[1]
-        n_class_2 += labels[2]
-        n_snps += types[tf_utils.EncodedVariantType.SNP]
-        n_indels += types[tf_utils.EncodedVariantType.INDEL]
 
       before_write_outputs = time.time()
       writer.write_candidates(*candidates)
@@ -1778,7 +1789,6 @@ def make_examples_runner(options):
       # we'll never execute the write.
       if gvcfs:
         writer.write_gvcfs(*gvcfs)
-      writer.write_examples(*examples)
 
       if options.runtime_by_region:
         runtimes['write outputs'] = runtimes.get('write outputs', 0) + (

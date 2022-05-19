@@ -1038,42 +1038,15 @@ class RegionProcessorTest(parameterized.TestCase):
 
     r1, r2 = mock.Mock(), mock.Mock()
     c1, c2 = mock.Mock(), mock.Mock()
-    l1, l2 = mock.Mock(), mock.Mock()
-    e1, e2, e3 = mock.Mock(), mock.Mock(), mock.Mock()
     self.add_mock('region_reads', retval=[r1, r2])
     self.add_mock('candidates_in_region', retval=({'child': [c1, c2]}, {}))
-    mock_cpe = self.add_mock(
-        'create_pileup_examples', side_effect=[[e1], [e2, e3]])
-    mock_lc = self.add_mock('label_candidates', retval=[(c1, l1), (c2, l2)])
-    mock_alte = self.add_mock('add_label_to_example', side_effect=[e1, e2, e3])
-    candidates_dict, examples_dict, gvcfs_dict, runtimes = self.processor.process(
-        self.region)
+    candidates_dict, gvcfs_dict, runtimes = self.processor.process(self.region)
     self.assertEqual({'child': [c1, c2]}, candidates_dict)
-    self.assertEqual({'child': [e1, e2, e3]}, examples_dict)
     self.assertEqual({}, gvcfs_dict)
     self.assertIsInstance(runtimes, dict)
 
     in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
     in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])
-    sample_order_for_child = [0, 1, 2]
-
-    # We don't try to label variants when in calling mode.
-    self.assertEqual([
-        mock.call(c1, sample_order=sample_order_for_child),
-        mock.call(c2, sample_order=sample_order_for_child)
-    ], mock_cpe.call_args_list)
-
-    if mode == deepvariant_pb2.MakeExamplesOptions.CALLING:
-      # In calling mode, we never try to label.
-      test_utils.assert_not_called_workaround(mock_lc)
-      test_utils.assert_not_called_workaround(mock_alte)
-    else:
-      mock_lc.assert_called_once_with([c1, c2], self.region)
-      self.assertEqual([
-          mock.call(e1, l1),
-          mock.call(e2, l2),
-          mock.call(e3, l2),
-      ], mock_alte.call_args_list)
 
   def test_create_pileup_examples_handles_none(self):
     self.processor.pic = mock.Mock()
