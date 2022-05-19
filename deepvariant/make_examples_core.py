@@ -957,7 +957,6 @@ class RegionProcessor(object):
       [].
       3. runtimes: A dict of runtimes in seconds keyed by stage.
     """
-    region_timer = timer.TimerStart()
     runtimes = {}
 
     if not self.initialized:
@@ -992,13 +991,11 @@ class RegionProcessor(object):
     else:
       candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(region)
 
-    examples_by_sample = {}
     for sample in self.samples:
       role = sample.options.role
       if role not in candidates_by_sample:
         continue
       candidates = candidates_by_sample[role]
-      examples_by_sample[role] = []
 
       if self.options.select_variant_types:
         candidates = list(
@@ -1018,10 +1015,6 @@ class RegionProcessor(object):
 
       # After any filtering and other changes above, set candidates for sample.
       candidates_by_sample[role] = candidates
-
-      logging.vlog(2, 'Found %s candidates in %s [%d bp] [%0.2fs elapsed]',
-                   len(examples_by_sample[role]), ranges.to_literal(region),
-                   ranges.length(region), region_timer.Stop())
 
       runtimes['make pileup images'] = trim_runtime(time.time() -
                                                     before_make_pileup_images)
