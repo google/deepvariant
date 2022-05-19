@@ -1165,12 +1165,6 @@ class RegionProcessor(object):
       # we need to return the gVCF records calculated by the caller below.
       return {}, {}
 
-    left_padding = 0
-    right_padding = 0
-    if padded_region is not None:
-      left_padding = region.start - padded_region.start
-      right_padding = padded_region.end - region.end
-
     allele_counters = {}
     candidate_positions = []
     if self.options.allele_counter_options.track_ref_reads:
@@ -1242,6 +1236,11 @@ class RegionProcessor(object):
 
     candidates = {}
     gvcfs = {}
+    left_padding = 0
+    right_padding = 0
+    if padded_region is not None:
+      left_padding = region.start - padded_region.start
+      right_padding = padded_region.end - region.end
     for sample in self.samples:
       role = sample.options.role
       if in_training_mode(
