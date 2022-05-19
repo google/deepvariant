@@ -31,24 +31,27 @@
 
 #include "deepvariant/utils.h"
 
+#include <string>
+
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/util/utils.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-Allele MakeAllele(const string& bases, const AlleleType type, const int count,
-                  const bool is_low_quality) {
+Allele MakeAllele(absl::string_view bases, const AlleleType type,
+                  const int count, const bool is_low_quality) {
   Allele allele;
-  allele.set_bases(bases);
+  allele.set_bases(std::string(bases));
   allele.set_type(type);
   allele.set_count(count);
   allele.set_is_low_quality(is_low_quality);
   return allele;
 }
 
-string SimplifyRefAlt(const string& ref, const string& alt) {
+string SimplifyRefAlt(absl::string_view ref, absl::string_view alt) {
   int shortest_allele_len = ref.length();
   if (alt.length() < shortest_allele_len) {
     shortest_allele_len = alt.length();

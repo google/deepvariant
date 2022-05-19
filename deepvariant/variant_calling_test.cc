@@ -212,7 +212,7 @@ class VariantCallingTest : public ::testing::Test {
   }
 
   void CheckCallFromComputeVariantWithSameProposedVariant(
-      const string& ref, const int min_alt_count,
+      absl::string_view ref, const int min_alt_count,
       const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& partial_expected_variant) {
     CheckCallFromComputeVariantWithSameProposedVariant(

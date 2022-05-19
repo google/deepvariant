@@ -729,7 +729,7 @@ bool AlleleCounter::NormalizeCigar(
 }
 
 void AlleleCounter::NormalizeAndAdd(
-    const nucleus::genomics::v1::Read& read, const string& sample,
+    const nucleus::genomics::v1::Read& read, absl::string_view sample,
     std::unique_ptr<std::vector<nucleus::genomics::v1::CigarUnit>>& norm_cigar,
     int& read_shift) {
   // Make sure our incoming read has a mapping quality above our min. threshold.

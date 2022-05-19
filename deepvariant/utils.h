@@ -44,12 +44,12 @@ namespace deepvariant {
 using tensorflow::string;
 
 // Creates an allele with the provided bases, type, and count.
-Allele MakeAllele(const string& bases, const AlleleType type, const int count,
-                  const bool is_low_quality = false);
+Allele MakeAllele(absl::string_view bases, const AlleleType type,
+                  const int count, const bool is_low_quality = false);
 
 // First simplifies ref and alt by removing the common suffix, and the returns
 // simplified_ref->simplified_alt.
-string SimplifyRefAlt(const string& ref, const string& alt);
+string SimplifyRefAlt(absl::string_view ref, absl::string_view alt);
 
 }  // namespace deepvariant
 }  // namespace genomics
