@@ -222,7 +222,7 @@ void FastPassAligner::FastAlignReadsToHaplotypes() {
 }
 
 void FastPassAligner::FastAlignReadsToHaplotype(
-    const string& haplotype, int* haplotype_score,
+    absl::string_view haplotype, int* haplotype_score,
     std::vector<ReadAlignment>* haplotype_read_alignment_scores) {
   CHECK(haplotype_score != nullptr);
   CHECK(haplotype_read_alignment_scores != nullptr);
@@ -339,7 +339,7 @@ CigarUnit::Operation CigarOperationFromChar(char op) {
   }
 }
 
-std::list<CigarOp> CigarStringToVector(const string& cigar) {
+std::list<CigarOp> CigarStringToVector(absl::string_view cigar) {
   std::list<CigarOp> cigarOps;
   absl::string_view input(cigar);
   RE2 pattern("(\\d+)([XIDS=])");
@@ -353,7 +353,7 @@ std::list<CigarOp> CigarStringToVector(const string& cigar) {
   return cigarOps;
 }
 
-inline bool AlignmentIsRef(const string& cigar, size_t target_len) {
+inline bool AlignmentIsRef(absl::string_view cigar, size_t target_len) {
   return cigar == absl::StrCat(target_len, "=");
 }
 
@@ -590,7 +590,7 @@ void FastPassAligner::AddKmerToIndex(tensorflow::StringPiece kmer,
   kmer_index_[kmer].push_back(KmerOccurrence(read_id, pos));
 }
 
-void FastPassAligner::AddReadToIndex(const string& read, ReadId read_id) {
+void FastPassAligner::AddReadToIndex(absl::string_view read, ReadId read_id) {
   // Ignoring reads that are too short for a kmer size. Those reads will still
   // be realigned with SSW.
   if (read.length() <= kmer_size_) {

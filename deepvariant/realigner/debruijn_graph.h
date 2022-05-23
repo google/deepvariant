@@ -107,7 +107,7 @@ class DeBruijnGraph {
   // acyclic DeBruijn graphs.  Argument `k` is used to construct the graph;
   // filtering settings are taken from options.
   DeBruijnGraph(
-      const string& ref,
+      absl::string_view ref,
       const std::vector<
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads,
       const Options& options, int k);

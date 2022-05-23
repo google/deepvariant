@@ -43,6 +43,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/node_hash_set.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/string_view.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/depth_first_search.hpp"
 #include "boost/graph/graph_traits.hpp"
@@ -177,7 +178,7 @@ bool DeBruijnGraph::HasCycle() const {
 }
 
 DeBruijnGraph::DeBruijnGraph(
-    const string& ref,
+    absl::string_view ref,
     const std::vector<nucleus::ConstProtoPtr<const Read>>& reads,
     const Options& options, int k)
     : options_(options), k_(k) {
@@ -194,7 +195,6 @@ DeBruijnGraph::DeBruijnGraph(
   }
   RebuildIndexMap();
 }
-
 
 // Indicates that we couldn't find a minimum k that can be used.
 constexpr int kBoundsNoWorkingK = -1;

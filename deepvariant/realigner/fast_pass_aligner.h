@@ -43,6 +43,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
@@ -114,7 +115,7 @@ struct ReadAlignment {
   static constexpr uint16_t kNotAligned = std::numeric_limits<uint16_t>::max();
   ReadAlignment() : position(kNotAligned), cigar(""), score(0) {}
 
-  ReadAlignment(uint16_t position_param, const string& cigar_param,
+  ReadAlignment(uint16_t position_param, absl::string_view cigar_param,
                 int score_param)
       : position(position_param), cigar(cigar_param), score(score_param) {}
 
@@ -282,7 +283,7 @@ class FastPassAligner {
 
   // Align all reads to a haplotype using fast pass alignment.
   void FastAlignReadsToHaplotype(
-      const string& haplotype, int* haplotype_score,
+      absl::string_view haplotype, int* haplotype_score,
       std::vector<ReadAlignment>* haplotype_read_alignment_scores);
 
   // Align reads to haplotypes using SSW library. Only reads that could not
@@ -413,7 +414,7 @@ class FastPassAligner {
   // be able align all the reads that are aligned to haplotypes w/o indels.
   void FastAlignReadsToHaplotypes();
 
-  void AddReadToIndex(const string& read, ReadId read_id);
+  void AddReadToIndex(absl::string_view read, ReadId read_id);
 
   void AddKmerToIndex(tensorflow::StringPiece kmer, ReadId read_id,
                       KmerOffset pos);
