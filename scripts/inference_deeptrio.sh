@@ -525,7 +525,8 @@ function setup_args() {
     run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
     run gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
     run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
-    run "gsutil cp ${CUSTOMIZED_MODEL}.input_shape ${INPUT_DIR}/model.ckpt.input_shape || echo 'skip input_shape'"
+    CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
+    run "gsutil cp ${CUSTOMIZED_MODEL_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
     extra_args+=( --customized_model "/input/model.ckpt")
     # TODO Add support for DeepTrio custom models.
     # echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"

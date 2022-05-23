@@ -449,7 +449,8 @@ function setup_args() {
     run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
     # Starting from v1.4.0, model.ckpt.example_info.json is used to provide more
     # information about the model.
-    run "gsutil cp model.ckpt.input_info ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+    CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
+    run "gsutil cp ${CUSTOMIZED_MODEL_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
     extra_args+=( --customized_model "/input/model.ckpt")
   else
     run echo "No custom model specified."
