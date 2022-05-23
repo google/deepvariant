@@ -1232,7 +1232,11 @@ class RegionProcessor(object):
           right_padding=right_padding)
 
       if self.options.phase_reads:
-        reads_to_phase = list(sample.in_memory_sam_reader.query(padded_region))
+        if padded_region is not None:
+          reads_to_phase = list(
+              sample.in_memory_sam_reader.query(padded_region))
+        else:
+          reads_to_phase = list(sample.in_memory_sam_reader.query(region))
         for read in reads_to_phase:
           # Remove existing values
           del read.info['HP'].values[:]
