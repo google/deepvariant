@@ -51,7 +51,7 @@ flags.DEFINE_enum(
     'model_type', None, ['WGS', 'WES', 'PACBIO', 'HYBRID_PACBIO_ILLUMINA'],
     'Required. Type of model to use for variant calling. Each '
     'model_type has an associated default model, which can be '
-    'overridden by the --customized_model flag.')
+    'overridden by the --customized_model_{parent,child} flags.')
 flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
@@ -103,9 +103,15 @@ flags.DEFINE_boolean(
 # Optional flags for call_variants.
 # TODO: Support different child/parent models.
 flags.DEFINE_string(
-    'customized_model', None,
-    'Optional. A path to a model checkpoint to load for the `call_variants` '
-    'step. If not set, the default for each --model_type will be used')
+    'customized_model_child', None,
+    'Optional. A path to a child model checkpoint to load for the '
+    '`call_variants` step. If not set, the default for each --model_type will '
+    'be used')
+flags.DEFINE_string(
+    'customized_model_parent', None,
+    'Optional. A path to a parent model checkpoint to load for the '
+    '`call_variants` step. If not set, the default for each --model_type will '
+    'be used')
 # Optional flags for make_examples.
 flags.DEFINE_integer('num_shards', 1,
                      'Optional. Number of shards for make_examples step.')
@@ -452,20 +458,37 @@ def check_or_create_intermediate_results_dir(intermediate_results_dir):
 
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
-  if FLAGS.customized_model is not None:
-    if (not tf.compat.v1.gfile.Exists(FLAGS.customized_model +
+  if FLAGS.customized_model_parent is not None:
+    if (not tf.compat.v1.gfile.Exists(FLAGS.customized_model_parent +
                                       '.data-00000-of-00001') or
-        not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.index') or
-        not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.meta')):
+        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_parent + '.index')
+        or
+        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_parent + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
                          'https://github.com/google/deepvariant/blob/r1.3/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
-                         'could-not-open'.format(FLAGS.customized_model))
+                         'could-not-open'.format(FLAGS.customized_model_parent))
     logging.info(
-        'You set --customized_model. Instead of using the default '
+        'You set --customized_model_parent. Instead of using the default '
         'model for %s, `call_variants` step will load %s* '
-        'instead.', FLAGS.model_type, FLAGS.customized_model)
+        'instead.', FLAGS.model_type, FLAGS.customized_model_parent)
+
+  if FLAGS.customized_model_child is not None:
+    if (not tf.compat.v1.gfile.Exists(FLAGS.customized_model_child +
+                                      '.data-00000-of-00001') or
+        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_child + '.index')
+        or
+        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_child + '.meta')):
+      raise RuntimeError('The model files {}* do not exist. Potentially '
+                         'relevant issue: '
+                         'https://github.com/google/deepvariant/blob/r1.3/docs/'
+                         'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
+                         'could-not-open'.format(FLAGS.customized_model_child))
+    logging.info(
+        'You set --customized_model_child. Instead of using the default '
+        'model for %s, `call_variants` step will load %s* '
+        'instead.', FLAGS.model_type, FLAGS.customized_model_child)
 
   if FLAGS.use_hp_information and FLAGS.model_type != 'PACBIO':
     raise ValueError('--use_hp_information can only be used with '
@@ -556,14 +579,14 @@ def create_all_commands(intermediate_results_dir):
 
   # Calling variants for child sample
   model_ckpt = get_model_ckpt(FLAGS.model_type + '_child',
-                              FLAGS.customized_model)
+                              FLAGS.customized_model_child)
   commands.append(
       generate_call_variants_command(CHILD, model_ckpt,
                                      intermediate_results_dir))
 
   # Calling variants for parent1 sample
   model_ckpt = get_model_ckpt(FLAGS.model_type + '_parent',
-                              FLAGS.customized_model)
+                              FLAGS.customized_model_parent)
   if FLAGS.reads_parent1 is not None:
     commands.append(
         generate_call_variants_command(PARENT1, model_ckpt,

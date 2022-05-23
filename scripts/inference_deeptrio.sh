@@ -18,7 +18,8 @@ Flags:
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
 --use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO*.
 --bin_version Version of DeepTrio model to use.
---customized_model Path to checkpoint directory containing model checkpoint.
+--customized_model_child Path to checkpoint directory containing child model checkpoint.
+--customized_model_parent Path to checkpoint directory containing parent model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
@@ -53,7 +54,8 @@ BAM_PARENT2=""
 BIN_VERSION="1.3.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
-CUSTOMIZED_MODEL=""
+CUSTOMIZED_MODEL_PARENT=""
+CUSTOMIZED_MODEL_CHILD=""
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
@@ -119,7 +121,16 @@ while (( "$#" )); do
       shift # Remove argument value from processing
       ;;
     --customized_model)
-      CUSTOMIZED_MODEL="$2"
+      echo "Error: Please use --customized_model_{parent,child} flags." >&2
+      exit 1
+      ;;
+    --customized_model_parent)
+      CUSTOMIZED_MODEL_PARENT="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --customized_model_child)
+      CUSTOMIZED_MODEL_CHILD="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -338,7 +349,8 @@ echo "BAM_PARENT2: ${BAM_PARENT2}"
 echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
-echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
+echo "CUSTOMIZED_MODEL_CHILD: ${CUSTOMIZED_MODEL_CHILD}"
+echo "CUSTOMIZED_MODEL_PARENT: ${CUSTOMIZED_MODEL_PARENT}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
@@ -519,25 +531,25 @@ function get_docker_image() {
 }
 
 function setup_args() {
-  if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
-    # TODO: Support different child/parent models.
-    run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
-    run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
-    run gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-    run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
-    CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
-    run "gsutil cp ${CUSTOMIZED_MODEL_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
-    extra_args+=( --customized_model "/input/model.ckpt")
-    # TODO Add support for DeepTrio custom models.
-    # echo "Copy from gs:// path $CUSTOMIZED_MODEL to ${INPUT_DIR}/"
-    # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.data-00000-of-00001 "${INPUT_DIR}/child/"
-    # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.index "${INPUT_DIR}child/"
-    # gsutil cp "${CUSTOMIZED_MODEL}"/child/model.ckpt.meta "${INPUT_DIR}child/"
-    # gsutil cp "${CUSTOMIZED_MODEL}"/parent/model.ckpt.data-00000-of-00001 "${INPUT_DIR}/parent/"
-    # gsutil cp "${CUSTOMIZED_MODEL}"/parent/model.ckpt.index "${INPUT_DIR}parent/"
-    # gsutil cp "${CUSTOMIZED_MODEL}"/parent/model.ckpt.meta "${INPUT_DIR}parent/"
-    # extra_args+=( --customized_model "/input/model.ckpt")
-  else
+  if [[ -n "${CUSTOMIZED_MODEL_CHILD}" ]]; then
+    run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_CHILD} to ${INPUT_DIR}/child_model"
+    run gsutil cp "${CUSTOMIZED_MODEL_CHILD}".data-00000-of-00001 "${INPUT_DIR}/child_model/model.ckpt.data-00000-of-00001"
+    run gsutil cp "${CUSTOMIZED_MODEL_CHILD}".index "${INPUT_DIR}/child_model/model.ckpt.index"
+    run gsutil cp "${CUSTOMIZED_MODEL_CHILD}".meta "${INPUT_DIR}/child_model/model.ckpt.meta"
+    CUSTOMIZED_MODEL_CHILD_DIR="$(dirname "${CUSTOMIZED_MODEL_CHILD}")"
+    run "gsutil cp ${CUSTOMIZED_MODEL_CHILD_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+    extra_args+=( --customized_model_child "/input/child_model/model.ckpt")
+  fi
+  if [[ -n "${CUSTOMIZED_MODEL_PARENT}" ]]; then
+    run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_PARENT} to ${INPUT_DIR}/parent_model"
+    run gsutil cp "${CUSTOMIZED_MODEL_PARENT}".data-00000-of-00001 "${INPUT_DIR}/parent_model/model.ckpt.data-00000-of-00001"
+    run gsutil cp "${CUSTOMIZED_MODEL_PARENT}".index "${INPUT_DIR}/parent_model/model.ckpt.index"
+    run gsutil cp "${CUSTOMIZED_MODEL_PARENT}".meta "${INPUT_DIR}/parent_model/model.ckpt.meta"
+    CUSTOMIZED_MODEL_PARENT_DIR="$(dirname "${CUSTOMIZED_MODEL_PARENT}")"
+    run "gsutil cp ${CUSTOMIZED_MODEL_PARENT_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+    extra_args+=( --customized_model_parent "/input/parent_model/model.ckpt")
+  fi
+  if [[ -z "${CUSTOMIZED_MODEL_CHILD}" ]] && [[ -z "${CUSTOMIZED_MODEL_PARENT}" ]]; then
     run echo "No custom model specified."
   fi
   if [[ -n "${MAKE_EXAMPLES_ARGS}" ]]; then
