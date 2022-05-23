@@ -48,7 +48,7 @@ USE_GPU=false
 USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 SAVE_INTERMEDIATE_RESULTS=false
 # Strings; sorted alphabetically.
-BAM=""
+BAM_CHILD=""
 BAM_PARENT1=""
 BAM_PARENT2=""
 BIN_VERSION="1.3.0"
@@ -219,16 +219,16 @@ if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   MODEL_TYPE="PACBIO"
   BASE="${HOME}/pacbio-case-study"
 
-  BAM_CHILD="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.bam"
-  BAM_PARENT1="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.bam"
-  BAM_PARENT2="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG004.pfda_challenge.grch38.phased.bam"
+  BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.bam}"
+  BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.bam}"
+  BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG004.pfda_challenge.grch38.phased.bam}"
 elif [[ "${MODEL_PRESET}" = "PACBIO_CHR20" ]]; then
   MODEL_TYPE="PACBIO"
   BASE="${HOME}/pacbio-case-study"
 
-  BAM_CHILD="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.chr20.bam"
-  BAM_PARENT1="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.chr20.bam"
-  BAM_PARENT2="${GCS_DATA_DIR}/pacbio-case-study-testdata/HG004.pfda_challenge.grch38.phased.chr20.bam"
+  BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.chr20.bam}"
+  BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.chr20.bam}"
+  BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG004.pfda_challenge.grch38.phased.chr20.bam}"
 
   if [[ -n "${REGIONS}" ]]; then
     echo "For --model_preset=${MODEL_PRESET}, regions will be set to chr20."
@@ -238,16 +238,16 @@ elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   MODEL_TYPE="WGS"
   BASE="${HOME}/wgs-case-study"
 
-  BAM_CHILD="${GCS_DATA_DIR}/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
-  BAM_PARENT1="${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
-  BAM_PARENT2="${GCS_DATA_DIR}/case-study-testdata/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"
+  BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
+  BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
+  BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/case-study-testdata/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
 elif [[ "${MODEL_PRESET}" = "WGS_CHR20" ]]; then
   MODEL_TYPE="WGS"
   BASE="${HOME}/wgs-case-study"
 
-  BAM_CHILD="${GCS_DATA_DIR}/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam"
-  BAM_PARENT1="${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam"
-  BAM_PARENT2="${GCS_DATA_DIR}/case-study-testdata/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam"
+  BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam}"
+  BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam}"
+  BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/case-study-testdata/HG004.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam}"
 
   if [[ -n "${REGIONS}" ]]; then
     echo "For --model_preset=${MODEL_PRESET}, regions will be set to chr20."
@@ -257,15 +257,13 @@ elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   MODEL_TYPE="WES"
   BASE="${HOME}/exome-case-study"
 
-  BAM_CHILD="${GCS_DATA_DIR}/exome-case-study-testdata/HG002.novaseq.wes_idt.100x.dedup.bam"
-  BAM_PARENT1="${GCS_DATA_DIR}/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam"
-  BAM_PARENT2="${GCS_DATA_DIR}/exome-case-study-testdata/HG004.novaseq.wes_idt.100x.dedup.bam"
-  CAPTURE_BED="${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed"
+  BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/exome-case-study-testdata/HG002.novaseq.wes_idt.100x.dedup.bam}"
+  BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam}"
+  BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/exome-case-study-testdata/HG004.novaseq.wes_idt.100x.dedup.bam}"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed}"
 else
-  if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS, WGS_CHR20, WES, PACBIO, PACBIO_CHR20." >&2
-    exit 1
-  fi
+  echo "Error: --model_preset must be one of WGS, WGS_CHR20, WES, PACBIO, PACBIO_CHR20." >&2
+  exit 1
 fi
 
 ## Flag consistency sanity checks.
