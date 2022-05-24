@@ -241,9 +241,11 @@ def make_examples_command(ref,
     special_args = {}
     special_args['add_hp_channel'] = True
     special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['max_reads_per_partition'] = 600
     special_args['min_mapping_quality'] = 1
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
+    special_args['phase_max_candidates'] = 5000
     special_args['phase_reads_region_padding'] = 5000
     special_args['phase_reads'] = True
     special_args['pileup_image_width'] = 199

@@ -54,10 +54,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~173m
-call_variants                    | ~183m
-postprocess_variants (with gVCF) | ~65m
-total                            | ~420m = ~7 hours
+make_examples                    | ~165m
+call_variants                    | ~178m
+postprocess_variants (with gVCF) | ~61m
+total                            | ~404m = ~6.73 hours
 
 ### Accuracy
 
@@ -70,7 +70,7 @@ to run DeepVariant once.
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
 | INDEL | 501573   | 2928     | 2910     | 0.994196      | 0.994461         | 0.994328        |
-| SNP   | 3324470  | 3025     | 1905     | 0.999091      | 0.999428         | 0.999259        |
+| SNP   | 3324469  | 3026     | 1905     | 0.999091      | 0.999428         | 0.999259        |
 
 ## Hybrid (Illumina + PacBio HiFi)
 
