@@ -164,6 +164,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
     # Set all the optional parameters to check that they all work together.
     output_prefix = test_utils.test_tmpfile('kitchen_sink')
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES
+    FLAGS.example_info_json = FLAGS.examples + '.example_info.json'
     FLAGS.output = output_prefix
     FLAGS.annotation = False
     FLAGS.regions = 'chr20:10,003,650-10,005,000'

@@ -5,7 +5,10 @@ used within DeepVariant and save them as PNG image files. This tool is
 particularly useful when you want to try to understand how a candidate variant
 of interest was represented when it was passed into the neural network.
 
-![An example pileup image](images/example_0.10.0.png)
+![An example pileup image](images/example_1.4.0.png)
+
+This example was generated with the data from the
+[quick start guide](deepvariant-quick-start.md) and the example commands below.
 
 For more information on the pileup images and how to read them, please see the
 ["Looking through DeepVariant's Eyes" blog post](https://google.github.io/deepvariant/posts/2020-02-20-looking-through-deepvariants-eyes/).
@@ -51,6 +54,7 @@ sudo docker run \
   -v "${OUTPUT_DIR}":"/output" \
   google/deepvariant:"${BIN_VERSION}" /opt/deepvariant/bin/show_examples \
   --examples=/output/intermediate_results_dir/make_examples.tfrecord-00000-of-00001.gz \
+  --example_info_json=/output/intermediate_results_dir/make_examples.tfrecord-00000-of-00001.gz.example_info.json \
   --output=/output/pileup --num_records=20
 
 # And then your images are here:

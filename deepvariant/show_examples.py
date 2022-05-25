@@ -41,15 +41,16 @@ show_examples
 """
 
 import gzip
+import json
 import os
 from typing import Any, Callable, Optional, Sequence, Set
 
 from absl import app
 from absl import flags
 from absl import logging
-
 import tensorflow as tf
 
+from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -63,6 +64,9 @@ flags.DEFINE_string(
     'examples', None, 'Path to a make_examples tfrecord file or '
     'many sharded files using e.g. make_examples.tfrecord@64.gz. '
     'May be gzipped.')
+flags.DEFINE_string(
+    'example_info_json', None, 'Path to one *example_info.json file containing '
+    'the information of the channels for the examples.')
 flags.DEFINE_string(
     'vcf', None, '[optional] Path to vcf file to filter by. '
     'This will output exclusively the loci that match a row in '
@@ -214,10 +218,21 @@ def create_region_filter(region_flag_string: str,
 def run():
   """Create pileup images from examples, filtered in various ways."""
   with errors.clean_commandline_error_exit():
+    if FLAGS.column_labels and FLAGS.example_info_json:
+      raise ValueError(
+          'Set at most one of --column_labels or --example_info_json.')
+
     if FLAGS.column_labels:
       column_labels = FLAGS.column_labels.split(',')
     else:
       column_labels = None
+
+    if FLAGS.example_info_json:
+      example_info = json.load(tf.io.gfile.GFile(FLAGS.example_info_json, 'r'))
+      column_labels = [
+          deepvariant_pb2.DeepVariantChannelEnum.Name(x)
+          for x in example_info['channels']
+      ]
 
     filter_to_vcf = FLAGS.vcf is not None
     if filter_to_vcf:
