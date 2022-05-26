@@ -302,7 +302,8 @@ docker run google/deepvariant:"${BIN_VERSION}" \
 An example usage:
 
 ```bash
-gsutil -m cp gs://deepvariant/models/DeepVariant/1.2.0/DeepVariant-inception_v3-1.2.0+data-wgs_standard/model.ckpt* .
+BIN_VERSION=1.4.0
+gsutil -m cp gs://deepvariant/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}-rc2+data-pacbio_standard/model.ckpt* .
 
 sudo docker run \
   -v $PWD:/input \
@@ -310,6 +311,7 @@ sudo docker run \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/freeze_graph \
   --checkpoint /input/model.ckpt  \
+  --example_info_json /input/model.ckpt.example_info.json \
   --output /output/model.pb
 ```
 

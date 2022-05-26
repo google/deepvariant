@@ -28,18 +28,24 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Saves model ckpt files to .pb file."""
 
+import json
 
 
 from absl import flags
 from absl import logging
 import tensorflow as tf
 import tf_slim as slim
+
+from deepvariant import modeling
 # pylint: disable=g-direct-tensorflow-import
 from tensorflow.python.tools import optimize_for_inference_lib
 # pylint: enable=g-direct-tensorflow-import
-from deepvariant import modeling
+
 
 flags.DEFINE_string('checkpoint', None, 'Required. Path to input model.ckpt.')
+flags.DEFINE_string(
+    'example_info_json', None, 'Path to one *example_info.json file containing '
+    'the information of the channels for the examples.')
 flags.DEFINE_string('output', None, 'Required. Path to output .pb file.')
 flags.DEFINE_integer('channels', 6, 'Number of channels in input tensor.')
 flags.DEFINE_integer('width', 221, 'Width of the input tensor.')
@@ -82,7 +88,14 @@ def freeze_graph(model,
 
 
 def main(_):
-  tensor_shape = [FLAGS.height, FLAGS.width, FLAGS.channels]
+  if FLAGS.example_info_json:
+    logging.info('--example_info_json is set. '
+                 'Use shape information from --example_info_json')
+    example_info = json.load(tf.io.gfile.GFile(FLAGS.example_info_json, 'r'))
+    tensor_shape = example_info['shape']
+  else:
+    tensor_shape = [FLAGS.height, FLAGS.width, FLAGS.channels]
+
   logging.info('Processing ckpt=%s, tensor_shape=%s.', FLAGS.checkpoint,
                tensor_shape)
   freeze_graph(
