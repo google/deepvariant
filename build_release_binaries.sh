@@ -132,6 +132,7 @@ bazel build  -c opt \
 
 # TODO: Replace this hand-made list with a find command.
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants_keras"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deeptrio/make_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/model_eval"

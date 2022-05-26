@@ -8,6 +8,7 @@ filegroup(
     name = "binaries",
     srcs = [
         "call_variants",
+        "call_variants_keras",
         "freeze_graph",
         "make_examples",
         "model_eval",
@@ -629,6 +630,17 @@ py_library(
 py_binary(
     name = "call_variants",
     srcs = ["call_variants.py"],
+    python_version = "PY3",
+    deps = [
+        ":call_variants_main_lib",
+        # TODO: Figure out why we need this dep.
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_binary(
+    name = "call_variants_keras",
+    srcs = ["call_variants_keras.py"],
     python_version = "PY3",
     deps = [
         ":call_variants_main_lib",
