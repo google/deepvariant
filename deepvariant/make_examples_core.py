@@ -734,6 +734,100 @@ class DiagnosticLogger(object):
         writer.write(read)
 
 
+class OutputsWriter(object):
+  """Manages all of the outputs of make_examples in a single place."""
+
+  def __init__(self, options, suffix=None):
+    self._writers = {
+        k: None for k in ['candidates', 'examples', 'gvcfs', 'runtime']
+    }
+    self.examples_filename = None
+
+    if options.candidates_filename:
+      self._add_writer(
+          'candidates',
+          tfrecord.Writer(
+              self._add_suffix(options.candidates_filename, suffix)))
+
+    if options.examples_filename:
+      self.examples_filename = self._add_suffix(options.examples_filename,
+                                                suffix)
+      self._add_writer('examples', tfrecord.Writer(self.examples_filename))
+
+    if options.gvcf_filename:
+      self._add_writer(
+          'gvcfs',
+          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)))
+
+    if options.runtime_by_region:
+      self._add_writer('runtime',
+                       tf.io.gfile.GFile(options.runtime_by_region, mode='w'))
+      writer = self._writers['runtime']
+      if writer is not None:
+        writer.__enter__()
+        writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
+
+  def _add_suffix(self, file_path, suffix):
+    """Adds suffix to file name if a suffix is given."""
+    if not suffix:
+      return file_path
+
+    file_dir, file_base = os.path.split(file_path)
+
+    file_split = file_base.split('.')
+    file_split[0] = f'{file_split[0]}_{suffix}'
+    new_file_base = ('.').join(file_split)
+
+    new_file = os.path.join(file_dir, new_file_base)
+    return new_file
+
+  def write_examples(self, *examples):
+    self._write('examples', *examples)
+
+  def write_gvcfs(self, *gvcfs):
+    self._write('gvcfs', *gvcfs)
+
+  def write_candidates(self, *candidates):
+    self._write('candidates', *candidates)
+
+  def write_runtime(self, stats_dict):
+    columns = [str(stats_dict.get(k, 'NA')) for k in RUNTIME_BY_REGION_COLUMNS]
+    writer = self._writers['runtime']
+    writer.write('\t'.join(columns) + '\n')
+
+  def _add_writer(self, name, writer):
+    if name not in self._writers:
+      raise ValueError(
+          'Expected writer {} to have a None binding in writers.'.format(name))
+    if self._writers[name] is not None:
+      raise ValueError('Expected writer {} to be bound to None in writers but '
+                       'saw {} instead'.format(name, self._writers[name]))
+    self._writers[name] = writer
+
+  def __enter__(self):
+    """API function to support with syntax."""
+    for writer in self._writers.values():
+      if writer is not None:
+        writer.__enter__()
+    return self
+
+  def __exit__(self, exception_type, exception_value, traceback):
+    for writer in self._writers.values():
+      if writer is not None:
+        writer.__exit__(exception_type, exception_value, traceback)
+
+  def _write(self, writer_name, *protos):
+    writer = self._writers[writer_name]
+    if writer:
+      for proto in protos:
+        writer.write(proto)
+
+  def close_all(self):
+    for writer in self._writers.values():
+      if writer is not None:
+        writer.close()
+
+
 class RegionProcessor(object):
   """Creates DeepVariant example protos for a single region on the genome.
 
@@ -939,6 +1033,65 @@ class RegionProcessor(object):
       return very_sensitive_caller.VerySensitiveCaller(variant_caller_options)
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
+
+  def writes_examples_in_region(
+      self, candidates: List[deepvariant_pb2.DeepVariantCall],
+      region: range_pb2.Range, sample_order: List[int], writer: OutputsWriter,
+      n_stats: Dict[str, int], runtimes: Dict[str,
+                                              float]) -> Optional[List[int]]:
+    """Generates and writes out the examples in a region.
+
+    Args:
+      candidates: List of candidates to be processed into examples.
+      region: The region to generate examples.
+      sample_order: Order of the samples to use when generating examples.
+      writer: A OutputsWriter used to write out examples.
+      n_stats: A dictionary that is used to accumulate counts for reporting.
+      runtimes: A dictionary that recorded runtime information for reporting.
+
+    Returns:
+      example_shape: a list of 3 integers, representing the example shape in the
+        region. If the region contains no examples, return None.
+    """
+    before_make_pileup_images = time.time()
+    example_shape = None
+    # Create A tf.Example proto, which includes the candidate variant, the
+    # pileup image, and, if in training mode, the truth variants and labels
+    # needed for training.
+    if in_training_mode(self.options):
+      # Initialize labels and types to be updated in the for loop below.
+      labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
+      types = {
+          tf_utils.EncodedVariantType.SNP: 0,
+          tf_utils.EncodedVariantType.INDEL: 0,
+          tf_utils.EncodedVariantType.UNKNOWN: 0
+      }
+      for candidate, label in self.label_candidates(candidates, region):
+        for example in self.create_pileup_examples(
+            candidate, sample_order=sample_order):
+          self.add_label_to_example(example, label)
+          _write_example_and_update_stats(example, writer, runtimes, labels,
+                                          types)
+          n_stats['n_examples'] += 1
+          if example_shape is None:
+            example_shape = tf_utils.example_image_shape(example)
+      if self.options.run_info_filename:
+        n_stats['n_class_0'] += labels[0]
+        n_stats['n_class_1'] += labels[1]
+        n_stats['n_class_2'] += labels[2]
+        n_stats['n_snps'] += types[tf_utils.EncodedVariantType.SNP]
+        n_stats['n_indels'] += types[tf_utils.EncodedVariantType.INDEL]
+    else:
+      for candidate in candidates:
+        for example in self.create_pileup_examples(
+            candidate, sample_order=sample_order):
+          _write_example_and_update_stats(example, writer, runtimes)
+          n_stats['n_examples'] += 1
+          if example_shape is None:
+            example_shape = tf_utils.example_image_shape(example)
+    runtimes['make pileup images'] = trim_runtime(time.time() -
+                                                  before_make_pileup_images)
+    return example_shape
 
   def process(self, region):
     """Finds candidates and creates corresponding examples in a region.
@@ -1565,100 +1718,6 @@ def processing_regions_from_options(options):
   return region_list
 
 
-class OutputsWriter(object):
-  """Manages all of the outputs of make_examples in a single place."""
-
-  def __init__(self, options, suffix=None):
-    self._writers = {
-        k: None for k in ['candidates', 'examples', 'gvcfs', 'runtime']
-    }
-    self.examples_filename = None
-
-    if options.candidates_filename:
-      self._add_writer(
-          'candidates',
-          tfrecord.Writer(
-              self._add_suffix(options.candidates_filename, suffix)))
-
-    if options.examples_filename:
-      self.examples_filename = self._add_suffix(options.examples_filename,
-                                                suffix)
-      self._add_writer('examples', tfrecord.Writer(self.examples_filename))
-
-    if options.gvcf_filename:
-      self._add_writer(
-          'gvcfs',
-          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)))
-
-    if options.runtime_by_region:
-      self._add_writer('runtime',
-                       tf.io.gfile.GFile(options.runtime_by_region, mode='w'))
-      writer = self._writers['runtime']
-      if writer is not None:
-        writer.__enter__()
-        writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
-
-  def _add_suffix(self, file_path, suffix):
-    """Adds suffix to file name if a suffix is given."""
-    if not suffix:
-      return file_path
-
-    file_dir, file_base = os.path.split(file_path)
-
-    file_split = file_base.split('.')
-    file_split[0] = f'{file_split[0]}_{suffix}'
-    new_file_base = ('.').join(file_split)
-
-    new_file = os.path.join(file_dir, new_file_base)
-    return new_file
-
-  def write_examples(self, *examples):
-    self._write('examples', *examples)
-
-  def write_gvcfs(self, *gvcfs):
-    self._write('gvcfs', *gvcfs)
-
-  def write_candidates(self, *candidates):
-    self._write('candidates', *candidates)
-
-  def write_runtime(self, stats_dict):
-    columns = [str(stats_dict.get(k, 'NA')) for k in RUNTIME_BY_REGION_COLUMNS]
-    writer = self._writers['runtime']
-    writer.write('\t'.join(columns) + '\n')
-
-  def _add_writer(self, name, writer):
-    if name not in self._writers:
-      raise ValueError(
-          'Expected writer {} to have a None binding in writers.'.format(name))
-    if self._writers[name] is not None:
-      raise ValueError('Expected writer {} to be bound to None in writers but '
-                       'saw {} instead'.format(name, self._writers[name]))
-    self._writers[name] = writer
-
-  def __enter__(self):
-    """API function to support with syntax."""
-    for writer in self._writers.values():
-      if writer is not None:
-        writer.__enter__()
-    return self
-
-  def __exit__(self, exception_type, exception_value, traceback):
-    for writer in self._writers.values():
-      if writer is not None:
-        writer.__exit__(exception_type, exception_value, traceback)
-
-  def _write(self, writer_name, *protos):
-    writer = self._writers[writer_name]
-    if writer:
-      for proto in protos:
-        writer.write(proto)
-
-  def close_all(self):
-    for writer in self._writers.values():
-      if writer is not None:
-        writer.close()
-
-
 def _write_example_and_update_stats(example,
                                     writer,
                                     runtimes,
@@ -1697,11 +1756,6 @@ def make_examples_runner(options):
     logging_with_options(options,
                          'Writing gvcf records to %s' % options.gvcf_filename)
 
-  n_regions, n_candidates, n_examples = 0, 0, 0
-  # Ideally this would use dv_constants.NUM_CLASSES, which requires generalizing
-  # deepvariant_pb2.MakeExamplesStats to use an array for the class counts.
-  n_class_0, n_class_1, n_class_2 = 0, 0, 0
-  n_snps, n_indels = 0, 0
   last_reported = 0
 
   writers_dict = {}
@@ -1722,8 +1776,20 @@ def make_examples_runner(options):
       options, 'Overhead for preparing inputs: %d seconds' %
       (time.time() - before_initializing_inputs))
 
-  example_shape = None
   running_timer = timer.TimerStart()
+  # Ideally this would use dv_constants.NUM_CLASSES, which requires generalizing
+  # deepvariant_pb2.MakeExamplesStats to use an array for the class counts.
+  n_stats = {
+      'n_class_0': 0,
+      'n_class_1': 0,
+      'n_class_2': 0,
+      'n_snps': 0,
+      'n_indels': 0,
+      'n_regions': 0,
+      'n_candidates': 0,
+      'n_examples': 0
+  }
+  example_shape = None
   for region in regions:
     (candidates_by_sample, gvcfs_by_sample,
      runtimes) = region_processor.process(region)
@@ -1731,54 +1797,19 @@ def make_examples_runner(options):
       role = sample.options.role
       if role not in candidates_by_sample:
         continue
-      candidates = candidates_by_sample[role]
       writer = writers_dict[role]
-      before_make_pileup_images = time.time()
-      # Create A tf.Example proto, which includes the candidate variant, the
-      # pileup image, and, if in training mode, the truth variants and labels
-      # needed for training.
-      if in_training_mode(options):
-        # Initialize labels and types to be updated in the for loop below.
-        labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
-        types = {
-            tf_utils.EncodedVariantType.SNP: 0,
-            tf_utils.EncodedVariantType.INDEL: 0,
-            tf_utils.EncodedVariantType.UNKNOWN: 0
-        }
-        for candidate, label in region_processor.label_candidates(
-            candidates, region):
-          for example in region_processor.create_pileup_examples(
-              candidate, sample_order=sample.options.order):
-            region_processor.add_label_to_example(example, label)
-            _write_example_and_update_stats(example, writer, runtimes, labels,
-                                            types)
-            n_examples += 1
-            if example_shape is None:
-              example_shape = tf_utils.example_image_shape(example)
-        if options.run_info_filename:
-          n_class_0 += labels[0]
-          n_class_1 += labels[1]
-          n_class_2 += labels[2]
-          n_snps += types[tf_utils.EncodedVariantType.SNP]
-          n_indels += types[tf_utils.EncodedVariantType.INDEL]
-      else:
-        for candidate in candidates:
-          for example in region_processor.create_pileup_examples(
-              candidate, sample_order=sample.options.order):
-            _write_example_and_update_stats(example, writer, runtimes)
-            n_examples += 1
-            if example_shape is None:
-              example_shape = tf_utils.example_image_shape(example)
-
-      runtimes['make pileup images'] = trim_runtime(time.time() -
-                                                    before_make_pileup_images)
+      region_example_shape = region_processor.writes_examples_in_region(
+          candidates_by_sample[role], region, sample.options.order, writer,
+          n_stats, runtimes)
+      if example_shape is None and region_example_shape is not None:
+        example_shape = region_example_shape
       gvcfs = gvcfs_by_sample[role]
 
-      n_candidates += len(candidates)
-      n_regions += 1
+      n_stats['n_candidates'] += len(candidates_by_sample[role])
+      n_stats['n_regions'] += 1
 
       before_write_outputs = time.time()
-      writer.write_candidates(*candidates)
+      writer.write_candidates(*candidates_by_sample[role])
 
       # If we have any gvcf records, write them out. This also serves to
       # protect us from trying to write to the gvcfs output of writer when gvcf
@@ -1793,12 +1824,14 @@ def make_examples_runner(options):
         runtimes['region'] = ranges.to_literal(region)
 
       # Output timing for every N candidates.
-      if (int(n_candidates / options.logging_every_n_candidates) > last_reported
-          or n_regions == 1):
-        last_reported = int(n_candidates / options.logging_every_n_candidates)
+      if (int(n_stats['n_candidates'] / options.logging_every_n_candidates) >
+          last_reported or n_stats['n_regions'] == 1):
+        last_reported = int(n_stats['n_candidates'] /
+                            options.logging_every_n_candidates)
         logging_with_options(
             options, '%s candidates (%s examples) [%0.2fs elapsed]' %
-            (n_candidates, n_examples, running_timer.Stop()))
+            (n_stats['n_candidates'], n_stats['n_examples'],
+             running_timer.Stop()))
         running_timer = timer.TimerStart()
     if options.runtime_by_region:
       # Runtimes are for all samples, so write this only once.
@@ -1811,12 +1844,12 @@ def make_examples_runner(options):
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
     make_examples_stats = deepvariant_pb2.MakeExamplesStats(
-        num_examples=n_examples,
-        num_snps=n_snps,
-        num_indels=n_indels,
-        num_class_0=n_class_0,
-        num_class_1=n_class_1,
-        num_class_2=n_class_2)
+        num_examples=n_stats['n_examples'],
+        num_snps=n_stats['n_snps'],
+        num_indels=n_stats['n_indels'],
+        num_class_0=n_stats['n_class_0'],
+        num_class_1=n_stats['n_class_1'],
+        num_class_2=n_stats['n_class_2'])
     run_info = deepvariant_pb2.MakeExamplesRunInfo(
         options=options,
         resource_metrics=resource_monitor.metrics(),
@@ -1857,5 +1890,6 @@ def make_examples_runner(options):
               'channels': example_channels
           }, fout)
 
-  logging_with_options(options, 'Found %s candidate variants' % n_candidates)
-  logging_with_options(options, 'Created %s examples' % n_examples)
+  logging_with_options(options,
+                       'Found %s candidate variants' % n_stats['n_candidates'])
+  logging_with_options(options, 'Created %s examples' % n_stats['n_examples'])
