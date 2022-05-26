@@ -166,6 +166,10 @@ gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz* \
   ${OUTPUT_BUCKET}
 ```
 
+NOTE: If you prefer shuffling locally, please take a look at this user-provided
+shuffler option:
+https://github.com/google/deepvariant/issues/360#issuecomment-1019990366
+
 ### Validation set
 
 ```
