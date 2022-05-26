@@ -1394,6 +1394,47 @@ TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedAllTheWayToSoftClip) {
   EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
 }
 
+TEST_F(AlleleCounterTest, NormalizeCigarDelInsMergedNoShift) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 34,
+      "ATGTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT", &contigs, &seqs);  // sequence
+                                                             // of TTCC-repeat.
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 34);
+
+  // Read is made by taking substring of a reference and removing 12 bases to
+  // create a deletion. Deletion is deliberately created non left aligned.
+  int interval_offset = 4;
+  auto read =
+      MakeRead("chr1", interval_offset, "TCCTTCCTTCCTCCTTCCTTCCTTCCTTCCTTCCA",
+               // Ref:  TCCTTCCTTCC T ________ TCCTTCCTTCCA
+               // Read: TCCTTCCTTCC _ TCCTTCCT TCCTTCCTTCCTTCCA.
+               {"11M", "1D", "8I", "16M"});
+
+  // Most right INS is shifted to the left and become ajacent to the DEL
+  // 1D and 8I should be merged into 1M and 7I. The resulting 7 bases INS is
+  // shifted again to position 4.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"4M", "7I", "24M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), interval_offset,
+                                norm_cigar, read_shift);
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

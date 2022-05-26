@@ -606,21 +606,31 @@ bool FindAndMergeOperations(
 // INS has to be merged then their overlapping part is converted to REF and
 // non overlapping part is preserved.
 // For example. 3D5I (3 del and 5 ins) is merged into 3M2I (3 ref and 2 ins).
-void SwipeAndMerge(std::vector<nucleus::genomics::v1::CigarUnit>& norm_cigar) {
+// Return true if any change was made to the cigar.
+bool SwipeAndMerge(std::vector<nucleus::genomics::v1::CigarUnit>& norm_cigar) {
   // Repeat the loop until nothing is merged.
   bool merged = true;
+  bool is_modified = false;
   while (merged) {
     merged = false;
     // First remove all operations of length zero
+    auto before_size = norm_cigar.size();
     norm_cigar.erase(
         std::remove_if(norm_cigar.begin(), norm_cigar.end(),
                        [](const nucleus::genomics::v1::CigarUnit& op) {
                          return (op.operation_length() == 0);
                        }),
         norm_cigar.end());
+    if (norm_cigar.size() < before_size) {
+      is_modified = true;
+    }
     // Then merge operations that are mergable.
     merged  = FindAndMergeOperations(norm_cigar);
-  }
+    if (merged) {
+      is_modified = true;
+    }
+  }  // while(merged)
+  return is_modified;
 }
 
 bool AlleleCounter::CanDelBeShifted(
@@ -717,9 +727,14 @@ bool AlleleCounter::NormalizeCigar(
       AdvanceReadReferencePointers(op_len, cigar_elt->operation(), read_offset,
                                    cur_interval_offset);
     }  // for
-    if (is_shifted) {
-      SwipeAndMerge(norm_cigar);
-    } else {
+
+    // Input BAM may contain non-normalized records, therefore we try to
+    // SwipeAndMerge even if there was no shift.
+    bool is_merged = SwipeAndMerge(norm_cigar);
+    if (is_merged) {
+      is_modified = true;
+    }
+    if (!is_shifted && !is_merged) {
       break;
     }
   }  // while (iteration < 10)
