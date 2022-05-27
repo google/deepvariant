@@ -245,8 +245,6 @@ def make_examples_command(ref,
     special_args['min_mapping_quality'] = 1
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
-    special_args['phase_max_candidates'] = 5000
-    special_args['phase_reads_region_padding'] = 5000
     special_args['phase_reads'] = True
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False

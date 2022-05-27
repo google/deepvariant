@@ -305,15 +305,16 @@ flags.DEFINE_bool(
 flags.DEFINE_bool('phase_reads', False,
                   'Calculate phases and add HP tag to all reads on a fly.')
 flags.DEFINE_integer(
-    'phase_reads_region_padding', 0,
-    'This flag is used in combination with phase_reads. It allows to extend'
+    'phase_reads_region_padding', 5000,
+    'This flag is used only when phase_reads is true. It allows to extend'
     'region and calculate candidates in extended region. Output examples are'
     'not affected by this flag.')
 
 flags.DEFINE_integer(
-    'phase_max_candidates', None,
+    'phase_max_candidates', 5000,
     'Limits the number of candidates for phasing. If number of candidates '
-    'exceeds the maximum then phasing is not performed for the window.')
+    'exceeds the maximum then phasing is not performed for the window. '
+    'This flag is used only when phase_reads is true.')
 
 
 def shared_flags_to_options(

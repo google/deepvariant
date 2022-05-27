@@ -1132,7 +1132,7 @@ class RegionProcessor(object):
 
     # Region is expanded by region_padding number of bases. This functionality
     # is only needed when phase_reads flag is on.
-    if self.options.phase_reads_region_padding > 0:
+    if self.options.phase_reads and self.options.phase_reads_region_padding > 0:
       contig_dict = ranges.contigs_dict(
           fasta.IndexedFastaReader(
               self.options.reference_filename).header.contigs)
