@@ -206,7 +206,7 @@ if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BASE="${HOME}/pacbio-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  BAM="${BAM:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.bam}"
+  BAM="${BAM:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.35x.grch38.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
