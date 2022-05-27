@@ -241,6 +241,11 @@ calculate the true `AD` and `DP` values at high-depth regions, you can set
 practice, capping reads per partition reduces runtimes with little/no impact on
 accuracy.
 
+## Missing variant calls near the edge of a contig
+
+This is a known issue that we don't currently address. Please see:
+https://github.com/google/deepvariant/issues/505 for more context.
+
 ## Singularity related questions:
 
 ### `TMPDIR`
