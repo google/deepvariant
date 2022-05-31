@@ -182,7 +182,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
-DEEP_TRIO_VERSION = '1.3.0'
+DEEP_TRIO_VERSION = '1.4.0'
 GLNEXUS_VERSION = 'v1.2.7'
 
 DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
@@ -277,7 +277,7 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
         raise ValueError(
             'The extra_args "{}" might have conflicts with other flags. '
             'See '
-            'https://github.com/google/deepvariant/blob/r1.3/docs/'
+            'https://github.com/google/deepvariant/blob/r1.4/docs/'
             'deepvariant-pacbio-model-case-study.md#clarification-'
             'of-the---use_hp_information-flag '
             'for an explanation, or report this issue on '
@@ -466,7 +466,7 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(FLAGS.customized_model_parent + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.3/docs/'
+                         'https://github.com/google/deepvariant/blob/r1.4/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
                          'could-not-open'.format(FLAGS.customized_model_parent))
     logging.info(
@@ -482,7 +482,7 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(FLAGS.customized_model_child + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.3/docs/'
+                         'https://github.com/google/deepvariant/blob/r1.4/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
                          'could-not-open'.format(FLAGS.customized_model_child))
     logging.info(

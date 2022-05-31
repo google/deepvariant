@@ -34,7 +34,7 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 
 For more details, see:
-https://github.com/google/deepvariant/blob/r1.3/docs/deepvariant-quick-start.md
+https://github.com/google/deepvariant/blob/r1.4/docs/deepvariant-quick-start.md
 """
 
 import os
@@ -141,7 +141,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
-DEEP_VARIANT_VERSION = '1.3.0'
+DEEP_VARIANT_VERSION = '1.4.0'
 
 
 def _is_quoted(value):
@@ -353,7 +353,7 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(FLAGS.customized_model + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.3/docs/'
+                         'https://github.com/google/deepvariant/blob/r1.4/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
                          'could-not-open'.format(FLAGS.customized_model))
     logging.info(
