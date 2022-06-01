@@ -68,7 +68,7 @@ curl ${HTTPDIR}/idt_capture_novogene.grch38.bed > input/idt_capture_novogene.grc
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.3.0"
+BIN_VERSION="1.4.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -88,6 +88,11 @@ sudo docker run \
 
 By specifying `--model_type WES`, you'll be using a model that is best suited
 for Illumina Whole Exome Sequencing data.
+
+NOTE: If you want to run each of the steps separately, add `--dry_run=true`
+to the command above to figure out what flags you need in each step. Based on
+the different model types, different flags are needed in the `make_examples`
+step.
 
 `--intermediate_results_dir` flag is optional. By specifying it, the
 intermediate outputs of `make_examples` and `call_variants` stages can be found
@@ -131,10 +136,10 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL         1051      1024        27         1471         8        417      6      1       0.974310           0.99241        0.283481         0.983277                     NaN                     NaN                   1.747283                   1.878728
-INDEL   PASS         1051      1024        27         1471         8        417      6      1       0.974310           0.99241        0.283481         0.983277                     NaN                     NaN                   1.747283                   1.878728
-  SNP    ALL        25279     24938       341        27521        57       2524     31      4       0.986511           0.99772        0.091712         0.992083                2.854703                2.771096                   1.623027                   1.629697
-  SNP   PASS        25279     24938       341        27521        57       2524     31      4       0.986511           0.99772        0.091712         0.992083                2.854703                2.771096                   1.623027                   1.629697
+INDEL    ALL         1051      1020        31         1467         9        417      6      1       0.970504          0.991429        0.284254         0.980855                     NaN                     NaN                   1.747283                   1.863366
+INDEL   PASS         1051      1020        31         1467         9        417      6      1       0.970504          0.991429        0.284254         0.980855                     NaN                     NaN                   1.747283                   1.863366
+  SNP    ALL        25279     24976       303        27608        46       2584     31      1       0.988014          0.998162        0.093596         0.993062                2.854703                2.760349                   1.623027                   1.624180
+  SNP   PASS        25279     24976       303        27608        46       2584     31      1       0.988014          0.998162        0.093596         0.993062                2.854703                2.760349                   1.623027                   1.624180
 ```
 
 [case study on whole genome sequencing data]: deepvariant-case-study.md

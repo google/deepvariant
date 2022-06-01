@@ -67,7 +67,7 @@ DeepVariant pipeline consists of 3 steps: `make_examples`, `call_variants`, and
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.3.0"
+BIN_VERSION="1.4.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -87,6 +87,11 @@ sudo docker run \
 
 By specifying `--model_type WGS`, you'll be using a model that is best suited
 for Illumina Whole Genome Sequencing data.
+
+NOTE: If you want to run each of the steps separately, add `--dry_run=true`
+to the command above to figure out what flags you need in each step. Based on
+the different model types, different flags are needed in the `make_examples`
+step.
 
 `--intermediate_results_dir` flag is optional. By specifying it, the
 intermediate outputs of `make_examples` and `call_variants` stages can be found
@@ -130,9 +135,9 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10578        50        21043        22       9987     19      3       0.995295          0.998010        0.474600         0.996651                     NaN                     NaN                   1.748961                   2.265006
-INDEL   PASS        10628     10578        50        21043        22       9987     19      3       0.995295          0.998010        0.474600         0.996651                     NaN                     NaN                   1.748961                   2.265006
-  SNP    ALL        70166     69885       281        85377        64      15390     17      4       0.995995          0.999086        0.180259         0.997538                2.296566                2.073678                   1.883951                   1.904509
-  SNP   PASS        70166     69885       281        85377        64      15390     17      4       0.995995          0.999086        0.180259         0.997538                2.296566                2.073678                   1.883951                   1.904509
+INDEL    ALL        10628     10584        44        21095        21      10035     18      3       0.995860          0.998101        0.475705         0.996979                     NaN                     NaN                   1.748961                   2.302479
+INDEL   PASS        10628     10584        44        21095        21      10035     18      3       0.995860          0.998101        0.475705         0.996979                     NaN                     NaN                   1.748961                   2.302479
+  SNP    ALL        70166     69929       237        85376        60      15349     13      4       0.996622          0.999143        0.179781         0.997881                2.296566                2.066688                   1.883951                   1.906484
+  SNP   PASS        70166     69929       237        85376        60      15349     13      4       0.996622          0.999143        0.179781         0.997881                2.296566                2.066688                   1.883951                   1.906484
 ```
 

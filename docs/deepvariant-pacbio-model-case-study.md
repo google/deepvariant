@@ -93,6 +93,11 @@ singularity exec --bind /usr/lib/locale/ \
     --regions chr20
 ```
 
+NOTE: If you want to run each of the steps separately, add `--dry_run=true`
+to the command above to figure out what flags you need in each step. Based on
+the different model types, different flags are needed in the `make_examples`
+step.
+
 ## Benchmark output
 
 ```bash
@@ -116,9 +121,9 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10562        66        23222        71      12146     41     28       0.993790          0.993590        0.523038         0.993690                     NaN                     NaN                   1.748961                   2.264826
-INDEL   PASS        10628     10562        66        23222        71      12146     41     28       0.993790          0.993590        0.523038         0.993690                     NaN                     NaN                   1.748961                   2.264826
-  SNP    ALL        70166     70137        29       109412        11      39197      4      1       0.999587          0.999843        0.358251         0.999715                2.296566                1.672899                   1.883951                   1.831317
-  SNP   PASS        70166     70137        29       109412        11      39197      4      1       0.999587          0.999843        0.358251         0.999715                2.296566                1.672899                   1.883951                   1.831317
+INDEL    ALL        10628     10562        66        23213        71      12137     41     28       0.993790          0.993590        0.522854         0.993690                     NaN                     NaN                   1.748961                   2.266841
+INDEL   PASS        10628     10562        66        23213        71      12137     41     28       0.993790          0.993590        0.522854         0.993690                     NaN                     NaN                   1.748961                   2.266841
+  SNP    ALL        70166     70137        29       109249        11      39034      4      1       0.999587          0.999843        0.357294         0.999715                2.296566                1.674805                   1.883951                   1.836323
+  SNP   PASS        70166     70137        29       109249        11      39034      4      1       0.999587          0.999843        0.357294         0.999715                2.296566                1.674805                   1.883951                   1.836323
 ```
 

@@ -109,7 +109,7 @@ you can run this case study within about half an hour (tested on 64 CPUs).
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.3.0"
+BIN_VERSION="1.4.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -130,6 +130,11 @@ sudo docker run \
 By specifying `--model_type HYBRID_PACBIO_ILLUMINA`, you'll be using a model
 that is best suited for (and trained on) the combination of PacBio Hifi long
 reads and Illumina short reads.
+
+NOTE: If you want to run each of the steps separately, add `--dry_run=true`
+to the command above to figure out what flags you need in each step. Based on
+the different model types, different flags are needed in the `make_examples`
+step.
 
 `--intermediate_results_dir` flag is optional. By specifying it, the
 intermediate outputs of `make_examples` and `call_variants` stages can be found
@@ -177,10 +182,10 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10613        15        22611        38      11431      5     33       0.998589          0.996601         0.50555         0.997594                     NaN                     NaN                   1.748961                   2.563749
-INDEL   PASS        10628     10613        15        22611        38      11431      5     33       0.998589          0.996601         0.50555         0.997594                     NaN                     NaN                   1.748961                   2.563749
-  SNP    ALL        70166     70138        28        98278        27      28082     12      9       0.999601          0.999615         0.28574         0.999608                2.296566                 1.88612                   1.883951                   2.052690
-  SNP   PASS        70166     70138        28        98278        27      28082     12      9       0.999601          0.999615         0.28574         0.999608                2.296566                 1.88612                   1.883951                   2.052690
+INDEL    ALL        10628     10614        14        23487        41      12304      8     32       0.998683          0.996334        0.523864         0.997507                     NaN                     NaN                   1.748961                   2.590014
+INDEL   PASS        10628     10614        14        23487        41      12304      8     32       0.998683          0.996334        0.523864         0.997507                     NaN                     NaN                   1.748961                   2.590014
+  SNP    ALL        70166     70148        18       105611        22      35409     10      6       0.999743          0.999687        0.335278         0.999715                2.296566                1.784454                   1.883951                   1.936478
+  SNP   PASS        70166     70148        18       105611        22      35409     10      6       0.999743          0.999687        0.335278         0.999715                2.296566                1.784454                   1.883951                   1.936478
 ```
 
 Notice that F1 scores are above 0.999 for SNPs and above 0.995 for indels!

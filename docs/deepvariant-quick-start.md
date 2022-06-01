@@ -33,7 +33,7 @@ If you want to compile the DeepVariant binaries for yourself, we also have a
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.3.0"
+BIN_VERSION="1.4.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -247,14 +247,14 @@ Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
 INDEL    ALL            4         4         0           13         0          9      0      0       1.000000               1.0        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
 INDEL   PASS            4         4         0           13         0          9      0      0       1.000000               1.0        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
-  SNP    ALL           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
-  SNP   PASS           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
+  SNP    ALL           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.372093
+  SNP   PASS           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.372093
 ```
 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.3/Dockerfile
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.4/Dockerfile
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
