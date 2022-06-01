@@ -42,7 +42,7 @@ DeepTrio comes with three models for different types of input data:
 ## Running DeepTrio
 
 The easiest and recommended way to run DeepTrio is using
-`google/deepvariant:latest-deeptrio` docker image. Please refer to the
+`google/deepvariant:deeptrio-latest` docker image. Please refer to the
 [quick start guide](deeptrio-quick-start.md) for more details on how to run
 DeepTrio using docker.
 

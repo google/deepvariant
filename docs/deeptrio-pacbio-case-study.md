@@ -85,7 +85,7 @@ is run as a separate command.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.3.0"
+BIN_VERSION="1.4.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -118,12 +118,15 @@ time sudo docker run \
 ```
 
 The `--use_hp_information` arg makes use of a phased reads, thus allowing a
-further improvement of the accuracy. In order to use this feature input BAM
-files have to be phased. For the detailed description on how to do that please
-see [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md).
+further improvement of the accuracy. You can use tools like whatshap to phase.
 
 By specifying `--model_type PACBIO`, you'll be using a model that is best suited
 for PacBio HiFi Whole Genome Sequencing data.
+
+NOTE: If you want to run each of the steps separately, add `--dry_run=true`
+to the command above to figure out what flags you need in each step. Based on
+the different model types, different flags are needed in the `make_examples`
+step.
 
 `--intermediate_results_dir` flag is optional. By specifying it, the
 intermediate outputs of `make_examples` and `call_variants` stages can be found
