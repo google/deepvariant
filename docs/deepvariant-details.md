@@ -303,7 +303,7 @@ An example usage:
 
 ```bash
 BIN_VERSION=1.4.0
-gsutil -m cp gs://deepvariant/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}-rc2+data-pacbio_standard/model.ckpt* .
+gsutil -m cp gs://deepvariant/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}+data-pacbio_standard/model.ckpt* .
 
 sudo docker run \
   -v $PWD:/input \
