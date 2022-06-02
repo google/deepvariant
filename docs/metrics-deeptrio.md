@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~501m
-call_variants for HG002          | ~348m
-call_variants for HG003          | ~344m
-call_variants for HG004          | ~344m
-postprocess_variants (parallel)  | ~67m
-total                            | ~1604m = ~26.73 hours
+make_examples                    | ~508m
+call_variants for HG002          | ~341m
+call_variants for HG003          | ~349m
+call_variants for HG004          | ~347m
+postprocess_variants (parallel)  | ~65m
+total                            | ~1610m = ~26.83 hours
 
 ### Accuracy
 
@@ -49,12 +49,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~798m
-call_variants for HG002          | ~261m
-call_variants for HG003          | ~264m
-call_variants for HG004          | ~263m
+make_examples                    | ~829m
+call_variants for HG002          | ~263m
+call_variants for HG003          | ~266m
+call_variants for HG004          | ~268m
 postprocess_variants (parallel)  | ~78m
-total                            | ~1664m = ~27.73 hours
+total                            | ~1704m = ~28.4 hours
 
 ### Accuracy
 
@@ -137,7 +137,7 @@ Use `gcloud compute ssh` to log in to the newly created instance.
 Download and run any of the following case study scripts:
 
 ```
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.3/scripts/inference_deeptrio.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.4/scripts/inference_deeptrio.sh
 
 # WGS
 bash inference_deeptrio.sh --model_preset WGS
