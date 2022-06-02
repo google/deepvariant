@@ -121,7 +121,7 @@ pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
 # Ideally we want to make these protobuf versions all match, eventually.
 pip3 install "${PIP_ARGS[@]}" 'protobuf==3.13.0'
 pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
-pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git
+pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git@v1.1.0
 
 pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
 
@@ -146,7 +146,6 @@ pip3 install "${PIP_ARGS[@]}" 'jsonschema==3.2.0'
 pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 pip3 install "${PIP_ARGS[@]}" 'Pillow>=5.4.1'
 pip3 install "${PIP_ARGS[@]}" 'ipython>=7.9.0'
-
 
 ################################################################################
 # TensorFlow
