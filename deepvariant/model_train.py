@@ -38,11 +38,11 @@ from absl import logging
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
-from third_party.nucleus.util import proto_utils
 from deepvariant import data_providers
+from deepvariant import dv_utils
 from deepvariant import logging_level
 from deepvariant import modeling
-from deepvariant import tf_utils
+from third_party.nucleus.util import proto_utils
 
 
 FLAGS = flags.FLAGS
@@ -241,7 +241,7 @@ def parse_and_run():
   if not tf_config:
     device_fn = tf.compat.v1.train.replica_device_setter(FLAGS.ps_tasks)
     # pylint: disable=g-long-ternary
-    master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
+    master = dv_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
                                      FLAGS.tpu_zone,
                                      FLAGS.gcp_project) if FLAGS.use_tpu else ''
     return run(

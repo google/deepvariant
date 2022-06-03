@@ -37,15 +37,14 @@ import json
 import os
 
 
-
 from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from deepvariant import dv_utils
 from deepvariant import logging_level
 from deepvariant import modeling
-from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
@@ -349,7 +348,7 @@ def call_variants(examples_filename, checkpoint_path, model, output_file):
                  'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME']))
 
   # Read a single TFExample to make sure we're not loading an older version.
-  first_example = tf_utils.get_one_example_from_examples_path(examples_filename)
+  first_example = dv_utils.get_one_example_from_examples_path(examples_filename)
   if first_example is None:
     logging.warning(
         'Unable to read any records from %s. Output will contain '
@@ -359,7 +358,7 @@ def call_variants(examples_filename, checkpoint_path, model, output_file):
 
   # TODO: Check example shape and format and throw a readable
   # error if incorrect
-  example_info_json = tf_utils.get_example_info_json_filename(
+  example_info_json = dv_utils.get_example_info_json_filename(
       examples_filename, 0)
   example_shape = get_shape_and_channels_from_json(example_info_json)[0]
 

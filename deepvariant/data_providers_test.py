@@ -39,15 +39,15 @@ import six
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
+from deepvariant import data_providers
+from deepvariant import dv_constants
+from deepvariant import dv_utils
+from deepvariant import testdata
+from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from tensorflow.core.example import example_pb2
-from deepvariant import data_providers
-from deepvariant import dv_constants
-from deepvariant import testdata
-from deepvariant import tf_utils
-from deepvariant.protos import deepvariant_pb2
 
 
 def setUpModule():
@@ -170,7 +170,7 @@ class DataProviderTest(parameterized.TestCase):
           break
         locus = features['locus'][0]
         if use_tpu:
-          locus = tf_utils.int_tensor_to_string(locus)
+          locus = dv_utils.int_tensor_to_string(locus)
         # NB, this looks like: array(['chr20:10001019-10001019'], dtype=object)
         seen.append(locus)
 
@@ -280,7 +280,7 @@ class DataProviderTest(parameterized.TestCase):
       self.assertEqual(batch_size, variants.shape[0])
       for variant in variants:
         if use_tpu:
-          variant = tf_utils.int_tensor_to_string(variant)
+          variant = dv_utils.int_tensor_to_string(variant)
         for v in variant_utils.decode_variants([variant]):
           self.assertEqual(v.reference_name, 'chr20')
 
@@ -515,8 +515,8 @@ class InputTest(
         a = features['alt_allele_indices'][0]
         if use_tpu:
           self.assertEqual(a.dtype, np.dtype('int32'))
-          self.assertEqual(a.shape, (tf_utils.STRING_TO_INT_BUFFER_LENGTH,))
-          actual_alt_allele_indices_encoded = tf_utils.int_tensor_to_string(a)
+          self.assertEqual(a.shape, (dv_utils.STRING_TO_INT_BUFFER_LENGTH,))
+          actual_alt_allele_indices_encoded = dv_utils.int_tensor_to_string(a)
         else:
           self.assertIsInstance(a, six.binary_type)
           actual_alt_allele_indices_encoded = a
@@ -526,8 +526,8 @@ class InputTest(
         a = features['variant'][0]
         if use_tpu:
           self.assertEqual(a.dtype, np.dtype('int32'))
-          self.assertEqual(a.shape, (tf_utils.STRING_TO_INT_BUFFER_LENGTH,))
-          actual_variant_encoded = tf_utils.int_tensor_to_string(a)
+          self.assertEqual(a.shape, (dv_utils.STRING_TO_INT_BUFFER_LENGTH,))
+          actual_variant_encoded = dv_utils.int_tensor_to_string(a)
         else:
           self.assertIsInstance(a, six.binary_type)
           actual_variant_encoded = a

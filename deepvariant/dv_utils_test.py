@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for deepvariant.tf_utils."""
+"""Tests for deepvariant.dv_utils."""
 
 from unittest import mock
 
@@ -37,7 +37,7 @@ from absl.testing import parameterized
 import six
 import tensorflow as tf
 
-from deepvariant import tf_utils
+from deepvariant import dv_utils
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -76,16 +76,16 @@ class TFUtilsTest(parameterized.TestCase):
       self.assertEqual({
           'v0': (2, 3),
           'v1': (3, 2, 1)
-      }, tf_utils.model_shapes(save_path))
+      }, dv_utils.model_shapes(save_path))
       # Asking for v0 gives you only v0's shape.
-      self.assertEqual({'v0': (2, 3)}, tf_utils.model_shapes(save_path, ['v0']))
+      self.assertEqual({'v0': (2, 3)}, dv_utils.model_shapes(save_path, ['v0']))
       # Asking for v1 gives you only v1's shape.
       self.assertEqual({'v1': (3, 2, 1)},
-                       tf_utils.model_shapes(save_path, ['v1']))
+                       dv_utils.model_shapes(save_path, ['v1']))
 
       # Verifies model_shapes() fails for non-existent tensors.
       with six.assertRaisesRegex(self, KeyError, 'v3'):
-        tf_utils.model_shapes(save_path, ['v3'])
+        dv_utils.model_shapes(save_path, ['v3'])
 
   def testModelNumClasses(self):
     # Builds a graph.
@@ -105,74 +105,74 @@ class TFUtilsTest(parameterized.TestCase):
       # If you pass in the correct class_variable_name, you'll find the number
       # of classes.
       self.assertEqual(
-          3, tf_utils.model_num_classes(save_path, class_variable_name))
+          3, dv_utils.model_num_classes(save_path, class_variable_name))
       # If the class variable name doesn't existin the checkpoint, return None.
       self.assertEqual(
-          None, tf_utils.model_num_classes(save_path, 'non-existent-var'))
+          None, dv_utils.model_num_classes(save_path, 'non-existent-var'))
       # If the checkpoint doesn't exist, return none.
       self.assertEqual(None,
-                       tf_utils.model_num_classes(None, class_variable_name))
+                       dv_utils.model_num_classes(None, class_variable_name))
 
   def testMakeExample(self):
-    example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
+    example = dv_utils.make_example(self.variant, self.alts, self.encoded_image,
                                     self.default_shape)
 
     self.assertEqual(self.encoded_image,
-                     tf_utils.example_encoded_image(example))
-    self.assertEqual(self.variant, tf_utils.example_variant(example))
-    self.assertEqual(six.b('1:11-11'), tf_utils.example_locus(example))
-    self.assertEqual([0], tf_utils.example_alt_alleles_indices(example))
-    self.assertEqual('1:11:C->A', tf_utils.example_key(example))
-    self.assertEqual(tf_utils.EncodedVariantType.SNP.value,
-                     tf_utils.example_variant_type(example))
+                     dv_utils.example_encoded_image(example))
+    self.assertEqual(self.variant, dv_utils.example_variant(example))
+    self.assertEqual(six.b('1:11-11'), dv_utils.example_locus(example))
+    self.assertEqual([0], dv_utils.example_alt_alleles_indices(example))
+    self.assertEqual('1:11:C->A', dv_utils.example_key(example))
+    self.assertEqual(dv_utils.EncodedVariantType.SNP.value,
+                     dv_utils.example_variant_type(example))
     pass
 
   def testMakeExampleMultiAllelic(self):
     alts = ['AA', 'CC', 'GG']
     self.variant.alternate_bases[:] = alts
     # Providing GG, AA checks that we're sorting the indices.
-    example = tf_utils.make_example(self.variant, ['GG', 'AA'], six.b('foo'),
+    example = dv_utils.make_example(self.variant, ['GG', 'AA'], six.b('foo'),
                                     self.default_shape)
-    self.assertEqual([0, 2], tf_utils.example_alt_alleles_indices(example))
-    self.assertEqual(['AA', 'GG'], tf_utils.example_alt_alleles(example))
-    self.assertEqual('1:11:C->AA/GG', tf_utils.example_key(example))
-    self.assertEqual(tf_utils.EncodedVariantType.INDEL.value,
-                     tf_utils.example_variant_type(example))
+    self.assertEqual([0, 2], dv_utils.example_alt_alleles_indices(example))
+    self.assertEqual(['AA', 'GG'], dv_utils.example_alt_alleles(example))
+    self.assertEqual('1:11:C->AA/GG', dv_utils.example_key(example))
+    self.assertEqual(dv_utils.EncodedVariantType.INDEL.value,
+                     dv_utils.example_variant_type(example))
 
   def testAltAllelesWithVariant(self):
     alts = list(self.variant.alternate_bases)
-    example = tf_utils.make_example(self.variant, alts, six.b('foo'),
+    example = dv_utils.make_example(self.variant, alts, six.b('foo'),
                                     self.default_shape)
-    self.assertEqual([0], tf_utils.example_alt_alleles_indices(example))
+    self.assertEqual([0], dv_utils.example_alt_alleles_indices(example))
     with mock.patch(
-        'deepvariant.tf_utils.example_variant'
+        'deepvariant.dv_utils.example_variant'
     ) as mock_ex_variant:
       # Providing variant directly avoids the call to example_variant().
       self.assertEqual(
-          alts, tf_utils.example_alt_alleles(example, variant=self.variant))
+          alts, dv_utils.example_alt_alleles(example, variant=self.variant))
       mock_ex_variant.assert_not_called()
 
       # Checks that we load the variant if needed and that our mock is working.
       mock_ex_variant.return_value = self.variant
-      self.assertEqual(alts, tf_utils.example_alt_alleles(example))
+      self.assertEqual(alts, dv_utils.example_alt_alleles(example))
       mock_ex_variant.assert_called_once_with(example)
 
   def assertIsNotAFeature(self, label, example):
     self.assertNotIn(label, example.features.feature)
 
   def testExampleSetLabel(self):
-    example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
+    example = dv_utils.make_example(self.variant, self.alts, self.encoded_image,
                                     self.default_shape)
 
     self.assertIsNotAFeature('label', example)
     for label in [0, 1, 2]:
-      tf_utils.example_set_label(example, label)
-      self.assertEqual(label, tf_utils.example_label(example))
+      dv_utils.example_set_label(example, label)
+      self.assertEqual(label, dv_utils.example_label(example))
 
   def testExampleImageShape(self):
-    example = tf_utils.make_example(self.variant, self.alts, self.encoded_image,
+    example = dv_utils.make_example(self.variant, self.alts, self.encoded_image,
                                     self.default_shape)
-    self.assertEqual(self.default_shape, tf_utils.example_image_shape(example))
+    self.assertEqual(self.default_shape, dv_utils.example_image_shape(example))
 
   def testFailedExampleImageShape(self):
     # Create an empty example that doesn't have the required image/shape field.
@@ -180,7 +180,7 @@ class TFUtilsTest(parameterized.TestCase):
     with six.assertRaisesRegex(
         self, ValueError, 'Invalid image/shape: we expect to find an '
         'image/shape field with length 3.'):
-      tf_utils.example_image_shape(example)
+      dv_utils.example_image_shape(example)
 
   @parameterized.parameters(
       ('test_shape.gz', 'test_shape.gz'),
@@ -199,7 +199,7 @@ class TFUtilsTest(parameterized.TestCase):
     tfrecord.write_tfrecords([example], output_file)
     self.assertEqual(
         valid_shape,
-        tf_utils.get_shape_from_examples_path(
+        dv_utils.get_shape_from_examples_path(
             test_utils.test_tmpfile(tfrecord_path_to_match)))
     # clean up
     gfile.Remove(output_file)
@@ -217,7 +217,7 @@ class TFUtilsTest(parameterized.TestCase):
     output_file = test_utils.test_tmpfile(file_name_to_write)
     tfrecord.write_tfrecords([], output_file)
     self.assertIsNone(
-        tf_utils.get_shape_from_examples_path(
+        dv_utils.get_shape_from_examples_path(
             test_utils.test_tmpfile(tfrecord_path_to_match)))
     # Clean up
     gfile.Remove(output_file)
@@ -232,12 +232,12 @@ class TFUtilsTest(parameterized.TestCase):
     # not fail like that, and will return an empty list, which
     # is turned into a different exception.
     with six.assertRaisesRegex(self, Exception, expected_partial_message):
-      tf_utils.get_shape_from_examples_path(source_paths)
+      dv_utils.get_shape_from_examples_path(source_paths)
 
   def testStringToIntTensor(self):
     with tf.compat.v1.Session() as sess:
       s = '\001\002\003\004\005\006\007'
-      it = tf_utils.string_to_int_tensor(s)
+      it = dv_utils.string_to_int_tensor(s)
       x = sess.run(it)
       a = x[0]
       self.assertLen(s, a)
@@ -247,16 +247,16 @@ class TFUtilsTest(parameterized.TestCase):
   def testIntTensorToString(self):
     with tf.compat.v1.Session() as sess:
       s = six.b('\001\002\003\004\005\006\007')
-      it = tf_utils.string_to_int_tensor(s)
+      it = dv_utils.string_to_int_tensor(s)
       x = sess.run(it)
-      t = tf_utils.int_tensor_to_string(x)
+      t = dv_utils.int_tensor_to_string(x)
       self.assertEqual(t, s)
 
   def testCompressionTypeOfFiles(self):
     self.assertEqual(
-        'GZIP', tf_utils.compression_type_of_files(['/tmp/foo.tfrecord.gz']))
+        'GZIP', dv_utils.compression_type_of_files(['/tmp/foo.tfrecord.gz']))
     self.assertEqual(None,
-                     tf_utils.compression_type_of_files(['/tmp/foo.tfrecord']))
+                     dv_utils.compression_type_of_files(['/tmp/foo.tfrecord']))
 
 
 if __name__ == '__main__':

@@ -38,12 +38,12 @@ from absl import logging
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
-from third_party.nucleus.util import proto_utils
-from tensorflow.python.framework.errors_impl import NotFoundError
 from deepvariant import data_providers
+from deepvariant import dv_utils
 from deepvariant import logging_level
 from deepvariant import modeling
-from deepvariant import tf_utils
+from third_party.nucleus.util import proto_utils
+from tensorflow.python.framework.errors_impl import NotFoundError
 
 FLAGS = flags.FLAGS
 
@@ -144,7 +144,7 @@ def main(_):
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
     logging.info('Set KMP_BLOCKTIME to %s', os.environ['KMP_BLOCKTIME'])
 
-  master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone,
+  master = dv_utils.resolve_master(FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone,
                                    FLAGS.gcp_project) if FLAGS.use_tpu else ''
   eval_loop(
       master=master,

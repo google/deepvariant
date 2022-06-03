@@ -33,16 +33,16 @@ training and evaluating germline calling accuracy.
 """
 
 
-
 from absl import logging
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
+from deepvariant import dv_constants
+from deepvariant import dv_utils
+from deepvariant.protos import deepvariant_pb2
 from google.protobuf import text_format
 from third_party.nucleus.io import sharded_file_utils
-from deepvariant import dv_constants
-from deepvariant import tf_utils
-from deepvariant.protos import deepvariant_pb2
+
 
 # These are empirically determined to work well on TPU with our data sets,
 # where lots of buffering and concurrency is necessary to keep the device
@@ -151,7 +151,7 @@ class DeepVariantInput(object):
     if tensor_shape:
       self.tensor_shape = tensor_shape
     else:
-      self.tensor_shape = tf_utils.get_shape_from_examples_path(input_file_spec)
+      self.tensor_shape = dv_utils.get_shape_from_examples_path(input_file_spec)
     self.input_files = sharded_file_utils.glob_list_sharded_file_patterns(
         self.input_file_spec)
 
@@ -204,8 +204,8 @@ class DeepVariantInput(object):
         # 'string'> is not a supported TPU infeed type. Supported types are:
         # [tf.float32, tf.int32, tf.complex64, tf.int64, tf.bool, tf.bfloat16]
         # Thus, we must encode the string as a tensor of int.
-        variant = tf_utils.string_to_int_tensor(variant)
-        alt_allele_indices = tf_utils.string_to_int_tensor(alt_allele_indices)
+        variant = dv_utils.string_to_int_tensor(variant)
+        alt_allele_indices = dv_utils.string_to_int_tensor(alt_allele_indices)
 
       features = {
           'image': image,
@@ -217,7 +217,7 @@ class DeepVariantInput(object):
       if (self.mode in (tf_estimator.ModeKeys.TRAIN, tf_estimator.ModeKeys.EVAL)
           or self.debugging_true_label_mode):
         if self.use_tpu:
-          features['locus'] = tf_utils.string_to_int_tensor(parsed['locus'])
+          features['locus'] = dv_utils.string_to_int_tensor(parsed['locus'])
         else:
           features['locus'] = parsed['locus']
 
@@ -273,7 +273,7 @@ class DeepVariantInput(object):
       return dataset
 
     batch_size = params['batch_size']
-    compression_type = tf_utils.compression_type_of_files(self.input_files)
+    compression_type = dv_utils.compression_type_of_files(self.input_files)
 
     # NOTE: The order of the file names returned can be non-deterministic,
     # even if shuffle is false.  See internal and the note in internal.
@@ -344,7 +344,7 @@ class DeepVariantInput(object):
       return dataset
 
     batch_size = params['batch_size']
-    compression_type = tf_utils.compression_type_of_files(self.input_files)
+    compression_type = dv_utils.compression_type_of_files(self.input_files)
     dataset = tf.data.Dataset.list_files(
         sharded_file_utils.normalize_to_sharded_file_pattern(
             self.input_file_spec),

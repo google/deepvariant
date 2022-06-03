@@ -87,8 +87,8 @@ py_test(
     deps = [
         ":make_examples_lib",
         ":py_testdata",
+        "//deepvariant:dv_utils",
         "//deepvariant:make_examples_core",
-        "//deepvariant:tf_utils",
         "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:fasta",

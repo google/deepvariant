@@ -45,14 +45,14 @@ import six
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
+from deepvariant import call_variants
+from deepvariant import dv_utils
+from deepvariant import modeling
+from deepvariant import testdata
+from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
-from deepvariant import call_variants
-from deepvariant import modeling
-from deepvariant import testdata
-from deepvariant import tf_utils
-from deepvariant.protos import deepvariant_pb2
 
 FLAGS = flags.FLAGS
 
@@ -265,7 +265,7 @@ class CallVariantsEndToEndTests(
     # is None), since we processed all of the examples with that model.
     if max_batches is None:
       six.assertCountEqual(self, [cvo.variant for cvo in call_variants_outputs],
-                           [tf_utils.example_variant(ex) for ex in examples])
+                           [dv_utils.example_variant(ex) for ex in examples])
 
     # Check the CVO debug_info: not filled if include_debug_info is False;
     # else, filled by logic based on CVO.
@@ -287,9 +287,9 @@ class CallVariantsEndToEndTests(
         self.assertEqual(len(cvo.debug_info.prelogits), 2048)
 
     def example_matches_call_variants_output(example, call_variants_output):
-      return (tf_utils.example_variant(example) == call_variants_output.variant
-              and tf_utils.example_alt_alleles_indices(
-                  example) == call_variants_output.alt_allele_indices.indices)
+      return (dv_utils.example_variant(example) == call_variants_output.variant
+              and dv_utils.example_alt_alleles_indices(example)
+              == call_variants_output.alt_allele_indices.indices)
 
     for call_variants_output in call_variants_outputs:
       # Find all matching examples.
@@ -304,7 +304,7 @@ class CallVariantsEndToEndTests(
       # as implemented we find our example using this information so it cannot
       # fail). Included here in case that changes in the future.
       self.assertEqual(
-          list(tf_utils.example_alt_alleles_indices(example)),
+          list(dv_utils.example_alt_alleles_indices(example)),
           list(call_variants_output.alt_allele_indices.indices))
       # We should have exactly three genotype probabilities (assuming our
       # ploidy == 2).
@@ -353,7 +353,7 @@ class CallVariantsUnitTests(
   def setUpClass(cls):
     cls.examples = list(
         tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
-    cls.variants = [tf_utils.example_variant(ex) for ex in cls.examples]
+    cls.variants = [dv_utils.example_variant(ex) for ex in cls.examples]
     cls.model = modeling.get_model('constant')
 
   @parameterized.parameters(

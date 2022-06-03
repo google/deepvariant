@@ -46,10 +46,10 @@ import numpy as np
 import six
 
 from deepvariant import dv_constants
+from deepvariant import dv_utils
 from deepvariant import make_examples
 from deepvariant import make_examples_core
 from deepvariant import testdata
-from deepvariant import tf_utils
 from deepvariant.protos import deepvariant_pb2
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
@@ -66,14 +66,14 @@ FLAGS = flags.FLAGS
 
 # Dictionary mapping keys to decoders for decode_example function.
 _EXAMPLE_DECODERS = {
-    'locus': tf_utils.example_locus,
-    'alt_allele_indices/encoded': tf_utils.example_alt_alleles_indices,
-    'image/encoded': tf_utils.example_encoded_image,
-    'variant/encoded': tf_utils.example_variant,
-    'variant_type': tf_utils.example_variant_type,
-    'label': tf_utils.example_label,
-    'image/shape': tf_utils.example_image_shape,
-    'sequencing_type': tf_utils.example_sequencing_type,
+    'locus': dv_utils.example_locus,
+    'alt_allele_indices/encoded': dv_utils.example_alt_alleles_indices,
+    'image/encoded': dv_utils.example_encoded_image,
+    'variant/encoded': dv_utils.example_variant,
+    'variant_type': dv_utils.example_variant_type,
+    'label': dv_utils.example_label,
+    'image/shape': dv_utils.example_image_shape,
+    'sequencing_type': dv_utils.example_sequencing_type,
 }
 
 
@@ -239,7 +239,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # Verify that the variants in the examples are all good.
     examples = self.verify_examples(
         FLAGS.examples, region, options, verify_labels=mode == 'training')
-    example_variants = [tf_utils.example_variant(ex) for ex in examples]
+    example_variants = [dv_utils.example_variant(ex) for ex in examples]
     self.verify_variants(example_variants, region, options, is_gvcf=False)
 
     # Verify the integrity of the examples and then check that they match our
@@ -777,12 +777,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   def sanity_check_example_info_json(self, example, examples_filename, task_id):
     """Checks `example_info.json` w/ examples_filename has the right info."""
-    example_info_json = tf_utils.get_example_info_json_filename(
+    example_info_json = dv_utils.get_example_info_json_filename(
         examples_filename, task_id)
     example_info = json.load(gfile.GFile(example_info_json, 'r'))
     self.assertIn('shape', example_info)
     self.assertEqual(example_info['shape'],
-                     tf_utils.example_image_shape(example))
+                     dv_utils.example_image_shape(example))
     self.assertIn('channels', example_info)
     self.assertLen(example_info['channels'], example_info['shape'][2])
 
@@ -800,9 +800,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)
       # pylint: disable=g-explicit-length-test
-      self.assertNotEmpty(tf_utils.example_alt_alleles_indices(example))
+      self.assertNotEmpty(dv_utils.example_alt_alleles_indices(example))
     # Check that the variants in the examples are good.
-    variants = [tf_utils.example_variant(x) for x in examples]
+    variants = [dv_utils.example_variant(x) for x in examples]
     self.verify_variants(variants, region, options, is_gvcf=False)
 
     if examples:

@@ -51,6 +51,7 @@ py_library(
         ":allele_frequency",
         ":call_variants_lib",
         ":data_providers",
+        ":dv_utils",
         ":dv_vcf_constants",
         ":haplotypes",
         ":make_examples_core",
@@ -60,7 +61,6 @@ py_library(
         ":modeling",
         ":pileup_image",
         ":postprocess_variants_py_lib",
-        ":tf_utils",
         "//deepvariant/python:allelecounter",
         "//deepvariant/python:direct_phasing",
         "//deepvariant/python:variant_calling",
@@ -434,10 +434,10 @@ py_library(
     deps = [
         ":allele_frequency",
         ":dv_constants",
+        ":dv_utils",
         ":dv_vcf_constants",
         ":pileup_image",
         ":resources_main_lib",
-        ":tf_utils",
         ":variant_caller",
         ":vcf_candidate_importer",
         ":very_sensitive_caller",
@@ -477,10 +477,10 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":dv_constants",
+        ":dv_utils",
         ":make_examples_core",
         ":make_examples_lib",
         ":py_testdata",
-        ":tf_utils",
         "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
@@ -582,10 +582,10 @@ py_test(
     shard_count = 2,
     srcs_version = "PY3",
     deps = [
+        ":dv_utils",
         ":make_examples_core",
         ":make_examples_lib",
         ":py_testdata",
-        ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
@@ -612,10 +612,10 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":data_providers",
+        ":dv_utils",
         ":logging_level",
         ":modeling",
         ":openvino_estimator",
-        ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",
@@ -670,9 +670,9 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":call_variants_main_lib",
+        ":dv_utils",
         ":modeling",
         ":py_testdata",
-        ":tf_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/testing:py_test_utils",
@@ -800,7 +800,7 @@ py_library(
         # END_INTERNAL
         ":dv_vcf_constants",
         ":logging_level",
-        ":tf_utils",
+        ":dv_utils",
         ":vcf_stats",
         "//deepvariant:dv_constants",
         "//deepvariant:haplotypes",
@@ -893,7 +893,7 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":dv_constants",
-        ":tf_utils",
+        ":dv_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
         "@com_google_protobuf//:protobuf_python",
@@ -976,7 +976,7 @@ py_library(
         ":attention_inception_v3",
         ":attention_module",
         ":data_providers",
-        ":tf_utils",
+        ":dv_utils",
         "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
@@ -991,8 +991,8 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":dv_constants",
+        ":dv_utils",
         ":modeling",
-        ":tf_utils",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -1117,8 +1117,8 @@ py_test(
 )
 
 py_library(
-    name = "tf_utils",
-    srcs = ["tf_utils.py"],
+    name = "dv_utils",
+    srcs = ["dv_utils.py"],
     srcs_version = "PY3",
     deps = [
         "//deepvariant/protos:deepvariant_py_pb2",
@@ -1131,14 +1131,14 @@ py_library(
 )
 
 py_test(
-    name = "tf_utils_test",
+    name = "dv_utils_test",
     size = "small",
-    srcs = ["tf_utils_test.py"],
+    srcs = ["dv_utils_test.py"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
+        ":dv_utils",
         ":py_testdata",
-        ":tf_utils",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",
         "@absl_py//absl/testing:absltest",

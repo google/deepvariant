@@ -20,8 +20,8 @@ py_library(
     srcs = ["labeled_examples_to_vcf.py"],
     srcs_version = "PY2AND3",
     deps = [
+        "//deepvariant:dv_utils",
         "//deepvariant:dv_vcf_constants",
-        "//deepvariant:tf_utils",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
@@ -55,7 +55,7 @@ py_library(
     srcs = ["variant_labeler.py"],
     srcs_version = "PY2AND3",
     deps = [
-        "//deepvariant:tf_utils",
+        "//deepvariant:dv_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
         "@absl_py//absl/logging",

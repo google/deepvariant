@@ -50,7 +50,7 @@ import tf_slim
 from tf_slim.nets import inception_v3
 
 from deepvariant import dv_constants
-from deepvariant import tf_utils
+from deepvariant import dv_utils
 # pylint: disable=g-direct-tensorflow-import
 from tensorflow.python.framework import ops
 from tensorflow.python.tpu import tpu_config
@@ -329,9 +329,9 @@ def eval_metric_fn(labels, predictions, variant_types):
   weights_by_type = {'All': None}
   if variant_types is not None:
     weights_by_type['SNPs'] = is_encoded_variant_type(
-        variant_types, tf_utils.EncodedVariantType.SNP)
+        variant_types, dv_utils.EncodedVariantType.SNP)
     weights_by_type['Indels'] = is_encoded_variant_type(
-        variant_types, tf_utils.EncodedVariantType.INDEL)
+        variant_types, dv_utils.EncodedVariantType.INDEL)
 
   for metric_name, metric_func in _METRICS_FUNCS_BY_VARIANT_TYPE.items():
     for weight_name, weights in weights_by_type.items():
@@ -542,7 +542,7 @@ class DeepVariantModel(object):
       excluded_scopes = set()
       reader = tf.compat.v1.train.NewCheckpointReader(start_from_checkpoint)
       var_to_shape_map = reader.get_variable_to_shape_map()
-      if tf_utils.model_num_classes(
+      if dv_utils.model_num_classes(
           start_from_checkpoint,
           self.n_classes_model_variable) != dv_constants.NUM_CLASSES:
         excluded_scopes.update(self.excluded_scopes_for_incompatible_classes)

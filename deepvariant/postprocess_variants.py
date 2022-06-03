@@ -36,11 +36,20 @@ import tempfile
 import time
 
 
+
 from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from deepvariant import dv_constants
+from deepvariant import dv_utils
+from deepvariant import dv_vcf_constants
+from deepvariant import haplotypes
+from deepvariant import logging_level
+from deepvariant import vcf_stats
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import postprocess_variants as postprocess_variants_lib
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tabix
@@ -55,14 +64,6 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util.struct_utils import add_string_field
-from deepvariant import dv_constants
-from deepvariant import dv_vcf_constants
-from deepvariant import haplotypes
-from deepvariant import logging_level
-from deepvariant import tf_utils
-from deepvariant import vcf_stats
-from deepvariant.protos import deepvariant_pb2
-from deepvariant.python import postprocess_variants as postprocess_variants_lib
 
 FLAGS = flags.FLAGS
 
@@ -942,7 +943,7 @@ def get_cvo_paths_and_first_record():
   """Returns sharded filenames for and one record from CVO input file."""
 
   paths = sharded_file_utils.maybe_generate_sharded_filenames(FLAGS.infile)
-  record = tf_utils.get_one_example_from_examples_path(
+  record = dv_utils.get_one_example_from_examples_path(
       ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
   return paths, record
 
@@ -963,7 +964,7 @@ def get_sample_name():
 
   _, record = get_cvo_paths_and_first_record()
   if FLAGS.nonvariant_site_tfrecord_path:
-    gvcf_record = tf_utils.get_one_example_from_examples_path(
+    gvcf_record = dv_utils.get_one_example_from_examples_path(
         FLAGS.nonvariant_site_tfrecord_path, proto=variants_pb2.Variant)
 
   if record is not None:

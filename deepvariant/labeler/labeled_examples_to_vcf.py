@@ -46,14 +46,13 @@ from absl import app
 from absl import flags
 from absl import logging
 
+from deepvariant import dv_utils
+from deepvariant import dv_vcf_constants
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-
-from deepvariant import dv_vcf_constants
-from deepvariant import tf_utils
 
 FLAGS = flags.FLAGS
 
@@ -85,7 +84,7 @@ flags.DEFINE_integer(
 
 
 def _example_sort_key(example):
-  return variant_utils.variant_range_tuple(tf_utils.example_variant(example))
+  return variant_utils.variant_range_tuple(dv_utils.example_variant(example))
 
 
 def examples_to_variants(examples_path, max_records=None):
@@ -109,7 +108,7 @@ def examples_to_variants(examples_path, max_records=None):
     ValueError: if we find a Variant in any example that doesn't have genotypes.
   """
   examples = tfrecord.read_tfrecords(examples_path, max_records=max_records)
-  variants = sorted((tf_utils.example_variant(example) for example in examples),
+  variants = sorted((dv_utils.example_variant(example) for example in examples),
                     key=variant_utils.variant_range_tuple)
 
   for _, group in itertools.groupby(variants,

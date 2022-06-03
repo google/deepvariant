@@ -34,7 +34,7 @@ import abc
 from absl import logging
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-from deepvariant import tf_utils
+from deepvariant import dv_utils
 
 # ---------------------------------------------------------------------------
 # VariantLabel
@@ -93,7 +93,7 @@ class VariantLabel(object):
 
   def convert_to_class(self, example):
     """Convert label to the class id."""
-    alt_alleles_indices = tf_utils.example_alt_alleles_indices(example)
+    alt_alleles_indices = dv_utils.example_alt_alleles_indices(example)
     # Set the label of the example to the # alts given our alt_alleles_indices.
     return self.label_for_alt_alleles(alt_alleles_indices)
 

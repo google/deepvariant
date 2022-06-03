@@ -33,25 +33,25 @@ import os
 import time
 
 
-
 from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
+from deepvariant import data_providers
+from deepvariant import dv_utils
+from deepvariant import logging_level
+from deepvariant import modeling
+from deepvariant.openvino_estimator import OpenVINOEstimator
+from deepvariant.protos import deepvariant_pb2
+from google.protobuf import text_format
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
-from deepvariant import data_providers
-from deepvariant import logging_level
-from deepvariant import modeling
-from deepvariant import tf_utils
-from deepvariant.openvino_estimator import OpenVINOEstimator
-from deepvariant.protos import deepvariant_pb2
-from google.protobuf import text_format
+
 
 tf.compat.v1.disable_eager_execution()
 
@@ -250,11 +250,11 @@ def write_variant_call(writer, prediction, use_tpu):
   """
   encoded_variant = prediction['variant']
   if use_tpu:
-    encoded_variant = tf_utils.int_tensor_to_string(encoded_variant)
+    encoded_variant = dv_utils.int_tensor_to_string(encoded_variant)
 
   encoded_alt_allele_indices = prediction['alt_allele_indices']
   if use_tpu:
-    encoded_alt_allele_indices = tf_utils.int_tensor_to_string(
+    encoded_alt_allele_indices = dv_utils.int_tensor_to_string(
         encoded_alt_allele_indices)
 
   rounded_gls = round_gls(prediction['probabilities'], precision=_GL_PRECISION)
@@ -338,7 +338,7 @@ def call_variants(examples_filename,
                  'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME']))
 
   # Read a single TFExample to make sure we're not loading an older version.
-  first_example = tf_utils.get_one_example_from_examples_path(examples_filename)
+  first_example = dv_utils.get_one_example_from_examples_path(examples_filename)
   if first_example is None:
     logging.warning(
         'Unable to read any records from %s. Output will contain '
@@ -346,7 +346,7 @@ def call_variants(examples_filename,
     tfrecord.write_tfrecords([], output_file)
     return
 
-  example_info_json = tf_utils.get_example_info_json_filename(
+  example_info_json = dv_utils.get_example_info_json_filename(
       examples_filename, 0)
   example_shape, example_channels_enum = get_shape_and_channels_from_json(
       example_info_json)
@@ -485,7 +485,7 @@ def main(argv=()):
     logging_level.set_from_flag()
 
     if FLAGS.use_tpu:
-      master = tf_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
+      master = dv_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
                                        FLAGS.tpu_zone, FLAGS.gcp_project)
     else:
       master = ''

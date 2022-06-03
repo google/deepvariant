@@ -45,8 +45,8 @@ import six
 
 from deeptrio import make_examples
 from deeptrio import testdata
+from deepvariant import dv_utils
 from deepvariant import make_examples_core
-from deepvariant import tf_utils
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from tensorflow.python.platform import gfile
@@ -65,14 +65,14 @@ FLAGS = flags.FLAGS
 
 # Dictionary mapping keys to decoders for decode_example function.
 _EXAMPLE_DECODERS = {
-    'locus': tf_utils.example_locus,
-    'alt_allele_indices/encoded': tf_utils.example_alt_alleles_indices,
-    'image/encoded': tf_utils.example_encoded_image,
-    'variant/encoded': tf_utils.example_variant,
-    'variant_type': tf_utils.example_variant_type,
-    'label': tf_utils.example_label,
-    'image/shape': tf_utils.example_image_shape,
-    'sequencing_type': tf_utils.example_sequencing_type,
+    'locus': dv_utils.example_locus,
+    'alt_allele_indices/encoded': dv_utils.example_alt_alleles_indices,
+    'image/encoded': dv_utils.example_encoded_image,
+    'variant/encoded': dv_utils.example_variant,
+    'variant_type': dv_utils.example_variant_type,
+    'label': dv_utils.example_label,
+    'image/shape': dv_utils.example_image_shape,
+    'sequencing_type': dv_utils.example_sequencing_type,
 }
 
 
@@ -244,7 +244,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     else:
       examples = self.verify_examples(
           FLAGS.examples, region, options, verify_labels=True)
-    example_variants = [tf_utils.example_variant(ex) for ex in examples]
+    example_variants = [dv_utils.example_variant(ex) for ex in examples]
     self.verify_variants(example_variants, region, options, is_gvcf=False)
 
     # Verify the integrity of the examples and then check that they match our
@@ -629,12 +629,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   def sanity_check_example_info_json(self, example, examples_filename, task_id):
     """Checks `example_info.json` w/ examples_filename has the right info."""
-    example_info_json = tf_utils.get_example_info_json_filename(
+    example_info_json = dv_utils.get_example_info_json_filename(
         examples_filename, task_id)
     example_info = json.load(gfile.GFile(example_info_json, 'r'))
     self.assertIn('shape', example_info)
     self.assertEqual(example_info['shape'],
-                     tf_utils.example_image_shape(example))
+                     dv_utils.example_image_shape(example))
     self.assertIn('channels', example_info)
     self.assertLen(example_info['channels'], example_info['shape'][2])
 
@@ -657,10 +657,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)
       # pylint: disable=g-explicit-length-test
-      self.assertNotEmpty(tf_utils.example_alt_alleles_indices(example))
+      self.assertNotEmpty(dv_utils.example_alt_alleles_indices(example))
 
     # Check that the variants in the examples are good.
-    variants = [tf_utils.example_variant(x) for x in examples]
+    variants = [dv_utils.example_variant(x) for x in examples]
     self.verify_variants(variants, region, options, is_gvcf=False)
 
     # In DeepTrio, path_to_output_examples can be pointing to the ones with
@@ -1078,10 +1078,10 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
                                        (alt2, six.b('tensor2'))]):
-      self.assertEqual(tf_utils.example_alt_alleles(ex), alt)
-      self.assertEqual(tf_utils.example_variant(ex), dv_call.variant)
-      self.assertEqual(tf_utils.example_encoded_image(ex), img)
-      self.assertEqual(tf_utils.example_image_shape(ex), self.default_shape)
+      self.assertEqual(dv_utils.example_alt_alleles(ex), alt)
+      self.assertEqual(dv_utils.example_variant(ex), dv_call.variant)
+      self.assertEqual(dv_utils.example_encoded_image(ex), img)
+      self.assertEqual(dv_utils.example_image_shape(ex), self.default_shape)
 
   @parameterized.parameters(
       # Test that a het variant gets a label value of 1 assigned to the example.
@@ -1116,8 +1116,8 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # The genotype of our example_variant should be set to the true genotype
     # according to our label.
-    self.assertEqual(expected_label_value, tf_utils.example_label(labeled))
-    labeled_variant = tf_utils.example_variant(labeled)
+    self.assertEqual(expected_label_value, dv_utils.example_label(labeled))
+    labeled_variant = dv_utils.example_variant(labeled)
     call = variant_utils.only_call(labeled_variant)
     self.assertEqual(tuple(call.genotype), label.genotype)
 
@@ -1139,7 +1139,7 @@ class RegionProcessorTest(parameterized.TestCase):
       self.processor.add_label_to_example(example, label)
 
   def _example_for_variant(self, variant):
-    return tf_utils.make_example(variant, list(variant.alternate_bases),
+    return dv_utils.make_example(variant, list(variant.alternate_bases),
                                  six.b('foo'), self.default_shape)
 
   def test_use_original_quality_scores_without_parse_sam_aux_fields(self):

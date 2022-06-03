@@ -39,6 +39,14 @@ from absl.testing import flagsaver
 from absl.testing import parameterized
 import six
 
+from deepvariant import dv_constants
+from deepvariant import dv_utils
+from deepvariant import make_examples
+from deepvariant import make_examples_core
+from deepvariant import testdata
+from deepvariant.labeler import variant_labeler
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.protos import realigner_pb2
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reads_pb2
@@ -46,14 +54,6 @@ from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
-from deepvariant import dv_constants
-from deepvariant import make_examples
-from deepvariant import make_examples_core
-from deepvariant import testdata
-from deepvariant import tf_utils
-from deepvariant.labeler import variant_labeler
-from deepvariant.protos import deepvariant_pb2
-from deepvariant.protos import realigner_pb2
 
 FLAGS = flags.FLAGS
 
@@ -848,10 +848,10 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
                                        (alt2, six.b('tensor2'))]):
-      self.assertEqual(tf_utils.example_alt_alleles(ex), alt)
-      self.assertEqual(tf_utils.example_variant(ex), dv_call.variant)
-      self.assertEqual(tf_utils.example_encoded_image(ex), img)
-      self.assertEqual(tf_utils.example_image_shape(ex), self.default_shape)
+      self.assertEqual(dv_utils.example_alt_alleles(ex), alt)
+      self.assertEqual(dv_utils.example_variant(ex), dv_call.variant)
+      self.assertEqual(dv_utils.example_encoded_image(ex), img)
+      self.assertEqual(dv_utils.example_image_shape(ex), self.default_shape)
 
   @parameterized.parameters(
       # Test that a het variant gets a label value of 1 assigned to the example.
@@ -886,8 +886,8 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # The genotype of our example_variant should be set to the true genotype
     # according to our label.
-    self.assertEqual(expected_label_value, tf_utils.example_label(labeled))
-    labeled_variant = tf_utils.example_variant(labeled)
+    self.assertEqual(expected_label_value, dv_utils.example_label(labeled))
+    labeled_variant = dv_utils.example_variant(labeled)
     call = variant_utils.only_call(labeled_variant)
     self.assertEqual(tuple(call.genotype), label.genotype)
 
@@ -909,7 +909,7 @@ class RegionProcessorTest(parameterized.TestCase):
       self.processor.add_label_to_example(example, label)
 
   def _example_for_variant(self, variant):
-    return tf_utils.make_example(variant, list(variant.alternate_bases),
+    return dv_utils.make_example(variant, list(variant.alternate_bases),
                                  six.b('foo'), self.default_shape)
 
   @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')

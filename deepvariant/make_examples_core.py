@@ -36,17 +36,16 @@ import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
 
-
 from absl import logging
 import numpy as np
 import tensorflow as tf
 
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
+from deepvariant import dv_utils
 from deepvariant import dv_vcf_constants
 from deepvariant import pileup_image
 from deepvariant import resources
-from deepvariant import tf_utils
 from deepvariant import variant_caller as vc_base
 from deepvariant import vcf_candidate_importer
 from deepvariant import very_sensitive_caller
@@ -1062,9 +1061,9 @@ class RegionProcessor(object):
       # Initialize labels and types to be updated in the for loop below.
       labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
       types = {
-          tf_utils.EncodedVariantType.SNP: 0,
-          tf_utils.EncodedVariantType.INDEL: 0,
-          tf_utils.EncodedVariantType.UNKNOWN: 0
+          dv_utils.EncodedVariantType.SNP: 0,
+          dv_utils.EncodedVariantType.INDEL: 0,
+          dv_utils.EncodedVariantType.UNKNOWN: 0
       }
       for candidate, label in self.label_candidates(candidates, region):
         for example in self.create_pileup_examples(
@@ -1074,13 +1073,13 @@ class RegionProcessor(object):
                                           types)
           n_stats['n_examples'] += 1
           if example_shape is None:
-            example_shape = tf_utils.example_image_shape(example)
+            example_shape = dv_utils.example_image_shape(example)
       if self.options.run_info_filename:
         n_stats['n_class_0'] += labels[0]
         n_stats['n_class_1'] += labels[1]
         n_stats['n_class_2'] += labels[2]
-        n_stats['n_snps'] += types[tf_utils.EncodedVariantType.SNP]
-        n_stats['n_indels'] += types[tf_utils.EncodedVariantType.INDEL]
+        n_stats['n_snps'] += types[dv_utils.EncodedVariantType.SNP]
+        n_stats['n_indels'] += types[dv_utils.EncodedVariantType.INDEL]
     else:
       for candidate in candidates:
         for example in self.create_pileup_examples(
@@ -1088,7 +1087,7 @@ class RegionProcessor(object):
           _write_example_and_update_stats(example, writer, runtimes)
           n_stats['n_examples'] += 1
           if example_shape is None:
-            example_shape = tf_utils.example_image_shape(example)
+            example_shape = dv_utils.example_image_shape(example)
     runtimes['make pileup images'] = trim_runtime(time.time() -
                                                   before_make_pileup_images)
     return example_shape
@@ -1498,7 +1497,7 @@ class RegionProcessor(object):
     This function calls PileupImageCreator.create_pileup_images on dv_call to
     get raw image tensors for each alt_allele option (see docs for details).
     These tensors are encoded as pngs, and all of the key information is encoded
-    as a tf.Example via a call to tf_utils.make_example.
+    as a tf.Example via a call to dv_utils.make_example.
 
     Args:
       dv_call: A DeepVariantCall.
@@ -1563,7 +1562,7 @@ class RegionProcessor(object):
     for alt_alleles, image_tensor in pileup_images:
       encoded_tensor, shape = self._encode_tensor(image_tensor)
       examples.append(
-          tf_utils.make_example(
+          dv_utils.make_example(
               dv_call.variant,
               alt_alleles,
               encoded_tensor,
@@ -1621,12 +1620,12 @@ class RegionProcessor(object):
     if not label.is_confident:
       raise ValueError('Cannot add a non-confident label to an example',
                        example, label)
-    alt_alleles_indices = tf_utils.example_alt_alleles_indices(example)
+    alt_alleles_indices = dv_utils.example_alt_alleles_indices(example)
 
-    tf_utils.example_set_variant(example, label.variant)
+    dv_utils.example_set_variant(example, label.variant)
 
     # Set the label of the example to the # alts given our alt_alleles_indices.
-    tf_utils.example_set_label(example,
+    dv_utils.example_set_label(example,
                                label.label_for_alt_alleles(alt_alleles_indices))
     return example
 
@@ -1730,9 +1729,9 @@ def _write_example_and_update_stats(example,
       runtimes['num examples'] = 0
     runtimes['num examples'] += 1
   if labels is not None and types is not None:
-    example_label = tf_utils.example_label(example)
-    example_type = tf_utils.encoded_variant_type(
-        tf_utils.example_variant(example))
+    example_label = dv_utils.example_label(example)
+    example_type = dv_utils.encoded_variant_type(
+        dv_utils.example_variant(example))
     labels[example_label] += 1
     types[example_type] += 1
 
@@ -1873,7 +1872,7 @@ def make_examples_runner(options):
   # Currently, even in multi-sample scenario, the suffix is not used here
   # because currently all the multiple-sample output will have the same shape
   # and list of channels.
-  example_info_filename = tf_utils.get_example_info_json_filename(
+  example_info_filename = dv_utils.get_example_info_json_filename(
       options.examples_filename, options.task_id)
   if example_info_filename is not None:
     logging_with_options(options,
