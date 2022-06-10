@@ -2,7 +2,7 @@
 layout: post
 title: "Adding Custom Channels to DeepVariant"
 date: 2022-06-09
-description: "This tutorial will show you how to add custom channels to DeepVariant, train new models, and use them to perform variant calling. Custom channels can be used to tailor DeepVariant to a specific sequencing platform or application."
+description: "This tutorial will show you how to add custom channels to DeepVariant, train new models, and use them to perform variant calling. Custom channels can be used to tailor DeepVariant to a specific sequencing platform or applications."
 img: "assets/images/custom-channels/channel_construction.png"
 authors: ["lucasbrambrink", "danielecook"]
 ---
