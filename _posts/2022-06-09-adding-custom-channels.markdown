@@ -38,7 +38,7 @@ This tutorial will show you how to add custom channels to DeepVariant, train new
 ## How are Channels Constructed?
 
 <img id='fig2' src="{{ site.baseurl }}/assets/images/custom-channels/channel_construction.png" alt="Examples of DeepVariant Channels" >
-<figcaption style='text-align: center;'>Figure2: Channel Elements: Channels encode a reference strip, and read pileup.</figcaption>
+<figcaption style='text-align: center;'>Figure 2: Channel Elements: Channels encode a reference strip, and read pileup.</figcaption>
 
 
 Although we visualize channels as images, their underlying representation is as multidimensional tensor objects. Each channel is encoded as a matrix of values ranging from 0-255. Channels have two components ([Figure 2](#fig2)). The top five pixels are known as the “reference strip”, and can be used to specify information derived from the reference, although only a few channels use this component (_e.g._ read base). Below the reference strip is the read pileup. Given that channels are encoded using pileup information, the width corresponds to a set number of bases whereas the height reflects the maximum number of reads. While these parameters are configurable, experimentation has yielded the optimal width and height for short paired end sequence reads to be [221 and 100](https://github.com/google/deepvariant/blob/r1.3/deepvariant/dv_constants.py#L36-L40), respectively. `make_examples` generates these matrices, and stacks them together to form 3D tensor objects as model input.
