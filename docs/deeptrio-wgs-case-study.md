@@ -169,7 +169,7 @@ HG002_trio_merged.vcf.gz
 
 ## Benchmark on chr20
 
-### Calculate mendelian vialation rate
+### Calculate mendelian violation rate
 
 ```bash
 sudo docker run \
