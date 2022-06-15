@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright 2020 Google LLC.
-# This script is used to install nvidia docker on Ubutun 20.04.
+# This script is used to install nvidia docker on Ubuntu 20.04.
 # For different Linux distributions and versions, modifications might be needed.
 
 set -euo pipefail
