@@ -581,6 +581,8 @@ def check_options_are_valid(options: deepvariant_pb2.MakeExamplesOptions,
         '--vsc_min_fraction_multiplier must be within (0-1] interval.',
         errors.CommandLineError)
 
-  for sample in options.sample_options:
-    if sample.pileup_height < 10 or sample.pileup_height > 100:
-      errors.log_and_raise('Pileup image heights must be between 10 and 100.')
+  total_pileup_height = sum(
+      [sample.pileup_height for sample in options.sample_options])
+  # Height constraint for Slim InceptionV3 implementation.
+  if total_pileup_height < 75 or total_pileup_height > 362:
+    errors.log_and_raise('Total pileup image heights must be between 75-362.')

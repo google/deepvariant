@@ -1164,8 +1164,8 @@ class RegionProcessorTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(height_parent=10, height_child=9),
       dict(height_parent=9, height_child=10),
-      dict(height_parent=100, height_child=101),
-      dict(height_parent=101, height_child=100),
+      dict(height_parent=150, height_child=101),
+      dict(height_parent=101, height_child=170),
   )
   @flagsaver.flagsaver
   def test_image_heights(self, height_parent, height_child):
@@ -1184,7 +1184,7 @@ class RegionProcessorTest(parameterized.TestCase):
 
     options = make_examples.default_options(add_flags=True)
     with self.assertRaisesRegex(
-        Exception, 'Pileup image heights must be between 10 and 100.'):
+        Exception, 'Total pileup image heights must be between 75-362.'):
       make_examples.check_options_are_valid(options)
 
   @parameterized.parameters(
