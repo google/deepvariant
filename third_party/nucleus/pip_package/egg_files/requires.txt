@@ -4,7 +4,7 @@ absl-py
 mock
 numpy
 six
-protobuf
+protobuf==3.19.4
 Pillow
 ipython
 apache-beam
