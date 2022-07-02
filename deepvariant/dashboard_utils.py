@@ -142,7 +142,15 @@ def create_html_report(specs: List[Dict[Text, alt.Chart]],
   for spec in specs:
     chart_id = spec['id']
     if 'chart' in spec:
-      chart_json = spec['chart'].to_json()
+      try:
+        chart_json = spec['chart'].to_json()
+      # pylint: disable=bare-except
+      except:
+        print(f'Error making chart for {chart_id}')
+        html_string += (
+            f'document.getElementById("vis_{chart_id}").innerHTML = "<p>Error making chart for {chart_id}</p>"\n'
+        )
+        continue
       download_filename = '{}_{}'.format(title.replace(' ', '_'), spec['id'])
       embed_options = {
           'mode': 'vega-lite',
