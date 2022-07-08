@@ -81,7 +81,6 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_child = 'your_gvcf_child'
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
-    FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
     commands, postprocess_cmds = self._create_all_commands_and_check_stdout()
 
@@ -149,7 +148,6 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
     FLAGS.output_gvcf_child = 'your_gvcf_child'
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
-    FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
     commands, postprocess_cmds = self._create_all_commands_and_check_stdout()
 
@@ -221,7 +219,6 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_child = 'your_gvcf_child'
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
-    FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
     commands, _ = self._create_all_commands_and_check_stdout()
     self.assertEqual(
@@ -268,7 +265,6 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
     FLAGS.output_gvcf_child = 'your_gvcf_child'
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
-    FLAGS.output_gvcf_merged = 'your_gvcf_merged'
     FLAGS.num_shards = 64
     commands, _ = self._create_all_commands_and_check_stdout()
     self.assertEqual(

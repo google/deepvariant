@@ -164,9 +164,6 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'output_gvcf_parent2', None,
     'Optional. Path where we should write gVCF file for parent2 sample.')
-flags.DEFINE_string(
-    'output_gvcf_merged', None,
-    'Optional. Path where we should write gVCF with all samples merged.')
 flags.DEFINE_boolean(
     'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF.')
