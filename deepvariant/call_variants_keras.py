@@ -220,8 +220,10 @@ def write_call_variants(predictions: np.ndarray,
         alt_allele_indices = curr_batch_alt_allele_indices[i]
         # Calculate the position of the corresponding prediction
         prediction_idx = (idx * FLAGS.batch_size) + i
-        logging.info('batch idx: %d, position in batch: %d, prediction_idx: %d',
-                     idx, i, prediction_idx)
+        logging.log_every_n(
+            logging.INFO,
+            'batch idx: %d, position in batch: %d, prediction_idx: %d',
+            _LOG_EVERY_N, idx, i, prediction_idx)
         if prediction_idx >= len(predictions):
           logging.info(
               'Prediction idx %d > num predictions %d. '
@@ -234,7 +236,6 @@ def write_call_variants(predictions: np.ndarray,
             'variant': variant.numpy(),
             'alt_allele_indices': alt_allele_indices.numpy()
         }
-        logging.info(pred)
         write_variant_call(writer, pred)
 
 
