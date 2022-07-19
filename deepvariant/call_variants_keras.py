@@ -135,6 +135,9 @@ flags.DEFINE_string(
     'inference. See https://www.tensorflow.org/performance/performance_guide '
     'for more information. The default value is 0, which provides the best '
     'performance in our tests. Set this flag to "" to not set the variable.')
+_LIMIT = flags.DEFINE_integer(
+    'limit', 0, 'If set to > 0, limit processing to <= limit '
+    'examples.')
 
 
 class ExecutionHardwareError(Exception):
@@ -345,6 +348,8 @@ def get_dataset(path, example_shape):
       load_dataset,
       cycle_length=_DEFAULT_INPUT_READ_THREADS,
       num_parallel_calls=tf.data.AUTOTUNE)
+  if _LIMIT.value > 0:
+    ds = ds.take(_LIMIT.value)
 
   image_ds = ds.map(map_func=_parse_example_image)
   variant_alt_allele_ds = ds.map(map_func=_parse_example_variant_alt_allele)
@@ -387,7 +392,7 @@ def call_variants(examples_filename, checkpoint_path, model, output_file):
         input_tensor=input_tensor,
         classes=_CLASSES,
         classifier_activation='softmax')
-    model.load_weights(checkpoint_path)
+    model.load_weights(checkpoint_path).expect_partial()
 
     examples_dataset, variant_alt_allele_dataset = get_dataset(
         examples_filename, example_shape)
