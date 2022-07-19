@@ -307,6 +307,8 @@ def get_shape_and_channels_from_json(example_info_json):
   return example_shape, example_channels_enum
 
 
+# TODO: Consider creating one data loading function to re-use simliar
+#                code with training in train_inceptionv3.py.
 def get_dataset(path, example_shape):
   """Parse TFRecords, do image preprocessing, and return the image dataset for inference and the variant/alt-allele dataset for writing the variant calls."""
 
@@ -351,12 +353,16 @@ def get_dataset(path, example_shape):
   if _LIMIT.value > 0:
     ds = ds.take(_LIMIT.value)
 
-  image_ds = ds.map(map_func=_parse_example_image)
-  variant_alt_allele_ds = ds.map(map_func=_parse_example_variant_alt_allele)
+  image_ds = ds.map(
+      map_func=_parse_example_image, num_parallel_calls=tf.data.AUTOTUNE)
+  variant_alt_allele_ds = ds.map(
+      map_func=_parse_example_variant_alt_allele,
+      num_parallel_calls=tf.data.AUTOTUNE)
 
-  image_ds = image_ds.batch(batch_size=FLAGS.batch_size)
+  image_ds = image_ds.batch(batch_size=FLAGS.batch_size).prefetch(
+      tf.data.AUTOTUNE)
   variant_alt_allele_ds = variant_alt_allele_ds.batch(
-      batch_size=FLAGS.batch_size)
+      batch_size=FLAGS.batch_size).prefetch(tf.data.AUTOTUNE)
   return image_ds, variant_alt_allele_ds
 
 
