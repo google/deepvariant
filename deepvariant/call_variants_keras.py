@@ -72,6 +72,8 @@ _GL_PRECISION = 10
 # there will be 200 lines per sample.
 _LOG_EVERY_N = 50000
 
+_LOG_EVERY_N_BATCHES = 100
+
 _DEFAULT_INPUT_READ_THREADS = 32
 _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
 
@@ -137,6 +139,18 @@ flags.DEFINE_string(
 
 class ExecutionHardwareError(Exception):
   pass
+
+
+class CustomCallback(tf.keras.callbacks.Callback):
+  """Custom callbacks for `predict`."""
+
+  def on_predict_batch_begin(self, batch, logs=None):
+    logging.log_every_n(logging.INFO, 'Begin `predict` on batch %d.',
+                        _LOG_EVERY_N_BATCHES, batch)
+
+  def on_predict_batch_end(self, batch, logs=None):
+    logging.log_every_n(logging.INFO, 'End `predict` on batch %d.',
+                        _LOG_EVERY_N_BATCHES, batch)
 
 
 def round_gls(gls, precision=None):
@@ -222,7 +236,7 @@ def write_call_variants(predictions: np.ndarray,
         prediction_idx = (idx * FLAGS.batch_size) + i
         logging.log_every_n(
             logging.INFO,
-            'batch idx: %d, position in batch: %d, prediction_idx: %d',
+            'Writing: batch idx: %d, position in batch: %d, prediction_idx: %d',
             _LOG_EVERY_N, idx, i, prediction_idx)
         if prediction_idx >= len(predictions):
           logging.info(
@@ -379,7 +393,7 @@ def call_variants(examples_filename, checkpoint_path, model, output_file):
         examples_filename, example_shape)
 
     # TODO: Do we need the equivalent of session_predict_hooks?
-    predictions = model.predict(examples_dataset)
+    predictions = model.predict(examples_dataset, callbacks=[CustomCallback()])
     write_call_variants(predictions, variant_alt_allele_dataset, output_file)
 
 
