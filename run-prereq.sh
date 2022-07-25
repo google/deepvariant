@@ -187,6 +187,14 @@ else
   fi
 fi
 
+# A temporary fix.
+# Context: intel-tensorflow 2.7.0 will end up updating markupsafe to 2.1.1,
+# which caused the issue here: https://github.com/pallets/markupsafe/issues/286.
+# Specifically:
+# ImportError: cannot import name 'soft_unicode' from 'markupsafe'.
+# So, forcing a downgrade. This isn't the best solution, but we need it to get
+# our tests pass.
+pip3 install "${PIP_ARGS[@]}" --upgrade 'markupsafe==2.0.1'
 
 ################################################################################
 # CUDA
