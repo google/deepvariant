@@ -269,7 +269,8 @@ flags.DEFINE_bool(
     'add_hp_channel', False,
     'If true, add another channel to represent HP tags per read.')
 flags.DEFINE_string(
-    'channels', None, 'Comma-delimited list of optional channels to add. '
+    'channels', None,
+    'Comma or space-delimited list of optional channels to add. '
     'Available channels: {}'.format(','.join(dv_constants.OPT_CHANNELS)))
 flags.DEFINE_bool(
     'add_supporting_other_alt_color', False,
@@ -380,7 +381,7 @@ def shared_flags_to_options(
           flags_obj.sequencing_type)
 
     if flags_obj.channels:
-      channel_set = flags_obj.channels.split(',')
+      channel_set = re.split('[, ]+', flags_obj.channels)
       for channel in channel_set:
         if channel and channel not in dv_constants.OPT_CHANNELS:
           err_msg = 'Channel "{}" is not one of the available opt channels: {}'.format(
