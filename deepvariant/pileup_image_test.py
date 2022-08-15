@@ -229,7 +229,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
   def test_encode_read_matches(self):
     start = 10
     dv_call = _make_dv_call()
-    alt_allele = dv_call.variant.alternate_bases[0]
+    alt_allele = dv_call.variant.alternate_bases
     read = test_utils.make_read(
         'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
     full_expected = np.dstack([
@@ -270,7 +270,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     # Same test case as test_encode_read_matches(), with --add_hp_channel.
     start = 10
     dv_call = _make_dv_call_with_allele_frequency()
-    alt_allele = dv_call.variant.alternate_bases[0]
+    alt_allele = dv_call.variant.alternate_bases
     read = test_utils.make_read(
         'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
     if hp_value is not None:
@@ -302,7 +302,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     # Same test case as test_encode_read_matches(), with allele frequency.
     start = 10
     dv_call = _make_dv_call_with_allele_frequency()
-    alt_allele = dv_call.variant.alternate_bases[0]
+    alt_allele = dv_call.variant.alternate_bases
     read = test_utils.make_read(
         'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
     full_expected = np.dstack([
@@ -369,7 +369,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
         quals=read_quals,
         name='read1')
     dv_call = _make_dv_call()
-    alt_allele = dv_call.variant.alternate_bases[0]
+    alt_allele = dv_call.variant.alternate_bases
     self.assertImageRowEquals(
         _make_encoder().encode_read(dv_call, 'ACAGT', read, ref_start,
                                     alt_allele), expected)
@@ -381,7 +381,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     read = test_utils.make_read(
         'AAG', start=start, cigar='2M2D1M', quals=range(10, 13), name='read1')
     dv_call = _make_dv_call()
-    alt_allele = dv_call.variant.alternate_bases[0]
+    alt_allele = dv_call.variant.alternate_bases
     full_expected = np.dstack([
         # Base. The second A is 0 because it's the anchor of the deletion.
         (250, 0, 0, 0, 180),
@@ -411,7 +411,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
         quals=range(10, 16),
         name='read1')
     dv_call = _make_dv_call()
-    alt_allele = dv_call.variant.alternate_bases[0]
+    alt_allele = dv_call.variant.alternate_bases
     full_expected = np.dstack([
         # Base.
         (250, 0, 30, 250, 180),
@@ -473,7 +473,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
       quals = [min_base_qual, base_qual, min_base_qual]
       read = test_utils.make_read(
           'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual)
-      actual = pie.encode_read(dv_call, 'AACAG', read, 1, 'C')
+      actual = pie.encode_read(dv_call, 'AACAG', read, 1, ['C'])
       if base_qual < min_base_qual:
         self.assertIsNone(actual)
       else:
@@ -523,7 +523,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
       quals = [base_qual - 1, min_base_qual, base_qual + 1]
       read = test_utils.make_read(
           'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual)
-      actual = pie.encode_read(dv_call, 'AACAG', read, 1, 'C')
+      actual = pie.encode_read(dv_call, 'AACAG', read, 1, ['C'])
       self.assertIsNotNone(actual)
 
   @parameterized.parameters(
@@ -570,7 +570,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
       quals = [min_base_qual, min_base_qual, min_base_qual]
       read = test_utils.make_read(
           'AAA', start=1, cigar='3M', quals=quals, mapq=mapping_qual)
-      actual = pie.encode_read(dv_call, 'AACAG', read, 1, 'C')
+      actual = pie.encode_read(dv_call, 'AACAG', read, 1, ['C'])
       if mapping_qual < min_mapping_qual:
         self.assertIsNone(actual)
       else:
@@ -614,7 +614,8 @@ class PileupImageEncoderTest(parameterized.TestCase):
         name=read_name)
     read.read_number = read_number
     actual = _make_encoder().encode_read(dv_call, 'TAT', read,
-                                         dv_call.variant.start - 1, alt_allele)
+                                         dv_call.variant.start - 1,
+                                         [alt_allele])
     expected_base_values = {'C': 30, 'G': 180}
     expected_supports_alt_channel = [152, 254]
     expected = [
@@ -665,7 +666,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     pie = _make_encoder(
         other_allele_supporting_read_alpha=other_allele_supporting_read_alpha)
     actual = pie.encode_read(dv_call, 'TAT', read, dv_call.variant.start - 1,
-                             alt_allele)
+                             [alt_allele])
     self.assertEqual(actual[0, 1, 4], expected_color)
 
   @parameterized.parameters((1, 254), (0.2, 218), (0.1, 203), (0.01, 152),
@@ -1471,7 +1472,7 @@ class PileupCustomChannels(absltest.TestCase):
         fragment_length=fragment_length)
     return _make_encoder_with_channels(channel_set).encode_read(
         dv_call, 'TTTTATGACAAAAAAGATGCGACGGTTCCGTAACCCATAAGAAAGAACGT', read,
-        start, alt_allele)
+        start, [alt_allele])
 
   def test_read_mapping_percent(self):
     result = self.get_encoded_read(['read_mapping_percent'])
@@ -1524,7 +1525,7 @@ class PileupCustomChannelsParam(parameterized.TestCase):
                     len(seq) + 1),
         name='read1')
     result = _make_encoder_with_channels(channels).encode_read(
-        dv_call, seq, read, start, alt_allele)
+        dv_call, seq, read, start, [alt_allele])
     return result
 
   @parameterized.parameters(('GC', 1.0), ('GAC', 0.66), ('GGAA', 0.50),
