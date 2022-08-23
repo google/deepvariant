@@ -37,8 +37,9 @@
 #include "third_party/nucleus/vendor/statusor.h"
 
 // Note: comment below is an instruction to CLIF.
-// CLIF use `::nucleus::StatusOr` as StatusOr
-// CLIF use `::tensorflow::Status` as Status
+// NOLINTNEXTLINE
+// CLIF use `::nucleus::StatusOr` as StatusOr, NumTemplateParameter:1, HasPyObjFromOnly
+// CLIF use `::tensorflow::Status` as Status, HasPyObjFromOnly
 
 namespace tensorflow {
 
