@@ -7,7 +7,6 @@ package(
 )
 
 licenses(["notice"])
-
 #
 # Python API
 #
