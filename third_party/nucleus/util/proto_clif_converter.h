@@ -41,8 +41,8 @@
 namespace nucleus {
 
 // Note: the comments below are instructions to CLIF.
-// CLIF use `::nucleus::EmptyProtoPtr` as EmptyProtoPtr
-// CLIF use `::nucleus::ConstProtoPtr` as ConstProtoPtr
+// CLIF use `::nucleus::EmptyProtoPtr` as EmptyProtoPtr, NumTemplateParameter:1
+// CLIF use `::nucleus::ConstProtoPtr` as ConstProtoPtr, NumTemplateParameter:1
 
 const ::google::protobuf::python::PyProto_API* GetPyProtoApi(PyObject* py);
 
