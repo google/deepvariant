@@ -81,9 +81,9 @@
 //  }
 //
 //
-// This is a copy of StatusOr from tensorflow/stream_executor/lib/statusor.h
-// based on the original internal google sources with the key changes to
-// statusor.h reapplied by hand.
+// This is a copy of StatusOr from
+// tensorflow/compiler/xla/stream_executor/lib/statusor.h based on the original
+// internal google sources with the key changes to statusor.h reapplied by hand.
 #ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_H_
 #define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_H_
 
