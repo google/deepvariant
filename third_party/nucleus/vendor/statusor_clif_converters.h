@@ -41,14 +41,18 @@
 // CLIF use `::nucleus::StatusOr` as StatusOr, NumTemplateParameter:1, HasPyObjFromOnly
 // CLIF use `::tensorflow::Status` as Status, HasPyObjFromOnly
 
-namespace tensorflow {
+namespace tsl {
 
 // We do not own namespace tensorflow, but at this point, nobody else is going
 // to provide the necessary conversion function for ::tensorflow::Status. This
 // is less than ideal, but for now we provide the function here.
 
-PyObject* Clif_PyObjFrom(const Status& c, const ::clif::py::PostConv&);
+PyObject* Clif_PyObjFrom(const tensorflow::Status& c,
+                         const ::clif::py::PostConv&);
 
+}  // namespace tsl
+namespace tensorflow {
+using tsl::Clif_PyObjFrom;  // NOLINT
 }  // namespace tensorflow
 
 namespace nucleus {

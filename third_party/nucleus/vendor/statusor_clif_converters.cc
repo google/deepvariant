@@ -33,9 +33,10 @@
 
 #include <string>
 
-namespace tensorflow {
+namespace tsl {
 
-PyObject* Clif_PyObjFrom(const Status& c, const clif::py::PostConv&) {
+PyObject* Clif_PyObjFrom(const tensorflow::Status& c,
+                         const clif::py::PostConv&) {
   if (!c.ok()) {
     ::nucleus::internal::ErrorFromStatus(c);
     return nullptr;
@@ -44,7 +45,7 @@ PyObject* Clif_PyObjFrom(const Status& c, const clif::py::PostConv&) {
   }
 }
 
-}  // namespace tensorflow
+}  // namespace tsl
 
 namespace nucleus {
 namespace internal {
