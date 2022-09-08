@@ -797,7 +797,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 21.
+  // Next ID: 22.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -842,6 +842,9 @@ message DeepVariantInputDatasets {
     bool phase_reads = 18;
     int32 phase_reads_region_padding = 19;
     int32 partition_size = 20;
+
+    // Optional. Opt Channels.
+    string channels = 21;
 
     // Deprecated fields.
     int32 sort_by_haplotypes_sample_hp_tag = 12 [deprecated = true];
