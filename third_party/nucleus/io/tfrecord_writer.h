@@ -36,12 +36,8 @@
 #include <memory>
 #include <string>
 
-namespace tensorflow {
-class WritableFile;
-namespace io {
-class RecordWriter;
-}  // namespace io
-}  // namespace tensorflow
+#include "tensorflow/core/lib/io/record_writer.h"
+#include "tensorflow/core/platform/file_system.h"
 
 namespace nucleus {
 

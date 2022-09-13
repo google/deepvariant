@@ -37,15 +37,10 @@
 #include <string>
 
 #include "third_party/nucleus/platform/types.h"
+#include "tensorflow/core/lib/io/record_reader.h"
+#include "tensorflow/core/platform/file_system.h"
 #include "tensorflow/core/platform/tstring.h"
 #include "tensorflow/core/platform/types.h"
-
-namespace tensorflow {
-class RandomAccessFile;
-namespace io {
-class RecordReader;
-}  // namespace io
-}  // namespace tensorflow
 
 namespace nucleus {
 
