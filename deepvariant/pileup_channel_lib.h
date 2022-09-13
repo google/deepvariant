@@ -31,11 +31,17 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 
+#include <algorithm>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace learning {
@@ -46,9 +52,16 @@ using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 using tensorflow::uint8;
 
-//--------------//
-// Opt Channels //
-//--------------//
+//------------------------//
+// Default Channels Names //
+//------------------------//
+static const auto& ch_mapping_quality = "mapping_quality";
+static const auto& ch_strand = "strand";
+static const auto& ch_read_supports_variant = "read_supports_variant";
+
+//--------------------//
+// Opt Channels Names //
+//--------------------//
 
 static const auto& ch_read_mapping_percent = "read_mapping_percent";
 static const auto& ch_avg_base_quality = "avg_base_quality";
@@ -94,6 +107,61 @@ inline std::vector<uint8> ScaleColorVector(std::vector<uint8>& channel_values,
                                          (static_cast<float>(value) / max_val));
   }
   return channel_values;
+}
+
+//---------------//
+// Base Channels //
+//---------------//
+inline int StrandColor(bool on_positive_strand,
+                       const PileupImageOptions& options) {
+  return (on_positive_strand ? options.positive_strand_color()
+                             : options.negative_strand_color());
+}
+
+inline int SupportsAltColor(int read_supports_alt,
+                            const PileupImageOptions& options) {
+  float alpha;
+  if (read_supports_alt == 0) {
+    alpha = options.allele_unsupporting_read_alpha();
+  } else if (read_supports_alt == 1) {
+    alpha = options.allele_supporting_read_alpha();
+  } else {
+    CHECK_EQ(read_supports_alt, 2) << "read_supports_alt can only be 0/1/2.";
+    alpha = options.other_allele_supporting_read_alpha();
+  }
+  return static_cast<int>(kMaxPixelValueAsFloat * alpha);
+}
+
+// Does this read support ref, one of the alternative alleles, or an allele we
+// aren't considering?
+inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
+                           const std::vector<std::string>& alt_alleles) {
+  std::string key =
+      (read.fragment_name() + "/" + std::to_string(read.read_number()));
+
+  // Iterate over all alts, not just alt_alleles.
+  for (const std::string& alt_allele : dv_call.variant().alternate_bases()) {
+    const auto& allele_support = dv_call.allele_support();
+    const bool alt_allele_present_in_call =
+        allele_support.find(alt_allele) != allele_support.cend();
+
+    if (alt_allele_present_in_call) {
+      const auto& supp_read_names = allele_support.at(alt_allele).read_names();
+      for (const std::string& read_name : supp_read_names) {
+        const bool alt_in_alt_alleles =
+            std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
+            alt_alleles.end();
+        // Read can support an alt we are currently considering (1), a different
+        // alt not present in alt_alleles (2), or ref (0).
+        if (read_name == key && alt_in_alt_alleles) {
+          return 1;
+        } else if (read_name == key && !alt_in_alt_alleles) {
+          return 2;
+        }
+      }
+    }
+  }
+  return 0;
 }
 
 //-----------------------//
@@ -289,6 +357,12 @@ inline std::vector<uint8> ReadInsertSize(
 
 
 inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
+  if (channel == ch_mapping_quality)
+    return DeepVariantChannelEnum::CH_MAPPING_QUALITY;
+  if (channel == ch_strand)
+    return DeepVariantChannelEnum::CH_STRAND;
+  if (channel == ch_read_supports_variant)
+    return DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT;
   if (channel == ch_read_mapping_percent)
     return DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT;
   if (channel == ch_avg_base_quality)
@@ -324,13 +398,28 @@ const int MaxHomoPolymerWeighted = 30;
 
 class OptChannels {
  public:
+  const PileupImageOptions& options_;
   std::map<std::string, std::vector<unsigned char>> data_;
   std::map<std::string, std::vector<unsigned char>> ref_data_;
   void CalculateChannels(const std::vector<std::string>& channels,
-                         const Read& read) {
+                         const Read& read, const DeepVariantCall& dv_call,
+                         const std::vector<std::string>& alt_alleles) {
     // Calculates values for each channel
     for (const std::string& channel : channels) {
-      if (channel == ch_read_mapping_percent) {
+      if (channel == ch_mapping_quality) {
+        const int mapping_quality = read.alignment().mapping_quality();
+        data_[channel].assign(
+            {ScaleColor(mapping_quality, options_.mapping_quality_cap())});
+      } else if (channel == ch_strand) {
+        const bool is_forward_strand =
+            !read.alignment().position().reverse_strand();
+        data_[channel].assign(
+            {static_cast<uint8>(StrandColor(is_forward_strand, options_))});
+      } else if (channel == ch_read_supports_variant) {
+        int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
+        data_[channel].assign(
+            {static_cast<uint8>(SupportsAltColor(supports_alt, options_))});
+      } else if (channel == ch_read_mapping_percent) {
         data_[channel].assign(
             {ScaleColor(ReadMappingPercent(read), MaxMappingPercent)});
       } else if (channel == ch_avg_base_quality) {
@@ -373,7 +462,17 @@ class OptChannels {
     // Create a fake read to represent reference bases.
     Read refRead;
     for (const std::string& channel : channels) {
-      if (channel == ch_read_mapping_percent) {
+      if (channel == ch_mapping_quality) {
+        int ref_qual = options_.reference_base_quality();
+        ref_data_[channel].assign(
+            {ScaleColor(ref_qual, options_.base_quality_cap())});
+      } else if (channel == ch_strand) {
+        int strand = StrandColor(true, options_);
+        ref_data_[channel].assign({static_cast<uint8>(strand)});
+      } else if (channel == ch_read_supports_variant) {
+        int alt = SupportsAltColor(0, options_);
+        ref_data_[channel].assign({static_cast<uint8>(alt)});
+      } else if (channel == ch_read_mapping_percent) {
         ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_avg_base_quality) {
         ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});

@@ -33,6 +33,7 @@
 
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -75,6 +76,49 @@ TEST(ScaleColorVectorLarge, OverMaxCase) {
       EXPECT_EQ(i, static_cast<int>(kMaxPixelValueAsFloat));
     }
   }
+}
+
+TEST(StrandColor, PositiveStrand) {
+  PileupImageOptions options{};
+  options.set_positive_strand_color(10);
+  options.set_negative_strand_color(20);
+  uint8 sc = StrandColor(true, options);
+  EXPECT_EQ(sc, 10);
+}
+
+TEST(StrandColor, NegativeStrand) {
+  PileupImageOptions options{};
+  options.set_positive_strand_color(10);
+  options.set_negative_strand_color(20);
+  uint8 sc = StrandColor(false, options);
+  EXPECT_EQ(sc, 20);
+}
+
+TEST(SupportsAltColor, AlleleSupporting) {
+  PileupImageOptions options{};
+    options.set_allele_unsupporting_read_alpha(1.0);
+  options.set_allele_supporting_read_alpha(0.0);
+  options.set_other_allele_supporting_read_alpha(0.0);
+  uint8 sac = SupportsAltColor(0, options);
+  EXPECT_EQ(sac, kMaxPixelValueAsFloat);
+}
+
+TEST(SupportsAltColor, AlleleUnsupporting) {
+  PileupImageOptions options{};
+    options.set_allele_unsupporting_read_alpha(0.0);
+  options.set_allele_supporting_read_alpha(1.0);
+  options.set_other_allele_supporting_read_alpha(0.0);
+  uint8 sac = SupportsAltColor(1, options);
+  EXPECT_EQ(sac, kMaxPixelValueAsFloat);
+}
+
+TEST(SupportsAltColor, OtherAlleleSupporting) {
+  PileupImageOptions options{};
+  options.set_allele_unsupporting_read_alpha(0.0);
+  options.set_allele_supporting_read_alpha(0.0);
+  options.set_other_allele_supporting_read_alpha(1.0);
+  uint8 sac = SupportsAltColor(2, options);
+  EXPECT_EQ(sac, kMaxPixelValueAsFloat);
 }
 
 TEST(ReadMappingPercentTest, BasicCase) {
@@ -225,8 +269,15 @@ TEST(ReadInsertSizeTest, NoValue) {
 }
 
 TEST(GetChannelDataTest, ReadData) {
-  OptChannels channel_set{};
-  std::vector<std::string> channels{ch_read_mapping_percent,
+  PileupImageOptions options{};
+  options.set_mapping_quality_cap(1);
+  options.set_positive_strand_color(20);
+
+  OptChannels channel_set{options};
+  std::vector<std::string> channels{ch_mapping_quality,
+                                    ch_strand,
+                                    ch_read_supports_variant,
+                                    ch_read_mapping_percent,
                                     ch_avg_base_quality,
                                     ch_identity,
                                     ch_gap_compressed_identity,
@@ -239,7 +290,15 @@ TEST(GetChannelDataTest, ReadData) {
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
     read.set_aligned_quality(i, base_quality);
   }
-  channel_set.CalculateChannels(channels, read);
+
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+  std::vector<std::string> alt_alleles = {};
+
+  channel_set.CalculateChannels(channels, read, dv_call, alt_alleles);
+  EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1),
+           static_cast<uint8>(kMaxPixelValueAsFloat));
+  EXPECT_EQ(channel_set.GetChannelData(ch_strand, 1), 20);
+  // TODO: add 'ch_read_supports_variant' test here
   EXPECT_EQ(channel_set.GetChannelData(ch_read_mapping_percent, 3), 203);
   EXPECT_EQ(channel_set.GetChannelData(ch_avg_base_quality, 3), 90);
   EXPECT_EQ(channel_set.GetChannelData(ch_identity, 9), 203);
@@ -255,8 +314,17 @@ TEST(GetChannelDataTest, ReadData) {
 }
 
 TEST(GetRefChannelDataTest, ReadData) {
-  OptChannels channel_set{};
-  std::vector<std::string> channels{ch_read_mapping_percent,
+  PileupImageOptions options{};
+  options.set_reference_base_quality(20);
+  options.set_base_quality_cap(20);
+  options.set_allele_unsupporting_read_alpha(1.0);
+  options.set_positive_strand_color(20);
+
+  OptChannels channel_set{options};
+  std::vector<std::string> channels{ch_mapping_quality,
+                                    ch_strand,
+                                    ch_read_supports_variant,
+                                    ch_read_mapping_percent,
                                     ch_avg_base_quality,
                                     ch_identity,
                                     ch_gap_compressed_identity,
@@ -270,6 +338,11 @@ TEST(GetRefChannelDataTest, ReadData) {
     ref_read.set_aligned_quality(i, base_quality);
   }
   channel_set.CalculateRefRows(channels, ref_read.aligned_sequence());
+  EXPECT_EQ(channel_set.GetRefRows(ch_mapping_quality, 1),
+           static_cast<uint8>(kMaxPixelValueAsFloat));
+  EXPECT_EQ(channel_set.GetRefRows(ch_strand, 1), 20);
+  EXPECT_EQ(channel_set.GetRefRows(ch_read_supports_variant, 1),
+            static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetRefRows(ch_read_mapping_percent, 3),
             static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetRefRows(ch_avg_base_quality, 3),

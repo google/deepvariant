@@ -62,38 +62,6 @@ using tensorflow::uint8;
 
 namespace {
 
-// Does this read support ref, one of the alternative alleles, or an allele we
-// aren't considering?
-inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
-                           const std::vector<std::string>& alt_alleles) {
-  string key =
-      (read.fragment_name() + "/" + std::to_string(read.read_number()));
-
-  // Iterate over all alts, not just alt_alleles.
-  for (const string& alt_allele : dv_call.variant().alternate_bases()) {
-    const auto& allele_support = dv_call.allele_support();
-    const bool alt_allele_present_in_call =
-        allele_support.find(alt_allele) != allele_support.cend();
-
-    if (alt_allele_present_in_call) {
-      const auto& supp_read_names = allele_support.at(alt_allele).read_names();
-      for (const string& read_name : supp_read_names) {
-        const bool alt_in_alt_alleles =
-            std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
-            alt_alleles.end();
-        // Read can support an alt we are currently considering (1), a different
-        // alt not present in alt_alleles (2), or ref (0).
-        if (read_name == key && alt_in_alt_alleles) {
-          return 1;
-        } else if (read_name == key && !alt_in_alt_alleles) {
-          return 2;
-        }
-      }
-    }
-  }
-  return 0;
-}
-
 // Get the allele frequency of the alt allele that is carried by a read.
 inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
                                  const Read& read,
@@ -349,8 +317,8 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
                            : 0;
 
   // Calculate OptChannels.
-  OptChannels channel_set{};
-  channel_set.CalculateChannels(img_row.channels, read);
+  OptChannels channel_set{options_};
+  channel_set.CalculateChannels(img_row.channels, read, dv_call, alt_alleles);
   img_row.channel_data.resize(img_row.channels.size(),
                               std::vector<unsigned char>(ref_bases.size(), 0));
 
@@ -516,7 +484,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
 
   // Calculate reference rows at the top of each channel image.
   // These are retrieved for each position in the loop below.
-  OptChannels channel_set{};
+  OptChannels channel_set{options_};
   channel_set.CalculateRefRows(img_row.channels, ref_bases);
 
   for (size_t col = 0; col < ref_bases.size(); ++col) {

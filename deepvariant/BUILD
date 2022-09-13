@@ -769,6 +769,7 @@ cc_library(
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -778,11 +779,11 @@ cc_test(
     srcs = ["pileup_channel_lib_test.cc"],
     deps = [
         ":pileup_channel_lib",
+        "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
-        "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",

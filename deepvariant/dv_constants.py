@@ -56,6 +56,7 @@ DEFAULT_SAMPLE_NAME = 'default'
 
 # Define available OptChannels (optional extra channels).
 OPT_CHANNELS = [
+    'mapping_quality', 'strand', 'read_supports_variant',
     'read_mapping_percent', 'avg_base_quality', 'identity',
     'gap_compressed_identity', 'gc_content', 'is_homopolymer',
     'homopolymer_weighted', 'blank', 'insert_size'
