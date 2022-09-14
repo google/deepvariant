@@ -638,12 +638,24 @@ py_binary(
     ],
 )
 
+py_library(
+    name = "keras_modeling",
+    srcs = ["keras_modeling.py"],
+    srcs_version = "PY3",
+    deps = [
+        # TODO: I need to break this down into smaller deps.
+        ":call_variants_main_lib",
+        "//deepvariant:dv_constants",
+    ],
+)
+
 py_binary(
     name = "call_variants_keras",
     srcs = ["call_variants_keras.py"],
     python_version = "PY3",
     deps = [
         ":call_variants_main_lib",
+        "//deepvariant:keras_modeling",
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],

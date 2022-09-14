@@ -43,8 +43,8 @@ import numpy as np
 import tensorflow as tf
 
 from deepvariant import dv_utils
+from deepvariant import keras_modeling as modeling
 from deepvariant import logging_level
-from deepvariant import modeling
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
@@ -77,8 +77,6 @@ _LOG_EVERY_N_BATCHES = 100
 _DEFAULT_INPUT_READ_THREADS = 32
 _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
 
-_CLASSES = 3
-
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
@@ -103,8 +101,6 @@ flags.DEFINE_integer('max_batches', None,
                      'Max. batches to evaluate. Defaults to all.')
 flags.DEFINE_integer('num_readers', 8,
                      'Number of parallel readers to create for examples.')
-flags.DEFINE_string('model_name', 'inception_v3',
-                    'The name of the model architecture of --checkpoint.')
 flags.DEFINE_boolean('include_debug_info', False,
                      'If true, include extra debug info in the output.')
 flags.DEFINE_boolean(
@@ -366,7 +362,8 @@ def get_dataset(path, example_shape):
   return image_ds, variant_alt_allele_ds
 
 
-def call_variants(examples_filename, checkpoint_path, model, output_file):
+def call_variants(examples_filename: str, checkpoint_path: str,
+                  output_file: str):
   """Main driver of call_variants."""
   if FLAGS.kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
@@ -391,13 +388,7 @@ def call_variants(examples_filename, checkpoint_path, model, output_file):
   logging.info('Shape of input examples: %s', str(example_shape))
 
   if checkpoint_path is not None:
-    input_tensor = tf.keras.Input(shape=example_shape)
-    model = tf.keras.applications.inception_v3.InceptionV3(
-        weights=None,
-        include_top=True,
-        input_tensor=input_tensor,
-        classes=_CLASSES,
-        classifier_activation='softmax')
+    model = modeling.inceptionv3(example_shape)
     model.load_weights(checkpoint_path).expect_partial()
 
     examples_dataset, variant_alt_allele_dataset = get_dataset(
@@ -420,11 +411,9 @@ def main(argv=()):
 
     logging_level.set_from_flag()
 
-    model = modeling.get_model(FLAGS.model_name)
     call_variants(
         examples_filename=FLAGS.examples,
         checkpoint_path=FLAGS.checkpoint,
-        model=model,
         output_file=FLAGS.outfile)
 
 
