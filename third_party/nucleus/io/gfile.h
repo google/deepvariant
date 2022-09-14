@@ -37,12 +37,8 @@
 #include <string>
 #include <vector>
 
-namespace tensorflow {
-class WritableFile;
-namespace io {
-class BufferedInputStream;
-}  // namespace io
-}  // namespace tensorflow
+#include "tensorflow/core/lib/io/buffered_inputstream.h"
+#include "tensorflow/core/platform/file_system.h"
 
 namespace nucleus {
 
