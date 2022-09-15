@@ -82,7 +82,7 @@ tf::Status BedGraphWriter::Write(
   TF_RETURN_IF_ERROR(text_writer_->Write(
       absl::Substitute("$0\t$1\t$2\t$3\n", record.reference_name(),
                        record.start(), record.end(), record.data_value())));
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 BedGraphWriter::BedGraphWriter(std::unique_ptr<TextWriter> text_writer)

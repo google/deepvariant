@@ -30,17 +30,16 @@
  */
 
 #include "third_party/nucleus/vendor/statusor.h"
+
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
 #include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
-using tensorflow::Status;
-
 // Status tests.
 TEST(StatusTest, OKStatusMatchesIsOK) {
-  EXPECT_THAT(Status::OK(), IsOK());
+  EXPECT_THAT(tensorflow::Status(), IsOK());
 }
 
 TEST(StatusTest, FailedStatusMatchesIsNotOK) {

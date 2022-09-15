@@ -72,7 +72,7 @@ tensorflow::Status hts_write(htsFile* hts_file, const char *str) {
   if (bytes_written != str_len) {
     return tf::errors::DataLoss("Failure to write to htsFile.");
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace
@@ -133,7 +133,7 @@ tf::Status TextWriter::Close() {
   if (hts_ok < 0) {
     return tf::errors::Internal("hts_close() failed with return code ", hts_ok);
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 

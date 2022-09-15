@@ -129,7 +129,7 @@ tf::Status BedWriter::Write(const nucleus::genomics::v1::BedRecord& record) {
   absl::StrAppend(&out, "\n");
   TF_RETURN_IF_ERROR(text_writer_->Write(out));
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace nucleus

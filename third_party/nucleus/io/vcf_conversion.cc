@@ -263,7 +263,7 @@ tensorflow::Status EncodeFormatValues(
   using VT = VcfType<ValueType>;
 
   if (values.empty()) {
-    return tensorflow::Status::OK();
+    return tensorflow::Status();
   }
 
   if (static_cast<int>(values.size()) != bcf_hdr_nsamples(h)) {
@@ -310,7 +310,7 @@ tensorflow::Status EncodeFormatValues(
     const bcf_hdr_t* h, bcf1_t* v) {
 
   if (values.empty()) {
-    return tensorflow::Status::OK();
+    return tensorflow::Status();
   }
 
   if (static_cast<int>(values.size()) != bcf_hdr_nsamples(h)) {
@@ -343,7 +343,7 @@ tensorflow::Status EncodeFormatValues(
         "Failure to write VCF FORMAT field");
   }
 
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 
@@ -423,7 +423,7 @@ tensorflow::Status EncodeInfoValue(
   using VT = VcfType<ValueType>;
 
   if (value.empty()) {
-    return tensorflow::Status::OK();
+    return tensorflow::Status();
   }
   return VT::PutInfoValues(tag, value.data(), value.size(), h, v);
 }
@@ -433,7 +433,7 @@ tensorflow::Status EncodeInfoValue(
     const std::vector<string>& value, const char* tag,
     const bcf_hdr_t* h, bcf1_t* v) {
   if (value.empty()) {
-    return tensorflow::Status::OK();
+    return tensorflow::Status();
   }
   if (value.size() != 1) {
     return tensorflow::errors::FailedPrecondition(
@@ -445,7 +445,7 @@ tensorflow::Status EncodeInfoValue(
     return tensorflow::errors::Internal(
         "Failure to write VCF INFO field");
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 template <>
@@ -466,7 +466,7 @@ tensorflow::Status EncodeInfoValue(const std::vector<bool>& value,
     return tensorflow::errors::Internal(
         "Failure to write VCF INFO field");
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 // Returns the hrec that contains information or nullptr if none does.
@@ -618,7 +618,7 @@ tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 // TODO: consider eliminating this templated function by making
@@ -659,7 +659,7 @@ tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 template <class T> tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
@@ -679,7 +679,7 @@ template <class T> tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
       }
     }
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 // -----------------------------------------------------------------------------
@@ -705,7 +705,7 @@ tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 template <class T> tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
@@ -718,7 +718,7 @@ template <class T> tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
     std::vector<T> value = ListValues<T>((*found).second);
     return EncodeInfoValue(value, field_name_.c_str(), header, bcf_record);
   } else {
-    return tensorflow::Status::OK();
+    return tensorflow::Status();
   }
 }
 
@@ -738,7 +738,7 @@ tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
     return tensorflow::errors::FailedPrecondition(
         "Unrecognized type for field ", field_name_);
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 template <class T> tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
@@ -747,7 +747,7 @@ template <class T> tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
   std::vector<T> value =
       ReadInfoValue<T>(header, bcf_record, field_name_.c_str());
   SetInfoField(field_name_, value, variant);
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 
@@ -936,7 +936,7 @@ tensorflow::Status VcfHeaderConverter::ConvertFromPb(
   if (ret < 0) {
     return tensorflow::errors::DataLoss("Couldn't sync bcf header");
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 // Convert a C string to uppercase, in place, unless it starts with "<".
@@ -1071,7 +1071,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
       }
     }
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 
@@ -1256,7 +1256,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
       }
     }
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 }  // namespace nucleus

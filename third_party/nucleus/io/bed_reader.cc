@@ -77,7 +77,7 @@ tf::Status NextNonCommentLine(TextReader& text_reader, string* line) {
   } while (absl::StartsWith(tmp, BED_COMMENT_PREFIX));
 
   *line = tmp;
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 tf::Status ConvertToPb(const string& line, const int desiredNumFields,
@@ -131,7 +131,7 @@ tf::Status ConvertToPb(const string& line, const int desiredNumFields,
     record->set_block_starts(tokens[11]);
   }
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Peeks into the path to the first BED record and returns the number of fields
@@ -148,7 +148,7 @@ tf::Status GetNumFields(const string& path, int* numFields) {
   TF_RETURN_IF_ERROR(text_reader->Close());
   std::vector<string> tokens = absl::StrSplit(line, '\t');
   *numFields = static_cast<int>(tokens.size());
-  return tf::Status::OK();
+  return tf::Status();
 }
 }  // namespace
 
@@ -211,7 +211,7 @@ tf::Status BedReader::Validate(const int numTokens) const {
     return tf::errors::Unknown(
         "Invalid BED with varying number of fields in file");
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 StatusOr<std::shared_ptr<BedIterable>> BedReader::Iterate() const {

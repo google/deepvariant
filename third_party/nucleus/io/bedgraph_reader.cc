@@ -83,7 +83,7 @@ tf::Status ConvertToPb(const string& line,
     return tf::errors::Unknown("Unable to parse data value in BedGraph");
   }
   record->set_data_value(value);
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace

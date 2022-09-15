@@ -273,7 +273,7 @@ tf::Status VcfReader::FromString(
   }
 
   TF_RETURN_IF_ERROR(RecordConverter().ConvertToPb(header_, bcf1_, v));
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 StatusOr<bool> VcfReader::FromStringPython(
@@ -299,7 +299,7 @@ tf::Status VcfReader::Close() {
   if (retval < 0) {
     return tf::errors::Internal("hts_close() failed");
   } else {
-    return tf::Status::OK();
+    return tf::Status();
   }
 }
 

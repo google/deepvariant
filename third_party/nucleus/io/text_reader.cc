@@ -95,7 +95,7 @@ tf::Status TextReader::Close() {
   if (hts_ok < 0) {
     return tf::errors::Internal("hts_close() failed with return code ", hts_ok);
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 TextReader::TextReader(htsFile* hts_file)

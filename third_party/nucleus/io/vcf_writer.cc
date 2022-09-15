@@ -122,12 +122,12 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
 
 tf::Status VcfWriter::WriteHeader() {
   if (options_.exclude_header()) {
-    return tf::Status::OK();
+    return tf::Status();
   }
   if (bcf_hdr_write(fp_, header_) < 0) {
     return tf::errors::Unknown("Failed to write header");
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 VcfWriter::~VcfWriter() {
@@ -156,7 +156,7 @@ tf::Status VcfWriter::Write(const Variant& variant_message) {
   if (bcf_write(fp_, header_, v.get_bcf1()) != 0) {
     return tf::errors::Unknown("bcf_write call failed");
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 tf::Status VcfWriter::Close() {
@@ -168,7 +168,7 @@ tf::Status VcfWriter::Close() {
   fp_ = nullptr;
   bcf_hdr_destroy(header_);
   header_ = nullptr;
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // static

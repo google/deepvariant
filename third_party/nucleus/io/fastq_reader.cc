@@ -91,7 +91,7 @@ tf::Status ConvertToPb(const string_view header,
   }
   record->set_sequence(string(sequence));
   record->set_quality(string(quality));
-  return tf::Status::OK();
+  return tf::Status();
 }
 }  // namespace
 
@@ -160,7 +160,7 @@ tf::Status FastqReader::Next(string* header, string* sequence,
   *sequence = sequence_or.ValueOrDie();
   *pad = pad_or.ValueOrDie();
   *quality = quality_or.ValueOrDie();
-  return tf::Status::OK();
+  return tf::Status();
 
 data_loss:
   return tf::errors::DataLoss("Failed to parse FASTQ record");

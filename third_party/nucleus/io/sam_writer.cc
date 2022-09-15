@@ -350,7 +350,7 @@ tf::Status PopulateNativeHeader(const genomics::v1::SamHeader& sam_header,
   memcpy(h->text, text.c_str(), text.length());
   h->text[text.length()] = '\0';
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Returns a bam1_core_t.flag based on the information contained in |read|.
@@ -491,7 +491,7 @@ tf::Status PopulateNativeBody(const Read& read, const bam_hdr_t* h, bam1_t* b) {
   if (aux_status.ok()) {
     auxBuilder.CopyTo(data_array_ptr);
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Helper method to get file extension of |file_path|.
@@ -619,7 +619,7 @@ SamWriter::~SamWriter() {
 tf::Status SamWriter::Close() {
   native_file_.reset();
   native_header_ = nullptr;
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 tf::Status SamWriter::Write(const Read& read) {
@@ -633,7 +633,7 @@ tf::Status SamWriter::Write(const Read& read) {
                  body->value()) < 0) {
     return tf::errors::Unknown("Cannot add record");
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace nucleus

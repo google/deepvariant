@@ -101,9 +101,9 @@ TEST(TextWriterTest, WritesUncompressedOutput) {
       TextWriter::ToFile(dest, TextWriter::NO_COMPRESS).ValueOrDie());
   tf::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
 
   EXPECT_EQ(kHelloWorldStr, FileContents(dest));
 }
@@ -115,9 +115,9 @@ TEST(TextWriterTest, WritesCompressedOutput) {
       TextWriter::ToFile(dest, TextWriter::COMPRESS).ValueOrDie());
   tf::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
 
   EXPECT_EQ(kHelloWorldBGZFStr, FileContents(dest));
 }
@@ -128,9 +128,9 @@ TEST(TextWriterTest, UsesCompressionWhenExtensionIsGz) {
   const auto writer = std::move(TextWriter::ToFile(destGz).ValueOrDie());
   tf::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
 
   EXPECT_EQ(kHelloWorldBGZFStr, FileContents(destGz));
 }
@@ -141,9 +141,9 @@ TEST(TextWriterTest, NoCompressionWhenExtensionIsNotGz) {
   const auto writer = std::move(TextWriter::ToFile(dest).ValueOrDie());
   tf::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status::OK(), status);
+  EXPECT_EQ(tf::Status(), status);
 
   EXPECT_EQ(kHelloWorld, FileContents(dest));
 }

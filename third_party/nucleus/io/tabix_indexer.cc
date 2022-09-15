@@ -46,7 +46,7 @@ tf::Status TbxIndexBuild(const string& path) {
     LOG(WARNING) << "Return code: " << val << "\nFile path: " << path;
     return tf::errors::Internal("Failure to write tabix index.");
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 tf::Status CSIIndexBuild(string path, int min_shift) {
@@ -56,7 +56,7 @@ tf::Status CSIIndexBuild(string path, int min_shift) {
     LOG(WARNING) << "Return code: " << val << "\nFile path: " << path;
     return tf::errors::Internal("Failure to write CSI index.");
   }
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace nucleus

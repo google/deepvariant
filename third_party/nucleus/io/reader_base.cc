@@ -71,7 +71,7 @@ tensorflow::Status IterableBase::Release() {
     reader_->live_iterable_ = nullptr;
     reader_ = nullptr;
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 bool IterableBase::IsAlive() const {
@@ -81,11 +81,11 @@ bool IterableBase::IsAlive() const {
 tensorflow::Status IterableBase::CheckIsAlive() const {
   if (!IsAlive())
     return tensorflow::errors::FailedPrecondition("Reader is not alive");
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 tensorflow::Status IterableBase::PythonEnter() {
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 tensorflow::Status IterableBase::PythonExit() {

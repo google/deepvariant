@@ -102,7 +102,7 @@ tf::Status FastqWriter::Write(
                   "\n");
   TF_RETURN_IF_ERROR(text_writer_->Write(out));
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace nucleus

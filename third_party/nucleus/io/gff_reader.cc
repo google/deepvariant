@@ -98,7 +98,7 @@ tf::Status ParseGffHeaderLine(const string& line, GffHeader* header) {
     // TODO: other directives currently ignored.
   }
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Peeks into the GFF file to extract the header.
@@ -124,7 +124,7 @@ tf::Status ReadGffHeader(const string& path, GffHeader* header) {
     return status;
   }
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 tf::Status NextNonCommentLine(TextReader& text_reader, string* line) {
@@ -137,7 +137,7 @@ tf::Status NextNonCommentLine(TextReader& text_reader, string* line) {
   } while (absl::StartsWith(tmp, kGffCommentPrefix));
 
   *line = tmp;
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Parses the text `attributes_string`, which is a ';'-delimited list
@@ -146,7 +146,7 @@ tf::Status ParseGffAttributes(const string& attributes_string,
                               google::protobuf::Map<string, string>* attributes_map) {
   if (attributes_string == kGffMissingField || attributes_string.empty()) {
     attributes_map->clear();
-    return tf::Status::OK();
+    return tf::Status();
   }
 
   google::protobuf::Map<string, string> tmp;
@@ -164,7 +164,7 @@ tf::Status ParseGffAttributes(const string& attributes_string,
     tmp[lhs] = rhs;
   }
   *attributes_map = tmp;
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Converts a text GFF line into a GffRecord proto message, or returns an error
@@ -246,7 +246,7 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
   record->set_phase(phase.value_or(kGffMissingInt32));
   *record->mutable_attributes() = attributes_map;
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace

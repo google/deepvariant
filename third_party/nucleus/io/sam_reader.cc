@@ -301,7 +301,7 @@ static inline bool StartsWith(const string& query, const char prefix[],
 tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
                           Read* read_message) {
   if (options.aux_field_handling() != SamReaderOptions::PARSE_ALL_AUX_FIELDS) {
-    return tf::Status::OK();
+    return tf::Status();
   }
   const auto& aux_fields_to_keep = options.aux_fields_to_keep();
 
@@ -454,7 +454,7 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
   }
 
   // Everything parsed correctly, so we return OK.
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Assign aligned_quality. Depending on the use_original_base_quality_scores
@@ -475,7 +475,7 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
       for (char c : oq_tag_value.string_value()) {
         quality->Add(reinterpret_cast<int>(c - 33));
       }
-      return tf::Status::OK();
+      return tf::Status();
     }
   } else {  // Use "QUAL" field.
     if (c->l_qseq) {
@@ -487,7 +487,7 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
         for (int i = 0; i < c->l_qseq; ++i) {
           quality->Add(quals[i]);
         }
-        return tf::Status::OK();
+        return tf::Status();
       }
     }
   }
@@ -600,7 +600,7 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
                  << ": " << status;
   }
 
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 // Base class for SamFullFileIterable and SamQueryIterable.
@@ -847,7 +847,7 @@ tf::Status SamReader::Close() {
   if (retval < 0) {
     return tf::errors::Internal("hts_close() failed");
   } else {
-    return tf::Status::OK();
+    return tf::Status();
   }
 }
 

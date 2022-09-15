@@ -75,7 +75,7 @@ tf::Status WriteGffHeader(const GffHeader& header, TextWriter* text_writer) {
                          range.start() + 1, range.end())));
   }
   // TODO: write ontology headers.
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 tf::Status FormatGffAttributes(const GffRecord& record,
@@ -85,7 +85,7 @@ tf::Status FormatGffAttributes(const GffRecord& record,
                                              record.attributes().end());
   *gff_attributes =
       absl::StrJoin(sorted_attributes, ";", absl::PairFormatter("="));
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
@@ -136,7 +136,7 @@ tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
   absl::StrAppend(&tmp, "\n");
 
   *gff_line = tmp;
-  return tf::Status::OK();
+  return tf::Status();
 }
 
 }  // namespace

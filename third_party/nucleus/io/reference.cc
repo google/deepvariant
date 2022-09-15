@@ -264,7 +264,7 @@ tensorflow::Status IndexedFastaReader::Close() {
     fai_destroy(faidx_);
     faidx_ = nullptr;
   }
-  return tensorflow::Status::OK();
+  return tensorflow::Status();
 }
 
 StatusOr<bool> IndexedFastaReaderIterable::Next(GenomeReferenceRecord* out) {
