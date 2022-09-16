@@ -47,124 +47,124 @@ import tensorflow as tf
 FLAGS = flags.FLAGS
 
 # Required flags.
-flags.DEFINE_enum(
+_MODEL_TYPE = flags.DEFINE_enum(
     'model_type', None, ['WGS', 'WES', 'PACBIO', 'HYBRID_PACBIO_ILLUMINA'],
     'Required. Type of model to use for variant calling. Each '
     'model_type has an associated default model, which can be '
     'overridden by the --customized_model_{parent,child} flags.')
-flags.DEFINE_string(
+_REF = flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
     'well. Supports text or gzipped references. Should match the reference '
     'used to align the BAM file provided to --reads_child.')
-flags.DEFINE_string(
+_READS_CHILD = flags.DEFINE_string(
     'reads_child', None,
     'Required. Aligned, sorted, indexed BAM file containing the reads we want '
     'to call. Should be aligned to a reference genome compatible with --ref.')
-flags.DEFINE_string(
+_READS_PARENT1 = flags.DEFINE_string(
     'reads_parent1', None,
     'Required. Aligned, sorted, indexed BAM file containing parent 1 reads of '
     'the person we want to call. Should be aligned to a reference genome '
     'compatible with --ref.')
-flags.DEFINE_string(
+_READS_PARENT2 = flags.DEFINE_string(
     'reads_parent2', None,
     'Aligned, sorted, indexed BAM file containing parent 2 reads of '
     'the person we want to call. Should be aligned to a reference genome '
     'compatible with --ref.')
-flags.DEFINE_string(
+_OUTPUT_VCF_CHILD = flags.DEFINE_string(
     'output_vcf_child', None,
     'Required. Path where we should write VCF file for the child.')
-flags.DEFINE_string(
+_OUTPUT_VCF_PARENT1 = flags.DEFINE_string(
     'output_vcf_parent1', None,
     'Required. Path where we should write VCF file for parent1.')
-flags.DEFINE_string(
+_OUTPUT_VCF_PARENT2 = flags.DEFINE_string(
     'output_vcf_parent2', None,
     'Required. Path where we should write VCF file for parent2.')
 # Optional flags.
-flags.DEFINE_boolean(
+_DRY_RUN = flags.DEFINE_boolean(
     'dry_run', False,
     'Optional. If True, only prints out commands without executing them.')
-flags.DEFINE_string(
+_INTERMEDIATE_RESULTS_DIR = flags.DEFINE_string(
     'intermediate_results_dir', None,
     'Optional. If specified, this should be an existing '
     'directory that is visible insider docker, and will be '
     'used to to store intermediate outputs.')
-flags.DEFINE_boolean(
+_VERSION = flags.DEFINE_boolean(
     'version',
     None,
     'Optional. If true, print out version number and exit.',
     allow_hide_cpp=True)
-flags.DEFINE_string('logging_dir', None,
-                    'Required. Directory where we should write log files.')
-flags.DEFINE_boolean(
+_LOGGING_DIR = flags.DEFINE_string(
+    'logging_dir', None, 'Required. Directory where we should write log files.')
+_RUNTIME_REPORT = flags.DEFINE_boolean(
     'runtime_report', False, 'Output make_examples runtime metrics '
     'and create a visual runtime report using runtime_by_region_vis. '
     'Only works with --logging_dir.')
 # Optional flags for call_variants.
 # TODO: Support different child/parent models.
-flags.DEFINE_string(
+_CUSTOMIZED_MODEL_CHILD = flags.DEFINE_string(
     'customized_model_child', None,
     'Optional. A path to a child model checkpoint to load for the '
     '`call_variants` step. If not set, the default for each --model_type will '
     'be used')
-flags.DEFINE_string(
+_CUSTOMIZED_MODEL_PARENT = flags.DEFINE_string(
     'customized_model_parent', None,
     'Optional. A path to a parent model checkpoint to load for the '
     '`call_variants` step. If not set, the default for each --model_type will '
     'be used')
 # Optional flags for make_examples.
-flags.DEFINE_integer('num_shards', 1,
-                     'Optional. Number of shards for make_examples step.')
-flags.DEFINE_string(
+_NUM_SHARDS = flags.DEFINE_integer(
+    'num_shards', 1, 'Optional. Number of shards for make_examples step.')
+_REGIONS = flags.DEFINE_string(
     'regions', None,
     'Optional. Space-separated list of regions we want to process. Elements '
     'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
-flags.DEFINE_string(
+_SAMPLE_NAME_CHILD = flags.DEFINE_string(
     'sample_name_child', None,
     'Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads_child.')
-flags.DEFINE_string(
+_SAMPLE_NAME_PARENT1 = flags.DEFINE_string(
     'sample_name_parent1', None,
     'Parent1 Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads_parent1.')
-flags.DEFINE_string(
+_SAMPLE_NAME_PARENT2 = flags.DEFINE_string(
     'sample_name_parent2', None,
     'Parent2 Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads_parent2.')
-flags.DEFINE_boolean(
+_USE_HP_INFORMATION = flags.DEFINE_boolean(
     'use_hp_information', None,
     'Optional. If True, corresponding flags will be set to properly use the HP '
     'information present in the BAM input.')
-flags.DEFINE_string(
+_MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
     'make_examples_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
     'valid flags for make_examples.py. If the flag_value is boolean, it has to '
     'be flag_name=true or flag_name=false.')
-flags.DEFINE_string(
+_CALL_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     'call_variants_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
     'valid flags for call_variants.py. If the flag_value is boolean, it has to '
     'be flag_name=true or flag_name=false.')
-flags.DEFINE_string(
+_POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     'postprocess_variants_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
     'valid flags for postprocess_variants.py. If the flag_value is boolean, '
     'it has to be flag_name=true or flag_name=false.')
 
 # Optional flags for postprocess_variants.
-flags.DEFINE_string(
+_OUTPUT_GVCF_CHILD = flags.DEFINE_string(
     'output_gvcf_child', None,
     'Optional. Path where we should write gVCF file for child sample.')
-flags.DEFINE_string(
+_OUTPUT_GVCF_PARENT1 = flags.DEFINE_string(
     'output_gvcf_parent1', None,
     'Optional. Path where we should write gVCF file for parent1 sample.')
-flags.DEFINE_string(
+_OUTPUT_GVCF_PARENT2 = flags.DEFINE_string(
     'output_gvcf_parent2', None,
     'Optional. Path where we should write gVCF file for parent2 sample.')
-flags.DEFINE_boolean(
+_VCF_STATS_REPORT = flags.DEFINE_boolean(
     'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
     'statistics about the output VCF.')
 
@@ -309,23 +309,23 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
     (string) A command to run.
   """
   command = [
-      'time', 'seq 0 {} |'.format(FLAGS.num_shards - 1),
+      'time', 'seq 0 {} |'.format(_NUM_SHARDS.value - 1),
       'parallel -q --halt 2 --line-buffer',
       '/opt/deepvariant/bin/deeptrio/make_examples'
   ]
   command.extend(['--mode', 'calling'])
   command.extend(['--ref', '"{}"'.format(ref)])
-  if FLAGS.reads_parent1 is not None:
+  if _READS_PARENT1.value is not None:
     command.extend(['--reads_parent1', '"{}"'.format(reads_parent1)])
-  if FLAGS.reads_parent2 is not None:
+  if _READS_PARENT2.value is not None:
     command.extend(['--reads_parent2', '"{}"'.format(reads_parent2)])
   command.extend(['--reads', '"{}"'.format(reads_child)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--sample_name', '"{}"'.format(sample_name_child)])
-  if FLAGS.sample_name_parent1 is not None:
+  if _SAMPLE_NAME_PARENT1.value is not None:
     command.extend(
         ['--sample_name_parent1', '"{}"'.format(sample_name_parent1)])
-  if FLAGS.sample_name_parent2 is not None:
+  if _SAMPLE_NAME_PARENT2.value is not None:
     command.extend(
         ['--sample_name_parent2', '"{}"'.format(sample_name_parent2)])
   special_args = {}
@@ -338,25 +338,25 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
 
   conflict_args = None
-  if FLAGS.model_type == 'PACBIO':
+  if _MODEL_TYPE.value == 'PACBIO':
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['add_hp_channel'] = True
     special_args['sort_by_haplotypes'] = special_args[
-        'parse_sam_aux_fields'] = bool(FLAGS.use_hp_information)
+        'parse_sam_aux_fields'] = bool(_USE_HP_INFORMATION.value)
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
     conflict_args = ['sort_by_haplotypes', 'parse_sam_aux_fields']
 
-  if FLAGS.model_type == 'WES':
+  if _MODEL_TYPE.value == 'WES':
     special_args[
         'pileup_image_height_child'] = DEEP_TRIO_WES_PILEUP_HEIGHT_CHILD
     special_args[
         'pileup_image_height_parent'] = DEEP_TRIO_WES_PILEUP_HEIGHT_PARENT
     special_args['channels'] = 'insert_size'
 
-  if FLAGS.model_type == 'WGS':
+  if _MODEL_TYPE.value == 'WGS':
     special_args['channels'] = 'insert_size'
 
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
@@ -368,9 +368,9 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
 
   command.extend(['--task {}'])
 
-  if FLAGS.logging_dir:
+  if _LOGGING_DIR.value:
     command.extend(
-        ['2>&1 | tee {}/make_examples.log'.format(FLAGS.logging_dir)])
+        ['2>&1 | tee {}/make_examples.log'.format(_LOGGING_DIR.value)])
 
   return ' '.join(command)
 
@@ -384,9 +384,9 @@ def call_variants_command(outfile, examples, model_ckpt, sample, extra_args):
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
-  if FLAGS.logging_dir:
+  if _LOGGING_DIR.value:
     command.extend([
-        '2>&1 | tee {}/call_variants_{}.log'.format(FLAGS.logging_dir, sample)
+        '2>&1 | tee {}/call_variants_{}.log'.format(_LOGGING_DIR.value, sample)
     ])
 
   return ' '.join(command)
@@ -417,10 +417,10 @@ def postprocess_variants_command(ref,
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
-  if FLAGS.logging_dir:
+  if _LOGGING_DIR.value:
     command.extend([
         '2>&1 | tee {}/postprocess_variants_{}.log'.format(
-            FLAGS.logging_dir, sample)
+            _LOGGING_DIR.value, sample)
     ])
 
   return ' '.join(command)
@@ -428,7 +428,7 @@ def postprocess_variants_command(ref,
 
 def runtime_by_region_vis_command(runtime_by_region_path: str):
   """Returns a runtime_by_region_vis command for subprocess."""
-  runtime_report = os.path.join(FLAGS.logging_dir,
+  runtime_report = os.path.join(_LOGGING_DIR.value,
                                 'make_examples_runtime_by_region_report.html')
 
   command = ['time', '/opt/deepvariant/bin/runtime_by_region_vis']
@@ -455,39 +455,40 @@ def check_or_create_intermediate_results_dir(intermediate_results_dir):
 
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
-  if FLAGS.customized_model_parent is not None:
-    if (not tf.compat.v1.gfile.Exists(FLAGS.customized_model_parent +
+  if _CUSTOMIZED_MODEL_PARENT.value is not None:
+    if (not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_PARENT.value +
                                       '.data-00000-of-00001') or
-        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_parent + '.index')
-        or
-        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_parent + '.meta')):
+        not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_PARENT.value + '.index')
+        or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_PARENT.value +
+                                         '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
                          'https://github.com/google/deepvariant/blob/r1.4/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
-                         'could-not-open'.format(FLAGS.customized_model_parent))
+                         'could-not-open'.format(
+                             _CUSTOMIZED_MODEL_PARENT.value))
     logging.info(
         'You set --customized_model_parent. Instead of using the default '
         'model for %s, `call_variants` step will load %s* '
-        'instead.', FLAGS.model_type, FLAGS.customized_model_parent)
+        'instead.', _MODEL_TYPE.value, _CUSTOMIZED_MODEL_PARENT.value)
 
-  if FLAGS.customized_model_child is not None:
-    if (not tf.compat.v1.gfile.Exists(FLAGS.customized_model_child +
+  if _CUSTOMIZED_MODEL_CHILD.value is not None:
+    if (not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_CHILD.value +
                                       '.data-00000-of-00001') or
-        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_child + '.index')
+        not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_CHILD.value + '.index')
         or
-        not tf.compat.v1.gfile.Exists(FLAGS.customized_model_child + '.meta')):
+        not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_CHILD.value + '.meta')):
       raise RuntimeError('The model files {}* do not exist. Potentially '
                          'relevant issue: '
                          'https://github.com/google/deepvariant/blob/r1.4/docs/'
                          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
-                         'could-not-open'.format(FLAGS.customized_model_child))
+                         'could-not-open'.format(_CUSTOMIZED_MODEL_CHILD.value))
     logging.info(
         'You set --customized_model_child. Instead of using the default '
         'model for %s, `call_variants` step will load %s* '
-        'instead.', FLAGS.model_type, FLAGS.customized_model_child)
+        'instead.', _MODEL_TYPE.value, _CUSTOMIZED_MODEL_CHILD.value)
 
-  if FLAGS.use_hp_information and FLAGS.model_type != 'PACBIO':
+  if _USE_HP_INFORMATION.value and _MODEL_TYPE.value != 'PACBIO':
     raise ValueError('--use_hp_information can only be used with '
                      '--model_type="PACBIO"')
 
@@ -509,26 +510,26 @@ def generate_call_variants_command(sample, model_ckpt,
           CALL_VARIANTS_OUTPUT_COMMON_SUFFIX),
       EXAMPLES_NAME_PATTERN.format(
           examples_common_prefix(intermediate_results_dir), sample,
-          examples_common_suffix(FLAGS.num_shards)), model_ckpt, sample,
-      FLAGS.call_variants_extra_args)
+          examples_common_suffix(_NUM_SHARDS.value)), model_ckpt, sample,
+      _CALL_VARIANTS_EXTRA_ARGS.value)
 
 
 def generate_postprocess_variants_command(sample, intermediate_results_dir,
                                           output_vcf, output_gvcf):
   """Helper function to generate post_process command line."""
   return postprocess_variants_command(
-      FLAGS.ref,
+      _REF.value,
       CALL_VARIANTS_OUTPUT_PATTERN.format(
           call_variants_output_common_prefix(intermediate_results_dir), sample,
           CALL_VARIANTS_OUTPUT_COMMON_SUFFIX),
       output_vcf,
       sample,
-      FLAGS.postprocess_variants_extra_args,
+      _POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
       NO_VARIANT_TFRECORD_PATTERN.format(
           nonvariant_site_tfrecord_common_suffix(intermediate_results_dir),
-          sample, examples_common_suffix(FLAGS.num_shards)),
+          sample, examples_common_suffix(_NUM_SHARDS.value)),
       gvcf_outfile=output_gvcf,
-      vcf_stats_report=FLAGS.vcf_stats_report)
+      vcf_stats_report=_VCF_STATS_REPORT.value)
 
 
 def create_all_commands(intermediate_results_dir):
@@ -539,13 +540,13 @@ def create_all_commands(intermediate_results_dir):
 
   # make_examples
   nonvariant_site_tfrecord_path = None
-  if FLAGS.output_gvcf_child is not None:
+  if _OUTPUT_GVCF_CHILD.value is not None:
     nonvariant_site_tfrecord_path = '{}.{}'.format(
         nonvariant_site_tfrecord_common_suffix(intermediate_results_dir),
-        examples_common_suffix(FLAGS.num_shards))
+        examples_common_suffix(_NUM_SHARDS.value))
 
-  if FLAGS.logging_dir and FLAGS.runtime_report:
-    runtime_directory = os.path.join(FLAGS.logging_dir,
+  if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
+    runtime_directory = os.path.join(_LOGGING_DIR.value,
                                      'make_examples_runtime_by_region')
     if not os.path.isdir(runtime_directory):
       logging.info('Creating a make_examples runtime by region directory in %s',
@@ -554,41 +555,41 @@ def create_all_commands(intermediate_results_dir):
     # The path to runtime metrics output is sharded just like the examples.
     runtime_by_region_path = os.path.join(
         runtime_directory,
-        'make_examples_runtime@{}.tsv'.format(FLAGS.num_shards))
+        'make_examples_runtime@{}.tsv'.format(_NUM_SHARDS.value))
   else:
     runtime_by_region_path = None
 
   commands.append(
       make_examples_command(
-          FLAGS.ref,
-          FLAGS.reads_child,
-          FLAGS.reads_parent1,
-          FLAGS.reads_parent2,
-          examples_common_name(intermediate_results_dir, FLAGS.num_shards),
-          FLAGS.sample_name_child,
-          FLAGS.sample_name_parent1,
-          FLAGS.sample_name_parent2,
+          _REF.value,
+          _READS_CHILD.value,
+          _READS_PARENT1.value,
+          _READS_PARENT2.value,
+          examples_common_name(intermediate_results_dir, _NUM_SHARDS.value),
+          _SAMPLE_NAME_CHILD.value,
+          _SAMPLE_NAME_PARENT1.value,
+          _SAMPLE_NAME_PARENT2.value,
           runtime_by_region_path=runtime_by_region_path,
-          extra_args=FLAGS.make_examples_extra_args,
+          extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
           # kwargs:
           gvcf=nonvariant_site_tfrecord_path,
-          regions=FLAGS.regions))
+          regions=_REGIONS.value))
 
   # Calling variants for child sample
-  model_ckpt = get_model_ckpt(FLAGS.model_type + '_child',
-                              FLAGS.customized_model_child)
+  model_ckpt = get_model_ckpt(_MODEL_TYPE.value + '_child',
+                              _CUSTOMIZED_MODEL_CHILD.value)
   commands.append(
       generate_call_variants_command(CHILD, model_ckpt,
                                      intermediate_results_dir))
 
   # Calling variants for parent1 sample
-  model_ckpt = get_model_ckpt(FLAGS.model_type + '_parent',
-                              FLAGS.customized_model_parent)
-  if FLAGS.reads_parent1 is not None:
+  model_ckpt = get_model_ckpt(_MODEL_TYPE.value + '_parent',
+                              _CUSTOMIZED_MODEL_PARENT.value)
+  if _READS_PARENT1.value is not None:
     commands.append(
         generate_call_variants_command(PARENT1, model_ckpt,
                                        intermediate_results_dir))
-  if FLAGS.reads_parent2 is not None:
+  if _READS_PARENT2.value is not None:
     commands.append(
         generate_call_variants_command(PARENT2, model_ckpt,
                                        intermediate_results_dir))
@@ -596,30 +597,30 @@ def create_all_commands(intermediate_results_dir):
   # postprocess_variants for child
   post_process_commands.append(
       generate_postprocess_variants_command(CHILD, intermediate_results_dir,
-                                            FLAGS.output_vcf_child,
-                                            FLAGS.output_gvcf_child))
+                                            _OUTPUT_VCF_CHILD.value,
+                                            _OUTPUT_GVCF_CHILD.value))
 
-  if FLAGS.reads_parent1 is not None:
+  if _READS_PARENT1.value is not None:
     post_process_commands.append(
         generate_postprocess_variants_command(PARENT1, intermediate_results_dir,
-                                              FLAGS.output_vcf_parent1,
-                                              FLAGS.output_gvcf_parent1))
+                                              _OUTPUT_VCF_PARENT1.value,
+                                              _OUTPUT_GVCF_PARENT1.value))
 
-  if FLAGS.reads_parent2 is not None:
+  if _READS_PARENT2.value is not None:
     post_process_commands.append(
         generate_postprocess_variants_command(PARENT2, intermediate_results_dir,
-                                              FLAGS.output_vcf_parent2,
-                                              FLAGS.output_gvcf_parent2))
+                                              _OUTPUT_VCF_PARENT2.value,
+                                              _OUTPUT_GVCF_PARENT2.value))
 
   # runtime-by-region
-  if FLAGS.logging_dir and FLAGS.runtime_report:
+  if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     commands.append(runtime_by_region_vis_command(runtime_by_region_path))
 
   return commands, post_process_commands
 
 
 def main(_):
-  if FLAGS.version:
+  if _VERSION.value:
     print('DeepTrio version {}'.format(DEEP_TRIO_VERSION))
     return
 
@@ -636,7 +637,8 @@ def main(_):
   # --reads_parent?, --output_vcf_parent?, --sample_name_parent? flags should
   # either all be set or all be unset.
   parent1_flags = [
-      FLAGS.reads_parent1, FLAGS.output_vcf_parent1, FLAGS.sample_name_parent1
+      _READS_PARENT1.value, _OUTPUT_VCF_PARENT1.value,
+      _SAMPLE_NAME_PARENT1.value
   ]
   if any(parent1_flags) and not all(parent1_flags):
     sys.stderr.write(
@@ -646,7 +648,8 @@ def main(_):
     sys.exit(1)
 
   parent2_flags = [
-      FLAGS.reads_parent2, FLAGS.output_vcf_parent2, FLAGS.sample_name_parent2
+      _READS_PARENT2.value, _OUTPUT_VCF_PARENT2.value,
+      _SAMPLE_NAME_PARENT2.value
   ]
   if any(parent2_flags) and not all(parent2_flags):
     sys.stderr.write(
@@ -656,7 +659,7 @@ def main(_):
     sys.exit(1)
 
   intermediate_results_dir = check_or_create_intermediate_results_dir(
-      FLAGS.intermediate_results_dir)
+      _INTERMEDIATE_RESULTS_DIR.value)
 
   commands, post_process_commands = create_all_commands(
       intermediate_results_dir)
@@ -664,7 +667,7 @@ def main(_):
         'in docker. ****\n'.format(intermediate_results_dir))
   for command in commands:
     print('\n***** Running the command:*****\n{}\n'.format(command))
-    if not FLAGS.dry_run:
+    if not _DRY_RUN.value:
       try:
         subprocess.check_call(command, shell=True, executable='/bin/bash')
       except subprocess.CalledProcessError as e:
@@ -672,7 +675,7 @@ def main(_):
         raise
   for command in post_process_commands:
     print('\n***** Running the command:*****\n{}\n'.format(command))
-  if not FLAGS.dry_run:
+  if not _DRY_RUN.value:
     return_codes = [
         subprocess.Popen(command, shell=True, executable='/bin/bash')
         for command in post_process_commands
