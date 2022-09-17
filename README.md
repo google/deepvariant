@@ -1,4 +1,4 @@
-# DeepVariant
+<img src="docs/images/dv_logo.png" width=50% height=50%>
 
 [![release](https://img.shields.io/badge/release-v1.4.0-green?logo=github)](https://github.com/google/deepvariant/releases)
 [![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
