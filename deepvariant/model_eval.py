@@ -128,7 +128,7 @@ flags.DEFINE_string(
     'for more information. The default value is 0, which provides the best '
     'performance in our tests. Set this flag to "" to not set the variable.')
 
-flags.DEFINE_enum('best_checkpoint_metric', 'F1/All',
+flags.DEFINE_enum('best_checkpoint_metric', 'Accuracy/All',
                   increasing_metrics + decreasing_metrics,
                   'The metric for measuring the best checkpoint.')
 
