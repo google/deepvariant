@@ -372,9 +372,9 @@ inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
     return DeepVariantChannelEnum::CH_GAP_COMPRESSED_IDENTITY;
   if (channel == ch_gc_content) return DeepVariantChannelEnum::CH_GC_CONTENT;
   if (channel == ch_is_homopolymer)
-    return DeepVariantChannelEnum::CH_IS_HOMEOPOLYMER;
+    return DeepVariantChannelEnum::CH_IS_HOMOPOLYMER;
   if (channel == ch_homopolymer_weighted)
-    return DeepVariantChannelEnum::CH_HOMEOPOLYMER_WEIGHTED;
+    return DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED;
   if (channel == ch_blank) return DeepVariantChannelEnum::CH_BLANK;
   if (channel == ch_insert_size)
     return DeepVariantChannelEnum::CH_INSERT_SIZE;
