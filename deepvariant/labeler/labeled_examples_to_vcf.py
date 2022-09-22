@@ -54,30 +54,28 @@ from third_party.nucleus.io import vcf
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_bool(
+_ALLOW_UNLABELED_EXAMPLES = flags.DEFINE_bool(
     'allow_unlabeled_examples', None,
     'If True, allow unlabeled examples as input and output ./. as the GT.')
-flags.DEFINE_string(
+_REF = flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference. Used to get the reference contigs for the '
     'VCF file.')
-flags.DEFINE_string(
+_EXAMPLES = flags.DEFINE_string(
     'examples', None,
     'Required. Path to labeled, DeepVariant tf.Example protos.')
-flags.DEFINE_string('output_vcf', None,
-                    'Required. Path where we will write out output VCF.')
-flags.DEFINE_string(
+_OUTPUT_VCF = flags.DEFINE_string(
+    'output_vcf', None, 'Required. Path where we will write out output VCF.')
+_SAMPLE_NAME = flags.DEFINE_string(
     'sample_name', '',
     'The sample name to write into the VCF. By default this is None, '
     'indicating we will use the call_set_name of the sample encoded in the '
     'example variant.')
-flags.DEFINE_integer(
+_MAX_RECORDS = flags.DEFINE_integer(
     'max_records', -1,
     'If provided, we will only read in at most max_record examples for '
     'conversion to VCF.')
-flags.DEFINE_integer(
+_LOG_EVERY = flags.DEFINE_integer(
     'log_every', 10000,
     'How frequently should we provide updates on the conversion process? We '
     'will log our conversion of every `log_every` variants.')
@@ -115,7 +113,7 @@ def examples_to_variants(examples_path, max_records=None):
                                     variant_utils.variant_range_tuple):
     variant = next(group)
     if not variantcall_utils.has_genotypes(variant_utils.only_call(variant)):
-      if FLAGS.allow_unlabeled_examples:
+      if _ALLOW_UNLABELED_EXAMPLES.value:
         call = variant.calls[0] if variant.calls else variant.calls.add()
         variantcall_utils.set_gt(call, (-1, -1))
       else:
@@ -150,20 +148,20 @@ def peek_sample_name(variants_iter):
 def main(argv):
   del argv
 
-  contigs = fasta.IndexedFastaReader(FLAGS.ref).header.contigs
-  max_records = FLAGS.max_records if FLAGS.max_records >= 0 else None
-  variants_iter = examples_to_variants(FLAGS.examples, max_records=max_records)
+  contigs = fasta.IndexedFastaReader(_REF.value).header.contigs
+  max_records = _MAX_RECORDS.value if _MAX_RECORDS.value >= 0 else None
+  variants_iter = examples_to_variants(_EXAMPLES.value, max_records=max_records)
 
-  if not FLAGS.sample_name:
+  if not _SAMPLE_NAME.value:
     sample_name, variants_iter = peek_sample_name(variants_iter)
   else:
-    sample_name = FLAGS.sample_name
+    sample_name = _SAMPLE_NAME.value
   header = dv_vcf_constants.deepvariant_header(
       contigs=contigs, sample_names=[sample_name])
-  with vcf.VcfWriter(FLAGS.output_vcf, header=header) as writer:
+  with vcf.VcfWriter(_OUTPUT_VCF.value, header=header) as writer:
     for variant in variants_iter:
       variant.calls[0].call_set_name = sample_name
-      logging.log_every_n(logging.INFO, 'Converted %s', FLAGS.log_every,
+      logging.log_every_n(logging.INFO, 'Converted %s', _LOG_EVERY.value,
                           variant_utils.variant_key(variant))
       writer.write(variant)
 

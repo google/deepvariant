@@ -59,99 +59,104 @@ from third_party.nucleus.util.cigar import REF_ADVANCING_OPS
 
 _UNSET_WS_INT_FLAG = -1
 
-flags.DEFINE_bool('ws_use_window_selector_model', False,
-                  'Activate the use of window selector models.')
-flags.DEFINE_string(
+_WS_USE_WINDOW_SELECTOR_MODEL = flags.DEFINE_bool(
+    'ws_use_window_selector_model', False,
+    'Activate the use of window selector models.')
+_WS_WINDOW_SELECTOR_MODEL = flags.DEFINE_string(
     'ws_window_selector_model', None,
     'Path to a text format proto of the window selector model to use.')
-flags.DEFINE_integer(
+_WS_MIN_NUM_SUPPORTING_READS = flags.DEFINE_integer(
     'ws_min_num_supporting_reads', _UNSET_WS_INT_FLAG,
     'Minimum number of supporting reads to call a reference position for local '
     'assembly.')
-flags.DEFINE_integer(
+_WS_MAX_NUM_SUPPORTING_READS = flags.DEFINE_integer(
     'ws_max_num_supporting_reads', _UNSET_WS_INT_FLAG,
     'Maximum number of supporting reads to call a reference position for local '
     'assembly.')
-flags.DEFINE_integer(
+_WS_MIN_MAPQ = flags.DEFINE_integer(
     'ws_min_mapq', 20,
     'Minimum read alignment quality to consider in calling a reference '
     'position for local assembly.')
-flags.DEFINE_integer(
+_WS_MIN_BASE_QUALITY = flags.DEFINE_integer(
     'ws_min_base_quality', 20,
     'Minimum base quality to consider in calling a reference position for '
     'local assembly.')
-flags.DEFINE_integer(
+_WS_MIN_WINDOWS_DISTANCE = flags.DEFINE_integer(
     'ws_min_windows_distance', 80,
     'Minimum distance between candidate windows for local assembly.')
-flags.DEFINE_integer(
+_WS_MAX_WINDOW_SIZE = flags.DEFINE_integer(
     'ws_max_window_size', 1000,
     'Maximum window size to consider for local assembly. Large noisy regions '
     'are skipped for realignment.')
-flags.DEFINE_integer(
+_WS_REGION_EXPANSION_IN_BP = flags.DEFINE_integer(
     'ws_region_expansion_in_bp', 20,
     'Number of bases to expand the region when calculating windows; larger '
     'values add overhead but allow larger nearby events to contribute evidence '
     'for assembling an region even if they are not contained by the region.')
-flags.DEFINE_integer('dbg_min_k', 10, 'Initial k-mer size to build the graph.')
-flags.DEFINE_integer(
+_DBG_MIN_K = flags.DEFINE_integer('dbg_min_k', 10,
+                                  'Initial k-mer size to build the graph.')
+_DBG_MAX_K = flags.DEFINE_integer(
     'dbg_max_k', 101,
     'Maximum k-mer size. Larger k-mer size is used to resolve graph cycles.')
-flags.DEFINE_integer('dbg_step_k', 1,
-                     'Increment size for k to try in resolving graph cycles.')
-flags.DEFINE_integer(
+_DBG_STEP_K = flags.DEFINE_integer(
+    'dbg_step_k', 1, 'Increment size for k to try in resolving graph cycles.')
+_DBG_MIN_MAPQ = flags.DEFINE_integer(
     'dbg_min_mapq', 14,
     'Minimum read alignment quality to consider in building the graph.')
-flags.DEFINE_integer(
+_DBG_MIN_BASE_QUALITY = flags.DEFINE_integer(
     'dbg_min_base_quality', 15,
     'Minimum base quality in a k-mer sequence to consider in building the '
     'graph.')
-flags.DEFINE_integer('dbg_min_edge_weight', 2,
-                     'Minimum number of supporting reads to keep an edge.')
-flags.DEFINE_integer(
+_DBG_MIN_EDGE_WEIGHT = flags.DEFINE_integer(
+    'dbg_min_edge_weight', 2,
+    'Minimum number of supporting reads to keep an edge.')
+_DBG_MAX_NUM_PATHS = flags.DEFINE_integer(
     'dbg_max_num_paths', 256,
     'Maximum number of paths within a graph to consider for realignment. '
     'Set max_num_paths to 0 to have unlimited number of paths.')
-flags.DEFINE_integer('aln_match', 4,
-                     'Match score (expected to be a non-negative score).')
-flags.DEFINE_integer('aln_mismatch', 6,
-                     'Mismatch score (expected to be a non-negative score).')
-flags.DEFINE_integer(
+_ALN_MATCH = flags.DEFINE_integer(
+    'aln_match', 4, 'Match score (expected to be a non-negative score).')
+_ALN_MISMATCH = flags.DEFINE_integer(
+    'aln_mismatch', 6, 'Mismatch score (expected to be a non-negative score).')
+_ALN_GAP_OPEN = flags.DEFINE_integer(
     'aln_gap_open', 8, 'Gap open score (expected to be a non-negative score). '
     'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
-flags.DEFINE_integer(
+_ALN_GAP_EXTEND = flags.DEFINE_integer(
     'aln_gap_extend', 2,
     'Gap extend score (expected to be a non-negative score). '
     'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
-flags.DEFINE_integer('aln_k', 23, 'k-mer size used to index target sequence.')
-flags.DEFINE_float('aln_error_rate', .01, 'Estimated sequencing error rate.')
-flags.DEFINE_string(
+_ALN_K = flags.DEFINE_integer('aln_k', 23,
+                              'k-mer size used to index target sequence.')
+_ALN_ERROR_RATE = flags.DEFINE_float('aln_error_rate', .01,
+                                     'Estimated sequencing error rate.')
+_REALIGNER_DIAGNOSTICS = flags.DEFINE_string(
     'realigner_diagnostics', '',
     'Root directory where the realigner should place diagnostic output (such as'
     ' a dump of the DeBruijn graph, and a log of metrics reflecting the graph '
     'and  realignment to the haplotypes).  If empty, no diagnostics are output.'
 )
-flags.DEFINE_bool(
+_EMIT_REALIGNED_READS = flags.DEFINE_bool(
     'emit_realigned_reads', False,
     'If True, we will emit realigned reads if our realigner_diagnostics are '
     'also enabled.')
-flags.DEFINE_bool(
+_USE_FAST_PASS_ALIGNER = flags.DEFINE_bool(
     'use_fast_pass_aligner', True,
     'This flag should always be True. The old implementation is deprecated.')
-flags.DEFINE_integer(
+_MAX_NUM_MISMATCHES = flags.DEFINE_integer(
     'max_num_mismatches', 2,
     'Num of maximum allowed mismatches for quick read to '
     'haplotype alignment.')
-flags.DEFINE_float(
+_REALIGNMENT_SIMILARITY_THRESHOLD = flags.DEFINE_float(
     'realignment_similarity_threshold', 0.16934,
     'Similarity threshold used in realigner in Smith-Waterman'
     'alignment.')
-flags.DEFINE_bool(
+_SPLIT_SKIP_READS = flags.DEFINE_bool(
     'split_skip_reads', False,
     'If True, splits reads with large SKIP cigar operations '
     'into individual reads. Resulting read parts that are less than '
     '15 bp are filtered out.')
-flags.DEFINE_integer('kmer_size', 32,
-                     'K-mer size for fast pass alinger reads index.')
+_KMER_SIZE = flags.DEFINE_integer(
+    'kmer_size', 32, 'K-mer size for fast pass alinger reads index.')
 
 # Margin added to the reference sequence for the aligner module.
 _REF_ALIGN_MARGIN = 20
@@ -685,7 +690,7 @@ class Realigner(object):
     realigned_reads = assign_reads_to_assembled_regions(assembled_regions,
                                                         reads)
 
-    if not flags.FLAGS.use_fast_pass_aligner:
+    if not _USE_FAST_PASS_ALIGNER.value:
       raise ValueError('--use_fast_pass_aligner is always true. '
                        'The older implementation is deprecated and removed.')
     # Walk over each region and align the reads in that region, adding them to
