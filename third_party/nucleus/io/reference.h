@@ -134,12 +134,12 @@ class GenomeReference : public Reader {
   bool IsValidInterval(const nucleus::genomics::v1::Range& range) const;
 
   // Close the underlying resource descriptors.
-  virtual tensorflow::Status Close() { return tensorflow::Status::OK(); }
+  virtual tensorflow::Status Close() { return tensorflow::Status(); }
 
   // This no-op function is needed only for Python context manager support.  Do
   // not use it!
   virtual tensorflow::Status PythonEnter() const {
-    return tensorflow::Status::OK();
+    return tensorflow::Status();
   }
 
  protected:

@@ -144,7 +144,7 @@ class Iterable : public IterableBase {
 
  private:
   Record current_record_;
-  tensorflow::Status current_status_ = tensorflow::Status::OK();
+  tensorflow::Status current_status_ = tensorflow::Status();
   bool IsOK() { return current_status_.ok(); }
 
  public:

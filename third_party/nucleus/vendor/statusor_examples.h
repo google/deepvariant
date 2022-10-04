@@ -76,9 +76,7 @@ static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorFail() {
   return Status(tensorflow::error::INVALID_ARGUMENT, "MakeIntVectorFail");
 }
 
-static Status FuncReturningStatusOK() {
-  return Status::OK();
-}
+static Status FuncReturningStatusOK() { return Status(); }
 
 static Status FuncReturningStatusFail() {
   return Status(tensorflow::error::INVALID_ARGUMENT, "FuncReturningStatusFail");

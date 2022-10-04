@@ -155,7 +155,7 @@ class SamReader : public Reader {
 
   // This no-op function is needed only for Python context manager support.  Do
   // not use it! Returns a Status indicating whether the enter was successful.
-  tensorflow::Status PythonEnter() const { return tensorflow::Status::OK(); }
+  tensorflow::Status PythonEnter() const { return tensorflow::Status(); }
 
   bool KeepRead(const nucleus::genomics::v1::Read& read) const;
 

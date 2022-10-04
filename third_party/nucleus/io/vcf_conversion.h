@@ -112,7 +112,7 @@ struct VcfType<int> {
     if (bcf_update_format_int32(hdr, line, tag, src, nsrc) != 0)
       return tensorflow::errors::Internal("bcf_update_format_int32 failed");
     else
-      return tensorflow::Status::OK();
+      return tensorflow::Status();
   }
 
   static int GetInfoValues(const bcf_hdr_t *hdr, const bcf1_t *line,
@@ -126,7 +126,7 @@ struct VcfType<int> {
     if (bcf_update_info_int32(hdr, line, tag, src, nsrc) != 0)
       return tensorflow::errors::Internal("bcf_update_info_int32 failed");
     else
-      return tensorflow::Status::OK();
+      return tensorflow::Status();
   }
 };
 
@@ -150,7 +150,7 @@ struct VcfType<float> {
     if (bcf_update_format_float(hdr, line, tag, src, nsrc) != 0)
       return tensorflow::errors::Internal("bcf_update_format_float failed");
     else
-      return tensorflow::Status::OK();
+      return tensorflow::Status();
   }
 
   static int GetInfoValues(const bcf_hdr_t *hdr, const bcf1_t *line,
@@ -164,7 +164,7 @@ struct VcfType<float> {
     if (bcf_update_info_float(hdr, line, tag, src, nsrc) != 0)
       return tensorflow::errors::Internal("bcf_update_info_float failed");
     else
-      return tensorflow::Status::OK();
+      return tensorflow::Status();
   }
 };
 
