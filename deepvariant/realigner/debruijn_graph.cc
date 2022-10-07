@@ -35,6 +35,7 @@
 #include <memory>
 #include <queue>
 #include <sstream>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -94,7 +95,8 @@ class EdgeLabelWriter {
 
   void operator()(std::ostream& out, const Edge e) const {
     EdgeInfo ei = g_[e];
-    out << "[label=" << ei.weight << (ei.is_ref ? " color=red" : "") << "]";
+    out << "[label=" << std::to_string(ei.weight)
+        << (ei.is_ref ? " color=red" : "") << "]";
   }
 
  private:
