@@ -37,7 +37,7 @@ import shutil
 
 from absl.testing import absltest
 
-from tensorflow.python.platform import gfile
+from etils import epath
 from third_party.nucleus.io import tabix
 from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils
@@ -68,15 +68,15 @@ class TabixTest(absltest.TestCase):
       pass
 
   def test_build_index_tbx(self):
-    self.assertFalse(gfile.Exists(self.tbx_index_file))
+    self.assertFalse(epath.Path(self.tbx_index_file).exists())
     tabix.build_index(self.output_file)
-    self.assertTrue(gfile.Exists(self.tbx_index_file))
+    self.assertTrue(epath.Path(self.tbx_index_file).exists())
 
   def test_build_index_csi(self):
     min_shift = 14
-    self.assertFalse(gfile.Exists(self.csi_index_file))
+    self.assertFalse(epath.Path(self.csi_index_file).exists())
     tabix.build_csi_index(self.output_file, min_shift)
-    self.assertTrue(gfile.Exists(self.csi_index_file))
+    self.assertTrue(epath.Path(self.csi_index_file).exists())
 
   def test_vcf_query_tbx(self):
     tabix.build_index(self.output_file)

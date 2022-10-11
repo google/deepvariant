@@ -37,9 +37,9 @@ import os
 
 from absl import flags
 from absl.testing import absltest
+from etils import epath
 import six
 
-from tensorflow.python.platform import gfile
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import struct_pb2
@@ -114,8 +114,7 @@ def test_tmpfile(name, contents=None):
   """
   path = os.path.join(absltest.get_default_test_tmpdir(), name)
   if contents is not None:
-    with gfile.Open(path, 'wb') as fout:
-      fout.write(contents)
+    epath.Path(path).write_text(contents)
   return path
 
 

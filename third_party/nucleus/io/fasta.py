@@ -56,7 +56,7 @@ import collections
 
 import six
 
-from tensorflow.python.platform import gfile
+from etils import epath
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import reference
 from third_party.nucleus.protos import fasta_pb2
@@ -71,9 +71,10 @@ RefFastaHeader = collections.namedtuple(
 class FastaReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading (name, bases) tuples from FASTA files."""
 
-  def _native_reader(self, input_path, **kwargs):
+  def _native_reader(
+      self, input_path: str, **kwargs) -> genomics_reader.GenomicsReader:
     fai_path = input_path + '.fai'
-    if gfile.Exists(fai_path):
+    if epath.Path(fai_path).exists():
       return IndexedFastaReader(input_path, **kwargs)
     return UnindexedFastaReader(input_path, **kwargs)
 

@@ -36,10 +36,10 @@ import collections
 import re
 
 from absl import logging
+from etils import epath
 import intervaltree
 import six
 
-from tensorflow.python.platform import gfile
 from third_party.nucleus.io import bed
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
@@ -420,7 +420,7 @@ def ranges_overlap(i1, i2):
           i1.start < i2.end)
 
 
-def bedpe_parser(filename):
+def bedpe_parser(filename: str) ->  range_pb2.Range:
   """Parses Range objects from a BEDPE-formatted file object.
 
   See http://bedtools.readthedocs.org/en/latest/content/general-usage.html
@@ -436,11 +436,12 @@ def bedpe_parser(filename):
   Yields:
     nucleus.genomics.v1.Range protobuf objects.
   """
-  for line in gfile.Open(filename):
-    parts = line.split('\t')
-    if parts[0] == parts[3]:
-      # only keep events on the same chromosome
-      yield make_range(parts[0], int(parts[1]), int(parts[5]))
+  with epath.Path(filename).open('r') as fp:
+    for line in fp:
+      parts = line.split('\t')
+      if parts[0] == parts[3]:
+        # only keep events on the same chromosome
+        yield make_range(parts[0], int(parts[1]), int(parts[5]))
 
 
 def bed_parser(filename):

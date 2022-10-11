@@ -46,7 +46,7 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 
-from tensorflow.python.platform import gfile
+from etils import epath
 from third_party.nucleus.protos import variants_pb2
 
 DEEPVARIANT_CHANNEL_NAMES = [
@@ -357,8 +357,7 @@ def save_to_png(arr,
   elif not path.endswith('.png'):
     # Only PNG is supported because JPEG files are unnecessarily 3 times larger.
     path = '{}.png'.format(path)
-  with gfile.Open(path, 'wb') as fout:
-    img.save(fout, format=path.split('.')[-1])
+  img.save(epath.Path(path).open('wb'), format=path.split('.')[-1])
 
   # Show image (great for notebooks)
   if show:

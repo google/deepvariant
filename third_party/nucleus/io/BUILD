@@ -30,6 +30,7 @@ py_library(
         ":genomics_reader",
         ":genomics_writer",
         ":gff",
+        ":gfile",
         ":sam",
         ":sharded_file_utils",
         ":tabix",

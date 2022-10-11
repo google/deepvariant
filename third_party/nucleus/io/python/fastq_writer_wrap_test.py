@@ -35,7 +35,7 @@ from __future__ import print_function
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from tensorflow.python.platform import gfile
+from etils import epath
 from third_party.nucleus.io import fastq
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io.python import fastq_writer
@@ -87,7 +87,7 @@ class WrapFastqWriterTest(parameterized.TestCase):
       for record in fastq_records:
         writer.write(record)
 
-    with gfile.Open(out_fname, 'r') as f:
+    with epath.Path(out_fname).open('r') as f:
       self.assertEqual(f.readlines(), self.expected_fastq_content)
 
   def test_context_manager(self):

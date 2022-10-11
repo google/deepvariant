@@ -37,7 +37,7 @@ import copy
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from tensorflow.python.platform import gfile
+from etils import epath
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import vcf_writer
@@ -221,7 +221,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
     ]
     # pylint: enable=line-too-long
 
-    with gfile.Open(out_fname, 'r') as f:
+    with epath.Path(out_fname).open('r') as f:
       self.assertEqual(f.readlines(), expected_vcf_content)
 
   def test_write_variant_is_ok(self):

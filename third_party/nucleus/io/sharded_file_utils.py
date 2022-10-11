@@ -46,10 +46,14 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+import os
 import re
-import six
+from typing import List
 
-from tensorflow.python.platform import gfile
+from etils import epath
+
+
+import six
 
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 SHARD_FILE_PATTERN = re.compile(R'(.*)-(\d+)-of-(\d*[1-9]\d*)([^/]+)?$')
@@ -115,7 +119,8 @@ def generate_sharded_filenames(spec):
   return files
 
 
-def glob_list_sharded_file_patterns(comma_separated_patterns, sep=','):
+def glob_list_sharded_file_patterns(comma_separated_patterns: str,
+                                    sep: str =',') -> List[str]:
   """Generate list of filenames corresponding to `comma_separated_patterns`.
 
   Args:
@@ -127,9 +132,9 @@ def glob_list_sharded_file_patterns(comma_separated_patterns, sep=','):
     List of filenames, sorted and dedupped.
   """
   return sorted(set([
-      f
+      os.fspath(f)
       for pattern in comma_separated_patterns.split(sep)
-      for f in gfile.Glob(normalize_to_sharded_file_pattern(pattern))
+      for f in epath.Path().glob(normalize_to_sharded_file_pattern(pattern))
   ]))
 
 
