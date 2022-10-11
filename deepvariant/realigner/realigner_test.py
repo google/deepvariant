@@ -37,9 +37,9 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
+from etils import epath
 import numpy as np
 import six
-import tensorflow as tf
 
 from deepvariant import testdata
 from deepvariant.protos import realigner_pb2
@@ -400,16 +400,16 @@ class RealignerTest(parameterized.TestCase):
 
     if not enabled:
       # Make sure our diagnostic output isn't emitted.
-      self.assertFalse(tf.io.gfile.exists(dx_dir))
+      self.assertFalse(epath.Path(dx_dir).exists())
     else:
       # Our root directory exists.
-      self.assertTrue(tf.io.gfile.isdir(dx_dir))
+      self.assertTrue(epath.Path(dx_dir).exists())
 
       # We expect a realigner_metrics.csv in our rootdir with 1 entry in it.
       metrics_file = os.path.join(
           dx_dir, self.reads_realigner.diagnostic_logger.metrics_filename)
-      self.assertTrue(tf.io.gfile.exists(metrics_file))
-      with tf.io.gfile.GFile(metrics_file) as fin:
+      self.assertTrue(epath.Path(metrics_file).exists())
+      with epath.Path(metrics_file).open('r') as fin:
         rows = list(csv.DictReader(fin))
         self.assertLen(rows, 1)
         self.assertEqual(
@@ -422,21 +422,21 @@ class RealignerTest(parameterized.TestCase):
 
       # As does the subdirectory for this region.
       region_subdir = os.path.join(dx_dir, assembled_region_str)
-      self.assertTrue(tf.io.gfile.isdir(region_subdir))
+      self.assertTrue(epath.Path(region_subdir).is_dir())
 
       # We always have a graph.dot
       self.assertTrue(
-          tf.io.gfile.exists(
+          epath.Path(
               os.path.join(
-                  region_subdir,
-                  self.reads_realigner.diagnostic_logger.graph_filename)))
+                  region_subdir, self.reads_realigner.diagnostic_logger
+                  .graph_filename)).exists())
 
       reads_file = os.path.join(
           dx_dir, region_str,
           self.reads_realigner.diagnostic_logger.realigned_reads_filename)
 
       # if emit_reads=False then file should not exist and vice versa.
-      self.assertEqual(emit_reads, tf.io.gfile.exists(reads_file))
+      self.assertEqual(emit_reads, epath.Path(reads_file).exists())
 
   @parameterized.parameters(
       dict(

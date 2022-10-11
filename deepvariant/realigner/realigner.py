@@ -40,7 +40,7 @@ import os.path
 
 
 from absl import flags
-import tensorflow as tf
+from etils import epath
 
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import window_selector
@@ -229,7 +229,7 @@ def window_selector_config(flags_obj):
     if flags_obj.ws_window_selector_model is None:
       window_selector_model = _ALLELE_COUNT_LINEAR_MODEL_DEFAULT
     else:
-      with tf.io.gfile.GFile(flags_obj.ws_window_selector_model) as f:
+      with epath.Path(flags_obj.ws_window_selector_model).open() as f:
         window_selector_model = text_format.Parse(
             f.read(), realigner_pb2.WindowSelectorModel())
 
@@ -344,11 +344,11 @@ class DiagnosticLogger(object):
   def enabled(self):
     return self.config and self.config.enabled
 
-  def _root_join(self, path, makedirs=True):
+  def _root_join(self, path: str, makedirs: bool = True) -> str:
     fullpath = os.path.join(self.config.output_root, path)
     subdir = os.path.dirname(fullpath)
     if makedirs and subdir:
-      tf.io.gfile.makedirs(subdir)
+      epath.Path(subdir).mkdir(parents=True, exist_ok=True)
     return fullpath
 
   def _write_csv_line(self, *args):
@@ -377,7 +377,7 @@ class DiagnosticLogger(object):
     if self.enabled:
       if graph:
         dest_file = self._file_for_region(region, self.graph_filename)
-        with tf.io.gfile.GFile(dest_file, 'w') as f:
+        with epath.Path(dest_file).open('w') as f:
           f.write(graph.graphviz())
       self._write_csv_line(
           ranges.to_literal(region), graph.kmer_size if graph else 'NA',
