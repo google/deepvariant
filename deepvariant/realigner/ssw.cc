@@ -70,7 +70,7 @@ int Aligner::SetReferenceSequence(const string& reference) {
 bool Aligner::Align(const string& query, const Filter& filter,
                     Alignment* alignment) const {
   return StripedSmithWaterman::Aligner::Align(
-      query.c_str(), filter, alignment);
+      query.c_str(), filter, alignment, query.length());
 }
 
 }  // namespace deepvariant

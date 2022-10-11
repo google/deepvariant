@@ -45,6 +45,8 @@ using tensorflow::string;
 
 // This exercises a bug in gcc 5.4.  internal
 // Building libssw with -fno-inline should work around it.
+// Updated Oct 2022: Even though we no longer need the workaround, I'm keeping
+// this test.
 int Gcc54Bug() {
   Aligner a(4, 2, 4, 2);
   Filter f;

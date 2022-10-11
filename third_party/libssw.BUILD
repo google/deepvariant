@@ -12,7 +12,6 @@ cc_library(
     name = "ssw",
     srcs = ["src/ssw.c"],
     hdrs = ["src/ssw.h"],
-    copts = ["-fno-inline"],  # gcc-5.4 bug
 )
 
 cc_binary(

@@ -32,10 +32,10 @@ http_archive(
 http_archive(
     name = "libssw",
     build_file = "//:third_party/libssw.BUILD",
-    sha256 = "10b9305e5a580ee5319f736d3581916f6c873ef4475bd0c0e564c2934334732c",
-    strip_prefix = "Complete-Striped-Smith-Waterman-Library-1.0",
+    sha256 = "a87b1904368bffe051ab6ea538543ec1520473a5d6d94204bd6fa8e39d0cf336",
+    strip_prefix = "Complete-Striped-Smith-Waterman-Library-1.2.4",
     urls = [
-        "https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library/archive/v1.0.tar.gz",
+        "https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library/archive/v1.2.4.tar.gz",
     ],
 )
 
