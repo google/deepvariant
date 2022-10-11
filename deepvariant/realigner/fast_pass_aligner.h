@@ -46,9 +46,6 @@
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
-#include "tensorflow/core/lib/hash/hash.h"
-#include "tensorflow/core/platform/types.h"
 #include "re2/re2.h"
 
 namespace learning {
@@ -58,8 +55,6 @@ namespace deepvariant {
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Position;
-
-using tensorflow::StringPieceHasher;
 
 // TODO Add ChromosomePosition type instead of uint64_t
 
@@ -218,8 +213,7 @@ void SetPositionsMap(size_t haplotype_size,
 void MergeCigarOp(const CigarOp& op, int read_len, std::list<CigarOp>* cigar);
 
 using KmerIndexType =
-    absl::flat_hash_map<tensorflow::StringPiece, std::vector<KmerOccurrence>,
-                        tensorflow::StringPieceHasher>;
+    absl::flat_hash_map<absl::string_view, std::vector<KmerOccurrence>>;
 
 // Align a set of reads to a target sequence.
 // This class is intended for realigning reads to haplotypes (graph paths)
@@ -416,10 +410,10 @@ class FastPassAligner {
 
   void AddReadToIndex(absl::string_view read, ReadId read_id);
 
-  void AddKmerToIndex(tensorflow::StringPiece kmer, ReadId read_id,
+  void AddKmerToIndex(absl::string_view kmer, ReadId read_id,
                       KmerOffset pos);
 
-  int FastAlignStrings(tensorflow::StringPiece s1, tensorflow::StringPiece s2,
+  int FastAlignStrings(absl::string_view s1, absl::string_view s2,
                        int max_mismatches, int* num_of_mismatches) const;
 
   void UpdateBestHaplotypes(
