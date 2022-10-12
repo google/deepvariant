@@ -507,15 +507,11 @@ class DeepVariantModel(object):
       Returns:
         List of summary ops to run on the CPU host.
       """
-      step = global_step[0]
-      with tf.compat.v2.summary.create_file_writer(
-          logdir=model_dir, filename_suffix='.host_call').as_default():
-        with tf.compat.v2.summary.record_if(
-            lambda: tf.math.equal(step % record_frequency_in_steps, 0)):
-          for i, name in enumerate(metric_names):
-            tf.compat.v2.summary.scalar(
-                name=prefix + name, data=args[i][0], step=step)
-          return tf.compat.v1.summary.all_v2_summary_ops()
+      # TODO: When updating TF to v2.9.1, I had to remove
+      # create_file_writer because it was giving me:
+      # ValueError: Invalid argument to flush(): <tf.Tensor 'create_file_writer/SummaryWriter:0' shape=() dtype=resource>
+      # In the future, try to add create_file_writer back for learning_rate.
+      return tf.compat.v1.summary.all_v2_summary_ops()
 
     # To log the current learning rate, and gradient norm for Tensorboard, the
     # summary op needs to be run on the host CPU via host_call. host_call
