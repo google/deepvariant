@@ -34,6 +34,7 @@
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
@@ -171,11 +172,9 @@ FastPassAligner::AlignReads(
 void FastPassAligner::InitSswLib() {
   // Initialize ssw library. Set reference.
   Filter filter;
-  ssw_aligner_ = absl::make_unique<Aligner>(
-      match_score_,
-      mismatch_penalty_,
-      gap_opening_penalty_,
-      gap_extending_penalty_);
+  ssw_aligner_ =
+      std::make_unique<Aligner>(match_score_, mismatch_penalty_,
+                                gap_opening_penalty_, gap_extending_penalty_);
 }
 
 void FastPassAligner::SswSetReference(const string& reference) {

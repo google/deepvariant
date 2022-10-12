@@ -112,8 +112,8 @@ class AlleleCounterTest : public ::testing::Test {
     Range range = MakeRange(chr, start, end);
     // TODO: Use MakeUnique here. There is already a copy in
     // tensorflow/compiler/xla/ptr_util.h.
-    return absl::make_unique<AlleleCounter>(ref_.get(), range,
-                                            std::vector<int>(), options_);
+    return std::make_unique<AlleleCounter>(ref_.get(), range,
+                                           std::vector<int>(), options_);
   }
 
   // Creates a new AlleleCount with custom Reference and on specified chr from
@@ -125,8 +125,8 @@ class AlleleCounterTest : public ::testing::Test {
       const int64_t end) {
     Range range = MakeRange(chr, start, end);
     // tensorflow/compiler/xla/ptr_util.h.
-    return absl::make_unique<AlleleCounter>(ref, range, std::vector<int>(),
-                                            options_);
+    return std::make_unique<AlleleCounter>(ref, range, std::vector<int>(),
+                                           options_);
   }
 
   // Add reads to allele_count and check that the resulting AlleleCounts are
