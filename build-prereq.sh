@@ -125,9 +125,6 @@ fi
 # I changed the llvm path to zip to avoid flakiness.
 (cd ../tensorflow &&
  git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
- sed -i -e 's/incompatible_use_toolchain_transition = True,//g' tensorflow/core/kernels/mlir_generated/build_defs.bzl &&
- sed -i -e 's|llvm-project/archive/{commit}.tar.gz|llvm-project/archive/{commit}.zip|g' third_party/llvm/workspace.bzl &&
- sed -i -e 's/LLVM_SHA256 = "6be97e134eab943941bbb06ad0c714070dc24cb4418a104813c1e9a2ca6655f7"/LLVM_SHA256 = "64893db02cecbb33e888f9801ea370b99e331e27c8e3f20b122381def7839092"/g' third_party/llvm/workspace.bzl &&
  echo | ./configure)
 
 note_build_stage "Set pyparsing to 2.2.0 for CLIF."

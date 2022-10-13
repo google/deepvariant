@@ -11,7 +11,7 @@
 import %workspace%/../tensorflow/.bazelrc
 import %workspace%/../tensorflow/.tf_configure.bazelrc
 
-# In tensorflow/.bazelrc v2.7.0, setting this to false broke our build.
+# In tensorflow/.bazelrc v2.9.1, setting this to false broke our build.
 # So, setting it back to true.
 build:linux --distinct_host_configuration=true
 
