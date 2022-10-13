@@ -1,4 +1,4 @@
-# DeepVariant
+<img src="docs/images/dv_logo.png" width=50% height=50%>
 
 [![release](https://img.shields.io/badge/release-v1.4.0-green?logo=github)](https://github.com/google/deepvariant/releases)
 [![announcements](https://img.shields.io/badge/announcements-blue)](https://groups.google.com/d/forum/deepvariant-announcements)
@@ -14,6 +14,8 @@ DeepVariant supports germline variant-calling in diploid organisms.
 *   NGS (Illumina) data for either a
     [whole genome](docs/deepvariant-case-study.md) or
     [whole exome](docs/deepvariant-exome-case-study.md).
+*   [RNA-seq Case Study](docs/deepvariant-rnaseq-case-study.md) for Illumina
+    RNA-seq.
 *   PacBio HiFi data, see the
     [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
 *   Hybrid PacBio HiFi + Illumina WGS, see the
