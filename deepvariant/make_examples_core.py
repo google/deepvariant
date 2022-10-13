@@ -37,8 +37,8 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 
 from absl import logging
+from etils import epath
 import numpy as np
-import tensorflow as tf
 
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
@@ -305,13 +305,13 @@ def trim_runtime(seconds: float) -> float:
 
 def read_make_examples_run_info(path):
   """Reads a MakeExamplesRunInfo proto in text_format from path."""
-  with tf.io.gfile.GFile(path) as f:
+  with epath.Path(path).open() as f:
     return text_format.Parse(f.read(), deepvariant_pb2.MakeExamplesRunInfo())
 
 
 def write_make_examples_run_info(run_info_proto, path):
   """Writes a MakeExamplesRunInfo proto in text_format to path."""
-  with tf.io.gfile.GFile(path, mode='w') as writer:
+  with epath.Path(path).open('w') as writer:
     writer.write(
         '# proto-file: learning/genomics/deepvariant/protos/deepvariant.proto\n'
         '# proto-message: MakeExamplesRunInfo\n')
@@ -717,7 +717,7 @@ class DiagnosticLogger(object):
     fullpath = os.path.join(self.output_root, path)
     subdir = os.path.dirname(fullpath)
     if makedirs and subdir:
-      tf.io.gfile.makedirs(subdir)
+      epath.Path(subdir).mkdir(parents=True, exist_ok=True)
     return fullpath
 
   def _file_for_region(self, region, basename):
@@ -760,7 +760,7 @@ class OutputsWriter(object):
 
     if options.runtime_by_region:
       self._add_writer('runtime',
-                       tf.io.gfile.GFile(options.runtime_by_region, mode='w'))
+                       epath.Path(options.runtime_by_region).open('w'))
       writer = self._writers['runtime']
       if writer is not None:
         writer.__enter__()
@@ -1881,7 +1881,7 @@ def make_examples_runner(options):
     # example_shape was filled in during the loop above.
     logging.info('example_shape = %s', str(example_shape))
     logging.info('example_channels = %s', str(example_channels))
-    with tf.io.gfile.GFile(example_info_filename, mode='w') as fout:
+    with epath.Path(example_info_filename).open('w') as fout:
       json.dump(
           {
               'version': dv_vcf_constants.DEEP_VARIANT_VERSION,
