@@ -37,6 +37,7 @@ import json
 import os
 
 
+from absl import app
 from absl import flags
 from absl import logging
 import numpy as np
@@ -52,10 +53,6 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
-
-# This is necessary but not sure why, it might be because we are using the
-# same dependies as the original call_variants.py
-tf.compat.v2.enable_v2_behavior()
 
 _ALLOW_EXECUTION_HARDWARE = [
     'auto',  # Default, no validation.
@@ -218,16 +215,16 @@ def write_variant_call(writer, prediction):
 
 
 def write_call_variants(predictions: np.ndarray,
-                        variant_alt_allele_dataset: tf.data.Dataset,
+                        image_variant_alt_allele_ds: tf.data.Dataset,
                         output_file: str):
   """Consume predictions one at a time and write them to out_dir."""
   writer = tfrecord.Writer(output_file)
   with writer:
     prediction_idx = 0
-    for idx, batch in variant_alt_allele_dataset.enumerate():
+    for idx, batch in image_variant_alt_allele_ds.enumerate():
       if prediction_idx >= len(predictions):
         break
-      curr_batch_variant, curr_batch_alt_allele_indices = batch[0], batch[1]
+      curr_batch_variant, curr_batch_alt_allele_indices = batch[1], batch[2]
       for i in range(len(curr_batch_variant)):
         variant = curr_batch_variant[i]
         alt_allele_indices = curr_batch_alt_allele_indices[i]
@@ -314,15 +311,7 @@ def get_dataset(path, example_shape):
       'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string)
   }
 
-  def _parse_example_variant_alt_allele(example):
-    """Parses a serialized tf.Example."""
-    parsed_features = tf.io.parse_single_example(
-        serialized=example, features=proto_features)
-    variant = parsed_features['variant/encoded']
-    alt_allele_indices = parsed_features['alt_allele_indices/encoded']
-    return variant, alt_allele_indices
-
-  def _parse_example_image(example):
+  def _parse_example(example):
     """Parses a serialized tf.Example."""
     parsed_features = tf.io.parse_single_example(
         serialized=example, features=proto_features)
@@ -330,7 +319,9 @@ def get_dataset(path, example_shape):
     image = tf.reshape(image, example_shape)
     image = tf.cast(image, tf.float32)
     image = tf.keras.applications.inception_v3.preprocess_input(image)
-    return image
+    variant = parsed_features['variant/encoded']
+    alt_allele_indices = parsed_features['alt_allele_indices/encoded']
+    return image, variant, alt_allele_indices
 
   ds = tf.data.TFRecordDataset.list_files(
       sharded_file_utils.normalize_to_sharded_file_pattern(path), shuffle=False)
@@ -349,17 +340,12 @@ def get_dataset(path, example_shape):
   if _LIMIT.value > 0:
     ds = ds.take(_LIMIT.value)
 
-  image_ds = ds.map(
-      map_func=_parse_example_image, num_parallel_calls=tf.data.AUTOTUNE)
-  variant_alt_allele_ds = ds.map(
-      map_func=_parse_example_variant_alt_allele,
-      num_parallel_calls=tf.data.AUTOTUNE)
+  image_variant_alt_allele_ds = ds.map(
+      map_func=_parse_example, num_parallel_calls=tf.data.AUTOTUNE)
 
-  image_ds = image_ds.batch(batch_size=FLAGS.batch_size).prefetch(
-      tf.data.AUTOTUNE)
-  variant_alt_allele_ds = variant_alt_allele_ds.batch(
+  image_variant_alt_allele_ds = image_variant_alt_allele_ds.batch(
       batch_size=FLAGS.batch_size).prefetch(tf.data.AUTOTUNE)
-  return image_ds, variant_alt_allele_ds
+  return image_variant_alt_allele_ds
 
 
 def call_variants(examples_filename: str, checkpoint_path: str,
@@ -391,12 +377,12 @@ def call_variants(examples_filename: str, checkpoint_path: str,
     model = modeling.inceptionv3(example_shape)
     model.load_weights(checkpoint_path).expect_partial()
 
-    examples_dataset, variant_alt_allele_dataset = get_dataset(
-        examples_filename, example_shape)
+    image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)
 
     # TODO: Do we need the equivalent of session_predict_hooks?
-    predictions = model.predict(examples_dataset, callbacks=[CustomCallback()])
-    write_call_variants(predictions, variant_alt_allele_dataset, output_file)
+    predictions = model.predict(
+        image_variant_alt_allele_ds, callbacks=[CustomCallback()])
+    write_call_variants(predictions, image_variant_alt_allele_ds, output_file)
 
 
 def main(argv=()):
@@ -423,6 +409,4 @@ if __name__ == '__main__':
       'outfile',
       'checkpoint',
   ])
-  # Parses flags and calls main(), doesn't seem to have
-  # an equivalent function outside of compat
-  tf.compat.v1.app.run()
+  app.run(main)
