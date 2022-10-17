@@ -78,6 +78,18 @@ RUNTIME_BY_REGION_COLUMNS = ('region', 'get reads', 'find candidates',
 # The name used for a sample if one is not specified or present in the reads.
 _UNKNOWN_SAMPLE = 'UNKNOWN'
 
+# candidate position -1 designates the end of region.
+END_OF_REGION = -1
+
+# candidate position -2 designate the end of partition. This is used to merge
+# candidate positions from all shards.
+END_OF_PARTITION = -2
+
+# Maximum length of partition in bases. It is limited by available memory.
+# TODO: For better flexibility it may be benefitial to expose it as a
+# flag.
+MAX_PARTITION_LEN = 1000000
+
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
 # ---------------------------------------------------------------------------
@@ -478,6 +490,80 @@ def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
         ranges.RangeSet.from_regions(regions_to_exclude, contig_dict))
 
   return regions
+
+
+def partition_by_candidates(regions: ranges.RangeSet,
+                            candidate_positions: List[int],
+                            max_size: int) -> List[range_pb2.Range]:
+  """Splits our intervals so that none contain more than max_size candidates.
+
+  Slices up the intervals in this RangeSet into a equivalent set of intervals
+  (i.e., spanning the same number of candidates), each of which contains at most
+  max_size candidates.
+
+  This function does not modify this RangeSet.
+
+
+  Args:
+    regions: All calling regions that we need to process in all shards.
+    candidate_positions: List[int]. List of candidate positions. Candidate
+      positions are sorted within each genome contig. Candidates in each contig
+      are terminated with END_OF_REGION.
+    max_size: int > 0. The maximum number of candidates per interval.
+
+  Returns:
+    nucleus.genomics.v1.Range protos, in sorted order.
+
+  Raises:
+    ValueError: if max_size <= 0.
+  """
+  if max_size <= 0:
+    raise ValueError('max_size must be > 0: {}'.format(max_size))
+
+  partitioned = []
+  candidate_it = 0  # Current candidate's index
+  # Iterate over regions and cut partitions with equal number of candidates.
+  # candidate positions are local to for each region.
+  # Candidate position = END_OF_REGION designates the last candidate in a
+  # region. (Example: 1, 5, 7, -1, 2, 4, 7, -1)
+  for interval in regions:
+    num_of_candidates = 0
+    refname = interval.reference_name
+    partition_start = interval.start
+    partition_end = interval.start
+    # candidate_positions[candidate_it] == END_OF_REGION designates the last
+    # candidate in the region. If it is reached then we need to close the
+    # partition.
+    while (candidate_it < len(candidate_positions) and
+           candidate_positions[candidate_it] != END_OF_REGION and
+           interval.start <= candidate_positions[candidate_it] < interval.end):
+      if num_of_candidates == max_size or partition_end - partition_start >= MAX_PARTITION_LEN:
+        # It may happen that there are no candidates over the a very long span
+        # (For example HG0002 chr1:125,000,000 - 140,000,000). In that case we
+        # need to break this interval into smaller partitions. Making allele
+        # counters for the very long intervals exhausts the memory quickly.
+        for pos in range(partition_start, partition_end, MAX_PARTITION_LEN):
+          partitioned.append(
+              ranges.make_range(refname, pos,
+                                min(partition_end, pos + MAX_PARTITION_LEN)))
+        partition_start = partition_end
+        partition_end = partition_start + 1
+        num_of_candidates = 0
+      else:
+        partition_end = candidate_positions[candidate_it] + 1
+        num_of_candidates += 1
+      candidate_it += 1
+
+    if (candidate_it < len(candidate_positions) and
+        candidate_positions[candidate_it] == END_OF_REGION):
+      for pos in range(partition_start, interval.end, MAX_PARTITION_LEN):
+        partitioned.append(
+            ranges.make_range(refname, pos,
+                              min(interval.end, pos + MAX_PARTITION_LEN)))
+      candidate_it += 1
+    else:
+      raise ValueError('Terminating item is missing in candidates list')
+  return partitioned
 
 
 def regions_to_process(contigs,

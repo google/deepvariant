@@ -275,6 +275,52 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
         make_examples_core.common_contigs(
             [_make_contigs(contigs) for contigs in contigs_list]))
 
+  @parameterized.named_parameters(
+      # calling_regions = contigs & calling_regions.
+      # Note that _from_literals() decreases start coordinate of an interval
+      # by 1. But, candidate positions are given in real coordinates.
+      dict(
+          testcase_name='one_interval',
+          regions=['1:1-10'],
+          candidate_positions=[2, 4, 5, make_examples_core.END_OF_REGION],
+          max_size=2,
+          expected=['1:1-5', '1:6-10']),  # One interval 2 partitions.
+      dict(
+          testcase_name='two_intervals',
+          regions=['1:1-10', '1:15-20'],
+          candidate_positions=[
+              2, 4, 5, make_examples_core.END_OF_REGION, 16, 19,
+              make_examples_core.END_OF_REGION
+          ],
+          max_size=2,
+          expected=['1:1-5', '1:6-10', '1:15-20']),  # 2 intervals.
+      dict(
+          testcase_name='two_intervals_different_contigs',
+          regions=['1:1-10', '2:1-20'],
+          candidate_positions=[
+              2, 4, 5, make_examples_core.END_OF_REGION, 2, 3, 12,
+              make_examples_core.END_OF_REGION
+          ],
+          max_size=2,
+          expected=['1:1-5', '1:6-10', '2:1-4',
+                    '2:5-20']),  # 2 intervals, different contigs.
+      dict(
+          testcase_name='candidate_far_apart',
+          regions=['1:1-1000200'],
+          candidate_positions=[3, 5, 7, make_examples_core.END_OF_REGION],
+          max_size=2,
+          expected=['1:1-6', '1:7-1000006', '1:1000007-1000200'])
+  )  # Distance between candidates > max partition
+  def test_partition_by_candidates(self, regions, candidate_positions, max_size,
+                                   expected):
+    partitioned = make_examples_core.partition_by_candidates(
+        regions=_from_literals(regions),
+        candidate_positions=candidate_positions,
+        max_size=max_size)
+    expected = _from_literals_list(expected)
+    print(partitioned)
+    six.assertCountEqual(self, expected, partitioned)
+
   @parameterized.parameters(
       # Note that these tests aren't so comprehensive as we are trusting that
       # the intersection code logic itself is good and well-tested elsewhere.
