@@ -35,6 +35,7 @@ TODO: Write a unit test suite like call_variants_test.py.
 
 import json
 import os
+import time
 
 
 from absl import app
@@ -214,41 +215,6 @@ def write_variant_call(writer, prediction):
   return writer.write(cvo)
 
 
-def write_call_variants(predictions: np.ndarray,
-                        image_variant_alt_allele_ds: tf.data.Dataset,
-                        output_file: str):
-  """Consume predictions one at a time and write them to out_dir."""
-  writer = tfrecord.Writer(output_file)
-  with writer:
-    prediction_idx = 0
-    for idx, batch in image_variant_alt_allele_ds.enumerate():
-      if prediction_idx >= len(predictions):
-        break
-      curr_batch_variant, curr_batch_alt_allele_indices = batch[1], batch[2]
-      for i in range(len(curr_batch_variant)):
-        variant = curr_batch_variant[i]
-        alt_allele_indices = curr_batch_alt_allele_indices[i]
-        # Calculate the position of the corresponding prediction
-        prediction_idx = (idx * FLAGS.batch_size) + i
-        logging.log_every_n(
-            logging.INFO,
-            'Writing: batch idx: %d, position in batch: %d, prediction_idx: %d',
-            _LOG_EVERY_N, idx, i, prediction_idx)
-        if prediction_idx >= len(predictions):
-          logging.info(
-              'Prediction idx %d > num predictions %d. '
-              'Probably because #steps was capped.', prediction_idx,
-              len(predictions))
-          break
-        probabilities = predictions[prediction_idx]
-        pred = {
-            'probabilities': probabilities,
-            'variant': variant.numpy(),
-            'alt_allele_indices': alt_allele_indices.numpy()
-        }
-        write_variant_call(writer, pred)
-
-
 def _create_cvo_proto(encoded_variant,
                       gls,
                       encoded_alt_allele_indices,
@@ -379,10 +345,31 @@ def call_variants(examples_filename: str, checkpoint_path: str,
 
     image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)
 
-    # TODO: Do we need the equivalent of session_predict_hooks?
-    predictions = model.predict(
-        image_variant_alt_allele_ds, callbacks=[CustomCallback()])
-    write_call_variants(predictions, image_variant_alt_allele_ds, output_file)
+    with tfrecord.Writer(output_file) as writer:
+      start_time = time.time()
+      n_examples, n_batches = 0, 0
+      for batch in image_variant_alt_allele_ds:
+        predictions = model.predict_on_batch(batch[0])
+        n_batches += 1
+        for probabilities, variant, alt_allele_indices in zip(
+            predictions, batch[1], batch[2]):
+          n_examples += 1
+          pred = {
+              'probabilities': probabilities,
+              'variant': variant.numpy(),
+              'alt_allele_indices': alt_allele_indices.numpy()
+          }
+          write_variant_call(writer, pred)
+          duration = time.time() - start_time
+          logging.log_every_n(
+              logging.INFO,
+              ('Processed %s examples in %s batches [%.3f sec per 100]'),
+              _LOG_EVERY_N, n_examples, n_batches,
+              (100 * duration) / n_examples)
+    logging.info('Processed %s examples in %s batches [%.3f sec per 100]',
+                 n_examples, n_batches, (100 * duration) / n_examples)
+    logging.info('Done calling variants from a total of %d examples.',
+                 n_examples)
 
 
 def main(argv=()):
