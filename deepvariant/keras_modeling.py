@@ -30,8 +30,9 @@
 
 import os
 import tempfile
-from typing import Tuple, Type
+from typing import Optional, Tuple, Type
 
+from absl import logging
 import tensorflow as tf
 
 from deepvariant import dv_constants
@@ -131,13 +132,15 @@ def add_l2_regularizers(
   return reg_model
 
 
-def inceptionv3(input_shape: Tuple[int, int, int]) -> tf.keras.Model:
+def inceptionv3(input_shape: Tuple[int, int, int],
+                weights: Optional[str] = None) -> tf.keras.Model:
   """Returns an InceptionV3 architecture.
 
   See https://tensorflow.org/api_docs/python/tf/keras/applications/InceptionV3.
 
   Args:
     input_shape: a 3-tuple describing the input shape.
+    weights: str. To initial weights from.
 
   Returns:
     An InceptionV3-based model.
@@ -167,5 +170,11 @@ def inceptionv3(input_shape: Tuple[int, int, int]) -> tf.keras.Model:
   model = tf.keras.Model(
       inputs=[inputs_image], outputs=outputs, name='inceptionv3')
   model.summary()
-  print(f'Number of l2 regularizers: {len(model.losses)}.')
+  logging.info('Number of l2 regularizers: %s.', len(model.losses))
+  if weights:
+    logging.info('inceptionv3: load_weights from init_weights_file: %s',
+                 weights)
+    model.load_weights(weights)
+  else:
+    logging.info('inceptionv3: No init_weights_file.')
   return model
