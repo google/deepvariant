@@ -31,6 +31,9 @@
  */
 
 #include "third_party/nucleus/io/tfrecord_reader.h"
+
+#include <memory>
+
 #include "absl/memory/memory.h"
 #include "tensorflow/core/lib/io/record_reader.h"
 #include "tensorflow/core/platform/logging.h"
@@ -57,7 +60,7 @@ std::unique_ptr<TFRecordReader> TFRecordReader::New(
       tensorflow::io::RecordReaderOptions::CreateRecordReaderOptions(
           compression_type);
   options.buffer_size = 16 * 1024 * 1024;
-  reader->reader_ = absl::make_unique<tensorflow::io::RecordReader>(
+  reader->reader_ = std::make_unique<tensorflow::io::RecordReader>(
       reader->file_.get(), options);
 
   return reader;

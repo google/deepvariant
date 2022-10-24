@@ -326,7 +326,7 @@ tensorflow::Status EncodeFormatValues(
     return tensorflow::errors::FailedPrecondition(
         "Can't currently handle > 1 string format entry per sample.");
   }
-  auto c_values_up = absl::make_unique<const char*[]>(n_samples);
+  auto c_values_up = std::make_unique<const char*[]>(n_samples);
   const char** c_values = c_values_up.get();
   CHECK(c_values != nullptr);
   for (size_t i = 0; i < n_samples; ++i) {
@@ -1118,7 +1118,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
 
   // Alleles
   int nAlleles = 1 + variant_message.alternate_bases_size();
-  auto alleles = absl::make_unique<const char* []>(nAlleles);
+  auto alleles = std::make_unique<const char*[]>(nAlleles);
   alleles.get()[0] = variant_message.reference_bases().c_str();
   for (int i = 1; i < nAlleles; i++) {
     alleles.get()[i] = variant_message.alternate_bases(i - 1).c_str();
@@ -1128,7 +1128,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
   // FILTER
   int nFilters = variant_message.filter_size();
   if (nFilters > 0) {
-    auto filterIds = absl::make_unique<int32[]>(nFilters);
+    auto filterIds = std::make_unique<int32[]>(nFilters);
     for (int i = 0; i < nFilters; i++) {
       const char* filterName = variant_message.filter(i).c_str();
       int32 filterId = bcf_hdr_id2int(&h, BCF_DT_ID, filterName);
@@ -1163,7 +1163,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
 
   if (nCalls > 0) {
     // Write genotypes.
-    auto gts = absl::make_unique<int32[]>(nCalls * ploidy);
+    auto gts = std::make_unique<int32[]>(nCalls * ploidy);
     for (int c = 0; c < nCalls; c++) {
       const nucleus::genomics::v1::VariantCall& vc = variant_message.calls(c);
 

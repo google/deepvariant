@@ -31,6 +31,9 @@
  */
 
 #include "third_party/nucleus/io/tfrecord_writer.h"
+
+#include <memory>
+
 #include "absl/memory/memory.h"
 #include "tensorflow/core/lib/io/record_writer.h"
 #include "tensorflow/core/platform/logging.h"
@@ -55,7 +58,7 @@ std::unique_ptr<TFRecordWriter> TFRecordWriter::New(
       tensorflow::io::RecordWriterOptions::CreateRecordWriterOptions(
           compression_type);
 
-  writer->writer_ = absl::make_unique<tensorflow::io::RecordWriter>(
+  writer->writer_ = std::make_unique<tensorflow::io::RecordWriter>(
       writer->file_.get(), options);
   return writer;
 }

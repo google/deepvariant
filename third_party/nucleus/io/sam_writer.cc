@@ -35,6 +35,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <memory>
 #include <utility>
 
 #include "google/protobuf/repeated_field.h"
@@ -592,8 +594,8 @@ StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
     cram_set_option(fp->fp.cram, CRAM_OPT_EMBED_REF, embed_ref ? 1 : 0);
   }
 
-  auto native_file = absl::make_unique<NativeFile>(fp);
-  auto native_header = absl::make_unique<NativeHeader>(bam_hdr_init());
+  auto native_file = std::make_unique<NativeFile>(fp);
+  auto native_header = std::make_unique<NativeHeader>(bam_hdr_init());
   TF_RETURN_IF_ERROR(PopulateNativeHeader(sam_header, fp->format.format == cram,
                                           native_header->value()));
 
@@ -623,7 +625,7 @@ tf::Status SamWriter::Close() {
 }
 
 tf::Status SamWriter::Write(const Read& read) {
-  auto body = absl::make_unique<NativeBody>(bam_init1());
+  auto body = std::make_unique<NativeBody>(bam_init1());
   tf::Status status =
       PopulateNativeBody(read, native_header_->value(), body->value());
   if (!status.ok()) {
