@@ -32,6 +32,7 @@
 #include "deepvariant/pileup_channel_lib.h"
 
 #include <vector>
+#include <string>
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "tensorflow/core/platform/test.h"
@@ -92,6 +93,60 @@ TEST(StrandColor, NegativeStrand) {
   options.set_negative_strand_color(20);
   uint8 sc = StrandColor(false, options);
   EXPECT_EQ(sc, 20);
+}
+
+TEST(ReadSupportsAlt, AlleleUnsupporting) {
+  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"});
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+  std::vector<std::string> alt_alleles = {};
+
+  uint8 rsa = ReadSupportsAlt(dv_call, read, alt_alleles);
+  EXPECT_EQ(rsa, 0);
+}
+
+
+TEST(ReadSupportsAlt, AlleleSupporting) {
+  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"}, "FRAG1");
+  read.set_read_number(1);
+
+  DeepVariantCall_SupportingReads dv_supporting_reads =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads.add_read_names("FRAG1/1");
+
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCATT");
+
+  dv_call.mutable_allele_support()->
+    insert(google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+        "GGGCGCATT", dv_supporting_reads));
+
+  std::vector<std::string> alt_alleles = {"GGGCGCATT"};
+
+  uint8 rsa = ReadSupportsAlt(dv_call, read, alt_alleles);
+  EXPECT_EQ(rsa, 1);
+}
+
+TEST(ReadSupportsAlt, OtherAlleleSupporting) {
+  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"}, "FRAG2");
+  read.set_read_number(2);
+
+  DeepVariantCall_SupportingReads dv_supporting_reads =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads.add_read_names("FRAG2/2");
+
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCATT");
+
+  dv_call.mutable_allele_support()->
+    insert(google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+        "GGGCGCATT", dv_supporting_reads));
+
+  std::vector<std::string> alt_alleles = {};
+
+  uint8 rsa = ReadSupportsAlt(dv_call, read, alt_alleles);
+  EXPECT_EQ(rsa, 2);
 }
 
 TEST(SupportsAltColor, AlleleSupporting) {
@@ -272,6 +327,7 @@ TEST(GetChannelDataTest, ReadData) {
   PileupImageOptions options{};
   options.set_mapping_quality_cap(1);
   options.set_positive_strand_color(20);
+  options.set_allele_unsupporting_read_alpha(1.0);
 
   OptChannels channel_set{options};
   std::vector<std::string> channels{ch_mapping_quality,
@@ -298,7 +354,8 @@ TEST(GetChannelDataTest, ReadData) {
   EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1),
            static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetChannelData(ch_strand, 1), 20);
-  // TODO: add 'ch_read_supports_variant' test here
+  EXPECT_EQ(channel_set.GetChannelData(ch_read_supports_variant, 1),
+            static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetChannelData(ch_read_mapping_percent, 3), 203);
   EXPECT_EQ(channel_set.GetChannelData(ch_avg_base_quality, 3), 90);
   EXPECT_EQ(channel_set.GetChannelData(ch_identity, 9), 203);
