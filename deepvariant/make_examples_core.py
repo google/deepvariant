@@ -33,7 +33,7 @@ import dataclasses
 import json
 import os
 import time
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple
 
 
 from absl import logging
@@ -1177,6 +1177,69 @@ class RegionProcessor(object):
     runtimes['make pileup images'] = trim_runtime(time.time() -
                                                   before_make_pileup_images)
     return example_shape
+
+  # TODO Add the test to integration test to verify this function.
+  def find_candidate_positions(self, region: range_pb2.Range) -> Iterator[int]:
+    """Finds all candidate positions within a given region."""
+    main_sample = self.samples[self.options.main_sample_index]
+    for sample in self.samples:
+      reads = []
+      # TODO: Refactor this loop. It is used in other places.
+      for sam_reader_index, sam_reader in enumerate(sample.sam_readers):
+        try:
+          reads.extend(sam_reader.query(region))
+        # TODO: OpError exception not propagated.
+        except ValueError as err:
+          error_message = str(err)
+          if error_message.startswith('DATA_LOSS:'):
+            raise ValueError(
+                error_message + '\nFailed to parse BAM/CRAM file. '
+                'This is often caused by:\n'
+                '(1) When using a CRAM file, and setting '
+                '--use_ref_for_cram to false (which means you want '
+                'to use the embedded ref instead of a ref file), '
+                'this error could be because of inability to find '
+                'the embedded ref file.\n'
+                '(2) Your BAM/CRAM file could be corrupted. Please '
+                'check its md5.\n'
+                'If you cannot find out the reason why this error '
+                'is occurring, please report to '
+                'https://github.com/google/deepvariant/issues') from err
+          elif error_message.startswith('NOT_FOUND: Unknown reference_name '):
+            raise ValueError('{}\nThe region {} does not exist in {}.'.format(
+                error_message, ranges.to_literal(region),
+                sample.options.reads_filenames[sam_reader_index])) from err
+          else:
+            # By default, raise the ValueError as is for now.
+            raise err
+      # end of sample.sam_readers loop
+      sample.in_memory_sam_reader.replace_reads(reads)
+      sample.reads = sample.in_memory_sam_reader.query(region)
+      if self.options.max_reads_per_partition > 0:
+        random_for_region = np.random.RandomState(self.options.random_seed)
+        logging.warning('Loaded %d reads for the region, max_reads=%d',
+                        len(reads), self.options.max_reads_per_partition)
+        sample.reads = utils.reservoir_sample(
+            sample.reads, self.options.max_reads_per_partition,
+            random_for_region)
+
+      sample.allele_counter = self._make_allele_counter_for_region(region, [])
+
+      if sample.options.reads_filenames:
+        for read in sample.reads:
+          sample.allele_counter.add(read, sample.options.name)
+    # end of self.samples loop:
+
+    allele_counters = {s.options.name: s.allele_counter for s in self.samples}
+    # TODO: For phasing we calculate candidates for all samples.
+    # If it is done here then we can reuse these results for phasing thus
+    # saving runtime.
+    candidate_positions = main_sample.variant_caller.get_candidate_positions(
+        allele_counters=allele_counters, sample_name=main_sample.options.name)
+    for pos in candidate_positions:
+      yield pos
+    # Mark the end of partition
+    yield END_OF_PARTITION
 
   def process(self, region):
     """Finds candidates and creates corresponding examples in a region.
