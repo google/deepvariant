@@ -34,9 +34,6 @@
 #include "google/protobuf/pyext/message.h"
 #include "google/protobuf/pyext/message_factory.h"
 #include "python/google/protobuf/proto_api.h"
-
-#include "google/protobuf/message_lite.h"
-
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/protos/bedgraph.pb.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -49,6 +46,7 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "google/protobuf/message_lite.h"
 
 namespace {
 

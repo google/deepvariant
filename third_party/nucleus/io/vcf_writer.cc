@@ -37,8 +37,6 @@
 #include <utility>
 #include <vector>
 
-#include "google/protobuf/map.h"
-#include "google/protobuf/repeated_field.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/substitute.h"
 #include "htslib/hts.h"
@@ -48,6 +46,8 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "google/protobuf/map.h"
+#include "google/protobuf/repeated_field.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"

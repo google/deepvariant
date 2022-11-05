@@ -29,10 +29,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#include "google/protobuf/message.h"
+#include "third_party/nucleus/util/proto_clif_converter.h"
+
 #include "python/google/protobuf/proto_api.h"
 #include "clif/python/types.h"
-#include "third_party/nucleus/util/proto_clif_converter.h"
+#include "google/protobuf/message.h"
 
 namespace nucleus {
 

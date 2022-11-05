@@ -37,7 +37,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "deepvariant/variant_calling_multisample.h"
-#include "google/protobuf/repeated_field.h"
+#include "net/proto2/public/repeated_field.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>

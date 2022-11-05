@@ -34,7 +34,6 @@
 
 #include <utility>
 
-#include "google/protobuf/text_format.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
@@ -45,6 +44,7 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
 #include "third_party/nucleus/vendor/statusor.h"
+#include "google/protobuf/text_format.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/env.h"
 

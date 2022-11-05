@@ -202,26 +202,24 @@
 #include <iostream>  // NOLINT
 #include <memory>
 #include <sstream>  // NOLINT
-#include <string>  // NOLINT
-#include <vector>  // NOLINT
+#include <string>   // NOLINT
+#include <vector>   // NOLINT
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-
+#include "absl/strings/string_view.h"
+#include "third_party/nucleus/platform/types.h"
+#include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
-#include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/field_comparator.h"
 #include "google/protobuf/util/message_differencer.h"
-#include "absl/strings/string_view.h"
-
 #include "tensorflow/core/platform/logging.h"
-#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 

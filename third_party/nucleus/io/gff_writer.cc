@@ -35,7 +35,6 @@
 #include <map>
 #include <utility>
 
-#include "google/protobuf/map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -44,6 +43,7 @@
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "google/protobuf/map.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"

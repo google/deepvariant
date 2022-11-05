@@ -89,6 +89,7 @@ cc_library(
     hdrs = ["debruijn_graph.h"],
     deps = [
         "//deepvariant/protos:realigner_cc_pb2",
+        "//net/proto2/public:proto2",
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
@@ -98,7 +99,6 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -165,11 +165,11 @@ cc_test(
     deps = [
         "fast_pass_aligner",
         "//deepvariant/protos:realigner_cc_pb2",
+        "//net/proto2/public:proto2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],

@@ -36,7 +36,7 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
-#include "google/protobuf/repeated_field.h"
+#include "net/proto2/public/repeated_field.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"

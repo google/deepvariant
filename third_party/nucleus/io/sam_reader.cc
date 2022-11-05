@@ -40,7 +40,6 @@
 #include <utility>
 #include <vector>
 
-#include "google/protobuf/repeated_field.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
@@ -57,6 +56,7 @@
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "google/protobuf/repeated_field.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"

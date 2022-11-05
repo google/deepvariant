@@ -32,10 +32,10 @@
 #ifndef THIRD_PARTY_NUCLEUS_UTIL_PROTO_CLIF_CONVERTER_H_
 #define THIRD_PARTY_NUCLEUS_UTIL_PROTO_CLIF_CONVERTER_H_
 
-#include "google/protobuf/message.h"
 #include "python/google/protobuf/proto_api.h"
 #include "clif/python/types.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "google/protobuf/message.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {

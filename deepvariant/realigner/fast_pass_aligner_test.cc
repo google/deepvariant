@@ -34,7 +34,7 @@
 
 #include "deepvariant/protos/realigner.pb.h"
 #include "deepvariant/realigner/fast_pass_aligner.h"
-#include "google/protobuf/text_format.h"
+#include "net/proto2/public/text_format.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
