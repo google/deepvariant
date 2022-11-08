@@ -36,13 +36,13 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
-#include "net/proto2/public/repeated_field.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
+#include "google/protobuf/repeated_field.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 

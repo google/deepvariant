@@ -29,12 +29,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "deepvariant/realigner/fast_pass_aligner.h"
+
 #include <fstream>
 #include <map>
 
 #include "deepvariant/protos/realigner.pb.h"
-#include "deepvariant/realigner/fast_pass_aligner.h"
-#include "net/proto2/public/text_format.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
@@ -44,6 +44,7 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
+#include "google/protobuf/text_format.h"
 
 namespace learning {
 namespace genomics {
