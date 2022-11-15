@@ -121,7 +121,7 @@ _clif_wrap_cc = rule(
         "_clif": attr.label(
             default = Label(CLIF_PYCLIF),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         # Hidden attribute: The label to the C++ CLIF header files.
         "_cliflib": attr.label(
@@ -386,7 +386,7 @@ _run_clif_proto_parser_rule = rule(
         "parser": attr.label(
             executable = True,
             default = Label(CLIF_PROTO),
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     output_to_genfiles = True,
