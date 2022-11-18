@@ -189,11 +189,14 @@ flags.DEFINE_float(
     'vsc_min_fraction_indels', 0.06,
     'Indel alleles occurring at least this fraction of all counts in our '
     'AlleleCount will be advanced as candidates.')
-flags.DEFINE_float(
+_VSC_MIN_FRACTION_MULTIPLIER = flags.DEFINE_float(
     'vsc_min_fraction_multiplier', 1.0,
     'In candidate generation, this multiplier is applied to the minimum allele '
     'fraction thresholds (vsc_min_fraction_snps and vsc_min_fraction_indels) '
-    'to adapt thresholds for multi-sample calling.')
+    'to adapt thresholds for multi-sample calling. This has to '
+    'in the (0, 1] interval. It can also be set to float("inf") '
+    'programmaticaly to only use candidates from the target sample in '
+    'multi-sample calling.')
 flags.DEFINE_float(
     'training_random_emit_ref_sites', NO_RANDOM_REF,
     'If > 0, emit extra random reference examples with this probability.')
@@ -576,11 +579,12 @@ def check_options_are_valid(options: deepvariant_pb2.MakeExamplesOptions,
             '--proposed_variants* is required with vcf_candidate_importer in '
             'calling mode.', errors.CommandLineError)
 
-  multiplier = FLAGS.vsc_min_fraction_multiplier
-  if multiplier <= 0 or multiplier > 1.0:
+  multiplier = _VSC_MIN_FRACTION_MULTIPLIER.value
+  if (multiplier <= 0 or multiplier > 1.0) and multiplier != float('inf'):
     errors.log_and_raise(
-        '--vsc_min_fraction_multiplier must be within (0-1] interval.',
-        errors.CommandLineError)
+        '--vsc_min_fraction_multiplier must be within (0-1] interval, or set '
+        'inf to only use candidates from the target sample. '
+        'Currently set to: {}'.format(multiplier), errors.CommandLineError)
 
   total_pileup_height = sum(
       [sample.pileup_height for sample in options.sample_options])
