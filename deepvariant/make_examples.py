@@ -77,6 +77,8 @@ flags.DEFINE_string(
     '(Only used when --variant_caller=vcf_candidate_importer.) '
     'Tabix-indexed VCF file containing the proposed positions and alts for '
     '`vcf_candidate_importer`. The GTs will be ignored.')
+flags.DEFINE_string('candidate_positions', None,
+                    'Path to the binary file containing candidate positions.')
 
 
 def one_sample_from_flags(add_flags=True, flags_obj=None):
@@ -101,6 +103,8 @@ def one_sample_from_flags(add_flags=True, flags_obj=None):
       sample_options.pileup_height = flags_obj.pileup_image_height
     if flags_obj.proposed_variants:
       sample_options.proposed_variants_filename = flags_obj.proposed_variants
+    if flags_obj.candidate_positions:
+      sample_options.candidate_positions = flags_obj.candidate_positions
   samples_in_order = [sample_options]
   sample_role_to_train = sample_options.role
   return samples_in_order, sample_role_to_train
@@ -146,6 +150,17 @@ def check_options_are_valid(options):
   # Check for general flags (shared for DeepVariant and DeepTrio).
   make_examples_options.check_options_are_valid(
       options, main_sample_index=MAIN_SAMPLE_INDEX)
+
+  main_sample = options.sample_options[MAIN_SAMPLE_INDEX]
+  if options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and main_sample.candidate_positions is None:
+    errors.log_and_raise('--candidate_positions is required when '
+                         '--positions_sweep is set.')
+  if options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and main_sample.proposed_variants_filename:
+    errors.log_and_raise('--positions_sweep_mode is incompatible with '
+                         '--proposed_variants')
+  if main_sample.candidate_positions and main_sample.proposed_variants_filename:
+    errors.log_and_raise('--candidate_positions is incompatible with '
+                         '--proposed_variants')
 
 
 def main(argv=()):

@@ -542,7 +542,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 9.
+// Next ID: 10.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -581,6 +581,9 @@ message SampleOptions {
 
   // Path to the variants for vcf_candidate_importer.
   string proposed_variants_filename = 8;
+
+  // Path to binary file containing candidate positions.
+  string candidate_positions = 9;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
@@ -651,6 +654,7 @@ message MakeExamplesOptions {
     UNSPECIFIED = 0;
     CALLING = 1;
     TRAINING = 2;
+    CANDIDATE_SWEEP = 3;
   }
   Mode mode = 18;
 

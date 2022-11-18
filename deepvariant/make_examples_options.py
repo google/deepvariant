@@ -84,8 +84,9 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'candidates', '',
     'Candidate DeepVariantCalls in tfrecord format. For DEBUGGING.')
-flags.DEFINE_string('mode', None,
-                    'Mode to run. Must be one of calling or training')
+flags.DEFINE_string(
+    'mode', None, 'Mode to run. Must be one of calling, training or '
+    'candidate_sweep')
 flags.DEFINE_string(
     'regions', '',
     'Optional. Space-separated list of regions we want to process. Elements '

@@ -60,6 +60,7 @@ from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
+from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import range_pb2
@@ -1795,8 +1796,9 @@ def processing_regions_from_options(options):
 
   Returns:
     Two values. The first is a list of nucleus.genomics.v1.Range protos of the
-    regions we should process. The second is a RangeSet containing the confident
-    regions for labeling, or None if we are running in training mode.
+    regions we should process. The second is a RangeSet containing the calling
+    regions calculated from intersection of input regions, condident regions
+    and regions to exclude.
   """
   ref_contigs = fasta.IndexedFastaReader(
       options.reference_filename).header.contigs
@@ -1862,8 +1864,9 @@ def processing_regions_from_options(options):
         'from the supplied VCF of proposed variants.'.format(
             trim_runtime(time_elapsed), len(region_list),
             len(filtered_regions)))
-    return filtered_regions
-  return region_list
+    return filtered_regions, None
+
+  return region_list, calling_regions
 
 
 def _write_example_and_update_stats(example,
@@ -1891,7 +1894,13 @@ def make_examples_runner(options):
   before_initializing_inputs = time.time()
 
   logging_with_options(options, 'Preparing inputs')
-  regions = processing_regions_from_options(options)
+  regions, calling_regions = processing_regions_from_options(options)
+
+  child = options.sample_options[options.main_sample_index]
+  if options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and child.candidate_positions:
+    _, candidate_positions_filename = sharded_file_utils.resolve_filespecs(
+        options.task_id, child.candidate_positions)
+    candidates_writer = epath.Path(candidate_positions_filename).open('wb')
 
   # Create a processor to create candidates and examples for each region.
   region_processor = RegionProcessor(options)
@@ -1939,6 +1948,18 @@ def make_examples_runner(options):
   }
   example_shape = None
   for region in regions:
+
+    if options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP:
+      candidates_in_region = list(
+          region_processor.find_candidate_positions(region))
+      candidates_writer.write(
+          np.array(candidates_in_region, dtype=np.int32).tobytes())
+      # Here we mark the end of the calling region
+      for cr in calling_regions:
+        if cr.reference_name == region.reference_name and cr.end == region.end:
+          candidates_writer.write(np.array([-1], dtype=np.int32).tobytes())
+      continue
+
     (candidates_by_sample, gvcfs_by_sample,
      runtimes) = region_processor.process(region)
     for sample in region_processor.samples:
@@ -1988,6 +2009,9 @@ def make_examples_runner(options):
 
   for writer in writers_dict.values():
     writer.close_all()
+  if (options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and
+      candidates_writer):
+    candidates_writer.close()
 
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:

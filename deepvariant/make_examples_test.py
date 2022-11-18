@@ -246,7 +246,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # golden labeled examples. Note we expect the order for both training and
     # calling modes to produce deterministic order because we fix the random
     # seed.
-    if mode == 'calling':
+    if mode in ['calling', 'candidate_sweep']:
       golden_file = _sharded(testdata.GOLDEN_CALLING_EXAMPLES, num_shards)
     else:
       golden_file = _sharded(testdata.GOLDEN_TRAINING_EXAMPLES, num_shards)

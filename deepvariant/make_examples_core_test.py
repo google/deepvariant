@@ -132,6 +132,10 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           flag_value='TRAINING',
           expected=deepvariant_pb2.MakeExamplesOptions.TRAINING,
       ),
+      dict(
+          flag_value='CANDIDATE_SWEEP',
+          expected=deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP,
+      ),
   )
   def test_parse_proto_enum_flag(self, flag_value, expected):
     enum_pb2 = deepvariant_pb2.MakeExamplesOptions.Mode
@@ -142,7 +146,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
   def test_parse_proto_enum_flag_error_handling(self):
     with six.assertRaisesRegex(
         self, ValueError,
-        'Unknown enum option "foo". Allowed options are CALLING,TRAINING'):
+        'Unknown enum option "foo". Allowed options are CALLING,CANDIDATE_SWEEP,TRAINING'
+    ):
       make_examples_core.parse_proto_enum_flag(
           deepvariant_pb2.MakeExamplesOptions.Mode, 'foo')
 
@@ -584,11 +589,10 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.exclude_regions = 'chr20:10,010,000-10,100,000'
 
     options = make_examples.default_options(add_flags=True)
+    _, regions_from_options = make_examples_core.processing_regions_from_options(
+        options)
     six.assertCountEqual(
-        self,
-        list(
-            ranges.RangeSet(
-                make_examples_core.processing_regions_from_options(options))),
+        self, list(ranges.RangeSet(regions_from_options)),
         _from_literals_list(
             ['chr20:10,000,000-10,009,999', 'chr20:10,100,001-11,000,000']))
 

@@ -972,10 +972,10 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.exclude_regions = '20:10,010,000-10,100,000'
 
     options = make_examples.default_options(add_flags=True)
+    _, regions_from_options = make_examples_core.processing_regions_from_options(
+        options)
     self.assertCountEqual(
-        list(
-            ranges.RangeSet(
-                make_examples_core.processing_regions_from_options(options))),
+        list(ranges.RangeSet(regions_from_options)),
         _from_literals_list(
             ['20:10,000,000-10,009,999', '20:10,100,001-11,000,000']))
 
