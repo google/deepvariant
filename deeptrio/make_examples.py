@@ -53,7 +53,7 @@ FLAGS = flags.FLAGS
 flags.adopt_module_key_flags(make_examples_options)
 
 # Flags related to samples in DeepTrio:
-flags.DEFINE_string(
+SAMPLE_NAME_TO_TRAIN_ = flags.DEFINE_string(
     'sample_name_to_train', None,
     'Optional - if not set, default to the value in '
     '--sample_name, i.e. the child. The default is set to be backward '
@@ -61,77 +61,77 @@ flags.DEFINE_string(
     '--sample_name_parent1, or --sample_name_parent2. '
     'Only used for training. When run in calling mode, this is unused because '
     'examples are generated for all 3 samples together.')
-flags.DEFINE_string(
+READS_ = flags.DEFINE_string(
     'reads', None,
     'Required. Aligned, sorted, indexed BAM file containing reads from the '
     'child of the trio. '
     'Should be aligned to a reference genome compatible with --ref. '
     'Can provide multiple BAMs (comma-separated).')
-flags.DEFINE_string(
+READS_PARENT1_ = flags.DEFINE_string(
     'reads_parent1', None,
     'Required. Aligned, sorted, indexed BAM file containing reads from parent '
     '1 of the trio. Should be aligned to a reference genome compatible with '
     '--ref. Can provide multiple BAMs (comma-separated).')
-flags.DEFINE_string(
+READS_PARENT2_ = flags.DEFINE_string(
     'reads_parent2', None,
     'Aligned, sorted, indexed BAM file containing reads from parent 2 of the '
     'trio. Should be aligned to a reference genome compatible with --ref. '
     'Can provide multiple BAMs (comma-separated).')
-flags.DEFINE_float(
+DOWNSAMPLE_FRACTION_CHILD_ = flags.DEFINE_float(
     'downsample_fraction_child', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
     'Reads will be kept (randomly) with a probability of downsample_fraction '
     'from the input child BAM. This argument makes it easy to create examples '
     'as though the input BAM had less coverage.')
-flags.DEFINE_float(
+DOWNSAMPLE_FRACTION_PARENTS_ = flags.DEFINE_float(
     'downsample_fraction_parents', NO_DOWNSAMPLING,
     'If not ' + str(NO_DOWNSAMPLING) + ' must be a value between 0.0 and 1.0. '
     'Reads will be kept (randomly) with a probability of downsample_fraction '
     'from the input parent BAMs. This argument makes it easy to create examples'
     ' as though the input BAMs had less coverage.')
-flags.DEFINE_string(
+SAMPLE_NAME_ = flags.DEFINE_string(
     'sample_name', '',
     'Child sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads.')
-flags.DEFINE_string(
+SAMPLE_NAME_PARENT1_ = flags.DEFINE_string(
     'sample_name_parent1', '',
     'Parent1 Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads_parent1.')
-flags.DEFINE_string(
+SAMPLE_NAME_PARENT2_ = flags.DEFINE_string(
     'sample_name_parent2', '',
     'Parent2 Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads_parent2.')
-flags.DEFINE_integer(
+PILEUP_IMAGE_HEIGHT_PARENT_ = flags.DEFINE_integer(
     'pileup_image_height_parent', 0,
     'Height for the parent pileup image. If 0, uses the default height')
-flags.DEFINE_integer(
+PILEUP_IMAGE_HEIGHT_CHILD_ = flags.DEFINE_integer(
     'pileup_image_height_child', 0,
     'Height for the child pileup image. If 0, uses the default height')
-flags.DEFINE_string(
+PROPOSED_VARIANTS_CHILD_ = flags.DEFINE_string(
     'proposed_variants_child', None,
     '(Only used when --variant_caller=vcf_candidate_importer.) '
     'Tabix-indexed VCF file containing the proposed positions and alts for '
     '`vcf_candidate_importer` for the child. The GTs will be ignored.')
-flags.DEFINE_string(
+PROPOSED_VARIANTS_PARENT1_ = flags.DEFINE_string(
     'proposed_variants_parent1', None,
     '(Only used when --variant_caller=vcf_candidate_importer.) '
     'Tabix-indexed VCF file containing the proposed positions and alts for '
     '`vcf_candidate_importer` for the parent 1. The GTs will be ignored.')
-flags.DEFINE_string(
+PROPOSED_VARIANTS_PARENT2_ = flags.DEFINE_string(
     'proposed_variants_parent2', None,
     '(Only used when --variant_caller=vcf_candidate_importer.) '
     'Tabix-indexed VCF file containing the proposed positions and alts for '
     '`vcf_candidate_importer` for the parent 2. The GTs will be ignored.')
-flags.DEFINE_string(
+CANDIDATE_POSITIONS_CHILD_ = flags.DEFINE_string(
     'candidate_positions_child', None,
     'Path to the binary file containing candidate positions for the child.')
-flags.DEFINE_string(
+CANDIDATE_POSITIONS_PARENT1_ = flags.DEFINE_string(
     'candidate_positions_parent1', None,
     'Path to the binary file containing candidate positions for the parent1.')
-flags.DEFINE_string(
+CANDIDATE_POSITIONS_PARENT2_ = flags.DEFINE_string(
     'candidate_positions_parent2', None,
     'Path to the binary file containing candidate positions for the parent2.')
 
@@ -143,15 +143,15 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
   """Collects sample-related options into a list of samples."""
   # Sample-specific options.
   child_sample_name = make_examples_core.assign_sample_name(
-      sample_name_flag=flags_obj.sample_name, reads_filenames=flags_obj.reads)
+      sample_name_flag=SAMPLE_NAME_.value, reads_filenames=READS_.value)
 
   parent1_sample_name = make_examples_core.assign_sample_name(
-      sample_name_flag=flags_obj.sample_name_parent1,
-      reads_filenames=flags_obj.reads_parent1)
+      sample_name_flag=SAMPLE_NAME_PARENT1_.value,
+      reads_filenames=READS_PARENT1_.value)
 
   parent2_sample_name = make_examples_core.assign_sample_name(
-      sample_name_flag=flags_obj.sample_name_parent2,
-      reads_filenames=flags_obj.reads_parent2)
+      sample_name_flag=SAMPLE_NAME_PARENT2_.value,
+      reads_filenames=READS_PARENT2_.value)
 
   parent1_options = deepvariant_pb2.SampleOptions(
       role='parent1',
@@ -181,38 +181,38 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
   sample_role_to_train = 'child'
 
   if add_flags:
-    if flags_obj.reads:
-      child_options.reads_filenames.extend(flags_obj.reads.split(','))
-    if flags_obj.reads_parent1:
-      parent1_options.reads_filenames.extend(flags_obj.reads_parent1.split(','))
-    if flags_obj.reads_parent2:
-      parent2_options.reads_filenames.extend(flags_obj.reads_parent2.split(','))
+    if READS_.value:
+      child_options.reads_filenames.extend(READS_.value.split(','))
+    if READS_PARENT1_.value:
+      parent1_options.reads_filenames.extend(READS_PARENT1_.value.split(','))
+    if READS_PARENT2_.value:
+      parent2_options.reads_filenames.extend(READS_PARENT2_.value.split(','))
 
-    if flags_obj.candidate_positions_child:
-      child_options.candidate_positions = flags_obj.candidate_positions_child
+    if CANDIDATE_POSITIONS_CHILD_.value:
+      child_options.candidate_positions = CANDIDATE_POSITIONS_CHILD_.value
 
-    if flags_obj.proposed_variants_child:
-      child_options.proposed_variants_filename = flags_obj.proposed_variants_child
-    if flags_obj.proposed_variants_parent1:
-      parent1_options.proposed_variants_filename = flags_obj.proposed_variants_parent1
-    if flags_obj.proposed_variants_parent2:
-      parent2_options.proposed_variants_filename = flags_obj.proposed_variants_parent2
+    if PROPOSED_VARIANTS_CHILD_.value:
+      child_options.proposed_variants_filename = PROPOSED_VARIANTS_CHILD_.value
+    if PROPOSED_VARIANTS_PARENT1_.value:
+      parent1_options.proposed_variants_filename = PROPOSED_VARIANTS_PARENT1_.value
+    if PROPOSED_VARIANTS_PARENT2_.value:
+      parent2_options.proposed_variants_filename = PROPOSED_VARIANTS_PARENT2_.value
 
-    if flags_obj.downsample_fraction_child != NO_DOWNSAMPLING:
-      child_options.downsample_fraction = flags_obj.downsample_fraction_child
-    if flags_obj.downsample_fraction_parents != NO_DOWNSAMPLING:
-      parent1_options.downsample_fraction = flags_obj.downsample_fraction_parents
-      parent2_options.downsample_fraction = flags_obj.downsample_fraction_parents
+    if DOWNSAMPLE_FRACTION_CHILD_.value != NO_DOWNSAMPLING:
+      child_options.downsample_fraction = DOWNSAMPLE_FRACTION_CHILD_.value
+    if DOWNSAMPLE_FRACTION_PARENTS_.value != NO_DOWNSAMPLING:
+      parent1_options.downsample_fraction = DOWNSAMPLE_FRACTION_PARENTS_.value
+      parent2_options.downsample_fraction = DOWNSAMPLE_FRACTION_PARENTS_.value
 
-    if flags_obj.pileup_image_height_child:
-      child_options.pileup_height = flags_obj.pileup_image_height_child
-    if flags_obj.pileup_image_height_parent:
-      parent1_options.pileup_height = parent2_options.pileup_height = flags_obj.pileup_image_height_parent
+    if PILEUP_IMAGE_HEIGHT_CHILD_.value:
+      child_options.pileup_height = PILEUP_IMAGE_HEIGHT_CHILD_.value
+    if PILEUP_IMAGE_HEIGHT_PARENT_.value:
+      parent1_options.pileup_height = parent2_options.pileup_height = PILEUP_IMAGE_HEIGHT_PARENT_.value
 
-    if flags_obj.sample_name_to_train:
-      if flags_obj.sample_name_to_train == flags_obj.sample_name:
+    if SAMPLE_NAME_TO_TRAIN_.value:
+      if SAMPLE_NAME_TO_TRAIN_.value == SAMPLE_NAME_.value:
         sample_role_to_train = child_options.role
-      elif flags_obj.sample_name_to_train == flags_obj.sample_name_parent1:
+      elif SAMPLE_NAME_TO_TRAIN_.value == SAMPLE_NAME_PARENT1_.value:
         sample_role_to_train = parent1_options.role
       else:
         errors.log_and_raise(
@@ -257,10 +257,10 @@ def default_options(add_flags=True, flags_obj=None):
 
   if add_flags:
     options.bam_fname = os.path.basename(
-        flags_obj.reads) + '|' + (os.path.basename(flags_obj.reads_parent1) if
-                                  flags_obj.reads_parent1 else 'None') + '|' + (
-                                      os.path.basename(flags_obj.reads_parent2)
-                                      if flags_obj.reads_parent2 else 'None')
+        READS_.value) + '|' + (os.path.basename(READS_PARENT1_.value)
+                               if READS_PARENT1_.value else 'None') + '|' + (
+                                   os.path.basename(READS_PARENT2_.value)
+                                   if READS_PARENT2_.value else 'None')
     options.pic_options.sequencing_type = deepvariant_pb2.PileupImageOptions.TRIO
     if not options.pic_options.height:
       options.pic_options.height = dt_constants.PILEUP_DEFAULT_HEIGHT

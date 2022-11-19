@@ -54,38 +54,39 @@ FLAGS = flags.FLAGS
 flags.adopt_module_key_flags(make_examples_options)
 
 # Flags related to the sample in DeepVariant:
-flags.DEFINE_string(
+READS_ = flags.DEFINE_string(
     'reads', None,
     'Required. Aligned, sorted, indexed BAM file containing the reads we want '
     'to call. Should be aligned to a reference genome compatible with --ref. '
     'Can provide multiple BAMs (comma-separated).')
-flags.DEFINE_string(
+SAMPLE_NAME_ = flags.DEFINE_string(
     'sample_name', '', 'Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads.')
-flags.DEFINE_integer(
+PILEUP_IMAGE_HEIGHT_ = flags.DEFINE_integer(
     'pileup_image_height', 0,
     'Height for the pileup image. If 0, uses the default height')
-flags.DEFINE_float(
+DOWNSAMPLE_FRACTION_ = flags.DEFINE_float(
     'downsample_fraction', NO_DOWNSAMPLING,
     f'If not {NO_DOWNSAMPLING} must be a value between 0.0 and 1.0. '
     'Reads will be kept (randomly) with a probability of downsample_fraction '
     'from the input BAM. This argument makes it easy to create examples as '
     'though the input BAM had less coverage.')
-flags.DEFINE_string(
+PROPOSED_VARIANTS_ = flags.DEFINE_string(
     'proposed_variants', '',
     '(Only used when --variant_caller=vcf_candidate_importer.) '
     'Tabix-indexed VCF file containing the proposed positions and alts for '
     '`vcf_candidate_importer`. The GTs will be ignored.')
-flags.DEFINE_string('candidate_positions', None,
-                    'Path to the binary file containing candidate positions.')
+CANDIDATE_POSITIONS_ = flags.DEFINE_string(
+    'candidate_positions', None,
+    'Path to the binary file containing candidate positions.')
 
 
 def one_sample_from_flags(add_flags=True, flags_obj=None):
   """Collect sample-related options into a list of samples."""
   # Sample-specific options.
   sample_name = make_examples_core.assign_sample_name(
-      sample_name_flag=flags_obj.sample_name, reads_filenames=flags_obj.reads)
+      sample_name_flag=SAMPLE_NAME_.value, reads_filenames=READS_.value)
   sample_options = deepvariant_pb2.SampleOptions(
       role='main_sample',
       name=sample_name,
@@ -95,16 +96,16 @@ def one_sample_from_flags(add_flags=True, flags_obj=None):
       pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT)
 
   if add_flags:
-    if flags_obj.reads:
-      sample_options.reads_filenames.extend(flags_obj.reads.split(','))
-    if flags_obj.downsample_fraction != NO_DOWNSAMPLING:
-      sample_options.downsample_fraction = flags_obj.downsample_fraction
-    if flags_obj.pileup_image_height:
-      sample_options.pileup_height = flags_obj.pileup_image_height
-    if flags_obj.proposed_variants:
-      sample_options.proposed_variants_filename = flags_obj.proposed_variants
-    if flags_obj.candidate_positions:
-      sample_options.candidate_positions = flags_obj.candidate_positions
+    if READS_.value:
+      sample_options.reads_filenames.extend(READS_.value.split(','))
+    if DOWNSAMPLE_FRACTION_.value != NO_DOWNSAMPLING:
+      sample_options.downsample_fraction = DOWNSAMPLE_FRACTION_.value
+    if PILEUP_IMAGE_HEIGHT_.value:
+      sample_options.pileup_height = PILEUP_IMAGE_HEIGHT_.value
+    if PROPOSED_VARIANTS_.value:
+      sample_options.proposed_variants_filename = PROPOSED_VARIANTS_.value
+    if CANDIDATE_POSITIONS_.value:
+      sample_options.candidate_positions = CANDIDATE_POSITIONS_.value
   samples_in_order = [sample_options]
   sample_role_to_train = sample_options.role
   return samples_in_order, sample_role_to_train
@@ -140,7 +141,7 @@ def default_options(add_flags=True, flags_obj=None):
       main_sample_index=MAIN_SAMPLE_INDEX)
 
   if add_flags:
-    options.bam_fname = os.path.basename(flags_obj.reads)
+    options.bam_fname = os.path.basename(READS_.value)
   return options
 
 
