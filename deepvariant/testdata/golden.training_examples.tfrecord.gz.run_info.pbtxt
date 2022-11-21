@@ -3521,6 +3521,7 @@ options {
       ploidy: 2
       min_fraction_multiplier: 1.0
       skip_uncalled_genotypes: true
+      phase_reads_region_padding: 5000
     }
     pileup_height: 100
     order: 0
@@ -3531,6 +3532,8 @@ options {
   min_length_for_sv: 25
   aux_fields_to_keep: "HP"
   aux_fields_to_keep: "OQ"
+  phase_reads_region_padding: 5000
+  phase_max_candidates: 5000
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3548,14 +3551,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 6
-  cpu_frequency_mhz: 1367.8785833333334
-  total_memory_mb: 63908
-  wall_time_seconds: 1.026489496231079
-  cpu_user_time_seconds: 8.17004
-  cpu_system_time_seconds: 3.33241
-  memory_peak_rss_mb: 441
-  write_bytes: 24576
+  physical_core_count: 12
+  cpu_frequency_mhz: 2249.1029166666667
+  total_memory_mb: 128650
+  wall_time_seconds: 0.8097074031829834
+  cpu_user_time_seconds: 6.390422
+  cpu_system_time_seconds: 0.578409
+  memory_peak_rss_mb: 463
+  write_bytes: 20480
 }
 stats {
   num_examples: 49

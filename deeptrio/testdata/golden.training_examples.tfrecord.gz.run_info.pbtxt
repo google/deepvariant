@@ -3523,6 +3523,7 @@ options {
       ploidy: 2
       min_fraction_multiplier: 0.6700000166893005
       skip_uncalled_genotypes: true
+      phase_reads_region_padding: 5000
     }
     pileup_height: 100
     order: 0
@@ -3546,6 +3547,7 @@ options {
       ploidy: 2
       min_fraction_multiplier: 0.6700000166893005
       skip_uncalled_genotypes: true
+      phase_reads_region_padding: 5000
     }
     pileup_height: 100
     order: 0
@@ -3569,6 +3571,7 @@ options {
       ploidy: 2
       min_fraction_multiplier: 0.6700000166893005
       skip_uncalled_genotypes: true
+      phase_reads_region_padding: 5000
     }
     pileup_height: 100
     order: 2
@@ -3581,6 +3584,8 @@ options {
   min_length_for_sv: 25
   aux_fields_to_keep: "HP"
   aux_fields_to_keep: "OQ"
+  phase_reads_region_padding: 5000
+  phase_max_candidates: 5000
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3598,14 +3603,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 6
-  cpu_frequency_mhz: 1375.8249999999998
-  total_memory_mb: 63908
-  wall_time_seconds: 2.085798978805542
-  cpu_user_time_seconds: 9.004819
-  cpu_system_time_seconds: 3.278863
-  memory_peak_rss_mb: 449
-  write_bytes: 32768
+  physical_core_count: 12
+  cpu_frequency_mhz: 2163.6276666666668
+  total_memory_mb: 128650
+  wall_time_seconds: 1.8559532165527344
+  cpu_user_time_seconds: 7.7805219999999995
+  cpu_system_time_seconds: 1.485445
+  memory_peak_rss_mb: 470
+  write_bytes: 20480
 }
 stats {
   num_examples: 50
