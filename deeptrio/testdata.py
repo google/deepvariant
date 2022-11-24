@@ -62,6 +62,7 @@ NA12891_CHR20_BAM = None
 NA12892_CHR20_BAM = None
 GOLDEN_TRAINING_EXAMPLES = None
 GOLDEN_CALLING_CANDIDATES = None
+GOLDEN_CANDIDATE_POSITIONS = None
 GOLDEN_CALLING_EXAMPLES = None
 CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
@@ -93,6 +94,7 @@ def init():
   global NA12891_CHR20_BAM
   global NA12892_CHR20_BAM
   global GOLDEN_TRAINING_EXAMPLES
+  global GOLDEN_CANDIDATE_POSITIONS
   global GOLDEN_CALLING_CANDIDATES
   global GOLDEN_CALLING_EXAMPLES
   global CONFIDENT_REGIONS_BED
@@ -120,6 +122,8 @@ def init():
 
   GOLDEN_TRAINING_EXAMPLES = deeptrio_testdata(
       'golden.training_examples.tfrecord.gz')
+  GOLDEN_CANDIDATE_POSITIONS = deeptrio_testdata(
+      'golden_child.candidate_positions')
   GOLDEN_CALLING_CANDIDATES = deeptrio_testdata(
       'golden_child.calling_examples.tfrecord.gz')
   GOLDEN_CALLING_EXAMPLES = deeptrio_testdata(

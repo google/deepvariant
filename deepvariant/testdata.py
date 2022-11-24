@@ -64,6 +64,7 @@ NOCHR20_BAM = None
 CHR20_CRAM = None
 GOLDEN_TRAINING_EXAMPLES = None
 GOLDEN_CALLING_CANDIDATES = None
+GOLDEN_CANDIDATE_POSITIONS = None
 GOLDEN_CALLING_EXAMPLES = None
 CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
@@ -121,6 +122,7 @@ def init():
   global CHR20_CRAM
   global GOLDEN_TRAINING_EXAMPLES
   global GOLDEN_CALLING_CANDIDATES
+  global GOLDEN_CANDIDATE_POSITIONS
   global GOLDEN_CALLING_EXAMPLES
   global CONFIDENT_REGIONS_BED
   global TRUTH_VARIANTS_VCF
@@ -173,6 +175,8 @@ def init():
       'golden.training_examples.tfrecord.gz')
   GOLDEN_CALLING_CANDIDATES = deepvariant_testdata(
       'golden.calling_examples.tfrecord.gz')
+  GOLDEN_CANDIDATE_POSITIONS = deepvariant_testdata(
+      'golden.candidate_positions')
   GOLDEN_CALLING_EXAMPLES = deepvariant_testdata(
       'golden.calling_examples.tfrecord.gz')
   CONFIDENT_REGIONS_BED = deepvariant_testdata(

@@ -42,6 +42,7 @@ from absl import logging
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
+from etils import epath
 import numpy as np
 import six
 
@@ -52,6 +53,7 @@ from deepvariant import make_examples_core
 from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
 from tensorflow.python.platform import gfile
+from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import variants_pb2
@@ -134,6 +136,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       # golden sets version for ssw realigner.
       dict(mode='calling', num_shards=0),
       dict(mode='calling', num_shards=3),
+      dict(mode='candidate_sweep', num_shards=0),
+      dict(mode='candidate_sweep', num_shards=3),
       dict(
           mode='training', num_shards=0, labeler_algorithm='haplotype_labeler'),
       dict(
@@ -173,7 +177,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                                  labeler_algorithm=None,
                                  use_fast_pass_aligner=True,
                                  phase_reads_region_padding=None):
-    self.assertIn(mode, {'calling', 'training'})
+    self.assertIn(mode, {'calling', 'training', 'candidate_sweep'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.write_run_info = True
     FLAGS.ref = testdata.CHR20_FASTA
@@ -189,6 +193,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         _sharded('vsc.tfrecord', num_shards))
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards))
+    if mode == 'candidate_sweep':
+      FLAGS.candidate_positions = test_utils.test_tmpfile(
+          _sharded('candidate_positions', num_shards))
+      candidate_positions = test_utils.test_tmpfile(
+          _sharded('candidate_positions', num_shards))
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
@@ -205,6 +214,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     else:
       FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
       FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+
+    if mode == 'candidate_sweep':
+      golden_candidate_positions = _sharded(testdata.GOLDEN_CANDIDATE_POSITIONS,
+                                            num_shards)
 
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
@@ -223,6 +236,19 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       # (b) run_info.resource_metrics is present and contains our hostname.
       self.assertTrue(run_info.HasField('resource_metrics'))
       self.assertEqual(run_info.resource_metrics.host_name, platform.node())
+
+      # For candidate_sweep mode we verify that candidate positions match
+      # golden set exactly.
+      if mode == 'candidate_sweep':
+        _, candidates_path = sharded_file_utils.resolve_filespecs(
+            task_id, candidate_positions)
+        _, gold_candidates_path = sharded_file_utils.resolve_filespecs(
+            task_id, golden_candidate_positions)
+        self.verify_candidate_positions(candidates_path, gold_candidates_path)
+
+    # In candidate_sweep mode the test stops here.
+    if mode == 'candidate_sweep':
+      return
 
     # Test that our candidates are reasonable, calling specific helper functions
     # to check lots of properties of the output.
@@ -707,6 +733,16 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         return False
 
     return True
+
+  def verify_candidate_positions(self, candidate_positions_paths,
+                                 candidate_positions_golden_set):
+    with epath.Path(candidate_positions_golden_set).open('rb') as my_file:
+      positions_golden = np.frombuffer(my_file.read(), dtype=np.int32)
+    with epath.Path(candidate_positions_paths).open('rb') as my_file:
+      positions = np.frombuffer(my_file.read(), dtype=np.int32)
+    logging.warning('%d positions created, %d positions in golden file',
+                    len(positions), len(positions_golden))
+    self.assertCountEqual(positions, positions_golden)
 
   def verify_variants(self, variants, region, options, is_gvcf):
     # Verifies simple properties of the Variant protos in variants. For example,
