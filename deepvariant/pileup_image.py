@@ -400,10 +400,14 @@ class PileupImageCreator(object):
         pileup_height = self.height
 
       max_reads = pileup_height - self.reference_band_height
+      reads_indices = list(range(len(reads)))
       if len(reads) > max_reads:
-        random_for_image.shuffle(reads)
+        # Shuffle the indices instead of the reads, so that we won't change
+        # the order of the reads list.
+        random_for_image.shuffle(reads_indices)
       pileup_of_reads = []
-      for read in reads:
+      for reads_index in reads_indices:
+        read = reads[reads_index]
         if len(pileup_of_reads) == max_reads:
           break
         row = _row_helper(read)

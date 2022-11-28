@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~461m
-call_variants for HG002          | ~350m
-call_variants for HG003          | ~353m
-call_variants for HG004          | ~354m
+make_examples                    | ~462m
+call_variants for HG002          | ~353m
+call_variants for HG003          | ~358m
+call_variants for HG004          | ~358m
 postprocess_variants (parallel)  | ~61m
-total                            | ~1579m = ~26.31 hours
+total                            | ~1592m = ~26.53 hours
 
 ### Accuracy
 
@@ -38,7 +38,7 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10954    | 46       | 22       | 0.995818      | 0.998081         | 0.996948        |
+| INDEL | 10952    | 48       | 24       | 0.995636      | 0.997906         | 0.99677         |
 | SNP   | 71456    | 203      | 62       | 0.997167      | 0.999134         | 0.998149        |
 
 ## PacBio (HiFi)
@@ -49,12 +49,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~708m
-call_variants for HG002          | ~261m
-call_variants for HG003          | ~267m
-call_variants for HG004          | ~271m
-postprocess_variants (parallel)  | ~63m
-total                            | ~1570m = ~26.17 hours
+make_examples                    | ~712m
+call_variants for HG002          | ~269m
+call_variants for HG003          | ~274m
+call_variants for HG004          | ~275m
+postprocess_variants (parallel)  | ~65m
+total                            | ~1595m = ~26.58 hours
 
 ### Accuracy
 
@@ -72,14 +72,14 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10595    | 33       | 54       | 0.996895      | 0.995155         | 0.996024        |
+| INDEL | 10596    | 32       | 53       | 0.996989      | 0.995245         | 0.996116        |
 | SNP   | 70144    | 22       | 19       | 0.999686      | 0.999729         | 0.999708        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10967    | 33       | 53       | 0.997         | 0.995403         | 0.996201        |
+| INDEL | 10965    | 35       | 53       | 0.996818      | 0.995402         | 0.99611         |
 | SNP   | 71594    | 65       | 38       | 0.999093      | 0.99947          | 0.999281        |
 
 ## Whole Exome Sequencing (Illumina)
@@ -90,12 +90,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
-make_examples                    | ~17m
+make_examples                    | ~16m
 call_variants for HG002          | ~5m
 call_variants for HG003          | ~5m
 call_variants for HG004          | ~5m
 postprocess_variants (parallel)  | ~1m
-total                            | ~33m
+total                            | ~32m
 
 ### Accuracy
 
