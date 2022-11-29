@@ -111,6 +111,8 @@ flags.DEFINE_integer(
     'Bin size in which to quantize gVCF genotype qualities. Larger bin size '
     'reduces the number of gVCF records at a loss of quality granularity. Must '
     'be a positive integer.')
+flags.DEFINE_float('p_error', 0.001,
+                   'Basecalling error for reference confidence model.')
 flags.DEFINE_bool('include_med_dp', False,
                   'If true, include MED_DP in the output gVCF records.')
 flags.DEFINE_string(

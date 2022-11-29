@@ -161,7 +161,7 @@ def make_vc_options(sample_name, flags_obj):
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=1400605801,
       sample_name=sample_name,
-      p_error=0.001,
+      p_error=flags_obj.p_error,
       max_gq=50,
       gq_resolution=flags_obj.gvcf_gq_binsize,
       ploidy=2,
