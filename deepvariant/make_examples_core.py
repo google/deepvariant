@@ -1406,7 +1406,7 @@ class RegionProcessor(object):
     return [
         candidate for candidate in candidates
         if candidate.variant.start >= region.start and
-        candidate.variant.end < region.end
+        candidate.variant.start < region.end
     ]
 
   def candidates_in_region(
