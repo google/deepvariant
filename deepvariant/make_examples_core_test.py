@@ -654,7 +654,8 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertFalse(self.processor.initialized)
     main_sample = self.processor.samples[0]
 
-    mock_rr = self.add_mock('region_reads', retval=[])
+    mock_rrna = self.add_mock('region_reads_norealign', retval=[])
+    mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
         retval=({
@@ -664,10 +665,11 @@ class RegionProcessorTest(parameterized.TestCase):
         }))
     self.processor.process(self.region)
     test_utils.assert_called_once_workaround(self.mock_init)
-    mock_rr.assert_called_once_with(
+    mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames)
+    mock_rr.assert_called_once_with(reads=[], region=self.region)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
 
@@ -675,7 +677,8 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.initialized = True
     self.assertTrue(self.processor.initialized)
     main_sample = self.processor.samples[0]
-    mock_rr = self.add_mock('region_reads', retval=[])
+    mock_rrna = self.add_mock('region_reads_norealign', retval=[])
+    mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
         retval=({
@@ -685,16 +688,17 @@ class RegionProcessorTest(parameterized.TestCase):
         }))
     self.processor.process(self.region)
     test_utils.assert_not_called_workaround(self.mock_init)
-    mock_rr.assert_called_once_with(
+    mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames)
-    main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
+    mock_rr.assert_called_once_with(reads=[], region=self.region)
     mock_cir.assert_called_once_with(self.region)
 
   def test_process_calls_no_candidates(self):
     main_sample = self.processor.samples[0]
-    mock_rr = self.add_mock('region_reads', retval=[])
+    mock_rrna = self.add_mock('region_reads_norealign', retval=[])
+    mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
         retval=({
@@ -706,11 +710,11 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertEmpty(candidates['main_sample'])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
-    mock_rr.assert_called_once_with(
+    mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames)
-    main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
+    mock_rr.assert_called_once_with(reads=[], region=self.region)
     mock_cir.assert_called_once_with(self.region)
 
   @parameterized.parameters([
@@ -723,7 +727,8 @@ class RegionProcessorTest(parameterized.TestCase):
     main_sample = self.processor.samples[0]
     mock_read = mock.MagicMock()
     mock_candidate = mock.MagicMock()
-    mock_rr = self.add_mock('region_reads', retval=[mock_read])
+    mock_rrna = self.add_mock('region_reads_norealign', retval=[mock_read])
+    mock_rr = self.add_mock('realign_reads', retval=[mock_read])
     mock_cir = self.add_mock(
         'candidates_in_region',
         retval=({
@@ -735,12 +740,11 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertEqual(candidates['main_sample'], [mock_candidate])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
-    mock_rr.assert_called_once_with(
+    mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames)
-    main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with(
-        [mock_read])
+    mock_rr.assert_called_once_with(reads=[mock_read], region=self.region)
     mock_cir.assert_called_once_with(self.region)
 
   @parameterized.parameters([
@@ -753,7 +757,8 @@ class RegionProcessorTest(parameterized.TestCase):
     r1, r2 = mock.Mock(), mock.Mock()
     c1, c2 = mock.Mock(), mock.Mock()
     main_sample = self.processor.samples[0]
-    self.add_mock('region_reads', retval=[r1, r2])
+    self.add_mock('region_reads_norealign', retval=[r1, r2])
+    self.add_mock('realign_reads', retval=[r1, r2])
     self.add_mock(
         'candidates_in_region',
         retval=({

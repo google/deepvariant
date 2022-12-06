@@ -1268,13 +1268,14 @@ class RegionProcessor(object):
     runtimes['num reads'] = 0
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
-        # Realigner is called in region_reads()
-        reads = self.region_reads(
+        # Realigner is called outside region_reads_norealign()
+        reads = self.region_reads_norealign(
             region=region,
             sam_readers=sample.sam_readers,
             reads_filenames=sample.options.reads_filenames)
-        runtimes['num reads'] += len(reads)
+        reads = self.realign_reads(reads, region)
         sample.in_memory_sam_reader.replace_reads(reads)
+        runtimes['num reads'] += len(reads)
 
     runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
     before_find_candidates = time.time()
@@ -1324,15 +1325,15 @@ class RegionProcessor(object):
         [len(x) for x in candidates_by_sample.values()])
     return candidates_by_sample, gvcfs_by_sample, runtimes
 
-  def region_reads(self, region, sam_readers, reads_filenames):
-    """Gets read alignments overlapping the region and optionally realigns them.
-
-    If self.options.realigner_enabled is set, uses realigned reads, otherwise
-    original reads are returned.
+  def region_reads_norealign(
+      self, region: range_pb2.Range,
+      sam_readers: Optional[Sequence[sam.SamReader]],
+      reads_filenames: Optional[Sequence[str]]) -> List[reads_pb2.Read]:
+    """Gets reads overlapping the region.
 
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
-        to realign reads.
+        to query reads.
       sam_readers: An iterable of sam.SamReader to query from.
       reads_filenames: Filenames matching sam_readers. This is only used for
         throwing more informative error messages.
@@ -1376,7 +1377,20 @@ class RegionProcessor(object):
       reads = utils.reservoir_sample(reads,
                                      self.options.max_reads_per_partition,
                                      random_for_region)
-    reads = list(reads)
+    return list(reads)
+
+  def realign_reads(self, reads: List[reads_pb2.Read],
+                    region: range_pb2.Range) -> List[reads_pb2.Read]:
+    """Realign reads overlapping the region.
+
+    Args:
+      reads: list of reads.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to realign reads.
+
+    Returns:
+      genomics.deepvariant.core.genomics.Read: realigned reads
+    """
     if self.options.realigner_enabled:
       max_read_length_to_realign = 500
       if max_read_length_to_realign > 0:
