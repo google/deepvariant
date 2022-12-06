@@ -12,6 +12,8 @@ py_binary(
     deps = [
         ":labeled_examples_to_vcf_main_lib",
         "@absl_py//absl:app",
+        # TODO: Figure out why we need this dep.
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 

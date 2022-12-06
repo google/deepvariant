@@ -116,6 +116,15 @@ bazel build -c opt \
   --show_result=0 \
   ${DV_COPT_FLAGS} \
   --build_python_zip \
+  //deepvariant/labeler:labeled_examples_to_vcf
+
+# shellcheck disable=SC2086
+bazel build -c opt \
+  --output_filter=DONT_MATCH_ANYTHING \
+  --noshow_loading_progress \
+  --show_result=0 \
+  ${DV_COPT_FLAGS} \
+  --build_python_zip \
   :binaries-deeptrio
 
 # shellcheck disable=SC2086
@@ -143,3 +152,4 @@ fix_zip_file "bazel-out/k8-opt/bin/deepvariant/show_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/multisample_make_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/freeze_graph"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/labeler/labeled_examples_to_vcf"
