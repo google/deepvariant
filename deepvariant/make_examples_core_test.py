@@ -37,6 +37,7 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
+import numpy as np
 import six
 
 from deepvariant import dv_constants
@@ -325,6 +326,92 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     expected = _from_literals_list(expected)
     print(partitioned)
     six.assertCountEqual(self, expected, partitioned)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='simple',
+          position_arrays=[
+              np.array([
+                  1, 2, 3, make_examples_core.END_OF_PARTITION, 7, 8, 9,
+                  make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION
+              ]),
+              np.array([4, 5, 6, make_examples_core.END_OF_PARTITION])
+          ],
+          expected=[
+              1, 2, 3, 4, 5, 6, 7, 8, 9, make_examples_core.END_OF_REGION
+          ],
+          check_failure=False,
+      ),
+      dict(
+          testcase_name='one_partition_in_each_shard',
+          position_arrays=[
+              np.array([1, 3, 7, make_examples_core.END_OF_PARTITION]),
+              np.array([
+                  9, 11, make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION
+              ])
+          ],
+          expected=[1, 3, 7, 9, 11, make_examples_core.END_OF_REGION],
+          check_failure=False,
+      ),
+      dict(
+          testcase_name='one_shard',
+          position_arrays=[
+              np.array([
+                  1, 2, 3, 4, 7, make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION
+              ])
+          ],
+          expected=[1, 2, 3, 4, 7, make_examples_core.END_OF_REGION],
+          check_failure=False,
+      ),
+      dict(
+          testcase_name='empty_shard',
+          position_arrays=[
+              np.array([
+                  1, 2, 3, 4, 7, make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION
+              ]),
+              np.array([])
+          ],
+          expected=[1, 2, 3, 4, 7, make_examples_core.END_OF_REGION],
+          check_failure=False,
+      ),
+      dict(
+          testcase_name='unordered_input',
+          position_arrays=[
+              np.array([1, 7, 3, make_examples_core.END_OF_PARTITION]),
+              np.array([
+                  4, 5, make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION
+              ])
+          ],
+          expected=None,
+          check_failure=True,
+      ),
+      dict(
+          testcase_name='unordered_input_2',
+          position_arrays=[
+              np.array([1, 3, 7, make_examples_core.END_OF_PARTITION]),
+              np.array([
+                  4, 5, make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION
+              ])
+          ],
+          expected=None,
+          check_failure=True,
+      ))
+  def test_merge_ranges_from_files_sequential(self, position_arrays, expected,
+                                              check_failure):
+    if check_failure:
+      with self.assertRaises(AssertionError):
+        make_examples_core.merge_ranges_from_files_sequential(position_arrays)
+    else:
+      self.assertSequenceEqual(
+          list(expected),
+          make_examples_core.merge_ranges_from_files_sequential(
+              position_arrays))
 
   @parameterized.parameters(
       # Note that these tests aren't so comprehensive as we are trusting that

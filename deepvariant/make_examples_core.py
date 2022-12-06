@@ -33,7 +33,7 @@ import dataclasses
 import json
 import os
 import time
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 
 from absl import logging
@@ -571,7 +571,8 @@ def regions_to_process(contigs,
                        partition_size,
                        calling_regions=None,
                        task_id=None,
-                       num_shards=None):
+                       num_shards=None,
+                       candidates=None):
   """Determines the regions to process and partitions them into pieces.
 
   This function divides the genomes into regions we should process by
@@ -604,6 +605,8 @@ def regions_to_process(contigs,
     num_shards: int >= 0 or None. The number of shards (i.e., the total number
       of tasks) we are running in parallel. Together with task_id determines the
       subset of regions we want to process.
+    candidates: numpy array of int32 containing candidate positions. If
+      candidate is provided then partition_by_candidates logic is used.
 
   Returns:
     An iterable of nucleus.genomics.v1.Range objects.
@@ -624,7 +627,13 @@ def regions_to_process(contigs,
   regions = ranges.RangeSet.from_contigs(contigs)
   if calling_regions:
     regions = regions.intersection(calling_regions)
-  partitioned = regions.partition(partition_size)
+
+  partitioned = []
+  # Depending on candidates parameter we choose the partitioning method.
+  if candidates is not None:
+    partitioned = partition_by_candidates(regions, candidates, 200)
+  else:
+    partitioned = regions.partition(partition_size)
 
   if num_shards:
     return (r for i, r in enumerate(partitioned) if i % num_shards == task_id)
@@ -1794,6 +1803,116 @@ class RegionProcessor(object):
     return example
 
 
+def move_to_the_next_non_exhausted_shard(shard_index: int,
+                                         i_th_index: List[int],
+                                         position_arrays: List[Any]) -> int:
+  """Returns the index of the next non-exhausted shard.
+
+  Args:
+    shard_index: int. Index of the current shard being processed.
+    i_th_index: List[int]. Current position within i-th shard.
+    position_arrays: List[Any]. List of arrays containing candidate positions
+      for each shard.
+
+  Returns:
+    int. Index of the next shard to be processed.
+  """
+  i = 0
+  while i < len(position_arrays):
+    shard_index += 1
+    if shard_index >= len(position_arrays):
+      shard_index = 0
+    if i_th_index[shard_index] < len(position_arrays[shard_index]):
+      break
+    i += 1
+  return shard_index
+
+
+def merge_ranges_from_files_sequential(position_arrays: List[Any]) -> List[int]:
+  """Merges input arrays containing sorted candidate positions.
+
+  positions_array contains all candidate positions for each shart. make_examples
+  generates candidate positions in a round robin pattern. So, in order to merge
+  all candidate positions from all shards we take candidate positions from the
+  first shard, first partition, then second shard first partition and so on.
+  Partitions within a shard are separated by END_OF_PARTITION special number.
+  <Shard_1 candidates, partition_1>, <Shard_2 candidates, partition_1>, ...
+  <Shard_N candidates, partition_1>,
+  <Shard_1 candidates, partition_2>, <Shard_2 candidates, partition_2> ...
+  <Shard_N candidates, partition_2>,
+  ...
+  <Shard_N candidates, partition_M>, <Shard_2 candidates, partition_M> ...
+  <Shard_N candidates, partition_M>,
+
+  position_arrays is a list of arrays of int32 values. Each list's item contains
+  candidate positions for one shard. Candidates positions within each shard are
+  not continuous. See regions_to_process() for details.
+
+  Args:
+    position_arrays: list of numpy arrays of int32 containing candidate
+      positions for each shard.
+
+  Returns:
+    List[int] Sorted candidate positions with END_OF_REGION separators.
+  """
+  candidate_positions_sorted = []
+  i_th_index = [0] * len(position_arrays)
+  shard_index = 0
+  num_arrays_left = len(position_arrays)
+  # Iterate until all shards are consumed
+  # Add sorted items until -1 is reached. -1 is added as well.
+  while num_arrays_left > 0:
+    items_added = 0
+    # Iterate over positions in one shard.
+    while i_th_index[shard_index] < len(position_arrays[shard_index]):
+      # Once END_OF_PARTITION is reached we need to move to the next shard.
+      if position_arrays[shard_index][
+          i_th_index[shard_index]] == END_OF_PARTITION:
+        i_th_index[shard_index] += 1
+        # If END_OF_REGION is encountered we need to move to the next shard.
+        if (i_th_index[shard_index] < len(position_arrays[shard_index]) and
+            position_arrays[shard_index][i_th_index[shard_index]]
+            == END_OF_REGION):
+          candidate_positions_sorted.append(END_OF_REGION)
+          i_th_index[shard_index] += 1
+        # Move to the next shard.
+        break
+      else:
+        # Assert that items are sorted
+        if candidate_positions_sorted:
+          assert (position_arrays[shard_index][i_th_index[shard_index]] >
+                  candidate_positions_sorted[-1])
+        candidate_positions_sorted.append(
+            position_arrays[shard_index][i_th_index[shard_index]])
+        i_th_index[shard_index] += 1
+        items_added += 1
+
+    # If all items of the shard are consumed then remove the shard from
+    # processing.
+    if i_th_index[shard_index] == len(position_arrays[shard_index]):
+      num_arrays_left -= 1
+    # Move to the next shard
+    shard_index = move_to_the_next_non_exhausted_shard(shard_index, i_th_index,
+                                                       position_arrays)
+
+  logging.info('Total number of candidates: %d',
+               len(candidate_positions_sorted))
+  return candidate_positions_sorted
+
+
+def load_candidate_positions(candidate_path: Any) -> List[int]:
+  """Load candidate positions from input file(s)."""
+  paths = sharded_file_utils.maybe_generate_sharded_filenames(candidate_path)
+  positions = []
+  for file_path in paths:
+    try:
+      with epath.Path(file_path).open('rb') as my_file:
+        positions.append(np.frombuffer(my_file.read(), dtype=np.int32))
+    except IOError:
+      continue
+  return merge_ranges_from_files_sequential(positions)
+
+
 def processing_regions_from_options(options):
   """Computes the calling regions from our options.
 
@@ -1814,6 +1933,16 @@ def processing_regions_from_options(options):
     regions calculated from intersection of input regions, condident regions
     and regions to exclude.
   """
+
+  # Load candidate_positions if the flag is set. Partitioning logic will depend
+  # on whether candidate_positions is set.
+  candidate_positions = None
+  main_sample_options = options.sample_options[options.main_sample_index]
+  if (options.mode != deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and
+      main_sample_options.candidate_positions):
+    candidate_positions = load_candidate_positions(
+        main_sample_options.candidate_positions)
+
   ref_contigs = fasta.IndexedFastaReader(
       options.reference_filename).header.contigs
 
@@ -1853,7 +1982,8 @@ def processing_regions_from_options(options):
       partition_size=options.allele_counter_options.partition_size,
       calling_regions=calling_regions,
       task_id=options.task_id,
-      num_shards=options.num_shards)
+      num_shards=options.num_shards,
+      candidates=candidate_positions)
 
   region_list = list(regions)
   # When using VcfCandidateImporter, it is safe to skip regions without
@@ -1971,7 +2101,8 @@ def make_examples_runner(options):
       # Here we mark the end of the calling region
       for cr in calling_regions:
         if cr.reference_name == region.reference_name and cr.end == region.end:
-          candidates_writer.write(np.array([-1], dtype=np.int32).tobytes())
+          candidates_writer.write(
+              np.array([END_OF_REGION], dtype=np.int32).tobytes())
       continue
 
     (candidates_by_sample, gvcfs_by_sample,
