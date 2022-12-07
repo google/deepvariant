@@ -1275,16 +1275,24 @@ class RegionProcessor(object):
 
     before_get_reads = time.time()
     runtimes['num reads'] = 0
+    # Collect reads from multiple BAMs. Each BAM contains a sample.
+    sample_reads_list = []
     for sample in self.samples:
       if sample.in_memory_sam_reader is not None:
         # Realigner is called outside region_reads_norealign()
-        reads = self.region_reads_norealign(
+        sample_reads = self.region_reads_norealign(
             region=region,
             sam_readers=sample.sam_readers,
             reads_filenames=sample.options.reads_filenames)
-        reads = self.realign_reads(reads, region)
-        sample.in_memory_sam_reader.replace_reads(reads)
-        runtimes['num reads'] += len(reads)
+        runtimes['num reads'] += len(sample_reads)
+        sample_reads_list.append(sample_reads)
+      else:
+        sample_reads_list.append([])
+
+    sample_reads_list = self.realign_reads_per_sample_multisample(
+        sample_reads_list, region)
+    for sample_index, sample in enumerate(self.samples):
+      sample.in_memory_sam_reader.replace_reads(sample_reads_list[sample_index])
 
     runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
     before_find_candidates = time.time()
@@ -1387,6 +1395,24 @@ class RegionProcessor(object):
                                      self.options.max_reads_per_partition,
                                      random_for_region)
     return list(reads)
+
+  def realign_reads_per_sample_multisample(
+      self, sample_reads_list: List[List[reads_pb2.Read]],
+      region: range_pb2.Range) -> List[List[reads_pb2.Read]]:
+    """Realign reads overlapping the region.
+
+    Args:
+      sample_reads_list: list of reads-list per sample.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to realign reads.
+
+    Returns:
+      [genomics.deepvariant.core.genomics.Read], realigned reads per sample
+    """
+    return [
+        self.realign_reads(reads_per_sample, region)
+        for reads_per_sample in sample_reads_list
+    ]
 
   def realign_reads(self, reads: List[reads_pb2.Read],
                     region: range_pb2.Range) -> List[reads_pb2.Read]:
