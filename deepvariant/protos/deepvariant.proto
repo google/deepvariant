@@ -588,7 +588,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 54.
+// Next ID: 55.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -680,6 +680,9 @@ message MakeExamplesOptions {
 
   // Whether the realigner should be enabled.
   bool realigner_enabled = 22;
+  // If True, realign reads from all samples together. If False, realign
+  // per sample.
+  bool joint_realignment = 54;
   // Settings for the realigner module.
   learning.genomics.deepvariant.RealignerOptions realigner_options = 23;
 

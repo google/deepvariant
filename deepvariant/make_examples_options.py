@@ -316,12 +316,15 @@ flags.DEFINE_integer(
     'This flag is used only when phase_reads is true. It allows to extend'
     'region and calculate candidates in extended region. Output examples are'
     'not affected by this flag.')
-
 flags.DEFINE_integer(
     'phase_max_candidates', 5000,
     'Limits the number of candidates for phasing. If number of candidates '
     'exceeds the maximum then phasing is not performed for the window. '
     'This flag is used only when phase_reads is true.')
+_ENABLE_JOINT_REALIGNMENT = flags.DEFINE_bool(
+    'enable_joint_realignment', False,
+    'If True, realign reads from all samples together. By default this is '
+    'False, which means reads from each sample are realigned per-sample.')
 
 
 def shared_flags_to_options(
@@ -482,6 +485,7 @@ def shared_flags_to_options(
         make_examples_core.parse_regions_flag(flags_obj.exclude_regions))
 
     options.realigner_enabled = flags_obj.realign_reads
+    options.joint_realignment = _ENABLE_JOINT_REALIGNMENT.value
     options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
     if (options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING and
