@@ -44,7 +44,6 @@ from absl.testing import flagsaver
 from absl.testing import parameterized
 from etils import epath
 import numpy as np
-import six
 
 from deeptrio import make_examples
 from deeptrio import testdata
@@ -1032,8 +1031,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.examples = 'examples.tfrecord'
 
     options = make_examples.default_options(add_flags=True)
-    with six.assertRaisesRegex(self, ValueError,
-                               'The regions to call is empty.'):
+    with self.assertRaisesRegex(ValueError, 'The regions to call is empty.'):
       make_examples_core.processing_regions_from_options(options)
 
 
@@ -1098,23 +1096,21 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic.get_channels.return_value = None
     self.add_mock(
         '_encode_tensor',
-        side_effect=[(six.b('tensor1'), self.default_shape),
-                     (six.b('tensor2'), self.default_shape)])
+        side_effect=[(b'tensor1', self.default_shape),
+                     (b'tensor2', self.default_shape)])
     dv_call = mock.Mock()
     dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
     ex = mock.Mock()
     alt1, alt2 = ['C'], ['G']
-    self.processor.pic.create_pileup_images.return_value = [
-        (alt1, six.b('tensor1')), (alt2, six.b('tensor2'))
-    ]
+    self.processor.pic.create_pileup_images.return_value = [(alt1, b'tensor1'),
+                                                            (alt2, b'tensor2')]
 
     actual = self.processor.create_pileup_examples(dv_call, 'child')
 
     self.processor.pic.create_pileup_images.assert_called_once()
 
     self.assertLen(actual, 2)
-    for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
-                                       (alt2, six.b('tensor2'))]):
+    for ex, (alt, img) in zip(actual, [(alt1, b'tensor1'), (alt2, b'tensor2')]):
       self.assertEqual(dv_utils.example_alt_alleles(ex), alt)
       self.assertEqual(dv_utils.example_variant(ex), dv_call.variant)
       self.assertEqual(dv_utils.example_encoded_image(ex), img)
@@ -1171,13 +1167,13 @@ class RegionProcessorTest(parameterized.TestCase):
         variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
         genotype=(0, 1))
     example = self._example_for_variant(label.variant)
-    with six.assertRaisesRegex(
-        self, ValueError, 'Cannot add a non-confident label to an example'):
+    with self.assertRaisesRegex(
+        ValueError, 'Cannot add a non-confident label to an example'):
       self.processor.add_label_to_example(example, label)
 
   def _example_for_variant(self, variant):
-    return dv_utils.make_example(variant, list(variant.alternate_bases),
-                                 six.b('foo'), self.default_shape)
+    return dv_utils.make_example(variant, list(variant.alternate_bases), b'foo',
+                                 self.default_shape)
 
   def test_use_original_quality_scores_without_parse_sam_aux_fields(self):
     FLAGS.mode = 'calling'
@@ -1193,8 +1189,8 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.use_original_quality_scores = True
     FLAGS.parse_sam_aux_fields = False
 
-    with six.assertRaisesRegex(
-        self, Exception, 'If --use_original_quality_scores is set then '
+    with self.assertRaisesRegex(
+        Exception, 'If --use_original_quality_scores is set then '
         '--parse_sam_aux_fields must be set too.'):
       make_examples.default_options(add_flags=True)
 
@@ -1273,8 +1269,8 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # If variant reference_bases are wrong, it should raise a ValueError.
     variant.reference_bases = 'G'
-    with six.assertRaisesRegex(self, ValueError,
-                               'does not match the bases in the reference'):
+    with self.assertRaisesRegex(ValueError,
+                                'does not match the bases in the reference'):
       self.processor.align_to_all_haplotypes(variant, [read])
 
 

@@ -28,7 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from absl.testing import absltest
-import six
 from deepvariant.realigner.python import ssw
 
 
@@ -60,7 +59,7 @@ class SswGccTest(absltest.TestCase):
     self.assertLen(ref, length)
     alignment = aligner.align(query, filter_)
     p(alignment)
-    self.assertEqual(six.b('2=1I2='), alignment.cigar_string)
+    self.assertEqual(b'2=1I2=', alignment.cigar_string)
 
   def test_longer(self):
     """Test longer strings, so the second-best alignment is considered."""
@@ -81,7 +80,7 @@ class SswGccTest(absltest.TestCase):
     self.assertLen(ref, length)
     alignment = aligner.align(query, filter_)
     p(alignment)
-    self.assertEqual(six.b('2=1I15='), alignment.cigar_string)
+    self.assertEqual(b'2=1I15=', alignment.cigar_string)
 
 
 if __name__ == '__main__':

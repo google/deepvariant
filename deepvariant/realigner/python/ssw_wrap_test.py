@@ -30,7 +30,6 @@
 
 
 from absl.testing import absltest
-import six
 from deepvariant.realigner.python import ssw
 
 REF = 'CAGCCTTTCTGACCCGGAAATCAAAATAGGCACAACAAA'
@@ -60,7 +59,7 @@ class SswWrapTest(absltest.TestCase):
     self.assertEqual(14, alignment.query_end)
     self.assertEqual(4, alignment.ref_end_next_best)
     self.assertEqual(2, alignment.mismatches)
-    self.assertEqual(six.b('4=1X4=1I5='), alignment.cigar_string)
+    self.assertEqual(b'4=1X4=1I5=', alignment.cigar_string)
 
   def test_Align2_reversed(self):
     """Tests the Align method, reversing query and ref from above."""
@@ -74,7 +73,7 @@ class SswWrapTest(absltest.TestCase):
     self.assertEqual(0, alignment.ref_begin)
     self.assertEqual(14, alignment.ref_end)
     self.assertEqual(2, alignment.mismatches)
-    self.assertEqual(six.b('8S4=1X4=1D5=17S'), alignment.cigar_string)
+    self.assertEqual(b'8S4=1X4=1D5=17S', alignment.cigar_string)
 
 
 if __name__ == '__main__':

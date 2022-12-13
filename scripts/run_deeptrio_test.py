@@ -35,7 +35,6 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
-import six
 from deepvariant.opensource_only.scripts import run_deeptrio
 
 FLAGS = flags.FLAGS
@@ -370,8 +369,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.use_hp_information = use_hp_information
     FLAGS.make_examples_extra_args = make_examples_extra_args
     if has_conflict:
-      with six.assertRaisesRegex(self, ValueError,
-                                 'conflicts with other flags'):
+      with self.assertRaisesRegex(ValueError, 'conflicts with other flags'):
         run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
     else:
       # Otherwise, the command should run without rasing errors.
@@ -398,8 +396,8 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.regions = None
     FLAGS.use_hp_information = True
-    with six.assertRaisesRegex(
-        self, ValueError, '--use_hp_information can only be used with '
+    with self.assertRaisesRegex(
+        ValueError, '--use_hp_information can only be used with '
         '--model_type="PACBIO"'):
       run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
 
@@ -461,7 +459,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.make_examples_extra_args = 'keep_secondary_alignments'
-    with six.assertRaisesRegex(self, ValueError, 'not enough values to unpack'):
+    with self.assertRaisesRegex(ValueError, 'not enough values to unpack'):
       _, _ = run_deeptrio.create_all_commands('/tmp/deeptrio_tmp_output')
 
   @parameterized.parameters(
