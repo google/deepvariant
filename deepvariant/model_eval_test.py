@@ -36,7 +36,6 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
-import six
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
@@ -55,7 +54,7 @@ def setUpModule():
 
 
 class ModelEvalTest(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
   def setUp(self):
     self.checkpoint_dir = tf.compat.v1.test.get_temp_dir()

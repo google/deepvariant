@@ -41,7 +41,6 @@ from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
 import numpy as np
-import six
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
@@ -110,8 +109,7 @@ def _get_infer_batches(tf_dataset, model, batch_size):
 
 
 class CallVariantsEndToEndTests(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass,
-                       tf.compat.v1.test.TestCase)):
+    tf.compat.v1.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
   def setUp(self):
     self.checkpoint_dir = tf.compat.v1.test.get_temp_dir()
@@ -264,8 +262,8 @@ class CallVariantsEndToEndTests(
     # We can only do this test when processing all of the variants (max_batches
     # is None), since we processed all of the examples with that model.
     if max_batches is None:
-      six.assertCountEqual(self, [cvo.variant for cvo in call_variants_outputs],
-                           [dv_utils.example_variant(ex) for ex in examples])
+      self.assertCountEqual([cvo.variant for cvo in call_variants_outputs],
+                            [dv_utils.example_variant(ex) for ex in examples])
 
     # Check the CVO debug_info: not filled if include_debug_info is False;
     # else, filled by logic based on CVO.
@@ -321,9 +319,8 @@ class CallVariantsEndToEndTests(
     del example.features.feature['image/shape']
     source_path = test_utils.test_tmpfile('make_examples_out_noshape.tfrecord')
     tfrecord.write_tfrecords([example], source_path)
-    with six.assertRaisesRegex(
-        self, ValueError,
-        'Invalid image/shape: we expect to find an image/shape '
+    with self.assertRaisesRegex(
+        ValueError, 'Invalid image/shape: we expect to find an image/shape '
         'field with length 3.'):
       ds = call_variants.prepare_inputs(source_path)
       _ = list(_get_infer_batches(ds, model=model, batch_size=1))
@@ -347,7 +344,7 @@ class CallVariantsEndToEndTests(
 
 
 class CallVariantsUnitTests(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
   @classmethod
   def setUpClass(cls):
@@ -384,8 +381,8 @@ class CallVariantsUnitTests(
       except tf.errors.OutOfRangeError:
         pass
 
-      six.assertCountEqual(self, self.variants,
-                           variant_utils.decode_variants(seen_variants))
+      self.assertCountEqual(self.variants,
+                            variant_utils.decode_variants(seen_variants))
 
   @parameterized.parameters(
       (None, [3.592555731302127e-5, 0.99992620944976807, 3.78809563699178e-5]),

@@ -44,7 +44,6 @@ from absl.testing import flagsaver
 from absl.testing import parameterized
 from etils import epath
 import numpy as np
-import six
 
 from deepvariant import dv_constants
 from deepvariant import dv_utils
@@ -323,8 +322,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     # This shows an example of what the error message looks like:
     # TODO: OpError exception not propagated.
-    with six.assertRaisesRegex(
-        self, ValueError, 'NOT_FOUND: Unknown reference_name '
+    with self.assertRaisesRegex(
+        ValueError, 'NOT_FOUND: Unknown reference_name '
         'reference_name:[ \t]*"chr20" start: 9999999 end: 10000999'):
       make_examples_core.make_examples_runner(options)
 
@@ -344,8 +343,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = 'calling'
     FLAGS.gvcf_gq_binsize = 5
     options = make_examples.default_options(add_flags=True)
-    with six.assertRaisesRegex(self, ValueError,
-                               'Failed to parse BAM/CRAM file.'):
+    with self.assertRaisesRegex(ValueError, 'Failed to parse BAM/CRAM file.'):
       make_examples_core.make_examples_runner(options)
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
@@ -609,8 +607,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.population_vcfs = ' '.join(
         [testdata.AF_VCF_CHR20_21_WILDCARD, testdata.AF_VCF_CHR20])
     options = make_examples.default_options(add_flags=True)
-    with six.assertRaisesRegex(
-        self, ValueError, 'Variants on chr20 are included in multiple VCFs'):
+    with self.assertRaisesRegex(
+        ValueError, 'Variants on chr20 are included in multiple VCFs'):
       # Run make_examples with the flags above.
       make_examples_core.make_examples_runner(options)
 

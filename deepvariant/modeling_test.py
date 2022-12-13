@@ -33,7 +33,6 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
-import six
 import tensorflow as tf
 import tf_slim
 
@@ -46,7 +45,7 @@ slim = tf_slim
 
 
 class ModelingTest(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
   @parameterized.parameters((model_class().name, type(model_class()))
                             for model_class in modeling.all_models())
@@ -54,7 +53,7 @@ class ModelingTest(
     self.assertIsInstance(modeling.get_model(model_name), expected_class)
 
   def test_get_model_unknown_model_signals_error(self):
-    with six.assertRaisesRegex(self, ValueError, 'Unknown model'):
+    with self.assertRaisesRegex(ValueError, 'Unknown model'):
       modeling.get_model('unknown_model_1234')
 
   def test_make_deepvariant_slim_model(self):
@@ -134,33 +133,29 @@ class ModelingTest(
     v1 = slim.variable('my_var', shape=[20, 1])
 
     # The only variables in the system are the three we've created.
-    six.assertCountEqual(self, [w1, w2, w3, v1], slim.get_variables())
+    self.assertCountEqual([w1, w2, w3, v1], slim.get_variables())
 
     # We get just the three model variables without any excludes.
-    six.assertCountEqual(self, [w1, w2, w3],
-                         model.variables_to_restore_from_model())
+    self.assertCountEqual([w1, w2, w3], model.variables_to_restore_from_model())
     # As well as when exclude_scopes is an empty list.
-    six.assertCountEqual(
-        self, [w1, w2, w3],
-        model.variables_to_restore_from_model(exclude_scopes=[]))
+    self.assertCountEqual(
+        [w1, w2, w3], model.variables_to_restore_from_model(exclude_scopes=[]))
 
     # Excluding model/l1 variables gives us w2 and w3.
-    six.assertCountEqual(
-        self, [w2, w3],
+    self.assertCountEqual(
+        [w2, w3],
         model.variables_to_restore_from_model(exclude_scopes=['model/l1']))
     # Excluding model/l2 gives us just w1 back.
-    six.assertCountEqual(
-        self, [w1],
+    self.assertCountEqual(
+        [w1],
         model.variables_to_restore_from_model(exclude_scopes=['model/l2']))
     # Excluding multiple scopes works as expected.
-    six.assertCountEqual(
-        self, [],
-        model.variables_to_restore_from_model(
-            exclude_scopes=['model/l1', 'model/l2']))
+    self.assertCountEqual([],
+                          model.variables_to_restore_from_model(
+                              exclude_scopes=['model/l1', 'model/l2']))
     # Excluding the root model scope also produces no variables..
-    six.assertCountEqual(
-        self, [],
-        model.variables_to_restore_from_model(exclude_scopes=['model']))
+    self.assertCountEqual(
+        [], model.variables_to_restore_from_model(exclude_scopes=['model']))
 
 
 # Hide the baseclass inside an enclosing scope so that unittest doesn't try to
@@ -168,8 +163,7 @@ class ModelingTest(
 class HiddenFromUnitTest(object):
 
   class SlimModelBaseTest(
-      six.with_metaclass(parameterized.TestGeneratorMetaclass,
-                         tf.test.TestCase)):
+      tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
     @parameterized.parameters(
         dict(is_training=True),
@@ -261,13 +255,13 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
       images = tf.compat.v1.placeholder(tf.float32, (4, height, width, 3))
       expected_message = ('Unsupported image dimensions.* model '
                           'inception_v3.*w={} x h={}.*').format(width, height)
-      with six.assertRaisesRegex(self, modeling.UnsupportedImageDimensionsError,
-                                 expected_message):
+      with self.assertRaisesRegex(modeling.UnsupportedImageDimensionsError,
+                                  expected_message):
         self.model.create(images, 3, is_training=True)
 
 
 class InceptionV3EmbeddingModelTest(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
   @classmethod
   def setUpClass(cls):
@@ -317,7 +311,7 @@ class InceptionV3EmbeddingModelTest(
 
 
 class InceptionV3AttentionModelTest(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
   @classmethod
   def setUpClass(cls):

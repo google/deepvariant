@@ -38,7 +38,6 @@ from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
 import numpy as np
-import six
 
 from deepvariant import dv_constants
 from deepvariant import dv_utils
@@ -145,8 +144,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
         expected)
 
   def test_parse_proto_enum_flag_error_handling(self):
-    with six.assertRaisesRegex(
-        self, ValueError,
+    with self.assertRaisesRegex(
+        ValueError,
         'Unknown enum option "foo". Allowed options are CALLING,CANDIDATE_SWEEP,TRAINING'
     ):
       make_examples_core.parse_proto_enum_flag(
@@ -201,7 +200,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
         'chr20:10009934-10010531'
     ])
     # Our confident regions should be exactly those found in the BED file.
-    six.assertCountEqual(self, expected, list(confident_regions))
+    self.assertCountEqual(expected, list(confident_regions))
 
   @flagsaver.flagsaver
   def test_gvcf_output_enabled_is_false_without_gvcf_flag(self):
@@ -234,21 +233,21 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
 
     # No common contigs always blows up.
     for threshold in [0.0, 0.1, 0.5, 0.9, 1.0]:
-      with six.assertRaisesRegex(self, ValueError, 'span 200'):
+      with self.assertRaisesRegex(ValueError, 'span 200'):
         make_examples_core.validate_reference_contig_coverage(
             ref_contigs, [], threshold)
 
     # Dropping either contig brings up below our 0.9 threshold.
-    with six.assertRaisesRegex(self, ValueError, 'span 200'):
+    with self.assertRaisesRegex(ValueError, 'span 200'):
       make_examples_core.validate_reference_contig_coverage(
           ref_contigs, _make_contigs([('1', 100)]), 0.9)
 
-    with six.assertRaisesRegex(self, ValueError, 'span 200'):
+    with self.assertRaisesRegex(ValueError, 'span 200'):
       make_examples_core.validate_reference_contig_coverage(
           ref_contigs, _make_contigs([('2', 100)]), 0.9)
 
     # Our actual overlap is 50%, so check that we raise when appropriate.
-    with six.assertRaisesRegex(self, ValueError, 'span 200'):
+    with self.assertRaisesRegex(ValueError, 'span 200'):
       make_examples_core.validate_reference_contig_coverage(
           ref_contigs, _make_contigs([('2', 100)]), 0.6)
     self.assertIsNone(
@@ -325,7 +324,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
         max_size=max_size)
     expected = _from_literals_list(expected)
     print(partitioned)
-    six.assertCountEqual(self, expected, partitioned)
+    self.assertCountEqual(expected, partitioned)
 
   @parameterized.named_parameters(
       dict(
@@ -430,8 +429,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
   )
   def test_regions_to_process(self, calling_regions, expected):
     contigs = _make_contigs([('1', 100), ('2', 200)])
-    six.assertCountEqual(
-        self, _from_literals_list(expected),
+    self.assertCountEqual(
+        _from_literals_list(expected),
         make_examples_core.regions_to_process(
             contigs, 1000, calling_regions=_from_literals(calling_regions)))
 
@@ -448,8 +447,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
   def test_regions_to_process_partition(self, max_size, calling_regions,
                                         expected):
     contigs = _make_contigs([('1', 100), ('2', 76), ('3', 121)])
-    six.assertCountEqual(
-        self, _from_literals_list(expected),
+    self.assertCountEqual(
+        _from_literals_list(expected),
         make_examples_core.regions_to_process(
             contigs, max_size, calling_regions=_from_literals(calling_regions)))
 
@@ -487,7 +486,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     contigs = _make_contigs([('1', 100), ('2', 200)])
     actual = make_examples_core.build_calling_regions(contigs, includes,
                                                       excludes)
-    six.assertCountEqual(self, actual, _from_literals_list(expected))
+    self.assertCountEqual(actual, _from_literals_list(expected))
 
   def test_regions_to_process_sorted_within_contig(self):
     # These regions are out of order but within a single contig.
@@ -529,7 +528,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     for task_id in range(num_shards):
       task_regions = get_regions(task_id, num_shards)
       sharded_regions.extend(task_regions)
-    six.assertCountEqual(self, unsharded_regions, sharded_regions)
+    self.assertCountEqual(unsharded_regions, sharded_regions)
 
   @parameterized.parameters(
       # Providing one of task id and num_shards but not the other is bad.
@@ -660,7 +659,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
       vcf_contigs = _make_contigs([(name, 100) for name in vcf_names])
     else:
       vcf_contigs = None
-    with six.assertRaisesRegex(self, ValueError, 'Reference contigs span'):
+    with self.assertRaisesRegex(ValueError, 'Reference contigs span'):
       make_examples_core._ensure_consistent_contigs(ref_contigs, sam_contigs,
                                                     vcf_contigs,
                                                     names_to_exclude,
@@ -678,8 +677,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     _, regions_from_options = make_examples_core.processing_regions_from_options(
         options)
-    six.assertCountEqual(
-        self, list(ranges.RangeSet(regions_from_options)),
+    self.assertCountEqual(
+        list(ranges.RangeSet(regions_from_options)),
         _from_literals_list(
             ['chr20:10,000,000-10,009,999', 'chr20:10,100,001-11,000,000']))
 
@@ -693,8 +692,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.examples = 'examples.tfrecord'
 
     options = make_examples.default_options(add_flags=True)
-    with six.assertRaisesRegex(self, ValueError,
-                               'The regions to call is empty.'):
+    with self.assertRaisesRegex(ValueError, 'The regions to call is empty.'):
       make_examples_core.processing_regions_from_options(options)
 
 
@@ -968,15 +966,14 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic.get_channels.return_value = None
     self.add_mock(
         '_encode_tensor',
-        side_effect=[(six.b('tensor1'), self.default_shape),
-                     (six.b('tensor2'), self.default_shape)])
+        side_effect=[(b'tensor1', self.default_shape),
+                     (b'tensor2', self.default_shape)])
     dv_call = mock.Mock()
     dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
     ex = mock.Mock()
     alt1, alt2 = ['C'], ['G']
-    self.processor.pic.create_pileup_images.return_value = [
-        (alt1, six.b('tensor1')), (alt2, six.b('tensor2'))
-    ]
+    self.processor.pic.create_pileup_images.return_value = [(alt1, b'tensor1'),
+                                                            (alt2, b'tensor2')]
 
     actual = self.processor.create_pileup_examples(dv_call)
 
@@ -988,8 +985,7 @@ class RegionProcessorTest(parameterized.TestCase):
         sample_order=None)
 
     self.assertLen(actual, 2)
-    for ex, (alt, img) in zip(actual, [(alt1, six.b('tensor1')),
-                                       (alt2, six.b('tensor2'))]):
+    for ex, (alt, img) in zip(actual, [(alt1, b'tensor1'), (alt2, b'tensor2')]):
       self.assertEqual(dv_utils.example_alt_alleles(ex), alt)
       self.assertEqual(dv_utils.example_variant(ex), dv_call.variant)
       self.assertEqual(dv_utils.example_encoded_image(ex), img)
@@ -1046,13 +1042,13 @@ class RegionProcessorTest(parameterized.TestCase):
         variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
         genotype=(0, 1))
     example = self._example_for_variant(label.variant)
-    with six.assertRaisesRegex(
-        self, ValueError, 'Cannot add a non-confident label to an example'):
+    with self.assertRaisesRegex(
+        ValueError, 'Cannot add a non-confident label to an example'):
       self.processor.add_label_to_example(example, label)
 
   def _example_for_variant(self, variant):
-    return dv_utils.make_example(variant, list(variant.alternate_bases),
-                                 six.b('foo'), self.default_shape)
+    return dv_utils.make_example(variant, list(variant.alternate_bases), b'foo',
+                                 self.default_shape)
 
   @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')
   def test_flags_strictly_needs_sam_aux_fields(
@@ -1064,8 +1060,8 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS[flags_strictly_needs_sam_aux_fields].value = True
     FLAGS.parse_sam_aux_fields = False
 
-    with six.assertRaisesRegex(
-        self, Exception,
+    with self.assertRaisesRegex(
+        Exception,
         'If --{} is set then --parse_sam_aux_fields must be set too.'.format(
             flags_strictly_needs_sam_aux_fields)):
       make_examples.default_options(add_flags=True)
@@ -1148,8 +1144,8 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # If variant reference_bases are wrong, it should raise a ValueError.
     variant.reference_bases = 'G'
-    with six.assertRaisesRegex(self, ValueError,
-                               'does not match the bases in the reference'):
+    with self.assertRaisesRegex(ValueError,
+                                'does not match the bases in the reference'):
       self.processor.align_to_all_haplotypes(variant, [read])
 
 

@@ -32,7 +32,6 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import six
 import tensorflow as tf
 
 from third_party.nucleus.testing import test_utils
@@ -46,7 +45,7 @@ def setUpModule():
 
 
 class CallVariantsAcceleratorTests(
-    six.with_metaclass(parameterized.TestGeneratorMetaclass, tf.test.TestCase)):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
 
   @parameterized.parameters(modeling.production_models())
   def test_call_variants_runs_on_gpus(self, model):

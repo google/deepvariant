@@ -35,7 +35,6 @@ file includes broader utilities we use in DeepVariant.
 
 import enum
 import numpy as np
-import six
 import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
@@ -261,10 +260,9 @@ def make_example(variant,
   example = example_pb2.Example()
   features = example.features
   features.feature['locus'].bytes_list.value.append(
-      six.b(
-          ranges.to_literal(
-              ranges.make_range(variant.reference_name, variant.start,
-                                variant.end))))
+      ranges.to_literal(
+          ranges.make_range(variant.reference_name, variant.start,
+                            variant.end)).encode('latin-1'))
   example_set_variant(example, variant)
   variant_type = encoded_variant_type(variant).value
   features.feature['variant_type'].int64_list.value.append(variant_type)
@@ -279,7 +277,7 @@ def make_example(variant,
   features.feature['image/shape'].int64_list.value.extend(shape)
   if second_image is not None:
     features.feature['second_image/encoded'].bytes_list.value.append(
-        six.b(second_image))
+        second_image.encode('latin-1'))
     features.feature['second_image/shape'].int64_list.value.extend(shape)
   features.feature['sequencing_type'].int64_list.value.append(sequencing_type)
   return example

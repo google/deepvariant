@@ -34,7 +34,6 @@ from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import six
 import tensorflow as tf
 
 from deepvariant import dv_utils
@@ -55,7 +54,7 @@ class TFUtilsTest(parameterized.TestCase):
         end=11,
         reference_bases='C',
         alternate_bases=self.alts)
-    self.encoded_image = six.b('encoded_image_data')
+    self.encoded_image = b'encoded_image_data'
     self.default_shape = [5, 5, 7]
 
   def testModelShapes(self):
@@ -84,7 +83,7 @@ class TFUtilsTest(parameterized.TestCase):
                        dv_utils.model_shapes(save_path, ['v1']))
 
       # Verifies model_shapes() fails for non-existent tensors.
-      with six.assertRaisesRegex(self, KeyError, 'v3'):
+      with self.assertRaisesRegex(KeyError, 'v3'):
         dv_utils.model_shapes(save_path, ['v3'])
 
   def testModelNumClasses(self):
@@ -120,7 +119,7 @@ class TFUtilsTest(parameterized.TestCase):
     self.assertEqual(self.encoded_image,
                      dv_utils.example_encoded_image(example))
     self.assertEqual(self.variant, dv_utils.example_variant(example))
-    self.assertEqual(six.b('1:11-11'), dv_utils.example_locus(example))
+    self.assertEqual(b'1:11-11', dv_utils.example_locus(example))
     self.assertEqual([0], dv_utils.example_alt_alleles_indices(example))
     self.assertEqual('1:11:C->A', dv_utils.example_key(example))
     self.assertEqual(dv_utils.EncodedVariantType.SNP.value,
@@ -131,7 +130,7 @@ class TFUtilsTest(parameterized.TestCase):
     alts = ['AA', 'CC', 'GG']
     self.variant.alternate_bases[:] = alts
     # Providing GG, AA checks that we're sorting the indices.
-    example = dv_utils.make_example(self.variant, ['GG', 'AA'], six.b('foo'),
+    example = dv_utils.make_example(self.variant, ['GG', 'AA'], b'foo',
                                     self.default_shape)
     self.assertEqual([0, 2], dv_utils.example_alt_alleles_indices(example))
     self.assertEqual(['AA', 'GG'], dv_utils.example_alt_alleles(example))
@@ -141,7 +140,7 @@ class TFUtilsTest(parameterized.TestCase):
 
   def testAltAllelesWithVariant(self):
     alts = list(self.variant.alternate_bases)
-    example = dv_utils.make_example(self.variant, alts, six.b('foo'),
+    example = dv_utils.make_example(self.variant, alts, b'foo',
                                     self.default_shape)
     self.assertEqual([0], dv_utils.example_alt_alleles_indices(example))
     with mock.patch(
@@ -177,8 +176,8 @@ class TFUtilsTest(parameterized.TestCase):
   def testFailedExampleImageShape(self):
     # Create an empty example that doesn't have the required image/shape field.
     example = example_pb2.Example()
-    with six.assertRaisesRegex(
-        self, ValueError, 'Invalid image/shape: we expect to find an '
+    with self.assertRaisesRegex(
+        ValueError, 'Invalid image/shape: we expect to find an '
         'image/shape field with length 3.'):
       dv_utils.example_image_shape(example)
 
@@ -231,7 +230,7 @@ class TFUtilsTest(parameterized.TestCase):
     # at least on a Posix filesystem.  Other filesystems might
     # not fail like that, and will return an empty list, which
     # is turned into a different exception.
-    with six.assertRaisesRegex(self, Exception, expected_partial_message):
+    with self.assertRaisesRegex(Exception, expected_partial_message):
       dv_utils.get_shape_from_examples_path(source_paths)
 
   def testStringToIntTensor(self):
@@ -246,7 +245,7 @@ class TFUtilsTest(parameterized.TestCase):
 
   def testIntTensorToString(self):
     with tf.compat.v1.Session() as sess:
-      s = six.b('\001\002\003\004\005\006\007')
+      s = b'\001\002\003\004\005\006\007'
       it = dv_utils.string_to_int_tensor(s)
       x = sess.run(it)
       t = dv_utils.int_tensor_to_string(x)

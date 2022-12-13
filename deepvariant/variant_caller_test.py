@@ -36,7 +36,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
 import numpy.testing as npt
-import six
 
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
@@ -274,8 +273,8 @@ class VariantCallerTests(parameterized.TestCase):
   def test_gvcf_basic_raises_with_bad_ref_base(self, ref):
     caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
-    with six.assertRaisesRegex(self, ValueError,
-                               'Invalid reference base={}'.format(ref)):
+    with self.assertRaisesRegex(ValueError,
+                                'Invalid reference base={}'.format(ref)):
       list(caller.make_gvcfs(allele_counter.summary_counts()))
 
   def assertGVCF(self,

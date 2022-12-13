@@ -46,7 +46,6 @@ from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
 import numpy as np
-import six
 import tensorflow as tf
 
 from deepvariant import dv_constants
@@ -347,8 +346,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.outfile = create_outfile('calls.vcf')
 
     FLAGS.group_variants = True
-    with six.assertRaisesRegex(
-        self, ValueError, '`call_variants_outputs` did not pass sanity check.'):
+    with self.assertRaisesRegex(
+        ValueError, '`call_variants_outputs` did not pass sanity check.'):
       postprocess_variants.main(['postprocess_variants.py'])
 
     FLAGS.group_variants = False
@@ -470,8 +469,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     ]
     variant = variants_pb2.Variant(calls=variant_calls)
     record = deepvariant_pb2.CallVariantsOutput(variant=variant)
-    with six.assertRaisesRegex(self, ValueError,
-                               'Expected exactly one VariantCal'):
+    with self.assertRaisesRegex(ValueError, 'Expected exactly one VariantCal'):
       postprocess_variants._extract_single_sample_name(record)
 
   @parameterized.parameters(
@@ -873,7 +871,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ),
   )
   def test_exception_merge_predictions(self, inputs, text):
-    with six.assertRaisesRegex(self, ValueError, text):
+    with self.assertRaisesRegex(ValueError, text):
       postprocess_variants.merge_predictions(inputs)
 
   @parameterized.parameters(
