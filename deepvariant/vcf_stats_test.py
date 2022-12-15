@@ -35,7 +35,6 @@ import tempfile
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import six
 import tensorflow as tf
 
 from deepvariant import testdata
@@ -203,8 +202,7 @@ class VcfStatsTest(parameterized.TestCase):
         'depth_histogram', 'titv_counts'
     ]
     vis_data = vcf_stats._compute_variant_stats_for_charts([self.variant])
-    six.assertCountEqual(
-        self,
+    self.assertCountEqual(
         vis_data.keys(),
         expected_keys,
         msg='vis_data does not have the right keys')

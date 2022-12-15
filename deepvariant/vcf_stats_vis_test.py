@@ -33,7 +33,6 @@ import tempfile
 from absl.testing import absltest
 import altair as alt
 import pandas as pd
-import six
 import tensorflow as tf
 
 from deepvariant import vcf_stats_vis
@@ -178,8 +177,7 @@ class VcfStatsVisTest(absltest.TestCase):
         },
         columns=['c', 's', 'e'])
     observed_output = vcf_stats_vis._integer_counts_to_histogram(test_input)
-    six.assertCountEqual(
-        self,
+    self.assertCountEqual(
         list(observed_output.columns),
         list(expected_output.columns),
         msg='Wrong column names')
