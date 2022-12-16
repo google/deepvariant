@@ -129,6 +129,61 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     super().tearDown()
     flagsaver.restore_flag_values(self._saved_flags)
 
+  @flagsaver.flagsaver
+  def test_make_examples_compare_realignment_modes(self):
+
+    def _run_with_realignment_mode(enable_joint_realignment):
+      FLAGS.enable_joint_realignment = enable_joint_realignment
+      num_shards = 1
+      FLAGS.reads = testdata.CHR20_BAM
+      region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+      FLAGS.ref = testdata.CHR20_FASTA
+      FLAGS.candidates = test_utils.test_tmpfile(
+          _sharded(f'jr-{enable_joint_realignment}.vsc.tfrecord', num_shards))
+      FLAGS.examples = test_utils.test_tmpfile(
+          _sharded(f'jr-{enable_joint_realignment}.ex.tfrecord', num_shards))
+      FLAGS.regions = [ranges.to_literal(region)]
+      FLAGS.partition_size = 1000
+      FLAGS.mode = 'calling'
+      FLAGS.gvcf_gq_binsize = 5
+      FLAGS.gvcf = test_utils.test_tmpfile(
+          _sharded('compare_realignment_modes.gvcf.tfrecord', num_shards))
+      FLAGS.task = 0
+      options = make_examples.default_options(add_flags=True)
+      # We need to overwrite bam_fname for USE_CRAM test since Golden Set
+      # generated from BAM file. BAM filename is stored in candidates. If we
+      # don't overwrite default_options variants won't match and test fail.
+      options.bam_fname = 'NA12878_S1.chr20.10_10p1mb.bam'
+      make_examples_core.make_examples_runner(options)
+
+      # Test that our candidates are reasonable, calling specific helper
+      # functions to check lots of properties of the output.
+      candidates = sorted(
+          tfrecord.read_tfrecords(
+              FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall),
+          key=lambda c: variant_utils.variant_range_tuple(c.variant))
+      self.verify_deepvariant_calls(candidates, options)
+      self.verify_variants([call.variant for call in candidates],
+                           region,
+                           options,
+                           is_gvcf=False)
+
+      # Verify that the variants in the examples are all good.
+      examples = self.verify_examples(
+          FLAGS.examples, region, options, verify_labels=False)
+      example_variants = [dv_utils.example_variant(ex) for ex in examples]
+      self.verify_variants(example_variants, region, options, is_gvcf=False)
+      return examples
+
+    examples1 = _run_with_realignment_mode(False)
+    examples2 = _run_with_realignment_mode(True)
+    # Because this test is with just one sample, whether
+    # enable_joint_realignment is True or False doesn't make a difference.
+    # NOTE: When creating this test, I deliberately change the behavior of
+    # enable_joint_realignment==False and confirm that this test can fail,
+    # if the outputs are different when we alter enable_joint_realignment.
+    self.assertDeepVariantExamplesEqual(examples1, examples2)
+
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @parameterized.parameters(
       # All tests are run with fast_pass_aligner enabled. There are no

@@ -1288,9 +1288,12 @@ class RegionProcessor(object):
         sample_reads_list.append(sample_reads)
       else:
         sample_reads_list.append([])
-
-    sample_reads_list = self.realign_reads_per_sample_multisample(
-        sample_reads_list, region)
+    if self.options.joint_realignment:
+      sample_reads_list = self.realign_reads_joint_multisample(
+          sample_reads_list, region)
+    else:
+      sample_reads_list = self.realign_reads_per_sample_multisample(
+          sample_reads_list, region)
     for sample_index, sample in enumerate(self.samples):
       sample.in_memory_sam_reader.replace_reads(sample_reads_list[sample_index])
 
@@ -1396,24 +1399,6 @@ class RegionProcessor(object):
                                      random_for_region)
     return list(reads)
 
-  def realign_reads_per_sample_multisample(
-      self, sample_reads_list: List[List[reads_pb2.Read]],
-      region: range_pb2.Range) -> List[List[reads_pb2.Read]]:
-    """Realign reads overlapping the region.
-
-    Args:
-      sample_reads_list: list of reads-list per sample.
-      region: A nucleus.genomics.v1.Range object specifying the region we want
-        to realign reads.
-
-    Returns:
-      [genomics.deepvariant.core.genomics.Read], realigned reads per sample
-    """
-    return [
-        self.realign_reads(reads_per_sample, region)
-        for reads_per_sample in sample_reads_list
-    ]
-
   def realign_reads(self, reads: List[reads_pb2.Read],
                     region: range_pb2.Range) -> List[reads_pb2.Read]:
     """Realign reads overlapping the region.
@@ -1448,6 +1433,61 @@ class RegionProcessor(object):
 
       _, reads = self.realigner.realign_reads(reads, region)
     return reads
+
+  def realign_reads_per_sample_multisample(
+      self, sample_reads_list: List[List[reads_pb2.Read]],
+      region: range_pb2.Range) -> List[List[reads_pb2.Read]]:
+    """Realign reads overlapping the region.
+
+    Args:
+      sample_reads_list: list of reads-list per sample.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to realign reads.
+
+    Returns:
+      [genomics.deepvariant.core.genomics.Read], realigned reads per sample
+    """
+    return [
+        self.realign_reads(reads_per_sample, region)
+        for reads_per_sample in sample_reads_list
+    ]
+
+  def realign_reads_joint_multisample(
+      self, sample_reads_list: List[List[reads_pb2.Read]],
+      region: range_pb2.Range) -> List[List[reads_pb2.Read]]:
+    """Realign reads overlapping the region.
+
+    Args:
+      sample_reads_list: list of reads-list per sample.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to realign reads.
+
+    Returns:
+    [genomics.deepvariant.core.genomics.Read], realigned reads per sample
+    """
+    # join reads from all samples
+    if len(sample_reads_list) > 1:
+      reads = []
+      for (sample_index, sample_reads) in enumerate(sample_reads_list):
+        for read in sample_reads:
+          read.fragment_name += f'.{sample_index}'
+        reads.extend(sample_reads)
+    else:
+      reads = sample_reads_list[0]
+
+    realigned_reads = self.realign_reads(reads, region)
+
+    sample_realigned_reads_list = [[] for _ in sample_reads_list]
+
+    # demultiplex reads
+    if len(sample_reads_list) > 1:
+      for read in realigned_reads:
+        read.fragment_name, sample_index = read.fragment_name.rsplit('.', 1)
+        sample_index = int(sample_index)
+        sample_realigned_reads_list[sample_index].append(read)
+    else:
+      sample_realigned_reads_list = [realigned_reads]
+    return sample_realigned_reads_list
 
   def filter_candidates_by_region(
       self, candidates: Sequence[deepvariant_pb2.DeepVariantCall],

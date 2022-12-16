@@ -381,6 +381,51 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # Height should be 60 + 40 * 2 = 140.
     self.assertEqual(decode_example(examples[0])['image/shape'], [140, 199, 8])
 
+  @flagsaver.flagsaver
+  def test_make_examples_compare_realignment_modes(self):
+
+    def _run_with_realignment_mode(enable_joint_realignment, name):
+      FLAGS.enable_joint_realignment = enable_joint_realignment
+      region = ranges.parse_literal('20:10,000,000-10,010,000')
+      FLAGS.ref = testdata.CHR20_FASTA
+      FLAGS.reads = testdata.HG001_CHR20_BAM
+      FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
+      FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
+      FLAGS.sample_name = 'child'
+      FLAGS.sample_name_to_train = 'child'
+      FLAGS.sample_name_parent1 = 'parent1'
+      FLAGS.sample_name_parent2 = 'parent2'
+      FLAGS.candidates = test_utils.test_tmpfile(f'{name}.vsc.tfrecord')
+      FLAGS.examples = test_utils.test_tmpfile(f'{name}.examples.tfrecord')
+      child_examples = test_utils.test_tmpfile(
+          f'{name}_child.examples.tfrecord')
+      FLAGS.regions = [ranges.to_literal(region)]
+      FLAGS.partition_size = 1000
+      FLAGS.mode = 'calling'
+      FLAGS.gvcf = test_utils.test_tmpfile(f'{name}.gvcf.tfrecord')
+      # child_gvcf = test_utils.test_tmpfile(f'{name}.gvcf_child.tfrecord')
+      # child_candidates = test_utils.test_tmpfile(f'{name}.vsc_child.tfrecord')
+      options = make_examples.default_options(add_flags=True)
+      make_examples_core.make_examples_runner(options)
+
+      examples = self.verify_examples(
+          child_examples,
+          region,
+          options,
+          verify_labels=False,
+          examples_filename=FLAGS.examples)
+      return examples
+
+    examples1 = _run_with_realignment_mode(False, 'ex1')
+    examples2 = _run_with_realignment_mode(True, 'ex2')
+    self.assertNotEmpty(examples1)
+    self.assertNotEmpty(examples2)
+    # The assumption is just that these two lists of examples should be
+    # different. In this case, it happens to be that we got different numbers
+    # of examples:
+    self.assertNotEmpty(examples1)
+    self.assertDeepVariantExamplesNotEqual(examples1, examples2)
+
   @parameterized.parameters(
       dict(select_types=None, expected_count=79),
       dict(select_types='all', expected_count=79),
@@ -563,6 +608,33 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(len(actual), len(expected))
     for i in range(len(actual)):
       self.assertEqual(decode_example(actual[i]), decode_example(expected[i]))
+
+  def assertDeepVariantExamplesNotEqual(self, actual, expected):
+    """Asserts that actual and expected tf.Examples are not equal.
+
+    Args:
+      actual: iterable of tf.Examples from DeepVariant. DeepVariant examples
+        that we want to check.
+      expected: iterable of tf.Examples. Expected results for actual.
+    """
+    pass_not_equal_check = False
+    if len(actual) != len(expected):
+      logging.warning(
+          'In assertDeepVariantExamplesNotEqual: '
+          'actual(%d) and expected(%d) has different lengths', len(actual),
+          len(expected))
+      pass_not_equal_check = True
+    min_size = min(len(actual), len(expected))
+    for i in range(min_size):
+      if decode_example(actual[i]) != decode_example(expected[i]):
+        logging.warning(
+            'assertDeepVariantExamplesNotEqual: '
+            'actual example[%d] and expected example[%d] '
+            'are different', i, i)
+        pass_not_equal_check = True
+    self.assertTrue(
+        pass_not_equal_check, 'assertDeepVariantExamplesNotEqual failed - '
+        'actual and expected examples are identical.')
 
   def assertVariantIsPresent(self, to_find, variants):
 
