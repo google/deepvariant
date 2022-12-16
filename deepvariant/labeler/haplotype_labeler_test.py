@@ -148,27 +148,34 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
       dict(
           grouped_positions=[[10, 11, 12, 13]],
           max_group_size=4,
+          force_group_within_bp=-1,
       ),
       dict(
           grouped_positions=[[10, 11, 12], [13]],
           max_group_size=3,
+          force_group_within_bp=-1,
       ),
       dict(
           grouped_positions=[[10, 11], [12, 13]],
           max_group_size=2,
+          force_group_within_bp=-1,
       ),
       dict(
           grouped_positions=[[10], [11], [12], [13]],
           max_group_size=1,
+          force_group_within_bp=-1,
       ),
   )
   def test_group_variants_group_size_works(self, grouped_positions,
-                                           max_group_size):
+                                           max_group_size,
+                                           force_group_within_bp):
     variants, groups = _variants_from_grouped_positions(grouped_positions)
     self.assertEqual(
         groups,
         haplotype_labeler.group_variants(
-            variants, [], max_group_size=max_group_size))
+            variants, [],
+            max_group_size=max_group_size,
+            force_group_within_bp=force_group_within_bp))
 
   @parameterized.parameters(
       # A few basic tests of functionality to start:
@@ -177,30 +184,35 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
           variant_positions=[10],
           truth_positions=[],
           expected_positions=[([10], [])],
+          force_group_within_bp=-1,
       ),
       # We group an isolated truth variant in isolation without any candidates.
       dict(
           variant_positions=[],
           truth_positions=[10],
           expected_positions=[([], [10])],
+          force_group_within_bp=-1,
       ),
       # A single candidate + truth at the same position are grouped together.
       dict(
           variant_positions=[10],
           truth_positions=[10],
           expected_positions=[([10], [10])],
+          force_group_within_bp=-1,
       ),
       # We respect our distance between variants across positional boundaries.
       dict(
           variant_positions=[10],
           truth_positions=[11],
           expected_positions=[([10], [11])],
+          force_group_within_bp=-1,
       ),
       # Another test of grouping across candidates and truth.
       dict(
           variant_positions=[9, 11],
           truth_positions=[10, 12],
           expected_positions=[([9, 11], [10, 12])],
+          force_group_within_bp=-1,
       ),
       # These tests actually result in broken up groups, with isolated truth
       # and candidates as well as grouped ones.
@@ -214,6 +226,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
               ([50], [45]),
               ([], [100]),
           ],
+          force_group_within_bp=-1,
       ),
       # Now some tests to exercise the max group size with both candidates and
       # truth variants. We vary the max group size to make sure the grouping
@@ -226,6 +239,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
               ([3, 4], [3, 4]),
               ([5], [5]),
           ],
+          force_group_within_bp=-1,
           max_group_size=2,
       ),
       dict(
@@ -235,18 +249,40 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
               ([1, 2, 3], [1, 2, 3]),
               ([4, 5], [4, 5]),
           ],
+          force_group_within_bp=-1,
           max_group_size=3,
       ),
+      # Force group variants within 1bp distance
+      dict(
+          variant_positions=[10, 11],
+          truth_positions=[10, 11],
+          expected_positions=[([10, 11], [10, 11])],
+          force_group_within_bp=1,
+          max_group_size=1),
+      # Force group variants within 1bp distance with 8 variants with
+      # max_group_size of 1
+      dict(
+          variant_positions=[1, 2, 3, 4, 5, 6, 7, 8],
+          truth_positions=[1, 2, 3, 4, 5, 6, 7, 8],
+          expected_positions=[([1, 2, 3, 4, 5, 6, 7,
+                                8], [1, 2, 3, 4, 5, 6, 7, 8])],
+          force_group_within_bp=1,
+          max_group_size=1),
   )
   def test_group_variants_with_truth(self,
                                      variant_positions,
                                      truth_positions,
                                      expected_positions,
+                                     force_group_within_bp,
                                      max_group_size=10):
     variants = [_test_variant(start=pos) for pos in variant_positions]
     truths = [_test_variant(start=pos) for pos in truth_positions]
     actual = haplotype_labeler.group_variants(
-        variants, truths, max_group_size=max_group_size, max_separation=5)
+        variants,
+        truths,
+        max_group_size=max_group_size,
+        max_separation=5,
+        force_group_within_bp=force_group_within_bp)
     self.assertEqual([([v.start
                         for v in variant_group], [v.start
                                                   for v in truth_group])
@@ -290,21 +326,29 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
       # Combining any of them will be 10*6*6*3*15*15*6*6 = 8748000.
       # Here we set a max_gt_options_product larger than that. So they are all
       # grouped together.
-      dict(max_gt_options_product=10000000, expected_group_split=[8]),
+      dict(
+          max_gt_options_product=10000000,
+          force_group_within_bp=-1,
+          expected_group_split=[8]),
       # The 8 variants each have #GT: 10, 6, 6, 3, 15, 15, 6, 6.
       # Because _MAX_GT_OPTIONS_PRODUCT is 100000, the split is:
       # 5 variants in one group: 10*6*6*3*15 = 16200
       # 3 variants in the next group: 15*6*6 = 540
       dict(
           max_gt_options_product=haplotype_labeler._MAX_GT_OPTIONS_PRODUCT,
+          force_group_within_bp=-1,
           expected_group_split=[5, 3]),
       # The 8 variants each have #GT: 10, 6, 6, 3, 15, 15, 6, 6.
       # Combining any of them will be more than max_gt_options_product=10.
       # So each individual is split into their own group.
-      dict(max_gt_options_product=10, expected_group_split=[1] * 8),
+      dict(
+          max_gt_options_product=10,
+          force_group_within_bp=-1,
+          expected_group_split=[1] * 8),
   )
   def test_group_variants_exceeds_max_gt_options_product(
-      self, max_gt_options_product, expected_group_split):
+      self, max_gt_options_product, force_group_within_bp,
+      expected_group_split):
     # This is an extreme case from a DeepTrio exome training run. internal.
     candidates = [
         _test_variant(36206921, alleles=('A', 'C', 'G', 'T')),
@@ -320,7 +364,8 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         candidates, [],
         max_group_size=haplotype_labeler._MAX_GROUP_SIZE,
         max_separation=haplotype_labeler._MAX_SEPARATION_WITHIN_VARIANT_GROUP,
-        max_gt_options_product=max_gt_options_product)
+        max_gt_options_product=max_gt_options_product,
+        force_group_within_bp=force_group_within_bp)
     self.assertLen(grouped, len(expected_group_split))
     self.assertEqual([len(g[0]) for g in grouped], expected_group_split)
 
@@ -982,7 +1027,7 @@ class LabelExamplesTest(parameterized.TestCase):
               (0,): 'xAAAAAy',
               (1,): 'xAACCAAy',
           }),
-      # Test an deletion at a few positions.
+      # Test a deletion at a few positions.
       dict(
           variants=[
               _test_variant(1, alleles=('AAA', 'A')),

@@ -84,6 +84,13 @@ _MAX_SEPARATION_WITHIN_VARIANT_GROUP = 30
 # The default maximum product of possible genotypes combinations.
 _MAX_GT_OPTIONS_PRODUCT = 100000
 
+# The variants that are within this value will be forcefully grouped together.
+# This is to ensure that we don't decouple a candidate with it's truth variant
+# in variant dense regions.
+# The value of this is set to 0bp because 1bp creates a lot of overhead.
+# Context about the value: internal#comment3
+_FORCE_GROUP_WITHIN_BP = 0
+
 # True we will generate enough information into our logs to help debug bad
 # regions.
 _DEBUG_PRINTING_IS_ENABLED = False
@@ -150,8 +157,6 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     # Now loop over our grouped variants, labeling them, and yielding
     # VariantLabel objects.
     for candidates_group, truth_group in grouped:
-      assert len(candidates_group) <= self.max_group_size
-      assert len(truth_group) <= self.max_group_size
 
       ref = self.make_labeler_ref(candidates_group, truth_group)
       labeling = find_best_matching_haplotypes(candidates_group, truth_group,
@@ -336,7 +341,8 @@ def group_variants(candidates,
                    truths,
                    max_group_size=_MAX_GROUP_SIZE,
                    max_separation=_MAX_SEPARATION_WITHIN_VARIANT_GROUP,
-                   max_gt_options_product=_MAX_GT_OPTIONS_PRODUCT):
+                   max_gt_options_product=_MAX_GT_OPTIONS_PRODUCT,
+                   force_group_within_bp=_FORCE_GROUP_WITHIN_BP):
   """Splits candidate and truth variants into smaller groups if necessary.
 
   This function takes in a list of candidate and truth variants and splits up
@@ -366,6 +372,11 @@ def group_variants(candidates,
       between the closest variants within a group.
     max_gt_options_product: int >= 0. The maximum number of combinations
       of genotypes (product of all genotypes in the group).
+    force_group_within_bp: int >= 0. Variants within this many bps will be
+      forced to be put in the same group. This is to ensure that we do not
+      decouple candidates and truths in variant-dense regions. This value can
+      be set to -1 for unit-test purposes. Setting -1 will not force any
+      grouping of variants.
 
   Returns:
     A list of grouped variants in 2-tuples, such as:
@@ -434,17 +445,21 @@ def group_variants(candidates,
   groups = []
   current_group = []
   current_gt_options_product = 1
+  previous_pos_end = 0
   for group_variant in groupable_variants:
     new_gt_options_product = current_gt_options_product * _num_genotypes(
         group_variant.variant)
-    if _include_in_variant_group(current_group, group_variant,
-                                 new_gt_options_product):
+    distance_from_prev_variant = group_variant.variant.end - previous_pos_end
+    if _include_in_variant_group(
+        current_group, group_variant, new_gt_options_product
+    ) or distance_from_prev_variant <= force_group_within_bp:
       current_group.append(group_variant)
       current_gt_options_product = new_gt_options_product
     else:
       groups.append(current_group)
       current_group = [group_variant]
       current_gt_options_product = _num_genotypes(group_variant.variant)
+    previous_pos_end = group_variant.variant.end
   if current_group:
     groups.append(current_group)
 
