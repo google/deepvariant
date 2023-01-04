@@ -40,6 +40,9 @@ CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-20.04}"
 ABSL_VERSION=20210324.2
 PROTOBUF_VERSION=3.13.0
 CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
+#TODO This is a workaround for internal. We will need to remove the
+# line once Clif is fixed.
+CLIF_PIN="1c5261b5979cfab20c4418d69c84c4a7d807d36a"
 # CLIF_PIN can be set to a specific commit hash on
 # https://github.com/google/clif/commits/main.
 # If not set, the default is to checkout the latest commit.
