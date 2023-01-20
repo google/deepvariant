@@ -78,7 +78,7 @@ message DeepTrioInputDatasets {
     bool add_hp_channel = 20;
     bool reverse_haplotypes = 21;
     bool phase_reads = 22;
-    int32 phase_reads_region_padding = 23;
+    int32 phase_reads_region_padding_pct = 23;
     int32 partition_size = 24;
   }
   repeated Dataset datasets = 1;

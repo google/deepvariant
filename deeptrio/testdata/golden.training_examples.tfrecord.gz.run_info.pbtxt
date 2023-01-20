@@ -3523,7 +3523,7 @@ options {
       ploidy: 2
       min_fraction_multiplier: 0.6700000166893005
       skip_uncalled_genotypes: true
-      phase_reads_region_padding: 5000
+      phase_reads_region_padding_pct: 20
     }
     pileup_height: 100
     order: 0
@@ -3547,7 +3547,7 @@ options {
       ploidy: 2
       min_fraction_multiplier: 0.6700000166893005
       skip_uncalled_genotypes: true
-      phase_reads_region_padding: 5000
+      phase_reads_region_padding_pct: 20
     }
     pileup_height: 100
     order: 0
@@ -3571,7 +3571,7 @@ options {
       ploidy: 2
       min_fraction_multiplier: 0.6700000166893005
       skip_uncalled_genotypes: true
-      phase_reads_region_padding: 5000
+      phase_reads_region_padding_pct: 20
     }
     pileup_height: 100
     order: 2
@@ -3584,7 +3584,7 @@ options {
   min_length_for_sv: 25
   aux_fields_to_keep: "HP"
   aux_fields_to_keep: "OQ"
-  phase_reads_region_padding: 5000
+  phase_reads_region_padding_pct: 20
   phase_max_candidates: 5000
 }
 labeling_metrics {

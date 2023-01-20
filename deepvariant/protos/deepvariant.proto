@@ -395,7 +395,7 @@ message VariantCallerOptions {
 
   bool track_ref_reads = 14;
 
-  int32 phase_reads_region_padding = 15;
+  int32 phase_reads_region_padding_pct = 15;
 }
 
 // Options to control how we label variant calls.
@@ -781,7 +781,7 @@ message MakeExamplesOptions {
 
   // DirectPhasing related options.
   bool phase_reads = 51;
-  int32 phase_reads_region_padding = 52;
+  int32 phase_reads_region_padding_pct = 52;
 
   int32 phase_max_candidates = 53;
 }
@@ -847,7 +847,7 @@ message DeepVariantInputDatasets {
     bool add_hp_channel = 16;
     bool reverse_haplotypes = 17;
     bool phase_reads = 18;
-    int32 phase_reads_region_padding = 19;
+    int32 phase_reads_region_padding_pct = 19;
     int32 partition_size = 20;
 
     // Optional. Opt Channels.

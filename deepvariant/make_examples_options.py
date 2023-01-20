@@ -311,11 +311,12 @@ flags.DEFINE_bool(
     'We do not recommend setting this flag to True.')
 flags.DEFINE_bool('phase_reads', False,
                   'Calculate phases and add HP tag to all reads on a fly.')
-flags.DEFINE_integer(
-    'phase_reads_region_padding', 5000,
-    'This flag is used only when phase_reads is true. It allows to extend'
-    'region and calculate candidates in extended region. Output examples are'
-    'not affected by this flag.')
+_PHASE_READS_REGION_PADDING_PCT = flags.DEFINE_integer(
+    'phase_reads_region_padding_pct', 20,
+    'This flag is used only when phase_reads is true. It allows to set the '
+    'region padding as a percantage over the region length. candidates are '
+    'calculated over an extended region. Output examples are not affected by '
+    'this flag.')
 flags.DEFINE_integer(
     'phase_max_candidates', 5000,
     'Limits the number of candidates for phasing. If number of candidates '
@@ -414,8 +415,9 @@ def shared_flags_to_options(
     # DirectPhasing related flags.
     if flags_obj.phase_reads:
       options.phase_reads = flags_obj.phase_reads
-    if flags_obj.phase_reads_region_padding:
-      options.phase_reads_region_padding = flags_obj.phase_reads_region_padding
+    phase_region_padding = _PHASE_READS_REGION_PADDING_PCT.value
+    if phase_region_padding:
+      options.phase_reads_region_padding_pct = phase_region_padding
     if flags_obj.phase_max_candidates:
       options.phase_max_candidates = flags_obj.phase_max_candidates
 

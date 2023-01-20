@@ -167,7 +167,7 @@ def make_vc_options(sample_name, flags_obj):
       gq_resolution=flags_obj.gvcf_gq_binsize,
       ploidy=2,
       skip_uncalled_genotypes=flags_obj.mode == 'training',
-      phase_reads_region_padding=flags_obj.phase_reads_region_padding)
+      phase_reads_region_padding_pct=flags_obj.phase_reads_region_padding_pct)
 
 
 def parse_proto_enum_flag(proto_enum_pb2,
@@ -1299,13 +1299,17 @@ class RegionProcessor(object):
 
     # Region is expanded by region_padding number of bases. This functionality
     # is only needed when phase_reads flag is on.
-    if self.options.phase_reads and self.options.phase_reads_region_padding > 0:
+    region_padding_percent = self.options.phase_reads_region_padding_pct
+    if self.options.phase_reads and region_padding_percent > 0:
       contig_dict = ranges.contigs_dict(
           fasta.IndexedFastaReader(
               self.options.reference_filename).header.contigs)
-      region_expanded = ranges.expand(region,
-                                      self.options.phase_reads_region_padding,
-                                      contig_dict)
+      # When candidate partitioning is used region size is variable. Therefore
+      # we need to calculate the padding for each region.
+      padding_fraction = int(
+          (region.end - region.start) * region_padding_percent / 100)
+      region_expanded = ranges.expand(region, padding_fraction, contig_dict)
+
       candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
           region, region_expanded)
     else:
@@ -2000,8 +2004,9 @@ def processing_regions_from_options(options):
   # Load candidate_positions if the flag is set. Partitioning logic will depend
   # on whether candidate_positions is set.
   candidate_positions = None
+  mode_candidate_sweep = deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP
   main_sample_options = options.sample_options[options.main_sample_index]
-  if (options.mode != deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and
+  if (options.mode != mode_candidate_sweep and
       main_sample_options.candidate_positions):
     candidate_positions = load_candidate_positions(
         main_sample_options.candidate_positions)
@@ -2103,10 +2108,11 @@ def make_examples_runner(options):
   logging_with_options(options, 'Preparing inputs')
   regions, calling_regions = processing_regions_from_options(options)
 
-  child = options.sample_options[options.main_sample_index]
-  if options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and child.candidate_positions:
+  main_sample = options.sample_options[options.main_sample_index]
+  mode_candidate_sweep = deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP
+  if options.mode == mode_candidate_sweep and main_sample.candidate_positions:
     _, candidate_positions_filename = sharded_file_utils.resolve_filespecs(
-        options.task_id, child.candidate_positions)
+        options.task_id, main_sample.candidate_positions)
     candidates_writer = epath.Path(candidate_positions_filename).open('wb')
 
   # Create a processor to create candidates and examples for each region.
@@ -2156,7 +2162,7 @@ def make_examples_runner(options):
   example_shape = None
   for region in regions:
 
-    if options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP:
+    if options.mode == mode_candidate_sweep:
       candidates_in_region = list(
           region_processor.find_candidate_positions(region))
       candidates_writer.write(
@@ -2217,8 +2223,7 @@ def make_examples_runner(options):
 
   for writer in writers_dict.values():
     writer.close_all()
-  if (options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and
-      candidates_writer):
+  if (options.mode == mode_candidate_sweep and candidates_writer):
     candidates_writer.close()
 
   # Construct and then write out our MakeExamplesRunInfo proto.

@@ -203,7 +203,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           mode='training', num_shards=3,
           labeler_algorithm='positional_labeler'),
       # test phase_reads_region_padding
-      dict(mode='calling', num_shards=0, phase_reads_region_padding=500),
+      dict(mode='calling', num_shards=0, phase_reads_region_padding_pct=20),
       # The following tests are for CRAM input:
       dict(
           mode='calling', num_shards=0, test_condition=TestConditions.USE_CRAM),
@@ -230,7 +230,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
                                  test_condition=TestConditions.USE_BAM,
                                  labeler_algorithm=None,
                                  use_fast_pass_aligner=True,
-                                 phase_reads_region_padding=None):
+                                 phase_reads_region_padding_pct=None):
     self.assertIn(mode, {'calling', 'training', 'candidate_sweep'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.write_run_info = True
@@ -257,8 +257,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = mode
     FLAGS.gvcf_gq_binsize = 5
     FLAGS.use_fast_pass_aligner = use_fast_pass_aligner
-    if phase_reads_region_padding is not None:
-      FLAGS.phase_reads_region_padding = phase_reads_region_padding
+    if phase_reads_region_padding_pct is not None:
+      FLAGS.phase_reads_region_padding_pct = phase_reads_region_padding_pct
     if labeler_algorithm is not None:
       FLAGS.labeler_algorithm = labeler_algorithm
 
