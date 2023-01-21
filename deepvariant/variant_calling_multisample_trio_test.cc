@@ -48,7 +48,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 
 namespace learning {
@@ -188,7 +187,7 @@ Variant WithCounts(const Variant& base_variant, const std::vector<int>& ad,
 }
 
 // Creates a non-variant site with the given reference base (defaults to "A").
-Variant NoVariant(tensorflow::StringPiece ref = "A") {
+Variant NoVariant(absl::string_view ref = "A") {
   return MakeExpectedVariant(std::string(ref), {});
 }
 

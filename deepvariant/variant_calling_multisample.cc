@@ -32,10 +32,13 @@
 #include "deepvariant/variant_calling_multisample.h"
 
 #include <algorithm>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
@@ -302,7 +305,7 @@ AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
   AlleleMap allele_map_mod;
   absl::btree_map<Allele, int, OrderAllele> read_counts;
   int num_of_dels = 0;
-  bool has_deletetion_adjacent_to_snp = false;
+  bool has_deletion_adjacent_to_snp = false;
 
   // Search for deletions and check if there is a deletion with the preceding
   // SNP. SNP is followed by deletion if deletion's alt base is different from
@@ -313,14 +316,14 @@ AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
       read_counts[elt.first] += elt.first.count();
       num_of_dels++;
       if (elt.second[0] != ref_bases[0]) {
-        has_deletetion_adjacent_to_snp = true;
+        has_deletion_adjacent_to_snp = true;
       }
     }
   }
 
   // If more than 1 DELs and their alt bases are different we need to keep just
   // one. The one with higher read support is kept.
-  if (num_of_dels > 1 && has_deletetion_adjacent_to_snp) {
+  if (num_of_dels > 1 && has_deletion_adjacent_to_snp) {
     Allele max_allele =
         std::max_element(read_counts.begin(), read_counts.end(),
                          [](const std::pair<const Allele, int>& element1,
@@ -368,7 +371,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     std::vector<double> vaf;
     ad.push_back(allele_count.ref_supporting_read_count());
 
-    std::map<tensorflow::StringPiece, const Allele*> alt_to_alleles;
+    std::map<absl::string_view, const Allele*> alt_to_alleles;
     for (const auto& entry : allele_map) {
       alt_to_alleles[entry.second] = &entry.first;
     }

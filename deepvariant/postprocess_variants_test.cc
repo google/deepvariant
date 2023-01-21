@@ -31,6 +31,8 @@
 
 #include "deepvariant/postprocess_variants.h"
 
+#include <vector>
+
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
@@ -39,17 +41,15 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
-#include "tensorflow/core/lib/core/stringpiece.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::StringPiece;
-
 namespace {
 
-CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
+CallVariantsOutput CreateSingleSiteCalls(absl::string_view reference_name,
+                                         int start,
                                          int end) {
   CallVariantsOutput single_site_call;
   // Add one call to fulfill the assumption of variant having one call.
@@ -61,7 +61,8 @@ CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
   return single_site_call;
 }
 
-CallVariantsOutput CreateSingleSiteCalls(StringPiece reference_name, int start,
+CallVariantsOutput CreateSingleSiteCalls(absl::string_view reference_name,
+                                         int start,
                                          int end, double quality) {
   CallVariantsOutput single_site_call =
       CreateSingleSiteCalls(reference_name, start, end);
