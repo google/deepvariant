@@ -64,7 +64,7 @@ enum AlleleType {
 
   // An allele type produced by a SOFT_CLIP operation during alignment.
   // Maybe indicative of a real genetic event occurring at this position,
-  // or may be an data quality / alignment artifact.
+  // or may be a data quality / alignment artifact.
   SOFT_CLIP = 5;
 }
 
@@ -95,7 +95,7 @@ message Allele {
 
 // An AlleleCount summarizes the NGS data observed at a position in the genome.
 //
-// An AlleleCount proto is an key intermediate data structure in DeepVariant
+// An AlleleCount proto is a key intermediate data structure in DeepVariant
 // summarizing the NGS read data covering a site in the genome. It is
 // intended to be relatively simple but keep track of the key pieces of
 // information about the observed reads and their associated alleles at this
@@ -804,7 +804,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 22.
+  // Next ID: 23.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -852,6 +852,9 @@ message DeepVariantInputDatasets {
 
     // Optional. Opt Channels.
     string channels = 21;
+
+    // Option to left align INDELs for each read.
+    bool normalize_reads = 22;
 
     // Deprecated fields.
     int32 sort_by_haplotypes_sample_hp_tag = 12 [deprecated = true];
