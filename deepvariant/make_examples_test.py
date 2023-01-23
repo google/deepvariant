@@ -202,7 +202,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(
           mode='training', num_shards=3,
           labeler_algorithm='positional_labeler'),
-      # test phase_reads_region_padding
+      # test phase_reads_region_padding_pct
       dict(mode='calling', num_shards=0, phase_reads_region_padding_pct=20),
       # The following tests are for CRAM input:
       dict(
