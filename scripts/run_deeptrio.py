@@ -34,6 +34,7 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 """
 
+import enum
 import os
 import subprocess
 import sys
@@ -134,10 +135,6 @@ _SAMPLE_NAME_PARENT2 = flags.DEFINE_string(
     'Parent2 Sample name to use for our sample_name in the output '
     'Variant/DeepVariantCall protos. If not specified, will be inferred from '
     'the header information from --reads_parent2.')
-_USE_HP_INFORMATION = flags.DEFINE_boolean(
-    'use_hp_information', None,
-    'Optional. If True, corresponding flags will be set to properly use the HP '
-    'information present in the BAM input.')
 _MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
     'make_examples_extra_args', None,
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
@@ -153,6 +150,11 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
     'valid flags for postprocess_variants.py. If the flag_value is boolean, '
     'it has to be flag_name=true or flag_name=false.')
+_USE_CANDIDATE_PARTITION = flags.DEFINE_boolean(
+    'use_candidate_partitioning', False,
+    'Optional. If set, make_examples is run over partitions that contain an '
+    'equal number of candidates. Default value is False.')
+
 
 # Optional flags for postprocess_variants.
 _OUTPUT_GVCF_CHILD = flags.DEFINE_string(
@@ -198,6 +200,14 @@ CALL_VARIANTS_OUTPUT_PATTERN = '{}_{}.{}'
 NO_VARIANT_TFRECORD_PATTERN = '{}_{}.{}'
 
 
+@enum.unique
+class CandidatePartitionCommand(enum.Enum):
+  """make_examples mode for candidate partition."""
+  SWEEP = enum.auto()  # Candidate sweep
+  CANDIDATE_PARTITION_INFERENCE = enum.auto(
+  )  # Inference with candidate partition
+
+
 def call_variants_output_common_prefix(intermediate_results_dir):
   return os.path.join(intermediate_results_dir, 'call_variants_output')
 
@@ -206,8 +216,16 @@ def examples_common_suffix(num_shards):
   return 'tfrecord@{}.gz'.format(num_shards)
 
 
+def _candidate_positions_common_suffix(num_shards):
+  return '@{}'.format(num_shards)
+
+
 def examples_common_prefix(intermediate_results_dir):
   return os.path.join(intermediate_results_dir, 'make_examples')
+
+
+def _candidate_positions_common_prefix(intermediate_results_dir):
+  return os.path.join(intermediate_results_dir, 'candidate_positions')
 
 
 def nonvariant_site_tfrecord_common_suffix(intermediate_results_dir):
@@ -218,6 +236,12 @@ def examples_common_name(intermediate_results_dir, num_shards):
   return '{}.{}'.format(
       examples_common_prefix(intermediate_results_dir),
       examples_common_suffix(num_shards))
+
+
+def _candidate_positions_common_name(intermediate_results_dir, num_shards):
+  return '{}{}'.format(
+      _candidate_positions_common_prefix(intermediate_results_dir),
+      _candidate_positions_common_suffix(num_shards))
 
 
 def _is_quoted(value):
@@ -286,10 +310,19 @@ def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
   return kwargs
 
 
-def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
-                          examples, sample_name_child, sample_name_parent1,
-                          sample_name_parent2, runtime_by_region_path,
-                          extra_args, **kwargs):
+def _make_examples_command(ref,
+                           reads_child,
+                           reads_parent1,
+                           reads_parent2,
+                           examples,
+                           sample_name_child,
+                           sample_name_parent1,
+                           sample_name_parent2,
+                           runtime_by_region_path,
+                           candidate_positions_path,
+                           extra_args,
+                           candidate_partition_mode=None,
+                           **kwargs):
   """Returns a make_examples command for subprocess.check_call.
 
   Args:
@@ -302,7 +335,10 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
     sample_name_parent1: Sample name for parent1.
     sample_name_parent2: Sample name for parent2.
     runtime_by_region_path: Path for runtime statistics output.
+    candidate_positions_path: Path to candidate positions file.
     extra_args: Comma-separated list of flag_name=flag_value.
+    candidate_partition_mode: If set adds extra parameters to allow candidate
+      partition.
     **kwargs: Additional arguments to pass in for make_examples.
 
   Returns:
@@ -313,7 +349,15 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
       'parallel -q --halt 2 --line-buffer',
       '/opt/deepvariant/bin/deeptrio/make_examples'
   ]
-  command.extend(['--mode', 'calling'])
+  if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
+    command.extend(['--mode', 'candidate_sweep'])
+  elif candidate_partition_mode == CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE:
+    command.extend(['--mode', 'calling'])
+  elif candidate_partition_mode is None:
+    command.extend(['--mode', 'calling'])
+  else:
+    raise ValueError('Invalid value of candidate_partition_mode.')
+
   command.extend(['--ref', '"{}"'.format(ref)])
   if _READS_PARENT1.value is not None:
     command.extend(['--reads_parent1', '"{}"'.format(reads_parent1)])
@@ -344,8 +388,13 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['add_hp_channel'] = True
-    special_args['sort_by_haplotypes'] = special_args[
-        'parse_sam_aux_fields'] = bool(_USE_HP_INFORMATION.value)
+    special_args['phase_reads_region_padding_pct'] = 20
+    # TODO make phasing optional.
+    special_args['phase_reads'] = True
+    if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
+      special_args['partition_size'] = 25000
+    special_args['sort_by_haplotypes'] = True
+    special_args['parse_sam_aux_fields'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
     conflict_args = ['sort_by_haplotypes', 'parse_sam_aux_fields']
 
@@ -359,7 +408,17 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
   if _MODEL_TYPE.value == 'WGS':
     special_args['channels'] = 'insert_size'
 
-  kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
+    special_args['partition_size'] = 10000  # Should be approximately read
+    # length to avoid having high
+    # coverage intervals in multiple shards at a time
+    special_args['candidate_positions_child'] = candidate_positions_path
+
+  if candidate_partition_mode == CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE:
+    special_args['candidate_positions_child'] = candidate_positions_path
+
+  if special_args:
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args),
@@ -369,8 +428,11 @@ def make_examples_command(ref, reads_child, reads_parent1, reads_parent2,
   command.extend(['--task {}'])
 
   if _LOGGING_DIR.value:
+    log_filename = 'make_examples.log'
+    if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
+      log_filename = 'make_examples_sweep.log'
     command.extend(
-        ['2>&1 | tee {}/make_examples.log'.format(_LOGGING_DIR.value)])
+        ['2>&1 | tee {}/{}'.format(_LOGGING_DIR.value, log_filename)])
 
   return ' '.join(command)
 
@@ -488,10 +550,6 @@ def check_flags():
         'model for %s, `call_variants` step will load %s* '
         'instead.', _MODEL_TYPE.value, _CUSTOMIZED_MODEL_CHILD.value)
 
-  if _USE_HP_INFORMATION.value and _MODEL_TYPE.value != 'PACBIO':
-    raise ValueError('--use_hp_information can only be used with '
-                     '--model_type="PACBIO"')
-
 
 def get_model_ckpt(model_type, customized_model):
   """Return the path to the model checkpoint based on the input args."""
@@ -559,21 +617,41 @@ def create_all_commands(intermediate_results_dir):
   else:
     runtime_by_region_path = None
 
-  commands.append(
-      make_examples_command(
-          _REF.value,
-          _READS_CHILD.value,
-          _READS_PARENT1.value,
-          _READS_PARENT2.value,
-          examples_common_name(intermediate_results_dir, _NUM_SHARDS.value),
-          _SAMPLE_NAME_CHILD.value,
-          _SAMPLE_NAME_PARENT1.value,
-          _SAMPLE_NAME_PARENT2.value,
-          runtime_by_region_path=runtime_by_region_path,
-          extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
-          # kwargs:
-          gvcf=nonvariant_site_tfrecord_path,
-          regions=_REGIONS.value))
+  # If _USE_CANDIDATE_PARTITION is set add a call to make_examples to generate
+  # candidates.
+  # If _USE_CANDIDATE_PARTITION is set we generate two make_examples commands.
+  # The first one to generate candidate_positions. The second command is for
+  # generating DeepVariant examples. _USE_CANDIDATE_PARTITION is an option that
+  # helps to better distribute the work between shards.
+  candidate_partition_modes = []
+  if _USE_CANDIDATE_PARTITION.value:
+    candidate_partition_modes = [
+        CandidatePartitionCommand.SWEEP,
+        CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE
+    ]
+  else:
+    candidate_partition_modes = [None]
+
+  for candidate_partition_mode in candidate_partition_modes:
+    commands.append(
+        _make_examples_command(
+            _REF.value,
+            _READS_CHILD.value,
+            _READS_PARENT1.value,
+            _READS_PARENT2.value,
+            examples_common_name(intermediate_results_dir, _NUM_SHARDS.value),
+            _SAMPLE_NAME_CHILD.value,
+            _SAMPLE_NAME_PARENT1.value,
+            _SAMPLE_NAME_PARENT2.value,
+            runtime_by_region_path=runtime_by_region_path,
+            extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
+            candidate_positions_path=_candidate_positions_common_name(
+                intermediate_results_dir, _NUM_SHARDS.value),
+            candidate_partition_mode=candidate_partition_mode
+            if _USE_CANDIDATE_PARTITION.value else None,
+            # kwargs:
+            gvcf=nonvariant_site_tfrecord_path,
+            regions=_REGIONS.value))
 
   # Calling variants for child sample
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value + '_child',
