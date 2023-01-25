@@ -804,7 +804,7 @@ message DeepVariantDatasetConfig {
 // Next ID: 3.
 message DeepVariantInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
-  // Next ID: 23.
+  // Next ID: 25.
   message Dataset {
     // Path to a BED file that contains the confident regions for creating TF
     // examples.
@@ -855,6 +855,15 @@ message DeepVariantInputDatasets {
 
     // Option to left align INDELs for each read.
     bool normalize_reads = 22;
+
+    // Same as in reads.proto.
+    // Added for enabling --min_mapping_quality for an internal script.
+    int32 min_mapping_quality = 23;
+
+    // Same as keep_legacy_behavior in AlleleCounterOptions.
+    // Added for enabling --keep_legacy_allele_counter_behavior for an internal
+    // script.
+    bool keep_legacy_allele_counter_behavior = 24;
 
     // Deprecated fields.
     int32 sort_by_haplotypes_sample_hp_tag = 12 [deprecated = true];
