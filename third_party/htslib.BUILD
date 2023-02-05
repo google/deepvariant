@@ -14,9 +14,9 @@ package(
     ],
 )
 
-version = "1.10.2"
+version = "1.13"
 
-version_dir = "htslib_1_10_2"
+version_dir = "htslib_1_13"
 
 include_htslib = "htslib/" + version_dir
 
@@ -56,6 +56,7 @@ htslib_srcs = [
     "sam_internal.h",
     "textutils_internal.h",
     "thread_pool_internal.h",
+    "config_vars.h",
     "version.h",
     "bcf_sr_sort.c",
     "bgzf.c",
@@ -68,11 +69,10 @@ htslib_srcs = [
     # "hfile_libcurl.c",
     # "hfile_s3.c",
     # "hfile_s3_write.c",
-    "hfile_net.c",
     "hts.c",
+    "hts_expr.c",
     "hts_os.c",
     "kfunc.c",
-    "knetfile.c",
     "kstring.c",
     "md5.c",
     "multipart.c",
@@ -96,21 +96,43 @@ htslib_srcs = [
     "cram/cram_external.c",
     "cram/cram_index.c",
     "cram/cram_io.c",
-    "cram/cram_samtools.c",
     "cram/cram_stats.c",
     "cram/mFILE.c",
     "cram/open_trace_file.c",
     "cram/pooled_alloc.c",
-    "cram/rANS_static.c",
     "cram/string_alloc.c",
     "cram/mFILE.h",
     "cram/misc.h",
     "cram/open_trace_file.h",
     "cram/os.h",
-    "cram/rANS_byte.h",
-    "cram/rANS_static.h",
     "cram/string_alloc.h",
-    "os/lzma_stub.h",
+] + [
+    "htscodecs/htscodecs/arith_dynamic.h",
+    "htscodecs/htscodecs/c_range_coder.h",
+    "htscodecs/htscodecs/c_simple_model.h",
+    "htscodecs/htscodecs/fqzcomp_qual.h",
+    "htscodecs/htscodecs/htscodecs_endian.h",
+    "htscodecs/htscodecs/htscodecs.h",
+    "htscodecs/htscodecs/pack.h",
+    "htscodecs/htscodecs/pooled_alloc.h",
+    "htscodecs/htscodecs/rANS_byte.h",
+    "htscodecs/htscodecs/rANS_static4x16.h",
+    "htscodecs/htscodecs/rANS_static.h",
+    "htscodecs/htscodecs/rANS_word.h",
+    "htscodecs/htscodecs/rle.h",
+    "htscodecs/htscodecs/tokenise_name3.h",
+    "htscodecs/htscodecs/utils.h",
+    "htscodecs/htscodecs/varint2.h",
+    "htscodecs/htscodecs/varint.h",
+    "htscodecs/htscodecs/version.h",
+    "htscodecs/htscodecs/arith_dynamic.c",
+    "htscodecs/htscodecs/fqzcomp_qual.c",
+    "htscodecs/htscodecs/htscodecs.c",
+    "htscodecs/htscodecs/pack.c",
+    "htscodecs/htscodecs/rANS_static4x16pr.c",
+    "htscodecs/htscodecs/rANS_static.c",
+    "htscodecs/htscodecs/rle.c",
+    "htscodecs/htscodecs/tokenise_name3.c",
 ]
 
 # These need to be included in the right order, cf cram.h
@@ -140,6 +162,7 @@ filegroup(
         "hfile_internal.h",
         "htslib/hfile.h",
         "htslib/hts_defs.h",
+        "htslib/kroundup.h",
         "htslib/kstring.h",
         "textutils_internal.h",
     ],
@@ -208,6 +231,19 @@ genrule(
     name = "version",
     outs = ["version.h"],
     cmd = """echo '#define HTS_VERSION_TEXT "%s"' > "$@" """ % version,
+)
+
+# From htslib-1.13/Makefile
+genrule(
+    name = "config_vars",
+    outs = ["config_vars.h"],
+    cmd = """
+        echo '#define HTS_CC "gcc"' > $@
+        echo '#define HTS_CPPFLAGS ""' >> $@
+        echo '#define HTS_CFLAGS "-g -Wall -O2 -fvisibility=hidden"' >> $@
+        echo '#define HTS_LDFLAGS "-fvisibility=hidden"' >> $@
+        echo '#define HTS_LIBS "-lz -lm -lbz2 -llzma -lcurl"' >> $@
+    """,
 )
 
 cc_library(
