@@ -51,11 +51,17 @@ FLAGS = flags.FLAGS
 
 # Required flags.
 _MODEL_TYPE = flags.DEFINE_enum(
-    'model_type', None, ['WGS', 'WES', 'PACBIO', 'HYBRID_PACBIO_ILLUMINA'],
-    'Required. Type of model to use for variant calling. Set this flag '
-    'to use the default model associated with each type, and it will set '
-    'necessary flags corresponding to each model. If you want to use a '
-    'customized model, add --customized_model flag in addition to this flag.')
+    'model_type',
+    None,
+    ['WGS', 'WES', 'PACBIO', 'ONT_R104', 'HYBRID_PACBIO_ILLUMINA'],
+    (
+        'Required. Type of model to use for variant calling. Set this flag to'
+        ' use the default model associated with each type, and it will set'
+        ' necessary flags corresponding to each model. If you want to use a'
+        ' customized model, add --customized_model flag in addition to this'
+        ' flag.'
+    ),
+)
 _REF = flags.DEFINE_string(
     'ref', None,
     'Required. Genome reference to use. Must have an associated FAI index as '
@@ -136,6 +142,7 @@ MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
     'WES': '/opt/models/wes/model.ckpt',
     'PACBIO': '/opt/models/pacbio/model.ckpt',
+    'ONT_R104': '/opt/models/ont_r104/model.ckpt',
     'HYBRID_PACBIO_ILLUMINA': '/opt/models/hybrid_pacbio_illumina/model.ckpt',
 }
 
@@ -250,6 +257,22 @@ def make_examples_command(ref,
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
+    special_args['vsc_min_fraction_indels'] = 0.12
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'ONT_R104':
+    special_args = {}
+    special_args['add_hp_channel'] = True
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['max_reads_per_partition'] = 600
+    special_args['min_mapping_quality'] = 5
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads'] = True
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
+    special_args['vsc_min_fraction_snps'] = 0.08
     special_args['vsc_min_fraction_indels'] = 0.12
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
