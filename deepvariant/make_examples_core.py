@@ -265,6 +265,10 @@ def in_training_mode(options):
   return options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING
 
 
+def in_candidate_sweep_mode(options):
+  return options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP
+
+
 def gvcf_output_enabled(options):
   """Returns True if we should be generating gVCF output."""
   return bool(options.gvcf_filename)

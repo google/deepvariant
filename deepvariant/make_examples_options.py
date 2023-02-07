@@ -537,7 +537,10 @@ def check_options_are_valid(options: deepvariant_pb2.MakeExamplesOptions,
   if not main_sample.reads_filenames:
     errors.log_and_raise('reads argument is required.', errors.CommandLineError)
 
-  if make_examples_core.in_training_mode(options):
+  if make_examples_core.in_candidate_sweep_mode(options):
+    # In candidate_sweep mode there is nothing to check here.
+    pass
+  elif make_examples_core.in_training_mode(options):
     if not options.truth_variants_filename:
       errors.log_and_raise('truth_variants is required when in training mode.',
                            errors.CommandLineError)
