@@ -80,9 +80,6 @@ export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.9.1"
 # value in the environment (allowing command line control of the build),
 # defaulting to 0 (CPU only build).
 export DV_GPU_BUILD="${DV_GPU_BUILD:-0}"
-# Set this to 1 to build with OpenVINO.
-# https://github.com/google/deepvariant/pull/363
-export DV_OPENVINO_BUILD="${DV_OPENVINO_BUILD:-0}"
 
 # If this variable is set to 1, DeepVariant will use a TensorFlow wheel file
 # compiled with MKL support for corei7 or better chipsets, which

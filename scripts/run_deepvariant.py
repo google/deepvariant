@@ -286,18 +286,17 @@ def make_examples_command(ref,
   return (' '.join(command), logfile)
 
 
-def call_variants_command(outfile, examples, model_ckpt,
-                          intermediate_results_dir, extra_args):
+def call_variants_command(outfile, examples, model_ckpt, extra_args):
   """Returns a call_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/call_variants']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
-  # --openvino_model_dir will only be used if use_openvino is set to true for
-  # call_variants. But it won't hurt to set it anyway, so setting it to the
-  # intermediate_results_dir.
-  command.extend(
-      ['--openvino_model_dir', '"{}"'.format(intermediate_results_dir)])
+  if extra_args and 'use_openvino' in extra_args:
+    raise RuntimeError(
+        'OpenVINO is not installed by default in DeepVariant '
+        'Docker images. Please rerun without use_openvino flag.'
+    )
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(command,
                                          _extra_args_to_dict(extra_args))
@@ -439,9 +438,13 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
                                       'call_variants_output.tfrecord.gz')
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
-      call_variants_command(call_variants_output, examples, model_ckpt,
-                            intermediate_results_dir,
-                            _CALL_VARIANTS_EXTRA_ARGS.value))
+      call_variants_command(
+          outfile=call_variants_output,
+          examples=examples,
+          model_ckpt=model_ckpt,
+          extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+      )
+  )
 
   # postprocess_variants
   commands.append(
