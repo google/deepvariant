@@ -31,7 +31,7 @@ syntax = "proto3";
 
 package learning.genomics.deeptrio;
 
-// Next ID: 25.
+// Next ID: 26.
 message DeepTrioInputDatasets {
   // Fields in Dataset are provided to make_examples.py as arguments.
   message Dataset {
@@ -80,6 +80,7 @@ message DeepTrioInputDatasets {
     bool phase_reads = 22;
     int32 phase_reads_region_padding_pct = 23;
     int32 partition_size = 24;
+    bool use_candidate_partition = 25;
   }
   repeated Dataset datasets = 1;
   string group_name = 2;
