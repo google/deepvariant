@@ -128,9 +128,6 @@ py_test(
     data = ["//third_party/nucleus/testdata"],
     python_version = "PY3",
     srcs_version = "PY3",
-    tags = [
-        "opt_presubmit",
-    ],
     deps = [
         ":sam",
         ":tfrecord",
@@ -644,9 +641,6 @@ cc_test(
     size = "small",
     srcs = ["sam_reader_test.cc"],
     data = ["//third_party/nucleus/testdata"],
-    tags = [
-        "opt_presubmit",
-    ],
     deps = [
         ":sam_reader",
         ":sam_writer",
@@ -690,9 +684,6 @@ cc_test(
     srcs = ["sam_writer_test.cc"],
     copts = NUCLEUS_COPTS,
     data = ["//third_party/nucleus/testdata"],
-    tags = [
-        "opt_presubmit",
-    ],
     deps = [
         ":sam_reader",
         ":sam_writer",
