@@ -188,6 +188,8 @@ DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
 DEEP_TRIO_WGS_PILEUP_HEIGHT_PARENT = 40
 DEEP_TRIO_WES_PILEUP_HEIGHT_CHILD = 100
 DEEP_TRIO_WES_PILEUP_HEIGHT_PARENT = 100
+DEEP_TRIO_PACBIO_PILEUP_HEIGHT_CHILD = 60
+DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT = 40
 
 CHILD = 'child'
 PARENT1 = 'parent1'
@@ -389,6 +391,14 @@ def _make_examples_command(ref,
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['add_hp_channel'] = True
     special_args['phase_reads_region_padding_pct'] = 20
+    special_args['min_mapping_quality'] = 1
+    special_args['track_ref_reads'] = True
+    special_args['pileup_image_height_child'] = (
+        DEEP_TRIO_PACBIO_PILEUP_HEIGHT_CHILD
+    )
+    special_args['pileup_image_height_parent'] = (
+        DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT
+    )
     # TODO make phasing optional.
     special_args['phase_reads'] = True
     if candidate_partition_mode != CandidatePartitionCommand.SWEEP:

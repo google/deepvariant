@@ -187,42 +187,73 @@ class RunDeeptrioTest(parameterized.TestCase):
     self.assertLen(postprocess_cmds, 2)
 
   @parameterized.parameters(
-      ('WGS', False, '--channels "insert_size" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--pileup_image_height_child "60" ' +
-       '--pileup_image_height_parent "40" '),
-      ('WES', False, '--channels "insert_size" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--pileup_image_height_child "100" ' +
-       '--pileup_image_height_parent "100" '),
-      ('PACBIO', False,
-       '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--parse_sam_aux_fields --partition_size "25000" --phase_reads ' +
-       '--phase_reads_region_padding_pct "20" --pileup_image_height_child "60" '
-       + '--pileup_image_height_parent "40" --pileup_image_width "199" ' +
-       '--norealign_reads --sort_by_haplotypes ' +
-       '--vsc_min_fraction_indels "0.12" '),
-      ('PACBIO', True,
-       '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
-       '--candidate_positions_child ' +
-       '"/tmp/deeptrio_tmp_output/candidate_positions@64" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--parse_sam_aux_fields --partition_size "25000" --phase_reads ' +
-       '--phase_reads_region_padding_pct "20" --pileup_image_height_child "60" '
-       + '--pileup_image_height_parent "40" --pileup_image_width "199" ' +
-       '--norealign_reads --sort_by_haplotypes ' +
-       '--vsc_min_fraction_indels "0.12" '),
-      ('WGS', True, '--candidate_positions_child ' +
-       '"/tmp/deeptrio_tmp_output/candidate_positions@64" ' +
-       '--channels "insert_size" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--pileup_image_height_child "60" --pileup_image_height_parent "40" '),
-      ('WES', True, '--candidate_positions_child ' +
-       '"/tmp/deeptrio_tmp_output/candidate_positions@64" ' +
-       '--channels "insert_size" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--pileup_image_height_child "100" --pileup_image_height_parent "100" '))
+      (
+          'WGS',
+          False,
+          '--channels "insert_size" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--pileup_image_height_child "60" '
+          + '--pileup_image_height_parent "40" ',
+      ),
+      (
+          'WES',
+          False,
+          '--channels "insert_size" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--pileup_image_height_child "100" '
+          + '--pileup_image_height_parent "100" ',
+      ),
+      (
+          'PACBIO',
+          False,
+          '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--min_mapping_quality "1" '
+          + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
+          + '--phase_reads_region_padding_pct "20" --pileup_image_height_child'
+          ' "60" '
+          + '--pileup_image_height_parent "40" --pileup_image_width "199" '
+          + '--norealign_reads --sort_by_haplotypes '
+          + '--track_ref_reads '
+          + '--vsc_min_fraction_indels "0.12" ',
+      ),
+      (
+          'PACBIO',
+          True,
+          '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          + '--candidate_positions_child '
+          + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--min_mapping_quality "1" '
+          + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
+          + '--phase_reads_region_padding_pct "20" --pileup_image_height_child'
+          ' "60" '
+          + '--pileup_image_height_parent "40" --pileup_image_width "199" '
+          + '--norealign_reads --sort_by_haplotypes '
+          + '--track_ref_reads '
+          + '--vsc_min_fraction_indels "0.12" ',
+      ),
+      (
+          'WGS',
+          True,
+          '--candidate_positions_child '
+          + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+          + '--channels "insert_size" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--pileup_image_height_child "60" --pileup_image_height_parent'
+          ' "40" ',
+      ),
+      (
+          'WES',
+          True,
+          '--candidate_positions_child '
+          + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+          + '--channels "insert_size" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--pileup_image_height_child "100" --pileup_image_height_parent'
+          ' "100" ',
+      ),
+  )
   @flagsaver.flagsaver
   def test_make_examples_commands_with_types(self, model_type,
                                              use_candidate_partition,
@@ -264,42 +295,58 @@ class RunDeeptrioTest(parameterized.TestCase):
   @parameterized.parameters((
       'PACBIO',
       # make_examples command with candidat_sweep mode
-      'time seq 0 63 ' + '| parallel -q --halt 2 --line-buffer ' +
-      '/opt/deepvariant/bin/deeptrio/make_examples ' +
-      '--mode candidate_sweep ' + '--ref "your_ref" ' +
-      '--reads_parent1 "your_bam_parent1" ' +
-      '--reads_parent2 "your_bam_parent2" ' + '--reads "your_bam_child" ' +
-      '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" ' +
-      '--sample_name "your_sample_child" ' +
-      '--sample_name_parent1 "your_sample_parent1" ' +
-      '--sample_name_parent2 "your_sample_parent2" ' +
-      '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
-      '--candidate_positions_child ' +
-      '"/tmp/deeptrio_tmp_output/candidate_positions@64" ' +
-      '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-      '--parse_sam_aux_fields --partition_size "10000" --phase_reads ' +
-      '--phase_reads_region_padding_pct "20" --pileup_image_height_child "60" '
-      '--pileup_image_height_parent "40" --pileup_image_width "199" ' +
-      '--norealign_reads --sort_by_haplotypes ' +
-      '--vsc_min_fraction_indels "0.12" ' + '--task {}',
+      'time seq 0 63 '
+      + '| parallel -q --halt 2 --line-buffer '
+      + '/opt/deepvariant/bin/deeptrio/make_examples '
+      + '--mode candidate_sweep '
+      + '--ref "your_ref" '
+      + '--reads_parent1 "your_bam_parent1" '
+      + '--reads_parent2 "your_bam_parent2" '
+      + '--reads "your_bam_child" '
+      + '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+      + '--sample_name "your_sample_child" '
+      + '--sample_name_parent1 "your_sample_parent1" '
+      + '--sample_name_parent2 "your_sample_parent2" '
+      + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+      + '--candidate_positions_child '
+      + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+      + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+      + '--min_mapping_quality "1" '
+      + '--parse_sam_aux_fields --partition_size "10000" --phase_reads '
+      + '--phase_reads_region_padding_pct "20" --pileup_image_height_child'
+      ' "60" --pileup_image_height_parent "40" --pileup_image_width'
+      ' "199" '
+      + '--norealign_reads --sort_by_haplotypes '
+      + '--track_ref_reads '
+      + '--vsc_min_fraction_indels "0.12" '
+      + '--task {}',
       # # make_examples command with call mode
-      'time seq 0 63 ' + '| parallel -q --halt 2 --line-buffer ' +
-      '/opt/deepvariant/bin/deeptrio/make_examples ' + '--mode calling ' +
-      '--ref "your_ref" ' + '--reads_parent1 "your_bam_parent1" ' +
-      '--reads_parent2 "your_bam_parent2" ' + '--reads "your_bam_child" ' +
-      '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" ' +
-      '--sample_name "your_sample_child" ' +
-      '--sample_name_parent1 "your_sample_parent1" ' +
-      '--sample_name_parent2 "your_sample_parent2" ' +
-      '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
-      '--candidate_positions_child ' +
-      '"/tmp/deeptrio_tmp_output/candidate_positions@64" ' +
-      '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-      '--parse_sam_aux_fields --partition_size "25000" --phase_reads ' +
-      '--phase_reads_region_padding_pct "20" --pileup_image_height_child "60" '
-      + '--pileup_image_height_parent "40" --pileup_image_width "199" ' +
-      '--norealign_reads --sort_by_haplotypes ' +
-      '--vsc_min_fraction_indels "0.12" ' + '--task {}'))
+      'time seq 0 63 '
+      + '| parallel -q --halt 2 --line-buffer '
+      + '/opt/deepvariant/bin/deeptrio/make_examples '
+      + '--mode calling '
+      + '--ref "your_ref" '
+      + '--reads_parent1 "your_bam_parent1" '
+      + '--reads_parent2 "your_bam_parent2" '
+      + '--reads "your_bam_child" '
+      + '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+      + '--sample_name "your_sample_child" '
+      + '--sample_name_parent1 "your_sample_parent1" '
+      + '--sample_name_parent2 "your_sample_parent2" '
+      + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+      + '--candidate_positions_child '
+      + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+      + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+      + '--min_mapping_quality "1" '
+      + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
+      + '--phase_reads_region_padding_pct "20" --pileup_image_height_child'
+      ' "60" '
+      + '--pileup_image_height_parent "40" --pileup_image_width "199" '
+      + '--norealign_reads --sort_by_haplotypes '
+      + '--track_ref_reads '
+      + '--vsc_min_fraction_indels "0.12" '
+      + '--task {}',
+  ))
   @flagsaver.flagsaver
   def test_make_examples_commands_with_candidate_partition(
       self, model_type, extra_args_1, extra_args_2):
@@ -324,21 +371,34 @@ class RunDeeptrioTest(parameterized.TestCase):
     self.assertEqual(commands[1], extra_args_2)
 
   @parameterized.parameters(
-      ('WGS', '--channels "insert_size" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--pileup_image_height_child "60" ' +
-       '--pileup_image_height_parent "40" '),
-      ('WES', '--channels "insert_size" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--pileup_image_height_child "100" ' +
-       '--pileup_image_height_parent "100" '),
-      ('PACBIO', '--add_hp_channel --alt_aligned_pileup "diff_channels" ' +
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" ' +
-       '--parse_sam_aux_fields --partition_size "25000" --phase_reads ' +
-       '--phase_reads_region_padding_pct "20" --pileup_image_height_child "60" '
-       + '--pileup_image_height_parent "40" --pileup_image_width "199" ' +
-       '--norealign_reads --sort_by_haplotypes ' +
-       '--vsc_min_fraction_indels "0.12" '))
+      (
+          'WGS',
+          '--channels "insert_size" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--pileup_image_height_child "60" '
+          + '--pileup_image_height_parent "40" ',
+      ),
+      (
+          'WES',
+          '--channels "insert_size" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--pileup_image_height_child "100" '
+          + '--pileup_image_height_parent "100" ',
+      ),
+      (
+          'PACBIO',
+          '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          + '--min_mapping_quality "1" '
+          + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
+          + '--phase_reads_region_padding_pct "20" --pileup_image_height_child'
+          ' "60" '
+          + '--pileup_image_height_parent "40" --pileup_image_width "199" '
+          + '--norealign_reads --sort_by_haplotypes '
+          + '--track_ref_reads '
+          + '--vsc_min_fraction_indels "0.12" ',
+      ),
+  )
   @flagsaver.flagsaver
   def test_duo_make_examples_commands_with_types(self, model_type,
                                                  extra_args_plus_gvcf):
@@ -369,37 +429,53 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--task {}' % extra_args_plus_gvcf)
 
   @parameterized.parameters(
-      (None, '--add_hp_channel '
-       '--alt_aligned_pileup "diff_channels" '
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--parse_sam_aux_fields '
-       '--partition_size "25000" '
-       '--phase_reads '
-       '--phase_reads_region_padding_pct "20" '
-       '--pileup_image_height_child "60" '
-       '--pileup_image_height_parent "40" '
-       '--pileup_image_width "199" '
-       '--norealign_reads '
-       '--sort_by_haplotypes '
-       '--vsc_min_fraction_indels "0.12" ', None),
-      ('alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
-       '--add_hp_channel '
-       '--alt_aligned_pileup "rows" '
-       '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-       '--parse_sam_aux_fields '
-       '--partition_size "25000" '
-       '--phase_reads '
-       '--phase_reads_region_padding_pct "20" '
-       '--pileup_image_height_child "60" '
-       '--pileup_image_height_parent "40" '
-       '--pileup_image_width "199" '
-       '--norealign_reads '
-       '--sort_by_haplotypes '
-       '--vsc_min_fraction_indels "0.03" ',
-       '\nWarning: --alt_aligned_pileup is previously set to diff_channels, '
-       'now to "rows".\n'
-       '\nWarning: --vsc_min_fraction_indels is previously set to 0.12, '
-       'now to 0.03.\n'),
+      (
+          None,
+          (
+              '--add_hp_channel '
+              '--alt_aligned_pileup "diff_channels" '
+              '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+              '--min_mapping_quality "1" '
+              '--parse_sam_aux_fields '
+              '--partition_size "25000" '
+              '--phase_reads '
+              '--phase_reads_region_padding_pct "20" '
+              '--pileup_image_height_child "60" '
+              '--pileup_image_height_parent "40" '
+              '--pileup_image_width "199" '
+              '--norealign_reads '
+              '--sort_by_haplotypes '
+              '--track_ref_reads '
+              '--vsc_min_fraction_indels "0.12" '
+          ),
+          None,
+      ),
+      (
+          'alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
+          (
+              '--add_hp_channel '
+              '--alt_aligned_pileup "rows" '
+              '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+              '--min_mapping_quality "1" '
+              '--parse_sam_aux_fields '
+              '--partition_size "25000" '
+              '--phase_reads '
+              '--phase_reads_region_padding_pct "20" '
+              '--pileup_image_height_child "60" '
+              '--pileup_image_height_parent "40" '
+              '--pileup_image_width "199" '
+              '--norealign_reads '
+              '--sort_by_haplotypes '
+              '--track_ref_reads '
+              '--vsc_min_fraction_indels "0.03" '
+          ),
+          (
+              '\nWarning: --alt_aligned_pileup is previously set to'
+              ' diff_channels, now to "rows".\n\nWarning:'
+              ' --vsc_min_fraction_indels is previously set to 0.12, now to'
+              ' 0.03.\n'
+          ),
+      ),
   )
   @flagsaver.flagsaver
   def test_pacbio_args_overwrite(self, make_examples_extra_args, expected_args,
