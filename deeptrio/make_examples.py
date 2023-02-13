@@ -125,15 +125,17 @@ PROPOSED_VARIANTS_PARENT2_ = flags.DEFINE_string(
     '(Only used when --variant_caller=vcf_candidate_importer.) '
     'Tabix-indexed VCF file containing the proposed positions and alts for '
     '`vcf_candidate_importer` for the parent 2. The GTs will be ignored.')
-CANDIDATE_POSITIONS_CHILD_ = flags.DEFINE_string(
-    'candidate_positions_child', None,
-    'Path to the binary file containing candidate positions for the child.')
-CANDIDATE_POSITIONS_PARENT1_ = flags.DEFINE_string(
-    'candidate_positions_parent1', None,
-    'Path to the binary file containing candidate positions for the parent1.')
-CANDIDATE_POSITIONS_PARENT2_ = flags.DEFINE_string(
-    'candidate_positions_parent2', None,
-    'Path to the binary file containing candidate positions for the parent2.')
+# We are using this flag for determining intervals for both child and parent
+# models. In the future, we can consider extending into 3 samples.
+CANDIDATE_POSITIONS_ = flags.DEFINE_string(
+    'candidate_positions',
+    None,
+    (
+        'Path to the binary file containing candidate positions used for '
+        'make_examples partitioning by candidates. Currently this '
+        'is only the child positions.'
+    ),
+)
 
 # Change any flag defaults that differ for DeepTrio.
 FLAGS.set_default('vsc_min_fraction_multiplier', 0.67)
@@ -188,8 +190,8 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
     if READS_PARENT2_.value:
       parent2_options.reads_filenames.extend(READS_PARENT2_.value.split(','))
 
-    if CANDIDATE_POSITIONS_CHILD_.value:
-      child_options.candidate_positions = CANDIDATE_POSITIONS_CHILD_.value
+    if CANDIDATE_POSITIONS_.value:
+      child_options.candidate_positions = CANDIDATE_POSITIONS_.value
 
     if PROPOSED_VARIANTS_CHILD_.value:
       child_options.proposed_variants_filename = PROPOSED_VARIANTS_CHILD_.value
@@ -293,8 +295,9 @@ def check_options_are_valid(options):
 
   if (options.mode == deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP and
       child.candidate_positions is None):
-    errors.log_and_raise('--candidate_positions_child is required when '
-                         '--positions_sweep_mode is set.')
+    errors.log_and_raise(
+        '--candidate_positions is required when --positions_sweep_mode is set.'
+    )
 
 
 def main(argv=()):

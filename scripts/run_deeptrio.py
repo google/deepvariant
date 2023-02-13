@@ -421,10 +421,10 @@ def _make_examples_command(ref,
     special_args['partition_size'] = 10000  # Should be approximately read
     # length to avoid having high
     # coverage intervals in multiple shards at a time
-    special_args['candidate_positions_child'] = candidate_positions_path
+    special_args['candidate_positions'] = candidate_positions_path
 
   if candidate_partition_mode == CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE:
-    special_args['candidate_positions_child'] = candidate_positions_path
+    special_args['candidate_positions'] = candidate_positions_path
 
   if special_args:
     kwargs = _update_kwargs_with_warning(kwargs, special_args)

@@ -192,10 +192,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     child_examples = test_utils.test_tmpfile(
         _sharded('examples_child.tfrecord', num_shards))
     if mode == 'candidate_sweep':
-      FLAGS.candidate_positions_child = test_utils.test_tmpfile(
-          _sharded('candidate_positions_child', num_shards))
-      candidate_positions_child = test_utils.test_tmpfile(
-          _sharded('candidate_positions_child', num_shards))
+      FLAGS.candidate_positions = test_utils.test_tmpfile(
+          _sharded('candidate_positions', num_shards)
+      )
+      candidate_positions = test_utils.test_tmpfile(
+          _sharded('candidate_positions', num_shards)
+      )
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
@@ -238,7 +240,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       # golden set exactly.
       if mode == 'candidate_sweep':
         _, candidates_path = sharded_file_utils.resolve_filespecs(
-            task_id, candidate_positions_child)
+            task_id, candidate_positions
+        )
         _, gold_candidates_path = sharded_file_utils.resolve_filespecs(
             task_id, golden_candidate_positions)
         self.verify_candidate_positions(candidates_path, gold_candidates_path)

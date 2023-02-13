@@ -220,7 +220,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           'PACBIO',
           True,
           '--add_hp_channel --alt_aligned_pileup "diff_channels" '
-          + '--candidate_positions_child '
+          + '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--min_mapping_quality "1" '
@@ -234,7 +234,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'WGS',
           True,
-          '--candidate_positions_child '
+          '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--channels "insert_size" '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
@@ -244,7 +244,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'WES',
           True,
-          '--candidate_positions_child '
+          '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--channels "insert_size" '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
@@ -306,7 +306,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--sample_name_parent1 "your_sample_parent1" '
       + '--sample_name_parent2 "your_sample_parent2" '
       + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
-      + '--candidate_positions_child '
+      + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
       + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
       + '--min_mapping_quality "1" '
@@ -332,7 +332,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--sample_name_parent1 "your_sample_parent1" '
       + '--sample_name_parent2 "your_sample_parent2" '
       + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
-      + '--candidate_positions_child '
+      + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
       + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
       + '--min_mapping_quality "1" '
