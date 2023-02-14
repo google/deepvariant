@@ -61,3 +61,9 @@ OPT_CHANNELS = [
     'gap_compressed_identity', 'gc_content', 'is_homopolymer',
     'homopolymer_weighted', 'blank', 'insert_size'
 ]
+
+# Used only when phasing is on (phase_reads=true). It allows to set the
+# region padding as a percantage over the region length. candidates are
+# calculated over an extended region. Output examples are not affected by
+# this value.
+PHASE_READS_REGION_PADDING_PCT = 20

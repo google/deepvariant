@@ -167,7 +167,8 @@ def make_vc_options(sample_name, flags_obj):
       gq_resolution=flags_obj.gvcf_gq_binsize,
       ploidy=2,
       skip_uncalled_genotypes=flags_obj.mode == 'training',
-      phase_reads_region_padding_pct=flags_obj.phase_reads_region_padding_pct)
+      phase_reads_region_padding_pct=dv_constants.PHASE_READS_REGION_PADDING_PCT,
+  )
 
 
 def parse_proto_enum_flag(proto_enum_pb2,

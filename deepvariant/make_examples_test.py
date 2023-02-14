@@ -193,44 +193,49 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       dict(mode='candidate_sweep', num_shards=0),
       dict(mode='candidate_sweep', num_shards=3),
       dict(
-          mode='training', num_shards=0, labeler_algorithm='haplotype_labeler'),
+          mode='training', num_shards=0, labeler_algorithm='haplotype_labeler'
+      ),
       dict(
-          mode='training', num_shards=3, labeler_algorithm='haplotype_labeler'),
+          mode='training', num_shards=3, labeler_algorithm='haplotype_labeler'
+      ),
       dict(
-          mode='training', num_shards=0,
-          labeler_algorithm='positional_labeler'),
+          mode='training', num_shards=0, labeler_algorithm='positional_labeler'
+      ),
       dict(
-          mode='training', num_shards=3,
-          labeler_algorithm='positional_labeler'),
-      # test phase_reads_region_padding_pct
-      dict(mode='calling', num_shards=0, phase_reads_region_padding_pct=20),
+          mode='training', num_shards=3, labeler_algorithm='positional_labeler'
+      ),
       # The following tests are for CRAM input:
       dict(
-          mode='calling', num_shards=0, test_condition=TestConditions.USE_CRAM),
+          mode='calling', num_shards=0, test_condition=TestConditions.USE_CRAM
+      ),
       dict(
           mode='training',
           num_shards=0,
           test_condition=TestConditions.USE_CRAM,
-          labeler_algorithm='haplotype_labeler'),
+          labeler_algorithm='haplotype_labeler',
+      ),
       # The following tests are for multiple BAM inputs:
       dict(
           mode='calling',
           num_shards=0,
-          test_condition=TestConditions.USE_MULTI_BAMS),
+          test_condition=TestConditions.USE_MULTI_BAMS,
+      ),
       dict(
           mode='training',
           num_shards=0,
           test_condition=TestConditions.USE_MULTI_BAMS,
-          labeler_algorithm='haplotype_labeler'),
+          labeler_algorithm='haplotype_labeler',
+      ),
   )
   @flagsaver.flagsaver
-  def test_make_examples_end2end(self,
-                                 mode,
-                                 num_shards,
-                                 test_condition=TestConditions.USE_BAM,
-                                 labeler_algorithm=None,
-                                 use_fast_pass_aligner=True,
-                                 phase_reads_region_padding_pct=None):
+  def test_make_examples_end2end(
+      self,
+      mode,
+      num_shards,
+      test_condition=TestConditions.USE_BAM,
+      labeler_algorithm=None,
+      use_fast_pass_aligner=True,
+  ):
     self.assertIn(mode, {'calling', 'training', 'candidate_sweep'})
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.write_run_info = True
@@ -257,8 +262,6 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.mode = mode
     FLAGS.gvcf_gq_binsize = 5
     FLAGS.use_fast_pass_aligner = use_fast_pass_aligner
-    if phase_reads_region_padding_pct is not None:
-      FLAGS.phase_reads_region_padding_pct = phase_reads_region_padding_pct
     if labeler_algorithm is not None:
       FLAGS.labeler_algorithm = labeler_algorithm
 
