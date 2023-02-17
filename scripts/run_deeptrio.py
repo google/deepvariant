@@ -292,19 +292,10 @@ def _extend_command_by_args_dict(command, extra_args):
   return command
 
 
-def _update_kwargs_with_warning(kwargs, extra_args, conflict_args=None):
-  """Updates `kwargs` with `extra_args`; crashes if `conflict_args` changed."""
+def _update_kwargs_with_warning(kwargs, extra_args):
+  """Updates `kwargs` with `extra_args`; gives a warning if values changed."""
   for k, v in extra_args.items():
     if k in kwargs:
-      if conflict_args is not None and k in conflict_args and kwargs[k] != v:
-        raise ValueError(
-            'The extra_args "{}" might have conflicts with other flags. '
-            'See '
-            'https://github.com/google/deepvariant/blob/r1.4/docs/'
-            'deepvariant-pacbio-model-case-study.md#clarification-'
-            'of-the---use_hp_information-flag '
-            'for an explanation, or report this issue on '
-            'https://github.com/google/deepvariant/issues.'.format(k))
       if kwargs[k] != v:
         print('\nWarning: --{} is previously set to {}, now to {}.'.format(
             k, kwargs[k], v))
@@ -383,7 +374,6 @@ def _make_examples_command(ref,
     command.extend(
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
 
-  conflict_args = None
   if _MODEL_TYPE.value == 'PACBIO':
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
@@ -405,7 +395,6 @@ def _make_examples_command(ref,
     special_args['sort_by_haplotypes'] = True
     special_args['parse_sam_aux_fields'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
-    conflict_args = ['sort_by_haplotypes', 'parse_sam_aux_fields']
 
   if _MODEL_TYPE.value == 'WES':
     special_args[
@@ -430,8 +419,7 @@ def _make_examples_command(ref,
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   # Extend the command with all items in kwargs and extra_args.
-  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args),
-                                       conflict_args)
+  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])

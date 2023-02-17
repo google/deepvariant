@@ -16,7 +16,6 @@ Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
---use_hp_information (true|false) Use to set --use_hp_information. Only set this for PACBIO*.
 --bin_version Version of DeepTrio model to use.
 --customized_model_child Path to checkpoint directory containing child model checkpoint.
 --customized_model_parent Path to checkpoint directory containing parent model checkpoint.
@@ -45,7 +44,6 @@ Note: All paths to dataset must be of the form "gs://..."
 BUILD_DOCKER=false
 DRY_RUN=false
 USE_GPU=false
-USE_HP_INFORMATION="unset"  # To distinguish whether this flag is set explicitly or not.
 SAVE_INTERMEDIATE_RESULTS=false
 # Strings; sorted alphabetically.
 BAM_CHILD=""
@@ -90,16 +88,6 @@ while (( "$#" )); do
       USE_GPU="$2"
       if [[ ${USE_GPU} != "true" ]] && [[ ${USE_GPU} != "false" ]]; then
         echo "Error: --use_gpu needs to have value (true|false)." >&2
-        echo "$USAGE" >&2
-        exit 1
-      fi
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --use_hp_information)
-      USE_HP_INFORMATION="$2"
-      if [[ "${USE_HP_INFORMATION}" != "true" ]] && [[ "${USE_HP_INFORMATION}" != "false" ]]; then
-        echo "Error: --use_hp_information needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -279,15 +267,9 @@ fi
 
 ## Flag consistency sanity checks.
 
-## The user should have not set --use_hp_information if it's not PACBIO.
-if [[ "${USE_HP_INFORMATION}" != "unset" ]] && [[ "${MODEL_TYPE}" != "PACBIO" ]]; then
-  echo "Error: Only set --use_hp_information for PACBIO." >&2
-  exit 1
-fi
-if [[ "${USE_HP_INFORMATION}" == "unset" ]] && [[ "${MODEL_TYPE}" == "PACBIO" ]]; then
-  # This is for backward-compatibility.
-  echo "For PACBIO, set use_hp_information=true if it's not explicitly set."
-  USE_HP_INFORMATION="true"
+if [[ "${USE_CANDIDATE_PARTITION}" == "false" ]] && [[ "${MODEL_TYPE}" == PACBIO* ]]; then
+  echo "For DeepTrio PACBIO*, automatically set --use_candidate_partitioning=true."
+  USE_CANDIDATE_PARTITION="true"
 fi
 
 N_SHARDS="64"
@@ -349,7 +331,6 @@ echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
-echo "USE_HP_INFORMATION: ${USE_HP_INFORMATION}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "# Strings; sorted alphabetically."
 echo "BAM_CHILD: ${BAM_CHILD}"
@@ -572,11 +553,6 @@ function setup_args() {
   fi
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
     extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
-  fi
-  if [[ "${USE_HP_INFORMATION}" == "true" ]] || [[ "${USE_HP_INFORMATION}" == "false" ]]; then
-    # Note that because --use_hp_information is a binary flag, I need to use
-    # the --flag=(true|false) format, or use --[no]flag format.
-    extra_args+=( "--use_hp_information=${USE_HP_INFORMATION}" )
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
