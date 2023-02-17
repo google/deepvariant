@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:20.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.8
 ARG DV_GPU_BUILD=0
-ARG VERSION_DEEPTRIO=1.4.0
+ARG VERSION_DEEPTRIO=1.5.0
 
 FROM continuumio/miniconda3 as conda_setup
 RUN conda config --add channels defaults && \
