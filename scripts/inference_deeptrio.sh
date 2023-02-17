@@ -62,6 +62,7 @@ MODEL_TYPE=""
 POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
 REGIONS=""
+USE_CANDIDATE_PARTITION=false
 
 while (( "$#" )); do
   case "$1" in
