@@ -151,9 +151,13 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     'valid flags for postprocess_variants.py. If the flag_value is boolean, '
     'it has to be flag_name=true or flag_name=false.')
 _USE_CANDIDATE_PARTITION = flags.DEFINE_boolean(
-    'use_candidate_partitioning', False,
-    'Optional. If set, make_examples is run over partitions that contain an '
-    'equal number of candidates. Default value is False.')
+    'use_candidate_partition',
+    False,
+    (
+        'Optional. If set, make_examples is run over partitions that contain an'
+        ' equal number of candidates. Default value is False.'
+    ),
+)
 
 
 # Optional flags for postprocess_variants.

@@ -257,7 +257,7 @@ class RunDeeptrioTest(parameterized.TestCase):
                                              use_candidate_partition,
                                              extra_args_plus_gvcf):
     FLAGS.model_type = model_type
-    FLAGS.use_candidate_partitioning = use_candidate_partition
+    FLAGS.use_candidate_partition = use_candidate_partition
     FLAGS.ref = 'your_ref'
     FLAGS.reads_child = 'your_bam_child'
     FLAGS.reads_parent1 = 'your_bam_parent1'
@@ -348,7 +348,7 @@ class RunDeeptrioTest(parameterized.TestCase):
   def test_make_examples_commands_with_candidate_partition(
       self, model_type, extra_args_1, extra_args_2):
     FLAGS.model_type = model_type
-    FLAGS.use_candidate_partitioning = True
+    FLAGS.use_candidate_partition = True
     FLAGS.ref = 'your_ref'
     FLAGS.reads_child = 'your_bam_child'
     FLAGS.reads_parent1 = 'your_bam_parent1'

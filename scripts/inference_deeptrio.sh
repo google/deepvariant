@@ -104,10 +104,10 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --use_candidate_partitioning)
+    --use_candidate_partition)
       USE_CANDIDATE_PARTITION="$2"
       if [[ ${USE_CANDIDATE_PARTITION} != "true" ]] && [[ ${USE_CANDIDATE_PARTITION} != "false" ]]; then
-        echo "Error: --use_candidate_partitioning needs to have value (true|false)." >&2
+        echo "Error: --use_candidate_partition needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -268,7 +268,7 @@ fi
 ## Flag consistency sanity checks.
 
 if [[ "${USE_CANDIDATE_PARTITION}" == "false" ]] && [[ "${MODEL_TYPE}" == PACBIO* ]]; then
-  echo "For DeepTrio PACBIO*, automatically set --use_candidate_partitioning=true."
+  echo "For DeepTrio PACBIO*, automatically set --use_candidate_partition=true."
   USE_CANDIDATE_PARTITION="true"
 fi
 
@@ -596,7 +596,7 @@ function run_deeptrio() {
     --output_gvcf_child "/output/${OUTPUT_GVCF_CHILD}" \
     --output_gvcf_parent1 "/output/${OUTPUT_GVCF_PARENT1}" \
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
-    --use_candidate_partitioning "${USE_CANDIDATE_PARTITION}" \
+    --use_candidate_partition "${USE_CANDIDATE_PARTITION}" \
     --logging_dir="/output/logs" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deeptrio_runtime.log""
