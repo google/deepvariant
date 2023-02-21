@@ -249,6 +249,29 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
 fi
 
 ################################################################################
+# TensorRT
+################################################################################
+
+note_build_stage "Install TensorRT"
+
+# Address the issue:
+# 'dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory'
+# It's unclear whether we need this or not. Setting up to get rid of the errors.
+if [[ "${DV_GPU_BUILD}" = "1" ]]; then
+  pip3 install "${PIP_ARGS[@]}" nvidia-tensorrt
+  sudo ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.8 /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.7
+  sudo ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.8 /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.7
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/python3.8/dist-packages/tensorrt/
+  sudo ldconfig
+  # Just in case this still doesn't work, we link them.
+  if [[ ! -e /usr/local/nvidia/lib ]]; then
+    mkdir -p /usr/local/nvidia/lib
+    ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.7 /usr/local/nvidia/lib/libnvinfer.so.7
+    ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.7 /usr/local/nvidia/lib/libnvinfer_plugin.so.7
+  fi
+fi
+
+################################################################################
 # Misc dependencies
 ################################################################################
 

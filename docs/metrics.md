@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~101m
-call_variants                    | ~178m
-postprocess_variants (with gVCF) | ~48m
-total                            | ~327m = ~5.45 hours
+make_examples                    | ~98m
+call_variants                    | ~174m
+postprocess_variants (with gVCF) | ~46m
+total                            | ~318m = ~5.3 hours
 
 ### Accuracy
 
@@ -20,8 +20,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501681   | 2820     | 1272     | 0.99441       | 0.997573         | 0.995989        |
-| SNP   | 3307194  | 20302    | 4141     | 0.993899      | 0.99875          | 0.996318        |
+| INDEL | 501712   | 2789     | 1175     | 0.994472      | 0.997758         | 0.996112        |
+| SNP   | 3306963  | 20533    | 3816     | 0.993829      | 0.998848         | 0.996332        |
 
 ## WES (Illumina)
 
@@ -43,8 +43,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 1021     | 30       | 11       | 0.971456      | 0.989554         | 0.980421        |
-| SNP   | 24976    | 303      | 46       | 0.988014      | 0.998162         | 0.993062        |
+| INDEL | 1019     | 32       | 10       | 0.969553      | 0.990467         | 0.979898        |
+| SNP   | 24981    | 298      | 49       | 0.988212      | 0.998043         | 0.993103        |
 
 ## PacBio (HiFi)
 
@@ -54,10 +54,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~156m
-call_variants                    | ~199m
-postprocess_variants (with gVCF) | ~59m
-total                            | ~414m = ~6.9 hours
+make_examples                    | ~153m
+call_variants                    | ~196m
+postprocess_variants (with gVCF) | ~53m
+total                            | ~402m = ~6.7 hours
 
 ### Accuracy
 
@@ -69,8 +69,8 @@ to run DeepVariant once.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501624   | 2877     | 2910     | 0.994297      | 0.994461         | 0.994379        |
-| SNP   | 3324613  | 2882     | 1905     | 0.999134      | 0.999428         | 0.999281        |
+| INDEL | 501620   | 2881     | 2803     | 0.994289      | 0.994664         | 0.994477        |
+| SNP   | 3324720  | 2775     | 1887     | 0.999166      | 0.999433         | 0.999300        |
 
 ## Hybrid (Illumina + PacBio HiFi)
 
@@ -80,10 +80,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~152m
-call_variants                    | ~181m
-postprocess_variants (with gVCF) | ~42m
-total                            | ~375m = ~6.25 hours
+make_examples                    | ~144m
+call_variants                    | ~173m
+postprocess_variants (with gVCF) | ~39m
+total                            | ~356m = ~5.93 hours
 
 ### Accuracy
 
@@ -92,8 +92,8 @@ out while training the hybrid model.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 503355   | 1146     | 1942     | 0.997728      | 0.99634          | 0.997034        |
-| SNP   | 3323945  | 3551     | 1580     | 0.998933      | 0.999525         | 0.999229        |
+| INDEL | 503347   | 1154     | 2003     | 0.997713      | 0.996225         | 0.996968        |
+| SNP   | 3323945  | 3550     | 1535     | 0.998933      | 0.999539         | 0.999236        |
 
 ## How to reproduce the metrics on this page
 
