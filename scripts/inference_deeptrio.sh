@@ -207,7 +207,7 @@ done
 
 ## Presets
 # These settings specify the commonly run case studies
-GCS_DATA_DIR="https://storage.googleapis.com/deepvariant"
+GCS_DATA_DIR="gs://deepvariant"  # Or you can use "https://storage.googleapis.com/deepvariant"
 BASE="${HOME}/custom-case-study"
 
 declare -a extra_args
@@ -375,7 +375,7 @@ function copy_gs_or_http_file() {
     gsutil -q stat "$1" || status=1
     if [[ $status == 0 ]]; then
       run echo "Copying from \"$1\" to \"$2\""
-      run gsutil -m cp "$1" "$2"
+      run gcloud storage cp "$1" "$2"
     else
       run echo "File $1 does not exist. Skip copying."
     fi
@@ -523,20 +523,20 @@ function get_docker_image() {
 function setup_args() {
   if [[ -n "${CUSTOMIZED_MODEL_CHILD}" ]]; then
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_CHILD} to ${INPUT_DIR}/child_model"
-    run gsutil cp "${CUSTOMIZED_MODEL_CHILD}".data-00000-of-00001 "${INPUT_DIR}/child_model/model.ckpt.data-00000-of-00001"
-    run gsutil cp "${CUSTOMIZED_MODEL_CHILD}".index "${INPUT_DIR}/child_model/model.ckpt.index"
-    run gsutil cp "${CUSTOMIZED_MODEL_CHILD}".meta "${INPUT_DIR}/child_model/model.ckpt.meta"
+    run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".data-00000-of-00001 "${INPUT_DIR}/child_model/model.ckpt.data-00000-of-00001"
+    run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".index "${INPUT_DIR}/child_model/model.ckpt.index"
+    run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".meta "${INPUT_DIR}/child_model/model.ckpt.meta"
     CUSTOMIZED_MODEL_CHILD_DIR="$(dirname "${CUSTOMIZED_MODEL_CHILD}")"
-    run "gsutil cp ${CUSTOMIZED_MODEL_CHILD_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+    run "gcloud storage cp ${CUSTOMIZED_MODEL_CHILD_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
     extra_args+=( --customized_model_child "/input/child_model/model.ckpt")
   fi
   if [[ -n "${CUSTOMIZED_MODEL_PARENT}" ]]; then
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_PARENT} to ${INPUT_DIR}/parent_model"
-    run gsutil cp "${CUSTOMIZED_MODEL_PARENT}".data-00000-of-00001 "${INPUT_DIR}/parent_model/model.ckpt.data-00000-of-00001"
-    run gsutil cp "${CUSTOMIZED_MODEL_PARENT}".index "${INPUT_DIR}/parent_model/model.ckpt.index"
-    run gsutil cp "${CUSTOMIZED_MODEL_PARENT}".meta "${INPUT_DIR}/parent_model/model.ckpt.meta"
+    run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".data-00000-of-00001 "${INPUT_DIR}/parent_model/model.ckpt.data-00000-of-00001"
+    run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".index "${INPUT_DIR}/parent_model/model.ckpt.index"
+    run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".meta "${INPUT_DIR}/parent_model/model.ckpt.meta"
     CUSTOMIZED_MODEL_PARENT_DIR="$(dirname "${CUSTOMIZED_MODEL_PARENT}")"
-    run "gsutil cp ${CUSTOMIZED_MODEL_PARENT_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+    run "gcloud storage cp ${CUSTOMIZED_MODEL_PARENT_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
     extra_args+=( --customized_model_parent "/input/parent_model/model.ckpt")
   fi
   if [[ -z "${CUSTOMIZED_MODEL_CHILD}" ]] && [[ -z "${CUSTOMIZED_MODEL_PARENT}" ]]; then
