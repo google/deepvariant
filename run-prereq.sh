@@ -259,9 +259,11 @@ note_build_stage "Install TensorRT"
 # It's unclear whether we need this or not. Setting up to get rid of the errors.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   pip3 install "${PIP_ARGS[@]}" nvidia-tensorrt
+  echo "For debugging:"
+  pip3 show nvidia-tensorrt
   sudo ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.8 /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.7
   sudo ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.8 /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.7
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/python3.8/dist-packages/tensorrt/
+  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:/usr/local/lib/python3.8/dist-packages/tensorrt/"
   sudo ldconfig
   # Just in case this still doesn't work, we link them.
   if [[ ! -e /usr/local/nvidia/lib ]]; then
