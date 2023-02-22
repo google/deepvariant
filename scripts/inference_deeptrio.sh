@@ -326,6 +326,12 @@ if [[ "${SAVE_INTERMEDIATE_RESULTS}" == "true" ]]; then
   extra_args+=( --intermediate_results_dir "/output/intermediate_results_dir")
 fi
 
+# Because the default is False, we only set it if
+# set to true.
+if [[ "${USE_CANDIDATE_PARTITION}" == "true" ]]; then
+  extra_args+=( --use_candidate_partition )
+fi
+
 echo "========================="
 echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
@@ -338,6 +344,7 @@ echo "BAM_PARENT1: ${BAM_PARENT1}"
 echo "BAM_PARENT2: ${BAM_PARENT2}"
 echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
+echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL_CHILD: ${CUSTOMIZED_MODEL_CHILD}"
 echo "CUSTOMIZED_MODEL_PARENT: ${CUSTOMIZED_MODEL_PARENT}"
@@ -596,7 +603,6 @@ function run_deeptrio() {
     --output_gvcf_child "/output/${OUTPUT_GVCF_CHILD}" \
     --output_gvcf_parent1 "/output/${OUTPUT_GVCF_PARENT1}" \
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
-    --use_candidate_partition "${USE_CANDIDATE_PARTITION}" \
     --logging_dir="/output/logs" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deeptrio_runtime.log""

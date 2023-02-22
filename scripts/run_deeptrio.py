@@ -154,6 +154,8 @@ _USE_CANDIDATE_PARTITION = flags.DEFINE_boolean(
     'use_candidate_partition',
     False,
     (
+        '[This flag is experimental for internal testing. '
+        'Do not set it to true.] '
         'Optional. If set, make_examples is run over partitions that contain an'
         ' equal number of candidates. Default value is False.'
     ),
@@ -702,6 +704,10 @@ def main(_):
   if _VERSION.value:
     print('DeepTrio version {}'.format(DEEP_TRIO_VERSION))
     return
+
+  if _USE_CANDIDATE_PARTITION.value:
+    print('The flag --use_candidate_partition is experimental. Do not set it.')
+    sys.exit(1)
 
   for flag_key in [
       'model_type', 'ref', 'reads_child', 'output_vcf_child',
