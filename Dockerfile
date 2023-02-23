@@ -207,4 +207,4 @@ RUN apt-get -y update && \
 
 WORKDIR /opt/deepvariant
 
-CMD ["/opt/deepvariant/bin/run_deepvariant_keras", "--help"]
+CMD ["/opt/deepvariant/bin/run_deepvariant", "--help"]
