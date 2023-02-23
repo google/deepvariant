@@ -261,15 +261,16 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   pip3 install "${PIP_ARGS[@]}" nvidia-tensorrt
   echo "For debugging:"
   pip3 show nvidia-tensorrt
-  sudo ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.8 /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.7
-  sudo ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.8 /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.7
-  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:/usr/local/lib/python3.8/dist-packages/tensorrt/"
+  TENSORRT_PATH=$(python3 -c 'import tensorrt; print(tensorrt.__path__[0])')
+  sudo ln -sf "${TENSORRT_PATH}/libnvinfer.so.8" "${TENSORRT_PATH}/libnvinfer.so.7"
+  sudo ln -sf "${TENSORRT_PATH}/libnvinfer_plugin.so.8" "${TENSORRT_PATH}/libnvinfer_plugin.so.7"
+  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:${TENSORRT_PATH}"
   sudo ldconfig
   # Just in case this still doesn't work, we link them.
   if [[ ! -e /usr/local/nvidia/lib ]]; then
     mkdir -p /usr/local/nvidia/lib
-    ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer.so.7 /usr/local/nvidia/lib/libnvinfer.so.7
-    ln -sf /usr/local/lib/python3.8/dist-packages/tensorrt/libnvinfer_plugin.so.7 /usr/local/nvidia/lib/libnvinfer_plugin.so.7
+    ln -sf "${TENSORRT_PATH}//libnvinfer.so.7" /usr/local/nvidia/lib/libnvinfer.so.7
+    ln -sf "${TENSORRT_PATH}//libnvinfer_plugin.so.7" /usr/local/nvidia/lib/libnvinfer_plugin.so.7
   fi
 fi
 
