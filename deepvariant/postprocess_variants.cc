@@ -97,11 +97,11 @@ void ProcessSingleSiteCallTfRecords(
     if (tfrecord_paths.size() > 1) {
       LOG(INFO) << "Done reading: " << tfrecord_path
                 << ". #entries in single_site_calls = "
-                << single_site_calls.size();
+                << std::to_string(single_site_calls.size());
     }
   }
   LOG(INFO) << "Total #entries in single_site_calls = "
-            << single_site_calls.size();
+            << std::to_string(single_site_calls.size());
   VLOG(3) << "Start SortSingleSiteCalls";
   SortSingleSiteCalls(contigs, &single_site_calls);
   VLOG(3) << "Done SortSingleSiteCalls";
