@@ -37,7 +37,7 @@ echo ========== See https://github.com/google/clif for how to build on different
 echo ========== Run this script in root mode.
 
 CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-20.04}"
-ABSL_VERSION=20210324.2
+ABSL_VERSION=20230125.1
 PROTOBUF_VERSION=3.13.0
 CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
 # CLIF_PIN can be set to a specific commit hash on
