@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~454m
-call_variants for HG002          | ~350m
-call_variants for HG003          | ~352m
-call_variants for HG004          | ~358m
+make_examples                    | ~452m
+call_variants for HG002          | ~370m
+call_variants for HG003          | ~374m
+call_variants for HG004          | ~370m
 postprocess_variants (parallel)  | ~62m
-total                            | ~1576m = ~26.27 hours
+total                            | ~1628m = ~27.13 hours
 
 ### Accuracy
 
@@ -24,24 +24,28 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11205    | 51       | 14       | 0.995469      | 0.998798         | 0.997131        |
-| SNP   | 71076    | 257      | 26       | 0.996397      | 0.999635         | 0.998013        |
+| INDEL | 11204    | 52       | 19       | 0.99538       | 0.99837          | 0.996873        |
+| SNP   | 71081    | 252      | 29       | 0.996467      | 0.999592         | 0.998027        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10589    | 39       | 20       | 0.99633       | 0.998193         | 0.997261        |
-| SNP   | 69985    | 181      | 69       | 0.99742       | 0.999016         | 0.998217        |
+| INDEL | 10588    | 40       | 21       | 0.996236      | 0.998102         | 0.997168        |
+| SNP   | 69988    | 178      | 64       | 0.997463      | 0.999087         | 0.998274        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10952    | 48       | 24       | 0.995636      | 0.997906         | 0.99677         |
-| SNP   | 71456    | 203      | 62       | 0.997167      | 0.999134         | 0.998149        |
+| INDEL | 10952    | 48       | 27       | 0.995636      | 0.997645         | 0.99664         |
+| SNP   | 71456    | 203      | 66       | 0.997167      | 0.999078         | 0.998122        |
 
 ## PacBio (HiFi)
+
+The numbers below are the same as
+https://github.com/google/deepvariant/blob/r1.4/docs/metrics-deeptrio.md#pacbio-hifi.
+To run DeepTrio PacBio, please use v1.4.0.
 
 ### Runtime
 
@@ -49,12 +53,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~706m
-call_variants for HG002          | ~268m
-call_variants for HG003          | ~274m
-call_variants for HG004          | ~278m
-postprocess_variants (parallel)  | ~67m
-total                            | ~1593m = ~26.55 hours
+make_examples                    | ~829m
+call_variants for HG002          | ~263m
+call_variants for HG003          | ~266m
+call_variants for HG004          | ~268m
+postprocess_variants (parallel)  | ~78m
+total                            | ~1704m = ~28.4 hours
 
 ### Accuracy
 
@@ -72,14 +76,14 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10596    | 32       | 53       | 0.996989      | 0.995245         | 0.996116        |
+| INDEL | 10595    | 33       | 54       | 0.996895      | 0.995155         | 0.996024        |
 | SNP   | 70144    | 22       | 19       | 0.999686      | 0.999729         | 0.999708        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10965    | 35       | 53       | 0.996818      | 0.995402         | 0.99611         |
+| INDEL | 10967    | 33       | 53       | 0.997         | 0.995403         | 0.996201        |
 | SNP   | 71594    | 65       | 38       | 0.999093      | 0.99947          | 0.999281        |
 
 ## Whole Exome Sequencing (Illumina)
@@ -137,7 +141,7 @@ Use `gcloud compute ssh` to log in to the newly created instance.
 Download and run any of the following case study scripts:
 
 ```
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.4/scripts/inference_deeptrio.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.5/scripts/inference_deeptrio.sh
 
 # WGS
 bash inference_deeptrio.sh --model_preset WGS
@@ -146,7 +150,7 @@ bash inference_deeptrio.sh --model_preset WGS
 bash inference_deeptrio.sh --model_preset WES
 
 # PacBio
-bash inference_deeptrio.sh --model_preset PACBIO
+bash inference_deeptrio.sh --model_preset PACBIO --bin_version 1.4.0
 
 ```
 
