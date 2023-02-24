@@ -23,6 +23,8 @@ held out while training.
 | INDEL | 501712   | 2789     | 1175     | 0.994472      | 0.997758         | 0.996112        |
 | SNP   | 3306963  | 20533    | 3816     | 0.993829      | 0.998848         | 0.996332        |
 
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/WGS/deepvariant.output.visual_report.html)
+
 ## WES (Illumina)
 
 ### Runtime
@@ -45,6 +47,8 @@ held out while training.
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
 | INDEL | 1019     | 32       | 10       | 0.969553      | 0.990467         | 0.979898        |
 | SNP   | 24981    | 298      | 49       | 0.988212      | 0.998043         | 0.993103        |
+
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/WES/deepvariant.output.visual_report.html)
 
 ## PacBio (HiFi)
 
@@ -72,6 +76,8 @@ to run DeepVariant once.
 | INDEL | 501629   | 2872     | 2771     | 0.994307      | 0.994725         | 0.994516        |
 | SNP   | 3324633  | 2862     | 1852     | 0.99914       | 0.999444         | 0.999292        |
 
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/PACBIO/deepvariant.output.visual_report.html)
+
 ## Hybrid (Illumina + PacBio HiFi)
 
 ### Runtime
@@ -95,6 +101,8 @@ out while training the hybrid model.
 | INDEL | 503347   | 1154     | 2003     | 0.997713      | 0.996225         | 0.996968        |
 | SNP   | 3323945  | 3550     | 1535     | 0.998933      | 0.999539         | 0.999236        |
 
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/HYBRID/deepvariant.output.visual_report.html)
+
 ## How to reproduce the metrics on this page
 
 For simplicity and consistency, we report runtime with a
@@ -107,7 +115,7 @@ Download and run any of the following case study scripts:
 
 ```
 # Get the script.
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.4/scripts/inference_deepvariant.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.5/scripts/inference_deepvariant.sh
 
 # WGS
 bash inference_deepvariant.sh --model_preset WGS
