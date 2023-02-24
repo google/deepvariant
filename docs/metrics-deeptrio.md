@@ -41,6 +41,11 @@ truth), which was held out while training.
 | INDEL | 10952    | 48       | 27       | 0.995636      | 0.997645         | 0.99664         |
 | SNP   | 71456    | 203      | 66       | 0.997167      | 0.999078         | 0.998122        |
 
+* See VCF stats report (for all chromosomes)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WGS/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WGS/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WGS/HG004.output.visual_report.html)
+
 ## PacBio (HiFi)
 
 The numbers below are the same as
@@ -59,6 +64,11 @@ call_variants for HG003          | ~266m
 call_variants for HG004          | ~268m
 postprocess_variants (parallel)  | ~78m
 total                            | ~1704m = ~28.4 hours
+
+* See VCF stats report (for all chromosomes)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.4.0/PACBIO/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.4.0/PACBIO/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.4.0/PACBIO/HG004.output.visual_report.html)
 
 ### Accuracy
 
@@ -128,6 +138,10 @@ truth), which was held out while training.
 | INDEL | 32       | 1        | 0        | 0.969697      | 1.0              | 0.984615        |
 | SNP   | 676      | 3        | 0        | 0.995582      | 1.0              | 0.997786        |
 
+* See VCF stats report (for all chromosomes)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WES/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WES/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WES/HG004.output.visual_report.html)
 
 ## How to reproduce the metrics on this page
 
