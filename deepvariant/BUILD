@@ -11,6 +11,7 @@ filegroup(
         "call_variants_keras",
         "freeze_graph",
         "make_examples",
+        "make_examples_somatic",
         "model_eval",
         "model_train",
         "multisample_make_examples",
@@ -529,6 +530,28 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":dv_constants",
+        ":logging_level",
+        ":make_examples_core",
+        ":make_examples_options",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io/python:hts_verbose",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:proto_utils",
+        "@absl_py//absl/flags",
+        # TODO: Figure out why we need this dep.
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+        "@absl_py//absl:app",
+    ],
+)
+
+py_binary(
+    name = "make_examples_somatic",
+    srcs = [
+        "make_examples_somatic.py",
+    ],
+    main = "make_examples_somatic.py",
+    python_version = "PY3",
+    deps = [
         ":logging_level",
         ":make_examples_core",
         ":make_examples_options",
