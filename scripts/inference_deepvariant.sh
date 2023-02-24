@@ -18,14 +18,14 @@ Flags:
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, WES, PACBIO, or HYBRID_PACBIO_ILLUMINA.
+--model_preset Preset case study to run: WGS, WES, PACBIO, ONT_R104, ONT_R104_DUPLEX_CHR20, or HYBRID_PACBIO_ILLUMINA. ONT_R104_DUPLEX_CHR20 will use the ONT_R104 model_type.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 
 
 If model_preset is not specified, the below flags are required:
---model_type Type of DeepVariant model to run (WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA)
+--model_type Type of DeepVariant model to run (WGS, WES, PACBIO, ONT_R104, HYBRID_PACBIO_ILLUMINA)
 --ref Path to GCP bucket containing ref file (.fa)
 --bam Path to GCP bucket containing BAM
 --truth_vcf Path to GCP bucket containing truth VCF
@@ -209,6 +209,23 @@ if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BAM="${BAM:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.35x.grch38.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
+  MODEL_TYPE="ONT_R104"
+  BASE="${HOME}/ont-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_R1041_Guppy6_sup_2_GRCh38.pass.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+elif [[ "${MODEL_PRESET}" = "ONT_R104_DUPLEX_CHR20" ]]; then
+  MODEL_TYPE="ONT_R104"
+  BASE="${HOME}/ont-duplex-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG002_R1041_Duplex_all_Dorado_v0.1.1_400bps_pass_2_GRCh38.chr20.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+  REGIONS="chr20"
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   MODEL_TYPE="WGS"
   BASE="${HOME}/wgs-case-study"
