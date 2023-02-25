@@ -533,12 +533,13 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_PARENT.value + '.index')
         or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_PARENT.value +
                                          '.meta')):
-      raise RuntimeError('The model files {}* do not exist. Potentially '
-                         'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.4/docs/'
-                         'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
-                         'could-not-open'.format(
-                             _CUSTOMIZED_MODEL_PARENT.value))
+      raise RuntimeError(
+          'The model files {}* do not exist. Potentially '
+          'relevant issue: '
+          'https://github.com/google/deepvariant/blob/r1.5/docs/'
+          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
+          'could-not-open'.format(_CUSTOMIZED_MODEL_PARENT.value)
+      )
     logging.info(
         'You set --customized_model_parent. Instead of using the default '
         'model for %s, `call_variants` step will load %s* '
@@ -550,11 +551,13 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_CHILD.value + '.index')
         or
         not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL_CHILD.value + '.meta')):
-      raise RuntimeError('The model files {}* do not exist. Potentially '
-                         'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.4/docs/'
-                         'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
-                         'could-not-open'.format(_CUSTOMIZED_MODEL_CHILD.value))
+      raise RuntimeError(
+          'The model files {}* do not exist. Potentially '
+          'relevant issue: '
+          'https://github.com/google/deepvariant/blob/r1.5/docs/'
+          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
+          'could-not-open'.format(_CUSTOMIZED_MODEL_CHILD.value)
+      )
     logging.info(
         'You set --customized_model_child. Instead of using the default '
         'model for %s, `call_variants` step will load %s* '

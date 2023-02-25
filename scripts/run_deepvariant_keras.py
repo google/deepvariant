@@ -34,7 +34,7 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 
 For more details, see:
-https://github.com/google/deepvariant/blob/r1.4/docs/deepvariant-quick-start.md
+https://github.com/google/deepvariant/blob/r1.5/docs/deepvariant-quick-start.md
 """
 
 import os
@@ -145,7 +145,7 @@ MODEL_TYPE_MAP = {
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
-DEEP_VARIANT_VERSION = '1.4.0'
+DEEP_VARIANT_VERSION = '1.5.0'
 
 
 def _is_quoted(value):
@@ -350,11 +350,13 @@ def check_flags():
         not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.index') or
         (not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.meta') and
          (not _IS_KERAS_MODEL.value))):
-      raise RuntimeError('The model files {}* do not exist. Potentially '
-                         'relevant issue: '
-                         'https://github.com/google/deepvariant/blob/r1.4/docs/'
-                         'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
-                         'could-not-open'.format(_CUSTOMIZED_MODEL.value))
+      raise RuntimeError(
+          'The model files {}* do not exist. Potentially '
+          'relevant issue: '
+          'https://github.com/google/deepvariant/blob/r1.5/docs/'
+          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
+          'could-not-open'.format(_CUSTOMIZED_MODEL.value)
+      )
     logging.info(
         'You set --customized_model. Instead of using the default '
         'model for %s, `call_variants` step will load %s* '
