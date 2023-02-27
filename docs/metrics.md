@@ -78,6 +78,31 @@ to run DeepVariant once.
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/PACBIO/deepvariant.output.visual_report.html)
 
+## ONT_R104
+
+### Runtime
+
+Runtime is on HG003 ultra-long reads (all chromosomes).
+
+Stage                            | Time (minutes)
+-------------------------------- | -----------------
+make_examples                    | ~782m
+call_variants                    | ~266m
+postprocess_variants (with gVCF) | ~67m
+total                            | ~1115m = ~18.58 hours
+
+### Accuracy
+
+hap.py results on HG003 ultra-long reads (all chromosomes, using NIST v4.2.1
+truth), which was held out while training.
+
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 444208   | 60293    | 42612    | 0.88049       | 0.915553         | 0.897679        |
+| SNP   | 3320812  | 6683     | 9294     | 0.997992      | 0.99721          | 0.997601        |
+
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/PACBIO/deepvariant.output.visual_report.html)
+
 ## Hybrid (Illumina + PacBio HiFi)
 
 ### Runtime
@@ -125,6 +150,9 @@ bash inference_deepvariant.sh --model_preset WES
 
 # PacBio
 bash inference_deepvariant.sh --model_preset PACBIO
+
+# ONT_R104
+bash inference_deepvariant.sh --model_preset ONT_R104
 
 # Hybrid
 bash inference_deepvariant.sh --model_preset HYBRID_PACBIO_ILLUMINA
