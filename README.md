@@ -18,9 +18,12 @@ DeepVariant supports germline variant-calling in diploid organisms.
     RNA-seq.
 *   PacBio HiFi data, see the
     [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
+*   Oxford Nanopore R10.4.1 Simplex or Duplex data, see the
+    [ONT R10.4.1 Simplex case study](docs/deepvariant-ont-r104-simplex-case-study.md)
+    and [ONT R10.4.1 Duplex case study](docs/deepvariant-ont-r104-duplex-case-study.md).
 *   Hybrid PacBio HiFi + Illumina WGS, see the
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
-*   Oxford Nanopore long-read data by using
+*   Oxford Nanopore R9.4.1 data by using
     [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper).
 *   GenapSys data, by using a
     [model retrained by GenapSys](https://github.com/GenapsysInc/genapsys_deepvariant/blob/master/docs/GenapSys_DeepVariant_WES_Model.md).
@@ -69,7 +72,7 @@ docker run \
   -v "YOUR_OUTPUT_DIR:/output" \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
-  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO,HYBRID_PACBIO_ILLUMINA]**
+  --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO,ONT_R104,HYBRID_PACBIO_ILLUMINA]**
   --ref=/input/YOUR_REF \
   --reads=/input/YOUR_BAM \
   --output_vcf=/output/YOUR_OUTPUT_VCF \

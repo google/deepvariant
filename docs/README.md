@@ -8,6 +8,8 @@
 *   [DeepVariant whole genome case study](deepvariant-case-study.md)
 *   [DeepVariant exome case study](deepvariant-exome-case-study.md)
 *   [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md)
+*   [DeepVariant ONT R10.4 simplex case study](deepvariant-ont-r104-simplex-case-study.md)
+    [DeepVariant ONT R10.4 duplex case study](deepvariant-ont-r104-duplex-case-study.md)
 *   [DeepVariant hybrid (PacBio and Illumina) case study](deepvariant-hybrid-case-study.md)
 *   [Runtime and accuracy metrics for all DeepVariant models](metrics.md)
 *   [Best practices for multi-sample variant calling](trio-merge-case-study.md)
