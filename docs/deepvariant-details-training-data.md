@@ -16,7 +16,7 @@ v1.1    | 12 HG001<br>3 HG002<br>3 HG004<br>3 HG005<br>3 HG006<br>3 HG007<sup>[(
 v1.2    | 12 HG001<br>6 HG002<sup>[(12)](#vfootnote12)</sup><br>6 HG004<sup>[(12)](#vfootnote12)</sup><br>3 HG005<br>3 HG006<br>3 HG007 | 518,709,296
 v1.3    | Same model as v1.2
 v1.4    | 12 HG001<br>6 HG002<sup>[(12)](#vfootnote12)</sup><br>6 HG004<sup>[(12)](#vfootnote12)</sup><br>3 HG005<br>3 HG006<br>3 HG007 | 517,209,566
-v1.5    | TODO 
+v1.5    | 13 HG001<br>14 HG002<br>8 HG004<br>9 HG005<br>4 HG006<br>4 HG007 | 815,200,320
 
 ### WES models
 
