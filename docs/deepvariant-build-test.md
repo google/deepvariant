@@ -12,8 +12,8 @@ The `build-prereq.sh` command below will install a number of system packages to
 fulfill DeepVariant's prerequisites (using apt-get and pip, invoked via sudo).
 This commands also downloads and builds TensorFlow and CLIF from source.
 
-Run the following commands to install prerequisites, build the DeepVariant
-programs, and then run tests.
+First run `sudo su`, and then run the following commands to install
+prerequisites, build the DeepVariant programs, and then run tests.
 
 ```shell
 ./build-prereq.sh

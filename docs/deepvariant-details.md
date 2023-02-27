@@ -43,7 +43,7 @@ in the [Inputs and outputs](#inputs-and-outputs) section.
 examples for evaluation with our deep learning models. The tf.Example protos are
 written out in TFRecord format. To learn more about tf.Example and TFRecord, see
 the
-[Using TFRecords and tf.Example](https://www.tensorflow.org/tutorials/load_data/tf_records)
+[Using TFRecords and tf.Example](https://www.tensorflow.org/tutorials/load_data/tfrecord)
 Colab.
 
 `make_examples` is a single-threaded program using 1-2 GB of RAM. Since the
@@ -302,7 +302,7 @@ docker run google/deepvariant:"${BIN_VERSION}" \
 An example usage:
 
 ```bash
-BIN_VERSION=1.4.0
+BIN_VERSION=1.5.0
 gsutil -m cp gs://deepvariant/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}+data-pacbio_standard/model.ckpt* .
 
 sudo docker run \

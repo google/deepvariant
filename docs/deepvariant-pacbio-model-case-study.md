@@ -79,7 +79,7 @@ curl ${HTTPDIR}/HG003.GRCh38.chr20.pFDA_truthv2.bam.bai > input/HG003.GRCh38.chr
 
 ```bash
 ulimit -u 10000 # https://stackoverflow.com/questions/52026652/openblas-blas-thread-init-pthread-create-resource-temporarily-unavailable/54746150#54746150
-BIN_VERSION="1.4.0"
+BIN_VERSION="1.5.0"
 mkdir -p deepvariant_output
 
 singularity exec --bind /usr/lib/locale/ \
@@ -121,9 +121,9 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10562        66        23213        71      12137     41     28       0.993790          0.993590        0.522854         0.993690                     NaN                     NaN                   1.748961                   2.266841
-INDEL   PASS        10628     10562        66        23213        71      12137     41     28       0.993790          0.993590        0.522854         0.993690                     NaN                     NaN                   1.748961                   2.266841
-  SNP    ALL        70166     70137        29       109249        11      39034      4      1       0.999587          0.999843        0.357294         0.999715                2.296566                1.674805                   1.883951                   1.836323
-  SNP   PASS        70166     70137        29       109249        11      39034      4      1       0.999587          0.999843        0.357294         0.999715                2.296566                1.674805                   1.883951                   1.836323
+INDEL    ALL        10628     10558        70        23068        73      11995     40     32       0.993414          0.993407        0.519984         0.993411                     NaN                     NaN                   1.748961                   2.306337
+INDEL   PASS        10628     10558        70        23068        73      11995     40     32       0.993414          0.993407        0.519984         0.993411                     NaN                     NaN                   1.748961                   2.306337
+  SNP    ALL        70166     70140        26       105927        21      35705      7      6       0.999629          0.999701        0.337072         0.999665                2.296566                1.713653                   1.883951                   1.901115
+  SNP   PASS        70166     70140        26       105927        21      35705      7      6       0.999629          0.999701        0.337072         0.999665                2.296566                1.713653                   1.883951                   1.901115
 ```
 
