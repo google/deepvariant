@@ -92,7 +92,7 @@ sudo docker run \
   --intermediate_results_dir "${OUTPUT_DIR}/${INTERMEDIATE_DIRECTORY}"
 ```
 
-By specifying `--model_type ONT_R10`, you'll be using a model that is best
+By specifying `--model_type ONT_R104`, you'll be using a model that is best
 suited for Oxford Nanopore R10.4.1 chemistry Simplex and Duplex reads.
 
 NOTE: If you want to run each of the steps separately, add `--dry_run=true` to
