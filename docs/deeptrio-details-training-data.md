@@ -9,11 +9,13 @@
 | 1.2.0        | (Same model as 1.1.0)              |             |
 | 1.3.0        | (Same model as 1.1.0)              |             |
 | 1.4.0        | 4 HG001/NA12891/NA12892 trios<br>7 HG005/HG006/HG007 trios <br>3 HG002/HG003/HG004 trios | 704,228,446 |
+| 1.5.0        | <sup>[(6)](#vfootnote6)</sup>4 HG001, 3 HG002, 3 HG003, 3 HG004, 7 HG005, 6 HG006, 6 HG007, 4 NA12891, 4 NA12892 | 704,228,358 |
 | Parent model |                                    |             |
 | 1.1.0        | 7 HG005/HG006/HG007 trios <br> 3 HG002/HG003/HG004 trios | 315,847,934 |
 | 1.2.0        | (Same model as 1.1.0)              |             |
 | 1.3.0        | (Same model as 1.1.0)              |             |
 | 1.4.0        | 7 HG005/HG006/HG007 trios <br> 3 HG002/HG003/HG004 trios | 457,374,516 |
+| 1.5.0        | <sup>[(6)](#vfootnote6)</sup>3 HG002, 3 HG003, 3 HG004, 7 HG005, 6 HG006, 6 HG007 | 457,374,464 |
 
 ### WES models
 
@@ -24,11 +26,16 @@
 | 1.2.0        | (Same model as 1.1.0)              |             |
 | 1.3.0        | (Same model as 1.1.0)              |             |
 | 1.4.0        | 27 HG001/NA12891/NA12892 trios<br>6 HG005/HG006/HG007 trios <br>6 HG002/HG003/HG004 trios  | 27,776,416 |
+| 1.5.0        | <sup>[(6)](#vfootnote6)</sup>9 HG001, 7 HG002, 7 HG003, 7 HG004, 8 HG005, 8 HG006, 8 HG007, 9 NA12891, 9 NA12892 | 27,791,954 |
 | Parent model |                                                 |            |
 | 1.1.0        | 6 HG005/HG006/HG007 trios <br> 6 HG002/HG003/HG004 trios  | 4,131,018  |
 | 1.2.0        | (Same model as 1.1.0)              |             |
 | 1.3.0        | (Same model as 1.1.0)              |             |
 | 1.4.0        | 6 HG005/HG006/HG007 trios <br> 6 HG002/HG003/HG004 trios  | 13,036,995  |
+| 1.5.0        | <sup>[(6)](#vfootnote6)</sup>6 HG002, 6 HG003, 6 HG004, 8 HG005, 8 HG006, 8 HG007 | 13,036,998  |
+
+
+
 
 ### PACBIO models<sup>[(2)](#vfootnote2)</sup><sup>[(3)](#vfootnote3)</sup>
 
@@ -62,3 +69,7 @@ used for training.
 <a name="vfootnote5">(5)</a>: In v1.3.0, we included PacBio Sequel II Chemistry
 v2.2 data in the training dataset. And we updated to NIST truth version to
 v4.2.1.
+
+<a name="vfootnote6">(6)</a>: Starting in v1.5.0, for clarity, we report the
+number of unique BAM files used. Note that this doesn't mean all the trios were
+paired together to produce training data.
