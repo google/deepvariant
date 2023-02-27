@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~98m
-call_variants                    | ~174m
-postprocess_variants (with gVCF) | ~46m
-total                            | ~318m = ~5.3 hours
+make_examples                    | ~103m
+call_variants                    | ~185m
+postprocess_variants (with gVCF) | ~48m
+total                            | ~336m = ~5.6 hours
 
 ### Accuracy
 
@@ -20,8 +20,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501712   | 2789     | 1175     | 0.994472      | 0.997758         | 0.996112        |
-| SNP   | 3306963  | 20533    | 3816     | 0.993829      | 0.998848         | 0.996332        |
+| INDEL | 501715   | 2786     | 1188     | 0.994478      | 0.997733         | 0.996103        |
+| SNP   | 3306844  | 20652    | 4262     | 0.993794      | 0.998713         | 0.996247        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/WGS/deepvariant.output.visual_report.html)
 
@@ -58,10 +58,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~153m
-call_variants                    | ~196m
-postprocess_variants (with gVCF) | ~53m
-total                            | ~402m = ~6.7 hours
+make_examples                    | ~154m
+call_variants                    | ~201m
+postprocess_variants (with gVCF) | ~56m
+total                            | ~411m = ~6.85 hours
 
 ### Accuracy
 
@@ -86,10 +86,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~144m
-call_variants                    | ~173m
-postprocess_variants (with gVCF) | ~39m
-total                            | ~356m = ~5.93 hours
+make_examples                    | ~150m
+call_variants                    | ~178m
+postprocess_variants (with gVCF) | ~41m
+total                            | ~369m = ~6.15 hours
 
 ### Accuracy
 
