@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~452m
-call_variants for HG002          | ~370m
-call_variants for HG003          | ~374m
-call_variants for HG004          | ~370m
+make_examples                    | ~441m
+call_variants for HG002          | ~356m
+call_variants for HG003          | ~360m
+call_variants for HG004          | ~359m
 postprocess_variants (parallel)  | ~62m
-total                            | ~1628m = ~27.13 hours
+total                            | ~1578m = ~26.3 hours
 
 ### Accuracy
 
