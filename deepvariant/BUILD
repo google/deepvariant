@@ -50,11 +50,13 @@ py_library(
     srcs = [],
     deps = [
         ":allele_frequency",
+        ":call_variants_keras_lib",
         ":call_variants_lib",
         ":data_providers",
         ":dv_utils",
         ":dv_vcf_constants",
         ":haplotypes",
+        ":keras_modeling",
         ":make_examples_core",
         ":make_examples_lib",
         ":model_eval_lib",
@@ -170,7 +172,7 @@ cc_test(
     name = "variant_calling_test",
     size = "small",
     srcs = ["variant_calling_test.cc"],
-    data = ["//deepvariant:testdata"],
+    data = [":testdata"],
     deps = [
         ":utils",
         ":variant_calling",
@@ -211,8 +213,8 @@ cc_test(
     size = "small",
     srcs = ["variant_calling_multisample_trio_test.cc"],
     deps = [
+        ":utils",
         ":variant_calling_multisample",
-        "//deepvariant:utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
@@ -668,7 +670,7 @@ py_library(
     deps = [
         # TODO: I need to break this down into smaller deps.
         ":call_variants_main_lib",
-        "//deepvariant:dv_constants",
+        ":dv_constants",
     ],
 )
 
@@ -677,10 +679,19 @@ py_binary(
     srcs = ["call_variants_keras.py"],
     python_version = "PY3",
     deps = [
-        ":call_variants_main_lib",
-        "//deepvariant:keras_modeling",
+        "call_variants_keras_lib",
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_library(
+    name = "call_variants_keras_lib",
+    srcs = ["call_variants_keras.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":call_variants_main_lib",
+        ":keras_modeling",
     ],
 )
 
@@ -838,8 +849,8 @@ py_library(
         ":logging_level",
         ":dv_utils",
         ":vcf_stats",
-        "//deepvariant:dv_constants",
-        "//deepvariant:haplotypes",
+        ":dv_constants",
+        ":haplotypes",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:postprocess_variants",
         "//third_party/nucleus/io:fasta",
