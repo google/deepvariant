@@ -25,8 +25,6 @@ DeepVariant supports germline variant-calling in diploid organisms.
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
 *   Oxford Nanopore R9.4.1 data by using
     [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper).
-*   GenapSys data, by using a
-    [model retrained by GenapSys](https://github.com/GenapsysInc/genapsys_deepvariant/blob/master/docs/GenapSys_DeepVariant_WES_Model.md).
 
 Please also note:
 
@@ -173,7 +171,7 @@ post on
 ### Prerequisites
 
 *   Unix-like operating system (cannot run on Windows)
-*   Python 3.6
+*   Python 3.8
 
 ### Official Solutions
 
