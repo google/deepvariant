@@ -167,7 +167,8 @@ std::string MakeAltAllele(const std::string_view prefix,
 //
 // A good alt allele is one that is a substitution, insertion, or deletion,
 // and satisfies our min count and min fraction requirements.
-VariantCaller::AlleleRejectionAcceptance VariantCaller::IsGoodAltAllele(
+VariantCaller::AlleleRejectionAcceptance
+VariantCaller::IsGoodAltAlleleWithReason(
     const Allele& allele, const int total_count,
     const bool apply_trio_coefficient) const {
   if (allele.type() == AlleleType::REFERENCE) {
@@ -227,7 +228,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   // First process target_sample_alleles
   for (const auto& allele : target_sample_alleles) {
     AlleleRejectionAcceptance allele_acceptance =
-        IsGoodAltAllele(allele, target_samples_total_count, false);
+        IsGoodAltAlleleWithReason(allele, target_samples_total_count, false);
     if (allele_acceptance == AlleleRejectionAcceptance::ACCEPTED) {
       alt_alleles.push_back(allele);
       continue;
@@ -237,7 +238,8 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
       for (const auto& all_samples_allele : all_sample_alleles) {
         if (IsAllelesTheSame(allele, all_samples_allele) &&
             AlleleRejectionAcceptance::ACCEPTED ==
-                IsGoodAltAllele(all_samples_allele, all_samples_total_count,
+                IsGoodAltAlleleWithReason(all_samples_allele,
+                                          all_samples_total_count,
                                 true)) {
           alt_alleles.push_back(allele);
           break;

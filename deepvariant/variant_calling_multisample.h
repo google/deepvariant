@@ -223,7 +223,7 @@ class VariantCaller {
   std::vector<Allele> SelectAltAlleles(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const std::string& target_sample) const;
-  AlleleRejectionAcceptance IsGoodAltAllele(
+  AlleleRejectionAcceptance IsGoodAltAlleleWithReason(
       const Allele& allele, const int total_count,
       const bool apply_trio_coefficient) const;
   bool KeepReferenceSite() const;
