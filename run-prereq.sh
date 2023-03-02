@@ -147,6 +147,7 @@ pip3 install "${PIP_ARGS[@]}" 'jsonschema==3.2.0'
 pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 pip3 install "${PIP_ARGS[@]}" 'Pillow>=5.4.1'
 pip3 install "${PIP_ARGS[@]}" 'ipython>=7.9.0'
+pip3 install "${PIP_ARGS[@]}" 'pysam==0.20.0'
 
 ################################################################################
 # TensorFlow

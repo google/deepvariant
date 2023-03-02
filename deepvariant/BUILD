@@ -925,6 +925,92 @@ py_test(
 )
 
 py_library(
+    name = "postprocess_variants_pysam_py_lib",
+    srcs = ["postprocess_variants_pysam.py"],
+    data = glob([
+        "multiallelic_model/**",
+    ]),
+    srcs_version = "PY3",
+    deps = [
+        # END_INTERNAL
+        ":dv_vcf_constants",
+        ":logging_level",
+        ":dv_utils",
+        ":vcf_stats",
+        ":dv_constants",
+        ":haplotypes",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/python:postprocess_variants",
+        "//third_party/nucleus/io:sharded_file_utils",
+        "//third_party/nucleus/io:tabix",
+        "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/io/python:merge_variants",
+        "//third_party/nucleus/protos:reference_py_pb2",
+        "//third_party/nucleus/protos:struct_py_pb2",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:genomics_math",
+        "//third_party/nucleus/util:proto_utils",
+        "//third_party/nucleus/util:struct_utils",
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
+    ],
+)
+
+py_binary(
+    name = "postprocess_variants_pysam",
+    srcs = [
+        "postprocess_variants_pysam.py",
+    ],
+    main = "postprocess_variants_pysam.py",
+    python_version = "PY3",
+    deps = [
+        ":postprocess_variants_pysam_py_lib",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
+        # TODO: Figure out why we need this dep.
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_test(
+    name = "postprocess_variants_pysam_test",
+    size = "medium",
+    srcs = ["postprocess_variants_pysam_test.py"],
+    data = [":testdata"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    tags = ["requires-net:external"],
+    deps = [
+        ":dv_constants",
+        ":dv_vcf_constants",
+        ":postprocess_variants_pysam_py_lib",
+        ":py_testdata",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/protos:reference_py_pb2",
+        "//third_party/nucleus/protos:struct_py_pb2",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/nucleus/util:genomics_math",
+        "//third_party/nucleus/util:struct_utils",
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
+        "//third_party/nucleus/util:vcf_constants",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:flagsaver",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
     name = "py_testdata",
     testonly = True,
     srcs = ["testdata.py"],
