@@ -221,6 +221,7 @@ cc_test(
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
