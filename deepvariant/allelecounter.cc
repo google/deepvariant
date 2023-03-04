@@ -80,8 +80,8 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
   std::vector<Allele> to_return;
   to_return.reserve(allele_sums.size());
   for (const auto& entry : allele_sums) {
-    to_return.push_back(MakeAllele(string(entry.first.first),
-                                   entry.first.second, entry.second));
+    to_return.push_back(
+        MakeAllele(entry.first.first, entry.first.second, entry.second));
   }
 
   // TODO SumAlleleCounts is only used in one place in variant_calling.cc
@@ -118,8 +118,8 @@ std::vector<Allele> SumAlleleCounts(
   std::vector<Allele> to_return;
   to_return.reserve(allele_sums.size());
   for (const auto& entry : allele_sums) {
-    to_return.push_back(MakeAllele(string(entry.first.first),
-                                   entry.first.second, entry.second));
+    to_return.push_back(
+        MakeAllele(entry.first.first, entry.first.second, entry.second));
   }
 
   // TODO SumAlleleCounts is only used in one place in variant_calling.cc
