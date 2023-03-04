@@ -203,7 +203,7 @@ class VariantCallingTest : public ::testing::Test {
       absl::string_view ref, const VariantCaller& caller,
       const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& expected_variant) {
-    AlleleCount allele_count = ConstructAlleleCount(std::string(ref), alleles);
+    AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
     std::vector<AlleleCount> allele_counts = {allele_count};
     const Variant& proposed_variant = expected_variant;
     return CheckCallFromComputeVariant(caller, proposed_variant, allele_counts,
@@ -227,7 +227,7 @@ class VariantCallingTest : public ::testing::Test {
                                       const std::vector<Allele>& alleles,
                                       const ExpectedVariant expect_variant,
                                       const Variant& expected_variant) {
-    AlleleCount allele_count = ConstructAlleleCount(std::string(ref), alleles);
+    AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
     const optional<DeepVariantCall> optional_variant =
         caller.CallVariant(allele_count);
     CheckVariant(optional_variant, expect_variant, expected_variant);
@@ -307,8 +307,7 @@ class VariantCallingTest : public ::testing::Test {
 TEST_F(VariantCallingTest, TestNoVariant) {
   for (const int count : {0, 1, 10, 100}) {
     for (const absl::string_view ref : {"A", "C", "G", "T"}) {
-      CheckCall(ref, 3,
-                {MakeAllele(std::string(ref), AlleleType::REFERENCE, count)},
+      CheckCall(ref, 3, {MakeAllele(ref, AlleleType::REFERENCE, count)},
                 ExpectedVariant::kNoVariantExpected, NoVariant(ref));
     }
   }
@@ -329,18 +328,15 @@ TEST_F(VariantCallingTest, TestSNP) {
         if (alt != ref) {
           const Variant variant = MakeExpectedVariant(ref, {alt});
           // there's just alt observed
-          CheckCall(
-              ref, 3,
-              {MakeAllele(std::string(alt), AlleleType::SUBSTITUTION, count)},
-              ExpectedVariant::kVariantExpected,
-              WithCounts(variant, {0, count}));
+          CheckCall(ref, 3, {MakeAllele(alt, AlleleType::SUBSTITUTION, count)},
+                    ExpectedVariant::kVariantExpected,
+                    WithCounts(variant, {0, count}));
           // we see ref and alt, result is still the same
-          CheckCall(
-              ref, 3,
-              {MakeAllele(std::string(alt), AlleleType::SUBSTITUTION, count),
-               MakeAllele(std::string(ref), AlleleType::REFERENCE, count)},
-              ExpectedVariant::kVariantExpected,
-              WithCounts(variant, {count, count}));
+          CheckCall(ref, 3,
+                    {MakeAllele(alt, AlleleType::SUBSTITUTION, count),
+                     MakeAllele(ref, AlleleType::REFERENCE, count)},
+                    ExpectedVariant::kVariantExpected,
+                    WithCounts(variant, {count, count}));
         }
       }
     }
@@ -614,8 +610,7 @@ TEST_F(VariantCallingTest, TestBiAllelicDeletion) {
   for (const absl::string_view alt_bases : {"AC", "ACCC", "ACCCCCCCCC"}) {
     const int count = 10;
     const string ref = "A";
-    const Allele alt =
-        MakeAllele(std::string(alt_bases), AlleleType::DELETION, count);
+    const Allele alt = MakeAllele(alt_bases, AlleleType::DELETION, count);
     const Variant variant = MakeExpectedVariant(alt.bases(), {ref});
     CheckCall(ref, count, {alt}, ExpectedVariant::kVariantExpected,
               WithCounts(variant, {0, count}));
@@ -626,8 +621,7 @@ TEST_F(VariantCallingTest, TestBiAllelicInsertion) {
   for (const absl::string_view alt_bases : {"AC", "ACCC", "ACCCCCCCCC"}) {
     const int count = 10;
     const string ref = "A";
-    const Allele alt =
-        MakeAllele(std::string(alt_bases), AlleleType::INSERTION, count);
+    const Allele alt = MakeAllele(alt_bases, AlleleType::INSERTION, count);
     const Variant variant = MakeExpectedVariant(ref, {alt.bases()});
     CheckCall(ref, count, {alt}, ExpectedVariant::kVariantExpected,
               WithCounts(variant, {0, count}));
