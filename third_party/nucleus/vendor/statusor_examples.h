@@ -45,7 +45,9 @@ static StatusOr<int> MakeIntOK() {
 }
 
 static StatusOr<int> MakeIntFail() {
-  return Status(tensorflow::error::INVALID_ARGUMENT, "MakeIntFail");
+  return Status(
+      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
+      "MakeIntFail");
 }
 
 static StatusOr<string> MakeStrOK() {
@@ -57,7 +59,9 @@ static StatusOr<string> MakeStrOKStrippedType() {
 }
 
 static StatusOr<string> MakeStrFail() {
-  return Status(tensorflow::error::INVALID_ARGUMENT, "MakeStrFail");
+  return Status(
+      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
+      "MakeStrFail");
 }
 
 static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrOK() {
@@ -65,7 +69,9 @@ static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrOK() {
 }
 
 static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrFail() {
-  return Status(tensorflow::error::INVALID_ARGUMENT, "MakeIntUniquePtrFail");
+  return Status(
+      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
+      "MakeIntUniquePtrFail");
 }
 
 static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorOK() {
@@ -73,13 +79,17 @@ static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorOK() {
 }
 
 static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorFail() {
-  return Status(tensorflow::error::INVALID_ARGUMENT, "MakeIntVectorFail");
+  return Status(
+      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
+      "MakeIntVectorFail");
 }
 
 static Status FuncReturningStatusOK() { return Status(); }
 
 static Status FuncReturningStatusFail() {
-  return Status(tensorflow::error::INVALID_ARGUMENT, "FuncReturningStatusFail");
+  return Status(
+      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
+      "FuncReturningStatusFail");
 }
 
 }  // namespace nucleus
