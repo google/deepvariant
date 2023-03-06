@@ -41,7 +41,6 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -66,7 +65,7 @@ class FastPassAlignerTest : public ::testing::Test {
 
   // Load read protos from test data human readable file.
   std::vector<nucleus::genomics::v1::Read> LoadReadProtosFromFile(
-      absl::string_view filename) {
+      const string& filename) {
     string file_path = nucleus::GetTestData(filename,
         "deepvariant/testdata/input");
     std::ifstream reads_stream(file_path);
@@ -90,7 +89,7 @@ class FastPassAlignerTest : public ::testing::Test {
     return reads;
   }
 
-  void LoadReferenceFromFile(absl::string_view filename, string* reference) {
+  void LoadReferenceFromFile(const string& filename, string* reference) {
     string file_path = nucleus::GetTestData(filename,
         "deepvariant/testdata/input");
     std::ifstream ref_stream(file_path);
@@ -99,7 +98,7 @@ class FastPassAlignerTest : public ::testing::Test {
     ref_stream.close();
   }
 
-  void LoadHaplotypesFromFile(absl::string_view filename,
+  void LoadHaplotypesFromFile(const string& filename,
                               std::vector<std::string>* haplotypes) {
     string file_path = nucleus::GetTestData(filename,
         "deepvariant/testdata/input");
