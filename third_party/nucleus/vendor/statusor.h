@@ -105,7 +105,9 @@ class StatusOr {
 
  public:
   // Construct a new StatusOr with Status::UNKNOWN status
-  StatusOr() : status_(tensorflow::error::UNKNOWN, "") {}
+  StatusOr()
+      : status_(static_cast<tsl::errors::Code>(absl::StatusCode::kUnknown),
+                "") {}
 
   // Construct a new StatusOr with the given non-ok status. After calling
   // this constructor, calls to ValueOrDie() is invalid.

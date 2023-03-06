@@ -132,9 +132,10 @@ TEST_P(GenomeReferenceTest, NotOKIfContigCalledWithBadName) {
 TEST_P(GenomeReferenceTest, NotOKIfIntervalIsInvalid) {
   // Asking for bad chromosome values produces death.
   StatusOr<string> result = Ref().GetBases(MakeRange("missing", 0, 1));
-  EXPECT_THAT(result, IsNotOKWithCodeAndMessage(
-      tensorflow::error::INVALID_ARGUMENT,
-      "Invalid interval"));
+  EXPECT_THAT(result,
+              IsNotOKWithCodeAndMessage(static_cast<tsl::errors::Code>(
+                                            absl::StatusCode::kInvalidArgument),
+                                        "Invalid interval"));
 
   // Starting before 0 is detected.
   EXPECT_THAT(Ref().GetBases(MakeRange("chrM", -1, 1)),
