@@ -80,8 +80,9 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
     if not self.truth_variant:
       return 0
 
-    if self.truth_variant.calls[0].genotype == [0, 0]:
-      return 0
+    if self.truth_variant.calls:
+      if self.truth_variant.calls[0].genotype == [0, 0]:
+        return 0
 
     # If the ref of the candidate and the truth doesn't match, return 0 (ref).
     if self.truth_variant.reference_bases != self.variant.reference_bases:
