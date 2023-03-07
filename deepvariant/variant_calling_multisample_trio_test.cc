@@ -32,6 +32,7 @@
 #include <cstdint>
 #include <memory>
 #include <numeric>
+#include <string>
 #include <unordered_map>
 
 #include "deepvariant/protos/deepvariant.pb.h"
