@@ -678,6 +678,7 @@ py_test(
     name = "keras_modeling_test",
     srcs = ["keras_modeling_test.py"],
     deps = [
+        ":dv_constants",
         ":keras_modeling",
         "@absl_py//absl/testing:absltest",
         # TODO: Figure out why we need this dep.

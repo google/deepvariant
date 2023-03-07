@@ -29,53 +29,69 @@
 """Tests for keras_modeling."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 import numpy as np
 import tensorflow as tf
 
+from deepvariant import dv_constants
 from deepvariant import keras_modeling
 
 
-class KerasModelingTest(absltest.TestCase):
+class KerasModelingTest(parameterized.TestCase):
 
-  def setUp(self):
-    """Set up the Keras models for testing."""
-    super().setUp()
-    self.model = keras_modeling.inceptionv3(input_shape=(100, 221, 7))
-
-  def test_prediction(self):
-    # Test the output shape of the model.
-    input_shape = (1, 100, 221, 7)
-    x = np.random.uniform(size=input_shape)
-    y = self.model.predict(
-        tf.keras.applications.inception_v3.preprocess_input(x)
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='Model with 7 channels',
+          model_num_channel=7,
+      ),
+  )
+  def test_prediction(self, model_num_channel):
+    model = keras_modeling.inceptionv3(
+        input_shape=(100, 221, model_num_channel)
     )
-    expected_shape = (1, 3)
+    input_shape = (1, 100, 221, model_num_channel)
+    x = np.random.uniform(size=input_shape)
+    y = model.predict(tf.keras.applications.inception_v3.preprocess_input(x))
+    expected_shape = (1, dv_constants.NUM_CLASSES)
     self.assertEqual(y.shape, expected_shape)
     self.assertTrue(np.all(y >= 0))
     self.assertTrue(np.all(y <= 1))
     self.assertAlmostEqual(np.sum(y), 1.0, delta=1e-4)
 
-  def test_prediction_failure(self):
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='Model and input have different number of channels',
+          model_num_channel=7,
+          input_num_channel=6,
+      ),
+  )
+  def test_prediction_failure(self, model_num_channel, input_num_channel):
     # Confirm that imcompatible shape causes an issue.
-    input_shape = (1, 100, 221, 6)
+    model = keras_modeling.inceptionv3(
+        input_shape=(100, 221, model_num_channel)
+    )
+    input_shape = (1, 100, 221, input_num_channel)
     x = np.random.uniform(size=input_shape)
     with self.assertRaisesRegex(
         ValueError,
         'Input 0 of layer "inceptionv3" is incompatible with the layer: ',
     ):
-      _ = self.model.predict(
-          tf.keras.applications.inception_v3.preprocess_input(x)
-      )
+      _ = model.predict(tf.keras.applications.inception_v3.preprocess_input(x))
 
-  def test_model_training(self):
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='Model with 3 channels',
+          model_num_channel=3,
+      ),
+  )
+  def test_model_training(self, model_num_channel):
     # Define a model.
-    input_shape = (100, 221, 7)
-    num_classes = 3
+    input_shape = (100, 221, model_num_channel)
     model = keras_modeling.inceptionv3(input_shape=input_shape)
 
     # Generate random input and target data.
     x_train = np.random.rand(32, *input_shape)
-    y_train = np.random.randint(num_classes, size=(32,))
+    y_train = np.random.randint(dv_constants.NUM_CLASSES, size=(32,))
 
     # Compile the model.
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
