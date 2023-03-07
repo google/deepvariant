@@ -43,7 +43,6 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/node_hash_map.h"
-#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -73,7 +72,7 @@ constexpr int64_t kStart = 10;
 // into nucleus::ConstProtoPtr. variant_calling_multisample API is only used by
 // Python, we don't call CallsFromAlleleCounts from C++.
 AlleleCount* MakeTestAlleleCount(int total_n, int alt_n,
-                                 absl::string_view sample_id,
+                                 const std::string& sample_id,
                                  const std::string& ref = "A",
                                  const std::string& alt = "C",
                                  int start = 100) {
@@ -114,7 +113,7 @@ enum class ExpectedVariant {
 
 VariantCallerOptions MakeOptions(
     const int min_count = 0, const double min_fraction = 0.0,
-    absl::string_view sample_name = kSampleName,
+    const std::string& sample_name = kSampleName,
     const double fraction_reference_sites_to_emit = -1.0) {
   VariantCallerOptions options;
   options.set_min_count_snps(min_count);
@@ -134,7 +133,7 @@ VariantCallerOptions MakeOptions(
   return options;
 }
 
-Variant MakeExpectedVariant(absl::string_view ref,
+Variant MakeExpectedVariant(const std::string& ref,
                             const std::vector<std::string>& alts,
                             const int64_t start = kStart) {
   Variant variant;
@@ -220,7 +219,7 @@ class VariantCallingTest : public ::testing::Test {
     return optional_variant;
   }
 
-  AlleleCount ConstructAlleleCount(absl::string_view ref,
+  AlleleCount ConstructAlleleCount(const std::string& ref,
                                    const std::vector<Allele>& alleles,
                                    const std::string& sample_id) {
     // Construct the synthetic AlleleCount we'll use to call.
@@ -712,7 +711,7 @@ TEST_F(VariantCallingTest, TestKitchenSink) {
 // Extracts the read_names from the map value of call.allele_support at key,
 // returning them as a vector of strings.
 std::vector<std::string> SupportingReadNames(const DeepVariantCall& call,
-                                             absl::string_view key) {
+                                             const std::string& key) {
   std::vector<std::string> names;
   for (const std::string& read_name :
        call.allele_support().at(key).read_names()) {
