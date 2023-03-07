@@ -674,6 +674,17 @@ py_library(
     ],
 )
 
+py_test(
+    name = "keras_modeling_test",
+    srcs = ["keras_modeling_test.py"],
+    deps = [
+        ":keras_modeling",
+        "@absl_py//absl/testing:absltest",
+        # TODO: Figure out why we need this dep.
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
 py_binary(
     name = "call_variants_keras",
     srcs = ["call_variants_keras.py"],
