@@ -201,7 +201,7 @@ done
 
 ## Presets
 # These settings specify the commonly run case studies
-GCS_DATA_DIR="https://storage.googleapis.com/deepvariant"
+GCS_DATA_DIR="gs://deepvariant"  # Or you can use "https://storage.googleapis.com/deepvariant"
 BASE="${HOME}/custom-case-study"
 
 declare -a extra_args
@@ -317,7 +317,7 @@ function copy_gs_or_http_file() {
     gsutil -q stat "$1" || status=1
     if [[ $status == 0 ]]; then
       run echo "Copying from \"$1\" to \"$2\""
-      run gsutil -m cp "$1" "$2"
+      run gcloud storage cp "$1" "$2"
     else
       run echo "File $1 does not exist. Skip copying."
     fi
@@ -451,10 +451,10 @@ function get_docker_image() {
 function setup_args() {
   if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
-    run gsutil cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
-    run gsutil cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
+    run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
+    run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
     if [[ "${IS_KERAS_MODEL}" = false ]]; then
-      run gsutil cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
+      run gcloud storage cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
     fi
     # Starting from v1.4.0, model.ckpt.example_info.json is used to provide more
     # information about the model.
