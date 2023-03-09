@@ -34,9 +34,13 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include <gmock/gmock-generated-matchers.h>

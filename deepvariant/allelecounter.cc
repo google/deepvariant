@@ -35,10 +35,15 @@
 #include <algorithm>
 #include <cstddef>
 #include <iomanip>
+#include <iterator>
+#include <map>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "deepvariant/utils.h"
 #include "absl/memory/memory.h"

@@ -31,6 +31,12 @@
 
 #include "deepvariant/postprocess_variants.h"
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
