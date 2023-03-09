@@ -32,8 +32,12 @@
 #include "deepvariant/realigner/debruijn_graph.h"
 
 #include <algorithm>
+#include <iterator>
+#include <map>
 #include <memory>
+#include <ostream>
 #include <queue>
+#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>

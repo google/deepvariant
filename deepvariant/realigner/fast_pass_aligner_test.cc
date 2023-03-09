@@ -32,7 +32,12 @@
 #include "deepvariant/realigner/fast_pass_aligner.h"
 
 #include <fstream>
+#include <iostream>
+#include <list>
 #include <map>
+#include <ostream>
+#include <string>
+#include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
 #include <gmock/gmock-generated-matchers.h>
