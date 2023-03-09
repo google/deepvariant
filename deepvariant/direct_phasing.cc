@@ -32,13 +32,18 @@
 #include "deepvariant/direct_phasing.h"
 
 #include <algorithm>
+#include <array>
 #include <string>
+#include <string_view>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/protos/variants.pb.h"
