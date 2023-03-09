@@ -31,13 +31,16 @@
 
 #include "deepvariant/realigner/fast_pass_aligner.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <list>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/ascii.h"

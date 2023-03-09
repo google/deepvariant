@@ -32,8 +32,10 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_FAST_PASS_ALIGNER_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_FAST_PASS_ALIGNER_H_
 
+#include <limits>
 #include <list>
 #include <map>
+#include <memory>
 #include <set>
 #include <utility>
 #include <vector>

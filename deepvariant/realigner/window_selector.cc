@@ -30,6 +30,9 @@
  */
 #include "deepvariant/realigner/window_selector.h"
 
+#include <algorithm>
+#include <vector>
+
 namespace learning {
 namespace genomics {
 namespace deepvariant {
