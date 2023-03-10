@@ -132,6 +132,21 @@ def add_l2_regularizers(
   return reg_model
 
 
+def num_channels_from_checkpoint(filepath: str) -> int:
+  """Determine the number of channels from a checkpoint path."""
+  reader = tf.train.load_checkpoint(filepath)
+
+  # Loop over variables in the checkpoint.
+  for name in reader.get_variable_to_shape_map().keys():
+    # 'layer_with_weights-0/layer_with_weights-0/kernel' seems to the main
+    # variable to look at. I'm not sure if this heuristics will always work.
+    # TODO
+    if name.startswith('layer_with_weights-0/layer_with_weights-0/kernel'):
+      weight_tensor = reader.get_tensor(name)
+      num_channels = weight_tensor.shape[2]
+  return num_channels
+
+
 def inceptionv3(input_shape: Tuple[int, int, int],
                 weights: Optional[str] = None) -> tf.keras.Model:
   """Returns an InceptionV3 architecture.

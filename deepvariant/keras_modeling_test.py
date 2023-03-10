@@ -28,6 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for keras_modeling."""
 
+from typing import Tuple
+
 from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
@@ -35,14 +37,26 @@ import tensorflow as tf
 
 from deepvariant import dv_constants
 from deepvariant import keras_modeling
+from third_party.nucleus.testing import test_utils
+
+
+def _filepath_for_weights_ckpt_from_shape(shape: Tuple[int, int, int]) -> str:
+  model = keras_modeling.inceptionv3(input_shape=shape)
+  tmp_model_name = test_utils.test_tmpfile(
+      'filepath_for_weights_ckpt_from_shape_{}.weights'.format(
+          '_'.join(str(i) for i in shape)
+      )
+  )
+  model.save_weights(tmp_model_name)
+  return tmp_model_name
 
 
 class KerasModelingTest(parameterized.TestCase):
 
   @parameterized.named_parameters(
       dict(
-          testcase_name='Model with 7 channels',
-          model_num_channel=7,
+          testcase_name='Model with 3 channels',
+          model_num_channel=3,
       ),
   )
   def test_prediction(self, model_num_channel):
@@ -107,6 +121,22 @@ class KerasModelingTest(parameterized.TestCase):
     self.assertNotEqual(
         loss_after, loss_before, 'Training is expected to change loss'
     )
+
+  @parameterized.parameters(
+      dict(input_shape=(75, 75, 8)),
+      dict(input_shape=(100, 221, 4)),
+      dict(input_shape=(300, 100, 5)),
+  )
+  def test_num_channels_from_checkpoint(self, input_shape):
+    # Create a model and save it to a checkpoint. Then test whether we can
+    # detect its number of channels correctly.
+    weights_ckpt_path = _filepath_for_weights_ckpt_from_shape(input_shape)
+
+    # Load it back and determine the num_channels.
+    detected_num_channels = keras_modeling.num_channels_from_checkpoint(
+        weights_ckpt_path
+    )
+    self.assertEqual(detected_num_channels, input_shape[-1])
 
 
 if __name__ == '__main__':

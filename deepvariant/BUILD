@@ -680,6 +680,7 @@ py_test(
     deps = [
         ":dv_constants",
         ":keras_modeling",
+        "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
