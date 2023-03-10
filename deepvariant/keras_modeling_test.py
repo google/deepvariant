@@ -138,6 +138,59 @@ class KerasModelingTest(parameterized.TestCase):
     )
     self.assertEqual(detected_num_channels, input_shape[-1])
 
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='Weights ckpt has the same shape as the model.',
+          checkpoint_weights_shape=(75, 75, 3),
+          input_shape=(75, 75, 3),
+      ),
+      dict(
+          testcase_name='Weights ckpt has fewer #channels than the model.',
+          checkpoint_weights_shape=(75, 75, 3),
+          input_shape=(75, 75, 4),
+      ),
+      dict(
+          testcase_name='Weights ckpt has more #channels than the model.',
+          checkpoint_weights_shape=(75, 75, 4),
+          input_shape=(75, 75, 3),
+      ),
+      dict(
+          testcase_name='Larger-than-input height/width do not break.',
+          checkpoint_weights_shape=(100, 100, 3),
+          input_shape=(75, 75, 4),
+      ),
+      dict(
+          testcase_name='Smaller-than-input height/width do not break.',
+          checkpoint_weights_shape=(75, 75, 3),
+          input_shape=(80, 80, 4),
+      ),
+  )
+  def test_inceptionv3_with_init_weights(
+      self, checkpoint_weights_shape, input_shape
+  ):
+    """keras_modeling.inceptionv3 can load weights (even different #channels).
+
+    Args:
+      checkpoint_weights_shape: The shape of the weights (checkpoint) file.
+      input_shape: The shape of the model we're training now.
+    """
+    # Create a model and save it to a checkpoint. Then test whether we can
+    # detect its number of channels correctly.
+    weights_ckpt_path = _filepath_for_weights_ckpt_from_shape(
+        checkpoint_weights_shape
+    )
+
+    model = keras_modeling.inceptionv3(
+        input_shape=input_shape, weights=weights_ckpt_path
+    )
+    x = np.random.uniform(size=(1,) + input_shape)
+    y = model.predict(tf.keras.applications.inception_v3.preprocess_input(x))
+    expected_shape = (1, dv_constants.NUM_CLASSES)
+    self.assertEqual(y.shape, expected_shape)
+    self.assertTrue(np.all(y >= 0))
+    self.assertTrue(np.all(y <= 1))
+    self.assertAlmostEqual(np.sum(y), 1.0, delta=1e-4)
+
 
 if __name__ == '__main__':
   absltest.main()

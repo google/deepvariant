@@ -132,6 +132,64 @@ def add_l2_regularizers(
   return reg_model
 
 
+def load_weights_to_model_with_different_channels(
+    model: tf.keras.Model, input_model: tf.keras.Model
+) -> tf.keras.Model:
+  """Initialize `model` with weights from `input_model` (different #channels).
+
+  Args:
+    model: The model we want to output.
+    input_model: The input model that contains the weights to initialize from.
+
+  Returns:
+    `model` with updated weights from `input_model`
+  """
+  for layer_i, (input_model_layer, new_layer) in enumerate(
+      zip(input_model.layers, model.layers)
+  ):
+    if not new_layer.weights:
+      continue
+    if len(new_layer.weights) != len(input_model_layer.weights):
+      raise ValueError(
+          'We expect input weights and the model we train to both '
+          'be InceptionV3. The top level dict should be the same.'
+      )
+
+    # Create a list of ndarray, which will be used input for `set_weights`
+    # at the end.
+    new_weights_to_assign = new_layer.get_weights()
+
+    for i, (input_model_layer_weights, new_layer_weights) in enumerate(
+        zip(input_model_layer.get_weights(), new_layer.get_weights())
+    ):
+      if input_model_layer_weights.shape == new_layer_weights.shape:
+        new_weights_to_assign[i] = input_model_layer_weights
+      else:
+        logging.info(
+            (
+                'input weights file layer %s:%s has shape %s, '
+                'target model layer %s:%s has shape %s'
+            ),
+            input_model_layer.name,
+            i,
+            input_model_layer_weights.shape,
+            new_layer.name,
+            i,
+            new_layer_weights.shape,
+        )
+        min_num_channels = min(
+            input_model_layer_weights.shape[2], new_layer_weights.shape[2]
+        )
+        new_weights_to_assign[i][:, :, :min_num_channels, :] = (
+            input_model_layer_weights[:, :, :min_num_channels, :]
+        )
+    # Now that the new_layer_weights list has the value we want to load with,
+    # and has the right shape.
+    model.layers[layer_i].set_weights(new_weights_to_assign)
+
+  return model
+
+
 def num_channels_from_checkpoint(filepath: str) -> int:
   """Determine the number of channels from a checkpoint path."""
   reader = tf.train.load_checkpoint(filepath)
@@ -162,9 +220,6 @@ def inceptionv3(input_shape: Tuple[int, int, int],
   """
   backbone = tf.keras.applications.InceptionV3(
       include_top=False,
-      # The old pretrained weights can't be loaded in
-      # TF2/Keras, but could investigate converting the checkpoint file
-      # (reference: internal)
       weights=None,
       input_shape=input_shape,
       classes=dv_constants.NUM_CLASSES,
@@ -186,10 +241,33 @@ def inceptionv3(input_shape: Tuple[int, int, int],
       inputs=[inputs_image], outputs=outputs, name='inceptionv3')
   model.summary()
   logging.info('Number of l2 regularizers: %s.', len(model.losses))
-  if weights:
-    logging.info('inceptionv3: load_weights from init_weights_file: %s',
-                 weights)
-    model.load_weights(weights)
-  else:
+
+  if not weights:
     logging.info('inceptionv3: No init_weights_file.')
-  return model
+    return model
+
+  weights_num_channels = num_channels_from_checkpoint(weights)
+  # If the input weights have different number of channels, need some special
+  # care:
+  model_num_channels = input_shape[2]
+  if weights_num_channels != model_num_channels:
+    # This step is harder to do directly from `weights`, or even the Checkpoint
+    # file format. So, create a `input_model` with expected #chanenls, load
+    # the weights, and then post-process.
+    # Improve later if possible: find a more readable alternative for this.
+    weights_input_shape = list(input_shape)
+    weights_input_shape[2] = weights_num_channels
+    input_model = inceptionv3(tuple(weights_input_shape), weights)
+    logging.info(
+        'inceptionv3: Assigning weights from %s channels to %s channels',
+        weights_num_channels,
+        model_num_channels,
+    )
+    model = load_weights_to_model_with_different_channels(model, input_model)
+    return model
+  else:
+    logging.info(
+        'inceptionv3: load_weights from init_weights_file: %s', weights
+    )
+    model.load_weights(weights)
+    return model
