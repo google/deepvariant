@@ -676,6 +676,7 @@ py_library(
 
 py_test(
     name = "keras_modeling_test",
+    size = "large",
     srcs = ["keras_modeling_test.py"],
     deps = [
         ":dv_constants",
