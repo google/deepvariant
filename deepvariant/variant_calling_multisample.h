@@ -34,7 +34,10 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 
+#include <map>
+#include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"

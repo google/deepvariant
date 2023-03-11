@@ -34,6 +34,8 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_H_
 
+#include <map>
+#include <string>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
