@@ -31,8 +31,11 @@
 
 #include "deepvariant/variant_calling.h"
 
+#include <memory>
 #include <numeric>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"

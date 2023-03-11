@@ -32,7 +32,10 @@
 #include "deepvariant/variant_calling.h"
 
 #include <algorithm>
+#include <map>
+#include <memory>
 #include <numeric>
+#include <string>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
