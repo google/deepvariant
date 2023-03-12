@@ -49,10 +49,12 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
   snp = test_utils.make_variant(start=10, alleles=['A', 'C'], gt=[0, 1])
   deletion = test_utils.make_variant(start=20, alleles=['ACG', 'A'], gt=[1, 1])
   multiallelic = test_utils.make_variant(
-      start=30, alleles=['ACT', 'ACTGT', 'A'], gt=[1, 2])
+      start=30, alleles=['ACT', 'ACTGT', 'A'], gt=[1, 2]
+  )
   # Outside our confident regions.
   non_confident = test_utils.make_variant(
-      start=200, alleles=['A', 'C'], gt=[0, 1])
+      start=200, alleles=['A', 'C'], gt=[0, 1]
+  )
   filtered = test_utils.make_variant(start=40, filters='FAILED', gt=[0, 1])
 
   variants = [snp, deletion, multiallelic, non_confident, filtered]
@@ -60,60 +62,68 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
   def _make_labeler(self, variants, confident_regions):
     return positional_labeler.PositionalVariantLabeler(
         truth_vcf_reader=vcf.InMemoryVcfReader(variants),
-        confident_regions=confident_regions)
+        confident_regions=confident_regions,
+    )
 
   @parameterized.parameters(
       # Simple tests: we get back our matching variants in the confident regions
       dict(candidate=snp, expected_confident=True, expected_truth=snp),
       dict(
-          candidate=deletion, expected_confident=True, expected_truth=deletion),
+          candidate=deletion, expected_confident=True, expected_truth=deletion
+      ),
       dict(
           candidate=multiallelic,
           expected_confident=True,
-          expected_truth=multiallelic),
-
+          expected_truth=multiallelic,
+      ),
       # Test the behavior outside of our confident regions.
       # If we provide a variant outside the confident regions (non_confident) we
       # don't get back any expected_truth variants.
       dict(
-          candidate=non_confident,
-          expected_confident=False,
-          expected_truth=None),
+          candidate=non_confident, expected_confident=False, expected_truth=None
+      ),
       # No matching variant, so we get a None as well as False.
       dict(
           candidate=test_utils.make_variant(start=300, alleles=['A', 'C']),
           expected_confident=False,
-          expected_truth=None),
-
+          expected_truth=None,
+      ),
       # This variant doesn't have any match but we're confident in it.
       dict(
           candidate=test_utils.make_variant(start=15, alleles=['C', 'A']),
           expected_confident=True,
           expected_genotype=(0, 0),
           expected_truth=test_utils.make_variant(
-              start=15, alleles=['C', 'A'], gt=[0, 0])),
-
+              start=15, alleles=['C', 'A'], gt=[0, 0]
+          ),
+      ),
       # These variant start at our SNP but has a different allele. We are
       # confident and we get back the true snp variant, despite having the
       # different alleles. snp has alleles=['A', 'C'] and gt=[0, 1].
       dict(
           candidate=test_utils.make_variant(
-              start=snp.start, alleles=['A', 'G']),
+              start=snp.start, alleles=['A', 'G']
+          ),
           expected_confident=True,
           expected_genotype=(0, 0),
-          expected_truth=snp),
+          expected_truth=snp,
+      ),
       dict(
           candidate=test_utils.make_variant(
-              start=snp.start, alleles=['AC', 'C']),
+              start=snp.start, alleles=['AC', 'C']
+          ),
           expected_confident=True,
           expected_genotype=(0, 0),
-          expected_truth=snp),
+          expected_truth=snp,
+      ),
       dict(
           candidate=test_utils.make_variant(
-              start=snp.start, alleles=['A', 'CA']),
+              start=snp.start, alleles=['A', 'CA']
+          ),
           expected_confident=True,
           expected_genotype=(0, 0),
-          expected_truth=snp),
+          expected_truth=snp,
+      ),
       # Checks that we don't match against the filtered truth variant in our
       # database. This means that we return not the filtered variant but one
       # with a (0, 0) genotype.
@@ -122,16 +132,21 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
           expected_confident=True,
           expected_genotype=(0, 0),
           expected_truth=test_utils.make_variant(
-              start=filtered.start, gt=(0, 0))),
+              start=filtered.start, gt=(0, 0)
+          ),
+      ),
   )
-  def test_label_variants(self,
-                          candidate,
-                          expected_confident,
-                          expected_truth,
-                          expected_genotype=None):
+  def test_label_variants(
+      self,
+      candidate,
+      expected_confident,
+      expected_truth,
+      expected_genotype=None,
+  ):
     labeler = self._make_labeler(
         self.variants,
-        ranges.RangeSet([ranges.make_range(self.snp.reference_name, 10, 100)]))
+        ranges.RangeSet([ranges.make_range(self.snp.reference_name, 10, 100)]),
+    )
 
     # Call _match so we can compare our expected truth with the actual one.
     is_confident, truth_variant = labeler._match(candidate)
@@ -161,7 +176,9 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
     labeler = self._make_labeler(
         overlapping,
         ranges.RangeSet(
-            [ranges.make_range(overlapping[0].reference_name, 0, 100)]))
+            [ranges.make_range(overlapping[0].reference_name, 0, 100)]
+        ),
+    )
     is_confident, truth_variant = labeler._match(candidate)
     self.assertEqual(is_confident, True)
     self.assertEqual(truth_variant, overlapping[1])
@@ -171,44 +188,55 @@ class PositionalVariantLabelerTest(parameterized.TestCase):
           overlapping_variants=[
               test_utils.make_variant(start=20, alleles=['A', 'CC'], gt=[1, 1]),
               test_utils.make_variant(
-                  start=20, alleles=['A', 'AAA'], gt=[0, 1]),
+                  start=20, alleles=['A', 'AAA'], gt=[0, 1]
+              ),
               test_utils.make_variant(start=20, alleles=['A', 'AA'], gt=[1, 1]),
           ],
           candidate=test_utils.make_variant(start=20, alleles=['A', 'AAA']),
           expected_confident=True,
-          truth_variant_idx=1),
-
+          truth_variant_idx=1,
+      ),
       # No candidate variant with matching alt, so use first candidate.
       dict(
           overlapping_variants=[
               test_utils.make_variant(start=20, alleles=['A', 'CC'], gt=[1, 1]),
               test_utils.make_variant(
-                  start=20, alleles=['A', 'AAA'], gt=[0, 1]),
+                  start=20, alleles=['A', 'AAA'], gt=[0, 1]
+              ),
               test_utils.make_variant(start=20, alleles=['A', 'AA'], gt=[1, 1]),
           ],
           candidate=test_utils.make_variant(start=20, alleles=['A', 'TT']),
           expected_confident=True,
-          truth_variant_idx=0),
+          truth_variant_idx=0,
+      ),
       # GAAA->GAA is the same as GA->A (the second one in matches), but if we
       # don't simplify the alleles before comparing, there will be no match and
       # will incorrectly fall back to the first one.
       dict(
           overlapping_variants=[
               test_utils.make_variant(
-                  start=20, alleles=['GAA', 'G'], gt=[1, 1]),
+                  start=20, alleles=['GAA', 'G'], gt=[1, 1]
+              ),
               test_utils.make_variant(start=20, alleles=['GA', 'G'], gt=[0, 1]),
           ],
           candidate=test_utils.make_variant(start=20, alleles=['GAAA', 'GAA']),
           expected_confident=True,
-          truth_variant_idx=1),
+          truth_variant_idx=1,
+      ),
   )
-  def test_match_multiple_matches(self, overlapping_variants, candidate,
-                                  expected_confident, truth_variant_idx):
+  def test_match_multiple_matches(
+      self,
+      overlapping_variants,
+      candidate,
+      expected_confident,
+      truth_variant_idx,
+  ):
     labeler = self._make_labeler(
         overlapping_variants,
         ranges.RangeSet(
-            [ranges.make_range(overlapping_variants[0].reference_name, 0,
-                               100)]))
+            [ranges.make_range(overlapping_variants[0].reference_name, 0, 100)]
+        ),
+    )
     is_confident, variant_match = labeler._match(candidate)
     expected_variant = overlapping_variants[truth_variant_idx]
     self.assertEqual(is_confident, expected_confident)

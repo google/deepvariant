@@ -47,7 +47,8 @@ def default_options(read_requirements=None):
     read_requirements = reads_pb2.ReadRequirements(
         min_base_quality=10,
         min_mapping_quality=10,
-        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT,
+    )
 
   return deepvariant_pb2.PileupImageOptions(
       reference_band_height=5,
@@ -78,7 +79,8 @@ def default_options(read_requirements=None):
       alt_aligned_pileup='none',
       types_to_alt_align='indels',
       min_non_zero_allele_frequency=0.00001,
-      use_allele_frequency=False)
+      use_allele_frequency=False,
+  )
 
 
 def _compute_half_width(width):
@@ -107,11 +109,13 @@ def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
 
   # Ensure that all three pileups have the same shape.
   if not ref_image.shape == alt_images[0].shape == alt_images[1].shape:
-    raise ValueError('Pileup images must be the same shape to be combined. '
-                     'ref_image.shape is {}. alt_images[0].shape is {}. '
-                     'alt_images[1].shape is {}.'.format(
-                         ref_image.shape, alt_images[0].shape,
-                         alt_images[1].shape))
+    raise ValueError(
+        'Pileup images must be the same shape to be combined. '
+        'ref_image.shape is {}. alt_images[0].shape is {}. '
+        'alt_images[1].shape is {}.'.format(
+            ref_image.shape, alt_images[0].shape, alt_images[1].shape
+        )
+    )
 
   if representation == 'rows':
     # Combine all images: [ref, alt1, alt2].
@@ -132,7 +136,8 @@ def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
     raise ValueError(
         '_represent_alt_aligned_pileups received invalid value for '
         'representation: "{}". Must be one of '
-        'rows, base_channels, or diff_channels.'.format(representation))
+        'rows, base_channels, or diff_channels.'.format(representation)
+    )
 
 
 class PileupImageCreator(object):
@@ -200,7 +205,8 @@ class PileupImageCreator(object):
     self._options = options
     self._encoder = pileup_image_native.PileupImageEncoderNative(self._options)
     self._channels_enum = self._encoder.all_channels_enum(
-        options.alt_aligned_pileup)
+        options.alt_aligned_pileup
+    )
     self._ref_reader = ref_reader
     self._samples = samples
 
@@ -275,24 +281,30 @@ class PileupImageCreator(object):
     ref = variant.reference_bases
     alts = list(variant.alternate_bases)
 
-    if (self.multi_allelic_mode ==
-        deepvariant_pb2.PileupImageOptions.UNSPECIFIED):
+    if (
+        self.multi_allelic_mode
+        == deepvariant_pb2.PileupImageOptions.UNSPECIFIED
+    ):
       raise ValueError('multi_allelic_mode cannot be UNSPECIFIED')
-    elif (self.multi_allelic_mode ==
-          deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES):
+    elif (
+        self.multi_allelic_mode
+        == deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES
+    ):
       for alt in alts:
         yield sorted([alt])
     else:
       for combination in itertools.combinations([ref] + alts, 2):
         yield sorted(list(set(combination) - {ref}))
 
-  def build_pileup(self,
-                   dv_call,
-                   refbases,
-                   reads_for_samples,
-                   alt_alleles,
-                   sample_order=None,
-                   custom_ref=False):
+  def build_pileup(
+      self,
+      dv_call,
+      refbases,
+      reads_for_samples,
+      alt_alleles,
+      sample_order=None,
+      custom_ref=False,
+  ):
     """Creates a pileup tensor for dv_call.
 
     Args:
@@ -302,10 +314,10 @@ class PileupImageCreator(object):
         sequence to encode. The middle base of this string should be at the
         start of the variant in dv_call.
       reads_for_samples: list by sample of Iterable of
-        third_party.nucleus.protos.Read objects that we'll use
-        to encode the read information supporting our call. Assumes each read is
-        aligned and is well-formed (e.g., has bases and quality scores, cigar).
-        Rows of the image are encoded in the same order as reads.
+        third_party.nucleus.protos.Read objects that we'll use to encode the
+        read information supporting our call. Assumes each read is aligned and
+        is well-formed (e.g., has bases and quality scores, cigar). Rows of the
+        image are encoded in the same order as reads.
       alt_alleles: A collection of alternative_bases from dv_call.variant that
         we are treating as "alt" when constructing this pileup image. A read
         will be considered supporting the "alt" allele if it occurs in the
@@ -325,35 +337,51 @@ class PileupImageCreator(object):
       ValueError: if any arguments are invalid.
     """
     if len(refbases) != self.width:
-      raise ValueError('refbases is {} long but width is {}'.format(
-          len(refbases), self.width))
+      raise ValueError(
+          'refbases is {} long but width is {}'.format(
+              len(refbases), self.width
+          )
+      )
 
     if not alt_alleles:
       raise ValueError('alt_alleles cannot be empty')
     if any(alt not in dv_call.variant.alternate_bases for alt in alt_alleles):
       raise ValueError(
-          'all elements of alt_alleles must be the alternate bases'
-          ' of dv_call.variant', alt_alleles, dv_call.variant)
+          (
+              'all elements of alt_alleles must be the alternate bases'
+              ' of dv_call.variant'
+          ),
+          alt_alleles,
+          dv_call.variant,
+      )
     if len(self._samples) != len(reads_for_samples):
       raise ValueError(
           'The number of self._samples ({}) must be the same as the number of '
           'reads_for_samples ({}).'.format(
-              len(self._samples), len(reads_for_samples)))
+              len(self._samples), len(reads_for_samples)
+          )
+      )
 
     image_start_pos = dv_call.variant.start - self.half_width
-    if not custom_ref and (refbases[self.half_width] !=
-                           dv_call.variant.reference_bases[0]):
-      raise ValueError('The middle base of reference sequence in the window '
-                       "({} at base {}) doesn't match first "
-                       'character of variant.reference_bases ({}).'.format(
-                           refbases[self.half_width], self.half_width,
-                           dv_call.variant.reference_bases))
+    if not custom_ref and (
+        refbases[self.half_width] != dv_call.variant.reference_bases[0]
+    ):
+      raise ValueError(
+          'The middle base of reference sequence in the window '
+          "({} at base {}) doesn't match first "
+          'character of variant.reference_bases ({}).'.format(
+              refbases[self.half_width],
+              self.half_width,
+              dv_call.variant.reference_bases,
+          )
+      )
 
     def build_pileup_for_one_sample(reads, sample):
       """Create read pileup image section for one sample."""
       # We start with n copies of our encoded reference bases.
-      rows = ([self._encoder.encode_reference(refbases)] *
-              self.reference_band_height)
+      rows = [
+          self._encoder.encode_reference(refbases)
+      ] * self.reference_band_height
 
       def _update_hap_index(read, hp_tag_for_assembly_polishing):
         default_hap_idx = 0  # By default, reads with no HP is set to 0.
@@ -363,8 +391,10 @@ class PileupImageCreator(object):
         if not hp_field.HasField('int_value'):
           return default_hap_idx
         hp_value = hp_field.int_value
-        if (hp_tag_for_assembly_polishing > 0 and
-            hp_value == hp_tag_for_assembly_polishing):
+        if (
+            hp_tag_for_assembly_polishing > 0
+            and hp_value == hp_tag_for_assembly_polishing
+        ):
           # For the target HP tag, set it to -1 so it will be sorted on
           # top of the pileup image.
           return -1
@@ -378,14 +408,16 @@ class PileupImageCreator(object):
       # image.
       def _row_helper(read):
         """A function that returns tuples of (haplotype, position, row)."""
-        read_row = self._encoder.encode_read(dv_call, refbases, read,
-                                             image_start_pos, alt_alleles)
+        read_row = self._encoder.encode_read(
+            dv_call, refbases, read, image_start_pos, alt_alleles
+        )
         if read_row is None:
           return None
         hap_idx = 0  # By default, reads with no HP is set to 0.
         if self._options.sort_by_haplotypes:
           hap_idx = _update_hap_index(
-              read, self._options.hp_tag_for_assembly_polishing)
+              read, self._options.hp_tag_for_assembly_polishing
+          )
         return hap_idx, read.alignment.position.position, read_row
 
       # We add a row for each read in order, down-sampling if the number of
@@ -432,7 +464,8 @@ class PileupImageCreator(object):
     for i in sample_order:
       sample = self._samples[i]
       sample_sections.extend(
-          build_pileup_for_one_sample(reads_for_samples[i], sample))
+          build_pileup_for_one_sample(reads_for_samples[i], sample)
+      )
 
     # Vertically stack the image rows to create a single
     # h x w x DEFAULT_NUM_CHANNEL image.
@@ -442,12 +475,14 @@ class PileupImageCreator(object):
     """Creates an empty image row as an uint8 np.array."""
     return np.zeros((1, self.width, self.num_channels), dtype=np.uint8)
 
-  def create_pileup_images(self,
-                           dv_call,
-                           reads_for_samples,
-                           sample_order=None,
-                           haplotype_alignments_for_samples=None,
-                           haplotype_sequences=None):
+  def create_pileup_images(
+      self,
+      dv_call,
+      reads_for_samples,
+      sample_order=None,
+      haplotype_alignments_for_samples=None,
+      haplotype_sequences=None,
+  ):
     """Creates a DeepVariant TF.Example for the DeepVariant call dv_call.
 
     See class documents for more details.
@@ -488,10 +523,14 @@ class PileupImageCreator(object):
           refbases=ref_bases,
           reads_for_samples=reads_for_samples,
           alt_alleles=alt_alleles,
-          sample_order=sample_order)
+          sample_order=sample_order,
+      )
       # Optionally also create pileup images with reads aligned to alts.
       if alt_aligned_representation != 'none':
-        if haplotype_alignments_for_samples is None or haplotype_sequences is None:
+        if (
+            haplotype_alignments_for_samples is None
+            or haplotype_sequences is None
+        ):
           # Use sample height or default to pic height.
           sample_heights = [
               sample.options.pileup_height for sample in self._samples
@@ -509,9 +548,13 @@ class PileupImageCreator(object):
           for alt in alt_alleles:
             if len(haplotype_sequences[alt]) != self.width:
               logging.warning(
-                  'haplotype_sequences[alt] is %d long but pileup '
-                  'image width is %d. Giving up on this image',
-                  len(haplotype_sequences[alt]), self.width)
+                  (
+                      'haplotype_sequences[alt] is %d long but pileup '
+                      'image width is %d. Giving up on this image'
+                  ),
+                  len(haplotype_sequences[alt]),
+                  self.width,
+              )
               return None
             alt_image = self.build_pileup(
                 dv_call=dv_call,
@@ -521,10 +564,12 @@ class PileupImageCreator(object):
                 ],
                 alt_alleles=alt_alleles,
                 sample_order=sample_order,
-                custom_ref=True)
+                custom_ref=True,
+            )
             alt_images.append(alt_image)
         composite_image = _represent_alt_aligned_pileups(
-            alt_aligned_representation, ref_image, alt_images)
+            alt_aligned_representation, ref_image, alt_images
+        )
         return composite_image
       else:
         return ref_image

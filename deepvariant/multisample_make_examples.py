@@ -71,37 +71,53 @@ flags.adopt_module_key_flags(make_examples_options)
 
 # Define flags specific to multi-sample make_examples.
 flags.DEFINE_string(
-    'reads', None, 'Required. A list of BAM/CRAM files, with different '
-    'samples separated by semi-colons. '
-    'At least one aligned, sorted, indexed BAM/CRAM file is required for '
-    'each sample. '
-    'All must be aligned to the same reference genome compatible with --ref. '
-    'Can provide multiple BAMs (comma-separated) for each sample. '
-    'Format is, for example: sample1;sample2_BAM1,sample2_BAM2;sample3 ')
+    'reads',
+    None,
+    (
+        'Required. A list of BAM/CRAM files, with different samples separated'
+        ' by semi-colons. At least one aligned, sorted, indexed BAM/CRAM file'
+        ' is required for each sample. All must be aligned to the same'
+        ' reference genome compatible with --ref. Can provide multiple BAMs'
+        ' (comma-separated) for each sample. Format is, for example:'
+        ' sample1;sample2_BAM1,sample2_BAM2;sample3 '
+    ),
+)
 flags.DEFINE_string(
-    'sample_names', 'DEFAULT',
-    'Sample names corresponding to the samples (must match order and length of '
-    'samples in --reads). Separate names for each sample with semi-colons, '
-    'e.g. "sample1;sample2;sample3". '
-    'If not specified, (i.e. "sample1;;sample3" or even ";;") '
-    'any sample without a sample name from this flag the will be inferred from '
-    'the header information from --reads.')
+    'sample_names',
+    'DEFAULT',
+    (
+        'Sample names corresponding to the samples (must match order and length'
+        ' of samples in --reads). Separate names for each sample with'
+        ' semi-colons, e.g. "sample1;sample2;sample3". If not specified, (i.e.'
+        ' "sample1;;sample3" or even ";;") any sample without a sample name'
+        ' from this flag the will be inferred from the header information from'
+        ' --reads.'
+    ),
+)
 flags.DEFINE_string(
-    'downsample_fractions', 'DEFAULT',
-    'If not empty string ("") must be a value between 0.0 and 1.0. '
-    'Reads will be kept (randomly) with a probability of downsample_fraction '
-    'from the input sample BAMs. This argument makes it easy to create '
-    'examples as though the input BAM had less coverage. '
-    'Similar to --reads and --sample_name, supply different '
-    'values for each sample by separating them with semi-colons, '
-    'where the order of samples is the same as in --reads.')
+    'downsample_fractions',
+    'DEFAULT',
+    (
+        'If not empty string ("") must be a value between 0.0 and 1.0. Reads'
+        ' will be kept (randomly) with a probability of downsample_fraction'
+        ' from the input sample BAMs. This argument makes it easy to create'
+        ' examples as though the input BAM had less coverage. Similar to'
+        ' --reads and --sample_name, supply different values for each sample by'
+        ' separating them with semi-colons, where the order of samples is the'
+        ' same as in --reads.'
+    ),
+)
 flags.DEFINE_string(
-    'pileup_image_heights', 'DEFAULT',
-    'Height for the part of the pileup image showing reads from each sample. '
-    'By default, use a height of 100 for all samples. '
-    'Similar to --reads and --sample_name, supply different '
-    'values for each sample by separating them with semi-colons, '
-    'where the order of samples is the same as in --reads.')
+    'pileup_image_heights',
+    'DEFAULT',
+    (
+        'Height for the part of the pileup image showing reads from each'
+        ' sample. By default, use a height of 100 for all samples. Similar to'
+        ' --reads and --sample_name, supply different values for each sample by'
+        ' separating them with semi-colons, where the order of samples is the'
+        ' same as in --reads.'
+    ),
+)
 
 
 def n_samples_from_flags(add_flags=True, flags_obj=None):
@@ -112,14 +128,19 @@ def n_samples_from_flags(add_flags=True, flags_obj=None):
   num_samples = len(n_reads)
   flags_organized = {}
   for flag_name in [
-      'reads', 'sample_names', 'downsample_fractions', 'pileup_image_heights'
+      'reads',
+      'sample_names',
+      'downsample_fractions',
+      'pileup_image_heights',
   ]:
     if flags_obj[flag_name].value != 'DEFAULT':
       flags_organized[flag_name] = flags_obj[flag_name].value.split(';')
       if len(flags_organized[flag_name]) != num_samples:
-        raise ValueError(f'--{flag_name} has {len(flags_organized[flag_name])} '
-                         f'samples, but it should be matching the number of '
-                         f'samples in --reads, which was {num_samples}.')
+        raise ValueError(
+            f'--{flag_name} has {len(flags_organized[flag_name])} '
+            'samples, but it should be matching the number of '
+            f'samples in --reads, which was {num_samples}.'
+        )
     else:
       flags_organized[flag_name] = [''] * num_samples
 
@@ -127,27 +148,34 @@ def n_samples_from_flags(add_flags=True, flags_obj=None):
   for i in range(num_samples):
     sample_name = make_examples_core.assign_sample_name(
         sample_name_flag=flags_organized['sample_names'][i],
-        reads_filenames=flags_organized['reads'][i])
+        reads_filenames=flags_organized['reads'][i],
+    )
 
     n_sample_options.append(
         deepvariant_pb2.SampleOptions(
             role=str(i),
             name=sample_name,
             variant_caller_options=make_examples_core.make_vc_options(
-                sample_name=sample_name, flags_obj=flags_obj),
+                sample_name=sample_name, flags_obj=flags_obj
+            ),
             order=range(num_samples),
-            pileup_height=100))
+            pileup_height=100,
+        )
+    )
 
   if add_flags:
     for i in range(num_samples):
       n_sample_options[i].reads_filenames.extend(
-          flags_organized['reads'][i].split(','))
+          flags_organized['reads'][i].split(',')
+      )
       if flags_organized['downsample_fractions'][i]:
         n_sample_options[i].downsample_fraction = float(
-            flags_organized['downsample_fractions'][i])
+            flags_organized['downsample_fractions'][i]
+        )
       if flags_organized['pileup_image_heights'][i]:
         n_sample_options[i].pileup_height = int(
-            flags_organized['pileup_image_heights'][i])
+            flags_organized['pileup_image_heights'][i]
+        )
 
   # Ordering here determines the default order of samples, and when a sample
   # above has a custom .order, then this is the list those indices refer to.
@@ -176,18 +204,21 @@ def default_options(add_flags=True, flags_obj=None):
     flags_obj = FLAGS
 
   samples_in_order, sample_role_to_train = n_samples_from_flags(
-      add_flags=add_flags, flags_obj=flags_obj)
+      add_flags=add_flags, flags_obj=flags_obj
+  )
 
   options = make_examples_options.shared_flags_to_options(
       add_flags=add_flags,
       flags_obj=flags_obj,
       samples_in_order=samples_in_order,
       sample_role_to_train=sample_role_to_train,
-      main_sample_index=MAIN_SAMPLE_INDEX)
+      main_sample_index=MAIN_SAMPLE_INDEX,
+  )
 
   if add_flags:
     options.bam_fname = '|'.join(
-        [os.path.basename(x) for x in flags_obj.reads.split(';')])
+        [os.path.basename(x) for x in flags_obj.reads.split(';')]
+    )
 
   return options
 
@@ -197,7 +228,8 @@ def check_options_are_valid(options):
 
   # Check for general flags (shared for DeepVariant and DeepTrio).
   make_examples_options.check_options_are_valid(
-      options, main_sample_index=MAIN_SAMPLE_INDEX)
+      options, main_sample_index=MAIN_SAMPLE_INDEX
+  )
 
   sample_names = [s.name for s in options.sample_options]
   if len(sample_names) != len(set(sample_names)):
@@ -210,7 +242,9 @@ def main(argv=()):
       errors.log_and_raise(
           'Command line parsing failure: make_examples does not accept '
           'positional arguments but some are present on the command line: '
-          '"{}".'.format(str(argv)), errors.CommandLineError)
+          '"{}".'.format(str(argv)),
+          errors.CommandLineError,
+      )
     del argv  # Unused.
 
     proto_utils.uses_fast_cpp_protos_or_die()

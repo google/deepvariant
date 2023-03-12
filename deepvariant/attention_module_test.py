@@ -40,8 +40,12 @@ class AttentionModuleTest(parameterized.TestCase):
   """Test to check functions from attention_module.py."""
 
   @parameterized.parameters([
-      (4096, dv_constants.PILEUP_DEFAULT_HEIGHT,
-       dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS),
+      (
+          4096,
+          dv_constants.PILEUP_DEFAULT_HEIGHT,
+          dv_constants.PILEUP_DEFAULT_WIDTH,
+          dv_constants.PILEUP_NUM_CHANNELS,
+      ),
       (4096, 8, 8, 2048),
   ])
   def test_se_block(self, batch_size, height, width, channels):
@@ -50,7 +54,8 @@ class AttentionModuleTest(parameterized.TestCase):
     input_shape = (batch_size, height, width, channels)
     input_feature = tf.zeros(shape=input_shape)
     output = attention_module.se_block(
-        input_feature=input_feature, name='se_block', ratio=8)
+        input_feature=input_feature, name='se_block', ratio=8
+    )
 
     self.assertEqual(input_shape, output.get_shape())
 

@@ -40,13 +40,19 @@ import logging
 
 from absl import flags
 
-flags.DEFINE_string('logging_level', 'INFO',
-                    'select general logging threshold.')
+flags.DEFINE_string(
+    'logging_level', 'INFO', 'select general logging threshold.'
+)
 
 
 def set_level(level_name):
-  for x in (logging.DEBUG, logging.ERROR, logging.FATAL, logging.INFO,
-            logging.WARN):
+  for x in (
+      logging.DEBUG,
+      logging.ERROR,
+      logging.FATAL,
+      logging.INFO,
+      logging.WARN,
+  ):
     if logging.getLevelName(x) == level_name.upper():
       logging.getLogger().setLevel(x)
       return

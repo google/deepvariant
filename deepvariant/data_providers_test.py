@@ -55,13 +55,14 @@ def setUpModule():
 
 # Return a DeepVariantInput attached to the golden training data.
 # Run with shuffling off, and in eval mode.
-def make_golden_dataset(compressed_inputs=False,
-                        mode=tf_estimator.ModeKeys.EVAL,
-                        use_tpu=False):
+def make_golden_dataset(
+    compressed_inputs=False, mode=tf_estimator.ModeKeys.EVAL, use_tpu=False
+):
   if compressed_inputs:
     source_path = test_utils.test_tmpfile('make_golden_dataset.tfrecord.gz')
     tfrecord.write_tfrecords(
-        tfrecord.read_tfrecords(testdata.GOLDEN_TRAINING_EXAMPLES), source_path)
+        tfrecord.read_tfrecords(testdata.GOLDEN_TRAINING_EXAMPLES), source_path
+    )
   else:
     source_path = testdata.GOLDEN_TRAINING_EXAMPLES
   return data_providers.get_input_fn_from_filespec(
@@ -70,15 +71,17 @@ def make_golden_dataset(compressed_inputs=False,
       name='labeled_golden',
       mode=mode,
       tensor_shape=None,
-      use_tpu=use_tpu)
+      use_tpu=use_tpu,
+  )
 
 
 def _test_dataset_config(filename, **kwargs):
   """Creates a DeepVariantDatasetConfig(**kwargs) and writes it to filename."""
   dataset_config_pbtext_filename = test_utils.test_tmpfile(filename)
   dataset_config = deepvariant_pb2.DeepVariantDatasetConfig(**kwargs)
-  data_providers.write_dataset_config_to_pbtxt(dataset_config,
-                                               dataset_config_pbtext_filename)
+  data_providers.write_dataset_config_to_pbtxt(
+      dataset_config, dataset_config_pbtext_filename
+  )
   return dataset_config_pbtext_filename
 
 
@@ -89,11 +92,13 @@ class DataProviderTest(parameterized.TestCase):
         'golden.dataset_config.pbtxt',
         name='some_dataset_name',
         tfrecord_path='/dev/null',
-        num_examples=1000)
+        num_examples=1000,
+    )
     ds = data_providers.get_input_fn_from_dataset(
         dataset_config_pbtext_filename,
         mode=tf_estimator.ModeKeys.EVAL,
-        tensor_shape=[3, 4, dv_constants.PILEUP_NUM_CHANNELS])
+        tensor_shape=[3, 4, dv_constants.PILEUP_NUM_CHANNELS],
+    )
 
     self.assertEqual('some_dataset_name', ds.name)
     self.assertEqual('/dev/null', ds.input_file_spec)
@@ -102,34 +107,45 @@ class DataProviderTest(parameterized.TestCase):
 
   def test_get_dataset_raises_error_for_empty_name(self):
     dataset_config_pbtext_filename = _test_dataset_config(
-        'test_get_dataset_raises_error_for_empty_name.pbtxt')
-    with self.assertRaisesRegex(ValueError,
-                                'dataset_config needs to have a name'):
+        'test_get_dataset_raises_error_for_empty_name.pbtxt'
+    )
+    with self.assertRaisesRegex(
+        ValueError, 'dataset_config needs to have a name'
+    ):
       data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL)
+          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL
+      )
 
   def test_get_dataset_raises_error_for_empty_data_split(self):
     dataset_config_pbtext_filename = _test_dataset_config(
         'test_get_dataset_raises_error_for_empty_data_split.pbtxt',
-        name='some_dataset_name')
+        name='some_dataset_name',
+    )
     expected_exception_message = (
-        'The dataset in the config {} does not '
-        'have a tfrecord_path.'.format(dataset_config_pbtext_filename))
+        'The dataset in the config {} does not have a tfrecord_path.'.format(
+            dataset_config_pbtext_filename
+        )
+    )
     with self.assertRaisesRegex(ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL)
+          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL
+      )
 
   def test_get_dataset_raises_error_for_empty_num_examples(self):
     dataset_config_pbtext_filename = _test_dataset_config(
         'test_get_dataset_raises_error_for_empty_num_examples.pbtxt',
         name='some_dataset_name',
-        tfrecord_path='/path/to/dataset')
+        tfrecord_path='/path/to/dataset',
+    )
     expected_exception_message = (
-        'The dataset in the config {} does not have '
-        'a num_examples.'.format(dataset_config_pbtext_filename))
+        'The dataset in the config {} does not have a num_examples.'.format(
+            dataset_config_pbtext_filename
+        )
+    )
     with self.assertRaisesRegex(ValueError, expected_exception_message):
       data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL)
+          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL
+      )
 
   def test_dataset_definition(self):
     ds = data_providers.DeepVariantInput(
@@ -138,26 +154,31 @@ class DataProviderTest(parameterized.TestCase):
         input_file_spec='test.tfrecord',
         num_examples=10,
         num_classes=dv_constants.NUM_CLASSES,
-        tensor_shape=[11, 13, dv_constants.PILEUP_NUM_CHANNELS])
+        tensor_shape=[11, 13, dv_constants.PILEUP_NUM_CHANNELS],
+    )
     self.assertEqual('name', ds.name)
     self.assertEqual('test.tfrecord', ds.input_file_spec)
     self.assertEqual(10, ds.num_examples)
     self.assertEqual(dv_constants.NUM_CLASSES, ds.num_classes)
-    self.assertEqual([11, 13, dv_constants.PILEUP_NUM_CHANNELS],
-                     ds.tensor_shape)
+    self.assertEqual(
+        [11, 13, dv_constants.PILEUP_NUM_CHANNELS], ds.tensor_shape
+    )
 
-  def assertTfDataSetExamplesMatchExpected(self,
-                                           input_fn,
-                                           expected_dataset,
-                                           use_tpu=False,
-                                           workaround_list_files=False):
+  def assertTfDataSetExamplesMatchExpected(
+      self,
+      input_fn,
+      expected_dataset,
+      use_tpu=False,
+      workaround_list_files=False,
+  ):
     # Note that we use input_fn to get an iterator, while we use
     # expected_dataset to get a filename, even though they are the same
     # type (DeepVariantInput), and may even be the same object.
     with tf.compat.v1.Session() as sess:
       params = {'batch_size': 1}
       batch_feed = tf.compat.v1.data.make_one_shot_iterator(
-          input_fn(params)).get_next()
+          input_fn(params)
+      ).get_next()
 
       sess.run(tf.compat.v1.global_variables_initializer())
       sess.run(tf.compat.v1.local_variables_initializer())
@@ -192,21 +213,24 @@ class DataProviderTest(parameterized.TestCase):
     self.assertEqual(expected_loci, seen)
     # Note that this expected shape comes from the golden dataset. If the data
     # is remade in the future, the values might need to be modified accordingly.
-    self.assertEqual(dv_constants.PILEUP_DEFAULT_DIMS,
-                     expected_dataset.tensor_shape)
+    self.assertEqual(
+        dv_constants.PILEUP_DEFAULT_DIMS, expected_dataset.tensor_shape
+    )
 
   # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
       dict(compressed_inputs=compressed_inputs, use_tpu=use_tpu)
       for compressed_inputs in [True, False]
-      for use_tpu in [True, False])
+      for use_tpu in [True, False]
+  )
   # pylint: enable=g-complex-comprehension
   def test_reading_dataset(self, compressed_inputs, use_tpu):
     golden_dataset = make_golden_dataset(compressed_inputs, use_tpu=use_tpu)
     self.assertTfDataSetExamplesMatchExpected(
         input_fn=golden_dataset,
         expected_dataset=golden_dataset,
-        use_tpu=use_tpu)
+        use_tpu=use_tpu,
+    )
 
   # It looks like tf.data.Dataset.list_files is potentially nondeterministic.
   # There's no guaranteed way to get around that (yet, internal).
@@ -219,24 +243,28 @@ class DataProviderTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(compressed_inputs=compressed_inputs, use_tpu=use_tpu)
       for compressed_inputs in [True, False]
-      for use_tpu in [True, False])
+      for use_tpu in [True, False]
+  )
   # pylint: enable=g-complex-comprehension
   def test_reading_sharded_dataset(self, compressed_inputs, use_tpu):
     golden_dataset = make_golden_dataset(compressed_inputs, use_tpu=use_tpu)
     n_shards = 3
     sharded_path = test_utils.test_tmpfile('sharded@{}'.format(n_shards))
     tfrecord.write_tfrecords(
-        tfrecord.read_tfrecords(golden_dataset.input_file_spec), sharded_path)
+        tfrecord.read_tfrecords(golden_dataset.input_file_spec), sharded_path
+    )
 
     config_file = _test_dataset_config(
         'test_sharded.pbtxt',
         name='sharded_test',
         tfrecord_path=sharded_path,
-        num_examples=golden_dataset.num_examples)
+        num_examples=golden_dataset.num_examples,
+    )
 
     self.assertTfDataSetExamplesMatchExpected(
         data_providers.get_input_fn_from_dataset(
-            config_file, mode=tf_estimator.ModeKeys.EVAL),
+            config_file, mode=tf_estimator.ModeKeys.EVAL
+        ),
         golden_dataset,
         # workaround_list_files is needed because wildcards, and so sharded
         # files, are nondeterministicly ordered (for now).
@@ -245,18 +273,24 @@ class DataProviderTest(parameterized.TestCase):
 
   @parameterized.parameters(
       dict(compressed_inputs=compressed_inputs, mode=mode, use_tpu=use_tpu)
-      for compressed_inputs in [True, False] for use_tpu in [True, False]
-      for mode in ['TRAIN', 'EVAL'])
+      for compressed_inputs in [True, False]
+      for use_tpu in [True, False]
+      for mode in ['TRAIN', 'EVAL']
+  )
   def test_get_batches(self, compressed_inputs, mode, use_tpu):
     mode = (
         tf_estimator.ModeKeys.EVAL
-        if mode == 'EVAL' else tf_estimator.ModeKeys.TRAIN)
+        if mode == 'EVAL'
+        else tf_estimator.ModeKeys.TRAIN
+    )
     input_fn = make_golden_dataset(
-        compressed_inputs, mode=mode, use_tpu=use_tpu)
+        compressed_inputs, mode=mode, use_tpu=use_tpu
+    )
     batch_size = 16
     with tf.compat.v1.Session() as sess:
       batch = tf.compat.v1.data.make_one_shot_iterator(
-          input_fn(dict(batch_size=batch_size))).get_next()
+          input_fn(dict(batch_size=batch_size))
+      ).get_next()
 
       # Get our images, labels, and variants for further testing.
       sess.run(tf.compat.v1.global_variables_initializer())
@@ -267,8 +301,9 @@ class DataProviderTest(parameterized.TestCase):
       # Checks that our labels are the right shape and are one-hot encoded.
       # Note that the shape is 100, not 107, because we only adjust the image
       # in the model_fn now, where previously it was done in the input_fn.
-      self.assertEqual([batch_size] + dv_constants.PILEUP_DEFAULT_DIMS,
-                       list(images.shape))
+      self.assertEqual(
+          [batch_size] + dv_constants.PILEUP_DEFAULT_DIMS, list(images.shape)
+      )
       self.assertEqual((batch_size,), labels.shape)
       for label in labels:
         # pylint: disable=g-generic-assert
@@ -287,12 +322,15 @@ class DataProviderTest(parameterized.TestCase):
       ('test_shape.gz', 'test_shape.gz'),
       ('test_shape-00000-of-00001.gz', 'test_shape@1.gz'),
       ('test_shape-00000-of-00001.gz', 'test_shape-?????-of-00001.gz'),
-      ('test_shape-00000-of-00001.gz', 'test_shape-*.gz'), ('output', 'output'),
+      ('test_shape-00000-of-00001.gz', 'test_shape-*.gz'),
+      ('output', 'output'),
       ('test_shape-00000-of-00001', 'test_shape@1'),
       ('test_shape-00000-of-00001', 'test_shape-?????-of-00001'),
-      ('test_shape-00000-of-00001', 'test_shape-*'))
-  def test_get_shape_from_examples_path(self, file_name_to_write,
-                                        tfrecord_path_to_match):
+      ('test_shape-00000-of-00001', 'test_shape-*'),
+  )
+  def test_get_shape_from_examples_path(
+      self, file_name_to_write, tfrecord_path_to_match
+  ):
     example = example_pb2.Example()
     valid_shape = [1, 2, 3]
     example.features.feature['image/shape'].int64_list.value.extend(valid_shape)
@@ -302,7 +340,8 @@ class DataProviderTest(parameterized.TestCase):
         mode=tf_estimator.ModeKeys.PREDICT,
         name='test_shape',
         input_file_spec=test_utils.test_tmpfile(tfrecord_path_to_match),
-        num_examples=1)
+        num_examples=1,
+    )
     self.assertEqual(valid_shape, ds.tensor_shape)
 
   def test_get_shape_from_examples_path_invalid_path(self):
@@ -311,13 +350,15 @@ class DataProviderTest(parameterized.TestCase):
           mode=tf_estimator.ModeKeys.PREDICT,
           name='test_invalid_path',
           input_file_spec='/this/path/does/not/exist',
-          num_examples=1)
+          num_examples=1,
+      )
 
   # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
       dict(max_examples=max_examples, batch_size=batch_size)
       for max_examples in [2, 4, 8]
-      for batch_size in [4, 8, 16])
+      for batch_size in [4, 8, 16]
+  )
   # pylint: enable=g-complex-comprehension
   def test_max_examples(self, max_examples, batch_size):
     input_fn = data_providers.get_input_fn_from_filespec(
@@ -325,14 +366,16 @@ class DataProviderTest(parameterized.TestCase):
         num_examples=testdata.N_GOLDEN_TRAINING_EXAMPLES,
         name='labeled_golden',
         max_examples=max_examples,
-        mode=tf_estimator.ModeKeys.TRAIN)
+        mode=tf_estimator.ModeKeys.TRAIN,
+    )
 
     n_batches_to_read = 100
     with tf.compat.v1.Session() as sess:
       sess.run(tf.compat.v1.global_variables_initializer())
 
       iterator = tf.compat.v1.data.make_one_shot_iterator(
-          input_fn(dict(batch_size=batch_size)))
+          input_fn(dict(batch_size=batch_size))
+      )
       next_element = iterator.get_next()
 
       def read_loci_in_batches():
@@ -362,37 +405,49 @@ class DataProviderTest(parameterized.TestCase):
       # update num_examples so it remains None.
       dict(num_examples=None, max_examples=5, expected=None),
   )
-  def test_max_examples_overrides_num_examples(self, num_examples, max_examples,
-                                               expected):
+  def test_max_examples_overrides_num_examples(
+      self, num_examples, max_examples, expected
+  ):
     dataset = data_providers.DeepVariantInput(
         # Use predict mode so we can have num_examples == None.
         mode=tf_estimator.ModeKeys.PREDICT,
         input_file_spec=testdata.GOLDEN_TRAINING_EXAMPLES,
         num_examples=num_examples,
-        max_examples=max_examples)
+        max_examples=max_examples,
+    )
     self.assertEqual(expected, dataset.num_examples)
 
   def test_features_extraction_spec_for_mode(self):
     dataset = make_golden_dataset()
 
     shared_feature_names = {
-        'image/encoded', 'variant/encoded', 'alt_allele_indices/encoded',
-        'variant_type', 'sequencing_type'
+        'image/encoded',
+        'variant/encoded',
+        'alt_allele_indices/encoded',
+        'variant_type',
+        'sequencing_type',
     }
     self.assertEqual(
         shared_feature_names,
         set(
             dataset.features_extraction_spec_for_mode(
-                include_label_and_locus=False).keys()))
+                include_label_and_locus=False
+            ).keys()
+        ),
+    )
     self.assertEqual(
         shared_feature_names.union({'label', 'locus'}),
         set(
             dataset.features_extraction_spec_for_mode(
-                include_label_and_locus=True).keys()))
+                include_label_and_locus=True
+            ).keys()
+        ),
+    )
 
 
 class InputTest(
-    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
   """Tests of input_fn, doing end-to-end I/O.
 
   These tests instantiate an input stream and then check it in various ways,
@@ -407,14 +462,17 @@ class InputTest(
         input_file_spec=testdata.GOLDEN_CALLING_EXAMPLES,
         num_examples=testdata.N_GOLDEN_CALLING_EXAMPLES,
         tensor_shape=None,
-        use_tpu=use_tpu)
+        use_tpu=use_tpu,
+    )
     params = {'batch_size': batch_size}
     batch_feed = tf.compat.v1.data.make_one_shot_iterator(
-        dvi(params)).get_next()
+        dvi(params)
+    ).get_next()
     return batch_feed
 
-  def check_batch_feed(self, batch_feed, use_tpu, expected_batch_size,
-                       expected_n_batches):
+  def check_batch_feed(
+      self, batch_feed, use_tpu, expected_batch_size, expected_n_batches
+  ):
     # Consume batch_feed, check that the right number of things is seen.
     with tf.compat.v1.Session() as sess:
       sess.run(tf.compat.v1.local_variables_initializer())
@@ -438,7 +496,8 @@ class InputTest(
         self.assertLessEqual(current_batch_size, expected_batch_size)
         self.assertEqual(
             list(a.shape),
-            [current_batch_size] + dv_constants.PILEUP_DEFAULT_DIMS)
+            [current_batch_size] + dv_constants.PILEUP_DEFAULT_DIMS,
+        )
         n_valid_entries += current_batch_size
 
       self.assertEqual(expected_n_batches, n)
@@ -451,7 +510,8 @@ class InputTest(
     batch_size = 1
     batch_feed = self.get_batch_feed(batch_size=batch_size, use_tpu=use_tpu)
     expected_n_batches = math.ceil(
-        float(testdata.N_GOLDEN_CALLING_EXAMPLES) / batch_size)
+        float(testdata.N_GOLDEN_CALLING_EXAMPLES) / batch_size
+    )
     self.check_batch_feed(batch_feed, use_tpu, batch_size, expected_n_batches)
 
   @parameterized.parameters(False, True)
@@ -462,7 +522,8 @@ class InputTest(
     batch_size = 1024
     batch_feed = self.get_batch_feed(batch_size=batch_size, use_tpu=use_tpu)
     expected_n_batches = math.ceil(
-        float(testdata.N_GOLDEN_CALLING_EXAMPLES) / batch_size)
+        float(testdata.N_GOLDEN_CALLING_EXAMPLES) / batch_size
+    )
     self.check_batch_feed(batch_feed, use_tpu, batch_size, expected_n_batches)
 
   @parameterized.parameters(False, True)
@@ -474,7 +535,9 @@ class InputTest(
     # Read and parse the canonical data.
     expected_decoded_records = list(
         tfrecord.read_tfrecords(
-            testdata.GOLDEN_CALLING_EXAMPLES, proto=example_pb2.Example))
+            testdata.GOLDEN_CALLING_EXAMPLES, proto=example_pb2.Example
+        )
+    )
 
     # Read and parse the data using tf.  This is the function under test,
     # although we indirectly check parse_tfexample as well.
@@ -495,11 +558,14 @@ class InputTest(
         # Get the corresponding parsed golden example.
         example = expected_decoded_records[n]
         expected_alt_allele_indices_encoded = example.features.feature[
-            'alt_allele_indices/encoded'].bytes_list.value[0]
+            'alt_allele_indices/encoded'
+        ].bytes_list.value[0]
         expected_variant_encoded = example.features.feature[
-            'variant/encoded'].bytes_list.value[0]
+            'variant/encoded'
+        ].bytes_list.value[0]
         expected_sequencing_type = example.features.feature[
-            'sequencing_type'].int64_list.value[0]
+            'sequencing_type'
+        ].int64_list.value[0]
 
         # Compare against the parsed batch feed.
 
@@ -519,8 +585,10 @@ class InputTest(
         else:
           self.assertIsInstance(a, bytes)
           actual_alt_allele_indices_encoded = a
-        self.assertEqual(expected_alt_allele_indices_encoded,
-                         actual_alt_allele_indices_encoded)
+        self.assertEqual(
+            expected_alt_allele_indices_encoded,
+            actual_alt_allele_indices_encoded,
+        )
 
         a = features['variant'][0]
         if use_tpu:

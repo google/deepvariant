@@ -54,7 +54,8 @@ def setUpModule():
 
 
 class ModelEvalTest(
-    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
 
   def setUp(self):
     self.checkpoint_dir = tf.compat.v1.test.get_temp_dir()
@@ -64,13 +65,18 @@ class ModelEvalTest(
 
   @parameterized.parameters(['inception_v3'])
   @flagsaver.flagsaver
-  @mock.patch('deepvariant.data_providers.'
-              'get_input_fn_from_dataset')
+  @mock.patch(
+      'deepvariant.data_providers.'
+      'get_input_fn_from_dataset'
+  )
   def test_end2end(self, model_name, mock_get_input_fn_from_dataset):
     """End-to-end test of model_eval."""
-    tf_test_utils.write_fake_checkpoint('inception_v3', self.test_session(),
-                                        self.checkpoint_dir,
-                                        FLAGS.moving_average_decay)
+    tf_test_utils.write_fake_checkpoint(
+        'inception_v3',
+        self.test_session(),
+        self.checkpoint_dir,
+        FLAGS.moving_average_decay,
+    )
 
     # Start up eval, loading that checkpoint.
     FLAGS.batch_size = 2
@@ -87,31 +93,43 @@ class ModelEvalTest(
     # minimize the number of times we need to run this.
     mock_get_input_fn_from_dataset.return_value = (
         data_providers_test.make_golden_dataset(
-            compressed_inputs=True, use_tpu=FLAGS.use_tpu))
+            compressed_inputs=True, use_tpu=FLAGS.use_tpu
+        )
+    )
     model_eval.main(0)
     mock_get_input_fn_from_dataset.assert_called_once_with(
         dataset_config_filename=FLAGS.dataset_config_pbtxt,
         mode=tf_estimator.ModeKeys.EVAL,
-        use_tpu=FLAGS.use_tpu)
+        use_tpu=FLAGS.use_tpu,
+    )
     self.assertTrue(
         tf_test_utils.check_file_exists(
-            'best_checkpoint.txt', eval_name=self.eval_name))
+            'best_checkpoint.txt', eval_name=self.eval_name
+        )
+    )
     self.assertTrue(
         tf_test_utils.check_file_exists(
-            'best_checkpoint.metrics', eval_name=self.eval_name))
+            'best_checkpoint.metrics', eval_name=self.eval_name
+        )
+    )
     self.assertEqual(
         tf.train.load_checkpoint(self.checkpoint_dir).get_tensor('global_step'),
-        0)
+        0,
+    )
 
   # Using a constant model, check that running an eval returns the expected
   # metrics.
   @flagsaver.flagsaver
   @mock.patch(
-      'deepvariant.model_eval.checkpoints_iterator')
-  @mock.patch('deepvariant.data_providers.'
-              'get_input_fn_from_dataset')
-  def test_fixed_eval_sees_the_same_evals(self, mock_get_input_fn_from_dataset,
-                                          mock_checkpoints_iterator):
+      'deepvariant.model_eval.checkpoints_iterator'
+  )
+  @mock.patch(
+      'deepvariant.data_providers.'
+      'get_input_fn_from_dataset'
+  )
+  def test_fixed_eval_sees_the_same_evals(
+      self, mock_get_input_fn_from_dataset, mock_checkpoints_iterator
+  ):
     dataset = data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu)
     n_checkpoints = 3
     checkpoints = [
@@ -121,7 +139,9 @@ class ModelEvalTest(
             self.checkpoint_dir,
             FLAGS.moving_average_decay,
             global_step=i,
-            name='model' + str(i)) for i in range(n_checkpoints)
+            name='model' + str(i),
+        )
+        for i in range(n_checkpoints)
     ]
 
     # Setup our mocks.
@@ -139,13 +159,18 @@ class ModelEvalTest(
     model_eval.main(0)
     self.assertEqual(
         tf.train.load_checkpoint(self.checkpoint_dir).get_tensor('global_step'),
-        n_checkpoints - 1)
-    self.assertEqual(mock_get_input_fn_from_dataset.call_args_list, [
-        mock.call(
-            use_tpu=FLAGS.use_tpu,
-            dataset_config_filename=FLAGS.dataset_config_pbtxt,
-            mode=tf_estimator.ModeKeys.EVAL)
-    ])
+        n_checkpoints - 1,
+    )
+    self.assertEqual(
+        mock_get_input_fn_from_dataset.call_args_list,
+        [
+            mock.call(
+                use_tpu=FLAGS.use_tpu,
+                dataset_config_filename=FLAGS.dataset_config_pbtxt,
+                mode=tf_estimator.ModeKeys.EVAL,
+            )
+        ],
+    )
 
     metrics = [
         model_eval.read_metrics(checkpoint, eval_name=FLAGS.eval_name)

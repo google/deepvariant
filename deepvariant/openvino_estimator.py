@@ -46,26 +46,31 @@ except ImportError:
 _LOG_EVERY_N = 15000
 
 
-def freeze_graph(model,
-                 checkpoint_path,
-                 tensor_shape,
-                 openvino_model_pb,
-                 moving_average_decay=0.9999):
+def freeze_graph(
+    model,
+    checkpoint_path,
+    tensor_shape,
+    openvino_model_pb,
+    moving_average_decay=0.9999,
+):
   """Converts model ckpts."""
-  logging.info('Processing ckpt=%s, tensor_shape=%s', checkpoint_path,
-               tensor_shape)
+  logging.info(
+      'Processing ckpt=%s, tensor_shape=%s', checkpoint_path, tensor_shape
+  )
   out_node = 'InceptionV3/Predictions/Reshape_1'
   in_node = 'input'
 
   inp = tf.compat.v1.placeholder(
-      shape=[1] + tensor_shape, dtype=tf.float32, name=in_node)
+      shape=[1] + tensor_shape, dtype=tf.float32, name=in_node
+  )
   _ = model.create(inp, num_classes=3, is_training=False)
 
   ema = tf.train.ExponentialMovingAverage(moving_average_decay)
   variables_to_restore = ema.variables_to_restore()
 
   load_ema = slim.assign_from_checkpoint_fn(
-      checkpoint_path, variables_to_restore, ignore_missing_vars=True)
+      checkpoint_path, variables_to_restore, ignore_missing_vars=True
+  )
 
   with tf.compat.v1.Session() as sess:
     sess.run(tf.compat.v1.global_variables_initializer())
@@ -73,9 +78,11 @@ def freeze_graph(model,
 
     graph_def = sess.graph.as_graph_def()
     graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
-        sess, graph_def, [out_node])
+        sess, graph_def, [out_node]
+    )
     graph_def = optimize_for_inference_lib.optimize_for_inference(
-        graph_def, [in_node], [out_node], tf.float32.as_datatype_enum)
+        graph_def, [in_node], [out_node], tf.float32.as_datatype_enum
+    )
 
     with tf.io.gfile.GFile(openvino_model_pb, 'wb') as f:
       f.write(graph_def.SerializeToString())
@@ -89,8 +96,11 @@ class OpenVINOEstimator(object):
     openvino_model_pb = os.path.join(openvino_model_dir, 'model.pb')
     freeze_graph(model, checkpoint_path, tensor_shape, openvino_model_pb)
     mo_tf_args = [
-        'mo', '--input_model=' + openvino_model_pb, '--scale=128',
-        '--mean_values', '[{}]'.format(','.join(['128'] * tensor_shape[-1]))
+        'mo',
+        '--input_model=' + openvino_model_pb,
+        '--scale=128',
+        '--mean_values',
+        '[{}]'.format(','.join(['128'] * tensor_shape[-1])),
     ]
     if openvino_model_dir:
       mo_tf_args.append('--output_dir=' + openvino_model_dir)
@@ -98,13 +108,17 @@ class OpenVINOEstimator(object):
     os.remove(openvino_model_pb)
 
     self.ie = Core()
-    self.ie.set_property('CPU', {
-        'CPU_THROUGHPUT_STREAMS': 'CPU_THROUGHPUT_AUTO',
-        'CPU_BIND_THREAD': 'YES'
-    })
+    self.ie.set_property(
+        'CPU',
+        {
+            'CPU_THROUGHPUT_STREAMS': 'CPU_THROUGHPUT_AUTO',
+            'CPU_BIND_THREAD': 'YES',
+        },
+    )
     net = self.ie.read_model(
         os.path.join(openvino_model_dir, 'model.xml'),
-        os.path.join(openvino_model_dir, 'model.bin'))
+        os.path.join(openvino_model_dir, 'model.bin'),
+    )
     self.input_name = net.inputs[0].get_any_name()
 
     p = PrePostProcessor(net)
@@ -113,7 +127,8 @@ class OpenVINOEstimator(object):
 
     compiled_model = self.ie.compile_model(net, 'CPU')
     num_requests = compiled_model.get_property(
-        'OPTIMAL_NUMBER_OF_INFER_REQUESTS')
+        'OPTIMAL_NUMBER_OF_INFER_REQUESTS'
+    )
     logging.info('OpenVINO uses %d inference requests.', num_requests)
     self.infer_queue = AsyncInferQueue(compiled_model, num_requests)
     self.tf_sess = tf.compat.v1.Session()
@@ -123,7 +138,8 @@ class OpenVINOEstimator(object):
   def __iter__(self):
     """Read input data."""
     features = tf.compat.v1.data.make_one_shot_iterator(
-        self.input_fn({'batch_size': 64})).get_next()
+        self.input_fn({'batch_size': 64})
+    ).get_next()
     self.images = features['image']
     self.variant = features['variant']
     self.alt_allele_indices = features['alt_allele_indices']
@@ -135,8 +151,10 @@ class OpenVINOEstimator(object):
       def completion_callback(request, inp_id):
         logging.log_every_n(
             logging.INFO,
-            ('Processed %s examples in call_variants (using OpenVINO)'),
-            _LOG_EVERY_N, inp_id)
+            'Processed %s examples in call_variants (using OpenVINO)',
+            _LOG_EVERY_N,
+            inp_id,
+        )
 
         output = next(iter(request.results.values()))
         self.outputs[inp_id - 1]['probabilities'] = output.reshape(-1)
@@ -147,7 +165,8 @@ class OpenVINOEstimator(object):
       while True:
         # Get next input
         inp, variant, alt_allele_indices = self.tf_sess.run(
-            [self.images, self.variant, self.alt_allele_indices])
+            [self.images, self.variant, self.alt_allele_indices]
+        )
 
         for i in range(inp.shape[0]):
           # Start this request on new data
@@ -155,9 +174,11 @@ class OpenVINOEstimator(object):
           self.outputs.append({
               'probabilities': None,
               'variant': variant[i],
-              'alt_allele_indices': alt_allele_indices[i]
+              'alt_allele_indices': alt_allele_indices[i],
           })
-          self.infer_queue.start_async({self.input_name: inp[i:i + 1]}, inp_id)
+          self.infer_queue.start_async(
+              {self.input_name: inp[i : i + 1]}, inp_id
+          )
 
     except (StopIteration, tf.errors.OutOfRangeError):
       self.infer_queue.wait_all()

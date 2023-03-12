@@ -53,8 +53,10 @@ from third_party.nucleus.util import variant_utils
 FLAGS = flags.FLAGS
 
 flags.DEFINE_bool(
-    'disable_haplotype_resolution', False,
-    'If True, makes `maybe_resolve_conflicting_variants` a no-op.')
+    'disable_haplotype_resolution',
+    False,
+    'If True, makes `maybe_resolve_conflicting_variants` a no-op.',
+)
 
 # The maximum number of overlapping variants to try to resolve into compatible
 # haplotypes. This corresponds to generating 3^12 (= 531,441) possible variant
@@ -79,14 +81,17 @@ def maybe_resolve_conflicting_variants(sorted_variants):
     Variant protos in coordinate-sorted order with no incompatible haplotypes.
   """
   if FLAGS.disable_haplotype_resolution:
-    logging.info('disable_haplotype_resolution is True. '
-                 '`maybe_resolve_conflicting_variants` has no effect.')
+    logging.info(
+        'disable_haplotype_resolution is True. '
+        '`maybe_resolve_conflicting_variants` has no effect.'
+    )
     for v in sorted_variants:
       yield v
   else:
     for overlapping_candidates in _group_overlapping_variants(sorted_variants):
       for resolved_candidate in _maybe_resolve_mixed_calls(
-          overlapping_candidates):
+          overlapping_candidates
+      ):
         yield resolved_candidate
 
 
@@ -159,7 +164,8 @@ def _maybe_resolve_mixed_calls(overlapping_candidates):
   # number of variants in the input is nearly always < 20 this is not an issue.
   for variant in sorted(
       reference_calls + resolved_variant_calls,
-      key=variant_utils.variant_range_tuple):
+      key=variant_utils.variant_range_tuple,
+  ):
     yield variant
 
 
@@ -204,10 +210,14 @@ class _VariantCompatibilityCalculator(object):
     """
     if len(nonref_genotype_counts) != len(self.variant_indices):
       raise ValueError(
-          'Variant counts must have same length as variant indices.')
+          'Variant counts must have same length as variant indices.'
+      )
     if not all(0 <= cnt <= ploidy for cnt in nonref_genotype_counts):
-      raise ValueError('Invalid variant allele count for ploidy {}: {}'.format(
-          ploidy, nonref_genotype_counts))
+      raise ValueError(
+          'Invalid variant allele count for ploidy {}: {}'.format(
+              ploidy, nonref_genotype_counts
+          )
+      )
 
     alts_in_span = np.zeros(self.size, dtype=int)
     for cnt, (start, end) in zip(nonref_genotype_counts, self.variant_indices):
@@ -233,8 +243,9 @@ class _LikelihoodAggregator(object):
     Args:
       num_alts: int. The number of alternate alleles in the variant.
     """
-    self._num_likelihoods = variant_utils.genotype_likelihood_index(
-        (num_alts, num_alts)) + 1
+    self._num_likelihoods = (
+        variant_utils.genotype_likelihood_index((num_alts, num_alts)) + 1
+    )
 
     # At each GL index, we keep a list that will include the joint GL across all
     # variants that include that particular set of allele indices for this
@@ -258,18 +269,23 @@ class _LikelihoodAggregator(object):
     if not all(bool(x) for x in self._genotype_likelihood_containers):
       raise ValueError(
           'All genotypes must have some probability mass: {}'.format(
-              self._genotype_likelihood_containers))
+              self._genotype_likelihood_containers
+          )
+      )
 
-    return genomics_math.normalize_log10_probs([
-        genomics_math.log10sumexp(unscaled)
-        for unscaled in self._genotype_likelihood_containers
-    ])
+    return genomics_math.normalize_log10_probs(
+        [
+            genomics_math.log10sumexp(unscaled)
+            for unscaled in self._genotype_likelihood_containers
+        ]
+    )
 
   def most_likely_allele_indices(self):
     """Returns allele indices for the genotype with the largest likelihood."""
     ix = np.argmax(self.scaled_likelihoods())
     return variant_utils.allele_indices_for_genotype_likelihood_index(
-        ix, ploidy=2)
+        ix, ploidy=2
+    )
 
 
 def _resolve_overlapping_variants(overlapping_variants):
@@ -296,8 +312,11 @@ def _resolve_overlapping_variants(overlapping_variants):
   calculator = _VariantCompatibilityCalculator(overlapping_variants)
   nonref_counts = [_nonref_genotype_count(v) for v in overlapping_variants]
   if calculator.all_variants_compatible(nonref_counts):
-    logging.vlog(2, 'Overlapping variants are naturally compatible: %s',
-                 overlapping_variants)
+    logging.vlog(
+        2,
+        'Overlapping variants are naturally compatible: %s',
+        overlapping_variants,
+    )
     for variant in overlapping_variants:
       yield variant
     return
@@ -308,10 +327,14 @@ def _resolve_overlapping_variants(overlapping_variants):
   if len(overlapping_variants) > _MAX_OVERLAPPING_VARIANTS_TO_RESOLVE:
     logging.vlog(
         2,
-        'Overlapping variants are not naturally compatible, and there are too '
-        'many to exhaustively search (%s). Returning variants without '
-        'modification, beginning with %s.', len(overlapping_variants),
-        overlapping_variants[0])
+        (
+            'Overlapping variants are not naturally compatible, and there are'
+            ' too many to exhaustively search (%s). Returning variants without'
+            ' modification, beginning with %s.'
+        ),
+        len(overlapping_variants),
+        overlapping_variants[0],
+    )
     for variant in overlapping_variants:
       yield variant
     return
@@ -384,33 +407,42 @@ def _resolve_overlapping_variants(overlapping_variants):
   most_likely_likelihood = None
   for nonref_count_config in valid_nonref_count_configurations:
     for allele_indices_config in _get_all_allele_indices_configurations(
-        overlapping_variants, nonref_count_config):
+        overlapping_variants, nonref_count_config
+    ):
       config_likelihood = _allele_indices_configuration_likelihood(
-          overlapping_variants, allele_indices_config)
-      if (most_likely_likelihood is None or
-          config_likelihood > most_likely_likelihood):
+          overlapping_variants, allele_indices_config
+      )
+      if (
+          most_likely_likelihood is None
+          or config_likelihood > most_likely_likelihood
+      ):
         most_likely_likelihood = config_likelihood
         most_likely_allele_indices_config = allele_indices_config
-      for aggregator, allele_indices in zip(likelihood_aggregators,
-                                            allele_indices_config):
+      for aggregator, allele_indices in zip(
+          likelihood_aggregators, allele_indices_config
+      ):
         aggregator.add(allele_indices, config_likelihood)
 
   marginal_allele_indices_config = tuple(
-      agg.most_likely_allele_indices() for agg in likelihood_aggregators)
+      agg.most_likely_allele_indices() for agg in likelihood_aggregators
+  )
   if marginal_allele_indices_config == most_likely_allele_indices_config:
     logging.vlog(
         2,
-        'Overlapping variants are not naturally compatible, but the genotype '
-        'configuration with the most likely joint likelihood is the same as '
-        'that from the scaled marginal likelihoods: %s',
-        overlapping_variants[0])
+        (
+            'Overlapping variants are not naturally compatible, but the'
+            ' genotype configuration with the most likely joint likelihood is'
+            ' the same as that from the scaled marginal likelihoods: %s'
+        ),
+        overlapping_variants[0],
+    )
     # Collapse the probabilities of all configurations to a single GL for each
     # allele, independently for each variant.
     scaled_gls = [agg.scaled_likelihoods() for agg in likelihood_aggregators]
 
-    for variant, allele_indices, gls in zip(overlapping_variants,
-                                            most_likely_allele_indices_config,
-                                            scaled_gls):
+    for variant, allele_indices, gls in zip(
+        overlapping_variants, most_likely_allele_indices_config, scaled_gls
+    ):
       newvariant = copy.deepcopy(variant)
       call = variant_utils.only_call(newvariant)
       call.genotype[:] = allele_indices
@@ -419,17 +451,21 @@ def _resolve_overlapping_variants(overlapping_variants):
   else:
     logging.vlog(
         2,
-        'Overlapping variants are not naturally compatible, and the genotype '
-        'configuration with the most likely joint likelihood is different from '
-        'that using the scaled marginal likelihoods: %s',
-        overlapping_variants[0])
+        (
+            'Overlapping variants are not naturally compatible, and the'
+            ' genotype configuration with the most likely joint likelihood is'
+            ' different from that using the scaled marginal likelihoods: %s'
+        ),
+        overlapping_variants[0],
+    )
     # TODO: Do something better than just punting.
     for variant in overlapping_variants:
       yield variant
 
 
-def _get_all_allele_indices_configurations(variants,
-                                           nonref_count_configuration):
+def _get_all_allele_indices_configurations(
+    variants, nonref_count_configuration
+):
   """Returns an iterable of allele configurations that satisfy the genotype.
 
   Args:
@@ -449,7 +485,8 @@ def _get_all_allele_indices_configurations(variants,
   if len(variants) != len(nonref_count_configuration):
     raise ValueError(
         'len(variants) must equal len(nonref_count_configuration): {} vs {}'
-        .format(len(variants), len(nonref_count_configuration)))
+        .format(len(variants), len(nonref_count_configuration))
+    )
 
   allele_indices_configs = [
       variant_utils.allele_indices_with_num_alts(variant, num_alts, ploidy=2)
@@ -475,12 +512,15 @@ def _allele_indices_configuration_likelihood(variants, allele_indices_config):
   if len(variants) != len(allele_indices_config):
     raise ValueError(
         'len(variants) must equal len(allele_indices_config): {} vs {}'.format(
-            len(variants), len(allele_indices_config)))
+            len(variants), len(allele_indices_config)
+        )
+    )
 
   retval = 0
   for variant, alleles in zip(variants, allele_indices_config):
     retval += variant_utils.genotype_likelihood(
-        variant_utils.only_call(variant), alleles)
+        variant_utils.only_call(variant), alleles
+    )
   return retval
 
 

@@ -66,22 +66,26 @@ def _make_dv_call(ref_bases='A', alt_bases='C'):
           start=10,
           end=11,
           reference_bases=ref_bases,
-          alternate_bases=[alt_bases]),
-      allele_support={'C': _supporting_reads('read1/1', 'read2/1')})
+          alternate_bases=[alt_bases],
+      ),
+      allele_support={'C': _supporting_reads('read1/1', 'read2/1')},
+  )
 
 
-def _make_dv_call_with_allele_frequency(ref_bases='A',
-                                        alt_bases='C',
-                                        alt_frequency=0.1):
+def _make_dv_call_with_allele_frequency(
+    ref_bases='A', alt_bases='C', alt_frequency=0.1
+):
   return deepvariant_pb2.DeepVariantCall(
       variant=variants_pb2.Variant(
           reference_name='chr1',
           start=10,
           end=11,
           reference_bases=ref_bases,
-          alternate_bases=[alt_bases]),
+          alternate_bases=[alt_bases],
+      ),
       allele_support={'C': _supporting_reads('read1/1', 'read2/1')},
-      allele_frequency=dict(A=1 - alt_frequency, C=alt_frequency))
+      allele_frequency=dict(A=1 - alt_frequency, C=alt_frequency),
+  )
 
 
 def _make_encoder(read_requirements=None, **kwargs):
@@ -109,9 +113,9 @@ def _make_encoder_with_allele_frequency(read_requirements=None, **kwargs):
   return pileup_image_native.PileupImageEncoderNative(options)
 
 
-def _make_encoder_with_hp_channel(read_requirements=None,
-                                  hp_tag_for_assembly_polishing=None,
-                                  **kwargs):
+def _make_encoder_with_hp_channel(
+    read_requirements=None, hp_tag_for_assembly_polishing=None, **kwargs
+):
   """Make a PileupImageEncoderNative with overrideable default options."""
   options = pileup_image.default_options(read_requirements)
   options.add_hp_channel = True
@@ -126,7 +130,8 @@ def _make_image_creator(ref_reader, samples, **kwargs):
   options = pileup_image.default_options()
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image.PileupImageCreator(
-      options=options, ref_reader=ref_reader, samples=samples)
+      options=options, ref_reader=ref_reader, samples=samples
+  )
 
 
 class PileupImageEncoderTest(parameterized.TestCase):
@@ -135,13 +140,15 @@ class PileupImageEncoderTest(parameterized.TestCase):
     super(PileupImageEncoderTest, self).setUp()
     self.options = pileup_image.default_options()
 
-  @parameterized.parameters(('A', 250), ('G', 180), ('T', 100), ('C', 30),
-                            ('N', 0), ('X', 0))
+  @parameterized.parameters(
+      ('A', 250), ('G', 180), ('T', 100), ('C', 30), ('N', 0), ('X', 0)
+  )
   def test_base_color(self, base, expected_color):
     pie = _make_encoder(
         base_color_offset_a_and_g=40,
         base_color_offset_t_and_c=30,
-        base_color_stride=70)
+        base_color_stride=70,
+    )
     self.assertAlmostEqual(pie.base_color(base), expected_color)
 
   @parameterized.parameters(
@@ -173,7 +180,8 @@ class PileupImageEncoderTest(parameterized.TestCase):
   def test_mapping_quality_color(self, mapping_qual, expected_color):
     pie = _make_encoder(mapping_quality_cap=20)
     self.assertAlmostEqual(
-        pie.mapping_quality_color(mapping_qual), expected_color)
+        pie.mapping_quality_color(mapping_qual), expected_color
+    )
 
   @parameterized.parameters((True, 1), (False, 2))
   def test_strand_color(self, on_positive_strand, expected_color):
@@ -188,12 +196,14 @@ class PileupImageEncoderTest(parameterized.TestCase):
       (1, int(254.0 * 0.1), 0.3),
       (2, int(254.0 * 0.3), 0.3),
   )
-  def test_supports_alt_color(self, supports_alt, expected_color,
-                              other_allele_supporting_read_alpha):
+  def test_supports_alt_color(
+      self, supports_alt, expected_color, other_allele_supporting_read_alpha
+  ):
     pie = _make_encoder(
         allele_supporting_read_alpha=0.1,
         allele_unsupporting_read_alpha=0.2,
-        other_allele_supporting_read_alpha=other_allele_supporting_read_alpha)
+        other_allele_supporting_read_alpha=other_allele_supporting_read_alpha,
+    )
     self.assertAlmostEqual(pie.supports_alt_color(supports_alt), expected_color)
 
   @parameterized.parameters(
@@ -202,7 +212,8 @@ class PileupImageEncoderTest(parameterized.TestCase):
   )
   def test_matches_ref_color(self, matches_ref, expected_color):
     pie = _make_encoder(
-        reference_matching_read_alpha=0.3, reference_mismatching_read_alpha=0.4)
+        reference_matching_read_alpha=0.3, reference_mismatching_read_alpha=0.4
+    )
     self.assertAlmostEqual(pie.matches_ref_color(matches_ref), expected_color)
 
   def test_reference_encoding(self):
@@ -220,8 +231,9 @@ class PileupImageEncoderTest(parameterized.TestCase):
             # Supports alt or not.
             (152, 152, 152, 152, 152),
             # Matches ref or not.
-            (50, 50, 50, 50, 50)
-        ]).astype(np.uint8))
+            (50, 50, 50, 50, 50),
+        ]).astype(np.uint8),
+    )
 
   def assertImageRowEquals(self, image_row, expected):
     npt.assert_equal(image_row, expected.astype(np.uint8))
@@ -231,7 +243,8 @@ class PileupImageEncoderTest(parameterized.TestCase):
     dv_call = _make_dv_call()
     alt_allele = dv_call.variant.alternate_bases
     read = test_utils.make_read(
-        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
+        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1'
+    )
     full_expected = np.dstack([
         # Base.
         (250, 30, 30, 180, 100),
@@ -244,12 +257,13 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 254, 254, 254),
         # Matches ref or not.
-        (50, 50, 254, 50, 50)
+        (50, 50, 254, 50, 50),
     ]).astype(np.uint8)
 
     self.assertImageRowEquals(
         _make_encoder().encode_read(dv_call, 'ACAGT', read, start, alt_allele),
-        full_expected)
+        full_expected,
+    )
 
   @parameterized.parameters(
       # The corresponding colors here are defined in HPValueColor in
@@ -264,15 +278,18 @@ class PileupImageEncoderTest(parameterized.TestCase):
       (None, 0, 2),
       (0, 0, 2),
       (1, 254, 2),
-      (2, 254 / 2, 2))
-  def test_encode_read_matches_with_hp_channel(self, hp_value, hp_color,
-                                               hp_tag_for_assembly_polishing):
+      (2, 254 / 2, 2),
+  )
+  def test_encode_read_matches_with_hp_channel(
+      self, hp_value, hp_color, hp_tag_for_assembly_polishing
+  ):
     # Same test case as test_encode_read_matches(), with --add_hp_channel.
     start = 10
     dv_call = _make_dv_call_with_allele_frequency()
     alt_allele = dv_call.variant.alternate_bases
     read = test_utils.make_read(
-        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
+        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1'
+    )
     if hp_value is not None:
       read.info['HP'].values.add().int_value = hp_value
 
@@ -295,8 +312,10 @@ class PileupImageEncoderTest(parameterized.TestCase):
 
     self.assertImageRowEquals(
         _make_encoder_with_hp_channel(
-            hp_tag_for_assembly_polishing=hp_tag_for_assembly_polishing)
-        .encode_read(dv_call, 'ACAGT', read, start, alt_allele), full_expected)
+            hp_tag_for_assembly_polishing=hp_tag_for_assembly_polishing
+        ).encode_read(dv_call, 'ACAGT', read, start, alt_allele),
+        full_expected,
+    )
 
   def test_encode_read_matches_with_allele_frequency(self):
     # Same test case as test_encode_read_matches(), with allele frequency.
@@ -304,7 +323,8 @@ class PileupImageEncoderTest(parameterized.TestCase):
     dv_call = _make_dv_call_with_allele_frequency()
     alt_allele = dv_call.variant.alternate_bases
     read = test_utils.make_read(
-        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1')
+        'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1'
+    )
     full_expected = np.dstack([
         # Base.
         (250, 30, 30, 180, 100),
@@ -319,17 +339,22 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Matches ref or not.
         (50, 50, 254, 50, 50),
         # Allele frequencies
-        (203, 203, 203, 203, 203)
+        (203, 203, 203, 203, 203),
     ]).astype(np.uint8)
 
     self.assertImageRowEquals(
         _make_encoder_with_allele_frequency().encode_read(
-            dv_call, 'ACAGT', read, start, alt_allele), full_expected)
+            dv_call, 'ACAGT', read, start, alt_allele
+        ),
+        full_expected,
+    )
 
   # pylint:disable=g-complex-comprehension
-  @parameterized.parameters((bases_start, bases_end)
-                            for bases_start in range(0, 5)
-                            for bases_end in range(6, 12))
+  @parameterized.parameters(
+      (bases_start, bases_end)
+      for bases_start in range(0, 5)
+      for bases_end in range(6, 12)
+  )
   # pylint:enable=g-complex-comprehension
   def test_encode_read_spans2(self, bases_start, bases_end):
     bases = 'AAAACCGTCCC'
@@ -354,10 +379,11 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 254, 254, 254),
         # Matches ref or not.
-        (50, 50, 254, 50, 50)
+        (50, 50, 254, 50, 50),
     ]).astype(np.uint8)
-    expected = np.zeros((1, ref_size, self.options.num_channels),
-                        dtype=np.uint8)
+    expected = np.zeros(
+        (1, ref_size, self.options.num_channels), dtype=np.uint8
+    )
     for i in range(read_start, read_start + len(read_bases)):
       if ref_start <= i < ref_start + ref_size:
         expected[0, i - ref_start] = full_expected[0, i - ref_start]
@@ -367,19 +393,24 @@ class PileupImageEncoderTest(parameterized.TestCase):
         start=read_start,
         cigar=str(len(read_bases)) + 'M',
         quals=read_quals,
-        name='read1')
+        name='read1',
+    )
     dv_call = _make_dv_call()
     alt_allele = dv_call.variant.alternate_bases
     self.assertImageRowEquals(
-        _make_encoder().encode_read(dv_call, 'ACAGT', read, ref_start,
-                                    alt_allele), expected)
+        _make_encoder().encode_read(
+            dv_call, 'ACAGT', read, ref_start, alt_allele
+        ),
+        expected,
+    )
 
   def test_encode_read_deletion(self):
     # ref:  AACAG
     # read: AA--G
     start = 2
     read = test_utils.make_read(
-        'AAG', start=start, cigar='2M2D1M', quals=range(10, 13), name='read1')
+        'AAG', start=start, cigar='2M2D1M', quals=range(10, 13), name='read1'
+    )
     dv_call = _make_dv_call()
     alt_allele = dv_call.variant.alternate_bases
     full_expected = np.dstack([
@@ -394,22 +425,20 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 0, 0, 254),
         # Matches ref or not.
-        (50, 254, 0, 0, 50)
+        (50, 254, 0, 0, 50),
     ]).astype(np.uint8)
     self.assertImageRowEquals(
         _make_encoder().encode_read(dv_call, 'AACAG', read, start, alt_allele),
-        full_expected)
+        full_expected,
+    )
 
   def test_encode_read_insertion(self):
     # ref:  AA-CAG
     # read: AAACAG
     start = 2
     read = test_utils.make_read(
-        'AAACAG',
-        start=start,
-        cigar='2M1I3M',
-        quals=range(10, 16),
-        name='read1')
+        'AAACAG', start=start, cigar='2M1I3M', quals=range(10, 16), name='read1'
+    )
     dv_call = _make_dv_call()
     alt_allele = dv_call.variant.alternate_bases
     full_expected = np.dstack([
@@ -424,18 +453,22 @@ class PileupImageEncoderTest(parameterized.TestCase):
         # Supports alt or not.
         (254, 254, 254, 254, 254),
         # Matches ref or not.
-        (50, 254, 50, 50, 50)
+        (50, 254, 50, 50, 50),
     ]).astype(np.uint8)
     self.assertImageRowEquals(
         _make_encoder().encode_read(dv_call, 'AACAG', read, start, alt_allele),
-        full_expected)
+        full_expected,
+    )
 
   @parameterized.parameters(
       (min_base_qual, min_mapping_qual)
       for min_base_qual, min_mapping_qual in itertools.product(
-          range(0, 5), range(0, 5)))
-  def test_ignores_reads_with_low_quality_bases(self, min_base_qual,
-                                                min_mapping_qual):
+          range(0, 5), range(0, 5)
+      )
+  )
+  def test_ignores_reads_with_low_quality_bases(
+      self, min_base_qual, min_mapping_qual
+  ):
     """Check that we discard reads with low quality bases at variant start site.
 
     We have the following scenario:
@@ -461,18 +494,22 @@ class PileupImageEncoderTest(parameterized.TestCase):
             start=2,
             end=3,
             reference_bases='A',
-            alternate_bases=['C']))
+            alternate_bases=['C'],
+        )
+    )
 
     read_requirements = reads_pb2.ReadRequirements(
         min_base_quality=min_base_qual,
         min_mapping_quality=min_mapping_qual,
-        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT,
+    )
     pie = _make_encoder(read_requirements=read_requirements)
 
     for base_qual in range(min_base_qual + 5):
       quals = [min_base_qual, base_qual, min_base_qual]
       read = test_utils.make_read(
-          'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual)
+          'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual
+      )
       actual = pie.encode_read(dv_call, 'AACAG', read, 1, ['C'])
       if base_qual < min_base_qual:
         self.assertIsNone(actual)
@@ -482,9 +519,12 @@ class PileupImageEncoderTest(parameterized.TestCase):
   @parameterized.parameters(
       (min_base_qual, min_mapping_qual)
       for min_base_qual, min_mapping_qual in itertools.product(
-          range(0, 5), range(0, 5)))
-  def test_keeps_reads_with_low_quality_bases(self, min_base_qual,
-                                              min_mapping_qual):
+          range(0, 5), range(0, 5)
+      )
+  )
+  def test_keeps_reads_with_low_quality_bases(
+      self, min_base_qual, min_mapping_qual
+  ):
     """Check that we keep reads with adequate quality at variant start position.
 
     We have the following scenario:
@@ -511,27 +551,34 @@ class PileupImageEncoderTest(parameterized.TestCase):
             start=2,
             end=3,
             reference_bases='A',
-            alternate_bases=['C']))
+            alternate_bases=['C'],
+        )
+    )
 
     read_requirements = reads_pb2.ReadRequirements(
         min_base_quality=min_base_qual,
         min_mapping_quality=min_mapping_qual,
-        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT,
+    )
     pie = _make_encoder(read_requirements=read_requirements)
 
     for base_qual in range(min_base_qual + 5):
       quals = [base_qual - 1, min_base_qual, base_qual + 1]
       read = test_utils.make_read(
-          'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual)
+          'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual
+      )
       actual = pie.encode_read(dv_call, 'AACAG', read, 1, ['C'])
       self.assertIsNotNone(actual)
 
   @parameterized.parameters(
       (min_base_qual, min_mapping_qual)
       for min_base_qual, min_mapping_qual in itertools.product(
-          range(0, 5), range(0, 5)))
-  def test_ignores_reads_with_low_mapping_quality(self, min_base_qual,
-                                                  min_mapping_qual):
+          range(0, 5), range(0, 5)
+      )
+  )
+  def test_ignores_reads_with_low_mapping_quality(
+      self, min_base_qual, min_mapping_qual
+  ):
     """Check that we discard reads with low mapping quality.
 
     We have the following scenario:
@@ -558,18 +605,22 @@ class PileupImageEncoderTest(parameterized.TestCase):
             start=2,
             end=3,
             reference_bases='A',
-            alternate_bases=['C']))
+            alternate_bases=['C'],
+        )
+    )
 
     read_requirements = reads_pb2.ReadRequirements(
         min_base_quality=min_base_qual,
         min_mapping_quality=min_mapping_qual,
-        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT)
+        min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT,
+    )
     pie = _make_encoder(read_requirements=read_requirements)
 
     for mapping_qual in range(min_mapping_qual + 5):
       quals = [min_base_qual, min_base_qual, min_base_qual]
       read = test_utils.make_read(
-          'AAA', start=1, cigar='3M', quals=quals, mapq=mapping_qual)
+          'AAA', start=1, cigar='3M', quals=quals, mapq=mapping_qual
+      )
       actual = pie.encode_read(dv_call, 'AACAG', read, 1, ['C'])
       if mapping_qual < min_mapping_qual:
         self.assertIsNone(actual)
@@ -592,8 +643,9 @@ class PileupImageEncoderTest(parameterized.TestCase):
       ('read3', 1, 'G', 'C', False),
       ('read3', 2, 'G', 'C', False),
   )
-  def test_read_support_is_respected(self, read_name, read_number, alt_allele,
-                                     read_base, supports_alt):
+  def test_read_support_is_respected(
+      self, read_name, read_number, alt_allele, read_base, supports_alt
+  ):
     """supports_alt is encoded as the 5th channel out of the 7 channels."""
     dv_call = deepvariant_pb2.DeepVariantCall(
         variant=variants_pb2.Variant(
@@ -601,26 +653,33 @@ class PileupImageEncoderTest(parameterized.TestCase):
             start=10,
             end=11,
             reference_bases='A',
-            alternate_bases=['C', 'G']),
+            alternate_bases=['C', 'G'],
+        ),
         allele_support={
             'C': _supporting_reads('read1/1', 'read3/2'),
             'G': _supporting_reads('read2/1', 'read2/2'),
-        })
+        },
+    )
     read = test_utils.make_read(
         read_base,
         start=dv_call.variant.start,
         cigar='1M',
         quals=[50],
-        name=read_name)
+        name=read_name,
+    )
     read.read_number = read_number
-    actual = _make_encoder().encode_read(dv_call, 'TAT', read,
-                                         dv_call.variant.start - 1,
-                                         [alt_allele])
+    actual = _make_encoder().encode_read(
+        dv_call, 'TAT', read, dv_call.variant.start - 1, [alt_allele]
+    )
     expected_base_values = {'C': 30, 'G': 180}
     expected_supports_alt_channel = [152, 254]
     expected = [
-        expected_base_values[read_base], 254, 211, 70,
-        expected_supports_alt_channel[supports_alt], 254
+        expected_base_values[read_base],
+        254,
+        211,
+        70,
+        expected_supports_alt_channel[supports_alt],
+        254,
     ]
 
     self.assertEqual(list(actual[0, 1]), expected)
@@ -635,9 +694,15 @@ class PileupImageEncoderTest(parameterized.TestCase):
       ('read1', 2, 'C', 'C', False, int(254.0 * 0.6)),
       ('read2', 1, 'C', 'G', False, int(254.0 * 0.6)),
   )
-  def test_read_support_multiallelic(self, read_name, read_number, alt_allele,
-                                     read_base, add_supporting_other_alt_color,
-                                     expected_color):
+  def test_read_support_multiallelic(
+      self,
+      read_name,
+      read_number,
+      alt_allele,
+      read_base,
+      add_supporting_other_alt_color,
+      expected_color,
+  ):
     """supports_alt is encoded as the 5th channel out of the 7 channels."""
     dv_call = deepvariant_pb2.DeepVariantCall(
         variant=variants_pb2.Variant(
@@ -645,17 +710,20 @@ class PileupImageEncoderTest(parameterized.TestCase):
             start=10,
             end=11,
             reference_bases='A',
-            alternate_bases=['C', 'G']),
+            alternate_bases=['C', 'G'],
+        ),
         allele_support={
             'C': _supporting_reads('read1/1'),
             'G': _supporting_reads('read2/1', 'read2/2'),
-        })
+        },
+    )
     read = test_utils.make_read(
         read_base,
         start=dv_call.variant.start,
         cigar='1M',
         quals=[50],
-        name=read_name)
+        name=read_name,
+    )
     read.read_number = read_number
 
     if add_supporting_other_alt_color:
@@ -664,18 +732,28 @@ class PileupImageEncoderTest(parameterized.TestCase):
       other_allele_supporting_read_alpha = 0.6
 
     pie = _make_encoder(
-        other_allele_supporting_read_alpha=other_allele_supporting_read_alpha)
-    actual = pie.encode_read(dv_call, 'TAT', read, dv_call.variant.start - 1,
-                             [alt_allele])
+        other_allele_supporting_read_alpha=other_allele_supporting_read_alpha
+    )
+    actual = pie.encode_read(
+        dv_call, 'TAT', read, dv_call.variant.start - 1, [alt_allele]
+    )
     self.assertEqual(actual[0, 1, 4], expected_color)
 
-  @parameterized.parameters((1, 254), (0.2, 218), (0.1, 203), (0.01, 152),
-                            (0.001, 101), (0.00031415, 76), (0.00001, 0),
-                            (0, 0))
+  @parameterized.parameters(
+      (1, 254),
+      (0.2, 218),
+      (0.1, 203),
+      (0.01, 152),
+      (0.001, 101),
+      (0.00031415, 76),
+      (0.00001, 0),
+      (0, 0),
+  )
   def test_allele_frequency_color(self, allele_frequency, expected_color):
     pie = _make_encoder()
     self.assertAlmostEqual(
-        pie.allele_frequency_color(allele_frequency), expected_color)
+        pie.allele_frequency_color(allele_frequency), expected_color
+    )
 
 
 class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
@@ -687,14 +765,16 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
     self.dv_call = _make_dv_call(ref_bases='G', alt_bases=self.alt_allele)
     samples = [
         make_examples_core.Sample(
-            options=deepvariant_pb2.SampleOptions(role='any_sample_role'))
+            options=deepvariant_pb2.SampleOptions(role='any_sample_role')
+        )
     ]
     self.pic = _make_image_creator(
         ref_reader=None,
         samples=samples,
         width=3,
         height=4,
-        reference_band_height=2)
+        reference_band_height=2,
+    )
     self.ref = 'AGC'
     self.read1 = test_utils.make_read('AGC', start=0, cigar='3M', name='read1')
     self.read2 = test_utils.make_read('AGC', start=1, cigar='3M', name='read2')
@@ -702,23 +782,16 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
     self.read4 = test_utils.make_read('AGC', start=3, cigar='3M', name='read4')
 
     self.expected_rows = {
-        'ref':
-            np.asarray(range(0, 3 * self.pic.num_channels),
-                       np.uint8).reshape(1, 3, self.pic.num_channels),
-        'empty':
-            np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
-        'read1':
-            np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
-        'read2':
-            np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
-        'read3':
-            None,
-        'read4':
-            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-        'read5':
-            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-        'read6':
-            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
+        'ref': np.asarray(
+            range(0, 3 * self.pic.num_channels), np.uint8
+        ).reshape(1, 3, self.pic.num_channels),
+        'empty': np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
+        'read1': np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
+        'read2': np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
+        'read3': None,
+        'read4': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
+        'read5': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
+        'read6': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
     }
 
     # Setup our shared mocks.
@@ -738,8 +811,10 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
 
   def assertImageMatches(self, actual_image, *row_names):
     """Checks that actual_image matches an image from constructed row_names."""
-    self.assertEqual(actual_image.shape,
-                     (self.pic.height, self.pic.width, self.pic.num_channels))
+    self.assertEqual(
+        actual_image.shape,
+        (self.pic.height, self.pic.width, self.pic.num_channels),
+    )
     expected_image = np.vstack([self.expected_rows[name] for name in row_names])
     npt.assert_equal(actual_image, expected_image)
 
@@ -752,7 +827,8 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         dv_call=self.dv_call,
         refbases=self.ref,
         reads_for_samples=[[]],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_once_with(self.ref)
     test_utils.assert_not_called_workaround(self.mock_enc_read)
     self.assertImageMatches(image, 'ref', 'ref', 'empty', 'empty')
@@ -763,10 +839,12 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         dv_call=self.dv_call,
         refbases=self.ref,
         reads_for_samples=[[self.read1]],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_once_with(self.ref)
-    self.mock_enc_read.assert_called_once_with(self.dv_call, self.ref,
-                                               self.read1, 9, {self.alt_allele})
+    self.mock_enc_read.assert_called_once_with(
+        self.dv_call, self.ref, self.read1, 9, {self.alt_allele}
+    )
     self.assertImageMatches(image, 'ref', 'ref', 'read1', 'empty')
 
   def test_image_creation_with_more_reads_than_rows(self):
@@ -776,12 +854,16 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         dv_call=self.dv_call,
         refbases=self.ref,
         reads_for_samples=[[self.read1, self.read2, self.read4]],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_once_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-    ])
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
+        ],
+    )
     self.assertImageMatches(image, 'ref', 'ref', 'read2', 'read4')
 
   def test_image_creation_with_bad_read(self):
@@ -790,13 +872,17 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         dv_call=self.dv_call,
         refbases=self.ref,
         reads_for_samples=[[self.read1, self.read3, self.read2]],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_once_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-    ])
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
+        ],
+    )
     self.assertImageMatches(image, 'ref', 'ref', 'read1', 'read2')
 
   def test_image_creation_with_all_reads_in_new_order(self):
@@ -807,12 +893,16 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
         dv_call=self.dv_call,
         refbases=self.ref,
         reads_for_samples=[[self.read2, self.read3, self.read4, self.read1]],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_once_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
-    ])
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
+        ],
+    )
     self.assertImageMatches(image, 'ref', 'ref', 'read1', 'read4')
 
   @parameterized.parameters(
@@ -827,9 +917,12 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
       # The sorting order should be reads with HP=2, HP=0, HP=1.
       (True, 2, ['ref', 'ref', 'read1', 'read5', 'read6', 'read2', 'read4']),
   )
-  def test_image_creation_with_haplotype_sorting(self, sort_by_haplotypes,
-                                                 hp_tag_for_assembly_polishing,
-                                                 expected_reads_layout):
+  def test_image_creation_with_haplotype_sorting(
+      self,
+      sort_by_haplotypes,
+      hp_tag_for_assembly_polishing,
+      expected_reads_layout,
+  ):
     # There are 5 reads. They are expected to be sorted by HP tag.
     read1 = test_utils.make_read('AGC', start=0, cigar='3M', name='read1')
     read1.info['HP'].values.add().int_value = 2
@@ -847,25 +940,33 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
     self.pic.height = 7
     # Change options to set sort_by_haplotypes flag.
     self.pic._options.sort_by_haplotypes = sort_by_haplotypes
-    self.pic._options.hp_tag_for_assembly_polishing = hp_tag_for_assembly_polishing
+    self.pic._options.hp_tag_for_assembly_polishing = (
+        hp_tag_for_assembly_polishing
+    )
     image = self.pic.build_pileup(
         dv_call=self.dv_call,
         refbases=self.ref,
         reads_for_samples=[[read1, read2, read4, read5, read6]],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_once_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, read4, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, read5, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, read6, 9, {self.alt_allele}),
-    ])
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(self.dv_call, self.ref, read1, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, read2, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, read4, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, read5, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, read6, 9, {self.alt_allele}),
+        ],
+    )
 
-    self.assertEqual(image.shape,
-                     (self.pic.height, self.pic.width, self.pic.num_channels))
+    self.assertEqual(
+        image.shape, (self.pic.height, self.pic.width, self.pic.num_channels)
+    )
     expected_image = np.vstack(
-        [self.expected_rows[name] for name in expected_reads_layout])
+        [self.expected_rows[name] for name in expected_reads_layout]
+    )
     npt.assert_equal(image, expected_image)
 
 
@@ -878,11 +979,14 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.dv_call = _make_dv_call(ref_bases='G', alt_bases=self.alt_allele)
     samples = [
         make_examples_core.Sample(
-            options=deepvariant_pb2.SampleOptions(role='sample_1')),
+            options=deepvariant_pb2.SampleOptions(role='sample_1')
+        ),
         make_examples_core.Sample(
-            options=deepvariant_pb2.SampleOptions(role='sample_2')),
+            options=deepvariant_pb2.SampleOptions(role='sample_2')
+        ),
         make_examples_core.Sample(
-            options=deepvariant_pb2.SampleOptions(role='sample_3')),
+            options=deepvariant_pb2.SampleOptions(role='sample_3')
+        ),
     ]
     self.pic = _make_image_creator(
         ref_reader=None,
@@ -890,7 +994,8 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
         width=3,
         height=4,
         reference_band_height=2,
-        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO)
+        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO,
+    )
     self.ref = 'AGC'
 
     self.read1 = test_utils.make_read('AGC', start=0, cigar='3M', name='read1')
@@ -899,53 +1004,60 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.read4 = test_utils.make_read('AGC', start=3, cigar='3M', name='read4')
 
     self.read1_parent1 = test_utils.make_read(
-        'TGC', start=0, cigar='3M', name='read1')
+        'TGC', start=0, cigar='3M', name='read1'
+    )
     self.read2_parent1 = test_utils.make_read(
-        'TGC', start=1, cigar='3M', name='read2')
+        'TGC', start=1, cigar='3M', name='read2'
+    )
     self.read3_parent1 = test_utils.make_read(
-        'AGC', start=2, cigar='3M', name='read3')
+        'AGC', start=2, cigar='3M', name='read3'
+    )
     self.read4_parent1 = test_utils.make_read(
-        'AGC', start=3, cigar='3M', name='read4')
+        'AGC', start=3, cigar='3M', name='read4'
+    )
 
     self.read1_parent2 = test_utils.make_read(
-        'AGC', start=0, cigar='3M', name='read1')
+        'AGC', start=0, cigar='3M', name='read1'
+    )
     self.read2_parent2 = test_utils.make_read(
-        'AGC', start=1, cigar='3M', name='read2')
+        'AGC', start=1, cigar='3M', name='read2'
+    )
     self.read3_parent2 = test_utils.make_read(
-        'AGC', start=2, cigar='3M', name='read3')
+        'AGC', start=2, cigar='3M', name='read3'
+    )
     self.read4_parent2 = test_utils.make_read(
-        'AGC', start=3, cigar='3M', name='read4')
+        'AGC', start=3, cigar='3M', name='read4'
+    )
 
     self.expected_rows = {
-        'ref':
-            np.asarray(range(0, 3 * self.pic.num_channels),
-                       np.uint8).reshape(1, 3, self.pic.num_channels),
-        'empty':
-            np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
-        'read1_parent1':
-            np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
-        'read2_parent1':
-            np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
-        'read3_parent1':
-            None,
-        'read4_parent1':
-            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-        'read1':
-            np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
-        'read2':
-            np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
-        'read3':
-            None,
-        'read4':
-            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-        'read1_parent2':
-            np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
-        'read2_parent2':
-            np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
-        'read3_parent2':
-            None,
-        'read4_parent2':
-            np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
+        'ref': np.asarray(
+            range(0, 3 * self.pic.num_channels), np.uint8
+        ).reshape(1, 3, self.pic.num_channels),
+        'empty': np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
+        'read1_parent1': np.full(
+            (1, 3, self.pic.num_channels), 1, dtype=np.uint8
+        ),
+        'read2_parent1': np.full(
+            (1, 3, self.pic.num_channels), 2, dtype=np.uint8
+        ),
+        'read3_parent1': None,
+        'read4_parent1': np.full(
+            (1, 3, self.pic.num_channels), 3, dtype=np.uint8
+        ),
+        'read1': np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
+        'read2': np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
+        'read3': None,
+        'read4': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
+        'read1_parent2': np.full(
+            (1, 3, self.pic.num_channels), 1, dtype=np.uint8
+        ),
+        'read2_parent2': np.full(
+            (1, 3, self.pic.num_channels), 2, dtype=np.uint8
+        ),
+        'read3_parent2': None,
+        'read4_parent2': np.full(
+            (1, 3, self.pic.num_channels), 3, dtype=np.uint8
+        ),
     }
 
     # Setup our shared mocks.
@@ -978,10 +1090,24 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
         dv_call=self.dv_call,
         refbases=self.ref,
         reads_for_samples=[[], [], []],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     test_utils.assert_not_called_workaround(self.mock_enc_read)
-    self.assertImageMatches(image, 'ref', 'ref', 'empty', 'empty', 'ref', 'ref',
-                            'empty', 'empty', 'ref', 'ref', 'empty', 'empty')
+    self.assertImageMatches(
+        image,
+        'ref',
+        'ref',
+        'empty',
+        'empty',
+        'ref',
+        'ref',
+        'empty',
+        'empty',
+        'ref',
+        'ref',
+        'empty',
+        'empty',
+    )
 
   def test_image_no_reads_for_one_parent(self):
     # This image is created just from reference and no reads. Checks that the
@@ -991,24 +1117,56 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     image = self.pic.build_pileup(
         dv_call=self.dv_call,
         refbases=self.ref,
-        reads_for_samples=[[self.read1_parent1, self.read2_parent1],
-                           [self.read1, self.read2], []],
-        alt_alleles={self.alt_allele})
-    self.assertImageMatches(image, 'ref', 'ref', 'read1_parent1',
-                            'read2_parent1', 'ref', 'ref', 'read1', 'read2',
-                            'ref', 'ref', 'empty', 'empty')
+        reads_for_samples=[
+            [self.read1_parent1, self.read2_parent1],
+            [self.read1, self.read2],
+            [],
+        ],
+        alt_alleles={self.alt_allele},
+    )
+    self.assertImageMatches(
+        image,
+        'ref',
+        'ref',
+        'read1_parent1',
+        'read2_parent1',
+        'ref',
+        'ref',
+        'read1',
+        'read2',
+        'ref',
+        'ref',
+        'empty',
+        'empty',
+    )
 
   def test_image_one_read(self):
     # We add a single read to our image.
     image = self.pic.build_pileup(
         dv_call=self.dv_call,
         refbases=self.ref,
-        reads_for_samples=[[self.read1_parent1], [self.read1],
-                           [self.read1_parent2]],
-        alt_alleles={self.alt_allele})
-    self.assertImageMatches(image, 'ref', 'ref', 'read1_parent1', 'empty',
-                            'ref', 'ref', 'read1', 'empty', 'ref', 'ref',
-                            'read1_parent2', 'empty')
+        reads_for_samples=[
+            [self.read1_parent1],
+            [self.read1],
+            [self.read1_parent2],
+        ],
+        alt_alleles={self.alt_allele},
+    )
+    self.assertImageMatches(
+        image,
+        'ref',
+        'ref',
+        'read1_parent1',
+        'empty',
+        'ref',
+        'ref',
+        'read1',
+        'empty',
+        'ref',
+        'ref',
+        'read1_parent2',
+        'empty',
+    )
 
   def test_image_creation_with_more_reads_than_rows(self):
     # Read1 should be dropped because there's only space for Read2 and Read4.
@@ -1019,27 +1177,47 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
         reads_for_samples=[
             [self.read1_parent1, self.read2_parent1, self.read4_parent1],
             [self.read1, self.read2, self.read4],
-            [self.read1_parent2, self.read2_parent2, self.read4_parent2]
+            [self.read1_parent2, self.read2_parent2, self.read4_parent2],
         ],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read4_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent2, 9,
-                  {self.alt_allele}),
-    ])
-    self.assertImageMatches(image, 'ref', 'ref', 'read2_parent1',
-                            'read4_parent1', 'ref', 'ref', 'read2', 'read4',
-                            'ref', 'ref', 'read2_parent2', 'read4_parent2')
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(
+                self.dv_call, self.ref, self.read4_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read2_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
+            mock.call(
+                self.dv_call, self.ref, self.read4_parent2, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read2_parent2, 9, {self.alt_allele}
+            ),
+        ],
+    )
+    self.assertImageMatches(
+        image,
+        'ref',
+        'ref',
+        'read2_parent1',
+        'read4_parent1',
+        'ref',
+        'ref',
+        'read2',
+        'read4',
+        'ref',
+        'ref',
+        'read2_parent2',
+        'read4_parent2',
+    )
 
   def test_image_creation_with_bad_read(self):
     # Read 3 is bad (return value is None) so it should be skipped.
@@ -1049,32 +1227,54 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
         reads_for_samples=[
             [self.read1_parent1, self.read3_parent1, self.read2_parent1],
             [self.read1, self.read3, self.read2],
-            [self.read1_parent2, self.read3_parent2, self.read2_parent2]
+            [self.read1_parent2, self.read3_parent2, self.read2_parent2],
         ],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read2_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read3_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
-                  {self.alt_allele}),
-    ])
-    self.assertImageMatches(image, 'ref', 'ref', 'read1_parent1',
-                            'read2_parent1', 'ref', 'ref', 'read1', 'read2',
-                            'ref', 'ref', 'read1_parent2', 'read2_parent2')
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(
+                self.dv_call, self.ref, self.read2_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read3_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read1_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read3, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
+            mock.call(
+                self.dv_call, self.ref, self.read2_parent2, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read3_parent2, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read1_parent2, 9, {self.alt_allele}
+            ),
+        ],
+    )
+    self.assertImageMatches(
+        image,
+        'ref',
+        'ref',
+        'read1_parent1',
+        'read2_parent1',
+        'ref',
+        'ref',
+        'read1',
+        'read2',
+        'ref',
+        'ref',
+        'read1_parent2',
+        'read2_parent2',
+    )
 
   def test_image_creation_with_all_reads_in_new_order(self):
     # Read 3 is bad (return value is None) so it should be skipped. Read2 should
@@ -1083,33 +1283,60 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     image = self.pic.build_pileup(
         dv_call=self.dv_call,
         refbases=self.ref,
-        reads_for_samples=[[
-            self.read2_parent1, self.read3_parent1, self.read4_parent1,
-            self.read1_parent1
-        ], [self.read2, self.read3, self.read4, self.read1],
-                           [
-                               self.read2_parent2, self.read3_parent2,
-                               self.read4_parent2, self.read1_parent2
-                           ]],
-        alt_alleles={self.alt_allele})
+        reads_for_samples=[
+            [
+                self.read2_parent1,
+                self.read3_parent1,
+                self.read4_parent1,
+                self.read1_parent1,
+            ],
+            [self.read2, self.read3, self.read4, self.read1],
+            [
+                self.read2_parent2,
+                self.read3_parent2,
+                self.read4_parent2,
+                self.read1_parent2,
+            ],
+        ],
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read1_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read1_parent2, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4_parent2, 9,
-                  {self.alt_allele}),
-    ])
-    self.assertImageMatches(image, 'ref', 'ref', 'read1_parent1',
-                            'read4_parent1', 'ref', 'ref', 'read1', 'read4',
-                            'ref', 'ref', 'read1_parent2', 'read4_parent2')
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(
+                self.dv_call, self.ref, self.read1_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read4_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(self.dv_call, self.ref, self.read1, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
+            mock.call(
+                self.dv_call, self.ref, self.read1_parent2, 9, {self.alt_allele}
+            ),
+            mock.call(
+                self.dv_call, self.ref, self.read4_parent2, 9, {self.alt_allele}
+            ),
+        ],
+    )
+    self.assertImageMatches(
+        image,
+        'ref',
+        'ref',
+        'read1_parent1',
+        'read4_parent1',
+        'ref',
+        'ref',
+        'read1',
+        'read4',
+        'ref',
+        'ref',
+        'read1_parent2',
+        'read4_parent2',
+    )
 
   def test_image_different_heights(self):
     # Parent and child image heights differ.
@@ -1119,20 +1346,25 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     samples = [
         make_examples_core.Sample(
             options=deepvariant_pb2.SampleOptions(
-                role='parent1', pileup_height=3)),
+                role='parent1', pileup_height=3
+            )
+        ),
+        make_examples_core.Sample(
+            options=deepvariant_pb2.SampleOptions(role='child', pileup_height=4)
+        ),
         make_examples_core.Sample(
             options=deepvariant_pb2.SampleOptions(
-                role='child', pileup_height=4)),
-        make_examples_core.Sample(
-            options=deepvariant_pb2.SampleOptions(
-                role='parent2', pileup_height=3))
+                role='parent2', pileup_height=3
+            )
+        ),
     ]
     self.custom_pic = _make_image_creator(
         ref_reader=None,
         samples=samples,
         width=3,
         reference_band_height=2,
-        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO)
+        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO,
+    )
     self.custom_pic._encoder = self.pic._encoder
 
     image = self.custom_pic.build_pileup(
@@ -1141,39 +1373,74 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
         reads_for_samples=[
             [self.read1_parent1, self.read2_parent1, self.read4_parent1],
             [self.read1, self.read2, self.read4],
-            [self.read1_parent2, self.read2_parent2, self.read4_parent2]
+            [self.read1_parent2, self.read2_parent2, self.read4_parent2],
         ],
-        alt_alleles={self.alt_allele})
+        alt_alleles={self.alt_allele},
+    )
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
     self.mock_enc_ref.assert_called_with(self.ref)
-    self.assertEqual(self.mock_enc_read.call_args_list, [
-        mock.call(self.dv_call, self.ref, self.read4_parent1, 9,
-                  {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
-        mock.call(self.dv_call, self.ref, self.read4_parent2, 9,
-                  {self.alt_allele}),
-    ])
-    self.assertImageMatches(image, 'ref', 'ref', 'read4_parent1', 'ref', 'ref',
-                            'read2', 'read4', 'ref', 'ref', 'read4_parent2')
+    self.assertEqual(
+        self.mock_enc_read.call_args_list,
+        [
+            mock.call(
+                self.dv_call, self.ref, self.read4_parent1, 9, {self.alt_allele}
+            ),
+            mock.call(self.dv_call, self.ref, self.read4, 9, {self.alt_allele}),
+            mock.call(self.dv_call, self.ref, self.read2, 9, {self.alt_allele}),
+            mock.call(
+                self.dv_call, self.ref, self.read4_parent2, 9, {self.alt_allele}
+            ),
+        ],
+    )
+    self.assertImageMatches(
+        image,
+        'ref',
+        'ref',
+        'read4_parent1',
+        'ref',
+        'ref',
+        'read2',
+        'read4',
+        'ref',
+        'ref',
+        'read4_parent2',
+    )
 
   @parameterized.parameters([
       dict(
           sample_order=None,
           image_rows=[
-              'ref', 'read1_parent1', 'ref', 'read1', 'ref', 'read1_parent2'
-          ]),
+              'ref',
+              'read1_parent1',
+              'ref',
+              'read1',
+              'ref',
+              'read1_parent2',
+          ],
+      ),
       dict(
           sample_order=[0, 1, 2],
           image_rows=[
-              'ref', 'read1_parent1', 'ref', 'read1', 'ref', 'read1_parent2'
-          ]),
+              'ref',
+              'read1_parent1',
+              'ref',
+              'read1',
+              'ref',
+              'read1_parent2',
+          ],
+      ),
       dict(
           sample_order=[2, 1, 0],
           image_rows=[
-              'ref', 'read1_parent2', 'ref', 'read1', 'ref', 'read1_parent1'
-          ]),
+              'ref',
+              'read1_parent2',
+              'ref',
+              'read1',
+              'ref',
+              'read1_parent1',
+          ],
+      ),
       dict(
           sample_order=[2, 2, 2],
           image_rows=[
@@ -1183,7 +1450,8 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
               'read1_parent2',
               'ref',
               'read1_parent2',
-          ]),
+          ],
+      ),
       dict(sample_order=[1], image_rows=['ref', 'read1']),
   ])
   def test_image_ordering(self, sample_order, image_rows):
@@ -1191,29 +1459,38 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     samples = [
         make_examples_core.Sample(
             options=deepvariant_pb2.SampleOptions(
-                role='parent1', pileup_height=2)),
+                role='parent1', pileup_height=2
+            )
+        ),
+        make_examples_core.Sample(
+            options=deepvariant_pb2.SampleOptions(role='child', pileup_height=2)
+        ),
         make_examples_core.Sample(
             options=deepvariant_pb2.SampleOptions(
-                role='child', pileup_height=2)),
-        make_examples_core.Sample(
-            options=deepvariant_pb2.SampleOptions(
-                role='parent2', pileup_height=2))
+                role='parent2', pileup_height=2
+            )
+        ),
     ]
     self.custom_pic = _make_image_creator(
         ref_reader=None,
         samples=samples,
         width=3,
         reference_band_height=1,
-        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO)
+        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO,
+    )
     self.custom_pic._encoder = self.pic._encoder
 
     image = self.custom_pic.build_pileup(
         dv_call=self.dv_call,
         refbases=self.ref,
-        reads_for_samples=[[self.read1_parent1], [self.read1],
-                           [self.read1_parent2]],
+        reads_for_samples=[
+            [self.read1_parent1],
+            [self.read1],
+            [self.read1_parent2],
+        ],
         alt_alleles={self.alt_allele},
-        sample_order=sample_order)
+        sample_order=sample_order,
+    )
 
     self.assertImageMatches(image, *image_rows)
 
@@ -1236,13 +1513,15 @@ class PileupImageCreatorTest(parameterized.TestCase):
         make_examples_core.Sample(
             options=deepvariant_pb2.SampleOptions(role='any_sample'),
             sam_readers=self.mock_sam_reader,
-            in_memory_sam_reader=self.mock_sam_reader)
+            in_memory_sam_reader=self.mock_sam_reader,
+        )
     ]
 
     self.pic = self._make_pic()
     self.reads_for_samples = [
         self.pic.get_reads(
-            self.dv_call.variant, sam_reader=sample.in_memory_sam_reader)
+            self.dv_call.variant, sam_reader=sample.in_memory_sam_reader
+        )
         for sample in self.samples
     ]
 
@@ -1251,7 +1530,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
         options=self.options,
         ref_reader=self.mock_ref_reader,
         samples=self.samples,
-        **kwargs)
+        **kwargs,
+    )
 
   @parameterized.parameters(
       ('A', ['C'], [['C']]),
@@ -1268,9 +1548,11 @@ class PileupImageCreatorTest(parameterized.TestCase):
   def test_alt_combinations_no_het_alt(self, ref, alts, expected):
     options = pileup_image.default_options()
     options.multi_allelic_mode = (
-        deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES)
+        deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES
+    )
     pic = pileup_image.PileupImageCreator(
-        options=options, ref_reader=self.mock_ref_reader, samples=self.samples)
+        options=options, ref_reader=self.mock_ref_reader, samples=self.samples
+    )
     variant = variants_pb2.Variant(reference_bases=ref, alternate_bases=alts)
     self.assertEqual(expected, list(pic._alt_allele_combinations(variant)))
 
@@ -1296,7 +1578,9 @@ class PileupImageCreatorTest(parameterized.TestCase):
     self.dv_call.variant.start = 3
     self.assertIsNone(
         self.pic.create_pileup_images(
-            dv_call=self.dv_call, reads_for_samples=self.reads_for_samples))
+            dv_call=self.dv_call, reads_for_samples=self.reads_for_samples
+        )
+    )
     test_utils.assert_called_once_workaround(self.mock_ref_reader.is_valid)
     self.mock_ref_reader.query.assert_not_called()
 
@@ -1304,16 +1588,21 @@ class PileupImageCreatorTest(parameterized.TestCase):
     self.dv_call.variant.alternate_bases[:] = ['C', 'T']
 
     with mock.patch.object(
-        self.pic, 'build_pileup', autospec=True) as mock_encoder:
+        self.pic, 'build_pileup', autospec=True
+    ) as mock_encoder:
       mock_encoder.side_effect = ['mi1', 'mi2', 'mi3']
 
       output = self.pic.create_pileup_images(
-          dv_call=self.dv_call, reads_for_samples=self.reads_for_samples)
-      self.assertEqual([
-          (['C'], 'mi1'),
-          (['T'], 'mi2'),
-          (['C', 'T'], 'mi3'),
-      ], output)
+          dv_call=self.dv_call, reads_for_samples=self.reads_for_samples
+      )
+      self.assertEqual(
+          [
+              (['C'], 'mi1'),
+              (['T'], 'mi2'),
+              (['C', 'T'], 'mi3'),
+          ],
+          output,
+      )
 
       def _expected_call(alts):
         return mock.call(
@@ -1321,7 +1610,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
             refbases=self.mock_ref_reader.query.return_value,
             reads_for_samples=[self.mock_sam_reader.query.return_value],
             alt_alleles=alts,
-            sample_order=None)
+            sample_order=None,
+        )
 
       self.assertEqual(mock_encoder.call_count, 3)
       mock_encoder.assert_has_calls([
@@ -1338,7 +1628,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
     haplotype_alignments = {'C': 'reads for C', 'T': 'reads for T'}
 
     with mock.patch.object(
-        self.pic, 'build_pileup', autospec=True) as mock_encoder:
+        self.pic, 'build_pileup', autospec=True
+    ) as mock_encoder:
       # The represent_alt_aligned_pileups function checks for shape of the
       # arrays, so mock with actual numpy arrays here.
       arr = np.zeros((100, 221, 6))
@@ -1350,12 +1641,17 @@ class PileupImageCreatorTest(parameterized.TestCase):
           dv_call=self.dv_call,
           reads_for_samples=self.reads_for_samples,
           haplotype_alignments_for_samples=[haplotype_alignments],
-          haplotype_sequences=haplotype_sequences)
-      expected_output = [(['C'], final_pileup), (['T'], final_pileup),
-                         (['C', 'T'], final_pileup)]
+          haplotype_sequences=haplotype_sequences,
+      )
+      expected_output = [
+          (['C'], final_pileup),
+          (['T'], final_pileup),
+          (['C', 'T'], final_pileup),
+      ]
       self.assertEqual([x[0] for x in output], [x[0] for x in expected_output])
-      self.assertEqual([x[1].shape for x in output],
-                       [x[1].shape for x in expected_output])
+      self.assertEqual(
+          [x[1].shape for x in output], [x[1].shape for x in expected_output]
+      )
 
       def _expected_ref_based_call(alts):
         return mock.call(
@@ -1363,7 +1659,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
             refbases=self.mock_ref_reader.query.return_value,
             reads_for_samples=[self.mock_sam_reader.query.return_value],
             alt_alleles=alts,
-            sample_order=None)
+            sample_order=None,
+        )
 
       def _expected_alt_based_call(alts, refbases, reads):
         return mock.call(
@@ -1372,7 +1669,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
             reads_for_samples=[reads],
             alt_alleles=alts,
             custom_ref=True,
-            sample_order=None)
+            sample_order=None,
+        )
 
       self.assertEqual(mock_encoder.call_count, 7)
       mock_encoder.assert_has_calls(
@@ -1388,7 +1686,8 @@ class PileupImageCreatorTest(parameterized.TestCase):
               _expected_alt_based_call(['C', 'T'], seq_for_c, 'reads for C'),
               _expected_alt_based_call(['C', 'T'], seq_for_t, 'reads for T'),
           ],
-          any_order=True)
+          any_order=True,
+      )
 
   def test_create_pileup_images_with_mismatched_alt_ref(self):
     self.dv_call.variant.alternate_bases[:] = ['T']
@@ -1396,13 +1695,15 @@ class PileupImageCreatorTest(parameterized.TestCase):
     haplotype_sequences = {'T': 'T' * (self.pic.width + 1)}
     haplotype_alignments = {'T': 'reads for T'}
     with mock.patch.object(
-        self.pic, 'build_pileup', autospec=True) as mock_encoder:
+        self.pic, 'build_pileup', autospec=True
+    ) as mock_encoder:
       self.pic._options.alt_aligned_pileup = 'rows'
       output = self.pic.create_pileup_images(
           dv_call=self.dv_call,
           reads_for_samples=self.reads_for_samples,
           haplotype_alignments_for_samples=[haplotype_alignments],
-          haplotype_sequences=haplotype_sequences)
+          haplotype_sequences=haplotype_sequences,
+      )
       self.assertIsNone(output)
       self.assertEqual(mock_encoder.call_count, 1)
 
@@ -1412,20 +1713,22 @@ class PileupImageCreatorTest(parameterized.TestCase):
       ((100, 221, 6), 'diff_channels', (100, 221, 8)),
   )
   def test_represent_alt_aligned_pileups_outputs_correct_shape(
-      self, input_shape, representation, expected_output_shape):
-
+      self, input_shape, representation, expected_output_shape
+  ):
     ref_image = np.zeros(input_shape)
     alt_image1 = np.zeros(input_shape)
     alt_image2 = np.zeros(input_shape)
 
     # Test with one alt image.
     output = pileup_image._represent_alt_aligned_pileups(
-        representation, ref_image, [alt_image1])
+        representation, ref_image, [alt_image1]
+    )
     self.assertEqual(output.shape, expected_output_shape)
 
     # Test with two alt images.
     output = pileup_image._represent_alt_aligned_pileups(
-        representation, ref_image, [alt_image1, alt_image2])
+        representation, ref_image, [alt_image1, alt_image2]
+    )
     self.assertEqual(output.shape, expected_output_shape)
 
   def test_represent_alt_aligned_pileups_raises_on_invalid_representation(self):
@@ -1433,16 +1736,18 @@ class PileupImageCreatorTest(parameterized.TestCase):
     ref_image = np.zeros((100, 221, 6))
     alt_image = np.zeros((100, 221, 6))
     with self.assertRaises(ValueError):
-      pileup_image._represent_alt_aligned_pileups('invalid', ref_image,
-                                                  [alt_image])
+      pileup_image._represent_alt_aligned_pileups(
+          'invalid', ref_image, [alt_image]
+      )
 
   def test_represent_alt_aligned_pileups_raises_on_different_shapes(self):
     # Different shapes of input images should raise error.
     ref_image = np.zeros((100, 221, 6))
     alt_image = np.zeros((500, 221, 6))
     with self.assertRaises(ValueError):
-      pileup_image._represent_alt_aligned_pileups('rows', ref_image,
-                                                  [alt_image])
+      pileup_image._represent_alt_aligned_pileups(
+          'rows', ref_image, [alt_image]
+      )
 
   def test_represent_alt_aligned_pileups_raises_on_too_many_alt_images(self):
     # Different shapes of input images should raise error.
@@ -1450,15 +1755,15 @@ class PileupImageCreatorTest(parameterized.TestCase):
     alt_image = np.zeros((100, 221, 6))
     with self.assertRaises(ValueError):
       pileup_image._represent_alt_aligned_pileups(
-          'rows', ref_image, [alt_image, alt_image, alt_image])
+          'rows', ref_image, [alt_image, alt_image, alt_image]
+      )
 
 
 class PileupCustomChannels(absltest.TestCase):
 
-  def get_encoded_read(self,
-                       channel_set,
-                       cigar='20M5D20M5S',
-                       fragment_length=10):
+  def get_encoded_read(
+      self, channel_set, cigar='20M5D20M5S', fragment_length=10
+  ):
     start = 500
     dv_call = _make_dv_call()
     alt_allele = dv_call.variant.alternate_bases[0]
@@ -1469,10 +1774,15 @@ class PileupCustomChannels(absltest.TestCase):
         cigar=cigar,
         quals=range(1, 51),
         name='read1',
-        fragment_length=fragment_length)
+        fragment_length=fragment_length,
+    )
     return _make_encoder_with_channels(channel_set).encode_read(
-        dv_call, 'TTTTATGACAAAAAAGATGCGACGGTTCCGTAACCCATAAGAAAGAACGT', read,
-        start, [alt_allele])
+        dv_call,
+        'TTTTATGACAAAAAAGATGCGACGGTTCCGTAACCCATAAGAAAGAACGT',
+        read,
+        start,
+        [alt_allele],
+    )
 
   def test_read_mapping_percent(self):
     result = self.get_encoded_read(['read_mapping_percent'])
@@ -1490,8 +1800,9 @@ class PileupCustomChannels(absltest.TestCase):
     self.assertSetEqual(set(np.unique(ch7)), set([0, 127]))
 
   def test_gap_compressed_identity(self):
-    result = self.get_encoded_read(['gap_compressed_identity'],
-                                   cigar='5M20D20M5S')
+    result = self.get_encoded_read(
+        ['gap_compressed_identity'], cigar='5M20D20M5S'
+    )
     ch7 = result[:, :, 6]
     self.assertSetEqual(set(np.unique(ch7)), set([0, 243]))
 
@@ -1502,7 +1813,8 @@ class PileupCustomChannels(absltest.TestCase):
 
   def test_multi(self):
     result = self.get_encoded_read(
-        ['read_mapping_percent', 'gap_compressed_identity', 'blank'])
+        ['read_mapping_percent', 'gap_compressed_identity', 'blank']
+    )
     self.assertEqual(result.shape, (1, 50, 9))
 
   def test_insert_size(self):
@@ -1521,15 +1833,21 @@ class PileupCustomChannelsParam(parameterized.TestCase):
         seq,
         start=start,
         cigar=f'{len(seq)}M',
-        quals=range(1,
-                    len(seq) + 1),
-        name='read1')
+        quals=range(1, len(seq) + 1),
+        name='read1',
+    )
     result = _make_encoder_with_channels(channels).encode_read(
-        dv_call, seq, read, start, [alt_allele])
+        dv_call, seq, read, start, [alt_allele]
+    )
     return result
 
-  @parameterized.parameters(('GC', 1.0), ('GAC', 0.66), ('GGAA', 0.50),
-                            ('ATTCTGTTAA', 0.20), ('TTTTTTTTTT', 0.00))
+  @parameterized.parameters(
+      ('GC', 1.0),
+      ('GAC', 0.66),
+      ('GGAA', 0.50),
+      ('ATTCTGTTAA', 0.20),
+      ('TTTTTTTTTT', 0.00),
+  )
   def test_gc_content(self, seq, exp_gc_content):
     result = self.make_pileup(seq, ['gc_content'])
     ch7 = result[:, :, 6][0]
@@ -1549,13 +1867,16 @@ class PileupCustomChannelsParam(parameterized.TestCase):
     ch7 = (result[:, :, 6][0] / MAX_PIXEL_FLOAT).astype(int)
     self.assertTrue((ch7 == expected_result).all())
 
-  @parameterized.parameters(('AAATTCCC', [3, 3, 3, 2, 2, 3, 3, 3]),
-                            ('ATCGTTCCC', [1, 1, 1, 1, 2, 2, 3, 3, 3]),
-                            ('ATTCCCTTA', [1, 2, 2, 3, 3, 3, 2, 2, 1]))
+  @parameterized.parameters(
+      ('AAATTCCC', [3, 3, 3, 2, 2, 3, 3, 3]),
+      ('ATCGTTCCC', [1, 1, 1, 1, 2, 2, 3, 3, 3]),
+      ('ATTCCCTTA', [1, 2, 2, 3, 3, 3, 2, 2, 1]),
+  )
   def test_weighted_homopolymer(self, seq, expected_result):
     result = self.make_pileup(seq, ['homopolymer_weighted'])
-    ch7 = np.round((result[:, :, 6][0] / MAX_PIXEL_FLOAT) *
-                   MAX_HOMOPOLYMER_WEIGHTED).astype(int)
+    ch7 = np.round(
+        (result[:, :, 6][0] / MAX_PIXEL_FLOAT) * MAX_HOMOPOLYMER_WEIGHTED
+    ).astype(int)
     self.assertTrue((ch7 == expected_result).all())
 
 

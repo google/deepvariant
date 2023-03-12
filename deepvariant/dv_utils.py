@@ -64,6 +64,7 @@ class EncodedVariantType(enum.Enum):
   enum provides a mapping between those raw int64 values in the example and a
   human-meaningful name for that type.
   """
+
   UNKNOWN = 0  # A variant of unknown type.
   SNP = 1  # The variant is a SNP.
   INDEL = 2  # The variant is an indel.
@@ -136,8 +137,10 @@ def example_label(example):
 def example_image_shape(example):
   """Gets the image shape field from example as a list of int64."""
   if len(example.features.feature['image/shape'].int64_list.value) != 3:
-    raise ValueError('Invalid image/shape: we expect to find an image/shape '
-                     'field with length 3.')
+    raise ValueError(
+        'Invalid image/shape: we expect to find an image/shape '
+        'field with length 3.'
+    )
   return example.features.feature['image/shape'].int64_list.value[0:3]
 
 
@@ -145,8 +148,12 @@ def example_key(example):
   """Constructs a key for example based on its position and alleles."""
   variant = example_variant(example)
   alts = example_alt_alleles(example)
-  return '{}:{}:{}->{}'.format(variant.reference_name, variant.start + 1,
-                               variant.reference_bases, '/'.join(alts))
+  return '{}:{}:{}->{}'.format(
+      variant.reference_name,
+      variant.start + 1,
+      variant.reference_bases,
+      '/'.join(alts),
+  )
 
 
 def example_set_label(example, numeric_label):
@@ -193,7 +200,8 @@ def get_one_example_from_examples_path(source, proto=None):
   files = sharded_file_utils.glob_list_sharded_file_patterns(source)
   if not files:
     raise ValueError(
-        'Cannot find matching files with the pattern "{}"'.format(source))
+        'Cannot find matching files with the pattern "{}"'.format(source)
+    )
   for f in files:
     try:
       return next(tfrecord.read_tfrecords(f, proto=proto))
@@ -220,7 +228,8 @@ def _simplify_variant(variant):
     return variants_pb2.VariantCall(
         call_set_name=call.call_set_name,
         genotype=call.genotype,
-        info=dict(call.info))  # dict() is necessary to actually set info.
+        info=dict(call.info),
+    )  # dict() is necessary to actually set info.
 
   return variants_pb2.Variant(
       reference_name=variant.reference_name,
@@ -230,15 +239,18 @@ def _simplify_variant(variant):
       alternate_bases=variant.alternate_bases,
       filter=variant.filter,
       quality=variant.quality,
-      calls=[_simplify_variant_call(call) for call in variant.calls])
+      calls=[_simplify_variant_call(call) for call in variant.calls],
+  )
 
 
-def make_example(variant,
-                 alt_alleles,
-                 encoded_image,
-                 shape,
-                 second_image=None,
-                 sequencing_type=0):
+def make_example(
+    variant,
+    alt_alleles,
+    encoded_image,
+    shape,
+    second_image=None,
+    sequencing_type=0,
+):
   """Creates a new tf.Example suitable for use with DeepVariant.
 
   Args:
@@ -254,6 +266,7 @@ def make_example(variant,
       encodes read data from another DNA sample. Must satisfy the same
       requirements as encoded_image.
     sequencing_type: int. The sequencing type of the input image.
+
   Returns:
     A tf.Example proto containing the standard DeepVariant features.
   """
@@ -261,8 +274,9 @@ def make_example(variant,
   features = example.features
   features.feature['locus'].bytes_list.value.append(
       ranges.to_literal(
-          ranges.make_range(variant.reference_name, variant.start,
-                            variant.end)).encode('latin-1'))
+          ranges.make_range(variant.reference_name, variant.start, variant.end)
+      ).encode('latin-1')
+  )
   example_set_variant(example, variant)
   variant_type = encoded_variant_type(variant).value
   features.feature['variant_type'].int64_list.value.append(variant_type)
@@ -271,13 +285,16 @@ def make_example(variant,
 
   features.feature['alt_allele_indices/encoded'].bytes_list.value.append(
       deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
-          indices=alt_indices).SerializeToString())
+          indices=alt_indices
+      ).SerializeToString()
+  )
 
   features.feature['image/encoded'].bytes_list.value.append(encoded_image)
   features.feature['image/shape'].int64_list.value.extend(shape)
   if second_image is not None:
     features.feature['second_image/encoded'].bytes_list.value.append(
-        second_image.encode('latin-1'))
+        second_image.encode('latin-1')
+    )
     features.feature['second_image/shape'].int64_list.value.extend(shape)
   features.feature['sequencing_type'].int64_list.value.append(sequencing_type)
   return example
@@ -327,7 +344,8 @@ def string_to_int_tensor(x):
   slen = shape[0]
   # pad to desired max_len
   padded = tf.pad(
-      tensor=clipped, paddings=[[0, STRING_TO_INT_MAX_CONTENTS_LEN - slen]])
+      tensor=clipped, paddings=[[0, STRING_TO_INT_MAX_CONTENTS_LEN - slen]]
+  )
   casted = tf.cast(padded, tf.int32)
   casted.set_shape([STRING_TO_INT_MAX_CONTENTS_LEN])
   return tf.concat([[slen], casted], 0)
@@ -336,7 +354,7 @@ def string_to_int_tensor(x):
 def int_tensor_to_string(x):
   """Python operations to encode a tensor of ints into string of bytes."""
   slen = x[0]
-  v = x[1:slen + 1]
+  v = x[1 : slen + 1]
   return np.array(v, dtype=np.uint8).tostring()
 
 
@@ -348,8 +366,10 @@ def compression_type_of_files(files):
 def tpu_available(sess=None):
   """Return true if a TPU device is available to the default session."""
   if sess is None:
-    init_op = tf.group(tf.compat.v1.global_variables_initializer(),
-                       tf.compat.v1.local_variables_initializer())
+    init_op = tf.group(
+        tf.compat.v1.global_variables_initializer(),
+        tf.compat.v1.local_variables_initializer(),
+    )
     with tf.compat.v1.Session() as sess:
       sess.run(init_op)
       devices = sess.list_devices()
@@ -364,22 +384,25 @@ def resolve_master(master, tpu_name, tpu_zone, gcp_project):
     return master
   elif tpu_name is not None:
     return tf.distribute.cluster_resolver.TPUClusterResolver(
-        tpu=[tpu_name], zone=tpu_zone, project=gcp_project).get_master()
+        tpu=[tpu_name], zone=tpu_zone, project=gcp_project
+    ).get_master()
   else:
     # For k8s TPU we do not have/need tpu_name. See
     # https://cloud.google.com/tpu/docs/kubernetes-engine-setup#tensorflow-code
     return tf.distribute.cluster_resolver.TPUClusterResolver().get_master()
 
 
-def get_example_info_json_filename(examples_filename: str,
-                                   task_id: Optional[int]) -> str:
+def get_example_info_json_filename(
+    examples_filename: str, task_id: Optional[int]
+) -> str:
   """Returns corresponding example_info.json filename for examples_filename."""
   if sharded_file_utils.is_sharded_file_spec(examples_filename):
     assert task_id is not None
     # If examples_filename has the @shards representation, resolve it into
     # the first shard. We only write .example_info.json to the first shard.
     example_info_prefix = sharded_file_utils.sharded_filename(
-        examples_filename, task_id)
+        examples_filename, task_id
+    )
   else:
     # In all other cases, including non-sharded files,
     # or sharded filenames with -ddddd-of-ddddd, just append.

@@ -67,7 +67,8 @@ class ResourceMonitor(object):
         host_name=_get_host_name(),
         cpu_frequency_mhz=_get_cpu_frequency(),
         physical_core_count=_get_cpu_count(),
-        total_memory_mb=_get_total_memory())
+        total_memory_mb=_get_total_memory(),
+    )
 
   def __enter__(self):
     return self.start()

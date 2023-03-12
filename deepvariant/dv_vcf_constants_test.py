@@ -40,17 +40,20 @@ class DvVcfConstantsTest(parameterized.TestCase):
       dict(contigs=[], sample_names=[]),
       dict(
           contigs=[reference_pb2.ContigInfo(name='chr1')],
-          sample_names=['single_sample']),
+          sample_names=['single_sample'],
+      ),
       dict(
           contigs=[
               reference_pb2.ContigInfo(name='1'),
-              reference_pb2.ContigInfo(name='2')
+              reference_pb2.ContigInfo(name='2'),
           ],
-          sample_names=['multiple', 'samples']),
+          sample_names=['multiple', 'samples'],
+      ),
   )
   def test_deepvariant_header(self, contigs, sample_names):
     header = dv_vcf_constants.deepvariant_header(
-        contigs=contigs, sample_names=sample_names)
+        contigs=contigs, sample_names=sample_names
+    )
     self.assertCountEqual(header.contigs, contigs)
     self.assertCountEqual(header.sample_names, sample_names)
     self.assertGreater(len(header.filters), 0)

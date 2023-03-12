@@ -62,9 +62,13 @@ from deepvariant import attention_inception_v3
 tf.compat.v1.disable_eager_execution()
 
 flags.DEFINE_float(
-    'label_smoothing', 1e-6,
-    'Amount of label smoothing to use. By default this is 0.0001% '
-    'meaning that we expect a label error at a rate of 1 / 1,000,000')
+    'label_smoothing',
+    1e-6,
+    (
+        'Amount of label smoothing to use. By default this is 0.0001% '
+        'meaning that we expect a label error at a rate of 1 / 1,000,000'
+    ),
+)
 
 # Training parameters.
 flags.DEFINE_float('learning_rate', 0.064, 'Initial learning rate.')
@@ -75,39 +79,64 @@ flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
 
 flags.DEFINE_float('rmsprop_epsilon', 1.0, 'Epsilon term for RMSProp.')
 
-flags.DEFINE_float('learning_rate_decay_factor', 0.94,
-                   'Learning rate decay factor.')
+flags.DEFINE_float(
+    'learning_rate_decay_factor', 0.94, 'Learning rate decay factor.'
+)
 
-flags.DEFINE_float('num_epochs_per_decay', 2.0,
-                   'Number of epochs after which learning rate decays.')
+flags.DEFINE_float(
+    'num_epochs_per_decay',
+    2.0,
+    'Number of epochs after which learning rate decays.',
+)
 
-flags.DEFINE_float('moving_average_decay', 0.9999,
-                   'The decay to use for the moving average.')
-
-flags.DEFINE_integer(
-    'save_summary_steps', 100, 'Number of steps which must have run before '
-    'showing summaries.')
-
-flags.DEFINE_integer(
-    'save_interval_secs', 60 * 10,
-    'Interval (in seconds) at which the model data '
-    'should be checkpointed. Set to 0 to disable, -1 to ignore. '
-    'Exclusive with save_interval_steps.')
+flags.DEFINE_float(
+    'moving_average_decay', 0.9999, 'The decay to use for the moving average.'
+)
 
 flags.DEFINE_integer(
-    'save_interval_steps', -1, 'Interval (in steps) at which the model data '
-    'should be checkpointed. Set to 0 to disable, -1 to ignore. '
-    'Exclusive with save_interval_secs.')
+    'save_summary_steps',
+    100,
+    'Number of steps which must have run before showing summaries.',
+)
 
 flags.DEFINE_integer(
-    'seq_type_embedding_size', 200,
-    'Set the embedding size for the sequencing type embeddings. Default is 200. '
-    'This flag is only useful when model_name is `inception_v3_embedding`.')
+    'save_interval_secs',
+    60 * 10,
+    (
+        'Interval (in seconds) at which the model data '
+        'should be checkpointed. Set to 0 to disable, -1 to ignore. '
+        'Exclusive with save_interval_steps.'
+    ),
+)
+
+flags.DEFINE_integer(
+    'save_interval_steps',
+    -1,
+    (
+        'Interval (in steps) at which the model data '
+        'should be checkpointed. Set to 0 to disable, -1 to ignore. '
+        'Exclusive with save_interval_secs.'
+    ),
+)
+
+flags.DEFINE_integer(
+    'seq_type_embedding_size',
+    200,
+    (
+        'Set the embedding size for the sequencing type embeddings. Default is'
+        ' 200. This flag is only useful when model_name is'
+        ' `inception_v3_embedding`.'
+    ),
+)
 
 flags.DEFINE_bool(
-    'allow_warmstart_from_different_num_channels', False,
-    'If True, always allow warmstarting from model checkpoints '
-    'that has different number of channels.')
+    'allow_warmstart_from_different_num_channels',
+    False,
+    (
+        'If True, always allow warmstarting from model checkpoints '
+        'that has different number of channels.'
+    ),
+)
 
 FLAGS = flags.FLAGS
 
@@ -133,7 +162,9 @@ def binarize(labels, target_class):
   """
   labels_binary = tf.compat.v1.where(
       tf.equal(labels, tf.constant(target_class, dtype=tf.int64)),
-      tf.zeros_like(labels), tf.ones_like(labels))
+      tf.zeros_like(labels),
+      tf.ones_like(labels),
+  )
   return labels_binary
 
 
@@ -199,8 +230,10 @@ def get_f1_score(labels, predictions, target_class=None):
   def compute_f1_score(name):
     pr_product = tf.multiply(precision, recall)
     return tf.math.divide(
-        tf.multiply(2.0, pr_product), tf.add(tf.add(precision, recall), 1e-12),
-        name)
+        tf.multiply(2.0, pr_product),
+        tf.add(tf.add(precision, recall), 1e-12),
+        name,
+    )
 
   f1_score = compute_f1_score('value')
   with ops.control_dependencies([precision_op, recall_op]):
@@ -224,8 +257,9 @@ def is_encoded_variant_type(variant_types_tensor, type_to_select):
     the variant_type at that position matched type_to_select. Has a False
     otherwise.
   """
-  return tf.equal(variant_types_tensor,
-                  tf.constant(type_to_select.value, dtype=tf.int64))
+  return tf.equal(
+      variant_types_tensor, tf.constant(type_to_select.value, dtype=tf.int64)
+  )
 
 
 # This dictionary contains a mapping from the human readable name of a metric
@@ -273,6 +307,7 @@ def _eval_name(metric_name, stratification_name):
 
 class EvalMetricOrdering(enum.Enum):
   """Enum capturing whether a better metric should be larger or smaller."""
+
   BIGGER_IS_BETTER = 1
   SMALLER_IS_BETTER = 2
 
@@ -295,12 +330,14 @@ def eval_function_metrics(has_variant_types=True):
     variant_type_names = _METRICS_BY_VARIANT_TYPE
   else:
     variant_type_names = {'All'}
-  for m, s in itertools.product(_METRICS_FUNCS_BY_VARIANT_TYPE,
-                                variant_type_names):
+  for m, s in itertools.product(
+      _METRICS_FUNCS_BY_VARIANT_TYPE, variant_type_names
+  ):
     names[_eval_name(m, s)] = EvalMetricOrdering.BIGGER_IS_BETTER
 
-  for m, s in itertools.product(_METRICS_FUNCS_BY_GENOTYPE_CLASS,
-                                _METRICS_GENOTYPE_CLASSES):
+  for m, s in itertools.product(
+      _METRICS_FUNCS_BY_GENOTYPE_CLASS, _METRICS_GENOTYPE_CLASSES
+  ):
     names[_eval_name(m, s)] = EvalMetricOrdering.BIGGER_IS_BETTER
 
   return names
@@ -329,21 +366,24 @@ def eval_metric_fn(labels, predictions, variant_types):
   weights_by_type = {'All': None}
   if variant_types is not None:
     weights_by_type['SNPs'] = is_encoded_variant_type(
-        variant_types, dv_utils.EncodedVariantType.SNP)
+        variant_types, dv_utils.EncodedVariantType.SNP
+    )
     weights_by_type['Indels'] = is_encoded_variant_type(
-        variant_types, dv_utils.EncodedVariantType.INDEL)
+        variant_types, dv_utils.EncodedVariantType.INDEL
+    )
 
   for metric_name, metric_func in _METRICS_FUNCS_BY_VARIANT_TYPE.items():
     for weight_name, weights in weights_by_type.items():
       metrics[_eval_name(metric_name, weight_name)] = metric_func(
-          labels, predicted_classes, weights=weights)
+          labels, predicted_classes, weights=weights
+      )
 
   # Add the metrics stratified by predicted class.
   for metric_name, metric_func in _METRICS_FUNCS_BY_GENOTYPE_CLASS.items():
     for class_name, class_value in _METRICS_GENOTYPE_CLASSES.items():
-      metrics[_eval_name(metric_name,
-                         class_name)] = metric_func(labels, predicted_classes,
-                                                    class_value)
+      metrics[_eval_name(metric_name, class_name)] = metric_func(
+          labels, predicted_classes, class_value
+      )
 
   # Special case F1/All to avoid a clash between the two different ways that we
   # can compute Precision and Recall (e.g., get_class_precision vs.
@@ -355,11 +395,14 @@ def eval_metric_fn(labels, predictions, variant_types):
   # Make sure our metrics are consistent with the expected names from
   # eval_function_metrics.
   expected_metrics = eval_function_metrics(
-      has_variant_types=variant_types is not None)
+      has_variant_types=variant_types is not None
+  )
   if set(expected_metrics) != set(metrics):
     raise AssertionError(
         'Bug: actual metrics={} not equal to expected={}'.format(
-            ','.join(metrics), ','.join(expected_metrics)))
+            ','.join(metrics), ','.join(expected_metrics)
+        )
+    )
 
   return metrics
 
@@ -388,7 +431,8 @@ class LoadEMAHook(tf_estimator.SessionRunHook):
     self._load_ema = slim.assign_from_checkpoint_fn(
         tf.train.latest_checkpoint(self._model_dir),
         variables_to_restore,
-        ignore_missing_vars=self._ignore_missing_vars)
+        ignore_missing_vars=self._ignore_missing_vars,
+    )
 
   def after_create_session(self, sess, coord):
     tf.compat.v1.logging.info('Reloading EMA...')
@@ -412,7 +456,8 @@ class PredictEMAHook(tf_estimator.SessionRunHook):
     self._load_ema = slim.assign_from_checkpoint_fn(
         self._checkpoint_path,
         variables_to_restore,
-        ignore_missing_vars=self._ignore_missing_vars)
+        ignore_missing_vars=self._ignore_missing_vars,
+    )
 
   def after_create_session(self, sess, coord):
     tf.compat.v1.logging.info('Reloading EMA...')
@@ -468,11 +513,9 @@ class DeepVariantModel(object):
     # a call to make_estimator below.
     self.model_dir = None
 
-  def construct_scalar_host_call(self,
-                                 metric_dict,
-                                 model_dir,
-                                 prefix='',
-                                 record_frequency_in_steps=100):
+  def construct_scalar_host_call(
+      self, metric_dict, model_dir, prefix='', record_frequency_in_steps=100
+  ):
     """Construct a host call to log scalars when training on TPU.
 
     Args:
@@ -519,7 +562,8 @@ class DeepVariantModel(object):
     # dimension. These Tensors are implicitly concatenated to
     # [params['batch_size']].
     global_step_tensor = tf.reshape(
-        tf.compat.v1.train.get_or_create_global_step(), [1])
+        tf.compat.v1.train.get_or_create_global_step(), [1]
+    )
     other_tensors = [tf.reshape(metric_dict[key], [1]) for key in metric_names]
 
     return host_call_fn, [global_step_tensor] + other_tensors
@@ -533,52 +577,66 @@ class DeepVariantModel(object):
 
     # If the path is non-False, use it.
     if start_from_checkpoint:
-      logging.info('Initializing model from checkpoint at %s',
-                   start_from_checkpoint)
+      logging.info(
+          'Initializing model from checkpoint at %s', start_from_checkpoint
+      )
       excluded_scopes = set()
       reader = tf.compat.v1.train.NewCheckpointReader(start_from_checkpoint)
       var_to_shape_map = reader.get_variable_to_shape_map()
-      if dv_utils.model_num_classes(
-          start_from_checkpoint,
-          self.n_classes_model_variable) != dv_constants.NUM_CLASSES:
+      if (
+          dv_utils.model_num_classes(
+              start_from_checkpoint, self.n_classes_model_variable
+          )
+          != dv_constants.NUM_CLASSES
+      ):
         excluded_scopes.update(self.excluded_scopes_for_incompatible_classes)
       if FLAGS.allow_warmstart_from_different_num_channels:
         excluded_scopes.update(self.excluded_scopes_for_incompatible_channels)
       if excluded_scopes:
         logging.info(
-            'The model checkpoint to warm start from has different '
-            'shapes. If this is in training, we will '
-            'exclude: %s', excluded_scopes)
+            (
+                'The model checkpoint to warm start from has different '
+                'shapes. If this is in training, we will '
+                'exclude: %s'
+            ),
+            excluded_scopes,
+        )
         vars_to_include = [
-            v for v in var_to_shape_map.keys()
+            v
+            for v in var_to_shape_map.keys()
             if not v.startswith(tuple(excluded_scopes))
         ]
       else:
-        logging.info('The model checkpoint to warm start from should have the '
-                     'same number of classes and same numbers of channels.'
-                     'If this is in training, we will include everything for '
-                     'warm starting....')
+        logging.info(
+            'The model checkpoint to warm start from should have the '
+            'same number of classes and same numbers of channels.'
+            'If this is in training, we will include everything for '
+            'warm starting....'
+        )
         vars_to_include = var_to_shape_map.keys()
       return tf_estimator.WarmStartSettings(
           ckpt_to_initialize_from=start_from_checkpoint,
-          vars_to_warm_start='|'.join(vars_to_include))
+          vars_to_warm_start='|'.join(vars_to_include),
+      )
     else:
       # If warm_start_from is an empty string, specifically set it to None.
       logging.vlog(3, 'Initializing model with random parameters')
       return None
 
-  def make_estimator(self,
-                     batch_size,
-                     model_dir=None,
-                     max_checkpoints_to_keep=100000,
-                     iterations_per_loop=100,
-                     params=None,
-                     unused_device_fn=None,
-                     master='',
-                     use_tpu=False,
-                     start_from_checkpoint=None,
-                     session_config=None,
-                     include_debug_info=False):
+  def make_estimator(
+      self,
+      batch_size,
+      model_dir=None,
+      max_checkpoints_to_keep=100000,
+      iterations_per_loop=100,
+      params=None,
+      unused_device_fn=None,
+      master='',
+      use_tpu=False,
+      start_from_checkpoint=None,
+      session_config=None,
+      include_debug_info=False,
+  ):
     """Returns a new tf.estimator.Estimator object for training or prediction.
 
     The estimator needs to know batch_size. We use the same value for all
@@ -607,8 +665,8 @@ class DeepVariantModel(object):
         only be used in training. The inference checkpoint is loaded in a
         different place.
       session_config: a tf.ConfigProto to pass to RunConfig, if not use_tpu.
-      include_debug_info: from call_variants. If True, PREDICT mode will
-        include extra info such as logits and prelogits.
+      include_debug_info: from call_variants. If True, PREDICT mode will include
+        extra info such as logits and prelogits.
 
     Returns:
       an object implementing the tf.estimator.Estimator interface (will be a
@@ -646,7 +704,8 @@ class DeepVariantModel(object):
           save_checkpoints_secs=save_checkpoints_secs,
           save_checkpoints_steps=save_checkpoints_steps,
           save_summary_steps=FLAGS.save_summary_steps,
-          tpu_config=tpu_cfg)
+          tpu_config=tpu_cfg,
+      )
 
       classifier = tpu_estimator.TPUEstimator(
           use_tpu=self.use_tpu,
@@ -679,7 +738,8 @@ class DeepVariantModel(object):
           model_fn=self.model_fn,
           config=config,
           params=params_with_batch_size,
-          warm_start_from=warm_start_from)
+          warm_start_from=warm_start_from,
+      )
     return classifier
 
   def model_fn(self, features, labels, mode, params):
@@ -757,15 +817,21 @@ class DeepVariantModel(object):
             'of w={} x h={} but a TensorFlow exception occurred while building '
             'the model, which typically indicates those dimensions are not '
             'supported by the model. The supported dimensions for {} are {}'
-        ).format(self.name, width, height, self.name,
-                 self.supported_dimensions_message)
+        ).format(
+            self.name,
+            width,
+            height,
+            self.name,
+            self.supported_dimensions_message,
+        )
         raise UnsupportedImageDimensionsError(message)
       else:
         raise
 
   def _is_bad_image_dimension_exception(self, exception):
     return any(
-        x in str(exception) for x in ['Negative dimension', 'SpatialSqueeze'])
+        x in str(exception) for x in ['Negative dimension', 'SpatialSqueeze']
+    )
 
   def _create(self, images, num_classes, is_training):
     """To be overloaded by subclasses to actually create the model."""
@@ -845,9 +911,14 @@ class DeepVariantModel(object):
 class DeepVariantSlimModel(DeepVariantModel):
   """Baseclass for DeepVariant models based on Slim networks."""
 
-  def __init__(self, name, pretrained_model_path, n_classes_model_variable,
-               excluded_scopes_for_incompatible_classes,
-               excluded_scopes_for_incompatible_channels):
+  def __init__(
+      self,
+      name,
+      pretrained_model_path,
+      n_classes_model_variable,
+      excluded_scopes_for_incompatible_classes,
+      excluded_scopes_for_incompatible_channels,
+  ):
     """Creates an DeepVariant CNN network based on a tf.slim model.
 
     Args:
@@ -857,22 +928,26 @@ class DeepVariantSlimModel(DeepVariantModel):
         model that we can use to determine the shape of the output
         classification layer of the model. For example, in inception-v3 from
         slim this is 'InceptionV3/Logits/Conv2d_1c_1x1/weights'.
-      excluded_scopes_for_incompatible_classes: set of str. A set of scopes
-        that will be excluded when restoring from a checkpoint to avoid loading
+      excluded_scopes_for_incompatible_classes: set of str. A set of scopes that
+        will be excluded when restoring from a checkpoint to avoid loading
         incompatible #classes.
       excluded_scopes_for_incompatible_channels: set of str. A set of scopes
         that will be excluded when restoring from a checkpoint to avoid loading
         incompatible #channels.
+
     Raises:
       ValueError: If any of the arguments are invalid.
     """
     super(DeepVariantSlimModel, self).__init__(
-        name=name, pretrained_model_path=pretrained_model_path)
+        name=name, pretrained_model_path=pretrained_model_path
+    )
     self.n_classes_model_variable = n_classes_model_variable
     self.excluded_scopes_for_incompatible_classes = (
-        excluded_scopes_for_incompatible_classes)
+        excluded_scopes_for_incompatible_classes
+    )
     self.excluded_scopes_for_incompatible_channels = (
-        excluded_scopes_for_incompatible_channels)
+        excluded_scopes_for_incompatible_channels
+    )
 
   def preprocess_images(self, images):
     """Applies preprocessing operations for Inception images.
@@ -918,14 +993,15 @@ class DeepVariantSlimModel(DeepVariantModel):
     endpoints = self.create(
         images=images,
         num_classes=num_classes,
-        is_training=mode == tf_estimator.ModeKeys.TRAIN)
+        is_training=mode == tf_estimator.ModeKeys.TRAIN,
+    )
 
     logits = endpoints['Logits']
 
     predictions = endpoints
     predictions.update({
         'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
-        'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+        'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
     })
     prelogits = endpoints['PreLogits'] if self.include_debug_info else None
     if mode == tf_estimator.ModeKeys.PREDICT:
@@ -937,14 +1013,33 @@ class DeepVariantSlimModel(DeepVariantModel):
         onehot_labels=one_hot_labels,
         logits=logits,
         weights=1.0,
-        label_smoothing=FLAGS.label_smoothing)
+        label_smoothing=FLAGS.label_smoothing,
+    )
     total_loss = tf.compat.v1.losses.get_total_loss(
-        add_regularization_losses=True)
-    return self.make_ops_and_estimator(features, endpoints, labels, logits,
-                                       predictions, total_loss, mode, params)
+        add_regularization_losses=True
+    )
+    return self.make_ops_and_estimator(
+        features,
+        endpoints,
+        labels,
+        logits,
+        predictions,
+        total_loss,
+        mode,
+        params,
+    )
 
-  def make_ops_and_estimator(self, features, endpoints, labels, logits,
-                             predictions, total_loss, mode, params):
+  def make_ops_and_estimator(
+      self,
+      features,
+      endpoints,
+      labels,
+      logits,
+      predictions,
+      total_loss,
+      mode,
+      params,
+  ):
     """Make EstimatorSpec for the current model.
 
     Args:
@@ -981,7 +1076,8 @@ class DeepVariantSlimModel(DeepVariantModel):
         rmsprop_decay=FLAGS.rmsprop_decay,
         rmsprop_momentum=FLAGS.rmsprop_momentum,
         rmsprop_epsilon=FLAGS.rmsprop_epsilon,
-        moving_average_decay=FLAGS.moving_average_decay)
+        moving_average_decay=FLAGS.moving_average_decay,
+    )
 
     eval_metrics = self._model_fn_eval(
         mode=mode,
@@ -989,7 +1085,8 @@ class DeepVariantSlimModel(DeepVariantModel):
         labels=labels,
         endpoints=endpoints,
         logits=logits,
-        use_logits=False)
+        use_logits=False,
+    )
 
     spec = tpu_estimator.TPUEstimatorSpec(
         mode=mode,
@@ -997,7 +1094,8 @@ class DeepVariantSlimModel(DeepVariantModel):
         train_op=train_op,
         host_call=host_call,
         eval_metrics=eval_metrics,
-        predictions=predictions)
+        predictions=predictions,
+    )
     if self.use_tpu:
       return spec
     else:
@@ -1028,8 +1126,9 @@ class DeepVariantSlimModel(DeepVariantModel):
     else:
       return tf_estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
-  def _model_fn_eval(self, mode, features, labels, endpoints, logits,
-                     use_logits):
+  def _model_fn_eval(
+      self, mode, features, labels, endpoints, logits, use_logits
+  ):
     """This is the EVAL part of model_fn."""
     if mode != tf_estimator.ModeKeys.EVAL:
       return None
@@ -1044,10 +1143,19 @@ class DeepVariantSlimModel(DeepVariantModel):
         tf.compat.v1.summary.scalar(tensor=value, name=name)
     return eval_metrics
 
-  def _model_fn_train(self, mode, total_loss, batches_per_epoch,
-                      num_epochs_per_decay, initial_learning_rate,
-                      learning_rate_decay_factor, rmsprop_decay,
-                      rmsprop_momentum, rmsprop_epsilon, moving_average_decay):
+  def _model_fn_train(
+      self,
+      mode,
+      total_loss,
+      batches_per_epoch,
+      num_epochs_per_decay,
+      initial_learning_rate,
+      learning_rate_decay_factor,
+      rmsprop_decay,
+      rmsprop_momentum,
+      rmsprop_epsilon,
+      moving_average_decay,
+  ):
     """This is the TRAIN part of model_fn."""
     if mode != tf_estimator.ModeKeys.TRAIN:
       return None, None
@@ -1062,7 +1170,8 @@ class DeepVariantSlimModel(DeepVariantModel):
         global_step=global_step,
         decay_steps=decay_steps,
         decay_rate=learning_rate_decay_factor,
-        staircase=True)
+        staircase=True,
+    )
 
     # Set a minimum boundary for the learning rate to be a fixed value of 1e-9.
     # It's common to see these tf.max(...) operations when training inception,
@@ -1075,7 +1184,8 @@ class DeepVariantSlimModel(DeepVariantModel):
         learning_rate,
         rmsprop_decay,
         momentum=rmsprop_momentum,
-        epsilon=rmsprop_epsilon)
+        epsilon=rmsprop_epsilon,
+    )
     if self.use_tpu:
       optimizer = tpu_optimizer.CrossShardOptimizer(optimizer)
     update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
@@ -1087,9 +1197,11 @@ class DeepVariantSlimModel(DeepVariantModel):
     # tf.model_variables() in the existing production DV2.
     variables_to_average = tf.compat.v1.model_variables()
     variable_averages = tf.train.ExponentialMovingAverage(
-        decay=moving_average_decay, num_updates=global_step)
-    with tf.control_dependencies([train_op
-                                 ]), tf.compat.v1.name_scope('moving_average'):
+        decay=moving_average_decay, num_updates=global_step
+    )
+    with tf.control_dependencies([train_op]), tf.compat.v1.name_scope(
+        'moving_average'
+    ):
       train_op = variable_averages.apply(variables_to_average)
     tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.UPDATE_OPS, train_op)
 
@@ -1100,7 +1212,8 @@ class DeepVariantSlimModel(DeepVariantModel):
         'learning_rate': learning_rate,
     }
     host_call = self.construct_scalar_host_call(
-        metric_dict=metric_dict, model_dir=self.model_dir, prefix='training/')
+        metric_dict=metric_dict, model_dir=self.model_dir, prefix='training/'
+    )
 
     return train_op, host_call
 
@@ -1120,19 +1233,25 @@ class DeepVariantInceptionV3(DeepVariantSlimModel):
         name='inception_v3',
         n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
         excluded_scopes_for_incompatible_classes=[
-            'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
+            'InceptionV3/Logits',
+            'InceptionV3/Conv2d_1a_3x3',
         ],
         excluded_scopes_for_incompatible_channels=['InceptionV3/Conv2d_1a_3x3'],
-        pretrained_model_path=('/namespace/vale-project/models/classification/'
-                               'imagenet/inception_v3/model.ckpt-9591376'))
+        pretrained_model_path=(
+            '/namespace/vale-project/models/classification/'
+            'imagenet/inception_v3/model.ckpt-9591376'
+        ),
+    )
     self.supported_dimensions_message = (
-        'odd widths between 75-361 and any heights between 75-362')
+        'odd widths between 75-361 and any heights between 75-362'
+    )
 
   def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(inception_v3.inception_v3_arg_scope()):
       _, endpoints = inception_v3.inception_v3(
-          images, num_classes, create_aux_logits=False, is_training=is_training)
+          images, num_classes, create_aux_logits=False, is_training=is_training
+      )
       return endpoints
 
 
@@ -1166,8 +1285,9 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
       model.
     """
     images, sequencing_type = inputs
-    endpoints = super(DeepVariantInceptionV3Embedding,
-                      self)._create(images, num_classes, is_training)
+    endpoints = super(DeepVariantInceptionV3Embedding, self)._create(
+        images, num_classes, is_training
+    )
 
     with tf.compat.v1.variable_scope('Embeddings'):
       # Take the graph all the way till PreLogits
@@ -1198,7 +1318,8 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     """Create word embeddings."""
     embeddings = self._embedding_lookup(indices)
     embeddings = slim.fully_connected(
-        embeddings, self.embedding_size, activation_fn=None)
+        embeddings, self.embedding_size, activation_fn=None
+    )
     return embeddings
 
   def _embedding_lookup(self, input_ids, word_embedding_name='seq_type_emb'):
@@ -1215,12 +1336,14 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
         name=word_embedding_name,
         shape=[self.vocab_size, self.embedding_size],
         initializer=tf.compat.v1.keras.initializers.VarianceScaling(
-            scale=1.0, mode='fan_avg', distribution='uniform'),
+            scale=1.0, mode='fan_avg', distribution='uniform'
+        ),
         collections=[
             tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
             tf.compat.v1.GraphKeys.MODEL_VARIABLES,
-            tf.compat.v1.GraphKeys.GLOBAL_VARIABLES
-        ])
+            tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
+        ],
+    )
 
     return tf.nn.embedding_lookup(params=embedding_table, ids=input_ids)
 
@@ -1248,7 +1371,9 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     if FLAGS.seq_type_embedding_size <= 0:
       raise ValueError(
           'Expected seq_type_embedding_size to be a positive number but saw %i '
-          'instead.' % FLAGS.seq_type_embedding_size)
+          'instead.'
+          % FLAGS.seq_type_embedding_size
+      )
     self.embedding_size = FLAGS.seq_type_embedding_size
 
     images = features['image']
@@ -1258,14 +1383,15 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
     endpoints = self.create(
         images=(images, sequencing_type),
         num_classes=num_classes,
-        is_training=mode == tf_estimator.ModeKeys.TRAIN)
+        is_training=mode == tf_estimator.ModeKeys.TRAIN,
+    )
 
     logits = endpoints['Logits']
 
     predictions = endpoints
     predictions.update({
         'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
-        'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+        'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
     })
 
     prelogits = endpoints['PreLogits'] if self.include_debug_info else None
@@ -1278,12 +1404,22 @@ class DeepVariantInceptionV3Embedding(DeepVariantInceptionV3):
         onehot_labels=one_hot_labels,
         logits=logits,
         weights=1.0,
-        label_smoothing=FLAGS.label_smoothing)
+        label_smoothing=FLAGS.label_smoothing,
+    )
     total_loss = tf.compat.v1.losses.get_total_loss(
-        add_regularization_losses=True)
+        add_regularization_losses=True
+    )
 
-    return self.make_ops_and_estimator(features, endpoints, labels, logits,
-                                       predictions, total_loss, mode, params)
+    return self.make_ops_and_estimator(
+        features,
+        endpoints,
+        labels,
+        logits,
+        predictions,
+        total_loss,
+        mode,
+        params,
+    )
 
 
 class DeepVariantAttentionInceptionV3(DeepVariantSlimModel):
@@ -1295,13 +1431,18 @@ class DeepVariantAttentionInceptionV3(DeepVariantSlimModel):
         name='attention_inception_v3',
         n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
         excluded_scopes_for_incompatible_classes=[
-            'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
+            'InceptionV3/Logits',
+            'InceptionV3/Conv2d_1a_3x3',
         ],
         excluded_scopes_for_incompatible_channels=['InceptionV3/Conv2d_1a_3x3'],
-        pretrained_model_path=('/namespace/vale-project/models/classification/'
-                               'imagenet/inception_v3/model.ckpt-9591376'))
+        pretrained_model_path=(
+            '/namespace/vale-project/models/classification/'
+            'imagenet/inception_v3/model.ckpt-9591376'
+        ),
+    )
     self.supported_dimensions_message = (
-        'odd widths between 75-361 and any heights between 75-362')
+        'odd widths between 75-361 and any heights between 75-362'
+    )
 
     self.attention_module = attention_module
     self.attention_position = attention_position
@@ -1309,14 +1450,16 @@ class DeepVariantAttentionInceptionV3(DeepVariantSlimModel):
   def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(
-        attention_inception_v3.attention_inception_v3_arg_scope()):
+        attention_inception_v3.attention_inception_v3_arg_scope()
+    ):
       _, endpoints = attention_inception_v3.attention_inception_v3(
           images,
           num_classes,
           create_aux_logits=False,
           is_training=is_training,
           attention_module=self.attention_module,
-          attention_position=self.attention_position)
+          attention_position=self.attention_position,
+      )
     return endpoints
 
 
@@ -1328,7 +1471,8 @@ class DeepVariantPlaceholderModel(DeepVariantModel):
     # Note the pretrained model path isn't used but we must return a valid
     # string so here we just return "UNUSED".
     super(DeepVariantPlaceholderModel, self).__init__(
-        name=name, pretrained_model_path='UNUSED')
+        name=name, pretrained_model_path='UNUSED'
+    )
 
   def preprocess_images(self, images):
     """Preprocess images for placeholder model."""
@@ -1375,10 +1519,10 @@ class DeepVariantConstantModel(DeepVariantPlaceholderModel):
   @staticmethod
   def _predictions(pred_const, batch_size):
     return {
-        'Predictions':
-            tf.reshape(
-                tf.tile(pred_const, [batch_size]),
-                shape=(batch_size, tf.shape(input=pred_const)[0]))
+        'Predictions': tf.reshape(
+            tf.tile(pred_const, [batch_size]),
+            shape=(batch_size, tf.shape(input=pred_const)[0]),
+        )
     }
 
   def _create(self, images, num_classes, is_training):
@@ -1414,8 +1558,10 @@ class DeepVariantConstantModel(DeepVariantPlaceholderModel):
       endpoints.update(predictions)
 
     if mode == tf_estimator.ModeKeys.EVAL:
-      eval_metrics = (eval_metric_fn,
-                      [labels, endpoints['Predictions'], variant_types])
+      eval_metrics = (
+          eval_metric_fn,
+          [labels, endpoints['Predictions'], variant_types],
+      )
     else:
       eval_metrics = None
 
@@ -1427,7 +1573,8 @@ class DeepVariantConstantModel(DeepVariantPlaceholderModel):
         loss=loss,
         train_op=train_op,
         eval_metrics=eval_metrics,
-        predictions=endpoints)
+        predictions=endpoints,
+    )
     if self.use_tpu:
       return spec
     else:
@@ -1437,7 +1584,7 @@ class DeepVariantConstantModel(DeepVariantPlaceholderModel):
 class DeepVariantSmallModel(DeepVariantSlimModel):
   """A smaller of version of the DeepVariant model.
 
-     Uses only the first layers of Inception net.
+  Uses only the first layers of Inception net.
   """
 
   def __init__(self, representation_layer='Mixed_5d'):
@@ -1452,13 +1599,17 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
     """
     super(DeepVariantSmallModel, self).__init__(
         name='small_inception',
-        pretrained_model_path=('/namespace/vale-project/models/classification/'
-                               'imagenet/inception_v3/model.ckpt-9591376'),
+        pretrained_model_path=(
+            '/namespace/vale-project/models/classification/'
+            'imagenet/inception_v3/model.ckpt-9591376'
+        ),
         n_classes_model_variable='InceptionV3/Logits/Conv2d_1c_1x1/weights',
         excluded_scopes_for_incompatible_classes=[
-            'InceptionV3/Logits', 'InceptionV3/Conv2d_1a_3x3'
+            'InceptionV3/Logits',
+            'InceptionV3/Conv2d_1a_3x3',
         ],
-        excluded_scopes_for_incompatible_channels=['InceptionV3/Conv2d_1a_3x3'])
+        excluded_scopes_for_incompatible_channels=['InceptionV3/Conv2d_1a_3x3'],
+    )
 
     self.representation_layer = representation_layer
 
@@ -1490,19 +1641,24 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
     endpoints = self.create(
         images=images,
         num_classes=num_classes,
-        is_training=mode == tf_estimator.ModeKeys.TRAIN)
+        is_training=mode == tf_estimator.ModeKeys.TRAIN,
+    )
 
     if self.representation_layer not in endpoints.keys():
-      raise ValueError('Layer {} is not found Inception endpoints.'
-                       'Available Inception net endpoints: {}'.format(
-                           self.representation_layer, endpoints.keys()))
+      raise ValueError(
+          'Layer {} is not found Inception endpoints.'
+          'Available Inception net endpoints: {}'.format(
+              self.representation_layer, endpoints.keys()
+          )
+      )
 
     mid_layer = endpoints[self.representation_layer]
     # Perform 1x1 convolution similarly to the Inception architecture
     # (see 'Predictions' end points in inception_v3 architecture)
 
     tower = tf.nn.conv2d(
-        mid_layer, 1, [1, 1], stride=1, activation_fn=tf.nn.relu)
+        mid_layer, 1, [1, 1], stride=1, activation_fn=tf.nn.relu
+    )
 
     batch_size = tower.get_shape()[0].value
     tower = tf.reshape(tower, [batch_size, -1])
@@ -1516,7 +1672,7 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
         'classes': tf.argmax(input=logits, axis=1, output_type=tf.int32),
         'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
         'Logits': logits,
-        'Predictions': slim.softmax(logits)
+        'Predictions': slim.softmax(logits),
     })
 
     if mode == tf_estimator.ModeKeys.PREDICT:
@@ -1528,25 +1684,39 @@ class DeepVariantSmallModel(DeepVariantSlimModel):
         onehot_labels=one_hot_labels,
         logits=logits,
         weights=1.0,
-        label_smoothing=FLAGS.label_smoothing)
+        label_smoothing=FLAGS.label_smoothing,
+    )
     total_loss = tf.compat.v1.losses.get_total_loss(
-        add_regularization_losses=True)
+        add_regularization_losses=True
+    )
 
-    return self.make_ops_and_estimator(features, endpoints, labels, logits,
-                                       predictions, total_loss, mode, params)
+    return self.make_ops_and_estimator(
+        features,
+        endpoints,
+        labels,
+        logits,
+        predictions,
+        total_loss,
+        mode,
+        params,
+    )
 
   def _create(self, images, num_classes, is_training):
     """See baseclass."""
     with slim.arg_scope(inception_v3.inception_v3_arg_scope()):
       _, endpoints = inception_v3.inception_v3(
-          images, num_classes, create_aux_logits=False, is_training=is_training)
+          images, num_classes, create_aux_logits=False, is_training=is_training
+      )
       return endpoints
 
 
 # Our list of pre-defined model classes.
 _MODEL_CLASSES = [
-    DeepVariantSmallModel, DeepVariantInceptionV3, DeepVariantConstantModel,
-    DeepVariantInceptionV3Embedding, DeepVariantAttentionInceptionV3
+    DeepVariantSmallModel,
+    DeepVariantInceptionV3,
+    DeepVariantConstantModel,
+    DeepVariantInceptionV3Embedding,
+    DeepVariantAttentionInceptionV3,
 ]
 
 
@@ -1582,5 +1752,8 @@ def get_model(model_name, **kwargs):
       model = model_class()
     if model_name == model.name:
       return model
-  raise ValueError('Unknown model_name {}, options are {}'.format(
-      model_name, [model_class().name for model_class in _MODEL_CLASSES]))
+  raise ValueError(
+      'Unknown model_name {}, options are {}'.format(
+          model_name, [model_class().name for model_class in _MODEL_CLASSES]
+      )
+  )

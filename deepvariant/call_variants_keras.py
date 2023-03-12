@@ -78,60 +78,101 @@ _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-    'examples', None,
-    'Required. tf.Example protos containing DeepVariant candidate variants in '
-    'TFRecord format, as emitted by make_examples. Can be a comma-separated '
-    'list of files, and the file names can contain wildcard characters.')
+    'examples',
+    None,
+    (
+        'Required. tf.Example protos containing DeepVariant candidate variants'
+        ' in TFRecord format, as emitted by make_examples. Can be a'
+        ' comma-separated list of files, and the file names can contain'
+        ' wildcard characters.'
+    ),
+)
 flags.DEFINE_string(
-    'outfile', None,
-    'Required. Destination path where we will write output candidate variants '
-    'with additional likelihood information in TFRecord format of '
-    'CallVariantsOutput protos.')
+    'outfile',
+    None,
+    (
+        'Required. Destination path where we will write output candidate'
+        ' variants with additional likelihood information in TFRecord format of'
+        ' CallVariantsOutput protos.'
+    ),
+)
 flags.DEFINE_string(
-    'checkpoint', None,
-    'Required. Path to the TensorFlow model checkpoint to use to evaluate '
-    'candidate variant calls.')
+    'checkpoint',
+    None,
+    (
+        'Required. Path to the TensorFlow model checkpoint to use to evaluate '
+        'candidate variant calls.'
+    ),
+)
 flags.DEFINE_integer(
-    'batch_size', 512,
-    'Number of candidate variant tensors to batch together during inference. '
-    'Larger batches use more memory but are more computational efficient.')
-flags.DEFINE_integer('max_batches', None,
-                     'Max. batches to evaluate. Defaults to all.')
-flags.DEFINE_integer('num_readers', 8,
-                     'Number of parallel readers to create for examples.')
-flags.DEFINE_boolean('include_debug_info', False,
-                     'If true, include extra debug info in the output.')
+    'batch_size',
+    512,
+    (
+        'Number of candidate variant tensors to batch together during'
+        ' inference. Larger batches use more memory but are more computational'
+        ' efficient.'
+    ),
+)
+flags.DEFINE_integer(
+    'max_batches', None, 'Max. batches to evaluate. Defaults to all.'
+)
+flags.DEFINE_integer(
+    'num_readers', 8, 'Number of parallel readers to create for examples.'
+)
 flags.DEFINE_boolean(
-    'debugging_true_label_mode', False,
-    'If true, read the true labels from examples and add to '
-    'output. Note that the program will crash if the input '
-    'examples do not have the label field. '
-    'When true, this will also fill everything when '
-    '--include_debug_info is set to true.')
+    'include_debug_info',
+    False,
+    'If true, include extra debug info in the output.',
+)
+flags.DEFINE_boolean(
+    'debugging_true_label_mode',
+    False,
+    (
+        'If true, read the true labels from examples and add to '
+        'output. Note that the program will crash if the input '
+        'examples do not have the label field. '
+        'When true, this will also fill everything when '
+        '--include_debug_info is set to true.'
+    ),
+)
 flags.DEFINE_string(
-    'execution_hardware', 'auto',
-    'When in cpu mode, call_variants will not place any ops on the GPU, even '
-    'if one is available. In accelerator mode call_variants validates that at '
-    'least some hardware accelerator (GPU/TPU) was available for us. This '
-    'option is primarily for QA purposes to allow users to validate their '
-    'accelerator environment is correctly configured. In auto mode, the '
-    'default, op placement is entirely left up to TensorFlow.  In tpu mode, '
-    'use and require TPU.')
+    'execution_hardware',
+    'auto',
+    (
+        'When in cpu mode, call_variants will not place any ops on the GPU,'
+        ' even if one is available. In accelerator mode call_variants validates'
+        ' that at least some hardware accelerator (GPU/TPU) was available for'
+        ' us. This option is primarily for QA purposes to allow users to'
+        ' validate their accelerator environment is correctly configured. In'
+        ' auto mode, the default, op placement is entirely left up to'
+        ' TensorFlow.  In tpu mode, use and require TPU.'
+    ),
+)
 flags.DEFINE_string(
-    'config_string', None,
-    'String representation of a tf.ConfigProto message, with comma-separated '
-    'key: value pairs, such as "allow_soft_placement: True". The value can '
-    'itself be another message, such as '
-    '"gpu_options: {per_process_gpu_memory_fraction: 0.5}".')
+    'config_string',
+    None,
+    (
+        'String representation of a tf.ConfigProto message, with'
+        ' comma-separated key: value pairs, such as "allow_soft_placement:'
+        ' True". The value can itself be another message, such as "gpu_options:'
+        ' {per_process_gpu_memory_fraction: 0.5}".'
+    ),
+)
 flags.DEFINE_string(
-    'kmp_blocktime', '0',
-    'Value to set the KMP_BLOCKTIME environment variable to for efficient MKL '
-    'inference. See https://www.tensorflow.org/performance/performance_guide '
-    'for more information. The default value is 0, which provides the best '
-    'performance in our tests. Set this flag to "" to not set the variable.')
+    'kmp_blocktime',
+    '0',
+    (
+        'Value to set the KMP_BLOCKTIME environment variable to for efficient'
+        ' MKL inference. See'
+        ' https://www.tensorflow.org/performance/performance_guide for more'
+        ' information. The default value is 0, which provides the best'
+        ' performance in our tests. Set this flag to "" to not set the'
+        ' variable.'
+    ),
+)
 _LIMIT = flags.DEFINE_integer(
-    'limit', 0, 'If set to > 0, limit processing to <= limit '
-    'examples.')
+    'limit', 0, 'If set to > 0, limit processing to <= limit examples.'
+)
 
 
 class ExecutionHardwareError(Exception):
@@ -142,12 +183,17 @@ class CustomCallback(tf.keras.callbacks.Callback):
   """Custom callbacks for `predict`."""
 
   def on_predict_batch_begin(self, batch, logs=None):
-    logging.log_every_n(logging.INFO, 'Begin `predict` on batch %d.',
-                        _LOG_EVERY_N_BATCHES, batch)
+    logging.log_every_n(
+        logging.INFO,
+        'Begin `predict` on batch %d.',
+        _LOG_EVERY_N_BATCHES,
+        batch,
+    )
 
   def on_predict_batch_end(self, batch, logs=None):
-    logging.log_every_n(logging.INFO, 'End `predict` on batch %d.',
-                        _LOG_EVERY_N_BATCHES, batch)
+    logging.log_every_n(
+        logging.INFO, 'End `predict` on batch %d.', _LOG_EVERY_N_BATCHES, batch
+    )
 
 
 def round_gls(gls, precision=None):
@@ -167,7 +213,9 @@ def round_gls(gls, precision=None):
   if abs(sum(gls) - 1) > 1e-6:
     raise ValueError(
         'Invalid genotype likelihoods do not sum to one: sum({}) = {}'.format(
-            gls, sum(gls)))
+            gls, sum(gls)
+        )
+    )
   if precision is None:
     return gls
 
@@ -181,8 +229,10 @@ def round_gls(gls, precision=None):
   rounded_gls = [round(gl, precision) for gl in gls]
   rounded_gls[min_ix] = max(
       0.0,
-      round(1 - sum(rounded_gls[:min_ix] + rounded_gls[min_ix + 1:]),
-            precision))
+      round(
+          1 - sum(rounded_gls[:min_ix] + rounded_gls[min_ix + 1 :]), precision
+      ),
+  )
   return rounded_gls
 
 
@@ -211,21 +261,26 @@ def write_variant_call(writer, prediction):
       encoded_alt_allele_indices,
       true_labels,
       logits=prediction.get('logits'),
-      prelogits=prediction.get('prelogits'))
+      prelogits=prediction.get('prelogits'),
+  )
   return writer.write(cvo)
 
 
-def _create_cvo_proto(encoded_variant,
-                      gls,
-                      encoded_alt_allele_indices,
-                      true_labels=None,
-                      logits=None,
-                      prelogits=None):
+def _create_cvo_proto(
+    encoded_variant,
+    gls,
+    encoded_alt_allele_indices,
+    true_labels=None,
+    logits=None,
+    prelogits=None,
+):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
   alt_allele_indices = (
       deepvariant_pb2.CallVariantsOutput.AltAlleleIndices.FromString(
-          encoded_alt_allele_indices))
+          encoded_alt_allele_indices
+      )
+  )
   debug_info = None
   if FLAGS.include_debug_info or FLAGS.debugging_true_label_mode:
     if prelogits is not None:
@@ -238,12 +293,14 @@ def _create_cvo_proto(encoded_variant,
         predicted_label=np.argmax(gls),
         true_label=true_labels,
         logits=logits,
-        prelogits=prelogits)
+        prelogits=prelogits,
+    )
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
       alt_allele_indices=alt_allele_indices,
       genotype_probabilities=gls,
-      debug_info=debug_info)
+      debug_info=debug_info,
+  )
   return call_variants_output
 
 
@@ -251,18 +308,23 @@ def get_shape_and_channels_from_json(example_info_json):
   """Returns the shape and channels list from the input json."""
   if not tf.io.gfile.exists(example_info_json):
     logging.warning(
-        'Starting from v1.4.0, we expect %s to '
-        'include information for shape and channels.', example_info_json)
+        (
+            'Starting from v1.4.0, we expect %s to '
+            'include information for shape and channels.'
+        ),
+        example_info_json,
+    )
     return None, None
   with tf.io.gfile.GFile(example_info_json) as f:
     example_info = json.load(f)
   example_shape = example_info['shape']
   example_channels_enum = example_info['channels']
   logging.info(
-      'From %s: '
-      'Shape of input examples: %s, '
-      'Channels of input examples: %s.', example_info_json, str(example_shape),
-      str(example_channels_enum))
+      'From %s: Shape of input examples: %s, Channels of input examples: %s.',
+      example_info_json,
+      str(example_shape),
+      str(example_channels_enum),
+  )
   return example_shape, example_channels_enum
 
 
@@ -274,13 +336,14 @@ def get_dataset(path, example_shape):
   proto_features = {
       'image/encoded': tf.io.FixedLenFeature((), tf.string),
       'variant/encoded': tf.io.FixedLenFeature((), tf.string),
-      'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string)
+      'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
   }
 
   def _parse_example(example):
     """Parses a serialized tf.Example."""
     parsed_features = tf.io.parse_single_example(
-        serialized=example, features=proto_features)
+        serialized=example, features=proto_features
+    )
     image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
     image = tf.reshape(image, example_shape)
     image = tf.cast(image, tf.float32)
@@ -290,51 +353,60 @@ def get_dataset(path, example_shape):
     return image, variant, alt_allele_indices
 
   ds = tf.data.TFRecordDataset.list_files(
-      sharded_file_utils.normalize_to_sharded_file_pattern(path), shuffle=False)
+      sharded_file_utils.normalize_to_sharded_file_pattern(path), shuffle=False
+  )
 
   def load_dataset(filename):
     dataset = tf.data.TFRecordDataset(
         filename,
         buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
-        compression_type='GZIP')
+        compression_type='GZIP',
+    )
     return dataset
 
   ds = ds.interleave(
       load_dataset,
       cycle_length=_DEFAULT_INPUT_READ_THREADS,
-      num_parallel_calls=tf.data.AUTOTUNE)
+      num_parallel_calls=tf.data.AUTOTUNE,
+  )
   if _LIMIT.value > 0:
     ds = ds.take(_LIMIT.value)
 
   image_variant_alt_allele_ds = ds.map(
-      map_func=_parse_example, num_parallel_calls=tf.data.AUTOTUNE)
+      map_func=_parse_example, num_parallel_calls=tf.data.AUTOTUNE
+  )
 
   image_variant_alt_allele_ds = image_variant_alt_allele_ds.batch(
-      batch_size=FLAGS.batch_size).prefetch(tf.data.AUTOTUNE)
+      batch_size=FLAGS.batch_size
+  ).prefetch(tf.data.AUTOTUNE)
   return image_variant_alt_allele_ds
 
 
-def call_variants(examples_filename: str, checkpoint_path: str,
-                  output_file: str):
+def call_variants(
+    examples_filename: str, checkpoint_path: str, output_file: str
+):
   """Main driver of call_variants."""
   if FLAGS.kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
-    logging.vlog(3,
-                 'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME']))
+    logging.vlog(
+        3, 'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME'])
+    )
 
   # Read a single TFExample to make sure we're not loading an older version.
   first_example = dv_utils.get_one_example_from_examples_path(examples_filename)
   if first_example is None:
     logging.warning(
-        'Unable to read any records from %s. Output will contain '
-        'zero records.', examples_filename)
+        'Unable to read any records from %s. Output will contain zero records.',
+        examples_filename,
+    )
     tfrecord.write_tfrecords([], output_file)
     return
 
   # TODO: Check example shape and format and throw a readable
   # error if incorrect
   example_info_json = dv_utils.get_example_info_json_filename(
-      examples_filename, 0)
+      examples_filename, 0
+  )
   example_shape = get_shape_and_channels_from_json(example_info_json)[0]
 
   logging.info('Shape of input examples: %s', str(example_shape))
@@ -352,24 +424,33 @@ def call_variants(examples_filename: str, checkpoint_path: str,
         predictions = model.predict_on_batch(batch[0])
         n_batches += 1
         for probabilities, variant, alt_allele_indices in zip(
-            predictions, batch[1], batch[2]):
+            predictions, batch[1], batch[2]
+        ):
           n_examples += 1
           pred = {
               'probabilities': probabilities,
               'variant': variant.numpy(),
-              'alt_allele_indices': alt_allele_indices.numpy()
+              'alt_allele_indices': alt_allele_indices.numpy(),
           }
           write_variant_call(writer, pred)
           duration = time.time() - start_time
           logging.log_every_n(
               logging.INFO,
-              ('Processed %s examples in %s batches [%.3f sec per 100]'),
-              _LOG_EVERY_N, n_examples, n_batches,
-              (100 * duration) / n_examples)
-    logging.info('Processed %s examples in %s batches [%.3f sec per 100]',
-                 n_examples, n_batches, (100 * duration) / n_examples)
-    logging.info('Done calling variants from a total of %d examples.',
-                 n_examples)
+              'Processed %s examples in %s batches [%.3f sec per 100]',
+              _LOG_EVERY_N,
+              n_examples,
+              n_batches,
+              (100 * duration) / n_examples,
+          )
+    logging.info(
+        'Processed %s examples in %s batches [%.3f sec per 100]',
+        n_examples,
+        n_batches,
+        (100 * duration) / n_examples,
+    )
+    logging.info(
+        'Done calling variants from a total of %d examples.', n_examples
+    )
 
 
 def main(argv=()):
@@ -378,7 +459,9 @@ def main(argv=()):
       errors.log_and_raise(
           'Command line parsing failure: call_variants does not accept '
           'positional arguments but some are present on the command line: '
-          '"{}".'.format(str(argv)), errors.CommandLineError)
+          '"{}".'.format(str(argv)),
+          errors.CommandLineError,
+      )
     del argv  # Unused.
     proto_utils.uses_fast_cpp_protos_or_die()
 
@@ -387,7 +470,8 @@ def main(argv=()):
     call_variants(
         examples_filename=FLAGS.examples,
         checkpoint_path=FLAGS.checkpoint,
-        output_file=FLAGS.outfile)
+        output_file=FLAGS.outfile,
+    )
 
 
 if __name__ == '__main__':

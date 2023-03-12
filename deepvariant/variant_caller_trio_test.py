@@ -47,7 +47,8 @@ def _reference_model_options(p_error, max_gq, gq_resolution=1):
       p_error=p_error,
       max_gq=max_gq,
       gq_resolution=gq_resolution,
-      ploidy=2)
+      ploidy=2,
+  )
 
 
 class PlaceholderVariantCaller(variant_caller.VariantCaller):
@@ -57,16 +58,19 @@ class PlaceholderVariantCaller(variant_caller.VariantCaller):
   the base class to be instantiated and its methods tested.
   """
 
-  def __init__(self,
-               p_error,
-               max_gq,
-               gq_resolution=1,
-               use_cache_table=False,
-               max_cache_coverage=100):
+  def __init__(
+      self,
+      p_error,
+      max_gq,
+      gq_resolution=1,
+      use_cache_table=False,
+      max_cache_coverage=100,
+  ):
     super(PlaceholderVariantCaller, self).__init__(
         options=_reference_model_options(p_error, max_gq, gq_resolution),
         use_cache_table=use_cache_table,
-        max_cache_coverage=max_cache_coverage)
+        max_cache_coverage=max_cache_coverage,
+    )
 
   def get_candidates(self, allele_counters, sample_name):
     return None
@@ -86,7 +90,8 @@ class VariantCallerTests(parameterized.TestCase):
             total_read_count=n_ref + n_alt,
             ref_base=ref,
             reference_name='chr1',
-            position=start_pos + i)
+            position=start_pos + i,
+        )
         for i, (n_alt, n_ref, ref) in enumerate(counts)
     ]
     allele_counter.counts.return_value = counts
@@ -178,8 +183,9 @@ class VariantCallerTests(parameterized.TestCase):
       [90, 0, 0.01, 100, [0.000000, -26.699867, -179.607168], 100],
       [100, 0, 0.01, 100, [0.000000, -29.666519, -199.563519], 100],
   )
-  def test_ref_calc(self, total_n, alt_n, p_error, max_gq, expected_likelihoods,
-                    expected_gq):
+  def test_ref_calc(
+      self, total_n, alt_n, p_error, max_gq, expected_likelihoods, expected_gq
+  ):
     caller = PlaceholderVariantCaller(p_error, max_gq)
     gq, likelihoods = caller.reference_confidence(total_n - alt_n, total_n)
     npt.assert_allclose(expected_likelihoods, likelihoods, atol=1e-6)
@@ -192,7 +198,6 @@ class VariantCallerTests(parameterized.TestCase):
       [10, 10, 100, (10, 10)],
       [10, 100, 100, (10, 100)],
       [100, 100, 100, (100, 100)],
-
       # Checks that the rescaling works when n_total_reads > max_allowed.
       [0, 200, 100, (0, 100)],
       [0, 200, 100, (0, 100)],
@@ -213,16 +218,20 @@ class VariantCallerTests(parameterized.TestCase):
       # n_ref_reads close to n_total_reads appropriately.
       [99, 100, 100, (99, 100)],
   )
-  def test_rescale_read_counts(self, n_ref, n_total, max_allowed_reads,
-                               expected):
+  def test_rescale_read_counts(
+      self, n_ref, n_total, max_allowed_reads, expected
+  ):
     actual = variant_caller._rescale_read_counts_if_necessary(
-        n_ref, n_total, max_allowed_reads)
+        n_ref, n_total, max_allowed_reads
+    )
     self.assertEqual(actual, expected)
 
   # pylint: disable=g-complex-comprehension
-  @parameterized.parameters((n_ref, n_alt_fraction)
-                            for n_ref in [1000, 10000, 100000, 1000000]
-                            for n_alt_fraction in [0.0, 0.01, 0.02])
+  @parameterized.parameters(
+      (n_ref, n_alt_fraction)
+      for n_ref in [1000, 10000, 100000, 1000000]
+      for n_alt_fraction in [0.0, 0.01, 0.02]
+  )
   # pylint: enable=g-complex-comprehension
   def test_handles_large_reference_counts(self, n_ref, n_alt_fraction):
     """Tests that we don't blow up when the coverage gets really high."""
@@ -231,7 +240,8 @@ class VariantCallerTests(parameterized.TestCase):
     gq, likelihoods = caller._calc_reference_confidence(n_ref, n_ref + n_alt)
     self.assertTrue(
         np.isfinite(likelihoods).all(),
-        'Non-finite likelihoods {}'.format(likelihoods))
+        'Non-finite likelihoods {}'.format(likelihoods),
+    )
     self.assertEqual(100, gq)
 
   @parameterized.parameters(*variant_caller.CANONICAL_DNA_BASES)
@@ -250,7 +260,8 @@ class VariantCallerTests(parameterized.TestCase):
         min_dp=0,
         chrom='chr1',
         gls=[-0.47712125472] * 3,
-        sample_name=options.sample_name)
+        sample_name=options.sample_name,
+    )
 
   @parameterized.parameters('N', 'R', 'W', 'B')
   def test_gvcf_basic_skips_iupac_ref_base(self, ref):
@@ -262,21 +273,24 @@ class VariantCallerTests(parameterized.TestCase):
   def test_gvcf_basic_raises_with_bad_ref_base(self, ref):
     caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(100, [(0, 0, ref)])
-    with self.assertRaisesRegex(ValueError,
-                                'Invalid reference base={}'.format(ref)):
+    with self.assertRaisesRegex(
+        ValueError, 'Invalid reference base={}'.format(ref)
+    ):
       list(caller.make_gvcfs(allele_counter.summary_counts()))
 
-  def assertGVCF(self,
-                 gvcf,
-                 ref,
-                 gq,
-                 start,
-                 end,
-                 min_dp,
-                 chrom='chr1',
-                 gls=None,
-                 sample_name=None,
-                 gts=None):
+  def assertGVCF(
+      self,
+      gvcf,
+      ref,
+      gq,
+      start,
+      end,
+      min_dp,
+      chrom='chr1',
+      gls=None,
+      sample_name=None,
+      gts=None,
+  ):
     if chrom:
       self.assertEqual(gvcf.reference_name, chrom)
     call = variant_utils.only_call(gvcf)
@@ -301,27 +315,42 @@ class VariantCallerTests(parameterized.TestCase):
       # Check some basics.
       ([(0, 0, 'A')], [dict(start=1, end=2, ref='A', gq=1, min_dp=0)]),
       # Two equal records are merged, and the reference base is the first one.
-      ([(0, 0, 'A'),
-        (0, 0, 'C')], [dict(start=1, end=3, ref='A', gq=1, min_dp=0)]),
-      ([(0, 0, 'C'),
-        (0, 0, 'A')], [dict(start=1, end=3, ref='C', gq=1, min_dp=0)]),
+      (
+          [(0, 0, 'A'), (0, 0, 'C')],
+          [dict(start=1, end=3, ref='A', gq=1, min_dp=0)],
+      ),
+      (
+          [(0, 0, 'C'), (0, 0, 'A')],
+          [dict(start=1, end=3, ref='C', gq=1, min_dp=0)],
+      ),
       # Three equal records are merged into a single block.
-      ([(0, 0, 'A'), (0, 0, 'C'),
-        (0, 0, 'T')], [dict(start=1, end=4, ref='A', gq=1, min_dp=0)]),
+      (
+          [(0, 0, 'A'), (0, 0, 'C'), (0, 0, 'T')],
+          [dict(start=1, end=4, ref='A', gq=1, min_dp=0)],
+      ),
       # We don't merge together different GQ value blocks:
-      ([(0, 0, 'A'), (0, 100, 'C')], [
-          dict(start=1, end=2, ref='A', gq=1, min_dp=0),
-          dict(start=2, end=3, ref='C', gq=100, min_dp=100),
-      ]),
-      ([(0, 100, 'A'), (0, 0, 'C')], [
-          dict(start=1, end=2, ref='A', gq=100, min_dp=100),
-          dict(start=2, end=3, ref='C', gq=1, min_dp=0),
-      ]),
-      ([(0, 0, 'A'), (0, 20, 'C'), (0, 100, 'T')], [
-          dict(start=1, end=2, ref='A', gq=1, min_dp=0),
-          dict(start=2, end=3, ref='C', gq=59, min_dp=20),
-          dict(start=3, end=4, ref='T', gq=100, min_dp=100),
-      ]),
+      (
+          [(0, 0, 'A'), (0, 100, 'C')],
+          [
+              dict(start=1, end=2, ref='A', gq=1, min_dp=0),
+              dict(start=2, end=3, ref='C', gq=100, min_dp=100),
+          ],
+      ),
+      (
+          [(0, 100, 'A'), (0, 0, 'C')],
+          [
+              dict(start=1, end=2, ref='A', gq=100, min_dp=100),
+              dict(start=2, end=3, ref='C', gq=1, min_dp=0),
+          ],
+      ),
+      (
+          [(0, 0, 'A'), (0, 20, 'C'), (0, 100, 'T')],
+          [
+              dict(start=1, end=2, ref='A', gq=1, min_dp=0),
+              dict(start=2, end=3, ref='C', gq=59, min_dp=20),
+              dict(start=3, end=4, ref='T', gq=100, min_dp=100),
+          ],
+      ),
   )
   def test_make_gvcfs(self, counts, expecteds):
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
@@ -345,7 +374,8 @@ class VariantCallerTests(parameterized.TestCase):
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=9, ref='T', gq=59, min_dp=20),
               dict(start=9, end=10, ref='G', gq=56, min_dp=19),
-          ]),
+          ],
+      ),
       # Binning by 3 does not cause any records to be merged.
       dict(
           gq_resolution=3,
@@ -359,7 +389,8 @@ class VariantCallerTests(parameterized.TestCase):
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=9, ref='T', gq=59, min_dp=20),
               dict(start=9, end=10, ref='G', gq=56, min_dp=19),
-          ]),
+          ],
+      ),
       # Binning by 4 causes the first merge, of the first two records.
       dict(
           gq_resolution=4,
@@ -372,7 +403,8 @@ class VariantCallerTests(parameterized.TestCase):
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=9, ref='T', gq=59, min_dp=20),
               dict(start=9, end=10, ref='G', gq=56, min_dp=19),
-          ]),
+          ],
+      ),
       dict(
           gq_resolution=10,
           expecteds=[
@@ -383,7 +415,8 @@ class VariantCallerTests(parameterized.TestCase):
               dict(start=6, end=7, ref='A', gq=72, min_dp=31),
               dict(start=7, end=8, ref='C', gq=83, min_dp=35),
               dict(start=8, end=10, ref='T', gq=56, min_dp=19),
-          ]),
+          ],
+      ),
       dict(
           gq_resolution=45,
           expecteds=[
@@ -392,15 +425,24 @@ class VariantCallerTests(parameterized.TestCase):
               dict(start=4, end=5, ref='T', gq=0, min_dp=20),
               dict(start=5, end=6, ref='A', gq=0, min_dp=16),
               dict(start=6, end=10, ref='A', gq=56, min_dp=19),
-          ]),
+          ],
+      ),
   )
   def test_quantize_gvcfs(self, gq_resolution, expecteds):
     # Each count tuple is n_alt, n_ref, ref_base.
     # The third, fourth, and the fifth ones should never be merged, since
     # either het or hom_alt has bigger GL than hom_ref.
-    counts = [(0, 18, 'A'), (0, 19, 'C'), (35, 0, 'A'), (10, 10, 'T'),
-              (4, 12, 'A'), (1, 30, 'A'), (1, 34, 'C'), (0, 20, 'T'),
-              (0, 19, 'G')]
+    counts = [
+        (0, 18, 'A'),
+        (0, 19, 'C'),
+        (35, 0, 'A'),
+        (10, 10, 'T'),
+        (4, 12, 'A'),
+        (1, 30, 'A'),
+        (1, 34, 'C'),
+        (0, 20, 'T'),
+        (0, 19, 'G'),
+    ]
     allele_counts = self.fake_allele_counter(1, counts).summary_counts()
     caller = PlaceholderVariantCaller(0.01, 100, gq_resolution)
     gvcfs = list(caller.make_gvcfs(allele_counts))
@@ -413,15 +455,21 @@ class VariantCallerTests(parameterized.TestCase):
     # Only tests the 'gvcfs' creation part of calls_and_gvcfs. The `calls`
     # portion of this method needs to be tested in subclasses, which have
     # implemented the get_candidates method.
-    counts = [(0, 0, 'A'), (10, 10, 'G'), (0, 0, 'G'), (0, 0, 'G'),
-              (10, 10, 'T')]
+    counts = [
+        (0, 0, 'A'),
+        (10, 10, 'G'),
+        (0, 0, 'G'),
+        (0, 0, 'G'),
+        (10, 10, 'T'),
+    ]
     caller = PlaceholderVariantCaller(0.01, 100)
     allele_counter = self.fake_allele_counter(10, counts)
     allele_counters = {'SAMPLE_ID': allele_counter}
     _, gvcfs = caller.calls_and_gvcfs(
         allele_counters=allele_counters,
         target_sample='SAMPLE_ID',
-        include_gvcfs=include_gvcfs)
+        include_gvcfs=include_gvcfs,
+    )
     # We expect our gvcfs to occur at the 10 position and that 12 and 13 have
     # been merged into a 2 bp block, if enabled. Otherwise should be empty.
     if include_gvcfs:
@@ -430,7 +478,8 @@ class VariantCallerTests(parameterized.TestCase):
       # chance of having each genotype is 1/3, in log10 space.
       flat_gls = np.log10([1.0 / 3] * 3)
       self.assertGVCF(
-          gvcfs[0], ref='A', start=10, end=11, gq=1, min_dp=0, gls=flat_gls)
+          gvcfs[0], ref='A', start=10, end=11, gq=1, min_dp=0, gls=flat_gls
+      )
       self.assertGVCF(
           gvcfs[1],
           ref='G',
@@ -441,9 +490,11 @@ class VariantCallerTests(parameterized.TestCase):
           gls=np.array([-14.0230482368, -7.993606e-15, -14.0230482368]),
           # The genotype should NOT be called here ("./.") as the likelihood
           # for het is greater than hom_ref.
-          gts=[-1, -1])
+          gts=[-1, -1],
+      )
       self.assertGVCF(
-          gvcfs[2], ref='G', start=12, end=14, gq=1, min_dp=0, gls=flat_gls)
+          gvcfs[2], ref='G', start=12, end=14, gq=1, min_dp=0, gls=flat_gls
+      )
     else:
       self.assertEmpty(gvcfs)
 
@@ -458,12 +509,15 @@ class VariantCallerCacheTests(parameterized.TestCase):
     super(VariantCallerCacheTests, cls).setUpClass()
     cls.raw_caller = PlaceholderVariantCaller(0.1, 50, use_cache_table=False)
     cls.cache_caller = PlaceholderVariantCaller(
-        0.1, 50, use_cache_table=True, max_cache_coverage=_CACHE_COVERAGE)
+        0.1, 50, use_cache_table=True, max_cache_coverage=_CACHE_COVERAGE
+    )
 
   # pylint: disable=g-complex-comprehension
-  @parameterized.parameters((n_alt, n_total)
-                            for n_total in range(_CACHE_COVERAGE + 1)
-                            for n_alt in range(n_total + 1))
+  @parameterized.parameters(
+      (n_alt, n_total)
+      for n_total in range(_CACHE_COVERAGE + 1)
+      for n_alt in range(n_total + 1)
+  )
   # pylint: enable=g-complex-comprehension
   def test_caching(self, n_alt, n_total):
     # Note that we only expect the gq and gls to be close if we are not

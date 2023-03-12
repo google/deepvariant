@@ -43,15 +43,17 @@ _MOVING_AVERAGE_DECAY = 0.995
 slim = tf_slim
 
 
-def write_fake_checkpoint(model_name,
-                          session,
-                          checkpoint_dir,
-                          moving_average_decay=_MOVING_AVERAGE_DECAY,
-                          name='model',
-                          height=dv_constants.PILEUP_DEFAULT_HEIGHT,
-                          width=dv_constants.PILEUP_DEFAULT_WIDTH,
-                          num_channels=dv_constants.PILEUP_NUM_CHANNELS,
-                          global_step=0):
+def write_fake_checkpoint(
+    model_name,
+    session,
+    checkpoint_dir,
+    moving_average_decay=_MOVING_AVERAGE_DECAY,
+    name='model',
+    height=dv_constants.PILEUP_DEFAULT_HEIGHT,
+    width=dv_constants.PILEUP_DEFAULT_WIDTH,
+    num_channels=dv_constants.PILEUP_NUM_CHANNELS,
+    global_step=0,
+):
   """Writes a fake TensorFlow checkpoint to checkpoint_dir."""
   path = os.path.join(checkpoint_dir, name)
   with session as sess:
@@ -65,14 +67,17 @@ def write_fake_checkpoint(model_name,
     # just call into model_train as it uses FLAGS which conflict with the
     # flags in use by model_eval. So we inline the creation of the EMA here.
     variable_averages = tf.train.ExponentialMovingAverage(
-        moving_average_decay, tf.compat.v1.train.get_or_create_global_step())
+        moving_average_decay, tf.compat.v1.train.get_or_create_global_step()
+    )
     tf.compat.v1.add_to_collection(
         tf.compat.v1.GraphKeys.UPDATE_OPS,
-        variable_averages.apply(slim.get_model_variables()))
+        variable_averages.apply(slim.get_model_variables()),
+    )
     sess.run(tf.compat.v1.global_variables_initializer())
     if global_step:
-      inc_op = tf.compat.v1.assign_add(tf.compat.v1.train.get_global_step(),
-                                       global_step)
+      inc_op = tf.compat.v1.assign_add(
+          tf.compat.v1.train.get_global_step(), global_step
+      )
       sess.run(inc_op)
     save = tf.compat.v1.train.Saver(slim.get_variables())
     save.save(sess, path)
@@ -98,8 +103,9 @@ def check_file_exists(name, eval_name=None):
   if not eval_name:
     file_name = os.path.join(tf.compat.v1.test.get_temp_dir(), name)
   else:
-    directory = os.path.join(tf.compat.v1.test.get_temp_dir(),
-                             'eval_' + eval_name)
+    directory = os.path.join(
+        tf.compat.v1.test.get_temp_dir(), 'eval_' + eval_name
+    )
     file_name = os.path.join(directory, name)
   return tf.io.gfile.exists(file_name)
 

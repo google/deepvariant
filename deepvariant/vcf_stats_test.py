@@ -54,55 +54,97 @@ class VcfStatsTest(parameterized.TestCase):
   def setUp(self):
     super(VcfStatsTest, self).setUp()
     self.variant = test_utils.make_variant(
-        chrom='chr1', start=10, alleles=['A', 'G'], gt=[0, 1], gq=59)
+        chrom='chr1', start=10, alleles=['A', 'G'], gt=[0, 1], gq=59
+    )
     variantcall_utils.set_format(
-        variant_utils.only_call(self.variant), 'DP', 20)
+        variant_utils.only_call(self.variant), 'DP', 20
+    )
 
   @parameterized.parameters(
       (test_utils.make_variant(alleles=['A', 'C']), vcf_stats.BIALLELIC_SNP),
-      (test_utils.make_variant(alleles=['A', 'C', '<*>']),
-       vcf_stats.BIALLELIC_SNP),
-      (test_utils.make_variant(alleles=['A', 'AG']),
-       vcf_stats.BIALLELIC_INSERTION),
-      (test_utils.make_variant(alleles=['A', 'AG', '<*>']),
-       vcf_stats.BIALLELIC_INSERTION),
-      (test_utils.make_variant(alleles=['AG', 'A']),
-       vcf_stats.BIALLELIC_DELETION),
-      (test_utils.make_variant(alleles=['AG', 'A', '<*>']),
-       vcf_stats.BIALLELIC_DELETION),
-      (test_utils.make_variant(alleles=['A', 'C', 'G']),
-       vcf_stats.MULTIALLELIC_SNP),
-      (test_utils.make_variant(alleles=['A', 'C', 'G', '<*>']),
-       vcf_stats.MULTIALLELIC_SNP),
-      (test_utils.make_variant(alleles=['A', 'AC', 'AG']),
-       vcf_stats.MULTIALLELIC_INSERTION),
-      (test_utils.make_variant(alleles=['A', 'AC', 'AG', '<*>']),
-       vcf_stats.MULTIALLELIC_INSERTION),
-      (test_utils.make_variant(alleles=['AGC', 'AC', 'A', 'AG']),
-       vcf_stats.MULTIALLELIC_DELETION),
-      (test_utils.make_variant(alleles=['AGC', 'AC', 'A', 'AG', '<*>']),
-       vcf_stats.MULTIALLELIC_DELETION),
-      (test_utils.make_variant(alleles=['AG', 'AC', 'A']),
-       vcf_stats.MULTIALLELIC_COMPLEX),
-      (test_utils.make_variant(alleles=['AG', 'AC', 'A', '<*>']),
-       vcf_stats.MULTIALLELIC_COMPLEX),
-      (test_utils.make_variant(alleles=['A', 'G', 'AT']),
-       vcf_stats.MULTIALLELIC_COMPLEX),
-      (test_utils.make_variant(alleles=['A', 'G', 'AT', '<*>']),
-       vcf_stats.MULTIALLELIC_COMPLEX),
+      (
+          test_utils.make_variant(alleles=['A', 'C', '<*>']),
+          vcf_stats.BIALLELIC_SNP,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'AG']),
+          vcf_stats.BIALLELIC_INSERTION,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'AG', '<*>']),
+          vcf_stats.BIALLELIC_INSERTION,
+      ),
+      (
+          test_utils.make_variant(alleles=['AG', 'A']),
+          vcf_stats.BIALLELIC_DELETION,
+      ),
+      (
+          test_utils.make_variant(alleles=['AG', 'A', '<*>']),
+          vcf_stats.BIALLELIC_DELETION,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'C', 'G']),
+          vcf_stats.MULTIALLELIC_SNP,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'C', 'G', '<*>']),
+          vcf_stats.MULTIALLELIC_SNP,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'AC', 'AG']),
+          vcf_stats.MULTIALLELIC_INSERTION,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'AC', 'AG', '<*>']),
+          vcf_stats.MULTIALLELIC_INSERTION,
+      ),
+      (
+          test_utils.make_variant(alleles=['AGC', 'AC', 'A', 'AG']),
+          vcf_stats.MULTIALLELIC_DELETION,
+      ),
+      (
+          test_utils.make_variant(alleles=['AGC', 'AC', 'A', 'AG', '<*>']),
+          vcf_stats.MULTIALLELIC_DELETION,
+      ),
+      (
+          test_utils.make_variant(alleles=['AG', 'AC', 'A']),
+          vcf_stats.MULTIALLELIC_COMPLEX,
+      ),
+      (
+          test_utils.make_variant(alleles=['AG', 'AC', 'A', '<*>']),
+          vcf_stats.MULTIALLELIC_COMPLEX,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'G', 'AT']),
+          vcf_stats.MULTIALLELIC_COMPLEX,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'G', 'AT', '<*>']),
+          vcf_stats.MULTIALLELIC_COMPLEX,
+      ),
       (test_utils.make_variant(alleles=['AG', 'TC']), vcf_stats.BIALLELIC_MNP),
-      (test_utils.make_variant(alleles=['AG', 'TC', '<*>']),
-       vcf_stats.BIALLELIC_MNP),
+      (
+          test_utils.make_variant(alleles=['AG', 'TC', '<*>']),
+          vcf_stats.BIALLELIC_MNP,
+      ),
       (test_utils.make_variant(alleles=['A']), vcf_stats.REFCALL),
       (test_utils.make_variant(alleles=['A', '<*>']), vcf_stats.REFCALL),
-      (test_utils.make_variant(alleles=['A', 'G'],
-                               filters='FAIL'), vcf_stats.REFCALL),
-      (test_utils.make_variant(alleles=['A', 'G', '<*>'],
-                               filters='FAIL'), vcf_stats.REFCALL),
-      (test_utils.make_variant(alleles=['A', 'G'],
-                               filters=['FAIL']), vcf_stats.REFCALL),
-      (test_utils.make_variant(alleles=['A', '<*>'],
-                               filters='.'), vcf_stats.REFCALL),
+      (
+          test_utils.make_variant(alleles=['A', 'G'], filters='FAIL'),
+          vcf_stats.REFCALL,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'G', '<*>'], filters='FAIL'),
+          vcf_stats.REFCALL,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', 'G'], filters=['FAIL']),
+          vcf_stats.REFCALL,
+      ),
+      (
+          test_utils.make_variant(alleles=['A', '<*>'], filters='.'),
+          vcf_stats.REFCALL,
+      ),
   )
   def test_get_variant_type(self, variant, expected_type):
     self.assertEqual(vcf_stats._get_variant_type(variant), expected_type)
@@ -114,69 +156,85 @@ class VcfStatsTest(parameterized.TestCase):
           expected_variant_type=vcf_stats.BIALLELIC_SNP,
           expected_transition=True,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['A', 'AG'],
           gt=[0, 1],
           expected_variant_type=vcf_stats.BIALLELIC_INSERTION,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['AT', 'A'],
           gt=[0, 1],
           expected_variant_type=vcf_stats.BIALLELIC_DELETION,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['AT', 'GC'],
           gt=[0, 1],
           expected_variant_type=vcf_stats.BIALLELIC_MNP,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['A', 'G', 'T'],
           gt=[0, 1],
           expected_variant_type=vcf_stats.MULTIALLELIC_SNP,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['A', 'AG', 'AT'],
           gt=[0, 1],
           expected_variant_type=vcf_stats.MULTIALLELIC_INSERTION,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['AT', 'A', 'T'],
           gt=[0, 1],
           expected_variant_type=vcf_stats.MULTIALLELIC_DELETION,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['A', 'GT', 'G'],
           gt=[0, 1],
           expected_variant_type=vcf_stats.MULTIALLELIC_COMPLEX,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=True),
+          expected_is_variant=True,
+      ),
       dict(
           alleles=['A', 'G'],
           gt=[0, 0],
           expected_variant_type=vcf_stats.REFCALL,
           expected_transition=False,
           expected_transversion=False,
-          expected_is_variant=False),
+          expected_is_variant=False,
+      ),
   )
-  def test_get_variant_stats(self, alleles, gt, expected_variant_type,
-                             expected_transition, expected_transversion,
-                             expected_is_variant):
+  def test_get_variant_stats(
+      self,
+      alleles,
+      gt,
+      expected_variant_type,
+      expected_transition,
+      expected_transversion,
+      expected_is_variant,
+  ):
     variant = test_utils.make_variant(
-        chrom='chr1', start=10, alleles=alleles, gt=gt, gq=59)
+        chrom='chr1', start=10, alleles=alleles, gt=gt, gq=59
+    )
     variant_stats = vcf_stats._get_variant_stats(variant)
     self.assertEqual(
         variant_stats,
@@ -193,23 +251,32 @@ class VcfStatsTest(parameterized.TestCase):
             genotype_quality=59,
             genotype=str(gt),
             vaf=None,
-            qual=0.0))
+            qual=0.0,
+        ),
+    )
 
   def test_compute_variant_stats_for_charts(self):
     expected_keys = [
-        'vaf_histograms_by_genotype', 'indel_sizes', 'base_changes',
-        'qual_histogram', 'gq_histogram', 'variant_type_counts',
-        'depth_histogram', 'titv_counts'
+        'vaf_histograms_by_genotype',
+        'indel_sizes',
+        'base_changes',
+        'qual_histogram',
+        'gq_histogram',
+        'variant_type_counts',
+        'depth_histogram',
+        'titv_counts',
     ]
     vis_data = vcf_stats._compute_variant_stats_for_charts([self.variant])
     self.assertCountEqual(
         vis_data.keys(),
         expected_keys,
-        msg='vis_data does not have the right keys')
+        msg='vis_data does not have the right keys',
+    )
 
   def test_vaf_histograms_by_genotype(self):
-    variant_stats_lite = collections.namedtuple('variant_stats_lite',
-                                                ['genotype', 'vaf'])
+    variant_stats_lite = collections.namedtuple(
+        'variant_stats_lite', ['genotype', 'vaf']
+    )
     variant_stats = [
         variant_stats_lite(genotype='[0, 0]', vaf=0),
         variant_stats_lite(genotype='[1, 1]', vaf=1),
@@ -218,7 +285,7 @@ class VcfStatsTest(parameterized.TestCase):
         variant_stats_lite(genotype='[0, 0]', vaf=0.08),
         variant_stats_lite(genotype='[0, 0]', vaf=0.19),
         variant_stats_lite(genotype='[0, 1]', vaf=0.45),
-        variant_stats_lite(genotype='[0, 1]', vaf=0.65)
+        variant_stats_lite(genotype='[0, 1]', vaf=0.65),
     ]
     # s = bin_start, e = bin_end, c = count
     truth_histograms = """
@@ -232,80 +299,83 @@ class VcfStatsTest(parameterized.TestCase):
     """
     self.assertEqual(
         vcf_stats._vaf_histograms_by_genotype(variant_stats),
-        json.loads(truth_histograms))
+        json.loads(truth_histograms),
+    )
 
   def test_format_histogram_for_vega(self):
     # s = bin_start, e = bin_end, c = count
     self.assertEqual(
         vcf_stats._format_histogram_for_vega(counts=[2, 2], bins=[1, 2.5, 4]),
-        [{
-            's': 1,
-            'e': 2.5,
-            'c': 2
-        }, {
-            's': 2.5,
-            'e': 4,
-            'c': 2
-        }])
+        [{'s': 1, 'e': 2.5, 'c': 2}, {'s': 2.5, 'e': 4, 'c': 2}],
+    )
 
   def test_count_titv(self):
     variant_stats_lite = collections.namedtuple(
-        'variant_stats_lite', ['is_transition', 'is_transversion'])
+        'variant_stats_lite', ['is_transition', 'is_transversion']
+    )
     variant_stats = [
         variant_stats_lite(is_transition=True, is_transversion=False),
         variant_stats_lite(is_transition=True, is_transversion=False),
         variant_stats_lite(is_transition=True, is_transversion=False),
         variant_stats_lite(is_transition=False, is_transversion=True),
         variant_stats_lite(is_transition=False, is_transversion=True),
-        variant_stats_lite(is_transition=False, is_transversion=False)
+        variant_stats_lite(is_transition=False, is_transversion=False),
     ]
     truth_counts = {'Transition': 3, 'Transversion': 2}
     self.assertEqual(vcf_stats._count_titv(variant_stats), truth_counts)
 
   def test_count_variant_types(self):
-    variant_stats_lite = collections.namedtuple('variant_stats_lite',
-                                                ['variant_type'])
+    variant_stats_lite = collections.namedtuple(
+        'variant_stats_lite', ['variant_type']
+    )
     variant_stats = [
         variant_stats_lite(variant_type='A'),
         variant_stats_lite(variant_type='B'),
         variant_stats_lite(variant_type='C'),
         variant_stats_lite(variant_type='A'),
-        variant_stats_lite(variant_type='B')
+        variant_stats_lite(variant_type='B'),
     ]
     truth_counts = {'A': 2, 'B': 2, 'C': 1}
     self.assertEqual(
-        vcf_stats._count_variant_types(variant_stats), truth_counts)
+        vcf_stats._count_variant_types(variant_stats), truth_counts
+    )
 
   def test_count_base_changes_and_indel_sizes(self):
     variant_stats_lite = collections.namedtuple(
         'variant_stats_lite',
-        ['reference_bases', 'alternate_bases', 'is_variant', 'variant_type'])
+        ['reference_bases', 'alternate_bases', 'is_variant', 'variant_type'],
+    )
     variant_stats = [
         variant_stats_lite(
             reference_bases='A',
             alternate_bases=['G'],
             is_variant=True,
-            variant_type=vcf_stats.BIALLELIC_SNP),
+            variant_type=vcf_stats.BIALLELIC_SNP,
+        ),
         variant_stats_lite(
             reference_bases='A',
             alternate_bases=['AGGG'],
             is_variant=True,
-            variant_type=vcf_stats.BIALLELIC_INSERTION),
+            variant_type=vcf_stats.BIALLELIC_INSERTION,
+        ),
         variant_stats_lite(
             reference_bases='A',
             alternate_bases=['G'],
             is_variant=False,
-            variant_type=vcf_stats.REFCALL),
+            variant_type=vcf_stats.REFCALL,
+        ),
         variant_stats_lite(
             reference_bases='A',
             alternate_bases=['G', 'T'],
             is_variant=True,
-            variant_type=vcf_stats.MULTIALLELIC_COMPLEX)
+            variant_type=vcf_stats.MULTIALLELIC_COMPLEX,
+        ),
     ]
     truth_base_changes = [['A', 'G', 1]]
     truth_indel_sizes = [[3, 1]]
     base_changes, indel_sizes = vcf_stats._count_base_changes_and_indel_sizes(
-        variant_stats)
+        variant_stats
+    )
     self.assertEqual(base_changes, truth_base_changes)
     self.assertEqual(indel_sizes, truth_indel_sizes)
 
@@ -314,27 +384,23 @@ class VcfStatsTest(parameterized.TestCase):
     variant_stats = [variant_stats_lite(qual=100), variant_stats_lite(qual=49)]
     hist = vcf_stats._compute_qual_histogram(variant_stats)
     # s = bin_start, e = bin_end, c = count
-    self.assertEqual(hist, [{
-        'c': 1,
-        's': 49.0,
-        'e': 50.0
-    }, {
-        'c': 1,
-        's': 100.0,
-        'e': 101.0
-    }])
+    self.assertEqual(
+        hist, [{'c': 1, 's': 49.0, 'e': 50.0}, {'c': 1, 's': 100.0, 'e': 101.0}]
+    )
 
   def test_get_integer_counts(self):
     self.assertEqual(
-        vcf_stats._get_integer_counts([1, 2, 2, 4]), [[1, 1], [2, 2], [4, 1]])
+        vcf_stats._get_integer_counts([1, 2, 2, 4]), [[1, 1], [2, 2], [4, 1]]
+    )
 
   def test_compute_gq_histogram(self):
-    variant_stats_lite = collections.namedtuple('variant_stats_lite',
-                                                ['genotype_quality'])
+    variant_stats_lite = collections.namedtuple(
+        'variant_stats_lite', ['genotype_quality']
+    )
     variant_stats = [
         variant_stats_lite(genotype_quality=100),
         variant_stats_lite(genotype_quality=100),
-        variant_stats_lite(genotype_quality=49)
+        variant_stats_lite(genotype_quality=49),
     ]
     hist = vcf_stats._compute_gq_histogram(variant_stats)
     self.assertEqual(hist, [[49, 1], [100, 2]])
@@ -344,7 +410,7 @@ class VcfStatsTest(parameterized.TestCase):
     variant_stats = [
         variant_stats_lite(depth=100),
         variant_stats_lite(depth=30),
-        variant_stats_lite(depth=30)
+        variant_stats_lite(depth=30),
     ]
     hist = vcf_stats._compute_depth_histogram(variant_stats)
     self.assertEqual(hist, [[30, 2], [100, 1]])
@@ -358,7 +424,8 @@ class VcfStatsTest(parameterized.TestCase):
           variants=reader.iterate(),
           output_basename=outfile_base,
           sample_name=sample_name,
-          vcf_reader=reader)
+          vcf_reader=reader,
+      )
     self.assertTrue(tf.io.gfile.exists(outfile_base + '.visual_report.html'))
 
 

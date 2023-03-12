@@ -80,7 +80,8 @@ class DeepVariantInput(object):
       prefetch_dataset_buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
       sloppy=True,
       list_files_shuffle=True,
-      debugging_true_label_mode=False):
+      debugging_true_label_mode=False,
+  ):
     """Create an DeepVariantInput object, usable as an `input_fn`.
 
     Args:
@@ -132,17 +133,21 @@ class DeepVariantInput(object):
     self.prefetch_dataset_buffer_size = prefetch_dataset_buffer_size
     self.debugging_true_label_mode = debugging_true_label_mode
     self.feature_extraction_spec = self.features_extraction_spec_for_mode(
-        mode in (tf_estimator.ModeKeys.TRAIN, tf_estimator.ModeKeys.EVAL) or
-        debugging_true_label_mode)
+        mode in (tf_estimator.ModeKeys.TRAIN, tf_estimator.ModeKeys.EVAL)
+        or debugging_true_label_mode
+    )
 
     if num_examples is None and mode != tf_estimator.ModeKeys.PREDICT:
-      raise ValueError('num_examples argument required for DeepVariantInput'
-                       'in TRAIN/EVAL modes.')
+      raise ValueError(
+          'num_examples argument required for DeepVariantInput'
+          'in TRAIN/EVAL modes.'
+      )
 
     if max_examples is not None:
       if max_examples <= 0:
         raise ValueError(
-            'max_examples must be > 0 if not None. Got {}'.format(max_examples))
+            'max_examples must be > 0 if not None. Got {}'.format(max_examples)
+        )
       # We update our num_examples in the situation where num_examples is set
       # (i.e., is not None) to the smaller of max_examples and num_examples.
       if self.num_examples is not None:
@@ -153,7 +158,8 @@ class DeepVariantInput(object):
     else:
       self.tensor_shape = dv_utils.get_shape_from_examples_path(input_file_spec)
     self.input_files = sharded_file_utils.glob_list_sharded_file_patterns(
-        self.input_file_spec)
+        self.input_file_spec
+    )
 
   def features_extraction_spec_for_mode(self, include_label_and_locus):
     """Returns a dict describing features from a TF.example."""
@@ -188,7 +194,8 @@ class DeepVariantInput(object):
     # TODO: Add tests for parse_tf_example function
     with tf.compat.v1.name_scope('input'):
       parsed = tf.io.parse_single_example(
-          serialized=tf_example, features=self.feature_extraction_spec)
+          serialized=tf_example, features=self.feature_extraction_spec
+      )
       image = parsed['image/encoded']
       if self.tensor_shape:
         # If the input is empty there won't be a tensor_shape.
@@ -214,8 +221,10 @@ class DeepVariantInput(object):
           'sequencing_type': parsed['sequencing_type'],
       }
 
-      if (self.mode in (tf_estimator.ModeKeys.TRAIN, tf_estimator.ModeKeys.EVAL)
-          or self.debugging_true_label_mode):
+      if (
+          self.mode in (tf_estimator.ModeKeys.TRAIN, tf_estimator.ModeKeys.EVAL)
+          or self.debugging_true_label_mode
+      ):
         if self.use_tpu:
           features['locus'] = dv_utils.string_to_int_tensor(parsed['locus'])
         else:
@@ -224,8 +233,10 @@ class DeepVariantInput(object):
         # Add variant_type to our features if are in TRAIN or EVAL mode.
         features['variant_type'] = parsed['variant_type']
 
-        if self.mode in (tf_estimator.ModeKeys.TRAIN,
-                         tf_estimator.ModeKeys.EVAL):
+        if self.mode in (
+            tf_estimator.ModeKeys.TRAIN,
+            tf_estimator.ModeKeys.EVAL,
+        ):
           label = parsed['label']
           return features, label
         features['label'] = parsed['label']
@@ -269,7 +280,8 @@ class DeepVariantInput(object):
       dataset = tf.data.TFRecordDataset(
           filename,
           buffer_size=self.prefetch_dataset_buffer_size,
-          compression_type=compression_type)
+          compression_type=compression_type,
+      )
       return dataset
 
     batch_size = params['batch_size']
@@ -282,13 +294,16 @@ class DeepVariantInput(object):
     for pattern in self.input_file_spec.split(','):
       one_dataset = tf.data.Dataset.list_files(
           sharded_file_utils.normalize_to_sharded_file_pattern(pattern),
-          shuffle=self.mode == tf_estimator.ModeKeys.TRAIN)
+          shuffle=self.mode == tf_estimator.ModeKeys.TRAIN,
+      )
       dataset = dataset.concatenate(one_dataset) if dataset else one_dataset
 
     # This shuffle applies to the set of files.
     # TODO: why would we shuffle the files?
-    if (self.mode == tf_estimator.ModeKeys.TRAIN and
-        self.initial_shuffle_buffer_size > 0):
+    if (
+        self.mode == tf_estimator.ModeKeys.TRAIN
+        and self.initial_shuffle_buffer_size > 0
+    ):
       dataset = dataset.shuffle(self.initial_shuffle_buffer_size)
 
     # For both TRAIN and EVAL, use the following to speed up.
@@ -299,7 +314,8 @@ class DeepVariantInput(object):
     dataset = dataset.interleave(
         load_dataset,
         cycle_length=self.input_read_threads,
-        num_parallel_calls=tf.data.AUTOTUNE)
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
 
     if self.max_examples is not None:
       dataset = dataset.take(self.max_examples)
@@ -313,7 +329,8 @@ class DeepVariantInput(object):
         dataset = dataset.shuffle(self.shuffle_buffer_size)
 
     dataset = dataset.map(
-        map_func=self.parse_tfexample, num_parallel_calls=tf.data.AUTOTUNE)
+        map_func=self.parse_tfexample, num_parallel_calls=tf.data.AUTOTUNE
+    )
     dataset = dataset.batch(batch_size=batch_size, drop_remainder=True)
     dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
@@ -340,18 +357,21 @@ class DeepVariantInput(object):
       dataset = tf.data.TFRecordDataset(
           filename,
           buffer_size=self.prefetch_dataset_buffer_size,
-          compression_type=compression_type)
+          compression_type=compression_type,
+      )
       return dataset
 
     batch_size = params['batch_size']
     compression_type = dv_utils.compression_type_of_files(self.input_files)
     dataset = tf.data.Dataset.list_files(
         sharded_file_utils.normalize_to_sharded_file_pattern(
-            self.input_file_spec),
+            self.input_file_spec
+        ),
         shuffle=False,
     )
-    logging.vlog(3,
-                 'self.input_read_threads={}'.format(self.input_read_threads))
+    logging.vlog(
+        3, 'self.input_read_threads={}'.format(self.input_read_threads)
+    )
     if self.sloppy:
       options = tf.data.Options()
       options.experimental_deterministic = False
@@ -359,17 +379,20 @@ class DeepVariantInput(object):
     dataset = dataset.interleave(
         load_dataset,
         cycle_length=self.input_read_threads,
-        num_parallel_calls=tf.data.AUTOTUNE)
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
     dataset = dataset.map(
-        map_func=self.parse_tfexample, num_parallel_calls=tf.data.AUTOTUNE)
+        map_func=self.parse_tfexample, num_parallel_calls=tf.data.AUTOTUNE
+    )
     dataset = dataset.batch(batch_size=batch_size)
     dataset = dataset.prefetch(tf.data.AUTOTUNE)
     return dataset
 
   def __str__(self):
-    return ('DeepVariantInput(name={}, input_file_spec={}, num_examples={}, '
-            'mode={})').format(self.name, self.input_file_spec,
-                               self.num_examples, self.mode)
+    return (
+        'DeepVariantInput(name={}, input_file_spec={}, num_examples={}, '
+        'mode={})'
+    ).format(self.name, self.input_file_spec, self.num_examples, self.mode)
 
 
 # This is the entry point to get a DeepVariantInput when you start with
@@ -396,7 +419,8 @@ def get_input_fn_from_dataset(dataset_config_filename, mode, **kwargs):
       mode=mode,
       num_examples=dataset_config.num_examples,
       name=dataset_config.name,
-      **kwargs)
+      **kwargs,
+  )
 
 
 # This is the entry point to get a DeepVariantInput when you start with
@@ -436,15 +460,20 @@ def get_batches(tf_dataset, model, batch_size):
   Raises:
     ValueError: if the dataset has the wrong mode.
   """
-  if tf_dataset.mode not in (tf_estimator.ModeKeys.TRAIN,
-                             tf_estimator.ModeKeys.EVAL):
+  if tf_dataset.mode not in (
+      tf_estimator.ModeKeys.TRAIN,
+      tf_estimator.ModeKeys.EVAL,
+  ):
     raise ValueError(
         'tf_dataset.mode is {} but must be one of TRAIN or EVAL.'.format(
-            tf_dataset.mode))
+            tf_dataset.mode
+        )
+    )
 
   params = dict(batch_size=batch_size)
   features, labels = tf.compat.v1.data.make_one_shot_iterator(
-      tf_dataset(params)).get_next()
+      tf_dataset(params)
+  ).get_next()
 
   images = features['image']
   encoded_variant = features['variant']
@@ -468,20 +497,27 @@ def read_dataset_config(dataset_config_filename):
   """
   with tf.io.gfile.GFile(dataset_config_filename) as f:
     dataset_config = text_format.Parse(
-        f.read(), deepvariant_pb2.DeepVariantDatasetConfig())
+        f.read(), deepvariant_pb2.DeepVariantDatasetConfig()
+    )
 
   if not dataset_config.name:
     raise ValueError('dataset_config needs to have a name')
 
   if not dataset_config.tfrecord_path:
-    raise ValueError('The dataset in the config {} does not have a '
-                     'tfrecord_path.'.format(dataset_config_filename))
+    raise ValueError(
+        'The dataset in the config {} does not have a tfrecord_path.'.format(
+            dataset_config_filename
+        )
+    )
 
   # TODO: remove this check once we're able to deal with absence
   # of num_examples.
   if not dataset_config.num_examples:
-    raise ValueError('The dataset in the config {} does not have a '
-                     'num_examples.'.format(dataset_config_filename))
+    raise ValueError(
+        'The dataset in the config {} does not have a num_examples.'.format(
+            dataset_config_filename
+        )
+    )
 
   return dataset_config
 

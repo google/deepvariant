@@ -57,8 +57,12 @@ def get_allele_frequency(variant, index):
     if index < len(variant.info['AF'].values):
       return variant.info['AF'].values[index].number_value
     else:
-      raise ValueError('Invalid index', index, 'for the info[AF] field',
-                       variant.info['AF'].values)
+      raise ValueError(
+          'Invalid index',
+          index,
+          'for the info[AF] field',
+          variant.info['AF'].values,
+      )
   raise ValueError('Variant does not have an AF field')
 
 
@@ -93,13 +97,16 @@ def get_ref_haplotype_and_offset(dv_variant, cohort_variants, ref_reader):
     ValueError: If the queried region is invalid.
   """
   # Get the range for haplotypes to be compared.
-  min_start_position = min(dv_variant.start,
-                           min([cv.start for cv in cohort_variants]))
-  max_end_position = max(dv_variant.end,
-                         max([cv.end for cv in cohort_variants]))
+  min_start_position = min(
+      dv_variant.start, min([cv.start for cv in cohort_variants])
+  )
+  max_end_position = max(
+      dv_variant.end, max([cv.end for cv in cohort_variants])
+  )
 
-  haplotype_region = ranges.make_range(dv_variant.reference_name,
-                                       min_start_position, max_end_position)
+  haplotype_region = ranges.make_range(
+      dv_variant.reference_name, min_start_position, max_end_position
+  )
 
   if ref_reader.is_valid(haplotype_region):
     return ref_reader.query(haplotype_region), min_start_position
@@ -127,31 +134,39 @@ def update_haplotype(variant, reference_haplotype, reference_offset):
     A list of haplotype objects. Haplotype objects are stored as dicts:
       {'haplotype': a haplotype (string),
        'alt': an alt allele (string),
-       'variant': an Variant proto}
+       'variant': a Variant proto}
   """
   if variant.start < reference_offset:
-    raise ValueError('The starting position of a variant is smaller than its ',
-                     'corresponding reference offset', variant.start,
-                     reference_offset)
+    raise ValueError(
+        'The starting position of a variant is smaller than its ',
+        'corresponding reference offset',
+        variant.start,
+        reference_offset,
+    )
   offset_start = variant.start - reference_offset
-  offset_suffix = \
+  offset_suffix = (
       variant.start + len(variant.reference_bases) - reference_offset
+  )
   list_updated_haplotype = []
   for biallelic_variant in variant.alternate_bases:
-    updated_haplotype = reference_haplotype[: offset_start] + \
-        biallelic_variant + reference_haplotype[offset_suffix: ]
+    updated_haplotype = (
+        reference_haplotype[:offset_start]
+        + biallelic_variant
+        + reference_haplotype[offset_suffix:]
+    )
     dict_haplotype = {
         'haplotype': updated_haplotype,
         'alt': biallelic_variant,
-        'variant': variant
+        'variant': variant,
     }
     list_updated_haplotype.append(dict_haplotype)
 
   return list_updated_haplotype
 
 
-def match_candidate_and_cohort_haplotypes(candidate_haps,
-                                          cohort_haps_and_freqs):
+def match_candidate_and_cohort_haplotypes(
+    candidate_haps, cohort_haps_and_freqs
+):
   """Match candidate haplotypes with cohort haplotypes and update frequency.
 
   First, we look for exact haplotype matches between candidate and cohorts.
@@ -165,11 +180,9 @@ def match_candidate_and_cohort_haplotypes(candidate_haps,
 
   Args:
     candidate_haps: A list of haplotype objects from a candidate.
-    cohort_haps_and_freqs: A list of haplotype objects from cohorts.
-    Haplotype objects are stored as dicts:
-      {'haplotype': a haplotype (string),
-       'alt': an alt allele (string),
-       'variant': an Variant proto}
+    cohort_haps_and_freqs: A list of haplotype objects from cohorts. Haplotype
+      objects are stored as dicts: {'haplotype': a haplotype (string), 'alt': an
+      alt allele (string), 'variant': a Variant proto}
 
   Returns:
     A dict with candidate alt alleles as keys, and associated frequencies
@@ -188,13 +201,15 @@ def match_candidate_and_cohort_haplotypes(candidate_haps,
         cohort_variant = cohort_obj['variant']
         cohort_frequency = get_allele_frequency(
             cohort_variant,
-            list(cohort_variant.alternate_bases).index(cohort_obj['alt']))
+            list(cohort_variant.alternate_bases).index(cohort_obj['alt']),
+        )
         dict_allele_frequency[candidate_alt] = cohort_frequency
 
         # Update REF frequency if it is not in the dictionary.
         if not dict_allele_frequency.get(candidate_variant.reference_bases):
-          dict_allele_frequency[candidate_variant.reference_bases] = \
+          dict_allele_frequency[candidate_variant.reference_bases] = (
               get_ref_allele_frequency(cohort_variant)
+          )
 
     # For an unmatched alt allele, set the frequency to 0.
     if not dict_allele_frequency.get(candidate_alt):
@@ -209,13 +224,17 @@ def match_candidate_and_cohort_haplotypes(candidate_haps,
     s_candidate = variant_utils.simplify_variant_alleles(candidate)
     for cohort_obj in cohort_haps_and_freqs:
       s_cohort_variant = variant_utils.simplify_variant_alleles(
-          cohort_obj['variant'])
+          cohort_obj['variant']
+      )
       # Try to find inexact matches to set REF allele frequency.
       # Inexact matches here mean only REF alleles match.
-      if s_candidate.start == s_cohort_variant.start and \
-          s_candidate.reference_bases == s_cohort_variant.reference_bases:
-        dict_allele_frequency[s_candidate.reference_bases] = \
+      if (
+          s_candidate.start == s_cohort_variant.start
+          and s_candidate.reference_bases == s_cohort_variant.reference_bases
+      ):
+        dict_allele_frequency[s_candidate.reference_bases] = (
             get_ref_allele_frequency(s_cohort_variant)
+        )
 
     # If still no match, set REF allele frequency to 1.
     if not dict_allele_frequency.get(candidate.reference_bases):
@@ -224,10 +243,9 @@ def match_candidate_and_cohort_haplotypes(candidate_haps,
   return dict_allele_frequency
 
 
-def find_matching_allele_frequency(variant,
-                                   population_vcf_reader,
-                                   ref_reader,
-                                   padding_bases=0):
+def find_matching_allele_frequency(
+    variant, population_vcf_reader, ref_reader, padding_bases=0
+):
   """Finds the allele frequencies of all the alt alleles for a candidate.
 
   Args:
@@ -245,7 +263,8 @@ def find_matching_allele_frequency(variant,
   query_region = ranges.make_range(
       chrom=variant.reference_name,
       start=variant.start - padding_bases,
-      end=variant.end + padding_bases)
+      end=variant.end + padding_bases,
+  )
   # Convert to list because we'll look through cohort_variants more than once.
   cohort_variants = list(population_vcf_reader.query(query_region))
 
@@ -256,7 +275,8 @@ def find_matching_allele_frequency(variant,
 
   try:
     reference_haplotype, reference_offset = get_ref_haplotype_and_offset(
-        variant, cohort_variants, ref_reader)
+        variant, cohort_variants, ref_reader
+    )
   except ValueError:
     # If the range associated with variant and cohort_variants is invalid,
     # assume this candidate does not have any ALT alleles.
@@ -266,12 +286,14 @@ def find_matching_allele_frequency(variant,
       dict_allele_frequency[alt] = 0
     return dict_allele_frequency
 
-  candidate_haps = update_haplotype(variant, reference_haplotype,
-                                    reference_offset)
+  candidate_haps = update_haplotype(
+      variant, reference_haplotype, reference_offset
+  )
   cohort_haps = []
   for cohort_variant in cohort_variants:
     cohort_haps.extend(
-        update_haplotype(cohort_variant, reference_haplotype, reference_offset))
+        update_haplotype(cohort_variant, reference_haplotype, reference_offset)
+    )
 
   for c in candidate_haps:
     logging.debug('candidate %s, %s', c['haplotype'], c['alt'])
@@ -279,18 +301,25 @@ def find_matching_allele_frequency(variant,
     logging.debug('cohort    %s, %s', c['haplotype'], c['alt'])
 
   dict_allele_frequency = match_candidate_and_cohort_haplotypes(
-      candidate_haps, cohort_haps)
+      candidate_haps, cohort_haps
+  )
 
   if dict_allele_frequency:
-    logging.vlog(3, 'dict_allele_frequency: %s:%d-%d, %s > %s',
-                 variant.reference_name, variant.start, variant.end,
-                 variant.reference_bases, dict_allele_frequency)
+    logging.vlog(
+        3,
+        'dict_allele_frequency: %s:%d-%d, %s > %s',
+        variant.reference_name,
+        variant.start,
+        variant.end,
+        variant.reference_bases,
+        dict_allele_frequency,
+    )
 
   return dict_allele_frequency
 
 
 def make_population_vcf_readers(
-    population_vcf_filenames: Sequence[str]
+    population_vcf_filenames: Sequence[str],
 ) -> DefaultDict[str, Optional[vcf.VcfReader]]:
   """Creates VcfReaders for the given VCF file paths, organized by reference.
 
@@ -319,7 +348,8 @@ def make_population_vcf_readers(
     # The DefaultDict allows later code to query for any chromosome and still
     # get the same reader. This is great for compatibility with multi-VCF below.
     return collections.defaultdict(
-        lambda: vcf.VcfReader(population_vcf_filenames[0]))
+        lambda: vcf.VcfReader(population_vcf_filenames[0])
+    )
 
   # If more than one VCF files are provided.
   population_vcf_readers = DefaultDict(lambda: None)
@@ -334,15 +364,17 @@ def make_population_vcf_readers(
     # There should not be more than one VCFs including variants in
     # reference_name.
     if population_vcf_readers.get(reference_name):
-      raise ValueError('Variants on %s are included in multiple VCFs' %
-                       reference_name)
+      raise ValueError(
+          'Variants on %s are included in multiple VCFs' % reference_name
+      )
     population_vcf_readers[reference_name] = population_vcf_reader
 
   return population_vcf_readers
 
 
-def add_allele_frequencies_to_candidates(candidates, population_vcf_reader,
-                                         ref_reader):
+def add_allele_frequencies_to_candidates(
+    candidates, population_vcf_reader, ref_reader
+):
   """Adds allele frequencies for candidate variants.
 
   Args:
@@ -361,7 +393,8 @@ def add_allele_frequencies_to_candidates(candidates, population_vcf_reader,
       dict_allele_frequency = find_matching_allele_frequency(
           variant=candidate.variant,
           population_vcf_reader=population_vcf_reader,
-          ref_reader=ref_reader)
+          ref_reader=ref_reader,
+      )
     else:
       # Set ALT frequencies to 0 if population_vcf_reader is None.
       dict_allele_frequency = {}
@@ -372,4 +405,5 @@ def add_allele_frequencies_to_candidates(candidates, population_vcf_reader,
     yield deepvariant_pb2.DeepVariantCall(
         variant=candidate.variant,
         allele_support=candidate.allele_support,
-        allele_frequency=dict_allele_frequency)
+        allele_frequency=dict_allele_frequency,
+    )

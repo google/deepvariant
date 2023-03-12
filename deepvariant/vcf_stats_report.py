@@ -40,11 +40,15 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('input_vcf', None, 'Path to the input VCF.')
 flags.DEFINE_string(
-    'outfile_base', None,
-    'Base path to the output JSON stats and visualization dir.')
+    'outfile_base',
+    None,
+    'Base path to the output JSON stats and visualization dir.',
+)
 flags.DEFINE_integer(
-    'num_records', -1, 'Maximum number of records to emit. If '
-    'negative, emit all records.')
+    'num_records',
+    -1,
+    'Maximum number of records to emit. If negative, emit all records.',
+)
 
 
 def main(argv):
@@ -53,13 +57,16 @@ def main(argv):
       errors.log_and_raise(
           'Command line parsing failure: vcf_stats_report does not accept '
           'positional arguments but some are present on the command line: '
-          '"{}".'.format(str(argv[1:])), errors.CommandLineError)
+          '"{}".'.format(str(argv[1:])),
+          errors.CommandLineError,
+      )
 
   with vcf.VcfReader(FLAGS.input_vcf) as reader:
     sample_names = reader.header.sample_names
     if len(sample_names) != 1:
-      raise ValueError('There must be exactly one sample in VCF: {}'.format(
-          FLAGS.input_vcf))
+      raise ValueError(
+          'There must be exactly one sample in VCF: {}'.format(FLAGS.input_vcf)
+      )
     sample_name = sample_names[0]
 
     # Missing GT causes error later while reading, so throw a clearer error here
@@ -76,7 +83,8 @@ def main(argv):
         variants,
         output_basename=FLAGS.outfile_base,
         sample_name=sample_name,
-        vcf_reader=reader)
+        vcf_reader=reader,
+    )
 
 
 if __name__ == '__main__':

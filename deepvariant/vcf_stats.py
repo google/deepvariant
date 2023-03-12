@@ -38,9 +38,19 @@ from third_party.nucleus.util import variantcall_utils
 from deepvariant import vcf_stats_vis
 
 _VARIANT_STATS_COLUMNS = [
-    'reference_name', 'position', 'reference_bases', 'alternate_bases',
-    'variant_type', 'is_variant', 'is_transition', 'is_transversion', 'depth',
-    'genotype_quality', 'genotype', 'vaf', 'qual'
+    'reference_name',
+    'position',
+    'reference_bases',
+    'alternate_bases',
+    'variant_type',
+    'is_variant',
+    'is_transition',
+    'is_transversion',
+    'depth',
+    'genotype_quality',
+    'genotype',
+    'vaf',
+    'qual',
 ]
 
 VariantStats = collections.namedtuple('VariantStats', _VARIANT_STATS_COLUMNS)
@@ -89,8 +99,9 @@ def _get_variant_type(variant):
 def _tstv(variant, vtype):
   """Returns a pair of bools indicating Transition, Transversion status."""
   if vtype == BIALLELIC_SNP:
-    is_transition = variant_utils.is_transition(variant.reference_bases,
-                                                variant.alternate_bases[0])
+    is_transition = variant_utils.is_transition(
+        variant.reference_bases, variant.alternate_bases[0]
+    )
     is_transversion = not is_transition
   else:
     is_transition = is_transversion = False
@@ -101,7 +112,8 @@ def _tstv(variant, vtype):
 def _get_vaf(variant, vcf_reader):
   """Gets the VAF (variant allele frequency)."""
   vafs = variantcall_utils.get_format(
-      variant_utils.only_call(variant), 'VAF', vcf_reader)
+      variant_utils.only_call(variant), 'VAF', vcf_reader
+  )
   return sum(vafs)
 
 
@@ -123,13 +135,17 @@ def _get_variant_stats(variant, vaf_available=False, vcf_reader=None):
       is_transversion=is_transversion,
       is_variant=variant_utils.is_variant_call(variant),
       depth=variantcall_utils.get_format(
-          variant_utils.only_call(variant), 'DP'),
+          variant_utils.only_call(variant), 'DP'
+      ),
       genotype_quality=variantcall_utils.get_gq(
-          variant_utils.only_call(variant)),
+          variant_utils.only_call(variant)
+      ),
       genotype=str(
-          sorted(variantcall_utils.get_gt(variant_utils.only_call(variant)))),
+          sorted(variantcall_utils.get_gt(variant_utils.only_call(variant)))
+      ),
       vaf=vaf,
-      qual=variant.quality)
+      qual=variant.quality,
+  )
 
 
 def _single_variant_stats(variants, vaf_available=False, vcf_reader=None):
@@ -153,11 +169,10 @@ def _format_histogram_for_vega(counts, bins):
   # Avoid floats becoming 0.6000000000000001 to save space in output json
   rounded_bins = [round(x, 10) for x in bins]
   # pylint: disable=g-complex-comprehension
-  vega_formatted_hist = [{
-      's': rounded_bins[idx],
-      'e': rounded_bins[idx + 1],
-      'c': count
-  } for idx, count in enumerate(counts)]
+  vega_formatted_hist = [
+      {'s': rounded_bins[idx], 'e': rounded_bins[idx + 1], 'c': count}
+      for idx, count in enumerate(counts)
+  ]
   # pylint: enable=g-complex-comprehension
   return vega_formatted_hist
 
@@ -180,8 +195,9 @@ def _vaf_histograms_by_genotype(single_stats, number_of_bins=10):
 
   # Group by genotype
   sorted_by_genotype = sorted(single_stats, key=lambda x: x.genotype)
-  grouped_by_genotype = itertools.groupby(sorted_by_genotype,
-                                          lambda x: x.genotype)
+  grouped_by_genotype = itertools.groupby(
+      sorted_by_genotype, lambda x: x.genotype
+  )
   # Fill in empty placeholders for genotypes to populate all five charts
   stats_by_genotype = {}
   required_genotypes = ['[0, 0]', '[0, 1]', '[1, 1]', '[-1, -1]', '[1, 2]']
@@ -260,7 +276,8 @@ def _compute_qual_histogram(single_var_stats):
   if quals:
     bin_range = (_round_down(min(quals)), _round_up(max(quals) + 1))
     counts, bins = np.histogram(
-        quals, range=bin_range, bins=bin_range[1] - bin_range[0])
+        quals, range=bin_range, bins=bin_range[1] - bin_range[0]
+    )
     hist = _format_histogram_for_vega(counts, bins)
     return [x for x in hist if x['c'] > 0]
   else:
@@ -336,13 +353,15 @@ def _compute_variant_stats_for_charts(variants, vcf_reader=None):
     vaf_available = 'VAF' in vcf_columns
 
   single_var_stats = _single_variant_stats(
-      variants, vaf_available=vaf_available, vcf_reader=vcf_reader)
+      variants, vaf_available=vaf_available, vcf_reader=vcf_reader
+  )
 
   titv_counts = _count_titv(single_var_stats)
   variant_type_counts = _count_variant_types(single_var_stats)
 
   base_changes, indel_sizes = _count_base_changes_and_indel_sizes(
-      single_var_stats)
+      single_var_stats
+  )
 
   histograms = _vaf_histograms_by_genotype(single_var_stats, number_of_bins=50)
 
@@ -358,7 +377,7 @@ def _compute_variant_stats_for_charts(variants, vcf_reader=None):
       'gq_histogram': gq_hist,
       'variant_type_counts': variant_type_counts,
       'depth_histogram': depth_histogram,
-      'titv_counts': titv_counts
+      'titv_counts': titv_counts,
   }
 
   return vis_data

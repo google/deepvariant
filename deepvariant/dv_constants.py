@@ -44,7 +44,9 @@ PILEUP_NUM_CHANNELS = 6
 
 # The dimensions of a pileup image tensor as height x width x rank.
 PILEUP_DEFAULT_DIMS = [
-    PILEUP_DEFAULT_HEIGHT, PILEUP_DEFAULT_WIDTH, PILEUP_NUM_CHANNELS
+    PILEUP_DEFAULT_HEIGHT,
+    PILEUP_DEFAULT_WIDTH,
+    PILEUP_NUM_CHANNELS,
 ]
 
 # Number of classes represented in the data set. The three classes are
@@ -56,10 +58,18 @@ DEFAULT_SAMPLE_NAME = 'default'
 
 # Define available OptChannels (optional extra channels).
 OPT_CHANNELS = [
-    'mapping_quality', 'strand', 'read_supports_variant',
-    'read_mapping_percent', 'avg_base_quality', 'identity',
-    'gap_compressed_identity', 'gc_content', 'is_homopolymer',
-    'homopolymer_weighted', 'blank', 'insert_size'
+    'mapping_quality',
+    'strand',
+    'read_supports_variant',
+    'read_mapping_percent',
+    'avg_base_quality',
+    'identity',
+    'gap_compressed_identity',
+    'gc_content',
+    'is_homopolymer',
+    'homopolymer_weighted',
+    'blank',
+    'insert_size',
 ]
 
 # Used only when phasing is on (phase_reads=true). It allows to set the

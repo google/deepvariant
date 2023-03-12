@@ -63,19 +63,22 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
       ValueError: if vcf_reader is None.
     """
     super(PositionalVariantLabeler, self).__init__(
-        truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions)
+        truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions
+    )
 
   def label_variants(self, variants, region=None):
     for variant in variants:
       is_confident, truth_variant = self._match(
-          variant_utils.unphase_all_genotypes(variant))
+          variant_utils.unphase_all_genotypes(variant)
+      )
 
       genotype = None
       if truth_variant is not None:
         genotype = _genotype_from_matched_truth(variant, truth_variant)
 
       yield variant_labeler.VariantLabel(
-          is_confident=is_confident, variant=variant, genotype=genotype)
+          is_confident=is_confident, variant=variant, genotype=genotype
+      )
 
   def _match(self, variant):
     """Get a truth variant matching variant.
@@ -108,9 +111,11 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
     variant = variant_utils.simplify_variant_alleles(variant)
     matched_variant = self._find_matching_variant_in_reader(variant)
     confident_or_no_constraint = (
-        self._confident_regions is None or
-        self._confident_regions.variant_overlaps(
-            variant, empty_set_return_value=False))
+        self._confident_regions is None
+        or self._confident_regions.variant_overlaps(
+            variant, empty_set_return_value=False
+        )
+    )
     if matched_variant is None and confident_or_no_constraint:
       matched_variant = self._make_synthetic_hom_ref(variant)
     return confident_or_no_constraint, matched_variant
@@ -131,7 +136,8 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
         end=variant.end,
         reference_bases=variant.reference_bases,
         alternate_bases=variant.alternate_bases,
-        calls=[variants_pb2.VariantCall(genotype=[0, 0])])
+        calls=[variants_pb2.VariantCall(genotype=[0, 0])],
+    )
 
   def _find_matching_variant_in_reader(self, variant):
     """Finds a variant in vcf_reader compatible with variant, if one exists."""
@@ -147,14 +153,21 @@ class PositionalVariantLabeler(variant_labeler.VariantLabeler):
 
     best_match = None
     for match in matches:
-      if (match.alternate_bases == variant.alternate_bases and
-          match.reference_bases == variant.reference_bases):
+      if (
+          match.alternate_bases == variant.alternate_bases
+          and match.reference_bases == variant.reference_bases
+      ):
         best_match = match
 
     if best_match is None:
       logging.info(
-          'Multiple matches detected; no good match found. Fall back '
-          'to first. variant: %s: matches: %s', variant, matches)
+          (
+              'Multiple matches detected; no good match found. Fall back '
+              'to first. variant: %s: matches: %s'
+          ),
+          variant,
+          matches,
+      )
       # TODO: The behavior of falling back to the first match is
       # likely not the best. Think about what to do for different use cases.
       best_match = matches[0]
@@ -203,19 +216,23 @@ def _genotype_from_matched_truth(candidate_variant, truth_variant):
   if truth_variant is None:
     raise ValueError('truth_variant cannot be None')
   if not variantcall_utils.has_genotypes(
-      variant_utils.only_call(truth_variant)):
-    raise ValueError('truth_variant needs genotypes to be used for labeling',
-                     truth_variant)
+      variant_utils.only_call(truth_variant)
+  ):
+    raise ValueError(
+        'truth_variant needs genotypes to be used for labeling', truth_variant
+    )
 
   def _match_one_allele(true_allele):
     if true_allele == truth_variant.reference_bases:
       return 0
     else:
       simplified_true_allele = variant_utils.simplify_alleles(
-          truth_variant.reference_bases, true_allele)
+          truth_variant.reference_bases, true_allele
+      )
       for alt_index, alt_allele in enumerate(candidate_variant.alternate_bases):
         simplified_alt_allele = variant_utils.simplify_alleles(
-            candidate_variant.reference_bases, alt_allele)
+            candidate_variant.reference_bases, alt_allele
+        )
         if simplified_true_allele == simplified_alt_allele:
           return alt_index + 1
       # If nothing matched, we don't have this alt, so the alt allele index for
@@ -229,4 +246,6 @@ def _genotype_from_matched_truth(candidate_variant, truth_variant):
     return tuple(
         _match_one_allele(true_allele)
         for true_allele in variant_utils.genotype_as_alleles(
-            variant_utils.unphase_all_genotypes(truth_variant)))
+            variant_utils.unphase_all_genotypes(truth_variant)
+        )
+    )

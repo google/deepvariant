@@ -65,9 +65,12 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
     """Runs one training step. This function always starts a new train_dir."""
     with mock.patch(
         'deepvariant.data_providers.'
-        'get_input_fn_from_dataset') as mock_get_input_fn_from_dataset:
-      with mock.patch('deepvariant.model_train.'
-                      'copy_over_example_info_json') as _:
+        'get_input_fn_from_dataset'
+    ) as mock_get_input_fn_from_dataset:
+      with mock.patch(
+          'deepvariant.model_train.'
+          'copy_over_example_info_json'
+      ) as _:
         mock_get_input_fn_from_dataset.return_value = dataset
         FLAGS.train_dir = tf_test_utils.test_tmpdir(uuid.uuid4().hex)
         FLAGS.batch_size = 2
@@ -88,10 +91,14 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         )
         self.assertIsNotNone(tf.train.latest_checkpoint(FLAGS.train_dir))
 
-  @mock.patch('deepvariant'
-              '.modeling.tf.compat.v1.losses.softmax_cross_entropy')
-  @mock.patch('deepvariant'
-              '.modeling.tf.compat.v1.losses.get_total_loss')
+  @mock.patch(
+      'deepvariant'
+      '.modeling.tf.compat.v1.losses.softmax_cross_entropy'
+  )
+  @mock.patch(
+      'deepvariant'
+      '.modeling.tf.compat.v1.losses.get_total_loss'
+  )
   def test_loss(self, mock_total_loss, mock_cross):
     labels = [[0, 1, 0], [1, 0, 0]]
     logits = 'Logits'
@@ -100,13 +107,16 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
     mock_total_loss.assert_called_once_with()
     self.assertEqual(actual, mock_total_loss.return_value)
     mock_cross.assert_called_once_with(
-        logits, labels, label_smoothing=smoothing, weights=1.0)
+        logits, labels, label_smoothing=smoothing, weights=1.0
+    )
 
   # pylint: disable=g-complex-comprehension
-  @parameterized.parameters((model.name, compressed_inputs)
-                            for model in modeling.production_models()
-                            if model.is_trainable
-                            for compressed_inputs in [True, False])
+  @parameterized.parameters(
+      (model.name, compressed_inputs)
+      for model in modeling.production_models()
+      if model.is_trainable
+      for compressed_inputs in [True, False]
+  )
   # pylint: enable=g-complex-comprehension
   @flagsaver.flagsaver
   def test_end2end(self, model_name, compressed_inputs):
@@ -114,56 +124,67 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
     self._run_tiny_training(
         model_name=model_name,
         dataset=data_providers_test.make_golden_dataset(
-            compressed_inputs=compressed_inputs, use_tpu=FLAGS.use_tpu))
+            compressed_inputs=compressed_inputs, use_tpu=FLAGS.use_tpu
+        ),
+    )
 
   @flagsaver.flagsaver
   def test_end2end_inception_v3_warm_up_from(self):
     """End-to-end test of model_train script."""
     checkpoint_dir = tf_test_utils.test_tmpdir('inception_v3_warm_up_from')
-    tf_test_utils.write_fake_checkpoint('inception_v3', self.test_session(),
-                                        checkpoint_dir)
+    tf_test_utils.write_fake_checkpoint(
+        'inception_v3', self.test_session(), checkpoint_dir
+    )
     self._run_tiny_training(
         model_name='inception_v3',
         dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
-        warm_start_from=checkpoint_dir + '/model')
+        warm_start_from=checkpoint_dir + '/model',
+    )
 
   @flagsaver.flagsaver
   def test_end2end_inception_v3_warm_up_allow_different_num_channels(self):
     """End-to-end test of model_train script."""
     FLAGS.allow_warmstart_from_different_num_channels = True
     checkpoint_dir = tf_test_utils.test_tmpdir(
-        'inception_v3_warm_up_allow_different_num_channels')
+        'inception_v3_warm_up_allow_different_num_channels'
+    )
     tf_test_utils.write_fake_checkpoint(
         'inception_v3',
         self.test_session(),
         checkpoint_dir,
-        num_channels=dv_constants.PILEUP_NUM_CHANNELS + 1)
+        num_channels=dv_constants.PILEUP_NUM_CHANNELS + 1,
+    )
     self._run_tiny_training(
         model_name='inception_v3',
         dataset=data_providers_test.make_golden_dataset(use_tpu=FLAGS.use_tpu),
-        warm_start_from=checkpoint_dir + '/model')
+        warm_start_from=checkpoint_dir + '/model',
+    )
 
   @flagsaver.flagsaver
   def test_end2end_inception_v3_warm_up_by_default_fail_diff_num_channels(self):
     """End-to-end test of model_train script."""
     checkpoint_dir = tf_test_utils.test_tmpdir(
-        'test_end2end_inception_v3_warm_up_by_default_fail_diff_num_channels')
+        'test_end2end_inception_v3_warm_up_by_default_fail_diff_num_channels'
+    )
     tf_test_utils.write_fake_checkpoint(
         'inception_v3',
         self.test_session(),
         checkpoint_dir,
-        num_channels=dv_constants.PILEUP_NUM_CHANNELS + 1)
+        num_channels=dv_constants.PILEUP_NUM_CHANNELS + 1,
+    )
     with self.assertRaisesRegex(
         ValueError,
         r'Shape of variable InceptionV3/Conv2d_1a_3x3/weights:0 \(\(.*\)\) '
         r'doesn\'t match with shape of tensor '
-        r'InceptionV3/Conv2d_1a_3x3/weights \(\[.*\]\) from checkpoint reader.'
+        r'InceptionV3/Conv2d_1a_3x3/weights \(\[.*\]\) from checkpoint reader.',
     ):
       self._run_tiny_training(
           model_name='inception_v3',
           dataset=data_providers_test.make_golden_dataset(
-              use_tpu=FLAGS.use_tpu),
-          warm_start_from=checkpoint_dir + '/model')
+              use_tpu=FLAGS.use_tpu
+          ),
+          warm_start_from=checkpoint_dir + '/model',
+      )
 
   @flagsaver.flagsaver
   def test_end2end_inception_v3_failed_warm_up_from(self):
@@ -173,26 +194,36 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
       self._run_tiny_training(
           model_name='inception_v3',
           dataset=data_providers_test.make_golden_dataset(
-              use_tpu=FLAGS.use_tpu),
-          warm_start_from='this/path/does/not/exist')
+              use_tpu=FLAGS.use_tpu
+          ),
+          warm_start_from='this/path/does/not/exist',
+      )
 
   @flagsaver.flagsaver
   def test_end2end_inception_v3_embedding_invalid_embedding_size(self):
     """End-to-end test of model_train script with an invalid embedding size."""
     with self.assertRaisesRegex(
-        ValueError, 'Expected seq_type_embedding_size '
-        'to be a positive number but saw -100 '
-        'instead.'):
+        ValueError,
+        (
+            'Expected seq_type_embedding_size '
+            'to be a positive number but saw -100 '
+            'instead.'
+        ),
+    ):
       FLAGS.seq_type_embedding_size = -100
       self._run_tiny_training(
           model_name='inception_v3_embedding',
           dataset=data_providers_test.make_golden_dataset(
-              use_tpu=FLAGS.use_tpu))
+              use_tpu=FLAGS.use_tpu
+          ),
+      )
 
   @parameterized.parameters((False), (True))
   @flagsaver.flagsaver
-  @mock.patch('deepvariant.model_train.'
-              'tf.compat.v1.train.replica_device_setter')
+  @mock.patch(
+      'deepvariant.model_train.'
+      'tf.compat.v1.train.replica_device_setter'
+  )
   @mock.patch('deepvariant.model_train.run')
   def test_main_internal(self, use_tpu, mock_run, mock_device_setter):
     FLAGS.master = 'some_master'
@@ -207,38 +238,52 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
         'some_master' if use_tpu else '',
         False,
         device_fn=mock.ANY,
-        use_tpu=mock.ANY)
+        use_tpu=mock.ANY,
+    )
 
   @mock.patch('deepvariant.model_train.os.environ')
-  @mock.patch('deepvariant.model_train.'
-              'tf.compat.v1.train.replica_device_setter')
+  @mock.patch(
+      'deepvariant.model_train.'
+      'tf.compat.v1.train.replica_device_setter'
+  )
   @mock.patch('deepvariant.model_train.run')
-  def test_main_tfconfig_local(self, mock_run, mock_device_setter,
-                               mock_environ):
+  def test_main_tfconfig_local(
+      self, mock_run, mock_device_setter, mock_environ
+  ):
     mock_environ.get.return_value = '{}'
     model_train.parse_and_run()
 
     mock_device_setter.assert_called_once_with(0)
     mock_run.assert_called_once_with(
-        '', True, device_fn=mock.ANY, use_tpu=mock.ANY)
+        '', True, device_fn=mock.ANY, use_tpu=mock.ANY
+    )
 
   @parameterized.named_parameters(
       ('master', 'master', 0, True, '/job:master/task:0'),
       ('worker', 'worker', 10, False, '/job:worker/task:10'),
   )
   @mock.patch(
-      'deepvariant.model_train.tf.distribute.Server')
+      'deepvariant.model_train.tf.distribute.Server'
+  )
   @mock.patch('deepvariant.model_train.os.environ')
-  @mock.patch('deepvariant.model_train.'
-              'tf.compat.v1.train.replica_device_setter')
+  @mock.patch(
+      'deepvariant.model_train.'
+      'tf.compat.v1.train.replica_device_setter'
+  )
   @mock.patch('deepvariant.model_train.run')
-  def test_main_tfconfig_dist(self, job_name, task_index, expected_is_chief,
-                              expected_worker, mock_run, mock_device_setter,
-                              mock_environ, mock_server):
+  def test_main_tfconfig_dist(
+      self,
+      job_name,
+      task_index,
+      expected_is_chief,
+      expected_worker,
+      mock_run,
+      mock_device_setter,
+      mock_environ,
+      mock_server,
+  ):
     tf_config = {
-        'cluster': {
-            'ps': ['ps1:800', 'ps2:800']
-        },
+        'cluster': {'ps': ['ps1:800', 'ps2:800']},
         'task': {
             'type': job_name,
             'index': task_index,
@@ -254,9 +299,11 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
     model_train.parse_and_run()
 
     mock_device_setter.assert_called_once_with(
-        2, worker_device=expected_worker, cluster=mock.ANY)
+        2, worker_device=expected_worker, cluster=mock.ANY
+    )
     mock_run.assert_called_once_with(
-        'some-target', expected_is_chief, device_fn=mock.ANY, use_tpu=mock.ANY)
+        'some-target', expected_is_chief, device_fn=mock.ANY, use_tpu=mock.ANY
+    )
 
   @parameterized.parameters(
       ('master', 'some-master'),
@@ -268,9 +315,7 @@ class ModelTrainTest(parameterized.TestCase, tf.test.TestCase):
   def test_main_invalid_args(self, flag_name, flag_value, mock_environ):
     # Ensure an exception is raised if flags and TF_CONFIG are set.
     tf_config = {
-        'cluster': {
-            'ps': ['ps1:800', 'ps2:800']
-        },
+        'cluster': {'ps': ['ps1:800', 'ps2:800']},
         'task': {
             'type': 'master',
             'index': 0,

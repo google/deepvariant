@@ -43,24 +43,32 @@ from third_party.nucleus.io import vcf
 class VcfCandidateImporter(variant_caller.VariantCaller):
   """Call variants and gvcf records from a VCF."""
 
-  def __init__(self,
-               options,
-               candidates_vcf,
-               use_cache_table=True,
-               max_cache_coverage=100):
+  def __init__(
+      self,
+      options,
+      candidates_vcf,
+      use_cache_table=True,
+      max_cache_coverage=100,
+  ):
     super(VcfCandidateImporter, self).__init__(
         options=options,
         use_cache_table=use_cache_table,
-        max_cache_coverage=max_cache_coverage)
+        max_cache_coverage=max_cache_coverage,
+    )
     self.vcf_reader = vcf.NativeVcfReader(candidates_vcf).c_reader
 
-  def get_candidates(self, allele_counters: Dict[str,
-                                                 allelecounter.AlleleCounter],
-                     sample_name: str) -> List[deepvariant_pb2.DeepVariantCall]:
+  def get_candidates(
+      self,
+      allele_counters: Dict[str, allelecounter.AlleleCounter],
+      sample_name: str,
+  ) -> List[deepvariant_pb2.DeepVariantCall]:
     return self.cpp_variant_caller_from_vcf.calls_from_vcf(
-        allele_counters[sample_name], self.vcf_reader)
+        allele_counters[sample_name], self.vcf_reader
+    )
 
   def get_candidate_positions(
-      self, allele_counters: Dict[str, allelecounter.AlleleCounter],
-      sample_name: str):
+      self,
+      allele_counters: Dict[str, allelecounter.AlleleCounter],
+      sample_name: str,
+  ):
     raise NotImplementedError
