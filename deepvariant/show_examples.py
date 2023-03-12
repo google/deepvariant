@@ -61,41 +61,80 @@ from third_party.nucleus.util import vis
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-    'examples', None, 'Path to a make_examples tfrecord file or '
-    'many sharded files using e.g. make_examples.tfrecord@64.gz. '
-    'May be gzipped.')
+    'examples',
+    None,
+    (
+        'Path to a make_examples tfrecord file or '
+        'many sharded files using e.g. make_examples.tfrecord@64.gz. '
+        'May be gzipped.'
+    ),
+)
 flags.DEFINE_string(
-    'example_info_json', None, 'Path to one *example_info.json file containing '
-    'the information of the channels for the examples.')
+    'example_info_json',
+    None,
+    (
+        'Path to one *example_info.json file containing '
+        'the information of the channels for the examples.'
+    ),
+)
 flags.DEFINE_string(
-    'vcf', None, '[optional] Path to vcf file to filter by. '
-    'This will output exclusively the loci that match a row in '
-    'the VCF file by chromosome, position, and reference bases. '
-    'The VCF can be headerless, so for example, running grep on a hap.py '
-    'output VCF file to get all false positives. '
-    'The VCF may be gzipped or uncompressed.')
-flags.DEFINE_string('output', None,
-                    '[optional] Output prefix to write image files to.')
-flags.DEFINE_enum('image_type', 'channels', ['channels', 'RGB', 'both'],
-                  'Show examples as "channels", "RGB", or "both".')
+    'vcf',
+    None,
+    (
+        '[optional] Path to vcf file to filter by. '
+        'This will output exclusively the loci that match a row in '
+        'the VCF file by chromosome, position, and reference bases. '
+        'The VCF can be headerless, so for example, running grep on a hap.py '
+        'output VCF file to get all false positives. '
+        'The VCF may be gzipped or uncompressed.'
+    ),
+)
 flags.DEFINE_string(
-    'regions', None, '[optional] Space-separated list of regions to filter to. '
-    'Elements can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE '
-    'files. Coordinates are 1-based, like in the VCF.')
-flags.DEFINE_integer('num_records', -1,
-                     'Maximum number of loci to output images for.')
+    'output', None, '[optional] Output prefix to write image files to.'
+)
+flags.DEFINE_enum(
+    'image_type',
+    'channels',
+    ['channels', 'RGB', 'both'],
+    'Show examples as "channels", "RGB", or "both".',
+)
+flags.DEFINE_string(
+    'regions',
+    None,
+    (
+        '[optional] Space-separated list of regions to filter to. Elements can'
+        ' be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.'
+        ' Coordinates are 1-based, like in the VCF.'
+    ),
+)
+flags.DEFINE_integer(
+    'num_records', -1, 'Maximum number of loci to output images for.'
+)
 flags.DEFINE_bool(
-    'annotation', True, 'Label images with channel labels and mark midpoints. '
-    'True by default. Use --noannotation to turn off.')
-flags.DEFINE_bool('verbose', False,
-                  'Show ID for each example as images are created.')
+    'annotation',
+    True,
+    (
+        'Label images with channel labels and mark midpoints. '
+        'True by default. Use --noannotation to turn off.'
+    ),
+)
 flags.DEFINE_bool(
-    'truth_labels', True, 'For examples with truth labels, '
-    'add the truth label to the file name.')
+    'verbose', False, 'Show ID for each example as images are created.'
+)
+flags.DEFINE_bool(
+    'truth_labels',
+    True,
+    'For examples with truth labels, add the truth label to the file name.',
+)
 flags.DEFINE_string(
-    'column_labels', None, 'Comma-separated column labels to print on image. '
-    'Defaults to the standard channel names of DeepVariant. '
-    'Use --noannotation to remove them entirely.')
+    'column_labels',
+    None,
+    (
+        'Comma-separated column labels to print on image. '
+        'Defaults to the standard channel names of DeepVariant. '
+        'Use --noannotation to remove them entirely.'
+    ),
+)
 flags.DEFINE_integer('scale', 1, 'Scale image outputs x times.')
 
 UPDATE_EVERY_N_EXAMPLES = 10000
@@ -139,8 +178,12 @@ def parse_vcf(vcf_path: str) -> Set[str]:
 
 def get_full_id(variant: variants_pb2.Variant, indices: Sequence[int]) -> str:
   alt_genotype_string = '|'.join([variant.alternate_bases[i] for i in indices])
-  return '{}:{}_{}->{}'.format(variant.reference_name, variant.start,
-                               variant.reference_bases, alt_genotype_string)
+  return '{}:{}_{}->{}'.format(
+      variant.reference_name,
+      variant.start,
+      variant.reference_bases,
+      alt_genotype_string,
+  )
 
 
 def get_short_id(variant: variants_pb2.Variant, indices: Sequence[int]) -> str:
@@ -154,8 +197,8 @@ def get_short_id(variant: variants_pb2.Variant, indices: Sequence[int]) -> str:
 
   # If any ref or alt strings are too long, shorten them all.
   if len(ref_bases) > MAX_SIZE_TO_PRINT or any(
-      [len(alts[i]) > MAX_SIZE_TO_PRINT for i in indices]):
-
+      [len(alts[i]) > MAX_SIZE_TO_PRINT for i in indices]
+  ):
     # If any alts are the same length (rare but possible), include their IDs.
     use_alt_indices = len(set([len(a) for a in alts])) < len(alts)
     alt_types = []
@@ -186,8 +229,9 @@ def get_label(example: tf.train.Example) -> Optional[int]:
     return None
 
 
-def create_region_filter(region_flag_string: str,
-                         verbose: bool = False) -> Callable[[Any], Any]:
+def create_region_filter(
+    region_flag_string: str, verbose: bool = False
+) -> Callable[[Any], Any]:
   """Create a function that acts as a regions filter.
 
   Args:
@@ -197,14 +241,15 @@ def create_region_filter(region_flag_string: str,
   Returns:
     A function that given a variant will return True or False whether the
         variant falls inside the regions.
-
   """
   if isinstance(region_flag_string, str):
     region_args = region_flag_string.split()
   regions = ranges.RangeSet.from_regions(region_args)
   if verbose:
-    logging.info('Regions to filter to: %s',
-                 ', '.join([ranges.to_literal(r) for r in regions]))
+    logging.info(
+        'Regions to filter to: %s',
+        ', '.join([ranges.to_literal(r) for r in regions]),
+    )
 
   def passes_region_filter(variant):
     for r in regions:
@@ -220,7 +265,8 @@ def run():
   with errors.clean_commandline_error_exit():
     if FLAGS.column_labels and FLAGS.example_info_json:
       raise ValueError(
-          'Set at most one of --column_labels or --example_info_json.')
+          'Set at most one of --column_labels or --example_info_json.'
+      )
 
     if FLAGS.column_labels:
       column_labels = FLAGS.column_labels.split(',')
@@ -238,14 +284,18 @@ def run():
     if filter_to_vcf:
       ids_from_vcf = parse_vcf(FLAGS.vcf)
       logging.info(
-          'Found %d loci in VCF. '
-          'Only examples matching these loci will be output.',
-          len(ids_from_vcf))
+          (
+              'Found %d loci in VCF. '
+              'Only examples matching these loci will be output.'
+          ),
+          len(ids_from_vcf),
+      )
 
     filter_to_region = FLAGS.regions is not None
     if filter_to_region:
       passes_region_filter = create_region_filter(
-          region_flag_string=FLAGS.regions, verbose=FLAGS.verbose)
+          region_flag_string=FLAGS.regions, verbose=FLAGS.verbose
+      )
 
     # Use nucleus.io.tfrecord to read all shards.
     dataset = tfrecord.read_tfrecords(FLAGS.examples)
@@ -262,8 +312,10 @@ def run():
       # indicate that the script is making progress and not stalled.
       if num_scanned % UPDATE_EVERY_N_EXAMPLES == 0:
         if num_scanned == UPDATE_EVERY_N_EXAMPLES:
-          print('Reporting progress below. Writing one dot every time {} '
-                'examples have been scanned:'.format(UPDATE_EVERY_N_EXAMPLES))
+          print(
+              'Reporting progress below. Writing one dot every time {} '
+              'examples have been scanned:'.format(UPDATE_EVERY_N_EXAMPLES)
+          )
         # Print another dot on the same line, using print since logging does
         # not support printing without a newline.
         print('.', end='', flush=True)
@@ -302,8 +354,12 @@ def run():
         full_id = get_full_id(variant, indices)
         if locus_with_alt_id != full_id:
           logging.info(
-              'ID above was shortened due to long ref/alt strings. '
-              'Original: %s', full_id)
+              (
+                  'ID above was shortened due to long ref/alt strings. '
+                  'Original: %s'
+              ),
+              full_id,
+          )
 
       # If the example has a truth label, optionally include it.
       optional_truth_label = ''
@@ -319,11 +375,16 @@ def run():
             '--column_labels must have {} names separated by commas, since '
             'there are {} channels in the examples. '
             'However, {} column labels were found: {}'.format(
-                len(channels), len(channels), len(column_labels),
-                ','.join(['"{}"'.format(x) for x in column_labels])))
+                len(channels),
+                len(channels),
+                len(column_labels),
+                ','.join(['"{}"'.format(x) for x in column_labels]),
+            )
+        )
 
-      output_prefix = '{}_'.format(
-          FLAGS.output) if FLAGS.output is not None else ''
+      output_prefix = (
+          '{}_'.format(FLAGS.output) if FLAGS.output is not None else ''
+      )
 
       # Create directory for images if does not exist.
       if output_prefix:
@@ -333,9 +394,9 @@ def run():
 
       # Create image with a grey-scale row of channels and save to file.
       if make_channels:
-        channels_output = '{}channels_{}{}.png'.format(output_prefix,
-                                                       locus_with_alt_id,
-                                                       optional_truth_label)
+        channels_output = '{}channels_{}{}.png'.format(
+            output_prefix, locus_with_alt_id, optional_truth_label
+        )
 
         vis.draw_deepvariant_pileup(
             channels=channels,
@@ -343,12 +404,14 @@ def run():
             scale=FLAGS.scale,
             show=False,
             annotated=FLAGS.annotation,
-            labels=column_labels)
+            labels=column_labels,
+        )
 
       # Create RGB image and save to file.
       if make_rgb:
-        rgb_output = '{}rgb_{}{}.png'.format(output_prefix, locus_with_alt_id,
-                                             optional_truth_label)
+        rgb_output = '{}rgb_{}{}.png'.format(
+            output_prefix, locus_with_alt_id, optional_truth_label
+        )
         vis.draw_deepvariant_pileup(
             channels=channels,
             composite_type='RGB',
@@ -356,30 +419,38 @@ def run():
             scale=FLAGS.scale,
             show=False,
             annotated=FLAGS.annotation,
-            labels=column_labels)
+            labels=column_labels,
+        )
 
       # Check if --num_records quota has been hit yet.
       num_output += 1
       if FLAGS.num_records != -1 and num_output >= FLAGS.num_records:
         break
 
-    logging.info('Scanned %d examples and output %d images.', num_scanned,
-                 num_output)
+    logging.info(
+        'Scanned %d examples and output %d images.', num_scanned, num_output
+    )
 
     if num_scanned == 0 and FLAGS.examples.startswith('gs://'):
       if sharded_file_utils.is_sharded_file_spec(FLAGS.examples):
         paths = sharded_file_utils.generate_sharded_filenames(FLAGS.examples)
-        special_gcs_message = ('WARNING: --examples sharded files are either '
-                               'all empty or do not exist. Please check that '
-                               'the paths are correct:\n')
+        special_gcs_message = (
+            'WARNING: --examples sharded files are either '
+            'all empty or do not exist. Please check that '
+            'the paths are correct:\n'
+        )
         for p in paths[0:3]:
           special_gcs_message += 'gsutil ls {}\n'.format(p)
         logging.warning(special_gcs_message)
       else:
         logging.warning(
-            'WARNING: --examples file is either empty or does not exist. '
-            'Please check that the path is correct: \n'
-            'gsutil ls %s', FLAGS.examples)
+            (
+                'WARNING: --examples file is either empty or does not exist. '
+                'Please check that the path is correct: \n'
+                'gsutil ls %s'
+            ),
+            FLAGS.examples,
+        )
 
 
 def main(argv):
@@ -389,7 +460,9 @@ def main(argv):
       errors.log_and_raise(
           'Command line parsing failure: show_examples.py does not accept '
           'positional arguments but some are present on the command line: '
-          '"{}".'.format(str(argv[1:])), errors.CommandLineError)
+          '"{}".'.format(str(argv[1:])),
+          errors.CommandLineError,
+      )
     run()
 
 

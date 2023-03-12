@@ -58,8 +58,10 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
 
     self.assertEqual(
         open(FLAGS.output_vcf).readlines(),
-        open(testdata.deepvariant_testdata(
-            'golden.training_examples.vcf')).readlines())
+        open(
+            testdata.deepvariant_testdata('golden.training_examples.vcf')
+        ).readlines(),
+    )
 
   @flagsaver.flagsaver
   def test_sample_name_flag(self):
@@ -72,7 +74,8 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
 
     with vcf.VcfReader(FLAGS.output_vcf) as vcf_reader:
       self.assertEqual(
-          list(vcf_reader.header.sample_names), [FLAGS.sample_name])
+          list(vcf_reader.header.sample_names), [FLAGS.sample_name]
+      )
 
   @flagsaver.flagsaver
   def test_raises_for_unlabeled_examples(self):
@@ -82,8 +85,11 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
 
     with self.assertRaisesRegex(
         ValueError,
-        ('Variant .* does not have any genotypes. This tool only works with '
-         'variants that have been labeled')):
+        (
+            'Variant .* does not have any genotypes. This tool only works with '
+            'variants that have been labeled'
+        ),
+    ):
       labeled_examples_to_vcf.main(0)
 
 

@@ -53,16 +53,32 @@ VEGA_URL = 'https://storage.googleapis.com/deepvariant/lib/vega'
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-    'input', None, 'TSV file that was produced when running make_examples '
-    'with --runtime_by_region. Can be sharded, e.g. /path/runtime@64.tsv.')
+    'input',
+    None,
+    (
+        'TSV file that was produced when running make_examples '
+        'with --runtime_by_region. Can be sharded, e.g. /path/runtime@64.tsv.'
+    ),
+)
 flags.DEFINE_string(
-    'title', None, 'Title will be shown at the top of the report and will '
-    'be used as a prefix for downloaded image files.')
-flags.DEFINE_string('output', 'runtime_by_region_report.html',
-                    'Path for the output report, which will be an html file.')
+    'title',
+    None,
+    (
+        'Title will be shown at the top of the report and will '
+        'be used as a prefix for downloaded image files.'
+    ),
+)
+flags.DEFINE_string(
+    'output',
+    'runtime_by_region_report.html',
+    'Path for the output report, which will be an html file.',
+)
 
 RUNTIME_COLUMNS = [
-    'get reads', 'find candidates', 'make pileup images', 'write outputs'
+    'get reads',
+    'find candidates',
+    'make pileup images',
+    'write outputs',
 ]
 COUNT_COLUMNS = ['num reads', 'num candidates', 'num examples']
 
@@ -175,15 +191,21 @@ def stage_histogram(d: pd.DataFrame, title: str = '') -> alt.Chart:
   """
   columns_used = RUNTIME_COLUMNS
   d = d[columns_used]
-  return alt.Chart(d).transform_fold(
-      RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage']) \
-    .mark_bar(opacity=0.3) \
-    .encode(
-        x=alt.X('runtime_by_stage:Q', bin=alt.Bin(maxbins=100),
-                title='Runtime (seconds)'),
-        y=alt.Y('count()', title='Count of regions', stack=None),
-        color=alt.Color('Stage:N', sort=None)
-    ).properties(title=title)
+  return (
+      alt.Chart(d)
+      .transform_fold(RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage'])
+      .mark_bar(opacity=0.3)
+      .encode(
+          x=alt.X(
+              'runtime_by_stage:Q',
+              bin=alt.Bin(maxbins=100),
+              title='Runtime (seconds)',
+          ),
+          y=alt.Y('count()', title='Count of regions', stack=None),
+          color=alt.Color('Stage:N', sort=None),
+      )
+      .properties(title=title)
+  )
 
 
 def correlation_scatter_charts(d: pd.DataFrame, title: str = '') -> alt.Chart:
@@ -198,16 +220,25 @@ def correlation_scatter_charts(d: pd.DataFrame, title: str = '') -> alt.Chart:
   """
   columns_used = ['region', 'total runtime'] + RUNTIME_COLUMNS + COUNT_COLUMNS
   d = d[columns_used]
-  return alt.Chart(d).mark_circle(opacity=0.1).encode(
-      x=alt.X(alt.repeat('column'), type='quantitative',
-              axis=alt.Axis(labelExpr="datum.value + 's'")),
-      y=alt.Y(alt.repeat('row'), type='quantitative'),
-      tooltip='region'
-  ).properties(width=100, height=100) \
-  .repeat(
-      column=['total runtime'] + RUNTIME_COLUMNS,
-      row=COUNT_COLUMNS,
-  ).properties(title=title)
+  return (
+      alt.Chart(d)
+      .mark_circle(opacity=0.1)
+      .encode(
+          x=alt.X(
+              alt.repeat('column'),
+              type='quantitative',
+              axis=alt.Axis(labelExpr="datum.value + 's'"),
+          ),
+          y=alt.Y(alt.repeat('row'), type='quantitative'),
+          tooltip='region',
+      )
+      .properties(width=100, height=100)
+      .repeat(
+          column=['total runtime'] + RUNTIME_COLUMNS,
+          row=COUNT_COLUMNS,
+      )
+      .properties(title=title)
+  )
 
 
 def totals_by_stage(d: pd.DataFrame) -> alt.Chart:
@@ -221,17 +252,24 @@ def totals_by_stage(d: pd.DataFrame) -> alt.Chart:
   """
   stage_totals_series = d.sum()[RUNTIME_COLUMNS]
   stage_totals = pd.DataFrame(
-      stage_totals_series, columns=['Runtime (seconds)'])
+      stage_totals_series, columns=['Runtime (seconds)']
+  )
   stage_totals.reset_index(inplace=True)
   stage_totals = stage_totals.rename(columns={'index': 'Stage'})
   stage_totals['Runtime'] = stage_totals['Runtime (seconds)'].apply(
-      format_runtime_string)
-  return alt.Chart(stage_totals).mark_bar().encode(
-      x='Runtime (seconds)',
-      y=alt.Y('Stage', sort=None),
-      tooltip=['Runtime'],
-      fill=alt.Fill('Stage',
-                    sort=None)).properties(title='Overall runtime by stage')
+      format_runtime_string
+  )
+  return (
+      alt.Chart(stage_totals)
+      .mark_bar()
+      .encode(
+          x='Runtime (seconds)',
+          y=alt.Y('Stage', sort=None),
+          tooltip=['Runtime'],
+          fill=alt.Fill('Stage', sort=None),
+      )
+      .properties(title='Overall runtime by stage')
+  )
 
 
 def pareto_by_task_tooltip(row: pd.Series) -> str:
@@ -244,9 +282,11 @@ def pareto_by_task_tooltip(row: pd.Series) -> str:
   Returns:
     A string to show as the tooltip for a pareto curve.
   """
-  return (f"{row['task cumsum order'] * 100:.2f}% of regions "
-          f"account for {row['task cumsum fraction'] * 100:.2f}% of "
-          f"the runtime in task {row['Task']}")
+  return (
+      f"{row['task cumsum order'] * 100:.2f}% of regions "
+      f"account for {row['task cumsum fraction'] * 100:.2f}% of "
+      f"the runtime in task {row['Task']}"
+  )
 
 
 def calculate_pareto_metrics(df_subset: pd.DataFrame) -> pd.DataFrame:
@@ -261,11 +301,13 @@ def calculate_pareto_metrics(df_subset: pd.DataFrame) -> pd.DataFrame:
   # These are the same for all regions in the same task, for the scatter plot:
   df_subset['task total runtime'] = df_subset['total runtime'].sum()
   df_subset['Runtime for task'] = df_subset['task total runtime'].apply(
-      format_runtime_string)
+      format_runtime_string
+  )
   df_subset['task num examples'] = df_subset['num examples'].sum()
   # These are cumulative sums for the pareto curves:
-  df_subset['task cumsum fraction'] = df_subset['total runtime'].cumsum(
-  ) / df_subset['total runtime'].sum()
+  df_subset['task cumsum fraction'] = (
+      df_subset['total runtime'].cumsum() / df_subset['total runtime'].sum()
+  )
   n = len(df_subset)
   df_subset['task cumsum order'] = list(map(lambda x: x / n, range(0, n)))
   df_subset['tooltip'] = df_subset.apply(pareto_by_task_tooltip, axis=1)
@@ -296,8 +338,13 @@ def pareto_and_runtimes_by_task(df: pd.DataFrame) -> alt.Chart:
 
   # Limit columns to greatly reduce the size of the html report.
   columns_used = [
-      'task cumsum order', 'task cumsum fraction', 'tooltip', 'Task',
-      'task total runtime', 'task num examples', 'Runtime for task'
+      'task cumsum order',
+      'task cumsum fraction',
+      'tooltip',
+      'Task',
+      'task total runtime',
+      'task num examples',
+      'Runtime for task',
   ]
   df = df[columns_used]
 
@@ -305,37 +352,50 @@ def pareto_and_runtimes_by_task(df: pd.DataFrame) -> alt.Chart:
   # curve.
   brush = alt.selection_interval()
 
-  pareto_by_task = alt.Chart(df).mark_line(size=2).encode(
-      x=alt.X(
-          'task cumsum order',
-          title='The longest-runtime X% of regions',
-          axis=alt.Axis(format='%')),
-      y=alt.Y(
-          'task cumsum fraction',
-          title='Account for Y% of the total runtime',
-          axis=alt.Axis(format='%')),
-      tooltip='tooltip',
-      color=alt.condition(brush, 'Task:N', alt.value('lightgray'))).properties(
-          title='Pareto curve for each task').interactive()
+  pareto_by_task = (
+      alt.Chart(df)
+      .mark_line(size=2)
+      .encode(
+          x=alt.X(
+              'task cumsum order',
+              title='The longest-runtime X% of regions',
+              axis=alt.Axis(format='%'),
+          ),
+          y=alt.Y(
+              'task cumsum fraction',
+              title='Account for Y% of the total runtime',
+              axis=alt.Axis(format='%'),
+          ),
+          tooltip='tooltip',
+          color=alt.condition(brush, 'Task:N', alt.value('lightgray')),
+      )
+      .properties(title='Pareto curve for each task')
+      .interactive()
+  )
 
   # This chart needs to use the same dataframe as the first chart to enable the
   # brushing on one to affect the other. Using max(task) for 'text' is a
   # trick that causes bundling by task to avoid showing multiple overlapping
   # points which otherwise make the text look funky.
-  task_scatter = alt.Chart(df).mark_point(size=10).encode(
-      x=alt.X('max(task total runtime)', title='Runtime (seconds)'),
-      y=alt.Y('task num examples:Q', title='Number of examples'),
-      color=alt.condition(brush, 'Task:N', alt.value('lightgray')),
-      tooltip=['Task', 'Runtime for task']
-    ) \
-    .properties(title='Total runtime for each task (drag to highlight)') \
-    .add_selection(brush)
+  task_scatter = (
+      alt.Chart(df)
+      .mark_point(size=10)
+      .encode(
+          x=alt.X('max(task total runtime)', title='Runtime (seconds)'),
+          y=alt.Y('task num examples:Q', title='Number of examples'),
+          color=alt.condition(brush, 'Task:N', alt.value('lightgray')),
+          tooltip=['Task', 'Runtime for task'],
+      )
+      .properties(title='Total runtime for each task (drag to highlight)')
+      .add_selection(brush)
+  )
 
   return pareto_by_task | task_scatter
 
 
-def individual_region_bars(small_df: pd.DataFrame,
-                           title: Union[str, Dict[str, str]] = '') -> alt.Chart:
+def individual_region_bars(
+    small_df: pd.DataFrame, title: Union[str, Dict[str, str]] = ''
+) -> alt.Chart:
   """Makes a stacked bar chart with runtime of each stage for individual regions.
 
   Args:
@@ -348,14 +408,22 @@ def individual_region_bars(small_df: pd.DataFrame,
   """
   columns_used = ['region', 'Runtime'] + RUNTIME_COLUMNS
   d = small_df[columns_used]
-  return alt.Chart(d).transform_fold(
-      RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage']) \
-    .mark_bar().encode(
-        x=alt.X('region:N', sort=None),
-        y=alt.Y('runtime_by_stage:Q', scale=alt.Scale(type='linear'), title='Runtime (seconds)'),
-        fill=alt.Fill('Stage:N', sort=None),
-        tooltip='Runtime:N'
-    ).properties(title=title)
+  return (
+      alt.Chart(d)
+      .transform_fold(RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage'])
+      .mark_bar()
+      .encode(
+          x=alt.X('region:N', sort=None),
+          y=alt.Y(
+              'runtime_by_stage:Q',
+              scale=alt.Scale(type='linear'),
+              title='Runtime (seconds)',
+          ),
+          fill=alt.Fill('Stage:N', sort=None),
+          tooltip='Runtime:N',
+      )
+      .properties(title=title)
+  )
 
 
 def selected_longest_and_median_regions(df: pd.DataFrame) -> alt.Chart:
@@ -370,8 +438,11 @@ def selected_longest_and_median_regions(df: pd.DataFrame) -> alt.Chart:
   num_rows = len(df)
   mid = round(num_rows / 2)
 
-  return individual_region_bars(df.iloc[0:20], 'Top runtime regions') \
-  | individual_region_bars(df.iloc[mid-10:mid+11], 'Median runtime regions')
+  return individual_region_bars(
+      df.iloc[0:20], 'Top runtime regions'
+  ) | individual_region_bars(
+      df.iloc[mid - 10 : mid + 11], 'Median runtime regions'
+  )
 
 
 def top_regions_producing_zero_examples(df: pd.DataFrame) -> alt.Chart:
@@ -392,18 +463,21 @@ def top_regions_producing_zero_examples(df: pd.DataFrame) -> alt.Chart:
       f'Spent {runtime_of_zeros:.2f} hours processing the '
       f'{len(regions_with_zero_examples)} regions that produced no examples, '
       f'which is {runtime_of_zeros / total_runtime * 100:.2f}% of the total '
-      f'runtime of {total_runtime:.2f} hours.')
+      f'runtime of {total_runtime:.2f} hours.'
+  )
 
   return individual_region_bars(
       regions_with_zero_examples.nlargest(50, 'total runtime'),
       title={
           'text': 'The longest-running regions that produced no examples',
-          'subtitle': subtitle
-      })
+          'subtitle': subtitle,
+      },
+  )
 
 
 def read_data_and_make_dataframes(
-    input_path: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    input_path: str,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
   """Loads data from a file into one dataframe as-is and one by task.
 
   Args:
@@ -420,8 +494,8 @@ def read_data_and_make_dataframes(
 
 
 def make_all_charts(
-    df: pd.DataFrame,
-    by_task: pd.DataFrame) -> List[Dict[Text, Union[str, alt.Chart]]]:
+    df: pd.DataFrame, by_task: pd.DataFrame
+) -> List[Dict[Text, Union[str, alt.Chart]]]:
   """Creates charts and puts them in a list with their ID names.
 
   Args:
@@ -431,74 +505,86 @@ def make_all_charts(
   Returns:
     list of dicts, each containing a chart and a descriptive ID.
   """
-  charts = [{
-      'id': 'total_by_stage',
-      'chart': totals_by_stage(by_task)
-  }, {
-      'id': 'pareto_and_runtimes_by_task',
-      'chart': pareto_and_runtimes_by_task(df)
-  }, {
-      'id': 'histogram_by_task',
-      'chart': stage_histogram(by_task, title='Stage runtimes for each task')
-  }, {
-      'id': 'selected_longest_and_median_regions',
-      'chart': selected_longest_and_median_regions(df)
-  }, {
-      'id': 'zero_examples',
-      'chart': top_regions_producing_zero_examples(df)
-  }]
+  charts = [
+      {'id': 'total_by_stage', 'chart': totals_by_stage(by_task)},
+      {
+          'id': 'pareto_and_runtimes_by_task',
+          'chart': pareto_and_runtimes_by_task(df),
+      },
+      {
+          'id': 'histogram_by_task',
+          'chart': stage_histogram(
+              by_task, title='Stage runtimes for each task'
+          ),
+      },
+      {
+          'id': 'selected_longest_and_median_regions',
+          'chart': selected_longest_and_median_regions(df),
+      },
+      {'id': 'zero_examples', 'chart': top_regions_producing_zero_examples(df)},
+  ]
 
   # Altair shows a max of 5000 data points.
   if len(df) <= 5000:
     # With up to 5000 points, just show them all.
-    charts.extend([{
-        'id': 'histogram',
-        'chart': stage_histogram(df, title='Runtime by stage for all regions')
-    }, {
-        'id': 'scatter_grid',
-        'chart': correlation_scatter_charts(df, title='Trends for all regions')
-    }])
+    charts.extend([
+        {
+            'id': 'histogram',
+            'chart': stage_histogram(
+                df, title='Runtime by stage for all regions'
+            ),
+        },
+        {
+            'id': 'scatter_grid',
+            'chart': correlation_scatter_charts(
+                df, title='Trends for all regions'
+            ),
+        },
+    ])
   else:
     # With too many points, make different subsets to show trends better.
     top_100 = df.nlargest(100, 'total runtime')
     top_5000 = df.nlargest(5000, 'total runtime')
 
     # Sample the bottom 99% to avoid outliers that obscure general trends.
-    bottom_99_percent = df.nsmallest(int(len(df) * .99), 'total runtime')
+    bottom_99_percent = df.nsmallest(int(len(df) * 0.99), 'total runtime')
     if len(bottom_99_percent) > 5000:
       bottom_99_percent = bottom_99_percent.sample(5000)
 
-    charts.extend([{
-        'id':
-            'histogram_bottom_99_percent',
-        'chart':
-            stage_histogram(
+    charts.extend([
+        {
+            'id': 'histogram_bottom_99_percent',
+            'chart': stage_histogram(
                 bottom_99_percent,
-                title='Runtime by stage for regions in the bottom 99%')
-    }, {
-        'id':
-            'histogram_top_100',
-        'chart':
-            stage_histogram(
-                top_100, title='Runtime by stage for regions in the top 100')
-    }, {
-        'id':
-            'scatter_grid_top_5000',
-        'chart':
-            correlation_scatter_charts(
-                top_5000, title='Trends for regions in the top 5000')
-    }, {
-        'id':
-            'scatter_grid_bottom_99_percent',
-        'chart':
-            correlation_scatter_charts(
-                bottom_99_percent, title='Trends for regions in the bottom 99%')
-    }])
+                title='Runtime by stage for regions in the bottom 99%',
+            ),
+        },
+        {
+            'id': 'histogram_top_100',
+            'chart': stage_histogram(
+                top_100, title='Runtime by stage for regions in the top 100'
+            ),
+        },
+        {
+            'id': 'scatter_grid_top_5000',
+            'chart': correlation_scatter_charts(
+                top_5000, title='Trends for regions in the top 5000'
+            ),
+        },
+        {
+            'id': 'scatter_grid_bottom_99_percent',
+            'chart': correlation_scatter_charts(
+                bottom_99_percent,
+                title='Trends for regions in the bottom 99%',
+            ),
+        },
+    ])
   return charts
 
 
-def make_report(input_path: str, title: str,
-                html_output: tf.io.gfile.GFile) -> None:
+def make_report(
+    input_path: str, title: str, html_output: tf.io.gfile.GFile
+) -> None:
   """Reads data, creates charts, and composes the charts into an HTML report.
 
   Args:
@@ -514,12 +600,15 @@ def make_report(input_path: str, title: str,
   charts = make_all_charts(df, by_task)
 
   # Write a subtitle with some top-level stats.
-  subtitle = (f'Runtime profiling for make_examples on {len(df)} regions '
-              f'across {len(by_task)} task{"(s)" if len(by_task) > 1 else ""}')
+  subtitle = (
+      f'Runtime profiling for make_examples on {len(df)} regions '
+      f'across {len(by_task)} task{"(s)" if len(by_task) > 1 else ""}'
+  )
 
   # Write the HTML report with all the charts.
   dashboard_utils.create_html_report(
-      specs=charts, html_output=html_output, title=title, subtitle=subtitle)
+      specs=charts, html_output=html_output, title=title, subtitle=subtitle
+  )
 
 
 def main(argv: Sequence[str]):
@@ -527,7 +616,8 @@ def main(argv: Sequence[str]):
     raise app.UsageError(
         'Command line parsing failure: this script does not accept '
         'positional arguments, but found these extra arguments: "{}".'
-        ''.format(str(argv[1:])))
+        ''.format(str(argv[1:]))
+    )
 
   # Add html to the output path if that is not already the suffix.
   if FLAGS.output.endswith('html'):
@@ -538,7 +628,8 @@ def main(argv: Sequence[str]):
   # Start HTML document. Using GFile enables writing to GCS too.
   html_output = tf.io.gfile.GFile(output_filename, 'w')
   make_report(
-      input_path=FLAGS.input, title=FLAGS.title, html_output=html_output)
+      input_path=FLAGS.input, title=FLAGS.title, html_output=html_output
+  )
   html_output.close()  # Abstracted out the file open/close to enable testing.
   print('Output written to:', output_filename)
 

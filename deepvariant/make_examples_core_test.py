@@ -99,13 +99,13 @@ def _from_literals(literals, contig_map=None):
 class MakeExamplesCoreUnitTest(parameterized.TestCase):
 
   def test_read_write_run_info(self):
-
     def _read_lines(path):
       with open(path) as fin:
         return list(fin.readlines())
 
     golden_actual = make_examples_core.read_make_examples_run_info(
-        testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO)
+        testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO
+    )
     # We don't really want to inject too much knowledge about the golden right
     # here, so we only use a minimal test that (a) the run_info_filename is
     # a non-empty string and (b) the number of candidates sites in the labeling
@@ -113,15 +113,18 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     # least one candidate variant, and the reader should have filled in the
     # value.
     self.assertNotEmpty(golden_actual.options.run_info_filename)
-    self.assertEqual(golden_actual.labeling_metrics.n_candidate_variant_sites,
-                     testdata.N_GOLDEN_TRAINING_EXAMPLES)
+    self.assertEqual(
+        golden_actual.labeling_metrics.n_candidate_variant_sites,
+        testdata.N_GOLDEN_TRAINING_EXAMPLES,
+    )
 
     # Check that reading + writing the data produces the same lines:
     tmp_output = test_utils.test_tmpfile('written_run_info.pbtxt')
     make_examples_core.write_make_examples_run_info(golden_actual, tmp_output)
     self.assertEqual(
         _read_lines(testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO),
-        _read_lines(tmp_output))
+        _read_lines(tmp_output),
+    )
 
   @parameterized.parameters(
       dict(
@@ -140,24 +143,32 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
   def test_parse_proto_enum_flag(self, flag_value, expected):
     enum_pb2 = deepvariant_pb2.MakeExamplesOptions.Mode
     self.assertEqual(
-        make_examples_core.parse_proto_enum_flag(enum_pb2, flag_value),
-        expected)
+        make_examples_core.parse_proto_enum_flag(enum_pb2, flag_value), expected
+    )
 
   def test_parse_proto_enum_flag_error_handling(self):
     with self.assertRaisesRegex(
         ValueError,
-        'Unknown enum option "foo". Allowed options are CALLING,CANDIDATE_SWEEP,TRAINING'
+        (
+            'Unknown enum option "foo". Allowed options are'
+            ' CALLING,CANDIDATE_SWEEP,TRAINING'
+        ),
     ):
       make_examples_core.parse_proto_enum_flag(
-          deepvariant_pb2.MakeExamplesOptions.Mode, 'foo')
+          deepvariant_pb2.MakeExamplesOptions.Mode, 'foo'
+      )
 
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()
     mock_sample_reader.header = reads_pb2.SamHeader(
-        read_groups=[reads_pb2.ReadGroup(sample_id='sample_name')])
+        read_groups=[reads_pb2.ReadGroup(sample_id='sample_name')]
+    )
     self.assertEqual(
         make_examples_core.extract_sample_name_from_sam_reader(
-            mock_sample_reader), 'sample_name')
+            mock_sample_reader
+        ),
+        'sample_name',
+    )
 
   @parameterized.parameters(
       # No samples could be found in the reads.
@@ -168,15 +179,20 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
       dict(samples=['sample1', 'sample2'], expected_sample_name='sample1'),
   )
   def test_extract_sample_name_from_reads_uses_default_when_necessary(
-      self, samples, expected_sample_name):
+      self, samples, expected_sample_name
+  ):
     mock_sample_reader = mock.Mock()
-    mock_sample_reader.header = reads_pb2.SamHeader(read_groups=[
-        reads_pb2.ReadGroup(sample_id=sample) for sample in samples
-    ])
+    mock_sample_reader.header = reads_pb2.SamHeader(
+        read_groups=[
+            reads_pb2.ReadGroup(sample_id=sample) for sample in samples
+        ]
+    )
     self.assertEqual(
         expected_sample_name,
         make_examples_core.extract_sample_name_from_sam_reader(
-            mock_sample_reader))
+            mock_sample_reader
+        ),
+    )
 
   @flagsaver.flagsaver
   def test_confident_regions(self):
@@ -192,12 +208,17 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
 
     # Our expected intervals, inlined from CONFIDENT_REGIONS_BED.
     expected = _from_literals_list([
-        'chr20:10000847-10002407', 'chr20:10002521-10004171',
-        'chr20:10004274-10004964', 'chr20:10004995-10006386',
-        'chr20:10006410-10007800', 'chr20:10007825-10008018',
-        'chr20:10008044-10008079', 'chr20:10008101-10008707',
-        'chr20:10008809-10008897', 'chr20:10009003-10009791',
-        'chr20:10009934-10010531'
+        'chr20:10000847-10002407',
+        'chr20:10002521-10004171',
+        'chr20:10004274-10004964',
+        'chr20:10004995-10006386',
+        'chr20:10006410-10007800',
+        'chr20:10007825-10008018',
+        'chr20:10008044-10008079',
+        'chr20:10008101-10008707',
+        'chr20:10008809-10008897',
+        'chr20:10009003-10009791',
+        'chr20:10009934-10010531',
     ])
     # Our confident regions should be exactly those found in the BED file.
     self.assertCountEqual(expected, list(confident_regions))
@@ -229,30 +250,38 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     for threshold in [0.5, 0.9, 1.0]:
       self.assertIsNone(
           make_examples_core.validate_reference_contig_coverage(
-              ref_contigs, ref_contigs, threshold))
+              ref_contigs, ref_contigs, threshold
+          )
+      )
 
     # No common contigs always blows up.
     for threshold in [0.0, 0.1, 0.5, 0.9, 1.0]:
       with self.assertRaisesRegex(ValueError, 'span 200'):
         make_examples_core.validate_reference_contig_coverage(
-            ref_contigs, [], threshold)
+            ref_contigs, [], threshold
+        )
 
     # Dropping either contig brings up below our 0.9 threshold.
     with self.assertRaisesRegex(ValueError, 'span 200'):
       make_examples_core.validate_reference_contig_coverage(
-          ref_contigs, _make_contigs([('1', 100)]), 0.9)
+          ref_contigs, _make_contigs([('1', 100)]), 0.9
+      )
 
     with self.assertRaisesRegex(ValueError, 'span 200'):
       make_examples_core.validate_reference_contig_coverage(
-          ref_contigs, _make_contigs([('2', 100)]), 0.9)
+          ref_contigs, _make_contigs([('2', 100)]), 0.9
+      )
 
     # Our actual overlap is 50%, so check that we raise when appropriate.
     with self.assertRaisesRegex(ValueError, 'span 200'):
       make_examples_core.validate_reference_contig_coverage(
-          ref_contigs, _make_contigs([('2', 100)]), 0.6)
+          ref_contigs, _make_contigs([('2', 100)]), 0.6
+      )
     self.assertIsNone(
         make_examples_core.validate_reference_contig_coverage(
-            ref_contigs, _make_contigs([('2', 100)]), 0.4))
+            ref_contigs, _make_contigs([('2', 100)]), 0.4
+        )
+    )
 
   @parameterized.parameters(
       # all intervals are shared.
@@ -262,23 +291,32 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
       # The names are the same but sizes are different, so not common.
       ([[('chrM', 10)], [('chrM', 20)]], []),
       # One common interval and one not.
-      ([[('chrM', 10), ('chr1', 20)], [('chrM', 10),
-                                       ('chr2', 30)]], [('chrM', 10)]),
+      (
+          [[('chrM', 10), ('chr1', 20)], [('chrM', 10), ('chr2', 30)]],
+          [('chrM', 10)],
+      ),
       # Check that the order doesn't matter.
-      ([[('chr1', 20), ('chrM', 10)], [('chrM', 10),
-                                       ('chr2', 30)]], [('chrM', 10, 1)]),
+      (
+          [[('chr1', 20), ('chrM', 10)], [('chrM', 10), ('chr2', 30)]],
+          [('chrM', 10, 1)],
+      ),
       # Three-way merges.
-      ([
-          [('chr1', 20), ('chrM', 10)],
-          [('chrM', 10), ('chr2', 30)],
-          [('chr2', 30), ('chr3', 30)],
-      ], []),
+      (
+          [
+              [('chr1', 20), ('chrM', 10)],
+              [('chrM', 10), ('chr2', 30)],
+              [('chr2', 30), ('chr3', 30)],
+          ],
+          [],
+      ),
   )
   def test_common_contigs(self, contigs_list, expected):
     self.assertEqual(
         _make_contigs(expected),
         make_examples_core.common_contigs(
-            [_make_contigs(contigs) for contigs in contigs_list]))
+            [_make_contigs(contigs) for contigs in contigs_list]
+        ),
+    )
 
   @parameterized.named_parameters(
       # calling_regions = contigs & calling_regions.
@@ -289,39 +327,55 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           regions=['1:1-10'],
           candidate_positions=[2, 4, 5, make_examples_core.END_OF_REGION],
           max_size=2,
-          expected=['1:1-5', '1:6-10']),  # One interval 2 partitions.
+          expected=['1:1-5', '1:6-10'],
+      ),  # One interval 2 partitions.
       dict(
           testcase_name='two_intervals',
           regions=['1:1-10', '1:15-20'],
           candidate_positions=[
-              2, 4, 5, make_examples_core.END_OF_REGION, 16, 19,
-              make_examples_core.END_OF_REGION
+              2,
+              4,
+              5,
+              make_examples_core.END_OF_REGION,
+              16,
+              19,
+              make_examples_core.END_OF_REGION,
           ],
           max_size=2,
-          expected=['1:1-5', '1:6-10', '1:15-20']),  # 2 intervals.
+          expected=['1:1-5', '1:6-10', '1:15-20'],
+      ),  # 2 intervals.
       dict(
           testcase_name='two_intervals_different_contigs',
           regions=['1:1-10', '2:1-20'],
           candidate_positions=[
-              2, 4, 5, make_examples_core.END_OF_REGION, 2, 3, 12,
-              make_examples_core.END_OF_REGION
+              2,
+              4,
+              5,
+              make_examples_core.END_OF_REGION,
+              2,
+              3,
+              12,
+              make_examples_core.END_OF_REGION,
           ],
           max_size=2,
-          expected=['1:1-5', '1:6-10', '2:1-4',
-                    '2:5-20']),  # 2 intervals, different contigs.
+          expected=['1:1-5', '1:6-10', '2:1-4', '2:5-20'],
+      ),  # 2 intervals, different contigs.
       dict(
           testcase_name='candidate_far_apart',
           regions=['1:1-1000200'],
           candidate_positions=[3, 5, 7, make_examples_core.END_OF_REGION],
           max_size=2,
-          expected=['1:1-6', '1:7-1000006', '1:1000007-1000200'])
+          expected=['1:1-6', '1:7-1000006', '1:1000007-1000200'],
+      ),
   )  # Distance between candidates > max partition
-  def test_partition_by_candidates(self, regions, candidate_positions, max_size,
-                                   expected):
+  def test_partition_by_candidates(
+      self, regions, candidate_positions, max_size, expected
+  ):
     partitioned = make_examples_core.partition_by_candidates(
         regions=_from_literals(regions),
         candidate_positions=candidate_positions,
-        max_size=max_size)
+        max_size=max_size,
+    )
     expected = _from_literals_list(expected)
     print(partitioned)
     self.assertCountEqual(expected, partitioned)
@@ -331,14 +385,29 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           testcase_name='simple',
           position_arrays=[
               np.array([
-                  1, 2, 3, make_examples_core.END_OF_PARTITION, 7, 8, 9,
+                  1,
+                  2,
+                  3,
                   make_examples_core.END_OF_PARTITION,
-                  make_examples_core.END_OF_REGION
+                  7,
+                  8,
+                  9,
+                  make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION,
               ]),
-              np.array([4, 5, 6, make_examples_core.END_OF_PARTITION])
+              np.array([4, 5, 6, make_examples_core.END_OF_PARTITION]),
           ],
           expected=[
-              1, 2, 3, 4, 5, 6, 7, 8, 9, make_examples_core.END_OF_REGION
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              make_examples_core.END_OF_REGION,
           ],
           check_failure=False,
       ),
@@ -347,9 +416,11 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           position_arrays=[
               np.array([1, 3, 7, make_examples_core.END_OF_PARTITION]),
               np.array([
-                  9, 11, make_examples_core.END_OF_PARTITION,
-                  make_examples_core.END_OF_REGION
-              ])
+                  9,
+                  11,
+                  make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION,
+              ]),
           ],
           expected=[1, 3, 7, 9, 11, make_examples_core.END_OF_REGION],
           check_failure=False,
@@ -358,8 +429,13 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           testcase_name='one_shard',
           position_arrays=[
               np.array([
-                  1, 2, 3, 4, 7, make_examples_core.END_OF_PARTITION,
-                  make_examples_core.END_OF_REGION
+                  1,
+                  2,
+                  3,
+                  4,
+                  7,
+                  make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION,
               ])
           ],
           expected=[1, 2, 3, 4, 7, make_examples_core.END_OF_REGION],
@@ -369,10 +445,15 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           testcase_name='empty_shard',
           position_arrays=[
               np.array([
-                  1, 2, 3, 4, 7, make_examples_core.END_OF_PARTITION,
-                  make_examples_core.END_OF_REGION
+                  1,
+                  2,
+                  3,
+                  4,
+                  7,
+                  make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION,
               ]),
-              np.array([])
+              np.array([]),
           ],
           expected=[1, 2, 3, 4, 7, make_examples_core.END_OF_REGION],
           check_failure=False,
@@ -382,9 +463,11 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           position_arrays=[
               np.array([1, 7, 3, make_examples_core.END_OF_PARTITION]),
               np.array([
-                  4, 5, make_examples_core.END_OF_PARTITION,
-                  make_examples_core.END_OF_REGION
-              ])
+                  4,
+                  5,
+                  make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION,
+              ]),
           ],
           expected=None,
           check_failure=True,
@@ -394,15 +477,19 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           position_arrays=[
               np.array([1, 3, 7, make_examples_core.END_OF_PARTITION]),
               np.array([
-                  4, 5, make_examples_core.END_OF_PARTITION,
-                  make_examples_core.END_OF_REGION
-              ])
+                  4,
+                  5,
+                  make_examples_core.END_OF_PARTITION,
+                  make_examples_core.END_OF_REGION,
+              ]),
           ],
           expected=None,
           check_failure=True,
-      ))
-  def test_merge_ranges_from_files_sequential(self, position_arrays, expected,
-                                              check_failure):
+      ),
+  )
+  def test_merge_ranges_from_files_sequential(
+      self, position_arrays, expected, check_failure
+  ):
     if check_failure:
       with self.assertRaises(AssertionError):
         make_examples_core.merge_ranges_from_files_sequential(position_arrays)
@@ -410,7 +497,9 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
       self.assertSequenceEqual(
           list(expected),
           make_examples_core.merge_ranges_from_files_sequential(
-              position_arrays))
+              position_arrays
+          ),
+      )
 
   @parameterized.parameters(
       # Note that these tests aren't so comprehensive as we are trusting that
@@ -432,25 +521,39 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     self.assertCountEqual(
         _from_literals_list(expected),
         make_examples_core.regions_to_process(
-            contigs, 1000, calling_regions=_from_literals(calling_regions)))
+            contigs, 1000, calling_regions=_from_literals(calling_regions)
+        ),
+    )
 
   @parameterized.parameters(
-      (50, None, [
-          '1:1-50', '1:51-100', '2:1-50', '2:51-76', '3:1-50', '3:51-100',
-          '3:101-121'
-      ]),
+      (
+          50,
+          None,
+          [
+              '1:1-50',
+              '1:51-100',
+              '2:1-50',
+              '2:51-76',
+              '3:1-50',
+              '3:51-100',
+              '3:101-121',
+          ],
+      ),
       (120, None, ['1:1-100', '2:1-76', '3:1-120', '3:121']),
       (500, None, ['1:1-100', '2:1-76', '3:1-121']),
       (10, ['1:1-20', '1:30-35'], ['1:1-10', '1:11-20', '1:30-35']),
       (8, ['1:1-20', '1:30-35'], ['1:1-8', '1:9-16', '1:17-20', '1:30-35']),
   )
-  def test_regions_to_process_partition(self, max_size, calling_regions,
-                                        expected):
+  def test_regions_to_process_partition(
+      self, max_size, calling_regions, expected
+  ):
     contigs = _make_contigs([('1', 100), ('2', 76), ('3', 121)])
     self.assertCountEqual(
         _from_literals_list(expected),
         make_examples_core.regions_to_process(
-            contigs, max_size, calling_regions=_from_literals(calling_regions)))
+            contigs, max_size, calling_regions=_from_literals(calling_regions)
+        ),
+    )
 
   @parameterized.parameters(
       dict(includes=[], excludes=[], expected=['1:1-100', '2:1-200']),
@@ -467,25 +570,30 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
       dict(
           includes=['1', '2'],
           excludes=['1:5-10', '1:20-50', '2:10-20'],
-          expected=['1:1-4', '1:11-19', '1:51-100', '2:1-9', '2:21-200']),
+          expected=['1:1-4', '1:11-19', '1:51-100', '2:1-9', '2:21-200'],
+      ),
       dict(
           includes=['1'],
           excludes=['1:5-10', '1:20-50', '2:10-20'],
-          expected=['1:1-4', '1:11-19', '1:51-100']),
+          expected=['1:1-4', '1:11-19', '1:51-100'],
+      ),
       dict(
           includes=['2'],
           excludes=['1:5-10', '1:20-50', '2:10-20'],
-          expected=['2:1-9', '2:21-200']),
+          expected=['2:1-9', '2:21-200'],
+      ),
       # A complex example of including and excluding.
       dict(
           includes=['1:10-20', '2:50-60', '2:70-80'],
           excludes=['1:1-13', '1:19-50', '2:10-65'],
-          expected=['1:14-18', '2:70-80']),
+          expected=['1:14-18', '2:70-80'],
+      ),
   )
   def test_build_calling_regions(self, includes, excludes, expected):
     contigs = _make_contigs([('1', 100), ('2', 200)])
-    actual = make_examples_core.build_calling_regions(contigs, includes,
-                                                      excludes)
+    actual = make_examples_core.build_calling_regions(
+        contigs, includes, excludes
+    )
     self.assertCountEqual(actual, _from_literals_list(expected))
 
   def test_regions_to_process_sorted_within_contig(self):
@@ -493,10 +601,13 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     contigs = _make_contigs([('z', 100)])
     in_regions = _from_literals(['z:15', 'z:20', 'z:6', 'z:25-30', 'z:3-4'])
     sorted_regions = _from_literals_list(
-        ['z:3-4', 'z:6', 'z:15', 'z:20', 'z:25-30'])
+        ['z:3-4', 'z:6', 'z:15', 'z:20', 'z:25-30']
+    )
     actual_regions = list(
         make_examples_core.regions_to_process(
-            contigs, 100, calling_regions=in_regions))
+            contigs, 100, calling_regions=in_regions
+        )
+    )
     # The assertEqual here is checking the order is exactly what we expect.
     self.assertEqual(sorted_regions, actual_regions)
 
@@ -507,7 +618,9 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     sorted_regions = _from_literals_list(['z:5', 'z:20', 'a:10', 'n:1'])
     actual_regions = list(
         make_examples_core.regions_to_process(
-            contigs, 100, calling_regions=in_regions))
+            contigs, 100, calling_regions=in_regions
+        )
+    )
     # The assertEqual here is checking the order is exactly what we expect.
     self.assertEqual(sorted_regions, actual_regions)
 
@@ -520,7 +633,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           contigs=_make_contigs([('z', 100), ('a', 100), ('n', 100)]),
           partition_size=5,
           task_id=task_id,
-          num_shards=num_shards)
+          num_shards=num_shards,
+      )
 
     # Check that the regions are the same unsharded vs. sharded.
     unsharded_regions = get_regions(0, 0)
@@ -549,7 +663,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           contigs=_make_contigs([('z', 100), ('a', 100), ('n', 100)]),
           partition_size=10,
           task_id=task,
-          num_shards=num_shards)
+          num_shards=num_shards,
+      )
 
   @parameterized.parameters(
       # Fetch all positions
@@ -561,7 +676,8 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     contigs = _make_contigs([('chr20', 20000000)])
     calling_regions = _from_literals(calling_regions)
     variant_positions = make_examples_core.fetch_vcf_positions(
-        [testdata.TRUTH_VARIANTS_VCF], contigs, calling_regions)
+        [testdata.TRUTH_VARIANTS_VCF], contigs, calling_regions
+    )
     self.assertLen(variant_positions, expected_count)
 
   @parameterized.parameters(
@@ -577,18 +693,26 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
       # A variant after all the regions.
       (['x:1-10', 'x:11-20', 'x:21-30'], ['x:40-50'], []),
       # Multiple variants in the same region.
-      (['x:11-20', 'x:21-30'
-       ], ['x:1-2', 'x:25-26', 'x:25-26', 'x:26-27', 'x:40-50'], [1]),
+      (
+          ['x:11-20', 'x:21-30'],
+          ['x:1-2', 'x:25-26', 'x:25-26', 'x:26-27', 'x:40-50'],
+          [1],
+      ),
       # A variant spanning multiple regions belongs where it starts.
-      (['x:1-10', 'x:11-20', 'x:21-30', 'x:31-40', 'x:41-50', 'x:51-60'
-       ], ['x:15-66'], [1]),
+      (
+          ['x:1-10', 'x:11-20', 'x:21-30', 'x:31-40', 'x:41-50', 'x:51-60'],
+          ['x:15-66'],
+          [1],
+      ),
   )
-  def test_filter_regions_by_vcf(self, region_literals, variant_literals,
-                                 regions_to_keep):
+  def test_filter_regions_by_vcf(
+      self, region_literals, variant_literals, regions_to_keep
+  ):
     regions = [ranges.parse_literal(l) for l in region_literals]
     variant_positions = [ranges.parse_literal(l) for l in variant_literals]
-    output = make_examples_core.filter_regions_by_vcf(regions,
-                                                      variant_positions)
+    output = make_examples_core.filter_regions_by_vcf(
+        regions, variant_positions
+    )
     list_output = list(output)
     list_expected = [regions[i] for i in regions_to_keep]
     self.assertEqual(list_output, list_expected)
@@ -600,32 +724,42 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           vcf_names=None,
           names_to_exclude=[],
           min_coverage_fraction=1.0,
-          expected_names=['1', '2', '3']),
+          expected_names=['1', '2', '3'],
+      ),
       dict(
           ref_names=['1', '2', '3'],
           sam_names=['1', '2'],
           vcf_names=None,
           names_to_exclude=[],
           min_coverage_fraction=0.66,
-          expected_names=['1', '2']),
+          expected_names=['1', '2'],
+      ),
       dict(
           ref_names=['1', '2', '3'],
           sam_names=['1', '2'],
           vcf_names=['1', '3'],
           names_to_exclude=[],
           min_coverage_fraction=0.33,
-          expected_names=['1']),
+          expected_names=['1'],
+      ),
       dict(
           ref_names=['1', '2', '3', '4', '5'],
           sam_names=['1', '2', '3'],
           vcf_names=None,
           names_to_exclude=['4', '5'],
           min_coverage_fraction=1.0,
-          expected_names=['1', '2', '3']),
+          expected_names=['1', '2', '3'],
+      ),
   )
-  def test_ensure_consistent_contigs(self, ref_names, sam_names, vcf_names,
-                                     names_to_exclude, min_coverage_fraction,
-                                     expected_names):
+  def test_ensure_consistent_contigs(
+      self,
+      ref_names,
+      sam_names,
+      vcf_names,
+      names_to_exclude,
+      min_coverage_fraction,
+      expected_names,
+  ):
     ref_contigs = _make_contigs([(name, 100) for name in ref_names])
     sam_contigs = _make_contigs([(name, 100) for name in sam_names])
     if vcf_names is not None:
@@ -633,8 +767,12 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     else:
       vcf_contigs = None
     actual = make_examples_core._ensure_consistent_contigs(
-        ref_contigs, sam_contigs, vcf_contigs, names_to_exclude,
-        min_coverage_fraction)
+        ref_contigs,
+        sam_contigs,
+        vcf_contigs,
+        names_to_exclude,
+        min_coverage_fraction,
+    )
     self.assertEqual([a.name for a in actual], expected_names)
 
   @parameterized.parameters(
@@ -643,16 +781,24 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           sam_names=['1', '2'],
           vcf_names=None,
           names_to_exclude=[],
-          min_coverage_fraction=0.67),
+          min_coverage_fraction=0.67,
+      ),
       dict(
           ref_names=['1', '2', '3'],
           sam_names=['1', '2'],
           vcf_names=['1', '3'],
           names_to_exclude=[],
-          min_coverage_fraction=0.34),
+          min_coverage_fraction=0.34,
+      ),
   )
-  def test_ensure_inconsistent_contigs(self, ref_names, sam_names, vcf_names,
-                                       names_to_exclude, min_coverage_fraction):
+  def test_ensure_inconsistent_contigs(
+      self,
+      ref_names,
+      sam_names,
+      vcf_names,
+      names_to_exclude,
+      min_coverage_fraction,
+  ):
     ref_contigs = _make_contigs([(name, 100) for name in ref_names])
     sam_contigs = _make_contigs([(name, 100) for name in sam_names])
     if vcf_names is not None:
@@ -660,10 +806,13 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     else:
       vcf_contigs = None
     with self.assertRaisesRegex(ValueError, 'Reference contigs span'):
-      make_examples_core._ensure_consistent_contigs(ref_contigs, sam_contigs,
-                                                    vcf_contigs,
-                                                    names_to_exclude,
-                                                    min_coverage_fraction)
+      make_examples_core._ensure_consistent_contigs(
+          ref_contigs,
+          sam_contigs,
+          vcf_contigs,
+          names_to_exclude,
+          min_coverage_fraction,
+      )
 
   @flagsaver.flagsaver
   def test_regions_and_exclude_regions_flags(self):
@@ -675,12 +824,15 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.exclude_regions = 'chr20:10,010,000-10,100,000'
 
     options = make_examples.default_options(add_flags=True)
-    _, regions_from_options = make_examples_core.processing_regions_from_options(
-        options)
+    _, regions_from_options = (
+        make_examples_core.processing_regions_from_options(options)
+    )
     self.assertCountEqual(
         list(ranges.RangeSet(regions_from_options)),
         _from_literals_list(
-            ['chr20:10,000,000-10,009,999', 'chr20:10,100,001-11,000,000']))
+            ['chr20:10,000,000-10,009,999', 'chr20:10,100,001-11,000,000']
+        ),
+    )
 
   @flagsaver.flagsaver
   def test_incorrect_empty_regions(self):
@@ -743,17 +895,15 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
-        retval=({
-            'main_sample': candidates
-        }, {
-            'main_sample': []
-        }))
+        retval=({'main_sample': candidates}, {'main_sample': []}),
+    )
     self.processor.process(self.region)
     test_utils.assert_called_once_workaround(self.mock_init)
     mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.options.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames,
+    )
     mock_rr.assert_called_once_with(reads=[], region=self.region)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region)
@@ -766,17 +916,15 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
-        retval=({
-            'main_sample': []
-        }, {
-            'main_sample': []
-        }))
+        retval=({'main_sample': []}, {'main_sample': []}),
+    )
     self.processor.process(self.region)
     test_utils.assert_not_called_workaround(self.mock_init)
     mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.options.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames,
+    )
     mock_rr.assert_called_once_with(reads=[], region=self.region)
     mock_cir.assert_called_once_with(self.region)
 
@@ -786,11 +934,8 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
-        retval=({
-            'main_sample': []
-        }, {
-            'main_sample': []
-        }))
+        retval=({'main_sample': []}, {'main_sample': []}),
+    )
     candidates, gvcfs, runtimes = self.processor.process(self.region)
     self.assertEmpty(candidates['main_sample'])
     self.assertEmpty(gvcfs['main_sample'])
@@ -798,13 +943,14 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.options.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames,
+    )
     mock_rr.assert_called_once_with(reads=[], region=self.region)
     mock_cir.assert_called_once_with(self.region)
 
   @parameterized.parameters([
       deepvariant_pb2.MakeExamplesOptions.TRAINING,
-      deepvariant_pb2.MakeExamplesOptions.CALLING
+      deepvariant_pb2.MakeExamplesOptions.CALLING,
   ])
   def test_process_calls_with_candidates(self, mode):
     self.processor.options.mode = mode
@@ -816,11 +962,8 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr = self.add_mock('realign_reads', retval=[mock_read])
     mock_cir = self.add_mock(
         'candidates_in_region',
-        retval=({
-            'main_sample': [mock_candidate]
-        }, {
-            'main_sample': []
-        }))
+        retval=({'main_sample': [mock_candidate]}, {'main_sample': []}),
+    )
     candidates, gvcfs, runtimes = self.processor.process(self.region)
     self.assertEqual(candidates['main_sample'], [mock_candidate])
     self.assertEmpty(gvcfs['main_sample'])
@@ -828,13 +971,14 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
-        reads_filenames=main_sample.options.reads_filenames)
+        reads_filenames=main_sample.options.reads_filenames,
+    )
     mock_rr.assert_called_once_with(reads=[mock_read], region=self.region)
     mock_cir.assert_called_once_with(self.region)
 
   @parameterized.parameters([
       deepvariant_pb2.MakeExamplesOptions.TRAINING,
-      deepvariant_pb2.MakeExamplesOptions.CALLING
+      deepvariant_pb2.MakeExamplesOptions.CALLING,
   ])
   def test_process_keeps_ordering_of_candidates_and_examples(self, mode):
     self.processor.options.mode = mode
@@ -846,23 +990,22 @@ class RegionProcessorTest(parameterized.TestCase):
     self.add_mock('realign_reads', retval=[r1, r2])
     self.add_mock(
         'candidates_in_region',
-        retval=({
-            'main_sample': [c1, c2]
-        }, {
-            'main_sample': []
-        }))
+        retval=({'main_sample': [c1, c2]}, {'main_sample': []}),
+    )
     candidates, gvcfs, runtimes = self.processor.process(self.region)
     self.assertEqual(candidates['main_sample'], [c1, c2])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with(
-        [r1, r2])
+        [r1, r2]
+    )
 
   def test_process_with_realigner(self):
     self.processor.options.mode = deepvariant_pb2.MakeExamplesOptions.CALLING
     self.processor.options.realigner_enabled = True
     self.processor.options.realigner_options.CopyFrom(
-        realigner_pb2.RealignerOptions())
+        realigner_pb2.RealignerOptions()
+    )
     self.processor.realigner = mock.Mock()
     self.processor.realigner.realign_reads.return_value = [], []
 
@@ -873,19 +1016,17 @@ class RegionProcessorTest(parameterized.TestCase):
     c1, c2 = mock.Mock(), mock.Mock()
     self.add_mock(
         'candidates_in_region',
-        retval=({
-            'main_sample': [c1, c2]
-        }, {
-            'main_sample': []
-        }))
+        retval=({'main_sample': [c1, c2]}, {'main_sample': []}),
+    )
 
     candidates, gvcfs, runtimes = self.processor.process(self.region)
     self.assertEqual(candidates['main_sample'], [c1, c2])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertIsInstance(runtimes, dict)
     main_sample.sam_readers[0].query.assert_called_once_with(self.region)
-    self.processor.realigner.realign_reads.assert_called_once_with([],
-                                                                   self.region)
+    self.processor.realigner.realign_reads.assert_called_once_with(
+        [], self.region
+    )
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
 
   def test_candidates_in_region_no_reads(self):
@@ -909,11 +1050,14 @@ class RegionProcessorTest(parameterized.TestCase):
     # Setup our make_allele_counter and other mocks.
     mock_ac = mock.Mock()
     mock_make_ac = self.add_mock(
-        '_make_allele_counter_for_region', retval=mock_ac)
+        '_make_allele_counter_for_region', retval=mock_ac
+    )
     # Setup our make_variant_caller and downstream mocks.
     mock_vc = mock.Mock()
-    mock_vc.calls_and_gvcfs.return_value = (['variant'],
-                                            ['gvcf'] if include_gvcfs else [])
+    mock_vc.calls_and_gvcfs.return_value = (
+        ['variant'],
+        ['gvcf'] if include_gvcfs else [],
+    )
     main_sample.variant_caller = mock_vc
 
     actual = self.processor.candidates_in_region(self.region)
@@ -924,8 +1068,9 @@ class RegionProcessorTest(parameterized.TestCase):
     # Make sure we're creating an AlleleCounter once and adding each of our
     # reads to it.
     mock_make_ac.assert_called_once_with(self.region, [])
-    self.assertEqual([mock.call(r, 'sample_id') for r in reads],
-                     mock_ac.add.call_args_list)
+    self.assertEqual(
+        [mock.call(r, 'sample_id') for r in reads], mock_ac.add.call_args_list
+    )
 
     # Make sure we call CallVariant for each of the counts returned by the
     # allele counter.
@@ -936,15 +1081,15 @@ class RegionProcessorTest(parameterized.TestCase):
         include_gvcfs=include_gvcfs,
         include_med_dp=include_med_dp,
         left_padding=0,
-        right_padding=0)
+        right_padding=0,
+    )
 
     # Finally, our actual result should be the single 'variant' and potentially
     # the gvcf records, each organized by sample.
-    expected_output = ({
-        'main_sample': ['variant']
-    }, {
-        'main_sample': ['gvcf'] if include_gvcfs else []
-    })
+    expected_output = (
+        {'main_sample': ['variant']},
+        {'main_sample': ['gvcf'] if include_gvcfs else []},
+    )
     self.assertEqual(expected_output, actual)
 
   def test_create_pileup_examples_handles_none(self):
@@ -958,7 +1103,8 @@ class RegionProcessorTest(parameterized.TestCase):
         reads_for_samples=[[]],
         haplotype_alignments_for_samples=None,
         haplotype_sequences=None,
-        sample_order=None)
+        sample_order=None,
+    )
 
   def test_create_pileup_examples(self):
     self.processor.pic = mock.Mock()
@@ -966,14 +1112,19 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.pic.get_channels.return_value = None
     self.add_mock(
         '_encode_tensor',
-        side_effect=[(b'tensor1', self.default_shape),
-                     (b'tensor2', self.default_shape)])
+        side_effect=[
+            (b'tensor1', self.default_shape),
+            (b'tensor2', self.default_shape),
+        ],
+    )
     dv_call = mock.Mock()
     dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
     ex = mock.Mock()
     alt1, alt2 = ['C'], ['G']
-    self.processor.pic.create_pileup_images.return_value = [(alt1, b'tensor1'),
-                                                            (alt2, b'tensor2')]
+    self.processor.pic.create_pileup_images.return_value = [
+        (alt1, b'tensor1'),
+        (alt2, b'tensor2'),
+    ]
 
     actual = self.processor.create_pileup_examples(dv_call)
 
@@ -982,7 +1133,8 @@ class RegionProcessorTest(parameterized.TestCase):
         reads_for_samples=[[]],
         haplotype_alignments_for_samples=None,
         haplotype_sequences=None,
-        sample_order=None)
+        sample_order=None,
+    )
 
     self.assertLen(actual, 2)
     for ex, (alt, img) in zip(actual, [(alt1, b'tensor1'), (alt2, b'tensor2')]):
@@ -997,7 +1149,8 @@ class RegionProcessorTest(parameterized.TestCase):
           label=variant_labeler.VariantLabel(
               is_confident=True,
               variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-              genotype=(0, 1)),
+              genotype=(0, 1),
+          ),
           expected_label_value=1,
       ),
       # Test that a reference variant gets a label value of 0 in the example.
@@ -1005,7 +1158,8 @@ class RegionProcessorTest(parameterized.TestCase):
           label=variant_labeler.VariantLabel(
               is_confident=True,
               variant=test_utils.make_variant(start=10, alleles=['A', '.']),
-              genotype=(0, 0)),
+              genotype=(0, 0),
+          ),
           expected_label_value=0,
       ),
   )
@@ -1040,19 +1194,23 @@ class RegionProcessorTest(parameterized.TestCase):
     label = variant_labeler.VariantLabel(
         is_confident=False,
         variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-        genotype=(0, 1))
+        genotype=(0, 1),
+    )
     example = self._example_for_variant(label.variant)
     with self.assertRaisesRegex(
-        ValueError, 'Cannot add a non-confident label to an example'):
+        ValueError, 'Cannot add a non-confident label to an example'
+    ):
       self.processor.add_label_to_example(example, label)
 
   def _example_for_variant(self, variant):
-    return dv_utils.make_example(variant, list(variant.alternate_bases), b'foo',
-                                 self.default_shape)
+    return dv_utils.make_example(
+        variant, list(variant.alternate_bases), b'foo', self.default_shape
+    )
 
   @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')
   def test_flags_strictly_needs_sam_aux_fields(
-      self, flags_strictly_needs_sam_aux_fields):
+      self, flags_strictly_needs_sam_aux_fields
+  ):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
@@ -1063,20 +1221,33 @@ class RegionProcessorTest(parameterized.TestCase):
     with self.assertRaisesRegex(
         Exception,
         'If --{} is set then --parse_sam_aux_fields must be set too.'.format(
-            flags_strictly_needs_sam_aux_fields)):
+            flags_strictly_needs_sam_aux_fields
+        ),
+    ):
       make_examples.default_options(add_flags=True)
 
   @parameterized.parameters(
       ('add_hp_channel', True, None),
-      ('add_hp_channel', False,
-       'Note that --{} is set but --parse_sam_aux_fields is not set.'),
-      ('add_hp_channel', None,
-       'Because --{}=true, --parse_sam_aux_fields is set to true to enable '
-       'reading auxiliary fields from reads.'),
+      (
+          'add_hp_channel',
+          False,
+          'Note that --{} is set but --parse_sam_aux_fields is not set.',
+      ),
+      (
+          'add_hp_channel',
+          None,
+          (
+              'Because --{}=true, --parse_sam_aux_fields is set to true to'
+              ' enable reading auxiliary fields from reads.'
+          ),
+      ),
   )
   def test_flag_optionally_needs_sam_aux_fields_with_different_parse_sam_aux_fields(
-      self, flag_optionally_needs_sam_aux_fields, parse_sam_aux_fields,
-      expected_message):
+      self,
+      flag_optionally_needs_sam_aux_fields,
+      parse_sam_aux_fields,
+      expected_message,
+  ):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
@@ -1092,7 +1263,8 @@ class RegionProcessorTest(parameterized.TestCase):
     if aux_fields_log_messages:
       self.assertRegex(
           aux_fields_log_messages[0],
-          expected_message.format(flag_optionally_needs_sam_aux_fields))
+          expected_message.format(flag_optionally_needs_sam_aux_fields),
+      )
     else:
       self.assertEmpty(aux_fields_log_messages)
 
@@ -1100,7 +1272,8 @@ class RegionProcessorTest(parameterized.TestCase):
       [
           dict(window_width=221),
           dict(window_width=1001),
-      ],)
+      ],
+  )
   def test_align_to_all_haplotypes(self, window_width):
     # align_to_all_haplotypes() will pull from the reference, so choose a
     # real variant.
@@ -1126,7 +1299,8 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.realigner.ref_reader = self.ref_reader
 
     read = test_utils.make_read(
-        'A' * 101, start=10046100, cigar='101M', quals=[30] * 101)
+        'A' * 101, start=10046100, cigar='101M', quals=[30] * 101
+    )
 
     self.processor.realigner.align_to_haplotype = mock.Mock()
     alt_info = self.processor.align_to_all_haplotypes(variant, [read])
@@ -1144,8 +1318,9 @@ class RegionProcessorTest(parameterized.TestCase):
 
     # If variant reference_bases are wrong, it should raise a ValueError.
     variant.reference_bases = 'G'
-    with self.assertRaisesRegex(ValueError,
-                                'does not match the bases in the reference'):
+    with self.assertRaisesRegex(
+        ValueError, 'does not match the bases in the reference'
+    ):
       self.processor.align_to_all_haplotypes(variant, [read])
 
 

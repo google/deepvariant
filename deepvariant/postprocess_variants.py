@@ -68,59 +68,108 @@ from third_party.nucleus.util.struct_utils import add_string_field
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-    'infile', None,
-    'Required. Path(s) to CallVariantOutput protos in TFRecord format to '
-    'postprocess. These should be the complete set of outputs for '
-    'call_variants.py.')
+    'infile',
+    None,
+    (
+        'Required. Path(s) to CallVariantOutput protos in TFRecord format to '
+        'postprocess. These should be the complete set of outputs for '
+        'call_variants.py.'
+    ),
+)
 flags.DEFINE_string(
-    'outfile', None,
-    'Required. Destination path where we will write output variant calls in '
-    'VCF format.')
+    'outfile',
+    None,
+    (
+        'Required. Destination path where we will write output variant calls in'
+        ' VCF format.'
+    ),
+)
 flags.DEFINE_string(
-    'ref', None,
-    'Required. Genome reference in FAI-indexed FASTA format. Used to determine '
-    'the sort order for the emitted variants and the VCF header.')
+    'ref',
+    None,
+    (
+        'Required. Genome reference in FAI-indexed FASTA format. Used to'
+        ' determine the sort order for the emitted variants and the VCF header.'
+    ),
+)
 flags.DEFINE_float(
-    'qual_filter', 1.0,
-    'Any variant with QUAL < qual_filter will be filtered in the VCF file.')
+    'qual_filter',
+    1.0,
+    'Any variant with QUAL < qual_filter will be filtered in the VCF file.',
+)
 flags.DEFINE_float(
-    'cnn_homref_call_min_gq', 20.0,
-    'All CNN RefCalls whose GQ is less than this value will have ./. genotype '
-    'instead of 0/0.')
+    'cnn_homref_call_min_gq',
+    20.0,
+    (
+        'All CNN RefCalls whose GQ is less than this value will have ./.'
+        ' genotype instead of 0/0.'
+    ),
+)
 flags.DEFINE_float(
-    'multi_allelic_qual_filter', 1.0,
-    'The qual value below which to filter multi-allelic variants.')
+    'multi_allelic_qual_filter',
+    1.0,
+    'The qual value below which to filter multi-allelic variants.',
+)
 flags.DEFINE_string(
-    'nonvariant_site_tfrecord_path', None,
-    'Optional. Path(s) to the non-variant sites protos in TFRecord format to '
-    'convert to gVCF file. This should be the complete set of outputs from the '
-    '--gvcf flag of make_examples.py.')
+    'nonvariant_site_tfrecord_path',
+    None,
+    (
+        'Optional. Path(s) to the non-variant sites protos in TFRecord format'
+        ' to convert to gVCF file. This should be the complete set of outputs'
+        ' from the --gvcf flag of make_examples.py.'
+    ),
+)
 flags.DEFINE_string(
-    'gvcf_outfile', None,
-    'Optional. Destination path where we will write the Genomic VCF output.')
+    'gvcf_outfile',
+    None,
+    'Optional. Destination path where we will write the Genomic VCF output.',
+)
 flags.DEFINE_boolean(
-    'group_variants', True, 'If using vcf_candidate_importer and multi-allelic '
-    'sites are split across multiple lines in VCF, set to False so that '
-    'variants are not grouped when transforming CallVariantsOutput to '
-    'Variants.')
+    'group_variants',
+    True,
+    (
+        'If using vcf_candidate_importer and multi-allelic '
+        'sites are split across multiple lines in VCF, set to False so that '
+        'variants are not grouped when transforming CallVariantsOutput to '
+        'Variants.'
+    ),
+)
 flags.DEFINE_boolean(
-    'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
-    'statistics about the output VCF at the same base path given by --outfile.')
+    'vcf_stats_report',
+    True,
+    (
+        'Optional. Output a visual report (HTML) of statistics about the output'
+        ' VCF at the same base path given by --outfile.'
+    ),
+)
 flags.DEFINE_string(
-    'sample_name', None,
-    'Optional. If set, this will only be used if the sample name cannot be '
-    'determined from the CallVariantsOutput or non-variant sites protos.')
+    'sample_name',
+    None,
+    (
+        'Optional. If set, this will only be used if the sample name cannot be '
+        'determined from the CallVariantsOutput or non-variant sites protos.'
+    ),
+)
 flags.DEFINE_boolean(
-    'use_multiallelic_model', False,
-    'If True, use a specialized model for genotype resolution of multiallelic '
-    'cases with two alts.')
+    'use_multiallelic_model',
+    False,
+    (
+        'If True, use a specialized model for genotype resolution of'
+        ' multiallelic cases with two alts.'
+    ),
+)
 flags.DEFINE_enum(
-    'debug_output_all_candidates', None, ['ALT', 'INFO'],
-    'Outputs all candidates considered by DeepVariant as additional ALT '
-    'alleles  or as an INFO field. For ALT, filtered candidates are assigned '
-    'a GL=0 and added as ALTs alleles, but do not appear in any sample '
-    'genotypes. This flag is useful for debugging purposes. '
-    'ALT-mode is incompatible with the multiallelic caller.')
+    'debug_output_all_candidates',
+    None,
+    ['ALT', 'INFO'],
+    (
+        'Outputs all candidates considered by DeepVariant as additional ALT'
+        ' alleles  or as an INFO field. For ALT, filtered candidates are'
+        ' assigned a GL=0 and added as ALTs alleles, but do not appear in any'
+        ' sample genotypes. This flag is useful for debugging purposes.'
+        ' ALT-mode is incompatible with the multiallelic caller.'
+    ),
+)
 flags.DEFINE_boolean('only_keep_pass', False, 'If True, only keep PASS calls.')
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
@@ -162,7 +211,8 @@ def _extract_single_sample_name(record):
   name = call.call_set_name
   if not name:
     raise ValueError(
-        'Error extracting name: no call_set_name set: {}'.format(record))
+        'Error extracting name: no call_set_name set: {}'.format(record)
+    )
 
   return name
 
@@ -233,8 +283,7 @@ def most_likely_genotype(predictions, ploidy=2, n_alleles=2):
     predictions: N element array-like. The real-space probabilities of each
       genotype state for this variant. The number of elements in predictions is
       related to ploidy and n_alleles is given by N = choose(ploidy + n_alleles
-      - 1, n_alleles -1)
-      for more information see:
+      - 1, n_alleles -1) for more information see:
       http://genome.sph.umich.edu/wiki/Relationship_between_Ploidy,_Alleles_and_Genotypes
     ploidy: int >= 1. The ploidy (e.g., number of chromosomes) of this sample.
     n_alleles: int >= 2. The number of alleles (ref + n_alts).
@@ -296,8 +345,10 @@ def uncall_homref_gt_if_lowqual(variant, min_homref_gq):
     min_homref_gq: float.
   """
   vcall = variant_utils.only_call(variant)
-  if (variant.filter == [dv_vcf_constants.DEEP_VARIANT_REF_FILTER] and
-      variantcall_utils.get_gq(vcall) < min_homref_gq):
+  if (
+      variant.filter == [dv_vcf_constants.DEEP_VARIANT_REF_FILTER]
+      and variantcall_utils.get_gq(vcall) < min_homref_gq
+  ):
     vcall.genotype[:] = [-1, -1]
 
 
@@ -363,7 +414,9 @@ def compute_quals(predictions, prediction_index):
   # GQ is rounded to the nearest integer to comply with the VCF spec.
   gq = int(
       np.around(
-          genomics_math.ptrue_to_bounded_phred(predictions[prediction_index])))
+          genomics_math.ptrue_to_bounded_phred(predictions[prediction_index])
+      )
+  )
   # QUAL is prob(variant genotype) / prob(all genotypes)
   # Taking the min to avoid minor numerical issues than can push sum > 1.0.
   # TODO: this is equivalent to the likely better implementation:
@@ -383,24 +436,34 @@ def expected_alt_allele_indices(num_alternate_bases):
   ]
   # alt_allele_indices starts from 0, where 0 refers to the first alt allele.
   # pylint: disable=g-complex-comprehension
-  return sorted([[i - 1
-                  for i in alt_allele_indices]
-                 for alt_allele_indices in alt_allele_indices_list])
+  return sorted(
+      [
+          [i - 1 for i in alt_allele_indices]
+          for alt_allele_indices in alt_allele_indices_list
+      ]
+  )
   # pylint: enable=g-complex-comprehension
 
 
 def _check_alt_allele_indices(call_variants_outputs):
   """Returns True if and only if the alt allele indices are valid."""
-  all_alt_allele_indices = sorted([
-      list(call_variants_output.alt_allele_indices.indices)
-      for call_variants_output in call_variants_outputs
-  ])
+  all_alt_allele_indices = sorted(
+      [
+          list(call_variants_output.alt_allele_indices.indices)
+          for call_variants_output in call_variants_outputs
+      ]
+  )
   if all_alt_allele_indices != expected_alt_allele_indices(
-      len(call_variants_outputs[0].variant.alternate_bases)):
+      len(call_variants_outputs[0].variant.alternate_bases)
+  ):
     logging.warning(
-        'Alt allele indices found from call_variants_outputs for '
-        'variant %s is %s, which is invalid.', call_variants_outputs[0].variant,
-        all_alt_allele_indices)
+        (
+            'Alt allele indices found from call_variants_outputs for '
+            'variant %s is %s, which is invalid.'
+        ),
+        call_variants_outputs[0].variant,
+        all_alt_allele_indices,
+    )
     return False
   return True
 
@@ -426,9 +489,13 @@ def is_valid_call_variants_outputs(call_variants_outputs):
   for call_to_check in other_calls:
     if first_call.variant != call_to_check.variant:
       logging.warning(
-          'Expected all inputs to merge_predictions to have the '
-          'same `variant`, but getting %s and %s.', first_call.variant,
-          call_to_check.variant)
+          (
+              'Expected all inputs to merge_predictions to have the '
+              'same `variant`, but getting %s and %s.'
+          ),
+          first_call.variant,
+          call_to_check.variant,
+      )
       return False
   return True
 
@@ -437,7 +504,8 @@ def convert_call_variants_outputs_to_probs_dict(
     canonical_variant,
     call_variants_outputs,
     alt_alleles_to_remove,
-    debug_output_all_candidates=None):
+    debug_output_all_candidates=None,
+):
   """Converts a list of CallVariantsOutput to an internal allele probs dict.
 
   Args:
@@ -459,7 +527,8 @@ def convert_call_variants_outputs_to_probs_dict(
     allele_set1 = frozenset([canonical_variant.reference_bases])
     allele_set2 = frozenset(
         canonical_variant.alternate_bases[index]
-        for index in call_variants_output.alt_allele_indices.indices)
+        for index in call_variants_output.alt_allele_indices.indices
+    )
     has_alleles_to_rm = bool(alt_alleles_to_remove.intersection(allele_set2))
     if has_alleles_to_rm and debug_output_all_candidates != 'ALT':
       continue
@@ -467,13 +536,18 @@ def convert_call_variants_outputs_to_probs_dict(
       # This block is run when debug_output_all_candidates=ALT
       # It sets genotype likelihood to a placeholder value,
       # which is later used to set GL=1.0 (prob=0).
-      p11, p12, p22 = (_FILTERED_ALT_PROB, _FILTERED_ALT_PROB,
-                       _FILTERED_ALT_PROB)
+      p11, p12, p22 = (
+          _FILTERED_ALT_PROB,
+          _FILTERED_ALT_PROB,
+          _FILTERED_ALT_PROB,
+      )
     else:
       p11, p12, p22 = call_variants_output.genotype_probabilities
-    for (set1, set2, p) in [(allele_set1, allele_set1, p11),
-                            (allele_set1, allele_set2, p12),
-                            (allele_set2, allele_set2, p22)]:
+    for set1, set2, p in [
+        (allele_set1, allele_set1, p11),
+        (allele_set1, allele_set2, p12),
+        (allele_set2, allele_set2, p22),
+    ]:
       for indices in itertools.product(set1, set2):
         flattened_dict[indices].append(p)
   return flattened_dict
@@ -513,15 +587,19 @@ def get_alt_alleles_to_remove(call_variants_outputs, qual_filter):
       # where QUAL < FLAGS.qual_filter. This is because if QUAL is too low,
       # it means it is unlikely this has a variant genotype.
       _, qual = compute_quals(
-          call_variants_output.genotype_probabilities, prediction_index=0)
+          call_variants_output.genotype_probabilities, prediction_index=0
+      )
       alt_allele_index = call_variants_output.alt_allele_indices.indices[0]
       # Keep track of one alt allele with the highest qual score.
       if max_qual is None or max_qual < qual:
         max_qual, max_qual_allele = (
-            qual, canonical_variant.alternate_bases[alt_allele_index])
+            qual,
+            canonical_variant.alternate_bases[alt_allele_index],
+        )
       if qual < qual_filter:
         alt_alleles_to_remove.add(
-            canonical_variant.alternate_bases[alt_allele_index])
+            canonical_variant.alternate_bases[alt_allele_index]
+        )
 
   # If all alt alleles are below `qual_filter`, keep at least one.
   if len(alt_alleles_to_remove) == len(canonical_variant.alternate_bases):
@@ -575,7 +653,8 @@ class AlleleRemapper(object):
         if field in call.info:
           entry = call.info[field]
           updated = [
-              v for i, v in enumerate(entry.values)
+              v
+              for i, v in enumerate(entry.values)
               if self.keep_index(i, ref_is_zero=ref_is_zero)
           ]
           # We cannot do entry.values[:] = updated as the ListValue type "does
@@ -603,8 +682,9 @@ def prune_alleles(variant, alt_alleles_to_remove):
 
   # Cleanup any VariantCall.info fields indexed by alt allele.
   remapper = AlleleRemapper(variant.alternate_bases, alt_alleles_to_remove)
-  remapper.reindex_allele_indexed_fields(new_variant,
-                                         _ALT_ALLELE_INDEXED_FORMAT_FIELDS)
+  remapper.reindex_allele_indexed_fields(
+      new_variant, _ALT_ALLELE_INDEXED_FORMAT_FIELDS
+  )
   new_variant.alternate_bases[:] = remapper.retained_alt_alleles()
 
   return new_variant
@@ -657,11 +737,13 @@ def get_multiallelic_distributions(call_variants_outputs, pruned_alleles):
 
   assert len(alt_allele_indices_to_probs) == 3
   # Concatenate all probabilities into one array.
-  final_probs = np.array([
-      alt_allele_indices_to_probs[first_alt_index] +
-      alt_allele_indices_to_probs[second_alt_index] +
-      alt_allele_indices_to_probs[(first_alt_index, second_alt_index)]
-  ])
+  final_probs = np.array(
+      [
+          alt_allele_indices_to_probs[first_alt_index]
+          + alt_allele_indices_to_probs[second_alt_index]
+          + alt_allele_indices_to_probs[(first_alt_index, second_alt_index)]
+      ]
+  )
   return final_probs
 
 
@@ -690,18 +772,21 @@ def normalize_predictions(predictions):
   """Normalize predictions and handle soft-filtered alt alleles."""
   if sum(predictions) == 0:
     predictions = [1.0] * len(predictions)
-  denominator = sum(
-      [i if i != _FILTERED_ALT_PROB else 0.0 for i in predictions]) or 1.0
+  denominator = (
+      sum([i if i != _FILTERED_ALT_PROB else 0.0 for i in predictions]) or 1.0
+  )
   normalized_predictions = [
       i / denominator if i != _FILTERED_ALT_PROB else 0.0 for i in predictions
   ]
   return normalized_predictions
 
 
-def merge_predictions(call_variants_outputs,
-                      qual_filter=None,
-                      multiallelic_model=None,
-                      debug_output_all_candidates=None):
+def merge_predictions(
+    call_variants_outputs,
+    qual_filter=None,
+    multiallelic_model=None,
+    debug_output_all_candidates=None,
+):
   """Merges the predictions from the multi-allelic calls."""
   # See the logic described in the class PileupImageCreator pileup_image.py
   #
@@ -717,28 +802,37 @@ def merge_predictions(call_variants_outputs,
   canonical_variant = first_call.variant
   if not other_calls:
     canonical_variant = variant_utils.simplify_variant_alleles(
-        canonical_variant)
+        canonical_variant
+    )
     return canonical_variant, first_call.genotype_probabilities
 
-  alt_alleles_to_remove = get_alt_alleles_to_remove(call_variants_outputs,
-                                                    qual_filter)
+  alt_alleles_to_remove = get_alt_alleles_to_remove(
+      call_variants_outputs, qual_filter
+  )
 
   # flattened_probs_dict is only used with the multiallelic model
   flattened_probs_dict = convert_call_variants_outputs_to_probs_dict(
-      canonical_variant, call_variants_outputs, alt_alleles_to_remove,
-      debug_output_all_candidates)
+      canonical_variant,
+      call_variants_outputs,
+      alt_alleles_to_remove,
+      debug_output_all_candidates,
+  )
 
   if debug_output_all_candidates == 'INFO':
-    add_string_field(canonical_variant.info, 'CANDIDATES',
-                     '|'.join(canonical_variant.alternate_bases))
+    add_string_field(
+        canonical_variant.info,
+        'CANDIDATES',
+        '|'.join(canonical_variant.alternate_bases),
+    )
   if debug_output_all_candidates != 'ALT':
     canonical_variant = prune_alleles(canonical_variant, alt_alleles_to_remove)
   # Run alternate model for multiallelic cases.
   num_alts = len(canonical_variant.alternate_bases)
   if num_alts == 2 and multiallelic_model is not None:
     # We have 3 CVOs for 2 alts. In this case, there are 6 possible genotypes.
-    cvo_probs = get_multiallelic_distributions(call_variants_outputs,
-                                               alt_alleles_to_remove)
+    cvo_probs = get_multiallelic_distributions(
+        call_variants_outputs, alt_alleles_to_remove
+    )
     normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]
   else:
 
@@ -746,8 +840,10 @@ def merge_predictions(call_variants_outputs,
       return min([x for x in probs if x != _FILTERED_ALT_PROB] or [0])
 
     predictions = [
-        min_alt_filter(flattened_probs_dict[(m, n)]) for _, _, m, n in
-        variant_utils.genotype_ordering_in_likelihoods(canonical_variant)
+        min_alt_filter(flattened_probs_dict[(m, n)])
+        for _, _, m, n in variant_utils.genotype_ordering_in_likelihoods(
+            canonical_variant
+        )
     ]
     if sum(predictions) == 0:
       predictions = [1.0] * len(predictions)
@@ -770,27 +866,33 @@ def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
   """
   logging.info('Writing output to VCF file: %s', output_vcf_path)
   with vcf.VcfWriter(
-      output_vcf_path, header=header, round_qualities=True) as writer:
+      output_vcf_path, header=header, round_qualities=True
+  ) as writer:
     count = 0
     for variant in variant_iterable:
-      if (not FLAGS.only_keep_pass or
-          variant.filter == [dv_vcf_constants.DEEP_VARIANT_PASS]):
+      if not FLAGS.only_keep_pass or variant.filter == [
+          dv_vcf_constants.DEEP_VARIANT_PASS
+      ]:
         count += 1
         writer.write(variant)
-        logging.log_every_n(logging.INFO, '%s variants written.', _LOG_EVERY_N,
-                            count)
+        logging.log_every_n(
+            logging.INFO, '%s variants written.', _LOG_EVERY_N, count
+        )
 
 
 def _sort_grouped_variants(group):
   return sorted(group, key=lambda x: sorted(x.alt_allele_indices.indices))
 
 
-def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
-                                                qual_filter,
-                                                multi_allelic_qual_filter,
-                                                sample_name, group_variants,
-                                                use_multiallelic_model,
-                                                debug_output_all_candidates):
+def _transform_call_variants_output_to_variants(
+    input_sorted_tfrecord_path,
+    qual_filter,
+    multi_allelic_qual_filter,
+    sample_name,
+    group_variants,
+    use_multiallelic_model,
+    debug_output_all_candidates,
+):
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
   Variants present in the input TFRecord are converted to Variant protos, with
@@ -817,25 +919,30 @@ def _transform_call_variants_output_to_variants(input_sorted_tfrecord_path,
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
   multiallelic_model = get_multiallelic_model(
-      use_multiallelic_model=use_multiallelic_model)
+      use_multiallelic_model=use_multiallelic_model
+  )
   group_fn = None
   if group_variants:
     group_fn = lambda x: variant_utils.variant_range(x.variant)
   for _, group in itertools.groupby(
       tfrecord.read_tfrecords(
-          input_sorted_tfrecord_path, proto=deepvariant_pb2.CallVariantsOutput),
-      group_fn):
+          input_sorted_tfrecord_path, proto=deepvariant_pb2.CallVariantsOutput
+      ),
+      group_fn,
+  ):
     outputs = _sort_grouped_variants(group)
     canonical_variant, predictions = merge_predictions(
         outputs,
         multi_allelic_qual_filter,
         multiallelic_model=multiallelic_model,
-        debug_output_all_candidates=debug_output_all_candidates)
+        debug_output_all_candidates=debug_output_all_candidates,
+    )
     variant = add_call_to_variant(
         canonical_variant,
         predictions,
         qual_filter=qual_filter,
-        sample_name=sample_name)
+        sample_name=sample_name,
+    )
     yield variant
 
 
@@ -881,7 +988,8 @@ def _create_record_from_template(template, start, end, fasta_reader):
   retval.end = end
   if start != template.start:
     retval.reference_bases = fasta_reader.query(
-        ranges.make_range(retval.reference_name, start, start + 1))
+        ranges.make_range(retval.reference_name, start, start + 1)
+    )
   return retval
 
 
@@ -944,7 +1052,8 @@ def get_cvo_paths_and_first_record():
 
   paths = sharded_file_utils.maybe_generate_sharded_filenames(FLAGS.infile)
   record = dv_utils.get_one_example_from_examples_path(
-      ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
+      ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput
+  )
   return paths, record
 
 
@@ -965,34 +1074,51 @@ def get_sample_name():
   _, record = get_cvo_paths_and_first_record()
   if FLAGS.nonvariant_site_tfrecord_path:
     gvcf_record = dv_utils.get_one_example_from_examples_path(
-        FLAGS.nonvariant_site_tfrecord_path, proto=variants_pb2.Variant)
+        FLAGS.nonvariant_site_tfrecord_path, proto=variants_pb2.Variant
+    )
 
   if record is not None:
     sample_name = _extract_single_sample_name(record)
-    logging.info('Using sample name from call_variants output. Sample name: %s',
-                 sample_name)
+    logging.info(
+        'Using sample name from call_variants output. Sample name: %s',
+        sample_name,
+    )
     if FLAGS.sample_name:
       logging.info('--sample_name is set but was not used.')
 
-  elif FLAGS.nonvariant_site_tfrecord_path and gvcf_record and gvcf_record.calls:
+  elif (
+      FLAGS.nonvariant_site_tfrecord_path and gvcf_record and gvcf_record.calls
+  ):
     sample_name = gvcf_record.calls[0].call_set_name
     logging.info(
-        'call_variants output is empty, so using sample name from TFRecords at '
-        '--nonvariant_site_tfrecord_path. Sample name: %s', sample_name)
+        (
+            'call_variants output is empty, so using sample name from TFRecords'
+            ' at --nonvariant_site_tfrecord_path. Sample name: %s'
+        ),
+        sample_name,
+    )
     if FLAGS.sample_name:
       logging.info('--sample_name is set but was not used.')
 
   elif FLAGS.sample_name:
     sample_name = FLAGS.sample_name
     logging.info(
-        'call_variants output and nonvariant TFRecords are empty. Using sample '
-        'name set with --sample_name. Sample name: %s', sample_name)
+        (
+            'call_variants output and nonvariant TFRecords are empty. Using'
+            ' sample name set with --sample_name. Sample name: %s'
+        ),
+        sample_name,
+    )
 
   else:
     sample_name = dv_constants.DEFAULT_SAMPLE_NAME
     logging.info(
-        'Could not determine sample name and --sample_name is unset. Using the '
-        'default sample name. Sample name: %s', sample_name)
+        (
+            'Could not determine sample name and --sample_name is unset. Using'
+            ' the default sample name. Sample name: %s'
+        ),
+        sample_name,
+    )
   return sample_name
 
 
@@ -1002,25 +1128,38 @@ def main(argv=()):
       errors.log_and_raise(
           'Command line parsing failure: postprocess_variants does not accept '
           'positional arguments but some are present on the command line: '
-          '"{}".'.format(str(argv)), errors.CommandLineError)
+          '"{}".'.format(str(argv)),
+          errors.CommandLineError,
+      )
     del argv  # Unused.
 
     if (not FLAGS.nonvariant_site_tfrecord_path) != (not FLAGS.gvcf_outfile):
       errors.log_and_raise(
-          'gVCF creation requires both nonvariant_site_tfrecord_path and '
-          'gvcf_outfile flags to be set.', errors.CommandLineError)
+          (
+              'gVCF creation requires both nonvariant_site_tfrecord_path and '
+              'gvcf_outfile flags to be set.'
+          ),
+          errors.CommandLineError,
+      )
 
-    if (FLAGS.use_multiallelic_model and
-        FLAGS.debug_output_all_candidates == 'ALT'):
+    if (
+        FLAGS.use_multiallelic_model
+        and FLAGS.debug_output_all_candidates == 'ALT'
+    ):
       errors.log_and_raise(
-          'debug_output_all_candidates=ALT is incompatible with the '
-          'multiallelic model. Use INFO instead.', errors.CommandLineError)
+          (
+              'debug_output_all_candidates=ALT is incompatible with the '
+              'multiallelic model. Use INFO instead.'
+          ),
+          errors.CommandLineError,
+      )
 
     proto_utils.uses_fast_cpp_protos_or_die()
     logging_level.set_from_flag()
 
     fasta_reader = fasta.IndexedFastaReader(
-        FLAGS.ref, cache_size=_FASTA_CACHE_SIZE)
+        FLAGS.ref, cache_size=_FASTA_CACHE_SIZE
+    )
     contigs = fasta_reader.header.contigs
     sample_name = get_sample_name()
     cvo_paths, cvo_record = get_cvo_paths_and_first_record()
@@ -1032,10 +1171,12 @@ def main(argv=()):
       temp = tempfile.NamedTemporaryFile()
       start_time = time.time()
       postprocess_variants_lib.process_single_sites_tfrecords(
-          contigs, cvo_paths, temp.name)
+          contigs, cvo_paths, temp.name
+      )
 
-      logging.info('CVO sorting took %s minutes',
-                   (time.time() - start_time) / 60)
+      logging.info(
+          'CVO sorting took %s minutes', (time.time() - start_time) / 60
+      )
 
       logging.info('Transforming call_variants_output to variants.')
       independent_variants = _transform_call_variants_output_to_variants(
@@ -1045,15 +1186,18 @@ def main(argv=()):
           sample_name=sample_name,
           group_variants=FLAGS.group_variants,
           use_multiallelic_model=FLAGS.use_multiallelic_model,
-          debug_output_all_candidates=FLAGS.debug_output_all_candidates)
+          debug_output_all_candidates=FLAGS.debug_output_all_candidates,
+      )
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
-          independent_variants)
+          independent_variants
+      )
 
     add_info_candidates = FLAGS.debug_output_all_candidates == 'INFO'
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs,
         sample_names=[sample_name],
-        add_info_candidates=add_info_candidates)
+        add_info_candidates=add_info_candidates,
+    )
     use_csi = _decide_to_use_csi(contigs)
 
     start_time = time.time()
@@ -1062,11 +1206,13 @@ def main(argv=()):
       write_variants_to_vcf(
           variant_iterable=variant_generator,
           output_vcf_path=FLAGS.outfile,
-          header=header)
+          header=header,
+      )
       if FLAGS.outfile.endswith('.gz'):
         build_index(FLAGS.outfile, use_csi)
-      logging.info('VCF creation took %s minutes',
-                   (time.time() - start_time) / 60)
+      logging.info(
+          'VCF creation took %s minutes', (time.time() - start_time) / 60
+      )
     else:
       # Dump all processed variants to the disk so that the C++
       # merge_and_write_variants_and_nonvariants logic can access them.
@@ -1079,19 +1225,28 @@ def main(argv=()):
       tmp_variant_file = dump_variants_to_temp_file(variant_generator)
       logging.info(
           'Processing variants (and writing to temporary file) took %s minutes',
-          (time.time() - start_time) / 60)
+          (time.time() - start_time) / 60,
+      )
       start_time = time.time()
       merge_variants.merge_and_write_variants_and_nonvariants(
-          FLAGS.only_keep_pass, tmp_variant_file.name,
+          FLAGS.only_keep_pass,
+          tmp_variant_file.name,
           tfrecord.expanded_paths_if_sharded(
-              FLAGS.nonvariant_site_tfrecord_path), FLAGS.ref, FLAGS.outfile,
-          FLAGS.gvcf_outfile, header)
+              FLAGS.nonvariant_site_tfrecord_path
+          ),
+          FLAGS.ref,
+          FLAGS.outfile,
+          FLAGS.gvcf_outfile,
+          header,
+      )
       if FLAGS.outfile.endswith('.gz'):
         build_index(FLAGS.outfile, use_csi)
       if FLAGS.gvcf_outfile.endswith('.gz'):
         build_index(FLAGS.gvcf_outfile, use_csi)
-      logging.info('Finished writing VCF and gVCF in %s minutes.',
-                   (time.time() - start_time) / 60)
+      logging.info(
+          'Finished writing VCF and gVCF in %s minutes.',
+          (time.time() - start_time) / 60,
+      )
     if FLAGS.vcf_stats_report:
       start_time = time.time()
       outfile_base = _get_base_path(FLAGS.outfile)
@@ -1100,9 +1255,12 @@ def main(argv=()):
             variants=reader.iterate(),
             output_basename=outfile_base,
             sample_name=sample_name,
-            vcf_reader=reader)
-      logging.info('Generating VCF stats took %s minutes.',
-                   (time.time() - start_time) / 60)
+            vcf_reader=reader,
+        )
+      logging.info(
+          'Generating VCF stats took %s minutes.',
+          (time.time() - start_time) / 60,
+      )
     if cvo_record:
       temp.close()
 

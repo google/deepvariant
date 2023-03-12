@@ -57,13 +57,15 @@ JSON_DF = (
     '"total runtime":{"3":0.73,"2":0.673,"1":0.6,"4":0.467,"0":0.462},'
     '"Runtime":{"3":"0.73s","2":"0.673s","1":"0.6s","4":"0.467s","0":"0.462s"}}'
 )
-JSON_BY_TASK_DF = ('{"Task":{"0":0},"get reads":{"0":0.68},'
-                   '"find candidates":{"0":0.975},'
-                   '"make pileup images":{"0":1.218},'
-                   '"write outputs":{"0":0.059},'
-                   '"num reads":{"0":182},'
-                   '"num candidates":{"0":12},'
-                   '"num examples":{"0":12},"total runtime":{"0":2.932}}')
+JSON_BY_TASK_DF = (
+    '{"Task":{"0":0},"get reads":{"0":0.68},'
+    '"find candidates":{"0":0.975},'
+    '"make pileup images":{"0":1.218},'
+    '"write outputs":{"0":0.059},'
+    '"num reads":{"0":182},'
+    '"num candidates":{"0":12},'
+    '"num examples":{"0":12},"total runtime":{"0":2.932}}'
+)
 
 
 def is_an_altair_chart(chart):
@@ -87,18 +89,22 @@ class RuntimeByRegionVisTest(parameterized.TestCase):
 
     html_output = io.StringIO()
     runtime_by_region_vis.make_report(
-        input_path=input_path, title='my fancy title', html_output=html_output)
+        input_path=input_path, title='my fancy title', html_output=html_output
+    )
     html = html_output.getvalue()
     self.assertIn(
-        'my fancy title', html, msg='The title is missing from the HTML.')
+        'my fancy title', html, msg='The title is missing from the HTML.'
+    )
     self.assertIn(
         '{} regions'.format(expected_regions),
         html,
-        msg='The subtitle contains the number of regions.')
+        msg='The subtitle contains the number of regions.',
+    )
     self.assertIn(
         'regions account for',
         html,
-        msg='The Pareto curve may be missing or it changed title')
+        msg='The Pareto curve may be missing or it changed title',
+    )
     self.assertIn('bar', html, msg='Vega specs may be missing from the HTML')
     self.assertNotIn('sdlfkjdkjf', html, msg='Negative control failed')
 
@@ -113,13 +119,15 @@ class RuntimeByRegionVisTest(parameterized.TestCase):
       dict(raw_seconds=0.1, expected='0.1s'),
   )
   def test_format_runtime_string(self, raw_seconds, expected):
-    self.assertEqual(expected,
-                     runtime_by_region_vis.format_runtime_string(raw_seconds))
+    self.assertEqual(
+        expected, runtime_by_region_vis.format_runtime_string(raw_seconds)
+    )
 
   def test_read_data_and_make_dataframes(self):
     input_path = testdata.RUNTIME_BY_REGION
     df, by_task = runtime_by_region_vis.read_data_and_make_dataframes(
-        input_path)
+        input_path
+    )
     # Compare as json strings.
     self.assertEqual(df.to_json(), JSON_DF)
     self.assertEqual(by_task.to_json(), JSON_BY_TASK_DF)
@@ -162,7 +170,8 @@ class RuntimeByRegionVisTest(parameterized.TestCase):
   def test_correlation_scatter_charts(self):
     df = pd.read_json(JSON_DF)
     chart = runtime_by_region_vis.correlation_scatter_charts(
-        df, title='chart title')
+        df, title='chart title'
+    )
     self.assertTrue(is_an_altair_chart(chart))
     chart_json = chart.to_json()
     self.assertIn('chart title', chart_json)
@@ -170,7 +179,8 @@ class RuntimeByRegionVisTest(parameterized.TestCase):
   def test_individual_region_bars(self):
     df = pd.read_json(JSON_DF)
     chart = runtime_by_region_vis.individual_region_bars(
-        df, title='chart title')
+        df, title='chart title'
+    )
     self.assertTrue(is_an_altair_chart(chart))
     chart_json = chart.to_json()
     self.assertIn('chart title', chart_json)

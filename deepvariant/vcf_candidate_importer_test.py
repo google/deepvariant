@@ -54,7 +54,8 @@ def _reference_model_options(p_error, max_gq, gq_resolution=1):
       p_error=p_error,
       max_gq=max_gq,
       gq_resolution=gq_resolution,
-      ploidy=2)
+      ploidy=2,
+  )
 
 
 class VcfCandidateImporterTests(parameterized.TestCase):
@@ -62,7 +63,8 @@ class VcfCandidateImporterTests(parameterized.TestCase):
   def make_test_caller(self, p_error, max_gq, gq_resolution=1):
     options = _reference_model_options(p_error, max_gq, gq_resolution)
     return vcf_candidate_importer.VcfCandidateImporter(
-        options, testdata.TRUTH_VARIANTS_VCF, use_cache_table=False)
+        options, testdata.TRUTH_VARIANTS_VCF, use_cache_table=False
+    )
 
   def fake_allele_counter(self, start_pos, counts):
     allele_counter = mock.Mock()
@@ -73,7 +75,8 @@ class VcfCandidateImporterTests(parameterized.TestCase):
             total_read_count=n_ref + n_alt,
             ref_base=ref,
             reference_name='chr1',
-            position=start_pos + i)
+            position=start_pos + i,
+        )
         for i, (n_alt, n_ref, ref) in enumerate(counts)
     ]
     # pylint: enable=g-complex-comprehension
@@ -93,19 +96,24 @@ class VcfCandidateImporterTests(parameterized.TestCase):
     # We aren't testing the correctness of the gvcf calculation here (that's
     # elsewhere) but rather focusing here on the separation of variants from
     # gvcf records, and the automatic merging of the gvcf blocks.
-    allele_counter = self.fake_allele_counter(10, [
-        (0, 0, 'A'),
-        (10, 10, 'G'),
-        (0, 0, 'G'),
-        (0, 0, 'G'),
-        (10, 10, 'T'),
-    ])
+    allele_counter = self.fake_allele_counter(
+        10,
+        [
+            (0, 0, 'A'),
+            (10, 10, 'G'),
+            (0, 0, 'G'),
+            (0, 0, 'G'),
+            (10, 10, 'T'),
+        ],
+    )
     allele_counter_dict = {'SAMPLE_ID': allele_counter}
     fake_candidates = [
         deepvariant_pb2.DeepVariantCall(
-            variant=test_utils.make_variant(alleles=['G', 'C'], start=11)),
+            variant=test_utils.make_variant(alleles=['G', 'C'], start=11)
+        ),
         deepvariant_pb2.DeepVariantCall(
-            variant=test_utils.make_variant(alleles=['T', 'C'], start=14)),
+            variant=test_utils.make_variant(alleles=['T', 'C'], start=14)
+        ),
     ]
 
     caller = self.make_test_caller(0.01, 100)
@@ -114,10 +122,12 @@ class VcfCandidateImporterTests(parameterized.TestCase):
       candidates, _ = caller.calls_and_gvcfs(
           allele_counters=allele_counter_dict,
           target_sample='SAMPLE_ID',
-          include_gvcfs=False)
+          include_gvcfs=False,
+      )
 
-    mock_cpp.calls_from_vcf.assert_called_once_with(allele_counter,
-                                                    caller.vcf_reader)
+    mock_cpp.calls_from_vcf.assert_called_once_with(
+        allele_counter, caller.vcf_reader
+    )
     self.assertEqual(candidates, fake_candidates)
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh.
@@ -126,20 +136,29 @@ class VcfCandidateImporterTests(parameterized.TestCase):
     # as the VCF output converted from the output of make_examples.
     variants = list(
         labeled_examples_to_vcf.examples_to_variants(
-            testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES))
+            testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES
+        )
+    )
     with vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF) as proposed_vcf_reader:
       # This checks the keys (like chr20:10099832:A->G) are the same.
-      self.assertEqual([variant_utils.variant_key(v1) for v1 in variants], [
-          variant_utils.variant_key(v2) for v2 in proposed_vcf_reader.iterate()
-      ])
+      self.assertEqual(
+          [variant_utils.variant_key(v1) for v1 in variants],
+          [
+              variant_utils.variant_key(v2)
+              for v2 in proposed_vcf_reader.iterate()
+          ],
+      )
 
     with vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF) as proposed_vcf_reader:
       self.assertEqual(
-          [variant_utils.genotype_as_alleles(v1) for v1 in variants], [
+          [variant_utils.genotype_as_alleles(v1) for v1 in variants],
+          [
               variant_utils.genotype_as_alleles(
-                  variant_utils.unphase_all_genotypes(v2))
+                  variant_utils.unphase_all_genotypes(v2)
+              )
               for v2 in proposed_vcf_reader.iterate()
-          ])
+          ],
+      )
 
 
 if __name__ == '__main__':

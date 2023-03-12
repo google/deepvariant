@@ -60,103 +60,180 @@ from third_party.nucleus.util.cigar import REF_ADVANCING_OPS
 _UNSET_WS_INT_FLAG = -1
 
 _WS_USE_WINDOW_SELECTOR_MODEL = flags.DEFINE_bool(
-    'ws_use_window_selector_model', False,
-    'Activate the use of window selector models.')
+    'ws_use_window_selector_model',
+    False,
+    'Activate the use of window selector models.',
+)
 _WS_WINDOW_SELECTOR_MODEL = flags.DEFINE_string(
-    'ws_window_selector_model', None,
-    'Path to a text format proto of the window selector model to use.')
+    'ws_window_selector_model',
+    None,
+    'Path to a text format proto of the window selector model to use.',
+)
 _WS_MIN_NUM_SUPPORTING_READS = flags.DEFINE_integer(
-    'ws_min_num_supporting_reads', _UNSET_WS_INT_FLAG,
-    'Minimum number of supporting reads to call a reference position for local '
-    'assembly.')
+    'ws_min_num_supporting_reads',
+    _UNSET_WS_INT_FLAG,
+    (
+        'Minimum number of supporting reads to call a reference position for'
+        ' local assembly.'
+    ),
+)
 _WS_MAX_NUM_SUPPORTING_READS = flags.DEFINE_integer(
-    'ws_max_num_supporting_reads', _UNSET_WS_INT_FLAG,
-    'Maximum number of supporting reads to call a reference position for local '
-    'assembly.')
+    'ws_max_num_supporting_reads',
+    _UNSET_WS_INT_FLAG,
+    (
+        'Maximum number of supporting reads to call a reference position for'
+        ' local assembly.'
+    ),
+)
 _WS_MIN_MAPQ = flags.DEFINE_integer(
-    'ws_min_mapq', 20,
-    'Minimum read alignment quality to consider in calling a reference '
-    'position for local assembly.')
+    'ws_min_mapq',
+    20,
+    (
+        'Minimum read alignment quality to consider in calling a reference '
+        'position for local assembly.'
+    ),
+)
 _WS_MIN_BASE_QUALITY = flags.DEFINE_integer(
-    'ws_min_base_quality', 20,
-    'Minimum base quality to consider in calling a reference position for '
-    'local assembly.')
+    'ws_min_base_quality',
+    20,
+    (
+        'Minimum base quality to consider in calling a reference position for '
+        'local assembly.'
+    ),
+)
 _WS_MIN_WINDOWS_DISTANCE = flags.DEFINE_integer(
-    'ws_min_windows_distance', 80,
-    'Minimum distance between candidate windows for local assembly.')
+    'ws_min_windows_distance',
+    80,
+    'Minimum distance between candidate windows for local assembly.',
+)
 _WS_MAX_WINDOW_SIZE = flags.DEFINE_integer(
-    'ws_max_window_size', 1000,
-    'Maximum window size to consider for local assembly. Large noisy regions '
-    'are skipped for realignment.')
+    'ws_max_window_size',
+    1000,
+    (
+        'Maximum window size to consider for local assembly. Large noisy'
+        ' regions are skipped for realignment.'
+    ),
+)
 _WS_REGION_EXPANSION_IN_BP = flags.DEFINE_integer(
-    'ws_region_expansion_in_bp', 20,
-    'Number of bases to expand the region when calculating windows; larger '
-    'values add overhead but allow larger nearby events to contribute evidence '
-    'for assembling an region even if they are not contained by the region.')
-_DBG_MIN_K = flags.DEFINE_integer('dbg_min_k', 10,
-                                  'Initial k-mer size to build the graph.')
+    'ws_region_expansion_in_bp',
+    20,
+    (
+        'Number of bases to expand the region when calculating windows; larger'
+        ' values add overhead but allow larger nearby events to contribute'
+        ' evidence for assembling an region even if they are not contained by'
+        ' the region.'
+    ),
+)
+_DBG_MIN_K = flags.DEFINE_integer(
+    'dbg_min_k', 10, 'Initial k-mer size to build the graph.'
+)
 _DBG_MAX_K = flags.DEFINE_integer(
-    'dbg_max_k', 101,
-    'Maximum k-mer size. Larger k-mer size is used to resolve graph cycles.')
+    'dbg_max_k',
+    101,
+    'Maximum k-mer size. Larger k-mer size is used to resolve graph cycles.',
+)
 _DBG_STEP_K = flags.DEFINE_integer(
-    'dbg_step_k', 1, 'Increment size for k to try in resolving graph cycles.')
+    'dbg_step_k', 1, 'Increment size for k to try in resolving graph cycles.'
+)
 _DBG_MIN_MAPQ = flags.DEFINE_integer(
-    'dbg_min_mapq', 14,
-    'Minimum read alignment quality to consider in building the graph.')
+    'dbg_min_mapq',
+    14,
+    'Minimum read alignment quality to consider in building the graph.',
+)
 _DBG_MIN_BASE_QUALITY = flags.DEFINE_integer(
-    'dbg_min_base_quality', 15,
-    'Minimum base quality in a k-mer sequence to consider in building the '
-    'graph.')
+    'dbg_min_base_quality',
+    15,
+    (
+        'Minimum base quality in a k-mer sequence to consider in building the '
+        'graph.'
+    ),
+)
 _DBG_MIN_EDGE_WEIGHT = flags.DEFINE_integer(
-    'dbg_min_edge_weight', 2,
-    'Minimum number of supporting reads to keep an edge.')
+    'dbg_min_edge_weight',
+    2,
+    'Minimum number of supporting reads to keep an edge.',
+)
 _DBG_MAX_NUM_PATHS = flags.DEFINE_integer(
-    'dbg_max_num_paths', 256,
-    'Maximum number of paths within a graph to consider for realignment. '
-    'Set max_num_paths to 0 to have unlimited number of paths.')
+    'dbg_max_num_paths',
+    256,
+    (
+        'Maximum number of paths within a graph to consider for realignment. '
+        'Set max_num_paths to 0 to have unlimited number of paths.'
+    ),
+)
 _ALN_MATCH = flags.DEFINE_integer(
-    'aln_match', 4, 'Match score (expected to be a non-negative score).')
+    'aln_match', 4, 'Match score (expected to be a non-negative score).'
+)
 _ALN_MISMATCH = flags.DEFINE_integer(
-    'aln_mismatch', 6, 'Mismatch score (expected to be a non-negative score).')
+    'aln_mismatch', 6, 'Mismatch score (expected to be a non-negative score).'
+)
 _ALN_GAP_OPEN = flags.DEFINE_integer(
-    'aln_gap_open', 8, 'Gap open score (expected to be a non-negative score). '
-    'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
+    'aln_gap_open',
+    8,
+    (
+        'Gap open score (expected to be a non-negative score). '
+        'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).'
+    ),
+)
 _ALN_GAP_EXTEND = flags.DEFINE_integer(
-    'aln_gap_extend', 2,
-    'Gap extend score (expected to be a non-negative score). '
-    'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).')
-_ALN_K = flags.DEFINE_integer('aln_k', 23,
-                              'k-mer size used to index target sequence.')
-_ALN_ERROR_RATE = flags.DEFINE_float('aln_error_rate', .01,
-                                     'Estimated sequencing error rate.')
+    'aln_gap_extend',
+    2,
+    (
+        'Gap extend score (expected to be a non-negative score). '
+        'Score for a gap of length g is -(gap_open + (g - 1) * gap_extend).'
+    ),
+)
+_ALN_K = flags.DEFINE_integer(
+    'aln_k', 23, 'k-mer size used to index target sequence.'
+)
+_ALN_ERROR_RATE = flags.DEFINE_float(
+    'aln_error_rate', 0.01, 'Estimated sequencing error rate.'
+)
 _REALIGNER_DIAGNOSTICS = flags.DEFINE_string(
-    'realigner_diagnostics', '',
-    'Root directory where the realigner should place diagnostic output (such as'
-    ' a dump of the DeBruijn graph, and a log of metrics reflecting the graph '
-    'and  realignment to the haplotypes).  If empty, no diagnostics are output.'
+    'realigner_diagnostics',
+    '',
+    (
+        'Root directory where the realigner should place diagnostic output'
+        ' (such as a dump of the DeBruijn graph, and a log of metrics'
+        ' reflecting the graph and  realignment to the haplotypes).  If empty,'
+        ' no diagnostics are output.'
+    ),
 )
 _EMIT_REALIGNED_READS = flags.DEFINE_bool(
-    'emit_realigned_reads', False,
-    'If True, we will emit realigned reads if our realigner_diagnostics are '
-    'also enabled.')
+    'emit_realigned_reads',
+    False,
+    (
+        'If True, we will emit realigned reads if our realigner_diagnostics are'
+        ' also enabled.'
+    ),
+)
 _USE_FAST_PASS_ALIGNER = flags.DEFINE_bool(
-    'use_fast_pass_aligner', True,
-    'This flag should always be True. The old implementation is deprecated.')
+    'use_fast_pass_aligner',
+    True,
+    'This flag should always be True. The old implementation is deprecated.',
+)
 _MAX_NUM_MISMATCHES = flags.DEFINE_integer(
-    'max_num_mismatches', 2,
-    'Num of maximum allowed mismatches for quick read to '
-    'haplotype alignment.')
+    'max_num_mismatches',
+    2,
+    'Num of maximum allowed mismatches for quick read to haplotype alignment.',
+)
 _REALIGNMENT_SIMILARITY_THRESHOLD = flags.DEFINE_float(
-    'realignment_similarity_threshold', 0.16934,
-    'Similarity threshold used in realigner in Smith-Waterman'
-    'alignment.')
+    'realignment_similarity_threshold',
+    0.16934,
+    'Similarity threshold used in realigner in Smith-Watermanalignment.',
+)
 _SPLIT_SKIP_READS = flags.DEFINE_bool(
-    'split_skip_reads', False,
-    'If True, splits reads with large SKIP cigar operations '
-    'into individual reads. Resulting read parts that are less than '
-    '15 bp are filtered out.')
+    'split_skip_reads',
+    False,
+    (
+        'If True, splits reads with large SKIP cigar operations '
+        'into individual reads. Resulting read parts that are less than '
+        '15 bp are filtered out.'
+    ),
+)
 _KMER_SIZE = flags.DEFINE_integer(
-    'kmer_size', 32, 'K-mer size for fast pass alinger reads index.')
+    'kmer_size', 32, 'K-mer size for fast pass alinger reads index.'
+)
 
 # Margin added to the reference sequence for the aligner module.
 _REF_ALIGN_MARGIN = 20
@@ -165,15 +242,16 @@ _DEFAULT_MIN_SUPPORTING_READS = 2
 _DEFAULT_MAX_SUPPORTING_READS = 300
 _ALLELE_COUNT_LINEAR_MODEL_DEFAULT = realigner_pb2.WindowSelectorModel(
     model_type=realigner_pb2.WindowSelectorModel.ALLELE_COUNT_LINEAR,
-    allele_count_linear_model=realigner_pb2.WindowSelectorModel
-    .AlleleCountLinearModel(
+    allele_count_linear_model=realigner_pb2.WindowSelectorModel.AlleleCountLinearModel(
         bias=-0.683379,
         coeff_soft_clip=2.997000,
         coeff_substitution=-0.086644,
         coeff_insertion=2.493585,
         coeff_deletion=1.795914,
         coeff_reference=-0.059787,
-        decision_boundary=3))
+        decision_boundary=3,
+    ),
+)
 
 # Minimum length of read to retain following splitting with --split_skip_reads.
 _MIN_SPLIT_LEN = 15
@@ -201,44 +279,58 @@ def window_selector_config(flags_obj):
   """
   if not flags_obj.ws_use_window_selector_model:
     if flags_obj.ws_window_selector_model is not None:
-      raise ValueError('Cannot specify a ws_window_selector_model '
-                       'if ws_use_window_selector_model is False.')
+      raise ValueError(
+          'Cannot specify a ws_window_selector_model '
+          'if ws_use_window_selector_model is False.'
+      )
 
     min_num_supporting_reads = (
         _DEFAULT_MIN_SUPPORTING_READS
-        if flags_obj.ws_min_num_supporting_reads == _UNSET_WS_INT_FLAG else
-        flags_obj.ws_min_num_supporting_reads)
+        if flags_obj.ws_min_num_supporting_reads == _UNSET_WS_INT_FLAG
+        else flags_obj.ws_min_num_supporting_reads
+    )
     max_num_supporting_reads = (
         _DEFAULT_MAX_SUPPORTING_READS
-        if flags_obj.ws_max_num_supporting_reads == _UNSET_WS_INT_FLAG else
-        flags_obj.ws_max_num_supporting_reads)
+        if flags_obj.ws_max_num_supporting_reads == _UNSET_WS_INT_FLAG
+        else flags_obj.ws_max_num_supporting_reads
+    )
     window_selector_model = realigner_pb2.WindowSelectorModel(
         model_type=realigner_pb2.WindowSelectorModel.VARIANT_READS,
-        variant_reads_model=realigner_pb2.WindowSelectorModel
-        .VariantReadsThresholdModel(
+        variant_reads_model=realigner_pb2.WindowSelectorModel.VariantReadsThresholdModel(
             min_num_supporting_reads=min_num_supporting_reads,
-            max_num_supporting_reads=max_num_supporting_reads))
+            max_num_supporting_reads=max_num_supporting_reads,
+        ),
+    )
   else:
     if flags_obj.ws_min_num_supporting_reads != _UNSET_WS_INT_FLAG:
-      raise ValueError('Cannot use both ws_min_num_supporting_reads and '
-                       'ws_use_window_selector_model flags.')
+      raise ValueError(
+          'Cannot use both ws_min_num_supporting_reads and '
+          'ws_use_window_selector_model flags.'
+      )
     if flags_obj.ws_max_num_supporting_reads != _UNSET_WS_INT_FLAG:
-      raise ValueError('Cannot use both ws_max_num_supporting_reads and '
-                       'ws_use_window_selector_model flags.')
+      raise ValueError(
+          'Cannot use both ws_max_num_supporting_reads and '
+          'ws_use_window_selector_model flags.'
+      )
 
     if flags_obj.ws_window_selector_model is None:
       window_selector_model = _ALLELE_COUNT_LINEAR_MODEL_DEFAULT
     else:
       with epath.Path(flags_obj.ws_window_selector_model).open() as f:
         window_selector_model = text_format.Parse(
-            f.read(), realigner_pb2.WindowSelectorModel())
+            f.read(), realigner_pb2.WindowSelectorModel()
+        )
 
-  if (window_selector_model.model_type ==
-      realigner_pb2.WindowSelectorModel.VARIANT_READS):
+  if (
+      window_selector_model.model_type
+      == realigner_pb2.WindowSelectorModel.VARIANT_READS
+  ):
     model = window_selector_model.variant_reads_model
     if model.max_num_supporting_reads < model.min_num_supporting_reads:
-      raise ValueError('ws_min_supporting_reads should be smaller than '
-                       'ws_max_supporting_reads.')
+      raise ValueError(
+          'ws_min_supporting_reads should be smaller than '
+          'ws_max_supporting_reads.'
+      )
 
   keep_legacy_behavior = False
   if 'keep_legacy_allele_counter_behavior' in flags_obj:
@@ -250,7 +342,8 @@ def window_selector_config(flags_obj):
       max_window_size=flags_obj.ws_max_window_size,
       region_expansion_in_bp=flags_obj.ws_region_expansion_in_bp,
       window_selector_model=window_selector_model,
-      keep_legacy_behavior=keep_legacy_behavior)
+      keep_legacy_behavior=keep_legacy_behavior,
+  )
 
   return ws_config
 
@@ -276,7 +369,8 @@ def realigner_config(flags_obj):
       min_mapq=flags_obj.dbg_min_mapq,
       min_base_quality=flags_obj.dbg_min_base_quality,
       min_edge_weight=flags_obj.dbg_min_edge_weight,
-      max_num_paths=flags_obj.dbg_max_num_paths)
+      max_num_paths=flags_obj.dbg_max_num_paths,
+  )
 
   aln_config = realigner_pb2.AlignerOptions(
       match=flags_obj.aln_match,
@@ -286,15 +380,16 @@ def realigner_config(flags_obj):
       k=flags_obj.aln_k,
       error_rate=flags_obj.aln_error_rate,
       max_num_of_mismatches=flags_obj.max_num_mismatches,
-      realignment_similarity_threshold=flags_obj
-      .realignment_similarity_threshold,
+      realignment_similarity_threshold=flags_obj.realignment_similarity_threshold,
       kmer_size=flags_obj.kmer_size,
-      force_alignment=False)
+      force_alignment=False,
+  )
 
   diagnostics = realigner_pb2.Diagnostics(
       enabled=bool(flags_obj.realigner_diagnostics),
       output_root=flags_obj.realigner_diagnostics,
-      emit_realigned_reads=flags_obj.emit_realigned_reads)
+      emit_realigned_reads=flags_obj.emit_realigned_reads,
+  )
 
   # The normalize_reads flag could came from the `flags_obj` arg, passed in
   # from make_examples_options.py. It is already part of AlleleCounterOptions in
@@ -311,17 +406,20 @@ def realigner_config(flags_obj):
       aln_config=aln_config,
       diagnostics=diagnostics,
       split_skip_reads=flags_obj.split_skip_reads,
-      normalize_reads=normalize_reads)
+      normalize_reads=normalize_reads,
+  )
 
 
 class DiagnosticLogger(object):
   """Writes diagnostic information about the assembler."""
 
-  def __init__(self,
-               config,
-               graph_filename='graph.dot',
-               metrics_filename='realigner_metrics.csv',
-               realigned_reads_filename='realigned_reads.bam'):
+  def __init__(
+      self,
+      config,
+      graph_filename='graph.dot',
+      metrics_filename='realigner_metrics.csv',
+      realigned_reads_filename='realigned_reads.bam',
+  ):
     self.config = config
     self.graph_filename = graph_filename
     self.metrics_filename = metrics_filename
@@ -362,17 +460,23 @@ class DiagnosticLogger(object):
 
   def log_realigned_reads(self, region, reads, shared_header=None):
     """Logs, if enabled, the realigned reads for region."""
-    if self.enabled and self.config.emit_realigned_reads and shared_header is not None:
+    if (
+        self.enabled
+        and self.config.emit_realigned_reads
+        and shared_header is not None
+    ):
       path = self._file_for_region(region, self.realigned_reads_filename)
       with sam.SamWriter(path, header=shared_header) as writer:
         # For realigned reads, sorting by just looking at starting position is
         # enough.
         for read in sorted(
-            reads, key=lambda read: read.alignment.position.position):
+            reads, key=lambda read: read.alignment.position.position
+        ):
           writer.write(read)
 
-  def log_graph_metrics(self, region, graph, candidate_haplotypes,
-                        graph_building_time):
+  def log_graph_metrics(
+      self, region, graph, candidate_haplotypes, graph_building_time
+  ):
     """Logs, if enabled, graph construction information for region."""
     if self.enabled:
       if graph:
@@ -380,8 +484,11 @@ class DiagnosticLogger(object):
         with epath.Path(dest_file).open('w') as f:
           f.write(graph.graphviz())
       self._write_csv_line(
-          ranges.to_literal(region), graph.kmer_size if graph else 'NA',
-          len(candidate_haplotypes), graph_building_time)
+          ranges.to_literal(region),
+          graph.kmer_size if graph else 'NA',
+          len(candidate_haplotypes),
+          graph_building_time,
+      )
 
 
 class AssemblyRegion(object):
@@ -400,10 +507,8 @@ class AssemblyRegion(object):
       since we often include all reads that overlap the region at all. It is
       possible that read_span will be smaller than region, which can happen, for
       example, when we only have reads starts in the middle of the region.
-  Here's a picture of when this can happen:
-  ref      : acgtACGTACgtgt
-  region   :     ------
-  read1    :       GGa
+      Here's a picture of when this can happen: ref      : acgtACGTACgtgt region
+      :     ------ read1    :       GGa
   read_span:       ---
   """
 
@@ -413,11 +518,14 @@ class AssemblyRegion(object):
     self._read_span = None
 
   def __str__(self):
-    return ('AssemblyRegion(region={}, span={}) with {} haplotypes and {} '
-            'reads').format(
-                ranges.to_literal(self.region),
-                ranges.to_literal(self.read_span), len(self.haplotypes),
-                len(self.reads))
+    return (
+        'AssemblyRegion(region={}, span={}) with {} haplotypes and {} reads'
+    ).format(
+        ranges.to_literal(self.region),
+        ranges.to_literal(self.read_span),
+        len(self.haplotypes),
+        len(self.reads),
+    )
 
   @property
   def haplotypes(self):
@@ -432,9 +540,11 @@ class AssemblyRegion(object):
   def read_span(self):
     if self._read_span is None and self.reads:
       spans = [utils.read_range(r) for r in self.reads]
-      self._read_span = ranges.make_range(spans[0].reference_name,
-                                          min(s.start for s in spans),
-                                          max(s.end for s in spans))
+      self._read_span = ranges.make_range(
+          spans[0].reference_name,
+          min(s.start for s in spans),
+          max(s.end for s in spans),
+      )
     return self._read_span
 
   def add_read(self, read):
@@ -478,8 +588,12 @@ def copy_read(read, part):
   new_read.alignment.Clear()
   new_read.aligned_quality[:] = []
   new_read.aligned_sequence = ''
-  new_read.alignment.position.reference_name = read.alignment.position.reference_name
-  new_read.alignment.position.reverse_strand = read.alignment.position.reverse_strand
+  new_read.alignment.position.reference_name = (
+      read.alignment.position.reference_name
+  )
+  new_read.alignment.position.reverse_strand = (
+      read.alignment.position.reverse_strand
+  )
   new_read.alignment.mapping_quality = read.alignment.mapping_quality
   new_read.fragment_name = f'{new_read.fragment_name}_p{part}'
   return new_read
@@ -491,9 +605,9 @@ def split_reads(reads):
   read_split = []
   for read in reads:
     # Check for SKIP operations within the Cigar String
-    if not any([
-        c.operation == cigar_pb2.CigarUnit.SKIP for c in read.alignment.cigar
-    ]):
+    if not any(
+        [c.operation == cigar_pb2.CigarUnit.SKIP for c in read.alignment.cigar]
+    ):
       read_split.append(read)
       continue
     part = 0
@@ -504,12 +618,14 @@ def split_reads(reads):
     reference_offset = 0
 
     for n, cigar in enumerate(read.alignment.cigar):
-      on_last_operation = (n + 1 == len(read.alignment.cigar))
+      on_last_operation = n + 1 == len(read.alignment.cigar)
 
       if cigar.operation in REF_ADVANCING_OPS:
         # Set position where the first ref op encountered.
         if not new_read.alignment.position.position:
-          new_read.alignment.position.position = read.alignment.position.position + reference_offset
+          new_read.alignment.position.position = (
+              read.alignment.position.position + reference_offset
+          )
         reference_offset += cigar.operation_length
 
       if cigar.operation in READ_ADVANCING_OPS:
@@ -520,9 +636,11 @@ def split_reads(reads):
 
       if cigar.operation == cigar_pb2.CigarUnit.SKIP or on_last_operation:
         new_read.aligned_sequence = read.aligned_sequence[
-            read_start:read_offset]
+            read_start:read_offset
+        ]
         new_read.aligned_quality.extend(
-            read.aligned_quality[read_start:read_offset])
+            read.aligned_quality[read_start:read_offset]
+        )
         if len(new_read.aligned_sequence) >= _MIN_SPLIT_LEN:
           read_split.append(new_read)
         if not on_last_operation:
@@ -588,12 +706,13 @@ class Realigner(object):
         candidate_haplotypes = graph.candidate_haplotypes()
       if candidate_haplotypes and candidate_haplotypes != [ref]:
         candidate_haplotypes_info = realigner_pb2.CandidateHaplotypes(
-            span=window, haplotypes=candidate_haplotypes)
+            span=window, haplotypes=candidate_haplotypes
+        )
         windows_haplotypes.append(candidate_haplotypes_info)
 
-      self.diagnostic_logger.log_graph_metrics(window, graph,
-                                               candidate_haplotypes,
-                                               graph_building_time)
+      self.diagnostic_logger.log_graph_metrics(
+          window, graph, candidate_haplotypes, graph_building_time
+      )
 
     return windows_haplotypes
 
@@ -605,15 +724,18 @@ class Realigner(object):
     contig = assembled_region.region.reference_name
     ref_start = max(
         0,
-        min(assembled_region.read_span.start, assembled_region.region.start) -
-        _REF_ALIGN_MARGIN)
+        min(assembled_region.read_span.start, assembled_region.region.start)
+        - _REF_ALIGN_MARGIN,
+    )
     ref_end = min(
         self.ref_reader.contig(contig).n_bases,
-        max(assembled_region.read_span.end, assembled_region.region.end) +
-        _REF_ALIGN_MARGIN)
+        max(assembled_region.read_span.end, assembled_region.region.end)
+        + _REF_ALIGN_MARGIN,
+    )
 
     ref_prefix = self.ref_reader.query(
-        ranges.make_range(contig, ref_start, assembled_region.region.start))
+        ranges.make_range(contig, ref_start, assembled_region.region.start)
+    )
     ref = self.ref_reader.query(assembled_region.region)
 
     # If we can't create the ref suffix then return the original alignments.
@@ -621,7 +743,8 @@ class Realigner(object):
       return assembled_region.reads
     else:
       ref_suffix = self.ref_reader.query(
-          ranges.make_range(contig, assembled_region.region.end, ref_end))
+          ranges.make_range(contig, assembled_region.region.end, ref_end)
+      )
 
     ref_seq = ref_prefix + ref + ref_suffix
 
@@ -629,7 +752,8 @@ class Realigner(object):
     # Read sizes may vary. We need this for realigner initialization and sanity
     # checks.
     self.config.aln_config.read_size = len(
-        assembled_region.reads[0].aligned_sequence)
+        assembled_region.reads[0].aligned_sequence
+    )
     self.config.aln_config.force_alignment = False
     fast_pass_realigner.set_normalize_reads(self.config.normalize_reads)
     fast_pass_realigner.set_options(self.config.aln_config)
@@ -637,10 +761,12 @@ class Realigner(object):
     fast_pass_realigner.set_ref_start(contig, ref_start)
     fast_pass_realigner.set_ref_prefix_len(len(ref_prefix))
     fast_pass_realigner.set_ref_suffix_len(len(ref_suffix))
-    fast_pass_realigner.set_haplotypes([
-        ref_prefix + target + ref_suffix
-        for target in assembled_region.haplotypes
-    ])
+    fast_pass_realigner.set_haplotypes(
+        [
+            ref_prefix + target + ref_suffix
+            for target in assembled_region.haplotypes
+        ]
+    )
     return fast_pass_realigner.realign_reads(assembled_region.reads)
 
   def realign_reads(self, reads, region):
@@ -677,9 +803,9 @@ class Realigner(object):
       reads = split_reads(reads)
 
     # Compute the windows where we need to assemble in the region.
-    candidate_windows = window_selector.select_windows(self.config.ws_config,
-                                                       self.ref_reader, reads,
-                                                       region)
+    candidate_windows = window_selector.select_windows(
+        self.config.ws_config, self.ref_reader, reads, region
+    )
 
     # Assemble each of those regions.
     candidate_haplotypes = self.call_debruijn_graph(candidate_windows, reads)
@@ -687,25 +813,30 @@ class Realigner(object):
     assembled_regions = [AssemblyRegion(ch) for ch in candidate_haplotypes]
 
     # Our realigned_reads start off with all of the unassigned reads.
-    realigned_reads = assign_reads_to_assembled_regions(assembled_regions,
-                                                        reads)
+    realigned_reads = assign_reads_to_assembled_regions(
+        assembled_regions, reads
+    )
 
     if not _USE_FAST_PASS_ALIGNER.value:
-      raise ValueError('--use_fast_pass_aligner is always true. '
-                       'The older implementation is deprecated and removed.')
+      raise ValueError(
+          '--use_fast_pass_aligner is always true. '
+          'The older implementation is deprecated and removed.'
+      )
     # Walk over each region and align the reads in that region, adding them to
     # our realigned_reads.
     for assembled_region in assembled_regions:
       realigned_reads_copy = self.call_fast_pass_aligner(assembled_region)
       realigned_reads.extend(realigned_reads_copy)
 
-    self.diagnostic_logger.log_realigned_reads(region, realigned_reads,
-                                               self.shared_header)
+    self.diagnostic_logger.log_realigned_reads(
+        region, realigned_reads, self.shared_header
+    )
 
     return candidate_haplotypes, realigned_reads
 
-  def align_to_haplotype(self, this_haplotype, haplotypes, prefix, suffix,
-                         reads, contig, ref_start):
+  def align_to_haplotype(
+      self, this_haplotype, haplotypes, prefix, suffix, reads, contig, ref_start
+  ):
     """Align reads to a given haplotype, not necessarily the reference.
 
     Align reads to a graph of haplotypes, reporting the alignments relative
@@ -806,7 +937,9 @@ def trim_cigar(cigar, ref_trim, ref_length):
         new_cigar.append(
             cigar_pb2.CigarUnit(
                 operation=cigar_unit.operation,
-                operation_length=c_operation_length))
+                operation_length=c_operation_length,
+            )
+        )
         ref_to_cover_remaining -= ref_step
         new_read_length += c_operation_length if advances_read else 0
       else:
@@ -815,7 +948,9 @@ def trim_cigar(cigar, ref_trim, ref_length):
         new_cigar.append(
             cigar_pb2.CigarUnit(
                 operation=cigar_unit.operation,
-                operation_length=c_operation_length))
+                operation_length=c_operation_length,
+            )
+        )
         new_read_length += c_operation_length if advances_read else 0
         ref_to_cover_remaining = 0
         break
@@ -849,8 +984,9 @@ def trim_read(read, region):
   trim_left = max(region.start - read_start, 0)
 
   ref_length = region.end - max(region.start, read_start)
-  new_cigar, read_trim, new_read_length = trim_cigar(read.alignment.cigar,
-                                                     trim_left, ref_length)
+  new_cigar, read_trim, new_read_length = trim_cigar(
+      read.alignment.cigar, trim_left, ref_length
+  )
 
   # Copy everything but aligned_sequence and aligned_quality fields of the read
   # to get all recursive properties and prevent mutating the original.
@@ -865,8 +1001,12 @@ def trim_read(read, region):
   for each_info_key in read.info:
     new_read.info[each_info_key].CopyFrom(read.info[each_info_key])
   new_read.alignment.position.position = read.alignment.position.position
-  new_read.alignment.position.reference_name = read.alignment.position.reference_name
-  new_read.alignment.position.reverse_strand = read.alignment.position.reverse_strand
+  new_read.alignment.position.reference_name = (
+      read.alignment.position.reference_name
+  )
+  new_read.alignment.position.reverse_strand = (
+      read.alignment.position.reverse_strand
+  )
   new_read.alignment.mapping_quality = read.alignment.mapping_quality
   # Following fields are not needed but we copy them for consistency:
   new_read.next_mate_position.CopyFrom(read.next_mate_position)
@@ -879,11 +1019,13 @@ def trim_read(read, region):
   if trim_left != 0:
     new_read.alignment.position.position = region.start
   # Set aligned_sequence, a string:
-  new_read.aligned_sequence = read.aligned_sequence[read_trim:read_trim +
-                                                    new_read_length]
+  new_read.aligned_sequence = read.aligned_sequence[
+      read_trim : read_trim + new_read_length
+  ]
   # Set aligned_quality, a repeated integer:
-  new_read.aligned_quality[:] = read.aligned_quality[read_trim:read_trim +
-                                                     new_read_length]
+  new_read.aligned_quality[:] = read.aligned_quality[
+      read_trim : read_trim + new_read_length
+  ]
 
   # Direct assignment on a repeated message field is not allowed, so setting
   # the cigar by using 'extend'.

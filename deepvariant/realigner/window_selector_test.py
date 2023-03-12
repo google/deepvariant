@@ -45,28 +45,27 @@ class AlleleCountLinearWindowSelectorTest(parameterized.TestCase):
   def setUp(self):
     window_selector_model = realigner_pb2.WindowSelectorModel(
         model_type=realigner_pb2.WindowSelectorModel.ALLELE_COUNT_LINEAR,
-        allele_count_linear_model=realigner_pb2.WindowSelectorModel
-        .AlleleCountLinearModel(
+        allele_count_linear_model=realigner_pb2.WindowSelectorModel.AlleleCountLinearModel(
             bias=0,
             coeff_soft_clip=0,
             coeff_substitution=-0.5,
             coeff_insertion=1,
             coeff_deletion=1,
             coeff_reference=-0.5,
-            decision_boundary=0))
+            decision_boundary=0,
+        ),
+    )
     self.config = realigner_pb2.WindowSelectorOptions(
         min_mapq=20,
         min_base_quality=20,
         min_windows_distance=4,
         region_expansion_in_bp=20,
-        window_selector_model=window_selector_model)
+        window_selector_model=window_selector_model,
+    )
 
-  def assertCandidatesFromReadsEquals(self,
-                                      reads,
-                                      expected,
-                                      start=None,
-                                      end=None,
-                                      ref=None):
+  def assertCandidatesFromReadsEquals(
+      self, reads, expected, start=None, end=None, ref=None
+  ):
     chrom = reads[0].alignment.position.reference_name
     start = 0 if start is None else start
     end = 20 if end is None else end
@@ -78,11 +77,13 @@ class AlleleCountLinearWindowSelectorTest(parameterized.TestCase):
     ref_reader = fasta.InMemoryFastaReader([(chrom, 0, ref)])
     if isinstance(expected, type) and issubclass(expected, Exception):
       with self.assertRaises(expected):
-        window_selector._candidates_from_reads(self.config, ref_reader, reads,
-                                               region)
+        window_selector._candidates_from_reads(
+            self.config, ref_reader, reads, region
+        )
     else:
-      actual = window_selector._candidates_from_reads(self.config, ref_reader,
-                                                      reads, region)
+      actual = window_selector._candidates_from_reads(
+          self.config, ref_reader, reads, region
+      )
       self.assertEqual(actual, expected)
 
   @parameterized.parameters(
@@ -91,24 +92,34 @@ class AlleleCountLinearWindowSelectorTest(parameterized.TestCase):
       # ------------------------------------------------------------------------
       dict(
           read=test_utils.make_read(
-              'AAGA', start=10, cigar='4M', quals=[64] * 4),
-          expected=[]),
+              'AAGA', start=10, cigar='4M', quals=[64] * 4
+          ),
+          expected=[],
+      ),
       dict(
           read=test_utils.make_read(
-              'AAGTA', start=10, cigar='2M2I1M', quals=[64] * 5),
-          expected=[10, 11, 12, 13]),
+              'AAGTA', start=10, cigar='2M2I1M', quals=[64] * 5
+          ),
+          expected=[10, 11, 12, 13],
+      ),
       dict(
           read=test_utils.make_read(
-              'AAA', start=10, cigar='2M2D1M', quals=[64] * 3),
-          expected=[12, 13]),
+              'AAA', start=10, cigar='2M2D1M', quals=[64] * 3
+          ),
+          expected=[12, 13],
+      ),
       dict(
           read=test_utils.make_read(
-              'TGATAC', start=10, cigar='2S3M1S', quals=[64] * 6),
-          expected=[]),
+              'TGATAC', start=10, cigar='2S3M1S', quals=[64] * 6
+          ),
+          expected=[],
+      ),
       dict(
           read=test_utils.make_read(
-              'AAGA', start=10, cigar='2M1X1M', quals=[64] * 4),
-          expected=[]),
+              'AAGA', start=10, cigar='2M1X1M', quals=[64] * 4
+          ),
+          expected=[],
+      ),
   )
   def test_candidates_from_one_read(self, read, expected):
     """Test WindowSelector.process_read() with reads of low quality."""
@@ -121,43 +132,58 @@ class AlleleCountLinearWindowSelectorTest(parameterized.TestCase):
       dict(
           reads=[
               test_utils.make_read(
-                  'AAGA', start=10, cigar='4M', quals=[64] * 4),
+                  'AAGA', start=10, cigar='4M', quals=[64] * 4
+              ),
               test_utils.make_read(
-                  'AAAA', start=10, cigar='4M', quals=[64] * 4),
+                  'AAAA', start=10, cigar='4M', quals=[64] * 4
+              ),
           ],
-          expected=[]),
+          expected=[],
+      ),
       dict(
           reads=[
               test_utils.make_read(
-                  'AAAA', start=10, cigar='4M', quals=[64] * 4),
+                  'AAAA', start=10, cigar='4M', quals=[64] * 4
+              ),
               test_utils.make_read(
-                  'AAA', start=10, cigar='3M1D', quals=[64] * 3),
+                  'AAA', start=10, cigar='3M1D', quals=[64] * 3
+              ),
           ],
-          expected=[13]),
+          expected=[13],
+      ),
       dict(
           reads=[
               test_utils.make_read(
-                  'AAGA', start=10, cigar='4M', quals=[64] * 4),
+                  'AAGA', start=10, cigar='4M', quals=[64] * 4
+              ),
               test_utils.make_read(
-                  'AAA', start=10, cigar='3M1D', quals=[64] * 3),
+                  'AAA', start=10, cigar='3M1D', quals=[64] * 3
+              ),
           ],
-          expected=[13]),
+          expected=[13],
+      ),
       dict(
           reads=[
               test_utils.make_read(
-                  'AAAA', start=10, cigar='4M', quals=[64] * 4),
+                  'AAAA', start=10, cigar='4M', quals=[64] * 4
+              ),
               test_utils.make_read(
-                  'AAAAT', start=10, cigar='4M1I', quals=[64] * 5),
+                  'AAAAT', start=10, cigar='4M1I', quals=[64] * 5
+              ),
           ],
-          expected=[13, 14]),
+          expected=[13, 14],
+      ),
       dict(
           reads=[
               test_utils.make_read(
-                  'AAAT', start=10, cigar='3M1S', quals=[64] * 4),
+                  'AAAT', start=10, cigar='3M1S', quals=[64] * 4
+              ),
               test_utils.make_read(
-                  'AAAAT', start=10, cigar='4M1I', quals=[64] * 5),
+                  'AAAAT', start=10, cigar='4M1I', quals=[64] * 5
+              ),
           ],
-          expected=[13, 14]),
+          expected=[13, 14],
+      ),
   )
   def test_candidates_from_reads(self, reads, expected):
     """Test WindowSelector.process_read() with reads of low quality."""
@@ -169,22 +195,21 @@ class WindowSelectorTest(parameterized.TestCase):
   def setUp(self):
     window_selector_model = realigner_pb2.WindowSelectorModel(
         model_type=realigner_pb2.WindowSelectorModel.VARIANT_READS,
-        variant_reads_model=realigner_pb2.WindowSelectorModel
-        .VariantReadsThresholdModel(
-            min_num_supporting_reads=1, max_num_supporting_reads=10))
+        variant_reads_model=realigner_pb2.WindowSelectorModel.VariantReadsThresholdModel(
+            min_num_supporting_reads=1, max_num_supporting_reads=10
+        ),
+    )
     self.config = realigner_pb2.WindowSelectorOptions(
         min_mapq=20,
         min_base_quality=20,
         min_windows_distance=4,
         region_expansion_in_bp=20,
-        window_selector_model=window_selector_model)
+        window_selector_model=window_selector_model,
+    )
 
-  def assertCandidatesFromReadsEquals(self,
-                                      reads,
-                                      expected,
-                                      start=None,
-                                      end=None,
-                                      ref=None):
+  def assertCandidatesFromReadsEquals(
+      self, reads, expected, start=None, end=None, ref=None
+  ):
     chrom = reads[0].alignment.position.reference_name
     start = 0 if start is None else start
     end = 20 if end is None else end
@@ -196,11 +221,13 @@ class WindowSelectorTest(parameterized.TestCase):
     ref_reader = fasta.InMemoryFastaReader([(chrom, 0, ref)])
     if isinstance(expected, type) and issubclass(expected, Exception):
       with self.assertRaises(expected):
-        window_selector._candidates_from_reads(self.config, ref_reader, reads,
-                                               region)
+        window_selector._candidates_from_reads(
+            self.config, ref_reader, reads, region
+        )
     else:
-      actual = window_selector._candidates_from_reads(self.config, ref_reader,
-                                                      reads, region)
+      actual = window_selector._candidates_from_reads(
+          self.config, ref_reader, reads, region
+      )
       self.assertEqual(actual, expected)
 
   @parameterized.parameters(
@@ -209,57 +236,71 @@ class WindowSelectorTest(parameterized.TestCase):
       # ------------------------------------------------------------------------
       dict(
           read=test_utils.make_read(
-              'AAGA', start=10, cigar='4M', quals=[64] * 4),
-          expected=[12]),
+              'AAGA', start=10, cigar='4M', quals=[64] * 4
+          ),
+          expected=[12],
+      ),
       dict(
           read=test_utils.make_read(
-              'AAGTA', start=10, cigar='2M2I1M', quals=[64] * 5),
-          expected=[10, 11, 12, 13]),
+              'AAGTA', start=10, cigar='2M2I1M', quals=[64] * 5
+          ),
+          expected=[10, 11, 12, 13],
+      ),
       dict(
           read=test_utils.make_read(
-              'AAA', start=10, cigar='2M2D1M', quals=[64] * 3),
-          expected=[12, 13]),
+              'AAA', start=10, cigar='2M2D1M', quals=[64] * 3
+          ),
+          expected=[12, 13],
+      ),
       dict(
           read=test_utils.make_read(
-              'TGATAC', start=10, cigar='2S3M1S', quals=[64] * 6),
-          expected=[8, 9, 10, 11, 12, 13]),
+              'TGATAC', start=10, cigar='2S3M1S', quals=[64] * 6
+          ),
+          expected=[8, 9, 10, 11, 12, 13],
+      ),
       dict(
           read=test_utils.make_read(
-              'AAGA', start=10, cigar='2M1X1M', quals=[64] * 4),
-          expected=[12]),
+              'AAGA', start=10, cigar='2M1X1M', quals=[64] * 4
+          ),
+          expected=[12],
+      ),
       # ------------------------------------------------------------------------
       # These reads test that we correctly ignore bases with low qualities.
       # ------------------------------------------------------------------------
       dict(
           read=test_utils.make_read(
-              'AAGA', start=10, cigar='4M', quals=[64, 64, 10, 30]),
-          expected=[]),
+              'AAGA', start=10, cigar='4M', quals=[64, 64, 10, 30]
+          ),
+          expected=[],
+      ),
       # Only insertions/soft clips where all bases have above our minimum base
       # quality are included.
       dict(
           read=test_utils.make_read(
-              'AAGTA', start=10, cigar='2M2I1M', quals=[64, 64, 10, 21, 64]),
-          expected=[]),
+              'AAGTA', start=10, cigar='2M2I1M', quals=[64, 64, 10, 21, 64]
+          ),
+          expected=[],
+      ),
       # The left 2S operator is ignored because one base has a 10 quality.
       dict(
           read=test_utils.make_read(
-              'TGATAC',
-              start=10,
-              cigar='2S3M1S',
-              quals=[21, 10, 64, 64, 64, 64]),
-          expected=[11, 12, 13]),
+              'TGATAC', start=10, cigar='2S3M1S', quals=[21, 10, 64, 64, 64, 64]
+          ),
+          expected=[11, 12, 13],
+      ),
       # The right 1S operator is ignored because one base has a 10 quality.
       dict(
           read=test_utils.make_read(
-              'TGATAC',
-              start=10,
-              cigar='2S3M1S',
-              quals=[64, 64, 64, 64, 64, 10]),
-          expected=[8, 9, 10, 11]),
+              'TGATAC', start=10, cigar='2S3M1S', quals=[64, 64, 64, 64, 64, 10]
+          ),
+          expected=[8, 9, 10, 11],
+      ),
       dict(
           read=test_utils.make_read(
-              'AAGA', start=10, cigar='2M1X1M', quals=[64, 64, 30, 10]),
-          expected=[12]),
+              'AAGA', start=10, cigar='2M1X1M', quals=[64, 64, 30, 10]
+          ),
+          expected=[12],
+      ),
   )
   def test_candidates_from_one_read(self, read, expected):
     """Test WindowSelector.process_read() with reads of low quality."""
@@ -323,24 +364,31 @@ class WindowSelectorTest(parameterized.TestCase):
   def test_candidates_from_reads_all_cigars(self, bases, cigar, expected):
     """Test WindowSelector.process_read() with reads of low quality."""
     read = test_utils.make_read(
-        bases, start=10, cigar=cigar, quals=[64] * len(bases))
+        bases, start=10, cigar=cigar, quals=[64] * len(bases)
+    )
     self.assertCandidatesFromReadsEquals(reads=[read], expected=expected)
 
   @parameterized.parameters(
       dict(
           read=test_utils.make_read(
-              'AGA', start=read_start, cigar='3M', quals=[64] * 3),
+              'AGA', start=read_start, cigar='3M', quals=[64] * 3
+          ),
           region_start=region_start,
           region_end=region_start + 100,
           expected=[read_start + 1],
-      ) for region_start in range(10) for read_start in range(region_start, 10))
-  def test_candidates_from_reads_position_invariance(self, read, region_start,
-                                                     region_end, expected):
+      )
+      for region_start in range(10)
+      for read_start in range(region_start, 10)
+  )
+  def test_candidates_from_reads_position_invariance(
+      self, read, region_start, region_end, expected
+  ):
     # Tests that a read with a mismatch at position read_start + 1 produces a
     # single candidate position at read_start + 1 regardless of where it occurs
     # within a single region spanning region_start - region_end.
     self.assertCandidatesFromReadsEquals(
-        reads=[read], expected=expected, start=region_start, end=region_end)
+        reads=[read], expected=expected, start=region_start, end=region_end
+    )
 
   # Our region is 5-8 and we are testing that the read's mismatch is only
   # included when it's within the region and not when it's outside.
@@ -351,10 +399,13 @@ class WindowSelectorTest(parameterized.TestCase):
       dict(
           read=test_utils.make_read('G', start=start, cigar='1M', quals=[64]),
           expected=[start] if 0 <= start < 28 else [],
-      ) for start in range(10))
+      )
+      for start in range(10)
+  )
   def test_candidates_from_reads_respects_region(self, read, expected):
     self.assertCandidatesFromReadsEquals(
-        reads=[read], expected=expected, start=5, end=8)
+        reads=[read], expected=expected, start=5, end=8
+    )
 
   # Our region is 5-8 and we have a 4 basepair deletion in our read. We expect
   # a mismatch count of one for each position in the deletion that overlaps the
@@ -365,21 +416,26 @@ class WindowSelectorTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           read=test_utils.make_read(
-              'AA', start=start, cigar='1M4D1M', quals=[64, 64]),
+              'AA', start=start, cigar='1M4D1M', quals=[64, 64]
+          ),
           expected=[
               pos for pos in range(start + 1, start + 5) if 0 <= pos < 28
           ],
-      ) for start in range(10))
+      )
+      for start in range(10)
+  )
   def test_candidates_from_reads_respects_region_deletion(self, read, expected):
     self.assertCandidatesFromReadsEquals(
-        reads=[read], expected=expected, start=5, end=8, ref='A' * 100)
+        reads=[read], expected=expected, start=5, end=8, ref='A' * 100
+    )
 
   def test_candidates_from_reads_counts_overlapping_events(self):
     # This read has a mismatch at position 2 and a 2 bp insertion at position 4,
     # so we need to double count the candidate positions from the mismatch and
     # insertion at position 2.
     read = test_utils.make_read(
-        'AAGACCAAA', start=0, cigar='4M2I3M', quals=[64] * 9)
+        'AAGACCAAA', start=0, cigar='4M2I3M', quals=[64] * 9
+    )
     expected = [2, 3, 4, 5]
     self.assertCandidatesFromReadsEquals(reads=[read], expected=expected)
 
@@ -387,16 +443,21 @@ class WindowSelectorTest(parameterized.TestCase):
       dict(
           read_mapq=read_mapq,
           min_mapq=min_mapq,
-          expect_read_to_be_included=read_mapq >= min_mapq)
+          expect_read_to_be_included=read_mapq >= min_mapq,
+      )
       for read_mapq in range(10, 15)
-      for min_mapq in range(8, 17))
-  def test_candidates_from_reads_respects_mapq(self, read_mapq, min_mapq,
-                                               expect_read_to_be_included):
+      for min_mapq in range(8, 17)
+  )
+  def test_candidates_from_reads_respects_mapq(
+      self, read_mapq, min_mapq, expect_read_to_be_included
+  ):
     read = test_utils.make_read(
-        'AGA', start=10, cigar='3M', quals=[64] * 3, mapq=read_mapq)
+        'AGA', start=10, cigar='3M', quals=[64] * 3, mapq=read_mapq
+    )
     self.config.min_mapq = min_mapq
     self.assertCandidatesFromReadsEquals(
-        reads=[read], expected=[11] if expect_read_to_be_included else [])
+        reads=[read], expected=[11] if expect_read_to_be_included else []
+    )
 
   @parameterized.parameters(
       dict(
@@ -404,7 +465,8 @@ class WindowSelectorTest(parameterized.TestCase):
           expected_ranges=[
               ranges.make_range('ref', 96, 104),
               ranges.make_range('ref', 196, 204),
-          ]),
+          ],
+      ),
       # Check that this works with 3 isolated regions.
       dict(
           candidates=[100, 200, 300],
@@ -412,39 +474,45 @@ class WindowSelectorTest(parameterized.TestCase):
               ranges.make_range('ref', 96, 104),
               ranges.make_range('ref', 196, 204),
               ranges.make_range('ref', 296, 304),
-          ]),
+          ],
+      ),
       # Check a simple example where we have two candidates from the same
       # region:
       dict(
           candidates=[2, 8],
           expected_ranges=[
               ranges.make_range('ref', -2, 12),
-          ]),
+          ],
+      ),
       # Check a simple example where we have candidates from two regions:
       dict(
           candidates=[2, 14],
           expected_ranges=[
               ranges.make_range('ref', -2, 6),
               ranges.make_range('ref', 10, 18),
-          ]),
+          ],
+      ),
       # Check boundary conditions for merging windows: should merge.
       dict(
           candidates=[2, 10],
           expected_ranges=[
               ranges.make_range('ref', -2, 14),
-          ]),
+          ],
+      ),
       # Check boundary conditions for merging windows: should not merge.
       dict(
           candidates=[2, 11],
           expected_ranges=[
               ranges.make_range('ref', -2, 6),
               ranges.make_range('ref', 7, 15),
-          ]),
+          ],
+      ),
   )
   def test_candidates_to_windows(self, candidates, expected_ranges):
     self.assertEqual(
         window_selector._candidates_to_windows(self.config, candidates, 'ref'),
-        expected_ranges)
+        expected_ranges,
+    )
 
   @parameterized.parameters(range(1, 20))
   def test_candidates_to_windows_window_size(self, size):
@@ -455,7 +523,8 @@ class WindowSelectorTest(parameterized.TestCase):
     self.config.min_windows_distance = size
     self.assertEqual(
         window_selector._candidates_to_windows(self.config, candidates, 'ref'),
-        [expected])
+        [expected],
+    )
 
   @parameterized.parameters(range(1, 20))
   def test_candidates_to_windows_min_window_distance(self, distance):
@@ -469,7 +538,7 @@ class WindowSelectorTest(parameterized.TestCase):
         # Finally, we have another variant that is exactly distance away from
         # 100. It should be joined with the candidate at 100 to produce a single
         # larger window.
-        100 + distance
+        100 + distance,
     ]
     expected = [
         # Our first window is for the 100 - 2 * distance one.
@@ -481,7 +550,8 @@ class WindowSelectorTest(parameterized.TestCase):
     self.config.min_windows_distance = distance
     self.assertEqual(
         window_selector._candidates_to_windows(self.config, candidates, 'ref'),
-        expected)
+        expected,
+    )
 
   @parameterized.parameters(range(1, 20))
   def test_candidates_to_windows_merged_close_candidates(self, distance):
@@ -491,13 +561,13 @@ class WindowSelectorTest(parameterized.TestCase):
     candidates = [100 + i * distance for i in range(5)]
     # Which should all be merged together into one giant window.
     expected = [
-        ranges.make_range('ref', 100 - distance,
-                          max(candidates) + distance),
+        ranges.make_range('ref', 100 - distance, max(candidates) + distance),
     ]
     self.config.min_windows_distance = distance
     self.assertEqual(
         window_selector._candidates_to_windows(self.config, candidates, 'ref'),
-        expected)
+        expected,
+    )
 
   def test_select_windows(self):
     # Simple end-to-end test of the high-level select_windows function. We give
@@ -514,16 +584,19 @@ class WindowSelectorTest(parameterized.TestCase):
 
     self.assertEqual(
         window_selector.select_windows(self.config, ref_reader, reads, region),
-        [ranges.make_range(chrom, 96, 104)])
+        [ranges.make_range(chrom, 96, 104)],
+    )
 
   def test_select_windows_returns_empty_list_when_no_reads(self):
-    self.assertEqual([],
-                     window_selector.select_windows(
-                         self.config,
-                         ref_reader=fasta.InMemoryFastaReader([('chr1', 0,
-                                                                'A' * 500)]),
-                         reads=[],
-                         region=ranges.make_range('chr1', 1, 100)))
+    self.assertEqual(
+        [],
+        window_selector.select_windows(
+            self.config,
+            ref_reader=fasta.InMemoryFastaReader([('chr1', 0, 'A' * 500)]),
+            reads=[],
+            region=ranges.make_range('chr1', 1, 100),
+        ),
+    )
 
 
 if __name__ == '__main__':

@@ -53,8 +53,11 @@ class WrapVariantCallingTest(absltest.TestCase):
     size = 1000
     region = ranges.make_range('chr20', 10000000, 10000000 + size)
     allele_counter = _allelecounter.AlleleCounter(
-        ref.c_reader, region, [],
-        deepvariant_pb2.AlleleCounterOptions(partition_size=size))
+        ref.c_reader,
+        region,
+        [],
+        deepvariant_pb2.AlleleCounterOptions(partition_size=size),
+    )
     caller = variant_calling_multisample.VariantCaller(
         deepvariant_pb2.VariantCallerOptions(
             min_count_snps=2,
@@ -65,7 +68,9 @@ class WrapVariantCallingTest(absltest.TestCase):
             p_error=0.001,
             max_gq=50,
             gq_resolution=1,
-            ploidy=2))
+            ploidy=2,
+        )
+    )
 
     # Grab all of the reads in our region and add them to the allele_counter.
     reads = list(sam_reader.query(region))

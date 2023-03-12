@@ -48,87 +48,140 @@ from third_party.nucleus.util import proto_utils
 FLAGS = flags.FLAGS
 
 # Data set selection parameters
-flags.DEFINE_string('dataset_config_pbtxt', None,
-                    'The path to the dataset config file.')
+flags.DEFINE_string(
+    'dataset_config_pbtxt', None, 'The path to the dataset config file.'
+)
 
-flags.DEFINE_string('model_name', 'inception_v3',
-                    'The name of the model to use for predictions.')
+flags.DEFINE_string(
+    'model_name',
+    'inception_v3',
+    'The name of the model to use for predictions.',
+)
 
 flags.DEFINE_integer('batch_size', 4096, 'The number of samples in each batch.')
 
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
-    'gcp_project', None,
-    'Project name for the Cloud TPU-enabled project. If not specified, we '
-    'will attempt to automatically detect the GCE project from metadata.')
+    'gcp_project',
+    None,
+    (
+        'Project name for the Cloud TPU-enabled project. If not specified, we '
+        'will attempt to automatically detect the GCE project from metadata.'
+    ),
+)
 flags.DEFINE_string(
-    'tpu_zone', None,
-    'GCE zone where the Cloud TPU is located in. If not specified, we '
-    'will attempt to automatically detect the GCE project from metadata.')
+    'tpu_zone',
+    None,
+    (
+        'GCE zone where the Cloud TPU is located in. If not specified, we '
+        'will attempt to automatically detect the GCE project from metadata.'
+    ),
+)
 flags.DEFINE_string(
-    'tpu_name', None,
-    'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
-    'this flag or --master.')
+    'tpu_name',
+    None,
+    (
+        'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
+        'this flag or --master.'
+    ),
+)
 
 flags.DEFINE_string(
-    'master', None,
-    'GRPC URL of the master (e.g. grpc://ip.address.of.tpu:8470). You '
-    'must specify either this flag or --tpu_name.')
+    'master',
+    None,
+    (
+        'GRPC URL of the master (e.g. grpc://ip.address.of.tpu:8470). You '
+        'must specify either this flag or --tpu_name.'
+    ),
+)
 
-flags.DEFINE_string('train_dir', '/tmp/deepvariant/',
-                    'Directory where to write event logs.')
+flags.DEFINE_string(
+    'train_dir', '/tmp/deepvariant/', 'Directory where to write event logs.'
+)
 
 flags.DEFINE_boolean('use_tpu', False, 'use tpu if available')
 
 flags.DEFINE_integer('worker_replicas', 1, 'Number of worker replicas.')
 
 flags.DEFINE_integer(
-    'ps_tasks', 0,
-    'The number of parameter servers. If the value is 0, then the parameters '
-    'are handled locally by the worker.')
+    'ps_tasks',
+    0,
+    (
+        'The number of parameter servers. If the value is 0, then the'
+        ' parameters are handled locally by the worker.'
+    ),
+)
 
 flags.DEFINE_integer('task', 0, 'Task id of the replica running the training.')
 
-flags.DEFINE_integer('number_of_steps', 8000000,
-                     'Maximum number of global steps to take when training.')
+flags.DEFINE_integer(
+    'number_of_steps',
+    8000000,
+    'Maximum number of global steps to take when training.',
+)
 
 flags.DEFINE_integer(
-    'num_retries', 0,
-    'The number of times to retry on InternalError or UnavailableError.')
+    'num_retries',
+    0,
+    'The number of times to retry on InternalError or UnavailableError.',
+)
 
 flags.DEFINE_integer(
-    'max_examples', None,
-    'The maximum number of examples to use in training. If None, all examples '
-    'will be used. If not None, the first max_examples examples from the '
-    'dataset will be used, with those same examples repeating over and over.')
+    'max_examples',
+    None,
+    (
+        'The maximum number of examples to use in training. If None, all'
+        ' examples will be used. If not None, the first max_examples examples'
+        ' from the dataset will be used, with those same examples repeating'
+        ' over and over.'
+    ),
+)
 
 # Pre-trained model parameters
 flags.DEFINE_string(
-    'start_from_checkpoint', 'model_default',
-    'A path to a checkpoint of model weights to initialize our model at the '
-    'start of training. If None or "", the model will start from random weights'
-    '. The special value "model_default" will use the default pretrained '
-    'path for the selected model.')
+    'start_from_checkpoint',
+    'model_default',
+    (
+        'A path to a checkpoint of model weights to initialize our model at the'
+        ' start of training. If None or "", the model will start from random'
+        ' weights. The special value "model_default" will use the default'
+        ' pretrained path for the selected model.'
+    ),
+)
 
 flags.DEFINE_integer(
-    'max_checkpoints_to_keep', 10,
-    'Number of last checkpoints to keep during training. '
-    'Passing "0" preserves all checkpoints.')
+    'max_checkpoints_to_keep',
+    10,
+    (
+        'Number of last checkpoints to keep during training. '
+        'Passing "0" preserves all checkpoints.'
+    ),
+)
 
 flags.DEFINE_string(
-    'kmp_blocktime', '0',
-    'Value to set the KMP_BLOCKTIME environment variable to for efficient MKL '
-    'training. See https://www.tensorflow.org/performance/performance_guide '
-    'for more information. The default value is 0, which provides the best '
-    'performance in our tests. Set this flag to "" to not set the variable.')
+    'kmp_blocktime',
+    '0',
+    (
+        'Value to set the KMP_BLOCKTIME environment variable to for efficient'
+        ' MKL training. See'
+        ' https://www.tensorflow.org/performance/performance_guide for more'
+        ' information. The default value is 0, which provides the best'
+        ' performance in our tests. Set this flag to "" to not set the'
+        ' variable.'
+    ),
+)
 
 flags.DEFINE_integer(
-    'random_seed', 400620758,
-    'Random seed value to use for TensorFlow. Providing a value != 0 will '
-    'result in a call to tf.set_random_seed(FLAGS.random_seed), making '
-    'training more deterministic. If set to 0, the TensorFlow random seed '
-    'will not be set at all, and TensorFlow will assign it a pseudo-random '
-    'value each time model_train is run.')
+    'random_seed',
+    400620758,
+    (
+        'Random seed value to use for TensorFlow. Providing a value != 0 will '
+        'result in a call to tf.set_random_seed(FLAGS.random_seed), making '
+        'training more deterministic. If set to 0, the TensorFlow random seed '
+        'will not be set at all, and TensorFlow will assign it a pseudo-random '
+        'value each time model_train is run.'
+    ),
+)
 
 
 def loss(logits, one_hot_labels, label_smoothing):
@@ -144,7 +197,8 @@ def loss(logits, one_hot_labels, label_smoothing):
     A `Tensor` whose value represents the total loss.
   """
   tf.compat.v1.losses.softmax_cross_entropy(
-      logits, one_hot_labels, label_smoothing=label_smoothing, weights=1.0)
+      logits, one_hot_labels, label_smoothing=label_smoothing, weights=1.0
+  )
   return tf.compat.v1.losses.get_total_loss()
 
 
@@ -152,7 +206,8 @@ def copy_over_example_info_json(dataset_config_pbtxt):
   """Copies example_info.json from examples dir to model output dir."""
   dataset_config = data_providers.read_dataset_config(dataset_config_pbtxt)
   json_file = os.path.join(
-      os.path.dirname(dataset_config.tfrecord_path), 'example_info.json')
+      os.path.dirname(dataset_config.tfrecord_path), 'example_info.json'
+  )
   target_file = os.path.join(FLAGS.train_dir, 'model.ckpt.example_info.json')
   if tf.io.gfile.exists(json_file) and not tf.io.gfile.exists(target_file):
     tf.io.gfile.makedirs(FLAGS.train_dir)  # Create the directory.
@@ -189,14 +244,21 @@ def run(target, unused_is_chief, device_fn, use_tpu):
           dataset_config_filename=FLAGS.dataset_config_pbtxt,
           mode=tf_estimator.ModeKeys.TRAIN,
           max_examples=FLAGS.max_examples,
-          use_tpu=use_tpu)
+          use_tpu=use_tpu,
+      )
       model = modeling.get_model(FLAGS.model_name)
-      logging.info('Running training on %s with model %s and tpu %s',
-                   tf_dataset, FLAGS.model_name, use_tpu)
+      logging.info(
+          'Running training on %s with model %s and tpu %s',
+          tf_dataset,
+          FLAGS.model_name,
+          use_tpu,
+      )
 
       batches_per_epoch = tf_dataset.num_examples // FLAGS.batch_size
       logging.info('Batches per epoch %s', batches_per_epoch)
-      params = dict(batches_per_epoch=batches_per_epoch,)
+      params = dict(
+          batches_per_epoch=batches_per_epoch,
+      )
       estimator = model.make_estimator(
           batch_size=FLAGS.batch_size,
           model_dir=FLAGS.train_dir,
@@ -207,7 +269,8 @@ def run(target, unused_is_chief, device_fn, use_tpu):
       )
 
       estimator.train(
-          input_fn=tf_dataset, max_steps=FLAGS.number_of_steps, hooks=None)
+          input_fn=tf_dataset, max_steps=FLAGS.number_of_steps, hooks=None
+      )
 
 
 def parse_and_run():
@@ -227,7 +290,8 @@ def parse_and_run():
     if getattr(FLAGS, name) and tf_config:
       raise ValueError(
           'Either the flag --%s or the environment variable TF_CONFIG can be'
-          ' set but not both.' % name)
+          ' set but not both.' % name
+      )
 
   # TODO: use new mechanisms to set TF_CONFIG automatically.
   #
@@ -241,11 +305,16 @@ def parse_and_run():
   if not tf_config:
     device_fn = tf.compat.v1.train.replica_device_setter(FLAGS.ps_tasks)
     # pylint: disable=g-long-ternary
-    master = dv_utils.resolve_master(FLAGS.master, FLAGS.tpu_name,
-                                     FLAGS.tpu_zone,
-                                     FLAGS.gcp_project) if FLAGS.use_tpu else ''
+    master = (
+        dv_utils.resolve_master(
+            FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone, FLAGS.gcp_project
+        )
+        if FLAGS.use_tpu
+        else ''
+    )
     return run(
-        master, FLAGS.task == 0, device_fn=device_fn, use_tpu=FLAGS.use_tpu)
+        master, FLAGS.task == 0, device_fn=device_fn, use_tpu=FLAGS.use_tpu
+    )
 
   tf_config_json = json.loads(tf_config)
 
@@ -263,7 +332,8 @@ def parse_and_run():
 
   cluster_spec = tf.train.ClusterSpec(cluster)
   server = tf.distribute.Server(
-      cluster_spec, job_name=job_name, task_index=task_index)
+      cluster_spec, job_name=job_name, task_index=task_index
+  )
 
   if job_name == 'ps':
     server.join()
@@ -272,12 +342,14 @@ def parse_and_run():
     device_fn = tf.compat.v1.train.replica_device_setter(
         num_ps,
         worker_device='/job:%s/task:%d' % (job_name, task_index),
-        cluster=cluster_spec)
+        cluster=cluster_spec,
+    )
     return run(
         server.target,
         job_name == 'master',
         device_fn=device_fn,
-        use_tpu=FLAGS.use_tpu)
+        use_tpu=FLAGS.use_tpu,
+    )
 
 
 def main(_):

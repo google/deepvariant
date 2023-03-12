@@ -45,7 +45,8 @@ def setUpModule():
 
 
 class CallVariantsAcceleratorTests(
-    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
 
   @parameterized.parameters(modeling.production_models())
   def test_call_variants_runs_on_gpus(self, model):
@@ -54,7 +55,8 @@ class CallVariantsAcceleratorTests(
         checkpoint_path=None,
         model=model,
         execution_hardware='accelerator',
-        output_file=test_utils.test_tmpfile('zzz.tfrecord'))
+        output_file=test_utils.test_tmpfile('zzz.tfrecord'),
+    )
 
 
 if __name__ == '__main__':

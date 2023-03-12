@@ -71,18 +71,20 @@ class ResourcesTest(absltest.TestCase):
             resources.resource,
             'getrusage',
             return_value=mock.Mock(
-                ru_utime=1.0,
-                ru_stime=2.0,
-                ru_maxrss=3 * 1024  # 3 Megabytes
-            )),
+                ru_utime=1.0, ru_stime=2.0, ru_maxrss=3 * 1024  # 3 Megabytes
+            ),
+        ),
     ]
 
     process_mock = mock.Mock()
     process_mock.io_counters.return_value = mock.Mock(
-        read_bytes=12, write_bytes=34)
+        read_bytes=12, write_bytes=34
+    )
     patchers.append(
         mock.patch.object(
-            resources.psutil, 'Process', return_value=process_mock))
+            resources.psutil, 'Process', return_value=process_mock
+        )
+    )
 
     with contextlib2.ExitStack() as stack:
       for ctx in patchers:
@@ -116,7 +118,8 @@ class ResourcesTest(absltest.TestCase):
     # Some psutil functions, such as cpu_freq(), can return None depending on
     # the environment; make sure we don't crash when that occurs.
     with mock.patch.object(
-        resources.resource, 'getrusage', side_effect=resource.error):
+        resources.resource, 'getrusage', side_effect=resource.error
+    ):
       with resources.ResourceMonitor() as monitor:
         self.assertEqual(monitor.metrics().cpu_user_time_seconds, 0)
         self.assertEqual(monitor.metrics().cpu_system_time_seconds, 0)
@@ -133,7 +136,8 @@ class ResourcesTest(absltest.TestCase):
     # psutil.cpu_freq() can throw NotImplementedError in certain environments;
     # make sure we don't crash when that occurs.
     with mock.patch.object(
-        resources.psutil, 'cpu_freq', side_effect=NotImplementedError):
+        resources.psutil, 'cpu_freq', side_effect=NotImplementedError
+    ):
       with resources.ResourceMonitor() as monitor:
         self.assertEqual(monitor.metrics().cpu_frequency_mhz, 0)
 

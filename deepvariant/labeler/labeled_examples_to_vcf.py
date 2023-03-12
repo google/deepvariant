@@ -55,30 +55,51 @@ from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 
 _ALLOW_UNLABELED_EXAMPLES = flags.DEFINE_bool(
-    'allow_unlabeled_examples', None,
-    'If True, allow unlabeled examples as input and output ./. as the GT.')
+    'allow_unlabeled_examples',
+    None,
+    'If True, allow unlabeled examples as input and output ./. as the GT.',
+)
 _REF = flags.DEFINE_string(
-    'ref', None,
-    'Required. Genome reference. Used to get the reference contigs for the '
-    'VCF file.')
+    'ref',
+    None,
+    (
+        'Required. Genome reference. Used to get the reference contigs for the '
+        'VCF file.'
+    ),
+)
 _EXAMPLES = flags.DEFINE_string(
-    'examples', None,
-    'Required. Path to labeled, DeepVariant tf.Example protos.')
+    'examples',
+    None,
+    'Required. Path to labeled, DeepVariant tf.Example protos.',
+)
 _OUTPUT_VCF = flags.DEFINE_string(
-    'output_vcf', None, 'Required. Path where we will write out output VCF.')
+    'output_vcf', None, 'Required. Path where we will write out output VCF.'
+)
 _SAMPLE_NAME = flags.DEFINE_string(
-    'sample_name', '',
-    'The sample name to write into the VCF. By default this is None, '
-    'indicating we will use the call_set_name of the sample encoded in the '
-    'example variant.')
+    'sample_name',
+    '',
+    (
+        'The sample name to write into the VCF. By default this is None, '
+        'indicating we will use the call_set_name of the sample encoded in the '
+        'example variant.'
+    ),
+)
 _MAX_RECORDS = flags.DEFINE_integer(
-    'max_records', -1,
-    'If provided, we will only read in at most max_record examples for '
-    'conversion to VCF.')
+    'max_records',
+    -1,
+    (
+        'If provided, we will only read in at most max_record examples for '
+        'conversion to VCF.'
+    ),
+)
 _LOG_EVERY = flags.DEFINE_integer(
-    'log_every', 10000,
-    'How frequently should we provide updates on the conversion process? We '
-    'will log our conversion of every `log_every` variants.')
+    'log_every',
+    10000,
+    (
+        'How frequently should we provide updates on the conversion process? We'
+        ' will log our conversion of every `log_every` variants.'
+    ),
+)
 
 
 def _example_sort_key(example):
@@ -106,11 +127,14 @@ def examples_to_variants(examples_path, max_records=None):
     ValueError: if we find a Variant in any example that doesn't have genotypes.
   """
   examples = tfrecord.read_tfrecords(examples_path, max_records=max_records)
-  variants = sorted((dv_utils.example_variant(example) for example in examples),
-                    key=variant_utils.variant_range_tuple)
+  variants = sorted(
+      (dv_utils.example_variant(example) for example in examples),
+      key=variant_utils.variant_range_tuple,
+  )
 
-  for _, group in itertools.groupby(variants,
-                                    variant_utils.variant_range_tuple):
+  for _, group in itertools.groupby(
+      variants, variant_utils.variant_range_tuple
+  ):
     variant = next(group)
     if not variantcall_utils.has_genotypes(variant_utils.only_call(variant)):
       if _ALLOW_UNLABELED_EXAMPLES.value:
@@ -118,9 +142,11 @@ def examples_to_variants(examples_path, max_records=None):
         variantcall_utils.set_gt(call, (-1, -1))
       else:
         raise ValueError(
-            ('Variant {} does not have any genotypes. This tool only works '
-             'with variants that have been labeled.').format(
-                 variant_utils.variant_key(variant)))
+            (
+                'Variant {} does not have any genotypes. This tool only works '
+                'with variants that have been labeled.'
+            ).format(variant_utils.variant_key(variant))
+        )
     yield variant
 
 
@@ -157,12 +183,17 @@ def main(argv):
   else:
     sample_name = _SAMPLE_NAME.value
   header = dv_vcf_constants.deepvariant_header(
-      contigs=contigs, sample_names=[sample_name])
+      contigs=contigs, sample_names=[sample_name]
+  )
   with vcf.VcfWriter(_OUTPUT_VCF.value, header=header) as writer:
     for variant in variants_iter:
       variant.calls[0].call_set_name = sample_name
-      logging.log_every_n(logging.INFO, 'Converted %s', _LOG_EVERY.value,
-                          variant_utils.variant_key(variant))
+      logging.log_every_n(
+          logging.INFO,
+          'Converted %s',
+          _LOG_EVERY.value,
+          variant_utils.variant_key(variant),
+      )
       writer.write(variant)
 
 

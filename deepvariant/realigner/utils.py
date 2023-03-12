@@ -31,8 +31,9 @@
 from third_party.nucleus.protos import cigar_pb2
 
 CIGAR_ALIGN_OPS = [
-    cigar_pb2.CigarUnit.ALIGNMENT_MATCH, cigar_pb2.CigarUnit.SEQUENCE_MATCH,
-    cigar_pb2.CigarUnit.SEQUENCE_MISMATCH
+    cigar_pb2.CigarUnit.ALIGNMENT_MATCH,
+    cigar_pb2.CigarUnit.SEQUENCE_MATCH,
+    cigar_pb2.CigarUnit.SEQUENCE_MISMATCH,
 ]
 CIGAR_INSERT_OPS = [cigar_pb2.CigarUnit.INSERT, cigar_pb2.CigarUnit.CLIP_SOFT]
 CIGAR_DELETE_OPS = [cigar_pb2.CigarUnit.DELETE, cigar_pb2.CigarUnit.SKIP]

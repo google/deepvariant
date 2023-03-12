@@ -54,30 +54,34 @@ class ShowExamplesTest(parameterized.TestCase):
     variants_inside = [test_utils.make_variant(start=15, alleles=['A', 'G'])]
     variants_outside = [
         test_utils.make_variant(start=4, alleles=['A', 'G']),
-        test_utils.make_variant(chrom='chr2', start=4, alleles=['A', 'G'])
+        test_utils.make_variant(chrom='chr2', start=4, alleles=['A', 'G']),
     ]
 
     region_filter_function = show_examples.create_region_filter(
-        region_flag_string=region_flag)
+        region_flag_string=region_flag
+    )
     for v in variants_inside:
       self.assertTrue(
           region_filter_function(v),
           msg='Variant at {} should pass filter {}'.format(
-              show_examples.get_short_id(v, [0]), region_flag))
+              show_examples.get_short_id(v, [0]), region_flag
+          ),
+      )
     for v in variants_outside:
       self.assertFalse(
           region_filter_function(v),
           msg='Variant at {} should NOT pass filter {}'.format(
-              show_examples.get_short_id(v, [0]), region_flag))
+              show_examples.get_short_id(v, [0]), region_flag
+          ),
+      )
 
   @parameterized.parameters([
       # The first allele is the ref, the rest are alts.
       dict(alleles=['A', 'G'], indices=[0], expected='chr1:10_A->G'),
       dict(alleles=['A', 'AA', 'AC'], indices=[0], expected='chr1:10_A->AA'),
       dict(
-          alleles=['A', 'AA', 'AC'],
-          indices=[0, 1],
-          expected='chr1:10_A->AA|AC'),
+          alleles=['A', 'AA', 'AC'], indices=[0, 1], expected='chr1:10_A->AA|AC'
+      ),
   ])
   def test_get_full_id(self, alleles, indices, expected):
     variant = test_utils.make_variant(start=10, alleles=alleles)
@@ -89,9 +93,8 @@ class ShowExamplesTest(parameterized.TestCase):
       dict(alleles=['A', 'G'], indices=[0], expected='chr1:10_A->G'),
       dict(alleles=['A', 'AA', 'AC'], indices=[0], expected='chr1:10_A->AA'),
       dict(
-          alleles=['A', 'AA', 'AC'],
-          indices=[0, 1],
-          expected='chr1:10_A->AA|AC'),
+          alleles=['A', 'AA', 'AC'], indices=[0, 1], expected='chr1:10_A->AA|AC'
+      ),
   ])
   def test_get_short_id_for_small_variants(self, alleles, indices, expected):
     variant = test_utils.make_variant(start=10, alleles=alleles)
@@ -107,19 +110,23 @@ class ShowExamplesTest(parameterized.TestCase):
       dict(
           alleles=['A', 'ACGTACGT', 'ACGTACGTACGTACGT'],
           indices=[0, 1],
-          expected='chr1:10_INS7bp|INS15bp'),
+          expected='chr1:10_INS7bp|INS15bp',
+      ),
       dict(
           alleles=['A', 'ACGTACGT', 'AAAAAAAA'],
           indices=[0],
-          expected='chr1:10_alt0INS7bp'),
+          expected='chr1:10_alt0INS7bp',
+      ),
       dict(
           alleles=['A', 'ACGTACGT', 'AAAAAAAA'],
           indices=[1],
-          expected='chr1:10_alt1INS7bp'),
+          expected='chr1:10_alt1INS7bp',
+      ),
       dict(
           alleles=['A', 'ACGTACGT', 'AAAAAAAA'],
           indices=[0, 1],
-          expected='chr1:10_alt0INS7bp|alt1INS7bp'),
+          expected='chr1:10_alt0INS7bp|alt1INS7bp',
+      ),
   ])
   def test_get_short_id_for_longer_variants(self, alleles, indices, expected):
     variant = test_utils.make_variant(start=10, alleles=alleles)
@@ -138,11 +145,13 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
     ls = glob.glob('{}*'.format(output_prefix))
     filenames = [os.path.basename(path) for path in ls]
     self.assertTrue(
-        all(['calling_channels' in filename for filename in filenames]))
+        all(['calling_channels' in filename for filename in filenames])
+    )
     self.assertTrue(all([filename.endswith('.png') for filename in filenames]))
     self.assertFalse(
         any(['label' in filename for filename in filenames]),
-        msg='Calling examples should NOT produce labeled images.')
+        msg='Calling examples should NOT produce labeled images.',
+    )
 
   @flagsaver.flagsaver
   def test_show_examples_end2end_training_examples(self):
@@ -153,11 +162,13 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
     ls = glob.glob('{}*'.format(output_prefix))
     filenames = [os.path.basename(path) for path in ls]
     self.assertTrue(
-        all(['training_channels' in filename for filename in filenames]))
+        all(['training_channels' in filename for filename in filenames])
+    )
     self.assertTrue(all([filename.endswith('.png') for filename in filenames]))
     self.assertTrue(
         all(['label' in filename for filename in filenames]),
-        msg='Training examples should produce labeled images.')
+        msg='Training examples should produce labeled images.',
+    )
 
   @flagsaver.flagsaver
   def test_show_examples_end2end_all_optional_parameters(self):
@@ -180,21 +191,25 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
 
     self.assertTrue(
         any(['kitchen_sink_channels' in filename for filename in filenames]),
-        msg='image_type=both, so there should be images with "channels"')
+        msg='image_type=both, so there should be images with "channels"',
+    )
     self.assertTrue(
         any(['kitchen_sink_rgb' in filename for filename in filenames]),
-        msg='image_type=both, so there should be images with "rgb"')
+        msg='image_type=both, so there should be images with "rgb"',
+    )
     self.assertTrue(all([filename.endswith('.png') for filename in filenames]))
     self.assertFalse(
         any(['label' in filename for filename in filenames]),
-        msg='Should be no "label" when truth_labels=False')
+        msg='Should be no "label" when truth_labels=False',
+    )
     self.assertLen(
         filenames,
         10,
-        msg='Should be 10 filenames, i.e. 5 records with '
-        'channels+rgb for each')
+        msg='Should be 10 filenames, i.e. 5 records with channels+rgb for each',
+    )
     self.assertCountEqual(
-        filenames, [
+        filenames,
+        [
             'kitchen_sink_rgb_chr20:10004146_A->G.png',
             'kitchen_sink_channels_chr20:10004146_A->G.png',
             'kitchen_sink_rgb_chr20:10004093_A->C.png',
@@ -204,10 +219,13 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
             'kitchen_sink_rgb_chr20:10003691_A->G.png',
             'kitchen_sink_channels_chr20:10003691_A->G.png',
             'kitchen_sink_rgb_chr20:10003650_T->C.png',
-            'kitchen_sink_channels_chr20:10003650_T->C.png'
+            'kitchen_sink_channels_chr20:10003650_T->C.png',
         ],
-        msg='Specific examples and their output filenames should be the same '
-        'if the inputs are the same.')
+        msg=(
+            'Specific examples and their output filenames should be the same '
+            'if the inputs are the same.'
+        ),
+    )
 
   @flagsaver.flagsaver
   def test_show_examples_raises_on_wrong_column_labels(self):

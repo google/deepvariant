@@ -45,10 +45,13 @@ slim = tf_slim
 
 
 class ModelingTest(
-    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
 
-  @parameterized.parameters((model_class().name, type(model_class()))
-                            for model_class in modeling.all_models())
+  @parameterized.parameters(
+      (model_class().name, type(model_class()))
+      for model_class in modeling.all_models()
+  )
   def test_get_model_existing_models(self, model_name, expected_class):
     self.assertIsInstance(modeling.get_model(model_name), expected_class)
 
@@ -62,19 +65,21 @@ class ModelingTest(
         n_classes_model_variable=['n_classes'],
         excluded_scopes_for_incompatible_classes=['logits'],
         excluded_scopes_for_incompatible_channels=['logits'],
-        pretrained_model_path='path')
+        pretrained_model_path='path',
+    )
 
     self.assertEqual('foo', model.name)
     self.assertEqual(['n_classes'], model.n_classes_model_variable)
     self.assertEqual(['logits'], model.excluded_scopes_for_incompatible_classes)
-    self.assertEqual(['logits'],
-                     model.excluded_scopes_for_incompatible_channels)
+    self.assertEqual(
+        ['logits'], model.excluded_scopes_for_incompatible_channels
+    )
     self.assertEqual('path', model.pretrained_model_path)
 
   def test_is_encoded_variant_type(self):
     types = [
         dv_utils.EncodedVariantType.SNP.value,
-        dv_utils.EncodedVariantType.INDEL.value
+        dv_utils.EncodedVariantType.INDEL.value,
     ]
     tensor = tf.constant(types * 4, dtype=tf.int64)
 
@@ -84,13 +89,20 @@ class ModelingTest(
 
     self.assertEqual(
         _run(
-            modeling.is_encoded_variant_type(tensor,
-                                             dv_utils.EncodedVariantType.SNP)),
-        [True, False] * 4)
+            modeling.is_encoded_variant_type(
+                tensor, dv_utils.EncodedVariantType.SNP
+            )
+        ),
+        [True, False] * 4,
+    )
     self.assertEqual(
         _run(
             modeling.is_encoded_variant_type(
-                tensor, dv_utils.EncodedVariantType.INDEL)), [False, True] * 4)
+                tensor, dv_utils.EncodedVariantType.INDEL
+            )
+        ),
+        [False, True] * 4,
+    )
 
   @parameterized.parameters(
       dict(labels=[0, 2, 1, 0], target_class=0, expected=[0, 1, 1, 0]),
@@ -100,7 +112,8 @@ class ModelingTest(
   def test_binarize(self, labels, target_class, expected):
     with self.test_session() as sess:
       result = sess.run(
-          modeling.binarize(np.array(labels), np.array(target_class)))
+          modeling.binarize(np.array(labels), np.array(target_class))
+      )
       self.assertListEqual(result.tolist(), expected)
 
   @parameterized.parameters([True, False])
@@ -113,7 +126,8 @@ class ModelingTest(
       variant_types = None
 
     expected = modeling.eval_function_metrics(
-        has_variant_types=include_variant_types)
+        has_variant_types=include_variant_types
+    )
     actual = modeling.eval_metric_fn(labels, predictions, variant_types)
     self.assertEqual(set(expected.keys()), set(actual.keys()))
 
@@ -139,23 +153,29 @@ class ModelingTest(
     self.assertCountEqual([w1, w2, w3], model.variables_to_restore_from_model())
     # As well as when exclude_scopes is an empty list.
     self.assertCountEqual(
-        [w1, w2, w3], model.variables_to_restore_from_model(exclude_scopes=[]))
+        [w1, w2, w3], model.variables_to_restore_from_model(exclude_scopes=[])
+    )
 
     # Excluding model/l1 variables gives us w2 and w3.
     self.assertCountEqual(
         [w2, w3],
-        model.variables_to_restore_from_model(exclude_scopes=['model/l1']))
+        model.variables_to_restore_from_model(exclude_scopes=['model/l1']),
+    )
     # Excluding model/l2 gives us just w1 back.
     self.assertCountEqual(
-        [w1],
-        model.variables_to_restore_from_model(exclude_scopes=['model/l2']))
+        [w1], model.variables_to_restore_from_model(exclude_scopes=['model/l2'])
+    )
     # Excluding multiple scopes works as expected.
-    self.assertCountEqual([],
-                          model.variables_to_restore_from_model(
-                              exclude_scopes=['model/l1', 'model/l2']))
+    self.assertCountEqual(
+        [],
+        model.variables_to_restore_from_model(
+            exclude_scopes=['model/l1', 'model/l2']
+        ),
+    )
     # Excluding the root model scope also produces no variables..
     self.assertCountEqual(
-        [], model.variables_to_restore_from_model(exclude_scopes=['model']))
+        [], model.variables_to_restore_from_model(exclude_scopes=['model'])
+    )
 
 
 # Hide the baseclass inside an enclosing scope so that unittest doesn't try to
@@ -163,7 +183,8 @@ class ModelingTest(
 class HiddenFromUnitTest(object):
 
   class SlimModelBaseTest(
-      tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+      tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+  ):
 
     @parameterized.parameters(
         dict(is_training=True),
@@ -172,35 +193,44 @@ class HiddenFromUnitTest(object):
     def test_create(self, is_training):
       # Creates a training=False model.
       self.assertEqual(
-          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
-          0)
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0
+      )
       images = tf.compat.v1.placeholder(
           tf.float32,
-          (4, dv_constants.PILEUP_DEFAULT_HEIGHT,
-           dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS))
+          (
+              4,
+              dv_constants.PILEUP_DEFAULT_HEIGHT,
+              dv_constants.PILEUP_DEFAULT_WIDTH,
+              dv_constants.PILEUP_NUM_CHANNELS,
+          ),
+      )
       endpoints = self.model.create(
-          images, dv_constants.NUM_CLASSES, is_training=is_training)
+          images, dv_constants.NUM_CLASSES, is_training=is_training
+      )
       if is_training:
         self.assertNotEqual(
             len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
-            0)
+            0,
+        )
       else:
         self.assertEqual(
             len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
-            0)
+            0,
+        )
       self.assertIn('Predictions', endpoints)
       self.assertIn('Logits', endpoints)
-      self.assertEqual(endpoints['Predictions'].shape,
-                       (4, dv_constants.NUM_CLASSES))
+      self.assertEqual(
+          endpoints['Predictions'].shape, (4, dv_constants.NUM_CLASSES)
+      )
 
     def test_preprocess_images(self):
       with self.test_session() as sess:
         batch_size = 3
         values = range(91, 91 + 2 * 1 * dv_constants.PILEUP_NUM_CHANNELS)
         all_values = list(np.tile(values, batch_size))
-        raw = np.array(
-            all_values, dtype='uint8').reshape(
-                (batch_size, 2, 1, dv_constants.PILEUP_NUM_CHANNELS))
+        raw = np.array(all_values, dtype='uint8').reshape(
+            (batch_size, 2, 1, dv_constants.PILEUP_NUM_CHANNELS)
+        )
         images = sess.run(self.model.preprocess_images(raw))
         for i in range(batch_size):
           image = images[i]
@@ -209,8 +239,9 @@ class HiddenFromUnitTest(object):
           # floats between between -1 and 1.
           self.assertEqual(tf.float32, image.dtype)
           self.assertTrue((image >= -1).all() and (image <= 1).all())
-          self.assertEqual((2, 1, dv_constants.PILEUP_NUM_CHANNELS),
-                           image.shape)
+          self.assertEqual(
+              (2, 1, dv_constants.PILEUP_NUM_CHANNELS), image.shape
+          )
 
           # The preprocess step resizes the image to h x w as needed by
           # inception. We don't really care where it goes in the image (and the
@@ -221,8 +252,10 @@ class HiddenFromUnitTest(object):
           # we are also testing the order of the values, which means that we
           # are sure that the pixels have been translated in the right order in
           # the image, wherever the actual translation might be.
-          self.assertEqual([(x - 128.0) / 128.0 for x in values],
-                           [x for x in np.nditer(image) if x != 0.0])
+          self.assertEqual(
+              [(x - 128.0) / 128.0 for x in values],
+              [x for x in np.nditer(image) if x != 0.0],
+          )
 
 
 class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
@@ -250,18 +283,22 @@ class InceptionV3ModelTest(HiddenFromUnitTest.SlimModelBaseTest):
       dict(width=73, height=2000),
   )
   def test_bad_inception_v3_image_dimensions_get_custom_exception(
-      self, width, height):
+      self, width, height
+  ):
     with self.test_session():
       images = tf.compat.v1.placeholder(tf.float32, (4, height, width, 3))
-      expected_message = ('Unsupported image dimensions.* model '
-                          'inception_v3.*w={} x h={}.*').format(width, height)
-      with self.assertRaisesRegex(modeling.UnsupportedImageDimensionsError,
-                                  expected_message):
+      expected_message = (
+          'Unsupported image dimensions.* model inception_v3.*w={} x h={}.*'
+      ).format(width, height)
+      with self.assertRaisesRegex(
+          modeling.UnsupportedImageDimensionsError, expected_message
+      ):
         self.model.create(images, 3, is_training=True)
 
 
 class InceptionV3EmbeddingModelTest(
-    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
 
   @classmethod
   def setUpClass(cls):
@@ -274,30 +311,38 @@ class InceptionV3EmbeddingModelTest(
   )
   def test_create(self, is_training):
     self.assertEqual(
-        len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0)
+        len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0
+    )
     images = tf.compat.v1.placeholder(
         tf.float32,
-        (4, dv_constants.PILEUP_DEFAULT_HEIGHT,
-         dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS))
+        (
+            4,
+            dv_constants.PILEUP_DEFAULT_HEIGHT,
+            dv_constants.PILEUP_DEFAULT_WIDTH,
+            dv_constants.PILEUP_NUM_CHANNELS,
+        ),
+    )
     seq_type = tf.compat.v1.placeholder(tf.int64, (4,))
-    endpoints = self.model._create((images, seq_type),
-                                   dv_constants.NUM_CLASSES,
-                                   is_training=is_training)
+    endpoints = self.model._create(
+        (images, seq_type), dv_constants.NUM_CLASSES, is_training=is_training
+    )
     if is_training:
       self.assertNotEqual(
-          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
-          0)
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0
+      )
     else:
       self.assertEqual(
-          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
-          0)
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0
+      )
     self.assertIn('Predictions', endpoints)
     self.assertIn('Logits', endpoints)
-    self.assertEqual(endpoints['Predictions'].shape,
-                     (4, dv_constants.NUM_CLASSES))
+    self.assertEqual(
+        endpoints['Predictions'].shape, (4, dv_constants.NUM_CLASSES)
+    )
     self.assertIn('Embeddings', endpoints)
-    self.assertEqual(endpoints['Embeddings'].shape,
-                     (4, 2048 + self.model.embedding_size))
+    self.assertEqual(
+        endpoints['Embeddings'].shape, (4, 2048 + self.model.embedding_size)
+    )
 
   def test_create_embeddings(self):
     indices = tf.compat.v1.placeholder(tf.int64, (4,))
@@ -311,7 +356,8 @@ class InceptionV3EmbeddingModelTest(
 
 
 class InceptionV3AttentionModelTest(
-    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
 
   @classmethod
   def setUpClass(cls):
@@ -319,7 +365,8 @@ class InceptionV3AttentionModelTest(
     cls.model = modeling.get_model(
         'attention_inception_v3',
         attention_module='se_block',
-        attention_position='all')
+        attention_position='all',
+    )
 
   @parameterized.parameters(
       dict(is_training=True),
@@ -327,31 +374,46 @@ class InceptionV3AttentionModelTest(
   )
   def test_create(self, is_training):
     self.assertEqual(
-        len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0)
+        len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0
+    )
     images = tf.compat.v1.placeholder(
         tf.float32,
-        (4, dv_constants.PILEUP_DEFAULT_HEIGHT,
-         dv_constants.PILEUP_DEFAULT_WIDTH, dv_constants.PILEUP_NUM_CHANNELS))
+        (
+            4,
+            dv_constants.PILEUP_DEFAULT_HEIGHT,
+            dv_constants.PILEUP_DEFAULT_WIDTH,
+            dv_constants.PILEUP_NUM_CHANNELS,
+        ),
+    )
 
     endpoints = self.model._create(
-        images, dv_constants.NUM_CLASSES, is_training=is_training)
+        images, dv_constants.NUM_CLASSES, is_training=is_training
+    )
     if is_training:
       self.assertNotEqual(
-          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
-          0)
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0
+      )
     else:
       self.assertEqual(
-          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)),
-          0)
+          len(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)), 0
+      )
     self.assertIn('Predictions', endpoints)
     self.assertIn('Logits', endpoints)
-    self.assertEqual(endpoints['Predictions'].shape,
-                     (4, dv_constants.NUM_CLASSES))
+    self.assertEqual(
+        endpoints['Predictions'].shape, (4, dv_constants.NUM_CLASSES)
+    )
     self.assertIn('Input_SE', endpoints)
 
     se_endpoints = [
-        'Mixed_5b', 'Mixed_5c', 'Mixed_5d', 'Mixed_6a', 'Mixed_6b', 'Mixed_6c',
-        'Mixed_6d', 'Mixed_7a', 'Mixed_7b'
+        'Mixed_5b',
+        'Mixed_5c',
+        'Mixed_5d',
+        'Mixed_6a',
+        'Mixed_6b',
+        'Mixed_6c',
+        'Mixed_6d',
+        'Mixed_7a',
+        'Mixed_7b',
     ]
     for endpoint in se_endpoints:
       se_endpoint = endpoint + '_SE'
