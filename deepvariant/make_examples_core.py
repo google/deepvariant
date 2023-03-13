@@ -37,6 +37,7 @@ import time
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 
+from absl import flags
 from absl import logging
 from etils import epath
 import numpy as np
@@ -73,9 +74,16 @@ from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
 
 # For --runtime_by_region, these columns will be written out in this order.
-RUNTIME_BY_REGION_COLUMNS = ('region', 'get reads', 'find candidates',
-                             'make pileup images', 'write outputs', 'num reads',
-                             'num candidates', 'num examples')
+RUNTIME_BY_REGION_COLUMNS = (
+    'region',
+    'get reads',
+    'find candidates',
+    'make pileup images',
+    'write outputs',
+    'num reads',
+    'num candidates',
+    'num examples',
+)
 
 # The name used for a sample if one is not specified or present in the reads.
 _UNKNOWN_SAMPLE = 'UNKNOWN'
@@ -151,7 +159,7 @@ def assign_sample_name(sample_name_flag, reads_filenames):
   return sample_name
 
 
-def make_vc_options(sample_name, flags_obj):
+def make_vc_options(sample_name, flags_obj: flags.FlagValues):
   return deepvariant_pb2.VariantCallerOptions(
       min_count_snps=flags_obj.vsc_min_count_snps,
       min_count_indels=flags_obj.vsc_min_count_indels,
@@ -171,9 +179,9 @@ def make_vc_options(sample_name, flags_obj):
   )
 
 
-def parse_proto_enum_flag(proto_enum_pb2,
-                          flag_value,
-                          skip_unspecified_option=True):
+def parse_proto_enum_flag(
+    proto_enum_pb2, flag_value, skip_unspecified_option=True
+):
   """Parses a command line flag string value into a protobuf Enum value.
 
   Args:
@@ -197,18 +205,22 @@ def parse_proto_enum_flag(proto_enum_pb2,
   """
   try:
     return proto_enum_pb2.Value(flag_value)
-  except ValueError:
+  except ValueError as exception:
     options = proto_enum_pb2.keys()
     if skip_unspecified_option:
       options = [o for o in options if 'unspecified' not in o.lower()]
-    raise ValueError('Unknown enum option "{}". Allowed options are {}'.format(
-        flag_value, ','.join(sorted(options))))
+    raise ValueError(
+        'Unknown enum option "{}". Allowed options are {}'.format(
+            flag_value, ','.join(sorted(options))
+        )
+    ) from exception
 
 
-def resolve_sam_aux_fields(flags_obj):
+def resolve_sam_aux_fields(flags_obj: flags.FlagValues):
   """Decide value of parse_sam_aux_fields based on other flags."""
   flags_requiring_sam_aux_fields = [
-      'sort_by_haplotypes', 'use_original_quality_scores'
+      'sort_by_haplotypes',
+      'use_original_quality_scores',
   ]
   flags_using_sam_aux_fields_optionally = ['add_hp_channel']
 
@@ -217,28 +229,38 @@ def resolve_sam_aux_fields(flags_obj):
     # User didn't set the 'parse_sam_aux_fields' flag, so default to False
     # unless a flag is on that would use it.
     parse_sam_aux_fields = False
-    for flag_name in (flags_requiring_sam_aux_fields +
-                      flags_using_sam_aux_fields_optionally):
+    for flag_name in (
+        flags_requiring_sam_aux_fields + flags_using_sam_aux_fields_optionally
+    ):
       if flags_obj[flag_name].value:
         logging.info(
-            'Because --%s=true, --parse_sam_aux_fields is set to '
-            'true to enable reading auxiliary fields from reads.', flag_name)
+            (
+                'Because --%s=true, --parse_sam_aux_fields is set to '
+                'true to enable reading auxiliary fields from reads.'
+            ),
+            flag_name,
+        )
       parse_sam_aux_fields = True
 
   if not parse_sam_aux_fields:
     for flag_name in flags_requiring_sam_aux_fields:
       if flags_obj[flag_name].value:
-        raise ValueError(f'If --{flag_name} is '
-                         'set then --parse_sam_aux_fields must be set too.')
+        raise ValueError(
+            f'If --{flag_name} is '
+            'set then --parse_sam_aux_fields must be set too.'
+        )
 
     for flag_name in flags_using_sam_aux_fields_optionally:
       if flags_obj[flag_name].value:
         logging.info(
-            'Note that --%s is set but --parse_sam_aux_fields is not '
-            'set. This is fine unless you are expecting to use aux fields from '
-            'the alignments file, such as haplotype tags from phasing. '
-            'If you do need to use aux fields, enable --parse_sam_aux_fields.',
-            flag_name)
+            (
+                'Note that --%s is set but --parse_sam_aux_fields is not set.'
+                ' This is fine unless you are expecting to use aux fields from'
+                ' the alignments file, such as haplotype tags from phasing. If'
+                ' you do need to use aux fields, enable --parse_sam_aux_fields.'
+            ),
+            flag_name,
+        )
   return parse_sam_aux_fields
 
 
@@ -296,17 +318,24 @@ def extract_sample_name_from_sam_reader(sam_reader):
   samples = set(samples_list)
   if not samples:
     logging.warning(
-        'No non-empty sample name found in the input reads. '
-        'DeepVariant will use %s as the sample name. You can also '
-        'provide a sample name with the --sample_name argument.',
-        dv_constants.DEFAULT_SAMPLE_NAME)
+        (
+            'No non-empty sample name found in the input reads. '
+            'DeepVariant will use %s as the sample name. You can also '
+            'provide a sample name with the --sample_name argument.'
+        ),
+        dv_constants.DEFAULT_SAMPLE_NAME,
+    )
     return dv_constants.DEFAULT_SAMPLE_NAME
   elif len(samples) > 1:
     logging.warning(
-        'Multiple samples (%s) were found in the input reads. '
-        'Please confirm this is intended. For now, DeepVariant '
-        'will use the first sample name %s.', ', '.join(sorted(samples)),
-        samples_list[0])
+        (
+            'Multiple samples (%s) were found in the input reads. '
+            'Please confirm this is intended. For now, DeepVariant '
+            'will use the first sample name %s.'
+        ),
+        ', '.join(sorted(samples)),
+        samples_list[0],
+    )
     return samples_list[0]
   return next(iter(samples))
 
@@ -333,7 +362,8 @@ def write_make_examples_run_info(run_info_proto, path):
   with epath.Path(path).open('w') as writer:
     writer.write(
         '# proto-file: learning/genomics/deepvariant/protos/deepvariant.proto\n'
-        '# proto-message: MakeExamplesRunInfo\n')
+        '# proto-message: MakeExamplesRunInfo\n'
+    )
     writer.write(text_format.MessageToString(run_info_proto, float_format=''))
 
 
@@ -342,11 +372,13 @@ def write_make_examples_run_info(run_info_proto, path):
 # ---------------------------------------------------------------------------
 
 
-def _ensure_consistent_contigs(ref_contigs,
-                               sam_contigs,
-                               vcf_contigs,
-                               exclude_contig_names=None,
-                               min_coverage_fraction=1.0):
+def _ensure_consistent_contigs(
+    ref_contigs,
+    sam_contigs,
+    vcf_contigs,
+    exclude_contig_names=None,
+    min_coverage_fraction=1.0,
+):
   """Returns the common contigs after ensuring 'enough' overlap.
 
   Args:
@@ -378,8 +410,9 @@ def _ensure_consistent_contigs(ref_contigs,
     # If VCF contigs exist, we just check the name (not the length).
     vcf_contigs_names = set([x.name for x in vcf_contigs])
     contigs = [x for x in contigs if x.name in vcf_contigs_names]
-  validate_reference_contig_coverage(ref_contigs, contigs,
-                                     min_coverage_fraction)
+  validate_reference_contig_coverage(
+      ref_contigs, contigs, min_coverage_fraction
+  )
   return contigs
 
 
@@ -417,8 +450,9 @@ def common_contigs(contigs_list):
   return common
 
 
-def validate_reference_contig_coverage(ref_contigs, shared_contigs,
-                                       min_coverage_fraction):
+def validate_reference_contig_coverage(
+    ref_contigs, shared_contigs, min_coverage_fraction
+):
   """Validates that shared_contigs spans a sufficient amount of ref_contigs.
 
   Args:
@@ -439,25 +473,31 @@ def validate_reference_contig_coverage(ref_contigs, shared_contigs,
     common_map = ranges.contigs_dict(shared_contigs)
     for ref_contig in ref_contigs:
       status = 'matched' if ref_contig.name in common_map else 'IS MISSING'
-      pieces.append('\n"{}" is {} bp and {}'.format(ref_contig.name,
-                                                    ref_contig.n_bases, status))
+      pieces.append(
+          '\n"{}" is {} bp and {}'.format(
+              ref_contig.name, ref_contig.n_bases, status
+          )
+      )
     return ', '.join(pieces)
 
   ref_bp = ranges.contigs_n_bases(ref_contigs)
   common_bp = ranges.contigs_n_bases(shared_contigs)
-  coverage = common_bp / (1. * ref_bp)
+  coverage = common_bp / (1.0 * ref_bp)
   if not shared_contigs or coverage < min_coverage_fraction:
-    raise ValueError('Reference contigs span {} bases but only {} bases '
-                     '({:.2%}) were found in common among our input files. '
-                     'Check that the sources were created on a common genome '
-                     'reference build. Contig matches were: {}. Here is a '
-                     'useful article about different human genome reference '
-                     'builds:\n'
-                     'https://gatkforums.broadinstitute.org/gatk/discussion/'
-                     '11010/human-genome-reference-builds-grch38-hg38-b37-hg19'
-                     '\nPlease make sure the --ref input matches the build '
-                     'used for the input in --reads.'.format(
-                         ref_bp, common_bp, coverage, format_contig_matches()))
+    raise ValueError(
+        'Reference contigs span {} bases but only {} bases '
+        '({:.2%}) were found in common among our input files. '
+        'Check that the sources were created on a common genome '
+        'reference build. Contig matches were: {}. Here is a '
+        'useful article about different human genome reference '
+        'builds:\n'
+        'https://gatkforums.broadinstitute.org/gatk/discussion/'
+        '11010/human-genome-reference-builds-grch38-hg38-b37-hg19'
+        '\nPlease make sure the --ref input matches the build '
+        'used for the input in --reads.'.format(
+            ref_bp, common_bp, coverage, format_contig_matches()
+        )
+    )
 
 
 def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
@@ -487,21 +527,23 @@ def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
   contig_dict = ranges.contigs_dict(contigs)
   if regions_to_include:
     regions = regions.intersection(
-        ranges.RangeSet.from_regions(regions_to_include, contig_dict))
+        ranges.RangeSet.from_regions(regions_to_include, contig_dict)
+    )
 
   # If we provided regions to exclude, intersect those with the existing calling
   # regions to further refine our set of contigs to process.
   if regions_to_exclude:
     # exclude_regions mutates regions.
     regions.exclude_regions(
-        ranges.RangeSet.from_regions(regions_to_exclude, contig_dict))
+        ranges.RangeSet.from_regions(regions_to_exclude, contig_dict)
+    )
 
   return regions
 
 
-def partition_by_candidates(regions: ranges.RangeSet,
-                            candidate_positions: List[int],
-                            max_size: int) -> List[range_pb2.Range]:
+def partition_by_candidates(
+    regions: ranges.RangeSet, candidate_positions: List[int], max_size: int
+) -> List[range_pb2.Range]:
   """Splits our intervals so that none contain more than max_size candidates.
 
   Slices up the intervals in this RangeSet into a equivalent set of intervals
@@ -541,18 +583,25 @@ def partition_by_candidates(regions: ranges.RangeSet,
     # candidate_positions[candidate_it] == END_OF_REGION designates the last
     # candidate in the region. If it is reached then we need to close the
     # partition.
-    while (candidate_it < len(candidate_positions) and
-           candidate_positions[candidate_it] != END_OF_REGION and
-           interval.start <= candidate_positions[candidate_it] < interval.end):
-      if num_of_candidates == max_size or partition_end - partition_start >= MAX_PARTITION_LEN:
+    while (
+        candidate_it < len(candidate_positions)
+        and candidate_positions[candidate_it] != END_OF_REGION
+        and interval.start <= candidate_positions[candidate_it] < interval.end
+    ):
+      if (
+          num_of_candidates == max_size
+          or partition_end - partition_start >= MAX_PARTITION_LEN
+      ):
         # It may happen that there are no candidates over the a very long span
         # (For example HG0002 chr1:125,000,000 - 140,000,000). In that case we
         # need to break this interval into smaller partitions. Making allele
         # counters for the very long intervals exhausts the memory quickly.
         for pos in range(partition_start, partition_end, MAX_PARTITION_LEN):
           partitioned.append(
-              ranges.make_range(refname, pos,
-                                min(partition_end, pos + MAX_PARTITION_LEN)))
+              ranges.make_range(
+                  refname, pos, min(partition_end, pos + MAX_PARTITION_LEN)
+              )
+          )
         partition_start = partition_end
         partition_end = partition_start + 1
         num_of_candidates = 0
@@ -561,24 +610,30 @@ def partition_by_candidates(regions: ranges.RangeSet,
         num_of_candidates += 1
       candidate_it += 1
 
-    if (candidate_it < len(candidate_positions) and
-        candidate_positions[candidate_it] == END_OF_REGION):
+    if (
+        candidate_it < len(candidate_positions)
+        and candidate_positions[candidate_it] == END_OF_REGION
+    ):
       for pos in range(partition_start, interval.end, MAX_PARTITION_LEN):
         partitioned.append(
-            ranges.make_range(refname, pos,
-                              min(interval.end, pos + MAX_PARTITION_LEN)))
+            ranges.make_range(
+                refname, pos, min(interval.end, pos + MAX_PARTITION_LEN)
+            )
+        )
       candidate_it += 1
     else:
       raise ValueError('Terminating item is missing in candidates list')
   return partitioned
 
 
-def regions_to_process(contigs,
-                       partition_size,
-                       calling_regions=None,
-                       task_id=None,
-                       num_shards=None,
-                       candidates=None):
+def regions_to_process(
+    contigs,
+    partition_size,
+    calling_regions=None,
+    task_id=None,
+    num_shards=None,
+    candidates=None,
+):
   """Determines the regions to process and partitions them into pieces.
 
   This function divides the genomes into regions we should process by
@@ -621,14 +676,20 @@ def regions_to_process(contigs,
     ValueError: if task_id and num_shards are bad or inconsistent.
   """
   if (task_id is None) != (num_shards is None):
-    raise ValueError('Both task_id and num_shards must be present if either is',
-                     task_id, num_shards)
+    raise ValueError(
+        'Both task_id and num_shards must be present if either is',
+        task_id,
+        num_shards,
+    )
   if num_shards:
     if num_shards < 0:
       raise ValueError('num_shards={} must be >= 0'.format(num_shards))
     if task_id < 0 or task_id >= num_shards:
-      raise ValueError('task_id={} should be >= 0 and < num_shards={}'.format(
-          task_id, num_shards))
+      raise ValueError(
+          'task_id={} should be >= 0 and < num_shards={}'.format(
+              task_id, num_shards
+          )
+      )
 
   regions = ranges.RangeSet.from_contigs(contigs)
   if calling_regions:
@@ -659,7 +720,6 @@ def fetch_vcf_positions(vcf_paths, contigs, calling_regions):
 
   Returns:
     Variant positions present in calling_regions.
-
   """
   # Fetch the set of regions being queried.
   regions = ranges.RangeSet.from_contigs(contigs)
@@ -747,6 +807,7 @@ class Sample(object):
   variant_caller: A variant caller for the sample, should be instantiated using
       the options.variant_caller_options.
   """
+
   options: deepvariant_pb2.SampleOptions
   sam_readers: Optional[Sequence[sam.SamReader]] = None
   in_memory_sam_reader: Optional[sam.InMemorySamReader] = None
@@ -809,9 +870,9 @@ def filter_candidates(candidates, select_variant_types):
 class DiagnosticLogger(object):
   """Writes diagnostic information about the assembler."""
 
-  def __init__(self,
-               output_root,
-               normalized_reads_filename='normalized_reads.bam'):
+  def __init__(
+      self, output_root, normalized_reads_filename='normalized_reads.bam'
+  ):
     self.normalized_reads_filename = normalized_reads_filename
     self.output_root = output_root
 
@@ -848,21 +909,26 @@ class OutputsWriter(object):
       self._add_writer(
           'candidates',
           tfrecord.Writer(
-              self._add_suffix(options.candidates_filename, suffix)))
+              self._add_suffix(options.candidates_filename, suffix)
+          ),
+      )
 
     if options.examples_filename:
-      self.examples_filename = self._add_suffix(options.examples_filename,
-                                                suffix)
+      self.examples_filename = self._add_suffix(
+          options.examples_filename, suffix
+      )
       self._add_writer('examples', tfrecord.Writer(self.examples_filename))
 
     if options.gvcf_filename:
       self._add_writer(
           'gvcfs',
-          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)))
+          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)),
+      )
 
     if options.runtime_by_region:
-      self._add_writer('runtime',
-                       epath.Path(options.runtime_by_region).open('w'))
+      self._add_writer(
+          'runtime', epath.Path(options.runtime_by_region).open('w')
+      )
       writer = self._writers['runtime']
       if writer is not None:
         writer.__enter__()
@@ -899,10 +965,13 @@ class OutputsWriter(object):
   def _add_writer(self, name, writer):
     if name not in self._writers:
       raise ValueError(
-          'Expected writer {} to have a None binding in writers.'.format(name))
+          'Expected writer {} to have a None binding in writers.'.format(name)
+      )
     if self._writers[name] is not None:
-      raise ValueError('Expected writer {} to be bound to None in writers but '
-                       'saw {} instead'.format(name, self._writers[name]))
+      raise ValueError(
+          'Expected writer {} to be bound to None in writers but '
+          'saw {} instead'.format(name, self._writers[name])
+      )
     self._writers[name] = writer
 
   def __enter__(self):
@@ -973,22 +1042,30 @@ class RegionProcessor(object):
     return direct_phasing.DirectPhasing()
 
   def _make_allele_counter_for_region(self, region, candidate_positions):
-    return allelecounter.AlleleCounter(self.ref_reader.c_reader, region,
-                                       candidate_positions,
-                                       self.options.allele_counter_options)
+    return allelecounter.AlleleCounter(
+        self.ref_reader.c_reader,
+        region,
+        candidate_positions,
+        self.options.allele_counter_options,
+    )
 
-  def _make_allele_counter_for_read_overlap_region(self, region, full_region,
-                                                   candidate_positions):
+  def _make_allele_counter_for_read_overlap_region(
+      self, region, full_region, candidate_positions
+  ):
     return allelecounter.AlleleCounter.Default(
-        self.ref_reader.c_reader, region, full_region, candidate_positions,
-        self.options.allele_counter_options)
+        self.ref_reader.c_reader,
+        region,
+        full_region,
+        candidate_positions,
+        self.options.allele_counter_options,
+    )
 
   def _encode_tensor(self, image_tensor):
     return image_tensor.tostring(), image_tensor.shape
 
   def _make_sam_readers(
-      self, reads_filenames: Sequence[str],
-      downsample_fraction: float) -> Optional[List[sam.SamReader]]:
+      self, reads_filenames: Sequence[str], downsample_fraction: float
+  ) -> Optional[List[sam.SamReader]]:
     """Creates a list of SamReaders, one from each filename.
 
     Args:
@@ -1004,9 +1081,12 @@ class RegionProcessor(object):
     """
     logging_with_options(
         self.options,
-        'Starting from v0.9.0, --use_ref_for_cram is default to true. '
-        'If you are using CRAM input, note that we will decode CRAM '
-        'using the reference you passed in with --ref')
+        (
+            'Starting from v0.9.0, --use_ref_for_cram is default to true. '
+            'If you are using CRAM input, note that we will decode CRAM '
+            'using the reference you passed in with --ref'
+        ),
+    )
     readers = []
     for reads_filename in reads_filenames:
       if reads_filename:
@@ -1014,15 +1094,17 @@ class RegionProcessor(object):
             sam.SamReader(
                 reads_filename,
                 ref_path=self.options.reference_filename
-                if self.options.use_ref_for_cram else None,
+                if self.options.use_ref_for_cram
+                else None,
                 read_requirements=self.options.read_requirements,
                 parse_aux_fields=self.options.parse_sam_aux_fields,
                 aux_fields_to_keep=self.options.aux_fields_to_keep,
                 hts_block_size=self.options.hts_block_size,
                 downsample_fraction=downsample_fraction,
                 random_seed=self.options.random_seed,
-                use_original_base_quality_scores=self.options
-                .use_original_quality_scores))
+                use_original_base_quality_scores=self.options.use_original_quality_scores,
+            )
+        )
     return readers
 
   def _initialize(self):
@@ -1035,35 +1117,42 @@ class RegionProcessor(object):
     for sample in self.samples:
       sample.sam_readers = self._make_sam_readers(
           reads_filenames=sample.options.reads_filenames,
-          downsample_fraction=sample.options.downsample_fraction)
+          downsample_fraction=sample.options.downsample_fraction,
+      )
       sample.in_memory_sam_reader = sam.InMemorySamReader([])
       sample.variant_caller = self._make_variant_caller_from_options(
           sample.options.variant_caller_options,
-          sample.options.proposed_variants_filename)
+          sample.options.proposed_variants_filename,
+      )
 
     if self.options.use_allele_frequency:
       population_vcf_readers = allele_frequency.make_population_vcf_readers(
-          self.options.population_vcf_filenames)
+          self.options.population_vcf_filenames
+      )
       self.population_vcf_readers = population_vcf_readers
 
     initialize_raligner = (
-        self.options.realigner_enabled or
-        self.options.pic_options.alt_aligned_pileup != 'none' or
-        self.options.allele_counter_options.track_ref_reads)
+        self.options.realigner_enabled
+        or self.options.pic_options.alt_aligned_pileup != 'none'
+        or self.options.allele_counter_options.track_ref_reads
+    )
 
     if initialize_raligner:
       main_sample = self.samples[self.options.main_sample_index]
       input_bam_header = sam.SamReader(
-          main_sample.options.reads_filenames[0]).header
+          main_sample.options.reads_filenames[0]
+      ).header
       self.realigner = realigner.Realigner(
           self.options.realigner_options,
           self.ref_reader,
-          shared_header=input_bam_header)
+          shared_header=input_bam_header,
+      )
 
     self.pic = pileup_image.PileupImageCreator(
         ref_reader=self.ref_reader,
         options=self.options.pic_options,
-        samples=self.samples)
+        samples=self.samples,
+    )
 
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
@@ -1078,68 +1167,95 @@ class RegionProcessor(object):
     """Creates the labeler from options."""
     truth_vcf_reader = vcf.VcfReader(
         self.options.truth_variants_filename,
-        excluded_format_fields=['GL', 'GQ', 'PL'])
+        excluded_format_fields=['GL', 'GQ', 'PL'],
+    )
     confident_regions = read_confident_regions(self.options)
 
-    if (self.options.variant_caller ==
-        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
-      logging.info('For --variant_caller=vcf_candidate_importer, we '
-                   'default the labeler_algorithm to positional_labler.')
+    if (
+        self.options.variant_caller
+        == deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER
+    ):
+      logging.info(
+          'For --variant_caller=vcf_candidate_importer, we '
+          'default the labeler_algorithm to positional_labler.'
+      )
       return positional_labeler.PositionalVariantLabeler(
-          truth_vcf_reader=truth_vcf_reader,
-          confident_regions=confident_regions)
+          truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions
+      )
 
-    if (self.options.labeler_algorithm ==
-        deepvariant_pb2.MakeExamplesOptions.POSITIONAL_LABELER):
+    if (
+        self.options.labeler_algorithm
+        == deepvariant_pb2.MakeExamplesOptions.POSITIONAL_LABELER
+    ):
       return positional_labeler.PositionalVariantLabeler(
-          truth_vcf_reader=truth_vcf_reader,
-          confident_regions=confident_regions)
-    elif (self.options.labeler_algorithm ==
-          deepvariant_pb2.MakeExamplesOptions.HAPLOTYPE_LABELER):
+          truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions
+      )
+    elif (
+        self.options.labeler_algorithm
+        == deepvariant_pb2.MakeExamplesOptions.HAPLOTYPE_LABELER
+    ):
       return haplotype_labeler.HaplotypeLabeler(
           truth_vcf_reader=truth_vcf_reader,
           ref_reader=self.ref_reader,
-          confident_regions=confident_regions)
-    elif (self.options.labeler_algorithm ==
-          deepvariant_pb2.MakeExamplesOptions.CUSTOMIZED_CLASSES_LABELER):
-      if (not self.options.customized_classes_labeler_classes_list or
-          not self.options.customized_classes_labeler_info_field_name):
-        raise ValueError('For -labeler_algorithm=customized_classes_labeler, '
-                         'you need to set '
-                         '-customized_classes_labeler_classes_list and '
-                         '-customized_classes_labeler_info_field_name.')
+          confident_regions=confident_regions,
+      )
+    elif (
+        self.options.labeler_algorithm
+        == deepvariant_pb2.MakeExamplesOptions.CUSTOMIZED_CLASSES_LABELER
+    ):
+      if (
+          not self.options.customized_classes_labeler_classes_list
+          or not self.options.customized_classes_labeler_info_field_name
+      ):
+        raise ValueError(
+            'For -labeler_algorithm=customized_classes_labeler, '
+            'you need to set '
+            '-customized_classes_labeler_classes_list and '
+            '-customized_classes_labeler_info_field_name.'
+        )
       return customized_classes_labeler.CustomizedClassesVariantLabeler(
           truth_vcf_reader=truth_vcf_reader,
           confident_regions=confident_regions,
           classes_list=self.options.customized_classes_labeler_classes_list,
-          info_field_name=self.options
-          .customized_classes_labeler_info_field_name)
+          info_field_name=self.options.customized_classes_labeler_info_field_name,
+      )
     else:
-      raise ValueError('Unexpected labeler_algorithm',
-                       self.options.labeler_algorithm)
+      raise ValueError(
+          'Unexpected labeler_algorithm', self.options.labeler_algorithm
+      )
 
-  def _make_variant_caller_from_options(self, variant_caller_options,
-                                        proposed_variants_filename):
+  def _make_variant_caller_from_options(
+      self, variant_caller_options, proposed_variants_filename
+  ):
     """Creates the variant_caller from options."""
-    if (self.options.variant_caller ==
-        deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER):
+    if (
+        self.options.variant_caller
+        == deepvariant_pb2.MakeExamplesOptions.VCF_CANDIDATE_IMPORTER
+    ):
       if in_training_mode(self.options):
         candidates_vcf = self.options.truth_variants_filename
       else:
         candidates_vcf = proposed_variants_filename
       return vcf_candidate_importer.VcfCandidateImporter(
-          variant_caller_options, candidates_vcf)
-    elif (self.options.variant_caller ==
-          deepvariant_pb2.MakeExamplesOptions.VERY_SENSITIVE_CALLER):
+          variant_caller_options, candidates_vcf
+      )
+    elif (
+        self.options.variant_caller
+        == deepvariant_pb2.MakeExamplesOptions.VERY_SENSITIVE_CALLER
+    ):
       return very_sensitive_caller.VerySensitiveCaller(variant_caller_options)
     else:
       raise ValueError('Unexpected variant_caller', self.options.variant_caller)
 
   def writes_examples_in_region(
-      self, candidates: List[deepvariant_pb2.DeepVariantCall],
-      region: range_pb2.Range, sample_order: List[int], writer: OutputsWriter,
-      n_stats: Dict[str, int], runtimes: Dict[str,
-                                              float]) -> Optional[List[int]]:
+      self,
+      candidates: List[deepvariant_pb2.DeepVariantCall],
+      region: range_pb2.Range,
+      sample_order: List[int],
+      writer: OutputsWriter,
+      n_stats: Dict[str, int],
+      runtimes: Dict[str, float],
+  ) -> Optional[List[int]]:
     """Generates and writes out the examples in a region.
 
     Args:
@@ -1165,14 +1281,16 @@ class RegionProcessor(object):
       types = {
           dv_utils.EncodedVariantType.SNP: 0,
           dv_utils.EncodedVariantType.INDEL: 0,
-          dv_utils.EncodedVariantType.UNKNOWN: 0
+          dv_utils.EncodedVariantType.UNKNOWN: 0,
       }
       for candidate, label in self.label_candidates(candidates, region):
         for example in self.create_pileup_examples(
-            candidate, sample_order=sample_order):
+            candidate, sample_order=sample_order
+        ):
           self.add_label_to_example(example, label)
-          _write_example_and_update_stats(example, writer, runtimes, labels,
-                                          types)
+          _write_example_and_update_stats(
+              example, writer, runtimes, labels, types
+          )
           n_stats['n_examples'] += 1
           if example_shape is None:
             example_shape = dv_utils.example_image_shape(example)
@@ -1185,13 +1303,15 @@ class RegionProcessor(object):
     else:
       for candidate in candidates:
         for example in self.create_pileup_examples(
-            candidate, sample_order=sample_order):
+            candidate, sample_order=sample_order
+        ):
           _write_example_and_update_stats(example, writer, runtimes)
           n_stats['n_examples'] += 1
           if example_shape is None:
             example_shape = dv_utils.example_image_shape(example)
-    runtimes['make pileup images'] = trim_runtime(time.time() -
-                                                  before_make_pileup_images)
+    runtimes['make pileup images'] = trim_runtime(
+        time.time() - before_make_pileup_images
+    )
     return example_shape
 
   def find_candidate_positions(self, region: range_pb2.Range) -> Iterator[int]:
@@ -1208,8 +1328,10 @@ class RegionProcessor(object):
         if self.options.max_reads_per_partition > 0:
           random_for_region = np.random.RandomState(self.options.random_seed)
           sample.reads = utils.reservoir_sample(
-              sample.reads, self.options.max_reads_per_partition,
-              random_for_region)
+              sample.reads,
+              self.options.max_reads_per_partition,
+              random_for_region,
+          )
 
         sample.allele_counter = self._make_allele_counter_for_region(region, [])
 
@@ -1220,7 +1342,8 @@ class RegionProcessor(object):
         error_message = str(err)
         if error_message.startswith('DATA_LOSS:'):
           raise ValueError(
-              error_message + '\nFailed to parse BAM/CRAM file. '
+              error_message
+              + '\nFailed to parse BAM/CRAM file. '
               'This is often caused by:\n'
               '(1) When using a CRAM file, and setting '
               '--use_ref_for_cram to false (which means you want '
@@ -1231,11 +1354,16 @@ class RegionProcessor(object):
               'check its md5.\n'
               'If you cannot find out the reason why this error '
               'is occurring, please report to '
-              'https://github.com/google/deepvariant/issues') from err
+              'https://github.com/google/deepvariant/issues'
+          ) from err
         elif error_message.startswith('NOT_FOUND: Unknown reference_name '):
-          raise ValueError('{}\nThe region {} does not exist in {}.'.format(
-              error_message, ranges.to_literal(region),
-              sample.options.reads_filenames)) from err
+          raise ValueError(
+              '{}\nThe region {} does not exist in {}.'.format(
+                  error_message,
+                  ranges.to_literal(region),
+                  sample.options.reads_filenames,
+              )
+          ) from err
         else:
           # By default, raise the ValueError as is for now.
           raise err
@@ -1247,7 +1375,8 @@ class RegionProcessor(object):
     # If it is done here then we can reuse these results for phasing thus
     # saving runtime.
     candidate_positions = main_sample.variant_caller.get_candidate_positions(
-        allele_counters=allele_counters, sample_name=main_sample.options.name)
+        allele_counters=allele_counters, sample_name=main_sample.options.name
+    )
     for pos in candidate_positions:
       yield pos
     # Mark the end of partition
@@ -1285,17 +1414,20 @@ class RegionProcessor(object):
         sample_reads = self.region_reads_norealign(
             region=region,
             sam_readers=sample.sam_readers,
-            reads_filenames=sample.options.reads_filenames)
+            reads_filenames=sample.options.reads_filenames,
+        )
         runtimes['num reads'] += len(sample_reads)
         sample_reads_list.append(sample_reads)
       else:
         sample_reads_list.append([])
     if self.options.joint_realignment:
       sample_reads_list = self.realign_reads_joint_multisample(
-          sample_reads_list, region)
+          sample_reads_list, region
+      )
     else:
       sample_reads_list = self.realign_reads_per_sample_multisample(
-          sample_reads_list, region)
+          sample_reads_list, region
+      )
     for sample_index, sample in enumerate(self.samples):
       sample.in_memory_sam_reader.replace_reads(sample_reads_list[sample_index])
 
@@ -1308,15 +1440,19 @@ class RegionProcessor(object):
     if self.options.phase_reads and region_padding_percent > 0:
       contig_dict = ranges.contigs_dict(
           fasta.IndexedFastaReader(
-              self.options.reference_filename).header.contigs)
+              self.options.reference_filename
+          ).header.contigs
+      )
       # When candidate partitioning is used region size is variable. Therefore
       # we need to calculate the padding for each region.
       padding_fraction = int(
-          (region.end - region.start) * region_padding_percent / 100)
+          (region.end - region.start) * region_padding_percent / 100
+      )
       region_expanded = ranges.expand(region, padding_fraction, contig_dict)
 
       candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
-          region, region_expanded)
+          region, region_expanded
+      )
     else:
       candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(region)
 
@@ -1328,9 +1464,11 @@ class RegionProcessor(object):
 
       if self.options.select_variant_types:
         candidates = list(
-            filter_candidates(candidates, self.options.select_variant_types))
-      runtimes['find candidates'] = trim_runtime(time.time() -
-                                                 before_find_candidates)
+            filter_candidates(candidates, self.options.select_variant_types)
+        )
+      runtimes['find candidates'] = trim_runtime(
+          time.time() - before_find_candidates
+      )
       before_make_pileup_images = time.time()
 
       # Get allele frequencies for candidates.
@@ -1339,22 +1477,29 @@ class RegionProcessor(object):
             allele_frequency.add_allele_frequencies_to_candidates(
                 candidates=candidates,
                 population_vcf_reader=self.population_vcf_readers[
-                    region.reference_name],
-                ref_reader=self.ref_reader))
+                    region.reference_name
+                ],
+                ref_reader=self.ref_reader,
+            )
+        )
 
       # After any filtering and other changes above, set candidates for sample.
       candidates_by_sample[role] = candidates
 
-      runtimes['make pileup images'] = trim_runtime(time.time() -
-                                                    before_make_pileup_images)
+      runtimes['make pileup images'] = trim_runtime(
+          time.time() - before_make_pileup_images
+      )
     runtimes['num candidates'] = sum(
-        [len(x) for x in candidates_by_sample.values()])
+        [len(x) for x in candidates_by_sample.values()]
+    )
     return candidates_by_sample, gvcfs_by_sample, runtimes
 
   def region_reads_norealign(
-      self, region: range_pb2.Range,
+      self,
+      region: range_pb2.Range,
       sam_readers: Optional[Sequence[sam.SamReader]],
-      reads_filenames: Optional[Sequence[str]]) -> List[reads_pb2.Read]:
+      reads_filenames: Optional[Sequence[str]],
+  ) -> List[reads_pb2.Read]:
     """Gets reads overlapping the region.
 
     Args:
@@ -1378,15 +1523,16 @@ class RegionProcessor(object):
     try:
       if self.options.max_reads_per_partition > 0:
         random_for_region = np.random.RandomState(self.options.random_seed)
-        reads = utils.reservoir_sample(reads,
-                                       self.options.max_reads_per_partition,
-                                       random_for_region)
+        reads = utils.reservoir_sample(
+            reads, self.options.max_reads_per_partition, random_for_region
+        )
       return list(reads)
     except ValueError as err:
       error_message = str(err)
       if error_message.startswith('DATA_LOSS:'):
         raise ValueError(
-            error_message + '\nFailed to parse BAM/CRAM file. '
+            error_message
+            + '\nFailed to parse BAM/CRAM file. '
             'This is often caused by:\n'
             '(1) When using a CRAM file, and setting '
             '--use_ref_for_cram to false (which means you want '
@@ -1397,16 +1543,21 @@ class RegionProcessor(object):
             'check its md5.\n'
             'If you cannot find out the reason why this error '
             'is occurring, please report to '
-            'https://github.com/google/deepvariant/issues') from err
+            'https://github.com/google/deepvariant/issues'
+        ) from err
       elif error_message.startswith('NOT_FOUND: Unknown reference_name '):
-        raise ValueError('{}\nThe region {} does not exist in {}.'.format(
-            error_message, ranges.to_literal(region), reads_filenames)) from err
+        raise ValueError(
+            '{}\nThe region {} does not exist in {}.'.format(
+                error_message, ranges.to_literal(region), reads_filenames
+            )
+        ) from err
       else:
         # By default, raise the ValueError as is for now.
         raise err
 
-  def realign_reads(self, reads: List[reads_pb2.Read],
-                    region: range_pb2.Range) -> List[reads_pb2.Read]:
+  def realign_reads(
+      self, reads: List[reads_pb2.Read], region: range_pb2.Range
+  ) -> List[reads_pb2.Read]:
     """Realign reads overlapping the region.
 
     Args:
@@ -1421,17 +1572,20 @@ class RegionProcessor(object):
       max_read_length_to_realign = 500
       if max_read_length_to_realign > 0:
         long_reads = [
-            read for read in reads
+            read
+            for read in reads
             if len(read.aligned_sequence) > max_read_length_to_realign
         ]
 
         short_reads = [
-            read for read in reads
+            read
+            for read in reads
             if len(read.aligned_sequence) <= max_read_length_to_realign
         ]
 
         _, realigned_short_reads = self.realigner.realign_reads(
-            short_reads, region)
+            short_reads, region
+        )
 
         # Long reads will be listed before short reads when both are present.
         # Examples with only short or only long reads will be unaffected.
@@ -1441,8 +1595,10 @@ class RegionProcessor(object):
     return reads
 
   def realign_reads_per_sample_multisample(
-      self, sample_reads_list: List[List[reads_pb2.Read]],
-      region: range_pb2.Range) -> List[List[reads_pb2.Read]]:
+      self,
+      sample_reads_list: List[List[reads_pb2.Read]],
+      region: range_pb2.Range,
+  ) -> List[List[reads_pb2.Read]]:
     """Realign reads overlapping the region.
 
     Args:
@@ -1459,8 +1615,10 @@ class RegionProcessor(object):
     ]
 
   def realign_reads_joint_multisample(
-      self, sample_reads_list: List[List[reads_pb2.Read]],
-      region: range_pb2.Range) -> List[List[reads_pb2.Read]]:
+      self,
+      sample_reads_list: List[List[reads_pb2.Read]],
+      region: range_pb2.Range,
+  ) -> List[List[reads_pb2.Read]]:
     """Realign reads overlapping the region.
 
     Args:
@@ -1474,7 +1632,7 @@ class RegionProcessor(object):
     # join reads from all samples
     if len(sample_reads_list) > 1:
       reads = []
-      for (sample_index, sample_reads) in enumerate(sample_reads_list):
+      for sample_index, sample_reads in enumerate(sample_reads_list):
         for read in sample_reads:
           read.fragment_name += f'.{sample_index}'
         reads.extend(sample_reads)
@@ -1496,20 +1654,25 @@ class RegionProcessor(object):
     return sample_realigned_reads_list
 
   def filter_candidates_by_region(
-      self, candidates: Sequence[deepvariant_pb2.DeepVariantCall],
-      region: range_pb2.Range) -> Sequence[deepvariant_pb2.DeepVariantCall]:
+      self,
+      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      region: range_pb2.Range,
+  ) -> Sequence[deepvariant_pb2.DeepVariantCall]:
     return [
-        candidate for candidate in candidates
-        if candidate.variant.start >= region.start and
-        candidate.variant.start < region.end
+        candidate
+        for candidate in candidates
+        if candidate.variant.start >= region.start
+        and candidate.variant.start < region.end
     ]
 
   def candidates_in_region(
       self,
       region: range_pb2.Range,
-      padded_region: Optional[range_pb2.Range] = None
-  ) -> Tuple[Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]], Dict[
-      str, Sequence[variants_pb2.Variant]]]:
+      padded_region: Optional[range_pb2.Range] = None,
+  ) -> Tuple[
+      Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
+      Dict[str, Sequence[variants_pb2.Variant]],
+  ]:
     """Finds candidates in the region using the designated variant caller.
 
     Args:
@@ -1546,10 +1709,12 @@ class RegionProcessor(object):
           # Calculate potential candidate positions from allele counts
           if padded_region is not None:
             sample.allele_counter = self._make_allele_counter_for_region(
-                padded_region, [])
+                padded_region, []
+            )
           else:
             sample.allele_counter = self._make_allele_counter_for_region(
-                region, [])
+                region, []
+            )
 
           for read in sample.reads:
             sample.allele_counter.add(read, sample.options.name)
@@ -1560,7 +1725,8 @@ class RegionProcessor(object):
     for sample in self.samples:
       if self.options.allele_counter_options.track_ref_reads:
         candidate_positions = sample.variant_caller.get_candidate_positions(
-            allele_counters=allele_counters, sample_name=sample.options.name)
+            allele_counters=allele_counters, sample_name=sample.options.name
+        )
       if sample.options.reads_filenames:
         if self.options.allele_counter_options.normalize_reads:
           reads_start = region.start
@@ -1568,7 +1734,8 @@ class RegionProcessor(object):
           for read in sample.reads:
             read_last_pos = min(
                 self.ref_reader.contig(region.reference_name).n_bases - 1,
-                utils.read_end(read))
+                utils.read_end(read),
+            )
             if read.alignment.position.position < reads_start:
               reads_start = read.alignment.position.position
             if read_last_pos > reads_end:
@@ -1576,31 +1743,38 @@ class RegionProcessor(object):
           full_range = range_pb2.Range(
               reference_name=region.reference_name,
               start=reads_start,
-              end=reads_end)
+              end=reads_end,
+          )
           sample.reads = sample.in_memory_sam_reader.query(region)
 
-          sample.allele_counter = self._make_allele_counter_for_read_overlap_region(
-              region, full_range, candidate_positions)
+          sample.allele_counter = (
+              self._make_allele_counter_for_read_overlap_region(
+                  region, full_range, candidate_positions
+              )
+          )
         else:
           if padded_region is not None:
             sample.allele_counter = self._make_allele_counter_for_region(
-                padded_region, candidate_positions)
+                padded_region, candidate_positions
+            )
           else:
             sample.allele_counter = self._make_allele_counter_for_region(
-                region, candidate_positions)
+                region, candidate_positions
+            )
 
         for read in sample.reads:
           if self.options.allele_counter_options.normalize_reads:
             cigar, read_shift = sample.allele_counter.normalize_and_add(
-                read, sample.options.name)
+                read, sample.options.name
+            )
             if cigar:
               if read_shift != 0:
                 read.alignment.position.position += read_shift
               del read.alignment.cigar[:]
               for el in cigar:
                 read.alignment.cigar.add(
-                    operation=el.operation,
-                    operation_length=el.operation_length)
+                    operation=el.operation, operation_length=el.operation_length
+                )
           else:
             sample.allele_counter.add(read, sample.options.name)
 
@@ -1615,8 +1789,10 @@ class RegionProcessor(object):
       right_padding = padded_region.end - region.end
     for sample in self.samples:
       role = sample.options.role
-      if in_training_mode(
-          self.options) and self.options.sample_role_to_train != role:
+      if (
+          in_training_mode(self.options)
+          and self.options.sample_role_to_train != role
+      ):
         continue
       if not sample.options.reads_filenames:
         continue
@@ -1626,26 +1802,33 @@ class RegionProcessor(object):
           include_gvcfs=gvcf_output_enabled(self.options),
           include_med_dp=self.options.include_med_dp,
           left_padding=left_padding,
-          right_padding=right_padding)
+          right_padding=right_padding,
+      )
 
       if self.options.phase_reads:
         if padded_region is not None:
           reads_to_phase = list(
-              sample.in_memory_sam_reader.query(padded_region))
+              sample.in_memory_sam_reader.query(padded_region)
+          )
         else:
           reads_to_phase = list(sample.in_memory_sam_reader.query(region))
         for read in reads_to_phase:
           # Remove existing values
           del read.info['HP'].values[:]
         # Skip phasing if number of candidates is over the phase_max_candidates.
-        if (self.options.phase_max_candidates and
-            len(candidates[role]) > self.options.phase_max_candidates):
+        if (
+            self.options.phase_max_candidates
+            and len(candidates[role]) > self.options.phase_max_candidates
+        ):
           logging_with_options(
-              self.options, 'Skip phasing: len(candidates[%s]) is %s.' %
-              (role, len(candidates[role])))
+              self.options,
+              'Skip phasing: len(candidates[%s]) is %s.'
+              % (role, len(candidates[role])),
+          )
         else:
-          read_phases = self.direct_phasing_cpp.phase(candidates[role],
-                                                      reads_to_phase)
+          read_phases = self.direct_phasing_cpp.phase(
+              candidates[role], reads_to_phase
+          )
           # Assign phase tag to reads.
           for read_phase, read in zip(read_phases, reads_to_phase):
             # Remove existing values
@@ -1658,7 +1841,8 @@ class RegionProcessor(object):
 
       if padded_region is not None:
         candidates[role] = self.filter_candidates_by_region(
-            candidates[role], region)
+            candidates[role], region
+        )
 
     return candidates, gvcfs
 
@@ -1691,27 +1875,34 @@ class RegionProcessor(object):
 
     # Sanity check that the reference_bases in the variant match the reference.
     ref_query_at_variant = self.realigner.ref_reader.query(
-        ranges.make_range(contig, ref_start, ref_end))
+        ranges.make_range(contig, ref_start, ref_end)
+    )
     if ref_bases != ref_query_at_variant:
-      raise ValueError('Error: reference_bases property in variant ({})'
-                       'does not match the bases in the reference ({}) at that '
-                       'position.'.format(ref_bases, ref_query_at_variant))
+      raise ValueError(
+          'Error: reference_bases property in variant ({})'
+          'does not match the bases in the reference ({}) at that '
+          'position.'.format(ref_bases, ref_query_at_variant)
+      )
 
     # Margin must be equal to or more than half the window width.
     # Some extra prefix/suffix can be added to anchor alignments, but currently
     # we don't add extra.
     margin = window_half_width
     valid_end = min(
-        self.realigner.ref_reader.contig(contig).n_bases, ref_end + margin)
-    alignment_region = ranges.make_range(contig, max(ref_start - margin, 0),
-                                         valid_end)
+        self.realigner.ref_reader.contig(contig).n_bases, ref_end + margin
+    )
+    alignment_region = ranges.make_range(
+        contig, max(ref_start - margin, 0), valid_end
+    )
     trimmed_reads = [realigner.trim_read(r, alignment_region) for r in reads]
     # Filter reads to a minimum read length of 15 bp after trimming.
     reads = [r for r in trimmed_reads if len(r.aligned_sequence) >= 15]
     prefix = self.realigner.ref_reader.query(
-        ranges.make_range(contig, max(ref_start - margin, 0), ref_start))
+        ranges.make_range(contig, max(ref_start - margin, 0), ref_start)
+    )
     suffix = self.realigner.ref_reader.query(
-        ranges.make_range(contig, ref_end, valid_end))
+        ranges.make_range(contig, ref_end, valid_end)
+    )
 
     alignments_by_haplotype = {}
     sequences_by_haplotype = {}
@@ -1724,16 +1915,17 @@ class RegionProcessor(object):
           suffix=suffix,
           reads=reads,
           contig=contig,
-          ref_start=ref_start - len(prefix))
+          ref_start=ref_start - len(prefix),
+      )
       # Sequence of the alt haplotype in the window:
       end_of_prefix = prefix[-window_half_width:]
-      beginning_of_suffix = suffix[:max(window_half_width + 1 - len(hap), 0)]
+      beginning_of_suffix = suffix[: max(window_half_width + 1 - len(hap), 0)]
       sequences_by_haplotype[hap] = end_of_prefix + hap + beginning_of_suffix
       # Long haplotypes can extend past the window, so enforce the width here.
       sequences_by_haplotype[hap] = sequences_by_haplotype[hap][0:window_width]
     return {
         'alt_alignments': alignments_by_haplotype,
-        'alt_sequences': sequences_by_haplotype
+        'alt_sequences': sequences_by_haplotype,
     }
 
   def create_pileup_examples(self, dv_call, sample_order=None):
@@ -1748,22 +1940,27 @@ class RegionProcessor(object):
       dv_call: A DeepVariantCall.
       sample_order: A list of indices representing the order in which samples
         should be represented in the pileup image. Example: [1,0,2] to swap the
-          first and second samples. This is None by default which puts the
-          samples in order.
+        first and second samples. This is None by default which puts the samples
+        in order.
 
     Returns:
       A list of tf.Example protos.
     """
     reads_for_samples = [
         self.pic.get_reads(
-            dv_call.variant, sam_reader=sample.in_memory_sam_reader)
+            dv_call.variant, sam_reader=sample.in_memory_sam_reader
+        )
         for sample in self.samples
     ]
 
     logging.vlog(
-        3, 'create_pileup_examples for variant: {}:{}_{}'.format(
-            dv_call.variant.reference_name, dv_call.variant.start,
-            dv_call.variant.reference_bases))
+        3,
+        'create_pileup_examples for variant: {}:{}_{}'.format(
+            dv_call.variant.reference_name,
+            dv_call.variant.start,
+            dv_call.variant.reference_bases,
+        ),
+    )
 
     # Decide whether each candidate needs ALT-alignment.
     alt_align_this_variant = False
@@ -1795,12 +1992,16 @@ class RegionProcessor(object):
         reads_for_samples=reads_for_samples,
         sample_order=sample_order,
         haplotype_alignments_for_samples=haplotype_alignments_for_samples,
-        haplotype_sequences=haplotype_sequences)
+        haplotype_sequences=haplotype_sequences,
+    )
 
     if pileup_images is None:
       # We cannot build a PileupImage for dv_call, issue a warning.
-      logging.warning('Could not create PileupImage for candidate at %s:%s',
-                      dv_call.variant.reference_name, dv_call.variant.start)
+      logging.warning(
+          'Could not create PileupImage for candidate at %s:%s',
+          dv_call.variant.reference_name,
+          dv_call.variant.start,
+      )
       return []
 
     examples = []
@@ -1812,7 +2013,9 @@ class RegionProcessor(object):
               alt_alleles,
               encoded_tensor,
               shape=shape,
-              sequencing_type=self.options.pic_options.sequencing_type))
+              sequencing_type=self.options.pic_options.sequencing_type,
+          )
+      )
     return examples
 
   def get_channels(self) -> List[int]:
@@ -1835,12 +2038,14 @@ class RegionProcessor(object):
     """
     # Set BAM filename (used for training stats).
     for candidate in candidates:
-      struct_utils.set_string_field(candidate.variant.info, 'BAM_FNAME',
-                                    self.options.bam_fname)
+      struct_utils.set_string_field(
+          candidate.variant.info, 'BAM_FNAME', self.options.bam_fname
+      )
 
     # Get our list of labels for each candidate variant.
     labels = self.labeler.label_variants(
-        [candidate.variant for candidate in candidates], region)
+        [candidate.variant for candidate in candidates], region
+    )
 
     # Remove any candidates we couldn't label, yielding candidate, label pairs.
     for candidate, label in zip(candidates, labels):
@@ -1863,21 +2068,23 @@ class RegionProcessor(object):
       ValueError: if label isn't confident.
     """
     if not label.is_confident:
-      raise ValueError('Cannot add a non-confident label to an example',
-                       example, label)
+      raise ValueError(
+          'Cannot add a non-confident label to an example', example, label
+      )
     alt_alleles_indices = dv_utils.example_alt_alleles_indices(example)
 
     dv_utils.example_set_variant(example, label.variant)
 
     # Set the label of the example to the # alts given our alt_alleles_indices.
-    dv_utils.example_set_label(example,
-                               label.label_for_alt_alleles(alt_alleles_indices))
+    dv_utils.example_set_label(
+        example, label.label_for_alt_alleles(alt_alleles_indices)
+    )
     return example
 
 
-def move_to_the_next_non_exhausted_shard(shard_index: int,
-                                         i_th_index: List[int],
-                                         position_arrays: List[Any]) -> int:
+def move_to_the_next_non_exhausted_shard(
+    shard_index: int, i_th_index: List[int], position_arrays: List[Any]
+) -> int:
   """Returns the index of the next non-exhausted shard.
 
   Args:
@@ -1938,13 +2145,17 @@ def merge_ranges_from_files_sequential(position_arrays: List[Any]) -> List[int]:
     # Iterate over positions in one shard.
     while i_th_index[shard_index] < len(position_arrays[shard_index]):
       # Once END_OF_PARTITION is reached we need to move to the next shard.
-      if position_arrays[shard_index][
-          i_th_index[shard_index]] == END_OF_PARTITION:
+      if (
+          position_arrays[shard_index][i_th_index[shard_index]]
+          == END_OF_PARTITION
+      ):
         i_th_index[shard_index] += 1
         # If END_OF_REGION is encountered we need to move to the next shard.
-        if (i_th_index[shard_index] < len(position_arrays[shard_index]) and
-            position_arrays[shard_index][i_th_index[shard_index]]
-            == END_OF_REGION):
+        if (
+            i_th_index[shard_index] < len(position_arrays[shard_index])
+            and position_arrays[shard_index][i_th_index[shard_index]]
+            == END_OF_REGION
+        ):
           candidate_positions_sorted.append(END_OF_REGION)
           i_th_index[shard_index] += 1
         # Move to the next shard.
@@ -1952,10 +2163,13 @@ def merge_ranges_from_files_sequential(position_arrays: List[Any]) -> List[int]:
       else:
         # Assert that items are sorted
         if candidate_positions_sorted:
-          assert (position_arrays[shard_index][i_th_index[shard_index]] >
-                  candidate_positions_sorted[-1])
+          assert (
+              position_arrays[shard_index][i_th_index[shard_index]]
+              > candidate_positions_sorted[-1]
+          )
         candidate_positions_sorted.append(
-            position_arrays[shard_index][i_th_index[shard_index]])
+            position_arrays[shard_index][i_th_index[shard_index]]
+        )
         i_th_index[shard_index] += 1
         items_added += 1
 
@@ -1964,11 +2178,13 @@ def merge_ranges_from_files_sequential(position_arrays: List[Any]) -> List[int]:
     if i_th_index[shard_index] == len(position_arrays[shard_index]):
       num_arrays_left -= 1
     # Move to the next shard
-    shard_index = move_to_the_next_non_exhausted_shard(shard_index, i_th_index,
-                                                       position_arrays)
+    shard_index = move_to_the_next_non_exhausted_shard(
+        shard_index, i_th_index, position_arrays
+    )
 
-  logging.info('Total number of candidates: %d',
-               len(candidate_positions_sorted))
+  logging.info(
+      'Total number of candidates: %d', len(candidate_positions_sorted)
+  )
   return candidate_positions_sorted
 
 
@@ -2011,13 +2227,17 @@ def processing_regions_from_options(options):
   candidate_positions = None
   mode_candidate_sweep = deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP
   main_sample_options = options.sample_options[options.main_sample_index]
-  if (options.mode != mode_candidate_sweep and
-      main_sample_options.candidate_positions):
+  if (
+      options.mode != mode_candidate_sweep
+      and main_sample_options.candidate_positions
+  ):
     candidate_positions = load_candidate_positions(
-        main_sample_options.candidate_positions)
+        main_sample_options.candidate_positions
+    )
 
   ref_contigs = fasta.IndexedFastaReader(
-      options.reference_filename).header.contigs
+      options.reference_filename
+  ).header.contigs
 
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None
@@ -2025,9 +2245,12 @@ def processing_regions_from_options(options):
     vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
     if all([x.n_bases == 0 for x in vcf_contigs]):
       logging.info(
-          '%s header does not contain contig lengths. Will skip contig '
-          'consistency checking for this file.',
-          options.truth_variants_filename)
+          (
+              '%s header does not contain contig lengths. Will skip contig '
+              'consistency checking for this file.'
+          ),
+          options.truth_variants_filename,
+      )
       vcf_contigs = None
 
   main_sample = options.sample_options[options.main_sample_index]
@@ -2037,60 +2260,78 @@ def processing_regions_from_options(options):
   ]
   sam_contigs = common_contigs(only_true(*all_sam_contigs))
 
-  contigs = _ensure_consistent_contigs(ref_contigs, sam_contigs, vcf_contigs,
-                                       options.exclude_contigs,
-                                       options.min_shared_contigs_basepairs)
-  logging_with_options(options,
-                       'Common contigs are %s' % [c.name for c in contigs])
-  calling_regions = build_calling_regions(ref_contigs, options.calling_regions,
-                                          options.exclude_calling_regions)
+  contigs = _ensure_consistent_contigs(
+      ref_contigs,
+      sam_contigs,
+      vcf_contigs,
+      options.exclude_contigs,
+      options.min_shared_contigs_basepairs,
+  )
+  logging_with_options(
+      options, 'Common contigs are %s' % [c.name for c in contigs]
+  )
+  calling_regions = build_calling_regions(
+      ref_contigs, options.calling_regions, options.exclude_calling_regions
+  )
   if not calling_regions:
-    raise ValueError('The regions to call is empty. Check your --regions and '
-                     '--exclude_regions flags to make sure they are not '
-                     'resulting in set of empty region to process. This also '
-                     'happens if you use "chr20" for a BAM where contig names '
-                     'don\'t have "chr"s (or vice versa).')
+    raise ValueError(
+        'The regions to call is empty. Check your --regions and '
+        '--exclude_regions flags to make sure they are not '
+        'resulting in set of empty region to process. This also '
+        'happens if you use "chr20" for a BAM where contig names '
+        'don\'t have "chr"s (or vice versa).'
+    )
   regions = regions_to_process(
       contigs=contigs,
       partition_size=options.allele_counter_options.partition_size,
       calling_regions=calling_regions,
       task_id=options.task_id,
       num_shards=options.num_shards,
-      candidates=candidate_positions)
+      candidates=candidate_positions,
+  )
 
   region_list = list(regions)
   # When using VcfCandidateImporter, it is safe to skip regions without
   # candidates as long as gVCF output is not needed. There is a tradeoff
   # though because it takes time to read the VCF, which is only worth it if
   # there are enough regions.
-  if (main_sample.proposed_variants_filename and
-      not gvcf_output_enabled(options)):
+  if main_sample.proposed_variants_filename and not gvcf_output_enabled(
+      options
+  ):
     logging_with_options(
-        options, 'Reading VCF to skip processing some regions without '
-        'variants in the --proposed_variants VCF.')
+        options,
+        (
+            'Reading VCF to skip processing some regions without '
+            'variants in the --proposed_variants VCF.'
+        ),
+    )
     before = time.time()
-    variant_positions = fetch_vcf_positions([
-        sample_option.proposed_variants_filename
-        for sample_option in options.sample_options
-    ], contigs, calling_regions)
+    variant_positions = fetch_vcf_positions(
+        [
+            sample_option.proposed_variants_filename
+            for sample_option in options.sample_options
+        ],
+        contigs,
+        calling_regions,
+    )
     filtered_regions = filter_regions_by_vcf(region_list, variant_positions)
     time_elapsed = time.time() - before
     logging_with_options(
-        options, 'Filtering regions took {} seconds and reduced the number of '
+        options,
+        'Filtering regions took {} seconds and reduced the number of '
         'regions to process from {} to {} regions containing variants '
         'from the supplied VCF of proposed variants.'.format(
-            trim_runtime(time_elapsed), len(region_list),
-            len(filtered_regions)))
+            trim_runtime(time_elapsed), len(region_list), len(filtered_regions)
+        ),
+    )
     return filtered_regions, None
 
   return region_list, calling_regions
 
 
-def _write_example_and_update_stats(example,
-                                    writer,
-                                    runtimes,
-                                    labels=None,
-                                    types=None):
+def _write_example_and_update_stats(
+    example, writer, runtimes, labels=None, types=None
+):
   """Writes out the example using writer; updates labels and types as needed."""
   writer.write_examples(example)
   if runtimes:
@@ -2100,7 +2341,8 @@ def _write_example_and_update_stats(example,
   if labels is not None and types is not None:
     example_label = dv_utils.example_label(example)
     example_type = dv_utils.encoded_variant_type(
-        dv_utils.example_variant(example))
+        dv_utils.example_variant(example)
+    )
     labels[example_label] += 1
     types[example_type] += 1
 
@@ -2117,7 +2359,8 @@ def make_examples_runner(options):
   mode_candidate_sweep = deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP
   if options.mode == mode_candidate_sweep and main_sample.candidate_positions:
     _, candidate_positions_filename = sharded_file_utils.resolve_filespecs(
-        options.task_id, main_sample.candidate_positions)
+        options.task_id, main_sample.candidate_positions
+    )
     candidates_writer = epath.Path(candidate_positions_filename).open('wb')
 
   # Create a processor to create candidates and examples for each region.
@@ -2126,30 +2369,40 @@ def make_examples_runner(options):
 
   if options.candidates_filename:
     logging_with_options(
-        options, 'Writing candidates to %s' % options.candidates_filename)
+        options, 'Writing candidates to %s' % options.candidates_filename
+    )
   if options.gvcf_filename:
-    logging_with_options(options,
-                         'Writing gvcf records to %s' % options.gvcf_filename)
+    logging_with_options(
+        options, 'Writing gvcf records to %s' % options.gvcf_filename
+    )
 
   last_reported = 0
 
   writers_dict = {}
   if in_training_mode(options) or len(options.sample_options) == 1:
     writers_dict[options.sample_role_to_train] = OutputsWriter(
-        options, suffix=None)
+        options, suffix=None
+    )
   else:
     for sample in region_processor.samples:
       if sample.sam_readers is not None:
         writers_dict[sample.options.role] = OutputsWriter(
-            options, suffix=sample.options.role)
+            options, suffix=sample.options.role
+        )
 
   logging_with_options(
-      options, 'Writing examples to %s' %
-      ', '.join([writer.examples_filename for writer in writers_dict.values()]))
+      options,
+      'Writing examples to %s'
+      % ', '.join(
+          [writer.examples_filename for writer in writers_dict.values()]
+      ),
+  )
 
   logging_with_options(
-      options, 'Overhead for preparing inputs: %d seconds' %
-      (time.time() - before_initializing_inputs))
+      options,
+      'Overhead for preparing inputs: %d seconds'
+      % (time.time() - before_initializing_inputs),
+  )
 
   running_timer = timer.TimerStart()
   # Ideally this would use dv_constants.NUM_CLASSES, which requires generalizing
@@ -2162,33 +2415,42 @@ def make_examples_runner(options):
       'n_indels': 0,
       'n_regions': 0,
       'n_candidates': 0,
-      'n_examples': 0
+      'n_examples': 0,
   }
   example_shape = None
   for region in regions:
 
     if options.mode == mode_candidate_sweep:
       candidates_in_region = list(
-          region_processor.find_candidate_positions(region))
+          region_processor.find_candidate_positions(region)
+      )
       candidates_writer.write(
-          np.array(candidates_in_region, dtype=np.int32).tobytes())
+          np.array(candidates_in_region, dtype=np.int32).tobytes()
+      )
       # Here we mark the end of the calling region
       for cr in calling_regions:
         if cr.reference_name == region.reference_name and cr.end == region.end:
           candidates_writer.write(
-              np.array([END_OF_REGION], dtype=np.int32).tobytes())
+              np.array([END_OF_REGION], dtype=np.int32).tobytes()
+          )
       continue
 
-    (candidates_by_sample, gvcfs_by_sample,
-     runtimes) = region_processor.process(region)
+    (candidates_by_sample, gvcfs_by_sample, runtimes) = (
+        region_processor.process(region)
+    )
     for sample in region_processor.samples:
       role = sample.options.role
       if role not in candidates_by_sample:
         continue
       writer = writers_dict[role]
       region_example_shape = region_processor.writes_examples_in_region(
-          candidates_by_sample[role], region, sample.options.order, writer,
-          n_stats, runtimes)
+          candidates_by_sample[role],
+          region,
+          sample.options.order,
+          writer,
+          n_stats,
+          runtimes,
+      )
       if example_shape is None and region_example_shape is not None:
         example_shape = region_example_shape
       gvcfs = gvcfs_by_sample[role]
@@ -2208,27 +2470,38 @@ def make_examples_runner(options):
 
       if options.runtime_by_region:
         runtimes['write outputs'] = runtimes.get('write outputs', 0) + (
-            trim_runtime(time.time() - before_write_outputs))
+            trim_runtime(time.time() - before_write_outputs)
+        )
         runtimes['region'] = ranges.to_literal(region)
 
       # Output timing for every N candidates.
-      if (int(n_stats['n_candidates'] / options.logging_every_n_candidates) >
-          last_reported or n_stats['n_regions'] == 1):
-        last_reported = int(n_stats['n_candidates'] /
-                            options.logging_every_n_candidates)
+      if (
+          int(n_stats['n_candidates'] / options.logging_every_n_candidates)
+          > last_reported
+          or n_stats['n_regions'] == 1
+      ):
+        last_reported = int(
+            n_stats['n_candidates'] / options.logging_every_n_candidates
+        )
         logging_with_options(
-            options, '%s candidates (%s examples) [%0.2fs elapsed]' %
-            (n_stats['n_candidates'], n_stats['n_examples'],
-             running_timer.Stop()))
+            options,
+            '%s candidates (%s examples) [%0.2fs elapsed]'
+            % (
+                n_stats['n_candidates'],
+                n_stats['n_examples'],
+                running_timer.Stop(),
+            ),
+        )
         running_timer = timer.TimerStart()
     if options.runtime_by_region:
       # Runtimes are for all samples, so write this only once.
       writers_dict[options.sample_role_to_train].write_runtime(
-          stats_dict=runtimes)
+          stats_dict=runtimes
+      )
 
   for writer in writers_dict.values():
     writer.close_all()
-  if (options.mode == mode_candidate_sweep and candidates_writer):
+  if options.mode == mode_candidate_sweep and candidates_writer:
     candidates_writer.close()
 
   # Construct and then write out our MakeExamplesRunInfo proto.
@@ -2239,23 +2512,30 @@ def make_examples_runner(options):
         num_indels=n_stats['n_indels'],
         num_class_0=n_stats['n_class_0'],
         num_class_1=n_stats['n_class_1'],
-        num_class_2=n_stats['n_class_2'])
+        num_class_2=n_stats['n_class_2'],
+    )
     run_info = deepvariant_pb2.MakeExamplesRunInfo(
         options=options,
         resource_metrics=resource_monitor.metrics(),
-        stats=make_examples_stats)
+        stats=make_examples_stats,
+    )
     if in_training_mode(options):
-      if (region_processor.labeler is not None and
-          region_processor.labeler.metrics is not None):
+      if (
+          region_processor.labeler is not None
+          and region_processor.labeler.metrics is not None
+      ):
         run_info.labeling_metrics.CopyFrom(region_processor.labeler.metrics)
       else:
         logging.warning(
-            'Labeling metrics requested but the selected labeling '
-            'algorithm %s does not collect metrics; skipping.',
-            options.labeler_algorithm)
+            (
+                'Labeling metrics requested but the selected labeling '
+                'algorithm %s does not collect metrics; skipping.'
+            ),
+            options.labeler_algorithm,
+        )
     logging_with_options(
-        options,
-        'Writing MakeExamplesRunInfo to %s' % options.run_info_filename)
+        options, 'Writing MakeExamplesRunInfo to %s' % options.run_info_filename
+    )
     write_make_examples_run_info(run_info, path=options.run_info_filename)
 
   # Write to .example_info file. Here we use the examples_filename as prefix.
@@ -2264,10 +2544,12 @@ def make_examples_runner(options):
   # because currently all the multiple-sample output will have the same shape
   # and list of channels.
   example_info_filename = dv_utils.get_example_info_json_filename(
-      options.examples_filename, options.task_id)
+      options.examples_filename, options.task_id
+  )
   if example_info_filename is not None:
-    logging_with_options(options,
-                         'Writing example info to %s' % example_info_filename)
+    logging_with_options(
+        options, 'Writing example info to %s' % example_info_filename
+    )
     example_channels = region_processor.get_channels()
     # example_shape was filled in during the loop above.
     logging.info('example_shape = %s', str(example_shape))
@@ -2277,9 +2559,12 @@ def make_examples_runner(options):
           {
               'version': dv_vcf_constants.DEEP_VARIANT_VERSION,
               'shape': example_shape,
-              'channels': example_channels
-          }, fout)
+              'channels': example_channels,
+          },
+          fout,
+      )
 
-  logging_with_options(options,
-                       'Found %s candidate variants' % n_stats['n_candidates'])
+  logging_with_options(
+      options, 'Found %s candidate variants' % n_stats['n_candidates']
+  )
   logging_with_options(options, 'Created %s examples' % n_stats['n_examples'])
