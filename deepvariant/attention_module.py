@@ -36,15 +36,15 @@ attention_inception_v3.py. The modified architecture is only used in
 DeepVariantAttentionInceptionV3 in modeling.py.
 """
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import tensorflow.compat.v1 as tf
 import tf_slim as slim
 
 
-def attach_attention_module(net: tf.Tensor,
-                            attention_module: str,
-                            end_point: str = None) -> Tuple[str, tf.Tensor]:
+def attach_attention_module(
+    net: tf.Tensor, attention_module: str, end_point: Optional[str] = None
+) -> Tuple[str, tf.Tensor]:
   """Attaches attention module to InceptionV3.
 
   Args:
@@ -67,7 +67,8 @@ def attach_attention_module(net: tf.Tensor,
     net = se_block(net, se_block_scope)
   else:
     raise Exception(
-        "'{}' is not a supported attention module".format(attention_module))
+        "'{}' is not a supported attention module".format(attention_module)
+    )
 
   return end_point, net
 
@@ -101,7 +102,8 @@ def se_block(input_feature: tf.Tensor, name: str, ratio: int = 8) -> tf.Tensor:
         activation_fn=tf.nn.relu,
         weights_initializer=kernel_initializer,
         biases_initializer=bias_initializer,
-        scope='bottleneck_fc')
+        scope='bottleneck_fc',
+    )
     assert excitation.get_shape()[1:] == (channel // ratio)
     excitation = slim.fully_connected(
         inputs=excitation,
@@ -109,7 +111,8 @@ def se_block(input_feature: tf.Tensor, name: str, ratio: int = 8) -> tf.Tensor:
         activation_fn=tf.nn.sigmoid,
         weights_initializer=kernel_initializer,
         biases_initializer=bias_initializer,
-        scope='recover_fc')
+        scope='recover_fc',
+    )
     assert excitation.get_shape()[1:] == (channel)
 
     excitation = tf.expand_dims(excitation, axis=1)

@@ -60,7 +60,8 @@ def build_classification_head(inputs: tf.Tensor, l2: float = 0.0) -> tf.Tensor:
       activation='softmax',
       dtype=tf.float32,
       name='classification',
-      kernel_regularizer=l2_regularizer)
+      kernel_regularizer=l2_regularizer,
+  )
   return head(inputs)
 
 
@@ -68,7 +69,8 @@ def add_l2_regularizers(
     model: tf.keras.Model,
     layer_class: Type[tf.keras.layers.Layer],
     l2: float = _DEFAULT_WEIGHT_DECAY,
-    regularizer_attr: str = 'kernel_regularizer') -> tf.keras.Model:
+    regularizer_attr: str = 'kernel_regularizer',
+) -> tf.keras.Model:
   """Adds L2 regularizers to all `layer_class` layers in `model`.
 
   Models from `tf.keras.applications` do not support specifying kernel or bias
@@ -205,8 +207,9 @@ def num_channels_from_checkpoint(filepath: str) -> int:
   return num_channels
 
 
-def inceptionv3(input_shape: Tuple[int, int, int],
-                weights: Optional[str] = None) -> tf.keras.Model:
+def inceptionv3(
+    input_shape: Tuple[int, int, int], weights: Optional[str] = None
+) -> tf.keras.Model:
   """Returns an InceptionV3 architecture.
 
   See https://tensorflow.org/api_docs/python/tf/keras/applications/InceptionV3.
@@ -223,11 +226,13 @@ def inceptionv3(input_shape: Tuple[int, int, int],
       weights=None,
       input_shape=input_shape,
       classes=dv_constants.NUM_CLASSES,
-      pooling='avg')
+      pooling='avg',
+  )
 
   weight_decay = _DEFAULT_WEIGHT_DECAY
   backbone = add_l2_regularizers(
-      backbone, tf.keras.layers.Conv2D, l2=weight_decay)
+      backbone, tf.keras.layers.Conv2D, l2=weight_decay
+  )
   backbone_drop_rate = _DEFAULT_BACKBONE_DROP_DRATE
 
   inputs_image = tf.keras.Input(shape=input_shape, name='image')
@@ -238,7 +243,8 @@ def inceptionv3(input_shape: Tuple[int, int, int],
   outputs.append(build_classification_head(hid, l2=weight_decay))
 
   model = tf.keras.Model(
-      inputs=[inputs_image], outputs=outputs, name='inceptionv3')
+      inputs=[inputs_image], outputs=outputs, name='inceptionv3'
+  )
   model.summary()
   logging.info('Number of l2 regularizers: %s.', len(model.losses))
 
