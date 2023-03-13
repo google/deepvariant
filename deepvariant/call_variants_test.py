@@ -91,12 +91,14 @@ def _get_infer_batches(tf_dataset, model, batch_size):
     ValueError: if the dataset has the wrong mode.
   """
   if tf_dataset.mode != tf_estimator.ModeKeys.PREDICT:
-    raise ValueError('tf_dataset.mode is {} but must be PREDICT.'.format(
-        tf_dataset.mode))
+    raise ValueError(
+        'tf_dataset.mode is {} but must be PREDICT.'.format(tf_dataset.mode)
+    )
 
   params = dict(batch_size=batch_size)
   features = tf.compat.v1.data.make_one_shot_iterator(
-      tf_dataset(params)).get_next()
+      tf_dataset(params)
+  ).get_next()
 
   images = features['image']
   if tf_dataset.tensor_shape:
@@ -109,13 +111,16 @@ def _get_infer_batches(tf_dataset, model, batch_size):
 
 
 class CallVariantsEndToEndTests(
-    tf.compat.v1.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.compat.v1.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
 
   def setUp(self):
+    super().setUp()
     self.checkpoint_dir = tf.compat.v1.test.get_temp_dir()
 
-  def assertCallVariantsEmitsNRecordsForInceptionV3(self, filename,
-                                                    num_examples):
+  def assertCallVariantsEmitsNRecordsForInceptionV3(
+      self, filename, num_examples
+  ):
     outfile = test_utils.test_tmpfile('inception_v3.call_variants.tfrecord')
     model = modeling.get_model('inception_v3')
     checkpoint_path = _LEAVE_MODEL_UNINITIALIZED
@@ -126,14 +131,17 @@ class CallVariantsEndToEndTests(
         model=model,
         output_file=outfile,
         batch_size=4,
-        max_batches=None)
+        max_batches=None,
+    )
     call_variants_outputs = list(
-        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
+        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput)
+    )
     # Check that we have the right number of output protos.
     self.assertEqual(len(call_variants_outputs), num_examples)
 
-  def assertCallVariantsEmitsNRecordsForConstantModel(self, filename,
-                                                      num_examples):
+  def assertCallVariantsEmitsNRecordsForConstantModel(
+      self, filename, num_examples
+  ):
     checkpoint_path = _LEAVE_MODEL_UNINITIALIZED
     outfile = test_utils.test_tmpfile('call_variants.tfrecord')
     model = modeling.get_model('constant')
@@ -145,9 +153,11 @@ class CallVariantsEndToEndTests(
         batch_size=4,
         max_batches=None,
         master='',
-        use_tpu=FLAGS.use_tpu)
+        use_tpu=FLAGS.use_tpu,
+    )
     call_variants_outputs = list(
-        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
+        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput)
+    )
     # Check that we have the right number of output protos.
     self.assertEqual(len(call_variants_outputs), num_examples)
 
@@ -155,30 +165,37 @@ class CallVariantsEndToEndTests(
     # Get only up to 10 examples.
     examples = list(
         tfrecord.read_tfrecords(
-            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10))
+            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10
+        )
+    )
     # Write to 15 shards, which means there will be multiple empty shards.
     source_path = test_utils.test_tmpfile('sharded@{}'.format(15))
     tfrecord.write_tfrecords(examples, source_path)
     self.assertCallVariantsEmitsNRecordsForConstantModel(
-        source_path, len(examples))
+        source_path, len(examples)
+    )
 
   def test_call_end2end_empty_first_shard(self):
     # Get only up to 10 examples.
     examples = list(
         tfrecord.read_tfrecords(
-            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10))
+            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10
+        )
+    )
     empty_first_file = test_utils.test_tmpfile('empty_1st_shard-00000-of-00002')
     tfrecord.write_tfrecords([], empty_first_file)
     second_file = test_utils.test_tmpfile('empty_1st_shard-00001-of-00002')
     tfrecord.write_tfrecords(examples, second_file)
     self.assertCallVariantsEmitsNRecordsForConstantModel(
-        test_utils.test_tmpfile('empty_1st_shard@2'), len(examples))
+        test_utils.test_tmpfile('empty_1st_shard@2'), len(examples)
+    )
 
   def test_call_end2end_zero_record_file_for_inception_v3(self):
     zero_record_file = test_utils.test_tmpfile('zero_record_file')
     tfrecord.write_tfrecords([], zero_record_file)
     self.assertCallVariantsEmitsNRecordsForInceptionV3(
-        test_utils.test_tmpfile('zero_record_file'), 0)
+        test_utils.test_tmpfile('zero_record_file'), 0
+    )
 
   def _call_end2end_helper(self, examples_path, model, shard_inputs):
     examples = list(tfrecord.read_tfrecords(examples_path))
@@ -217,7 +234,8 @@ class CallVariantsEndToEndTests(
     )
 
     call_variants_outputs = list(
-        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput))
+        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput)
+    )
 
     return call_variants_outputs, examples, batch_size, max_batches
 
@@ -225,32 +243,42 @@ class CallVariantsEndToEndTests(
   @flagsaver.flagsaver
   def test_call_end2end_with_labels(self, model):
     FLAGS.debugging_true_label_mode = True
-    (call_variants_outputs, examples, batch_size,
-     max_batches) = self._call_end2end_helper(testdata.GOLDEN_TRAINING_EXAMPLES,
-                                              model, False)
+    (call_variants_outputs, examples, batch_size, max_batches) = (
+        self._call_end2end_helper(
+            testdata.GOLDEN_TRAINING_EXAMPLES, model, False
+        )
+    )
     # Check that we have the right number of output protos.
     self.assertEqual(
         len(call_variants_outputs),
-        batch_size * max_batches if max_batches else len(examples))
+        batch_size * max_batches if max_batches else len(examples),
+    )
 
     # Checks that at least some of the `true_label`s are filled.
     self.assertTrue(
-        any(cvo.debug_info.true_label > 0 for cvo in call_variants_outputs))
+        any(cvo.debug_info.true_label > 0 for cvo in call_variants_outputs)
+    )
 
-  @parameterized.parameters((model, shard_inputs, include_debug_info)
-                            for shard_inputs in [False, True]
-                            for model in modeling.production_models()
-                            for include_debug_info in [False, True])
+  # pylint: disable=g-complex-comprehension
+  @parameterized.parameters(
+      (model, shard_inputs, include_debug_info)
+      for shard_inputs in [False, True]
+      for model in modeling.production_models()
+      for include_debug_info in [False, True]
+  )  # pylint: enable=g-complex-comprehension
   @flagsaver.flagsaver
   def test_call_end2end(self, model, shard_inputs, include_debug_info):
     FLAGS.include_debug_info = include_debug_info
-    (call_variants_outputs, examples, batch_size,
-     max_batches) = self._call_end2end_helper(testdata.GOLDEN_CALLING_EXAMPLES,
-                                              model, shard_inputs)
+    (call_variants_outputs, examples, batch_size, max_batches) = (
+        self._call_end2end_helper(
+            testdata.GOLDEN_CALLING_EXAMPLES, model, shard_inputs
+        )
+    )
     # Check that we have the right number of output protos.
     self.assertEqual(
         len(call_variants_outputs),
-        batch_size * max_batches if max_batches else len(examples))
+        batch_size * max_batches if max_batches else len(examples),
+    )
 
     # Check that our CallVariantsOutput (CVO) have the following critical
     # properties:
@@ -262,37 +290,49 @@ class CallVariantsEndToEndTests(
     # We can only do this test when processing all of the variants (max_batches
     # is None), since we processed all of the examples with that model.
     if max_batches is None:
-      self.assertCountEqual([cvo.variant for cvo in call_variants_outputs],
-                            [dv_utils.example_variant(ex) for ex in examples])
+      self.assertCountEqual(
+          [cvo.variant for cvo in call_variants_outputs],
+          [dv_utils.example_variant(ex) for ex in examples],
+      )
 
     # Check the CVO debug_info: not filled if include_debug_info is False;
     # else, filled by logic based on CVO.
     if not include_debug_info:
       for cvo in call_variants_outputs:
-        self.assertEqual(cvo.debug_info,
-                         deepvariant_pb2.CallVariantsOutput.DebugInfo())
+        self.assertEqual(
+            cvo.debug_info, deepvariant_pb2.CallVariantsOutput.DebugInfo()
+        )
     else:
       for cvo in call_variants_outputs:
-        self.assertEqual(cvo.debug_info.has_insertion,
-                         variant_utils.has_insertion(cvo.variant))
-        self.assertEqual(cvo.debug_info.has_deletion,
-                         variant_utils.has_deletion(cvo.variant))
-        self.assertEqual(cvo.debug_info.is_snp,
-                         variant_utils.is_snp(cvo.variant))
-        self.assertEqual(cvo.debug_info.predicted_label,
-                         np.argmax(cvo.genotype_probabilities))
+        self.assertEqual(
+            cvo.debug_info.has_insertion,
+            variant_utils.has_insertion(cvo.variant),
+        )
+        self.assertEqual(
+            cvo.debug_info.has_deletion, variant_utils.has_deletion(cvo.variant)
+        )
+        self.assertEqual(
+            cvo.debug_info.is_snp, variant_utils.is_snp(cvo.variant)
+        )
+        self.assertEqual(
+            cvo.debug_info.predicted_label,
+            np.argmax(cvo.genotype_probabilities),
+        )
         self.assertEqual(len(cvo.debug_info.logits), 3)
         self.assertEqual(len(cvo.debug_info.prelogits), 2048)
 
     def example_matches_call_variants_output(example, call_variants_output):
-      return (dv_utils.example_variant(example) == call_variants_output.variant
-              and dv_utils.example_alt_alleles_indices(example)
-              == call_variants_output.alt_allele_indices.indices)
+      return (
+          dv_utils.example_variant(example) == call_variants_output.variant
+          and dv_utils.example_alt_alleles_indices(example)
+          == call_variants_output.alt_allele_indices.indices
+      )
 
     for call_variants_output in call_variants_outputs:
       # Find all matching examples.
       matches = [
-          ex for ex in examples
+          ex
+          for ex in examples
           if example_matches_call_variants_output(ex, call_variants_output)
       ]
       # We should have exactly one match.
@@ -303,13 +343,15 @@ class CallVariantsEndToEndTests(
       # fail). Included here in case that changes in the future.
       self.assertEqual(
           list(dv_utils.example_alt_alleles_indices(example)),
-          list(call_variants_output.alt_allele_indices.indices))
+          list(call_variants_output.alt_allele_indices.indices),
+      )
       # We should have exactly three genotype probabilities (assuming our
       # ploidy == 2).
       self.assertEqual(len(call_variants_output.genotype_probabilities), 3)
       # These are probabilities so they should be between 0 and 1.
       self.assertTrue(
-          0 <= gp <= 1 for gp in call_variants_output.genotype_probabilities)
+          0 <= gp <= 1 for gp in call_variants_output.genotype_probabilities
+      )
 
   @parameterized.parameters(model for model in modeling.production_models())
   def test_call_variants_with_no_shape(self, model):
@@ -320,8 +362,12 @@ class CallVariantsEndToEndTests(
     source_path = test_utils.test_tmpfile('make_examples_out_noshape.tfrecord')
     tfrecord.write_tfrecords([example], source_path)
     with self.assertRaisesRegex(
-        ValueError, 'Invalid image/shape: we expect to find an image/shape '
-        'field with length 3.'):
+        ValueError,
+        (
+            'Invalid image/shape: we expect to find an image/shape '
+            'field with length 3.'
+        ),
+    ):
       ds = call_variants.prepare_inputs(source_path)
       _ = list(_get_infer_batches(ds, model=model, batch_size=1))
 
@@ -344,12 +390,15 @@ class CallVariantsEndToEndTests(
 
 
 class CallVariantsUnitTests(
-    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass):
+    tf.test.TestCase, metaclass=parameterized.TestGeneratorMetaclass
+):
 
   @classmethod
   def setUpClass(cls):
+    super().setUpClass()
     cls.examples = list(
-        tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
+        tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES)
+    )
     cls.variants = [dv_utils.example_variant(ex) for ex in cls.examples]
     cls.model = modeling.get_model('constant')
 
@@ -365,7 +414,8 @@ class CallVariantsUnitTests(
     # file_string_input could be a comma-separated list. Add the prefix to all
     # of them, and join it back to a string.
     file_string_input = ','.join(
-        [test_utils.test_tmpfile(f) for f in file_string_input.split(',')])
+        [test_utils.test_tmpfile(f) for f in file_string_input.split(',')]
+    )
 
     with self.test_session() as sess:
       sess.run(tf.compat.v1.local_variables_initializer())
@@ -381,8 +431,9 @@ class CallVariantsUnitTests(
       except tf.errors.OutOfRangeError:
         pass
 
-      self.assertCountEqual(self.variants,
-                            variant_utils.decode_variants(seen_variants))
+      self.assertCountEqual(
+          self.variants, variant_utils.decode_variants(seen_variants)
+      )
 
   @parameterized.parameters(
       (None, [3.592555731302127e-5, 0.99992620944976807, 3.78809563699178e-5]),
@@ -395,8 +446,9 @@ class CallVariantsUnitTests(
     self.assertEqual(actual, expected)
 
   @parameterized.parameters('auto', 'cpu')
-  def test_call_variants_non_accelerated_execution_runs(self,
-                                                        execution_hardware):
+  def test_call_variants_non_accelerated_execution_runs(
+      self, execution_hardware
+  ):
     if FLAGS.use_tpu:
       # predict batch size must be divisible by number of replicas.
       batch_size = 2
@@ -411,7 +463,8 @@ class CallVariantsUnitTests(
         max_batches=1,
         batch_size=batch_size,
         output_file=outfile,
-        use_tpu=FLAGS.use_tpu)
+        use_tpu=FLAGS.use_tpu,
+    )
 
   @parameterized.parameters(
       dict(hardware_env='auto', devices=['cpu'], expect_exception=False),
@@ -426,18 +479,22 @@ class CallVariantsUnitTests(
       dict(
           hardware_env='accelerator',
           devices=['cpu', 'gpu'],
-          expect_exception=False),
+          expect_exception=False,
+      ),
       dict(
           hardware_env='accelerator',
           devices=['cpu', 'tpu'],
-          expect_exception=False),
+          expect_exception=False,
+      ),
       dict(
           hardware_env='accelerator',
           devices=['cpu', 'gpu', 'tpu'],
-          expect_exception=False),
+          expect_exception=False,
+      ),
   )
-  def test_call_variants_execution_hardware(self, hardware_env, devices,
-                                            expect_exception):
+  def test_call_variants_execution_hardware(
+      self, hardware_env, devices, expect_exception
+  ):
     # We cannot access the full _DeviceAttribute as it's not exported. So use a
     # namedtuple with the same field names instead.
     device = collections.namedtuple('_DeviceAttribute', ['name', 'device_type'])
@@ -447,8 +504,9 @@ class CallVariantsUnitTests(
     if 'tpu' in devices or FLAGS.use_tpu:
       return
 
-    with mock.patch.object(call_variants.tf.compat.v1.Session,
-                           'list_devices') as mock_ld:
+    with mock.patch.object(
+        call_variants.tf.compat.v1.Session, 'list_devices'
+    ) as mock_ld:
       mock_ld.return_value = [
           device(name=dt + '/' + str(i), device_type=dt.upper())
           for i, dt in enumerate(devices)
@@ -465,7 +523,8 @@ class CallVariantsUnitTests(
             execution_hardware=hardware_env,
             max_batches=1,
             batch_size=1,
-            output_file=test_utils.test_tmpfile('zzz.tfrecord'))
+            output_file=test_utils.test_tmpfile('zzz.tfrecord'),
+        )
 
       if expect_exception:
         with self.assertRaises(call_variants.ExecutionHardwareError):
@@ -474,13 +533,16 @@ class CallVariantsUnitTests(
         _run()
 
   def test_catches_bad_argv(self):
-    with mock.patch.object(logging, 'error') as mock_logging, mock.patch.object(
-        sys, 'exit') as mock_exit:
+    with (
+        mock.patch.object(logging, 'error') as mock_logging,
+        mock.patch.object(sys, 'exit') as mock_exit,
+    ):
       call_variants.main(['call_variants.py', 'extra_arg'])
     mock_logging.assert_called_once_with(
         'Command line parsing failure: call_variants does not accept '
         'positional arguments but some are present on the command line: '
-        '"[\'call_variants.py\', \'extra_arg\']".')
+        "\"['call_variants.py', 'extra_arg']\"."
+    )
     mock_exit.assert_called_once_with(errno.ENOENT)
 
 
