@@ -51,86 +51,135 @@ FLAGS = flags.FLAGS
 def _get_metric_names(required_ordering):
   metrics = modeling.eval_function_metrics(has_variant_types=True)
   return [
-      name for name, ordering in metrics.items()
+      name
+      for name, ordering in metrics.items()
       if ordering == required_ordering
   ]
 
 
 increasing_metrics = _get_metric_names(
-    required_ordering=modeling.EvalMetricOrdering.BIGGER_IS_BETTER)
+    required_ordering=modeling.EvalMetricOrdering.BIGGER_IS_BETTER
+)
 decreasing_metrics = ['loss'] + _get_metric_names(
-    required_ordering=modeling.EvalMetricOrdering.SMALLER_IS_BETTER)
+    required_ordering=modeling.EvalMetricOrdering.SMALLER_IS_BETTER
+)
 
 flags.DEFINE_integer('batch_size', 1024, 'The number of samples in each batch.')
 
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
-    'gcp_project', None,
-    'Project name for the Cloud TPU-enabled project. If not specified, we '
-    'will attempt to automatically detect the GCE project from metadata.')
+    'gcp_project',
+    None,
+    (
+        'Project name for the Cloud TPU-enabled project. If not specified, we '
+        'will attempt to automatically detect the GCE project from metadata.'
+    ),
+)
 flags.DEFINE_string(
-    'tpu_zone', None,
-    'GCE zone where the Cloud TPU is located in. If not specified, we '
-    'will attempt to automatically detect the GCE project from metadata.')
+    'tpu_zone',
+    None,
+    (
+        'GCE zone where the Cloud TPU is located in. If not specified, we '
+        'will attempt to automatically detect the GCE project from metadata.'
+    ),
+)
 flags.DEFINE_string(
-    'tpu_name', None,
-    'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
-    'this flag or --master.')
+    'tpu_name',
+    None,
+    (
+        'Name of the Cloud TPU for Cluster Resolvers. You must specify either '
+        'this flag or --master.'
+    ),
+)
 
 flags.DEFINE_string(
-    'master', None,
-    'GRPC URL of the master (e.g. grpc://ip.address.of.tpu:8470). You '
-    'must specify either this flag or --tpu_name.')
-
-flags.DEFINE_string('checkpoint_dir', '/tmp/deepvariant/',
-                    'Directory where the model was written to.')
-
-flags.DEFINE_string(
-    'eval_name', None,
-    'Name of the evaluation if user needs to run multiple evaluations on '
-    'different data sets, such as on training data vs test data. Metrics for '
-    'different evaluations are saved in separate directories, and appear '
-    'separately in tensorboard.  The directory will be named "eval_"+eval_name')
+    'master',
+    None,
+    (
+        'GRPC URL of the master (e.g. grpc://ip.address.of.tpu:8470). You '
+        'must specify either this flag or --tpu_name.'
+    ),
+)
 
 flags.DEFINE_string(
-    'eval_dir', None,
-    'This is used only to generate eval_name, if that is not provided.')
+    'checkpoint_dir',
+    '/tmp/deepvariant/',
+    'Directory where the model was written to.',
+)
 
-flags.DEFINE_integer('min_eval_interval_s', 180,
-                     'Minimum seconds between evaluations.')
+flags.DEFINE_string(
+    'eval_name',
+    None,
+    (
+        'Name of the evaluation if user needs to run multiple evaluations on'
+        ' different data sets, such as on training data vs test data. Metrics'
+        ' for different evaluations are saved in separate directories, and'
+        ' appear separately in tensorboard.  The directory will be named'
+        ' "eval_"+eval_name'
+    ),
+)
+
+flags.DEFINE_string(
+    'eval_dir',
+    None,
+    'This is used only to generate eval_name, if that is not provided.',
+)
 
 flags.DEFINE_integer(
-    'eval_timeout', 20000,
-    'Maximum seconds between checkpoints before evaluation '
-    'terminates.')
-
-flags.DEFINE_integer('max_ckpt_to_evaluate', None,
-                     'Max ckpt number to evaluate (inclusive).')
+    'min_eval_interval_s', 180, 'Minimum seconds between evaluations.'
+)
 
 flags.DEFINE_integer(
-    'max_examples', None,
-    'Maximum number of examples to evaluate. Set to None (default) to evaluate '
-    'all examples. If not None, must be a positive integer and at most '
-    '`n_examples // max_example batches` will be evaluated.')
+    'eval_timeout',
+    20000,
+    'Maximum seconds between checkpoints before evaluation terminates.',
+)
 
-flags.DEFINE_string('model_name', 'inception_v3',
-                    'The name of the model to use for predictions.')
+flags.DEFINE_integer(
+    'max_ckpt_to_evaluate', None, 'Max ckpt number to evaluate (inclusive).'
+)
 
-flags.DEFINE_string('dataset_config_pbtxt', None,
-                    'The path to the dataset config file.')
+flags.DEFINE_integer(
+    'max_examples',
+    None,
+    (
+        'Maximum number of examples to evaluate. Set to None (default) to'
+        ' evaluate all examples. If not None, must be a positive integer and at'
+        ' most `n_examples // max_example batches` will be evaluated.'
+    ),
+)
+
+flags.DEFINE_string(
+    'model_name',
+    'inception_v3',
+    'The name of the model to use for predictions.',
+)
+
+flags.DEFINE_string(
+    'dataset_config_pbtxt', None, 'The path to the dataset config file.'
+)
 
 flags.DEFINE_boolean('use_tpu', False, 'use tpu if available')
 
 flags.DEFINE_string(
-    'kmp_blocktime', '0',
-    'Value to set the KMP_BLOCKTIME environment variable to for efficient MKL '
-    'evaluation. See https://www.tensorflow.org/performance/performance_guide '
-    'for more information. The default value is 0, which provides the best '
-    'performance in our tests. Set this flag to "" to not set the variable.')
+    'kmp_blocktime',
+    '0',
+    (
+        'Value to set the KMP_BLOCKTIME environment variable to for efficient'
+        ' MKL evaluation. See'
+        ' https://www.tensorflow.org/performance/performance_guide for more'
+        ' information. The default value is 0, which provides the best'
+        ' performance in our tests. Set this flag to "" to not set the'
+        ' variable.'
+    ),
+)
 
-flags.DEFINE_enum('best_checkpoint_metric', 'Accuracy/All',
-                  increasing_metrics + decreasing_metrics,
-                  'The metric for measuring the best checkpoint.')
+flags.DEFINE_enum(
+    'best_checkpoint_metric',
+    'Accuracy/All',
+    increasing_metrics + decreasing_metrics,
+    'The metric for measuring the best checkpoint.',
+)
 
 
 def main(_):
@@ -144,8 +193,15 @@ def main(_):
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
     logging.info('Set KMP_BLOCKTIME to %s', os.environ['KMP_BLOCKTIME'])
 
-  master = dv_utils.resolve_master(FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone,
-                                   FLAGS.gcp_project) if FLAGS.use_tpu else ''
+  # pylint: disable=g-long-ternary
+  master = (
+      dv_utils.resolve_master(
+          FLAGS.master, FLAGS.tpu_name, FLAGS.tpu_zone, FLAGS.gcp_project
+      )
+      if FLAGS.use_tpu
+      else ''
+  )
+  # pylint: enable=g-long-ternary
   eval_loop(
       master=master,
       dataset_config_pbtxt=FLAGS.dataset_config_pbtxt,
@@ -159,35 +215,39 @@ def main(_):
   )
 
 
-def checkpoints_iterator(checkpoint_dir,
-                         min_interval_secs=0,
-                         timeout=None,
-                         timeout_fn=None):
+def checkpoints_iterator(
+    checkpoint_dir, min_interval_secs=0, timeout=None, timeout_fn=None
+):
   # This is here to make it easy to mock out the iterator for tests.
-  return tf.train.checkpoints_iterator(checkpoint_dir, min_interval_secs,
-                                       timeout, timeout_fn)
+  return tf.train.checkpoints_iterator(
+      checkpoint_dir, min_interval_secs, timeout, timeout_fn
+  )
 
 
 def get_latest_step_from_checkpoint_dir(checkpoint_dir):
   try:
     latest_step = tf.train.load_checkpoint(checkpoint_dir).get_tensor(
-        'global_step')
+        'global_step'
+    )
     logging.info('Latest ckpt from %s was %s', checkpoint_dir, latest_step)
   except ValueError:
-    logging.info('Unable to get latest ckpt from %s. Return None',
-                 checkpoint_dir)
+    logging.info(
+        'Unable to get latest ckpt from %s. Return None', checkpoint_dir
+    )
   return latest_step
 
 
-def eval_loop(master,
-              dataset_config_pbtxt,
-              checkpoint_dir,
-              model_name,
-              batch_size,
-              max_examples,
-              eval_name,
-              max_ckpt_to_evaluate,
-              use_tpu=False):
+def eval_loop(
+    master,
+    dataset_config_pbtxt,
+    checkpoint_dir,
+    model_name,
+    batch_size,
+    max_examples,
+    eval_name,
+    max_ckpt_to_evaluate,
+    use_tpu=False,
+):
   """Evaluate incoming checkpoints, until the specified end."""
   logging.info('Running fixed eval for: %s', dataset_config_pbtxt)
 
@@ -211,10 +271,16 @@ def eval_loop(master,
   num_batches = num_examples // batch_size
   num_samples = batch_size * num_batches
   logging.info(
-      'Dataset has %s samples, doing eval over %s; '
-      'max_examples is %s, num examples to be used %s; num_batches is %s',
-      tf_dataset.num_examples, num_samples, max_examples, num_examples,
-      num_batches)
+      (
+          'Dataset has %s samples, doing eval over %s; '
+          'max_examples is %s, num examples to be used %s; num_batches is %s'
+      ),
+      tf_dataset.num_examples,
+      num_samples,
+      max_examples,
+      num_examples,
+      num_batches,
+  )
 
   # This loads EMA variables.
   eval_hooks = [h(checkpoint_dir) for h in model.session_eval_hooks()]
@@ -223,11 +289,14 @@ def eval_loop(master,
       batch_size=batch_size,
       model_dir=checkpoint_dir,
       use_tpu=use_tpu,
-      master=master)
+      master=master,
+  )
 
   def terminate_eval():
-    logging.info('Terminating eval after %d seconds of no checkpoints',
-                 FLAGS.eval_timeout)
+    logging.info(
+        'Terminating eval after %d seconds of no checkpoints',
+        FLAGS.eval_timeout,
+    )
     return True
 
   # Run evaluation when there's a new checkpoint
@@ -235,8 +304,8 @@ def eval_loop(master,
       checkpoint_dir=checkpoint_dir,
       min_interval_secs=FLAGS.min_eval_interval_s,
       timeout=FLAGS.eval_timeout,
-      timeout_fn=terminate_eval):
-
+      timeout_fn=terminate_eval,
+  ):
     logging.info('Starting to evaluate.')
 
     # For each step, calls input_fn, which returns one batch of data.
@@ -247,7 +316,8 @@ def eval_loop(master,
         steps=num_batches,
         hooks=eval_hooks,
         checkpoint_path=ckpt,
-        name=eval_name)
+        name=eval_name,
+    )
     logging.info('Eval results: %s', eval_results)
 
     # Track best checkpoint seen so far, measured by ckpt_metric.
@@ -261,22 +331,29 @@ def eval_loop(master,
         logging.info('best_checkpoint file does not exist.')
         best_ckpt = (eval_results, ckpt)
         _write_best_checkpoint(ckpt, eval_results, eval_name)
-    if ((ckpt_metric_increasing and
-         eval_results[ckpt_metric] > best_ckpt[0][ckpt_metric]) or
-        (not ckpt_metric_increasing and
-         eval_results[ckpt_metric] < best_ckpt[0][ckpt_metric])):
+    if (
+        ckpt_metric_increasing
+        and eval_results[ckpt_metric] > best_ckpt[0][ckpt_metric]
+    ) or (
+        not ckpt_metric_increasing
+        and eval_results[ckpt_metric] < best_ckpt[0][ckpt_metric]
+    ):
       best_ckpt = (eval_results, ckpt)
       _write_best_checkpoint(ckpt, eval_results, eval_name)
 
     _write_checkpoint_metrics(ckpt, eval_results, eval_name)
 
     latest_step = get_latest_step_from_checkpoint_dir(ckpt)
-    if (max_ckpt_to_evaluate is not None and latest_step is not None and
-        latest_step >= max_ckpt_to_evaluate):
+    if (
+        max_ckpt_to_evaluate is not None
+        and latest_step is not None
+        and latest_step >= max_ckpt_to_evaluate
+    ):
       logging.info(
-          'Stop evaluation because '
-          'latest_step(%s) >= max_ckpt_to_evaluate(%s)', latest_step,
-          max_ckpt_to_evaluate)
+          'Stop evaluation because latest_step(%s) >= max_ckpt_to_evaluate(%s)',
+          latest_step,
+          max_ckpt_to_evaluate,
+      )
       break
 
   return
@@ -314,12 +391,17 @@ def _write_best_checkpoint(checkpoint_path, metrics_and_values, eval_name):
       subdirectory of checkpoint_path where the eval metrics will be written.
   """
   best_checkpoint_path = checkpoint_metrics_path(
-      checkpoint_path, eval_name, file_name='best_checkpoint.txt')
+      checkpoint_path, eval_name, file_name='best_checkpoint.txt'
+  )
   best_checkpoint_metrics_path = checkpoint_metrics_path(
-      checkpoint_path, eval_name, file_name='best_checkpoint.metrics')
+      checkpoint_path, eval_name, file_name='best_checkpoint.metrics'
+  )
   serializable = {k: str(v) for k, v in metrics_and_values.items()}
-  logging.info('Writing new best checkpoint %s with values %s',
-               best_checkpoint_path, metrics_and_values)
+  logging.info(
+      'Writing new best checkpoint %s with values %s',
+      best_checkpoint_path,
+      metrics_and_values,
+  )
   try:
     with tf.io.gfile.GFile(best_checkpoint_path, 'w') as fout:
       fout.write(checkpoint_path + '\n')
@@ -329,14 +411,17 @@ def _write_best_checkpoint(checkpoint_path, metrics_and_values, eval_name):
     # Note we have a bare exception here as as there's no clear TF base
     # exception to catch will cover all of the potential issues that might arise
     # trying to write our metrics to our metrics file.
-    logging.warning('Failed to write best checkpoint to path %s',
-                    best_checkpoint_path)
+    logging.warning(
+        'Failed to write best checkpoint to path %s', best_checkpoint_path
+    )
 
 
-def _write_checkpoint_metrics(checkpoint_path,
-                              metrics_and_values,
-                              eval_name,
-                              current_metrics='current.metrics'):
+def _write_checkpoint_metrics(
+    checkpoint_path,
+    metrics_and_values,
+    eval_name,
+    current_metrics='current.metrics',
+):
   """Writes a JSON of metrics for checkpoint_path in eval_name.
 
   This function writes out metrics to a JSON for a checkpoint into
@@ -360,7 +445,8 @@ def _write_checkpoint_metrics(checkpoint_path,
   """
   path = checkpoint_metrics_path(checkpoint_path, eval_name)
   experiment_metrics_path = checkpoint_metrics_path(
-      checkpoint_path, eval_name, file_name=current_metrics)
+      checkpoint_path, eval_name, file_name=current_metrics
+  )
   serializable = {k: str(v) for k, v in metrics_and_values.items()}
   logging.info('Writing checkpoint metrics %s', path)
   try:
