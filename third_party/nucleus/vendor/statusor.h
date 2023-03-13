@@ -178,7 +178,9 @@ class StatusOr {
   // Returns this->status().error_message()
   const string& error_message() const { return status_.error_message(); }
   // Returns this->status().code()
-  tensorflow::error::Code code() const { return status_.code(); }
+  tensorflow::error::Code code() const {
+    return static_cast<tensorflow::error::Code>(status_.code());
+  }
 
   // Returns a reference to our current value, requires that this->ok().
   // If you need to initialize a T object from the stored value,
