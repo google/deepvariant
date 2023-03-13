@@ -34,11 +34,12 @@ TODO: Write a unit test suite like call_variants_test.py.
 """
 
 import json
+import multiprocessing
 import os
 import time
+from typing import Any
 
 
-from absl import app
 from absl import flags
 from absl import logging
 import numpy as np
@@ -48,12 +49,15 @@ from deepvariant import dv_utils
 from deepvariant import keras_modeling as modeling
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
+from absl import app
+
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
+
 
 _ALLOW_EXECUTION_HARDWARE = [
     'auto',  # Default, no validation.
@@ -382,6 +386,53 @@ def get_dataset(path, example_shape):
   return image_variant_alt_allele_ds
 
 
+def post_processing(output_file: str, output_queue: Any) -> None:
+  """Post processing of called variants.
+
+  Args:
+    output_file: Path to output file where outputs will be written.
+    output_queue: Multiprocessing queue to fetch predictions from.
+  """
+  writer = tfrecord.Writer(output_file)
+  n_examples = 0
+  n_batches = 0
+  start_time = time.time()
+  while True:
+    item = output_queue.get()
+    if item is None:
+      break
+    predictions, variants, alt_allele_indices_list = item
+    for probabilities, variant, alt_allele_indices in zip(
+        predictions, variants, alt_allele_indices_list
+    ):
+      pred = {
+          'probabilities': probabilities,
+          'variant': variant.numpy(),
+          'alt_allele_indices': alt_allele_indices.numpy(),
+      }
+      write_variant_call(writer, pred)
+      n_examples += 1
+      duration = time.time() - start_time
+      logging.log_every_n(
+          logging.INFO,
+          'Processed %s examples in %s batches [%.3f sec per 100]',
+          _LOG_EVERY_N,
+          n_examples,
+          n_batches,
+          (100 * duration) / n_examples,
+      )
+    n_batches += 1
+  writer.close()
+  duration = time.time() - start_time
+  logging.info(
+      'Processed %s examples in %s batches [%.3f sec per 100]',
+      n_examples,
+      n_batches,
+      (100 * duration) / n_examples,
+  )
+  logging.info('Done calling variants from a total of %d examples.', n_examples)
+
+
 def call_variants(
     examples_filename: str, checkpoint_path: str, output_file: str
 ):
@@ -417,40 +468,22 @@ def call_variants(
 
     image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)
 
-    with tfrecord.Writer(output_file) as writer:
-      start_time = time.time()
-      n_examples, n_batches = 0, 0
-      for batch in image_variant_alt_allele_ds:
-        predictions = model.predict_on_batch(batch[0])
-        n_batches += 1
-        for probabilities, variant, alt_allele_indices in zip(
-            predictions, batch[1], batch[2]
-        ):
-          n_examples += 1
-          pred = {
-              'probabilities': probabilities,
-              'variant': variant.numpy(),
-              'alt_allele_indices': alt_allele_indices.numpy(),
-          }
-          write_variant_call(writer, pred)
-          duration = time.time() - start_time
-          logging.log_every_n(
-              logging.INFO,
-              'Processed %s examples in %s batches [%.3f sec per 100]',
-              _LOG_EVERY_N,
-              n_examples,
-              n_batches,
-              (100 * duration) / n_examples,
-          )
-    logging.info(
-        'Processed %s examples in %s batches [%.3f sec per 100]',
-        n_examples,
-        n_batches,
-        (100 * duration) / n_examples,
+    output_queue = multiprocessing.Queue()
+    post_processing_process = multiprocessing.get_context().Process(
+        target=post_processing,
+        args=(
+            output_file,
+            output_queue,
+        ),
     )
-    logging.info(
-        'Done calling variants from a total of %d examples.', n_examples
-    )
+    post_processing_process.start()
+    batch_no = 0
+    for batch in image_variant_alt_allele_ds:
+      predictions = model.predict_on_batch(batch[0])
+      batch_no += 1
+      output_queue.put((predictions, batch[1], batch[2]))
+    output_queue.put(None)
+    post_processing_process.join()
 
 
 def main(argv=()):
@@ -480,4 +513,5 @@ if __name__ == '__main__':
       'outfile',
       'checkpoint',
   ])
+  logging.use_python_logging()
   app.run(main)
