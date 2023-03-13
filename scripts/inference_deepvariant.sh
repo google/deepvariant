@@ -369,6 +369,11 @@ function copy_data() {
     copy_gs_or_http_file "${PROPOSED_VARIANTS}" "${INPUT_DIR}"
     copy_gs_or_http_file "${PROPOSED_VARIANTS}.tbi" "${INPUT_DIR}"
   fi
+  if [[ -n "${REGIONS}" ]]; then
+    if [[ "${REGIONS}" = http* ]] || [[ "${REGIONS}" = gs://* ]]; then
+      copy_gs_or_http_file "${REGIONS}" "${INPUT_DIR}"
+    fi
+  fi
   if [[ -n "${POPULATION_VCFS}" ]]; then
     copy_gs_or_http_file "${POPULATION_VCFS}" "${INPUT_DIR}"
     copy_gs_or_http_file "${POPULATION_VCFS}.tbi" "${INPUT_DIR}"
@@ -493,8 +498,13 @@ function setup_args() {
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
   fi
   if [[ -n "${REGIONS}" ]]; then
-    extra_args+=( --regions "${REGIONS}")
-    happy_args+=( -l "${REGIONS}")
+    if [[ "${REGIONS}" = http* ]] || [[ "${REGIONS}" = gs://* ]]; then
+      extra_args+=( --regions "/input/$(basename $REGIONS)")
+      happy_args+=( -T "${INPUT_DIR}/$(basename $REGIONS)")
+    else
+      extra_args+=( --regions "${REGIONS}")
+      happy_args+=( -l "${REGIONS}")
+    fi
   fi
   if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.0$ ]]; then
     extra_args+=( --runtime_report )
