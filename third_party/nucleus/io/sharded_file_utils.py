@@ -119,8 +119,9 @@ def generate_sharded_filenames(spec):
   return files
 
 
-def glob_list_sharded_file_patterns(comma_separated_patterns: str,
-                                    sep: str =',') -> List[str]:
+def glob_list_sharded_file_patterns(
+    comma_separated_patterns: str, sep: str = ','
+) -> List[str]:
   """Generate list of filenames corresponding to `comma_separated_patterns`.
 
   Args:
@@ -134,7 +135,11 @@ def glob_list_sharded_file_patterns(comma_separated_patterns: str,
   return sorted(set([
       os.fspath(f)
       for pattern in comma_separated_patterns.split(sep)
-      for f in epath.Path().glob(normalize_to_sharded_file_pattern(pattern))
+      # Note: epath.Path().glob(normalize_to_sharded_file_pattern(pattern))
+      # does not work with gs://.
+      for f in epath.Path(
+          os.path.dirname(normalize_to_sharded_file_pattern(pattern))).glob(
+              os.path.basename(normalize_to_sharded_file_pattern(pattern)))
   ]))
 
 
