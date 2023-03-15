@@ -63,80 +63,143 @@ _MODEL_TYPE = flags.DEFINE_enum(
     ),
 )
 _REF = flags.DEFINE_string(
-    'ref', None,
-    'Required. Genome reference to use. Must have an associated FAI index as '
-    'well. Supports text or gzipped references. Should match the reference '
-    'used to align the BAM file provided to --reads.')
+    'ref',
+    None,
+    (
+        'Required. Genome reference to use. Must have an associated FAI index'
+        ' as well. Supports text or gzipped references. Should match the'
+        ' reference used to align the BAM file provided to --reads.'
+    ),
+)
 _READS = flags.DEFINE_string(
-    'reads', None,
-    'Required. Aligned, sorted, indexed BAM file containing the reads we want '
-    'to call. Should be aligned to a reference genome compatible with --ref.')
+    'reads',
+    None,
+    (
+        'Required. Aligned, sorted, indexed BAM file containing the reads we'
+        ' want to call. Should be aligned to a reference genome compatible with'
+        ' --ref.'
+    ),
+)
 _OUTPUT_VCF = flags.DEFINE_string(
-    'output_vcf', None, 'Required. Path where we should write VCF file.')
+    'output_vcf', None, 'Required. Path where we should write VCF file.'
+)
 # Optional flags.
 _DRY_RUN = flags.DEFINE_boolean(
-    'dry_run', False,
-    'Optional. If True, only prints out commands without executing them.')
+    'dry_run',
+    False,
+    'Optional. If True, only prints out commands without executing them.',
+)
 _INTERMEDIATE_RESULTS_DIR = flags.DEFINE_string(
-    'intermediate_results_dir', None,
-    'Optional. If specified, this should be an existing '
-    'directory that is visible insider docker, and will be '
-    'used to to store intermediate outputs.')
+    'intermediate_results_dir',
+    None,
+    (
+        'Optional. If specified, this should be an existing '
+        'directory that is visible insider docker, and will be '
+        'used to to store intermediate outputs.'
+    ),
+)
 _LOGGING_DIR = flags.DEFINE_string(
-    'logging_dir', None, 'Optional. Directory where we should write log files '
-    'for each stage and optionally runtime reports.')
+    'logging_dir',
+    None,
+    (
+        'Optional. Directory where we should write log files '
+        'for each stage and optionally runtime reports.'
+    ),
+)
 _RUNTIME_REPORT = flags.DEFINE_boolean(
-    'runtime_report', False, 'Output make_examples runtime metrics '
-    'and create a visual runtime report using runtime_by_region_vis. '
-    'Only works with --logging_dir.')
+    'runtime_report',
+    False,
+    (
+        'Output make_examples runtime metrics '
+        'and create a visual runtime report using runtime_by_region_vis. '
+        'Only works with --logging_dir.'
+    ),
+)
 _VERSION = flags.DEFINE_boolean(
     'version',
     None,
     'Optional. If true, print out version number and exit.',
-    allow_hide_cpp=True)
+    allow_hide_cpp=True,
+)
 # Optional flags for call_variants.
 _CUSTOMIZED_MODEL = flags.DEFINE_string(
-    'customized_model', None,
-    'Optional. A path to a model checkpoint to load for the `call_variants` '
-    'step. If not set, the default for each --model_type will be used')
+    'customized_model',
+    None,
+    (
+        'Optional. A path to a model checkpoint to load for the `call_variants`'
+        ' step. If not set, the default for each --model_type will be used'
+    ),
+)
 # Optional flags for make_examples.
 _NUM_SHARDS = flags.DEFINE_integer(
-    'num_shards', 1, 'Optional. Number of shards for make_examples step.')
+    'num_shards', 1, 'Optional. Number of shards for make_examples step.'
+)
 _REGIONS = flags.DEFINE_string(
-    'regions', None,
-    'Optional. Space-separated list of regions we want to process. Elements '
-    'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
+    'regions',
+    None,
+    (
+        'Optional. Space-separated list of regions we want to process. Elements'
+        ' can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE'
+        ' files.'
+    ),
+)
 _SAMPLE_NAME = flags.DEFINE_string(
-    'sample_name', None,
-    'Sample name to use instead of the sample name from the input reads BAM '
-    '(SM tag in the header). This flag is used for both make_examples and '
-    'postprocess_variants.')
+    'sample_name',
+    None,
+    (
+        'Sample name to use instead of the sample name from the input reads BAM'
+        ' (SM tag in the header). This flag is used for both make_examples and'
+        ' postprocess_variants.'
+    ),
+)
 _USE_HP_INFORMATION = flags.DEFINE_boolean(
-    'use_hp_information', None, '(Deprecated in v1.4.0) '
-    'Optional. If True, corresponding flags will be set to properly use the HP '
-    'information present in the BAM input.')
+    'use_hp_information',
+    None,
+    (
+        '(Deprecated in v1.4.0) Optional. If True, corresponding flags will be'
+        ' set to properly use the HP information present in the BAM input.'
+    ),
+)
 _MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
-    'make_examples_extra_args', None,
-    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for make_examples.py. If the flag_value is boolean, it has to '
-    'be flag_name=true or flag_name=false.')
+    'make_examples_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for make_examples.py. If the flag_value is boolean, it'
+        ' has to be flag_name=true or flag_name=false.'
+    ),
+)
 _CALL_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
-    'call_variants_extra_args', None,
-    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for call_variants.py. If the flag_value is boolean, it has to '
-    'be flag_name=true or flag_name=false.')
+    'call_variants_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for call_variants.py. If the flag_value is boolean, it'
+        ' has to be flag_name=true or flag_name=false.'
+    ),
+)
 _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
-    'postprocess_variants_extra_args', None,
-    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for postprocess_variants.py. If the flag_value is boolean, '
-    'it has to be flag_name=true or flag_name=false.')
+    'postprocess_variants_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for postprocess_variants.py. If the flag_value is'
+        ' boolean, it has to be flag_name=true or flag_name=false.'
+    ),
+)
 
 # Optional flags for postprocess_variants.
 _OUTPUT_GVCF = flags.DEFINE_string(
-    'output_gvcf', None, 'Optional. Path where we should write gVCF file.')
+    'output_gvcf', None, 'Optional. Path where we should write gVCF file.'
+)
 _VCF_STATS_REPORT = flags.DEFINE_boolean(
-    'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
-    'statistics about the output VCF.')
+    'vcf_stats_report',
+    True,
+    (
+        'Optional. Output a visual report (HTML) of '
+        'statistics about the output VCF.'
+    ),
+)
 
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
@@ -202,18 +265,18 @@ def _update_kwargs_with_warning(kwargs, extra_args):
   for k, v in extra_args.items():
     if k in kwargs:
       if kwargs[k] != v:
-        print('\nWarning: --{} is previously set to {}, now to {}.'.format(
-            k, kwargs[k], v))
+        print(
+            '\nWarning: --{} is previously set to {}, now to {}.'.format(
+                k, kwargs[k], v
+            )
+        )
     kwargs[k] = v
   return kwargs
 
 
-def make_examples_command(ref,
-                          reads,
-                          examples,
-                          extra_args,
-                          runtime_by_region_path=None,
-                          **kwargs):
+def make_examples_command(
+    ref, reads, examples, extra_args, runtime_by_region_path=None, **kwargs
+):
   """Returns a make_examples (command, logfile) for subprocess.
 
   Args:
@@ -228,8 +291,10 @@ def make_examples_command(ref,
     (string, string) A command to run, and a log file to output to.
   """
   command = [
-      'time', 'seq 0 {} |'.format(_NUM_SHARDS.value - 1),
-      'parallel -q --halt 2 --line-buffer', '/opt/deepvariant/bin/make_examples'
+      'time',
+      'seq 0 {} |'.format(_NUM_SHARDS.value - 1),
+      'parallel -q --halt 2 --line-buffer',
+      '/opt/deepvariant/bin/make_examples',
   ]
   command.extend(['--mode', 'calling'])
   command.extend(['--ref', '"{}"'.format(ref)])
@@ -238,7 +303,8 @@ def make_examples_command(ref,
 
   if runtime_by_region_path is not None:
     command.extend(
-        ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)])
+        ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)]
+    )
 
   if _MODEL_TYPE.value == 'WGS' or _MODEL_TYPE.value == 'WES':
     special_args = {}
@@ -298,22 +364,25 @@ def call_variants_command(outfile, examples, model_ckpt, extra_args):
         'Docker images. Please rerun without use_openvino flag.'
     )
   # Extend the command with all items in extra_args.
-  command = _extend_command_by_args_dict(command,
-                                         _extra_args_to_dict(extra_args))
+  command = _extend_command_by_args_dict(
+      command, _extra_args_to_dict(extra_args)
+  )
   logfile = None
   if _LOGGING_DIR.value:
     logfile = '{}/call_variants.log'.format(_LOGGING_DIR.value)
   return (' '.join(command), logfile)
 
 
-def postprocess_variants_command(ref,
-                                 infile,
-                                 outfile,
-                                 extra_args,
-                                 nonvariant_site_tfrecord_path=None,
-                                 gvcf_outfile=None,
-                                 vcf_stats_report=True,
-                                 sample_name=None):
+def postprocess_variants_command(
+    ref,
+    infile,
+    outfile,
+    extra_args,
+    nonvariant_site_tfrecord_path=None,
+    gvcf_outfile=None,
+    vcf_stats_report=True,
+    sample_name=None,
+):
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
@@ -322,7 +391,7 @@ def postprocess_variants_command(ref,
   if nonvariant_site_tfrecord_path is not None:
     command.extend([
         '--nonvariant_site_tfrecord_path',
-        '"{}"'.format(nonvariant_site_tfrecord_path)
+        '"{}"'.format(nonvariant_site_tfrecord_path),
     ])
   if gvcf_outfile is not None:
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
@@ -331,8 +400,9 @@ def postprocess_variants_command(ref,
   if sample_name is not None:
     command.extend(['--sample_name', '"{}"'.format(sample_name)])
   # Extend the command with all items in extra_args.
-  command = _extend_command_by_args_dict(command,
-                                         _extra_args_to_dict(extra_args))
+  command = _extend_command_by_args_dict(
+      command, _extra_args_to_dict(extra_args)
+  )
   logfile = None
   if _LOGGING_DIR.value:
     logfile = '{}/postprocess_variants.log'.format(_LOGGING_DIR.value)
@@ -341,8 +411,9 @@ def postprocess_variants_command(ref,
 
 def runtime_by_region_vis_command(runtime_by_region_path: str):
   """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
-  runtime_report = os.path.join(_LOGGING_DIR.value,
-                                'make_examples_runtime_by_region_report.html')
+  runtime_report = os.path.join(
+      _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
+  )
 
   command = ['time', '/opt/deepvariant/bin/runtime_by_region_vis']
   command.extend(['--input', '"{}"'.format(runtime_by_region_path)])
@@ -357,22 +428,29 @@ def check_or_create_intermediate_results_dir(intermediate_results_dir):
   if intermediate_results_dir is None:
     intermediate_results_dir = tempfile.mkdtemp()
   if not os.path.isdir(intermediate_results_dir):
-    logging.info('Creating a directory for intermediate results in %s',
-                 intermediate_results_dir)
+    logging.info(
+        'Creating a directory for intermediate results in %s',
+        intermediate_results_dir,
+    )
     os.makedirs(intermediate_results_dir)
   else:
-    logging.info('Re-using the directory for intermediate results in %s',
-                 intermediate_results_dir)
+    logging.info(
+        'Re-using the directory for intermediate results in %s',
+        intermediate_results_dir,
+    )
   return intermediate_results_dir
 
 
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if _CUSTOMIZED_MODEL.value is not None:
-    if (not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value +
-                                      '.data-00000-of-00001') or
-        not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.index') or
-        not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.meta')):
+    if (
+        not tf.compat.v1.gfile.Exists(
+            _CUSTOMIZED_MODEL.value + '.data-00000-of-00001'
+        )
+        or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.index')
+        or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.meta')
+    ):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
@@ -381,9 +459,14 @@ def check_flags():
           'could-not-open'.format(_CUSTOMIZED_MODEL.value)
       )
     logging.info(
-        'You set --customized_model. Instead of using the default '
-        'model for %s, `call_variants` step will load %s* '
-        'instead.', _MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
+        (
+            'You set --customized_model. Instead of using the default '
+            'model for %s, `call_variants` step will load %s* '
+            'instead.'
+        ),
+        _MODEL_TYPE.value,
+        _CUSTOMIZED_MODEL.value,
+    )
 
 
 def get_model_ckpt(model_type, customized_model):
@@ -403,23 +486,29 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
   if _OUTPUT_GVCF.value is not None:
     nonvariant_site_tfrecord_path = os.path.join(
         intermediate_results_dir,
-        'gvcf.tfrecord@{}.gz'.format(_NUM_SHARDS.value))
+        'gvcf.tfrecord@{}.gz'.format(_NUM_SHARDS.value),
+    )
 
   examples = os.path.join(
       intermediate_results_dir,
-      'make_examples.tfrecord@{}.gz'.format(_NUM_SHARDS.value))
+      'make_examples.tfrecord@{}.gz'.format(_NUM_SHARDS.value),
+  )
 
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
-    runtime_directory = os.path.join(_LOGGING_DIR.value,
-                                     'make_examples_runtime_by_region')
+    runtime_directory = os.path.join(
+        _LOGGING_DIR.value, 'make_examples_runtime_by_region'
+    )
     if not os.path.isdir(runtime_directory):
-      logging.info('Creating a make_examples runtime by region directory in %s',
-                   runtime_directory)
+      logging.info(
+          'Creating a make_examples runtime by region directory in %s',
+          runtime_directory,
+      )
       os.makedirs(runtime_directory)
     # The path to runtime metrics output is sharded just like the examples.
     runtime_by_region_path = os.path.join(
         runtime_directory,
-        'make_examples_runtime@{}.tsv'.format(_NUM_SHARDS.value))
+        'make_examples_runtime@{}.tsv'.format(_NUM_SHARDS.value),
+    )
   else:
     runtime_by_region_path = None
 
@@ -433,11 +522,14 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           # kwargs:
           gvcf=nonvariant_site_tfrecord_path,
           regions=_REGIONS.value,
-          sample_name=_SAMPLE_NAME.value))
+          sample_name=_SAMPLE_NAME.value,
+      )
+  )
 
   # call_variants
-  call_variants_output = os.path.join(intermediate_results_dir,
-                                      'call_variants_output.tfrecord.gz')
+  call_variants_output = os.path.join(
+      intermediate_results_dir, 'call_variants_output.tfrecord.gz'
+  )
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       call_variants_command(
@@ -458,7 +550,9 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
           vcf_stats_report=_VCF_STATS_REPORT.value,
-          sample_name=_SAMPLE_NAME.value))
+          sample_name=_SAMPLE_NAME.value,
+      )
+  )
 
   # runtime-by-region
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
@@ -469,9 +563,11 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
 
 def main(_):
   if _USE_HP_INFORMATION.value:
-    raise NotImplementedError('The --use_hp_information flag has been '
-                              'deprecated. DeepVariant now phases internally '
-                              'for PacBio mode.')
+    raise NotImplementedError(
+        'The --use_hp_information flag has been '
+        'deprecated. DeepVariant now phases internally '
+        'for PacBio mode.'
+    )
   if _VERSION.value:
     print('DeepVariant version {}'.format(DEEP_VARIANT_VERSION))
     return
@@ -483,15 +579,18 @@ def main(_):
       sys.exit(1)
 
   intermediate_results_dir = check_or_create_intermediate_results_dir(
-      _INTERMEDIATE_RESULTS_DIR.value)
+      _INTERMEDIATE_RESULTS_DIR.value
+  )
 
   if _LOGGING_DIR.value and not os.path.isdir(_LOGGING_DIR.value):
     logging.info('Creating a directory for logs in %s', _LOGGING_DIR.value)
     os.makedirs(_LOGGING_DIR.value)
 
   commands_logfiles = create_all_commands_and_logfiles(intermediate_results_dir)
-  print('\n***** Intermediate results will be written to {} '
-        'in docker. ****\n'.format(intermediate_results_dir))
+  print(
+      '\n***** Intermediate results will be written to {} '
+      'in docker. ****\n'.format(intermediate_results_dir)
+  )
   for command, logfile in commands_logfiles:
     print('\n***** Running the command:*****\n{}\n'.format(command))
     if not _DRY_RUN.value:
@@ -503,7 +602,8 @@ def main(_):
           bufsize=1,
           shell=True,
           executable='/bin/bash',
-          universal_newlines=True) as proc:
+          universal_newlines=True,
+      ) as proc:
         for line in proc.stdout:
           print(line, end='')
           if fp is not None:
