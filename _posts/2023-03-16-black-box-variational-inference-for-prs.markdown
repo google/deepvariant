@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Variational inference for polygenic risk scores"
-date:   2023-03-20
+date:   2023-03-16
 description: "We introduce a new way to build polygenic risk scores from GWAS summary
 statistics using black box variational inference."
 img: "assets/images/PacBio-2019-01/figure2b.png"
