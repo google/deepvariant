@@ -19,7 +19,7 @@ Over the last decade, PRS have become the canonical way to think about how many 
 
 <img src="{{ site.baseurl }}/assets/images/2023-03-16/prs_eqn.jpeg">
 <figcaption>
-Equation 1: A PRS is computed by summing the effects of each genetic variant. Most often PRS are computed using SNPs. In that case, \beta_i represents the SNP effect and X_i represents the SNP allele count for a specific individual or sample.
+Equation 1: A PRS is computed by summing the effects of each genetic variant. Most often PRS are computed using SNPs. In that case, $\beta_i$ represents the SNP effect and $X_i$ represents the SNP allele count for a specific individual or sample.
 </figcaption>
 
 One of the most well known and widely used methods for developing PRS is called [LDpred](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4596916/) (and more recently [LDpred2](https://privefl.github.io/bigsnpr/articles/LDpred2.html)). LDPred introduced a really clever idea to infer the true effects of each genetic variant by using summary statistics taken from a standard [GWAS](https://en.wikipedia.org/wiki/Genome-wide_association_study), and modifying the variant effects to account for the correlation structure in the genome (often called [linkage disequilibrium](https://en.wikipedia.org/wiki/Linkage_disequilibrium) or LD). The resulting method utilizes all variants for the PRS, which will tend to outperform simpler methods that select only a subset of variants. Additionally, LDpred only relies on aggregate summary level statistics, thus side-stepping issues related to data access and privacy.
