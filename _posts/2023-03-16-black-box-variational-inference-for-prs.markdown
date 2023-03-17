@@ -67,7 +67,7 @@ Equation 2: The ELBO for the VI formulation of Bayesian PRS.
 
 From ancient statistical genetics [theory](https://www.nature.com/articles/ng.2213), we know that $\hat{\beta}$ follows a normal distribution with mean $D\beta$ and variance $D\sigma^2$. Given that result, we can easily compute the first term in the ELBO using the normal likelihood function. For the prior, we can choose any valid probability distribution, such as the sparse prior proposed by LDpred. For the surrogate posterior Q, in theory we could also choose any distribution. In practice we rely on the mean field assumption (all variants are independent) and specify a multivariate normal distribution with mean $\alpha$ and a diagonal covariance matrix $\Psi$. We know that all variants are not independent in the posterior. In fact, we expect that their covariance is a function of LD. However, computing the true posterior covariance in the optimization is not computationally feasible, so we opt to obtain a useful approximation.
 
-Now putting this together, the procedure for maximizing the ELBO with respect to $\psi$ using stochastic gradient descent and automatic differentiation (black box VI) is summarized in Equation (3). The idea is to sample a vector $\beta^*$ from the current surrogate and then use $\beta^*$ to compute the ELBO. By maximizing this computed ELBO with respect to $\psi$ over samples from the surrogate, you are essentially estimating a posterior distribution that is good at creating samples of the true genetic variant effects that maximize the likelihood of the GWAS summary stats, while controlling for our prior beliefs. 
+Now putting this together, the procedure for maximizing the ELBO with respect to $\psi$ using stochastic gradient descent and automatic differentiation (black box VI) is summarized in Equation (3). The idea is to sample a vector $\beta^*$ from the current surrogate and then use it to compute the ELBO. By maximizing this computed ELBO with respect to $\psi$ over samples from the surrogate, you are essentially estimating a posterior distribution that is good at creating samples of the true genetic variant effects that maximize the likelihood of the GWAS summary stats, while controlling for our prior beliefs. 
 
 <img src="{{ site.baseurl }}/assets/images/2023-03-16/max_elbo_eqn.jpeg">
 <figcaption>
@@ -92,15 +92,15 @@ fixed_prior_distribution = get_my_prior(prior_hyperparams)
 learnable_posterior_distribution = get_my_posterior()
 
 for each optimization step:
-      # Sample effect sizes from the posterior.
+        # Sample effect sizes from the posterior.
 	beta_sample = learnable_posterior_distribution.sample()
 
 	# Transform into GWAS summary stat space.
 	beta_transform = matrix_multiply(ld_matrix, beta_sample)
 
 	# Compute the loss as a function of the MSE between
-      # the observed summary stats (beta) and the estimates
-      # plus a KL-divergence term to provide regularization.
+        # the observed summary stats (beta) and the estimates
+        # plus a KL-divergence term to provide regularization.
 	loss = mean_squared_error(beta, beta_transform)
 	# Weight the KL term inversely proportional to the data size.
 	loss = loss + KL_WEIGHT * kl_divergence(
@@ -108,7 +108,7 @@ for each optimization step:
                    fixed_prior_distribution)
 
 	# Use SGD to update the learnable parameters in your posterior.
-      update_estimates(loss, learnable_posterior_distribution)
+        update_estimates(loss, learnable_posterior_distribution)
 ```
 
 #### Implementing bbviPRS in TensorFlow Probability
@@ -119,9 +119,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 
-
 tfd = tfp.distributions
-
 
 normal_prior = tfd.Normal(loc=0.0, scale=1.0)
 _=plt.figure(figsize=(10,8))
