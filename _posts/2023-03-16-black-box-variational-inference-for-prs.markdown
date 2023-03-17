@@ -12,7 +12,7 @@ On the Genomics team in Google Health AI, we think a lot about [polygenic risk s
 
 Given our interest in VI, we were excited to see a [preprint](https://www.biorxiv.org/content/10.1101/2022.05.10.491396v2) from Zabad et al. posted in May of 2022 that introduces the key concepts for using VI to create PRS. They provide great baseline results using a traditional VI approach. However, traditional VI does not employ the black box technique which translates into less modeling flexibility. We believe that bbVI implemented using libraries such as [TensorFlow Probability](https://www.tensorflow.org/probability) has a lot of potential to be a powerful and flexible methodology for building Bayesian methods, so we figured a blog post laying out some of the basics might be useful for the community. 
 
-Here, we first give background context on PRS, LDpred, MCMC and variational inference. If you are already familiar with these concepts, please feel free to skip those sections and head right to the “bbVI + PRS = bbviPRS” section, where we introduce bbviPRS: a method to construct a PRS from GWAS summary statistics that uses black box variational inference.
+Here, we first give background context on PRS, LDpred, MCMC and variational inference. If you are already familiar with these concepts, please feel free to skip those sections and head right to the “bbVI + PRS = bbviPRS” section, where we introduce bbviPRS: a method to construct a PRS from GWAS summary statistics that uses black box variational inference. We also provide a [companion colab](https://github.com/Google-Health/genomics-research/tree/main/black-box-vi-prs) with an implementation of the method.
 
 ## Polygenic risk scores (PRS) and LDpred
 Over the last decade, PRS have become the canonical way to think about how many genetic variants express their influence over complex human traits. As a result, there has been a lot of effort focused on making bigger and more accurate PRS. The key idea behind a PRS is quite simple: sum the effects of each of many genetic variants to create a score that is predictive of the trait or disease.
@@ -129,7 +129,7 @@ _=plt.hist(normal_prior_sample, 100)
 
 <img src="{{ site.baseurl }}/assets/images/2023-03-16/normal_prior.png">
 
-From this, hopefully you can see how we are able to define the `get_my_prior` function from the pseudocode above. In bbviPRS we don’t use the normal prior, but instead use a mixture of normals, where one distribution has small variance and mean zero. This distribution is similar to the sparsity inducing distribution used by LDpred. You can check the colab for implementation details.
+From this, hopefully you can see how we are able to define the `get_my_prior` function from the pseudocode above. In bbviPRS we don’t use the normal prior, but instead use a mixture of normals, where one distribution has small variance and mean zero. This distribution is similar to the sparsity inducing distribution used by LDpred. You can check the [colab](https://github.com/Google-Health/genomics-research/tree/main/black-box-vi-prs) for implementation details.
 
 From the prior example, there is one thing missing. We also need to introduce learnable parameters, so that we can learn our surrogate. This code snippet shows how we do that in principle.
 
@@ -143,7 +143,7 @@ posterior = tfd.Normal(
 
 Here, we create a normal distribution just as before, but we let the mean and scale parameters be represented by TFP variable objects. When we use this distribution inside of a training loop, we can specify that these parameters should be updated as part of the optimization routine.
 
-From these basic examples, hopefully you get a sense of how we can construct and use probability distributions in our optimization code. The remaining elements from the pseudocode above are in principle pretty straightforward. Please take a look at the colab to understand more details. 
+From these basic examples, hopefully you get a sense of how we can construct and use probability distributions in our optimization code. The remaining elements from the pseudocode above are in principle pretty straightforward. Please take a look at the [colab](https://github.com/Google-Health/genomics-research/tree/main/black-box-vi-prs) to understand more details. 
 
 ## A few results
 We first compared bbviPRS to LdPred2 on simulated data to get a sense of how well bbviPRS performs in terms of predictive power when compared with a known standard. We compare the Pearson correlations between the estimated PRS and the simulated phenotype in a held out test set. Phenotypes were simulated across a range of heritabilities and causal fractions.
@@ -172,7 +172,7 @@ Here, we introduced the new idea of applying black box variational inference to 
 
 The main advantage of the bbviPRS method is that it is extremely flexible and extensible. This means that it can give the practitioner a large degree of control and flexibility when trying new methodological ideas or incorporating new types of data. For example, you could imagine how the flexibility of bbviPRS could be an asset for models that incorporate data across different diseases or different genetic ancestries. However, the drawback to this flexibility and extensibility comes (perhaps) at the expense of predictive power. That is, as both our simulated data and many of our real data examples show, bbviPRS tends to underperform relative to LDpred2 for the baseline PRS problem. 
 
-All of that being said, we think that the black box methods laid out here could be quite useful to the statistical genetics community, so we hope this blog post and the accompanying colab can be an asset for those working in the PRS space. Good luck! Let us know how it goes.
+All of that being said, we think that the black box methods laid out here could be quite useful to the statistical genetics community, so we hope this blog post and the accompanying [colab](https://github.com/Google-Health/genomics-research/tree/main/black-box-vi-prs) can be an asset for those working in the PRS space. Good luck! Let us know how it goes.
 
 ## Acknowledgements
 This was joint work with Thomas Colthurst with lots of input and help from Farhad Hormozdiari, Ted Yun and Cory McLean. Special thanks to Justin Cosentino for important contributions to the infrastructure and codebase that enabled this work and results. And thanks to the entire Genomics team at Google HealthAI.
