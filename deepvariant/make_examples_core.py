@@ -41,6 +41,7 @@ from absl import flags
 from absl import logging
 from etils import epath
 import numpy as np
+import tensorflow as tf
 
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
@@ -63,7 +64,6 @@ from google.protobuf import text_format
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import sharded_file_utils
-from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
@@ -906,23 +906,35 @@ class OutputsWriter(object):
     self.examples_filename = None
 
     if options.candidates_filename:
+      output_file = self._add_suffix(options.candidates_filename, suffix)
+      tf_options = None
+      if output_file.endswith('.gz'):
+        tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
       self._add_writer(
           'candidates',
-          tfrecord.Writer(
-              self._add_suffix(options.candidates_filename, suffix)
-          ),
+          tf.io.TFRecordWriter(output_file, options=tf_options),
       )
 
     if options.examples_filename:
       self.examples_filename = self._add_suffix(
           options.examples_filename, suffix
       )
-      self._add_writer('examples', tfrecord.Writer(self.examples_filename))
+      tf_options = None
+      if self.examples_filename.endswith('.gz'):
+        tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
+      self._add_writer(
+          'examples',
+          tf.io.TFRecordWriter(self.examples_filename, options=tf_options),
+      )
 
     if options.gvcf_filename:
+      output_file = self._add_suffix(options.gvcf_filename, suffix)
+      tf_options = None
+      if output_file.endswith('.gz'):
+        tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
       self._add_writer(
           'gvcfs',
-          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)),
+          tf.io.TFRecordWriter(output_file, options=tf_options),
       )
 
     if options.runtime_by_region:
@@ -990,7 +1002,7 @@ class OutputsWriter(object):
     writer = self._writers[writer_name]
     if writer:
       for proto in protos:
-        writer.write(proto)
+        writer.write(proto.SerializeToString())
 
   def close_all(self):
     for writer in self._writers.values():
