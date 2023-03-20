@@ -491,7 +491,7 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
       }
     }
   }
-  return tf::Status(tensorflow::error::Code::NOT_FOUND,
+  return tf::Status(static_cast<tensorflow::errors::Code>(absl::StatusCode::kNotFound),
                     "Could not read base quality scores");
 }
 
@@ -529,7 +529,7 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
   if (options.has_read_requirements() &&
       !PartialReadSatisfiesRequirements(*read_message,
                                         options.read_requirements())) {
-    return tf::Status(tensorflow::error::Code::ABORTED,
+    return tf::Status(static_cast<tensorflow::errors::Code>(absl::StatusCode::kAborted),
                       "Read doesn't satisfy requirements.");
   }
 
