@@ -247,7 +247,7 @@ StatusOr<T>::StatusOr(const tensorflow::Status& status) : status_(status) {
   assert(!status.ok());
   if (status.ok()) {
     status_ = tensorflow::Status(
-        tensorflow::error::INTERNAL,
+        static_cast<tensorflow::errors::Code>(absl::StatusCode::kInternal),
         "Status::OK is not a valid constructor argument to StatusOr<T>");
   }
 }
@@ -263,7 +263,7 @@ void StatusOr<T>::CheckValueNotNull(const T& value) {
   assert(!IsNull<T>::IsValueNull(value));
   if (IsNull<T>::IsValueNull(value)) {
     status_ = tensorflow::Status(
-        tensorflow::error::INTERNAL,
+        static_cast<tensorflow::errors::Code>(absl::StatusCode::kInternal),
         "NULL is not a valid constructor argument to StatusOr<T*>");
   }
 }
