@@ -267,7 +267,7 @@ def write_variant_call(writer, prediction):
       logits=prediction.get('logits'),
       prelogits=prediction.get('prelogits'),
   )
-  return writer.write(cvo)
+  return writer.write(cvo.SerializeToString())
 
 
 def _create_cvo_proto(
@@ -393,7 +393,10 @@ def post_processing(output_file: str, output_queue: Any) -> None:
     output_file: Path to output file where outputs will be written.
     output_queue: Multiprocessing queue to fetch predictions from.
   """
-  writer = tfrecord.Writer(output_file)
+  tf_options = None
+  if output_file.endswith('.gz'):
+    tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
+  writer = tf.io.TFRecordWriter(output_file, options=tf_options)
   n_examples = 0
   n_batches = 0
   start_time = time.time()
