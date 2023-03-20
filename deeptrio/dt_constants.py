@@ -50,7 +50,9 @@ PILEUP_NUM_CHANNELS = 6
 
 # The dimensions of a pileup image tensor as height x width x rank.
 PILEUP_DEFAULT_DIMS = [
-    PILEUP_DEFAULT_HEIGHT, PILEUP_DEFAULT_WIDTH, PILEUP_NUM_CHANNELS
+    PILEUP_DEFAULT_HEIGHT,
+    PILEUP_DEFAULT_WIDTH,
+    PILEUP_NUM_CHANNELS,
 ]
 
 # Number of classes represented in the data set. The three classes are
