@@ -65,6 +65,7 @@ from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
 from third_party.nucleus.util.struct_utils import get_string_field
 
+
 FLAGS = flags.FLAGS
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
@@ -75,10 +76,12 @@ _FILTERED_ALT_PROB = postprocess_variants._FILTERED_ALT_PROB
 
 
 def placeholder_reference_reader():
-  return fasta.InMemoryFastaReader(chromosomes=[
-      ('1', 0, 'AACCGGTTACGTTCGATTTTAAAACCCCGGGG'),
-      ('2', 0, 'GCAGTGACGTAGCGATGACGTAGACGCTTACG'),
-  ])
+  return fasta.InMemoryFastaReader(
+      chromosomes=[
+          ('1', 0, 'AACCGGTTACGTTCGATTTTAAAACCCCGGGG'),
+          ('2', 0, 'GCAGTGACGTAGCGATGACGTAGACGCTTACG'),
+      ]
+  )
 
 
 def placeholder_reference_pysam_reader():
@@ -100,16 +103,18 @@ class MockVcfWriter(object):
     self.variants_written.append(copy.deepcopy(proto))
 
 
-def _create_variant(ref_name,
-                    start,
-                    ref_base,
-                    alt_bases,
-                    qual,
-                    filter_field,
-                    genotype,
-                    gq,
-                    likelihoods,
-                    ad=None):
+def _create_variant(
+    ref_name,
+    start,
+    ref_base,
+    alt_bases,
+    qual,
+    filter_field,
+    genotype,
+    gq,
+    likelihoods,
+    ad=None,
+):
   """Creates a Variant record for testing.
 
   Args:
@@ -137,7 +142,8 @@ def _create_variant(ref_name,
       gq=gq,
       gls=likelihoods,
       sample_name=_DEFAULT_SAMPLE_NAME,
-      ad=ad)
+      ad=ad,
+  )
 
 
 def _create_variant_with_alleles(ref=None, alts=None, start=0):
@@ -146,14 +152,13 @@ def _create_variant_with_alleles(ref=None, alts=None, start=0):
       reference_bases=ref,
       alternate_bases=alts,
       start=start,
-      calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)])
+      calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)],
+  )
 
 
-def _create_call_variants_output(indices,
-                                 probabilities=None,
-                                 ref=None,
-                                 alts=None,
-                                 variant=None):
+def _create_call_variants_output(
+    indices, probabilities=None, ref=None, alts=None, variant=None
+):
   if alts is None != variant is None:
     raise ValueError('Exactly one of either `alts` or `variant` should be set.')
   if not variant:
@@ -161,8 +166,10 @@ def _create_call_variants_output(indices,
   return deepvariant_pb2.CallVariantsOutput(
       genotype_probabilities=probabilities,
       alt_allele_indices=deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
-          indices=indices),
-      variant=variant)
+          indices=indices
+      ),
+      variant=variant,
+  )
 
 
 def _read_contents(path, decompress=False):
@@ -191,17 +198,22 @@ def _create_nonvariant(ref_name, start, end, ref_base):
       end=end,
       alleles=[ref_base, vcf_constants.GVCF_ALT_ALLELE],
       gt=[0, 0],
-      gls=[-.001, -5, -10])
+      gls=[-0.001, -5, -10],
+  )
 
 
 def make_golden_dataset(compressed_inputs=False):
   if compressed_inputs:
     source_path = test_utils.test_tmpfile(
-        'golden.postprocess_single_site_input.tfrecord.gz')
+        'golden.postprocess_single_site_input.tfrecord.gz'
+    )
     tfrecord.write_tfrecords(
         tfrecord.read_tfrecords(
             testdata.GOLDEN_POSTPROCESS_INPUT,
-            proto=deepvariant_pb2.CallVariantsOutput), source_path)
+            proto=deepvariant_pb2.CallVariantsOutput,
+        ),
+        source_path,
+    )
   else:
     source_path = testdata.GOLDEN_POSTPROCESS_INPUT
   return source_path
@@ -233,15 +245,20 @@ class AlleleRemapperTest(parameterized.TestCase):
     remapper = postprocess_variants.AlleleRemapper(alt_alleles, remove)
     self.assertEqual(remapper.original_alts, alt_alleles)
     self.assertEqual(remapper.alleles_to_remove, set(remove))
-    self.assertEqual(keep_index_expected,
-                     [remapper.keep_index(i) for i in range(len(alt_alleles))])
+    self.assertEqual(
+        keep_index_expected,
+        [remapper.keep_index(i) for i in range(len(alt_alleles))],
+    )
     # When our i is 1 for the first alt allele, we expect that we will get back
     # our keep_index_expected but also that keep_index(i==0) is True for the
     # reference allele.
-    self.assertEqual([True] + keep_index_expected, [
-        remapper.keep_index(i, ref_is_zero=True)
-        for i in range(len(alt_alleles) + 1)
-    ])
+    self.assertEqual(
+        [True] + keep_index_expected,
+        [
+            remapper.keep_index(i, ref_is_zero=True)
+            for i in range(len(alt_alleles) + 1)
+        ],
+    )
 
   def test_makes_copy_of_inputs(self):
     alt_alleles = ['A', 'B']
@@ -256,21 +273,23 @@ class AlleleRemapperTest(parameterized.TestCase):
 class PostprocessVariantsTest(parameterized.TestCase):
 
   # pylint: disable=g-complex-comprehension
-  @parameterized.parameters((compressed_inputs_and_outputs, only_keep_pass)
-                            for compressed_inputs_and_outputs in [False, True]
-                            for only_keep_pass in [False, True])
+  @parameterized.parameters(
+      (compressed_inputs_and_outputs, only_keep_pass)
+      for compressed_inputs_and_outputs in [False, True]
+      for only_keep_pass in [False, True]
+  )
   # pylint: enable=g-complex-comprehension
   @flagsaver.flagsaver
   def test_call_end2end(self, compressed_inputs_and_outputs, only_keep_pass):
     FLAGS.infile = make_golden_dataset(compressed_inputs_and_outputs)
     FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.outfile = create_outfile('calls.vcf', compressed_inputs_and_outputs,
-                                   only_keep_pass)
-    FLAGS.nonvariant_site_tfrecord_path = (
-        testdata.GOLDEN_POSTPROCESS_GVCF_INPUT)
-    FLAGS.gvcf_outfile = create_outfile('gvcf_calls.vcf',
-                                        compressed_inputs_and_outputs,
-                                        only_keep_pass)
+    FLAGS.outfile = create_outfile(
+        'calls.vcf', compressed_inputs_and_outputs, only_keep_pass
+    )
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
+    FLAGS.gvcf_outfile = create_outfile(
+        'gvcf_calls.vcf', compressed_inputs_and_outputs, only_keep_pass
+    )
     FLAGS.only_keep_pass = only_keep_pass
     postprocess_variants.main(['postprocess_variants.py'])
 
@@ -280,10 +299,12 @@ class PostprocessVariantsTest(parameterized.TestCase):
       vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT
     self.assertEqual(
         _read_contents(FLAGS.outfile, compressed_inputs_and_outputs),
-        _read_contents(vcf_output))
+        _read_contents(vcf_output),
+    )
     self.assertEqual(
         _read_contents(FLAGS.gvcf_outfile, compressed_inputs_and_outputs),
-        _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT))
+        _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT),
+    )
 
     if compressed_inputs_and_outputs:
       self.assertTrue(tf.io.gfile.exists(FLAGS.outfile + '.tbi'))
@@ -297,7 +318,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
     FLAGS.group_variants = True
     with self.assertRaisesRegex(
-        ValueError, '`call_variants_outputs` did not pass sanity check.'):
+        ValueError, '`call_variants_outputs` did not pass sanity check.'
+    ):
       postprocess_variants.main(['postprocess_variants.py'])
 
     FLAGS.group_variants = False
@@ -305,7 +327,9 @@ class PostprocessVariantsTest(parameterized.TestCase):
     self.assertEqual(
         _read_contents(FLAGS.outfile),
         _read_contents(
-            testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT))
+            testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_OUTPUT
+        ),
+    )
 
   @parameterized.parameters(False, True)
   def test_build_index(self, use_csi):
@@ -326,11 +350,14 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_reading_sharded_input_with_empty_shards_does_not_crash(self):
     valid_variants = tfrecord.read_tfrecords(
         testdata.GOLDEN_POSTPROCESS_INPUT,
-        proto=deepvariant_pb2.CallVariantsOutput)
+        proto=deepvariant_pb2.CallVariantsOutput,
+    )
     empty_shard_one = test_utils.test_tmpfile(
-        'reading_empty_shard.tfrecord-00000-of-00002')
+        'reading_empty_shard.tfrecord-00000-of-00002'
+    )
     none_empty_shard_two = test_utils.test_tmpfile(
-        'reading_empty_shard.tfrecord-00001-of-00002')
+        'reading_empty_shard.tfrecord-00001-of-00002'
+    )
     tfrecord.write_tfrecords([], empty_shard_one)
     tfrecord.write_tfrecords(valid_variants, none_empty_shard_two)
     FLAGS.infile = test_utils.test_tmpfile('reading_empty_shard.tfrecord@2')
@@ -340,39 +367,53 @@ class PostprocessVariantsTest(parameterized.TestCase):
     postprocess_variants.main(['postprocess_variants.py'])
 
   @parameterized.parameters(
-      ([
-          test_utils.make_variant(
-              chrom='chr20',
-              start=3,
-              end=4,
-              alleles=['A', 'T'],
-              sample_name='vcf_sample_name',
-              gt=[0, 1],
-              gls=[-.001, -5, -10],
-              ad=[0, 1, 2])
-      ], [], 'flag_sample_name', 'vcf_sample_name'),
-      ([], [
-          test_utils.make_variant(
-              chrom='chr20',
-              start=0,
-              end=1,
-              alleles=['A', vcf_constants.GVCF_ALT_ALLELE],
-              sample_name='gvcf_sample_name',
-              gt=[0, 0],
-              gls=[-.001, -5, -10],
-              ad=[0, 1, 2])
-      ], 'flag_sample_name', 'gvcf_sample_name'),
+      (
+          [
+              test_utils.make_variant(
+                  chrom='chr20',
+                  start=3,
+                  end=4,
+                  alleles=['A', 'T'],
+                  sample_name='vcf_sample_name',
+                  gt=[0, 1],
+                  gls=[-0.001, -5, -10],
+                  ad=[0, 1, 2],
+              )
+          ],
+          [],
+          'flag_sample_name',
+          'vcf_sample_name',
+      ),
+      (
+          [],
+          [
+              test_utils.make_variant(
+                  chrom='chr20',
+                  start=0,
+                  end=1,
+                  alleles=['A', vcf_constants.GVCF_ALT_ALLELE],
+                  sample_name='gvcf_sample_name',
+                  gt=[0, 0],
+                  gls=[-0.001, -5, -10],
+                  ad=[0, 1, 2],
+              )
+          ],
+          'flag_sample_name',
+          'gvcf_sample_name',
+      ),
       # flag_sample_name only used when no CVOs or nonvariant TFRecords present.
       ([], [], 'flag_sample_name', 'flag_sample_name'),
       ([], [], None, dv_constants.DEFAULT_SAMPLE_NAME),
   )
   @flagsaver.flagsaver
-  def test_sample_name_set_correctly(self, variants, nonvariants,
-                                     sample_name_flag, expected_sample_name):
+  def test_sample_name_set_correctly(
+      self, variants, nonvariants, sample_name_flag, expected_sample_name
+  ):
     shard = test_utils.test_tmpfile('records.cvo.tfrecord-00000-of-00001')
     cvos = [
         _create_call_variants_output(
-            indices=[0], probabilities=[0.19, 0.75, 0.06], variant=variant)
+            indices=[0], probabilities=[0.19, 0.75, 0.06], variant=variant
+        )
         for variant in variants
     ]
 
@@ -383,7 +424,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.sample_name = sample_name_flag
 
     FLAGS.nonvariant_site_tfrecord_path = test_utils.test_tmpfile(
-        'records.postprocess_gvcf_input.tfrecord.gz')
+        'records.postprocess_gvcf_input.tfrecord.gz'
+    )
     tfrecord.write_tfrecords(nonvariants, FLAGS.nonvariant_site_tfrecord_path)
     FLAGS.gvcf_outfile = test_utils.test_tmpfile('records.g.vcf')
 
@@ -392,20 +434,23 @@ class PostprocessVariantsTest(parameterized.TestCase):
     fasta_reader = fasta.IndexedFastaReader(FLAGS.ref)
     contigs = fasta_reader.header.contigs
     expected_vcf_header = dv_vcf_constants.deepvariant_header(
-        contigs=contigs, sample_names=[expected_sample_name])
+        contigs=contigs, sample_names=[expected_sample_name]
+    )
     vcf_reader = vcf.VcfReader(FLAGS.outfile)
     self.assertEqual(vcf_reader.header, expected_vcf_header)
     self.assertLen(list(vcf_reader), len(variants))
 
     expected_gvcf = dv_vcf_constants.deepvariant_header(
-        contigs=contigs, sample_names=[expected_sample_name])
+        contigs=contigs, sample_names=[expected_sample_name]
+    )
     gvcf_reader = vcf.VcfReader(FLAGS.gvcf_outfile)
     self.assertEqual(gvcf_reader.header, expected_gvcf)
     self.assertLen(list(gvcf_reader), len(nonvariants) + len(variants))
 
   def test_extract_single_variant_name(self):
     record = _create_call_variants_output(
-        indices=[0], probabilities=[0.19, 0.75, 0.06], ref='A', alts=['C', 'T'])
+        indices=[0], probabilities=[0.19, 0.75, 0.06], ref='A', alts=['C', 'T']
+    )
     expected = _DEFAULT_SAMPLE_NAME
     actual = postprocess_variants._extract_single_sample_name(record)
     self.assertEqual(actual, expected)
@@ -424,218 +469,306 @@ class PostprocessVariantsTest(parameterized.TestCase):
       postprocess_variants._extract_single_sample_name(record)
 
   @parameterized.parameters(
-      ([
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.19, 0.75, 0.06],
-              ref='A',
-              alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[1],
-              probabilities=[0.03, 0.93, 0.04],
-              ref='A',
-              alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[0.03, 0.92, 0.05],
-              ref='A',
-              alts=['C', 'T'])
-      ], set(), False, {
-          ('A', 'A'): [0.19, 0.03, 0.03],
-          ('A', 'C'): [0.75, 0.92],
-          ('C', 'C'): [0.06, 0.05],
-          ('A', 'T'): [0.93, 0.92],
-          ('T', 'T'): [0.04, 0.05],
-          ('C', 'T'): [0.05],
-          ('T', 'C'): [0.05],
-      }),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.19, 0.75, 0.06],
+                  ref='A',
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.03, 0.93, 0.04],
+                  ref='A',
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.03, 0.92, 0.05],
+                  ref='A',
+                  alts=['C', 'T'],
+              ),
+          ],
+          set(),
+          False,
+          {
+              ('A', 'A'): [0.19, 0.03, 0.03],
+              ('A', 'C'): [0.75, 0.92],
+              ('C', 'C'): [0.06, 0.05],
+              ('A', 'T'): [0.93, 0.92],
+              ('T', 'T'): [0.04, 0.05],
+              ('C', 'T'): [0.05],
+              ('T', 'C'): [0.05],
+          },
+      ),
       # Example where all alt alleles are below qual_filter, but we keep one
       # where the qual is highest among the ones filtered out ('T')
-      ([
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.19, 0.75, 0.06],
-              ref='A',
-              alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[1],
-              probabilities=[0.03, 0.93, 0.04],
-              ref='A',
-              alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[0.03, 0.92, 0.05],
-              ref='A',
-              alts=['C', 'T'])
-      ], set(['C']), False, {
-          ('A', 'A'): [0.03],
-          ('A', 'T'): [0.93],
-          ('T', 'T'): [0.04],
-      }),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.19, 0.75, 0.06],
+                  ref='A',
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.03, 0.93, 0.04],
+                  ref='A',
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.03, 0.92, 0.05],
+                  ref='A',
+                  alts=['C', 'T'],
+              ),
+          ],
+          set(['C']),
+          False,
+          {
+              ('A', 'A'): [0.03],
+              ('A', 'T'): [0.93],
+              ('T', 'T'): [0.04],
+          },
+      ),
       # Test debug_output_all_candidates=ALT
-      ([
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.03, 0.05, 0.85],
-              ref='A',
-              alts=['ACC', 'ACCC']),
-          _create_call_variants_output(
-              indices=[1],
-              probabilities=[0.03, 0.04, 0.92],
-              ref='A',
-              alts=['ACC', 'ACCC']),
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[0.03, 0.05, 0.92],
-              ref='A',
-              alts=['ACC', 'ACCC']),
-      ], set(['ACC']), 'ALT', {
-          ('A', 'A'): [_FILTERED_ALT_PROB, 0.03, _FILTERED_ALT_PROB],
-          ('A', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
-          ('ACC', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
-          ('A', 'ACCC'): [0.04, _FILTERED_ALT_PROB],
-          ('ACC', 'ACCC'): [_FILTERED_ALT_PROB],
-          ('ACCC', 'ACC'): [_FILTERED_ALT_PROB],
-          ('ACCC', 'ACCC'): [0.92, _FILTERED_ALT_PROB],
-      }),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.03, 0.05, 0.85],
+                  ref='A',
+                  alts=['ACC', 'ACCC'],
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.03, 0.04, 0.92],
+                  ref='A',
+                  alts=['ACC', 'ACCC'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.03, 0.05, 0.92],
+                  ref='A',
+                  alts=['ACC', 'ACCC'],
+              ),
+          ],
+          set(['ACC']),
+          'ALT',
+          {
+              ('A', 'A'): [_FILTERED_ALT_PROB, 0.03, _FILTERED_ALT_PROB],
+              ('A', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
+              ('ACC', 'ACC'): [_FILTERED_ALT_PROB, _FILTERED_ALT_PROB],
+              ('A', 'ACCC'): [0.04, _FILTERED_ALT_PROB],
+              ('ACC', 'ACCC'): [_FILTERED_ALT_PROB],
+              ('ACCC', 'ACC'): [_FILTERED_ALT_PROB],
+              ('ACCC', 'ACCC'): [0.92, _FILTERED_ALT_PROB],
+          },
+      ),
       # Test debug_output_all_candidates=None
-      ([
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.03, 0.05, 0.85],
-              ref='A',
-              alts=['ACC', 'ACCC']),
-          _create_call_variants_output(
-              indices=[1],
-              probabilities=[0.03, 0.04, 0.92],
-              ref='A',
-              alts=['ACC', 'ACCC']),
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[0.03, 0.05, 0.92],
-              ref='A',
-              alts=['ACC', 'ACCC']),
-      ], set(['ACC']), None, {
-          ('A', 'A'): [0.03],
-          ('A', 'ACCC'): [0.04],
-          ('ACCC', 'ACCC'): [0.92],
-      }),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.03, 0.05, 0.85],
+                  ref='A',
+                  alts=['ACC', 'ACCC'],
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.03, 0.04, 0.92],
+                  ref='A',
+                  alts=['ACC', 'ACCC'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.03, 0.05, 0.92],
+                  ref='A',
+                  alts=['ACC', 'ACCC'],
+              ),
+          ],
+          set(['ACC']),
+          None,
+          {
+              ('A', 'A'): [0.03],
+              ('A', 'ACCC'): [0.04],
+              ('ACCC', 'ACCC'): [0.92],
+          },
+      ),
   )
   def test_convert_call_variants_outputs_to_probs_dict(
-      self, call_variants_outputs, alt_alleles_to_remove,
-      debug_output_all_candidates, expected_probs_dict):
+      self,
+      call_variants_outputs,
+      alt_alleles_to_remove,
+      debug_output_all_candidates,
+      expected_probs_dict,
+  ):
     # In the current code, all call_variants_outputs have the same variant
     # field.
     canonical_variant = call_variants_outputs[0].variant
     self.assertEqual(
         postprocess_variants.convert_call_variants_outputs_to_probs_dict(
-            canonical_variant, call_variants_outputs, alt_alleles_to_remove,
-            debug_output_all_candidates), expected_probs_dict)
+            canonical_variant,
+            call_variants_outputs,
+            alt_alleles_to_remove,
+            debug_output_all_candidates,
+        ),
+        expected_probs_dict,
+    )
 
   @parameterized.parameters(
       # Example with 2 alternate_bases:
       # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
-      ([
-          _create_call_variants_output(
-              indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[1], probabilities=[0.03, 0.93, 0.04], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1], probabilities=[0.03, 0.92, 0.05], alts=['C', 'T'])
-      ], [0.03, 0.75, 0.05, 0.92, 0.05, 0.04]),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[1], probabilities=[0.03, 0.93, 0.04], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.03, 0.92, 0.05],
+                  alts=['C', 'T'],
+              ),
+          ],
+          [0.03, 0.75, 0.05, 0.92, 0.05, 0.04],
+      ),
       # One more example with 2 alternate_bases:
       # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
-      ([
-          _create_call_variants_output(
-              indices=[1], probabilities=[0.978, 0.03, 0.002], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[0.992, 0.007, 0.001],
-              alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.99997, 0.00002, 0.00001],
-              alts=['C', 'T']),
-      ], [0.978, 0.00002, 0.00001, 0.007, 0.001, 0.001]),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.978, 0.03, 0.002],
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.992, 0.007, 0.001],
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.99997, 0.00002, 0.00001],
+                  alts=['C', 'T'],
+              ),
+          ],
+          [0.978, 0.00002, 0.00001, 0.007, 0.001, 0.001],
+      ),
       # An extreme case where our logic could result in ZeroDivisionError if
       # we don't handle this special case.
-      ([
-          _create_call_variants_output(
-              indices=[0], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[1], probabilities=[0.00, 1.0, 0.0], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1], probabilities=[1.0, 0.0, 0.0], alts=['C', 'T'])
-      ], [1.0 / 6] * 6),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[1], probabilities=[0.00, 1.0, 0.0], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1], probabilities=[1.0, 0.0, 0.0], alts=['C', 'T']
+              ),
+          ],
+          [1.0 / 6] * 6,
+      ),
       # expected_unnormalized_probs is min of 0/0, 0/1, 1/1.
-      ([
-          _create_call_variants_output(
-              indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['A']),
-      ], [0.19, 0.75, 0.06]),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['A']
+              ),
+          ],
+          [0.19, 0.75, 0.06],
+      ),
       # expected_unnormalized_probs is min of
       # 0/0, 0/1, 1/1, 0/2, 1/2, 2/2, 0/3, 1/3, 2/3, 3/3.
-      ([
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.999, 0.001, 0],
-              alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[0, 2],
-              probabilities=[0.0001, 0.9996, 0.0003],
-              alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[1, 2],
-              probabilities=[0.0001, 0.0002, 0.9997],
-              alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[2],
-              probabilities=[0.00004, 0.9999, 0.00006],
-              alts=['C', 'G', 'T']),
-      ], [0, 0.001, 0, 0.0002, 0, 0, 0.0002, 0.0003, 0.9997, 0.00006]),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.999, 0.001, 0],
+                  alts=['C', 'G', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[0, 2],
+                  probabilities=[0.0001, 0.9996, 0.0003],
+                  alts=['C', 'G', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[1, 2],
+                  probabilities=[0.0001, 0.0002, 0.9997],
+                  alts=['C', 'G', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[2],
+                  probabilities=[0.00004, 0.9999, 0.00006],
+                  alts=['C', 'G', 'T'],
+              ),
+          ],
+          [0, 0.001, 0, 0.0002, 0, 0, 0.0002, 0.0003, 0.9997, 0.00006],
+      ),
   )
   def test_merge_predictions_probs(self, inputs, expected_unnormalized_probs):
     denominator = sum(expected_unnormalized_probs)
     for permuted_inputs in itertools.permutations(inputs):
       _, predictions = postprocess_variants.merge_predictions(permuted_inputs)
       np.testing.assert_almost_equal(
-          predictions, [x / denominator for x in expected_unnormalized_probs])
+          predictions, [x / denominator for x in expected_unnormalized_probs]
+      )
 
   @parameterized.parameters(
-      ([
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.999, 0.001, 0],
-              alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[0, 2],
-              probabilities=[0.0001, 0.9996, 0.0003],
-              alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[1, 2],
-              probabilities=[0.0001, 0.0002, 0.9997],
-              alts=['C', 'G', 'T']),
-          _create_call_variants_output(
-              indices=[2],
-              probabilities=[0.00004, 0.9999, 0.00006],
-              alts=['C', 'G', 'T']),
-      ], ['C', 'G', 'T']),)
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.999, 0.001, 0],
+                  alts=['C', 'G', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[0, 2],
+                  probabilities=[0.0001, 0.9996, 0.0003],
+                  alts=['C', 'G', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[1], probabilities=[0, 1, 0], alts=['C', 'G', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[1, 2],
+                  probabilities=[0.0001, 0.0002, 0.9997],
+                  alts=['C', 'G', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[2],
+                  probabilities=[0.00004, 0.9999, 0.00006],
+                  alts=['C', 'G', 'T'],
+              ),
+          ],
+          ['C', 'G', 'T'],
+      ),
+  )
   def test_candidate_info_field(self, inputs, expected_candidates):
     merge_pred = postprocess_variants.merge_predictions
     variant, _ = merge_pred(inputs, debug_output_all_candidates='INFO')
     obs_candidates = get_string_field(variant.info, 'CANDIDATES')[0].split('|')
     self.assertSameElements(obs_candidates, expected_candidates)
 
-  @parameterized.parameters(
-      ([0.001, 0.017, 0.30, _FILTERED_ALT_PROB,
-        0.327], [0.0015504, 0.0263566, 0.4651163, 0.0, 0.5069767]))
+  @parameterized.parameters((
+      [0.001, 0.017, 0.30, _FILTERED_ALT_PROB, 0.327],
+      [0.0015504, 0.0263566, 0.4651163, 0.0, 0.5069767],
+  ))
   def test_normalize_predictions(self, predictions, expected_predictions):
     norm_predictions = postprocess_variants.normalize_predictions(predictions)
     np.testing.assert_almost_equal(norm_predictions, expected_predictions)
@@ -643,85 +776,126 @@ class PostprocessVariantsTest(parameterized.TestCase):
   @parameterized.parameters(
       # Example with 2 alternate_bases:
       # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
-      ([
-          _create_call_variants_output(
-              indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[1], probabilities=[0.03, 0.93, 0.04], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1], probabilities=[0.03, 0.92, 0.05], alts=['C', 'T'])
-      ], [0.033062, 0.10498016, 0.00496365, 0.5842303, 0.2543793, 0.01838462]),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[1], probabilities=[0.03, 0.93, 0.04], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.03, 0.92, 0.05],
+                  alts=['C', 'T'],
+              ),
+          ],
+          [0.033062, 0.10498016, 0.00496365, 0.5842303, 0.2543793, 0.01838462],
+      ),
       # One more example with 2 alternate_bases:
       # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
-      ([
-          _create_call_variants_output(
-              indices=[1], probabilities=[0.978, 0.03, 0.002], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[0.992, 0.007, 0.001],
-              alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.99997, 0.00002, 0.00001],
-              alts=['C', 'T']),
-      ], [
-          9.3330729e-01, 1.5126608e-02, 6.1836297e-04, 4.9650513e-02,
-          2.9180625e-05, 1.2679433e-03
-      ]),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.978, 0.03, 0.002],
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.992, 0.007, 0.001],
+                  alts=['C', 'T'],
+              ),
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.99997, 0.00002, 0.00001],
+                  alts=['C', 'T'],
+              ),
+          ],
+          [
+              9.3330729e-01,
+              1.5126608e-02,
+              6.1836297e-04,
+              4.9650513e-02,
+              2.9180625e-05,
+              1.2679433e-03,
+          ],
+      ),
       # An extreme case where our logic could result in ZeroDivisionError if
       # we don't handle this special case.
-      ([
-          _create_call_variants_output(
-              indices=[0], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[1], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']),
-          _create_call_variants_output(
-              indices=[0, 1], probabilities=[1.0, 0.0, 0.0], alts=['C', 'T'])
-      ], [
-          1.3300395e-03, 9.5756045e-03, 1.9776919e-05, 7.6043198e-04,
-          9.3802148e-01, 5.0292656e-02
-      ]),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[1], probabilities=[0.0, 1.0, 0.0], alts=['C', 'T']
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1], probabilities=[1.0, 0.0, 0.0], alts=['C', 'T']
+              ),
+          ],
+          [
+              1.3300395e-03,
+              9.5756045e-03,
+              1.9776919e-05,
+              7.6043198e-04,
+              9.3802148e-01,
+              5.0292656e-02,
+          ],
+      ),
       # Example where all alt alleles are below qual_filter, but we keep one
       # where the qual is highest among the ones filtered out.
-      ([
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[1, 0, 0],
-              variant=_create_variant_with_alleles(alts=['C', 'T'])),
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.99, 0.01, 0],
-              variant=_create_variant_with_alleles(alts=['C', 'T'])),
-          _create_call_variants_output(
-              indices=[1],
-              probabilities=[1, 0, 0],
-              variant=_create_variant_with_alleles(alts=['C', 'T'])),
-      ], [0.99, 0.01, 0.0], 6),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[1, 0, 0],
+                  variant=_create_variant_with_alleles(alts=['C', 'T']),
+              ),
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.99, 0.01, 0],
+                  variant=_create_variant_with_alleles(alts=['C', 'T']),
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[1, 0, 0],
+                  variant=_create_variant_with_alleles(alts=['C', 'T']),
+              ),
+          ],
+          [0.99, 0.01, 0.0],
+          6,
+      ),
   )
   @flagsaver.flagsaver
-  def test_merge_predictions_multiallelics_probs(self,
-                                                 inputs,
-                                                 expected_unnormalized_probs,
-                                                 qual_filter=None):
+  def test_merge_predictions_multiallelics_probs(
+      self, inputs, expected_unnormalized_probs, qual_filter=None
+  ):
     FLAGS.use_multiallelic_model = True
     multiallelic_model = postprocess_variants.get_multiallelic_model(
-        use_multiallelic_model=FLAGS.use_multiallelic_model)
+        use_multiallelic_model=FLAGS.use_multiallelic_model
+    )
     denominator = sum(expected_unnormalized_probs)
     for permuted_inputs in itertools.permutations(inputs):
       _, predictions = postprocess_variants.merge_predictions(
           permuted_inputs,
           multiallelic_model=multiallelic_model,
-          qual_filter=qual_filter)
+          qual_filter=qual_filter,
+      )
       np.testing.assert_almost_equal(
-          predictions, [x / denominator for x in expected_unnormalized_probs],
-          decimal=5)
+          predictions,
+          [x / denominator for x in expected_unnormalized_probs],
+          decimal=5,
+      )
 
   @parameterized.parameters(
       # With 1 alt allele, we expect to see 1 alt_allele_indices: [0].
       (
           [
               _create_call_variants_output(
-                  indices=[1], probabilities=[0.19, 0.75, 0.06], alts=['A']),
+                  indices=[1], probabilities=[0.19, 0.75, 0.06], alts=['A']
+              ),
           ],
           '`call_variants_outputs` did not pass sanity check.',
       ),
@@ -729,13 +903,11 @@ class PostprocessVariantsTest(parameterized.TestCase):
       (
           [
               _create_call_variants_output(
-                  indices=[0],
-                  probabilities=[0.19, 0.75, 0.06],
-                  alts=['G', 'T']),
+                  indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['G', 'T']
+              ),
               _create_call_variants_output(
-                  indices=[1],
-                  probabilities=[0.03, 0.93, 0.04],
-                  alts=['G', 'T']),
+                  indices=[1], probabilities=[0.03, 0.93, 0.04], alts=['G', 'T']
+              ),
           ],
           '`call_variants_outputs` did not pass sanity check.',
       ),
@@ -744,26 +916,24 @@ class PostprocessVariantsTest(parameterized.TestCase):
       (
           [
               _create_call_variants_output(
-                  indices=[0],
-                  probabilities=[0.19, 0.75, 0.06],
-                  alts=['G', 'T']),
+                  indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['G', 'T']
+              ),
               _create_call_variants_output(
-                  indices=[0],
-                  probabilities=[0.03, 0.93, 0.04],
-                  alts=['G', 'T']),
+                  indices=[0], probabilities=[0.03, 0.93, 0.04], alts=['G', 'T']
+              ),
               _create_call_variants_output(
                   indices=[0, 1],
                   probabilities=[0.03, 0.93, 0.04],
-                  alts=['G', 'T']),
+                  alts=['G', 'T'],
+              ),
           ],
           '`call_variants_outputs` did not pass sanity check.',
       ),
       (
           [
               _create_call_variants_output(
-                  indices=[0],
-                  probabilities=[0.19, 0.75, 0.06],
-                  alts=['G', 'T']),
+                  indices=[0], probabilities=[0.19, 0.75, 0.06], alts=['G', 'T']
+              ),
           ],
           '`call_variants_outputs` did not pass sanity check.',
       ),
@@ -774,33 +944,48 @@ class PostprocessVariantsTest(parameterized.TestCase):
               _create_call_variants_output(
                   indices=[0],
                   probabilities=[0.999, 0.001, 0],
-                  alts=['AA', 'T', 'AAA']),
+                  alts=['AA', 'T', 'AAA'],
+              ),
               _create_call_variants_output(
                   indices=[0, 1],
                   probabilities=[0, 1, 0],
-                  alts=['AA', 'T', 'AAA']),
+                  alts=['AA', 'T', 'AAA'],
+              ),
               _create_call_variants_output(
                   indices=[0, 2],
                   probabilities=[0.0001, 0.9996, 0.0003],
-                  alts=['AA', 'T', 'AAA'])
+                  alts=['AA', 'T', 'AAA'],
+              ),
           ],
           '`call_variants_outputs` did not pass sanity check.',
       ),
       # reference_bases have to be exactly the same.
-      ([
-          _create_call_variants_output(
-              indices=[0],
-              probabilities=[0.999, 0.001, 0],
-              variant=_create_variant_with_alleles(ref='A', alts=['T', 'C'])),
-          _create_call_variants_output(
-              indices=[1],
-              probabilities=[0.2, 0.8, 0],
-              variant=_create_variant_with_alleles(ref='A', alts=['T', 'C'])),
-          _create_call_variants_output(
-              indices=[0, 1],
-              probabilities=[0.2, 0.8, 0],
-              variant=_create_variant_with_alleles(ref='G', alts=['T', 'C'])),
-      ], '`call_variants_outputs` did not pass sanity check.'),
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.999, 0.001, 0],
+                  variant=_create_variant_with_alleles(
+                      ref='A', alts=['T', 'C']
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.2, 0.8, 0],
+                  variant=_create_variant_with_alleles(
+                      ref='A', alts=['T', 'C']
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.2, 0.8, 0],
+                  variant=_create_variant_with_alleles(
+                      ref='G', alts=['T', 'C']
+                  ),
+              ),
+          ],
+          '`call_variants_outputs` did not pass sanity check.',
+      ),
       # alternate_bases have to be exactly the same. Different orders are
       # not acceptable either.
       (
@@ -808,15 +993,18 @@ class PostprocessVariantsTest(parameterized.TestCase):
               _create_call_variants_output(
                   indices=[0],
                   probabilities=[0.999, 0.001, 0],
-                  variant=_create_variant_with_alleles(alts=['T', 'C'])),
+                  variant=_create_variant_with_alleles(alts=['T', 'C']),
+              ),
               _create_call_variants_output(
                   indices=[1],
                   probabilities=[0.2, 0.8, 0],
-                  variant=_create_variant_with_alleles(alts=['T', 'C'])),
+                  variant=_create_variant_with_alleles(alts=['T', 'C']),
+              ),
               _create_call_variants_output(
                   indices=[0, 1],
                   probabilities=[0.2, 0.8, 0],
-                  variant=_create_variant_with_alleles(alts=['C', 'T'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T']),
+              ),
           ],
           '`call_variants_outputs` did not pass sanity check.',
       ),
@@ -826,78 +1014,237 @@ class PostprocessVariantsTest(parameterized.TestCase):
       postprocess_variants.merge_predictions(inputs)
 
   @parameterized.parameters(
-      (_create_variant(
-          '1', 1, 'A', ['C'], 20.0, dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1],
-          15, [-2.0, -9.90308995105826, -0.0043648054], [10, 10]), [1, 1]),
-      (_create_variant('GL000220.1', 10000210, 'C', ['T'], 50.0,
-                       dv_vcf_constants.DEEP_VARIANT_NO_CALL, [1, 1], 25,
-                       [-2.0, -9.90308995105826, -0.0043648054],
-                       [0, 0]), [-1, -1]),
-      (_create_variant('GL000220.1', 10000210, 'C', ['T'], 5.0,
-                       dv_vcf_constants.DEEP_VARIANT_NO_CALL, [1, 1], 25,
-                       [-2.0, -9.90308995105826, -0.0043648054],
-                       [0, 0]), [-1, -1]),
+      (
+          _create_variant(
+              '1',
+              1,
+              'A',
+              ['C'],
+              20.0,
+              dv_vcf_constants.DEEP_VARIANT_PASS,
+              [1, 1],
+              15,
+              [-2.0, -9.90308995105826, -0.0043648054],
+              [10, 10],
+          ),
+          [1, 1],
+      ),
+      (
+          _create_variant(
+              'GL000220.1',
+              10000210,
+              'C',
+              ['T'],
+              50.0,
+              dv_vcf_constants.DEEP_VARIANT_NO_CALL,
+              [1, 1],
+              25,
+              [-2.0, -9.90308995105826, -0.0043648054],
+              [0, 0],
+          ),
+          [-1, -1],
+      ),
+      (
+          _create_variant(
+              'GL000220.1',
+              10000210,
+              'C',
+              ['T'],
+              5.0,
+              dv_vcf_constants.DEEP_VARIANT_NO_CALL,
+              [1, 1],
+              25,
+              [-2.0, -9.90308995105826, -0.0043648054],
+              [0, 0],
+          ),
+          [-1, -1],
+      ),
   )
   def test_uncall_gt_if_no_ad(self, variant, expected_gt):
     postprocess_variants.uncall_gt_if_no_ad(variant)
     self.assertEqual(variant.calls[0].genotype, expected_gt)
 
   @parameterized.parameters(
-      (_create_variant('X', 10000210, 'CACA', ['C'], 0.04364805402,
-                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 19,
-                       [-0.0043648054, -2.30102999566, -2.30102999566],
-                       [1, 0]), [-1, -1]),
-      (_create_variant('chrY', 10000210, 'C', ['T'], 0.00043431619,
-                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 20,
-                       [-0.00004343161, -4.0, -9.90308995105826],
-                       [0, 1]), [0, 0]),
-      (_create_variant('X', 10000210, 'CACA', ['C', 'A'], 0.0217691925,
-                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 13,
-                       [-0.00217691925, -3, -3, -3, -3, -3],
-                       [1, 1, 1]), [-1, -1]),
+      (
+          _create_variant(
+              'X',
+              10000210,
+              'CACA',
+              ['C'],
+              0.04364805402,
+              dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+              [0, 0],
+              19,
+              [-0.0043648054, -2.30102999566, -2.30102999566],
+              [1, 0],
+          ),
+          [-1, -1],
+      ),
+      (
+          _create_variant(
+              'chrY',
+              10000210,
+              'C',
+              ['T'],
+              0.00043431619,
+              dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+              [0, 0],
+              20,
+              [-0.00004343161, -4.0, -9.90308995105826],
+              [0, 1],
+          ),
+          [0, 0],
+      ),
+      (
+          _create_variant(
+              'X',
+              10000210,
+              'CACA',
+              ['C', 'A'],
+              0.0217691925,
+              dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+              [0, 0],
+              13,
+              [-0.00217691925, -3, -3, -3, -3, -3],
+              [1, 1, 1],
+          ),
+          [-1, -1],
+      ),
   )
   def test_uncall_homref_gt_if_lowqual(self, variant, expected_gt):
     postprocess_variants.uncall_homref_gt_if_lowqual(variant, 20)
     self.assertEqual(variant.calls[0].genotype, expected_gt)
 
   @parameterized.parameters(
-      ([0.01, 0.0, 0.99],
-       _create_variant('GL000220.1', 1, 'A', ['.'], 20.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
-                       [-2.0, -9.90308995105826, -0.0043648054], [1, 0])),
-      ([0.01, 0.0, 0.99],
-       _create_variant('GL000220.1', 10000210, 'C', ['T'], 20.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 20,
-                       [-2.0, -9.90308995105826, -0.0043648054], [0, 2])),
-      ([0.001, 0.999, 0.0],
-       _create_variant('20', 10000210, 'C', ['CT'], 30.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 1], 30,
-                       [-3.0, -0.00043451177, -9.90308995105826])),
-      ([0.0001, 0.0, 0.9999],
-       _create_variant('1', 1, 'C', ['T'], 40.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [1, 1], 40,
-                       [-4.0, -9.90308995105826, -0.00004343161])),
-      ([0.1, 0.90, 0.0],
-       _create_variant('20', 10000210, 'A', ['T'], 10.0,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 1], 10,
-                       [-1.0, -0.04575749056, -9.90308995105826])),
-      ([0.99, 0.005, 0.005],
-       _create_variant('X', 10000210, 'CACA', ['C'], 0.04364805402,
-                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 20,
-                       [-0.0043648054, -2.30102999566, -2.30102999566])),
-      ([0.9999, 0.0001, 0.0],
-       _create_variant('chrY', 10000210, 'C', ['T'], 0.00043431619,
-                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 40,
-                       [-0.00004343161, -4.0, -9.90308995105826])),
+      (
+          [0.01, 0.0, 0.99],
+          _create_variant(
+              'GL000220.1',
+              1,
+              'A',
+              ['.'],
+              20.0,
+              dv_vcf_constants.DEEP_VARIANT_PASS,
+              [1, 1],
+              20,
+              [-2.0, -9.90308995105826, -0.0043648054],
+              [1, 0],
+          ),
+      ),
+      (
+          [0.01, 0.0, 0.99],
+          _create_variant(
+              'GL000220.1',
+              10000210,
+              'C',
+              ['T'],
+              20.0,
+              dv_vcf_constants.DEEP_VARIANT_PASS,
+              [1, 1],
+              20,
+              [-2.0, -9.90308995105826, -0.0043648054],
+              [0, 2],
+          ),
+      ),
+      (
+          [0.001, 0.999, 0.0],
+          _create_variant(
+              '20',
+              10000210,
+              'C',
+              ['CT'],
+              30.0,
+              dv_vcf_constants.DEEP_VARIANT_PASS,
+              [0, 1],
+              30,
+              [-3.0, -0.00043451177, -9.90308995105826],
+          ),
+      ),
+      (
+          [0.0001, 0.0, 0.9999],
+          _create_variant(
+              '1',
+              1,
+              'C',
+              ['T'],
+              40.0,
+              dv_vcf_constants.DEEP_VARIANT_PASS,
+              [1, 1],
+              40,
+              [-4.0, -9.90308995105826, -0.00004343161],
+          ),
+      ),
+      (
+          [0.1, 0.90, 0.0],
+          _create_variant(
+              '20',
+              10000210,
+              'A',
+              ['T'],
+              10.0,
+              dv_vcf_constants.DEEP_VARIANT_PASS,
+              [0, 1],
+              10,
+              [-1.0, -0.04575749056, -9.90308995105826],
+          ),
+      ),
+      (
+          [0.99, 0.005, 0.005],
+          _create_variant(
+              'X',
+              10000210,
+              'CACA',
+              ['C'],
+              0.04364805402,
+              dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+              [0, 0],
+              20,
+              [-0.0043648054, -2.30102999566, -2.30102999566],
+          ),
+      ),
+      (
+          [0.9999, 0.0001, 0.0],
+          _create_variant(
+              'chrY',
+              10000210,
+              'C',
+              ['T'],
+              0.00043431619,
+              dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+              [0, 0],
+              40,
+              [-0.00004343161, -4.0, -9.90308995105826],
+          ),
+      ),
       # Multi-allelic test examples.
-      ([0.995, 0.001, 0.001, 0.001, 0.001, 0.001],
-       _create_variant('X', 10000210, 'CACA', ['C', 'A'], 0.0217691925,
-                       dv_vcf_constants.DEEP_VARIANT_REF_FILTER, [0, 0], 23,
-                       [-0.00217691925, -3, -3, -3, -3, -3])),
-      ([0.001, 0.001, 0.001, 0.995, 0.001, 0.001],
-       _create_variant('X', 10000210, 'CACA', ['C', 'A'], 30,
-                       dv_vcf_constants.DEEP_VARIANT_PASS, [0, 2], 23,
-                       [-3, -3, -3, -0.00217691925, -3, -3])),
+      (
+          [0.995, 0.001, 0.001, 0.001, 0.001, 0.001],
+          _create_variant(
+              'X',
+              10000210,
+              'CACA',
+              ['C', 'A'],
+              0.0217691925,
+              dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+              [0, 0],
+              23,
+              [-0.00217691925, -3, -3, -3, -3, -3],
+          ),
+      ),
+      (
+          [0.001, 0.001, 0.001, 0.995, 0.001, 0.001],
+          _create_variant(
+              'X',
+              10000210,
+              'CACA',
+              ['C', 'A'],
+              30,
+              dv_vcf_constants.DEEP_VARIANT_PASS,
+              [0, 2],
+              23,
+              [-3, -3, -3, -0.00217691925, -3, -3],
+          ),
+      ),
   )
   def test_add_call_to_variant(self, probs, expected):
     raw_variant = variants_pb2.Variant(
@@ -906,12 +1253,12 @@ class PostprocessVariantsTest(parameterized.TestCase):
         alternate_bases=expected.alternate_bases,
         start=expected.start,
         end=expected.end,
-        calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)])
+        calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)],
+    )
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1])
     variant = postprocess_variants.add_call_to_variant(
-        variant=raw_variant,
-        predictions=probs,
-        sample_name=_DEFAULT_SAMPLE_NAME)
+        variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
+    )
     self.assertEqual(variant.reference_bases, expected.reference_bases)
     self.assertEqual(variant.alternate_bases, expected.alternate_bases)
     self.assertEqual(variant.reference_name, expected.reference_name)
@@ -923,8 +1270,10 @@ class PostprocessVariantsTest(parameterized.TestCase):
     self.assertLen(expected.calls, 1)
     self.assertEqual(variant.calls[0].genotype, expected.calls[0].genotype)
     self.assertEqual(variant.calls[0].info['GQ'], expected.calls[0].info['GQ'])
-    for gl, expected_gl in zip(variant.calls[0].genotype_likelihood,
-                               expected.calls[0].genotype_likelihood):
+    for gl, expected_gl in zip(
+        variant.calls[0].genotype_likelihood,
+        expected.calls[0].genotype_likelihood,
+    ):
       self.assertAlmostEqual(gl, expected_gl, places=6)
 
   @parameterized.parameters(
@@ -953,9 +1302,9 @@ class PostprocessVariantsTest(parameterized.TestCase):
           [2, 2],
       ),
   )
-  def test_triallelic_genotype_in_add_call_to_variant(self,
-                                                      highest_prob_position,
-                                                      expected_best_genotype):
+  def test_triallelic_genotype_in_add_call_to_variant(
+      self, highest_prob_position, expected_best_genotype
+  ):
     """Ensures the order of GLs are interpreted correctly for triallelics."""
     raw_variant = _create_variant_with_alleles(ref='CACA', alts=['C', 'A'])
     # Create a probability with 6 elements, one of them 0.995 (best genotype),
@@ -965,9 +1314,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
     probs[highest_prob_position] = 0.995
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1, 1])
     variant = postprocess_variants.add_call_to_variant(
-        variant=raw_variant,
-        predictions=probs,
-        sample_name=_DEFAULT_SAMPLE_NAME)
+        variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
+    )
     self.assertEqual(variant.calls[0].genotype, expected_best_genotype)
 
   @parameterized.parameters(
@@ -1016,7 +1364,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_compute_quals_numerical_stability(self, probs, call, expected_gq):
     max_qual = round(
         genomics_math.ptrue_to_bounded_phred(1.0),
-        postprocess_variants._QUAL_PRECISION)
+        postprocess_variants._QUAL_PRECISION,
+    )
     gq, qual = postprocess_variants.compute_quals(probs, call)
     self.assertEqual(expected_gq, gq)
     self.assertEqual(max_qual, qual)
@@ -1053,7 +1402,8 @@ class PostprocessVariantsTest(parameterized.TestCase):
       expected.append(dv_vcf_constants.DEEP_VARIANT_NO_CALL)
       self.assertEqual(
           postprocess_variants.compute_filter_fields(variant, min_qual),
-          expected)
+          expected,
+      )
       # Now add hom ref genotype and AD --> qual shouldn't affect filter field
       del variant.filter[:]
       variant.calls.add(genotype=[0, 0])
@@ -1062,18 +1412,23 @@ class PostprocessVariantsTest(parameterized.TestCase):
       expected.append(dv_vcf_constants.DEEP_VARIANT_REF_FILTER)
       self.assertEqual(
           postprocess_variants.compute_filter_fields(variant, min_qual),
-          expected)
+          expected,
+      )
       # Now add variant genotype --> qual filter should matter again
       del variant.filter[:]
       del variant.calls[:]
       variant.calls.add(genotype=[0, 1])
       variantcall_utils.set_ad(variant.calls[0], [1, 1])
       expected = []
-      expected.append(dv_vcf_constants.DEEP_VARIANT_PASS if qual >= min_qual
-                      else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER)
+      expected.append(
+          dv_vcf_constants.DEEP_VARIANT_PASS
+          if qual >= min_qual
+          else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER
+      )
       self.assertEqual(
           postprocess_variants.compute_filter_fields(variant, min_qual),
-          expected)
+          expected,
+      )
 
   @parameterized.parameters(
       (
@@ -1081,27 +1436,33 @@ class PostprocessVariantsTest(parameterized.TestCase):
               _create_call_variants_output(
                   indices=[0],
                   probabilities=[0.01, 0.98, 0.01],
-                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT']),
+              ),
               _create_call_variants_output(
                   indices=[1],
                   probabilities=[1, 0, 0],
-                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT']),
+              ),
               _create_call_variants_output(
                   indices=[2],
                   probabilities=[0.01, 0.97, 0.02],
-                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT']),
+              ),
               _create_call_variants_output(
                   indices=[0, 1],
                   probabilities=[0.01, 0.98, 0.01],
-                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT']),
+              ),
               _create_call_variants_output(
                   indices=[0, 2],
                   probabilities=[0.04, 0.95, 0.01],
-                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT']),
+              ),
               _create_call_variants_output(
                   indices=[1, 2],
                   probabilities=[0.01, 0.98, 0.01],
-                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T', 'TT']),
+              ),
           ],
           6,
           set(['T']),
@@ -1113,26 +1474,32 @@ class PostprocessVariantsTest(parameterized.TestCase):
               _create_call_variants_output(
                   indices=[0, 1],
                   probabilities=[1, 0, 0],
-                  variant=_create_variant_with_alleles(alts=['C', 'T'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T']),
+              ),
               _create_call_variants_output(
                   indices=[0],
                   probabilities=[0.99, 0.01, 0],
-                  variant=_create_variant_with_alleles(alts=['C', 'T'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T']),
+              ),
               _create_call_variants_output(
                   indices=[1],
                   probabilities=[1, 0, 0],
-                  variant=_create_variant_with_alleles(alts=['C', 'T'])),
+                  variant=_create_variant_with_alleles(alts=['C', 'T']),
+              ),
           ],
           6,
           set(['T']),
       ),
   )
-  def test_get_alt_alleles_to_remove(self, call_variants_outputs, qual_filter,
-                                     expected_output):
+  def test_get_alt_alleles_to_remove(
+      self, call_variants_outputs, qual_filter, expected_output
+  ):
     self.assertEqual(
-        postprocess_variants.get_alt_alleles_to_remove(call_variants_outputs,
-                                                       qual_filter),
-        expected_output)
+        postprocess_variants.get_alt_alleles_to_remove(
+            call_variants_outputs, qual_filter
+        ),
+        expected_output,
+    )
 
   @parameterized.parameters(
       (
@@ -1166,12 +1533,15 @@ class PostprocessVariantsTest(parameterized.TestCase):
           _create_variant_with_alleles(alts=[]),
       ),
   )
-  def test_prune_alleles(self, canonical_variant, alt_alleles_to_remove,
-                         expected_variant):
+  def test_prune_alleles(
+      self, canonical_variant, alt_alleles_to_remove, expected_variant
+  ):
     self.assertEqual(
-        postprocess_variants.prune_alleles(canonical_variant,
-                                           alt_alleles_to_remove),
-        expected_variant)
+        postprocess_variants.prune_alleles(
+            canonical_variant, alt_alleles_to_remove
+        ),
+        expected_variant,
+    )
 
   @parameterized.parameters(
       # Check that we are simplifying alleles and that the simplification deps
@@ -1181,35 +1551,45 @@ class PostprocessVariantsTest(parameterized.TestCase):
           start=5,
           alt_alleles_to_remove=[],
           expected_alleles=['CAA', 'CA', 'C'],
-          expected_end=8),
+          expected_end=8,
+      ),
       # Removing the C allele allows us to simplify CAA + CA => CA + C.
       dict(
           alleles=['CAA', 'CA', 'C'],
           start=4,
           alt_alleles_to_remove=['C'],
           expected_alleles=['CA', 'C'],
-          expected_end=6),
+          expected_end=6,
+      ),
       # Removing the CA allele doesn't allow any simplification.
       dict(
           alleles=['CAA', 'CA', 'C'],
           start=3,
           alt_alleles_to_remove=['CA'],
           expected_alleles=['CAA', 'C'],
-          expected_end=6),
+          expected_end=6,
+      ),
       # Make sure we keep at least one anchor base when pruning.
       dict(
           alleles=['CCA', 'CA', 'T'],
           start=2,
           alt_alleles_to_remove=['T'],
           expected_alleles=['CC', 'C'],
-          expected_end=4),
+          expected_end=4,
+      ),
   )
-  def test_prune_and_simplify_alleles(self, alleles, start,
-                                      alt_alleles_to_remove, expected_alleles,
-                                      expected_end):
+  def test_prune_and_simplify_alleles(
+      self,
+      alleles,
+      start,
+      alt_alleles_to_remove,
+      expected_alleles,
+      expected_end,
+  ):
     """Test that prune_alleles + simplify_variant_alleles works as expected."""
     variant = _create_variant_with_alleles(
-        ref=alleles[0], alts=alleles[1:], start=start)
+        ref=alleles[0], alts=alleles[1:], start=start
+    )
     pruned = postprocess_variants.prune_alleles(variant, alt_alleles_to_remove)
     simplified = variant_utils.simplify_variant_alleles(pruned)
     self.assertEqual(simplified.reference_bases, expected_alleles[0])
@@ -1222,17 +1602,21 @@ class PostprocessVariantsTest(parameterized.TestCase):
     ref, alts = 'CCA', ['CA', 'C']
     inputs = [
         _create_call_variants_output(
-            ref=ref, indices=[0], probabilities=[0.0, 1.0, 0.0], alts=alts),
+            ref=ref, indices=[0], probabilities=[0.0, 1.0, 0.0], alts=alts
+        ),
         _create_call_variants_output(
-            ref=ref, indices=[1], probabilities=[1.0, 0.0, 0.0], alts=alts),
+            ref=ref, indices=[1], probabilities=[1.0, 0.0, 0.0], alts=alts
+        ),
         _create_call_variants_output(
-            ref=ref, indices=[0, 1], probabilities=[0.0, 1.0, 0.0], alts=alts),
+            ref=ref, indices=[0, 1], probabilities=[0.0, 1.0, 0.0], alts=alts
+        ),
     ]
 
     for permuted_inputs in itertools.permutations(inputs):
       # qual_filter=2 is needed so we remove our middle 'C' allele.
       variant, probs = postprocess_variants.merge_predictions(
-          permuted_inputs, qual_filter=2)
+          permuted_inputs, qual_filter=2
+      )
       np.testing.assert_almost_equal(probs, [0.0, 1.0, 0.0])
       self.assertEqual(variant.reference_bases, 'CC')
       self.assertEqual(variant.alternate_bases, ['C'])
@@ -1245,29 +1629,70 @@ class PostprocessVariantsTest(parameterized.TestCase):
       (['A', 'C'], {'C'}, [1, 2, 3], [1, 2]),
       (['A', 'C'], {'A', 'C'}, [1, 2, 3], [1]),
   )
-  def test_prune_alleles_handles_format_fields(self, alts, to_remove, orig_ad,
-                                               expected_ad):
+  def test_prune_alleles_handles_format_fields(
+      self, alts, to_remove, orig_ad, expected_ad
+  ):
     variant = _create_variant_with_alleles(alts=alts)
     test_utils.set_list_values(variant.calls[0].info['AD'], orig_ad)
     actual = postprocess_variants.prune_alleles(variant, to_remove)
-    self.assertEqual([v.int_value for v in actual.calls[0].info['AD'].values],
-                     expected_ad)
+    self.assertEqual(
+        [v.int_value for v in actual.calls[0].info['AD'].values], expected_ad
+    )
 
   @parameterized.parameters(
       (1, [[0]]),
       (2, [[0], [0, 1], [1]]),
       (3, [[0], [0, 1], [0, 2], [1], [1, 2], [2]]),
       (4, [[0], [0, 1], [0, 2], [0, 3], [1], [1, 2], [1, 3], [2], [2, 3], [3]]),
-      (8, [[0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [1],
-           [1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [2], [2, 3], [2, 4],
-           [2, 5], [2, 6], [2, 7], [3], [3, 4], [3, 5], [3, 6], [3, 7], [4],
-           [4, 5], [4, 6], [4, 7], [5], [5, 6], [5, 7], [6], [6, 7], [7]]),
+      (
+          8,
+          [
+              [0],
+              [0, 1],
+              [0, 2],
+              [0, 3],
+              [0, 4],
+              [0, 5],
+              [0, 6],
+              [0, 7],
+              [1],
+              [1, 2],
+              [1, 3],
+              [1, 4],
+              [1, 5],
+              [1, 6],
+              [1, 7],
+              [2],
+              [2, 3],
+              [2, 4],
+              [2, 5],
+              [2, 6],
+              [2, 7],
+              [3],
+              [3, 4],
+              [3, 5],
+              [3, 6],
+              [3, 7],
+              [4],
+              [4, 5],
+              [4, 6],
+              [4, 7],
+              [5],
+              [5, 6],
+              [5, 7],
+              [6],
+              [6, 7],
+              [7],
+          ],
+      ),
   )
-  def test_expected_alt_allele_indices(self, num_alternate_bases,
-                                       expected_indices):
+  def test_expected_alt_allele_indices(
+      self, num_alternate_bases, expected_indices
+  ):
     self.assertEqual(
         postprocess_variants.expected_alt_allele_indices(num_alternate_bases),
-        expected_indices)
+        expected_indices,
+    )
 
   @flagsaver.flagsaver
   def test_catches_bad_argv(self):
@@ -1289,8 +1714,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.infile = make_golden_dataset(False)
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = 'nonempty_outfile.vcf'
-    FLAGS.nonvariant_site_tfrecord_path = (
-        testdata.GOLDEN_POSTPROCESS_GVCF_INPUT)
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
     # This is the bad flag.
     FLAGS.gvcf_outfile = ''
     with mock.patch.object(logging, 'error') as mock_logging, \
@@ -1319,15 +1743,18 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
         _create_call_variants_output(
             indices=[0, 1],
             probabilities=[0.98, 0.02, 0],
-            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA'])),
+            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA']),
+        ),
         _create_call_variants_output(
             indices=[1],
             probabilities=[0.995, 0.005, 0],
-            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA'])),
+            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA']),
+        ),
         _create_call_variants_output(
             indices=[0],
             probabilities=[0.95, 0.05, 0],
-            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA'])),
+            variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA']),
+        ),
     ]
     output = postprocess_variants._sort_grouped_variants(group)
     # In sorted output, 1st has indices=[0].
