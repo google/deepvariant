@@ -116,7 +116,7 @@ int GetHPValueForHPChannel(const Read& read,
     LOG(FATAL)
         << "This function is currently used when --add_hp_channel is set. "
         << "HP value has to be either 1, 2, or 0. Found a read with HP="
-        << hp_value << ", read=" << read.DebugString();
+        << hp_value << ", read=" << read;
   }
   // If hp_tag_for_assembly_polishing is set to 2, this is a special case
   // assembly polishing:

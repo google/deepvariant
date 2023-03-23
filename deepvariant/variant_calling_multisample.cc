@@ -295,7 +295,7 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
         break;
       default:
         // this includes AlleleType::REFERENCE which should have been removed
-        LOG(FATAL) << "Unexpected alt allele " << alt_allele.DebugString();
+        LOG(FATAL) << "Unexpected alt allele " << alt_allele;
     }
   }
 

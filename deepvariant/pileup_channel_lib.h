@@ -197,7 +197,7 @@ inline int AvgBaseQuality(const Read& read) {
     // Base qualities range between 0 and 93
     if (base_qual < 0 || base_qual > 93) {
       LOG(FATAL) << "Encountered base quality outside of bounds (0,93):"
-                 << base_qual << ", read=" << read.DebugString();
+                 << base_qual << ", read=" << read;
     }
   }
   float avg_base_qual = (static_cast<float>(base_qual_sum) /
