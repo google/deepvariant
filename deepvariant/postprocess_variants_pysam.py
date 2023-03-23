@@ -47,7 +47,6 @@ from deepvariant import dv_utils
 from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
-from deepvariant import vcf_stats
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
 from third_party.nucleus.io import sharded_file_utils
@@ -135,11 +134,8 @@ flags.DEFINE_boolean(
 )
 flags.DEFINE_boolean(
     'vcf_stats_report',
-    True,
-    (
-        'Optional. Output a visual report (HTML) of statistics about the output'
-        ' VCF at the same base path given by --outfile.'
-    ),
+    False,
+    'Deprecated. Use vcf_stats_report.py instead.',
 )
 flags.DEFINE_string(
     'sample_name',
@@ -960,23 +956,6 @@ def dump_variants_to_temp_file(variant_protos):
   return temp
 
 
-def _get_base_path(input_vcf):
-  """Returns the base path for the output files.
-
-  Args:
-    input_vcf: string. Path to VCF for which to compute stats.
-
-  Returns:
-    A string with the base path.
-  """
-  if input_vcf.endswith('.vcf'):
-    return input_vcf[:-4]
-  elif input_vcf.endswith('.vcf.gz'):
-    return input_vcf[:-7]
-  else:
-    return input_vcf
-
-
 def _decide_to_use_csi(contigs):
   """Return True if CSI index is to be used over tabix index format.
 
@@ -1213,20 +1192,6 @@ def main(argv=()):
         build_index(FLAGS.gvcf_outfile, use_csi)
       logging.info(
           'Finished writing VCF and gVCF in %s minutes.',
-          (time.time() - start_time) / 60,
-      )
-    if FLAGS.vcf_stats_report:
-      start_time = time.time()
-      outfile_base = _get_base_path(FLAGS.outfile)
-      with vcf.VcfReader(FLAGS.outfile) as reader:
-        vcf_stats.create_vcf_report(
-            variants=reader.iterate(),
-            output_basename=outfile_base,
-            sample_name=sample_name,
-            vcf_reader=reader,
-        )
-      logging.info(
-          'Generating VCF stats took %s minutes.',
           (time.time() - start_time) / 60,
       )
     if cvo_record:

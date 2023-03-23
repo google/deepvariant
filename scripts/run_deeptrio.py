@@ -39,6 +39,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from typing import List, Optional
 
 from absl import app
 from absl import flags
@@ -257,12 +258,14 @@ _OUTPUT_GVCF_PARENT2 = flags.DEFINE_string(
     None,
     'Optional. Path where we should write gVCF file for parent2 sample.',
 )
+
+# Optional flags for vcf_stats_report.
 _VCF_STATS_REPORT = flags.DEFINE_boolean(
     'vcf_stats_report',
     True,
     (
         'Optional. Output a visual report (HTML) of '
-        'statistics about the output VCF.'
+        'statistics about each output VCF.'
     ),
 )
 
@@ -358,6 +361,13 @@ def _add_quotes(value):
   if isinstance(value, str) and _is_quoted(value):
     return value
   return '"{}"'.format(value)
+
+
+def trim_suffix(string: str, suffix: str) -> str:
+  if string.endswith(suffix):
+    return string[: -len(suffix)]
+  else:
+    return string
 
 
 def _extra_args_to_dict(extra_args):
@@ -590,7 +600,6 @@ def postprocess_variants_command(
     extra_args,
     nonvariant_site_tfrecord_path=None,
     gvcf_outfile=None,
-    vcf_stats_report=True,
 ):
   """Returns a postprocess_variants command for subprocess.check_call."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
@@ -604,8 +613,6 @@ def postprocess_variants_command(
     ])
   if gvcf_outfile is not None:
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
-  if not vcf_stats_report:
-    command.extend(['--novcf_stats_report'])
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(
       command, _extra_args_to_dict(extra_args)
@@ -622,7 +629,25 @@ def postprocess_variants_command(
   return ' '.join(command)
 
 
-def runtime_by_region_vis_command(runtime_by_region_path: str):
+def vcf_stats_report_command(vcf_path: str) -> str:
+  """Returns a vcf_stats_report command for subprocess.
+
+  Args:
+    vcf_path: Path to VCF, which will be passed to --input_vcf and
+      suffix-trimmed for --outfile_base.
+
+  Returns:
+    command string for subprocess
+  """
+  command = ['time', '/opt/deepvariant/bin/vcf_stats_report']
+  command.extend(['--input_vcf', '"{}"'.format(vcf_path)])
+  outfile_base = trim_suffix(trim_suffix(vcf_path, '.gz'), '.vcf')
+  command.extend(['--outfile_base', '"{}"'.format(outfile_base)])
+
+  return ' '.join(command)
+
+
+def runtime_by_region_vis_command(runtime_by_region_path: str) -> str:
   """Returns a runtime_by_region_vis command for subprocess."""
   runtime_report = os.path.join(
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
@@ -636,7 +661,9 @@ def runtime_by_region_vis_command(runtime_by_region_path: str):
   return ' '.join(command)
 
 
-def check_or_create_intermediate_results_dir(intermediate_results_dir):
+def check_or_create_intermediate_results_dir(
+    intermediate_results_dir: Optional[str],
+) -> str:
   """Checks or creates the path to the directory for intermediate results."""
   if intermediate_results_dir is None:
     intermediate_results_dir = tempfile.mkdtemp()
@@ -749,30 +776,30 @@ def generate_postprocess_variants_command(
 ):
   """Helper function to generate post_process command line."""
   return postprocess_variants_command(
-      _REF.value,
-      CALL_VARIANTS_OUTPUT_PATTERN.format(
+      ref=_REF.value,
+      infile=CALL_VARIANTS_OUTPUT_PATTERN.format(
           call_variants_output_common_prefix(intermediate_results_dir),
           sample,
           CALL_VARIANTS_OUTPUT_COMMON_SUFFIX,
       ),
-      output_vcf,
-      sample,
-      _POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
-      NO_VARIANT_TFRECORD_PATTERN.format(
+      outfile=output_vcf,
+      sample=sample,
+      extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+      nonvariant_site_tfrecord_path=NO_VARIANT_TFRECORD_PATTERN.format(
           nonvariant_site_tfrecord_common_suffix(intermediate_results_dir),
           sample,
           examples_common_suffix(_NUM_SHARDS.value),
       ),
       gvcf_outfile=output_gvcf,
-      vcf_stats_report=_VCF_STATS_REPORT.value,
   )
 
 
 def create_all_commands(intermediate_results_dir):
-  """Creates 3 commands to be executed later."""
+  """Creates commands for all stages to be executed later."""
   check_flags()
   commands = []
   post_process_commands = []
+  report_commands = []
 
   # make_examples
   nonvariant_site_tfrecord_path = None
@@ -876,6 +903,10 @@ def create_all_commands(intermediate_results_dir):
           _OUTPUT_GVCF_CHILD.value,
       )
   )
+  if _VCF_STATS_REPORT.value:
+    report_commands.append(
+        vcf_stats_report_command(vcf_path=_OUTPUT_VCF_CHILD.value)
+    )
 
   if _READS_PARENT1.value is not None:
     post_process_commands.append(
@@ -886,6 +917,10 @@ def create_all_commands(intermediate_results_dir):
             _OUTPUT_GVCF_PARENT1.value,
         )
     )
+    if _VCF_STATS_REPORT.value:
+      report_commands.append(
+          vcf_stats_report_command(vcf_path=_OUTPUT_VCF_PARENT1.value)
+      )
 
   if _READS_PARENT2.value is not None:
     post_process_commands.append(
@@ -896,12 +931,62 @@ def create_all_commands(intermediate_results_dir):
             _OUTPUT_GVCF_PARENT2.value,
         )
     )
+    if _VCF_STATS_REPORT.value:
+      report_commands.append(
+          vcf_stats_report_command(vcf_path=_OUTPUT_VCF_PARENT2.value)
+      )
 
   # runtime-by-region
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
-    commands.append(runtime_by_region_vis_command(runtime_by_region_path))
+    report_commands.append(
+        runtime_by_region_vis_command(runtime_by_region_path)
+    )
 
-  return commands, post_process_commands
+  return commands, post_process_commands, report_commands
+
+
+def run_commands(
+    commands: List[str], sequential: bool = True, dry_run: bool = False
+) -> None:
+  """Run commands using subprocess, sequentially or in parallel.
+
+  Whether sequential or not, this function will finish when all commands have
+  stopped running.
+
+  Args:
+    commands: List of string commands to run, to be executed by /bin/bash.
+    sequential: True to execute commands one at a time, exiting if any fail.
+      False to run all in parallel, exiting when all have succeeded or failed.
+    dry_run: False to execute commands, True to only print commands.
+
+  Raises:
+    Exception: When one or more of the given commands have failed.
+  """
+
+  if sequential:
+    for command in commands:
+      print('\n***** Running the command:*****\n{}\n'.format(command))
+      if not dry_run:
+        try:
+          subprocess.check_call(command, shell=True, executable='/bin/bash')
+        except subprocess.CalledProcessError as e:
+          logging.info(e.output)
+          raise Exception('Command(s) failed. See details above.') from e
+  else:
+    for command in commands:
+      print('\n***** Running the command:*****\n{}\n'.format(command))
+    if not _DRY_RUN.value:
+      tasks = [
+          subprocess.Popen(command, shell=True, executable='/bin/bash')
+          for command in commands
+      ]
+      failed_task_indices = [
+          i for i, task in enumerate(tasks) if task.wait() != 0
+      ]
+      if failed_task_indices:
+        for i in failed_task_indices:
+          logging.info('Failed command: %s', commands[i])
+        raise Exception('Command(s) failed. See details above.')
 
 
 def main(_):
@@ -967,30 +1052,21 @@ def main(_):
       _INTERMEDIATE_RESULTS_DIR.value
   )
 
-  commands, post_process_commands = create_all_commands(
+  commands, post_process_commands, report_commands = create_all_commands(
       intermediate_results_dir
   )
   print(
       '\n***** Intermediate results will be written to {} '
       'in docker. ****\n'.format(intermediate_results_dir)
   )
-  for command in commands:
-    print('\n***** Running the command:*****\n{}\n'.format(command))
-    if not _DRY_RUN.value:
-      try:
-        subprocess.check_call(command, shell=True, executable='/bin/bash')
-      except subprocess.CalledProcessError as e:
-        logging.info(e.output)
-        raise
-  for command in post_process_commands:
-    print('\n***** Running the command:*****\n{}\n'.format(command))
-  if not _DRY_RUN.value:
-    return_codes = [
-        subprocess.Popen(command, shell=True, executable='/bin/bash')
-        for command in post_process_commands
-    ]
-    if any([x.wait() > 0 for x in return_codes]):
-      raise Exception('One or more postprocess_variants failed.')
+  # make_examples and call_variants:
+  run_commands(commands=commands, sequential=True, dry_run=_DRY_RUN.value)
+  run_commands(
+      commands=post_process_commands, sequential=False, dry_run=_DRY_RUN.value
+  )
+  run_commands(
+      commands=report_commands, sequential=False, dry_run=_DRY_RUN.value
+  )
 
 
 if __name__ == '__main__':

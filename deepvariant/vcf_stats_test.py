@@ -418,12 +418,12 @@ class VcfStatsTest(parameterized.TestCase):
   def test_create_vcf_report(self):
     base_dir = tempfile.mkdtemp()
     outfile_base = os.path.join(base_dir, 'stats_test')
-    sample_name = 'test_sample_name'
+    title = 'test_title'
     with vcf.VcfReader(testdata.GOLDEN_POSTPROCESS_OUTPUT) as reader:
       vcf_stats.create_vcf_report(
           variants=reader.iterate(),
           output_basename=outfile_base,
-          sample_name=sample_name,
+          title=title,
           vcf_reader=reader,
       )
     self.assertTrue(tf.io.gfile.exists(outfile_base + '.visual_report.html'))
