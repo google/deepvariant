@@ -22,7 +22,7 @@ Flags:
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
-
+--report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepVariant model to run (WGS, WES, PACBIO, ONT_R104, HYBRID_PACBIO_ILLUMINA)
@@ -55,6 +55,7 @@ POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
 REF=""
 REGIONS=""
+REPORT_TITLE=""
 TRUTH_BED=""
 TRUTH_VCF=""
 
@@ -122,6 +123,11 @@ while (( "$#" )); do
       ;;
     --postprocess_variants_extra_args)
       POSTPROCESS_VARIANTS_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --report_title)
+      REPORT_TITLE="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -298,6 +304,7 @@ echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
+echo "REPORT_TITLE: ${REPORT_TITLE}"
 echo "TRUTH_BED: ${TRUTH_BED}"
 echo "TRUTH_VCF: ${TRUTH_VCF}"
 echo "========================="
@@ -496,6 +503,9 @@ function setup_args() {
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
+  fi
+  if [[ -n "${REPORT_TITLE}" ]]; then
+    extra_args+=( --report_title "${REPORT_TITLE}")
   fi
   if [[ -n "${REGIONS}" ]]; then
     if [[ "${REGIONS}" = http* ]] || [[ "${REGIONS}" = gs://* ]]; then

@@ -41,6 +41,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from typing import Any, Dict, Optional, Tuple
 
 from absl import app
 from absl import flags
@@ -192,6 +193,8 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
 _OUTPUT_GVCF = flags.DEFINE_string(
     'output_gvcf', None, 'Optional. Path where we should write gVCF file.'
 )
+
+# Optional flags for vcf_stats_report.
 _VCF_STATS_REPORT = flags.DEFINE_boolean(
     'vcf_stats_report',
     True,
@@ -200,6 +203,15 @@ _VCF_STATS_REPORT = flags.DEFINE_boolean(
         'statistics about the output VCF.'
     ),
 )
+_REPORT_TITLE = flags.DEFINE_string(
+    'report_title',
+    None,
+    (
+        'Optional. Title for the VCF stats report (HTML).'
+        'If not provided, the title will be the sample name.'
+    ),
+)
+
 
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
@@ -228,7 +240,14 @@ def _add_quotes(value):
   return '"{}"'.format(value)
 
 
-def _extra_args_to_dict(extra_args):
+def trim_suffix(string: str, suffix: str) -> str:
+  if string.endswith(suffix):
+    return string[: -len(suffix)]
+  else:
+    return string
+
+
+def _extra_args_to_dict(extra_args: str) -> Dict[str, Any]:
   """Parses comma-separated list of flag_name=flag_value to dict."""
   args_dict = {}
   if extra_args is None:
@@ -374,14 +393,13 @@ def call_variants_command(outfile, examples, model_ckpt, extra_args):
 
 
 def postprocess_variants_command(
-    ref,
-    infile,
-    outfile,
-    extra_args,
-    nonvariant_site_tfrecord_path=None,
-    gvcf_outfile=None,
-    vcf_stats_report=True,
-    sample_name=None,
+    ref: str,
+    infile: str,
+    outfile: str,
+    extra_args: str,
+    nonvariant_site_tfrecord_path: Optional[str] = None,
+    gvcf_outfile: Optional[str] = None,
+    sample_name: Optional[str] = None,
 ):
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
@@ -395,8 +413,6 @@ def postprocess_variants_command(
     ])
   if gvcf_outfile is not None:
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
-  if not vcf_stats_report:
-    command.extend(['--novcf_stats_report'])
   if sample_name is not None:
     command.extend(['--sample_name', '"{}"'.format(sample_name)])
   # Extend the command with all items in extra_args.
@@ -409,7 +425,35 @@ def postprocess_variants_command(
   return (' '.join(command), logfile)
 
 
-def runtime_by_region_vis_command(runtime_by_region_path: str):
+def vcf_stats_report_command(
+    vcf_path: str, title: Optional[str] = None
+) -> Tuple[str, Optional[str]]:
+  """Returns a vcf_stats_report (command, logfile) for subprocess.
+
+  Args:
+    vcf_path: Path to VCF, which will be passed to --input_vcf and
+      suffix-trimmed for --outfile_base.
+    title: Passed straight to command unless it's None.
+
+  Returns:
+    [command string for subprocess, optional log directory path]
+  """
+  command = ['time', '/opt/deepvariant/bin/vcf_stats_report']
+  command.extend(['--input_vcf', '"{}"'.format(vcf_path)])
+  outfile_base = trim_suffix(trim_suffix(vcf_path, '.gz'), '.vcf')
+  command.extend(['--outfile_base', '"{}"'.format(outfile_base)])
+  if title is not None:
+    command.extend(['--title', '"{}"'.format(title)])
+
+  logfile = None
+  if _LOGGING_DIR.value:
+    logfile = '{}/vcf_stats_report.log'.format(_LOGGING_DIR.value)
+  return (' '.join(command), logfile)
+
+
+def runtime_by_region_vis_command(
+    runtime_by_region_path: str, title: str = 'DeepVariant'
+) -> Tuple[str, None]:
   """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
   runtime_report = os.path.join(
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
@@ -417,13 +461,15 @@ def runtime_by_region_vis_command(runtime_by_region_path: str):
 
   command = ['time', '/opt/deepvariant/bin/runtime_by_region_vis']
   command.extend(['--input', '"{}"'.format(runtime_by_region_path)])
-  command.extend(['--title', '"{}"'.format('DeepVariant')])
+  command.extend(['--title', '"{}"'.format(title)])
   command.extend(['--output', '"{}"'.format(runtime_report)])
 
   return (' '.join(command), None)
 
 
-def check_or_create_intermediate_results_dir(intermediate_results_dir):
+def check_or_create_intermediate_results_dir(
+    intermediate_results_dir: Optional[str],
+) -> str:
   """Checks or creates the path to the directory for intermediate results."""
   if intermediate_results_dir is None:
     intermediate_results_dir = tempfile.mkdtemp()
@@ -543,20 +589,31 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
   # postprocess_variants
   commands.append(
       postprocess_variants_command(
-          _REF.value,
-          call_variants_output,
-          _OUTPUT_VCF.value,
-          _POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+          ref=_REF.value,
+          infile=call_variants_output,
+          outfile=_OUTPUT_VCF.value,
+          extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
-          vcf_stats_report=_VCF_STATS_REPORT.value,
           sample_name=_SAMPLE_NAME.value,
       )
   )
 
+  # vcf_stats_report
+  if _VCF_STATS_REPORT.value:
+    commands.append(
+        vcf_stats_report_command(
+            vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value
+        )
+    )
+
   # runtime-by-region
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
-    commands.append(runtime_by_region_vis_command(runtime_by_region_path))
+    commands.append(
+        runtime_by_region_vis_command(
+            runtime_by_region_path, title=_REPORT_TITLE.value
+        )
+    )
 
   return commands
 

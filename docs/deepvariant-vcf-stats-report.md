@@ -18,7 +18,8 @@ sudo docker run \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/vcf_stats_report \
   --input_vcf /input/${INPUT_VCF} \
-  --outfile_base /output/${OUTPUT}
+  --outfile_base /output/${OUTPUT} \
+  --title "optional header for the report"
 ```
 
 This creates one output file: `${OUTPUT}.visual_report.html`

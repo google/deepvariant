@@ -227,9 +227,9 @@ class VcfStatsVisTest(absltest.TestCase):
   def test_create_visual_report(self):
     base_dir = tempfile.mkdtemp()
     outfile_base = os.path.join(base_dir, 'stats_test')
-    sample_name = 'test_sample_name'
+    title = 'test_title'
     vcf_stats_vis.create_visual_report(
-        outfile_base, VIS_DATA, sample_name=sample_name
+        basename=outfile_base, vis_data=VIS_DATA, title=title
     )
     self.assertTrue(tf.io.gfile.exists(outfile_base + '.visual_report.html'))
 

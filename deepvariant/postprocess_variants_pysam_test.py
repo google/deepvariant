@@ -1728,15 +1728,6 @@ class PostprocessVariantsTest(parameterized.TestCase):
 
 class MergeVcfAndGvcfTest(parameterized.TestCase):
 
-  @parameterized.parameters(
-      dict(input_vcf='/tmp/test.vcf', expected_base_path='/tmp/test'),
-      dict(input_vcf='/tmp/test.vcf.gz', expected_base_path='/tmp/test'),
-      dict(input_vcf='test', expected_base_path='test'),
-  )
-  def test_get_base_path(self, input_vcf, expected_base_path):
-    path = postprocess_variants._get_base_path(input_vcf)
-    self.assertEqual(path, expected_base_path)
-
   # TODO use itertools.permutations to improve the test.
   def test_sort_grouped_variants(self):
     group = [

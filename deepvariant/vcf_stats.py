@@ -383,8 +383,12 @@ def _compute_variant_stats_for_charts(variants, vcf_reader=None):
   return vis_data
 
 
-def create_vcf_report(variants, output_basename, sample_name, vcf_reader=None):
+def create_vcf_report(variants, output_basename, title=None, vcf_reader=None):
   """Calculate VCF stats and create a visual report."""
-  vis_data = _compute_variant_stats_for_charts(variants, vcf_reader=vcf_reader)
+  vis_data = _compute_variant_stats_for_charts(
+      variants=variants, vcf_reader=vcf_reader
+  )
 
-  vcf_stats_vis.create_visual_report(output_basename, vis_data, sample_name)
+  vcf_stats_vis.create_visual_report(
+      basename=output_basename, vis_data=vis_data, title=title
+  )

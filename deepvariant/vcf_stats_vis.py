@@ -461,7 +461,7 @@ def _build_tt_chart(titv_counts):
   return tt_chart
 
 
-def _build_all_charts(vis_data, sample_name=''):
+def _build_all_charts(vis_data, title=''):
   """Build all charts and combine into a single interface."""
 
   # Row 1
@@ -491,7 +491,7 @@ def _build_all_charts(vis_data, sample_name=''):
   all_charts = alt.vconcat(row1, row2, row3)
 
   all_charts = (
-      all_charts.properties(title=sample_name, spacing=70)
+      all_charts.properties(title=title, spacing=70)
       .configure_header(labelFontSize=16, titleFontSize=20)
       .configure_title(fontSize=20)
   )
@@ -536,7 +536,7 @@ def _save_html(basename, all_charts):
     writer.write(html_string)
 
 
-def create_visual_report(basename, vis_data, sample_name=''):
+def create_visual_report(basename, vis_data, title=''):
   """Build visual report with several charts."""
-  all_charts = _build_all_charts(vis_data, sample_name)
+  all_charts = _build_all_charts(vis_data, title=title)
   _save_html(basename, all_charts)
