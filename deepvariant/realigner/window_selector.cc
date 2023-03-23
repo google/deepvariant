@@ -94,7 +94,7 @@ std::vector<int> VariantReadsWindowSelectorCandidates(
           break;
         case UNSPECIFIED:
         default:
-          LOG(FATAL) << "Saw an Allele " << allele
+          LOG(FATAL) << "Saw an Allele " << allele.DebugString()
                      << " with an unexpected type " << allele.type()
                      << " in AlleleCount " << counts[i].DebugString()
                      << " which should never happen.";
@@ -154,7 +154,7 @@ std::vector<float> AlleleCountLinearWindowSelectorCandidates(
           break;
         case UNSPECIFIED:
         default:
-          LOG(FATAL) << "Saw an Allele " << allele
+          LOG(FATAL) << "Saw an Allele " << allele.DebugString()
                      << " with an unexpected type " << allele.type()
                      << " in AlleleCount " << counts[i].DebugString()
                      << " which should never happen.";
