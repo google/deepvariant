@@ -117,12 +117,12 @@ void MakeVariantConsistentWithRefAndAlts(const string& refbases,
   }
   QCHECK_NE(variant_to_fix->reference_bases().length(), refbases.length())
       << "Proposed variant has incorrect ref bases: "
-      << "Problematic variant=" << *variant_to_fix;
+      << "Problematic variant=" << variant_to_fix->DebugString();
 
   if (variant_to_fix->reference_bases().length() < refbases.length()) {
     QCHECK(absl::StartsWith(refbases, variant_to_fix->reference_bases()))
         << "Proposed variant has incorrect ref bases: "
-        << "Problematic variant=" << *variant_to_fix;
+        << "Problematic variant=" << variant_to_fix->DebugString();
     string suffix = refbases.substr(variant_to_fix->reference_bases().length(),
                                     refbases.length());
     variant_to_fix->set_reference_bases(
@@ -289,7 +289,7 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
         break;
       default:
         // this includes AlleleType::REFERENCE which should have been removed
-        LOG(FATAL) << "Unexpected alt allele " << alt_allele;
+        LOG(FATAL) << "Unexpected alt allele " << alt_allele.DebugString();
     }
   }
 

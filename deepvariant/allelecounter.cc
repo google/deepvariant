@@ -376,7 +376,7 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
       bases = read.aligned_sequence().substr(read_offset, op_len);
       break;
     default:
-      LOG(FATAL) << "Unexpected cigar operation: " << cigar;
+      LOG(FATAL) << "Unexpected cigar operation: " << cigar.DebugString();
   }
 
   return ReadAllele(interval_offset - 1, StrCat(prev_base, bases), type,
