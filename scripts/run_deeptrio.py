@@ -274,21 +274,21 @@ MODEL_TYPE_MAP = {
     'WGS_parent': '/opt/models/deeptrio/wgs/parent/model.ckpt',
     'WES_child': '/opt/models/deeptrio/wes/child/model.ckpt',
     'WES_parent': '/opt/models/deeptrio/wes/parent/model.ckpt',
-    # 'PACBIO_child': '/opt/models/deeptrio/pacbio/child/model.ckpt',
-    # 'PACBIO_parent': '/opt/models/deeptrio/pacbio/parent/model.ckpt',
+    'PACBIO_child': '/opt/models/deeptrio/pacbio/child/model.ckpt',
+    'PACBIO_parent': '/opt/models/deeptrio/pacbio/parent/model.ckpt',
 }
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
-DEEP_TRIO_VERSION = '1.5.0'
+DEEP_TRIO_VERSION = '1.4.0'
 GLNEXUS_VERSION = 'v1.2.7'
 
 DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
 DEEP_TRIO_WGS_PILEUP_HEIGHT_PARENT = 40
 DEEP_TRIO_WES_PILEUP_HEIGHT_CHILD = 100
 DEEP_TRIO_WES_PILEUP_HEIGHT_PARENT = 100
-# DEEP_TRIO_PACBIO_PILEUP_HEIGHT_CHILD = 60
-# DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT = 40
+DEEP_TRIO_PACBIO_PILEUP_HEIGHT_CHILD = 60
+DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT = 40
 
 CHILD = 'child'
 PARENT1 = 'parent1'
@@ -498,33 +498,26 @@ def _make_examples_command(
     )
 
   if _MODEL_TYPE.value == 'PACBIO':
-    print(
-        'To run DeepTrio PACBIO, please use version v1.4.0. See '
-        'https://github.com/google/deepvariant/blob/r1.4/docs/'
-        'deeptrio-pacbio-case-study.md'
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['vsc_min_fraction_indels'] = 0.12
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['add_hp_channel'] = True
+    special_args['min_mapping_quality'] = 1
+    special_args['track_ref_reads'] = True
+    special_args['pileup_image_height_child'] = (
+        DEEP_TRIO_PACBIO_PILEUP_HEIGHT_CHILD
     )
-    sys.exit(1)
-  # TODO: Add PACBIO mode back to run_deeptrio.
-  #   special_args['pileup_image_width'] = 199
-  #   special_args['realign_reads'] = False
-  #   special_args['vsc_min_fraction_indels'] = 0.12
-  #   special_args['alt_aligned_pileup'] = 'diff_channels'
-  #   special_args['add_hp_channel'] = True
-  #   special_args['min_mapping_quality'] = 1
-  #   special_args['track_ref_reads'] = True
-  #   special_args['pileup_image_height_child'] = (
-  #       DEEP_TRIO_PACBIO_PILEUP_HEIGHT_CHILD
-  #   )
-  #   special_args['pileup_image_height_parent'] = (
-  #       DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT
-  #   )
-  #   # TODO make phasing optional.
-  #   special_args['phase_reads'] = True
-  #   if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
-  #     special_args['partition_size'] = 25000
-  #   special_args['sort_by_haplotypes'] = True
-  #   special_args['parse_sam_aux_fields'] = True
-  #   kwargs = _update_kwargs_with_warning(kwargs, special_args)
+    special_args['pileup_image_height_parent'] = (
+        DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT
+    )
+    # TODO make phasing optional.
+    special_args['phase_reads'] = True
+    if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
+      special_args['partition_size'] = 25000
+    special_args['sort_by_haplotypes'] = True
+    special_args['parse_sam_aux_fields'] = True
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   if _MODEL_TYPE.value == 'WES':
     special_args['pileup_image_height_child'] = (
@@ -996,15 +989,6 @@ def main(_):
 
   if _USE_CANDIDATE_PARTITION.value:
     print('The flag --use_candidate_partition is experimental. Do not set it.')
-    sys.exit(1)
-
-  # TODO: Add PACBIO mode back to run_deeptrio.
-  if _MODEL_TYPE.value == 'PACBIO':
-    print(
-        'To run DeepTrio PACBIO, please use version v1.4.0. See '
-        'https://github.com/google/deepvariant/blob/r1.4/docs/'
-        'deeptrio-pacbio-case-study.md'
-    )
     sys.exit(1)
 
   for flag_key in [
