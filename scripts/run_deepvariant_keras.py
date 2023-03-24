@@ -51,95 +51,167 @@ FLAGS = flags.FLAGS
 
 # Required flags.
 _MODEL_TYPE = flags.DEFINE_enum(
-    'model_type', None, ['WGS', 'WES', 'PACBIO', 'HYBRID_PACBIO_ILLUMINA'],
-    'Required. Type of model to use for variant calling. Set this flag '
-    'to use the default model associated with each type, and it will set '
-    'necessary flags corresponding to each model. If you want to use a '
-    'customized model, add --customized_model flag in addition to this flag.')
+    'model_type',
+    None,
+    ['WGS', 'WES', 'PACBIO', 'ONT_R104', 'HYBRID_PACBIO_ILLUMINA'],
+    (
+        'Required. Type of model to use for variant calling. Set this flag to'
+        ' use the default model associated with each type, and it will set'
+        ' necessary flags corresponding to each model. If you want to use a'
+        ' customized model, add --customized_model flag in addition to this'
+        ' flag.'
+    ),
+)
 _REF = flags.DEFINE_string(
-    'ref', None,
-    'Required. Genome reference to use. Must have an associated FAI index as '
-    'well. Supports text or gzipped references. Should match the reference '
-    'used to align the BAM file provided to --reads.')
+    'ref',
+    None,
+    (
+        'Required. Genome reference to use. Must have an associated FAI index'
+        ' as well. Supports text or gzipped references. Should match the'
+        ' reference used to align the BAM file provided to --reads.'
+    ),
+)
 _READS = flags.DEFINE_string(
-    'reads', None,
-    'Required. Aligned, sorted, indexed BAM file containing the reads we want '
-    'to call. Should be aligned to a reference genome compatible with --ref.')
+    'reads',
+    None,
+    (
+        'Required. Aligned, sorted, indexed BAM file containing the reads we'
+        ' want to call. Should be aligned to a reference genome compatible with'
+        ' --ref.'
+    ),
+)
 _OUTPUT_VCF = flags.DEFINE_string(
-    'output_vcf', None, 'Required. Path where we should write VCF file.')
+    'output_vcf', None, 'Required. Path where we should write VCF file.'
+)
 # Optional flags.
 _DRY_RUN = flags.DEFINE_boolean(
-    'dry_run', False,
-    'Optional. If True, only prints out commands without executing them.')
+    'dry_run',
+    False,
+    'Optional. If True, only prints out commands without executing them.',
+)
 _INTERMEDIATE_RESULTS_DIR = flags.DEFINE_string(
-    'intermediate_results_dir', None,
-    'Optional. If specified, this should be an existing '
-    'directory that is visible insider docker, and will be '
-    'used to to store intermediate outputs.')
+    'intermediate_results_dir',
+    None,
+    (
+        'Optional. If specified, this should be an existing '
+        'directory that is visible insider docker, and will be '
+        'used to to store intermediate outputs.'
+    ),
+)
 _LOGGING_DIR = flags.DEFINE_string(
-    'logging_dir', None, 'Optional. Directory where we should write log files '
-    'for each stage and optionally runtime reports.')
+    'logging_dir',
+    None,
+    (
+        'Optional. Directory where we should write log files '
+        'for each stage and optionally runtime reports.'
+    ),
+)
 _RUNTIME_REPORT = flags.DEFINE_boolean(
-    'runtime_report', False, 'Output make_examples runtime metrics '
-    'and create a visual runtime report using runtime_by_region_vis. '
-    'Only works with --logging_dir.')
+    'runtime_report',
+    False,
+    (
+        'Output make_examples runtime metrics '
+        'and create a visual runtime report using runtime_by_region_vis. '
+        'Only works with --logging_dir.'
+    ),
+)
 _VERSION = flags.DEFINE_boolean(
     'version',
     None,
     'Optional. If true, print out version number and exit.',
-    allow_hide_cpp=True)
+    allow_hide_cpp=True,
+)
 # Optional flags for call_variants.
 _CUSTOMIZED_MODEL = flags.DEFINE_string(
-    'customized_model', None,
-    'Optional. A path to a model checkpoint to load for the `call_variants` '
-    'step. If not set, the default for each --model_type will be used')
+    'customized_model',
+    None,
+    (
+        'Optional. A path to a model checkpoint to load for the `call_variants`'
+        ' step. If not set, the default for each --model_type will be used'
+    ),
+)
 # Optional flags for make_examples.
 _NUM_SHARDS = flags.DEFINE_integer(
-    'num_shards', 1, 'Optional. Number of shards for make_examples step.')
+    'num_shards', 1, 'Optional. Number of shards for make_examples step.'
+)
 _REGIONS = flags.DEFINE_string(
-    'regions', None,
-    'Optional. Space-separated list of regions we want to process. Elements '
-    'can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE files.')
+    'regions',
+    None,
+    (
+        'Optional. Space-separated list of regions we want to process. Elements'
+        ' can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE'
+        ' files.'
+    ),
+)
 _SAMPLE_NAME = flags.DEFINE_string(
-    'sample_name', None,
-    'Sample name to use instead of the sample name from the input reads BAM '
-    '(SM tag in the header). This flag is used for both make_examples and '
-    'postprocess_variants.')
+    'sample_name',
+    None,
+    (
+        'Sample name to use instead of the sample name from the input reads BAM'
+        ' (SM tag in the header). This flag is used for both make_examples and'
+        ' postprocess_variants.'
+    ),
+)
 _USE_HP_INFORMATION = flags.DEFINE_boolean(
-    'use_hp_information', None, '(Deprecated in v1.4.0) '
-    'Optional. If True, corresponding flags will be set to properly use the HP '
-    'information present in the BAM input.')
+    'use_hp_information',
+    None,
+    (
+        '(Deprecated in v1.4.0) Optional. If True, corresponding flags will be'
+        ' set to properly use the HP information present in the BAM input.'
+    ),
+)
 _MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
-    'make_examples_extra_args', None,
-    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for make_examples.py. If the flag_value is boolean, it has to '
-    'be flag_name=true or flag_name=false.')
+    'make_examples_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for make_examples.py. If the flag_value is boolean, it'
+        ' has to be flag_name=true or flag_name=false.'
+    ),
+)
 _CALL_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
-    'call_variants_extra_args', None,
-    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for call_variants.py. If the flag_value is boolean, it has to '
-    'be flag_name=true or flag_name=false.')
+    'call_variants_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for call_variants.py. If the flag_value is boolean, it'
+        ' has to be flag_name=true or flag_name=false.'
+    ),
+)
 _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
-    'postprocess_variants_extra_args', None,
-    'A comma-separated list of flag_name=flag_value. "flag_name" has to be '
-    'valid flags for postprocess_variants.py. If the flag_value is boolean, '
-    'it has to be flag_name=true or flag_name=false.')
+    'postprocess_variants_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for postprocess_variants.py. If the flag_value is'
+        ' boolean, it has to be flag_name=true or flag_name=false.'
+    ),
+)
 
 # Optional flags for postprocess_variants.
 _OUTPUT_GVCF = flags.DEFINE_string(
-    'output_gvcf', None, 'Optional. Path where we should write gVCF file.')
+    'output_gvcf', None, 'Optional. Path where we should write gVCF file.'
+)
 _VCF_STATS_REPORT = flags.DEFINE_boolean(
-    'vcf_stats_report', True, 'Optional. Output a visual report (HTML) of '
-    'statistics about the output VCF.')
+    'vcf_stats_report',
+    True,
+    (
+        'Optional. Output a visual report (HTML) of '
+        'statistics about the output VCF.'
+    ),
+)
 
 _IS_KERAS_MODEL = flags.DEFINE_boolean(
-    'is_keras_model', False,
-    'Optional. Set to true for loading models trained with TF2/Keras.')
+    'is_keras_model',
+    False,
+    'Optional. Set to true for loading models trained with TF2/Keras.',
+)
 
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/wgs/model.ckpt',
     'WES': '/opt/models/wes/model.ckpt',
     'PACBIO': '/opt/models/pacbio/model.ckpt',
+    'ONT_R104': '/opt/models/ont_r104/model.ckpt',
     'HYBRID_PACBIO_ILLUMINA': '/opt/models/hybrid_pacbio_illumina/model.ckpt',
 }
 
@@ -254,6 +326,22 @@ def make_examples_command(ref,
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
+    special_args['vsc_min_fraction_indels'] = 0.12
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'ONT_R104':
+    special_args = {}
+    special_args['add_hp_channel'] = True
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['max_reads_per_partition'] = 600
+    special_args['min_mapping_quality'] = 5
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads'] = True
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
+    special_args['vsc_min_fraction_snps'] = 0.08
     special_args['vsc_min_fraction_indels'] = 0.12
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
