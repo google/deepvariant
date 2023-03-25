@@ -1779,6 +1779,59 @@ class PostprocessVariantsTest(parameterized.TestCase):
     )
     mock_exit.assert_called_once_with(errno.ENOENT)
 
+  @parameterized.parameters(
+      dict(
+          call=_create_call_variants_output(
+              indices=[0],
+              probabilities=[0.02, 0.98, 0],
+              variant=_create_variant_with_alleles(ref='CA', alts=['C']),
+          ),
+          expected_probabilities=[1.0, 0, 0],
+      ),
+      dict(
+          call=_create_call_variants_output(
+              indices=[0],
+              probabilities=[0.98, 0.02, 0],
+              variant=_create_variant_with_alleles(ref='CA', alts=['C']),
+          ),
+          expected_probabilities=[1.0, 0, 0],
+      ),
+      dict(
+          call=_create_call_variants_output(
+              indices=[0],
+              probabilities=[0.2, 0.5, 0.3],
+              variant=_create_variant_with_alleles(ref='CA', alts=['C']),
+          ),
+          expected_probabilities=[0.4, 0, 0.6],
+      ),
+      dict(
+          call=_create_call_variants_output(
+              indices=[0],
+              probabilities=[0.0, 1.0, 0.0],
+              variant=_create_variant_with_alleles(ref='CA', alts=['C']),
+          ),
+          expected_probabilities=[0, 0, 0],
+      ),
+      dict(
+          call=_create_call_variants_output(
+              indices=[0, 1],
+              probabilities=[0.02, 0.03, 0.45, 0.07, 0.3, 0.13],
+              variant=_create_variant_with_alleles(ref='CA', alts=['C', 'CAA']),
+          ),
+          expected_probabilities=[0.033, 0, 0.75, 0, 0, 0.216],
+      ),
+  )
+  def test_correct_nonautosome_probabilities(
+      self, call, expected_probabilities
+  ):
+    self.assertSequenceAlmostEqual(
+        expected_probabilities,
+        postprocess_variants.correct_nonautosome_probabilities(
+            call.genotype_probabilities, call.variant
+        ),
+        places=2,
+    )
+
 
 class MergeVcfAndGvcfTest(parameterized.TestCase):
 
@@ -1832,7 +1885,6 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     # In sorted output, 3rd has indices=[1].
     self.assertEqual(output[2], group[1])
     self.assertEqual(output[2].alt_allele_indices.indices, [1])
-
 
 if __name__ == '__main__':
   absltest.main()
