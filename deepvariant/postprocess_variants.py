@@ -180,7 +180,8 @@ _PAR_REGIONS = flags.DEFINE_string(
     'par_regions_bed',
     None,
     (
-        'Optional BED file containing PAR regions.'
+        'Optional BED file containing Human Pseudoautosomal Region (PAR) '
+        'regions.'
         'Variants within this region are unaffected by genotype reallocation '
         'applied on regions supplied by --haploid_contigs flag.'
     ),
@@ -801,7 +802,7 @@ def correct_nonautosome_probabilities(probabilities, variant):
 
   # It is assumed that probabilities are stored in the specific order. See
   # most_likely_genotype for details.
-  # Each heterozyhous probability is zeroed. Foe example, for biallelic case
+  # Each heterozyhous probability is zeroed. For example, for biallelic case
   # the probability of 0/1 genotype becomes zero.
   index = 0
   for h1 in range(0, n_alleles):

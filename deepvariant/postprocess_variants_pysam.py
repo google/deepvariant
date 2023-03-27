@@ -59,6 +59,7 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import proto_utils
+from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util.struct_utils import add_string_field
@@ -166,6 +167,25 @@ flags.DEFINE_enum(
     ),
 )
 flags.DEFINE_boolean('only_keep_pass', False, 'If True, only keep PASS calls.')
+_HAPLOID_CONTIGS = flags.DEFINE_list(
+    'haploid_contigs',
+    None,
+    (
+        'Optional list of non autosomal chromosomes. For all listed chromosomes'
+        'HET probabilities are not considered.'
+    ),
+)
+
+_PAR_REGIONS = flags.DEFINE_string(
+    'par_regions_bed',
+    None,
+    (
+        'Optional BED file containing Human Pseudoautosomal Region (PAR) '
+        'regions.'
+        'Variants within this region are unaffected by genotype reallocation '
+        'applied on regions supplied by --haploid_contigs flag.'
+    ),
+)
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
@@ -785,11 +805,49 @@ def normalize_predictions(predictions):
   return normalized_predictions
 
 
+def correct_nonautosome_probabilities(probabilities, variant):
+  """Recalculate probabilities for non-autosome heterozygous calls."""
+  n_alleles = len(variant.alternate_bases) + 1
+
+  # It is assumed that probabilities are stored in the specific order. See
+  # most_likely_genotype for details.
+  # Each heterozyhous probability is zeroed. For example, for biallelic case
+  # the probability of 0/1 genotype becomes zero.
+  index = 0
+  for h1 in range(0, n_alleles):
+    for h2 in range(0, h1 + 1):
+      if h2 != h1:
+        if len(probabilities) <= index:
+          raise ValueError("Probabilties array doesn't match alt alleles.")
+        probabilities[index] = 0
+      index += 1
+
+  new_sum = sum(probabilities) or 1.0
+  return list(map(lambda p: p / new_sum, probabilities))
+
+
+def is_non_autosome(variant):
+  """Returns True if variant is non_autosome."""
+  return (
+      _HAPLOID_CONTIGS.value
+      and variant.reference_name in _HAPLOID_CONTIGS.value
+  )
+
+
+def is_in_regions(variant, regions):
+  """Returns True of variant overlaps one of the regions."""
+  if regions:
+    return regions.variant_overlaps(variant)
+  else:
+    return False
+
+
 def merge_predictions(
     call_variants_outputs,
     qual_filter=None,
     multiallelic_model=None,
     debug_output_all_candidates=None,
+    par_regions=None,
 ):
   """Merges the predictions from the multi-allelic calls."""
   # See the logic described in the class PileupImageCreator pileup_image.py
@@ -808,8 +866,15 @@ def merge_predictions(
     canonical_variant = variant_utils.simplify_variant_alleles(
         canonical_variant
     )
+    if is_non_autosome(canonical_variant) and not is_in_regions(
+        canonical_variant, par_regions
+    ):
+      return canonical_variant, correct_nonautosome_probabilities(
+          first_call.genotype_probabilities, canonical_variant
+      )
     return canonical_variant, first_call.genotype_probabilities
 
+  # Special handling of multiallelic variants
   alt_alleles_to_remove = get_alt_alleles_to_remove(
       call_variants_outputs, qual_filter
   )
@@ -857,7 +922,14 @@ def merge_predictions(
   # calculation above. flattened_probs_dict is indexed by alt allele, and
   # simplify can change those alleles so we cannot simplify until afterwards.
   canonical_variant = variant_utils.simplify_variant_alleles(canonical_variant)
-  return canonical_variant, normalized_predictions
+  if is_non_autosome(canonical_variant) and not is_in_regions(
+      canonical_variant, par_regions
+  ):
+    return canonical_variant, correct_nonautosome_probabilities(
+        normalized_predictions, canonical_variant
+    )
+  else:
+    return canonical_variant, normalized_predictions
 
 
 def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
@@ -896,6 +968,7 @@ def _transform_call_variants_output_to_variants(
     group_variants,
     use_multiallelic_model,
     debug_output_all_candidates,
+    par_regions,
 ):
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
@@ -918,6 +991,7 @@ def _transform_call_variants_output_to_variants(
       resolution of multiallelic cases with two alts.
     debug_output_all_candidates: if 'ALT', output all alleles considered by
       DeepVariant as ALT alleles.
+    par_regions: RangeSet containing PAR regions.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
@@ -940,6 +1014,7 @@ def _transform_call_variants_output_to_variants(
         multi_allelic_qual_filter,
         multiallelic_model=multiallelic_model,
         debug_output_all_candidates=debug_output_all_candidates,
+        par_regions=par_regions,
     )
     variant = add_call_to_variant(
         canonical_variant,
@@ -1094,6 +1169,10 @@ def main(argv=()):
           errors.CommandLineError,
       )
 
+    par_regions = None
+    if _PAR_REGIONS.value:
+      par_regions = ranges.RangeSet.from_bed(_PAR_REGIONS.value)
+
     proto_utils.uses_fast_cpp_protos_or_die()
     logging_level.set_from_flag()
 
@@ -1134,6 +1213,7 @@ def main(argv=()):
           group_variants=FLAGS.group_variants,
           use_multiallelic_model=FLAGS.use_multiallelic_model,
           debug_output_all_candidates=FLAGS.debug_output_all_candidates,
+          par_regions=par_regions,
       )
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants
