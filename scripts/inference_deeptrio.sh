@@ -267,9 +267,9 @@ fi
 
 ## Flag consistency sanity checks.
 
-if [[ "${BIN_VERSION}" == "1.5.0" ]] && [[ "${MODEL_TYPE}" == PACBIO* ]]; then
-  echo "For DeepTrio PACBIO*, please run with version 1.4.0."
-  exit 1
+if [[ "${USE_CANDIDATE_PARTITION}" == "false" ]] && [[ "${MODEL_TYPE}" == PACBIO* ]]; then
+  echo "For DeepTrio PACBIO*, automatically set --use_candidate_partition=true."
+  USE_CANDIDATE_PARTITION="true"
 fi
 
 N_SHARDS="64"
