@@ -334,7 +334,7 @@ def write_variant_call(writer, prediction, use_tpu):
       logits=prediction.get('logits'),
       prelogits=prediction.get('prelogits'),
   )
-  return writer.write(cvo.SerializeToString())
+  return writer.write(cvo)
 
 
 def _create_cvo_proto(
@@ -545,10 +545,7 @@ def call_variants(
 
   # Consume predictions one at a time and write them to output_file.
   logging.info('Writing calls to %s', output_file)
-  tf_options = None
-  if output_file.endswith('.gz'):
-    tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
-  writer = tf.io.TFRecordWriter(output_file, options=tf_options)
+  writer = tfrecord.Writer(output_file)
   with writer:
     start_time = time.time()
     n_examples, n_batches = 0, 0
