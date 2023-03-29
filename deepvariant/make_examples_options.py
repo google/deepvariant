@@ -528,6 +528,15 @@ _ENABLE_JOINT_REALIGNMENT = flags.DEFINE_bool(
         'False, which means reads from each sample are realigned per-sample.'
     ),
 )
+_OUTPUT_LOCAL_READ_PHASING = flags.DEFINE_string(
+    'output_local_read_phasing',
+    None,
+    (
+        '[optional] For debugging only. Output filename for a TSV file '
+        'containing read phases. If examples are sharded, this should be '
+        'sharded into the same number of shards as the examples.'
+    ),
+)
 
 
 def shared_flags_to_options(
@@ -659,14 +668,20 @@ def shared_flags_to_options(
               errors.CommandLineError,
           )
 
-    num_shards, examples, candidates, gvcf, runtime_by_region = (
-        sharded_file_utils.resolve_filespecs(
-            flags_obj.task,
-            flags_obj.examples or '',
-            flags_obj.candidates or '',
-            flags_obj.gvcf or '',
-            flags_obj.runtime_by_region or '',
-        )
+    (
+        num_shards,
+        examples,
+        candidates,
+        gvcf,
+        runtime_by_region,
+        read_phases_output,
+    ) = sharded_file_utils.resolve_filespecs(
+        flags_obj.task,
+        flags_obj.examples or '',
+        flags_obj.candidates or '',
+        flags_obj.gvcf or '',
+        flags_obj.runtime_by_region or '',
+        flags_obj.output_local_read_phasing or '',
     )
     options.examples_filename = examples
     options.candidates_filename = candidates
@@ -675,6 +690,7 @@ def shared_flags_to_options(
     options.task_id = flags_obj.task
     options.num_shards = num_shards
     options.runtime_by_region = runtime_by_region
+    options.read_phases_output = read_phases_output
 
     options.parse_sam_aux_fields = make_examples_core.resolve_sam_aux_fields(
         flags_obj=flags_obj

@@ -906,7 +906,7 @@ class RegionProcessorTest(parameterized.TestCase):
     )
     mock_rr.assert_called_once_with(reads=[], region=self.region)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
-    mock_cir.assert_called_once_with(self.region)
+    mock_cir.assert_called_once_with(self.region, None)
 
   def test_on_demand_initialization_not_called_if_initialized(self):
     self.processor.initialized = True
@@ -926,7 +926,7 @@ class RegionProcessorTest(parameterized.TestCase):
         reads_filenames=main_sample.options.reads_filenames,
     )
     mock_rr.assert_called_once_with(reads=[], region=self.region)
-    mock_cir.assert_called_once_with(self.region)
+    mock_cir.assert_called_once_with(self.region, None)
 
   def test_process_calls_no_candidates(self):
     main_sample = self.processor.samples[0]
@@ -946,7 +946,7 @@ class RegionProcessorTest(parameterized.TestCase):
         reads_filenames=main_sample.options.reads_filenames,
     )
     mock_rr.assert_called_once_with(reads=[], region=self.region)
-    mock_cir.assert_called_once_with(self.region)
+    mock_cir.assert_called_once_with(self.region, None)
 
   @parameterized.parameters([
       deepvariant_pb2.MakeExamplesOptions.TRAINING,
@@ -974,7 +974,7 @@ class RegionProcessorTest(parameterized.TestCase):
         reads_filenames=main_sample.options.reads_filenames,
     )
     mock_rr.assert_called_once_with(reads=[mock_read], region=self.region)
-    mock_cir.assert_called_once_with(self.region)
+    mock_cir.assert_called_once_with(self.region, None)
 
   @parameterized.parameters([
       deepvariant_pb2.MakeExamplesOptions.TRAINING,
