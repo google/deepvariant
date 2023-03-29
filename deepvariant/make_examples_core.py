@@ -85,6 +85,9 @@ RUNTIME_BY_REGION_COLUMNS = (
     'num examples',
 )
 
+# For --read_phases_output, these columns will be written out in this order.
+READ_PHASES_OUTPUT_COLUMNS = ('fragment_name', 'phase', 'region_order')
+
 # The name used for a sample if one is not specified or present in the reads.
 _UNKNOWN_SAMPLE = 'UNKNOWN'
 
@@ -901,7 +904,8 @@ class OutputsWriter(object):
 
   def __init__(self, options, suffix=None):
     self._writers = {
-        k: None for k in ['candidates', 'examples', 'gvcfs', 'runtime']
+        k: None
+        for k in ['candidates', 'examples', 'gvcfs', 'runtime', 'read_phases']
     }
     self.examples_filename = None
 
@@ -934,6 +938,15 @@ class OutputsWriter(object):
         writer.__enter__()
         writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
 
+    if options.read_phases_output:
+      self._add_writer(
+          'read_phases', epath.Path(options.read_phases_output).open('w')
+      )
+      writer = self._writers['read_phases']
+      if writer is not None:
+        writer.__enter__()
+        writer.write('\t'.join(READ_PHASES_OUTPUT_COLUMNS) + '\n')
+
   def _add_suffix(self, file_path, suffix):
     """Adds suffix to file name if a suffix is given."""
     if not suffix:
@@ -961,6 +974,12 @@ class OutputsWriter(object):
     columns = [str(stats_dict.get(k, 'NA')) for k in RUNTIME_BY_REGION_COLUMNS]
     writer = self._writers['runtime']
     writer.write('\t'.join(columns) + '\n')
+
+  def write_read_phase(self, read, phase, region_n):
+    writer = self._writers['read_phases']
+    if writer is not None:
+      read_key = read.fragment_name + '/' + str(read.read_number)
+      writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
 
   def _add_writer(self, name, writer):
     if name not in self._writers:
@@ -1037,6 +1056,7 @@ class RegionProcessor(object):
     if self.options.phase_reads:
       # One instance of DirectPhasing per lifetime of make_examples.
       self.direct_phasing_cpp = self._make_direct_phasing_obj()
+    self.writers_dict = {}
 
   def _make_direct_phasing_obj(self):
     return direct_phasing.DirectPhasing()
@@ -1382,12 +1402,13 @@ class RegionProcessor(object):
     # Mark the end of partition
     yield END_OF_PARTITION
 
-  def process(self, region):
+  def process(self, region, region_n=None):
     """Finds candidates and creates corresponding examples in a region.
 
     Args:
       region: A nucleus.genomics.v1.Range proto. Specifies the region on the
         genome we should process.
+      region_n: Order number of the region being processed by this process.
 
     Returns:
       (candidates_by_sample, gvcfs_by_sample, runtimes)
@@ -1451,10 +1472,12 @@ class RegionProcessor(object):
       region_expanded = ranges.expand(region, padding_fraction, contig_dict)
 
       candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
-          region, region_expanded
+          region=region, region_n=region_n, padded_region=region_expanded
       )
     else:
-      candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(region)
+      candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
+          region=region, region_n=region_n
+      )
 
     for sample in self.samples:
       role = sample.options.role
@@ -1668,6 +1691,7 @@ class RegionProcessor(object):
   def candidates_in_region(
       self,
       region: range_pb2.Range,
+      region_n: Optional[int] = None,
       padded_region: Optional[range_pb2.Range] = None,
   ) -> Tuple[
       Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
@@ -1678,6 +1702,7 @@ class RegionProcessor(object):
     Args:
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to get candidates for.
+      region_n: Order number of the region being processed by this process.
       padded_region: A nucleus.genomics.v1.Range object specifying the padded
         region.
 
@@ -1789,6 +1814,9 @@ class RegionProcessor(object):
       right_padding = padded_region.end - region.end
     for sample in self.samples:
       role = sample.options.role
+      writer = None
+      if role in self.writers_dict:
+        writer = self.writers_dict[role]
       if (
           in_training_mode(self.options)
           and self.options.sample_role_to_train != role
@@ -1837,6 +1865,8 @@ class RegionProcessor(object):
               if read_phase in [1, 2]:
                 read_phase = 1 + (read_phase % 2)
             read.info['HP'].values.add(int_value=read_phase)
+            if writer and self.options.read_phases_output:
+              writer.write_read_phase(read, read_phase, region_n)
         reads_to_phase = None
 
       if padded_region is not None:
@@ -2389,6 +2419,7 @@ def make_examples_runner(options):
         writers_dict[sample.options.role] = OutputsWriter(
             options, suffix=sample.options.role
         )
+  region_processor.writers_dict = writers_dict
 
   logging_with_options(
       options,
@@ -2418,7 +2449,9 @@ def make_examples_runner(options):
       'n_examples': 0,
   }
   example_shape = None
+  region_n = 0
   for region in regions:
+    region_n += 1
 
     if options.mode == mode_candidate_sweep:
       candidates_in_region = list(
@@ -2436,7 +2469,7 @@ def make_examples_runner(options):
       continue
 
     (candidates_by_sample, gvcfs_by_sample, runtimes) = (
-        region_processor.process(region)
+        region_processor.process(region, region_n)
     )
     for sample in region_processor.samples:
       role = sample.options.role
