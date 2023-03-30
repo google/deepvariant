@@ -343,7 +343,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 16
+// Next ID: 18
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -358,6 +358,12 @@ message VariantCallerOptions {
   // fraction thresholds (vsc_min_fraction_snps and vsc_min_fraction_indels)
   // to adapt thresholds for multi-sample calling.
   float min_fraction_multiplier = 12;
+  // In candidate generation, this threshold is used to exclude a variant when
+  // the allele frequency is above this threshold from a non-target sample.
+  // This is designed for the somatic case - where we want to avoid generating
+  // a candidate if the AF is high in any of the non-target samples.
+  float max_fraction_snps_for_non_target_sample = 16;
+  float max_fraction_indels_for_non_target_sample = 17;
 
   // If provided, we will emit "candidate" variant records at a random fraction
   // of otherwise non-candidate sites. Useful for training.

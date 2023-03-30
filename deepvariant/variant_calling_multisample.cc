@@ -31,6 +31,8 @@
 
 #include "deepvariant/variant_calling_multisample.h"
 
+#include <stdlib.h>
+
 #include <algorithm>
 #include <map>
 #include <numeric>
@@ -210,14 +212,25 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
       allele_counts.at(target_sample);
   std::vector<AlleleCount> all_samples_allele_counts;
   all_samples_allele_counts.reserve(allele_counts.size());
+  // "Non-target" samples are referring to all the samples that are providing
+  // supportive information. Usually the main truth labels are not from this
+  // sample, or usually it means that the calls coming from these non-target
+  // samples are not the main focus of our problem.
+  std::vector<AlleleCount> non_target_allele_counts;
+  non_target_allele_counts.reserve(allele_counts.size());
   for (const auto& allele_counts_entry : allele_counts) {
     all_samples_allele_counts.push_back(allele_counts_entry.second);
+    if (allele_counts_entry.first != target_sample) {
+      non_target_allele_counts.push_back(allele_counts_entry.second);
+    }
   }
 
   const std::vector<Allele> target_sample_alleles =
       SumAlleleCounts(target_sample_allele_count);
   const std::vector<Allele> all_sample_alleles =
       SumAlleleCounts(all_samples_allele_counts);
+  const std::vector<Allele> non_target_sample_alleles =
+      SumAlleleCounts(non_target_allele_counts);
 
   const int target_samples_total_count =
       TotalAlleleCounts(target_sample_allele_count);
@@ -227,6 +240,25 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   std::vector<Allele> alt_alleles;
   // First process target_sample_alleles
   for (const auto& allele : target_sample_alleles) {
+    bool skip_high_af_allele_for_non_target = false;
+    // Having a double for-loop seems inefficient. Can be room for improvement.
+    for (const auto& non_target_sample_allele : non_target_sample_alleles) {
+      if (!IsAllelesTheSame(allele, non_target_sample_allele)) continue;
+      int non_target_total_count =
+          all_samples_total_count - target_samples_total_count;
+      float max_fraction_for_non_target_sample =
+          non_target_sample_allele.type() == AlleleType::SUBSTITUTION
+          ? options_.max_fraction_snps_for_non_target_sample()
+          : options_.max_fraction_indels_for_non_target_sample();
+      if (max_fraction_for_non_target_sample > 0 &&
+          (1.0 * non_target_sample_allele.count() / non_target_total_count) >
+          max_fraction_for_non_target_sample) {
+        skip_high_af_allele_for_non_target = true;
+        break;
+      }
+    }
+    if (skip_high_af_allele_for_non_target) continue;
+
     AlleleRejectionAcceptance allele_acceptance =
         IsGoodAltAlleleWithReason(allele, target_samples_total_count, false);
     if (allele_acceptance == AlleleRejectionAcceptance::ACCEPTED) {
