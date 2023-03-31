@@ -308,6 +308,24 @@ _VSC_MIN_FRACTION_MULTIPLIER = flags.DEFINE_float(
         ' sample in multi-sample calling.'
     ),
 )
+_VSC_MAX_FRACTION_INDELS_FOR_NON_TARGET_SAMPLE = flags.DEFINE_float(
+    'vsc_max_fraction_indels_for_non_target_sample',
+    0.0,
+    (
+        'In candidate generation, if any non-target sample has more Indels '
+        'than this threshold, the candidate will be excluded.'
+        'Default is 0.0 which means no max is set.'
+    ),
+)
+_VSC_MAX_FRACTION_SNPS_FOR_NON_TARGET_SAMPLE = flags.DEFINE_float(
+    'vsc_max_fraction_snps_for_non_target_sample',
+    0.0,
+    (
+        'In candidate generation, if any non-target sample has more SNPs than '
+        'this threshold, the candidate will be excluded.'
+        'Default is 0.0 which means no max is set.'
+    ),
+)
 flags.DEFINE_float(
     'training_random_emit_ref_sites',
     NO_RANDOM_REF,
