@@ -556,6 +556,44 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     )
 
   @parameterized.parameters(
+      dict(
+          ref_reader=fasta.InMemoryFastaReader([('chr1', 0, 'GATACA')]),
+          expected=[],
+          min_region_len=3,
+      ),
+      dict(
+          ref_reader=fasta.InMemoryFastaReader([('chr1', 0, 'NNNGATACA')]),
+          expected=[ranges.make_range('chr1', 0, 3)],
+          min_region_len=3,
+      ),
+      dict(
+          ref_reader=fasta.InMemoryFastaReader([('chr1', 0, 'GATACANNN')]),
+          expected=[ranges.make_range('chr1', 6, 9)],
+          min_region_len=3,
+      ),
+      dict(
+          ref_reader=fasta.InMemoryFastaReader([('chr1', 0, 'GATACANNNTTT')]),
+          expected=[ranges.make_range('chr1', 6, 9)],
+          min_region_len=3,
+      ),
+      dict(
+          ref_reader=fasta.InMemoryFastaReader(
+              [('chr1', 0, 'GATACANNNAAAAANNN')]
+          ),
+          expected=[
+              ranges.make_range('chr1', 6, 9),
+              ranges.make_range('chr1', 14, 17),
+          ],
+          min_region_len=3,
+      ),
+  )
+  def test_find_ref_n_regions(self, ref_reader, expected, min_region_len):
+    self.assertCountEqual(
+        expected,
+        make_examples_core.find_ref_n_regions(ref_reader, min_region_len),
+    )
+
+  @parameterized.parameters(
       dict(includes=[], excludes=[], expected=['1:1-100', '2:1-200']),
       dict(includes=['1'], excludes=[], expected=['1:1-100']),
       # Check that excludes work as expected.
@@ -592,7 +630,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
   def test_build_calling_regions(self, includes, excludes, expected):
     contigs = _make_contigs([('1', 100), ('2', 200)])
     actual = make_examples_core.build_calling_regions(
-        contigs, includes, excludes
+        contigs, includes, excludes, None
     )
     self.assertCountEqual(actual, _from_literals_list(expected))
 
@@ -831,6 +869,25 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
         list(ranges.RangeSet(regions_from_options)),
         _from_literals_list(
             ['chr20:10,000,000-10,009,999', 'chr20:10,100,001-11,000,000']
+        ),
+    )
+
+  @flagsaver.flagsaver
+  def test_regions_exclude_n_reference(self):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = 'examples.tfrecord'
+    FLAGS.discard_non_dna_regions = True
+
+    options = make_examples.default_options(add_flags=True)
+    _, regions_from_options = (
+        make_examples_core.processing_regions_from_options(options)
+    )
+    self.assertCountEqual(
+        list(ranges.RangeSet(regions_from_options)),
+        _from_literals_list(
+            ['chr20:9,995,001-11,095,000', 'chr20:59,776,001-60,001,000']
         ),
     )
 
