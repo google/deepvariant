@@ -61,6 +61,7 @@ from deepvariant.realigner import realigner
 from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import fasta
+from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
@@ -102,6 +103,9 @@ END_OF_PARTITION = -2
 # TODO: For better flexibility it may be benefitial to expose it as a
 # flag.
 MAX_PARTITION_LEN = 1000000
+
+# Non DNA regions larger than this value are excluded from processing.
+MIN_NON_DNA_REGION = 300000
 
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
@@ -503,7 +507,45 @@ def validate_reference_contig_coverage(
     )
 
 
-def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
+def find_ref_n_regions(
+    ref_reader: genomics_reader.GenomicsReader, min_region_len: int
+) -> List[range_pb2.Range]:
+  """Returns List[nucleus.genomics.v1.Range] regions containing Ns.
+
+  Args:
+    ref_reader: genomics_reader.GenomicsReader. Nucleus Fasta reader.
+    min_region_len: int. Only regions larger than min_region_len are returned.
+
+  Returns:
+    A List of nucleus.genomics.v1.Range containing regions of Ns in the
+    reference.
+  """
+  ref_n_regions = []
+  # ref_reader returns tupes of contig_name and vector of bases.
+  for ref in ref_reader.iterate():
+    length = 0
+    start = 0
+    i = 0
+    for i, b in enumerate(ref[1]):
+      if b not in vc_base.CANONICAL_DNA_BASES:
+        if length == 0:
+          start = i
+        length += 1
+      else:
+        if length >= min_region_len:
+          ref_n_regions.append(ranges.make_range(ref[0], start, i))
+          logging.info('Excluding %s:%d-%d', ref[0], start, i)
+        start = 0
+        length = 0
+    if length >= min_region_len:
+      ref_n_regions.append(ranges.make_range(ref[0], start, i + 1))
+      logging.info('Excluding %s:%d-%d', ref[0], start, i + 1)
+  return ref_n_regions
+
+
+def build_calling_regions(
+    contigs, regions_to_include, regions_to_exclude, ref_n_regions
+):
   """Builds a RangeSet containing the regions we should call variants in.
 
   This function intersects the Ranges spanning all of the contigs with those
@@ -517,6 +559,7 @@ def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
       RangeSet.
     regions_to_exclude: RangeSet or iterable that can be converted to a
       RangeSet.
+    ref_n_regions: List of Range containing non DNA bases to exclude.
 
   Returns:
     A RangeSet.
@@ -532,6 +575,9 @@ def build_calling_regions(contigs, regions_to_include, regions_to_exclude):
     regions = regions.intersection(
         ranges.RangeSet.from_regions(regions_to_include, contig_dict)
     )
+
+  if ref_n_regions:
+    regions.exclude_regions(ranges.RangeSet(ref_n_regions))
 
   # If we provided regions to exclude, intersect those with the existing calling
   # regions to further refine our set of contigs to process.
@@ -2269,6 +2315,12 @@ def processing_regions_from_options(options):
       options.reference_filename
   ).header.contigs
 
+  ref_n_regions = None
+  if options.discard_non_dna_regions and not options.calling_regions:
+    ref_n_regions = find_ref_n_regions(
+        fasta.IndexedFastaReader(options.reference_filename), MIN_NON_DNA_REGION
+    )
+
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None
   if in_training_mode(options):
@@ -2301,7 +2353,10 @@ def processing_regions_from_options(options):
       options, 'Common contigs are %s' % [c.name for c in contigs]
   )
   calling_regions = build_calling_regions(
-      ref_contigs, options.calling_regions, options.exclude_calling_regions
+      ref_contigs,
+      options.calling_regions,
+      options.exclude_calling_regions,
+      ref_n_regions,
   )
   if not calling_regions:
     raise ValueError(

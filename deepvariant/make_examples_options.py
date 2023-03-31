@@ -537,6 +537,14 @@ _OUTPUT_LOCAL_READ_PHASING = flags.DEFINE_string(
         'sharded into the same number of shards as the examples.'
     ),
 )
+_DISCARD_NON_DNA_REGIONS = flags.DEFINE_bool(
+    'discard_non_dna_regions',
+    False,
+    (
+        'Default is False. If set regions of Ns larger than 300,000bp are'
+        'discarded.'
+    ),
+)
 
 
 def shared_flags_to_options(
@@ -777,6 +785,8 @@ def shared_flags_to_options(
     options.customized_classes_labeler_info_field_name = (
         flags_obj.customized_classes_labeler_info_field_name
     )
+
+  options.discard_non_dna_regions = _DISCARD_NON_DNA_REGIONS.value
 
   return options
 
