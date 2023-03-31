@@ -521,25 +521,28 @@ def find_ref_n_regions(
     reference.
   """
   ref_n_regions = []
-  # ref_reader returns tupes of contig_name and vector of bases.
-  for ref in ref_reader.iterate():
-    length = 0
-    start = 0
-    i = 0
-    for i, b in enumerate(ref[1]):
+  # ref_reader returns tuples of contig_name and vector of bases.
+  for ref_name, bases in ref_reader.iterate():
+    i = min_region_len - 1
+    while i < len(bases):
+      b = bases[i]
       if b not in vc_base.CANONICAL_DNA_BASES:
-        if length == 0:
-          start = i
-        length += 1
+        # Seek back to find the start of N-region.
+        j = i
+        while j > 0 and bases[j] not in vc_base.CANONICAL_DNA_BASES:
+          j -= 1
+        start = j if j == 0 else j + 1
+        # Seek forward to find the end of N-region.
+        j = i
+        while j < len(bases) and bases[j] not in vc_base.CANONICAL_DNA_BASES:
+          j += 1
+        end = j
+        if end - start >= min_region_len:
+          logging.info('Excluding %s:%d-%d', ref_name, start, end)
+          ref_n_regions.append(ranges.make_range(ref_name, start, end))
+        i = end
       else:
-        if length >= min_region_len:
-          ref_n_regions.append(ranges.make_range(ref[0], start, i))
-          logging.info('Excluding %s:%d-%d', ref[0], start, i)
-        start = 0
-        length = 0
-    if length >= min_region_len:
-      ref_n_regions.append(ranges.make_range(ref[0], start, i + 1))
-      logging.info('Excluding %s:%d-%d', ref[0], start, i + 1)
+        i += min_region_len - 1
   return ref_n_regions
 
 
