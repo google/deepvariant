@@ -480,7 +480,7 @@ void DirectPhasing::Clear() {
 }
 
 // Iterate through all candidates in the region. For each potentially
-// heterozygious SNP candidate create a graph vertex coressponding to each
+// heterozygious SNP candidate create a graph vertex corresponding to each
 // allele. Candidate is heterozygous if there is a ref allele, or there are
 // multiple distintive alt alleles.
 void DirectPhasing::Build(
