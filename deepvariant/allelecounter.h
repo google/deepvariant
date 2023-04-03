@@ -387,7 +387,7 @@ class AlleleCounter {
                       absl::string_view sample,
                       const std::vector<ReadAllele>& to_add);
 
-  // Nomralize cigar by shifting INDELs in the middle of a repeat all the way
+  // Normalize cigar by shifting INDELs in the middle of a repeat all the way
   // to the left. As a result of shifting two INDELs may become merged. Merged
   // INDEL may become non-normalized so the process is repeated up to 10 times.
   // If INDEL is shifted all the way to the beginning of the read then this

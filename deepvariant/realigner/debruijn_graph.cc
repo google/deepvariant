@@ -205,7 +205,7 @@ DeBruijnGraph::DeBruijnGraph(
 // Indicates that we couldn't find a minimum k that can be used.
 constexpr int kBoundsNoWorkingK = -1;
 struct KBounds {
-  int min_k;  // Mininum k to consider (inclusive).
+  int min_k;  // Minimum k to consider (inclusive).
   int max_k;  // Maximum k to consider (inclusive).
 };
 
