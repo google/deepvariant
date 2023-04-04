@@ -33,6 +33,8 @@ import os
 from absl import app
 from absl import flags
 
+from deepvariant import dv_constants
+
 from deepvariant import logging_level
 from deepvariant import make_examples_core
 from deepvariant import make_examples_options
@@ -153,7 +155,7 @@ def tumor_normal_samples_from_flags(add_flags=True, flags_obj=None):
           sample_name=tumor_sample_name, flags_obj=flags_obj
       ),
       order=[0, 1],
-      pileup_height=100,
+      pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
   )
   normal_sample_options = deepvariant_pb2.SampleOptions(
       role='normal',
@@ -162,7 +164,7 @@ def tumor_normal_samples_from_flags(add_flags=True, flags_obj=None):
           sample_name=normal_sample_name, flags_obj=flags_obj
       ),
       order=[0, 1],
-      pileup_height=100,
+      pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
   )
 
   if add_flags:
