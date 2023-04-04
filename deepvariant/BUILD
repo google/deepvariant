@@ -572,6 +572,7 @@ py_binary(
     main = "make_examples_somatic.py",
     python_version = "PY3",
     deps = [
+        ":dv_constants",
         ":logging_level",
         ":make_examples_core",
         ":make_examples_options",
