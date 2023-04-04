@@ -46,7 +46,10 @@ from third_party.nucleus.util import proto_utils
 # Sentinel command line flag value indicating no downsampling should occur.
 NO_DOWNSAMPLING = 0.0
 
-MAIN_SAMPLE_INDEX = 1  # 1 is the tumor, 0 is the normal match.
+# 1 is the tumor, 0 is the normal match.
+# Tumor sample is the "main" sample because the goal here is somatic calling.
+MAIN_SAMPLE_INDEX = 1
+NORMAL_SAMPLE_INDEX = 0
 
 FLAGS = flags.FLAGS
 
@@ -243,9 +246,13 @@ def check_options_are_valid(options):
       options, main_sample_index=MAIN_SAMPLE_INDEX
   )
 
-  normal = options.sample_options[MAIN_SAMPLE_INDEX]
+  tumor = options.sample_options[MAIN_SAMPLE_INDEX]
+  normal = options.sample_options[NORMAL_SAMPLE_INDEX]
 
-  if normal.variant_caller_options.sample_name == _SAMPLE_NAME_TUMOR.value:
+  if (
+      tumor.variant_caller_options.sample_name
+      == normal.variant_caller_options.sample_name
+  ):
     errors.log_and_raise(
         (
             'Sample names of tumor and normal samples cannot be the same. Use '
