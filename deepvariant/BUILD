@@ -564,6 +564,28 @@ py_binary(
     ],
 )
 
+py_library(
+    name = "make_examples_somatic_lib",
+    srcs = [
+        "make_examples_somatic.py",
+    ],
+    srcs_version = "PY2AND3",
+    deps = [
+        ":dv_constants",
+        ":logging_level",
+        ":make_examples_core",
+        ":make_examples_options",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io/python:hts_verbose",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:proto_utils",
+        "@absl_py//absl/flags",
+        # TODO: Figure out why we need this dep.
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+        "@absl_py//absl:app",
+    ],
+)
+
 py_binary(
     name = "make_examples_somatic",
     srcs = [
@@ -584,6 +606,23 @@ py_binary(
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
+    ],
+)
+
+py_test(
+    name = "make_examples_somatic_test",
+    srcs = ["make_examples_somatic_test.py"],
+    data = [":testdata"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":make_examples_somatic_lib",
+        ":py_testdata",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:flagsaver",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
