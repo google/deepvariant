@@ -36,6 +36,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <sys/types.h>
+
 #include <utility>
 
 #include "absl/memory/memory.h"
@@ -43,16 +44,13 @@
 #include "htslib/bgzf.h"
 #include "htslib/hfile.h"
 #include "third_party/nucleus/io/hts_path.h"
-#include "tensorflow/core/platform/logging.h"
-
-namespace tf = tensorflow;
 
 namespace {
 
 // Write a string to an htslib file handle (compressed or not).
 // Parallels hts_getline; oddly, no function like this is exposed by
 // htslib.
-tensorflow::Status hts_write(htsFile* hts_file, const char *str) {
+::nucleus::Status hts_write(htsFile* hts_file, const char* str) {
   ssize_t str_len = strlen(str);
   ssize_t bytes_written;
 
@@ -65,19 +63,17 @@ tensorflow::Status hts_write(htsFile* hts_file, const char *str) {
       bytes_written = bgzf_write(hts_file->fp.bgzf, str, str_len);
       break;
     default:
-      return tf::errors::FailedPrecondition(
+      return ::nucleus::FailedPrecondition(
           "Unrecognized hts_file compression format");
   }
 
   if (bytes_written != str_len) {
-    return tf::errors::DataLoss("Failure to write to htsFile.");
+    return ::nucleus::DataLoss("Failure to write to htsFile.");
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace
-
-
 
 namespace nucleus {
 
@@ -87,54 +83,49 @@ StatusOr<std::unique_ptr<TextWriter>> TextWriter::ToFile(
   htsFile* fp = hts_open_x(path, mode);
 
   if (fp == nullptr) {
-    return tf::errors::Unknown(
-        "Could not open file for writing: ", path);
+    return ::nucleus::Unknown(
+        absl::StrCat("Could not open file for writing: ", path));
   } else {
     auto writer = absl::WrapUnique(new TextWriter(fp));
     return std::move(writer);
   }
 }
 
-
 StatusOr<std::unique_ptr<TextWriter>> TextWriter::ToFile(const string& path) {
-  CompressionPolicy should_compress = (absl::EndsWith(path, ".gz") ?
-                                       COMPRESS : NO_COMPRESS);
+  CompressionPolicy should_compress =
+      (absl::EndsWith(path, ".gz") ? COMPRESS : NO_COMPRESS);
   return ToFile(path, should_compress);
 }
 
-
-TextWriter::TextWriter(htsFile* hts_file)
-    : hts_file_(hts_file) {
+TextWriter::TextWriter(htsFile* hts_file) : hts_file_(hts_file) {
   CHECK(hts_file_ != nullptr);
 }
 
 TextWriter::~TextWriter() {
   if (hts_file_) {
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
-tf::Status TextWriter::Write(const string& text) {
+::nucleus::Status TextWriter::Write(const string& text) {
   if (hts_file_ == nullptr) {
-    return tf::errors::FailedPrecondition(
-        "Cannot write to a closed TextWriter");
+    return ::nucleus::FailedPrecondition("Cannot write to a closed TextWriter");
   }
   return hts_write(hts_file_, text.c_str());
 }
 
-
-tf::Status TextWriter::Close() {
+::nucleus::Status TextWriter::Close() {
   if (!hts_file_) {
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot close an already closed file writer");
   }
   int hts_ok = hts_close(hts_file_);
   hts_file_ = nullptr;
   if (hts_ok < 0) {
-    return tf::errors::Internal("hts_close() failed with return code ", hts_ok);
+    return ::nucleus::Internal(
+        absl::StrCat("hts_close() failed with return code ", hts_ok));
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
-
 
 }  // namespace nucleus

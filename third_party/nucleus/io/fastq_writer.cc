@@ -39,13 +39,9 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
+#include "third_party/nucleus/vendor/status.h"
 
 namespace nucleus {
-
-namespace tf = tensorflow;
 
 // 256 KB write buffer.
 constexpr int WRITER_BUFFER_SIZE = 256 * 1024;
@@ -61,7 +57,7 @@ StatusOr<std::unique_ptr<FastqWriter>> FastqWriter::ToFile(
     const nucleus::genomics::v1::FastqWriterOptions& options) {
   StatusOr<std::unique_ptr<TextWriter>> text_writer =
       TextWriter::ToFile(fastq_path);
-  TF_RETURN_IF_ERROR(text_writer.status());
+  NUCLEUS_RETURN_IF_ERROR(text_writer.status());
   return absl::WrapUnique(
       new FastqWriter(text_writer.ConsumeValueOrDie(), options));
 }
@@ -69,29 +65,28 @@ StatusOr<std::unique_ptr<FastqWriter>> FastqWriter::ToFile(
 FastqWriter::FastqWriter(
     std::unique_ptr<TextWriter> text_writer,
     const nucleus::genomics::v1::FastqWriterOptions& options)
-    : options_(options), text_writer_(std::move(text_writer)) {
-}
+    : options_(options), text_writer_(std::move(text_writer)) {}
 
 FastqWriter::~FastqWriter() {
   if (text_writer_) {
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
-tf::Status FastqWriter::Close() {
+::nucleus::Status FastqWriter::Close() {
   if (!text_writer_)
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot close an already closed FastqWriter");
   // Close the file pointer we have been writing to.
-  tf::Status close_status = text_writer_->Close();
+  ::nucleus::Status close_status = text_writer_->Close();
   text_writer_ = nullptr;
   return close_status;
 }
 
-tf::Status FastqWriter::Write(
+::nucleus::Status FastqWriter::Write(
     const nucleus::genomics::v1::FastqRecord& record) {
   if (!text_writer_)
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot write to closed FASTQ stream.");
   string out = "@";
   absl::StrAppend(&out, record.id());
@@ -100,9 +95,9 @@ tf::Status FastqWriter::Write(
   }
   absl::StrAppend(&out, "\n", record.sequence(), "\n+\n", record.quality(),
                   "\n");
-  TF_RETURN_IF_ERROR(text_writer_->Write(out));
+  NUCLEUS_RETURN_IF_ERROR(text_writer_->Write(out));
 
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace nucleus

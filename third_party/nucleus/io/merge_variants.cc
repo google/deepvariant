@@ -165,17 +165,17 @@ void MergeAndWriteVariantsAndNonVariants(
       if (!only_keep_pass ||
           (variant.variant->filter().size() == 1 &&
            variant.variant->filter(0) == DEEP_VARIANT_PASS)) {
-        TF_QCHECK_OK(vcf_writer->Write(*variant.variant));
+        NUCLEUS_QCHECK_OK(vcf_writer->Write(*variant.variant));
       }
       ZeroScaleGl(variant.variant.get());
       TransfromToGvcf(variant.variant.get());
-      TF_QCHECK_OK(gvcf_writer->Write(*variant.variant));
+      NUCLEUS_QCHECK_OK(gvcf_writer->Write(*variant.variant));
 
       variant = variant_reader->GetAndReadNext();
     } else if (nonvariant.contig_map_index < variant.contig_map_index ||
                (nonvariant.contig_map_index == variant.contig_map_index &&
                 nonvariant.variant->end() <= variant.variant->start())) {
-      TF_QCHECK_OK(gvcf_writer->Write(*nonvariant.variant));
+      NUCLEUS_QCHECK_OK(gvcf_writer->Write(*nonvariant.variant));
 
       nonvariant = non_variant_reader->GetAndReadNext();
     } else {
@@ -183,7 +183,7 @@ void MergeAndWriteVariantsAndNonVariants(
         std::unique_ptr<Variant> v = CreateRecordFromTemplate(
             *nonvariant.variant, nonvariant.variant->start(),
             variant.variant->start(), ref);
-        TF_QCHECK_OK(gvcf_writer->Write(*v));
+        NUCLEUS_QCHECK_OK(gvcf_writer->Write(*v));
       }
       if (nonvariant.variant->end() > variant.variant->end()) {
         nonvariant = {.variant = CreateRecordFromTemplate(
@@ -197,8 +197,8 @@ void MergeAndWriteVariantsAndNonVariants(
     }
   }
 
-  TF_QCHECK_OK(vcf_writer->Close());
-  TF_QCHECK_OK(gvcf_writer->Close());
+  NUCLEUS_QCHECK_OK(vcf_writer->Close());
+  NUCLEUS_QCHECK_OK(gvcf_writer->Close());
 }
 
 }  // namespace nucleus

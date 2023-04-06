@@ -39,25 +39,24 @@ namespace nucleus {
 
 // Status tests.
 TEST(StatusTest, OKStatusMatchesIsOK) {
-  EXPECT_THAT(tensorflow::Status(), IsOK());
+  EXPECT_THAT(nucleus::Status(), IsOK());
 }
 
 TEST(StatusTest, FailedStatusMatchesIsNotOK) {
-  EXPECT_THAT(tensorflow::errors::Unknown("fail"), IsNotOK());
+  EXPECT_THAT(Unknown("fail"), IsNotOK());
 }
 
 TEST(StatusTest, FailedStatusMatchesIsNotOKCode) {
-  EXPECT_THAT(tensorflow::errors::Unknown("fail"),
-              IsNotOKWithCode(tensorflow::error::UNKNOWN));
+  EXPECT_THAT(Unknown("fail"), IsNotOKWithCode(absl::StatusCode::kUnknown));
 }
 
 TEST(StatusTest, FailedStatusMatchesIsNotOKWithMessage) {
-  EXPECT_THAT(tensorflow::errors::Unknown("fail"), IsNotOKWithMessage("fail"));
+  EXPECT_THAT(Unknown("fail"), IsNotOKWithMessage("fail"));
 }
 
 TEST(StatusTest, FailedStatusMatchesIsNotOKWithCodeAndMessage) {
-  EXPECT_THAT(tensorflow::errors::Unknown("fail"),
-              IsNotOKWithCodeAndMessage(tensorflow::error::UNKNOWN, "fail"));
+  EXPECT_THAT(Unknown("fail"),
+              IsNotOKWithCodeAndMessage(absl::StatusCode::kUnknown, "fail"));
 }
 
 // StatusOr tests.
@@ -67,24 +66,24 @@ TEST(StatusOrTest, OKStatusMatchesIsOK) {
 }
 
 TEST(StatusOrTest, FailedStatusMatchesIsNotOK) {
-  StatusOr<int> status_or = tensorflow::errors::Unknown("fail");
+  StatusOr<int> status_or = Unknown("fail");
   EXPECT_THAT(status_or, IsNotOK());
 }
 
 TEST(StatusOrTest, FailedStatusMatchesIsNotOKCode) {
-  StatusOr<int> status_or = tensorflow::errors::Unknown("fail");
-  EXPECT_THAT(status_or, IsNotOKWithCode(tensorflow::error::UNKNOWN));
+  StatusOr<int> status_or = Unknown("fail");
+  EXPECT_THAT(status_or, IsNotOKWithCode(absl::StatusCode::kUnknown));
 }
 
 TEST(StatusOrTest, FailedStatusMatchesIsNotOKWithMessage) {
-  StatusOr<int> status_or = tensorflow::errors::Unknown("fail");
+  StatusOr<int> status_or = Unknown("fail");
   EXPECT_THAT(status_or, IsNotOKWithMessage("fail"));
 }
 
 TEST(StatusOrTest, FailedStatusMatchesIsNotOKWithCodeAndMessage) {
-  StatusOr<int> status_or = tensorflow::errors::Unknown("fail");
+  StatusOr<int> status_or = Unknown("fail");
   EXPECT_THAT(status_or,
-              IsNotOKWithCodeAndMessage(tensorflow::error::UNKNOWN, "fail"));
+              IsNotOKWithCodeAndMessage(absl::StatusCode::kUnknown, "fail"));
 }
 
 }  // namespace nucleus

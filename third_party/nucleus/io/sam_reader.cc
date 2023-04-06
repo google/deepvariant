@@ -36,7 +36,9 @@
 #include <errno.h>
 #include <stdint.h>
 
+#include <algorithm>
 #include <map>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -56,14 +58,11 @@
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/vendor/statusor.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
-
-namespace tf = tensorflow;
 
 using absl::string_view;
 using nucleus::genomics::v1::CigarUnit;
@@ -227,13 +226,13 @@ bool ReadSatisfiesRequirements(
     const Read& read,
     const nucleus::genomics::v1::ReadRequirements& requirements) {
   return PartialReadSatisfiesRequirements(read, requirements) &&
-      (requirements.keep_unaligned() || read.has_alignment()) &&
-      (requirements.keep_improperly_placed() ||
-       IsReadProperlyPlaced(read)) &&
-      (!read.has_alignment() || read.alignment().mapping_quality() >=
-       requirements.min_mapping_quality());
+         (requirements.keep_unaligned() || read.has_alignment()) &&
+         (requirements.keep_improperly_placed() ||
+          IsReadProperlyPlaced(read)) &&
+         (!read.has_alignment() || read.alignment().mapping_quality() >=
+                                       requirements.min_mapping_quality());
 }
-} // namespace sam_reader_internal
+}  // namespace sam_reader_internal
 
 // -----------------------------------------------------------------------------
 //
@@ -247,11 +246,16 @@ bool ReadSatisfiesRequirements(
 // a value < 0 if type isn't one of the expected types from htslib.
 static inline int HtslibAuxSize(uint8_t type) {
   switch (type) {
-    case 'A': case 'c': case 'C':
+    case 'A':
+    case 'c':
+    case 'C':
       return 1;
-    case 's': case 'S':
+    case 's':
+    case 'S':
       return 2;
-    case 'f': case 'i': case 'I':
+    case 'f':
+    case 'i':
+    case 'I':
       return 4;
     default:
       return -1;  // -1 indicates error here.
@@ -298,10 +302,11 @@ static inline bool StartsWith(const string& query, const char prefix[],
 // Returns:
 //   tensorflow::Status. Will be ok() if parsing succeeded or was not required,
 //   otherwise will contain an error_message describing the problem.
-tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
-                          Read* read_message) {
+::nucleus::Status ParseAuxFields(const bam1_t* b,
+                                 const SamReaderOptions& options,
+                                 Read* read_message) {
   if (options.aux_field_handling() != SamReaderOptions::PARSE_ALL_AUX_FIELDS) {
-    return tf::Status();
+    return ::nucleus::Status();
   }
   const auto& aux_fields_to_keep = options.aux_fields_to_keep();
 
@@ -312,10 +317,10 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
     // [tag char 1, tag char 2, type byte, ...]
     // where the ... contents depends on the 2-character tag and type.
     const string tag = string(reinterpret_cast<char*>(s), 2);
-    bool include_tag = (aux_fields_to_keep.empty() ||
-                        std::find(aux_fields_to_keep.begin(),
-                                  aux_fields_to_keep.end(), tag)
-                        != aux_fields_to_keep.end());
+    bool include_tag =
+        (aux_fields_to_keep.empty() ||
+         std::find(aux_fields_to_keep.begin(), aux_fields_to_keep.end(), tag) !=
+             aux_fields_to_keep.end());
     s += 2;
     const uint8_t type = *s++;
     switch (type) {
@@ -329,29 +334,36 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
         s += 1;
       } break;
       // These are all different byte-sized integers.
-      case 'C': case 'c': case 'S': case 's': case 'I': case 'i': {
+      case 'C':
+      case 'c':
+      case 'S':
+      case 's':
+      case 'I':
+      case 'i': {
         const int size = HtslibAuxSize(type);
         if (size < 0 || end - s < size)
-          return tf::errors::DataLoss("Malformed tag " + tag);
+          return ::nucleus::DataLoss("Malformed tag " + tag);
         errno = 0;
         const int value = bam_aux2i(s - 1);
         if (value == 0 && errno == EINVAL)
-          return tf::errors::DataLoss("Malformed tag " + tag);
+          return ::nucleus::DataLoss("Malformed tag " + tag);
         if (include_tag) SetInfoField(tag, value, read_message);
         s += size;
       } break;
       // A 4-byte floating point.
       case 'f': {
-        if (end - s < 4) return tf::errors::DataLoss("Malformed tag " + tag);
+        if (end - s < 4) return ::nucleus::DataLoss("Malformed tag " + tag);
         const float value = le_to_float(s);
         if (include_tag) SetInfoField(tag, value, read_message);
         s += 4;
       } break;
       // Z and H are null-terminated strings.
-      case 'Z': case 'H': {
+      case 'Z':
+      case 'H': {
         char* value = reinterpret_cast<char*>(s);
-        for (; s < end && *s; ++s) {}  // Loop to the end.
-        if (s >= end) return tf::errors::DataLoss("Malformed tag " + tag);
+        for (; s < end && *s; ++s) {
+        }  // Loop to the end.
+        if (s >= end) return ::nucleus::DataLoss("Malformed tag " + tag);
         s++;
         // The H hex tag is not really used and likely deprecated (see:
         // https://sourceforge.net/p/samtools/mailman/message/28274509/
@@ -363,12 +375,12 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
         const uint8_t sub_type = *s++;
         const int element_size = HtslibAuxSize(sub_type);
         if (element_size < 0)
-          return tf::errors::DataLoss("element_size == 0 for tag " + tag);
+          return ::nucleus::DataLoss("element_size == 0 for tag " + tag);
         // Prevents us from reading off the end of our buffer with le_to_u32.
         if (end - s < 4)
-          return tf::errors::DataLoss("data too short for tag " + tag);
+          return ::nucleus::DataLoss("data too short for tag " + tag);
         const int n_elements = le_to_u32(s);
-        if (n_elements == 0) return tf::errors::DataLoss("n_elements is zero");
+        if (n_elements == 0) return ::nucleus::DataLoss("n_elements is zero");
         // We need to skip 4 bytes for n_elements int that occurs before the
         // array.
         s += 4;
@@ -443,25 +455,25 @@ tf::Status ParseAuxFields(const bam1_t* b, const SamReaderOptions& options,
           }
           if (include_tag) SetInfoField(tag, all_values, read_message);
         } else {
-          return tf::errors::DataLoss("Unknown subtype " +
-                                      std::to_string(sub_type));
+          return ::nucleus::DataLoss("Unknown subtype " +
+                                     std::to_string(sub_type));
         }
       } break;
       default: {
-        return tf::errors::DataLoss("Unknown tag " + tag);
+        return ::nucleus::DataLoss("Unknown tag " + tag);
       }
     }
   }
 
   // Everything parsed correctly, so we return OK.
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // Assign aligned_quality. Depending on the use_original_base_quality_scores
 // aligned_quality is read either from "QUAL" field or from "OQ" tag in SAM/BAM.
-tf::Status AssignAlignedQuality(const bam1_t* b,
-                                const SamReaderOptions& options,
-                                Read* read_message) {
+::nucleus::Status AssignAlignedQuality(const bam1_t* b,
+                                       const SamReaderOptions& options,
+                                       Read* read_message) {
   const bam1_core_t* c = &b->core;
   // Use optional "OQ" tag.
   if (options.use_original_base_quality_scores()) {
@@ -475,7 +487,7 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
       for (char c : oq_tag_value.string_value()) {
         quality->Add(reinterpret_cast<int>(c - 33));
       }
-      return tf::Status();
+      return ::nucleus::Status();
     }
   } else {  // Use "QUAL" field.
     if (c->l_qseq) {
@@ -487,27 +499,28 @@ tf::Status AssignAlignedQuality(const bam1_t* b,
         for (int i = 0; i < c->l_qseq; ++i) {
           quality->Add(quals[i]);
         }
-        return tf::Status();
+        return ::nucleus::Status();
       }
     }
   }
-  return tf::Status(static_cast<tensorflow::errors::Code>(absl::StatusCode::kNotFound),
-                    "Could not read base quality scores");
+  return ::nucleus::Status(absl::StatusCode::kNotFound,
+                           "Could not read base quality scores");
 }
 
 // Returns with tensorflow::error::Code::ABORTED if the read doesn't
 // satisfy read requirements. When that happens, the function aborts early and
 // doesn't fill the other fields such as aligned_sequence, which can be
 // expensive in long reads.
-tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
-                       const SamReaderOptions& options, Read* read_message) {
+::nucleus::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
+                              const SamReaderOptions& options,
+                              Read* read_message) {
   CHECK(h != nullptr) << "BAM header cannot be null";
   CHECK(b != nullptr) << "BAM record cannot be null";
   CHECK(read_message != nullptr) << "Read record cannot be null";
 
   read_message->Clear();
 
-  const bam1_core_t *c = &b->core;
+  const bam1_core_t* c = &b->core;
 
   // Grab a bunch of basic information from the bam1_t record and put it into
   // our protobuf.
@@ -529,8 +542,8 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
   if (options.has_read_requirements() &&
       !PartialReadSatisfiesRequirements(*read_message,
                                         options.read_requirements())) {
-    return tf::Status(static_cast<tensorflow::errors::Code>(absl::StatusCode::kAborted),
-                      "Read doesn't satisfy requirements.");
+    return ::nucleus::Status(absl::StatusCode::kAborted,
+                             "Read doesn't satisfy requirements.");
   }
 
   if (c->l_qseq) {
@@ -582,13 +595,13 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
   }
 
   // Parse out our read aux fields.
-  tf::Status status = ParseAuxFields(b, options, read_message);
+  ::nucleus::Status status = ParseAuxFields(b, options, read_message);
   if (!status.ok()) {
     // Not thread safe.
     static int counter = 0;
     if (counter++ < 1) {
-      LOG(WARNING) << "Aux field parsing failure in read "
-                   << bam_get_qname(b) << ": " << status;
+      LOG(WARNING) << "Aux field parsing failure in read " << bam_get_qname(b)
+                   << ": " << status;
     }
   }
 
@@ -600,7 +613,7 @@ tf::Status ConvertToPb(const bam_hdr_t* h, const bam1_t* b,
                  << ": " << status;
   }
 
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // Base class for SamFullFileIterable and SamQueryIterable.
@@ -614,9 +627,7 @@ class SamIterableBase : public SamIterable {
   StatusOr<bool> Next(nucleus::genomics::v1::Read* out) override;
 
   // Base class constructor. Intializes common attrubutes.
-  SamIterableBase(const SamReader* reader,
-                  htsFile* fp,
-                  bam_hdr_t* header);
+  SamIterableBase(const SamReader* reader, htsFile* fp, bam_hdr_t* header);
   ~SamIterableBase() override;
 
  protected:
@@ -642,9 +653,7 @@ class SamQueryIterable : public SamIterableBase {
 
  public:
   // Constructor will be invoked via SamReader::Query.
-  SamQueryIterable(const SamReader* reader,
-                   htsFile* fp,
-                   bam_hdr_t* header,
+  SamQueryIterable(const SamReader* reader, htsFile* fp, bam_hdr_t* header,
                    hts_itr_t* iter);
 
   ~SamQueryIterable() override;
@@ -662,17 +671,15 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
       sampler_(options.downsample_fraction(), options.random_seed()) {
   CHECK(fp != nullptr) << "pointer to SAM/BAM cannot be null";
   CHECK(header_ != nullptr) << "pointer to header cannot be null";
-  CHECK(options.aux_field_handling()
-        || !options.use_original_base_quality_scores())
+  CHECK(options.aux_field_handling() ||
+        !options.use_original_base_quality_scores())
       << "aux_field_handling must be true if use_original_quality_scores is "
          "set to true";
-  bool oq_is_included = (
-      options.aux_fields_to_keep().empty() ||
-      std::find(options.aux_fields_to_keep().begin(),
-                options.aux_fields_to_keep().end(), kOQ)
-      != options.aux_fields_to_keep().end());
-  CHECK(oq_is_included
-        || !options.use_original_base_quality_scores())
+  bool oq_is_included = (options.aux_fields_to_keep().empty() ||
+                         std::find(options.aux_fields_to_keep().begin(),
+                                   options.aux_fields_to_keep().end(),
+                                   kOQ) != options.aux_fields_to_keep().end());
+  CHECK(oq_is_included || !options.use_original_base_quality_scores())
       << "aux_fields_to_keep must contain OQ or be empty (which means "
       << "including everything) if use_original_quality_scores is set to true.";
 
@@ -713,8 +720,7 @@ SamReader::SamReader(const string& reads_path, const SamReaderOptions& options,
 }
 
 StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
-    const string& reads_path,
-    const string& ref_path,
+    const string& reads_path, const string& ref_path,
     const SamReaderOptions& options) {
   // Validate that we support the requested read requirements.
   if (options.has_read_requirements() &&
@@ -722,20 +728,20 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
           nucleus::genomics::v1::ReadRequirements::UNSPECIFIED &&
       options.read_requirements().min_base_quality_mode() !=
           nucleus::genomics::v1::ReadRequirements::ENFORCED_BY_CLIENT) {
-    return tf::errors::InvalidArgument(
-        "Unsupported min_base_quality mode in options ",
-        options.ShortDebugString());
+    return ::nucleus::InvalidArgument(
+        absl::StrCat("Unsupported min_base_quality mode in options ",
+                     options.ShortDebugString()));
   }
 
   htsFile* fp = hts_open_x(reads_path, "r");
   if (!fp) {
-    return tf::errors::NotFound("Could not open ", reads_path);
+    return ::nucleus::NotFound(absl::StrCat("Could not open ", reads_path));
   }
 
   if (options.hts_block_size() > 0) {
     LOG(INFO) << "Setting HTS_OPT_BLOCK_SIZE to " << options.hts_block_size();
     if (hts_set_opt(fp, HTS_OPT_BLOCK_SIZE, options.hts_block_size()) != 0)
-      return tf::errors::Unknown("Failed to set HTS_OPT_BLOCK_SIZE");
+      return ::nucleus::Unknown("Failed to set HTS_OPT_BLOCK_SIZE");
   }
 
   bam_hdr_t* header = sam_hdr_read(fp);
@@ -744,9 +750,11 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
     int retval = hts_close(fp);
     fp = nullptr;
     if (retval < 0) {
-      return tf::errors::Internal("hts_close() failed on file with ", errmsg);
+      return ::nucleus::Internal(
+          absl::StrCat("hts_close() failed on file with ", errmsg));
     }
-    return tf::errors::Unknown("Could not parse file with ", errmsg);
+    return ::nucleus::Unknown(
+        absl::StrCat("Could not parse file with ", errmsg));
   }
 
   hts_idx_t* idx = nullptr;
@@ -763,8 +771,8 @@ StatusOr<std::unique_ptr<SamReader>> SamReader::FromFile(
     if (!ref_path.empty()) {
       LOG(INFO) << "Setting CRAM reference path to '" << ref_path << "'";
       if (cram_set_option(fp->fp.cram, CRAM_OPT_REFERENCE, ref_path.c_str())) {
-        return tf::errors::Unknown(
-            "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path);
+        return ::nucleus::Unknown(absl::StrCat(
+            "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path));
       }
     } else {
       // If |ref_path| is empty, assumes that the reference sequence is embedded
@@ -781,7 +789,7 @@ SamReader::~SamReader() {
   if (fp_) {
     // We cannot return a value from the destructor, so the best we can do is
     // CHECK-fail if the Close() wasn't successful.
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
@@ -801,7 +809,7 @@ bool SamReader::KeepRead(const nucleus::genomics::v1::Read& read) const {
 
 StatusOr<std::shared_ptr<SamIterable>> SamReader::Iterate() const {
   if (fp_ == nullptr)
-    return tf::errors::FailedPrecondition("Cannot Iterate a closed SamReader.");
+    return ::nucleus::FailedPrecondition("Cannot Iterate a closed SamReader.");
   return StatusOr<std::shared_ptr<SamIterable>>(
       MakeIterable<SamFullFileIterable>(this, fp_, header_));
 }
@@ -809,15 +817,15 @@ StatusOr<std::shared_ptr<SamIterable>> SamReader::Iterate() const {
 StatusOr<std::shared_ptr<SamIterable>> SamReader::Query(
     const Range& region) const {
   if (fp_ == nullptr)
-    return tf::errors::FailedPrecondition("Cannot Query a closed SamReader.");
+    return ::nucleus::FailedPrecondition("Cannot Query a closed SamReader.");
   if (!HasIndex()) {
-    return tf::errors::FailedPrecondition("Cannot query without an index");
+    return ::nucleus::FailedPrecondition("Cannot query without an index");
   }
 
   const int tid = bam_name2id(header_, region.reference_name().c_str());
   if (tid < 0) {
-    return tf::errors::NotFound(
-        "Unknown reference_name ", region.ShortDebugString());
+    return ::nucleus::NotFound(
+        absl::StrCat("Unknown reference_name ", region.ShortDebugString()));
   }
 
   // Note that query is 0-based inclusive on start and exclusive on end,
@@ -825,17 +833,16 @@ StatusOr<std::shared_ptr<SamIterable>> SamReader::Query(
   hts_itr_t* iter = sam_itr_queryi(idx_, tid, region.start(), region.end());
   if (iter == nullptr) {
     // The region isn't valid according to sam_itr_query(), blow up.
-    return tf::errors::NotFound(
-        "region '", region.ShortDebugString(),
-        "' specifies an unknown reference interval");
+    return ::nucleus::NotFound(
+        absl::StrCat("region '", region.ShortDebugString(),
+                     "' specifies an unknown reference interval"));
   }
 
-    return StatusOr<std::shared_ptr<SamIterable>>(
-        MakeIterable<SamQueryIterable>(this, fp_, header_, iter));
+  return StatusOr<std::shared_ptr<SamIterable>>(
+      MakeIterable<SamQueryIterable>(this, fp_, header_, iter));
 }
 
-
-tf::Status SamReader::Close() {
+::nucleus::Status SamReader::Close() {
   if (HasIndex()) {
     hts_idx_destroy(idx_);
     idx_ = nullptr;
@@ -845,17 +852,16 @@ tf::Status SamReader::Close() {
   int retval = hts_close(fp_);
   fp_ = nullptr;
   if (retval < 0) {
-    return tf::errors::Internal("hts_close() failed");
+    return ::nucleus::Internal("hts_close() failed");
   } else {
-    return tf::Status();
+    return ::nucleus::Status();
   }
 }
-
 
 // Iterable class definitions.
 
 StatusOr<bool> SamIterableBase::Next(Read* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   // Keep reading until "reader_->KeepRead(.)"
   const SamReader* sam_reader = static_cast<const SamReader*>(reader_);
   do {
@@ -863,31 +869,25 @@ StatusOr<bool> SamIterableBase::Next(Read* out) {
     if (code == -1) {
       return false;
     } else if (code < -1) {
-      return tf::errors::DataLoss("Failed to parse SAM record");
+      return ::nucleus::DataLoss("Failed to parse SAM record");
     }
     // Convert to proto.
-    tf::Status status = ConvertToPb(header_, bam1_, sam_reader->options(), out);
-    if (status.code() == tensorflow::error::Code::ABORTED) {
+    ::nucleus::Status status =
+        ConvertToPb(header_, bam1_, sam_reader->options(), out);
+    if (status.code() == absl::StatusCode::kAborted) {
       // "ABORT" from ConvertToPb means requirements were not met.
       continue;
     }
-    TF_RETURN_IF_ERROR(status);
+    NUCLEUS_RETURN_IF_ERROR(status);
   } while (!sam_reader->KeepRead(*out));
   return true;
 }
 
-SamIterableBase::SamIterableBase(const SamReader* reader,
-                                 htsFile* fp,
+SamIterableBase::SamIterableBase(const SamReader* reader, htsFile* fp,
                                  bam_hdr_t* header)
-    : Iterable(reader),
-      fp_(fp),
-      header_(header),
-      bam1_(bam_init1())
-{}
+    : Iterable(reader), fp_(fp), header_(header), bam1_(bam_init1()) {}
 
-SamIterableBase::~SamIterableBase() {
-  bam_destroy1(bam1_);
-}
+SamIterableBase::~SamIterableBase() { bam_destroy1(bam1_); }
 
 int SamFullFileIterable::next_sam_record() {
   // sam_read1 docs say: >= 0 on successfully reading a new record,
@@ -896,26 +896,18 @@ int SamFullFileIterable::next_sam_record() {
   return sam_read1(fp_, header_, bam1_);
 }
 
-SamFullFileIterable::SamFullFileIterable(const SamReader* reader,
-                                         htsFile* fp,
+SamFullFileIterable::SamFullFileIterable(const SamReader* reader, htsFile* fp,
                                          bam_hdr_t* header)
-    : SamIterableBase(reader, fp, header)
-{}
-
+    : SamIterableBase(reader, fp, header) {}
 
 int SamQueryIterable::next_sam_record() {
   return sam_itr_next(fp_, iter_, bam1_);
 }
 
-SamQueryIterable::~SamQueryIterable() {
-  hts_itr_destroy(iter_);
-}
+SamQueryIterable::~SamQueryIterable() { hts_itr_destroy(iter_); }
 
-SamQueryIterable::SamQueryIterable(const SamReader* reader,
-                                   htsFile* fp,
-                                   bam_hdr_t* header,
-                                   hts_itr_t* iter)
-    : SamIterableBase(reader, fp, header), iter_(iter)
-{}
+SamQueryIterable::SamQueryIterable(const SamReader* reader, htsFile* fp,
+                                   bam_hdr_t* header, hts_itr_t* iter)
+    : SamIterableBase(reader, fp, header), iter_(iter) {}
 
 }  // namespace nucleus

@@ -33,24 +33,21 @@
 #include "third_party/nucleus/io/fastq_reader.h"
 
 #include <stddef.h>
+
 #include <utility>
 
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
+#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/vendor/statusor.h"
 
 namespace nucleus {
-
-namespace tf = tensorflow;
 
 using absl::string_view;
 using nucleus::genomics::v1::FastqReaderOptions;
 using nucleus::genomics::v1::FastqRecord;
-
 
 // For validation of the FASTQ format.
 constexpr char HEADER_SYMBOL = '@';
@@ -62,21 +59,19 @@ constexpr char SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL = '+';
 //
 // -----------------------------------------------------------------------------
 
-
 namespace {
 
 // TODO: get rid of pessimizing string_view -> string conversions
 // once our OSS dependencies are updated.
-tf::Status ConvertToPb(const string_view header,
-                       const string_view sequence,
-                       const string_view pad,
-                       const string_view quality,
-                       nucleus::genomics::v1::FastqRecord* record) {
+::nucleus::Status ConvertToPb(const string_view header,
+                              const string_view sequence, const string_view pad,
+                              const string_view quality,
+                              nucleus::genomics::v1::FastqRecord* record) {
   CHECK(record != nullptr) << "FASTQ record cannot be null";
-  if (header.empty() || header[0] != HEADER_SYMBOL ||
-      pad.empty() || pad[0] != SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL ||
-      sequence.empty() || sequence.length() != quality.length()) {
-    return tf::errors::DataLoss("Invalid FASTQ record");
+  if (header.empty() || header[0] != HEADER_SYMBOL || pad.empty() ||
+      pad[0] != SEQUENCE_AND_QUALITY_SEPARATOR_SYMBOL || sequence.empty() ||
+      sequence.length() != quality.length()) {
+    return ::nucleus::DataLoss("Invalid FASTQ record");
   }
   record->Clear();
   size_t spaceix = header.find(' ');
@@ -91,7 +86,7 @@ tf::Status ConvertToPb(const string_view header,
   }
   record->set_sequence(string(sequence));
   record->set_quality(string(quality));
-  return tf::Status();
+  return ::nucleus::Status();
 }
 }  // namespace
 
@@ -109,8 +104,9 @@ class FastqFullFileIterable : public FastqIterable {
 StatusOr<std::unique_ptr<FastqReader>> FastqReader::FromFile(
     const string& fastq_path,
     const nucleus::genomics::v1::FastqReaderOptions& options) {
-  StatusOr<std::unique_ptr<TextReader>> textreader_or = TextReader::FromFile(fastq_path);
-  TF_RETURN_IF_ERROR(textreader_or.status());
+  StatusOr<std::unique_ptr<TextReader>> textreader_or =
+      TextReader::FromFile(fastq_path);
+  NUCLEUS_RETURN_IF_ERROR(textreader_or.status());
   return std::unique_ptr<FastqReader>(
       new FastqReader(std::move(textreader_or.ValueOrDie()), options));
 }
@@ -121,54 +117,62 @@ FastqReader::FastqReader(std::unique_ptr<TextReader> text_reader,
 
 FastqReader::~FastqReader() {
   if (text_reader_) {
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
-tf::Status FastqReader::Close() {
+::nucleus::Status FastqReader::Close() {
   if (!text_reader_) {
-    return tf::errors::FailedPrecondition("FastqReader already closed");
+    return ::nucleus::FailedPrecondition("FastqReader already closed");
   }
   // Close the file pointer.
-  tf::Status close_status = text_reader_->Close();
+  ::nucleus::Status close_status = text_reader_->Close();
   text_reader_ = nullptr;
   return close_status;
 }
 
-tf::Status FastqReader::Next(string* header, string* sequence,
-                             string* pad, string* quality) const {
+::nucleus::Status FastqReader::Next(string* header, string* sequence,
+                                    string* pad, string* quality) const {
   // Read the four lines, returning early if we are at the end of the stream or
   // the record is truncated.
   StatusOr<string> header_or, sequence_or, pad_or, quality_or;
 
   header_or = text_reader_->ReadLine();
   if (!header_or.ok()) {
-    if (tf::errors::IsOutOfRange(header_or.status())) {
+    if (::nucleus::IsOutOfRange(header_or.status())) {
       return header_or.status();
-    } else { goto data_loss; }
+    } else {
+      goto data_loss;
+    }
   }
   sequence_or = text_reader_->ReadLine();
-  if (!sequence_or.ok()) { goto data_loss; }
+  if (!sequence_or.ok()) {
+    goto data_loss;
+  }
 
   pad_or = text_reader_->ReadLine();
-  if (!pad_or.ok()) { goto data_loss; }
+  if (!pad_or.ok()) {
+    goto data_loss;
+  }
 
   quality_or = text_reader_->ReadLine();
-  if (!quality_or.ok()) { goto data_loss; }
+  if (!quality_or.ok()) {
+    goto data_loss;
+  }
 
   *header = header_or.ValueOrDie();
   *sequence = sequence_or.ValueOrDie();
   *pad = pad_or.ValueOrDie();
   *quality = quality_or.ValueOrDie();
-  return tf::Status();
+  return ::nucleus::Status();
 
 data_loss:
-  return tf::errors::DataLoss("Failed to parse FASTQ record");
+  return ::nucleus::DataLoss("Failed to parse FASTQ record");
 }
 
 StatusOr<std::shared_ptr<FastqIterable>> FastqReader::Iterate() const {
   if (!text_reader_) {
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot Iterate a closed FastqReader.");
   }
   return StatusOr<std::shared_ptr<FastqIterable>>(
@@ -177,18 +181,19 @@ StatusOr<std::shared_ptr<FastqIterable>> FastqReader::Iterate() const {
 
 // Iterable class definitions.
 StatusOr<bool> FastqFullFileIterable::Next(FastqRecord* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   const FastqReader* fastq_reader = static_cast<const FastqReader*>(reader_);
   string header, sequence, pad, quality;
-  tf::Status status = fastq_reader->Next(&header, &sequence, &pad, &quality);
+  ::nucleus::Status status =
+      fastq_reader->Next(&header, &sequence, &pad, &quality);
   if (!status.ok()) {
-    if (tf::errors::IsOutOfRange(status)) {
+    if (::nucleus::IsOutOfRange(status)) {
       return false;
     } else {
       return status;
     }
   }
-  TF_RETURN_IF_ERROR(ConvertToPb(header, sequence, pad, quality, out));
+  NUCLEUS_RETURN_IF_ERROR(ConvertToPb(header, sequence, pad, quality, out));
   return true;
 }
 

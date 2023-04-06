@@ -39,16 +39,15 @@
 #include "htslib/vcf.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
 // -----------------------------------------------------------------------------
 // VCF type encoding utilities
-template<class T>
+template <class T>
 struct VcfType {
   // Predicates for checking missing and sentinel entries.  Use these, not ==.
   // Is argument the "missing" value?
@@ -57,9 +56,9 @@ struct VcfType {
   static bool IsVectorEnd(T);
   // Missing and sentinel value assignment.  Use these, not = assignment
   // Set argument to "missing" value
-  static void SetMissing(T* v);
+  static void SetMissing(T *v);
   // Set argument to vector end sentinel
-  static void SetVectorEnd(T* v);
+  static void SetVectorEnd(T *v);
 
   // FORMAT field extraction: wrapper for bcf_get_format_*()
   // Given a VCF record, this will grab FORMAT tag "tag" from the record, a
@@ -72,9 +71,9 @@ struct VcfType {
   // FORMAT field writing: wrapper for bcf_update_format_*()
   // Given a VCF record, this routine will populate the FORMAT field specified
   // by "tag" with the values src[0]...src[nsrc-1].
-  static tensorflow::Status PutFormatValues(const char *tag, const T *src,
-                                            int nsrc, const bcf_hdr_t *hdr,
-                                            bcf1_t *line);
+  static ::nucleus::Status PutFormatValues(const char *tag, const T *src,
+                                           int nsrc, const bcf_hdr_t *hdr,
+                                           bcf1_t *line);
 
   // INFO field extraction: wrapper for bcf_get_info_*()
   // Given a VCF record, this will grab INFO tag "tag" from the record, a
@@ -87,32 +86,32 @@ struct VcfType {
   // INFO field writing: wrapper for bcf_update_info_*()
   // Given a VCF record, this routine will populate the INFO field specified
   // by "tag" with the values src[0]...src[nsrc-1].
-  static tensorflow::Status PutInfoValues(const char *tag, const T *src,
-                                          int nsrc, const bcf_hdr_t *hdr,
-                                          bcf1_t *line);
+  static ::nucleus::Status PutInfoValues(const char *tag, const T *src,
+                                         int nsrc, const bcf_hdr_t *hdr,
+                                         bcf1_t *line);
 };
 
 // See interface description comment above.
-template<>
+template <>
 struct VcfType<int> {
-  static bool IsMissing(int v)   { return (v == bcf_int32_missing); }
+  static bool IsMissing(int v) { return (v == bcf_int32_missing); }
   static bool IsVectorEnd(int v) { return (v == bcf_int32_vector_end); }
-  static void SetMissing(int* v)     { *v = bcf_int32_missing;  }
-  static void SetVectorEnd(int* v)   { *v = bcf_int32_vector_end; }
+  static void SetMissing(int *v) { *v = bcf_int32_missing; }
+  static void SetVectorEnd(int *v) { *v = bcf_int32_vector_end; }
 
   static int GetFormatValues(const bcf_hdr_t *hdr, const bcf1_t *line,
                              const char *tag, int **dst, int *ndst) {
-    return bcf_get_format_int32(hdr, const_cast<bcf1_t *>(line),
-                                tag, dst, ndst);
+    return bcf_get_format_int32(hdr, const_cast<bcf1_t *>(line), tag, dst,
+                                ndst);
   }
 
-  static tensorflow::Status PutFormatValues(const char *tag, const int *src,
-                                            int nsrc, const bcf_hdr_t *hdr,
-                                            bcf1_t *line) {
+  static ::nucleus::Status PutFormatValues(const char *tag, const int *src,
+                                           int nsrc, const bcf_hdr_t *hdr,
+                                           bcf1_t *line) {
     if (bcf_update_format_int32(hdr, line, tag, src, nsrc) != 0)
-      return tensorflow::errors::Internal("bcf_update_format_int32 failed");
+      return ::nucleus::Internal("bcf_update_format_int32 failed");
     else
-      return tensorflow::Status();
+      return ::nucleus::Status();
   }
 
   static int GetInfoValues(const bcf_hdr_t *hdr, const bcf1_t *line,
@@ -120,37 +119,37 @@ struct VcfType<int> {
     return bcf_get_info_int32(hdr, const_cast<bcf1_t *>(line), tag, dst, ndst);
   }
 
-  static tensorflow::Status PutInfoValues(const char *tag, const int *src,
-                                          int nsrc, const bcf_hdr_t *hdr,
-                                          bcf1_t *line) {
+  static ::nucleus::Status PutInfoValues(const char *tag, const int *src,
+                                         int nsrc, const bcf_hdr_t *hdr,
+                                         bcf1_t *line) {
     if (bcf_update_info_int32(hdr, line, tag, src, nsrc) != 0)
-      return tensorflow::errors::Internal("bcf_update_info_int32 failed");
+      return ::nucleus::Internal("bcf_update_info_int32 failed");
     else
-      return tensorflow::Status();
+      return ::nucleus::Status();
   }
 };
 
 // See interface description comment above.
-template<>
+template <>
 struct VcfType<float> {
-  static bool IsMissing(float v)   { return bcf_float_is_missing(v); }
+  static bool IsMissing(float v) { return bcf_float_is_missing(v); }
   static bool IsVectorEnd(float v) { return bcf_float_is_vector_end(v); }
-  static void SetMissing(float* v) { bcf_float_set(v, bcf_float_missing); }
-  static void SetVectorEnd(float* v) { bcf_float_set(v, bcf_float_vector_end); }
+  static void SetMissing(float *v) { bcf_float_set(v, bcf_float_missing); }
+  static void SetVectorEnd(float *v) { bcf_float_set(v, bcf_float_vector_end); }
 
   static int GetFormatValues(const bcf_hdr_t *hdr, const bcf1_t *line,
                              const char *tag, float **dst, int *ndst) {
-    return bcf_get_format_float(hdr, const_cast<bcf1_t *>(line),
-                                tag, dst, ndst);
+    return bcf_get_format_float(hdr, const_cast<bcf1_t *>(line), tag, dst,
+                                ndst);
   }
 
-  static tensorflow::Status PutFormatValues(const char *tag, const float *src,
-                                            int nsrc, const bcf_hdr_t *hdr,
-                                            bcf1_t *line) {
+  static ::nucleus::Status PutFormatValues(const char *tag, const float *src,
+                                           int nsrc, const bcf_hdr_t *hdr,
+                                           bcf1_t *line) {
     if (bcf_update_format_float(hdr, line, tag, src, nsrc) != 0)
-      return tensorflow::errors::Internal("bcf_update_format_float failed");
+      return ::nucleus::Internal("bcf_update_format_float failed");
     else
-      return tensorflow::Status();
+      return ::nucleus::Status();
   }
 
   static int GetInfoValues(const bcf_hdr_t *hdr, const bcf1_t *line,
@@ -158,16 +157,15 @@ struct VcfType<float> {
     return bcf_get_info_float(hdr, const_cast<bcf1_t *>(line), tag, dst, ndst);
   }
 
-  static tensorflow::Status PutInfoValues(const char *tag, const float *src,
-                                          int nsrc, const bcf_hdr_t *hdr,
-                                          bcf1_t *line) {
+  static ::nucleus::Status PutInfoValues(const char *tag, const float *src,
+                                         int nsrc, const bcf_hdr_t *hdr,
+                                         bcf1_t *line) {
     if (bcf_update_info_float(hdr, line, tag, src, nsrc) != 0)
-      return tensorflow::errors::Internal("bcf_update_info_float failed");
+      return ::nucleus::Internal("bcf_update_info_float failed");
     else
-      return tensorflow::Status();
+      return ::nucleus::Status();
   }
 };
-
 
 // -----------------------------------------------------------------------------
 // Helper class for encoding VariantCall.info values in VCF FORMAT field values.
@@ -188,31 +186,30 @@ struct VcfType<float> {
 class VcfFormatFieldAdapter {
  public:
   // Creates a new adapter for a field name field_name.
-  VcfFormatFieldAdapter(const string& field_name, int vcf_type);
+  VcfFormatFieldAdapter(const string &field_name, int vcf_type);
 
   // Adds the values for our field_name from variant's calls into our bcf1_t
   // record bcf_record.
-  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
-                                  const bcf_hdr_t* header,
-                                  bcf1_t* bcf_record) const;
+  ::nucleus::Status EncodeValues(const nucleus::genomics::v1::Variant &variant,
+                                 const bcf_hdr_t *header,
+                                 bcf1_t *bcf_record) const;
 
   // Add the values for this genotype field in the bcf1_t `bcf_record` to the
   // VariantCall info maps within this Variant proto message `variant`.
-  tensorflow::Status DecodeValues(
-      const bcf_hdr_t *header, const bcf1_t *bcf_record,
-      nucleus::genomics::v1::Variant *variant) const;
+  ::nucleus::Status DecodeValues(const bcf_hdr_t *header,
+                                 const bcf1_t *bcf_record,
+                                 nucleus::genomics::v1::Variant *variant) const;
 
  private:  // Non-API methods
   template <class T>
-  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
-                                  const bcf_hdr_t* header,
-                                  bcf1_t* bcf_record) const;
+  ::nucleus::Status EncodeValues(const nucleus::genomics::v1::Variant &variant,
+                                 const bcf_hdr_t *header,
+                                 bcf1_t *bcf_record) const;
 
   template <class T>
-  tensorflow::Status DecodeValues(
-      const bcf_hdr_t *header, const bcf1_t *bcf_record,
-      nucleus::genomics::v1::Variant *variant) const;
-
+  ::nucleus::Status DecodeValues(const bcf_hdr_t *header,
+                                 const bcf1_t *bcf_record,
+                                 nucleus::genomics::v1::Variant *variant) const;
 
  private:  // Fields
   // The name of our field, such as "DP", "AD", or "VAF".
@@ -220,7 +217,6 @@ class VcfFormatFieldAdapter {
   // The htslib/VCF "type" of this field, such as BCF_HT_INT.
   int vcf_type_;
 };
-
 
 // -----------------------------------------------------------------------------
 // Helper class for encoding Variant.info values in VCF INFO field values.
@@ -230,31 +226,30 @@ class VcfFormatFieldAdapter {
 class VcfInfoFieldAdapter {
  public:
   // Creates a new adapter for a field name field_name.
-  VcfInfoFieldAdapter(const string& field_name, int vcf_type);
+  VcfInfoFieldAdapter(const string &field_name, int vcf_type);
 
   // Adds the values for our field_name from the Variant into our bcf1_t
   // record bcf_record.
-  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
-                                  const bcf_hdr_t* header,
-                                  bcf1_t* bcf_record) const;
+  ::nucleus::Status EncodeValues(const nucleus::genomics::v1::Variant &variant,
+                                 const bcf_hdr_t *header,
+                                 bcf1_t *bcf_record) const;
 
   // Add the values for this INFO field in the bcf1_t `bcf_record` to the
   // Variant message info map.
-  tensorflow::Status DecodeValues(
-      const bcf_hdr_t *header, const bcf1_t *bcf_record,
-      nucleus::genomics::v1::Variant *variant) const;
+  ::nucleus::Status DecodeValues(const bcf_hdr_t *header,
+                                 const bcf1_t *bcf_record,
+                                 nucleus::genomics::v1::Variant *variant) const;
 
  private:  // Non-API methods
   template <class T>
-  tensorflow::Status EncodeValues(const nucleus::genomics::v1::Variant& variant,
-                                  const bcf_hdr_t* header,
-                                  bcf1_t* bcf_record) const;
+  ::nucleus::Status EncodeValues(const nucleus::genomics::v1::Variant &variant,
+                                 const bcf_hdr_t *header,
+                                 bcf1_t *bcf_record) const;
 
   template <class T>
-  tensorflow::Status DecodeValues(
-      const bcf_hdr_t *header, const bcf1_t *bcf_record,
-      nucleus::genomics::v1::Variant *variant) const;
-
+  ::nucleus::Status DecodeValues(const bcf_hdr_t *header,
+                                 const bcf1_t *bcf_record,
+                                 nucleus::genomics::v1::Variant *variant) const;
 
  private:  // Fields
   // The name of our info field, such as "H2" or "END"
@@ -272,8 +267,8 @@ class VcfHeaderConverter {
 
   // Converts a proto VcfHeader to a bcf_hdr_t. Caller needs to take ownership
   // of |h|.
-  static tensorflow::Status ConvertFromPb(const nucleus::genomics::v1::VcfHeader &vcf_header,
-                            bcf_hdr_t **h);
+  static ::nucleus::Status ConvertFromPb(
+      const nucleus::genomics::v1::VcfHeader &vcf_header, bcf_hdr_t **h);
 };
 
 // Helper class for converting between Variant proto messages and VCF records.
@@ -290,13 +285,13 @@ class VcfRecordConverter {
 
   // Convert a VCF line parsed by htslib into a Variant protocol buffer.
   // The parsed line is passed in v, and the parsed header is in h.
-  tensorflow::Status ConvertToPb(
+  ::nucleus::Status ConvertToPb(
       const bcf_hdr_t *h, bcf1_t *v,
       nucleus::genomics::v1::Variant *variant_message) const;
 
   // Convert a Variant protocol buffer into htslib's representation of a VCF
   // line.
-  tensorflow::Status ConvertFromPb(
+  ::nucleus::Status ConvertFromPb(
       const nucleus::genomics::v1::Variant &variant_message, const bcf_hdr_t &h,
       bcf1_t *v) const;
 

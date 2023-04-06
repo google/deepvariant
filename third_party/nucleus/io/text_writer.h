@@ -38,12 +38,10 @@
 
 #include "htslib/hts.h"
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
-
 
 // TextWriter is a class allowing writing text to a (possibly compressed) file
 // stream
@@ -54,10 +52,10 @@ class TextWriter {
     COMPRESS = true,
   };
 
- public :
+ public:
   // Factory function allowing explicit choice of whether to use compression.
-  static StatusOr<std::unique_ptr<TextWriter>>
-  ToFile(const string& path, CompressionPolicy compression);
+  static StatusOr<std::unique_ptr<TextWriter>> ToFile(
+      const string& path, CompressionPolicy compression);
 
   // Factory function that uses compression if the filename ends in ".gz".
   static StatusOr<std::unique_ptr<TextWriter>> ToFile(const string& path);
@@ -66,10 +64,10 @@ class TextWriter {
   ~TextWriter();
 
   // Write a string to the file stream.
-  tensorflow::Status Write(const string& text);
+  ::nucleus::Status Write(const string& text);
 
   // Close the underlying file stream.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
  private:
   // Private constructor.
@@ -80,6 +78,5 @@ class TextWriter {
 };
 
 }  // namespace nucleus
-
 
 #endif  // THIRD_PARTY_NUCLEUS_IO_TEXT_WRITER_H_

@@ -44,11 +44,10 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/util/samplers.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
-
 
 // Alias for the abstract base class for SAM record iterables.
 using SamIterable = Iterable<nucleus::genomics::v1::Read>;
@@ -102,8 +101,7 @@ class SamReader : public Reader {
   // Returns a StatusOr that is OK if the SamReader could be successfully
   // created or an error code indicating the error that occurred.
   static StatusOr<std::unique_ptr<SamReader>> FromFile(
-      const string& reads_path,
-      const string& ref_path,
+      const string& reads_path, const string& ref_path,
       const nucleus::genomics::v1::SamReaderOptions& options);
 
   static StatusOr<std::unique_ptr<SamReader>> FromFile(
@@ -151,11 +149,11 @@ class SamReader : public Reader {
 
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // This no-op function is needed only for Python context manager support.  Do
   // not use it! Returns a Status indicating whether the enter was successful.
-  tensorflow::Status PythonEnter() const { return tensorflow::Status(); }
+  ::nucleus::Status PythonEnter() const { return ::nucleus::Status(); }
 
   bool KeepRead(const nucleus::genomics::v1::Read& read) const;
 
@@ -177,10 +175,10 @@ class SamReader : public Reader {
   const nucleus::genomics::v1::SamReaderOptions options_;
 
   // A pointer to the htslib file used to access the SAM/BAM data.
-  htsFile * fp_;
+  htsFile* fp_;
 
   // A htslib header data structure obtained by parsing the header of this BAM.
-  bam_hdr_t * header_;
+  bam_hdr_t* header_;
 
   // The htslib index data structure for our indexed BAM file. May be NULL if no
   // index was loaded.

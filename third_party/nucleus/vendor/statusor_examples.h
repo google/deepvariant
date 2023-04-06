@@ -33,35 +33,26 @@
 #ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
 #define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
 
-#include "third_party/nucleus/vendor/statusor.h"
+#include <memory>
+
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/vendor/statusor.h"
 
 namespace nucleus {
 
-using tensorflow::Status;
-
-static StatusOr<int> MakeIntOK() {
-  return 42;
-}
+static StatusOr<int> MakeIntOK() { return 42; }
 
 static StatusOr<int> MakeIntFail() {
-  return Status(
-      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
-      "MakeIntFail");
+  return Status(absl::StatusCode::kInvalidArgument, "MakeIntFail");
 }
 
-static StatusOr<string> MakeStrOK() {
-  return string("hello");
-}
+static StatusOr<string> MakeStrOK() { return string("hello"); }
 
-static StatusOr<string> MakeStrOKStrippedType() {
-  return string("hello");
-}
+static StatusOr<string> MakeStrOKStrippedType() { return string("hello"); }
 
 static StatusOr<string> MakeStrFail() {
-  return Status(
-      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
-      "MakeStrFail");
+  return Status(absl::StatusCode::kInvalidArgument, "MakeStrFail");
 }
 
 static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrOK() {
@@ -69,9 +60,7 @@ static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrOK() {
 }
 
 static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrFail() {
-  return Status(
-      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
-      "MakeIntUniquePtrFail");
+  return Status(absl::StatusCode::kInvalidArgument, "MakeIntUniquePtrFail");
 }
 
 static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorOK() {
@@ -79,17 +68,13 @@ static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorOK() {
 }
 
 static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorFail() {
-  return Status(
-      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
-      "MakeIntVectorFail");
+  return Status(absl::StatusCode::kInvalidArgument, "MakeIntVectorFail");
 }
 
 static Status FuncReturningStatusOK() { return Status(); }
 
 static Status FuncReturningStatusFail() {
-  return Status(
-      static_cast<tsl::errors::Code>(absl::StatusCode::kInvalidArgument),
-      "FuncReturningStatusFail");
+  return Status(absl::StatusCode::kInvalidArgument, "FuncReturningStatusFail");
 }
 
 }  // namespace nucleus

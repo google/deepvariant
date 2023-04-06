@@ -39,11 +39,8 @@
 
 #include "absl/synchronization/mutex.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
-
 
 namespace nucleus {
 
@@ -75,17 +72,17 @@ class Reader {
   // is another extant Iterable, return nullptr.  This method should
   // be used by subclasses to provide their own methods exposing
   // Iterables.
-  template<class Iterable, class Reader, typename... Args>
+  template <class Iterable, class Reader, typename... Args>
   std::shared_ptr<Iterable> MakeIterable(Reader* reader, Args&&... args) const {
     absl::MutexLock lock(&mutex_);
     if (live_iterable_ != nullptr) {
       LOG(WARNING) << "Returning null from MakeIterable because there's "
-                   " already an active iterator";
+                      " already an active iterator";
       // Wraps |args| so the dtor of Iterable can perform necessary cleanup.
       std::make_shared<Iterable>(nullptr, std::forward<Args>(args)...);
       return nullptr;
     }
-    Iterable* it =  new Iterable(reader, std::forward<Args>(args)...);
+    Iterable* it = new Iterable(reader, std::forward<Args>(args)...);
     live_iterable_ = it;
     return std::shared_ptr<Iterable>(it);
   }
@@ -95,7 +92,6 @@ class Reader {
 
   friend class IterableBase;
 };
-
 
 class IterableBase {
  protected:
@@ -110,7 +106,7 @@ class IterableBase {
   // Method to *explicitly* "release" this iterable to enable another
   // iteration to proceed. Returns OK status if the release was successful, or
   // an error if not.
-  tensorflow::Status Release();
+  nucleus::Status Release();
 
   // Is this iterable alive, in the sense that
   //  - its reader is still open; and
@@ -120,31 +116,27 @@ class IterableBase {
   // Iterable implementations should indicate a not-OK status in Next() on
   // attempts to iterate on an iterable that is not live. They can call this
   // method to do the check and return the status if not OK. The standard usage
-  // is: TF_RETURN_IF_ERROR(CheckIsAlive()) in Next().
-  tensorflow::Status CheckIsAlive() const;
+  // is: NUCLEUS_RETURN_IF_ERROR(CheckIsAlive()) in Next().
+  nucleus::Status CheckIsAlive() const;
 
   // Python Context manager support---will be wrapped as __enter__ /
   // __exit__. This two functions should return an OK status if the enter/exit
   // were successful, or an error if not.
-  tensorflow::Status PythonEnter();
-  tensorflow::Status PythonExit();
+  nucleus::Status PythonEnter();
+  nucleus::Status PythonExit();
 
   friend class Reader;
 };
 
-
-
 // This is the base class that client code should extend.
-template<class Record>
+template <class Record>
 class Iterable : public IterableBase {
  protected:
-  explicit Iterable(const Reader* reader)
-      : IterableBase(reader)
-  {}
+  explicit Iterable(const Reader* reader) : IterableBase(reader) {}
 
  private:
   Record current_record_;
-  tensorflow::Status current_status_ = tensorflow::Status();
+  nucleus::Status current_status_ = nucleus::Status();
   bool IsOK() { return current_status_.ok(); }
 
  public:
@@ -175,7 +167,8 @@ class Iterable : public IterableBase {
     explicit iterator(std::shared_ptr<Iterable> iterable, bool end = false)
         : iterable_(iterable) {
       if (!end) {
-        past_end_ = false; ++(*this);
+        past_end_ = false;
+        ++(*this);
       } else {
         past_end_ = true;
       }
@@ -202,7 +195,9 @@ class Iterable : public IterableBase {
     }
 
     iterator operator++(int) {
-      iterator retval = *this; ++(*this); return retval;
+      iterator retval = *this;
+      ++(*this);
+      return retval;
     }
 
     // Note that equality for input iterators needs not be correct for
@@ -219,14 +214,13 @@ class Iterable : public IterableBase {
         return iterable_->current_status_;
       } else if (past_end_) {
         // We've attempted to read past the end of the iterator.
-        return tensorflow::errors::OutOfRange("iterator past_end_");
+        return ::nucleus::OutOfRange("iterator past_end_");
       } else {
         // Normal case: everything is fine, so return the current record.
         return &iterable_->current_record_;
       }
     }
   };
-
 
  public:
   // Disable copy.
@@ -250,7 +244,7 @@ class Iterable : public IterableBase {
     return iterator(iterable, false);
   }
 
-  template<class A>
+  template <class A>
   friend iterator end(std::shared_ptr<A> iterable) {
     // Note it would be better to return a Status or StatusOr here but it seems
     // that this is incompatible with iterator interface.

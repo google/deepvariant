@@ -34,13 +34,13 @@
 #define THIRD_PARTY_NUCLEUS_IO_TABIX_INDEXER_H_
 
 #include "third_party/nucleus/platform/types.h"
-#include "tensorflow/core/lib/core/status.h"
+#include "third_party/nucleus/vendor/status.h"
 
 namespace nucleus {
 
 // Builds a tabix index for bgzipped VCF at the specified path.
-tensorflow::Status TbxIndexBuild(const string& path);
-tensorflow::Status CSIIndexBuild(string path, int min_shift);
+::nucleus::Status TbxIndexBuild(const string& path);
+::nucleus::Status CSIIndexBuild(string path, int min_shift);
 }  // namespace nucleus
 
 #endif  // THIRD_PARTY_NUCLEUS_IO_TABIX_INDEXER_H_

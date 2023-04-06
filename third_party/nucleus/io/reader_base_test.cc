@@ -42,12 +42,10 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-
-namespace tf = tensorflow;
 
 using ::testing::Pointee;
 using ::testing::StrEq;
@@ -89,10 +87,10 @@ class ToyIterable : public Iterable<string> {
  public:
   StatusOr<bool> Next(string* out) override {
     const ToyReader& reader = *static_cast<const ToyReader*>(reader_);
-    TF_RETURN_IF_ERROR(CheckIsAlive());
+    NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
     if (pos_ < reader.toys_.size()) {
       StatusOr<string> toy_or = reader.toys_[pos_];
-      TF_RETURN_IF_ERROR(toy_or.status());
+      NUCLEUS_RETURN_IF_ERROR(toy_or.status());
       *out = toy_or.ValueOrDie();
       ++pos_;
       return true;
@@ -149,7 +147,7 @@ TEST(ReaderIterableTest, SupportsRangeFor) {
 // This interface is used by our Python APIs.
 TEST(ReaderIterableTest, IterationHandlesError) {
   ToyReader tr({StatusOr<string>("ball"),
-                tf::errors::Unknown("Malformed record: argybarg"),
+                ::nucleus::Unknown("Malformed record: argybarg"),
                 StatusOr<string>("doll")});
 
   std::shared_ptr<ToyIterable> it = tr.IterateFrom(0);
@@ -173,7 +171,7 @@ TEST(ReaderIterableTest, IterationHandlesError) {
 // would be encountered upon parsing a malformed record in a file.
 TEST(ReaderIterableTest, CppIterationHandlesError) {
   ToyReader tr({StatusOr<string>("ball"),
-                tf::errors::Unknown("Malformed record: argybarg"),
+                ::nucleus::Unknown("Malformed record: argybarg"),
                 StatusOr<string>("doll")});
   auto it = tr.IterateFrom(0);
   auto it_cur = begin(it);

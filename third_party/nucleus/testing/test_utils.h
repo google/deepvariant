@@ -123,7 +123,7 @@ MATCHER(IsFinite, "") { return std::isfinite(arg); }
 template <class Record>
 std::vector<Record> as_vector(
     const StatusOr<std::shared_ptr<Iterable<Record>>>& it) {
-  TF_CHECK_OK(it.status());
+  NUCLEUS_CHECK_OK(it.status());
   return as_vector(it.ValueOrDie());
 }
 

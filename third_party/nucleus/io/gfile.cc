@@ -47,8 +47,8 @@ bool Exists(const std::string& filename) {
 
 std::vector<std::string> Glob(const std::string& pattern) {
   std::vector<std::string> results;
-  tensorflow::Status s = tensorflow::Env::Default()->GetMatchingPaths(
-      pattern, &results);
+  ::tensorflow::Status s =
+      tensorflow::Env::Default()->GetMatchingPaths(pattern, &results);
   return results;
 }
 
@@ -65,8 +65,8 @@ std::unique_ptr<ReadableFile> ReadableFile::New(const std::string& filename) {
   size_t buffer_size = 512 * 1024;
 
   std::unique_ptr<tensorflow::io::RandomAccessInputStream> input_stream(
-      new tensorflow::io::RandomAccessInputStream(
-          file.release(), true /* owns_file */));
+      new tensorflow::io::RandomAccessInputStream(file.release(),
+                                                  true /* owns_file */));
   std::unique_ptr<tensorflow::io::BufferedInputStream> buffered_input_stream(
       new tensorflow::io::BufferedInputStream(
           input_stream.release(), buffer_size, true /* owns_input_stream */));
@@ -77,25 +77,22 @@ std::unique_ptr<ReadableFile> ReadableFile::New(const std::string& filename) {
   return f;
 }
 
-ReadableFile::~ReadableFile() {
-}
+ReadableFile::~ReadableFile() {}
 
 bool ReadableFile::Readline(std::string* s) {
   *s = stream_->ReadLineAsString();
   return s->length() > 0;
 }
 
-void ReadableFile::Close() {
-  stream_ = nullptr;
-}
+void ReadableFile::Close() { stream_ = nullptr; }
 
 WritableFile::WritableFile() {}
 
 std::unique_ptr<WritableFile> WritableFile::New(const std::string& filename) {
   std::unique_ptr<tensorflow::WritableFile> file;
 
-  tensorflow::Status s = tensorflow::Env::Default()->NewWritableFile(
-      filename, &file);
+  tensorflow::Status s =
+      tensorflow::Env::Default()->NewWritableFile(filename, &file);
 
   if (!s.ok()) {
     return nullptr;
@@ -112,12 +109,8 @@ bool WritableFile::Write(const std::string& s) {
   return status.ok();
 }
 
-void WritableFile::Close() {
-  file_ = nullptr;
-}
+void WritableFile::Close() { file_ = nullptr; }
 
-WritableFile::~WritableFile() {
-}
+WritableFile::~WritableFile() {}
 
 }  // namespace nucleus
-

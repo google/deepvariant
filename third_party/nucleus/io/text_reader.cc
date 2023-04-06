@@ -33,13 +33,12 @@
 #include "third_party/nucleus/io/text_reader.h"
 
 #include <stdlib.h>
+
 #include <utility>
 
 #include "absl/memory/memory.h"
 #include "third_party/nucleus/io/hts_path.h"
-#include "tensorflow/core/lib/core/errors.h"
-
-namespace tf = tensorflow;
+#include "third_party/nucleus/vendor/status.h"
 
 namespace nucleus {
 
@@ -47,9 +46,10 @@ StatusOr<std::unique_ptr<TextReader>> TextReader::FromFile(const string& path) {
   htsFile* fp = hts_open_x(path, "r");
 
   if (fp == nullptr) {
-    return tf::errors::NotFound("Could not open ", path,
-                                ". The file might not exist, or the format "
-                                "detected by htslib might be incorrect.");
+    return ::nucleus::NotFound(
+        absl::StrCat("Could not open ", path,
+                     ". The file might not exist, or the format "
+                     "detected by htslib might be incorrect."));
   } else {
     auto reader = absl::WrapUnique(new TextReader(fp));
     return std::move(reader);
@@ -58,20 +58,20 @@ StatusOr<std::unique_ptr<TextReader>> TextReader::FromFile(const string& path) {
 
 TextReader::~TextReader() {
   if (hts_file_) {
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
 StatusOr<string> TextReader::ReadLine() {
-  tf::Status status;
+  ::nucleus::Status status;
   string line;
   kstring_t k_line = {0, 0, nullptr};
 
   int ret = hts_getline(hts_file_, '\n', &k_line);
   if (ret == -1) {
-    status = tf::errors::OutOfRange("EOF");
+    status = ::nucleus::OutOfRange("EOF");
   } else if (ret < 0) {
-    status = tf::errors::DataLoss("Failed to read text line");
+    status = ::nucleus::DataLoss("Failed to read text line");
   }
 
   if (k_line.s) {
@@ -85,21 +85,21 @@ StatusOr<string> TextReader::ReadLine() {
   }
 }
 
-tf::Status TextReader::Close() {
+::nucleus::Status TextReader::Close() {
   if (!hts_file_) {
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot close an already closed file writer");
   }
   int hts_ok = hts_close(hts_file_);
   hts_file_ = nullptr;
   if (hts_ok < 0) {
-    return tf::errors::Internal("hts_close() failed with return code ", hts_ok);
+    return ::nucleus::Internal(
+        absl::StrCat("hts_close() failed with return code ", hts_ok));
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
-TextReader::TextReader(htsFile* hts_file)
-    : hts_file_(hts_file) {
+TextReader::TextReader(htsFile* hts_file) : hts_file_(hts_file) {
   CHECK(hts_file_ != nullptr);
 }
 

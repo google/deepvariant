@@ -43,12 +43,8 @@
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "google/protobuf/map.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
-
-namespace tf = tensorflow;
 
 namespace nucleus {
 
@@ -66,29 +62,30 @@ constexpr int32 kGffMissingInt32 = -1;
 
 namespace {
 
-tf::Status WriteGffHeader(const GffHeader& header, TextWriter* text_writer) {
-  TF_RETURN_IF_ERROR(text_writer->Write("##gff-version 3.2.1\n"));
+::nucleus::Status WriteGffHeader(const GffHeader& header,
+                                 TextWriter* text_writer) {
+  NUCLEUS_RETURN_IF_ERROR(text_writer->Write("##gff-version 3.2.1\n"));
   for (const Range& range : header.sequence_regions()) {
-    TF_RETURN_IF_ERROR(text_writer->Write(
+    NUCLEUS_RETURN_IF_ERROR(text_writer->Write(
         // Range start converted from 0- to 1-based, end-inclusive.
         absl::Substitute("##sequence-region $0 $1 $2\n", range.reference_name(),
                          range.start() + 1, range.end())));
   }
   // TODO: write ontology headers.
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
-tf::Status FormatGffAttributes(const GffRecord& record,
-                               string* gff_attributes) {
+::nucleus::Status FormatGffAttributes(const GffRecord& record,
+                                      string* gff_attributes) {
   // Sort to ensure deterministic iteration order.
   std::map<string, string> sorted_attributes(record.attributes().begin(),
                                              record.attributes().end());
   *gff_attributes =
       absl::StrJoin(sorted_attributes, ";", absl::PairFormatter("="));
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
-tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
+::nucleus::Status FormatGffLine(const GffRecord& record, string* gff_line) {
   string tmp, attributes;
   absl::StrAppend(&tmp, record.range().reference_name(), "\t");
   absl::StrAppend(
@@ -118,7 +115,7 @@ tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
       strand_code = "-";
       break;
     default:
-      return tf::errors::InvalidArgument("Illegal GffRecord strand encoding");
+      return ::nucleus::InvalidArgument("Illegal GffRecord strand encoding");
   }
   absl::StrAppend(&tmp, strand_code, "\t");
   // Phase
@@ -128,15 +125,15 @@ tf::Status FormatGffLine(const GffRecord& record, string* gff_line) {
   } else if (phase == kGffMissingInt32) {
     absl::StrAppend(&tmp, kGffMissingField, "\t");
   } else {
-    return tf::errors::InvalidArgument("Illegal GffRecord phase encoding");
+    return ::nucleus::InvalidArgument("Illegal GffRecord phase encoding");
   }
   // Attributes
-  TF_RETURN_IF_ERROR(FormatGffAttributes(record, &attributes));
+  NUCLEUS_RETURN_IF_ERROR(FormatGffAttributes(record, &attributes));
   absl::StrAppend(&tmp, attributes);
   absl::StrAppend(&tmp, "\n");
 
   *gff_line = tmp;
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace
@@ -146,30 +143,30 @@ StatusOr<std::unique_ptr<GffWriter>> GffWriter::ToFile(
     const GffWriterOptions& options) {
   StatusOr<std::unique_ptr<TextWriter>> text_writer_or =
       TextWriter::ToFile(gff_path);
-  TF_RETURN_IF_ERROR(text_writer_or.status());
+  NUCLEUS_RETURN_IF_ERROR(text_writer_or.status());
 
   std::unique_ptr<TextWriter> text_writer =
       std::move(text_writer_or.ValueOrDie());
-  TF_RETURN_IF_ERROR(WriteGffHeader(header, text_writer.get()));
+  NUCLEUS_RETURN_IF_ERROR(WriteGffHeader(header, text_writer.get()));
 
   return absl::WrapUnique(
       new GffWriter(std::move(text_writer), header, options));
 }
 
-tf::Status GffWriter::Write(const GffRecord& record) {
+::nucleus::Status GffWriter::Write(const GffRecord& record) {
   if (!text_writer_)
-    return tf::errors::FailedPrecondition("Cannot write to closed GFF stream.");
+    return ::nucleus::FailedPrecondition("Cannot write to closed GFF stream.");
   string line;
-  TF_RETURN_IF_ERROR(FormatGffLine(record, &line));
+  NUCLEUS_RETURN_IF_ERROR(FormatGffLine(record, &line));
   return text_writer_->Write(line);
 }
 
-tf::Status GffWriter::Close() {
+::nucleus::Status GffWriter::Close() {
   if (!text_writer_)
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot close an already closed GffWriter");
   // Close the file pointer we have been writing to.
-  tf::Status close_status = text_writer_->Close();
+  ::nucleus::Status close_status = text_writer_->Close();
   text_writer_ = nullptr;
   return close_status;
 }

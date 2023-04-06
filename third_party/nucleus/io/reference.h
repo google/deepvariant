@@ -71,8 +71,8 @@
 #include "third_party/nucleus/protos/fasta.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
@@ -134,13 +134,11 @@ class GenomeReference : public Reader {
   bool IsValidInterval(const nucleus::genomics::v1::Range& range) const;
 
   // Close the underlying resource descriptors.
-  virtual tensorflow::Status Close() { return tensorflow::Status(); }
+  virtual ::nucleus::Status Close() { return ::nucleus::Status(); }
 
   // This no-op function is needed only for Python context manager support.  Do
   // not use it!
-  virtual tensorflow::Status PythonEnter() const {
-    return tensorflow::Status();
-  }
+  virtual ::nucleus::Status PythonEnter() const { return ::nucleus::Status(); }
 
  protected:
   // Default constructor for subclasses.
@@ -219,7 +217,7 @@ class IndexedFastaReader : public GenomeReference {
       const override;
 
   // Close the underlying resource descriptors.
-  tensorflow::Status Close() override;
+  ::nucleus::Status Close() override;
 
  private:
   // Allow iteration to access the underlying reader.
@@ -297,7 +295,7 @@ class UnindexedFastaReader : public GenomeReference {
       const override;
 
   // Close the underlying resource descriptors.
-  tensorflow::Status Close() override;
+  ::nucleus::Status Close() override;
 
  private:
   // Allow iteration to access the underlying reader.

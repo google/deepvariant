@@ -39,11 +39,10 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
-
 
 // A BED writer, allowing us to write BED files.
 //
@@ -68,8 +67,8 @@ class BedWriter {
   // Write a BedRecord to the BED file.
   // Returns Status::OK() if the write was successful; otherwise the status
   // provides information about what error occurred.
-  tensorflow::Status Write(const nucleus::genomics::v1::BedRecord& record);
-  tensorflow::Status WritePython(
+  ::nucleus::Status Write(const nucleus::genomics::v1::BedRecord& record);
+  ::nucleus::Status WritePython(
       const ConstProtoPtr<const nucleus::genomics::v1::BedRecord>& wrapped) {
     return Write(*(wrapped.p_));
   }
@@ -77,7 +76,7 @@ class BedWriter {
   // Close the underlying resource descriptors. Returns Status::OK() if the
   // close was successful; otherwise the status provides information about what
   // error occurred.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // Provide access to the header.
   const nucleus::genomics::v1::BedHeader& Header() const { return header_; }
@@ -100,7 +99,6 @@ class BedWriter {
 
   // Underlying file writer.
   std::unique_ptr<TextWriter> text_writer_;
-
 };
 
 }  // namespace nucleus

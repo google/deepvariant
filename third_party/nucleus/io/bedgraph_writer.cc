@@ -43,13 +43,11 @@
 
 namespace nucleus {
 
-namespace tf = tensorflow;
-
 StatusOr<std::unique_ptr<BedGraphWriter>> BedGraphWriter::ToFile(
     const string& bedgraph_path) {
   StatusOr<std::unique_ptr<TextWriter>> text_writer =
       TextWriter::ToFile(bedgraph_path);
-  TF_RETURN_IF_ERROR(text_writer.status());
+  NUCLEUS_RETURN_IF_ERROR(text_writer.status());
   return absl::WrapUnique(new BedGraphWriter(text_writer.ConsumeValueOrDie()));
 }
 
@@ -57,32 +55,32 @@ BedGraphWriter::~BedGraphWriter() {
   if (!text_writer_) {
     return;
   }
-  tf::Status status = Close();
+  ::nucleus::Status status = Close();
   if (!status.ok()) {
     LOG(WARNING) << "Closing BedGraphReader encountered an error";
   }
 }
 
-tf::Status BedGraphWriter::Close() {
+::nucleus::Status BedGraphWriter::Close() {
   if (!text_writer_) {
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot close an already closed BedGraphWriter");
   }
-  tf::Status close_status = text_writer_->Close();
+  ::nucleus::Status close_status = text_writer_->Close();
   text_writer_ = nullptr;
   return close_status;
 }
 
-tf::Status BedGraphWriter::Write(
+::nucleus::Status BedGraphWriter::Write(
     const nucleus::genomics::v1::BedGraphRecord& record) {
   if (!text_writer_) {
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot write to closed bedgraph stream.");
   }
-  TF_RETURN_IF_ERROR(text_writer_->Write(
+  NUCLEUS_RETURN_IF_ERROR(text_writer_->Write(
       absl::Substitute("$0\t$1\t$2\t$3\n", record.reference_name(),
                        record.start(), record.end(), record.data_value())));
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 BedGraphWriter::BedGraphWriter(std::unique_ptr<TextWriter> text_writer)

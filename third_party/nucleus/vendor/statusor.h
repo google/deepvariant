@@ -92,22 +92,21 @@
 #include <utility>
 
 #include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
-
-template<typename T>
+template <typename T>
 class StatusOr {
-  template<typename U> friend class StatusOr;
+  template <typename U>
+  friend class StatusOr;
 
  public:
   // Construct a new StatusOr with Status::UNKNOWN status
-  StatusOr()
-      : status_(static_cast<tsl::errors::Code>(absl::StatusCode::kUnknown),
-                "") {}
+  StatusOr() : status_(absl::StatusCode::kUnknown, "") {}
 
   // Construct a new StatusOr with the given non-ok status. After calling
   // this constructor, calls to ValueOrDie() is invalid.
@@ -119,7 +118,7 @@ class StatusOr {
   // REQUIRES: status != Status::OK.
   // In optimized builds, passing Status::OK here will have the effect
   // of passing PosixErrorSpace::EINVAL as a fallback.
-  StatusOr(const tensorflow::Status& status);  // NOLINT
+  StatusOr(const nucleus::Status& status);  // NOLINT
 
   // Construct a new StatusOr with the given value. If T is a plain pointer,
   // value must not be NULL. After calling this constructor, calls to
@@ -137,8 +136,7 @@ class StatusOr {
   // Conversion copy constructor, T must be copy constructible from U
   template <typename U>
   StatusOr(const StatusOr<U>& other)  // NOLINT
-      : status_(other.status_),
-        value_(other.value_) {}
+      : status_(other.status_), value_(other.value_) {}
 
   // Conversion assignment operator, T must be assignable from U
   template <typename U>
@@ -157,8 +155,7 @@ class StatusOr {
   // Not marked with explicit so the implicit conversion can happen.
   template <typename U>
   StatusOr(StatusOr<U>&& other)  // NOLINT
-      : status_(std::move(other.status_)),
-        value_(std::move(other.value_)) {}
+      : status_(std::move(other.status_)), value_(std::move(other.value_)) {}
 
   // Move assignment operator to avoid unnecessary copy.
   // T must be assignable from U
@@ -171,7 +168,7 @@ class StatusOr {
 
   // Returns a reference to our status. If this contains a T, then
   // returns Status::OK.
-  const tensorflow::Status& status() const { return status_; }
+  const nucleus::Status& status() const { return status_; }
 
   // Returns this->status().ok()
   bool ok() const { return status_.ok(); }
@@ -198,7 +195,7 @@ class StatusOr {
   T ConsumeValueOrDie();
 
  private:
-  tensorflow::Status status_;
+  nucleus::Status status_;
   T value_;
 
   void CheckValueNotNull(const T& value);
@@ -219,35 +216,34 @@ class StatusOr {
 // Implementation details for StatusOr<T>
 
 template <typename T>
-StatusOr<T>::StatusOr(const T& value)
-    : status_(), value_(value) {
+StatusOr<T>::StatusOr(const T& value) : status_(), value_(value) {
   CheckValueNotNull(value);
 }
 
 template <typename T>
 const T& StatusOr<T>::ValueOrDie() const {
-  TF_CHECK_OK(status_);
+  NUCLEUS_CHECK_OK(status_);
   return value_;
 }
 
 template <typename T>
 T& StatusOr<T>::ValueOrDie() {
-  TF_CHECK_OK(status_);
+  NUCLEUS_CHECK_OK(status_);
   return value_;
 }
 
 template <typename T>
 T StatusOr<T>::ConsumeValueOrDie() {
-  TF_CHECK_OK(status_);
+  NUCLEUS_CHECK_OK(status_);
   return std::move(value_);
 }
 
 template <typename T>
-StatusOr<T>::StatusOr(const tensorflow::Status& status) : status_(status) {
+StatusOr<T>::StatusOr(const nucleus::Status& status) : status_(status) {
   assert(!status.ok());
   if (status.ok()) {
-    status_ = tensorflow::Status(
-        static_cast<tensorflow::errors::Code>(absl::StatusCode::kInternal),
+    status_ = nucleus::Status(
+        absl::StatusCode::kInternal,
         "Status::OK is not a valid constructor argument to StatusOr<T>");
   }
 }
@@ -262,11 +258,17 @@ template <typename T>
 void StatusOr<T>::CheckValueNotNull(const T& value) {
   assert(!IsNull<T>::IsValueNull(value));
   if (IsNull<T>::IsValueNull(value)) {
-    status_ = tensorflow::Status(
-        static_cast<tensorflow::errors::Code>(absl::StatusCode::kInternal),
+    status_ = nucleus::Status(
+        absl::StatusCode::kInternal,
         "NULL is not a valid constructor argument to StatusOr<T*>");
   }
 }
+
+#define NUCLEUS_RETURN_IF_ERROR(...)                     \
+  do {                                                   \
+    ::nucleus::Status _status = (__VA_ARGS__);           \
+    if (TF_PREDICT_FALSE(!_status.ok())) return _status; \
+  } while (0)
 
 }  // namespace nucleus
 

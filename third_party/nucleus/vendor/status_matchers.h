@@ -42,19 +42,16 @@
 namespace nucleus {
 
 // Matches if a Status or StatusOr object's ok() returns true.
-MATCHER(IsOK, "") {
-  return arg.ok();
-}
+MATCHER(IsOK, "") { return arg.ok(); }
 
 // Matches if a Status or StatusOr object's ok() returns false.
-MATCHER(IsNotOK, "") {
-  return !arg.ok();
-}
+MATCHER(IsNotOK, "") { return !arg.ok(); }
 
 // Matches if a Status or StatusOr object's ok() returns false and that status
 // code is expected_code.
 MATCHER_P(IsNotOKWithCode, expected_code, "") {
-  return (!arg.ok()) && arg.code() == expected_code;
+  return (!arg.ok()) &&
+         static_cast<int>(arg.code()) == static_cast<int>(expected_code);
 }
 
 // Matches if a Status or StatusOr object's ok() returns false and that status
@@ -70,7 +67,8 @@ MATCHER_P(IsNotOKWithMessage, expected_error_message_substring, "") {
 // expected_error_message_substring.
 MATCHER_P2(IsNotOKWithCodeAndMessage, expected_code,
            expected_error_message_substring, "") {
-  return (!arg.ok()) && arg.code() == expected_code &&
+  return (!arg.ok()) &&
+         static_cast<int>(arg.code()) == static_cast<int>(expected_code) &&
          arg.error_message().find(expected_error_message_substring) !=
              std::string::npos;
 }

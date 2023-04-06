@@ -32,8 +32,7 @@
 
 #include "third_party/nucleus/io/reader_base.h"
 
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
+#include "third_party/nucleus/vendor/status.h"
 
 namespace nucleus {
 
@@ -48,48 +47,37 @@ Reader::~Reader() {
   }
 }
 
-
 // IterableBase class methods
 
-IterableBase::IterableBase(const Reader* reader)
-    : reader_(reader)
-{}
+IterableBase::IterableBase(const Reader* reader) : reader_(reader) {}
 
 IterableBase::~IterableBase() {
   // We cannot return a Status from our destructor, so the best we can do
   // if we need to release resources and cannot is CHECK-fail.
-  TF_CHECK_OK(Release());
+  NUCLEUS_CHECK_OK(Release());
 }
 
-tensorflow::Status IterableBase::Release() {
+nucleus::Status IterableBase::Release() {
   if (IsAlive()) {
     absl::MutexLock lock(&reader_->mutex_);
     if (reader_->live_iterable_ == nullptr) {
-      return tensorflow::errors::FailedPrecondition(
-          "reader_->live_iterable_ is null");
+      return ::nucleus::FailedPrecondition("reader_->live_iterable_ is null");
     }
     reader_->live_iterable_ = nullptr;
     reader_ = nullptr;
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
-bool IterableBase::IsAlive() const {
-  return reader_ != nullptr;
+bool IterableBase::IsAlive() const { return reader_ != nullptr; }
+
+::nucleus::Status IterableBase::CheckIsAlive() const {
+  if (!IsAlive()) return ::nucleus::FailedPrecondition("Reader is not alive");
+  return nucleus::Status();
 }
 
-tensorflow::Status IterableBase::CheckIsAlive() const {
-  if (!IsAlive())
-    return tensorflow::errors::FailedPrecondition("Reader is not alive");
-  return tensorflow::Status();
-}
+::nucleus::Status IterableBase::PythonEnter() { return nucleus::Status(); }
 
-tensorflow::Status IterableBase::PythonEnter() {
-  return tensorflow::Status();
-}
-
-tensorflow::Status IterableBase::PythonExit() {
-  return Release();
-}
+::nucleus::Status IterableBase::PythonExit() { return Release(); }
 
 }  // namespace nucleus

@@ -44,12 +44,8 @@
 #include "absl/types/optional.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "google/protobuf/map.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
-
-namespace tf = tensorflow;
 
 using nucleus::genomics::v1::GffHeader;
 using nucleus::genomics::v1::GffReaderOptions;
@@ -66,7 +62,7 @@ constexpr int32 kGffMissingInt32 = -1;
 
 namespace {
 
-tf::Status ParseGffHeaderLine(const string& line, GffHeader* header) {
+::nucleus::Status ParseGffHeaderLine(const string& line, GffHeader* header) {
   if (absl::StartsWith(line, "##gff-version")) {
     // TODO: get rid of pessimizing string_view -> string
     // conversions
@@ -74,17 +70,17 @@ tf::Status ParseGffHeaderLine(const string& line, GffHeader* header) {
   } else if (absl::StartsWith(line, "##sequence-region")) {
     std::vector<string> tokens = absl::StrSplit(line, ' ');
     if (tokens.size() != 4) {
-      return tf::errors::DataLoss("Invalid sequence-region GFF header.");
+      return ::nucleus::DataLoss("Invalid sequence-region GFF header.");
     }
     // Parse seqid.
     string seqid = tokens[1];
     // Parse start, end.
     int64 start1, end1;
     if (!absl::SimpleAtoi(tokens[2], &start1)) {
-      return tf::errors::Unknown("Can't parse GFF sequence-region start");
+      return ::nucleus::Unknown("Can't parse GFF sequence-region start");
     }
     if (!absl::SimpleAtoi(tokens[3], &end1)) {
-      return tf::errors::Unknown("Can't parse GFF sequence-region end");
+      return ::nucleus::Unknown("Can't parse GFF sequence-region end");
     }
     // Convert to zero-based end-exclusive coordinates.
     int64 start = start1 - 1;
@@ -98,55 +94,56 @@ tf::Status ParseGffHeaderLine(const string& line, GffHeader* header) {
     // TODO: other directives currently ignored.
   }
 
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // Peeks into the GFF file to extract the header.
 // TODO: refactor header reading
-tf::Status ReadGffHeader(const string& path, GffHeader* header) {
+::nucleus::Status ReadGffHeader(const string& path, GffHeader* header) {
   CHECK(header != nullptr);
   header->Clear();
 
   StatusOr<std::unique_ptr<TextReader>> reader_or = TextReader::FromFile(path);
-  TF_RETURN_IF_ERROR(reader_or.status());
+  NUCLEUS_RETURN_IF_ERROR(reader_or.status());
   std::unique_ptr<TextReader> text_reader = std::move(reader_or.ValueOrDie());
 
   StatusOr<string> line_or;
   string line;
   while ((line_or = text_reader->ReadLine()).ok() &&
          absl::StartsWith(line = line_or.ValueOrDie(), kGffCommentPrefix)) {
-    TF_RETURN_IF_ERROR(ParseGffHeaderLine(line, header));
+    NUCLEUS_RETURN_IF_ERROR(ParseGffHeaderLine(line, header));
   }
 
   // Propagate error, if any.
-  tf::Status status = line_or.status();
-  if (!status.ok() && !tf::errors::IsOutOfRange(status)) {
+  ::nucleus::Status status = line_or.status();
+  if (!status.ok() && !::nucleus::IsOutOfRange(status)) {
     return status;
   }
 
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
-tf::Status NextNonCommentLine(TextReader& text_reader, string* line) {
+::nucleus::Status NextNonCommentLine(TextReader& text_reader, string* line) {
   CHECK(line != nullptr);
   string tmp;
   do {
     StatusOr<string> line_or = text_reader.ReadLine();
-    TF_RETURN_IF_ERROR(line_or.status());
+    NUCLEUS_RETURN_IF_ERROR(line_or.status());
     tmp = line_or.ValueOrDie();
   } while (absl::StartsWith(tmp, kGffCommentPrefix));
 
   *line = tmp;
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // Parses the text `attributes_string`, which is a ';'-delimited list
 // of string-to-string '=' assignments, into a proto string->string map.
-tf::Status ParseGffAttributes(const string& attributes_string,
-                              google::protobuf::Map<string, string>* attributes_map) {
+::nucleus::Status ParseGffAttributes(
+    const string& attributes_string,
+    google::protobuf::Map<string, string>* attributes_map) {
   if (attributes_string == kGffMissingField || attributes_string.empty()) {
     attributes_map->clear();
-    return tf::Status();
+    return ::nucleus::Status();
   }
 
   google::protobuf::Map<string, string> tmp;
@@ -155,7 +152,7 @@ tf::Status ParseGffAttributes(const string& attributes_string,
   for (absl::string_view assignment : assignments) {
     std::vector<absl::string_view> tokens = absl::StrSplit(assignment, '=');
     if (tokens.size() != 2) {
-      return tf::errors::Unknown("Cannot parse GFF attributes string");
+      return ::nucleus::Unknown("Cannot parse GFF attributes string");
     }
     // TODO: get rid of pessimizing string_view -> string
     // conversions
@@ -164,34 +161,34 @@ tf::Status ParseGffAttributes(const string& attributes_string,
     tmp[lhs] = rhs;
   }
   *attributes_map = tmp;
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // Converts a text GFF line into a GffRecord proto message, or returns an error
 // code if the line is malformed.  The record will only be modified if the call
 // succeeds.
-tf::Status ConvertToPb(const string& line, GffRecord* record) {
+::nucleus::Status ConvertToPb(const string& line, GffRecord* record) {
   CHECK(record != nullptr);
 
   std::vector<string> fields = absl::StrSplit(line, '\t');
   if (fields.size() != 9) {
-    return tf::errors::Unknown("Incorrect number of columns in a GFF record.");
+    return ::nucleus::Unknown("Incorrect number of columns in a GFF record.");
   }
 
   // Parse line.
   string seq_id = fields[0];
   if (seq_id == kGffMissingField || seq_id.empty()) {
-    return tf::errors::Unknown("GFF mandatory seq_id field is missing");
+    return ::nucleus::Unknown("GFF mandatory seq_id field is missing");
   }
   string source = (fields[1] == kGffMissingField ? "" : fields[1]);
   string type = (fields[2] == kGffMissingField ? "" : fields[2]);
 
   int64 start1, end1;
   if (!absl::SimpleAtoi(fields[3], &start1)) {
-    return tf::errors::Unknown("Cannot parse GFF record `start`");
+    return ::nucleus::Unknown("Cannot parse GFF record `start`");
   }
   if (!absl::SimpleAtoi(fields[4], &end1)) {
-    return tf::errors::Unknown("Cannot parse GFF record `end`");
+    return ::nucleus::Unknown("Cannot parse GFF record `end`");
   }
   // Convert to zero-based end-exclusive coordinate system.
   // TODO: consider factoring this out.
@@ -203,7 +200,7 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
   if (fields[5] != kGffMissingField) {
     float value;
     if (!absl::SimpleAtof(fields[5], &value)) {
-      return tf::errors::Unknown("Cannot parse GFF record `score`");
+      return ::nucleus::Unknown("Cannot parse GFF record `score`");
     }
     score = value;
   }
@@ -217,7 +214,7 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
   } else if (strand_field == "-") {
     strand = GffRecord::REVERSE_STRAND;
   } else {
-    return tf::errors::Unknown("Invalid GFF record `strand` encoding");
+    return ::nucleus::Unknown("Invalid GFF record `strand` encoding");
   }
   // Parse phase.
   absl::optional<int> phase;
@@ -226,13 +223,13 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
     int value;
     if (!absl::SimpleAtoi(phase_field, &value) ||
         !((value >= 0) && (value < 3))) {
-      return tf::errors::Unknown("Invalid GFF record `phase` encoding.");
+      return ::nucleus::Unknown("Invalid GFF record `phase` encoding.");
     }
     phase = value;
   }
   // Parse attributes dictionary.
   google::protobuf::Map<string, string> attributes_map;
-  TF_RETURN_IF_ERROR(ParseGffAttributes(fields[8], &attributes_map));
+  NUCLEUS_RETURN_IF_ERROR(ParseGffAttributes(fields[8], &attributes_map));
 
   // Write on the record.
   record->Clear();
@@ -246,7 +243,7 @@ tf::Status ConvertToPb(const string& line, GffRecord* record) {
   record->set_phase(phase.value_or(kGffMissingInt32));
   *record->mutable_attributes() = attributes_map;
 
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace
@@ -267,16 +264,17 @@ class GffFullFileIterable : public GffIterable {
 // Iterable class definitions.
 StatusOr<bool> GffFullFileIterable::Next(
     nucleus::genomics::v1::GffRecord* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   const GffReader* gff_reader = static_cast<const GffReader*>(reader_);
   string line;
-  tf::Status status = NextNonCommentLine(*gff_reader->text_reader_, &line);
-  if (tf::errors::IsOutOfRange(status)) {
+  ::nucleus::Status status =
+      NextNonCommentLine(*gff_reader->text_reader_, &line);
+  if (::nucleus::IsOutOfRange(status)) {
     return false;
   } else {
-    TF_RETURN_IF_ERROR(status);
+    NUCLEUS_RETURN_IF_ERROR(status);
   }
-  TF_RETURN_IF_ERROR(ConvertToPb(line, out));
+  NUCLEUS_RETURN_IF_ERROR(ConvertToPb(line, out));
   return true;
 }
 
@@ -292,10 +290,10 @@ StatusOr<std::unique_ptr<GffReader>> GffReader::FromFile(
     const nucleus::genomics::v1::GffReaderOptions& options) {
   StatusOr<std::unique_ptr<TextReader>> text_reader_or =
       TextReader::FromFile(gff_path);
-  TF_RETURN_IF_ERROR(text_reader_or.status());
+  NUCLEUS_RETURN_IF_ERROR(text_reader_or.status());
 
   GffHeader header;
-  TF_RETURN_IF_ERROR(ReadGffHeader(gff_path, &header));
+  NUCLEUS_RETURN_IF_ERROR(ReadGffHeader(gff_path, &header));
 
   return std::unique_ptr<GffReader>(
       new GffReader(std::move(text_reader_or.ValueOrDie()), options, header));
@@ -309,16 +307,16 @@ GffReader::GffReader(std::unique_ptr<TextReader> text_reader,
 
 StatusOr<std::shared_ptr<GffIterable>> GffReader::Iterate() const {
   if (!text_reader_)
-    return tf::errors::FailedPrecondition("Cannot Iterate a closed GffReader.");
+    return ::nucleus::FailedPrecondition("Cannot Iterate a closed GffReader.");
   return StatusOr<std::shared_ptr<GffIterable>>(
       MakeIterable<GffFullFileIterable>(this));
 }
 
-tensorflow::Status GffReader::Close() {
+::nucleus::Status GffReader::Close() {
   if (!text_reader_) {
-    return tf::errors::FailedPrecondition("GffReader already closed");
+    return ::nucleus::FailedPrecondition("GffReader already closed");
   }
-  tf::Status status = text_reader_->Close();
+  ::nucleus::Status status = text_reader_->Close();
   text_reader_ = nullptr;
   return status;
 }

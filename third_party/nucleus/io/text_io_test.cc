@@ -40,11 +40,6 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-
-namespace tf = tensorflow;
-
 
 // -----------------------------------------------------------------------------
 // Utility functions
@@ -99,11 +94,11 @@ TEST(TextWriterTest, WritesUncompressedOutput) {
   string dest = MakeTempFile("uncompressed.txt");
   const auto writer = std::move(
       TextWriter::ToFile(dest, TextWriter::NO_COMPRESS).ValueOrDie());
-  tf::Status status;
+  ::nucleus::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
 
   EXPECT_EQ(kHelloWorldStr, FileContents(dest));
 }
@@ -113,11 +108,11 @@ TEST(TextWriterTest, WritesCompressedOutput) {
   string dest = MakeTempFile("compressed.txt.gz");
   const auto writer = std::move(
       TextWriter::ToFile(dest, TextWriter::COMPRESS).ValueOrDie());
-  tf::Status status;
+  ::nucleus::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
 
   EXPECT_EQ(kHelloWorldBGZFStr, FileContents(dest));
 }
@@ -126,11 +121,11 @@ TEST(TextWriterTest, WritesCompressedOutput) {
 TEST(TextWriterTest, UsesCompressionWhenExtensionIsGz) {
   string destGz = MakeTempFile("test_file.txt.gz");
   const auto writer = std::move(TextWriter::ToFile(destGz).ValueOrDie());
-  tf::Status status;
+  ::nucleus::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
 
   EXPECT_EQ(kHelloWorldBGZFStr, FileContents(destGz));
 }
@@ -139,11 +134,11 @@ TEST(TextWriterTest, UsesCompressionWhenExtensionIsGz) {
 TEST(TextWriterTest, NoCompressionWhenExtensionIsNotGz) {
   string dest = MakeTempFile("test_file.txt");
   const auto writer = std::move(TextWriter::ToFile(dest).ValueOrDie());
-  tf::Status status;
+  ::nucleus::Status status;
   status = writer->Write(kHelloWorld);
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
   status = writer->Close();
-  EXPECT_EQ(tf::Status(), status);
+  EXPECT_EQ(::nucleus::Status(), status);
 
   EXPECT_EQ(kHelloWorld, FileContents(dest));
 }
@@ -162,7 +157,7 @@ TEST(TextReaderTest, ReadsUncompressedFile) {
   EXPECT_TRUE(rv.ok());
   EXPECT_EQ(rv.ValueOrDie(), kHelloWorldStr);
   rv = reader->ReadLine();
-  EXPECT_TRUE(tf::errors::IsOutOfRange(rv.status()));
+  EXPECT_TRUE(::nucleus::IsOutOfRange(rv.status()));
 }
 
 
@@ -177,7 +172,7 @@ TEST(TextReaderTest, ReadsCompressedFile) {
   EXPECT_TRUE(rv.ok());
   EXPECT_EQ(rv.ValueOrDie(), kHelloWorldStr);
   rv = reader->ReadLine();
-  EXPECT_TRUE(tf::errors::IsOutOfRange(rv.status()));
+  EXPECT_TRUE(::nucleus::IsOutOfRange(rv.status()));
 }
 
 

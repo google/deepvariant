@@ -48,7 +48,7 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
+#include "third_party/nucleus/vendor/status.h"
 
 namespace nucleus {
 
@@ -137,8 +137,8 @@ class VcfReader : public Reader {
       const nucleus::genomics::v1::Range& region);
 
   // Parses vcf_line and puts the result into v.
-  tensorflow::Status FromString(const absl::string_view& vcf_line,
-                                nucleus::genomics::v1::Variant* v);
+  ::nucleus::Status FromString(const absl::string_view& vcf_line,
+                               nucleus::genomics::v1::Variant* v);
   // Same as FromString, but we have CLIF converters to deal with
   // StatusOr<...> objects, so return one of those instead of a Status.
   StatusOr<bool> FromStringPython(const absl::string_view& vcf_line,
@@ -157,11 +157,11 @@ class VcfReader : public Reader {
 
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // This no-op function is needed only for Python context manager support.  Do
   // not use it! Returns a Status indicating whether the enter was successful.
-  tensorflow::Status PythonEnter() const { return tensorflow::Status(); }
+  ::nucleus::Status PythonEnter() const { return ::nucleus::Status(); }
 
   // Access to the record converter.
   const VcfRecordConverter& RecordConverter() const {
