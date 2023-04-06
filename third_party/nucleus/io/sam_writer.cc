@@ -52,14 +52,11 @@
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
-namespace tf = tensorflow;
 using genomics::v1::Read;
 using genomics::v1::SamHeader;
 using genomics::v1::Value;
@@ -160,8 +157,8 @@ class AuxBuilder {
     size_t num_bytes = 0;
     for (const auto& entry : read.info()) {
       if (entry.first.size() != 2) {
-        return tf::errors::Unknown("info key should be of two characters: ",
-                                   entry.first);
+        return ::nucleus::Unknown(absl::StrCat(
+            "info key should be of two characters: ", entry.first));
       }
       if (entry.second.values_size() != 1) {
         // TODO: Support writing byte-array field.
@@ -318,8 +315,8 @@ void AppendComments(const genomics::v1::SamHeader& sam_header,
 }
 
 // Populates the fields in |h| based on information in |sam_header| proto.
-tf::Status PopulateNativeHeader(const genomics::v1::SamHeader& sam_header,
-                                bool is_cram, bam_hdr_t* h) {
+::nucleus::Status PopulateNativeHeader(
+    const genomics::v1::SamHeader& sam_header, bool is_cram, bam_hdr_t* h) {
   DCHECK_NE(nullptr, h);
   const uint32_t contig_size = sam_header.contigs().size();
   h->n_targets = contig_size;
@@ -352,7 +349,7 @@ tf::Status PopulateNativeHeader(const genomics::v1::SamHeader& sam_header,
   memcpy(h->text, text.c_str(), text.length());
   h->text[text.length()] = '\0';
 
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // Returns a bam1_core_t.flag based on the information contained in |read|.
@@ -396,7 +393,8 @@ uint16_t GetReadFlag(const Read& read) {
 }
 
 // Populates the fields in |b| based on information in |h| and |read| proto.
-tf::Status PopulateNativeBody(const Read& read, const bam_hdr_t* h, bam1_t* b) {
+::nucleus::Status PopulateNativeBody(const Read& read, const bam_hdr_t* h,
+                                     bam1_t* b) {
   DCHECK_NE(nullptr, b);
   bam1_core_t* c = &b->core;
   c->isize = read.fragment_length();
@@ -493,7 +491,7 @@ tf::Status PopulateNativeBody(const Read& read, const bam_hdr_t* h, bam1_t* b) {
   if (aux_status.ok()) {
     auxBuilder.CopyTo(data_array_ptr);
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // Helper method to get file extension of |file_path|.
@@ -573,34 +571,36 @@ StatusOr<std::unique_ptr<SamWriter>> SamWriter::ToFile(
   fmt.specific = nullptr;
 
   if (hts_parse_format(&fmt, GetFileExtension(sam_path).c_str()) < 0) {
-    return tf::errors::Unknown("Parsing file format fails: ", sam_path);
+    return ::nucleus::Unknown(
+        absl::StrCat("Parsing file format fails: ", sam_path));
   }
   samFile* fp = hts_open_format_x(sam_path, "w", &fmt);
   if (fp == nullptr) {
-    return tf::errors::Unknown("Could not open file for writing: ", sam_path);
+    return ::nucleus::Unknown(
+        absl::StrCat("Could not open file for writing: ", sam_path));
   }
   // Set user provided reference FASTA to decode CRAM.
   if (fp->format.format == cram) {
     if (ref_path.empty()) {
-      return tf::errors::FailedPrecondition(
+      return ::nucleus::FailedPrecondition(
           "Writing CRAM format requires a reference file");
     }
     LOG(INFO) << "Setting CRAM reference path to '" << ref_path << "'";
     if (cram_set_option(fp->fp.cram, CRAM_OPT_REFERENCE, ref_path.c_str()) <
         0) {
-      return tf::errors::Unknown(
-          "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path);
+      return ::nucleus::Unknown(absl::StrCat(
+          "Failed to set the CRAM_OPT_REFERENCE value to ", ref_path));
     }
     cram_set_option(fp->fp.cram, CRAM_OPT_EMBED_REF, embed_ref ? 1 : 0);
   }
 
   auto native_file = std::make_unique<NativeFile>(fp);
   auto native_header = std::make_unique<NativeHeader>(bam_hdr_init());
-  TF_RETURN_IF_ERROR(PopulateNativeHeader(sam_header, fp->format.format == cram,
-                                          native_header->value()));
+  NUCLEUS_RETURN_IF_ERROR(PopulateNativeHeader(
+      sam_header, fp->format.format == cram, native_header->value()));
 
   if (sam_hdr_write(fp, native_header->value()) < 0) {
-    return tf::errors::Unknown("Writing header to file failed");
+    return ::nucleus::Unknown("Writing header to file failed");
   }
   return absl::WrapUnique<SamWriter>(
       new SamWriter(std::move(native_file), std::move(native_header)));
@@ -614,28 +614,28 @@ SamWriter::~SamWriter() {
   if (native_file_) {
     // There's nothing we can do but assert fail if there's an error during
     // the Close() call here.
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
-tf::Status SamWriter::Close() {
+::nucleus::Status SamWriter::Close() {
   native_file_.reset();
   native_header_ = nullptr;
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
-tf::Status SamWriter::Write(const Read& read) {
+::nucleus::Status SamWriter::Write(const Read& read) {
   auto body = std::make_unique<NativeBody>(bam_init1());
-  tf::Status status =
+  ::nucleus::Status status =
       PopulateNativeBody(read, native_header_->value(), body->value());
   if (!status.ok()) {
     return status;
   }
   if (sam_write1(native_file_->value(), native_header_->value(),
                  body->value()) < 0) {
-    return tf::errors::Unknown("Cannot add record");
+    return ::nucleus::Unknown("Cannot add record");
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace nucleus

@@ -34,10 +34,12 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+
 #include <algorithm>
 #include <utility>
 
 #include "absl/strings/ascii.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "htslib/tbx.h"
 #include "third_party/nucleus/io/hts_path.h"
@@ -46,11 +48,8 @@
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
-
-namespace tf = tensorflow;
+#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/vendor/statusor.h"
 
 namespace nucleus {
 
@@ -88,7 +87,7 @@ StatusOr<const nucleus::genomics::v1::ContigInfo*> GenomeReference::Contig(
       return &contig;
     }
   }
-  return tensorflow::errors::NotFound("Unknown contig ", contig_name);
+  return ::nucleus::NotFound(absl::StrCat("Unknown contig ", contig_name));
 }
 
 // Note that start and end are 0-based, and end is exclusive. So end
@@ -143,8 +142,7 @@ class IndexedFastaReaderIterable : public GenomeReferenceRecordIterable {
 };
 
 StatusOr<std::unique_ptr<IndexedFastaReader>> IndexedFastaReader::FromFile(
-    const string& fasta_path, const string& fai_path,
-    int cache_size_bases) {
+    const string& fasta_path, const string& fai_path, int cache_size_bases) {
   nucleus::genomics::v1::FastaReaderOptions options =
       nucleus::genomics::v1::FastaReaderOptions();
   return FromFile(fasta_path, fai_path, options, cache_size_bases);
@@ -157,8 +155,8 @@ StatusOr<std::unique_ptr<IndexedFastaReader>> IndexedFastaReader::FromFile(
   const string gzi = fasta_path + ".gzi";
   faidx_t* faidx = fai_load3_x(fasta_path, fai_path, gzi, 0);
   if (faidx == nullptr) {
-    return tensorflow::errors::NotFound(
-        "could not load fasta and/or fai for fasta ", fasta_path);
+    return ::nucleus::NotFound(
+        absl::StrCat("could not load fasta and/or fai for fasta ", fasta_path));
   }
   return std::unique_ptr<IndexedFastaReader>(
       new IndexedFastaReader(fasta_path, faidx, options, cache_size_bases));
@@ -178,18 +176,18 @@ IndexedFastaReader::IndexedFastaReader(
 
 IndexedFastaReader::~IndexedFastaReader() {
   if (faidx_) {
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
 StatusOr<string> IndexedFastaReader::GetBases(const Range& range) const {
   if (faidx_ == nullptr) {
-    return tensorflow::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "can't read from closed IndexedFastaReader object.");
   }
   if (!IsValidInterval(range))
-    return tensorflow::errors::InvalidArgument("Invalid interval: ",
-                                               range.ShortDebugString());
+    return ::nucleus::InvalidArgument(
+        absl::StrCat("Invalid interval: ", range.ShortDebugString()));
 
   if (range.start() == range.end()) {
     // We are requesting an empty string. faidx_fetch_seq does not allow this,
@@ -232,8 +230,8 @@ StatusOr<string> IndexedFastaReader::GetBases(const Range& range) const {
       faidx_fetch_seq(faidx_, range_to_fetch.reference_name().c_str(),
                       range_to_fetch.start(), range_to_fetch.end() - 1, &len);
   if (len <= 0)
-    return tensorflow::errors::InvalidArgument("Couldn't fetch bases for ",
-                                               range.ShortDebugString());
+    return ::nucleus::InvalidArgument(
+        absl::StrCat("Couldn't fetch bases for ", range.ShortDebugString()));
   string result(bases);
   if (!options_.keep_true_case()) {
     absl::AsciiStrToUpper(&result);
@@ -256,19 +254,18 @@ IndexedFastaReader::Iterate() const {
       MakeIterable<IndexedFastaReaderIterable>(this));
 }
 
-tensorflow::Status IndexedFastaReader::Close() {
+::nucleus::Status IndexedFastaReader::Close() {
   if (faidx_ == nullptr) {
-    return tensorflow::errors::FailedPrecondition(
-        "IndexedFastaReader already closed");
+    return ::nucleus::FailedPrecondition("IndexedFastaReader already closed");
   } else {
     fai_destroy(faidx_);
     faidx_ = nullptr;
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
 StatusOr<bool> IndexedFastaReaderIterable::Next(GenomeReferenceRecord* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   const IndexedFastaReader* fasta_reader =
       static_cast<const IndexedFastaReader*>(reader_);
   if (pos_ >= fasta_reader->contigs_.size()) {
@@ -331,7 +328,7 @@ StatusOr<std::unique_ptr<UnindexedFastaReader>> UnindexedFastaReader::FromFile(
     const string& fasta_path) {
   StatusOr<std::unique_ptr<TextReader>> textreader_or =
       TextReader::FromFile(fasta_path);
-  TF_RETURN_IF_ERROR(textreader_or.status());
+  NUCLEUS_RETURN_IF_ERROR(textreader_or.status());
   return std::unique_ptr<UnindexedFastaReader>(
       new UnindexedFastaReader(std::move(textreader_or.ValueOrDie())));
 }
@@ -346,7 +343,7 @@ UnindexedFastaReader::Contigs() const {
 
 StatusOr<string> UnindexedFastaReader::GetBases(const Range& range) const {
   LOG(FATAL) << "Unimplemented function invoked : " << __func__;
-  return tf::errors::Unimplemented("");
+  return ::nucleus::Unimplemented("");
 }
 
 StatusOr<std::shared_ptr<GenomeReferenceRecordIterable>>
@@ -355,13 +352,12 @@ UnindexedFastaReader::Iterate() const {
       MakeIterable<UnindexedFastaReaderIterable>(this));
 }
 
-tf::Status UnindexedFastaReader::Close() {
+::nucleus::Status UnindexedFastaReader::Close() {
   if (!text_reader_) {
-    return tf::errors::FailedPrecondition(
-        "UnindexedFastaReader already closed");
+    return ::nucleus::FailedPrecondition("UnindexedFastaReader already closed");
   }
   // Close the file pointer.
-  tf::Status close_status = text_reader_->Close();
+  ::nucleus::Status close_status = text_reader_->Close();
   text_reader_ = nullptr;
   return close_status;
 }
@@ -371,14 +367,14 @@ UnindexedFastaReader::UnindexedFastaReader(
     : text_reader_(std::move(text_reader)) {}
 
 StatusOr<bool> UnindexedFastaReaderIterable::Next(GenomeReferenceRecord* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   DCHECK(out && out->first.empty() && out->second.empty())
       << "out must be default initialized";
 
   const UnindexedFastaReader* fasta_reader =
       static_cast<const UnindexedFastaReader*>(reader_);
   if (!fasta_reader->text_reader_) {
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot iterate a closed UnindexedFastaReader.");
   }
   if (!next_name_.empty()) {
@@ -390,11 +386,11 @@ StatusOr<bool> UnindexedFastaReaderIterable::Next(GenomeReferenceRecord* out) {
     // Read one line.
     StatusOr<string> line = fasta_reader->text_reader_->ReadLine();
     if (!line.ok()) {
-      if (tf::errors::IsOutOfRange(line.status())) {
+      if (::nucleus::IsOutOfRange(line.status())) {
         eof = true;
         break;
       }
-      return tf::errors::DataLoss("Failed to parse FASTA");
+      return ::nucleus::DataLoss("Failed to parse FASTA");
     }
     std::string l = line.ValueOrDie();
 
@@ -411,7 +407,7 @@ StatusOr<bool> UnindexedFastaReaderIterable::Next(GenomeReferenceRecord* out) {
     }
     // Processing a sequence line. If name is absent by now, return an error.
     if (out->first.empty()) {
-      return tf::errors::DataLoss("Name not found in FASTA");
+      return ::nucleus::DataLoss("Name not found in FASTA");
     }
     out->second.append(
         absl::AsciiStrToUpper(absl::StripTrailingAsciiWhitespace(l)));
@@ -472,23 +468,23 @@ StatusOr<std::unique_ptr<InMemoryFastaReader>> InMemoryFastaReader::Create(
   for (const auto& seq : seqs) {
     if (seq.region().reference_name().empty() || seq.region().start() < 0 ||
         seq.region().start() > seq.region().end()) {
-      return tensorflow::errors::InvalidArgument(
-          "Malformed region ", seq.region().ShortDebugString());
+      return ::nucleus::InvalidArgument(
+          absl::StrCat("Malformed region ", seq.region().ShortDebugString()));
     }
 
     const size_t region_len = seq.region().end() - seq.region().start();
     if (region_len != seq.bases().length()) {
-      return tensorflow::errors::InvalidArgument(
-          "Region size = ", region_len, " not equal to bases.length() ",
-          seq.bases().length());
+      return ::nucleus::InvalidArgument(
+          absl::StrCat("Region size = ", region_len,
+                       " not equal to bases.length() ", seq.bases().length()));
     }
 
     auto insert_result = seqs_map.emplace(seq.region().reference_name(), seq);
     if (!insert_result.second) {
-      return tensorflow::errors::InvalidArgument(
+      return ::nucleus::InvalidArgument(absl::StrCat(
           "Each ReferenceSequence must be on a different chromosome but "
           "multiple ones were found on ",
-          seq.region().reference_name());
+          seq.region().reference_name()));
     }
   }
 
@@ -504,17 +500,17 @@ InMemoryFastaReader::Iterate() const {
 
 StatusOr<string> InMemoryFastaReader::GetBases(const Range& range) const {
   if (!IsValidInterval(range))
-    return tensorflow::errors::InvalidArgument("Invalid interval: ",
-                                               range.ShortDebugString());
+    return ::nucleus::InvalidArgument(
+        absl::StrCat("Invalid interval: ", range.ShortDebugString()));
 
   const ReferenceSequence& seq = seqs_.at(range.reference_name());
 
   if (range.start() < seq.region().start() ||
       range.end() > seq.region().end()) {
-    return tensorflow::errors::InvalidArgument(
+    return ::nucleus::InvalidArgument(absl::StrCat(
         "Cannot query range=", range.ShortDebugString(),
         " as this InMemoryFastaReader only has bases in the interval=",
-        seq.region().ShortDebugString());
+        seq.region().ShortDebugString()));
   }
   const int64 pos = range.start() - seq.region().start();
   const int64 len = range.end() - range.start();
@@ -522,7 +518,7 @@ StatusOr<string> InMemoryFastaReader::GetBases(const Range& range) const {
 }
 
 StatusOr<bool> FastaFullFileIterable::Next(GenomeReferenceRecord* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   const InMemoryFastaReader* fasta_reader =
       static_cast<const InMemoryFastaReader*>(reader_);
   if (pos_ >= fasta_reader->contigs_.size()) {

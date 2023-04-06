@@ -34,37 +34,29 @@
 
 #include "clif/python/postconv.h"
 #include "clif/python/types.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
 
 // Note: comment below is an instruction to CLIF.
 // NOLINTNEXTLINE
 // CLIF use `::nucleus::StatusOr` as StatusOr, NumTemplateParameter:1, HasPyObjFromOnly
-// CLIF use `::tensorflow::Status` as Status, HasPyObjFromOnly
+// CLIF use `::nucleus::Status` as Status, HasPyObjFromOnly
 
-namespace tsl {
+namespace nucleus {
 
-// We do not own namespace tensorflow, but at this point, nobody else is going
-// to provide the necessary conversion function for ::tensorflow::Status. This
-// is less than ideal, but for now we provide the function here.
+PyObject* Clif_PyObjFrom(const nucleus::Status& c, const ::clif::py::PostConv&);
 
-PyObject* Clif_PyObjFrom(const tensorflow::Status& c,
-                         const ::clif::py::PostConv&);
-
-}  // namespace tsl
-namespace tensorflow {
-using tsl::Clif_PyObjFrom;  // NOLINT
-}  // namespace tensorflow
+}  // namespace nucleus
 
 namespace nucleus {
 namespace internal {
 
-void ErrorFromStatus(const ::tensorflow::Status& status);
+void ErrorFromStatus(const ::nucleus::Status& status);
 
 }  // namespace internal
 
 template <typename T>
-PyObject* Clif_PyObjFrom(const StatusOr<T>& c,
-                         const ::clif::py::PostConv& pc) {
+PyObject* Clif_PyObjFrom(const StatusOr<T>& c, const ::clif::py::PostConv& pc) {
   if (!c.ok()) {
     internal::ErrorFromStatus(c.status());
     return nullptr;

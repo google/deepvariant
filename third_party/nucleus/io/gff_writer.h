@@ -39,8 +39,8 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
@@ -69,8 +69,8 @@ class GffWriter {
   // Writes a GffRecord to the GFF file.
   // Returns Status::OK() if the write was successful; otherwise the status
   // provides information about what error occurred.
-  tensorflow::Status Write(const nucleus::genomics::v1::GffRecord& record);
-  tensorflow::Status WritePython(
+  ::nucleus::Status Write(const nucleus::genomics::v1::GffRecord& record);
+  ::nucleus::Status WritePython(
       const ConstProtoPtr<const nucleus::genomics::v1::GffRecord>& wrapped) {
     return Write(*(wrapped.p_));
   }
@@ -78,7 +78,7 @@ class GffWriter {
   // Closes the underlying resource descriptors. Returns Status::OK() if the
   // close was successful; otherwise the status provides information about what
   // error occurred.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // Provides access to the header.
   const nucleus::genomics::v1::GffHeader& Header() const { return header_; }

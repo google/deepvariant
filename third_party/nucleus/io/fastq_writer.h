@@ -39,11 +39,10 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
-
 
 // A FASTQ writer, allowing us to write FASTQ files.
 //
@@ -69,8 +68,8 @@ class FastqWriter {
   // Write a FastqRecord to the FASTQ file.
   // Returns Status::OK() if the write was successful; otherwise the status
   // provides information about what error occurred.
-  tensorflow::Status Write(const nucleus::genomics::v1::FastqRecord& record);
-  tensorflow::Status WritePython(
+  ::nucleus::Status Write(const nucleus::genomics::v1::FastqRecord& record);
+  ::nucleus::Status WritePython(
       const ConstProtoPtr<const nucleus::genomics::v1::FastqRecord>& wrapped) {
     return Write(*(wrapped.p_));
   }
@@ -78,7 +77,7 @@ class FastqWriter {
   // Close the underlying resource descriptors. Returns Status::OK() if the
   // close was successful; otherwise the status provides information about what
   // error occurred.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // This no-op function is needed only for Python context manager support.  Do
   // not use it!
@@ -88,7 +87,6 @@ class FastqWriter {
   // Private constructor; use ToFile to safely create a FastqWriter.
   FastqWriter(std::unique_ptr<TextWriter> text_writer,
               const nucleus::genomics::v1::FastqWriterOptions& options);
-
 
   // Our options that control the behavior of this class.
   const nucleus::genomics::v1::FastqWriterOptions options_;

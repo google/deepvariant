@@ -38,25 +38,23 @@
 
 namespace nucleus {
 
-namespace tf = tensorflow;
-
-tf::Status TbxIndexBuild(const string& path) {
+::nucleus::Status TbxIndexBuild(const string& path) {
   int val = tbx_index_build_x(path, 0, &tbx_conf_vcf);
   if (val < 0) {
     LOG(WARNING) << "Return code: " << val << "\nFile path: " << path;
-    return tf::errors::Internal("Failure to write tabix index.");
+    return ::nucleus::Internal("Failure to write tabix index.");
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
-tf::Status CSIIndexBuild(string path, int min_shift) {
+::nucleus::Status CSIIndexBuild(string path, int min_shift) {
   // Create a index file in CSI format by setting min_shift as a non-zero value.
   int val = tbx_index_build_x(path, min_shift, &tbx_conf_vcf);
   if (val < 0) {
     LOG(WARNING) << "Return code: " << val << "\nFile path: " << path;
-    return tf::errors::Internal("Failure to write CSI index.");
+    return ::nucleus::Internal("Failure to write CSI index.");
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace nucleus

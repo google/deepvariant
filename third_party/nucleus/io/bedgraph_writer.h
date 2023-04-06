@@ -39,8 +39,8 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/bedgraph.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
@@ -70,17 +70,17 @@ class BedGraphWriter {
   // Writes a BedGraphRecord to the Bedgraph file.
   // Returns Status::OK() if the write was successful; otherwise the status
   // provides information about why an error occurred.
-  tensorflow::Status Write(const nucleus::genomics::v1::BedGraphRecord& record);
-  tensorflow::Status WritePython(
+  ::nucleus::Status Write(const nucleus::genomics::v1::BedGraphRecord& record);
+  ::nucleus::Status WritePython(
       const ConstProtoPtr<const nucleus::genomics::v1::BedGraphRecord>&
-      wrapped) {
+          wrapped) {
     return Write(*(wrapped.p_));
   }
 
   // Close the underlying resource descriptors. Returns Status::OK() if the
   // close was successful; otherwise the status provides information about what
   // error occurred.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // This no-op function is needed only for Python context manager support. Do
   // not use it.

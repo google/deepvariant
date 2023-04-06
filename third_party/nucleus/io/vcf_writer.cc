@@ -46,15 +46,12 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "google/protobuf/map.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
-
-namespace tf = tensorflow;
 
 using nucleus::genomics::v1::Variant;
 
@@ -94,11 +91,12 @@ StatusOr<std::unique_ptr<VcfWriter>> VcfWriter::ToFile(
   const char* const open_mode = GetOpenMode(variants_path);
   htsFile* fp = hts_open_x(variants_path, open_mode);
   if (fp == nullptr) {
-    return tf::errors::Unknown("Could not open variants_path: ", variants_path);
+    return ::nucleus::Unknown(
+        absl ::StrCat("Could not open variants_path: ", variants_path));
   }
 
   auto writer = absl::WrapUnique(new VcfWriter(header, options, fp));
-  TF_RETURN_IF_ERROR(writer->WriteHeader());
+  NUCLEUS_RETURN_IF_ERROR(writer->WriteHeader());
   return std::move(writer);
 }
 
@@ -117,35 +115,35 @@ VcfWriter::VcfWriter(const nucleus::genomics::v1::VcfHeader& header,
           options_.retrieve_gl_and_pl_from_info_map()) {
   CHECK(fp != nullptr);
 
-  TF_CHECK_OK(VcfHeaderConverter::ConvertFromPb(vcf_header_, &header_));
+  NUCLEUS_CHECK_OK(VcfHeaderConverter::ConvertFromPb(vcf_header_, &header_));
 }
 
-tf::Status VcfWriter::WriteHeader() {
+::nucleus::Status VcfWriter::WriteHeader() {
   if (options_.exclude_header()) {
-    return tf::Status();
+    return ::nucleus::Status();
   }
   if (bcf_hdr_write(fp_, header_) < 0) {
-    return tf::errors::Unknown("Failed to write header");
+    return ::nucleus::Unknown("Failed to write header");
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 VcfWriter::~VcfWriter() {
   if (fp_) {
     // There's nothing we can do but assert fail if there's an error during
     // the Close() call here.
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
-tf::Status VcfWriter::Write(const Variant& variant_message) {
+::nucleus::Status VcfWriter::Write(const Variant& variant_message) {
   if (fp_ == nullptr)
-    return tf::errors::FailedPrecondition("Cannot write to closed VCF stream.");
+    return ::nucleus::FailedPrecondition("Cannot write to closed VCF stream.");
   BCFRecord v;
   if (v.get_bcf1() == nullptr) {
-    return tf::errors::Unknown("bcf_init call failed");
+    return ::nucleus::Unknown("bcf_init call failed");
   }
-  TF_RETURN_IF_ERROR(
+  NUCLEUS_RETURN_IF_ERROR(
       RecordConverter().ConvertFromPb(variant_message, *header_, v.get_bcf1()));
   if (options_.round_qual_values() &&
       !bcf_float_is_missing(v.get_bcf1()->qual)) {
@@ -154,21 +152,20 @@ tf::Status VcfWriter::Write(const Variant& variant_message) {
     v.get_bcf1()->qual = rounded_quality;
   }
   if (bcf_write(fp_, header_, v.get_bcf1()) != 0) {
-    return tf::errors::Unknown("bcf_write call failed");
+    return ::nucleus::Unknown("bcf_write call failed");
   }
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
-tf::Status VcfWriter::Close() {
+::nucleus::Status VcfWriter::Close() {
   if (fp_ == nullptr)
-    return tf::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Cannot close an already closed VcfWriter");
-  if (hts_close(fp_) < 0)
-    return tf::errors::Unknown("hts_close call failed");
+  if (hts_close(fp_) < 0) return ::nucleus::Unknown("hts_close call failed");
   fp_ = nullptr;
   bcf_hdr_destroy(header_);
   header_ = nullptr;
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 // static

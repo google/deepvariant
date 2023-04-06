@@ -67,7 +67,7 @@ TEST(TabixIndexerTest, IndexBuildsCorrectly) {
 
   auto variants = nucleus::as_vector(reader->Iterate());
   for (const auto& v : variants) {
-    TF_CHECK_OK(writer->Write(v));
+    NUCLEUS_CHECK_OK(writer->Write(v));
   }
 
   EXPECT_THAT(TbxIndexBuild(output_filename), IsOK());
@@ -91,7 +91,7 @@ TEST(CSIIndexerTest, IndexBuildsCorrectly) {
 
   auto variants = nucleus::as_vector(reader->Iterate());
   for (const auto& v : variants) {
-    TF_CHECK_OK(writer->Write(v));
+    NUCLEUS_CHECK_OK(writer->Write(v));
   }
 
   EXPECT_THAT(CSIIndexBuild(output_filename, 14), IsOK());

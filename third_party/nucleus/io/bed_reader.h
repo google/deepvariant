@@ -40,7 +40,7 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
+#include "third_party/nucleus/vendor/status.h"
 
 namespace nucleus {
 
@@ -89,7 +89,7 @@ class BedReader : public Reader {
 
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // This no-op function is needed only for Python context manager support.
   void PythonEnter() const {}
@@ -104,7 +104,7 @@ class BedReader : public Reader {
   const nucleus::genomics::v1::BedHeader& Header() const { return header_; }
 
   // Returns OK if the input numTokens equals num_fields in the header.
-  tensorflow::Status Validate(const int numTokens) const;
+  ::nucleus::Status Validate(const int numTokens) const;
 
  private:
   // Private constructor; use FromFile to safely create a BedReader from a

@@ -515,20 +515,23 @@ TEST(VcfReaderFromStringTest, MatchesGolden) {
   vector<Variant> golden =
       ReadProtosFromTFRecord<Variant>(GetTestData(kVcfPhasesetGoldenFilename));
   vector<Variant> parsed(5);
-  TF_CHECK_OK(reader->FromString(
+  NUCLEUS_CHECK_OK(reader->FromString(
       "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT:GQ\t0/1:.\t0/1:42", &(parsed[0])));
-  TF_CHECK_OK(reader->FromString(
+  NUCLEUS_CHECK_OK(reader->FromString(
       "Chr1\t22\tDogSNP2\tA\tT\t0\t.\t.\tGT:PL\t0/1:.\t0|1:50,40,60",
       &(parsed[1])));
-  TF_CHECK_OK(reader->FromString(
-      "Chr1\t23\tDogSNP3\tA\tT\t0\t.\t.\tGT:GL:PS\t"
-      "0/1:.:.\t0/1:-5.0,-4.0,-6.0:.", &(parsed[2])));
-  TF_CHECK_OK(reader->FromString(
-      "Chr1\t24\tDogSNP4\tA\tT\t0\t.\t.\tGT:PL:PS\t"
-      "0|1:50,40,60:24\t0|1:50,40,60:.", &(parsed[3])));
-  TF_CHECK_OK(reader->FromString(
-      "Chr1\t25\tDogSNP5\ta\tt\t0\t.\t.\tGT:GQ:PS:PL\t"
-      "0|1:42:24:50,40,60\t1|1:42:.:50,40,60", &(parsed[4])));
+  NUCLEUS_CHECK_OK(
+      reader->FromString("Chr1\t23\tDogSNP3\tA\tT\t0\t.\t.\tGT:GL:PS\t"
+                         "0/1:.:.\t0/1:-5.0,-4.0,-6.0:.",
+                         &(parsed[2])));
+  NUCLEUS_CHECK_OK(
+      reader->FromString("Chr1\t24\tDogSNP4\tA\tT\t0\t.\t.\tGT:PL:PS\t"
+                         "0|1:50,40,60:24\t0|1:50,40,60:.",
+                         &(parsed[3])));
+  NUCLEUS_CHECK_OK(
+      reader->FromString("Chr1\t25\tDogSNP5\ta\tt\t0\t.\t.\tGT:GQ:PS:PL\t"
+                         "0|1:42:24:50,40,60\t1|1:42:.:50,40,60",
+                         &(parsed[4])));
   EXPECT_THAT(parsed, Pointwise(EqualsProto(), golden));
 }
 
@@ -538,7 +541,7 @@ TEST(VcfReaderMultipleNamesTest, SplitsOnSemicolon) {
           GetTestData(kVcfPhasesetFilename),
           nucleus::genomics::v1::VcfReaderOptions()).ValueOrDie());
   Variant v;
-  TF_CHECK_OK(reader->FromString(
+  NUCLEUS_CHECK_OK(reader->FromString(
       "Chr1\t21\tDogSNP1;CatSNP2\tA\tT\t0\t.\t.\tGT:GQ\t0/1:.\t0/1:42", &v));
   ASSERT_EQ(2, v.names_size());
   EXPECT_EQ("DogSNP1", v.names(0));
@@ -551,15 +554,14 @@ TEST(VcfReaderDifferentPloidyTest, Simple) {
           GetTestData(kVcfPhasesetFilename),
           nucleus::genomics::v1::VcfReaderOptions()).ValueOrDie());
   Variant v;
-  TF_CHECK_OK(reader->FromString(
-      "Chr1\t21\t.\tC\t<SYMBOLIC>\t49\t.\t.\tGT:PS:GQ\t0|1:1:45\t.:.:.",
-      &v));
+  NUCLEUS_CHECK_OK(reader->FromString(
+      "Chr1\t21\t.\tC\t<SYMBOLIC>\t49\t.\t.\tGT:PS:GQ\t0|1:1:45\t.:.:.", &v));
   ASSERT_EQ(2, v.calls_size());
   EXPECT_THAT(v.calls(0).genotype(), testing::ElementsAre(0, 1));
   EXPECT_THAT(v.calls(1).genotype(), testing::ElementsAre(-1));
 
   Variant v2;
-  TF_CHECK_OK(reader->FromString(
+  NUCLEUS_CHECK_OK(reader->FromString(
       "Chr1\t21\t.\tC\t<SYMBOLIC>\t49\t.\t.\tGT:PS:GQ\t0|1:1:45\t0:24:42",
       &v2));
   ASSERT_EQ(2, v2.calls_size());
@@ -611,20 +613,20 @@ TEST(VcfReaderTest, MissingHeaderDefinitions) {
                     .ValueOrDie());
   Variant v1;
   // AB is an undefined FORMAT tag.
-  TF_CHECK_OK(reader->FromString(
+  NUCLEUS_CHECK_OK(reader->FromString(
       "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT:GQ:AB\t0/1:.:abc\t0/1:42:def",
       &v1));
   EXPECT_EQ("abc", v1.calls(0).info().at("AB").values(0).string_value());
   EXPECT_EQ("def", v1.calls(1).info().at("AB").values(0).string_value());
   Variant v2;
   // q10 is an undefined FILTER tag.
-  TF_CHECK_OK(reader->FromString(
+  NUCLEUS_CHECK_OK(reader->FromString(
       "Chr1\t22\tDogSNP2\tA\tT\t0\tq10\t.\tGT:PL\t0/1:.\t0|1:50,40,60", &v2));
   EXPECT_EQ("q10", v2.filter(0));
 
   Variant v3;
   // Chr2 is an undefined contig.
-  TF_CHECK_OK(
+  NUCLEUS_CHECK_OK(
       reader->FromString("Chr2\t23\tDogSNP3\tA\tT\t0\t.\t.\tGT:GL:PS\t"
                          "0/1:.:.\t0/1:-5.0,-4.0,-6.0:.",
                          &v3));

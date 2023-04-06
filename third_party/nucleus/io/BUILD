@@ -402,9 +402,9 @@ cc_library(
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:bed_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -433,10 +433,10 @@ cc_library(
         "//third_party/nucleus/protos:bed_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:proto_ptr",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -467,9 +467,9 @@ cc_library(
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:bedgraph_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -499,6 +499,7 @@ cc_library(
         "//third_party/nucleus/protos:bedgraph_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:proto_ptr",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -534,9 +535,9 @@ cc_library(
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:fastq_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -565,6 +566,7 @@ cc_library(
         "//third_party/nucleus/protos:fastq_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:proto_ptr",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -631,11 +633,11 @@ cc_library(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:samplers",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
         "@htslib",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -675,12 +677,12 @@ cc_library(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
         "@htslib",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -723,6 +725,7 @@ cc_library(
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -765,6 +768,7 @@ cc_library(
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:proto_ptr",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -825,11 +829,11 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@htslib",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -862,9 +866,9 @@ cc_library(
     hdrs = ["reader_base.h"],
     deps = [
         "//third_party/nucleus/util:proto_ptr",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/synchronization",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -875,6 +879,7 @@ cc_test(
     deps = [
         ":reader_base",
         "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:status_matchers",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_googletest//:gtest_main",
@@ -893,6 +898,7 @@ cc_library(
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -955,6 +961,7 @@ cc_library(
     deps = [
         ":hts_path",
         "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/vendor:status",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -983,11 +990,11 @@ cc_library(
     deps = [
         ":hts_path",
         "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@htslib",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -998,10 +1005,10 @@ cc_library(
     deps = [
         ":hts_path",
         "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@htslib",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -1094,11 +1101,11 @@ cc_library(
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:gff_cc_pb2",
         "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf_lite",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -1127,11 +1134,11 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:proto_ptr",
+        "//third_party/nucleus/vendor:status",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 

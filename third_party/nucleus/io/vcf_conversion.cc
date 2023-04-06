@@ -39,8 +39,10 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/substitute.h"
@@ -67,8 +69,8 @@ constexpr char kExtraHeaderFmt[] = "##$0=$1";
 // object.
 void AddFilterToHeader(const nucleus::genomics::v1::VcfFilterInfo& filter,
                        bcf_hdr_t* header) {
-  string filterStr = absl::Substitute(
-      kFilterHeaderFmt, filter.id().c_str(), filter.description().c_str());
+  string filterStr = absl::Substitute(kFilterHeaderFmt, filter.id().c_str(),
+                                      filter.description().c_str());
   bcf_hdr_append(header, filterStr.c_str());
 }
 
@@ -82,9 +84,9 @@ void AddInfoToHeader(const nucleus::genomics::v1::VcfInfo& info,
   if (!info.version().empty()) {
     absl::StrAppend(&extra, ",Version=\"", info.version(), "\"");
   }
-  string infoStr = absl::Substitute(
-      kInfoHeaderFmt, info.id().c_str(), info.number().c_str(),
-      info.type().c_str(), info.description().c_str(), extra.c_str());
+  string infoStr = absl::Substitute(kInfoHeaderFmt, info.id().c_str(),
+                                    info.number().c_str(), info.type().c_str(),
+                                    info.description().c_str(), extra.c_str());
   bcf_hdr_append(header, infoStr.c_str());
 }
 
@@ -111,8 +113,8 @@ void AddStructuredExtraToHeader(
     // Cut off the dangling comma.
     fieldStr.pop_back();
   }
-  string result = absl::Substitute(
-      kStructuredExtraHeaderFmt, sExtra.key().c_str(), fieldStr.c_str());
+  string result = absl::Substitute(kStructuredExtraHeaderFmt,
+                                   sExtra.key().c_str(), fieldStr.c_str());
   bcf_hdr_append(header, result.c_str());
 }
 
@@ -120,8 +122,8 @@ void AddStructuredExtraToHeader(
 // VcfExtra object.
 void AddExtraToHeader(const nucleus::genomics::v1::VcfExtra& extra,
                       bcf_hdr_t* header) {
-  string result = absl::Substitute(
-      kExtraHeaderFmt, extra.key().c_str(), extra.value().c_str());
+  string result = absl::Substitute(kExtraHeaderFmt, extra.key().c_str(),
+                                   extra.value().c_str());
   bcf_hdr_append(header, result.c_str());
 }
 
@@ -138,8 +140,8 @@ void AddContigToHeader(const nucleus::genomics::v1::ContigInfo& contig,
   for (auto const& kv : contig.extra()) {
     absl::StrAppend(&extra, ",", kv.first, "=\"", kv.second, "\"");
   }
-  string contigStr = absl::Substitute(
-      kContigHeaderFmt, contig.name().c_str(), extra.c_str());
+  string contigStr =
+      absl::Substitute(kContigHeaderFmt, contig.name().c_str(), extra.c_str());
   bcf_hdr_append(header, contigStr.c_str());
 }
 
@@ -199,10 +201,9 @@ std::vector<std::vector<ValueType>> ReadFormatValues(const bcf_hdr_t* h,
   return values;
 }
 
-
 // Specialized instantiation for string fields, which require different
 // memory management and semantics.
-template<>
+template <>
 std::vector<std::vector<string>> ReadFormatValues(const bcf_hdr_t* h,
                                                   const bcf1_t* v,
                                                   const char* tag) {
@@ -258,17 +259,17 @@ int32 vcfEncodeAllele(int pbAllele, bool isPhased) {
 //     empty subvectors
 // (This the inverse of ReadFormatValues)
 template <class ValueType>
-tensorflow::Status EncodeFormatValues(
+::nucleus::Status EncodeFormatValues(
     const std::vector<std::vector<ValueType>>& values, const char* tag,
     const bcf_hdr_t* h, bcf1_t* v) {
   using VT = VcfType<ValueType>;
 
   if (values.empty()) {
-    return tensorflow::Status();
+    return ::nucleus::Status();
   }
 
   if (static_cast<int>(values.size()) != bcf_hdr_nsamples(h)) {
-    return tensorflow::errors::FailedPrecondition("Values.size() != nsamples");
+    return ::nucleus::FailedPrecondition("Values.size() != nsamples");
   }
   size_t n_samples = values.size();
 
@@ -290,7 +291,7 @@ tensorflow::Status EncodeFormatValues(
       }
     } else {
       if (values[s].size() != values_per_sample)
-        return tensorflow::errors::FailedPrecondition(
+        return ::nucleus::FailedPrecondition(
             "values[s].size() != values_per_sample");
       for (size_t j = 0; j < values_per_sample; j++) {
         flat_values.push_back(values[s][j]);
@@ -298,24 +299,22 @@ tensorflow::Status EncodeFormatValues(
     }
   }
   if (flat_values.size() != n_samples * values_per_sample)
-    return tensorflow::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "flat_values.size() != n_samples * values_per_sample");
   return VT::PutFormatValues(tag, flat_values.data(), flat_values.size(), h, v);
 }
 
-
 // Specialized instantiation for string.
-template<>
-tensorflow::Status EncodeFormatValues(
+template <>
+::nucleus::Status EncodeFormatValues(
     const std::vector<std::vector<string>>& values, const char* tag,
     const bcf_hdr_t* h, bcf1_t* v) {
-
   if (values.empty()) {
-    return tensorflow::Status();
+    return ::nucleus::Status();
   }
 
   if (static_cast<int>(values.size()) != bcf_hdr_nsamples(h)) {
-    return tensorflow::errors::FailedPrecondition("Values.size() != nsamples");
+    return ::nucleus::FailedPrecondition("Values.size() != nsamples");
   }
   size_t n_samples = values.size();
 
@@ -324,7 +323,7 @@ tensorflow::Status EncodeFormatValues(
     values_per_sample = std::max(values_per_sample, values[s].size());
   }
   if (values_per_sample > 1) {
-    return tensorflow::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Can't currently handle > 1 string format entry per sample.");
   }
   auto c_values_up = std::make_unique<const char*[]>(n_samples);
@@ -340,21 +339,18 @@ tensorflow::Status EncodeFormatValues(
   int rc = bcf_update_format_string(h, v, tag, c_values,
                                     values_per_sample * n_samples);
   if (rc < 0) {
-    return tensorflow::errors::Internal(
-        "Failure to write VCF FORMAT field");
+    return ::nucleus::Internal("Failure to write VCF FORMAT field");
   }
 
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
-
 
 // -----------------------------------------------------------------------------
 // "Raw" low-level interface to encoding/decoding to INFO fields. These
 // functions parallel the "FORMAT" functions above.
 
 template <class ValueType>
-std::vector<ValueType> ReadInfoValue(const bcf_hdr_t* h,
-                                     const bcf1_t* v,
+std::vector<ValueType> ReadInfoValue(const bcf_hdr_t* h, const bcf1_t* v,
                                      const char* tag) {
   using VT = VcfType<ValueType>;
 
@@ -382,8 +378,7 @@ std::vector<ValueType> ReadInfoValue(const bcf_hdr_t* h,
 }
 
 template <>
-std::vector<string> ReadInfoValue(const bcf_hdr_t* h,
-                                  const bcf1_t* v,
+std::vector<string> ReadInfoValue(const bcf_hdr_t* h, const bcf1_t* v,
                                   const char* tag) {
   if (bcf_get_info(h, const_cast<bcf1_t*>(v), tag) == nullptr) {
     return {};
@@ -397,12 +392,11 @@ std::vector<string> ReadInfoValue(const bcf_hdr_t* h,
   }
   std::string string_value(dst);
   free(dst);
-  return std::vector<string> { string_value };
+  return std::vector<string>{string_value};
 }
 
 template <>
-std::vector<bool> ReadInfoValue(const bcf_hdr_t* h,
-                                const bcf1_t* v,
+std::vector<bool> ReadInfoValue(const bcf_hdr_t* h, const bcf1_t* v,
                                 const char* tag) {
   void* dst;
   int n_dst = 0;
@@ -418,56 +412,54 @@ std::vector<bool> ReadInfoValue(const bcf_hdr_t* h,
 }
 
 template <class ValueType>
-tensorflow::Status EncodeInfoValue(
-    const std::vector<ValueType>& value, const char* tag,
-    const bcf_hdr_t* h, bcf1_t* v) {
+::nucleus::Status EncodeInfoValue(const std::vector<ValueType>& value,
+                                  const char* tag, const bcf_hdr_t* h,
+                                  bcf1_t* v) {
   using VT = VcfType<ValueType>;
 
   if (value.empty()) {
-    return tensorflow::Status();
+    return ::nucleus::Status();
   }
   return VT::PutInfoValues(tag, value.data(), value.size(), h, v);
 }
 
 template <>
-tensorflow::Status EncodeInfoValue(
-    const std::vector<string>& value, const char* tag,
-    const bcf_hdr_t* h, bcf1_t* v) {
+::nucleus::Status EncodeInfoValue(const std::vector<string>& value,
+                                  const char* tag, const bcf_hdr_t* h,
+                                  bcf1_t* v) {
   if (value.empty()) {
-    return tensorflow::Status();
+    return ::nucleus::Status();
   }
   if (value.size() != 1) {
-    return tensorflow::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "VCF string INFO fields can only contain a single string.");
   }
   const char* string_value = value[0].c_str();
   int rc = bcf_update_info_string(h, v, tag, string_value);
   if (rc < 0) {
-    return tensorflow::errors::Internal(
-        "Failure to write VCF INFO field");
+    return ::nucleus::Internal("Failure to write VCF INFO field");
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
 template <>
-tensorflow::Status EncodeInfoValue(const std::vector<bool>& value,
-                                   const char* tag, const bcf_hdr_t* h,
-                                   bcf1_t* v) {
+::nucleus::Status EncodeInfoValue(const std::vector<bool>& value,
+                                  const char* tag, const bcf_hdr_t* h,
+                                  bcf1_t* v) {
   bool flag_setting;
   if (value.size() == 1 && value[0] == false) {
     flag_setting = false;
   } else if (value.size() == 1 && value[0] == true) {
     flag_setting = true;
   } else {
-    return tensorflow::errors::FailedPrecondition(
+    return ::nucleus::FailedPrecondition(
         "Illegal setting of INFO FLAG value in Variant message.");
   }
   int rc = bcf_update_info_flag(h, v, tag, "", flag_setting);
   if (rc < 0) {
-    return tensorflow::errors::Internal(
-        "Failure to write VCF INFO field");
+    return ::nucleus::Internal("Failure to write VCF INFO field");
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
 // Returns the hrec that contains information or nullptr if none does.
@@ -603,12 +595,9 @@ VcfFormatFieldAdapter::VcfFormatFieldAdapter(const string& field_name,
                                              int vcf_type)
     : field_name_(field_name), vcf_type_(vcf_type) {}
 
-
-tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
-    const nucleus::genomics::v1::Variant& variant,
-    const bcf_hdr_t* header,
+::nucleus::Status VcfFormatFieldAdapter::EncodeValues(
+    const nucleus::genomics::v1::Variant& variant, const bcf_hdr_t* header,
     bcf1_t* bcf_record) const {
-
   if (vcf_type_ == BCF_HT_REAL) {
     return EncodeValues<float>(variant, header, bcf_record);
   } else if (vcf_type_ == BCF_HT_INT) {
@@ -616,19 +605,18 @@ tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
   } else if (vcf_type_ == BCF_HT_STR) {
     return EncodeValues<string>(variant, header, bcf_record);
   } else {
-    return tensorflow::errors::FailedPrecondition(
-        "Unrecognized type for field ", field_name_);
+    return ::nucleus::FailedPrecondition(
+        absl::StrCat("Unrecognized type for field ", field_name_));
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
 // TODO: consider eliminating this templated function by making
 // the intermediate vectors contain variant objects (Value).
-template <class T> tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
-    const nucleus::genomics::v1::Variant& variant,
-    const bcf_hdr_t* header,
+template <class T>
+::nucleus::Status VcfFormatFieldAdapter::EncodeValues(
+    const nucleus::genomics::v1::Variant& variant, const bcf_hdr_t* header,
     bcf1_t* bcf_record) const {
-
   const int n_calls = variant.calls().size();
   std::vector<std::vector<T>> values(n_calls, std::vector<T>{});
   for (int i = 0; i < n_calls; ++i) {
@@ -645,11 +633,9 @@ template <class T> tensorflow::Status VcfFormatFieldAdapter::EncodeValues(
   return EncodeFormatValues(values, field_name_.c_str(), header, bcf_record);
 }
 
-
-tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
+::nucleus::Status VcfFormatFieldAdapter::DecodeValues(
     const bcf_hdr_t* header, const bcf1_t* bcf_record,
     nucleus::genomics::v1::Variant* variant) const {
-
   if (vcf_type_ == BCF_HT_REAL) {
     return DecodeValues<float>(header, bcf_record, variant);
   } else if (vcf_type_ == BCF_HT_INT) {
@@ -657,16 +643,16 @@ tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
   } else if (vcf_type_ == BCF_HT_STR) {
     return DecodeValues<string>(header, bcf_record, variant);
   } else {
-    return tensorflow::errors::FailedPrecondition(
-        "Unrecognized type for field ", field_name_);
+    return ::nucleus::FailedPrecondition(
+        absl::StrCat("Unrecognized type for field ", field_name_));
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
-template <class T> tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
-    const bcf_hdr_t *header, const bcf1_t *bcf_record,
-    nucleus::genomics::v1::Variant *variant) const {
-
+template <class T>
+::nucleus::Status VcfFormatFieldAdapter::DecodeValues(
+    const bcf_hdr_t* header, const bcf1_t* bcf_record,
+    nucleus::genomics::v1::Variant* variant) const {
   if (bcf_record->n_sample > 0) {
     std::vector<std::vector<T>> values =
         ReadFormatValues<T>(header, bcf_record, field_name_.c_str());
@@ -680,18 +666,16 @@ template <class T> tensorflow::Status VcfFormatFieldAdapter::DecodeValues(
       }
     }
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
 // -----------------------------------------------------------------------------
 // VcfInfoFieldAdapter implementation.
 
-VcfInfoFieldAdapter::VcfInfoFieldAdapter(const string& field_name,
-                                         int vcf_type)
+VcfInfoFieldAdapter::VcfInfoFieldAdapter(const string& field_name, int vcf_type)
     : field_name_(field_name), vcf_type_(vcf_type) {}
 
-
-tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
+::nucleus::Status VcfInfoFieldAdapter::EncodeValues(
     const nucleus::genomics::v1::Variant& variant, const bcf_hdr_t* header,
     bcf1_t* bcf_record) const {
   if (vcf_type_ == BCF_HT_REAL) {
@@ -703,28 +687,26 @@ tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
   } else if (vcf_type_ == BCF_HT_FLAG) {
     return EncodeValues<bool>(variant, header, bcf_record);
   } else {
-    return tensorflow::errors::FailedPrecondition(
-        "Unrecognized type for field ", field_name_);
+    return ::nucleus::FailedPrecondition(
+        absl::StrCat("Unrecognized type for field ", field_name_));
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
-template <class T> tensorflow::Status VcfInfoFieldAdapter::EncodeValues(
-    const nucleus::genomics::v1::Variant& variant,
-    const bcf_hdr_t* header,
+template <class T>
+::nucleus::Status VcfInfoFieldAdapter::EncodeValues(
+    const nucleus::genomics::v1::Variant& variant, const bcf_hdr_t* header,
     bcf1_t* bcf_record) const {
-
   auto found = variant.info().find(field_name_);
   if (found != variant.info().end()) {
     std::vector<T> value = ListValues<T>((*found).second);
     return EncodeInfoValue(value, field_name_.c_str(), header, bcf_record);
   } else {
-    return tensorflow::Status();
+    return ::nucleus::Status();
   }
 }
 
-
-tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
+::nucleus::Status VcfInfoFieldAdapter::DecodeValues(
     const bcf_hdr_t* header, const bcf1_t* bcf_record,
     nucleus::genomics::v1::Variant* variant) const {
   if (vcf_type_ == BCF_HT_REAL) {
@@ -736,22 +718,21 @@ tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
   } else if (vcf_type_ == BCF_HT_FLAG) {
     return DecodeValues<bool>(header, bcf_record, variant);
   } else {
-    return tensorflow::errors::FailedPrecondition(
-        "Unrecognized type for field ", field_name_);
+    return ::nucleus::FailedPrecondition(
+        absl::StrCat("Unrecognized type for field ", field_name_));
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
-template <class T> tensorflow::Status VcfInfoFieldAdapter::DecodeValues(
-    const bcf_hdr_t *header, const bcf1_t *bcf_record,
-    nucleus::genomics::v1::Variant *variant) const {
+template <class T>
+::nucleus::Status VcfInfoFieldAdapter::DecodeValues(
+    const bcf_hdr_t* header, const bcf1_t* bcf_record,
+    nucleus::genomics::v1::Variant* variant) const {
   std::vector<T> value =
       ReadInfoValue<T>(header, bcf_record, field_name_.c_str());
   SetInfoField(field_name_, value, variant);
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
-
-
 
 // -----------------------------------------------------------------------------
 // VcfRecordConverter implementation.
@@ -784,8 +765,8 @@ VcfRecordConverter::VcfRecordConverter(
     } else if (type == "Flag") {
       vcf_type = BCF_HT_FLAG;
     } else {
-      LOG(WARNING) << "Unhandled INFO field type: field " << tag
-                   << " of type " << type;
+      LOG(WARNING) << "Unhandled INFO field type: field " << tag << " of type "
+                   << type;
       continue;
     }
     info_adapters_.emplace_back(tag, vcf_type);
@@ -900,7 +881,7 @@ void VcfHeaderConverter::ConvertToPb(const bcf_hdr_t* hdr,
   }
 }
 
-tensorflow::Status VcfHeaderConverter::ConvertFromPb(
+::nucleus::Status VcfHeaderConverter::ConvertFromPb(
     const nucleus::genomics::v1::VcfHeader& vcf_header, bcf_hdr_t** h) {
   // Note: bcf_hdr_init writes the fileformat= and the FILTER=<ID=PASS,...>
   // filter automatically.
@@ -935,23 +916,23 @@ tensorflow::Status VcfHeaderConverter::ConvertFromPb(
   bcf_hdr_add_sample(*h, nullptr);
   int ret = bcf_hdr_sync(*h);
   if (ret < 0) {
-    return tensorflow::errors::DataLoss("Couldn't sync bcf header");
+    return ::nucleus::DataLoss("Couldn't sync bcf header");
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
 // Convert a C string to uppercase, in place, unless it starts with "<".
-char *uppercase_allele(char *s) {
-  char *r = s;
+char* uppercase_allele(char* s) {
+  char* r = s;
   if (*s == '<') return r;
   while (*s) {
-    *s = toupper((unsigned char) *s);
+    *s = toupper((unsigned char)*s);
     s++;
   }
   return r;
 }
 
-tensorflow::Status VcfRecordConverter::ConvertToPb(
+::nucleus::Status VcfRecordConverter::ConvertToPb(
     const bcf_hdr_t* h, bcf1_t* v,
     nucleus::genomics::v1::Variant* variant_message) const {
   CHECK(h != nullptr) << "BCF header cannot be null";
@@ -971,7 +952,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
   // Don't add the missing "." marker to the id field.
   if (v->d.id && strcmp(v->d.id, ".") != 0) {
     std::vector<string> names = absl::StrSplit(v->d.id, ';');
-    for (string &n : names) {
+    for (string& n : names) {
       variant_message->add_names(n);
     }
   }
@@ -1000,7 +981,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
 
   // Parse the generic INFO fields.
   for (const auto& adapter : info_adapters_) {
-    TF_RETURN_IF_ERROR(adapter.DecodeValues(h, v, variant_message));
+    NUCLEUS_RETURN_IF_ERROR(adapter.DecodeValues(h, v, variant_message));
   }
 
   // Parse the calls of the variant.
@@ -1009,7 +990,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
     int n_gts = 0;
     if (bcf_get_genotypes(h, v, &gt_arr, &n_gts) < 0) {
       free(gt_arr);
-      return tensorflow::errors::DataLoss("Couldn't parse genotypes");
+      return ::nucleus::DataLoss("Couldn't parse genotypes");
     }
     int max_ploidy = n_gts / v->n_sample;
 
@@ -1035,7 +1016,7 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
 
     // Parse "generic" FORMAT fields.
     for (const auto& adapter : format_adapters_) {
-      TF_RETURN_IF_ERROR(adapter.DecodeValues(h, v, variant_message));
+      NUCLEUS_RETURN_IF_ERROR(adapter.DecodeValues(h, v, variant_message));
     }
 
     // Handle FORMAT fields requiring special logic.
@@ -1072,18 +1053,17 @@ tensorflow::Status VcfRecordConverter::ConvertToPb(
       }
     }
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
-
-tensorflow::Status VcfRecordConverter::ConvertFromPb(
+::nucleus::Status VcfRecordConverter::ConvertFromPb(
     const nucleus::genomics::v1::Variant& variant_message, const bcf_hdr_t& h,
     bcf1_t* v) const {
   CHECK(v != nullptr) << "bcf1_t record cannot be null";
 
   v->rid = bcf_hdr_name2id(&h, variant_message.reference_name().c_str());
   if (v->rid < 0)
-    return tensorflow::errors::NotFound(
+    return ::nucleus::NotFound(
         "Record's reference name is not available in VCF header.");
 
   v->pos = variant_message.start();
@@ -1100,7 +1080,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
       variant_message.alternate_bases()[0][0] == '<') {
     int end = v->pos + v->rlen;
     if (bcf_update_info_int32(&h, v, "END", &end, 1) != 0)
-      return tensorflow::errors::Unknown("Failure to write END to vcf record");
+      return ::nucleus::Unknown("Failure to write END to vcf record");
   }
 
   // Some variants don't have names; these will get the placeholder "." in the
@@ -1134,7 +1114,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
       const char* filterName = variant_message.filter(i).c_str();
       int32 filterId = bcf_hdr_id2int(&h, BCF_DT_ID, filterName);
       if (filterId < 0) {
-        return tensorflow::errors::NotFound("Filter must be found in header.");
+        return ::nucleus::NotFound("Filter must be found in header.");
       }
       filterIds.get()[i] = filterId;
     }
@@ -1143,16 +1123,16 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
 
   // Generic INFO fields
   for (const VcfInfoFieldAdapter& field : info_adapters_) {
-    TF_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
+    NUCLEUS_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
   }
 
   // Variant calls
   int nCalls = variant_message.calls().size();
   int nSamples = bcf_hdr_nsamples(&h);
   if (nCalls != nSamples)
-    return tensorflow::errors::FailedPrecondition(
-        "Variant call count ", nCalls, " must match number of samples ",
-        nSamples, ".");
+    return ::nucleus::FailedPrecondition(
+        absl::StrCat("Variant call count ", nCalls,
+                     " must match number of samples ", nSamples, "."));
 
   // We need to determine the effective ploidy (as the max number of GT calls
   // among samples at this variant); any genotypes shorter than this ploidy
@@ -1169,15 +1149,15 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
       const nucleus::genomics::v1::VariantCall& vc = variant_message.calls(c);
 
       if (vc.genotype_size() > ploidy)
-        return tensorflow::errors::FailedPrecondition(
+        return ::nucleus::FailedPrecondition(
             "Too many genotypes given the ploidy");
       if (vc.call_set_name() != h.samples[c])
-        return tensorflow::errors::FailedPrecondition(
-          "Out-of-order call set names, or unrecognized call set name, "
-          "with respect to samples declared in VCF header. Variant has ",
-          vc.call_set_name(), " at position ", c,
-          " while the VCF header expected a sample named ",
-          h.samples[c], " at this position");
+        return ::nucleus::FailedPrecondition(absl::StrCat(
+            "Out-of-order call set names, or unrecognized call set name, "
+            "with respect to samples declared in VCF header. Variant has ",
+            vc.call_set_name(), " at position ", c,
+            " while the VCF header expected a sample named ", h.samples[c],
+            " at this position"));
 
       const bool isPhased = vc.is_phased();
       int a = 0;
@@ -1189,8 +1169,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
       }
     }
     if (bcf_update_genotypes(&h, v, gts.get(), nCalls * ploidy) < 0) {
-      return tensorflow::errors::Unknown(
-          "Failure to write genotypes to VCF record");
+      return ::nucleus::Unknown("Failure to write genotypes to VCF record");
     }
 
     // Write remaining FORMAT fields.
@@ -1199,7 +1178,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
     // genotype_likelihood field is populated, but not both. This is guaranteed
     // when reading Variants from a VCF file.
     for (const VcfFormatFieldAdapter& field : format_adapters_) {
-      TF_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
+      NUCLEUS_RETURN_IF_ERROR(field.EncodeValues(variant_message, &h, v));
     }
 
     if (!gl_and_pl_in_info_map_) {
@@ -1224,7 +1203,7 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
           // Do we need to zero-shift?
           gl_values.push_back(gl_this_call);
         }
-        TF_RETURN_IF_ERROR(EncodeFormatValues(gl_values, "GL", &h, v));
+        NUCLEUS_RETURN_IF_ERROR(EncodeFormatValues(gl_values, "GL", &h, v));
       }
 
       if (want_pl_ && has_ll) {
@@ -1253,11 +1232,12 @@ tensorflow::Status VcfRecordConverter::ConvertFromPb(
           }
         }
 
-        TF_RETURN_IF_ERROR(EncodeFormatValues(ll_values_phred, "PL", &h, v));
+        NUCLEUS_RETURN_IF_ERROR(
+            EncodeFormatValues(ll_values_phred, "PL", &h, v));
       }
     }
   }
-  return tensorflow::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace nucleus

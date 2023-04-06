@@ -40,8 +40,8 @@
 #include "third_party/nucleus/io/text_reader.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/gff.pb.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
@@ -81,7 +81,7 @@ class GffReader : public Reader {
 
   // Closes the underlying resource descriptors. Returns a Status to
   // indicate if everything went OK with the close.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // This no-op function is needed only for Python context manager support.
   void PythonEnter() const {}

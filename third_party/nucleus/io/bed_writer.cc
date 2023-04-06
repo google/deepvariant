@@ -39,13 +39,8 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
-
-namespace tf = tensorflow;
 
 // 256 KB write buffer.
 constexpr int WRITER_BUFFER_SIZE = 256 * 1024;
@@ -61,7 +56,7 @@ StatusOr<std::unique_ptr<BedWriter>> BedWriter::ToFile(
     const nucleus::genomics::v1::BedWriterOptions& options) {
   StatusOr<std::unique_ptr<TextWriter>> text_writer =
       TextWriter::ToFile(bed_path);
-  TF_RETURN_IF_ERROR(text_writer.status());
+  NUCLEUS_RETURN_IF_ERROR(text_writer.status());
   return absl::WrapUnique(
       new BedWriter(text_writer.ConsumeValueOrDie(), header, options));
 }
@@ -71,34 +66,31 @@ BedWriter::BedWriter(std::unique_ptr<TextWriter> text_writer,
                      const nucleus::genomics::v1::BedWriterOptions& options)
     : header_(header),
       options_(options),
-      text_writer_(std::move(text_writer)) {
-}
+      text_writer_(std::move(text_writer)) {}
 
 BedWriter::~BedWriter() {
   if (text_writer_) {
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
-tf::Status BedWriter::Close() {
+Status BedWriter::Close() {
   if (!text_writer_)
-    return tf::errors::FailedPrecondition(
-        "Cannot close an already closed BedWriter");
+    return FailedPrecondition("Cannot close an already closed BedWriter");
   // Close the file pointer we have been writing to.
-  tf::Status close_status = text_writer_->Close();
+  ::nucleus::Status close_status = text_writer_->Close();
   text_writer_ = nullptr;
   return close_status;
 }
 
-tf::Status BedWriter::Write(const nucleus::genomics::v1::BedRecord& record) {
+::nucleus::Status BedWriter::Write(
+    const nucleus::genomics::v1::BedRecord& record) {
   if (!text_writer_)
-    return tf::errors::FailedPrecondition("Cannot write to closed BED stream.");
+    return ::nucleus::FailedPrecondition("Cannot write to closed BED stream.");
   int numFields = header_.num_fields();
   string out = "";
-  absl::StrAppend(&out,
-                  record.reference_name(),
-                  "\t", record.start(),
-                  "\t", record.end());
+  absl::StrAppend(&out, record.reference_name(), "\t", record.start(), "\t",
+                  record.end());
   if (numFields > 3) absl::StrAppend(&out, "\t", record.name());
   if (numFields > 4) absl::StrAppend(&out, "\t", record.score());
   if (numFields > 5) {
@@ -113,23 +105,19 @@ tf::Status BedWriter::Write(const nucleus::genomics::v1::BedRecord& record) {
         absl::StrAppend(&out, "\t.");
         break;
       default:
-        return tf::errors::Unknown("Unknown strand encoding in the BED proto.");
+        return ::nucleus::Unknown("Unknown strand encoding in the BED proto.");
     }
   }
   if (numFields > 7)
-    absl::StrAppend(&out,
-                    "\t", record.thick_start(),
-                    "\t", record.thick_end());
+    absl::StrAppend(&out, "\t", record.thick_start(), "\t", record.thick_end());
   if (numFields > 8) absl::StrAppend(&out, "\t", record.item_rgb());
   if (numFields == 12)
-    absl::StrAppend(&out,
-                    "\t", record.block_count(),
-                    "\t", record.block_sizes(),
-                    "\t", record.block_starts());
+    absl::StrAppend(&out, "\t", record.block_count(), "\t",
+                    record.block_sizes(), "\t", record.block_starts());
   absl::StrAppend(&out, "\n");
-  TF_RETURN_IF_ERROR(text_writer_->Write(out));
+  NUCLEUS_RETURN_IF_ERROR(text_writer_->Write(out));
 
-  return tf::Status();
+  return ::nucleus::Status();
 }
 
 }  // namespace nucleus

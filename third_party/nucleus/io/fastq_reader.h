@@ -39,11 +39,10 @@
 #include "third_party/nucleus/io/text_reader.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/fastq.pb.h"
+#include "third_party/nucleus/vendor/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
-
 
 // Alias for the abstract base class for FASTQ record iterables.
 using FastqIterable = Iterable<nucleus::genomics::v1::FastqRecord>;
@@ -87,11 +86,11 @@ class FastqReader : public Reader {
 
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
-  tensorflow::Status Close();
+  ::nucleus::Status Close();
 
   // This no-op function is needed only for Python context manager support.  Do
   // not use it! Returns a Status indicating whether the enter was successful.
-  tensorflow::Status PythonEnter() const { return tensorflow::Status(); }
+  ::nucleus::Status PythonEnter() const { return ::nucleus::Status(); }
 
   // Get the options controlling the behavior of this FastqReader.
   const nucleus::genomics::v1::FastqReaderOptions& Options() const {
@@ -105,8 +104,8 @@ class FastqReader : public Reader {
               const nucleus::genomics::v1::FastqReaderOptions& options);
 
   // Populates the four string  pointers with values from the input file.
-  tensorflow::Status Next(string* header, string* sequence,
-                          string* pad, string* quality) const;
+  ::nucleus::Status Next(string* header, string* sequence, string* pad,
+                         string* quality) const;
 
   // Our options that control the behavior of this class.
   const nucleus::genomics::v1::FastqReaderOptions options_;

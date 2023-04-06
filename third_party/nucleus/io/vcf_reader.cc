@@ -50,27 +50,23 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/vendor/statusor.h"
 #include "google/protobuf/map.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
-namespace tf = tensorflow;
-
-using std::vector;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Variant;
-using nucleus::genomics::v1::VariantCall;
+using std::vector;
 
 namespace {
 
 bool FileTypeIsIndexable(htsFormat format) {
   return format.format == vcf && format.compression == bgzf;
 }
-
 
 }  // namespace
 
@@ -81,11 +77,8 @@ class VcfQueryIterable : public VariantIterable {
   StatusOr<bool> Next(nucleus::genomics::v1::Variant* out) override;
 
   // Constructor will be invoked via VcfReader::Query.
-  VcfQueryIterable(const VcfReader* reader,
-                   htsFile* fp,
-                   bcf_hdr_t* header,
-                   tbx_t* idx,
-                   hts_itr_t* iter);
+  VcfQueryIterable(const VcfReader* reader, htsFile* fp, bcf_hdr_t* header,
+                   tbx_t* idx, hts_itr_t* iter);
 
   ~VcfQueryIterable() override;
 
@@ -98,7 +91,6 @@ class VcfQueryIterable : public VariantIterable {
   kstring_t str_;
 };
 
-
 // Iterable class for traversing all VCF records in the file.
 class VcfFullFileIterable : public VariantIterable {
  public:
@@ -106,9 +98,7 @@ class VcfFullFileIterable : public VariantIterable {
   StatusOr<bool> Next(nucleus::genomics::v1::Variant* out) override;
 
   // Constructor will be invoked via VcfReader::Iterate.
-  VcfFullFileIterable(const VcfReader* reader,
-                      htsFile* fp,
-                      bcf_hdr_t* header);
+  VcfFullFileIterable(const VcfReader* reader, htsFile* fp, bcf_hdr_t* header);
 
   ~VcfFullFileIterable() override;
 
@@ -129,7 +119,7 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileWithHeader(
     const nucleus::genomics::v1::VcfReaderOptions& options,
     const nucleus::genomics::v1::VcfHeader& header) {
   bcf_hdr_t* h = nullptr;
-  TF_RETURN_IF_ERROR(VcfHeaderConverter::ConvertFromPb(header, &h));
+  NUCLEUS_RETURN_IF_ERROR(VcfHeaderConverter::ConvertFromPb(header, &h));
   return FromFileHelper(vcf_filepath, options, h);
 }
 
@@ -138,13 +128,14 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileHelper(
     const nucleus::genomics::v1::VcfReaderOptions& options, bcf_hdr_t* h) {
   htsFile* fp = hts_open_x(vcf_filepath, "r");
   if (fp == nullptr) {
-    return tf::errors::NotFound("Could not open ", vcf_filepath);
+    return ::nucleus::NotFound(absl::StrCat("Could not open ", vcf_filepath));
   }
 
   if (h == nullptr) {
     h = bcf_hdr_read(fp);
     if (h == nullptr) {
-      return tf::errors::Unknown("Couldn't parse header for ", fp->fn);
+      return ::nucleus::Unknown(
+          absl::StrCat("Couldn't parse header for ", fp->fn));
     }
   } else {
     // Call bcf_hdr_read to verify that this is a headerless VCF file.
@@ -154,7 +145,8 @@ StatusOr<std::unique_ptr<VcfReader>> VcfReader::FromFileHelper(
       hts_close(fp);
       bcf_hdr_destroy(null_h);
       bcf_hdr_destroy(h);
-      return tf::errors::Unknown("Unexpected header in", vcf_filepath);
+      return ::nucleus::Unknown(
+          absl::StrCat("Unexpected header in", vcf_filepath));
     }
     // Without the header, htslib fails to parse the format. Default to vcf.
     // TODO: support bcf files with no header.
@@ -200,13 +192,13 @@ VcfReader::~VcfReader() {
   if (fp_) {
     // We cannot return a value from the destructor, so the best we can do is
     // CHECK-fail if the Close() wasn't successful.
-    TF_CHECK_OK(Close());
+    NUCLEUS_CHECK_OK(Close());
   }
 }
 
 StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Iterate() {
   if (fp_ == nullptr)
-    return tf::errors::FailedPrecondition("Cannot Iterate a closed VcfReader.");
+    return ::nucleus::FailedPrecondition("Cannot Iterate a closed VcfReader.");
   return StatusOr<std::shared_ptr<VariantIterable>>(
       MakeIterable<VcfFullFileIterable>(this, fp_, header_));
 }
@@ -214,19 +206,19 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Iterate() {
 StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
     const Range& region) {
   if (fp_ == nullptr)
-    return tf::errors::FailedPrecondition("Cannot Query a closed VcfReader.");
+    return ::nucleus::FailedPrecondition("Cannot Query a closed VcfReader.");
   if (!HasIndex()) {
-    return tf::errors::FailedPrecondition("Cannot query without an index");
+    return ::nucleus::FailedPrecondition("Cannot query without an index");
   }
 
   const char* reference_name = region.reference_name().c_str();
   if (bcf_hdr_name2id(header_, reference_name) < 0) {
-    return tf::errors::NotFound(
-        "Unknown reference_name '", region.reference_name(), "'");
+    return ::nucleus::NotFound(
+        absl::StrCat("Unknown reference_name '", region.reference_name(), "'"));
   }
   if (region.start() < 0 || region.start() >= region.end())
-    return tf::errors::InvalidArgument(
-        "Malformed region '", region.ShortDebugString(), "'");
+    return ::nucleus::InvalidArgument(
+        absl::StrCat("Malformed region '", region.ShortDebugString(), "'"));
 
   // Get the tid (index of reference_name in our tabix index),
   const int tid = tbx_name2id(idx_, reference_name);
@@ -236,9 +228,9 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
     // matching exactly the logic of our Range.
     iter = tbx_itr_queryi(idx_, tid, region.start(), region.end());
     if (iter == nullptr) {
-      return tf::errors::NotFound(
-          "region '", region.ShortDebugString(),
-          "' returned an invalid hts_itr_queryi result");
+      return ::nucleus::NotFound(
+          absl::StrCat("region '", region.ShortDebugString(),
+                       "' returned an invalid hts_itr_queryi result"));
     }
   }  // implicit else case:
   // The chromosome isn't reflected in the tabix index (meaning, no
@@ -247,10 +239,10 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
       MakeIterable<VcfQueryIterable>(this, fp_, header_, idx_, iter));
 }
 
-tf::Status VcfReader::FromString(
-    const absl::string_view& vcf_line, nucleus::genomics::v1::Variant* v) {
+::nucleus::Status VcfReader::FromString(const absl::string_view& vcf_line,
+                                        nucleus::genomics::v1::Variant* v) {
   size_t len = vcf_line.length();
-  std::unique_ptr<char[]> cstr{new char[len + 1 ]};
+  std::unique_ptr<char[]> cstr{new char[len + 1]};
   std::strncpy(cstr.get(), vcf_line.data(), len);
   *(cstr.get() + len) = '\0';
   kstring_t str = {.l = len + 1, .m = len + 1, .s = cstr.get()};
@@ -260,7 +252,8 @@ tf::Status VcfReader::FromString(
   // non-critical errors. Ignore these missing header definitions because they
   // are common in the wild.
   if (vcf_parse1(&str, header_, bcf1_) < 0) {
-    return tf::errors::DataLoss("Failed to parse VCF record: ", cstr.get());
+    return ::nucleus::DataLoss(
+        absl::StrCat("Failed to parse VCF record: ", cstr.get()));
   }
   if (bcf1_->errcode == BCF_ERR_CTG_UNDEF ||
       bcf1_->errcode == BCF_ERR_TAG_UNDEF) {
@@ -269,26 +262,26 @@ tf::Status VcfReader::FromString(
   }
 
   if (bcf1_->errcode != 0) {
-    return tf::errors::DataLoss("Failed to parse VCF record with errcode: ",
-                                bcf1_->errcode);
+    return ::nucleus::DataLoss(absl::StrCat(
+        "Failed to parse VCF record with errcode: ", bcf1_->errcode));
   }
 
-  TF_RETURN_IF_ERROR(RecordConverter().ConvertToPb(header_, bcf1_, v));
-  return tf::Status();
+  NUCLEUS_RETURN_IF_ERROR(RecordConverter().ConvertToPb(header_, bcf1_, v));
+  return ::nucleus::Status();
 }
 
-StatusOr<bool> VcfReader::FromStringPython(
-    const absl::string_view& vcf_line, nucleus::genomics::v1::Variant* v) {
-  tf::Status s = FromString(vcf_line, v);
+StatusOr<bool> VcfReader::FromStringPython(const absl::string_view& vcf_line,
+                                           nucleus::genomics::v1::Variant* v) {
+  ::nucleus::Status s = FromString(vcf_line, v);
   if (!s.ok()) {
     return s;
   }
   return true;
 }
 
-tf::Status VcfReader::Close() {
+::nucleus::Status VcfReader::Close() {
   if (fp_ == nullptr)
-    return tf::errors::FailedPrecondition("VcfReader already closed");
+    return ::nucleus::FailedPrecondition("VcfReader already closed");
   if (HasIndex()) {
     tbx_destroy(idx_);
     idx_ = nullptr;
@@ -298,22 +291,23 @@ tf::Status VcfReader::Close() {
   int retval = hts_close(fp_);
   fp_ = nullptr;
   if (retval < 0) {
-    return tf::errors::Internal("hts_close() failed");
+    return ::nucleus::Internal("hts_close() failed");
   } else {
-    return tf::Status();
+    return ::nucleus::Status();
   }
 }
 
 // Iterable class definitions.
 
 StatusOr<bool> VcfQueryIterable::Next(Variant* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   if (tbx_itr_next(fp_, idx_, iter_, &str_) < 0) return false;
   if (vcf_parse1(&str_, header_, bcf1_) < 0) {
-    return tf::errors::DataLoss("Failed to parse VCF record: ", str_.s);
+    return ::nucleus::DataLoss(
+        absl::StrCat("Failed to parse VCF record: ", str_.s));
   }
   const VcfReader* reader = static_cast<const VcfReader*>(reader_);
-  TF_RETURN_IF_ERROR(
+  NUCLEUS_RETURN_IF_ERROR(
       reader->RecordConverter().ConvertToPb(header_, bcf1_, out));
   return true;
 }
@@ -321,13 +315,13 @@ StatusOr<bool> VcfQueryIterable::Next(Variant* out) {
 VcfQueryIterable::~VcfQueryIterable() {
   hts_itr_destroy(iter_);
   bcf_destroy(bcf1_);
-  if (str_.s != nullptr) { free(str_.s); }
+  if (str_.s != nullptr) {
+    free(str_.s);
+  }
 }
 
-VcfQueryIterable::VcfQueryIterable(const VcfReader* reader,
-                                   htsFile* fp,
-                                   bcf_hdr_t* header,
-                                   tbx_t* idx,
+VcfQueryIterable::VcfQueryIterable(const VcfReader* reader, htsFile* fp,
+                                   bcf_hdr_t* header, tbx_t* idx,
                                    hts_itr_t* iter)
     : Iterable(reader),
       fp_(fp),
@@ -335,36 +329,27 @@ VcfQueryIterable::VcfQueryIterable(const VcfReader* reader,
       bcf1_(bcf_init()),
       idx_(idx),
       iter_(iter),
-      str_({0, 0, nullptr})
-{}
-
+      str_({0, 0, nullptr}) {}
 
 StatusOr<bool> VcfFullFileIterable::Next(Variant* out) {
-  TF_RETURN_IF_ERROR(CheckIsAlive());
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   if (bcf_read(fp_, header_, bcf1_) < 0) {
     if (bcf1_->errcode) {
-      return tf::errors::DataLoss("Failed to parse VCF record");
+      return ::nucleus::DataLoss("Failed to parse VCF record");
     } else {
       return false;
     }
   }
   const VcfReader* reader = static_cast<const VcfReader*>(reader_);
-  TF_RETURN_IF_ERROR(
+  NUCLEUS_RETURN_IF_ERROR(
       reader->RecordConverter().ConvertToPb(header_, bcf1_, out));
   return true;
 }
 
-VcfFullFileIterable::~VcfFullFileIterable() {
-  bcf_destroy(bcf1_);
-}
+VcfFullFileIterable::~VcfFullFileIterable() { bcf_destroy(bcf1_); }
 
-VcfFullFileIterable::VcfFullFileIterable(const VcfReader* reader,
-                                         htsFile* fp,
+VcfFullFileIterable::VcfFullFileIterable(const VcfReader* reader, htsFile* fp,
                                          bcf_hdr_t* header)
-    : Iterable(reader),
-      fp_(fp),
-      header_(header),
-      bcf1_(bcf_init())
-{}
+    : Iterable(reader), fp_(fp), header_(header), bcf1_(bcf_init()) {}
 
 }  // namespace nucleus
