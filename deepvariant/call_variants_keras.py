@@ -453,12 +453,20 @@ def call_variants(
     tfrecord.write_tfrecords([], output_file)
     return
 
-  # TODO: Check example shape and format and throw a readable
-  # error if incorrect
   example_info_json = dv_utils.get_example_info_json_filename(
       examples_filename, 0
   )
   example_shape = get_shape_and_channels_from_json(example_info_json)[0]
+
+  if example_shape is None:
+    logging.info(
+        (
+            'Unable to read shape information from %s. Directly read from '
+            'examples instead.'
+        ),
+        example_info_json,
+    )
+    example_shape = dv_utils.example_image_shape(first_example)
 
   logging.info('Shape of input examples: %s', str(example_shape))
 
