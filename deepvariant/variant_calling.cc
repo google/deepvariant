@@ -32,6 +32,7 @@
 #include "deepvariant/variant_calling.h"
 
 #include <algorithm>
+#include <functional>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -321,7 +322,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     std::vector<double> vaf;
     ad.push_back(allele_count.ref_supporting_read_count());
 
-    std::map<std::string, const Allele*> alt_to_alleles;
+    std::map<std::string, const Allele*, std::less<>> alt_to_alleles;
     for (const auto& entry : allele_map) {
       const string key = SimplifyRefAlt(allele_map_refbases, entry.second);
       alt_to_alleles[key] = &entry.first;
