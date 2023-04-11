@@ -55,14 +55,8 @@ class VerySensitiveCaller(variant_caller.VariantCaller):
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
   ) -> Sequence[deepvariant_pb2.DeepVariantCall]:
-    # AlleleCounter doesn't have copy constructor therefore we pass
-    # allele counts only (which is a member of AlleleCounter).
-    allele_counts = {
-        sample_id: allele_counters[sample_id].counts()
-        for sample_id in allele_counters
-    }
     return self.cpp_variant_caller.calls_from_allele_counts(
-        allele_counts, sample_name
+        allele_counters, sample_name
     )
 
   def get_candidate_positions(
@@ -70,10 +64,6 @@ class VerySensitiveCaller(variant_caller.VariantCaller):
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
   ):
-    allele_counts = {
-        sample_id: allele_counters[sample_id].counts()
-        for sample_id in allele_counters
-    }
     return self.cpp_variant_caller.call_positions_from_allele_counts(
-        allele_counts, sample_name
+        allele_counters, sample_name
     )
