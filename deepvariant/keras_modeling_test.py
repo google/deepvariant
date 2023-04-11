@@ -41,7 +41,9 @@ from third_party.nucleus.testing import test_utils
 
 
 def _filepath_for_weights_ckpt_from_shape(shape: Tuple[int, int, int]) -> str:
-  model = keras_modeling.inceptionv3(input_shape=shape)
+  model = keras_modeling.inceptionv3(
+      input_shape=shape, init_backbone_with_imagenet=False
+  )
   tmp_model_name = test_utils.test_tmpfile(
       'filepath_for_weights_ckpt_from_shape_{}.weights'.format(
           '_'.join(str(i) for i in shape)
@@ -61,7 +63,8 @@ class KerasModelingTest(parameterized.TestCase):
   )
   def test_prediction(self, model_num_channel):
     model = keras_modeling.inceptionv3(
-        input_shape=(100, 221, model_num_channel)
+        input_shape=(100, 221, model_num_channel),
+        init_backbone_with_imagenet=False,
     )
     input_shape = (1, 100, 221, model_num_channel)
     x = np.random.uniform(size=input_shape)
@@ -82,7 +85,8 @@ class KerasModelingTest(parameterized.TestCase):
   def test_prediction_failure(self, model_num_channel, input_num_channel):
     # Confirm that imcompatible shape causes an issue.
     model = keras_modeling.inceptionv3(
-        input_shape=(100, 221, model_num_channel)
+        input_shape=(100, 221, model_num_channel),
+        init_backbone_with_imagenet=False,
     )
     input_shape = (1, 100, 221, input_num_channel)
     x = np.random.uniform(size=input_shape)
@@ -101,7 +105,9 @@ class KerasModelingTest(parameterized.TestCase):
   def test_model_training(self, model_num_channel):
     # Define a model.
     input_shape = (100, 221, model_num_channel)
-    model = keras_modeling.inceptionv3(input_shape=input_shape)
+    model = keras_modeling.inceptionv3(
+        input_shape=input_shape, init_backbone_with_imagenet=False
+    )
 
     # Generate random input and target data.
     x_train = np.random.rand(32, *input_shape)
@@ -181,7 +187,9 @@ class KerasModelingTest(parameterized.TestCase):
     )
 
     model = keras_modeling.inceptionv3(
-        input_shape=input_shape, weights=weights_ckpt_path
+        input_shape=input_shape,
+        weights=weights_ckpt_path,
+        init_backbone_with_imagenet=False,
     )
     x = np.random.uniform(size=(1,) + input_shape)
     y = model.predict(tf.keras.applications.inception_v3.preprocess_input(x))

@@ -207,8 +207,63 @@ def num_channels_from_checkpoint(filepath: str) -> int:
   return num_channels
 
 
+def inceptionv3_with_imagenet(
+    input_shape: Tuple[int, int, int]
+) -> tf.keras.Model:
+  """Returns `inceptionv3` model with 3 channels; init with `weights=imagenet`.
+
+  Our `inceptionv3` model (defined in this file as well) allows #channels other
+  than 3. When the #channels is not 3, we couldn't set `weights=imagenet` to
+  our backbone tf.keras.applications.InceptionV3 because it will complain the
+  number of channels is not 3. We created this "inceptionv3_with_imagenet"
+  model which has the same architecture, which we can then use our own
+  "load_weights_to_model_with_different_channels" function to initiate an
+  inceptionv3 model with any numbers of channels.
+
+  The reason why this function is separate (instead of parameterized in the same
+  implementation of inceptionv3) is to make it easier to read.
+
+  Args:
+    input_shape: a 3-tuple describing the input shape. The 3rd dimension is not
+      used in this function. We always set that to 3 in this function.
+
+  Returns:
+    An InceptionV3-based model with 3 channels and init with `weights=imagenet`.
+  """
+  input_shape = list(input_shape)
+  input_shape = [input_shape[0], input_shape[1], 3]
+
+  backbone = tf.keras.applications.InceptionV3(
+      include_top=False,
+      weights='imagenet',
+      input_shape=input_shape,
+      classes=dv_constants.NUM_CLASSES,
+      pooling='avg',
+  )
+
+  weight_decay = _DEFAULT_WEIGHT_DECAY
+  backbone = add_l2_regularizers(
+      backbone, tf.keras.layers.Conv2D, l2=weight_decay
+  )
+  backbone_drop_rate = _DEFAULT_BACKBONE_DROP_DRATE
+
+  inputs_image = tf.keras.Input(shape=input_shape, name='image')
+  hid = backbone(inputs_image)
+  hid = tf.keras.layers.Dropout(backbone_drop_rate)(hid)
+
+  outputs = []
+  outputs.append(build_classification_head(hid, l2=weight_decay))
+
+  model = tf.keras.Model(
+      inputs=[inputs_image], outputs=outputs, name='inceptionv3'
+  )
+  return model
+
+
 def inceptionv3(
-    input_shape: Tuple[int, int, int], weights: Optional[str] = None
+    input_shape: Tuple[int, int, int],
+    weights: Optional[str] = None,
+    init_backbone_with_imagenet: bool = True,
 ) -> tf.keras.Model:
   """Returns an InceptionV3 architecture.
 
@@ -217,6 +272,9 @@ def inceptionv3(
   Args:
     input_shape: a 3-tuple describing the input shape.
     weights: str. To initial weights from.
+    init_backbone_with_imagenet: If True, get a model with InceptionV3 that has
+      `weights='imagenet'` to start with. This will download a model. It should
+      be set to False in unit tests.
 
   Returns:
     An InceptionV3-based model.
@@ -248,7 +306,16 @@ def inceptionv3(
   model.summary()
   logging.info('Number of l2 regularizers: %s.', len(model.losses))
 
-  if not weights:
+  # If no weights file is specified, initialize with `imagenet`.
+  # The `init_backbone_with_imagenet` flag should be set to False for unit
+  # tests to avoid loading the `imagenet` model from online.
+  if not weights and init_backbone_with_imagenet:
+    logging.info('inceptionv3: Initiate the model with imagenet (3 channels).')
+    model = load_weights_to_model_with_different_channels(
+        model, inceptionv3_with_imagenet(input_shape)
+    )
+
+  elif not weights and not init_backbone_with_imagenet:
     logging.info('inceptionv3: No init_weights_file.')
     return model
 
@@ -263,7 +330,9 @@ def inceptionv3(
     # Improve later if possible: find a more readable alternative for this.
     weights_input_shape = list(input_shape)
     weights_input_shape[2] = weights_num_channels
-    input_model = inceptionv3(tuple(weights_input_shape), weights)
+    input_model = inceptionv3(
+        tuple(weights_input_shape), weights, init_backbone_with_imagenet=False
+    )
     logging.info(
         'inceptionv3: Assigning weights from %s channels to %s channels',
         weights_num_channels,
