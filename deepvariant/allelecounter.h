@@ -241,7 +241,7 @@ class AlleleCounter {
   //
   // The GenomeReference must be available throughout the lifetime of this
   // AlleleCounter object.
-  AlleleCounter(const nucleus::GenomeReference* const ref,
+  AlleleCounter(const nucleus::GenomeReference* ref,
                 const nucleus::genomics::v1::Range& range,
                 const std::vector<int>& candidate_positions,
                 const AlleleCounterOptions& options);
@@ -249,11 +249,15 @@ class AlleleCounter {
   // An alternative constructor that allows to use a wider reference region for
   // allele counter. This is needed for read normalization for those reads that
   // only partially overlap allele counter region.
-  AlleleCounter(const nucleus::GenomeReference* const ref,
+  AlleleCounter(const nucleus::GenomeReference* ref,
                 const nucleus::genomics::v1::Range& range,
                 const nucleus::genomics::v1::Range& full_range,
                 const std::vector<int>& candidate_positions,
                 const AlleleCounterOptions& options);
+
+  // This Init is used by unit tests only.
+  static AlleleCounter* InitFromAlleleCounts(
+      const std::vector<AlleleCount>& allele_counts);
 
   // Adds the alleles from read to our AlleleCounts. This method is also called
   // by NormalizeAndAdd. In that case allele counts are created using a
@@ -339,6 +343,9 @@ class AlleleCounter {
   string ReadKey(const nucleus::genomics::v1::Read& read);
 
  private:
+  // This constructor is used for unit testing only.
+  AlleleCounter();
+
   // Initialize allele counter.
   void Init();
 

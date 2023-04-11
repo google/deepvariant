@@ -79,9 +79,9 @@ class WrapVariantCallingTest(absltest.TestCase):
       allele_counter.add(read, 'sample_id')
 
     # Get the candidates records for this whole region.
-    allele_counts = {}
-    allele_counts['sample_id'] = allele_counter.counts()
-    candidates = caller.calls_from_allele_counts(allele_counts, 'sample_id')
+    allele_counters = {}
+    allele_counters['sample_id'] = allele_counter
+    candidates = caller.calls_from_allele_counts(allele_counters, 'sample_id')
 
     # We should have at least some candidates and some gvcf records.
     self.assertNotEmpty(candidates)

@@ -432,33 +432,29 @@ bool VariantCaller::KeepReferenceSite() const {
 
 template <class T>
 std::vector<T> VariantCaller::AlleleCountsGenerator(
-    const std::unordered_map<std::string,
-                             std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
-        allele_counts,
+    const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
     const std::string& target_sample,
     std::optional<T> (VariantCaller::*F)(
         const absl::node_hash_map<std::string, AlleleCount>&,
         const std::string&) const) const {
   // Get Allele counts for the target sample
-  auto it = allele_counts.find(target_sample);
-  if (it == allele_counts.end()) {
+  auto it = allele_counters.find(target_sample);
+  if (it == allele_counters.end()) {
     LOG(WARNING)
         << "allele_counters collection does not contain target sample!";
     return std::vector<T>();
   }
 
   // Contains AlleleCount objects for each position of the target sample.
-  const std::vector<nucleus::ConstProtoPtr<AlleleCount>>&
-      target_sample_allele_counts = it->second;
+  const std::vector<AlleleCount>& target_sample_allele_counts =
+      it->second->Counts();
 
   // Initialize a vector of iterators - one iterator per sample.
-  absl::node_hash_map<
-      std::string,
-      std::vector<nucleus::ConstProtoPtr<AlleleCount>>::const_iterator>
+  absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
       allele_counter_iterators;
-  for (const auto& sample_allele_counts : allele_counts) {
-    allele_counter_iterators[sample_allele_counts.first] =
-        sample_allele_counts.second.begin();
+  for (const auto& sample_allele_counters : allele_counters) {
+    allele_counter_iterators[sample_allele_counters.first] =
+        sample_allele_counters.second->Counts().begin();
   }
 
   std::vector<T> items;
@@ -468,13 +464,13 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
   while (allele_counter_iterators[target_sample] !=
          target_sample_allele_counts.end()) {
     absl::node_hash_map<std::string, AlleleCount> allele_counts_per_sample;
-    for (const auto& sample_counter : allele_counts) {
+    for (const auto& sample_counter : allele_counters) {
       if (allele_counter_iterators[sample_counter.first] !=
-          allele_counts.at(sample_counter.first).end()) {
+          allele_counters.at(sample_counter.first)->Counts().end()) {
         // allele_counts_per_sample contain AlleleCount for each sample for one
         // position.
         allele_counts_per_sample[sample_counter.first] =
-            *(allele_counter_iterators[sample_counter.first]->p_);
+            *(allele_counter_iterators[sample_counter.first]);
       }
     }
     // Calling CallVariant for one position. allele_counts_per_sample contains
@@ -486,7 +482,7 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
 
     // Increment all iterators.
     for (auto& it : allele_counter_iterators) {
-      if (it.second != allele_counts.at(it.first).end()) {
+      if (it.second != allele_counters.at(it.first)->Counts().end()) {
         it.second++;
       }
     }
@@ -495,20 +491,16 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
-    const std::unordered_map<std::string,
-                             std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
-        allele_counts,
+    const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
     const std::string& target_sample) const {
-  return AlleleCountsGenerator<DeepVariantCall>(allele_counts, target_sample,
+  return AlleleCountsGenerator<DeepVariantCall>(allele_counters, target_sample,
                                                 &VariantCaller::CallVariant);
 }
 
 std::vector<int> VariantCaller::CallPositionsFromAlleleCounts(
-    const std::unordered_map<std::string,
-                             std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
-        allele_counts,
+    const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
     const std::string& target_sample) const {
-  return AlleleCountsGenerator<int>(allele_counts, target_sample,
+  return AlleleCountsGenerator<int>(allele_counters, target_sample,
                                     &VariantCaller::CallVariantPosition);
 }
 

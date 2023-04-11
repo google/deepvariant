@@ -45,6 +45,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
@@ -257,6 +258,19 @@ void AlleleCounter::Init() {
     counts_.push_back(allele_count);
   }
 }
+
+// AlleleCounter objects are passed to Python by pointers. We need to return
+// a raw pointer here in order to test a Python specific API.
+AlleleCounter* AlleleCounter::InitFromAlleleCounts(
+    const std::vector<AlleleCount>& allele_counts) {
+  auto allele_counter = new AlleleCounter();
+  allele_counter->counts_.assign(allele_counts.begin(), allele_counts.end());
+  return allele_counter;
+}
+
+// This constructor is only used for unit testing, therefore it is defined as
+// private.
+AlleleCounter::AlleleCounter() : ref_(nullptr) {}
 
 AlleleCounter::AlleleCounter(const GenomeReference* const ref,
                              const Range& range,

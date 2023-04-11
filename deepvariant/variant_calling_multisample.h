@@ -76,7 +76,7 @@ extern const char* const kDPFormatField;
 extern const char* const kADFormatField;
 extern const char* const kVAFFormatField;
 
-// Implements the less functionality needed to use an Allele as an key in a map.
+// Implements the less functionality needed to use an Allele as a key in a map.
 struct OrderAllele {
   bool operator()(const Allele& allele1, const Allele& allele2) const {
     // Note we ignore count (and other potential fields) because they aren't
@@ -157,8 +157,7 @@ class VariantCaller {
   //   the reads of all the samples.
   // Logic is implemented in SelectAltAlleles() function.
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
-      const std::unordered_map<
-          std::string, std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
+      const std::unordered_map<std::string, AlleleCounter*>&
           allele_counts_wrapper,
       const std::string& target_sample) const;
 
@@ -166,9 +165,7 @@ class VariantCaller {
   // This function is almost identical to CallsFromAlleleCounts except it
   // only calculates candidate positions.
   std::vector<int> CallPositionsFromAlleleCounts(
-      const std::unordered_map<
-          std::string, std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
-          allele_counts,
+      const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
       const std::string& target_sample) const;
 
   // Iterates allele_counts for all samples and calls specified function F for
@@ -176,9 +173,7 @@ class VariantCaller {
   // generate candidate positions.
   template <class T>
   std::vector<T> AlleleCountsGenerator(
-      const std::unordered_map<
-          std::string, std::vector<nucleus::ConstProtoPtr<AlleleCount>>>&
-          allele_counts,
+      const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
       const std::string& target_sample,
       std::optional<T> (VariantCaller::*F)(
           const absl::node_hash_map<std::string, AlleleCount>&,
