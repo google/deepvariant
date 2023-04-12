@@ -315,7 +315,7 @@ def inceptionv3(
     model = load_weights_to_model_with_different_channels(
         model, inceptionv3_with_imagenet(input_shape)
     )
-
+    return model
   elif not weights and not init_backbone_with_imagenet:
     logging.info('inceptionv3: No init_weights_file.')
     return model
