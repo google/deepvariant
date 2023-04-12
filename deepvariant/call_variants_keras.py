@@ -471,7 +471,9 @@ def call_variants(
   logging.info('Shape of input examples: %s', str(example_shape))
 
   if checkpoint_path is not None:
-    model = modeling.inceptionv3(example_shape)
+    model = modeling.inceptionv3(
+        example_shape, init_backbone_with_imagenet=False
+    )
     model.load_weights(checkpoint_path).expect_partial()
 
     image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)

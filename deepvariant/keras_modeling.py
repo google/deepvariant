@@ -274,7 +274,8 @@ def inceptionv3(
     weights: str. To initial weights from.
     init_backbone_with_imagenet: If True, get a model with InceptionV3 that has
       `weights='imagenet'` to start with. This will download a model. It should
-      be set to False in unit tests.
+      be set to False in unit tests, or when specific model weights will be
+      loaded afterwards.
 
   Returns:
     An InceptionV3-based model.
