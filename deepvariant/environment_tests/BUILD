@@ -1,7 +1,5 @@
 # KEEP THIS LINE to import nucleus.bzl externally
 
-load("//third_party/bazel_rules/rules_python/python:py_test.bzl", "py_test")
-
 test_suite(
     name = "smoke_tests",
     tests = [

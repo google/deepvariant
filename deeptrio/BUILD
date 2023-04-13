@@ -1,7 +1,3 @@
-load("//third_party/bazel_rules/rules_python/python:py_library.bzl", "py_library")
-load("//third_party/bazel_rules/rules_python/python:py_test.bzl", "py_test")
-load("//third_party/bazel_rules/rules_python/python:py_binary.bzl", "py_binary")
-
 package(
     default_visibility = [
         "//visibility:public",
