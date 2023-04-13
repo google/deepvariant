@@ -1,3 +1,4 @@
+load("//third_party/bazel_rules/rules_python/python:py_test.bzl", "py_test")
 load("//third_party:clif.bzl", "py_clif_cc")
 
 package(
