@@ -28,6 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for make_examples_somatic."""
 
+import os
+
 
 from absl import flags
 from absl import logging
@@ -35,8 +37,10 @@ from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
 
+from deepvariant import make_examples_core
 from deepvariant import make_examples_somatic
 from deepvariant import testdata
+from third_party.nucleus.testing import test_utils
 
 
 FLAGS = flags.FLAGS
@@ -68,6 +72,29 @@ class MakeExamplesSomaticEnd2EndTest(parameterized.TestCase):
     ]
     self.assertEqual(normal_sample_options.name, 'NORMAL')
     self.assertEqual(tumor_sample_options.name, 'TUMOR')
+
+  @flagsaver.flagsaver
+  def test_make_examples_somatic_end2end_check_calling_examples_suffixes(self):
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads_normal = testdata.CHR20_BAM
+    FLAGS.reads_tumor = testdata.CHR20_BAM
+    FLAGS.sample_name_normal = 'NORMAL'
+    FLAGS.sample_name_tumor = 'TUMOR'
+    FLAGS.mode = 'calling'
+    FLAGS.examples = test_utils.test_tmpfile('TEST_SUFFIX.tfrecord.gz')
+    with_normal_suffix = test_utils.test_tmpfile(
+        'TEST_SUFFIX_normal.tfrecord.gz'
+    )
+    with_tumor_suffix = test_utils.test_tmpfile('TEST_SUFFIX_tumor.tfrecord.gz')
+    options = make_examples_somatic.default_options(add_flags=True)
+    FLAGS.regions = 'chr20:10,000,000-10,010,000'
+    options = make_examples_somatic.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+    # This shows that examples in calling mode are generated with the _sample
+    # suffixes.
+    self.assertTrue(os.path.exists(with_normal_suffix))
+    self.assertTrue(os.path.exists(with_tumor_suffix))
+    self.assertFalse(os.path.exists(FLAGS.examples))
 
 
 if __name__ == '__main__':
