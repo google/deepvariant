@@ -166,7 +166,7 @@ def tumor_normal_samples_from_flags(add_flags=True, flags_obj=None):
       variant_caller_options=make_examples_core.make_vc_options(
           sample_name=normal_sample_name, flags_obj=flags_obj
       ),
-      order=[0, 1],
+      skip_output_generation=True,
       pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
   )
 

@@ -2469,12 +2469,22 @@ def make_examples_runner(options):
   last_reported = 0
 
   writers_dict = {}
-  if in_training_mode(options) or len(options.sample_options) == 1:
+  samples_that_need_writers = [
+      sample
+      for sample in region_processor.samples
+      if not sample.options.skip_output_generation
+  ]
+  if not samples_that_need_writers:
+    raise ValueError(
+        'At least one sample should have skip_output_generation=False.'
+    )
+
+  if in_training_mode(options) or len(samples_that_need_writers) == 1:
     writers_dict[options.sample_role_to_train] = OutputsWriter(
         options, suffix=None
     )
   else:
-    for sample in region_processor.samples:
+    for sample in samples_that_need_writers:
       if sample.sam_readers is not None:
         writers_dict[sample.options.role] = OutputsWriter(
             options, suffix=sample.options.role
@@ -2531,7 +2541,7 @@ def make_examples_runner(options):
     (candidates_by_sample, gvcfs_by_sample, runtimes) = (
         region_processor.process(region, region_n)
     )
-    for sample in region_processor.samples:
+    for sample in samples_that_need_writers:
       role = sample.options.role
       if role not in candidates_by_sample:
         continue

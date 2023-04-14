@@ -90,11 +90,11 @@ class MakeExamplesSomaticEnd2EndTest(parameterized.TestCase):
     FLAGS.regions = 'chr20:10,000,000-10,010,000'
     options = make_examples_somatic.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
-    # This shows that examples in calling mode are generated with the _sample
-    # suffixes.
-    self.assertTrue(os.path.exists(with_normal_suffix))
-    self.assertTrue(os.path.exists(with_tumor_suffix))
-    self.assertFalse(os.path.exists(FLAGS.examples))
+    # This shows that tumor examples in calling mode are generated without the
+    # _tumor suffixes, because it's the only samples generating output.
+    self.assertFalse(os.path.exists(with_normal_suffix))
+    self.assertFalse(os.path.exists(with_tumor_suffix))
+    self.assertTrue(os.path.exists(FLAGS.examples))
 
 
 if __name__ == '__main__':
