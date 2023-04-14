@@ -548,7 +548,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 10.
+// Next ID: 11.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -590,6 +590,9 @@ message SampleOptions {
 
   // Path to binary file containing candidate positions.
   string candidate_positions = 9;
+
+  // If true, skip any output generation for this sample.
+  bool skip_output_generation = 10;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
