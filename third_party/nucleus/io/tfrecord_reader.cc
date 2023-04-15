@@ -48,7 +48,7 @@ std::unique_ptr<TFRecordReader> TFRecordReader::New(
   tensorflow::Status s =
       tensorflow::Env::Default()->NewRandomAccessFile(filename, &file);
   if (!s.ok()) {
-    LOG(ERROR) << s.error_message();
+    LOG(ERROR) << s;
     return nullptr;
   }
 
