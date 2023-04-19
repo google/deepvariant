@@ -128,6 +128,17 @@ out while training the hybrid model.
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.5.0/HYBRID/deepvariant.output.visual_report.html)
 
+## Inspect outputs that produced the metrics above
+
+The DeepVariant VCFs, gVCFs, and hap.py evaluation outputs are available at:
+
+```
+gs://deepvariant/case-study-outputs
+```
+
+You can also inspect them in a web browser here:
+https://42basepairs.com/browse/gs/deepvariant/case-study-outputs
+
 ## How to reproduce the metrics on this page
 
 For simplicity and consistency, we report runtime with a
@@ -164,3 +175,4 @@ The accuracy metrics come from the hap.py summary.csv output file.
 The runs are deterministic so all 5 runs produced the same output.
 
 [CPU instance with 64 CPUs]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
+
