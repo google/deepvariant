@@ -150,7 +150,7 @@ class DeBruijnGraph {
   // to construct an acyclic DeBruijn graph in this manner, it is returned;
   // otherwise we return nullptr.
   static std::unique_ptr<DeBruijnGraph> Build(
-      absl::string_view ref,
+      const string& ref,
       const std::vector<
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads,
       const Options& options);
