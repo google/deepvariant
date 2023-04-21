@@ -40,6 +40,7 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
 #include "tensorflow/core/lib/gtl/optional.h"
@@ -160,10 +161,21 @@ class VariantCaller {
   std::vector<DeepVariantCall> CallsFromVcf(
       const AlleleCounter& allele_counter,
       nucleus::VcfReader* vcf_reader_ptr) const;
+
   std::vector<DeepVariantCall> CallsFromVcf(
       const std::vector<AlleleCount>& allele_counts,
       const nucleus::genomics::v1::Range& range,
       nucleus::VcfReader* vcf_reader_ptr) const;
+
+  std::vector<int> CallPositionsFromVcf(
+      const AlleleCounter& allele_counter,
+      nucleus::VcfReader* vcf_reader_ptr) const;
+
+  std::vector<int> CallPositionsFromVcf(
+      const std::vector<AlleleCount>& allele_counts,
+      const nucleus::genomics::v1::Range& range,
+      nucleus::VcfReader* vcf_reader_ptr) const;
+
   std::vector<DeepVariantCall> CallsFromVariantsInRegion(
       const std::vector<AlleleCount>& allele_counts,
       const std::vector<nucleus::genomics::v1::Variant>& variants_in_region)

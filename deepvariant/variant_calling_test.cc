@@ -39,6 +39,11 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
+#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock-more-matchers.h>
+
+#include "tensorflow/core/platform/test.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -46,6 +51,7 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "google/protobuf/repeated_field.h"
+#include "google/protobuf/text_format.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 
 namespace learning {
@@ -863,6 +869,43 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
   EXPECT_THAT(candidates[0].variant(), EqualsProto(variant2));
   EXPECT_THAT(candidates[1].variant(), EqualsProto(variant5));
 }
+
+TEST_F(VariantCallingTest, TestCallPositionsFromVcfQueryingVcf) {
+  const VariantCaller caller(MakeOptions());
+  std::unique_ptr<nucleus::VcfReader> reader = std::move(
+      nucleus::VcfReader::FromFile(
+          nucleus::GetTestData("vcf_candidate_importer.indels.chr20.vcf.gz",
+                               "deepvariant/testdata/input"),
+          nucleus::genomics::v1::VcfReaderOptions())
+          .ValueOrDie());
+  std::vector<AlleleCount> allele_count_not_used = {AlleleCount()};
+
+  // Querying in contigInHeaderWithCandidates returns one candidate.
+  std::vector<int> positions = caller.CallPositionsFromVcf(
+      allele_count_not_used, MakeRange("chr20", 59777020, 59974170),
+      reader.get());
+  EXPECT_THAT(positions, UnorderedElementsAre(
+    59777552,
+    59804672,
+    59848583,
+    59858359,
+    59858388,
+    59865297,
+    59884411,
+    59904401,
+    59904404,
+    59906637,
+    59912353,
+    59928658,
+    59951038,
+    59958677,
+    59958833,
+    59965315,
+    59965632,
+    59965720,
+    59974165
+    ));
+  }
 
 TEST_F(VariantCallingTest, TestCallsFromVcfQueryingVcf) {
   // TODO

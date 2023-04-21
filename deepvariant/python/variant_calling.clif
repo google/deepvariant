@@ -39,3 +39,5 @@ from "deepvariant/variant_calling.h":
           self, allele_counter: AlleleCounter) -> list<DeepVariantCall>
       def `CallsFromVcf` as calls_from_vcf(
           self, allele_counter: AlleleCounter, vcf_reader: VcfReader) -> list<DeepVariantCall>
+      def `CallPositionsFromVcf` as call_positions_from_vcf(
+          self, allele_counter: AlleleCounter, vcf_reader: VcfReader) -> list<int>
