@@ -47,6 +47,7 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
@@ -387,7 +388,8 @@ bool is_uncalled_genotype(const Variant& variant) {
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
-    const std::vector<AlleleCount>& allele_counts, const Range& range,
+    const std::vector<AlleleCount>& allele_counts,
+    const Range& range,
     nucleus::VcfReader* vcf_reader_ptr) const {
   std::vector<Variant> variants_in_region;
   nucleus::StatusOr<std::shared_ptr<nucleus::VariantIterable>> status =
@@ -430,11 +432,60 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
   return CallsFromVariantsInRegion(allele_counts, variants_in_region);
 }
 
+std::vector<int> VariantCaller::CallPositionsFromVcf(
+    const std::vector<AlleleCount>& allele_counts, const Range& range,
+    nucleus::VcfReader* vcf_reader_ptr) const {
+  std::vector<Variant> variants_in_region;
+  std::vector<int> positions;
+  nucleus::StatusOr<std::shared_ptr<nucleus::VariantIterable>> status =
+      vcf_reader_ptr->Query(range);
+  if (status.ok()) {
+    std::shared_ptr<nucleus::VariantIterable> variants = status.ValueOrDie();
+    bool warn_missing = false;
+    for (const auto& v : variants) {
+      const Variant* variant = v.ValueOrDie();
+      // This ensures we only keep variants that start in this region.
+      // By default, vcf_reader->Query() returns all variants that overlap a
+      // region, which can incorrectly cause the same variant to be processed
+      // multiple times.
+      if (variant->start() >= range.start()) {
+        if (options_.skip_uncalled_genotypes() &&
+            is_uncalled_genotype(*variant)) {
+          if (!warn_missing) {
+            LOG(WARNING) << "Uncalled genotypes (./.) present in VCF. These "
+                            "are skipped.";
+            warn_missing = true;
+          }
+          continue;
+        }
+        // This is a good variant, save the position.
+        positions.push_back(variant->start());
+      }
+    }
+  } else if (status.error_message() == "Cannot query without an index") {
+    LOG(FATAL) << "Error in VariantCaller::CallsFromVcf: "
+               << status.error_message();
+  } else {
+    LOG(WARNING)
+        << nucleus::MakeIntervalStr(range)
+        << " cannot be found in proposed VCF header. Skip this region.";
+  }
+  return positions;
+}
+
 std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
     const AlleleCounter& allele_counter,
     nucleus::VcfReader* vcf_reader_ptr) const {
   return CallsFromVcf(allele_counter.Counts(), allele_counter.Interval(),
                       vcf_reader_ptr);
+}
+
+std::vector<int> VariantCaller::CallPositionsFromVcf(
+    const AlleleCounter& allele_counter,
+    nucleus::VcfReader* vcf_reader_ptr) const {
+  return CallPositionsFromVcf(allele_counter.Counts(),
+                              allele_counter.Interval(),
+                              vcf_reader_ptr);
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(

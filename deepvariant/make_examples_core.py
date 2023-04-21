@@ -185,6 +185,7 @@ def make_vc_options(sample_name, flags_obj: flags.FlagValues):
       ploidy=2,
       skip_uncalled_genotypes=flags_obj.mode == 'training',
       phase_reads_region_padding_pct=dv_constants.PHASE_READS_REGION_PADDING_PCT,
+      track_ref_reads=flags_obj.track_ref_reads,
   )
 
 

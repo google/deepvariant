@@ -71,4 +71,6 @@ class VcfCandidateImporter(variant_caller.VariantCaller):
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
   ):
-    raise NotImplementedError
+    return self.cpp_variant_caller_from_vcf.call_positions_from_vcf(
+        allele_counters[sample_name], self.vcf_reader
+    )
