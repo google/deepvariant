@@ -243,6 +243,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           'PACBIO',
           False,
           '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          + '--discard_non_dna_regions '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--min_mapping_quality "1" '
           + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
@@ -258,6 +259,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           '--add_hp_channel --alt_aligned_pileup "diff_channels" '
           + '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+          + '--discard_non_dna_regions '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--min_mapping_quality "1" '
           + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
@@ -346,6 +348,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
       + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+      + '--discard_non_dna_regions '
       + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
       + '--min_mapping_quality "1" '
       + '--parse_sam_aux_fields --partition_size "10000" --phase_reads '
@@ -372,6 +375,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
       + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
+      + '--discard_non_dna_regions '
       + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
       + '--min_mapping_quality "1" '
       + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
@@ -423,6 +427,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'PACBIO',
           '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          + '--discard_non_dna_regions '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--min_mapping_quality "1" '
           + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
@@ -471,6 +476,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           (
               '--add_hp_channel '
               '--alt_aligned_pileup "diff_channels" '
+              '--discard_non_dna_regions '
               '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
               '--min_mapping_quality "1" '
               '--parse_sam_aux_fields '
@@ -491,6 +497,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           (
               '--add_hp_channel '
               '--alt_aligned_pileup "rows" '
+              '--discard_non_dna_regions '
               '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
               '--min_mapping_quality "1" '
               '--parse_sam_aux_fields '

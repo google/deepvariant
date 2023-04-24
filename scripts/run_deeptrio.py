@@ -517,6 +517,7 @@ def _make_examples_command(
       special_args['partition_size'] = 25000
     special_args['sort_by_haplotypes'] = True
     special_args['parse_sam_aux_fields'] = True
+    special_args['discard_non_dna_regions'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   if _MODEL_TYPE.value == 'WES':
