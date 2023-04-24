@@ -987,10 +987,6 @@ def main(_):
     print('DeepTrio version {}'.format(DEEP_TRIO_VERSION))
     return
 
-  if _USE_CANDIDATE_PARTITION.value:
-    print('The flag --use_candidate_partition is experimental. Do not set it.')
-    sys.exit(1)
-
   for flag_key in [
       'model_type',
       'ref',
