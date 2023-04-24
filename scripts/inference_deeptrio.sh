@@ -265,13 +265,6 @@ else
   exit 1
 fi
 
-## Flag consistency sanity checks.
-
-if [[ "${USE_CANDIDATE_PARTITION}" == "false" ]] && [[ "${MODEL_TYPE}" == PACBIO* ]]; then
-  echo "For DeepTrio PACBIO*, automatically set --use_candidate_partition=true."
-  USE_CANDIDATE_PARTITION="true"
-fi
-
 N_SHARDS="64"
 INPUT_DIR="${BASE}/input/data"
 OUTPUT_DIR="${BASE}/output"
