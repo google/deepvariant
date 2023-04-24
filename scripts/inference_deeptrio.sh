@@ -61,6 +61,7 @@ POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
 REGIONS=""
 USE_CANDIDATE_PARTITION=false
+DISCARD_NON_DNA_REGIONS=false
 
 while (( "$#" )); do
   case "$1" in
@@ -108,6 +109,16 @@ while (( "$#" )); do
       USE_CANDIDATE_PARTITION="$2"
       if [[ ${USE_CANDIDATE_PARTITION} != "true" ]] && [[ ${USE_CANDIDATE_PARTITION} != "false" ]]; then
         echo "Error: --use_candidate_partition needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --discard_non_dna_regions)
+      DISCARD_NON_DNA_REGIONS="$2"
+      if [[ ${DISCARD_NON_DNA_REGIONS} != "true" ]] && [[ ${DISCARD_NON_DNA_REGIONS} != "false" ]]; then
+        echo "Error: --discard_non_dna_regions needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -324,6 +335,9 @@ fi
 if [[ "${USE_CANDIDATE_PARTITION}" == "true" ]]; then
   extra_args+=( --use_candidate_partition )
 fi
+if [[ "${DISCARD_NON_DNA_REGIONS}" == "true" ]]; then
+  extra_args+=( --discard_non_dna_regions )
+fi
 
 echo "========================="
 echo "# Booleans; sorted alphabetically."
@@ -341,6 +355,7 @@ echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL_CHILD: ${CUSTOMIZED_MODEL_CHILD}"
 echo "CUSTOMIZED_MODEL_PARENT: ${CUSTOMIZED_MODEL_PARENT}"
+echo "DISCARD_NON_DNA_REGIONS: ${DISCARD_NON_DNA_REGIONS}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
