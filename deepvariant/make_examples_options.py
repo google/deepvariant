@@ -188,6 +188,15 @@ flags.DEFINE_integer(
         'following processing such as sampling and realigner.'
     ),
 )
+_MAX_READS_FOR_DYNAMIC_BASES_PER_REGION = flags.DEFINE_integer(
+    'max_reads_for_dynamic_bases_per_region',
+    0,
+    (
+        'If > 0, set the max number of bases to '
+        '(max_reads_for_dynamic_bases_per_region * region length).'
+        'This is particularly important for very long reads.'
+    ),
+)
 flags.DEFINE_string(
     'multi_allelic_mode',
     '',
@@ -794,6 +803,9 @@ def shared_flags_to_options(
       for path in re.split(',| ', flags_obj.population_vcfs):
         options.population_vcf_filenames.extend(gfile.Glob(path))
     options.max_reads_per_partition = flags_obj.max_reads_per_partition
+    options.max_reads_for_dynamic_bases_per_region = (
+        _MAX_READS_FOR_DYNAMIC_BASES_PER_REGION.value
+    )
     options.use_ref_for_cram = flags_obj.use_ref_for_cram
     options.hts_block_size = flags_obj.hts_block_size
     options.logging_every_n_candidates = flags_obj.logging_every_n_candidates

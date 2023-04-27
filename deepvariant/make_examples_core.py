@@ -921,8 +921,100 @@ def filter_candidates(candidates, select_variant_types):
         yield candidate
         break
 
+# ---------------------------------------------------------------------------
+# A modified version of reservoir_sample for reads.
+# ---------------------------------------------------------------------------
 
-class DiagnosticLogger(object):
+
+def reservoir_sample_reads(
+    iterable_of_reads: Iterator[reads_pb2.Read],
+    k: int,
+    region: range_pb2.Range,
+    max_bases_to_cover: int,
+    random: Optional[np.random.RandomState] = None,
+) -> List[reads_pb2.Read]:
+  """Samples k reads (or cover up to `max_bases_to_cover`) uniformly.
+
+  Args:
+    iterable_of_reads: The iterable to sample from.
+    k: The number of elements to sample.
+    region: The region we're sampling from. This can be used to determine how
+      many bases are covered in the region.
+    max_bases_to_cover: If this maximum number of bases is reached, the
+      samplling will stop.
+    random: A random number generator or None.
+
+  Returns:
+    A list containing the sample reads.
+
+  Raises:
+    ValueError: If k is negative. Or, if k and max_bases_to_cover are both 0.
+  """
+  # If `max_bases_to_cover` is not set, use the simpler
+  # reservoir_sample implementation.
+  if not max_bases_to_cover:
+    return utils.reservoir_sample(iterable_of_reads, k, random)
+
+  if k < 0:
+    raise ValueError('k must be nonnegative, but got {}'.format(k))
+  elif k == 0:
+    # Because this function is now used both for selecting up to `k` or
+    # covering `max_bases_to_cover`, if k is 0, we should set it to a large
+    # number (meaning not limiting on that).
+    k = float('inf')
+
+  if random is None:
+    random = np.random
+
+  sampled_reads = []
+  # Keep a list of the number of bases each `sampled_reads` have in the region.
+  sampled_reads_overlap_len = []
+  bases_covered = 0
+
+  for i, read in enumerate(iterable_of_reads):
+    if len(sampled_reads) < k and bases_covered < max_bases_to_cover:
+      sampled_reads.append(read)
+      overlap_len = ranges.overlap_len(region, utils.read_range(read))
+      sampled_reads_overlap_len.append(overlap_len)
+      bases_covered += overlap_len
+    else:
+      j = random.randint(0, i + 1)
+      if j < len(sampled_reads):
+        # Because this replaces the read at sampled_reads[j], subtract first.
+        bases_covered -= sampled_reads_overlap_len[j]
+        sampled_reads[j] = read
+        overlap_len = ranges.overlap_len(region, utils.read_range(read))
+        sampled_reads_overlap_len[j] = overlap_len
+        bases_covered += overlap_len
+
+  # At the end, report cases where we covered max_bases_to_cover or more.
+  if bases_covered >= max_bases_to_cover:
+    # Empirically, bases_covered is likely much more than max_bases_to_cover at
+    # this point. Let's do another round of trimming.
+    total_bases = 0
+    for i, overlap_len in enumerate(sampled_reads_overlap_len):
+      total_bases += overlap_len
+      if total_bases > max_bases_to_cover:
+        sampled_reads = sampled_reads[: i + 1]
+        sampled_reads_overlap_len = sampled_reads_overlap_len[: i + 1]
+        bases_covered = total_bases
+        break
+    logging.info(
+        (
+            'In %s:%d-%d: reservoir_sample_reads sampled len(reads)=%s '
+            'because bases_covered(%s) > max_bases_to_cover(%s).'
+        ),
+        region.reference_name,
+        region.start,
+        region.end,
+        len(sampled_reads),
+        bases_covered,
+        max_bases_to_cover,
+    )
+  return sampled_reads
+
+
+class DiagnosticLogger:
   """Writes diagnostic information about the assembler."""
 
   def __init__(
@@ -951,7 +1043,7 @@ class DiagnosticLogger(object):
         writer.write(read)
 
 
-class OutputsWriter(object):
+class OutputsWriter:
   """Manages all of the outputs of make_examples in a single place."""
 
   def __init__(self, options, suffix=None):
@@ -1397,11 +1489,19 @@ class RegionProcessor(object):
       try:
         sample.in_memory_sam_reader.replace_reads(reads)
         sample.reads = sample.in_memory_sam_reader.query(region)
-        if self.options.max_reads_per_partition > 0:
+        max_bases_to_cover = 0
+        if self.options.max_reads_for_dynamic_bases_per_region > 0:
+          max_bases_to_cover = (
+              self.options.max_reads_for_dynamic_bases_per_region
+              * (region.end - region.start)
+          )
+        if self.options.max_reads_per_partition > 0 or max_bases_to_cover > 0:
           random_for_region = np.random.RandomState(self.options.random_seed)
-          sample.reads = utils.reservoir_sample(
+          sample.reads = reservoir_sample_reads(
               sample.reads,
               self.options.max_reads_per_partition,
+              region,
+              max_bases_to_cover,
               random_for_region,
           )
 
@@ -1596,10 +1696,20 @@ class RegionProcessor(object):
       reads = itertools.chain(reads, sam_reader.query(region))
 
     try:
-      if self.options.max_reads_per_partition > 0:
+      max_bases_to_cover = 0
+      if self.options.max_reads_for_dynamic_bases_per_region > 0:
+        max_bases_to_cover = (
+            self.options.max_reads_for_dynamic_bases_per_region
+            * (region.end - region.start)
+        )
+      if self.options.max_reads_per_partition > 0 or max_bases_to_cover > 0:
         random_for_region = np.random.RandomState(self.options.random_seed)
-        reads = utils.reservoir_sample(
-            reads, self.options.max_reads_per_partition, random_for_region
+        reads = reservoir_sample_reads(
+            reads,
+            self.options.max_reads_per_partition,
+            region,
+            max_bases_to_cover,
+            random_for_region,
         )
       return list(reads)
     except ValueError as err:
