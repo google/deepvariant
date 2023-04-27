@@ -623,6 +623,65 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         output_examples_to_compare, list(tfrecord.read_tfrecords(golden_file))
     )
 
+  @parameterized.parameters(
+      dict(
+          max_reads_per_partition=1500,
+          expected_len_examples1=88,
+          expected_len_examples2=32,
+      ),
+      dict(
+          max_reads_per_partition=8,
+          expected_len_examples1=34,
+          expected_len_examples2=30,
+      ),
+  )
+  @flagsaver.flagsaver
+  def test_make_examples_with_max_reads_for_dynamic_bases_per_region(
+      self,
+      max_reads_per_partition,
+      expected_len_examples1,
+      expected_len_examples2,
+  ):
+    region = ranges.parse_literal('20:10,000,000-10,010,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.HG001_CHR20_BAM
+    FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
+    FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
+    FLAGS.sample_name = 'child'
+    FLAGS.sample_name_to_train = 'child'
+    FLAGS.sample_name_parent1 = 'parent1'
+    FLAGS.sample_name_parent2 = 'parent2'
+    FLAGS.examples = test_utils.test_tmpfile(_sharded('ex.tfrecord'))
+    child_examples = test_utils.test_tmpfile(_sharded('ex_child.tfrecord'))
+    FLAGS.partition_size = 1000
+    FLAGS.mode = 'calling'
+    FLAGS.max_reads_per_partition = max_reads_per_partition
+
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+    examples1 = self.verify_examples(
+        child_examples,
+        region,
+        options,
+        verify_labels=False,
+        examples_filename=FLAGS.examples,
+    )
+    self.assertLen(examples1, expected_len_examples1)
+    # Now, this is the main part of the test. I want to test the behavior after
+    # I set max_reads_for_dynamic_bases_per_region.
+    FLAGS.max_reads_for_dynamic_bases_per_region = 1
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+    examples2 = self.verify_examples(
+        child_examples,
+        region,
+        options,
+        verify_labels=False,
+        examples_filename=FLAGS.examples,
+    )
+    self.assertLen(examples2, expected_len_examples2)
+
   def verify_nist_concordance(self, candidates, nist_variants):
     # Tests that we call almost all of the real variants (according to NIST's
     # Genome in a Bottle callset for NA12878) in our candidate callset.

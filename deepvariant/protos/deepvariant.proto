@@ -597,7 +597,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 57.
+// Next ID: 58.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -698,6 +698,15 @@ message MakeExamplesOptions {
   // The maximum number of reads per partition that we consider before following
   // processing such as sampling and realigner.
   int32 max_reads_per_partition = 24;
+  // Similar to `max_reads_per_partition`, we want to we add another field
+  // to constrain the number of reads to downsample. Even with
+  // `max_reads_per_partition`, the memory usage can sometimes still be too
+  // large, especially when the reads are very long.
+  // When this field is set, we'll multiple it by the region we're in. And then
+  // we will only sample the reads up to a point where the number of bases in
+  // the region are larger than
+  // (max_reads_for_dynamic_bases_per_region * region length).
+  int32 max_reads_for_dynamic_bases_per_region = 57;
 
   // Deprecated. Use sample_options instead.
   float deprecated_downsample_fraction = 25;

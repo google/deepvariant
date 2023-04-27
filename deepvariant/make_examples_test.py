@@ -189,6 +189,90 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # if the outputs are different when we alter enable_joint_realignment.
     self.assertDeepVariantExamplesEqual(examples1, examples2)
 
+  @parameterized.parameters(
+      dict(
+          mode='calling',
+          max_reads_per_partition=1500,
+          expected_len_examples1=84,
+          expected_len_examples2=17,
+      ),
+      dict(
+          mode='calling',
+          max_reads_per_partition=0,
+          expected_len_examples1=84,
+          expected_len_examples2=17,
+      ),
+      # For 'candidate_sweep' mode, it won't create examples, so we just aim
+      # to run it through without errors.
+      dict(
+          mode='candidate_sweep',
+          max_reads_per_partition=1500,
+          expected_len_examples1=None,
+          expected_len_examples2=None,
+      ),
+      dict(
+          mode='candidate_sweep',
+          max_reads_per_partition=0,
+          expected_len_examples1=None,
+          expected_len_examples2=None,
+      ),
+  )
+  @flagsaver.flagsaver
+  def test_make_examples_with_max_reads_for_dynamic_bases_per_region(
+      self,
+      mode,
+      max_reads_per_partition,
+      expected_len_examples1,
+      expected_len_examples2,
+  ):
+    num_shards = 1
+    FLAGS.reads = testdata.CHR20_BAM
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded(
+            'test_max_reads_per_partition_and_bases.ex.tfrecord.gz', num_shards
+        )
+    )
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.partition_size = 1000
+    FLAGS.mode = mode
+    FLAGS.gvcf_gq_binsize = 5
+    FLAGS.task = 0
+    FLAGS.max_reads_per_partition = max_reads_per_partition
+
+    if mode == 'candidate_sweep':
+      FLAGS.candidate_positions = test_utils.test_tmpfile(
+          _sharded(
+              'test_max_reads_per_partition_and_bases.candidate_positions',
+              num_shards,
+          )
+      )
+
+    options = make_examples.default_options(add_flags=True)
+    # We need to overwrite bam_fname for USE_CRAM test since Golden Set
+    # generated from BAM file. BAM filename is stored in candidates. If we
+    # don't overwrite default_options variants won't match and test fail.
+    options.bam_fname = 'NA12878_S1.chr20.10_10p1mb.bam'
+    make_examples_core.make_examples_runner(options)
+    if expected_len_examples1 is not None:
+      examples1 = self.verify_examples(
+          FLAGS.examples, region, options, verify_labels=False
+      )
+      self.assertLen(examples1, expected_len_examples1)
+
+    # Now, this is the main part of the test. I want to test the behavior after
+    # I set max_reads_for_dynamic_bases_per_region.
+    FLAGS.max_reads_for_dynamic_bases_per_region = 1
+    options = make_examples.default_options(add_flags=True)
+    options.bam_fname = 'NA12878_S1.chr20.10_10p1mb.bam'
+    make_examples_core.make_examples_runner(options)
+    if expected_len_examples2 is not None:
+      examples2 = self.verify_examples(
+          FLAGS.examples, region, options, verify_labels=False
+      )
+      self.assertLen(examples2, expected_len_examples2)
+
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @parameterized.parameters(
       # All tests are run with fast_pass_aligner enabled. There are no
