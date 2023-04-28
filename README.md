@@ -77,8 +77,11 @@ docker run \
   --output_gvcf=/output/YOUR_OUTPUT_GVCF \
   --num_shards=$(nproc) \ **This will use all your cores to run make_examples. Feel free to change.**
   --logging_dir=/output/logs \ **Optional. This saves the log output for each stage separately.
+  --haploid_contigs="chrX,chrY" \ **Optional. Heterozygous variants in these contigs will be re-genotyped as the most likely of reference or homozygous alternates. For a sample with karyotype XY, it should be set to "chrX,chrY" for GRCh38 and "X,Y" for GRCh37. For a sample with karyotype XX, this should not be used.
+  --par_regions_bed="/input/GRCh3X_par.bed" \ **Optional. If --haploid_contigs is set, then this can be used to provide PAR regions to be excluded from genotype adjustment. Download links to this files are available in this page.
   --dry_run=false **Default is false. If set to true, commands will be printed out but not executed.
 ```
+For details on X,Y support, please see [DeepVariant haploid support](docs/deepvariant-haploid-support.md).
 
 To see all flags you can use, run: `docker run
 google/deepvariant:"${BIN_VERSION}"`
@@ -100,7 +103,7 @@ For more information, also see:
 
 If you're using DeepVariant in your work, please cite:
 
-[A universal SNP and small-indel variant caller using deep neural networks. _Nature Biotechnology_ 36, 983–987 (2018).](https://rdcu.be/7Dhl) <br/>
+[A universal SNP and small-indel variant caller using deep neural networks. *Nature Biotechnology* 36, 983–987 (2018).](https://rdcu.be/7Dhl) <br/>
 Ryan Poplin, Pi-Chuan Chang, David Alexander, Scott Schwartz, Thomas Colthurst, Alexander Ku, Dan Newburger, Jojo Dijamco, Nam Nguyen, Pegah T. Afshar, Sam S. Gross, Lizzie Dorfman, Cory Y. McLean, and Mark A. DePristo.<br/>
 doi: https://doi.org/10.1038/nbt.4235
 
@@ -152,7 +155,7 @@ doi: https://doi.org/10.1093/bioinformatics/btaa1081
 
 ## How DeepVariant works
 
-![diagram of stages in DeepVariant](docs/images/inference_flow_diagram.svg)
+![Stages in DeepVariant](docs/images/inference_flow_diagram.svg)
 
 For more information on the pileup images and how to read them, please see the
 ["Looking through DeepVariant's Eyes" blog post](https://google.github.io/deepvariant/posts/2020-02-20-looking-through-deepvariants-eyes/).

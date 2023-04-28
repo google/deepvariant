@@ -85,6 +85,30 @@ _OUTPUT_VCF = flags.DEFINE_string(
     'output_vcf', None, 'Required. Path where we should write VCF file.'
 )
 # Optional flags.
+_HAPLOID_CONTIGS = flags.DEFINE_string(
+    'haploid_contigs',
+    None,
+    (
+        'Optional list of non autosomal chromosomes. For all listed'
+        ' chromosomes, HET probabilities are not considered. For samples with'
+        ' XY karyotype it is expected to set --haploid_contigs="chrX,chrY" for'
+        ' GRCh38 and --haploid_contigs="X,Y" for GRCh37. For samples with'
+        ' XX karyotype --haploid_contigs flag should not be used.'
+    ),
+)
+
+_PAR_REGIONS = flags.DEFINE_string(
+    'par_regions_bed',
+    None,
+    (
+        'Optional BED file containing Human Pseudoautosomal Region (PAR)'
+        ' regions. This should be specific to the reference used. For example'
+        ' GRCh38 PAR bed file would be different from GRCh37 bed file. Regions'
+        ' in this bed file are treated as diploid, effectively subtracting them'
+        ' from the --haploid_contigs.'
+    ),
+)
+
 _DRY_RUN = flags.DEFINE_boolean(
     'dry_run',
     False,
@@ -400,6 +424,8 @@ def postprocess_variants_command(
     nonvariant_site_tfrecord_path: Optional[str] = None,
     gvcf_outfile: Optional[str] = None,
     sample_name: Optional[str] = None,
+    haploid_contigs: Optional[str] = None,
+    par_regions_bed: Optional[str] = None,
 ):
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
@@ -415,6 +441,10 @@ def postprocess_variants_command(
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
   if sample_name is not None:
     command.extend(['--sample_name', '"{}"'.format(sample_name)])
+  if haploid_contigs is not None:
+    command.extend(['--haploid_contigs', '"{}"'.format(haploid_contigs)])
+  if par_regions_bed is not None:
+    command.extend(['--par_regions_bed', '"{}"'.format(par_regions_bed)])
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(
       command, _extra_args_to_dict(extra_args)
@@ -596,6 +626,8 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
           sample_name=_SAMPLE_NAME.value,
+          haploid_contigs=_HAPLOID_CONTIGS.value,
+          par_regions_bed=_PAR_REGIONS.value,
       )
   )
 
