@@ -294,7 +294,7 @@ def inceptionv3(
   )
   backbone_drop_rate = _DEFAULT_BACKBONE_DROP_DRATE
 
-  inputs_image = tf.keras.Input(shape=input_shape, name='image')
+  inputs_image = backbone.input
   hid = backbone(inputs_image)
   hid = tf.keras.layers.Dropout(backbone_drop_rate)(hid)
 
@@ -302,7 +302,7 @@ def inceptionv3(
   outputs.append(build_classification_head(hid, l2=weight_decay))
 
   model = tf.keras.Model(
-      inputs=[inputs_image], outputs=outputs, name='inceptionv3'
+      inputs=backbone.input, outputs=outputs, name='inceptionv3'
   )
   model.summary()
   logging.info('Number of l2 regularizers: %s.', len(model.losses))
