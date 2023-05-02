@@ -41,7 +41,6 @@
 #include <vector>
 
 #include "deepvariant/pileup_channel_lib.h"
-#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -188,7 +187,7 @@ int PileupImageEncoderNative::BaseColor(char base) const {
   }
 }
 
-int PileupImageEncoderNative::BaseColor(absl::string_view base) const {
+int PileupImageEncoderNative::BaseColor(const string& base) const {
   CHECK_EQ(base.size(), 1) << "'base' string should be a single character";
   return BaseColor(base[0]);
 }
@@ -247,7 +246,7 @@ int PileupImageEncoderNative::StrandColor(bool on_positive_strand) const {
 }
 
 vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
-    absl::string_view alt_aligned_representation) {
+    const std::string& alt_aligned_representation) {
   std::vector<DeepVariantChannelEnum> channels_list;
   // The list here corresponds to the order in EncodeRead.
   channels_list.push_back(DeepVariantChannelEnum::CH_READ_BASE);
@@ -283,10 +282,10 @@ vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
   return channels_list;
 }
 
+
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
-    const DeepVariantCall& dv_call, absl::string_view ref_bases,
-    const Read& read, int image_start_pos,
-    const vector<std::string>& alt_alleles) {
+    const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
+    int image_start_pos, const vector<std::string>& alt_alleles) {
   ImageRow img_row(ref_bases.size(), options_.num_channels(),
                    options_.use_allele_frequency(), options_.add_hp_channel(),
                    ToVector(options_.channels()));
@@ -331,8 +330,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   // should return null) from EncodeRead.
   std::function<bool(int, int, const CigarUnit::Operation&)>
       action_per_cigar_unit =
-          [&, ref_bases](int ref_i, int read_i,
-                         const CigarUnit::Operation& cigar_op) {
+          [&](int ref_i, int read_i, const CigarUnit::Operation& cigar_op) {
             char read_base = 0;
             if (cigar_op == CigarUnit::INSERT) {
               // TODO: fix this to be a char in the proto

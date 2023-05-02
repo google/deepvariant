@@ -279,9 +279,9 @@ class AlleleCounter {
   // Python wrapper around NormalizeAndAdd. It allows to avoid serialization of
   // protos when calling from Python.
   std::unique_ptr<std::vector<nucleus::genomics::v1::CigarUnit>>
-  NormalizeAndAddPython(
-      const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>& wrapped,
-      absl::string_view sample, int* read_shift) {
+  NormalizeAndAddPython(const nucleus::ConstProtoPtr<
+                            const nucleus::genomics::v1::Read>& wrapped,
+                        const string& sample, int* read_shift) {
     auto norm_cigar =
         std::make_unique<std::vector<nucleus::genomics::v1::CigarUnit>>(
             std::vector<nucleus::genomics::v1::CigarUnit>());
@@ -292,9 +292,9 @@ class AlleleCounter {
   // Simple wrapper around Add() that allows us to efficiently pass large
   // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and
   // calls Add(read).
-  void AddPython(
-      const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>& wrapped,
-      absl::string_view sample) {
+  void AddPython(const nucleus::ConstProtoPtr<
+                     const nucleus::genomics::v1::Read>& wrapped,
+                 const string& sample) {
     Add(*(wrapped.p_), sample, nullptr);
   }
 

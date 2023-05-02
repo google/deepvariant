@@ -37,7 +37,6 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "tensorflow/core/platform/types.h"
@@ -85,11 +84,11 @@ class PileupImageEncoderNative {
 
   // Return all the channels in this image, as a list of enums.
   std::vector<DeepVariantChannelEnum> AllChannelsEnum(
-      absl::string_view alt_aligned_representation);
+      const std::string& alt_aligned_representation);
   // Encode one read into a row of pixels for our image.
   std::unique_ptr<ImageRow> EncodeRead(
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,
-      absl::string_view ref_bases, const nucleus::genomics::v1::Read& read,
+      const string& ref_bases, const nucleus::genomics::v1::Read& read,
       int image_start_pos, const std::vector<std::string>& alt_alleles);
 
   // Simple wrapper around EncodeRead that allows us to efficiently pass large
@@ -114,7 +113,7 @@ class PileupImageEncoderNative {
   // Get the pixel color (int) for a base.
   int BaseColor(char base) const;
   // Overload of the above provided for CLIF.
-  int BaseColor(absl::string_view base) const;
+  int BaseColor(const string& base) const;
   // Get the strand pixel color (int) for a positive strand observation.
   int StrandColor(bool on_positive_strand) const;
   // Get the pixel color (int) for a read that supports an alt allele.
