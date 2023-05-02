@@ -1047,10 +1047,15 @@ class OutputsWriter:
   """Manages all of the outputs of make_examples in a single place."""
 
   def __init__(self, options, suffix=None):
-    self._writers = {
-        k: None
-        for k in ['candidates', 'examples', 'gvcfs', 'runtime', 'read_phases']
-    }
+    outputs = [
+        'candidates',
+        'examples',
+        'gvcfs',
+        'runtime',
+        'read_phases',
+        'sitelist',
+    ]
+    self._writers = {k: None for k in outputs}
     self.examples_filename = None
 
     if options.candidates_filename:
@@ -1091,6 +1096,11 @@ class OutputsWriter:
         writer.__enter__()
         writer.write('\t'.join(READ_PHASES_OUTPUT_COLUMNS) + '\n')
 
+    if options.output_sitelist:
+      sitelist_fname = options.examples_filename + '.sitelist.tsv'
+      self._add_writer('sitelist', epath.Path(sitelist_fname).open('w'))
+      writer = self._writers['sitelist']
+
   def _add_suffix(self, file_path, suffix):
     """Adds suffix to file name if a suffix is given."""
     if not suffix:
@@ -1113,6 +1123,27 @@ class OutputsWriter:
 
   def write_candidates(self, *candidates):
     self._write('candidates', *candidates)
+
+  def write_site(
+      self,
+      call: variants_pb2.Variant,
+      label=None,
+  ):
+    """Writes chrom,pos,ref,alt,label to a sitelist file."""
+    chrom_pos_ref_alt = [
+        call.reference_name,
+        call.start,
+        call.reference_bases,
+        ','.join(call.alternate_bases),
+    ]
+    if label:
+      label_class = label.features.feature['label'].int64_list.value[0]
+      chrom_pos_ref_alt.append(label_class)
+    else:
+      chrom_pos_ref_alt.append(-1)
+    site = '\t'.join(list(map(str, chrom_pos_ref_alt))) + '\n'
+
+    self._write_text('sitelist', site)
 
   def write_runtime(self, stats_dict):
     columns = [str(stats_dict.get(k, 'NA')) for k in RUNTIME_BY_REGION_COLUMNS]
@@ -1154,6 +1185,11 @@ class OutputsWriter:
     if writer:
       for proto in protos:
         writer.write(proto)
+
+  def _write_text(self, writer_name, line):
+    writer = self._writers[writer_name]
+    if writer:
+      writer.write(line)
 
   def close_all(self):
     for writer in self._writers.values():
@@ -1456,6 +1492,10 @@ class RegionProcessor(object):
               example, writer, runtimes, labels, types
           )
           n_stats['n_examples'] += 1
+
+          if self.options.output_sitelist:
+            writer.write_site(candidate.variant, example)
+
           if example_shape is None:
             example_shape = dv_utils.example_image_shape(example)
       if self.options.run_info_filename:
@@ -1471,6 +1511,10 @@ class RegionProcessor(object):
         ):
           _write_example_and_update_stats(example, writer, runtimes)
           n_stats['n_examples'] += 1
+
+          if self.options.output_sitelist:
+            writer.write_site(candidate.variant)
+
           if example_shape is None:
             example_shape = dv_utils.example_image_shape(example)
     runtimes['make pileup images'] = trim_runtime(
