@@ -43,7 +43,6 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/node_hash_map.h"
-#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
 
@@ -196,7 +195,7 @@ class VariantCaller {
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      const AlleleMap& allele_map, absl::string_view target_sample,
+      const AlleleMap& allele_map, const std::string& target_sample,
       DeepVariantCall* call) const;
 
  private:
@@ -221,7 +220,7 @@ class VariantCaller {
 
   std::vector<Allele> SelectAltAlleles(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      absl::string_view target_sample) const;
+      const std::string& target_sample) const;
   AlleleRejectionAcceptance IsGoodAltAlleleWithReason(
       const Allele& allele, const int total_count,
       const bool apply_trio_coefficient) const;
@@ -246,7 +245,7 @@ class VariantCaller {
 // deletes all other deletions from the allele_map. In all other cases
 // allele_map is not modified.
 AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
-                            absl::string_view ref_bases);
+                            const std::string& ref_bases);
 
 }  // namespace multi_sample
 }  // namespace deepvariant

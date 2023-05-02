@@ -47,7 +47,6 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
-#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -108,7 +107,7 @@ class AlleleCounterTest : public ::testing::Test {
   }
 
   // Creates a new AlleleCount on specified chr from start to end.
-  std::unique_ptr<AlleleCounter> MakeCounter(absl::string_view chr,
+  std::unique_ptr<AlleleCounter> MakeCounter(const string& chr,
                                              const int64_t start,
                                              const int64_t end) {
     Range range = MakeRange(chr, start, end);
@@ -121,8 +120,10 @@ class AlleleCounterTest : public ::testing::Test {
   // Creates a new AlleleCount with custom Reference and on specified chr from
   // start to end.
   std::unique_ptr<AlleleCounter> MakeCounter(
-      const nucleus::GenomeReference* ref, absl::string_view chr,
-      const int64_t start, const int64_t end) {
+      const nucleus::GenomeReference* ref,
+      const string& chr,
+      const int64_t start,
+      const int64_t end) {
     Range range = MakeRange(chr, start, end);
     // tensorflow/compiler/xla/ptr_util.h.
     return std::make_unique<AlleleCounter>(ref, range, std::vector<int>(),
@@ -219,8 +220,8 @@ class AlleleCounterTest : public ::testing::Test {
   }
 
   AlleleCount MakeAlleleCount(
-      const nucleus::genomics::v1::Position& position,
-      absl::string_view ref_base, int32_t ref_supporting_read_count,
+      const nucleus::genomics::v1::Position& position, const string& ref_base,
+      int32_t ref_supporting_read_count,
       const absl::node_hash_map<std::string, Allele>& read_alleles) {
     AlleleCount allele_count;
     allele_count.mutable_position()->MergeFrom(position);
@@ -1057,10 +1058,12 @@ TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_sample_three_reads) {
 }
 
 // Helper method to create a test sequence.
-void CreateTestSeq(absl::string_view name, const int pos_in_fasta,
-                   const int range_start, const int range_end,
-                   const string& bases, std::vector<ContigInfo>* contigs,
-                   std::vector<ReferenceSequence>* seqs) {
+void CreateTestSeq(
+    const string& name,
+    const int pos_in_fasta, const int range_start,
+    const int range_end, const string& bases,
+    std::vector<ContigInfo>* contigs,
+    std::vector<ReferenceSequence>* seqs) {
   CHECK(pos_in_fasta >= 0 && pos_in_fasta < contigs->size());
   ContigInfo* contig = &contigs->at(pos_in_fasta);
   contig->set_name(name);
