@@ -573,6 +573,12 @@ _DISCARD_NON_DNA_REGIONS = flags.DEFINE_bool(
     ),
 )
 
+_OUTPUT_SITELIST = flags.DEFINE_bool(
+    'output_sitelist',
+    False,
+    'If True, output a list of sites present in examples output.',
+)
+
 
 def shared_flags_to_options(
     add_flags,
@@ -618,6 +624,7 @@ def shared_flags_to_options(
       sample_options=samples_in_order,
       main_sample_index=main_sample_index,
       sample_role_to_train=sample_role_to_train,
+      output_sitelist=_OUTPUT_SITELIST.value,
   )
 
   if add_flags:
