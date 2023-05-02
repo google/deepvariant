@@ -110,6 +110,7 @@ cc_test(
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
@@ -206,6 +207,7 @@ cc_library(
         "//third_party/nucleus/util:samplers",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -875,6 +877,7 @@ cc_library(
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

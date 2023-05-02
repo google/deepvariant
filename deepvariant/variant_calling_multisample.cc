@@ -47,6 +47,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
@@ -159,7 +160,7 @@ std::string CalcRefBases(const std::string& ref_bases,
 //   "ACGT" [DEL] => "A" + "" (from >= "ACGT".length()) => "A"
 //
 std::string MakeAltAllele(const std::string_view prefix,
-                          const std::string& variant_ref, const uint32_t from) {
+                          absl::string_view variant_ref, const uint32_t from) {
   const auto postfix =
       from >= variant_ref.length() ? "" : variant_ref.substr(from);
   return StrCat(prefix, postfix);
@@ -205,7 +206,7 @@ bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
 // IsGoodAltAllele().
 std::vector<Allele> VariantCaller::SelectAltAlleles(
     const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const std::string& target_sample) const {
+    absl::string_view target_sample) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
@@ -285,7 +286,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
 
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
 // "GQ" key of info with a numerical value of gq, if provided) to variant.
-void AddGenotypes(const std::string& sample_name,
+void AddGenotypes(absl::string_view sample_name,
                   const std::vector<int>& genotypes, Variant* variant) {
   CHECK(variant != nullptr);
 
@@ -335,7 +336,7 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
 }
 
 AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
-                            const std::string& ref_bases) {
+                            absl::string_view ref_bases) {
   AlleleMap allele_map_mod;
   absl::btree_map<Allele, int, OrderAllele> read_counts;
   int num_of_dels = 0;
@@ -592,7 +593,7 @@ AlleleMap::const_iterator FindAllele(const Allele& allele,
 
 void VariantCaller::AddSupportingReads(
     const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const AlleleMap& allele_map, const std::string& target_sample,
+    const AlleleMap& allele_map, absl::string_view target_sample,
     DeepVariantCall* call) const {
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.

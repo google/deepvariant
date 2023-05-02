@@ -240,7 +240,7 @@ KBounds KMinMaxFromReference(const string_view ref,
 }
 
 std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
-    const string& ref,
+    absl::string_view ref,
     const std::vector<nucleus::ConstProtoPtr<const Read>>& reads,
     const DeBruijnGraph::Options& options) {
   KBounds bounds = KMinMaxFromReference(ref, options);

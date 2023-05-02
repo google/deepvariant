@@ -47,6 +47,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/util/utils.h"
@@ -66,7 +67,7 @@ constexpr char kChr[] = "chr1";
 constexpr int64_t kStart = 10;
 
 AlleleCount MakeTestAlleleCount(int total_n, int alt_n,
-                                const std::string& sample_id,
+                                absl::string_view sample_id,
                                 const std::string& ref = "A",
                                 const std::string& alt = "C", int start = 100) {
   CHECK_GE(total_n, alt_n) << "Total number of reads must be >= n alt reads";
@@ -96,7 +97,7 @@ VariantCallerOptions BasicOptions() {
   return options;
 }
 
-Variant MakeExpectedVariant(const std::string& ref,
+Variant MakeExpectedVariant(absl::string_view ref,
                             const std::vector<std::string>& alts,
                             const int64_t start = kStart) {
   Variant variant;
