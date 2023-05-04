@@ -198,13 +198,23 @@ def num_channels_from_checkpoint(filepath: str) -> int:
 
   # Loop over variables in the checkpoint.
   for name in reader.get_variable_to_shape_map().keys():
-    # 'layer_with_weights-0/layer_with_weights-0/kernel' seems to the main
+    # 'layer_with_weights-0/kernel/.ATTRIBUTES/VARIABLE_VALUE' seems to the main
     # variable to look at. I'm not sure if this heuristics will always work.
     # TODO
-    if name.startswith('layer_with_weights-0/layer_with_weights-0/kernel'):
+    if name.startswith(
+        'layer_with_weights-0/kernel/.ATTRIBUTES/VARIABLE_VALUE'
+    ):
       weight_tensor = reader.get_tensor(name)
-      num_channels = weight_tensor.shape[2]
-  return num_channels
+      return weight_tensor.shape[2]
+    # We used to wire the model a bit differently.
+    # If we see 'layer_with_weights-0/layer_with_weights-0/kernel', stop and
+    # alert the user.
+    if name.startswith('layer_with_weights-0/layer_with_weights-0/kernel'):
+      raise ValueError(
+          'You are using an older DeepVariant Keras model '
+          'architecture. Please use a new model.'
+      )
+  raise ValueError('Unexpected model format.')
 
 
 def inceptionv3_with_imagenet(
@@ -247,15 +257,13 @@ def inceptionv3_with_imagenet(
   )
   backbone_drop_rate = _DEFAULT_BACKBONE_DROP_DRATE
 
-  inputs_image = tf.keras.Input(shape=input_shape, name='image')
-  hid = backbone(inputs_image)
-  hid = tf.keras.layers.Dropout(backbone_drop_rate)(hid)
+  hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)
 
   outputs = []
   outputs.append(build_classification_head(hid, l2=weight_decay))
 
   model = tf.keras.Model(
-      inputs=[inputs_image], outputs=outputs, name='inceptionv3'
+      inputs=backbone.input, outputs=outputs, name='inceptionv3'
   )
   return model
 
@@ -294,9 +302,7 @@ def inceptionv3(
   )
   backbone_drop_rate = _DEFAULT_BACKBONE_DROP_DRATE
 
-  inputs_image = backbone.input
-  hid = backbone(inputs_image)
-  hid = tf.keras.layers.Dropout(backbone_drop_rate)(hid)
+  hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)
 
   outputs = []
   outputs.append(build_classification_head(hid, l2=weight_decay))
