@@ -29,14 +29,14 @@
 # pylint: disable=line-too-long
 r"""Converts labeled DeepVariant examples protos into a VCF file.
 
-./blaze-py3/bin/learning/genomics/deepvariant/labeler/labeled_examples_to_vcf \
-  --ref
-  $(pwd)/learning/genomics/deepvariant/testdata/ucsc.hg19.chr20.unittest.fasta.gz
-  \
-  --examples
-  $(pwd)/learning/genomics/deepvariant/testdata/golden.training_examples.tfrecord
-  \
-  --output_vcf /tmp/golden_training.vcf
+By default, the GT for each of the VCF entries will be parsed from the variant
+in the DeepVariant tf.Example. If the variant doesn't have the GT field, we'll
+use the `label` in the example to fill the GT field.
+
+There is an optional --allow_unlabeled_examples flag which will make any
+unlabeled examples with ./. as GT. Default for --allow_unlabeled_examples is
+false, which means the code will crash if any examples are unlabeled (no GT in
+variant AND also no label in tf.Example.)
 """
 # pylint: enable=line-too-long
 
@@ -127,17 +127,33 @@ def examples_to_variants(examples_path, max_records=None):
     ValueError: if we find a Variant in any example that doesn't have genotypes.
   """
   examples = tfrecord.read_tfrecords(examples_path, max_records=max_records)
-  variants = sorted(
-      (dv_utils.example_variant(example) for example in examples),
-      key=variant_utils.variant_range_tuple,
+  variants_and_labels = sorted(
+      (
+          (dv_utils.example_variant(example), dv_utils.example_label(example))
+          for example in examples
+      ),
+      key=lambda x: variant_utils.variant_range_tuple(x[0]),
   )
-
   for _, group in itertools.groupby(
-      variants, variant_utils.variant_range_tuple
+      variants_and_labels, lambda x: variant_utils.variant_range_tuple(x[0])
   ):
-    variant = next(group)
+    (variant, label) = next(group)
     if not variantcall_utils.has_genotypes(variant_utils.only_call(variant)):
-      if _ALLOW_UNLABELED_EXAMPLES.value:
+      if label is not None:
+        logging.log_every_n(
+            logging.INFO,
+            'Variant in the example does not have GT. Use label to fill GT.',
+            _LOG_EVERY.value,
+        )
+        if label == 0:
+          gt = (0, 0)
+        if label == 1:
+          gt = (0, 1)
+        if label == 2:
+          gt = (1, 1)
+        call = variant.calls[0] if variant.calls else variant.calls.add()
+        variantcall_utils.set_gt(call, gt)
+      elif _ALLOW_UNLABELED_EXAMPLES.value:
         call = variant.calls[0] if variant.calls else variant.calls.add()
         variantcall_utils.set_gt(call, (-1, -1))
       else:
