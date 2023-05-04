@@ -131,6 +131,8 @@ def example_variant(example):
 
 def example_label(example):
   """Gets the label field from example as a string."""
+  if 'label' not in example.features.feature:
+    return None
   return int(example.features.feature['label'].int64_list.value[0])
 
 
