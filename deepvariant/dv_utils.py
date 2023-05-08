@@ -410,3 +410,10 @@ def get_example_info_json_filename(
     # or sharded filenames with -ddddd-of-ddddd, just append.
     example_info_prefix = examples_filename
   return example_info_prefix + '.example_info.json'
+
+
+def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:
+  tf_options = None
+  if output_filename.endswith('.gz'):
+    tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
+  return tf.io.TFRecordWriter(output_filename, options=tf_options)

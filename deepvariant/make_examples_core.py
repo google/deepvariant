@@ -64,7 +64,6 @@ from third_party.nucleus.io import fasta
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import sharded_file_utils
-from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
@@ -142,7 +141,7 @@ VARIANT_TYPE_SELECTORS = {
 # ---------------------------------------------------------------------------
 
 
-def assign_sample_name(sample_name_flag, reads_filenames):
+def assign_sample_name(sample_name_flag: str, reads_filenames: str) -> str:
   """Returns sample name derived from either sample_name flag or input BAM.
 
   Function derives sample_name from the flag. If flag is not set then
@@ -166,7 +165,9 @@ def assign_sample_name(sample_name_flag, reads_filenames):
   return sample_name
 
 
-def make_vc_options(sample_name, flags_obj: flags.FlagValues):
+def make_vc_options(
+    sample_name: str, flags_obj: flags.FlagValues
+) -> deepvariant_pb2.VariantCallerOptions:
   return deepvariant_pb2.VariantCallerOptions(
       min_count_snps=flags_obj.vsc_min_count_snps,
       min_count_indels=flags_obj.vsc_min_count_indels,
@@ -1061,7 +1062,7 @@ class OutputsWriter:
     if options.candidates_filename:
       self._add_writer(
           'candidates',
-          tfrecord.Writer(
+          dv_utils.get_tf_record_writer(
               self._add_suffix(options.candidates_filename, suffix)
           ),
       )
@@ -1070,12 +1071,16 @@ class OutputsWriter:
       self.examples_filename = self._add_suffix(
           options.examples_filename, suffix
       )
-      self._add_writer('examples', tfrecord.Writer(self.examples_filename))
+      self._add_writer(
+          'examples', dv_utils.get_tf_record_writer(self.examples_filename)
+      )
 
     if options.gvcf_filename:
       self._add_writer(
           'gvcfs',
-          tfrecord.Writer(self._add_suffix(options.gvcf_filename, suffix)),
+          dv_utils.get_tf_record_writer(
+              self._add_suffix(options.gvcf_filename, suffix)
+          ),
       )
 
     if options.runtime_by_region:
@@ -1184,7 +1189,7 @@ class OutputsWriter:
     writer = self._writers[writer_name]
     if writer:
       for proto in protos:
-        writer.write(proto)
+        writer.write(proto.SerializeToString())
 
   def _write_text(self, writer_name, line):
     writer = self._writers[writer_name]
