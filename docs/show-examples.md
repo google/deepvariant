@@ -55,13 +55,15 @@ sudo docker run \
   google/deepvariant:"${BIN_VERSION}" /opt/deepvariant/bin/show_examples \
   --examples=/output/intermediate_results_dir/make_examples.tfrecord-00000-of-00001.gz \
   --example_info_json=/output/intermediate_results_dir/make_examples.tfrecord-00000-of-00001.gz.example_info.json \
-  --output=/output/pileup --num_records=20
+  --output=/output/pileup \
+  --num_records=20 \
+  --curate
 
 # And then your images are here:
 ls "${OUTPUT_DIR}"/pileup*.png
 ```
 
-### Try it with these powerful optional parameters
+## Try it with these powerful optional parameters
 
 *   Filter to regions? Use e.g. `--regions chr20:1-3000000` or paths to BED or
     BEDPE files.
@@ -71,11 +73,15 @@ ls "${OUTPUT_DIR}"/pileup*.png
     depth.
 *   Stop after a certain number of examples, e.g. 10? Use `--num_records 10`.
 *   Sharded examples? Use for example, `--examples make_examples.tfrecord@64.gz`
-    to search through them all. This is best paired with --regions or --vcf to
-    narrow down to a small number of examples of interest. You can also use the
-    actual filename of a single make_examples file to only read that one, as
+    to search through them all. This is best paired with `--regions` or `--vcf`
+    to narrow down to a small number of examples of interest. You can also use
+    the actual filename of a single make_examples file to only read that one, as
     shown in the sample code above.
-*   Want an RGB image too? `--image_type both`. The RGB image overlays the
-    channels as colors into a single image. Just remember that DeepVariant sees
-    all the channels, not this RGB representation.
-*   Don't want to print headers onto the images? Use `--noannotation`.
+*   Use `--curate` to create a TSV file with concepts for each pileup. Then
+    filter that TSV in any way you want and read that filtered TSV in using
+    `--filter_by_tsv` to e.g. get pileup images only for examples with low
+    mapping quality, many errors, nearby variants, or any other concepts.
+    Filtering can be done any way you want, `grep` would be an easy option (the
+    TSV's header is not needed).
+*   Write out example tfrecords using `--write_tfrecords` after applying any
+    filtering using the options above.

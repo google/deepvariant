@@ -43,11 +43,12 @@ show_examples
 import gzip
 import json
 import os
-from typing import Any, Callable, Optional, Sequence, Set
+from typing import Any, Callable, Dict, Optional, Sequence, Set
 
 from absl import app
 from absl import flags
 from absl import logging
+import pandas as pd
 import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
@@ -58,9 +59,8 @@ from third_party.nucleus.util import errors
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import vis
 
-FLAGS = flags.FLAGS
 
-flags.DEFINE_string(
+_EXAMPLES = flags.DEFINE_string(
     'examples',
     None,
     (
@@ -69,7 +69,7 @@ flags.DEFINE_string(
         'May be gzipped.'
     ),
 )
-flags.DEFINE_string(
+_EXAMPLE_INFO_JSON = flags.DEFINE_string(
     'example_info_json',
     None,
     (
@@ -77,7 +77,7 @@ flags.DEFINE_string(
         'the information of the channels for the examples.'
     ),
 )
-flags.DEFINE_string(
+_VCF = flags.DEFINE_string(
     'vcf',
     None,
     (
@@ -89,16 +89,19 @@ flags.DEFINE_string(
         'The VCF may be gzipped or uncompressed.'
     ),
 )
-flags.DEFINE_string(
+_OUTPUT = flags.DEFINE_string(
     'output', None, '[optional] Output prefix to write image files to.'
 )
-flags.DEFINE_enum(
+_IMAGE_TYPE = flags.DEFINE_enum(
     'image_type',
     'channels',
-    ['channels', 'RGB', 'both'],
-    'Show examples as "channels", "RGB", or "both".',
+    ['channels', 'RGB', 'both', 'none'],
+    (
+        'By default, images are output as a row of channels. Use "RGB" to stack'
+        ' channels (lossy), or get "both". Use "none" to avoid saving images. '
+    ),
 )
-flags.DEFINE_string(
+_REGIONS = flags.DEFINE_string(
     'regions',
     None,
     (
@@ -107,10 +110,12 @@ flags.DEFINE_string(
         ' Coordinates are 1-based, like in the VCF.'
     ),
 )
-flags.DEFINE_integer(
-    'num_records', -1, 'Maximum number of loci to output images for.'
+_NUM_RECORDS = flags.DEFINE_integer(
+    'num_records',
+    None,
+    'Maximum number of loci to output (after any filtering).',
 )
-flags.DEFINE_bool(
+_ANNOTATION = flags.DEFINE_bool(
     'annotation',
     True,
     (
@@ -118,15 +123,15 @@ flags.DEFINE_bool(
         'True by default. Use --noannotation to turn off.'
     ),
 )
-flags.DEFINE_bool(
+_VERBOSE = flags.DEFINE_bool(
     'verbose', False, 'Show ID for each example as images are created.'
 )
-flags.DEFINE_bool(
+_TRUTH_LABELS = flags.DEFINE_bool(
     'truth_labels',
     True,
     'For examples with truth labels, add the truth label to the file name.',
 )
-flags.DEFINE_string(
+_COLUMN_LABELS = flags.DEFINE_string(
     'column_labels',
     None,
     (
@@ -135,7 +140,37 @@ flags.DEFINE_string(
         'Use --noannotation to remove them entirely.'
     ),
 )
-flags.DEFINE_integer('scale', 1, 'Scale image outputs x times.')
+_SCALE = flags.DEFINE_integer('scale', 1, 'Scale image outputs x times.')
+_CURATE = flags.DEFINE_bool(
+    'curate',
+    False,
+    'Output a TSV of concept curation tags with one row per pileup image.',
+)
+_WRITE_TFRECORDS = flags.DEFINE_bool(
+    'write_tfrecords',
+    False,
+    (
+        'Write out examples as tfrecords. This is after all the same filtering '
+        'applied to the images.'
+    ),
+)
+_FILTER_BY_TSV = flags.DEFINE_string(
+    'filter_by_tsv',
+    None,
+    (
+        '[optional] Path to a TSV file of curation tags output by --curate. '
+        'This will output exclusively the loci that match a row in '
+        'the TSV file by the first column. '
+        'The TSV can be headerless, so filtering with combinations of '
+        'utilities like grep, sed, etc. is easy. '
+        'Recommended usage is to run show_examples once with --curate, filter '
+        'that output TSV in any way you want, then read that '
+        'filtered TSV in again using --filter_by_tsv. '
+    ),
+)
+_MAX_EXAMPLES_TO_SCAN = flags.DEFINE_integer(
+    'max_examples_to_scan', None, 'Stop after scanning this many examples. '
+)
 
 UPDATE_EVERY_N_EXAMPLES = 10000
 MAX_SIZE_TO_PRINT = 5
@@ -187,7 +222,25 @@ def get_full_id(variant: variants_pb2.Variant, indices: Sequence[int]) -> str:
 
 
 def get_short_id(variant: variants_pb2.Variant, indices: Sequence[int]) -> str:
-  """Prepare a locus ID, shortening ref and alt if necessary."""
+  """Prepare a locus ID, shortening ref and alt if necessary.
+
+  Examples of long alleles replaced with their sizes:
+  20:62456134_INS103bp.png
+  20:62481177_DEL51bp.png
+  Examples of short alleles where the full string is included:
+  1:55424995_TC->T.png
+  1:55424996_CT->CTT.png
+  1:55424996_CT->C.png
+  1:55424996_CT->TTT.png
+  1:55424996_CT->C|CTT.png
+
+  Args:
+    variant: Variant object from which to get locus position and alleles.
+    indices: list of allele indices for this particular pileup image.
+
+  Returns:
+    A short ID packed with variant information.
+  """
 
   pos_prefix = '{}:{}'.format(variant.reference_name, variant.start)
 
@@ -260,29 +313,45 @@ def create_region_filter(
   return passes_region_filter
 
 
+def curation_to_dict(
+    named_tuple_of_enums: vis.PileupCuration,
+) -> Dict[str, str]:
+  def unenum_name(enum):
+    return type(enum).__name__
+
+  def unenum_value(enum):
+    return str(enum)
+
+  return {unenum_name(x): unenum_value(x) for x in named_tuple_of_enums}
+
+
 def run():
   """Create pileup images from examples, filtered in various ways."""
   with errors.clean_commandline_error_exit():
-    if FLAGS.column_labels and FLAGS.example_info_json:
+    if not _EXAMPLES.value:
+      raise ValueError('--examples is required')
+    examples_path = _EXAMPLES.value
+
+    if _COLUMN_LABELS.value and _EXAMPLE_INFO_JSON.value:
       raise ValueError(
           'Set at most one of --column_labels or --example_info_json.'
       )
 
-    if FLAGS.column_labels:
-      column_labels = FLAGS.column_labels.split(',')
+    if _COLUMN_LABELS.value:
+      column_labels = _COLUMN_LABELS.value.split(',')
     else:
       column_labels = None
 
-    if FLAGS.example_info_json:
-      example_info = json.load(tf.io.gfile.GFile(FLAGS.example_info_json, 'r'))
+    if _EXAMPLE_INFO_JSON.value:
+      example_info = json.load(tf.io.gfile.GFile(_EXAMPLE_INFO_JSON.value, 'r'))
       column_labels = [
           deepvariant_pb2.DeepVariantChannelEnum.Name(x)
           for x in example_info['channels']
       ]
 
-    filter_to_vcf = FLAGS.vcf is not None
+    filter_to_vcf = _VCF.value is not None
     if filter_to_vcf:
-      ids_from_vcf = parse_vcf(FLAGS.vcf)
+      ids_from_vcf = parse_vcf(_VCF.value)
       logging.info(
           (
               'Found %d loci in VCF. '
@@ -291,23 +360,46 @@ def run():
           len(ids_from_vcf),
       )
 
-    filter_to_region = FLAGS.regions is not None
+    filter_to_region = _REGIONS.value is not None
     if filter_to_region:
       passes_region_filter = create_region_filter(
-          region_flag_string=FLAGS.regions, verbose=FLAGS.verbose
+          region_flag_string=_REGIONS.value, verbose=_VERBOSE.value
       )
+    if _FILTER_BY_TSV.value:
+      tsv_df = pd.read_csv(_FILTER_BY_TSV.value, sep='\t', header=None)
+      ids_from_tsv = set(tsv_df[0])
 
     # Use nucleus.io.tfrecord to read all shards.
-    dataset = tfrecord.read_tfrecords(FLAGS.examples)
+    dataset = tfrecord.read_tfrecords(examples_path)
 
-    # Check flag here to avoid expensive string matching on every iteration.
-    make_rgb = FLAGS.image_type in ['both', 'RGB']
-    make_channels = FLAGS.image_type in ['both', 'channels']
+    make_rgb = _IMAGE_TYPE.value in ['both', 'RGB']
+    make_channels = _IMAGE_TYPE.value in ['both', 'channels']
+
+    # Prepare output directory:
+    output_prefix = (
+        '{}_'.format(_OUTPUT.value) if _OUTPUT.value is not None else ''
+    )
+    if output_prefix:
+      tf.io.gfile.makedirs(os.path.dirname(output_prefix))
+
+    if _WRITE_TFRECORDS.value:
+      tfrecord_writer = tf.io.TFRecordWriter(
+          f'{output_prefix}examples.tfrecord.gz',
+          options=tf.io.TFRecordOptions(compression_type='GZIP'),
+      )
+
+    if _CURATE.value:
+      curation_tags = []
 
     num_scanned = 0
     num_output = 0
     for example in dataset:
       num_scanned += 1
+      if (
+          _MAX_EXAMPLES_TO_SCAN.value is not None
+          and num_scanned > _MAX_EXAMPLES_TO_SCAN.value
+      ):
+        break
       # Only when scanning many examples, print a dot for each one to
       # indicate that the script is making progress and not stalled.
       if num_scanned % UPDATE_EVERY_N_EXAMPLES == 0:
@@ -324,6 +416,8 @@ def run():
       variant = vis.variant_from_example(example)
       locus_id = vis.locus_id_from_variant(variant)
       indices = vis.alt_allele_indices_from_example(example)
+      # Use locus ID in the filename, replacing long alleles with INS/DEL sizes.
+      locus_with_alt_id = get_short_id(variant, indices)
 
       # Optionally filter to variants in the VCF.
       if filter_to_vcf:
@@ -335,21 +429,10 @@ def run():
       if filter_to_region and not passes_region_filter(variant):
         continue
 
-      # Use locus ID in the filename, replacing long alleles with INS/DEL sizes.
-      locus_with_alt_id = get_short_id(variant, indices)
+      if _FILTER_BY_TSV.value and locus_with_alt_id not in ids_from_tsv:
+        continue
 
-      # Examples of long alleles replaced with their sizes:
-      # 20:62456134_INS103bp.png
-      # 20:62481177_DEL51bp.png
-
-      # Examples of short alleles where the full string is included:
-      # 1:55424995_TC->T.png
-      # 1:55424996_CT->CTT.png
-      # 1:55424996_CT->C.png
-      # 1:55424996_CT->TTT.png
-      # 1:55424996_CT->C|CTT.png
-
-      if FLAGS.verbose:
+      if _VERBOSE.value:
         logging.info('\nOutputting image for: %s', locus_with_alt_id)
         full_id = get_full_id(variant, indices)
         if locus_with_alt_id != full_id:
@@ -363,7 +446,7 @@ def run():
 
       # If the example has a truth label, optionally include it.
       optional_truth_label = ''
-      if FLAGS.truth_labels:
+      if _TRUTH_LABELS.value:
         truth_label = get_label(example)
         if truth_label is not None:
           optional_truth_label = '_label{}'.format(truth_label)
@@ -382,58 +465,73 @@ def run():
             )
         )
 
-      output_prefix = (
-          '{}_'.format(FLAGS.output) if FLAGS.output is not None else ''
-      )
-
-      # Create directory for images if does not exist.
-      if output_prefix:
-        output_dir = os.path.dirname(output_prefix)
-        if not tf.io.gfile.exists(output_dir):
-          tf.io.gfile.makedirs(output_dir)
-
       # Create image with a grey-scale row of channels and save to file.
       if make_channels:
-        channels_output = '{}channels_{}{}.png'.format(
+        channels_output = '{}{}{}.png'.format(
             output_prefix, locus_with_alt_id, optional_truth_label
         )
 
         vis.draw_deepvariant_pileup(
             channels=channels,
             path=channels_output,
-            scale=FLAGS.scale,
+            scale=_SCALE.value,
             show=False,
-            annotated=FLAGS.annotation,
+            annotated=_ANNOTATION.value,
             labels=column_labels,
         )
 
       # Create RGB image and save to file.
       if make_rgb:
-        rgb_output = '{}rgb_{}{}.png'.format(
+        rgb_output = '{}{}{}.rgb.png'.format(
             output_prefix, locus_with_alt_id, optional_truth_label
         )
         vis.draw_deepvariant_pileup(
             channels=channels,
             composite_type='RGB',
             path=rgb_output,
-            scale=FLAGS.scale,
+            scale=_SCALE.value,
             show=False,
-            annotated=FLAGS.annotation,
+            annotated=_ANNOTATION.value,
             labels=column_labels,
         )
+      if _CURATE.value:
+        tags = vis.curate_pileup(channels=channels)
+        tags = curation_to_dict(tags)
+        example_width = channels[0].shape[1]
+        buffer = int(example_width / 2)
+        curation_tags.append({
+            'id': locus_with_alt_id,
+            'pos': f'{variant.reference_name}:{variant.start}',
+            # Pileup window, e.g. for IGV automation "goto" command:
+            'window': (
+                f'{variant.reference_name}:{variant.start - buffer}-'
+                f'{variant.start + buffer + 1}'
+            ),
+            'label': optional_truth_label,
+            **tags,
+        })
+      if _WRITE_TFRECORDS.value:
+        tfrecord_writer.write(example.SerializeToString())
 
       # Check if --num_records quota has been hit yet.
       num_output += 1
-      if FLAGS.num_records != -1 and num_output >= FLAGS.num_records:
+      if _NUM_RECORDS.value is not None and num_output >= _NUM_RECORDS.value:
         break
 
     logging.info(
         'Scanned %d examples and output %d images.', num_scanned, num_output
     )
 
-    if num_scanned == 0 and FLAGS.examples.startswith('gs://'):
-      if sharded_file_utils.is_sharded_file_spec(FLAGS.examples):
-        paths = sharded_file_utils.generate_sharded_filenames(FLAGS.examples)
+    if _WRITE_TFRECORDS.value:
+      tfrecord_writer.close()
+
+    if _CURATE.value:
+      df = pd.DataFrame(curation_tags)
+      df.to_csv(f'{output_prefix}curation.tsv', index=False, sep='\t')
+
+    if num_scanned == 0 and examples_path.startswith('gs://'):
+      if sharded_file_utils.is_sharded_file_spec(examples_path):
+        paths = sharded_file_utils.generate_sharded_filenames(examples_path)
         special_gcs_message = (
             'WARNING: --examples sharded files are either '
             'all empty or do not exist. Please check that '
@@ -449,7 +547,7 @@ def run():
                 'Please check that the path is correct: \n'
                 'gsutil ls %s'
             ),
-            FLAGS.examples,
+            examples_path,
         )
 
 

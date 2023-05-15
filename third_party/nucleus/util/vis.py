@@ -39,15 +39,16 @@ from __future__ import print_function
 
 import enum
 import math
-from typing import List, Tuple, NamedTuple
+from typing import List, NamedTuple, Tuple
 
+from etils import epath
 from IPython import display
 import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 
-from etils import epath
 from third_party.nucleus.protos import variants_pb2
+
 
 DEEPVARIANT_CHANNEL_NAMES = [
     'read base', 'base quality', 'mapping quality', 'strand',
