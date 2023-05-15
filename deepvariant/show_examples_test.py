@@ -144,9 +144,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
     show_examples.run()
     ls = glob.glob('{}*'.format(output_prefix))
     filenames = [os.path.basename(path) for path in ls]
-    self.assertTrue(
-        all(['calling_channels' in filename for filename in filenames])
-    )
+    self.assertTrue(all(['calling' in filename for filename in filenames]))
     self.assertTrue(all([filename.endswith('.png') for filename in filenames]))
     self.assertFalse(
         any(['label' in filename for filename in filenames]),
@@ -161,9 +159,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
     show_examples.run()
     ls = glob.glob('{}*'.format(output_prefix))
     filenames = [os.path.basename(path) for path in ls]
-    self.assertTrue(
-        all(['training_channels' in filename for filename in filenames])
-    )
+    self.assertTrue(all(['training' in filename for filename in filenames]))
     self.assertTrue(all([filename.endswith('.png') for filename in filenames]))
     self.assertTrue(
         all(['label' in filename for filename in filenames]),
@@ -190,11 +186,11 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
     filenames = [os.path.basename(path) for path in ls]
 
     self.assertTrue(
-        any(['kitchen_sink_channels' in filename for filename in filenames]),
-        msg='image_type=both, so there should be images with "channels"',
+        any(['kitchen_sink_chr20' in filename for filename in filenames]),
+        msg='image_type=both, so there should be images without "rgb"',
     )
     self.assertTrue(
-        any(['kitchen_sink_rgb' in filename for filename in filenames]),
+        any(['rgb' in filename for filename in filenames]),
         msg='image_type=both, so there should be images with "rgb"',
     )
     self.assertTrue(all([filename.endswith('.png') for filename in filenames]))
@@ -207,19 +203,20 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
         10,
         msg='Should be 10 filenames, i.e. 5 records with channels+rgb for each',
     )
+    # Despite "Count", this checks that the items are the same, unordered.
     self.assertCountEqual(
         filenames,
         [
-            'kitchen_sink_rgb_chr20:10004146_A->G.png',
-            'kitchen_sink_channels_chr20:10004146_A->G.png',
-            'kitchen_sink_rgb_chr20:10004093_A->C.png',
-            'kitchen_sink_channels_chr20:10004093_A->C.png',
-            'kitchen_sink_rgb_chr20:10003831_G->A.png',
-            'kitchen_sink_channels_chr20:10003831_G->A.png',
-            'kitchen_sink_rgb_chr20:10003691_A->G.png',
-            'kitchen_sink_channels_chr20:10003691_A->G.png',
-            'kitchen_sink_rgb_chr20:10003650_T->C.png',
-            'kitchen_sink_channels_chr20:10003650_T->C.png',
+            'kitchen_sink_chr20:10004146_A->G.png',
+            'kitchen_sink_chr20:10004146_A->G.rgb.png',
+            'kitchen_sink_chr20:10004093_A->C.png',
+            'kitchen_sink_chr20:10004093_A->C.rgb.png',
+            'kitchen_sink_chr20:10003831_G->A.png',
+            'kitchen_sink_chr20:10003831_G->A.rgb.png',
+            'kitchen_sink_chr20:10003691_A->G.png',
+            'kitchen_sink_chr20:10003691_A->G.rgb.png',
+            'kitchen_sink_chr20:10003650_T->C.png',
+            'kitchen_sink_chr20:10003650_T->C.rgb.png',
         ],
         msg=(
             'Specific examples and their output filenames should be the same '
