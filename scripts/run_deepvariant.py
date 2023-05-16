@@ -417,38 +417,16 @@ def call_variants_command(outfile, examples, model_ckpt, extra_args):
 
 
 def postprocess_variants_command(
-    ref: str,
-    infile: str,
-    outfile: str,
-    extra_args: str,
-    nonvariant_site_tfrecord_path: Optional[str] = None,
-    gvcf_outfile: Optional[str] = None,
-    sample_name: Optional[str] = None,
-    haploid_contigs: Optional[str] = None,
-    par_regions_bed: Optional[str] = None,
-):
+    ref: str, infile: str, outfile: str, extra_args: str, **kwargs
+) -> Tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
-  if nonvariant_site_tfrecord_path is not None:
-    command.extend([
-        '--nonvariant_site_tfrecord_path',
-        '"{}"'.format(nonvariant_site_tfrecord_path),
-    ])
-  if gvcf_outfile is not None:
-    command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
-  if sample_name is not None:
-    command.extend(['--sample_name', '"{}"'.format(sample_name)])
-  if haploid_contigs is not None:
-    command.extend(['--haploid_contigs', '"{}"'.format(haploid_contigs)])
-  if par_regions_bed is not None:
-    command.extend(['--par_regions_bed', '"{}"'.format(par_regions_bed)])
-  # Extend the command with all items in extra_args.
-  command = _extend_command_by_args_dict(
-      command, _extra_args_to_dict(extra_args)
-  )
+  # Extend the command with all items in kwargs and extra_args.
+  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
+  command = _extend_command_by_args_dict(command, kwargs)
   logfile = None
   if _LOGGING_DIR.value:
     logfile = '{}/postprocess_variants.log'.format(_LOGGING_DIR.value)
