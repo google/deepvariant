@@ -79,6 +79,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/freeze_gra
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/labeler/labeled_examples_to_vcf.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples_somatic.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
+COPY --from=builder /opt/deepvariant/scripts/run_deepsomatic.py .
 COPY --from=builder /opt/deepvariant/scripts/run_deepvariant_keras.py .
 
 RUN ./run-prereq.sh
@@ -147,6 +148,10 @@ RUN \
     /opt/deepvariant/bin/run_deepvariant && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
+    'python3 -u /opt/deepvariant/bin/run_deepsomatic.py "$@"' > \
+    /opt/deepvariant/bin/run_deepsomatic && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
     'python3 -u /opt/deepvariant/bin/run_deepvariant_keras.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant_keras && \
   chmod +x /opt/deepvariant/bin/make_examples \
@@ -160,6 +165,7 @@ RUN \
     /opt/deepvariant/bin/model_train \
     /opt/deepvariant/bin/model_eval \
     /opt/deepvariant/bin/run_deepvariant \
+    /opt/deepvariant/bin/run_deepsomatic \
     /opt/deepvariant/bin/run_deepvariant_keras \
     /opt/deepvariant/bin/freeze_graph \
     /opt/deepvariant/bin/labeled_examples_to_vcf \
