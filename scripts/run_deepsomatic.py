@@ -131,6 +131,14 @@ _VERSION = flags.DEFINE_boolean(
     'Optional. If true, print out version number and exit.',
     allow_hide_cpp=True,
 )
+# TODO
+_USE_KERAS_MODEL = flags.DEFINE_boolean(
+    'use_keras_model',
+    False,
+    'Default to False. If True, call_variants step will use --customized_model '
+    'as a Keras model.',
+)
+
 # Optional flags for call_variants.
 _CUSTOMIZED_MODEL = flags.DEFINE_string(
     'customized_model',
@@ -356,10 +364,17 @@ def make_examples_somatic_command(
 
 
 def call_variants_command(
-    outfile, examples, model_ckpt, extra_args
+    outfile: str,
+    examples: str,
+    model_ckpt: str,
+    extra_args: str,
+    use_keras_model: bool = False,
 ) -> Tuple[str, Optional[str]]:
   """Returns a call_variants (command, logfile) for subprocess."""
-  command = ['time', '/opt/deepvariant/bin/call_variants']
+  binary_name = 'call_variants'
+  if use_keras_model:
+    binary_name = 'call_variants_keras'
+  command = ['time', f'/opt/deepvariant/bin/{binary_name}']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
@@ -374,7 +389,7 @@ def call_variants_command(
   )
   logfile = None
   if _LOGGING_DIR.value:
-    logfile = '{}/call_variants.log'.format(_LOGGING_DIR.value)
+    logfile = '{}/{}.log'.format(_LOGGING_DIR.value, binary_name)
   return (' '.join(command), logfile)
 
 
@@ -562,6 +577,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir: str,
           examples=examples,
           model_ckpt=model_ckpt,
           extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+          use_keras_model=_USE_KERAS_MODEL.value,
       )
   )
 
