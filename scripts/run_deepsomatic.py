@@ -480,11 +480,12 @@ def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if _CUSTOMIZED_MODEL.value is not None:
     if (
-        not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL.value + '.data-00000-of-00001'
+        not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
+        or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
+        or (
+            not _USE_KERAS_MODEL.value
+            and not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.meta')
         )
-        or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.index')
-        or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.meta')
     ):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
