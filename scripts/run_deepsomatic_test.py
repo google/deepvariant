@@ -41,9 +41,12 @@ FLAGS = flags.FLAGS
 
 class RunDeepSomaticTest(parameterized.TestCase):
 
-  @parameterized.parameters(('WGS',))
+  @parameterized.parameters(
+      ('WGS', True),
+      ('WGS', False),
+  )
   @flagsaver.flagsaver
-  def test_basic_commands(self, model_type):
+  def test_basic_commands(self, model_type, use_keras_model):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
@@ -52,6 +55,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.output_gvcf = 'your_gvcf'
     FLAGS.num_shards = 64
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.use_keras_model = use_keras_model
     commands = run_deepsomatic.create_all_commands_and_logfiles(
         '/tmp/deepsomatic_tmp_output', used_in_test=True
     )
@@ -71,13 +75,18 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.05"'
         ' --task {}' % (extra_args_plus_gvcf),
     )
+    call_variants_bin = (
+        'call_variants_keras' if use_keras_model else 'call_variants'
+    )
     self.assertEqual(
         commands[1][0],
-        'time /opt/deepvariant/bin/call_variants --outfile'
+        'time /opt/deepvariant/bin/{} --outfile'
         ' "/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/{}/model.ckpt"'.format(model_type.lower()),
+        ' --checkpoint "/opt/models/{}/model.ckpt"'.format(
+            call_variants_bin, model_type.lower()
+        ),
     )
     self.assertEqual(
         commands[2][0],
