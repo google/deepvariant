@@ -33,8 +33,11 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <functional>
 #include <map>
+#include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
@@ -56,9 +59,12 @@ using tensorflow::uint8;
 //------------------------//
 // Default Channels Names //
 //------------------------//
+static const auto& ch_read_base = "read_base";
+static const auto& ch_base_quality = "base_quality";
 static const auto& ch_mapping_quality = "mapping_quality";
 static const auto& ch_strand = "strand";
 static const auto& ch_read_supports_variant = "read_supports_variant";
+static const auto& ch_base_differs_from_ref = "base_differs_from_ref";
 
 //--------------------//
 // Opt Channels Names //
@@ -113,6 +119,37 @@ inline std::vector<uint8> ScaleColorVector(std::vector<uint8>& channel_values,
 //---------------//
 // Base Channels //
 //---------------//
+
+inline int BaseColor(char base, const PileupImageOptions& options) {
+  switch (base) {
+    case 'A':
+      return (options.base_color_offset_a_and_g() +
+              options.base_color_stride() * 3);
+    case 'G':
+      return (options.base_color_offset_a_and_g() +
+              options.base_color_stride() * 2);
+    case 'T':
+      return (options.base_color_offset_t_and_c() +
+              options.base_color_stride() * 1);
+    case 'C':
+      return (options.base_color_offset_t_and_c() +
+              options.base_color_stride() * 0);
+    default:
+      return 0;
+  }
+}
+
+inline std::vector<uint8> BaseColorVector(const std::string& bases,
+                                          const PileupImageOptions& options) {
+  std::vector<uint8> base_colors;
+  base_colors.reserve(bases.size());
+  for (const char base : bases) {
+    int color = BaseColor(base, options);
+    base_colors.push_back(color);
+  }
+  return base_colors;
+}
+
 inline int StrandColor(bool on_positive_strand,
                        const PileupImageOptions& options) {
   return (on_positive_strand ? options.positive_strand_color()
@@ -165,6 +202,15 @@ inline int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
   return 0;
 }
 
+// Returns a value based on whether the current read base matched the
+// reference base it was compared to.
+inline int MatchesRefColor(bool base_matches_ref,
+                           const PileupImageOptions& options) {
+  float alpha = (base_matches_ref ? options.reference_matching_read_alpha()
+                                  : options.reference_mismatching_read_alpha());
+  return static_cast<int>(kMaxPixelValueAsFloat * alpha);
+}
+
 //-----------------------//
 // Experimental Channels //
 //-----------------------//
@@ -209,7 +255,6 @@ inline int AvgBaseQuality(const Read& read) {
 // Identity: Similar to mapping percent but with a slightly different def.
 inline int Identity(const Read& read) {
   int match_len = 0;
-  int total_len = 0;
   for (const auto& cigar_elt : read.alignment().cigar()) {
     const CigarUnit::Operation& op = cigar_elt.operation();
     int op_len = cigar_elt.operation_length();
@@ -217,16 +262,12 @@ inline int Identity(const Read& read) {
       case CigarUnit::SEQUENCE_MATCH:
       case CigarUnit::ALIGNMENT_MATCH:
         match_len += op_len;
-        total_len += op_len;
         break;
       case CigarUnit::SEQUENCE_MISMATCH:
-        total_len += op_len;
         break;
       case CigarUnit::INSERT:
-        total_len += op_len;
         break;
       case CigarUnit::DELETE:
-        total_len += op_len;
         break;
       default:
         break;
@@ -358,12 +399,17 @@ inline std::vector<uint8> ReadInsertSize(
 
 
 inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
+  if (channel == ch_read_base) return DeepVariantChannelEnum::CH_READ_BASE;
+  if (channel == ch_base_quality)
+    return DeepVariantChannelEnum::CH_BASE_QUALITY;
   if (channel == ch_mapping_quality)
     return DeepVariantChannelEnum::CH_MAPPING_QUALITY;
   if (channel == ch_strand)
     return DeepVariantChannelEnum::CH_STRAND;
   if (channel == ch_read_supports_variant)
     return DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT;
+  if (channel == ch_base_differs_from_ref)
+    return DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF;
   if (channel == ch_read_mapping_percent)
     return DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT;
   if (channel == ch_avg_base_quality)
@@ -400,61 +446,261 @@ const int MaxHomoPolymerWeighted = 30;
 class OptChannels {
  public:
   const PileupImageOptions& options_;
-  std::map<std::string, std::vector<unsigned char>> data_;
   std::map<std::string, std::vector<unsigned char>> ref_data_;
-  void CalculateChannels(const std::vector<std::string>& channels,
-                         const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles) {
-    // Calculates values for each channel
+
+  std::map<std::string, std::vector<unsigned char>> read_level_data_;
+  std::map<std::string, std::vector<unsigned char>> data_;
+  const std::set<std::string> base_level_channels_set_ = {
+    ch_read_base,
+    ch_base_quality,
+    ch_base_differs_from_ref,
+  };
+
+  bool CalculateChannels(const std::vector<std::string>& channels,
+                         const Read& read, const std::string& ref_bases,
+                         const DeepVariantCall& dv_call,
+                         const std::vector<std::string>& alt_alleles,
+                         int image_start_pos) {
+    std::set<std::string> included_base_level_channels;
+
+    /*--------------------------------------
+    Calculate read-level channels
+    ---------------------------------------*/
     for (const std::string& channel : channels) {
-      if (channel == ch_mapping_quality) {
-        const int mapping_quality = read.alignment().mapping_quality();
-        data_[channel].assign(
-            {ScaleColor(mapping_quality, options_.mapping_quality_cap())});
-      } else if (channel == ch_strand) {
-        const bool is_forward_strand =
-            !read.alignment().position().reverse_strand();
-        data_[channel].assign(
-            {static_cast<uint8>(StrandColor(is_forward_strand, options_))});
-      } else if (channel == ch_read_supports_variant) {
-        int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
-        data_[channel].assign(
-            {static_cast<uint8>(SupportsAltColor(supports_alt, options_))});
-      } else if (channel == ch_read_mapping_percent) {
-        data_[channel].assign(
-            {ScaleColor(ReadMappingPercent(read), MaxMappingPercent)});
-      } else if (channel == ch_avg_base_quality) {
-        data_[channel].assign(
-            {ScaleColor(AvgBaseQuality(read), MaxAvgBaseQuality)});
-      } else if (channel == ch_identity) {
-        data_[channel].assign({ScaleColor(Identity(read), MaxIdentity)});
-      } else if (channel == ch_gap_compressed_identity) {
-        data_[channel].assign(
-            {ScaleColor(GapCompressedIdentity(read), MaxIdentity)});
-      } else if (channel == ch_gc_content) {
-        data_[channel].assign({ScaleColor(GcContent(read), MaxGcContent)});
-      } else if (channel == ch_is_homopolymer) {
-        std::vector<uint8> is_homopolymer = IsHomoPolymer(read);
-        data_[channel] = ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
-      } else if (channel == ch_homopolymer_weighted) {
-        std::vector<uint8> homopolymer_weighted = HomoPolymerWeighted(read);
-        data_[channel] =
-            ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
-      } else if (channel == ch_blank) {
-        data_[channel] = Blank(read);
-      } else if (channel == ch_insert_size) {
-        data_[channel] = ReadInsertSize(read);
+      // Instantiate each channel data row
+      data_[channel] = std::vector<unsigned char>(ref_bases.size(), 0);
+
+      // If we are looking at a base level channel we will fill that data out
+      // later. For read level channels we can calculate values now
+      if (base_level_channels_set_.find(channel) !=
+                  base_level_channels_set_.end()) {
+        included_base_level_channels.insert(channel);
+      } else {
+        bool ok = CalculateReadLevelData(channel, read, dv_call, alt_alleles);
+        if (!ok) return false;
       }
     }
+
+    /*--------------------------------------
+    Calculate base-level channels
+    ---------------------------------------*/
+
+    // Handler for each component of the CIGAR string, as subdivided
+    // according the rules below.
+    // Side effect: draws in img_row
+    // Return value: true on normal exit; false if we determine that we
+    // have a low quality base at the call position (in which case we
+    // should return null) from EncodeRead.
+    std::function<bool(int, int, const CigarUnit::Operation&)>
+        action_per_cigar_unit =
+          [&](int ref_i, int read_i, const CigarUnit::Operation& cigar_op) {
+            char read_base = 0;
+            if (cigar_op == CigarUnit::INSERT) {
+              read_base = options_.indel_anchoring_base_char()[0];
+            } else if (cigar_op == CigarUnit::DELETE) {
+              ref_i -= 1;  // Adjust anchor base on reference
+              read_base = options_.indel_anchoring_base_char()[0];
+            } else if (cigar_op == CigarUnit::ALIGNMENT_MATCH ||
+                      cigar_op == CigarUnit::SEQUENCE_MATCH ||
+                      cigar_op == CigarUnit::SEQUENCE_MISMATCH) {
+              read_base = read.aligned_sequence()[read_i];
+            }
+
+            size_t col = ref_i - image_start_pos;
+            if (read_base && 0 <= col && col < ref_bases.size()) {
+              int base_quality = read.aligned_quality(read_i);
+              // Bail out if we found this read had a low-quality base at the
+              // call site.
+              if (ref_i == dv_call.variant().start() &&
+                  base_quality <
+                    options_.read_requirements().min_base_quality()) {
+                return false;
+              }
+
+              // Calculate base level values for channels
+              for (const std::string& channel : included_base_level_channels)
+                {
+                if (channel == ch_read_base) {
+                  data_[channel][col] = BaseColor(read_base, options_);
+                } else if (channel == ch_base_quality) {
+                  data_[channel][col] =
+                      ScaleColor(base_quality, options_.base_quality_cap());
+                } else if (channel == ch_base_differs_from_ref) {
+                  bool matches_ref = (read_base == ref_bases[col]);
+                  data_[channel][col] =
+                      MatchesRefColor(matches_ref, options_);
+                }
+              }
+
+              // Fill in base level value for read level channels from
+              // previously calculated read level values
+              for (
+                std::map<std::string, std::vector<unsigned char>>::iterator
+                          iter = read_level_data_.begin();
+                    iter != read_level_data_.end(); ++iter)
+              {
+                std::string channel =  iter->first;
+                if (iter->second.size() == 1) {
+                  data_[channel][col] = iter->second[0];
+                } else {
+                  data_[channel][col] = iter->second[read_i];
+                }
+                }
+            }
+            return true;
+          };
+
+    return CalculateBaseLevelData(read, action_per_cigar_unit);
   }
 
-  inline uint8 GetChannelData(const std::string& channel, int pos) {
-    // Returns values for each channel
-    if (data_[channel].size() == 1) {
-      return data_[channel][0];
-    } else {
-      return data_[channel][pos];
+  // Calculate values for channels that only depend on information at the
+  // granularity of an entire read.
+  bool CalculateReadLevelData(const std::string& channel, const Read& read,
+                              const DeepVariantCall& dv_call,
+                              const std::vector<std::string>& alt_alleles) {
+    if (channel == ch_mapping_quality) {
+      const int mapping_quality = read.alignment().mapping_quality();
+      const int min_mapping_quality =
+          options_.read_requirements().min_mapping_quality();
+      // Bail early if this read's mapping quality is too low.
+      if (mapping_quality < min_mapping_quality) {
+        return false;
+      }
+      read_level_data_[channel].assign(
+          {ScaleColor(mapping_quality, options_.mapping_quality_cap())});
+    } else if (channel == ch_strand) {
+      const bool is_forward_strand =
+          !read.alignment().position().reverse_strand();
+      read_level_data_[channel].assign(
+          {static_cast<uint8>(StrandColor(is_forward_strand, options_))});
+    } else if (channel == ch_read_supports_variant) {
+      int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
+      read_level_data_[channel].assign(
+          {static_cast<uint8>(SupportsAltColor(supports_alt, options_))});
+    } else if (channel == ch_read_mapping_percent) {
+      read_level_data_[channel].assign(
+          {ScaleColor(ReadMappingPercent(read), MaxMappingPercent)});
+    } else if (channel == ch_avg_base_quality) {
+      read_level_data_[channel].assign(
+          {ScaleColor(AvgBaseQuality(read), MaxAvgBaseQuality)});
+    } else if (channel == ch_identity) {
+      read_level_data_[channel].assign({ScaleColor(Identity(read),
+                                                    MaxIdentity)});
+    } else if (channel == ch_gap_compressed_identity) {
+      read_level_data_[channel].assign(
+          {ScaleColor(GapCompressedIdentity(read), MaxIdentity)});
+    } else if (channel == ch_gc_content) {
+      read_level_data_[channel].assign({ScaleColor(GcContent(read),
+                                                    MaxGcContent)});
+    } else if (channel == ch_is_homopolymer) {
+      std::vector<uint8> is_homopolymer = IsHomoPolymer(read);
+      read_level_data_[channel] = ScaleColorVector(is_homopolymer,
+                                                    MaxIsHomoPolymer);
+    } else if (channel == ch_homopolymer_weighted) {
+      std::vector<uint8> homopolymer_weighted = HomoPolymerWeighted(read);
+      read_level_data_[channel] =
+          ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
+    } else if (channel == ch_blank) {
+      read_level_data_[channel] = Blank(read);
+    } else if (channel == ch_insert_size) {
+      read_level_data_[channel] = ReadInsertSize(read);
     }
+
+    return true;
+  }
+
+  // Calculate values for channels that depend on information at the
+  // granularity of bases within the read and/or reference sequence.
+  bool CalculateBaseLevelData(const Read& read,
+                              std::function<
+                                  bool(int, int, const CigarUnit::Operation&)>
+                              action_per_cigar_unit) {
+    // In the following, we iterate over alignment information for each
+    // base of read creating an association between a reference index,
+    // read index and cigar operation and storing in a vector for subsequent
+    // base level channel value calculation(s).
+    //
+    // The handling of each cigar element type is given below, assuming
+    // it has length n.
+    //
+    // ALIGNMENT_MATCH, SEQUENCE_MATCH, SEQUENCE_MISMATCH:
+    //   Provide a segment ref_i, read_i for each of the n bases in the
+    //   operator, where ref_i is the position on the genome where this
+    //   base aligns.
+    //
+    // INSERT, CLIP_SOFT:
+    //   Provides a single ref_i, read_i segment regardless of n. ref_i
+    //   is set to the preceding base of the insertion; i.e., the anchor
+    //   base. Beware that ref_i could be -1 if the insertion is aligned
+    //   to the first base of a contig.  read_i points to the first base
+    //   of the insertion. So if our cigar is 1M2I1M for a read starting
+    //   at S, we'd see first (S, 0, '1M'), followed by one (S, 1,
+    //   '2I'), and then (S + 1, 3, '1M').
+    //
+    // DELETE, SKIP:
+    //   Provides a single ref_i, read_i segment regardless of n. ref_i
+    //   is set to the first base of the deletion, just like in an
+    //   ALIGNMENT_MATCH. read_i points to the previous base in the
+    //   read, as there's no actual read sequence associated with a
+    //   deletion. Beware that read_i could be -1 if the deletion is the
+    //   first cigar of the read. So if our cigar is 1M2D1M for a read
+    //   starting at S, we'd see first (S, 0, '1M'), followed by one (S
+    //   + 1, 0, '2D'), and then (S + 3, 1, '1M').
+    //
+    // CLIP_HARD, PAD:
+    //   These operators are ignored by as they don't impact the
+    //   alignment of the read w.r.t. the reference.
+    //
+    // Any other CIGAR op:
+    //   Fatal error, at present; later we should fail with a status encoding.
+
+    int ref_i = read.alignment().position().position();
+    int read_i = 0;
+    bool ok = true;
+
+    for (const auto& cigar_elt : read.alignment().cigar()) {
+      const CigarUnit::Operation& op = cigar_elt.operation();
+      int op_len = cigar_elt.operation_length();
+
+      switch (op) {
+        case CigarUnit::ALIGNMENT_MATCH:
+        case CigarUnit::SEQUENCE_MATCH:
+        case CigarUnit::SEQUENCE_MISMATCH:
+          // Alignment op.
+          for (int i = 0; i < op_len; i++) {
+            ok = ok && action_per_cigar_unit(ref_i, read_i, op);
+            ref_i++;
+            read_i++;
+          }
+          break;
+        case CigarUnit::INSERT:
+        case CigarUnit::CLIP_SOFT:
+          // Insert op.
+          ok = action_per_cigar_unit(ref_i - 1 , read_i, op);
+          read_i += op_len;
+          break;
+        case CigarUnit::DELETE:
+        case CigarUnit::SKIP:
+          // Delete op.
+          ok = action_per_cigar_unit(ref_i, read_i - 1, op);
+          ref_i += op_len;
+          break;
+        case CigarUnit::CLIP_HARD:
+        case CigarUnit::PAD:
+          // Ignored ops.  Do nothing.
+          break;
+        default:
+          LOG(FATAL) << "Unrecognized CIGAR op";
+      }
+
+      if (!ok) {return false;}
+    }
+
+    return true;
+  }
+
+  inline uint8 GetChannelData(const std::string& channel, int col) {
+    return data_[channel][col];
   }
 
   void CalculateRefRows(const std::vector<std::string>& channels,
@@ -463,7 +709,13 @@ class OptChannels {
     // Create a fake read to represent reference bases.
     Read refRead;
     for (const std::string& channel : channels) {
-      if (channel == ch_mapping_quality) {
+      if (channel == ch_read_base) {
+        ref_data_[channel] = BaseColorVector(ref_bases, options_);
+      } else if (channel == ch_base_quality) {
+        int ref_qual = options_.reference_base_quality();
+        ref_data_[channel].assign(
+            {ScaleColor(ref_qual, options_.base_quality_cap())});
+      } else if (channel == ch_mapping_quality) {
         int ref_qual = options_.reference_base_quality();
         ref_data_[channel].assign(
             {ScaleColor(ref_qual, options_.base_quality_cap())});
@@ -473,6 +725,9 @@ class OptChannels {
       } else if (channel == ch_read_supports_variant) {
         int alt = SupportsAltColor(0, options_);
         ref_data_[channel].assign({static_cast<uint8>(alt)});
+      } else if (channel == ch_base_differs_from_ref) {
+        int ref = MatchesRefColor(true, options_);
+        ref_data_[channel].assign({static_cast<uint8>(ref)});
       } else if (channel == ch_read_mapping_percent) {
         ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_avg_base_quality) {
