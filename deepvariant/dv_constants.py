@@ -58,9 +58,12 @@ DEFAULT_SAMPLE_NAME = 'default'
 
 # Define available OptChannels (optional extra channels).
 OPT_CHANNELS = [
+    'read_base',
+    'base_quality',
     'mapping_quality',
     'strand',
     'read_supports_variant',
+    'base_differs_from_ref',
     'read_mapping_percent',
     'avg_base_quality',
     'identity',

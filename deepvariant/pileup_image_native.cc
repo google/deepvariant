@@ -318,9 +318,22 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
 
   // Calculate OptChannels.
   OptChannels channel_set{options_};
-  channel_set.CalculateChannels(img_row.channels, read, dv_call, alt_alleles);
+  bool ok = channel_set.CalculateChannels(img_row.channels, read,
+                                          ref_bases, dv_call, alt_alleles,
+                                          image_start_pos);
+  // Bail out if we found an issue while calculating channels
+  // (a low-quality base at the call site, mapping quality is too low, etc)
+  if (!ok) {
+    return nullptr;
+  }
+
+  // Fill OptChannel set.
   img_row.channel_data.resize(img_row.channels.size(),
-                              std::vector<unsigned char>(ref_bases.size(), 0));
+                            std::vector<unsigned char>(ref_bases.size(), 0));
+  for (int j = 0; j < img_row.channels.size(); j++) {
+    const std::string channel = img_row.channels[j];
+    img_row.channel_data[j] = channel_set.data_[channel];
+  }
 
   // Handler for each component of the CIGAR string, as subdivided
   // according the rules below.
@@ -368,11 +381,6 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
               if (img_row.add_hp_channel) {
                 img_row.hp_value[col] = ScaleColor(hp_value, 2);
               }
-              // Fill OptChannel set.
-              for (int j = 0; j < img_row.channels.size(); j++) {
-                img_row.channel_data[j][col] =
-                    channel_set.GetChannelData(img_row.channels[j], read_i);
-              }
             }
             return true;
           };
@@ -416,7 +424,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   //   Fatal error, at present; later we should fail with a status encoding.
   int ref_i = read.alignment().position().position();
   int read_i = 0;
-  bool ok = true;
+  ok = true;
 
   for (const auto& cigar_elt : read.alignment().cigar()) {
     const CigarUnit::Operation& op = cigar_elt.operation();
@@ -460,7 +468,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     }
   }
 
-  return std::unique_ptr<ImageRow>(new ImageRow(img_row));
+  return std::make_unique<ImageRow>(img_row);
 }
 
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
@@ -508,7 +516,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
     }
   }
 
-  return std::unique_ptr<ImageRow>(new ImageRow(img_row));
+  return std::make_unique<ImageRow>(img_row);
 }
 
 }  // namespace deepvariant

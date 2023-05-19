@@ -31,6 +31,7 @@
 
 #include "deepvariant/pileup_channel_lib.h"
 
+#include <iostream>
 #include <vector>
 #include <string>
 
@@ -77,6 +78,49 @@ TEST(ScaleColorVectorLarge, OverMaxCase) {
       EXPECT_EQ(i, static_cast<int>(kMaxPixelValueAsFloat));
     }
   }
+}
+
+TEST(BaseColor, A) {
+  PileupImageOptions options{};
+  options.set_base_color_offset_a_and_g(1);
+  options.set_base_color_stride(1);
+  uint8 color = BaseColor('A', options);
+  EXPECT_EQ(color, 4);
+}
+
+TEST(BaseColor, T) {
+  PileupImageOptions options{};
+  options.set_base_color_offset_t_and_c(1);
+  options.set_base_color_stride(1);
+  uint8 color = BaseColor('T', options);
+  EXPECT_EQ(color, 2);
+}
+
+TEST(BaseColor, G) {
+  PileupImageOptions options{};
+  options.set_base_color_offset_a_and_g(1);
+  options.set_base_color_stride(1);
+  uint8 color = BaseColor('G', options);
+  EXPECT_EQ(color, 3);
+}
+
+TEST(BaseColor, C) {
+  PileupImageOptions options{};
+  options.set_base_color_offset_t_and_c(1);
+  options.set_base_color_stride(1);
+  uint8 color = BaseColor('C', options);
+  EXPECT_EQ(color, 1);
+}
+
+TEST(BaseColorVector, ATGC) {
+  PileupImageOptions options{};
+  options.set_base_color_offset_a_and_g(1);
+  options.set_base_color_offset_t_and_c(1);
+  options.set_base_color_stride(1);
+
+  std::vector<uint8> expect_vector{4, 2, 3, 1};
+  std::vector<uint8> colors_vector = BaseColorVector("ATGC", options);
+  EXPECT_EQ(colors_vector, expect_vector);
 }
 
 TEST(StrandColor, PositiveStrand) {
@@ -147,6 +191,22 @@ TEST(ReadSupportsAlt, OtherAlleleSupporting) {
 
   uint8 rsa = ReadSupportsAlt(dv_call, read, alt_alleles);
   EXPECT_EQ(rsa, 2);
+}
+
+TEST(MatchesRefColor, BaseMatch) {
+  PileupImageOptions options{};
+  options.set_reference_matching_read_alpha(1);
+  options.set_reference_mismatching_read_alpha(0);
+  int match = MatchesRefColor(true, options);
+  EXPECT_EQ(match, kMaxPixelValueAsFloat);
+}
+
+TEST(MatchesRefColor, BaseMistmatch) {
+  PileupImageOptions options{};
+  options.set_reference_matching_read_alpha(0);
+  options.set_reference_mismatching_read_alpha(1);
+  int match = MatchesRefColor(false, options);
+  EXPECT_EQ(match, kMaxPixelValueAsFloat);
 }
 
 TEST(SupportsAltColor, AlleleSupporting) {
@@ -282,7 +342,6 @@ TEST(HomoPolymerWeightedTest, WeightedHomoPolymerMax) {
   std::string bases;
   bases.insert(0, 20, 'A');
   bases.insert(0, 10, 'G');
-  LOG(INFO) << bases;
   Read read = nucleus::MakeRead("chr1", 1, bases, {"60M"});
   std::vector<uint8> w_homopolymer = HomoPolymerWeighted(read);
   std::vector<uint8> expected;
@@ -328,11 +387,20 @@ TEST(GetChannelDataTest, ReadData) {
   options.set_mapping_quality_cap(1);
   options.set_positive_strand_color(20);
   options.set_allele_unsupporting_read_alpha(1.0);
+  options.set_base_color_offset_a_and_g(1);
+  options.set_base_color_offset_t_and_c(1);
+  options.set_base_color_stride(1);
+  options.set_base_quality_cap(20);
+  options.set_reference_matching_read_alpha(1);
+  options.set_reference_mismatching_read_alpha(0);
 
   OptChannels channel_set{options};
-  std::vector<std::string> channels{ch_mapping_quality,
+  std::vector<std::string> channels{ch_read_base,
+                                    ch_base_quality,
+                                    ch_mapping_quality,
                                     ch_strand,
                                     ch_read_supports_variant,
+                                    ch_base_differs_from_ref,
                                     ch_read_mapping_percent,
                                     ch_avg_base_quality,
                                     ch_identity,
@@ -340,8 +408,11 @@ TEST(GetChannelDataTest, ReadData) {
                                     ch_gc_content,
                                     ch_is_homopolymer,
                                     ch_homopolymer_weighted,
-                                    ch_blank};
-  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"});
+                                    ch_blank,
+                                    ch_insert_size};
+  Read ref_read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTTAT", {"11M"});
+  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTTAT", {"11M"});
+  read.set_fragment_length(MaxFragmentLength);
   const int base_quality = 33;
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
     read.set_aligned_quality(i, base_quality);
@@ -350,24 +421,34 @@ TEST(GetChannelDataTest, ReadData) {
   DeepVariantCall dv_call = DeepVariantCall::default_instance();
   std::vector<std::string> alt_alleles = {};
 
-  channel_set.CalculateChannels(channels, read, dv_call, alt_alleles);
+  channel_set.CalculateChannels(channels, read, ref_read.aligned_sequence(),
+                                dv_call, alt_alleles, 0);
+  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 11), 4);
+  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 9), 2);
+  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 1), 3);
+  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 4), 1);
+  EXPECT_EQ(channel_set.GetChannelData(ch_base_quality, 1),
+            kMaxPixelValueAsFloat);
   EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1),
            static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetChannelData(ch_strand, 1), 20);
   EXPECT_EQ(channel_set.GetChannelData(ch_read_supports_variant, 1),
             static_cast<uint8>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetChannelData(ch_read_mapping_percent, 3), 203);
+  EXPECT_EQ(channel_set.GetChannelData(ch_base_differs_from_ref, 1),
+            kMaxPixelValueAsFloat);
+  EXPECT_EQ(channel_set.GetChannelData(ch_read_mapping_percent, 3), 231);
   EXPECT_EQ(channel_set.GetChannelData(ch_avg_base_quality, 3), 90);
-  EXPECT_EQ(channel_set.GetChannelData(ch_identity, 9), 203);
+  EXPECT_EQ(channel_set.GetChannelData(ch_identity, 9), 231);
   EXPECT_EQ(channel_set.GetChannelData(ch_gap_compressed_identity, 9),
             static_cast<uint8>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetChannelData(ch_gc_content, 3), 152);
+  EXPECT_EQ(channel_set.GetChannelData(ch_gc_content, 3), 127);
   EXPECT_EQ(channel_set.GetChannelData(ch_is_homopolymer, 1),
             static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetChannelData(ch_is_homopolymer, 4), 0);
   EXPECT_EQ(channel_set.GetChannelData(ch_homopolymer_weighted, 1), 25);
   EXPECT_EQ(channel_set.GetChannelData(ch_homopolymer_weighted, 9), 33);
-  EXPECT_EQ(channel_set.GetChannelData(ch_blank, 0), 0);
+  EXPECT_EQ(channel_set.GetChannelData(ch_blank, 1), 0);
+  EXPECT_EQ(channel_set.GetChannelData(ch_insert_size, 1), 254);
 }
 
 TEST(GetRefChannelDataTest, ReadData) {
@@ -376,11 +457,18 @@ TEST(GetRefChannelDataTest, ReadData) {
   options.set_base_quality_cap(20);
   options.set_allele_unsupporting_read_alpha(1.0);
   options.set_positive_strand_color(20);
+  options.set_base_color_offset_a_and_g(1);
+  options.set_base_color_offset_t_and_c(1);
+  options.set_base_color_stride(1);
+  options.set_reference_matching_read_alpha(1.0);
 
   OptChannels channel_set{options};
-  std::vector<std::string> channels{ch_mapping_quality,
+  std::vector<std::string> channels{ch_read_base,
+                                    ch_base_quality,
+                                    ch_mapping_quality,
                                     ch_strand,
                                     ch_read_supports_variant,
+                                    ch_base_differs_from_ref,
                                     ch_read_mapping_percent,
                                     ch_avg_base_quality,
                                     ch_identity,
@@ -389,17 +477,24 @@ TEST(GetRefChannelDataTest, ReadData) {
                                     ch_is_homopolymer,
                                     ch_homopolymer_weighted,
                                     ch_blank};
-  Read ref_read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"});
+  Read ref_read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTTAT", {"11M"});
   const int base_quality = 33;
   for (size_t i = 0; i < ref_read.aligned_sequence().size(); ++i) {
     ref_read.set_aligned_quality(i, base_quality);
   }
   channel_set.CalculateRefRows(channels, ref_read.aligned_sequence());
+  EXPECT_EQ(channel_set.GetRefRows(ch_read_base, 10), 4);
+  EXPECT_EQ(channel_set.GetRefRows(ch_read_base, 8), 2);
+  EXPECT_EQ(channel_set.GetRefRows(ch_read_base, 0), 3);
+  EXPECT_EQ(channel_set.GetRefRows(ch_read_base, 3), 1);
+  EXPECT_EQ(channel_set.GetRefRows(ch_base_quality, 0), kMaxPixelValueAsFloat);
   EXPECT_EQ(channel_set.GetRefRows(ch_mapping_quality, 1),
            static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetRefRows(ch_strand, 1), 20);
   EXPECT_EQ(channel_set.GetRefRows(ch_read_supports_variant, 1),
             static_cast<uint8>(kMaxPixelValueAsFloat));
+  EXPECT_EQ(channel_set.GetRefRows(ch_base_differs_from_ref, 0),
+            kMaxPixelValueAsFloat);
   EXPECT_EQ(channel_set.GetRefRows(ch_read_mapping_percent, 3),
             static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetRefRows(ch_avg_base_quality, 3),
@@ -407,7 +502,7 @@ TEST(GetRefChannelDataTest, ReadData) {
   EXPECT_EQ(channel_set.GetRefRows(ch_identity, 9), 254);
   EXPECT_EQ(channel_set.GetRefRows(ch_gap_compressed_identity, 9),
             static_cast<uint8>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetRefRows(ch_gc_content, 3), 152);
+  EXPECT_EQ(channel_set.GetRefRows(ch_gc_content, 3), 127);
   EXPECT_EQ(channel_set.GetRefRows(ch_is_homopolymer, 1),
             static_cast<uint8>(kMaxPixelValueAsFloat));
   EXPECT_EQ(channel_set.GetRefRows(ch_is_homopolymer, 4), 0);
