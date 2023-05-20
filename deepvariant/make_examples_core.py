@@ -1682,6 +1682,8 @@ class RegionProcessor(object):
 
     for sample in self.samples:
       role = sample.options.role
+      if sample.options.skip_output_generation:
+        continue
       if role not in candidates_by_sample:
         continue
       candidates = candidates_by_sample[role]
@@ -2028,11 +2030,6 @@ class RegionProcessor(object):
       writer = None
       if role in self.writers_dict:
         writer = self.writers_dict[role]
-      if (
-          in_training_mode(self.options)
-          and self.options.sample_role_to_train != role
-      ):
-        continue
       if not sample.options.reads_filenames:
         continue
       candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(
@@ -2704,6 +2701,8 @@ def make_examples_runner(options):
     for sample in samples_that_need_writers:
       role = sample.options.role
       if role not in candidates_by_sample:
+        continue
+      if in_training_mode(options) and options.sample_role_to_train != role:
         continue
       writer = writers_dict[role]
       region_example_shape = region_processor.writes_examples_in_region(

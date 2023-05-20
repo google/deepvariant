@@ -149,7 +149,8 @@ def _sharded(basename, num_shards=None):
 
 class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
-  # Golden sets are created with learning/genomics/internal/create_golden.sh
+  # Golden sets are created with
+  # learning/genomics/internal/create_golden_deep_trio.sh
   @parameterized.parameters(
       # All tests are run with fast_pass_aligner enabled. There are no
       # golden sets version for ssw realigner.
@@ -334,6 +335,63 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           ).labeling_metrics,
           run_info.labeling_metrics,
       )
+
+  @flagsaver.flagsaver
+  def test_make_examples_ont_end2end(self):
+    """Test end to end for long ONT reads with phasing enabled.
+
+    This test runs ONT end to end and compares the output with the golden
+    output. This test is introduced because previously in training mode the
+    non training sample would not be phased. So this now tests to make sure
+    all of the training examples are phased correctly.
+    """
+    region = ranges.parse_literal('chr20:5050000-5075000')
+    FLAGS.write_run_info = True
+    FLAGS.ref = testdata.GRCH38_CHR0_FASTA
+    FLAGS.reads = testdata.ONT_HG002_BAM
+    FLAGS.reads_parent1 = testdata.ONT_HG003_BAM
+    FLAGS.reads_parent2 = testdata.ONT_HG004_BAM
+    FLAGS.confident_regions = testdata.HG002_HIGH_CONFIDENCE_BED
+    FLAGS.truth_variants = testdata.HG002_HIGH_CONFIDENCE_VCF
+    FLAGS.sample_name = 'HG002'
+    FLAGS.sample_name_to_train = 'HG002'
+    FLAGS.sample_name_parent1 = 'HG003'
+    FLAGS.sample_name_parent2 = 'HG004'
+    FLAGS.add_hp_channel = True
+    FLAGS.alt_aligned_pileup = 'diff_channels'
+    FLAGS.min_mapping_quality = 1
+    FLAGS.mode = 'training'
+    FLAGS.parse_sam_aux_fields = True
+    FLAGS.partition_size = 25000
+    FLAGS.phase_reads = True
+    FLAGS.pileup_image_height_child = 100
+    FLAGS.pileup_image_height_parent = 100
+    FLAGS.pileup_image_width = 199
+    FLAGS.realign_reads = False
+    FLAGS.skip_parent_calling = True
+    FLAGS.sort_by_haplotypes = True
+    FLAGS.track_ref_reads = True
+    FLAGS.vsc_min_fraction_indels = 0.12
+    FLAGS.vsc_min_fraction_snps = 0.1
+    num_shards = 0
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('examples.tfrecord', num_shards)
+    )
+    FLAGS.regions = [ranges.to_literal(region)]
+    golden_file = _sharded(testdata.GOLDEN_ONT_MAKE_EXAMPLES_OUTPUT, num_shards)
+
+    for task_id in range(max(num_shards, 1)):
+      FLAGS.task = task_id
+      options = make_examples.default_options(add_flags=True)
+      make_examples_core.make_examples_runner(options)
+
+    examples = self.verify_examples(
+        FLAGS.examples, region, options, verify_labels=True
+    )
+
+    self.assertDeepVariantExamplesEqual(
+        examples, list(tfrecord.read_tfrecords(golden_file))
+    )
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @flagsaver.flagsaver

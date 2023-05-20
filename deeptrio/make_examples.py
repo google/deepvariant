@@ -188,6 +188,11 @@ CANDIDATE_POSITIONS_ = flags.DEFINE_string(
         'is only the child positions.'
     ),
 )
+_SKIP_PARENT_CALLING = flags.DEFINE_bool(
+    'skip_parent_calling',
+    False,
+    'If True, parents will not be called. Default is False.',
+)
 
 # Change any flag defaults that differ for DeepTrio.
 FLAGS.set_default('vsc_min_fraction_multiplier', 0.67)
@@ -218,6 +223,7 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
       ),
       order=[0, 1, 2],
       pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT,
+      skip_output_generation=_SKIP_PARENT_CALLING.value,
   )
   child_options = deepvariant_pb2.SampleOptions(
       role='child',
@@ -237,6 +243,7 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
       # Swap the two parents when calling on parent2.
       order=[2, 1, 0],
       pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT,
+      skip_output_generation=_SKIP_PARENT_CALLING.value,
   )
 
   # If --sample_name_to_train is not set, train on the child.
