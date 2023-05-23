@@ -54,7 +54,7 @@ FLAGS = flags.FLAGS
 _MODEL_TYPE = flags.DEFINE_enum(
     'model_type',
     'WGS',  # Set default to WGS. We only have this model type right now.
-    ['WGS'],
+    ['WGS', 'ONT_R104'],
     (
         'Required. Type of model to use for variant calling. Set this flag to'
         ' use the default model associated with each type, and it will set'
@@ -349,6 +349,21 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_indels'] = 0.05
     special_args['vsc_min_fraction_snps'] = 0.05
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'ONT_R104':
+    special_args = {}
+    special_args['add_hp_channel'] = True
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['min_mapping_quality'] = 10
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads'] = True
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
+    special_args['vsc_min_fraction_snps'] = 0.10
+    special_args['vsc_min_fraction_indels'] = 0.10
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
 
@@ -591,8 +606,6 @@ def create_all_commands_and_logfiles(intermediate_results_dir: str,
           extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
-          sample_name_tumor=_SAMPLE_NAME_TUMOR.value,
-          sample_name_normal=_SAMPLE_NAME_NORMAL.value,
       )
   )
 

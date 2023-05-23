@@ -161,7 +161,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--infile '
         '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
         '--outfile "your_vcf"'
-        '%s' % extra_sample_name_flag,
     )
 
   @parameterized.parameters(
