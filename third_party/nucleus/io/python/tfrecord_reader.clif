@@ -27,6 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from "third_party/nucleus/io/python/tstring_clif_conversions.h" import *
+
 from "third_party/nucleus/io/tfrecord_reader.h":
   namespace `nucleus`:
 
