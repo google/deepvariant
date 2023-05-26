@@ -8,6 +8,15 @@ package(
 
 licenses(["notice"])
 
+cc_library(
+    name = "tstring_clif_conversions",
+    hdrs = ["tstring_clif_conversions.h"],
+    deps = [
+        "@clif//:cpp_runtime",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
 py_clif_cc(
     name = "vcf_reader",
     srcs = ["vcf_reader.clif"],
@@ -411,6 +420,7 @@ py_clif_cc(
     name = "tfrecord_reader",
     srcs = ["tfrecord_reader.clif"],
     deps = [
+        ":tstring_clif_conversions",
         "//third_party/nucleus/io:tfrecord_reader",
     ],
 )
