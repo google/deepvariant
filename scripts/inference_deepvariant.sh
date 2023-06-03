@@ -14,6 +14,7 @@ Flags:
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
 --bin_version Version of DeepVariant model to use
 --customized_model Path to checkpoint directory containing model checkpoint.
+--use_keras_model (true|false) If true, the model provided is Keras model.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
@@ -47,6 +48,7 @@ BIN_VERSION="1.5.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
+USE_KERAS_MODEL=false  # TODO: Change this to true before release.
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
@@ -108,6 +110,11 @@ while (( "$#" )); do
       ;;
     --customized_model)
       CUSTOMIZED_MODEL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --use_keras_model)
+      USE_KERAS_MODEL="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -475,7 +482,9 @@ function setup_args() {
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
     run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
     run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-    run gcloud storage cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
+    if [[ "${USE_KERAS_MODEL}" = false ]]; then
+      run gcloud storage cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
+    fi
     # Starting from v1.4.0, model.ckpt.example_info.json is used to provide more
     # information about the model.
     CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
@@ -542,6 +551,7 @@ function run_deepvariant_with_docker() {
     --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards "$(nproc)" \
     --logging_dir="/output/logs" \
+    --use_keras_model="${USE_KERAS_MODEL}" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""
   echo
