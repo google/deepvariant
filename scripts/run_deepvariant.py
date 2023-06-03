@@ -146,6 +146,13 @@ _VERSION = flags.DEFINE_boolean(
     'Optional. If true, print out version number and exit.',
     allow_hide_cpp=True,
 )
+# TODO: Change to True as default before release.
+_USE_KERAS_MODEL = flags.DEFINE_boolean(
+    'use_keras_model',
+    False,
+    'Default to False. If True, the model provided has to be a Keras model.',
+)
+
 # Optional flags for call_variants.
 _CUSTOMIZED_MODEL = flags.DEFINE_string(
     'customized_model',
@@ -395,9 +402,18 @@ def make_examples_command(
   return (' '.join(command), logfile)
 
 
-def call_variants_command(outfile, examples, model_ckpt, extra_args):
+def call_variants_command(
+    outfile: str,
+    examples: str,
+    model_ckpt: str,
+    extra_args: str,
+    use_keras_model: bool = False,
+) -> Tuple[str, Optional[str]]:
   """Returns a call_variants (command, logfile) for subprocess."""
-  command = ['time', '/opt/deepvariant/bin/call_variants']
+  binary_name = 'call_variants'
+  if use_keras_model:
+    binary_name = 'call_variants_keras'
+  command = ['time', f'/opt/deepvariant/bin/{binary_name}']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
@@ -412,7 +428,7 @@ def call_variants_command(outfile, examples, model_ckpt, extra_args):
   )
   logfile = None
   if _LOGGING_DIR.value:
-    logfile = '{}/call_variants.log'.format(_LOGGING_DIR.value)
+    logfile = '{}/{}.log'.format(_LOGGING_DIR.value, binary_name)
   return (' '.join(command), logfile)
 
 
@@ -499,11 +515,12 @@ def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if _CUSTOMIZED_MODEL.value is not None:
     if (
-        not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL.value + '.data-00000-of-00001'
+        not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
+        or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
+        or (
+            not _USE_KERAS_MODEL.value
+            and not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.meta')
         )
-        or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.index')
-        or not tf.compat.v1.gfile.Exists(_CUSTOMIZED_MODEL.value + '.meta')
     ):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
@@ -591,6 +608,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           examples=examples,
           model_ckpt=model_ckpt,
           extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+          use_keras_model=_USE_KERAS_MODEL.value,
       )
   )
 
