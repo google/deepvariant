@@ -528,6 +528,12 @@ function setup_args() {
   if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.0$ ]]; then
     extra_args+=( --runtime_report )
   fi
+  # --use_keras_model is introduced only after 1.5.0.
+  if [[ "${BUILD_DOCKER}" = true ]] || [[ ! "${BIN_VERSION}" =~ ^1\.[0-5]\.0$ ]]; then
+    if [[ "${USE_KERAS_MODEL}" = true ]]; then
+    extra_args+=( --use_keras_model )
+    fi
+  fi
 }
 
 function run_deepvariant_with_docker() {
@@ -551,7 +557,6 @@ function run_deepvariant_with_docker() {
     --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards "$(nproc)" \
     --logging_dir="/output/logs" \
-    --use_keras_model="${USE_KERAS_MODEL}" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""
   echo
