@@ -34,6 +34,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -45,11 +46,10 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-
 // Structure to hold merged reads with phasing.
 struct MergedPhaseRead {
-  std::string fragment_name;  // Uniquely identifies a read.
-  int phase;  // Phasing {0, 1, 2}.
+  std::string fragment_name;                 // Uniquely identifies a read.
+  int phase;                                 // Phasing {0, 1, 2}.
   absl::flat_hash_map<int, int> phase_dist;  // Different phases the read was
                                              // assigned after merging. This is
                                              // needed to count number of reads
@@ -69,7 +69,16 @@ struct Group {
 struct ShardRegion {
   int shard;
   int region;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const ShardRegion& sr) {
+    return H::combine(std::move(h), sr.shard, sr.region);
+  }
 };
+
+inline bool operator==(const ShardRegion& l, const ShardRegion& r) {
+  return l.shard == r.shard && l.region == r.region;
+}
 
 // Implementation of phased reads merging algorithm.
 class Merger {
@@ -110,6 +119,5 @@ class Merger {
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_MERGE_PHASED_READS_H_
