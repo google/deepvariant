@@ -42,6 +42,7 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
+#include "absl/container/btree_map.h"
 #include "absl/strings/match.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -323,7 +324,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     std::vector<double> vaf;
     ad.push_back(allele_count.ref_supporting_read_count());
 
-    std::map<std::string, const Allele*, std::less<>> alt_to_alleles;
+    absl::btree_map<std::string, const Allele*, std::less<>> alt_to_alleles;
     for (const auto& entry : allele_map) {
       const string key = SimplifyRefAlt(allele_map_refbases, entry.second);
       alt_to_alleles[key] = &entry.first;
