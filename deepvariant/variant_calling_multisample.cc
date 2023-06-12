@@ -405,7 +405,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     std::vector<double> vaf;
     ad.push_back(allele_count.ref_supporting_read_count());
 
-    std::map<absl::string_view, const Allele*> alt_to_alleles;
+    absl::btree_map<absl::string_view, const Allele*> alt_to_alleles;
     for (const auto& entry : allele_map) {
       alt_to_alleles[entry.second] = &entry.first;
     }
