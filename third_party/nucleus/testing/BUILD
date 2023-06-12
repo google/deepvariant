@@ -1,7 +1,10 @@
 # Testing utilities that are temporarily located here until they can
 # be separately open source.
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_applicable_licenses = ["//third_party/nucleus:license"],
+    default_visibility = ["//visibility:public"],
+)
 
 licenses(["notice"])
 

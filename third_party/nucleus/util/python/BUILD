@@ -1,6 +1,7 @@
 load("//third_party:clif.bzl", "py_clif_cc")
 
 package(
+    default_applicable_licenses = ["//third_party/nucleus:license"],
     default_visibility = [
         "//visibility:public",
     ],

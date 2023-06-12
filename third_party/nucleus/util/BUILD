@@ -1,9 +1,8 @@
 # Utility routines for working with genomics data and genomics protobufs.
 
 package(
-    default_visibility = [
-        "//visibility:public",
-    ],
+    default_applicable_licenses = ["//third_party/nucleus:license"],
+    default_visibility = ["//visibility:public"],
 )
 
 licenses(["notice"])
