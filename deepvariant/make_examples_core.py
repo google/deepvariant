@@ -2135,12 +2135,16 @@ class RegionProcessor(object):
     trimmed_reads = [realigner.trim_read(r, alignment_region) for r in reads]
     # Filter reads to a minimum read length of 15 bp after trimming.
     reads = [r for r in trimmed_reads if len(r.aligned_sequence) >= 15]
-    prefix = self.realigner.ref_reader.query(
-        ranges.make_range(contig, max(ref_start - margin, 0), ref_start)
-    )
-    suffix = self.realigner.ref_reader.query(
-        ranges.make_range(contig, ref_end, valid_end)
-    )
+    prefix = ''
+    if max(ref_start - margin, 0) < ref_start:
+      prefix = self.realigner.ref_reader.query(
+          ranges.make_range(contig, max(ref_start - margin, 0), ref_start)
+      )
+    suffix = ''
+    if ref_end < valid_end:
+      suffix = self.realigner.ref_reader.query(
+          ranges.make_range(contig, ref_end, valid_end)
+      )
 
     alignments_by_haplotype = {}
     sequences_by_haplotype = {}
