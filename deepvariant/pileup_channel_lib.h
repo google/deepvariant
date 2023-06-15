@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/btree_set.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -461,7 +462,7 @@ class OptChannels {
                          const DeepVariantCall& dv_call,
                          const std::vector<std::string>& alt_alleles,
                          int image_start_pos) {
-    std::set<std::string> included_base_level_channels;
+    absl::btree_set<std::string> included_base_level_channels;
 
     /*--------------------------------------
     Calculate read-level channels
