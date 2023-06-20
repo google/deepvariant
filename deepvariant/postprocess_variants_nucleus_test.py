@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for deepvariant .postprocess_variants."""
+"""Tests for deepvariant .postprocess_variants_nucleus."""
 
 import copy
 import errno
@@ -50,7 +50,7 @@ import tensorflow as tf
 
 from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
-from deepvariant import postprocess_variants
+from deepvariant import postprocess_variants_nucleus as postprocess_variants
 from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta
@@ -417,7 +417,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('calls_reading_empty_shard.vcf')
 
-    postprocess_variants.main(['postprocess_variants.py'])
+    postprocess_variants.main(['postprocess_variants_nucleus.py'])
 
   @parameterized.parameters(
       (
