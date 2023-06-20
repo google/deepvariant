@@ -15,7 +15,7 @@ filegroup(
         "model_eval",
         "model_train",
         "multisample_make_examples",
-        "postprocess_variants",
+        "postprocess_variants_nucleus",
         "runtime_by_region_vis",
         "show_examples",
         "vcf_stats_report",
@@ -63,7 +63,7 @@ py_library(
         ":model_train_lib",
         ":modeling",
         ":pileup_image",
-        ":postprocess_variants_py_lib",
+        ":postprocess_variants_nucleus_py_lib",
         "//deepvariant/python:allelecounter",
         "//deepvariant/python:direct_phasing",
         "//deepvariant/python:variant_calling",
@@ -945,8 +945,8 @@ cc_test(
 )
 
 py_library(
-    name = "postprocess_variants_py_lib",
-    srcs = ["postprocess_variants.py"],
+    name = "postprocess_variants_nucleus_py_lib",
+    srcs = ["postprocess_variants_nucleus.py"],
     data = glob([
         "multiallelic_model/**",
     ]),
@@ -982,14 +982,14 @@ py_library(
 )
 
 py_binary(
-    name = "postprocess_variants",
+    name = "postprocess_variants_nucleus",
     srcs = [
-        "postprocess_variants.py",
+        "postprocess_variants_nucleus.py",
     ],
-    main = "postprocess_variants.py",
+    main = "postprocess_variants_nucleus.py",
     python_version = "PY3",
     deps = [
-        ":postprocess_variants_py_lib",
+        ":postprocess_variants_nucleus_py_lib",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
         # TODO: Figure out why we need this dep.
@@ -998,9 +998,9 @@ py_binary(
 )
 
 py_test(
-    name = "postprocess_variants_test",
+    name = "postprocess_variants_nucleus_test",
     size = "medium",
-    srcs = ["postprocess_variants_test.py"],
+    srcs = ["postprocess_variants_nucleus_test.py"],
     data = [":testdata"],
     python_version = "PY3",
     srcs_version = "PY3",
@@ -1008,7 +1008,7 @@ py_test(
     deps = [
         ":dv_constants",
         ":dv_vcf_constants",
-        ":postprocess_variants_py_lib",
+        ":postprocess_variants_nucleus_py_lib",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:fasta",
