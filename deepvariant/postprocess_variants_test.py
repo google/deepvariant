@@ -51,7 +51,7 @@ import tensorflow as tf
 
 from deepvariant import dv_constants
 from deepvariant import dv_vcf_constants
-from deepvariant import postprocess_variants_pysam as postprocess_variants
+from deepvariant import postprocess_variants
 from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta

@@ -1032,8 +1032,8 @@ py_test(
 )
 
 py_library(
-    name = "postprocess_variants_pysam_py_lib",
-    srcs = ["postprocess_variants_pysam.py"],
+    name = "postprocess_variants_py_lib",
+    srcs = ["postprocess_variants.py"],
     data = glob([
         "multiallelic_model/**",
     ]),
@@ -1067,14 +1067,14 @@ py_library(
 )
 
 py_binary(
-    name = "postprocess_variants_pysam",
+    name = "postprocess_variants",
     srcs = [
-        "postprocess_variants_pysam.py",
+        "postprocess_variants.py",
     ],
-    main = "postprocess_variants_pysam.py",
+    main = "postprocess_variants.py",
     python_version = "PY3",
     deps = [
-        ":postprocess_variants_pysam_py_lib",
+        ":postprocess_variants_py_lib",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
         # TODO: Figure out why we need this dep.
@@ -1083,9 +1083,9 @@ py_binary(
 )
 
 py_test(
-    name = "postprocess_variants_pysam_test",
+    name = "postprocess_variants_test",
     size = "medium",
-    srcs = ["postprocess_variants_pysam_test.py"],
+    srcs = ["postprocess_variants_test.py"],
     data = [":testdata"],
     python_version = "PY3",
     srcs_version = "PY3",
@@ -1093,7 +1093,7 @@ py_test(
     deps = [
         ":dv_constants",
         ":dv_vcf_constants",
-        ":postprocess_variants_pysam_py_lib",
+        ":postprocess_variants_py_lib",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:fasta",
