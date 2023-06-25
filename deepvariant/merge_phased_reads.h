@@ -41,6 +41,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
+#include "absl/status/statusor.h"
 
 namespace learning {
 namespace genomics {
@@ -79,6 +80,17 @@ struct ShardRegion {
 inline bool operator==(const ShardRegion& l, const ShardRegion& r) {
   return l.shard == r.shard && l.region == r.region;
 }
+
+// The components of a sharded file spec.
+struct ShardedFileSpec {
+  std::string basename;
+  int nshards;
+  std::string suffix;
+};
+
+// Parses a simple sharded file spec into its components.
+absl::StatusOr<ShardedFileSpec> parse_sharded_file_spec(
+    absl::string_view file_spec);
 
 // Implementation of phased reads merging algorithm.
 class Merger {

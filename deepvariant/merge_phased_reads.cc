@@ -42,11 +42,49 @@
 
 #include "deepvariant/merge_phased_reads.h"
 
+#include <string>
+
 #include "absl/flags/flag.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "tensorflow/core/platform/logging.h"
+#include "re2/re2.h"
 
 ABSL_FLAG(std::string, input_path, "", "Sharded input.");
 ABSL_FLAG(std::string, output_path, "", "Output path.");
+
+namespace learning {
+namespace genomics {
+namespace deepvariant {
+
+absl::StatusOr<ShardedFileSpec>
+parse_sharded_file_spec(absl::string_view file_spec) {
+  ShardedFileSpec output;
+  std::string nshards_str;
+  static const absl::string_view kShardSpecPattern =
+      R"((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)";
+  if (!RE2::FullMatch(file_spec, kShardSpecPattern, &output.basename,
+                      &nshards_str, &output.suffix)) {
+    // No @<N> found.
+    return absl::InvalidArgumentError(
+        absl::StrCat("'", file_spec, "' is not a valid sharded file spec."));
+  }
+
+  int nshards_int;
+  if (!absl::SimpleAtoi(nshards_str, &nshards_int)) {
+    return absl::OutOfRangeError(absl::StrCat(
+        "'", file_spec, "' is not a valid sharded file spec. '", nshards_str,
+        "' is too large to represent as an integer."));
+  }
+  output.nshards = nshards_int;
+
+  return output;
+}
+
+}  // namespace deepvariant
+}  // namespace genomics
+}  // namespace learning
 
 int main(int argc, char** argv) {
   QCHECK(FLAGS_input_path.CurrentValue().empty() ||

@@ -566,8 +566,28 @@ py_binary(
     ],
 )
 
-cc_binary(
+cc_library(
     name = "merge_phased_reads_cpp",
+    srcs = [
+        "merge_phased_reads.cc",
+    ],
+    hdrs = [
+        "merge_phased_reads.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_googlesource_code_re2//:re2",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_binary(
+    name = "merge_phased_reads",
     srcs = [
         "merge_phased_reads.cc",
         "merge_phased_reads.h",
@@ -576,7 +596,10 @@ cc_binary(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_googlesource_code_re2//:re2",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -585,7 +608,6 @@ cc_test(
     name = "merge_phased_reads_test",
     size = "small",
     srcs = [
-        "merge_phased_reads.h",
         "merge_phased_reads_test.cc",
     ],
     deps = [
@@ -593,6 +615,8 @@ cc_test(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",

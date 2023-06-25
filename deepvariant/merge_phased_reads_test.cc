@@ -31,12 +31,13 @@
 
 #include "deepvariant/merge_phased_reads.h"
 
-#include <gmock/gmock-generated-matchers.h>
-#include <gmock/gmock-matchers.h>
-#include <gmock/gmock-more-matchers.h>
+#include <vector>
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/hash/hash_testing.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 
 namespace learning {
 namespace genomics {
@@ -55,6 +56,70 @@ TEST(ShardRegion, SupportsAbslHash) {
       {.shard = 10, .region = -10}
   }));
 }
+
+struct ParseFilenameExpectation {
+  absl::string_view filename;
+  ShardedFileSpec file_spec;
+  absl::StatusCode result_code = absl::StatusCode::kOk;
+};
+
+class ShardedFileSpecTest :
+    public testing::TestWithParam<ParseFilenameExpectation> {
+};
+
+TEST_P(ShardedFileSpecTest, parse_sharded_file_spec_utest) {
+  const ParseFilenameExpectation& exp = GetParam();
+  absl::StatusOr<ShardedFileSpec> file_spec =
+      parse_sharded_file_spec(exp.filename);
+  EXPECT_EQ(file_spec.status().code(), exp.result_code);
+  if (exp.result_code == absl::StatusCode::kOk) {
+    EXPECT_EQ(file_spec.value().basename, exp.file_spec.basename);
+    EXPECT_EQ(file_spec.value().nshards, exp.file_spec.nshards);
+    EXPECT_EQ(file_spec.value().suffix, exp.file_spec.suffix);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ShardedFileTests,
+    ShardedFileSpecTest,
+    ::testing::ValuesIn(std::vector<ParseFilenameExpectation>({
+    {
+      .filename = "/dir/foo/bar@3",
+      .file_spec = {
+        .basename = "/dir/foo/bar",
+        .nshards = 3,
+        .suffix = "",
+      },
+      .result_code = absl::StatusCode::kOk,
+    },
+    {
+      .filename = "/dir/foo/bar@3.txt",
+      .file_spec = {
+        .basename = "/dir/foo/bar",
+        .nshards = 3,
+        .suffix = "txt",
+      },
+      .result_code = absl::StatusCode::kOk,
+    },
+    {
+      .filename = "/dir/foo/bar_not_sharded.txt",
+      .file_spec = {
+        .basename = "",
+        .nshards = 0,
+        .suffix = "",
+      },
+      .result_code = absl::StatusCode::kInvalidArgument,
+    },
+    {
+      .filename = "/dir/foo/incorrect_sharded_spec@99999999999999999.txt",
+      .file_spec = {
+        .basename = "",
+        .nshards = 0,
+        .suffix = "",
+      },
+      .result_code = absl::StatusCode::kOutOfRange,
+    },
+ })));
 
 }  // namespace deepvariant
 }  // namespace genomics
