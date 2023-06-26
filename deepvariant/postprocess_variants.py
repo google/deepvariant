@@ -262,7 +262,12 @@ def _pysam_resolve_file_path(file_path):
     str. The full configured file path for pysam to open.
   """
   # BEGN_INTERNAL
-  if file_path.startswith('/cns/'):
+  if (
+      file_path.startswith('/cns/')
+      or file_path.startswith('/placer/')
+      or file_path.startswith('/readahead/')
+      or file_path.startswith('/bigstore/')
+  ):
     return f'google:{file_path}'
   # END_INTERNAL
   return file_path
