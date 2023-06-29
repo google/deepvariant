@@ -114,6 +114,7 @@ pip3 install "${PIP_ARGS[@]}" 'enum34==1.1.8'
 pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
 pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
+pip3 install "${PIP_ARGS[@]}" ml_collections
 # Note that protobuf installed with pip needs to be 3.13 because of the pyclif
 # version we're using. This is currently inconsistent with C++ protobuf version
 # in WORKSPACE and protobuf.BUILD, but we can't update those, because those

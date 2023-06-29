@@ -1159,6 +1159,7 @@ py_library(
         ":dv_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
+        "@absl_py//absl/logging",
         "@com_google_protobuf//:protobuf_python",
     ],
 )
@@ -1178,12 +1179,15 @@ py_library(
     srcs = ["data_providers_test.py"],
     srcs_version = "PY3",
     deps = [
+        ":config",
         ":data_providers",
         ":dv_constants",
+        ":dv_utils",
         ":modeling",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
@@ -1631,6 +1635,11 @@ py_library(
     srcs = ["attention_inception_v3.py"],
     srcs_version = "PY3",
     deps = [":attention_module"],
+)
+
+py_library(
+    name = "config",
+    srcs = ["config.py"],
 )
 
 py_library(

@@ -38,6 +38,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
+# TODO: Move configs to deepvariant folder.
+from deepvariant import config
 from deepvariant import data_providers
 from deepvariant import dv_constants
 from deepvariant import dv_utils
@@ -83,6 +85,44 @@ def _test_dataset_config(filename, **kwargs):
       dataset_config, dataset_config_pbtext_filename
   )
   return dataset_config_pbtext_filename
+
+
+class ParseExampleTest(absltest.TestCase):
+
+  def test_parse_example(self):
+    path = testdata.GOLDEN_TRAINING_EXAMPLES
+    ds = tf.data.TFRecordDataset(path, compression_type='GZIP')
+    item = ds.take(1).get_single_element()
+    input_shape = dv_utils.get_shape_from_examples_path(path)
+    output = data_providers.parse_example(item, input_shape=input_shape)
+    self.assertIsInstance(output, tuple)
+    self.assertIsInstance(output[0], tf.Tensor)
+
+
+class CreateExamplesTest(absltest.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    self.config = config.get_config()
+
+  def test_invalid_mode(self):
+    with self.assertRaisesRegex(ValueError, 'Mode must be set to'):
+      _ = data_providers.input_fn(
+          path=testdata.GOLDEN_TRAINING_EXAMPLES,
+          config=self.config,
+          mode='invalid_mode',
+          n_epochs=1,
+      )
+
+  def test_create_input_dataset(self):
+    ds = data_providers.input_fn(
+        path=testdata.GOLDEN_TRAINING_EXAMPLES,
+        config=self.config,
+        n_epochs=1,
+        mode='train',
+    )
+    item = ds.take(1).get_single_element()
+    self.assertIsInstance(item, tuple)
 
 
 class DataProviderTest(parameterized.TestCase):
