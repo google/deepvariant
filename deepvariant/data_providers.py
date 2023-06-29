@@ -32,8 +32,13 @@ tf.data.Dataset and data providers for standard DeepVariant datasets for
 training and evaluating germline calling accuracy.
 """
 
+import itertools
+from typing import Optional, Tuple
+
+
 
 from absl import logging
+import ml_collections
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
@@ -52,6 +57,119 @@ _DEFAULT_INPUT_READ_THREADS = 32
 _DEFAULT_SHUFFLE_BUFFER_ELEMENTS = 100
 _DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS = 1024
 _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
+
+
+def parse_example(
+    example: tf.train.Example,
+    input_shape: Tuple[int, int, int],
+) -> Tuple[tf.Tensor, tf.Tensor]:
+  """Parses a serialized tf.Example, preprocesses the image, and one-hot encodes the label."""
+  proto_features = {
+      'image/encoded': tf.io.FixedLenFeature((), tf.string),
+      'variant/encoded': tf.io.FixedLenFeature((), tf.string),
+      'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
+      'label': tf.io.FixedLenFeature((1), tf.int64),
+  }
+
+  parsed_features = tf.io.parse_single_example(
+      serialized=example, features=proto_features
+  )
+  image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
+  image = tf.reshape(image, input_shape)
+  image = tf.cast(image, tf.float32)
+
+  # Preprocess image
+  image = tf.keras.applications.inception_v3.preprocess_input(image)
+  label = tf.keras.layers.CategoryEncoding(
+      num_tokens=dv_constants.NUM_CLASSES, output_mode='one_hot'
+  )(parsed_features['label'])
+
+  return image, label
+
+
+def input_fn(
+    path: str,
+    config: ml_collections.ConfigDict,
+    mode: str = 'train',
+    n_epochs: int = -1,
+    limit: Optional[int] = None,
+) -> tf.data.Dataset:
+  """tf.data.Dataset loading function.
+
+  Args:
+    path: the input filename for a tfrecord[.gz] file containing examples. Can
+      contain sharding designators.
+    config: A configuration file.
+    mode: One of ['train', 'eval', 'predict']
+    n_epochs: Number of epochs.
+    limit: Limit the number of batches for testing purposes.
+
+  Returns:
+    tf.data.Dataset
+  """
+
+  if mode not in ['train', 'eval', 'predict']:
+    raise ValueError('Mode must be set to one of "train", "eval", or "predict"')
+  is_training = mode == 'train'
+
+  # Get input shape from input path.
+  input_shape = dv_utils.get_shape_from_examples_path(path)
+
+  def load_dataset(filename: str) -> tf.data.Dataset:
+    return tf.data.TFRecordDataset(
+        filename,
+        buffer_size=config.prefetch_buffer_bytes,
+        compression_type='GZIP',
+    )
+
+  file_list = [
+      tf.io.gfile.glob(sharded_file_utils.normalize_to_sharded_file_pattern(x))
+      for x in path.split(',')
+  ]
+  file_list = list(itertools.chain(*file_list))
+  ds = tf.data.Dataset.from_tensor_slices(file_list)
+
+  if is_training:
+    ds = ds.shuffle(
+        config.shuffle_buffer_elements, reshuffle_each_iteration=True
+    )
+
+  ds = ds.interleave(
+      load_dataset,
+      cycle_length=config.input_read_threads,
+      num_parallel_calls=tf.data.AUTOTUNE,
+      deterministic=False,
+  )
+
+  if is_training and n_epochs > 0:
+    ds = ds.repeat(n_epochs)
+
+  if is_training:
+    ds = ds.shuffle(
+        config.shuffle_buffer_elements, reshuffle_each_iteration=True
+    )
+
+  ds = ds.map(
+      map_func=lambda example: parse_example(example, input_shape),
+      num_parallel_calls=tf.data.AUTOTUNE,
+      deterministic=False,
+  )
+  batch_size = config.batch_size if mode == 'train' else config.batch_size
+  ds = ds.batch(batch_size=batch_size, drop_remainder=True)
+
+  # Limit the number of batches.
+  if limit:
+    ds = ds.take(limit)
+
+  if n_epochs > 0:
+    ds = ds.repeat(n_epochs)
+  elif mode == 'eval':
+    ds = ds.repeat()
+
+  # Prefetch overlaps in-feed with training
+  ds = ds.prefetch(tf.data.AUTOTUNE)
+
+  return ds
 
 
 class DeepVariantInput(object):
@@ -82,7 +200,7 @@ class DeepVariantInput(object):
       list_files_shuffle=True,
       debugging_true_label_mode=False,
   ):
-    """Create an DeepVariantInput object, usable as an `input_fn`.
+    """Create a DeepVariantInput object, usable as an `input_fn`.
 
     Args:
       mode: the mode string (from `tf.estimator.ModeKeys`).
