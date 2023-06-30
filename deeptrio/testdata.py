@@ -85,7 +85,9 @@ ONT_HG003_BAM = None
 ONT_HG004_BAM = None
 HG002_HIGH_CONFIDENCE_VCF = None
 HG002_HIGH_CONFIDENCE_BED = None
+HG002_DENOVO_BED = None
 GOLDEN_ONT_MAKE_EXAMPLES_OUTPUT = None
+GOLDEN_ONT_DENOVO_MAKE_EXAMPLES_OUTPUT = None
 
 ONT_N_GOLDEN_TRAINING_EXAMPLES = 167
 N_GOLDEN_TRAINING_EXAMPLES = 50
@@ -129,7 +131,9 @@ def init():
   global ONT_HG004_BAM
   global HG002_HIGH_CONFIDENCE_VCF
   global HG002_HIGH_CONFIDENCE_BED
+  global HG002_DENOVO_BED
   global GOLDEN_ONT_MAKE_EXAMPLES_OUTPUT
+  global GOLDEN_ONT_DENOVO_MAKE_EXAMPLES_OUTPUT
 
   CHR20_FASTA = deeptrio_testdata('input/hs37d5.chr20.fa.gz')
   HG001_CHR20_BAM = deeptrio_testdata('input/HG001.chr20.10_10p1mb_sorted.bam')
@@ -202,8 +206,14 @@ def init():
   HG002_HIGH_CONFIDENCE_BED = deeptrio_testdata(
       'input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.bed'
   )
+  HG002_DENOVO_BED = deeptrio_testdata(
+      'input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.denovo_regions.bed'
+  )
   GOLDEN_ONT_MAKE_EXAMPLES_OUTPUT = deeptrio_testdata(
       'HG002_ONT_deeptrio.examples.tfrecord.gz'
+  )
+  GOLDEN_ONT_DENOVO_MAKE_EXAMPLES_OUTPUT = deeptrio_testdata(
+      'HG002_ONT_deeptrio.denovo.examples.tfrecord.gz'
   )
 
   # For CustomizedClassesVariantLabeler.

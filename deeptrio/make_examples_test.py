@@ -76,6 +76,7 @@ _EXAMPLE_DECODERS = {
     'label': dv_utils.example_label,
     'image/shape': dv_utils.example_image_shape,
     'sequencing_type': dv_utils.example_sequencing_type,
+    'denovo_label': dv_utils.example_denovo_label,
 }
 
 
@@ -336,9 +337,27 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           run_info.labeling_metrics,
       )
 
+  @parameterized.parameters(
+      dict(
+          denovo_test=False,
+          expected_denovo_variants=0,
+      ),
+      dict(
+          denovo_test=True,
+          expected_denovo_variants=3,
+      ),
+  )
   @flagsaver.flagsaver
-  def test_make_examples_ont_end2end(self):
+  def test_make_examples_ont_end2end(
+      self,
+      denovo_test: bool,
+      expected_denovo_variants: int,
+  ):
     """Test end to end for long ONT reads with phasing enabled.
+
+    Args:
+      denovo_test: If true, denovo parameters will be set.
+      expected_denovo_variants: Total number of denovo examples expected.
 
     This test runs ONT end to end and compares the output with the golden
     output. This test is introduced because previously in training mode the
@@ -379,19 +398,63 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     )
     FLAGS.regions = [ranges.to_literal(region)]
     golden_file = _sharded(testdata.GOLDEN_ONT_MAKE_EXAMPLES_OUTPUT, num_shards)
+    FLAGS.denovo_regions = None
+    if denovo_test:
+      # If denovo test is enabled, then set the parameters for denovo testing.
+      golden_file = _sharded(
+          testdata.GOLDEN_ONT_DENOVO_MAKE_EXAMPLES_OUTPUT, num_shards
+      )
+      FLAGS.write_run_info = True
+      FLAGS.denovo_regions = testdata.HG002_DENOVO_BED
 
     for task_id in range(max(num_shards, 1)):
       FLAGS.task = task_id
       options = make_examples.default_options(add_flags=True)
       make_examples_core.make_examples_runner(options)
 
-    examples = self.verify_examples(
-        FLAGS.examples, region, options, verify_labels=True
-    )
+      examples = self.verify_examples(
+          FLAGS.examples, region, options, verify_labels=True
+      )
 
-    self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
-    )
+      self.assertDeepVariantExamplesEqual(
+          examples, list(tfrecord.read_tfrecords(golden_file))
+      )
+      if denovo_test:
+        # Check total number of denovo examples.
+        total_denovo = sum(
+            [
+                1
+                for example in examples
+                if dv_utils.example_denovo_label(example)
+            ]
+        )
+        self.assertEqual(
+            total_denovo,
+            expected_denovo_variants,
+            msg='ONT denovo golden test: denovo variants count.',
+        )
+        # Read the runinfo file
+        runinfo = make_examples_core.read_make_examples_run_info(
+            FLAGS.examples + '.run_info.pbtxt'
+        )
+        golden_runinfo = make_examples_core.read_make_examples_run_info(
+            testdata.GOLDEN_ONT_DENOVO_MAKE_EXAMPLES_OUTPUT + '.run_info.pbtxt'
+        )
+        self.assertEqual(
+            runinfo.stats.num_examples,
+            golden_runinfo.stats.num_examples,
+            msg='ONT denovo golden test: Run info comparison num_examples.',
+        )
+        self.assertEqual(
+            runinfo.stats.num_denovo,
+            golden_runinfo.stats.num_denovo,
+            msg='ONT denovo golden test: Run info comparison num_denovo.',
+        )
+        self.assertEqual(
+            runinfo.stats.num_nondenovo,
+            golden_runinfo.stats.num_nondenovo,
+            msg='ONT denovo golden test: Run info comparison num_nondenovo.',
+        )
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @flagsaver.flagsaver
@@ -1413,7 +1476,9 @@ class RegionProcessorTest(parameterized.TestCase):
               variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
               genotype=(0, 1),
           ),
+          denovo_label=0,
           expected_label_value=1,
+          denovo_enabled=True,
       ),
       # Test that a reference variant gets a label value of 0 in the example.
       dict(
@@ -1422,13 +1487,29 @@ class RegionProcessorTest(parameterized.TestCase):
               variant=test_utils.make_variant(start=10, alleles=['A', '.']),
               genotype=(0, 0),
           ),
+          denovo_label=1,
           expected_label_value=0,
+          denovo_enabled=True,
+      ),
+      dict(
+          label=variant_labeler.VariantLabel(
+              is_confident=True,
+              variant=test_utils.make_variant(start=10, alleles=['A', '.']),
+              genotype=(0, 0),
+          ),
+          denovo_label=None,
+          expected_label_value=0,
+          denovo_enabled=False,
       ),
   )
-  def test_add_label_to_example(self, label, expected_label_value):
+  def test_add_label_to_example(
+      self, label, denovo_label, expected_label_value, denovo_enabled
+  ):
     example = self._example_for_variant(label.variant)
     labeled = copy.deepcopy(example)
-    actual = self.processor.add_label_to_example(labeled, label)
+    actual = self.processor.add_label_to_example(
+        labeled, label, denovo_label, denovo_enabled
+    )
 
     # The add_label_to_example command modifies labeled and returns it.
     self.assertIs(actual, labeled)
@@ -1441,6 +1522,10 @@ class RegionProcessorTest(parameterized.TestCase):
     # The genotype of our example_variant should be set to the true genotype
     # according to our label.
     self.assertEqual(expected_label_value, dv_utils.example_label(labeled))
+    if denovo_enabled:
+      self.assertEqual(denovo_label, dv_utils.example_denovo_label(labeled))
+    else:
+      self.assertIsNone(dv_utils.example_denovo_label(labeled))
     labeled_variant = dv_utils.example_variant(labeled)
     call = variant_utils.only_call(labeled_variant)
     self.assertEqual(tuple(call.genotype), label.genotype)
@@ -1462,7 +1547,9 @@ class RegionProcessorTest(parameterized.TestCase):
     with self.assertRaisesRegex(
         ValueError, 'Cannot add a non-confident label to an example'
     ):
-      self.processor.add_label_to_example(example, label)
+      self.processor.add_label_to_example(
+          example, label, denovo_label=0, denovo_enabled=False
+      )
 
   def _example_for_variant(self, variant):
     return dv_utils.make_example(

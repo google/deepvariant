@@ -579,6 +579,12 @@ _OUTPUT_SITELIST = flags.DEFINE_bool(
     'If True, output a list of sites present in examples output.',
 )
 
+_DENOVO_REGIONS = flags.DEFINE_string(
+    'denovo_regions',
+    '',
+    'Regions where variants are de novo. Used to label variants as de novo.',
+)
+
 
 def shared_flags_to_options(
     add_flags,
@@ -646,6 +652,8 @@ def shared_flags_to_options(
       options.reference_filename = flags_obj.ref
     if flags_obj.confident_regions:
       options.confident_regions_filename = flags_obj.confident_regions
+    if flags_obj.denovo_regions:
+      options.denovo_regions_filename = _DENOVO_REGIONS.value
     if flags_obj.truth_variants:
       options.truth_variants_filename = flags_obj.truth_variants
     if flags_obj.sequencing_type:

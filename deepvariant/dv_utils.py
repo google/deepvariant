@@ -136,6 +136,20 @@ def example_label(example):
   return int(example.features.feature['label'].int64_list.value[0])
 
 
+def example_denovo_label(example: example_pb2.Example) -> Optional[int]:
+  """Gets the label field from example as a string.
+
+  Args:
+    example: A tf.Example containing DeepVariant example.
+
+  Returns:
+    De novo label for the example.
+  """
+  if 'denovo_label' not in example.features.feature:
+    return None
+  return int(example.features.feature['denovo_label'].int64_list.value[0])
+
+
 def example_image_shape(example):
   """Gets the image shape field from example as a list of int64."""
   if len(example.features.feature['image/shape'].int64_list.value) != 3:
@@ -164,10 +178,24 @@ def example_set_label(example, numeric_label):
   Sets the label feature of example to numeric_label.
 
   Args:
-    example: a tf.Example proto.
+    example: A tf.Example proto.
     numeric_label: A numeric (int64 compatible) label for example.
   """
   example.features.feature['label'].int64_list.value[:] = [numeric_label]
+
+
+def example_set_denovo_label(
+    example: example_pb2.Example, numeric_label: int
+) -> None:
+  """Sets the denovo label features of example.
+
+  Sets the label feature of example to numeric_label.
+
+  Args:
+    example: a tf.Example proto.
+    numeric_label: A numeric (int64 compatible) label for example.
+  """
+  example.features.feature['denovo_label'].int64_list.value[:] = [numeric_label]
 
 
 def example_set_variant(example, variant):

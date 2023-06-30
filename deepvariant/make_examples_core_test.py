@@ -1226,7 +1226,9 @@ class RegionProcessorTest(parameterized.TestCase):
   def test_add_label_to_example(self, label, expected_label_value):
     example = self._example_for_variant(label.variant)
     labeled = copy.deepcopy(example)
-    actual = self.processor.add_label_to_example(labeled, label)
+    actual = self.processor.add_label_to_example(
+        labeled, label, denovo_label=0, denovo_enabled=False
+    )
 
     # The add_label_to_example command modifies labeled and returns it.
     self.assertIs(actual, labeled)
@@ -1260,7 +1262,9 @@ class RegionProcessorTest(parameterized.TestCase):
     with self.assertRaisesRegex(
         ValueError, 'Cannot add a non-confident label to an example'
     ):
-      self.processor.add_label_to_example(example, label)
+      self.processor.add_label_to_example(
+          example, label, denovo_label=0, denovo_enabled=False
+      )
 
   def _example_for_variant(self, variant):
     return dv_utils.make_example(
