@@ -37,10 +37,12 @@ import time
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 
+
 from absl import flags
 from absl import logging
 from etils import epath
 import numpy as np
+
 
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
@@ -72,6 +74,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
+from tensorflow.core.example import example_pb2
 
 # For --runtime_by_region, these columns will be written out in this order.
 RUNTIME_BY_REGION_COLUMNS = (
@@ -887,6 +890,23 @@ def read_confident_regions(options):
     return None
 
 
+def read_denovo_regions(
+    denovo_regions_filename: str,
+) -> Optional[ranges.RangeSet]:
+  """Read the bedfile provided in options and return a rangeset.
+
+  Args:
+    denovo_regions_filename: filename to read denovo regions from.
+
+  Returns:
+    List of ranges from denovo region option or none if option is not set.
+  """
+  if denovo_regions_filename:
+    return ranges.RangeSet.from_bed(denovo_regions_filename)
+  else:
+    return None
+
+
 def filter_candidates(candidates, select_variant_types):
   """Yields the candidate variants whose type is one of select_variant_types.
 
@@ -1481,20 +1501,38 @@ class RegionProcessor(object):
     # pileup image, and, if in training mode, the truth variants and labels
     # needed for training.
     if in_training_mode(self.options):
+      # Get all denovo regions
+      denovo_regions = read_denovo_regions(self.options.denovo_regions_filename)
+      denovo_enabled = True if denovo_regions else False
       # Initialize labels and types to be updated in the for loop below.
       labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
+      labels_denovo = {i: 0 for i in range(0, dv_constants.NUM_DENOVO_CLASSES)}
       types = {
           dv_utils.EncodedVariantType.SNP: 0,
           dv_utils.EncodedVariantType.INDEL: 0,
           dv_utils.EncodedVariantType.UNKNOWN: 0,
       }
       for candidate, label in self.label_candidates(candidates, region):
+        denovo_label = 0
+        # If the variant overlaps with provided de novo regions then set label.
+        if denovo_regions and denovo_regions.variant_overlaps(
+            candidate.variant
+        ):
+          denovo_label = 1
         for example in self.create_pileup_examples(
             candidate, sample_order=sample_order
         ):
-          self.add_label_to_example(example, label)
+          self.add_label_to_example(
+              example, label, denovo_label, denovo_enabled
+          )
           _write_example_and_update_stats(
-              example, writer, runtimes, labels, types
+              example,
+              writer,
+              runtimes,
+              labels,
+              labels_denovo,
+              types,
+              denovo_enabled,
           )
           n_stats['n_examples'] += 1
 
@@ -1509,6 +1547,8 @@ class RegionProcessor(object):
         n_stats['n_class_2'] += labels[2]
         n_stats['n_snps'] += types[dv_utils.EncodedVariantType.SNP]
         n_stats['n_indels'] += types[dv_utils.EncodedVariantType.INDEL]
+        n_stats['n_non_denovo'] += labels_denovo[0]
+        n_stats['n_denovo'] += labels_denovo[1]
     else:
       for candidate in candidates:
         for example in self.create_pileup_examples(
@@ -2294,7 +2334,13 @@ class RegionProcessor(object):
       if label.is_confident:
         yield candidate, label
 
-  def add_label_to_example(self, example, label):
+  def add_label_to_example(
+      self,
+      example: example_pb2.Example,
+      label: Any,
+      denovo_label: int,
+      denovo_enabled: bool = False,
+  ) -> example_pb2.Example:
     """Adds label information about the assigned label to our example.
 
     Args:
@@ -2302,6 +2348,8 @@ class RegionProcessor(object):
         this proto.
       label: A variant_labeler.Label object containing the labeling information
         to add to our example.
+      denovo_label: An int value defining the denovo label for the example.
+      denovo_enabled: If true a denovo label will be added to the proto.
 
     Returns:
       The example proto with label fields added.
@@ -2321,6 +2369,9 @@ class RegionProcessor(object):
     dv_utils.example_set_label(
         example, label.label_for_alt_alleles(alt_alleles_indices)
     )
+
+    if denovo_enabled:
+      dv_utils.example_set_denovo_label(example, denovo_label)
     return example
 
 
@@ -2581,7 +2632,13 @@ def processing_regions_from_options(options):
 
 
 def _write_example_and_update_stats(
-    example, writer, runtimes, labels=None, types=None
+    example,
+    writer,
+    runtimes,
+    labels=None,
+    labels_denovo=None,
+    types=None,
+    denovo_enabled=False,
 ):
   """Writes out the example using writer; updates labels and types as needed."""
   writer.write_examples(example)
@@ -2591,10 +2648,14 @@ def _write_example_and_update_stats(
     runtimes['num examples'] += 1
   if labels is not None and types is not None:
     example_label = dv_utils.example_label(example)
+    example_denovo_label = 0
+    if denovo_enabled:
+      example_denovo_label = dv_utils.example_denovo_label(example)
     example_type = dv_utils.encoded_variant_type(
         dv_utils.example_variant(example)
     )
     labels[example_label] += 1
+    labels_denovo[example_denovo_label] += 1
     types[example_type] += 1
 
 
@@ -2673,6 +2734,8 @@ def make_examples_runner(options):
       'n_class_0': 0,
       'n_class_1': 0,
       'n_class_2': 0,
+      'n_denovo': 0,
+      'n_non_denovo': 0,
       'n_snps': 0,
       'n_indels': 0,
       'n_regions': 0,
@@ -2779,6 +2842,8 @@ def make_examples_runner(options):
         num_class_0=n_stats['n_class_0'],
         num_class_1=n_stats['n_class_1'],
         num_class_2=n_stats['n_class_2'],
+        num_denovo=n_stats['n_denovo'],
+        num_nondenovo=n_stats['n_non_denovo'],
     )
     run_info = deepvariant_pb2.MakeExamplesRunInfo(
         options=options,

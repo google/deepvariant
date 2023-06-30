@@ -597,7 +597,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 59.
+// Next ID: 60.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -808,6 +808,9 @@ message MakeExamplesOptions {
   bool discard_non_dna_regions = 56;
 
   bool output_sitelist = 58;
+
+  // Related to de novo variants labeling
+  string denovo_regions_filename = 59;
 }
 
 // Config describe information needed for a dataset that can be used for
@@ -994,7 +997,7 @@ message LabelingMetrics {
 }
 
 // Statistics about MakeExamples.
-// Next ID: 7.
+// Next ID: 9.
 message MakeExamplesStats {
   int32 num_examples = 1;
 
@@ -1004,6 +1007,8 @@ message MakeExamplesStats {
   int32 num_class_0 = 4;
   int32 num_class_1 = 5;
   int32 num_class_2 = 6;
+  int32 num_denovo = 7;
+  int32 num_nondenovo = 8;
 }
 
 // Configuration and runtime information about a MakeExamples run in
