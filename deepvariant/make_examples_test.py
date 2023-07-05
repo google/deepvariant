@@ -571,6 +571,28 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     examples2 = _get_examples(0.01)
     self.assertLess(len(examples2), len(examples1))
 
+  @flagsaver.flagsaver
+  def test_make_examples_end2end_confirm_vsc_min_fraction_used(self):
+    """Set very low vsc_max_fraction_{snps,indels} and confirm they're used."""
+    region = ranges.parse_literal('chr20:10,000,000-10,004,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('confirm_vsc_min.examples.tfrecord')
+    )
+    FLAGS.mode = 'calling'
+    # Setting min_fractions to larger than 100% to confirm that this will end
+    # up removing all examples.
+    FLAGS.vsc_min_fraction_snps = 1.1
+    FLAGS.vsc_min_fraction_indels = 1.1
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+    examples = self.verify_examples(
+        FLAGS.examples, region, options, verify_labels=False
+    )
+    self.assertEmpty(examples)
+
   # Golden sets are created with learning/genomics/internal/create_golden.sh
   @parameterized.parameters(
       dict(mode='calling'),
