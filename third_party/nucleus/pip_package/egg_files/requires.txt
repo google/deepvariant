@@ -5,6 +5,6 @@ mock
 numpy
 six
 protobuf==3.19.4
-Pillow
+Pillow==9.5.0
 ipython
 apache-beam
