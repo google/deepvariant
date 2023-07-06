@@ -69,6 +69,7 @@ from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
@@ -311,7 +312,9 @@ def gvcf_output_enabled(options):
   return bool(options.gvcf_filename)
 
 
-def only_true(*elts):
+def only_true(
+    *elts: List[reference_pb2.ContigInfo],
+) -> List[List[reference_pb2.ContigInfo]]:
   """Returns the sublist of elements that evaluate to True."""
   return [elt for elt in elts if elt]
 
@@ -387,11 +390,11 @@ def write_make_examples_run_info(run_info_proto, path):
 
 
 def _ensure_consistent_contigs(
-    ref_contigs,
-    sam_contigs,
-    vcf_contigs,
-    exclude_contig_names=None,
-    min_coverage_fraction=1.0,
+    ref_contigs: List[reference_pb2.ContigInfo],
+    sam_contigs: List[reference_pb2.ContigInfo],
+    vcf_contigs: Optional[List[reference_pb2.ContigInfo]],
+    exclude_contig_names: Optional[List[str]] = None,
+    min_coverage_fraction: float = 1.0,
 ):
   """Returns the common contigs after ensuring 'enough' overlap.
 
@@ -430,7 +433,9 @@ def _ensure_consistent_contigs(
   return contigs
 
 
-def common_contigs(contigs_list):
+def common_contigs(
+    contigs_list: List[List[reference_pb2.ContigInfo]],
+) -> List[reference_pb2.ContigInfo]:
   """Gets a list of contigs found in all contigs in contigs_list.
 
   A common contig is considered one where the name and length in basepairs are
@@ -445,11 +450,14 @@ def common_contigs(contigs_list):
     so should not be modified.
   """
 
-  def common2(contigs1, contigs2):
+  def common2(
+      contigs1: List[reference_pb2.ContigInfo],
+      contigs2: List[reference_pb2.ContigInfo],
+  ) -> List[reference_pb2.ContigInfo]:
     """Computes the common contigs between contigs1 and contigs2."""
     map2 = ranges.contigs_dict(contigs2)
 
-    def is_common(contig1):
+    def is_common(contig1: reference_pb2.ContigInfo) -> bool:
       contig2 = map2.get(contig1.name, None)
       return contig2 and contig1.n_bases == contig2.n_bases
 
@@ -465,7 +473,9 @@ def common_contigs(contigs_list):
 
 
 def validate_reference_contig_coverage(
-    ref_contigs, shared_contigs, min_coverage_fraction
+    ref_contigs: List[reference_pb2.ContigInfo],
+    shared_contigs: List[reference_pb2.ContigInfo],
+    min_coverage_fraction: float,
 ):
   """Validates that shared_contigs spans a sufficient amount of ref_contigs.
 
@@ -554,8 +564,12 @@ def find_ref_n_regions(
 
 
 def build_calling_regions(
-    contigs, regions_to_include, regions_to_exclude, ref_n_regions
-):
+    contigs: List[reference_pb2.ContigInfo],
+    regions_to_include: List[str],
+    regions_to_exclude: List[str],
+    # TODO: Use X | None instead.
+    ref_n_regions: Optional[List[range_pb2.Range]],
+) -> ranges.RangeSet:
   """Builds a RangeSet containing the regions we should call variants in.
 
   This function intersects the Ranges spanning all of the contigs with those
