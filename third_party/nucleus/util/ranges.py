@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import collections
 import re
+from typing import Dict, Iterable, List, Optional
 
 from absl import logging
 from etils import epath
@@ -43,6 +44,8 @@ import six
 from third_party.nucleus.io import bed
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
+from third_party.nucleus.protos import reference_pb2
+
 
 # Regular expressions for matching literal chr:start-stop strings.
 _REGION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)-([0-9,]+)$')
@@ -139,7 +142,12 @@ class RangeSet(object):
         yield make_range(refname, start, end)
 
   @classmethod
-  def from_regions(cls, regions, contig_map=None):
+  def from_regions(
+      cls,
+      regions: List[str],
+      # TODO: Use X | None instead.
+      contig_map: Optional[Dict[str, reference_pb2.ContigInfo]] = None,
+  ) -> 'RangeSet':
     """Parses a command-line style literal regions flag into a RangeSet.
 
     Args:
@@ -161,7 +169,9 @@ class RangeSet(object):
       return cls(ranges=from_regions(regions, contig_map=contig_map))
 
   @classmethod
-  def from_contigs(cls, contigs):
+  def from_contigs(
+      cls, contigs: List[reference_pb2.ContigInfo]
+  ) -> 'RangeSet':
     """Creates a RangeSet with an interval covering each base of each contig."""
     return cls(
         (make_range(contig.name, 0, contig.n_bases) for contig in contigs),
@@ -420,7 +430,7 @@ def ranges_overlap(i1, i2):
           i1.start < i2.end)
 
 
-def bedpe_parser(filename: str) ->  range_pb2.Range:
+def bedpe_parser(filename: str) -> Iterable[range_pb2.Range]:
   """Parses Range objects from a BEDPE-formatted file object.
 
   See http://bedtools.readthedocs.org/en/latest/content/general-usage.html
@@ -599,7 +609,9 @@ def contigs_n_bases(contigs):
   return sum(c.n_bases for c in contigs)
 
 
-def contigs_dict(contigs):
+def contigs_dict(
+    contigs: List[reference_pb2.ContigInfo],
+) -> Dict[str, reference_pb2.ContigInfo]:
   """Creates a dictionary for contigs.
 
   Args:
