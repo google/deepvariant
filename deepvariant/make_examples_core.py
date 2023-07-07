@@ -34,7 +34,7 @@ import itertools
 import json
 import os
 import time
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 
 
 
@@ -393,7 +393,7 @@ def _ensure_consistent_contigs(
     ref_contigs: List[reference_pb2.ContigInfo],
     sam_contigs: List[reference_pb2.ContigInfo],
     vcf_contigs: Optional[List[reference_pb2.ContigInfo]],
-    exclude_contig_names: Optional[List[str]] = None,
+    exclude_contig_names: Optional[Iterable[str]] = None,
     min_coverage_fraction: float = 1.0,
 ):
   """Returns the common contigs after ensuring 'enough' overlap.
@@ -564,11 +564,11 @@ def find_ref_n_regions(
 
 
 def build_calling_regions(
-    contigs: List[reference_pb2.ContigInfo],
-    regions_to_include: List[str],
-    regions_to_exclude: List[str],
+    contigs: Sequence[reference_pb2.ContigInfo],
+    regions_to_include: Iterable[str],
+    regions_to_exclude: Iterable[str],
     # TODO: Use X | None instead.
-    ref_n_regions: Optional[List[range_pb2.Range]],
+    ref_n_regions: Optional[Iterable[range_pb2.Range]],
 ) -> ranges.RangeSet:
   """Builds a RangeSet containing the regions we should call variants in.
 
@@ -700,13 +700,13 @@ def partition_by_candidates(
 
 
 def regions_to_process(
-    contigs,
-    partition_size,
-    calling_regions=None,
-    task_id=None,
-    num_shards=None,
-    candidates=None,
-):
+    contigs: Sequence[reference_pb2.ContigInfo],
+    partition_size: int,
+    calling_regions: Optional[ranges.RangeSet] = None,
+    task_id: Optional[int] = None,
+    num_shards: Optional[int] = None,
+    candidates: Optional[List[int]] = None,
+) -> Iterable[range_pb2.Range]:
   """Determines the regions to process and partitions them into pieces.
 
   This function divides the genomes into regions we should process by
@@ -781,7 +781,11 @@ def regions_to_process(
     return partitioned
 
 
-def fetch_vcf_positions(vcf_paths, contigs, calling_regions):
+def fetch_vcf_positions(
+    vcf_paths: List[str],
+    contigs: Sequence[reference_pb2.ContigInfo],
+    calling_regions: Optional[ranges.RangeSet],
+) -> List[range_pb2.Range]:
   """Fetches variants present in calling_regions.
 
   Args:
@@ -809,7 +813,9 @@ def fetch_vcf_positions(vcf_paths, contigs, calling_regions):
   return variant_positions
 
 
-def filter_regions_by_vcf(regions, variant_positions):
+def filter_regions_by_vcf(
+    regions: List[range_pb2.Range], variant_positions: List[range_pb2.Range]
+) -> List[range_pb2.Range]:
   """Filter a list of regions to only those that contain variants.
 
   Args:
@@ -821,8 +827,9 @@ def filter_regions_by_vcf(regions, variant_positions):
     filtered_regions: a list of Range objects, each of which appeared in the
         input regions and contains at least one of the input variants.
   """
-
-  def dict_by_chromosome(list_of_ranges):
+  def dict_by_chromosome(
+      list_of_ranges: List[range_pb2.Range],
+  ) -> Dict[str, List[range_pb2.Range]]:
     d = collections.defaultdict(list)
     for r in list_of_ranges:
       d[r.reference_name].append(r)
@@ -1236,7 +1243,7 @@ class OutputsWriter:
         writer.close()
 
 
-class RegionProcessor(object):
+class RegionProcessor:
   """Creates DeepVariant example protos for a single region on the genome.
 
   This class helps us to run the very sensitive caller, pileup image creator,
@@ -1257,7 +1264,7 @@ class RegionProcessor(object):
       tf.Example protos.
   """
 
-  def __init__(self, options):
+  def __init__(self, options: deepvariant_pb2.MakeExamplesOptions):
     """Creates a new RegionProcess.
 
     Args:
@@ -1277,10 +1284,12 @@ class RegionProcessor(object):
       self.direct_phasing_cpp = self._make_direct_phasing_obj()
     self.writers_dict = {}
 
-  def _make_direct_phasing_obj(self):
+  def _make_direct_phasing_obj(self) -> direct_phasing.DirectPhasing:
     return direct_phasing.DirectPhasing()
 
-  def _make_allele_counter_for_region(self, region, candidate_positions):
+  def _make_allele_counter_for_region(
+      self, region: range_pb2.Range, candidate_positions: Iterable[int]
+  ) -> allelecounter.AlleleCounter:
     return allelecounter.AlleleCounter(
         self.ref_reader.c_reader,
         region,
@@ -1289,8 +1298,11 @@ class RegionProcessor(object):
     )
 
   def _make_allele_counter_for_read_overlap_region(
-      self, region, full_region, candidate_positions
-  ):
+      self,
+      region: range_pb2.Range,
+      full_region: range_pb2.Range,
+      candidate_positions: Iterable[int],
+  ) -> allelecounter.AlleleCounter:
     return allelecounter.AlleleCounter.Default(
         self.ref_reader.c_reader,
         region,
@@ -1299,7 +1311,9 @@ class RegionProcessor(object):
         self.options.allele_counter_options,
     )
 
-  def _encode_tensor(self, image_tensor):
+  def _encode_tensor(
+      self, image_tensor: np.ndarray
+  ) -> Tuple[str, Tuple[int, int, int]]:
     return image_tensor.tostring(), image_tensor.shape
 
   def _make_sam_readers(
@@ -1657,7 +1671,7 @@ class RegionProcessor(object):
     # Mark the end of partition
     yield END_OF_PARTITION
 
-  def process(self, region, region_n=None):
+  def process(self, region: range_pb2.Range, region_n: Optional[int] = None):
     """Finds candidates and creates corresponding examples in a region.
 
     Args:
@@ -2508,7 +2522,9 @@ def load_candidate_positions(candidate_path: Any) -> List[int]:
   return merge_ranges_from_files_sequential(positions)
 
 
-def processing_regions_from_options(options):
+def processing_regions_from_options(
+    options: deepvariant_pb2.MakeExamplesOptions,
+) -> Tuple[List[range_pb2.Range], Optional[ranges.RangeSet]]:
   """Computes the calling regions from our options.
 
   This function does all of the work needed to read our input files and region
