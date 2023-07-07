@@ -34,7 +34,7 @@ import itertools
 import json
 import os
 import time
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
 
 
 
@@ -56,6 +56,7 @@ from deepvariant import very_sensitive_caller
 from deepvariant.labeler import customized_classes_labeler
 from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import positional_labeler
+from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.python import direct_phasing
@@ -285,7 +286,9 @@ def parse_regions_flag(regions_flag_value):
   return regions_flag_value
 
 
-def logging_with_options(options, message):
+def logging_with_options(
+    options: deepvariant_pb2.MakeExamplesOptions, message: str
+):
   """If options contain multiple shards, log with task/shard prefix."""
   if options.num_shards > 1:
     prefix = 'Task {}/{}: '.format(options.task_id, options.num_shards)
@@ -393,7 +396,7 @@ def _ensure_consistent_contigs(
     ref_contigs: List[reference_pb2.ContigInfo],
     sam_contigs: List[reference_pb2.ContigInfo],
     vcf_contigs: Optional[List[reference_pb2.ContigInfo]],
-    exclude_contig_names: Optional[Iterable[str]] = None,
+    exclude_contig_names: Optional[Sequence[str]] = None,
     min_coverage_fraction: float = 1.0,
 ):
   """Returns the common contigs after ensuring 'enough' overlap.
@@ -565,10 +568,10 @@ def find_ref_n_regions(
 
 def build_calling_regions(
     contigs: Sequence[reference_pb2.ContigInfo],
-    regions_to_include: Iterable[str],
-    regions_to_exclude: Iterable[str],
+    regions_to_include: Sequence[str],
+    regions_to_exclude: Sequence[str],
     # TODO: Use X | None instead.
-    ref_n_regions: Optional[Iterable[range_pb2.Range]],
+    ref_n_regions: Optional[Sequence[range_pb2.Range]],
 ) -> ranges.RangeSet:
   """Builds a RangeSet containing the regions we should call variants in.
 
@@ -1478,8 +1481,10 @@ class RegionProcessor:
       )
 
   def _make_variant_caller_from_options(
-      self, variant_caller_options, proposed_variants_filename
-  ):
+      self,
+      variant_caller_options: deepvariant_pb2.VariantCallerOptions,
+      proposed_variants_filename: str,
+  ) -> vc_base.VariantCaller:
     """Creates the variant_caller from options."""
     if (
         self.options.variant_caller
@@ -1502,7 +1507,7 @@ class RegionProcessor:
 
   def writes_examples_in_region(
       self,
-      candidates: List[deepvariant_pb2.DeepVariantCall],
+      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       region: range_pb2.Range,
       sample_order: List[int],
       writer: OutputsWriter,
@@ -1671,7 +1676,14 @@ class RegionProcessor:
     # Mark the end of partition
     yield END_OF_PARTITION
 
-  def process(self, region: range_pb2.Range, region_n: Optional[int] = None):
+  def process(
+      self, region: range_pb2.Range, region_n: Optional[int] = None
+  ) -> Tuple[
+      Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
+      Dict[str, Sequence[variants_pb2.Variant]],
+      # TODO: Use | instead.
+      Dict[str, Union[float, int]],
+  ]:
     """Finds candidates and creates corresponding examples in a region.
 
     Args:
@@ -2152,7 +2164,12 @@ class RegionProcessor:
 
     return candidates, gvcfs
 
-  def align_to_all_haplotypes(self, variant, reads):
+  def align_to_all_haplotypes(
+      self,
+      variant: variants_pb2.Variant,
+      reads: List[reads_pb2.Read],
+      # TODO: Use | instead.
+  ) -> Dict[str, Dict[str, Union[List[reads_pb2.Read], str]]]:
     """For each alternate allele, realign reads to it and get "ref" sequences.
 
     For alt-aligned pileups, this realigns the reads to each of the alternate
@@ -2238,7 +2255,11 @@ class RegionProcessor:
         'alt_sequences': sequences_by_haplotype,
     }
 
-  def create_pileup_examples(self, dv_call, sample_order=None):
+  def create_pileup_examples(
+      self,
+      dv_call: deepvariant_pb2.DeepVariantCall,
+      sample_order: Optional[List[int]] = None,
+  ) -> List[example_pb2.Example]:
     """Creates a tf.Example for DeepVariantCall.
 
     This function calls PileupImageCreator.create_pileup_images on dv_call to
@@ -2332,7 +2353,13 @@ class RegionProcessor:
     # All the example would have the same list of channels based on `self.pic`.
     return self.pic.get_channels()
 
-  def label_candidates(self, candidates, region):
+  def label_candidates(
+      self,
+      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      region: range_pb2.Range,
+  ) -> Iterator[
+      Tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
+  ]:
     """Gets label information for each candidate.
 
     Args:
@@ -2662,13 +2689,13 @@ def processing_regions_from_options(
 
 
 def _write_example_and_update_stats(
-    example,
-    writer,
-    runtimes,
-    labels=None,
-    labels_denovo=None,
-    types=None,
-    denovo_enabled=False,
+    example: example_pb2.Example,
+    writer: OutputsWriter,
+    runtimes: Dict[str, float],
+    labels: Optional[Dict[Union[int, None], int]] = None,
+    labels_denovo: Optional[Dict[Union[int, None], int]] = None,
+    types: Optional[Dict[dv_utils.EncodedVariantType, int]] = None,
+    denovo_enabled: bool = False,
 ):
   """Writes out the example using writer; updates labels and types as needed."""
   writer.write_examples(example)
@@ -2676,20 +2703,22 @@ def _write_example_and_update_stats(
     if 'num examples' not in runtimes:
       runtimes['num examples'] = 0
     runtimes['num examples'] += 1
-  if labels is not None and types is not None:
+  if labels is not None:
     example_label = dv_utils.example_label(example)
+    labels[example_label] += 1
+  if labels_denovo is not None:
     example_denovo_label = 0
     if denovo_enabled:
       example_denovo_label = dv_utils.example_denovo_label(example)
+    labels_denovo[example_denovo_label] += 1
+  if types is not None:
     example_type = dv_utils.encoded_variant_type(
         dv_utils.example_variant(example)
     )
-    labels[example_label] += 1
-    labels_denovo[example_denovo_label] += 1
     types[example_type] += 1
 
 
-def make_examples_runner(options):
+def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   """Runs examples creation stage of deepvariant."""
   resource_monitor = resources.ResourceMonitor().start()
   before_initializing_inputs = time.time()
@@ -2699,6 +2728,7 @@ def make_examples_runner(options):
 
   main_sample = options.sample_options[options.main_sample_index]
   mode_candidate_sweep = deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP
+  candidates_writer = None
   if options.mode == mode_candidate_sweep and main_sample.candidate_positions:
     _, candidate_positions_filename = sharded_file_utils.resolve_filespecs(
         options.task_id, main_sample.candidate_positions
@@ -2777,7 +2807,7 @@ def make_examples_runner(options):
   for region in regions:
     region_n += 1
 
-    if options.mode == mode_candidate_sweep:
+    if options.mode == mode_candidate_sweep and candidates_writer:
       candidates_in_region = list(
           region_processor.find_candidate_positions(region)
       )
