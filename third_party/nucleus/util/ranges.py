@@ -144,7 +144,7 @@ class RangeSet(object):
   @classmethod
   def from_regions(
       cls,
-      regions: List[str],
+      regions: Iterable[str],
       # TODO: Use X | None instead.
       contig_map: Optional[Dict[str, reference_pb2.ContigInfo]] = None,
   ) -> 'RangeSet':
@@ -170,7 +170,7 @@ class RangeSet(object):
 
   @classmethod
   def from_contigs(
-      cls, contigs: List[reference_pb2.ContigInfo]
+      cls, contigs: Iterable[reference_pb2.ContigInfo]
   ) -> 'RangeSet':
     """Creates a RangeSet with an interval covering each base of each contig."""
     return cls(
@@ -191,7 +191,7 @@ class RangeSet(object):
     """
     return cls(bed_parser(source), contigs)
 
-  def intersection(self, *others):
+  def intersection(self, *others: 'RangeSet') -> 'RangeSet':
     """Computes the intersection among this RangeSet and *others RangeSets.
 
     This function computes the intersection of all of the intervals in self and
@@ -262,7 +262,7 @@ class RangeSet(object):
 
     return intersected
 
-  def exclude_regions(self, other):
+  def exclude_regions(self, other: 'RangeSet'):
     """Chops out all of the intervals in other from this this RangeSet.
 
     NOTE: This is a *MUTATING* operation for performance reasons. Make a copy
@@ -610,7 +610,7 @@ def contigs_n_bases(contigs):
 
 
 def contigs_dict(
-    contigs: List[reference_pb2.ContigInfo],
+    contigs: Iterable[reference_pb2.ContigInfo],
 ) -> Dict[str, reference_pb2.ContigInfo]:
   """Creates a dictionary for contigs.
 
