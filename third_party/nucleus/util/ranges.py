@@ -34,7 +34,7 @@ from __future__ import print_function
 
 import collections
 import re
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, Optional, Sequence
 
 from absl import logging
 from etils import epath
@@ -45,6 +45,7 @@ from third_party.nucleus.io import bed
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reference_pb2
+from third_party.nucleus.protos import variants_pb2
 
 
 # Regular expressions for matching literal chr:start-stop strings.
@@ -144,7 +145,7 @@ class RangeSet(object):
   @classmethod
   def from_regions(
       cls,
-      regions: Iterable[str],
+      regions: Sequence[str],
       # TODO: Use X | None instead.
       contig_map: Optional[Dict[str, reference_pb2.ContigInfo]] = None,
   ) -> 'RangeSet':
@@ -170,7 +171,7 @@ class RangeSet(object):
 
   @classmethod
   def from_contigs(
-      cls, contigs: Iterable[reference_pb2.ContigInfo]
+      cls, contigs: Sequence[reference_pb2.ContigInfo]
   ) -> 'RangeSet':
     """Creates a RangeSet with an interval covering each base of each contig."""
     return cls(
@@ -293,14 +294,15 @@ class RangeSet(object):
 
   __bool__ = __nonzero__  # Python 3 compatibility.
 
-  def variant_overlaps(self, variant, empty_set_return_value=True):
+  def variant_overlaps(self, variant: variants_pb2.Variant,
+                       empty_set_return_value: bool = True):
     """Returns True if the variant's range overlaps with any in this set."""
     if not self:
       return empty_set_return_value
     else:
       return self.overlaps(variant.reference_name, variant.start)
 
-  def overlaps(self, chrom, pos):
+  def overlaps(self, chrom: str, pos: int):
     """Returns True if chr:pos overlaps with any range in this RangeSet.
 
     Uses a fast bisection algorithm to determine the overlap in O(log n) time.

@@ -129,7 +129,7 @@ def example_variant(example):
   return variants_pb2.Variant.FromString(encoded)
 
 
-def example_label(example):
+def example_label(example: example_pb2.Example) -> Optional[int]:
   """Gets the label field from example as a string."""
   if 'label' not in example.features.feature:
     return None
