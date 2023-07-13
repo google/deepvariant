@@ -69,4 +69,4 @@ sudo apt-get update && sudo apt-get install "${APT_ARGS[@]}" nvidia-docker2
 sudo systemctl restart docker
 
 #### Test nvidia-smi with the latest official CUDA image
-sudo docker run --gpus 1 nvidia/cuda:11.3.0-base-ubuntu20.04 nvidia-smi
+sudo docker run --gpus 1 nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04 nvidia-smi
