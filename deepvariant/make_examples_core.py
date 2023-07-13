@@ -76,7 +76,10 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
+# pylint: disable=g-direct-tensorflow-import
 from tensorflow.core.example import example_pb2
+from tensorflow.python.lib.io import tf_record
+# pylint: enable=g-direct-tensorflow-import
 
 # For --runtime_by_region, these columns will be written out in this order.
 RUNTIME_BY_REGION_COLUMNS = (
@@ -931,7 +934,10 @@ def read_denovo_regions(
     return None
 
 
-def filter_candidates(candidates, select_variant_types):
+def filter_candidates(
+    candidates: Iterable[deepvariant_pb2.DeepVariantCall],
+    select_variant_types: Sequence[str],
+) -> Iterable[deepvariant_pb2.DeepVariantCall]:
   """Yields the candidate variants whose type is one of select_variant_types.
 
   This function iterates through candidates and yield each candidate in order
@@ -965,6 +971,7 @@ def filter_candidates(candidates, select_variant_types):
       if selector(v):
         yield candidate
         break
+
 
 # ---------------------------------------------------------------------------
 # A modified version of reservoir_sample for reads.
@@ -1194,7 +1201,7 @@ class OutputsWriter:
 
     self._write_text('sitelist', site)
 
-  def write_runtime(self, stats_dict):
+  def write_runtime(self, stats_dict: Dict[str, Any]):
     columns = [str(stats_dict.get(k, 'NA')) for k in RUNTIME_BY_REGION_COLUMNS]
     writer = self._writers['runtime']
     writer.write('\t'.join(columns) + '\n')
@@ -1205,7 +1212,7 @@ class OutputsWriter:
       read_key = read.fragment_name + '/' + str(read.read_number)
       writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
 
-  def _add_writer(self, name, writer):
+  def _add_writer(self, name: str, writer: tf_record.TFRecordWriter):
     if name not in self._writers:
       raise ValueError(
           'Expected writer {} to have a None binding in writers.'.format(name)
@@ -1229,13 +1236,13 @@ class OutputsWriter:
       if writer is not None:
         writer.__exit__(exception_type, exception_value, traceback)
 
-  def _write(self, writer_name, *protos):
+  def _write(self, writer_name: str, *protos):
     writer = self._writers[writer_name]
     if writer:
       for proto in protos:
         writer.write(proto.SerializeToString())
 
-  def _write_text(self, writer_name, line):
+  def _write_text(self, writer_name: str, line: str):
     writer = self._writers[writer_name]
     if writer:
       writer.write(line)
