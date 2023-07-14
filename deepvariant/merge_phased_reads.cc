@@ -42,11 +42,15 @@
 
 #include "deepvariant/merge_phased_reads.h"
 
+#include <fstream>
+#include <sstream>
 #include <string>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "tensorflow/core/platform/logging.h"
 #include "re2/re2.h"
@@ -80,6 +84,72 @@ parse_sharded_file_spec(absl::string_view file_spec) {
   output.nshards = nshards_int;
 
   return output;
+}
+
+int shard_with(int num_shards) {
+  if (num_shards < 100000) return 5;
+  if (num_shards < 1000000) return 6;
+  if (num_shards < 10000000) return 7;
+  if (num_shards < 100000000) return 8;
+  if (num_shards < 1000000000) return 9;
+  LOG(FATAL) << "num_shards == " << num_shards << ": Unsupported";
+}
+
+// Generates a sharded file name from ShardedFileSpec and shard number.
+// Format: <basename>-<shard>-of-<num_shards>[.<extension>]
+std::string generate_sharded_filename(const ShardedFileSpec& spec, int shard) {
+  const int num_shards = spec.nshards;
+  DCHECK_LE(0, shard);
+  DCHECK_LE(0, num_shards);
+  return absl::StrCat(spec.basename, "-",
+                      absl::StrFormat("%0*d", shard_with(num_shards), shard),
+                      "-of-", absl::StrFormat("%05d", num_shards), spec.suffix,
+                      spec.suffix);
+}
+
+// Loads input files from a sharded path.
+void Merger::LoadFromFiles(absl::string_view input_path) {
+  absl::StatusOr<ShardedFileSpec> sharded_input =
+      parse_sharded_file_spec(input_path);
+  if (!sharded_input.ok()) {
+    LOG(FATAL) << "Could not read " << input_path;
+  }
+  num_shards_ = sharded_input->nshards;
+  LOG(INFO) << "basename=" << sharded_input->basename << ", " << num_shards_
+            << " shards";
+
+  for (int shard = 0; shard < num_shards_; ++shard) {
+    if (!sharded_input.status().ok()) {
+      LOG(FATAL) << sharded_input.status();
+    }
+    const std::string filename =
+        generate_sharded_filename(sharded_input.value(), shard);
+    LOG(INFO) << "Loading " << filename;
+
+    std::ifstream csv_file;
+    csv_file.open(filename);
+    std::string line;
+    bool is_first_line = true;
+    while (std::getline(csv_file, line)) {
+      if (is_first_line) {
+        is_first_line = false;
+        continue;
+      }
+
+      std::istringstream iss(line);
+      std::vector<std::string> tokens(5);
+      MergedPhaseRead phased_read;
+      int i = 0;
+      while (std::getline(iss, tokens[i], '\t')) {
+        i++;
+      }
+      phased_reads_.push_back({
+          .fragment_name = tokens[0],
+          .phase = std::stoi(tokens[1]),
+      });
+    }
+  }
+  LOG(INFO) << "Total records loaded: " << phased_reads_.size();
 }
 
 }  // namespace deepvariant
