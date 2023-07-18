@@ -38,17 +38,16 @@ from absl.testing import parameterized
 import numpy as np
 import numpy.testing as npt
 
+from deepvariant import dv_constants
+from deepvariant import pileup_image
+from deepvariant import sample as sample_lib
+from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import pileup_image_native
 from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-
-from deepvariant import dv_constants
-from deepvariant import make_examples_core
-from deepvariant import pileup_image
-from deepvariant.protos import deepvariant_pb2
-from deepvariant.python import pileup_image_native
 
 
 MAX_PIXEL_FLOAT = 254.0
@@ -764,7 +763,7 @@ class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
     self.alt_allele = 'C'
     self.dv_call = _make_dv_call(ref_bases='G', alt_bases=self.alt_allele)
     samples = [
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(role='any_sample_role')
         )
     ]
@@ -978,13 +977,13 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     self.alt_allele = 'C'
     self.dv_call = _make_dv_call(ref_bases='G', alt_bases=self.alt_allele)
     samples = [
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(role='sample_1')
         ),
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(role='sample_2')
         ),
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(role='sample_3')
         ),
     ]
@@ -1344,15 +1343,15 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     # If there are more reads than rows, a deterministic random subset is used.
     # For parents, Read4 will also be dropped.
     samples = [
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(
                 role='parent1', pileup_height=3
             )
         ),
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(role='child', pileup_height=4)
         ),
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(
                 role='parent2', pileup_height=3
             )
@@ -1457,15 +1456,15 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
   def test_image_ordering(self, sample_order, image_rows):
     # Order of pileup images in build_pileup can be controlled by sample_order.
     samples = [
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(
                 role='parent1', pileup_height=2
             )
         ),
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(role='child', pileup_height=2)
         ),
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(
                 role='parent2', pileup_height=2
             )
@@ -1510,7 +1509,7 @@ class PileupImageCreatorTest(parameterized.TestCase):
     self.variant = self.dv_call.variant
 
     self.samples = [
-        make_examples_core.Sample(
+        sample_lib.Sample(
             options=deepvariant_pb2.SampleOptions(role='any_sample'),
             sam_readers=self.mock_sam_reader,
             in_memory_sam_reader=self.mock_sam_reader,

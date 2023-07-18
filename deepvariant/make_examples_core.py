@@ -29,7 +29,6 @@
 """Core functionality for step one of DeepVariant: Making examples."""
 
 import collections
-import dataclasses
 import itertools
 import json
 import os
@@ -50,6 +49,7 @@ from deepvariant import dv_utils
 from deepvariant import dv_vcf_constants
 from deepvariant import pileup_image
 from deepvariant import resources
+from deepvariant import sample as sample_lib
 from deepvariant import variant_caller as vc_base
 from deepvariant import vcf_candidate_importer
 from deepvariant import very_sensitive_caller
@@ -873,39 +873,6 @@ def filter_regions_by_vcf(
 
 
 # ---------------------------------------------------------------------------
-# Working with samples
-# ---------------------------------------------------------------------------
-
-
-@dataclasses.dataclass
-class Sample(object):
-  """Organizes sample-level properties.
-
-  options: A SampleOptions proto containing instructions for how to treat the
-      sample, most of which will be set from flags.
-  sam_readers: SamReader objects with handles on the `reads_filenames` from the
-      options.
-  in_memory_sam_reader: InMemorySamReader for this sample, which stores the
-      alignments for this sample that have been read into memory from the
-      sam_readers.
-  reads: A list of reads queried from the sam readers.
-  allele_counter: An allele counter object for the sample.
-  variant_caller: A variant caller for the sample, should be instantiated using
-      the options.variant_caller_options.
-  """
-
-  options: deepvariant_pb2.SampleOptions
-  sam_readers: Optional[Sequence[sam.SamReader]] = None
-  in_memory_sam_reader: Optional[sam.InMemorySamReader] = None
-  reads: Optional[List[reads_pb2.Read]] = None
-  allele_counter: Optional[allelecounter.AlleleCounter] = None
-  variant_caller: Optional[vc_base.VariantCaller] = None
-
-  def __repr__(self):
-    return '<Sample {}>'.format(str(self.__dict__))
-
-
-# ---------------------------------------------------------------------------
 # Region processor
 # ---------------------------------------------------------------------------
 
@@ -1282,7 +1249,9 @@ class RegionProcessor:
         resources for calling (e.g., reference_filename).
     """
     self.options = options
-    self.samples = [Sample(options=x) for x in self.options.sample_options]
+    self.samples = [
+        sample_lib.Sample(options=x) for x in self.options.sample_options
+    ]
     self.initialized = False
     self.ref_reader = None
     self.realigner = None
