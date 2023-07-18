@@ -891,10 +891,13 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":dv_constants",
+        ":sample",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:pileup_image_native",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:sam",
         "//third_party/nucleus/protos:reads_py_pb2",
-        "//third_party/nucleus/util:py_utils",
+        "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/logging",
     ],
@@ -1735,5 +1738,18 @@ py_binary(
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
+    ],
+)
+
+py_library(
+    name = "sample",
+    srcs = ["sample.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":variant_caller",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//deepvariant/python:allelecounter",
+        "//third_party/nucleus/io:sam",
+        "//third_party/nucleus/protos:reads_py_pb2",
     ],
 )

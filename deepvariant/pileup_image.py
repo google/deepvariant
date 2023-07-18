@@ -29,16 +29,22 @@
 """Encodes reference and read data into a PileupImage for DeepVariant."""
 
 import itertools
+from typing import Iterable, List, Optional, Tuple
+
 
 
 from absl import logging
 import numpy as np
 
-from third_party.nucleus.protos import reads_pb2
-from third_party.nucleus.util import ranges
 from deepvariant import dv_constants
+from deepvariant import sample as sample_lib
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
+from third_party.nucleus.io import fasta
+from third_party.nucleus.io import sam
+from third_party.nucleus.protos import reads_pb2
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import ranges
 
 
 def default_options(read_requirements=None):
@@ -201,7 +207,12 @@ class PileupImageCreator(object):
   with the alt alleles used for each image.
   """
 
-  def __init__(self, options, ref_reader, samples):
+  def __init__(
+      self,
+      options: deepvariant_pb2.PileupImageOptions,
+      ref_reader: fasta.IndexedFastaReader,
+      samples: List[sample_lib.Sample],
+  ):
     self._options = options
     self._encoder = pileup_image_native.PileupImageEncoderNative(self._options)
     self._channels_enum = self._encoder.all_channels_enum(
@@ -221,7 +232,9 @@ class PileupImageCreator(object):
   def get_channels(self):
     return self._channels_enum
 
-  def get_reads(self, variant, sam_reader):
+  def get_reads(
+      self, variant: variants_pb2.Variant, sam_reader: sam.SamReader
+  ) -> List[reads_pb2.Read]:
     """Gets the reads used to construct the pileup image around variant.
 
     Args:
@@ -237,7 +250,7 @@ class PileupImageCreator(object):
     region = ranges.make_range(variant.reference_name, query_start, query_end)
     return list(sam_reader.query(region))
 
-  def get_reference_bases(self, variant):
+  def get_reference_bases(self, variant: variants_pb2.Variant) -> Optional[str]:
     """Gets the reference bases used to make the pileup image around variant.
 
     Args:
@@ -256,7 +269,9 @@ class PileupImageCreator(object):
     else:
       return None
 
-  def _alt_allele_combinations(self, variant):
+  def _alt_allele_combinations(
+      self, variant: variants_pb2.Variant
+  ) -> Iterable[List[str]]:
     """Yields the set of all alt_alleles for variant.
 
     This function computes the sets of alt_alleles we want to use to cover all
@@ -298,12 +313,12 @@ class PileupImageCreator(object):
 
   def build_pileup(
       self,
-      dv_call,
-      refbases,
-      reads_for_samples,
-      alt_alleles,
-      sample_order=None,
-      custom_ref=False,
+      dv_call: deepvariant_pb2.DeepVariantCall,
+      refbases: str,
+      reads_for_samples: List[List[reads_pb2.Read]],
+      alt_alleles: List[str],
+      sample_order: Optional[List[int]] = None,
+      custom_ref: bool = False,
   ):
     """Creates a pileup tensor for dv_call.
 
@@ -376,18 +391,24 @@ class PileupImageCreator(object):
           )
       )
 
-    def build_pileup_for_one_sample(reads, sample):
+    def build_pileup_for_one_sample(
+        reads: List[reads_pb2.Read], sample: sample_lib.Sample
+    ) -> List[np.ndarray]:
       """Create read pileup image section for one sample."""
       # We start with n copies of our encoded reference bases.
       rows = [
           self._encoder.encode_reference(refbases)
       ] * self.reference_band_height
-
-      def _update_hap_index(read, hp_tag_for_assembly_polishing):
+      def _update_hap_index(
+          read: reads_pb2.Read, hp_tag_for_assembly_polishing: int
+      ) -> int:
         default_hap_idx = 0  # By default, reads with no HP is set to 0.
-        if 'HP' not in read.info or not read.info.get('HP').values:
+        if 'HP' not in read.info:
           return default_hap_idx
-        hp_field = next(iter(read.info.get('HP').values))
+        read_info_hp = read.info.get('HP')
+        if read_info_hp is None or not read_info_hp.values:
+          return default_hap_idx
+        hp_field = next(iter(read_info_hp.values))
         if not hp_field.HasField('int_value'):
           return default_hap_idx
         hp_value = hp_field.int_value
@@ -406,7 +427,9 @@ class PileupImageCreator(object):
       # Returns tuples of the form (haplotype, position, row),
       # if the read can be encoded as a valid row to be used in the pileup
       # image.
-      def _row_helper(read):
+      def _row_helper(
+          read: reads_pb2.Read,
+      ) -> Optional[Tuple[int, int, np.ndarray]]:
         """A function that returns tuples of (haplotype, position, row)."""
         read_row = self._encoder.encode_read(
             dv_call, refbases, read, image_start_pos, alt_alleles
@@ -471,7 +494,7 @@ class PileupImageCreator(object):
     # h x w x DEFAULT_NUM_CHANNEL image.
     return np.vstack(sample_sections)
 
-  def _empty_image_row(self):
+  def _empty_image_row(self) -> np.ndarray:
     """Creates an empty image row as an uint8 np.array."""
     return np.zeros((1, self.width, self.num_channels), dtype=np.uint8)
 
