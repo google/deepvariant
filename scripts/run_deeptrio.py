@@ -131,6 +131,13 @@ _VERSION = flags.DEFINE_boolean(
     'Optional. If true, print out version number and exit.',
     allow_hide_cpp=True,
 )
+# TODO: Change to True as default before release.
+_USE_KERAS_MODEL = flags.DEFINE_boolean(
+    'use_keras_model',
+    False,
+    'Default to False. If True, the model provided has to be a Keras model.',
+)
+
 _LOGGING_DIR = flags.DEFINE_string(
     'logging_dir', None, 'Required. Directory where we should write log files.'
 )
@@ -144,7 +151,6 @@ _RUNTIME_REPORT = flags.DEFINE_boolean(
     ),
 )
 # Optional flags for call_variants.
-# TODO: Support different child/parent models.
 _CUSTOMIZED_MODEL_CHILD = flags.DEFINE_string(
     'customized_model_child',
     None,
@@ -565,9 +571,19 @@ def _make_examples_command(
   return ' '.join(command)
 
 
-def call_variants_command(outfile, examples, model_ckpt, sample, extra_args):
+def call_variants_command(
+    outfile: str,
+    examples: str,
+    model_ckpt: str,
+    sample: str,
+    extra_args: str,
+    use_keras_model: bool = False,
+) -> str:
   """Returns a call_variants command for subprocess.check_call."""
-  command = ['time', '/opt/deepvariant/bin/call_variants']
+  binary_name = 'call_variants'
+  if use_keras_model:
+    binary_name = 'call_variants_keras'
+  command = ['time', f'/opt/deepvariant/bin/{binary_name}']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
@@ -578,8 +594,8 @@ def call_variants_command(outfile, examples, model_ckpt, sample, extra_args):
   if _LOGGING_DIR.value:
     command.extend(
         [
-            '2>&1 | tee {}/call_variants_{}.log'.format(
-                _LOGGING_DIR.value, sample
+            '2>&1 | tee {}/{}_{}.log'.format(
+                _LOGGING_DIR.value, binary_name, sample
             )
         ]
     )
@@ -676,20 +692,23 @@ def check_or_create_intermediate_results_dir(
   return intermediate_results_dir
 
 
+def model_exists(model_prefix: str) -> bool:
+  if not tf.io.gfile.exists(
+      model_prefix + '.data-00000-of-00001'
+  ) or not tf.io.gfile.exists(model_prefix + '.index'):
+    return False
+  # If it's a Slim model, we also expect a .meta file.
+  if not _USE_KERAS_MODEL.value and not tf.io.gfile.exists(
+      model_prefix + '.meta'
+  ):
+    return False
+  return True
+
+
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if _CUSTOMIZED_MODEL_PARENT.value is not None:
-    if (
-        not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL_PARENT.value + '.data-00000-of-00001'
-        )
-        or not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL_PARENT.value + '.index'
-        )
-        or not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL_PARENT.value + '.meta'
-        )
-    ):
+    if not model_exists(_CUSTOMIZED_MODEL_PARENT.value):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
@@ -708,17 +727,7 @@ def check_flags():
     )
 
   if _CUSTOMIZED_MODEL_CHILD.value is not None:
-    if (
-        not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL_CHILD.value + '.data-00000-of-00001'
-        )
-        or not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL_CHILD.value + '.index'
-        )
-        or not tf.compat.v1.gfile.Exists(
-            _CUSTOMIZED_MODEL_CHILD.value + '.meta'
-        )
-    ):
+    if not model_exists(_CUSTOMIZED_MODEL_CHILD.value):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
@@ -763,6 +772,7 @@ def generate_call_variants_command(
       model_ckpt,
       sample,
       _CALL_VARIANTS_EXTRA_ARGS.value,
+      use_keras_model=_USE_KERAS_MODEL.value,
   )
 
 

@@ -155,9 +155,17 @@ class RunDeeptrioTest(parameterized.TestCase):
     self.assertLen(postprocess_cmds, 3)
     self.assertLen(report_commands, 3)
 
-  @parameterized.parameters('WGS', 'WES', 'PACBIO')
+  # pylint: disable=g-complex-comprehension
+  @parameterized.parameters(
+      (model_type, use_keras_model)
+      for model_type in ['WGS', 'WES', 'PACBIO']
+      for use_keras_model in [False, True]
+  )
+  # pylint: enable=g-complex-comprehension
   @flagsaver.flagsaver
-  def test_duo_call_variants_postprocess_variants_commands(self, model_type):
+  def test_duo_call_variants_postprocess_variants_commands(
+      self, model_type, use_keras_model
+  ):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads_child = 'your_bam_child'
@@ -168,14 +176,18 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
     FLAGS.output_gvcf_child = 'your_gvcf_child'
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
+    FLAGS.use_keras_model = use_keras_model
     FLAGS.num_shards = 64
     commands, postprocess_cmds, report_commands = (
         self._create_all_commands_and_check_stdout()
     )
 
+    call_variants_bin = (
+        'call_variants_keras' if use_keras_model else 'call_variants'
+    )
     self.assertEqual(
         commands[1],
-        'time /opt/deepvariant/bin/call_variants --outfile'
+        f'time /opt/deepvariant/bin/{call_variants_bin} --outfile'
         ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_child.tfrecord@64.gz"'
@@ -185,7 +197,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     )
     self.assertEqual(
         commands[2],
-        'time /opt/deepvariant/bin/call_variants --outfile'
+        f'time /opt/deepvariant/bin/{call_variants_bin} --outfile'
         ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_parent1.tfrecord@64.gz"'
