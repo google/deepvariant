@@ -16,6 +16,7 @@ Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
+--docker_source Where to pull the Docker image from. Default: google/deepvariant.
 --bin_version Version of DeepTrio model to use.
 --customized_model_child Path to checkpoint directory containing child model checkpoint.
 --customized_model_parent Path to checkpoint directory containing parent model checkpoint.
@@ -50,6 +51,7 @@ SAVE_INTERMEDIATE_RESULTS=false
 BAM_CHILD=""
 BAM_PARENT1=""
 BAM_PARENT2=""
+DOCKER_SOURCE="google/deepvariant"
 BIN_VERSION="1.5.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
@@ -162,6 +164,11 @@ while (( "$#" )); do
       ;;
     --model_type)
       MODEL_TYPE="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --docker_source)
+      DOCKER_SOURCE="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -342,6 +349,7 @@ echo "# Strings; sorted alphabetically."
 echo "BAM_CHILD: ${BAM_CHILD}"
 echo "BAM_PARENT1: ${BAM_PARENT1}"
 echo "BAM_PARENT2: ${BAM_PARENT2}"
+echo "DOCKER_SOURCE: ${DOCKER_SOURCE}"
 echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
@@ -498,14 +506,14 @@ function get_docker_image() {
     fi
   else
     if [[ "${USE_GPU}" = true ]]; then
-      IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}-gpu"
+      IMAGE="${DOCKER_SOURCE}:deeptrio-${BIN_VERSION}-gpu"
       # shellcheck disable=SC2027
       # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
     else
-      IMAGE="google/deepvariant:deeptrio-${BIN_VERSION}"
+      IMAGE="${DOCKER_SOURCE}:deeptrio-${BIN_VERSION}"
       # shellcheck disable=SC2027
       # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
@@ -719,6 +727,9 @@ function main() {
 
   setup_test
   copy_data
+  if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]]; then
+    run "gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://gcr.io"
+  fi
   get_docker_image
   setup_args
   run_deeptrio
