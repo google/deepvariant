@@ -12,6 +12,7 @@ Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
+--docker_source Where to pull the Docker image from. Default: google/deepvariant.
 --bin_version Version of DeepVariant model to use
 --customized_model Path to checkpoint directory containing model checkpoint.
 --use_keras_model (true|false) If true, the model provided is Keras model.
@@ -44,6 +45,7 @@ USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
 # Strings; sorted alphabetically.
 BAM=""
+DOCKER_SOURCE="google/deepvariant"
 BIN_VERSION="1.5.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
@@ -145,6 +147,11 @@ while (( "$#" )); do
       ;;
     --model_type)
       MODEL_TYPE="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --docker_source)
+      DOCKER_SOURCE="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -299,6 +306,7 @@ echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "# Strings; sorted alphabetically."
 echo "BAM: ${BAM}"
+echo "DOCKER_SOURCE: ${DOCKER_SOURCE}"
 echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
@@ -448,14 +456,14 @@ function get_docker_image() {
 
   else
     if [[ "${USE_GPU}" = true ]]; then
-      IMAGE="google/deepvariant:${BIN_VERSION}-gpu"
+      IMAGE="${DOCKER_SOURCE}:${BIN_VERSION}-gpu"
       # shellcheck disable=SC2027
       # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
     else
-      IMAGE="google/deepvariant:${BIN_VERSION}"
+      IMAGE="${DOCKER_SOURCE}:${BIN_VERSION}"
       # shellcheck disable=SC2027
       # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
@@ -606,6 +614,9 @@ function main() {
 
   setup_test
   copy_data
+  if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]]; then
+    run "gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://gcr.io"
+  fi
   get_docker_image
   setup_args
   run_deepvariant_with_docker
