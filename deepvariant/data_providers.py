@@ -184,11 +184,11 @@ class DeepVariantInput(object):
 
   def __init__(
       self,
-      mode,
-      input_file_spec,
+      mode: str,
+      input_file_spec: str,
       num_examples=None,
       num_classes=dv_constants.NUM_CLASSES,
-      max_examples=None,
+      max_examples: Optional[int] = None,
       tensor_shape=None,
       name=None,
       use_tpu=False,
@@ -408,13 +408,13 @@ class DeepVariantInput(object):
     # NOTE: The order of the file names returned can be non-deterministic,
     # even if shuffle is false.  See internal and the note in internal.
     # We need the shuffle flag to be able to disable reordering in EVAL mode.
-    dataset = None
-    for pattern in self.input_file_spec.split(','):
-      one_dataset = tf.data.Dataset.list_files(
-          sharded_file_utils.normalize_to_sharded_file_pattern(pattern),
-          shuffle=self.mode == tf_estimator.ModeKeys.TRAIN,
-      )
-      dataset = dataset.concatenate(one_dataset) if dataset else one_dataset
+    dataset = tf.data.Dataset.list_files(
+        [
+            sharded_file_utils.normalize_to_sharded_file_pattern(pattern)
+            for pattern in self.input_file_spec.split(',')
+        ],
+        shuffle=self.mode == tf_estimator.ModeKeys.TRAIN,
+    )
 
     # This shuffle applies to the set of files.
     # TODO: why would we shuffle the files?
