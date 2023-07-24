@@ -100,7 +100,7 @@ def input_fn(
     path: the input filename for a tfrecord[.gz] file containing examples. Can
       contain sharding designators.
     config: A configuration file.
-    mode: One of ['train', 'eval', 'predict']
+    mode: One of ['train', 'tune', 'predict']
     n_epochs: Number of epochs.
     limit: Limit the number of batches for testing purposes.
 
@@ -108,8 +108,8 @@ def input_fn(
     tf.data.Dataset
   """
 
-  if mode not in ['train', 'eval', 'predict']:
-    raise ValueError('Mode must be set to one of "train", "eval", or "predict"')
+  if mode not in ['train', 'tune', 'predict']:
+    raise ValueError('Mode must be set to one of "train", "tune", or "predict"')
   is_training = mode == 'train'
 
   # Get input shape from input path.
