@@ -1,6 +1,3 @@
-#!/bin/bash
-set -euo pipefail
-
 # Copyright 2017 Google LLC.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +26,8 @@ set -euo pipefail
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+#!/bin/bash
+set -euo pipefail
 
 echo ========== This script is only maintained for Ubuntu 20.04.
 echo ========== Load config settings.
