@@ -818,6 +818,24 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "train",
+    srcs = [
+        "train.py",
+    ],
+    main = "train.py",
+    deps = [
+        ":data_providers",
+        ":dv_constants",
+        ":dv_utils",
+        ":keras_modeling",
+        "//third_party/nucleus/io:sharded_file_utils",
+        "@absl_py//absl:app",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
+    ],
+)
+
 py_library(
     name = "call_variants_keras_lib",
     srcs = ["call_variants_keras.py"],
