@@ -38,6 +38,7 @@ def get_config() -> ml_collections.ConfigDict:
   # Reduce steps per epoch so that we log more frequently, to workaround
   # the infrequent logging due to the TensorBoard update_freq arg being
   # deprecated (internal): https://datascience.stackexchange.com/a/47416
+  config.trial = 0  # Used to allow for replicates during training.
   config.num_mini_epochs_per_epoch = 25
   config.batch_size = 512
   config.num_epochs = 10
