@@ -91,6 +91,7 @@ def input_fn(
     path: str,
     config: ml_collections.ConfigDict,
     mode: str = 'train',
+    strategy: tf.distribute.Strategy = tf.distribute.get_strategy(),
     n_epochs: int = -1,
     limit: Optional[int] = None,
 ) -> tf.data.Dataset:
@@ -101,6 +102,7 @@ def input_fn(
       contain sharding designators.
     config: A configuration file.
     mode: One of ['train', 'tune', 'predict']
+    strategy: A tf.distribute.Strategy.
     n_epochs: Number of epochs.
     limit: Limit the number of batches for testing purposes.
 
@@ -163,11 +165,14 @@ def input_fn(
 
   if n_epochs > 0:
     ds = ds.repeat(n_epochs)
-  elif mode == 'eval':
+  elif mode == 'tune':
     ds = ds.repeat()
 
   # Prefetch overlaps in-feed with training
   ds = ds.prefetch(tf.data.AUTOTUNE)
+
+  # Distribute the dataset
+  ds = strategy.experimental_distribute_dataset(ds)
 
   return ds
 
