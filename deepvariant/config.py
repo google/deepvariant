@@ -65,7 +65,7 @@ def get_config() -> ml_collections.ConfigDict:
   config.early_stopping.patience = 5
 
   config.log_every_steps = 100
-  config.tune_every_steps = 100_000
+  config.eval_every_steps = 100_000
 
   config.prefetch_buffer_bytes = 16 * 1000 * 1000
   config.shuffle_buffer_elements = 1024
