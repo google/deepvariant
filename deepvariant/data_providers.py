@@ -163,7 +163,7 @@ def input_fn(
 
   if n_epochs > 0:
     ds = ds.repeat(n_epochs)
-  elif mode == 'tune':
+  elif mode == 'eval':
     ds = ds.repeat()
 
   # Prefetch overlaps in-feed with training
