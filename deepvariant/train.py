@@ -413,12 +413,16 @@ def train(config: ml_collections.ConfigDict):
             )
 
           # Log metrics
-          if (
-              train_step > 0 and train_step % config.log_every_steps == 0
-          ) or is_last_step:
+          if (train_step % config.log_every_steps == 0) or is_last_step:
+            metrics_to_write = {
+                f'train/{x.name}': x.result() for x in train_metrics
+            }
+            metrics_to_write['train/learning_rate'] = optimizer.learning_rate(
+                train_step
+            )
             metric_writer.write_scalars(
                 train_step,
-                {f'train/{x.name}': x.result() for x in train_metrics},
+                metrics_to_write,
             )
             # Reset train metrics.
             for metric in train_metrics:
