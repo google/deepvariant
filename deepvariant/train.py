@@ -37,6 +37,7 @@ from absl import app
 from absl import flags
 from absl import logging
 from clu import metric_writers
+from clu import periodic_actions
 import ml_collections
 from ml_collections.config_flags import config_flags
 import tensorflow as tf
@@ -147,7 +148,10 @@ def train(config: ml_collections.ConfigDict):
   )
 
   steps_per_epoch = train_dataset_config.num_examples // config.batch_size
-  steps_per_tune = tune_dataset_config.num_examples // config.batch_size
+  steps_per_tune = (
+      config.num_validation_examples
+      or tune_dataset_config.num_examples // config.batch_size
+  )
 
   if _LIMIT.value:
     steps_per_epoch = _LIMIT.value
@@ -222,7 +226,6 @@ def train(config: ml_collections.ConfigDict):
         average_decay=config.average_decay,
     )
 
-    # TODO: Group metrics and cleanup.
     def create_metrics():
       return [
           tf.keras.metrics.CategoricalAccuracy(),
@@ -321,7 +324,7 @@ def train(config: ml_collections.ConfigDict):
       mode='tune',
       strategy=strategy,
       config=config,
-      limit=_LIMIT.value,
+      limit=steps_per_tune,
   )
   train_iter, tune_iter = iter(train_ds), iter(tune_ds)
 
@@ -374,6 +377,13 @@ def train(config: ml_collections.ConfigDict):
   # ============= #
   # Training Loop #
   # ============= #
+  metric_writer = metric_writers.create_default_writer(
+      logdir=experiment_tensorboard_dir
+  )
+  num_train_steps = steps_per_epoch * config.num_epochs
+  report_progress = periodic_actions.ReportProgress(
+      num_train_steps=num_train_steps, writer=metric_writer, every_secs=600
+  )
 
   metric_writer = metric_writers.create_default_writer(
       logdir=experiment_tensorboard_dir
@@ -393,10 +403,12 @@ def train(config: ml_collections.ConfigDict):
     with metric_writers.ensure_flushes(metric_writer):
       for epoch in range(starting_epoch, config.num_epochs):
         logging.info('Starting epoch %s', epoch)
-        for train_step in range(steps_per_epoch):
+        for loop_train_step in range(steps_per_epoch):
           # ===== #
           # train #
           # ===== #
+          # Calculate full train step.
+          train_step = loop_train_step + (epoch * steps_per_epoch)
 
           is_last_step = (train_step == (steps_per_epoch - 1)) and (
               epoch == (config.num_epochs - 1)
@@ -413,6 +425,8 @@ def train(config: ml_collections.ConfigDict):
             )
 
           # Log metrics
+          report_progress(train_step)
+
           if (train_step % config.log_every_steps == 0) or is_last_step:
             metrics_to_write = {
                 f'train/{x.name}': x.result() for x in train_metrics
@@ -420,6 +434,7 @@ def train(config: ml_collections.ConfigDict):
             metrics_to_write['train/learning_rate'] = optimizer.learning_rate(
                 train_step
             )
+            metrics_to_write['epoch'] = epoch
             metric_writer.write_scalars(
                 train_step,
                 metrics_to_write,
@@ -438,7 +453,8 @@ def train(config: ml_collections.ConfigDict):
               or is_last_step
           ):
             logging.info('Running tune at step=%d epoch=%d', train_step, epoch)
-            for step_tune in range(steps_per_tune):
+            for loop_step_tune in range(steps_per_tune):
+              step_tune = loop_step_tune + (epoch * steps_per_tune)
               with tf.profiler.experimental.Trace(
                   'tune', step_num=step_tune, _r=1
               ):
@@ -446,7 +462,7 @@ def train(config: ml_collections.ConfigDict):
 
             metric_writer.write_scalars(
                 train_step,
-                {f'tune_step/{x.name}': x.result() for x in tune_metrics},
+                {f'tune/{x.name}': x.result() for x in tune_metrics},
             )
 
             if get_checkpoint_metric() > best_checkpoint_metric:
