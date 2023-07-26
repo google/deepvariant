@@ -334,11 +334,13 @@ def train(config: ml_collections.ConfigDict):
           '2) Batch Size: %s.\n'
           '3) Epochs: %s.\n'
           '4) Steps per epoch: %s.\n'
+          '5) Steps per tune: %s.\n'
       ),
       train_dataset_config.num_examples,
       config.batch_size,
       config.num_epochs,
       steps_per_epoch,
+      steps_per_tune,
   )
 
   # ================= #
