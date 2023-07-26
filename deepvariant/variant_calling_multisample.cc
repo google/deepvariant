@@ -52,7 +52,7 @@
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/lib/strings/strcat.h"
-#include "tensorflow/core/platform/logging.h"
+#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {

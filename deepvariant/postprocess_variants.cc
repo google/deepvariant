@@ -45,7 +45,7 @@
 #include "tensorflow/core/lib/io/compression.h"
 #include "tensorflow/core/lib/io/record_reader.h"
 #include "tensorflow/core/lib/io/record_writer.h"
-#include "tensorflow/core/platform/logging.h"
+#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {

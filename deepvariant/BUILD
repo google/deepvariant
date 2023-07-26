@@ -86,6 +86,7 @@ cc_library(
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
@@ -122,6 +123,7 @@ cc_library(
     hdrs = ["postprocess_variants.h"],
     deps = [
         "@com_google_absl//absl/strings:cord",
+        "@com_google_absl//absl/log",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
@@ -166,6 +168,7 @@ cc_library(
         "//third_party/nucleus/util:samplers",
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
@@ -207,6 +210,7 @@ cc_library(
         "//third_party/nucleus/util:samplers",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/log",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -429,6 +433,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/hash",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
@@ -578,12 +583,13 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_googlesource_code_re2//:re2",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -597,12 +603,13 @@ cc_binary(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_googlesource_code_re2//:re2",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -956,6 +963,7 @@ cc_library(
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/log",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

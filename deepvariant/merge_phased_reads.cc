@@ -52,7 +52,8 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "tensorflow/core/platform/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "re2/re2.h"
 
 ABSL_FLAG(std::string, input_path, "", "Sharded input.");

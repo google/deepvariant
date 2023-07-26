@@ -46,7 +46,7 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "tensorflow/core/platform/logging.h"
+#include "absl/log/log.h"
 
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
