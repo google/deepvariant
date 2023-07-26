@@ -53,7 +53,7 @@
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/platform/logging.h"
+#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {

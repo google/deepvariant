@@ -48,7 +48,7 @@
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/platform/logging.h"
+#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {

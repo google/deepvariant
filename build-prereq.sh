@@ -127,6 +127,13 @@ fi
  git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
  echo | ./configure)
 
+# We want to use a newer absl version. So I grabbed the one from TensorFlow
+# r2.13. Eventually we'll want to update to TF 2.13. But for now this works.
+# TODO: After updating to v2.13, we can remove this.
+wget https://raw.githubusercontent.com/tensorflow/tensorflow/r2.13/third_party/absl/workspace.bzl -O ../tensorflow/third_party/absl/workspace.bzl
+wget https://raw.githubusercontent.com/tensorflow/tensorflow/r2.13/third_party/absl/absl_designated_initializers.patch -O ../tensorflow/third_party/absl/absl_design\
+ated_initializers.patch
+
 note_build_stage "Set pyparsing to 2.2.0 for CLIF."
 export PATH="$HOME/.local/bin":$PATH
 pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
