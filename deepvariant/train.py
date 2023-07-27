@@ -29,7 +29,6 @@
 r"""Train a DeepVariant Keras Model.
 """
 
-import os
 import sys
 import warnings
 
@@ -83,20 +82,6 @@ config_flags.DEFINE_config_file('config', None)
 FLAGS = flags.FLAGS
 
 
-def construct_hyperparam_str() -> str:
-  return (
-      f'bs{FLAGS.config.batch_size}'
-      f'lr{FLAGS.config.learning_rate}'
-      f'lrnepochsperdecay{FLAGS.config.learning_rate_num_epochs_per_decay}'
-      f'lrdecayrate{FLAGS.config.learning_rate_decay_rate}'
-      f'ad{FLAGS.config.average_decay}'
-      f'ls{FLAGS.config.label_smoothing}'
-      f'rho{FLAGS.config.rho}'
-      f'mom{FLAGS.config.momentum}'
-      f'eps{FLAGS.config.epsilon}'
-  )
-
-
 class F1Class(tfa.metrics.F1Score):
   """Reports F1 Score for a target class."""
 
@@ -118,9 +103,8 @@ def train(config: ml_collections.ConfigDict):
     tf.data.experimental.enable_debug_mode()
 
   experiment_dir = _EXPERIMENT_DIR.value
-  experiment_dir = os.path.join(experiment_dir, construct_hyperparam_str())
+
   model_dir = f'{experiment_dir}/checkpoints'
-  experiment_tensorboard_dir = f'{experiment_dir}/tensorboard_log'
   logging.info(
       'Use TPU at %s', _LEADER.value if _LEADER.value is not None else 'local'
   )
@@ -379,16 +363,11 @@ def train(config: ml_collections.ConfigDict):
   # ============= #
   # Training Loop #
   # ============= #
-  metric_writer = metric_writers.create_default_writer(
-      logdir=experiment_tensorboard_dir
-  )
+
+  metric_writer = metric_writers.create_default_writer(logdir=experiment_dir)
   num_train_steps = steps_per_epoch * config.num_epochs
   report_progress = periodic_actions.ReportProgress(
       num_train_steps=num_train_steps, writer=metric_writer, every_secs=600
-  )
-
-  metric_writer = metric_writers.create_default_writer(
-      logdir=experiment_tensorboard_dir
   )
 
   with strategy.scope():
