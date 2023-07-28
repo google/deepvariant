@@ -445,3 +445,24 @@ def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:
   if output_filename.endswith('.gz'):
     tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
   return tf.io.TFRecordWriter(output_filename, options=tf_options)
+
+
+def preprocess_images(images):
+  """Applies preprocessing operations for Inception images.
+
+  Because this will run in model_fn, on the accelerator, we use operations
+  that efficiently execute there.
+
+  Args:
+    images: A Tensor of shape [batch_size height, width, channel] with uint8
+      values.
+
+  Returns:
+    A tensor of images of shape [batch_size height, width, channel]
+    containing floating point values, with all points rescaled between
+    -1 and 1 and possibly resized.
+  """
+  images = tf.cast(images, dtype=tf.float32)
+  images = tf.subtract(images, 128.0)
+  images = tf.math.divide(images, 128.0)
+  return images
