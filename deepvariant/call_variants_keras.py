@@ -351,7 +351,7 @@ def get_dataset(path, example_shape):
     image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
     image = tf.reshape(image, example_shape)
     image = tf.cast(image, tf.float32)
-    image = tf.keras.applications.inception_v3.preprocess_input(image)
+    image = dv_utils.preprocess_images(image)
     variant = parsed_features['variant/encoded']
     alt_allele_indices = parsed_features['alt_allele_indices/encoded']
     return image, variant, alt_allele_indices
