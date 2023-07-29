@@ -122,14 +122,13 @@ cc_library(
     srcs = ["postprocess_variants.cc"],
     hdrs = ["postprocess_variants.h"],
     deps = [
-        "@com_google_absl//absl/strings:cord",
-        "@com_google_absl//absl/log",
-        "//third_party/nucleus/util:cpp_utils",
-        "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/protos:reference_cc_pb2",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings:cord",
         "@org_tensorflow//tensorflow/core:lib",
-        # TODO: remove when GCS build directive OSS bug is fixed.
         "@org_tensorflow//tensorflow/core/platform/cloud:gcs_file_system",
     ],
 )
