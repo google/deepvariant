@@ -179,23 +179,28 @@ def train(config: ml_collections.ConfigDict):
         staircase=True,
     )
 
+    logging.info(
+        'Exponential Decay:'
+        ' initial_learning_rate=%s\n'
+        ' decay_steps=%s\n'
+        ' learning_rate_decay_rate=%s',
+        config.learning_rate,
+        decay_steps,
+        config.learning_rate_decay_rate,
+    )
+
     if config.warmup_steps > 0:
-      warmup_steps = config.warmup_steps
       warmup_learning_rate = config.learning_rate / 10
       logging.info(
-          (
-              'Use LinearWarmup. warmup_steps=%s, warmup_steps=%s, '
-              'warmup_learning_rate=%s'
-          ),
+          'Use LinearWarmup: \n warmup_steps=%s\n warmup_learning_rate=%s',
           config.warmup_steps,
-          warmup_steps,
           warmup_learning_rate,
       )
       learning_rate = optimization.LinearWarmup(
           # This is initial learning rate.
           warmup_learning_rate=warmup_learning_rate,
           after_warmup_lr_sched=learning_rate,
-          warmup_steps=warmup_steps,
+          warmup_steps=config.warmup_steps,
       )
 
     # Define Optimizer.

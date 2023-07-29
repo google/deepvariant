@@ -79,7 +79,7 @@ def parse_example(
   image = tf.cast(image, tf.float32)
 
   # Preprocess image
-  image = tf.keras.applications.inception_v3.preprocess_input(image)
+  image = dv_utils.preprocess_images(image)
   label = tf.keras.layers.CategoryEncoding(
       num_tokens=dv_constants.NUM_CLASSES, output_mode='one_hot'
   )(parsed_features['label'])
@@ -314,7 +314,6 @@ class DeepVariantInput(object):
       If mode is PREDICT,
         features ...
     """
-    # TODO: Add tests for parse_tf_example function
     with tf.compat.v1.name_scope('input'):
       parsed = tf.io.parse_single_example(
           serialized=tf_example, features=self.feature_extraction_spec
