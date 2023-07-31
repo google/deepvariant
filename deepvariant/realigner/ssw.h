@@ -33,13 +33,12 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_SSW_H_
 
 #include "src/ssw_cpp.h"
-#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::string;
+using std::string;
 
 // This wrapper library exists solely to provide "string" interface methods,
 // since CLIF cannot wrap char*.  Note that we include this wrapper class here

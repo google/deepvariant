@@ -35,13 +35,12 @@
 
 #include "absl/strings/str_format.h"
 #include "src/ssw_cpp.h"
-#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::string;
+using std::string;
 
 // This exercises a bug in gcc 5.4.  internal
 // Building libssw with -fno-inline should work around it.

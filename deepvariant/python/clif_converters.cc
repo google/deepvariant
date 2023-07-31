@@ -42,13 +42,12 @@
 #include "numpy/ndarrayobject.h"
 #include "clif/python/postconv.h"
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using ::tensorflow::string;
+using std::string;
 
 // We need to initialize the numpy C ARRAY API via a call to import_array():
 // https://docs.scipy.org/doc/numpy-1.13.0/reference/c-api.array.html#importing-the-api

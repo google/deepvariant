@@ -33,15 +33,15 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
 
+#include "absl/strings/string_view.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::string;
+using std::string;
 
 // Creates an allele with the provided bases, type, and count.
 Allele MakeAllele(absl::string_view bases, const AlleleType type,

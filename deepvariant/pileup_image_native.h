@@ -39,13 +39,12 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
-#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::string;
+using std::string;
 
 constexpr int NUM_CHANNELS = 6;
 constexpr int NUM_SEQ_TYPE = PileupImageOptions::SequencingType_ARRAYSIZE;
