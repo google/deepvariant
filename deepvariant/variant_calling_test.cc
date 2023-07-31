@@ -45,6 +45,7 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/str_cat.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
@@ -52,7 +53,6 @@
 #include "third_party/nucleus/util/utils.h"
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/text_format.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 
 namespace learning {
 namespace genomics {
@@ -66,7 +66,6 @@ using nucleus::VcfReader;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using tensorflow::gtl::optional;
-using tensorflow::strings::StrCat;
 using ::testing::DoubleNear;
 using ::testing::Eq;
 using ::testing::UnorderedElementsAre;
@@ -85,7 +84,7 @@ AlleleCount MakeAlleleCount(const absl::string_view chr_name, int start,
   allele_count.set_ref_base(ref_base.data(), ref_base.size());
   allele_count.set_ref_supporting_read_count(ref_supporting_read_count);
   for (int i = 0; i < read_alleles.size(); ++i) {
-    (*allele_count.mutable_read_alleles())[StrCat("read_", i)] =
+    (*allele_count.mutable_read_alleles())[absl::StrCat("read_", i)] =
         read_alleles[i];
   }
   return allele_count;
@@ -275,7 +274,7 @@ class VariantCallingTest : public ::testing::Test {
         // Non-reference reads are stored in the read_alleles list.
         const Allele read_allele = MakeAllele(allele.bases(), allele.type(), 1);
         for (int i = 0; i < allele.count(); ++i) {
-          const string read_name = StrCat("read_", ++read_counter);
+          const string read_name = absl::StrCat("read_", ++read_counter);
           (*allele_count.mutable_read_alleles())[read_name] = read_allele;
         }
       }
@@ -818,7 +817,7 @@ TEST_F(VariantCallingTest, TestRefSites) {
 
   const DeepVariantCall& call = *optional_call;
   EXPECT_THAT(SupportingReadNames(call, kSupportingUncalledAllele),
-              UnorderedElementsAre(StrCat("read_", count + 1)));
+              UnorderedElementsAre(absl::StrCat("read_", count + 1)));
 }
 
 TEST_F(VariantCallingTest, TestRefSitesFraction) {

@@ -44,12 +44,12 @@
 #include "deepvariant/utils.h"
 #include "absl/container/btree_map.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "absl/log/log.h"
 
 namespace learning {
@@ -64,7 +64,6 @@ using tensorflow::string;
 using tensorflow::gtl::make_optional;
 using tensorflow::gtl::nullopt;
 using tensorflow::gtl::optional;
-using tensorflow::strings::StrCat;
 
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
@@ -193,7 +192,7 @@ string CalcRefBases(const string& ref_bases,
     CHECK(max_elt->bases().size() > 1)
         << "Saw invalid deletion allele with too few bases"
         << max_elt->ShortDebugString();
-    return StrCat(ref_bases, max_elt->bases().substr(1));
+    return absl::StrCat(ref_bases, max_elt->bases().substr(1));
   }
 }
 
@@ -229,7 +228,7 @@ string MakeAltAllele(const string& prefix, const string& variant_ref,
                      const uint32_t from) {
   const auto postfix =
       from >= variant_ref.length() ? "" : variant_ref.substr(from);
-  return StrCat(prefix, postfix);
+  return absl::StrCat(prefix, postfix);
 }
 
 // Is allele a good alternative allele for a Variant proto?

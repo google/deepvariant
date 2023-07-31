@@ -101,6 +101,7 @@ cc_test(
     deps = [
         ":allelecounter",
         ":utils",
+        "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
@@ -111,6 +112,7 @@ cc_test(
         "//third_party/nucleus/vendor:statusor",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
@@ -210,7 +212,7 @@ cc_library(
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/log",
-        "@org_tensorflow//tensorflow/core:lib",
+        "@com_google_absl//absl/strings",
     ],
 )
 

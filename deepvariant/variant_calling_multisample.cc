@@ -51,8 +51,8 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 
 namespace learning {
 namespace genomics {
@@ -61,7 +61,6 @@ namespace multi_sample {
 
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
-using tensorflow::strings::StrCat;
 
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
@@ -126,7 +125,7 @@ std::string CalcRefBases(const std::string& ref_bases,
     CHECK(max_elt->bases().size() > 1)
         << "Saw invalid deletion allele with too few bases"
         << max_elt->ShortDebugString();
-    return StrCat(ref_bases, max_elt->bases().substr(1));
+    return absl::StrCat(ref_bases, max_elt->bases().substr(1));
   }
 }
 
@@ -162,7 +161,7 @@ std::string MakeAltAllele(const std::string_view prefix,
                           const std::string& variant_ref, const uint32_t from) {
   const auto postfix =
       from >= variant_ref.length() ? "" : variant_ref.substr(from);
-  return StrCat(prefix, postfix);
+  return absl::StrCat(prefix, postfix);
 }
 
 // Is allele a good alternative allele for a Variant proto?
