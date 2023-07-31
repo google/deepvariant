@@ -31,13 +31,12 @@
 
 #include "deepvariant/realigner/ssw.h"
 #include "src/ssw_cpp.h"
-#include "tensorflow/core/platform/types.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using tensorflow::string;
+using std::string;
 
 Filter::Filter()
     : StripedSmithWaterman::Filter()

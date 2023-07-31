@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/log/log.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/utils.h"
@@ -45,7 +46,6 @@
 #include "tensorflow/core/lib/io/compression.h"
 #include "tensorflow/core/lib/io/record_reader.h"
 #include "tensorflow/core/lib/io/record_writer.h"
-#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {
@@ -89,7 +89,7 @@ void ProcessSingleSiteCallTfRecords(
         read_file.get(),
         tensorflow::io::RecordReaderOptions::CreateRecordReaderOptions(option));
 
-    uint64 offset = 0;
+    std::uint64_t offset = 0;
     tensorflow::tstring data;
     LOG(INFO) << "Read from: " << tfrecord_path;
     while (reader.ReadRecord(&offset, &data).ok()) {
