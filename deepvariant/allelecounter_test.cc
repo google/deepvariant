@@ -39,6 +39,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -47,6 +48,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -55,7 +57,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace learning {
@@ -71,7 +72,6 @@ using nucleus::genomics::v1::ContigInfo;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
 using nucleus::genomics::v1::ReferenceSequence;
-using tensorflow::strings::StrCat;
 using ::testing::Contains;
 using ::testing::Eq;
 using ::testing::IsEmpty;
@@ -91,7 +91,7 @@ class AlleleCounterTest : public ::testing::Test {
   AlleleCounterTest() {
     const string& test_fasta_path = nucleus::GetTestData("test.fasta");
     ref_ = std::move(nucleus::IndexedFastaReader::FromFile(
-                         test_fasta_path, StrCat(test_fasta_path, ".fai"))
+                         test_fasta_path, absl::StrCat(test_fasta_path, ".fai"))
                          .ValueOrDie());
     read_ = MakeRead("chr1", 1, "TCCGTxx", {"5M"});
     options_.mutable_read_requirements()->set_min_base_quality(21);
@@ -215,7 +215,7 @@ class AlleleCounterTest : public ::testing::Test {
                 const std::vector<std::string>& cigar_elements) {
     Read read = nucleus::MakeRead(chr, start, bases, cigar_elements);
     // Each read gets a unique name.
-    read.set_fragment_name(StrCat("read_", ++read_name_counter_));
+    read.set_fragment_name(absl::StrCat("read_", ++read_name_counter_));
     return read;
   }
 
@@ -317,7 +317,7 @@ TEST_F(AlleleCounterTest, TestTotalAlleleCounts) {
 
 TEST_F(AlleleCounterTest, TestAddSimpleRead) {
   for (const auto& op : {"M", "X", "="}) {
-    AddAndCheckReads(MakeRead(chr_, start_, "TCCGT", {StrCat(5, op)}),
+    AddAndCheckReads(MakeRead(chr_, start_, "TCCGT", {absl::StrCat(5, op)}),
                      {
                          {MakeAllele("T", AlleleType::REFERENCE, 1)},
                          {MakeAllele("C", AlleleType::REFERENCE, 1)},
@@ -355,7 +355,7 @@ TEST_F(AlleleCounterTest, TestAddRead) {
 
       const int n_bp = end - start;
       const string read_seq = seq.substr(start, n_bp);
-      const string read_cigar = StrCat(n_bp, "M");
+      const string read_cigar = absl::StrCat(n_bp, "M");
 
       AddAndCheckReads(MakeRead(chr_, start_ + start, read_seq, {read_cigar}),
                        expected);
@@ -414,11 +414,11 @@ TEST_F(AlleleCounterTest, TestDiffInsertionSizes) {
   for (int size = 1; size < 10; ++size) {
     const string bases(size, 'A');
     AddAndCheckReads(
-        MakeRead(chr_, start_, StrCat("TC", bases, {"CGT"}),
-                 {"2M", StrCat(size, "I"), "3M"}),
+        MakeRead(chr_, start_, absl::StrCat("TC", bases, {"CGT"}),
+                 {"2M", absl::StrCat(size, "I"), "3M"}),
         {
             {MakeAllele("T", AlleleType::REFERENCE, 1)},
-            {MakeAllele(StrCat("C", bases), AlleleType::INSERTION, 1)},
+            {MakeAllele(absl::StrCat("C", bases), AlleleType::INSERTION, 1)},
             {MakeAllele("C", AlleleType::REFERENCE, 1)},
             {MakeAllele("G", AlleleType::REFERENCE, 1)},
             {MakeAllele("T", AlleleType::REFERENCE, 1)},
