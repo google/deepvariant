@@ -38,7 +38,6 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
-# TODO: Move configs to deepvariant folder.
 from deepvariant import config
 from deepvariant import data_providers
 from deepvariant import dv_constants
@@ -103,7 +102,7 @@ class CreateExamplesTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    self.config = config.get_config()
+    self.config = config.get_config('exome')
 
   def test_invalid_mode(self):
     with self.assertRaisesRegex(ValueError, 'Mode must be set to'):
