@@ -36,6 +36,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -61,9 +62,6 @@ using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using tensorflow::string;
-using tensorflow::gtl::make_optional;
-using tensorflow::gtl::nullopt;
-using tensorflow::gtl::optional;
 
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
@@ -368,7 +366,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
     const std::vector<AlleleCount>& allele_counts) const {
   std::vector<DeepVariantCall> variants;
   for (const AlleleCount& allele_count : allele_counts) {
-    optional<DeepVariantCall> call = CallVariant(allele_count);
+    std::optional<DeepVariantCall> call = CallVariant(allele_count);
     if (call) {
       variants.push_back(*call);
     }
@@ -495,7 +493,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
   // For each variant in the region, loop through AlleleCounts to find a match
   // to the variant position. At each match, add the supporting reads.
   for (const auto& v : variants_in_region) {
-    optional<DeepVariantCall> call = ComputeVariant(v, allele_counts);
+    std::optional<DeepVariantCall> call = ComputeVariant(v, allele_counts);
     if (call) {
       calls.push_back(*call);
     }
@@ -503,7 +501,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
   return calls;
 }
 
-optional<DeepVariantCall> VariantCaller::ComputeVariant(
+std::optional<DeepVariantCall> VariantCaller::ComputeVariant(
     const Variant& variant,
     const std::vector<AlleleCount>& allele_counts) const {
   DeepVariantCall call;
@@ -517,7 +515,7 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
     if (!nucleus::AreCanonicalBases(allele_count_match.ref_base())) {
       // We don't emit calls at any site in the genome that isn't one of the
       // canonical DNA bases (one of A, C, G, or T).
-      return nullopt;
+      return std::nullopt;
     }
   }
   // If idx=-1 and no allele count matches we proceed with
@@ -536,20 +534,20 @@ optional<DeepVariantCall> VariantCaller::ComputeVariant(
   AddReadDepths(allele_count_match, allele_map, refbases, m_variant);
   AddSupportingReads(allele_count_match.read_alleles(), allele_map, refbases,
                      &call);
-  return make_optional(call);
+  return std::make_optional(call);
 }
 
-optional<DeepVariantCall> VariantCaller::CallVariant(
+std::optional<DeepVariantCall> VariantCaller::CallVariant(
     const AlleleCount& allele_count) const {
   if (!nucleus::AreCanonicalBases(allele_count.ref_base())) {
     // We don't emit calls at any site in the genome that isn't one of the
     // canonical DNA bases (one of A, C, G, or T).
-    return nullopt;
+    return std::nullopt;
   }
 
   std::vector<Allele> alt_alleles = SelectAltAlleles(allele_count);
   if (alt_alleles.empty() && !KeepReferenceSite()) {
-    return nullopt;
+    return std::nullopt;
   }
   const string refbases = CalcRefBases(allele_count.ref_base(), alt_alleles);
   std::vector<std::string> alternate_bases;
@@ -581,7 +579,7 @@ optional<DeepVariantCall> VariantCaller::CallVariant(
               alternate_bases, variant);
   AddReadDepths(allele_count, allele_map, refbases, variant);
   AddSupportingReads(allele_count.read_alleles(), allele_map, refbases, &call);
-  return make_optional(call);
+  return std::make_optional(call);
 }
 
 void VariantCaller::AddSupportingReads(
