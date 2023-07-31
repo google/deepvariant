@@ -33,6 +33,7 @@
 
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -65,7 +66,6 @@ using nucleus::MakeRange;
 using nucleus::VcfReader;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
-using tensorflow::gtl::optional;
 using ::testing::DoubleNear;
 using ::testing::Eq;
 using ::testing::UnorderedElementsAre;
@@ -207,7 +207,8 @@ class VariantCallingTest : public ::testing::Test {
   // functions below should be cleaned up. And, the assumption that the
   // proposed variant is the same as the expected variant should also be
   // re-examined.
-  optional<DeepVariantCall> CheckCallFromComputeVariantWithSameProposedVariant(
+  std::optional<DeepVariantCall>
+  CheckCallFromComputeVariantWithSameProposedVariant(
       absl::string_view ref, const VariantCaller& caller,
       const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& expected_variant) {
@@ -230,13 +231,13 @@ class VariantCallingTest : public ::testing::Test {
   // Checks the result of CallVariant on an AlleleCount with the requested
   // properties from the arguments. Returns the resulting DeepVariantCall
   // produced by CallVariants for further testing in the callee.
-  optional<DeepVariantCall> CheckCall(const absl::string_view ref,
+  std::optional<DeepVariantCall> CheckCall(const absl::string_view ref,
                                       const VariantCaller& caller,
                                       const std::vector<Allele>& alleles,
                                       const ExpectedVariant expect_variant,
                                       const Variant& expected_variant) {
     AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
-    const optional<DeepVariantCall> optional_variant =
+    const std::optional<DeepVariantCall> optional_variant =
         caller.CallVariant(allele_count);
     CheckVariant(optional_variant, expect_variant, expected_variant);
     return optional_variant;
@@ -246,11 +247,11 @@ class VariantCallingTest : public ::testing::Test {
   // requested properties from the arguments. Returns the resulting
   // DeepVariantCall produced by ComputeVariants for further testing in the
   // callee.
-  optional<DeepVariantCall> CheckCallFromComputeVariant(
+  std::optional<DeepVariantCall> CheckCallFromComputeVariant(
       const VariantCaller& caller, const Variant& proposed_variant,
       const std::vector<AlleleCount>& allele_counts,
       const ExpectedVariant expect_variant, const Variant& expected_variant) {
-    const optional<DeepVariantCall> optional_variant =
+    const std::optional<DeepVariantCall> optional_variant =
         caller.ComputeVariant(proposed_variant, allele_counts);
     CheckVariant(optional_variant, expect_variant, expected_variant);
     return optional_variant;
@@ -282,7 +283,7 @@ class VariantCallingTest : public ::testing::Test {
     return allele_count;
   }
 
-  void CheckVariant(const optional<DeepVariantCall> optional_variant,
+  void CheckVariant(const std::optional<DeepVariantCall> optional_variant,
                     const ExpectedVariant expect_variant,
                     const Variant& partial_expected_variant) {
     switch (expect_variant) {
@@ -763,7 +764,7 @@ TEST_F(VariantCallingTest, TestReadSupport) {
   const Variant variant = MakeExpectedVariant("ATG", {"A", "ACTTG"});
   VariantCaller caller(MakeOptions(count, 0.1));
 
-  const optional<DeepVariantCall> optional_call =
+  const std::optional<DeepVariantCall> optional_call =
       CheckCall(ref, caller,
                 {
                     MakeAllele(ref, AlleleType::REFERENCE, count),
@@ -806,7 +807,7 @@ TEST_F(VariantCallingTest, TestRefSites) {
   const Variant variant = MakeExpectedVariant("A", {"."});
   VariantCaller caller(MakeOptions(count, 0.1, kSampleName, 1.0));
 
-  const optional<DeepVariantCall> optional_call = CheckCall(
+  const std::optional<DeepVariantCall> optional_call = CheckCall(
       ref, caller,
       {
           MakeAllele(ref, AlleleType::REFERENCE, count),
@@ -831,7 +832,7 @@ TEST_F(VariantCallingTest, TestRefSitesFraction) {
   const int tries = 10000;
   int successes = 0;
   for (int i = 0; i < tries; ++i) {
-    const optional<DeepVariantCall> optional_call =
+    const std::optional<DeepVariantCall> optional_call =
         CheckCall(ref, caller, {MakeAllele(ref, AlleleType::REFERENCE, count)},
                   ExpectedVariant::kMaybeExpected, variant);
     if (optional_call) {
@@ -1190,7 +1191,7 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
 
   Variant proposed_variant =
       MakeExpectedVariant("TACACACACAC", {"TACACAC", "T"}, 66618315);
-  optional<DeepVariantCall> dv_call = CheckCallFromComputeVariant(
+  std::optional<DeepVariantCall> dv_call = CheckCallFromComputeVariant(
       caller, proposed_variant, {allele_count},
       ExpectedVariant::kVariantExpected,
       // Now, the 4 "TACAC" DELELTIONs above are correctly counted under
