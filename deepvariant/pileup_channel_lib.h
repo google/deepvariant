@@ -32,6 +32,7 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <map>
@@ -42,12 +43,13 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/btree_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace learning {
 namespace genomics {
@@ -55,7 +57,6 @@ namespace deepvariant {
 
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
-using tensorflow::uint8;
 
 //------------------------//
 // Default Channels Names //
@@ -95,7 +96,7 @@ const float kMaxPixelValueAsFloat = 254.0;
 const float MaxFragmentLength = 1000;
 
 // Scales an input value to pixel range 0-254.
-inline uint8 ScaleColor(int value, float max_val) {
+inline std::uint8_t ScaleColor(int value, float max_val) {
   if (static_cast<float>(value) > max_val) {
     value = max_val;
   }
@@ -104,8 +105,8 @@ inline uint8 ScaleColor(int value, float max_val) {
 }
 
 // Scales an input vector to pixel range 0-254
-inline std::vector<uint8> ScaleColorVector(std::vector<uint8>& channel_values,
-                                           float max_val) {
+inline std::vector<std::uint8_t> ScaleColorVector(
+    std::vector<std::uint8_t>& channel_values, float max_val) {
   for (int i = 0; i < channel_values.size(); i++) {
     int value = channel_values[i];
     if (static_cast<float>(value) > max_val) {
@@ -140,9 +141,9 @@ inline int BaseColor(char base, const PileupImageOptions& options) {
   }
 }
 
-inline std::vector<uint8> BaseColorVector(const std::string& bases,
-                                          const PileupImageOptions& options) {
-  std::vector<uint8> base_colors;
+inline std::vector<std::uint8_t> BaseColorVector(
+    const std::string& bases, const PileupImageOptions& options) {
+  std::vector<std::uint8_t> base_colors;
   base_colors.reserve(bases.size());
   for (const char base : bases) {
     int color = BaseColor(base, options);
@@ -328,11 +329,11 @@ inline int GcContent(const Read& read) {
                           100);
 }
 
-inline std::vector<uint8> IsHomoPolymer(const Read& read) {
+inline std::vector<std::uint8_t> IsHomoPolymer(const Read& read) {
   // Generates a vector indicating homopolymers of 3 or more.
   // ATCGGGAG
   // 00011100
-  std::vector<uint8> homopolymer(read.aligned_sequence().size());
+  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
   auto seq = read.aligned_sequence();
   for (int i = 2; i < seq.size(); i++) {
     if (seq[i] == seq[i - 1] && seq[i - 1] == seq[i - 2]) {
@@ -344,11 +345,11 @@ inline std::vector<uint8> IsHomoPolymer(const Read& read) {
   return homopolymer;
 }
 
-inline std::vector<uint8> HomoPolymerWeighted(const Read& read) {
+inline std::vector<std::uint8_t> HomoPolymerWeighted(const Read& read) {
   // Generates a vector reflecting the number of repeats observed.
   // ATCGGGAA
   // 11133322
-  std::vector<uint8> homopolymer(read.aligned_sequence().size());
+  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
   auto seq = read.aligned_sequence();
   homopolymer[0] = 1;
   int current_weight = 1;
@@ -365,9 +366,9 @@ inline std::vector<uint8> HomoPolymerWeighted(const Read& read) {
   return homopolymer;
 }
 
-inline std::vector<uint8> Blank(const Read& read) {
+inline std::vector<std::uint8_t> Blank(const Read& read) {
   // Used to return a blank channel.
-  std::vector<uint8> blank(read.aligned_sequence().size(), 0);
+  std::vector<std::uint8_t> blank(read.aligned_sequence().size(), 0);
   return blank;
 }
 
@@ -386,18 +387,17 @@ inline int normalizeFragmentLength(const Read& read) {
   if (static_cast<float>(fragment_length) > MaxFragmentLength) {
     fragment_length = static_cast<int>(MaxFragmentLength);
   }
-  return static_cast<int>(kMaxPixelValueAsFloat *
-    (static_cast<float>(fragment_length) / MaxFragmentLength));
+  return static_cast<int>(
+      kMaxPixelValueAsFloat *
+      (static_cast<float>(fragment_length) / MaxFragmentLength));
 }
 
-inline std::vector<uint8> ReadInsertSize(
-    const Read& read) {
+inline std::vector<std::uint8_t> ReadInsertSize(const Read& read) {
   // Generates a vector reflecting the fragment length of the read
-  std::vector<uint8> reads_with_insert_size(
+  std::vector<std::uint8_t> reads_with_insert_size(
       read.aligned_sequence().size(), normalizeFragmentLength(read));
   return reads_with_insert_size;
 }
-
 
 inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
   if (channel == ch_read_base) return DeepVariantChannelEnum::CH_READ_BASE;
@@ -405,8 +405,7 @@ inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
     return DeepVariantChannelEnum::CH_BASE_QUALITY;
   if (channel == ch_mapping_quality)
     return DeepVariantChannelEnum::CH_MAPPING_QUALITY;
-  if (channel == ch_strand)
-    return DeepVariantChannelEnum::CH_STRAND;
+  if (channel == ch_strand) return DeepVariantChannelEnum::CH_STRAND;
   if (channel == ch_read_supports_variant)
     return DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT;
   if (channel == ch_base_differs_from_ref)
@@ -424,12 +423,10 @@ inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
   if (channel == ch_homopolymer_weighted)
     return DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED;
   if (channel == ch_blank) return DeepVariantChannelEnum::CH_BLANK;
-  if (channel == ch_insert_size)
-    return DeepVariantChannelEnum::CH_INSERT_SIZE;
+  if (channel == ch_insert_size) return DeepVariantChannelEnum::CH_INSERT_SIZE;
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
-      << "enum in DeepVariantChannelEnum.";
+               << "enum in DeepVariantChannelEnum.";
 }
-
 
 //-------------------//
 // Channels Accessor //
@@ -452,9 +449,9 @@ class OptChannels {
   std::map<std::string, std::vector<unsigned char>> read_level_data_;
   std::map<std::string, std::vector<unsigned char>> data_;
   const std::set<std::string> base_level_channels_set_ = {
-    ch_read_base,
-    ch_base_quality,
-    ch_base_differs_from_ref,
+      ch_read_base,
+      ch_base_quality,
+      ch_base_differs_from_ref,
   };
 
   bool CalculateChannels(const std::vector<std::string>& channels,
@@ -474,7 +471,7 @@ class OptChannels {
       // If we are looking at a base level channel we will fill that data out
       // later. For read level channels we can calculate values now
       if (base_level_channels_set_.find(channel) !=
-                  base_level_channels_set_.end()) {
+          base_level_channels_set_.end()) {
         included_base_level_channels.insert(channel);
       } else {
         bool ok = CalculateReadLevelData(channel, read, dv_call, alt_alleles);
@@ -493,63 +490,59 @@ class OptChannels {
     // have a low quality base at the call position (in which case we
     // should return null) from EncodeRead.
     std::function<bool(int, int, const CigarUnit::Operation&)>
-        action_per_cigar_unit =
-          [&](int ref_i, int read_i, const CigarUnit::Operation& cigar_op) {
-            char read_base = 0;
-            if (cigar_op == CigarUnit::INSERT) {
-              read_base = options_.indel_anchoring_base_char()[0];
-            } else if (cigar_op == CigarUnit::DELETE) {
-              ref_i -= 1;  // Adjust anchor base on reference
-              read_base = options_.indel_anchoring_base_char()[0];
-            } else if (cigar_op == CigarUnit::ALIGNMENT_MATCH ||
-                      cigar_op == CigarUnit::SEQUENCE_MATCH ||
-                      cigar_op == CigarUnit::SEQUENCE_MISMATCH) {
-              read_base = read.aligned_sequence()[read_i];
-            }
+        action_per_cigar_unit = [&](int ref_i, int read_i,
+                                    const CigarUnit::Operation& cigar_op) {
+          char read_base = 0;
+          if (cigar_op == CigarUnit::INSERT) {
+            read_base = options_.indel_anchoring_base_char()[0];
+          } else if (cigar_op == CigarUnit::DELETE) {
+            ref_i -= 1;  // Adjust anchor base on reference
+            read_base = options_.indel_anchoring_base_char()[0];
+          } else if (cigar_op == CigarUnit::ALIGNMENT_MATCH ||
+                     cigar_op == CigarUnit::SEQUENCE_MATCH ||
+                     cigar_op == CigarUnit::SEQUENCE_MISMATCH) {
+            read_base = read.aligned_sequence()[read_i];
+          }
 
-            size_t col = ref_i - image_start_pos;
-            if (read_base && 0 <= col && col < ref_bases.size()) {
-              int base_quality = read.aligned_quality(read_i);
-              // Bail out if we found this read had a low-quality base at the
-              // call site.
-              if (ref_i == dv_call.variant().start() &&
-                  base_quality <
+          size_t col = ref_i - image_start_pos;
+          if (read_base && 0 <= col && col < ref_bases.size()) {
+            int base_quality = read.aligned_quality(read_i);
+            // Bail out if we found this read had a low-quality base at the
+            // call site.
+            if (ref_i == dv_call.variant().start() &&
+                base_quality <
                     options_.read_requirements().min_base_quality()) {
-                return false;
-              }
-
-              // Calculate base level values for channels
-              for (const std::string& channel : included_base_level_channels)
-                {
-                if (channel == ch_read_base) {
-                  data_[channel][col] = BaseColor(read_base, options_);
-                } else if (channel == ch_base_quality) {
-                  data_[channel][col] =
-                      ScaleColor(base_quality, options_.base_quality_cap());
-                } else if (channel == ch_base_differs_from_ref) {
-                  bool matches_ref = (read_base == ref_bases[col]);
-                  data_[channel][col] =
-                      MatchesRefColor(matches_ref, options_);
-                }
-              }
-
-              // Fill in base level value for read level channels from
-              // previously calculated read level values
-              for (
-                std::map<std::string, std::vector<unsigned char>>::iterator
-                          iter = read_level_data_.begin();
-                    iter != read_level_data_.end(); ++iter)
-              {
-                std::string channel =  iter->first;
-                if (iter->second.size() == 1) {
-                  data_[channel][col] = iter->second[0];
-                } else {
-                  data_[channel][col] = iter->second[read_i];
-                }
-                }
+              return false;
             }
-            return true;
-          };
+
+            // Calculate base level values for channels
+            for (const std::string& channel : included_base_level_channels) {
+              if (channel == ch_read_base) {
+                data_[channel][col] = BaseColor(read_base, options_);
+              } else if (channel == ch_base_quality) {
+                data_[channel][col] =
+                    ScaleColor(base_quality, options_.base_quality_cap());
+              } else if (channel == ch_base_differs_from_ref) {
+                bool matches_ref = (read_base == ref_bases[col]);
+                data_[channel][col] = MatchesRefColor(matches_ref, options_);
+              }
+            }
+
+            // Fill in base level value for read level channels from
+            // previously calculated read level values
+            for (std::map<std::string, std::vector<unsigned char>>::iterator
+                     iter = read_level_data_.begin();
+                 iter != read_level_data_.end(); ++iter) {
+              std::string channel = iter->first;
+              if (iter->second.size() == 1) {
+                data_[channel][col] = iter->second[0];
+              } else {
+                data_[channel][col] = iter->second[read_i];
+              }
+            }
+          }
+          return true;
+        };
 
     return CalculateBaseLevelData(read, action_per_cigar_unit);
   }
@@ -572,12 +565,12 @@ class OptChannels {
     } else if (channel == ch_strand) {
       const bool is_forward_strand =
           !read.alignment().position().reverse_strand();
-      read_level_data_[channel].assign(
-          {static_cast<uint8>(StrandColor(is_forward_strand, options_))});
+      read_level_data_[channel].assign({static_cast<std::uint8_t>(
+          StrandColor(is_forward_strand, options_))});
     } else if (channel == ch_read_supports_variant) {
       int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
-      read_level_data_[channel].assign(
-          {static_cast<uint8>(SupportsAltColor(supports_alt, options_))});
+      read_level_data_[channel].assign({static_cast<std::uint8_t>(
+          SupportsAltColor(supports_alt, options_))});
     } else if (channel == ch_read_mapping_percent) {
       read_level_data_[channel].assign(
           {ScaleColor(ReadMappingPercent(read), MaxMappingPercent)});
@@ -585,20 +578,21 @@ class OptChannels {
       read_level_data_[channel].assign(
           {ScaleColor(AvgBaseQuality(read), MaxAvgBaseQuality)});
     } else if (channel == ch_identity) {
-      read_level_data_[channel].assign({ScaleColor(Identity(read),
-                                                    MaxIdentity)});
+      read_level_data_[channel].assign(
+          {ScaleColor(Identity(read), MaxIdentity)});
     } else if (channel == ch_gap_compressed_identity) {
       read_level_data_[channel].assign(
           {ScaleColor(GapCompressedIdentity(read), MaxIdentity)});
     } else if (channel == ch_gc_content) {
-      read_level_data_[channel].assign({ScaleColor(GcContent(read),
-                                                    MaxGcContent)});
+      read_level_data_[channel].assign(
+          {ScaleColor(GcContent(read), MaxGcContent)});
     } else if (channel == ch_is_homopolymer) {
-      std::vector<uint8> is_homopolymer = IsHomoPolymer(read);
-      read_level_data_[channel] = ScaleColorVector(is_homopolymer,
-                                                    MaxIsHomoPolymer);
+      std::vector<std::uint8_t> is_homopolymer = IsHomoPolymer(read);
+      read_level_data_[channel] =
+          ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
     } else if (channel == ch_homopolymer_weighted) {
-      std::vector<uint8> homopolymer_weighted = HomoPolymerWeighted(read);
+      std::vector<std::uint8_t> homopolymer_weighted =
+          HomoPolymerWeighted(read);
       read_level_data_[channel] =
           ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
     } else if (channel == ch_blank) {
@@ -612,10 +606,10 @@ class OptChannels {
 
   // Calculate values for channels that depend on information at the
   // granularity of bases within the read and/or reference sequence.
-  bool CalculateBaseLevelData(const Read& read,
-                              std::function<
-                                  bool(int, int, const CigarUnit::Operation&)>
-                              action_per_cigar_unit) {
+  bool CalculateBaseLevelData(
+      const Read& read,
+      std::function<bool(int, int, const CigarUnit::Operation&)>
+          action_per_cigar_unit) {
     // In the following, we iterate over alignment information for each
     // base of read creating an association between a reference index,
     // read index and cigar operation and storing in a vector for subsequent
@@ -677,7 +671,7 @@ class OptChannels {
         case CigarUnit::INSERT:
         case CigarUnit::CLIP_SOFT:
           // Insert op.
-          ok = action_per_cigar_unit(ref_i - 1 , read_i, op);
+          ok = action_per_cigar_unit(ref_i - 1, read_i, op);
           read_i += op_len;
           break;
         case CigarUnit::DELETE:
@@ -694,13 +688,15 @@ class OptChannels {
           LOG(FATAL) << "Unrecognized CIGAR op";
       }
 
-      if (!ok) {return false;}
+      if (!ok) {
+        return false;
+      }
     }
 
     return true;
   }
 
-  inline uint8 GetChannelData(const std::string& channel, int col) {
+  inline std::uint8_t GetChannelData(const std::string& channel, int col) {
     return data_[channel][col];
   }
 
@@ -722,34 +718,40 @@ class OptChannels {
             {ScaleColor(ref_qual, options_.base_quality_cap())});
       } else if (channel == ch_strand) {
         int strand = StrandColor(true, options_);
-        ref_data_[channel].assign({static_cast<uint8>(strand)});
+        ref_data_[channel].assign({static_cast<std::uint8_t>(strand)});
       } else if (channel == ch_read_supports_variant) {
         int alt = SupportsAltColor(0, options_);
-        ref_data_[channel].assign({static_cast<uint8>(alt)});
+        ref_data_[channel].assign({static_cast<std::uint8_t>(alt)});
       } else if (channel == ch_base_differs_from_ref) {
         int ref = MatchesRefColor(true, options_);
-        ref_data_[channel].assign({static_cast<uint8>(ref)});
+        ref_data_[channel].assign({static_cast<std::uint8_t>(ref)});
       } else if (channel == ch_read_mapping_percent) {
-        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
+        ref_data_[channel].assign(
+            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_avg_base_quality) {
-        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
+        ref_data_[channel].assign(
+            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_identity) {
-        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
+        ref_data_[channel].assign(
+            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_gap_compressed_identity) {
-        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
+        ref_data_[channel].assign(
+            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_insert_size) {
-        ref_data_[channel].assign({static_cast<uint8>(kMaxPixelValueAsFloat)});
+        ref_data_[channel].assign(
+            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
       } else if (channel == ch_gc_content) {
         refRead.set_aligned_sequence(ref_bases);
         ref_data_[channel].assign(
             {ScaleColor(GcContent(refRead), MaxGcContent)});
       } else if (channel == ch_is_homopolymer) {
         refRead.set_aligned_sequence(ref_bases);
-        std::vector<uint8> is_homopolymer = IsHomoPolymer(refRead);
+        std::vector<std::uint8_t> is_homopolymer = IsHomoPolymer(refRead);
         ref_data_[channel] = ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
       } else if (channel == ch_homopolymer_weighted) {
         refRead.set_aligned_sequence(ref_bases);
-        std::vector<uint8> homopolymer_weighted = HomoPolymerWeighted(refRead);
+        std::vector<std::uint8_t> homopolymer_weighted =
+            HomoPolymerWeighted(refRead);
         ref_data_[channel] =
             ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
       } else {
@@ -758,7 +760,7 @@ class OptChannels {
     }
   }
 
-  inline uint8 GetRefRows(const std::string& channel, int col) {
+  inline std::uint8_t GetRefRows(const std::string& channel, int col) {
     // Returns first value if size 1 else return specific column.
     // Note that ref_data is indexed by col and not pos.
     if (ref_data_[channel].size() == 1) {

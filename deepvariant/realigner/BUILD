@@ -97,8 +97,8 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )
@@ -150,10 +150,11 @@ cc_library(
         "//third_party/nucleus/protos:reads_cc_pb2",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 

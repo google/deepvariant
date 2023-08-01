@@ -56,7 +56,6 @@
 #include "boost/graph/reverse_graph.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace learning {
 namespace genomics {

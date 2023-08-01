@@ -122,6 +122,8 @@ cc_library(
     deps = [
         "//deepvariant:pileup_image_native",
         "@clif//:cpp_runtime",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@local_config_python//:numpy_headers",
         "@local_config_python//:python_headers",
         "@org_tensorflow//tensorflow/core:lib",
