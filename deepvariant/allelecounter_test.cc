@@ -57,7 +57,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace learning {
 namespace genomics {
@@ -1262,7 +1261,7 @@ TEST_F(AlleleCounterTest, NormalizeCigarTwoDelsMerged) {
                        // taken from HG003 chr1:8,089,255
                        {"4M", "9D", "1M", "3D", "3M"});
 
-  // Most right DEL is shifted to the left and become ajacent to the DEL on the
+  // Most right DEL is shifted to the left and become adjacent to the DEL on the
   // left. Two DELs should be merged. The resulting DEL should be normalized
   // again.
   std::vector<CigarUnit> expected_cigar =
@@ -1328,7 +1327,7 @@ TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedToEdge) {
   // Creating a InMemoryFastaReader with a test sequence.
   CreateTestSeq("chr1", 0, 0, 34,
       "ATGTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT", &contigs, &seqs);  // sequence
-                                                              // of TTCC-repeats
+                                   // of TTCC-repeats
   std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
       nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
 
@@ -1403,7 +1402,7 @@ TEST_F(AlleleCounterTest, NormalizeCigarDelInsMergedNoShift) {
   // Creating a InMemoryFastaReader with a test sequence.
   CreateTestSeq("chr1", 0, 0, 34,
       "ATGTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT", &contigs, &seqs);  // sequence
-                                                             // of TTCC-repeat.
+                                   // of TTCC-repeat.
   std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
       nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
 

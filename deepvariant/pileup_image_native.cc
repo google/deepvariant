@@ -46,6 +46,7 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 
 using nucleus::genomics::v1::CigarUnit;
@@ -57,8 +58,6 @@ using learning::genomics::deepvariant::DeepVariantCall;
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
-using tensorflow::uint8;
 
 namespace {
 
@@ -300,9 +299,9 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     return nullptr;
   }
   const bool is_forward_strand = !read.alignment().position().reverse_strand();
-  const uint8 alt_color = SupportsAltColor(supports_alt);
-  const uint8 mapping_color = MappingQualityColor(mapping_quality);
-  const uint8 strand_color = StrandColor(is_forward_strand);
+  const std::uint8_t alt_color = SupportsAltColor(supports_alt);
+  const std::uint8_t mapping_color = MappingQualityColor(mapping_quality);
+  const std::uint8_t strand_color = StrandColor(is_forward_strand);
   const int min_base_quality = options_.read_requirements().min_base_quality();
 
   // Calculate AUX channels.
@@ -310,7 +309,8 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
       (options_.use_allele_frequency())
           ? ReadAlleleFrequency(dv_call, read, alt_alleles)
           : 0;
-  const uint8 allele_frequency_color = AlleleFrequencyColor(allele_frequency);
+  const std::uint8_t allele_frequency_color =
+      AlleleFrequencyColor(allele_frequency);
   const int hp_value = (options_.add_hp_channel())
                            ? GetHPValueForHPChannel(
                                  read, options_.hp_tag_for_assembly_polishing())
@@ -474,13 +474,13 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
     const string& ref_bases) {
   int ref_qual = options_.reference_base_quality();
-  uint8 base_quality_color = BaseQualityColor(ref_qual);
-  uint8 mapping_quality_color = MappingQualityColor(ref_qual);
+  std::uint8_t base_quality_color = BaseQualityColor(ref_qual);
+  std::uint8_t mapping_quality_color = MappingQualityColor(ref_qual);
   // We use "+" strand color for the reference.
-  uint8 strand_color = StrandColor(true);
-  uint8 alt_color = SupportsAltColor(0);
-  uint8 ref_color = MatchesRefColor(true);
-  uint8 allele_frequency_color = AlleleFrequencyColor(0);
+  std::uint8_t strand_color = StrandColor(true);
+  std::uint8_t alt_color = SupportsAltColor(0);
+  std::uint8_t ref_color = MatchesRefColor(true);
+  std::uint8_t allele_frequency_color = AlleleFrequencyColor(0);
 
   ImageRow img_row(ref_bases.size(), options_.num_channels(),
                    options_.use_allele_frequency(), options_.add_hp_channel(),

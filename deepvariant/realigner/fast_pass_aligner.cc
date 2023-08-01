@@ -42,13 +42,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
-#include "tensorflow/core/platform/logging.h"
 #include "re2/re2.h"
 
 namespace learning {
@@ -192,7 +193,7 @@ Alignment FastPassAligner::SswAlign(const string& target) const {
   if (ssw_aligner_->Align(target, filter, &alignment)) {
     return alignment;
   } else {
-    VLOG(2) << "SSW alignment failed for query: '" << target << "'";
+    LOG(WARNING) << "SSW alignment failed for query: '" << target << "'";
     return Alignment();
   }
 }
@@ -578,8 +579,7 @@ void FastPassAligner::RealignReadsToReference(
     } else {  // Could not find a new alignment.
       if (force_alignment_) {
       } else {
-        // Keep the original alignment.
-        VLOG(3) << "Keeping original alignment (force_alignment is off)";
+        // Keeping original alignment (force_alignment is off).
         (*realigned_reads)->push_back(realigned_read);
       }
     }

@@ -40,8 +40,8 @@
 #include "deepvariant/pileup_image_native.h"
 #include "numpy/arrayobject.h"
 #include "numpy/ndarrayobject.h"
+#include "absl/log/check.h"
 #include "clif/python/postconv.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace learning {
 namespace genomics {
