@@ -35,6 +35,7 @@ from absl.testing import parameterized
 import numpy as np
 import tensorflow as tf
 
+from deepvariant import dv_config
 from deepvariant import dv_constants
 from deepvariant import keras_modeling
 from third_party.nucleus.testing import test_utils
@@ -198,6 +199,35 @@ class KerasModelingTest(parameterized.TestCase):
     self.assertTrue(np.all(y >= 0))
     self.assertTrue(np.all(y <= 1))
     self.assertAlmostEqual(np.sum(y), 1.0, delta=1e-4)
+
+
+class GetModelTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      dict(model_type='inception_v3'),
+  )
+  def test_retrieve_model_and_fn(self, model_type):
+    config = dv_config.get_config('exome')
+
+    with config.unlocked():
+      config.model_type = model_type
+
+    # This test should not throw any errors when retrieving the model
+    # and it's corresponding preprocess function.
+    keras_modeling.get_model(config)
+    keras_modeling.get_model_preprocess_fn(config)
+
+  def test_get_model_error(self):
+    config = dv_config.get_config('exome')
+
+    with config.unlocked():
+      config.model_type = 'not_a_model'
+
+    with self.assertRaisesRegex(ValueError, 'Unsupported model type'):
+      keras_modeling.get_model(config)
+
+    with self.assertRaisesRegex(ValueError, 'Unsupported model type'):
+      keras_modeling.get_model_preprocess_fn(config)
 
 
 if __name__ == '__main__':

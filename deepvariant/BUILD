@@ -795,9 +795,9 @@ py_library(
     srcs = ["keras_modeling.py"],
     srcs_version = "PY3",
     deps = [
-        # TODO: I need to break this down into smaller deps.
-        ":call_variants_main_lib",
         ":dv_constants",
+        ":dv_utils",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -806,6 +806,7 @@ py_test(
     size = "large",
     srcs = ["keras_modeling_test.py"],
     deps = [
+        ":dv_config",
         ":dv_constants",
         ":keras_modeling",
         "//third_party/nucleus/testing:py_test_utils",
@@ -1189,6 +1190,7 @@ py_library(
     deps = [
         ":dv_constants",
         ":dv_utils",
+        ":keras_modeling",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
         "@absl_py//absl/logging",
@@ -1211,11 +1213,10 @@ py_library(
     srcs = ["data_providers_test.py"],
     srcs_version = "PY3",
     deps = [
-        ":config",
         ":data_providers",
+        ":dv_config",
         ":dv_constants",
         ":dv_utils",
-        ":modeling",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
@@ -1670,8 +1671,8 @@ py_library(
 )
 
 py_library(
-    name = "config",
-    srcs = ["config.py"],
+    name = "dv_config",
+    srcs = ["dv_config.py"],
 )
 
 py_library(

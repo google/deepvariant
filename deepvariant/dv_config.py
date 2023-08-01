@@ -60,6 +60,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config = ml_collections.ConfigDict()
   config.early_stopping = ml_collections.ConfigDict()
 
+  config.model_type = 'inception_v3'
   config.trial = 0  # Used to allow for replicates during training.
 
   # Default Dataset
