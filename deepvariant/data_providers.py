@@ -33,7 +33,7 @@ training and evaluating germline calling accuracy.
 """
 
 import itertools
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 
 
@@ -44,6 +44,7 @@ from tensorflow import estimator as tf_estimator
 
 from deepvariant import dv_constants
 from deepvariant import dv_utils
+from deepvariant import keras_modeling
 from deepvariant.protos import deepvariant_pb2
 from google.protobuf import text_format
 from third_party.nucleus.io import sharded_file_utils
@@ -59,32 +60,44 @@ _DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS = 1024
 _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
 
 
-def parse_example(
-    example: tf.train.Example,
-    input_shape: Tuple[int, int, int],
-) -> Tuple[tf.Tensor, tf.Tensor]:
-  """Parses a serialized tf.Example, preprocesses the image, and one-hot encodes the label."""
-  proto_features = {
-      'image/encoded': tf.io.FixedLenFeature((), tf.string),
-      'variant/encoded': tf.io.FixedLenFeature((), tf.string),
-      'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
-      'label': tf.io.FixedLenFeature((1), tf.int64),
-  }
+def create_parse_example_fn(
+    config: ml_collections.ConfigDict,
+) -> Callable[
+    [tf.train.Example, Tuple[int, int, int]], Tuple[tf.Tensor, tf.Tensor]
+]:
+  """Generates a function for parsing tf.train.Examples."""
 
-  parsed_features = tf.io.parse_single_example(
-      serialized=example, features=proto_features
-  )
-  image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
-  image = tf.reshape(image, input_shape)
-  image = tf.cast(image, tf.float32)
+  preprocess_fn = keras_modeling.get_model_preprocess_fn(config)
 
-  # Preprocess image
-  image = dv_utils.preprocess_images(image)
-  label = tf.keras.layers.CategoryEncoding(
-      num_tokens=dv_constants.NUM_CLASSES, output_mode='one_hot'
-  )(parsed_features['label'])
+  def parse_example(
+      example: tf.train.Example,
+      input_shape: Tuple[int, int, int],
+  ) -> Tuple[tf.Tensor, tf.Tensor]:
+    """Parses a serialized tf.Example, preprocesses the image, and one-hot encodes the label."""
+    proto_features = {
+        'image/encoded': tf.io.FixedLenFeature((), tf.string),
+        'variant/encoded': tf.io.FixedLenFeature((), tf.string),
+        'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
+        'label': tf.io.FixedLenFeature((1), tf.int64),
+    }
 
-  return image, label
+    parsed_features = tf.io.parse_single_example(
+        serialized=example, features=proto_features
+    )
+    image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
+    image = tf.reshape(image, input_shape)
+    image = tf.cast(image, tf.float32)
+
+    # Preprocess image
+    if preprocess_fn:
+      image = preprocess_fn(image)
+    label = tf.keras.layers.CategoryEncoding(
+        num_tokens=dv_constants.NUM_CLASSES, output_mode='one_hot'
+    )(parsed_features['label'])
+
+    return image, label
+
+  return parse_example
 
 
 def input_fn(
@@ -151,13 +164,15 @@ def input_fn(
         config.shuffle_buffer_elements, reshuffle_each_iteration=True
     )
 
+  # Retrieve preprocess function
+  parse_example = create_parse_example_fn(config)
+
   ds = ds.map(
       map_func=lambda example: parse_example(example, input_shape),
       num_parallel_calls=tf.data.AUTOTUNE,
       deterministic=False,
   )
-  batch_size = config.batch_size if mode == 'train' else config.batch_size
-  ds = ds.batch(batch_size=batch_size, drop_remainder=True)
+  ds = ds.batch(batch_size=config.batch_size, drop_remainder=True)
 
   # Limit the number of batches.
   if limit:

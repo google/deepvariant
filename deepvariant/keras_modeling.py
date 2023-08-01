@@ -30,12 +30,14 @@
 
 import os
 import tempfile
-from typing import Optional, Tuple, Type
+from typing import Callable, Optional, Tuple, Type, Union
 
 from absl import logging
+import ml_collections
 import tensorflow as tf
 
 from deepvariant import dv_constants
+from deepvariant import dv_utils
 
 _DEFAULT_WEIGHT_DECAY = 0.00004
 _DEFAULT_BACKBONE_DROP_DRATE = 0.2
@@ -353,3 +355,23 @@ def inceptionv3(
     )
     model.load_weights(weights)
     return model
+
+
+def get_model(
+    config: ml_collections.ConfigDict,
+) -> Union[tf.keras.Model, Callable[..., tf.keras.Model]]:
+  if config.model_type == 'inception_v3':
+    return inceptionv3
+  else:
+    raise ValueError('Unsupported model type.')
+
+
+def get_model_preprocess_fn(
+    config: ml_collections.ConfigDict,
+) -> Callable[[tf.train.Example], tf.train.Example]:
+  """Returns the preprocess function for the model type."""
+
+  if config.model_type == 'inception_v3':
+    return dv_utils.preprocess_images
+  else:
+    raise ValueError('Unsupported model type.')

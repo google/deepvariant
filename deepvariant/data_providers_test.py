@@ -38,8 +38,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
-from deepvariant import config
 from deepvariant import data_providers
+from deepvariant import dv_config
 from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant import testdata
@@ -93,7 +93,9 @@ class ParseExampleTest(absltest.TestCase):
     ds = tf.data.TFRecordDataset(path, compression_type='GZIP')
     item = ds.take(1).get_single_element()
     input_shape = dv_utils.get_shape_from_examples_path(path)
-    output = data_providers.parse_example(item, input_shape=input_shape)
+    config = dv_config.get_config('exome')
+    parse_example = data_providers.create_parse_example_fn(config)
+    output = parse_example(item, input_shape)
     self.assertIsInstance(output, tuple)
     self.assertIsInstance(output[0], tf.Tensor)
 
@@ -102,7 +104,7 @@ class CreateExamplesTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    self.config = config.get_config('exome')
+    self.config = dv_config.get_config('exome')
 
   def test_invalid_mode(self):
     with self.assertRaisesRegex(ValueError, 'Mode must be set to'):
