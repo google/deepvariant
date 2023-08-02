@@ -60,6 +60,13 @@ _LEADER = flags.DEFINE_string(
     ),
 )
 
+_STRATEGY = flags.DEFINE_enum(
+    'strategy',
+    'mirrored',
+    ['tpu', 'mirrored'],
+    'The strategy to use.',
+)
+
 _EXPERIMENT_DIR = flags.DEFINE_string(
     'experiment_dir',
     None,
@@ -109,14 +116,17 @@ def train(config: ml_collections.ConfigDict):
       'Use TPU at %s', _LEADER.value if _LEADER.value is not None else 'local'
   )
   logging.info('experiment_dir: %s', experiment_dir)
-  tpu = _LEADER.value
-  if tpu != 'local':
-    resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=tpu)
+  if _STRATEGY.value == 'tpu':
+    resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
+        tpu=_LEADER.value
+    )
     tf.config.experimental_connect_to_cluster(resolver)
     tf.tpu.experimental.initialize_tpu_system(resolver)
     strategy = tf.distribute.TPUStrategy(resolver)
-  else:
+  elif _STRATEGY.value in ['mirrored']:
     strategy = tf.distribute.MirroredStrategy()
+  else:
+    raise ValueError(f'Unknown strategy: {_STRATEGY.value}')
 
   # Load config
   train_dataset_config = data_providers.read_dataset_config(
