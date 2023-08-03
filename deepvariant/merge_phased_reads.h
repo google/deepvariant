@@ -47,29 +47,34 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
+// Structure to hold input reads.
+struct UnmergedRead {
+  std::string fragment_name;
+  int phase = 0;
+  int region_order = 0;
+  int shard = 0;
+  int id = 0;  // id in merged_reads_
+  std::vector<int> consensus_phases;
+};
+
 // Structure to hold merged reads with phasing.
 struct MergedPhaseRead {
   std::string fragment_name;                 // Uniquely identifies a read.
-  int phase;                                 // Phasing {0, 1, 2}.
+  int phase = 0;                                 // Phasing {0, 1, 2}.
+  int region_order = 0;                          // Each make_examples shard
+                                             // runs over a set of regions. This
+                                             // field contains an order of a
+                                             // region.
+  int shard = 0;                                 // Shard.
   absl::flat_hash_map<int, int> phase_dist;  // Different phases the read was
                                              // assigned after merging. This is
                                              // needed to count number of reads
                                              // with inconsistent phasing.
 };
 
-// Input reads are grouped by shard and region order. At each step the merging
-// is done between two groups with adjacent shards and the same region order.
-// For example group (shard_2, region_1) is merged with (shard_1, region_1).
-// Each group contains the map of unique read id to the read's phase.
-// When groups are merged we need to find reads with the same
-// fragment_name. To make it faster numeric IDs are used instead of string ids.
-struct Group {
-  absl::flat_hash_map<int, int> read_id_to_phase;
-};
-
 struct ShardRegion {
-  int shard;
-  int region;
+  int shard = 0;
+  int region = 0;
 
   template <typename H>
   friend H AbslHashValue(H h, const ShardRegion& sr) {
@@ -84,7 +89,7 @@ inline bool operator==(const ShardRegion& l, const ShardRegion& r) {
 // The components of a sharded file spec.
 struct ShardedFileSpec {
   std::string basename;
-  int nshards;
+  int nshards = 0;
   std::string suffix;
 };
 
@@ -116,14 +121,21 @@ class Merger {
   void MergeGroup(const ShardRegion& group);
   int UpdateReadsMap(const std::string& fragment_name);
 
+  std::vector<UnmergedRead> unmerged_reads_;
   // Merged reads with phasing data.
-  std::vector<MergedPhaseRead> phased_reads_;
+  std::vector<MergedPhaseRead> merged_reads_;
 
-  // Map from read_id to phased_reads index.
-  absl::flat_hash_map<std::string, int> phased_reads_map_;
+  // Map from read name to merged_reads_ index.
+  absl::flat_hash_map<std::string, int> merged_reads_map_;
 
-  // Map from (shard, region_num) to Group.
-  absl::flat_hash_map<ShardRegion, Group> groups_;
+  // Input reads are grouped by shard and region order. At each step the merging
+  // is done between two groups with adjacent shards and the same region order.
+  // For example group (shard_2, region_1) is merged with (shard_1, region_1).
+  // Each group contains the map of unique read id to the read's phase.
+  // When groups are merged we need to find reads with the same
+  // fragment_name. To make it faster numeric IDs are used instead of string
+  // ids.
+  absl::flat_hash_map<ShardRegion, std::vector<int>> groups_;
   int num_shards_;
   int num_groups_;
 };
