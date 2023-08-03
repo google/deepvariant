@@ -32,7 +32,7 @@
 // This utility is used to merge phased reads from different shards.
 // We can find a consistent phasing if there are reads that overlap multiple
 // shards. Please note, that input file must be local, this utility does not
-// Google paths.
+// support Google paths.
 //
 // Usage:
 // blaze-bin/learning/genomics/deepvariant/merge_phased_reads_cpp \
@@ -48,12 +48,12 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "absl/log/check.h"
-#include "absl/log/log.h"
 #include "re2/re2.h"
 
 ABSL_FLAG(std::string, input_path, "", "Sharded input.");
@@ -144,13 +144,37 @@ void Merger::LoadFromFiles(absl::string_view input_path) {
       while (std::getline(iss, tokens[i], '\t')) {
         i++;
       }
-      phased_reads_.push_back({
+      int id = UpdateReadsMap(tokens[0]);
+      unmerged_reads_.push_back({
           .fragment_name = tokens[0],
           .phase = std::stoi(tokens[1]),
+          .region_order = std::stoi(tokens[2]),
+          .shard = shard,
+          .id = id,
       });
     }
   }
-  LOG(INFO) << "Total records loaded: " << phased_reads_.size();
+  LOG(INFO) << "Total records loaded: " << merged_reads_.size();
+}
+
+int Merger::UpdateReadsMap(const std::string& fragment_name) {
+  auto it = merged_reads_map_.find(fragment_name);
+  if (it == merged_reads_map_.end()) {
+    merged_reads_.push_back(
+        {.fragment_name = fragment_name, .phase = 0, .phase_dist = {}});
+    merged_reads_map_[fragment_name] = merged_reads_.size() - 1;
+  }
+  return merged_reads_map_[fragment_name];
+}
+
+void Merger::GroupReads() {
+  for (auto index = 0; index < unmerged_reads_.size(); index++) {
+    std::vector<int>& read_ids =
+        groups_[{.shard = merged_reads_[index].shard,
+                 .region = merged_reads_[index].region_order}];
+    read_ids.push_back(index);
+  }
+  num_groups_ = groups_.size();
 }
 
 }  // namespace deepvariant
