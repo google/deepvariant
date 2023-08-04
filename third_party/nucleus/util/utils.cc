@@ -37,11 +37,10 @@
 
 #include "third_party/nucleus/util/utils.h"
 
-#include "absl/log/check.h"
-#include "absl/log/log.h"
 #include "absl/strings/substitute.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 

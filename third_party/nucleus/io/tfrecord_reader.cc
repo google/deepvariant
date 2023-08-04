@@ -34,9 +34,9 @@
 
 #include <memory>
 
-#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "tensorflow/core/lib/io/record_reader.h"
+#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
