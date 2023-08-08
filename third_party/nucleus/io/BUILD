@@ -1,5 +1,9 @@
 # Code for reading and writing genomics data.
 
+# Placeholder: load py_library
+# Placeholder: load py_test
+# Placeholder: load py_binary
+
 package(
     #default_applicable_licenses = ["//third_party/nucleus:license"],
     default_visibility = [
