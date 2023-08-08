@@ -1,3 +1,4 @@
+# Placeholder: load py_test
 load("//third_party:clif.bzl", "py_clif_cc")
 
 package(
