@@ -266,17 +266,19 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   echo "For debugging:"
   pip3 show nvidia-tensorrt
   TENSORRT_PATH=$(python3 -c 'import tensorrt; print(tensorrt.__path__[0])')
-  sudo ln -sf "${TENSORRT_PATH}/libnvinfer.so.8" "${TENSORRT_PATH}/libnvinfer.so.7"
-  sudo ln -sf "${TENSORRT_PATH}/libnvinfer_plugin.so.8" "${TENSORRT_PATH}/libnvinfer_plugin.so.7"
-  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:${TENSORRT_PATH}"
+  # In v8.6.1, the libs got moved to tensorrt_libs:
+  # https://docs.nvidia.com/deeplearning/tensorrt/release-notes/index.html#rel-8-6-1
+  sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer.so.8" "${TENSORRT_PATH}_libs/libnvinfer.so.7"
+  sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer_plugin.so.8" "${TENSORRT_PATH}_libs/libnvinfer_plugin.so.7"
+  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:${TENSORRT_PATH}_libs"
   sudo ldconfig
   # Just in case this still doesn't work, we link them.
   # This is a workaround that we might want to get rid of, if we can make sure
   # setting LD_LIBRARY_PATH and `sudo ldconfig`` works.
   if [[ ! -e /usr/local/nvidia/lib ]]; then
     sudo mkdir -p /usr/local/nvidia/lib
-    sudo ln -sf "${TENSORRT_PATH}//libnvinfer.so.7" /usr/local/nvidia/lib/libnvinfer.so.7
-    sudo ln -sf "${TENSORRT_PATH}//libnvinfer_plugin.so.7" /usr/local/nvidia/lib/libnvinfer_plugin.so.7
+    sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer.so.7" /usr/local/nvidia/lib/libnvinfer.so.7
+    sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer_plugin.so.7" /usr/local/nvidia/lib/libnvinfer_plugin.so.7
   fi
 fi
 
