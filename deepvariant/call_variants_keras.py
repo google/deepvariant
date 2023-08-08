@@ -437,6 +437,15 @@ def call_variants(
     examples_filename: str, checkpoint_path: str, output_file: str
 ):
   """Main driver of call_variants."""
+  output_queue = multiprocessing.Queue()
+  post_processing_process = multiprocessing.get_context().Process(
+      target=post_processing,
+      args=(
+          output_file,
+          output_queue,
+      ),
+  )
+  post_processing_process.start()
   if FLAGS.kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
     logging.vlog(
@@ -478,15 +487,6 @@ def call_variants(
 
     image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)
 
-    output_queue = multiprocessing.Queue()
-    post_processing_process = multiprocessing.get_context().Process(
-        target=post_processing,
-        args=(
-            output_file,
-            output_queue,
-        ),
-    )
-    post_processing_process.start()
     batch_no = 0
     for batch in image_variant_alt_allele_ds:
       predictions = model.predict_on_batch(batch[0])
