@@ -61,7 +61,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
     )
 
     extra_args_plus_gvcf = (
-        '--gvcf "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" '
+        '--gvcf "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
     )
 
     self.assertEqual(
@@ -71,8 +71,11 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
         ' "your_normal_bam" --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --channels "insert_size"'
         ' %s'
-        '--vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.05"'
+        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
+        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
+        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % (extra_args_plus_gvcf),
     )
     call_variants_bin = (
@@ -140,8 +143,11 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
         ' "your_normal_bam" --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --channels "insert_size"'
         '%s'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.05"'
+        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
+        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
+        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % extra_sample_name_flag,
     )
     self.assertEqual(
@@ -200,11 +206,13 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
         ' "your_normal_bam" --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --channels "insert_size"'
         ' --gvcf'
         ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" %s'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.05"'
-        ' --task {}'
-        % expected_args,
+        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
+        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
+        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
+        ' --task {}' % expected_args,
     )
 
   @flagsaver.flagsaver
@@ -230,9 +238,11 @@ class RunDeepSomaticTest(parameterized.TestCase):
             ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
             ' "your_normal_bam" --examples'
             ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
-            ' --gvcf'
+            ' --channels "insert_size" --gvcf'
             ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
-            ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.05"'
+            ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
+            ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
+            ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
             ' --task {}'
         ),
     )
@@ -264,11 +274,13 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
         ' "your_normal_bam" --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --channels "insert_size"'
         ' --gvcf'
         ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" %s'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.05"'
-        ' --task {}'
-        % expected_args,
+        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
+        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
+        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
+        ' --task {}' % expected_args,
     )
 
   @flagsaver.flagsaver

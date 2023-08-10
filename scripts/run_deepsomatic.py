@@ -347,7 +347,10 @@ def make_examples_somatic_command(
     # Specific flags that are not default can be added here.
     special_args = {}
     special_args['vsc_min_fraction_indels'] = 0.05
-    special_args['vsc_min_fraction_snps'] = 0.05
+    special_args['vsc_min_fraction_snps'] = 0.029
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    special_args['channels'] = 'insert_size'
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'ONT_R104':
     special_args = {}
