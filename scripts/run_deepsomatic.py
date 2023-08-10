@@ -356,7 +356,7 @@ def make_examples_somatic_command(
     special_args = {}
     special_args['add_hp_channel'] = True
     special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['min_mapping_quality'] = 10
+    special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
@@ -364,8 +364,8 @@ def make_examples_somatic_command(
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
-    special_args['vsc_min_fraction_snps'] = 0.10
-    special_args['vsc_min_fraction_indels'] = 0.10
+    special_args['vsc_min_fraction_snps'] = 0.05
+    special_args['vsc_min_fraction_indels'] = 0.08
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
