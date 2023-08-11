@@ -151,6 +151,8 @@ pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 pip3 install "${PIP_ARGS[@]}" 'Pillow==9.5.0'
 pip3 install "${PIP_ARGS[@]}" 'ipython>=7.9.0'
 pip3 install "${PIP_ARGS[@]}" 'pysam==0.20.0'
+pip3 install "${PIP_ARGS[@]}" 'tensorflow-addons==0.21.0'
+pip3 install "${PIP_ARGS[@]}"  "tf-models-official==${DV_GCP_OPTIMIZED_TF_WHL_VERSION}"
 
 ################################################################################
 # TensorFlow

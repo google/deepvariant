@@ -45,7 +45,7 @@ import tensorflow_addons as tfa
 from deepvariant import data_providers
 from deepvariant import dv_utils
 from deepvariant import keras_modeling
-from tensorflow_models.official.modeling import optimization
+from official.modeling import optimization
 
 
 _BEST_CHECKPOINT_METRIC = 'tune/f1_weighted'
