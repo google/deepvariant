@@ -90,6 +90,10 @@ sudo update-alternatives --install /usr/bin/python python "/usr/bin/python${PYTH
 # packages.
 sudo -H apt-get install "${APT_ARGS[@]}" "python3-testresources"
 
+# Fix this error:
+# "error: command 'x86_64-linux-gnu-gcc' failed: No such file or directory"
+sudo -H apt-get install "${APT_ARGS[@]}" "gcc"
+
 # If we install python3-pip directly, the pip3 version points to:
 #   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
 # Use the following lines to ensure correct Python version.
