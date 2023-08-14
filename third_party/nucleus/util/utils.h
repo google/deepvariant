@@ -46,7 +46,6 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "tensorflow/core/platform/logging.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 

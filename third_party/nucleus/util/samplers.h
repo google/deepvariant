@@ -35,7 +35,7 @@
 
 #include <random>
 
-#include "tensorflow/core/platform/logging.h"
+#include "absl/log/check.h"
 #include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {

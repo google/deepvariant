@@ -54,7 +54,6 @@
 #include "third_party/nucleus/vendor/statusor.h"
 #include "google/protobuf/map.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 

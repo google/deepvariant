@@ -209,6 +209,7 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/platform/types.h"
 #include "google/protobuf/descriptor.h"
@@ -219,7 +220,6 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/field_comparator.h"
 #include "google/protobuf/util/message_differencer.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 

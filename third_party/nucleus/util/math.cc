@@ -33,8 +33,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "absl/log/check.h"
 #include "third_party/nucleus/util/math.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 

@@ -33,8 +33,6 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_PYTHON_TSTRING_CLIF_CONVERSIONS_H_
 #define THIRD_PARTY_NUCLEUS_IO_PYTHON_TSTRING_CLIF_CONVERSIONS_H_
 
-#include <Python.h>
-
 #include <string>
 
 #include "clif/python/postconv.h"

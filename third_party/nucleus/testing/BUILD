@@ -46,10 +46,11 @@ cc_library(
     ],
     deps = [
         "//third_party/nucleus/platform:types",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )

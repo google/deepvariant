@@ -39,6 +39,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
 #include "google/protobuf/descriptor.h"
@@ -101,7 +102,7 @@ string JoinStringPieces(const Container& strings, string_view separator) {
   return stream.str();
 }
 
-// Find all the descriptors for the ingore_fields.
+// Find all the descriptors for the ignore_fields.
 std::vector<const google::protobuf::FieldDescriptor*> GetFieldDescriptors(
     const google::protobuf::Descriptor* proto_descriptor,
     const std::vector<string>& ignore_fields) {

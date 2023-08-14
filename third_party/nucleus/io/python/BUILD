@@ -13,7 +13,7 @@ cc_library(
     hdrs = ["tstring_clif_conversions.h"],
     deps = [
         "@clif//:cpp_runtime",
-        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/tsl/platform:tstring",
     ],
 )
 

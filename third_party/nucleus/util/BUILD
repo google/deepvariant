@@ -49,6 +49,7 @@ cc_library(
     srcs = ["utils.cc"],
     hdrs = ["utils.h"],
     deps = [
+        ":proto_ptr",
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
@@ -57,7 +58,8 @@ cc_library(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
     ],
@@ -134,8 +136,8 @@ cc_library(
     srcs = ["math.cc"],
     hdrs = ["math.h"],
     deps = [
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings:cord",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -323,7 +325,7 @@ cc_library(
     hdrs = ["samplers.h"],
     deps = [
         "//third_party/nucleus/platform:types",
-        "@org_tensorflow//tensorflow/core:lib",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
