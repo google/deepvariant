@@ -120,7 +120,7 @@ def train(config: ml_collections.ConfigDict):
     resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
         tpu=_LEADER.value
     )
-    tf.config.experimental_connect_to_cluster(resolver)
+    tf.config.experimental_connect_to_cluster(resolver, protocol='grpc+loas')
     tf.tpu.experimental.initialize_tpu_system(resolver)
     strategy = tf.distribute.TPUStrategy(resolver)
   elif _STRATEGY.value in ['mirrored']:
