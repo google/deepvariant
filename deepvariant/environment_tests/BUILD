@@ -1,5 +1,7 @@
 # KEEP THIS LINE to import nucleus.bzl externally
 
+# Placeholder: load py_test
+
 test_suite(
     name = "smoke_tests",
     tests = [

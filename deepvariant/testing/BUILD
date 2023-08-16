@@ -1,6 +1,8 @@
 # Testing utilities that are temporarily located here until they can
 # be separately open source.
 
+# Placeholder: load py_library
+
 package(default_visibility = ["//:__subpackages__"])
 
 py_library(
