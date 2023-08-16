@@ -89,19 +89,6 @@ config_flags.DEFINE_config_file('config', None)
 FLAGS = flags.FLAGS
 
 
-class F1Class(tfa.metrics.F1Score):
-  """Reports F1 Score for a target class."""
-
-  # TODO: Create custom metrics.py module.
-
-  def __init__(self, num_classes: int, target_class: int, name: str):
-    self.target_class = target_class
-    super().__init__(num_classes=num_classes, name=name)
-
-  def result(self) -> tf.Tensor:
-    return super().result()[self.target_class]
-
-
 def train(config: ml_collections.ConfigDict):
   """Train a model."""
   logging.info('Running with debug=%s', _DEBUG.value)
@@ -225,36 +212,9 @@ def train(config: ml_collections.ConfigDict):
         average_decay=config.average_decay,
     )
 
-    def create_metrics():
-      return [
-          tf.keras.metrics.CategoricalAccuracy(),
-          tf.keras.metrics.CategoricalCrossentropy(),
-          tf.keras.metrics.TruePositives(),
-          tf.keras.metrics.TrueNegatives(),
-          tf.keras.metrics.FalsePositives(),
-          tf.keras.metrics.FalseNegatives(),
-          tf.keras.metrics.Precision(),
-          tf.keras.metrics.Precision(name='precision_homref', class_id=0),
-          tf.keras.metrics.Precision(name='precision_het', class_id=1),
-          tf.keras.metrics.Precision(name='precision_homalt', class_id=2),
-          tf.keras.metrics.Recall(),
-          tf.keras.metrics.Recall(name='recall_homref', class_id=0),
-          tf.keras.metrics.Recall(name='recall_het', class_id=1),
-          tf.keras.metrics.Recall(name='recall_homalt', class_id=2),
-          tfa.metrics.F1Score(
-              num_classes=3, average='weighted', name='f1_weighted'
-          ),
-          tfa.metrics.F1Score(num_classes=3, average='micro', name='f1_micro'),
-          tfa.metrics.F1Score(num_classes=3, average='macro', name='f1_macro'),
-          F1Class(num_classes=3, target_class=0, name='f1_homref'),
-          F1Class(num_classes=3, target_class=1, name='f1_het'),
-          F1Class(num_classes=3, target_class=2, name='f1_homalt'),
-          # Leave mean loss as the last metric as it is updated differently.
-          tf.keras.metrics.Mean(name='loss'),
-      ]
-
-    train_metrics = create_metrics()
-    tune_metrics = create_metrics()
+  with strategy.scope():
+    train_metrics = keras_modeling.create_metrics()
+    tune_metrics = keras_modeling.create_metrics()
 
   @tf.function
   def run_train_step(inputs):
