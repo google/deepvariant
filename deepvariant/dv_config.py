@@ -49,6 +49,8 @@ def get_exome_config(
   config.momentum = 0.9848544529312561
   config.epsilon = 0.8696723762650027
   config.warmup_steps = 718
+  config.weight_decay = 0.1
+  config.backbone_dropout_rate = 0.22517227651098964
 
   config.init_weights_file = '/readahead/512M/cns/oz-d/home/brain-genomics/kishwar/deepvariant_1.6_release_models/wgs_rc0/wgs.rc0.ckpt'
 
@@ -84,7 +86,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.init_weights_file = None
   config.init_backbone_with_imagenet = True
   config.best_metrics = 'val_categorical_accuracy'
-  config.early_stopping.patience = 5
+  config.weight_decay = 0.00004
+  config.backbone_dropout_rate = 0.2
 
   # TensorBoard Options
   config.log_every_steps = 100

@@ -111,7 +111,6 @@ def train(config: ml_collections.ConfigDict):
     tf.tpu.experimental.initialize_tpu_system(resolver)
     strategy = tf.distribute.TPUStrategy(resolver)
   elif _STRATEGY.value in ['mirrored']:
-    strategy = tf.distribute.MirroredStrategy()
   else:
     raise ValueError(f'Unknown strategy: {_STRATEGY.value}')
 
@@ -147,6 +146,7 @@ def train(config: ml_collections.ConfigDict):
         input_shape=input_shape,
         weights=config.init_weights_file,
         init_backbone_with_imagenet=config.init_backbone_with_imagenet,
+        config=config,
     )
 
     # Define Loss Function.

@@ -275,6 +275,7 @@ def inceptionv3(
     input_shape: Tuple[int, int, int],
     weights: Optional[str] = None,
     init_backbone_with_imagenet: bool = True,
+    config: Optional[ml_collections.ConfigDict] = None,
 ) -> tf.keras.Model:
   """Returns an InceptionV3 architecture.
 
@@ -287,6 +288,7 @@ def inceptionv3(
       `weights='imagenet'` to start with. This will download a model. It should
       be set to False in unit tests, or when specific model weights will be
       loaded afterwards.
+    config: a model configuration.
 
   Returns:
     An InceptionV3-based model.
@@ -299,13 +301,18 @@ def inceptionv3(
       pooling='avg',
   )
 
-  weight_decay = _DEFAULT_WEIGHT_DECAY
+  if config:
+    weight_decay = config.weight_decay
+    backbone_dropout_rate = config.backbone_dropout_rate
+  else:
+    weight_decay = _DEFAULT_WEIGHT_DECAY
+    backbone_dropout_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
+
   backbone = add_l2_regularizers(
       backbone, tf.keras.layers.Conv2D, l2=weight_decay
   )
-  backbone_drop_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
 
-  hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)
+  hid = tf.keras.layers.Dropout(backbone_dropout_rate)(backbone.output)
 
   outputs = []
   outputs.append(build_classification_head(hid, l2=weight_decay))
