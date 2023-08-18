@@ -53,8 +53,8 @@ FLAGS = flags.FLAGS
 # Required flags.
 _MODEL_TYPE = flags.DEFINE_enum(
     'model_type',
-    'WGS',  # Set default to WGS. We only have this model type right now.
-    ['WGS', 'ONT_R104'],
+    'WGS',
+    ['WGS', 'ONT_R104', 'PACBIO'],
     (
         'Required. Type of model to use for variant calling. Set this flag to'
         ' use the default model associated with each type, and it will set'
@@ -351,6 +351,24 @@ def make_examples_somatic_command(
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
     special_args['channels'] = 'insert_size'
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'PACBIO':
+    special_args = {}
+    special_args['add_hp_channel'] = True
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['min_mapping_quality'] = 5
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads'] = True
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    special_args['vsc_min_count_snps'] = 1
+    special_args['vsc_min_fraction_indels'] = 0.08
+    special_args['vsc_min_fraction_snps'] = 0.02
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'ONT_R104':
     special_args = {}
