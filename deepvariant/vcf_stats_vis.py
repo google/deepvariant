@@ -212,15 +212,16 @@ def _build_gq_histogram(data):
 def _build_vaf_histograms(histogram_json):
   """Create VAF histograms split by genotype."""
   guides = {REF: 0, HET: 0.5, HOM: 1}
-  hist_data = pd.DataFrame()
+  dfs = []
   for key in histogram_json:
     g = pd.DataFrame(histogram_json[key])
     pretty, group = _prettify_genotype(key)
     g['GT'] = pretty  # pretty genotype name
     g['g'] = group  # main/other genotypes
     g['l'] = guides.get(pretty, None)  # vertical line as guide
-    hist_data = hist_data.append(g)
+    dfs.append(g)
 
+  hist_data = pd.concat(dfs)
   main_hist_data = hist_data[hist_data['g'] == 'main']
   other_hist_data = hist_data[hist_data['g'] == 'others']
 
