@@ -38,7 +38,7 @@
 
 #include "absl/memory/memory.h"
 #include "third_party/nucleus/io/hts_path.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 
 namespace nucleus {
 

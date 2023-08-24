@@ -39,7 +39,7 @@
 #include "htslib/vcf.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/platform/logging.h"
 

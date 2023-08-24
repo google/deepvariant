@@ -43,7 +43,7 @@
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 #include "google/protobuf/map.h"
 
 namespace nucleus {

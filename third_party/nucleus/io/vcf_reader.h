@@ -48,7 +48,7 @@
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/vendor/statusor.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 
 namespace nucleus {
 

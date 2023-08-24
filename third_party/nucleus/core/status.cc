@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 
 #include <memory>
 #include <string>

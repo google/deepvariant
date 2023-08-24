@@ -32,7 +32,7 @@
 
 #include "third_party/nucleus/io/reader_base.h"
 
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 
 namespace nucleus {
 

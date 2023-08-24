@@ -42,7 +42,7 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/platform/types.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/vendor/status_matchers.h"
 #include "third_party/nucleus/vendor/statusor.h"
 #include "tensorflow/core/lib/core/errors.h"

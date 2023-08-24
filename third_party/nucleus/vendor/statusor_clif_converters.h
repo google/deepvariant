@@ -34,7 +34,7 @@
 
 #include "clif/python/postconv.h"
 #include "clif/python/types.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/vendor/statusor.h"
 
 // Note: comment below is an instruction to CLIF.

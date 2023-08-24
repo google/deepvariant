@@ -52,7 +52,7 @@
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 #include "google/protobuf/repeated_field.h"
 
 namespace nucleus {

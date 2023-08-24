@@ -19,26 +19,12 @@ cc_library(
 )
 
 cc_library(
-    name = "status",
-    srcs = ["status.cc"],
-    hdrs = [
-        "status.h",
-    ],
-    deps = [
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
-        "@org_tensorflow//tensorflow/core:lib",
-    ],
-)
-
-cc_library(
     name = "statusor",
     hdrs = [
         "statusor.h",
     ],
     deps = [
-        ":status",
+        "//third_party/nucleus/core:status",
         "//third_party/nucleus/platform:types",
         "@org_tensorflow//tensorflow/core:lib",
     ],
@@ -74,8 +60,8 @@ cc_library(
     srcs = ["statusor_clif_converters.cc"],
     hdrs = ["statusor_clif_converters.h"],
     deps = [
-        ":status",
         ":statusor",
+        "//third_party/nucleus/core:status",
         "@clif//:cpp_runtime",
     ],
 )
@@ -84,8 +70,8 @@ cc_library(
     name = "statusor_examples",
     hdrs = ["statusor_examples.h"],
     deps = [
-        ":status",
         ":statusor",
+        "//third_party/nucleus/core:status",
         "//third_party/nucleus/platform:types",
     ],
 )

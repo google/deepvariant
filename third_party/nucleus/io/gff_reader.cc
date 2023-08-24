@@ -44,7 +44,7 @@
 #include "absl/types/optional.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/range.pb.h"
-#include "third_party/nucleus/vendor/status.h"
+#include "third_party/nucleus/core/status.h"
 #include "google/protobuf/map.h"
 
 using nucleus::genomics::v1::GffHeader;
